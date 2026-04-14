@@ -1,0 +1,10 @@
+{
+  "extends": "@cyberlearn/config/tsconfig/library.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "@cyberlearn/email": ["./src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

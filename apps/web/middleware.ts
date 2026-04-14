@@ -1,0 +1,144 @@
+import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
+
+// ─── Security headers (ADR-002) ────────────────────────────────────────────
+// Implemented directly instead of using the unmaintained next-safe-middleware.
+// Update the CSP when adding new external origins (Pyodide CDN in Phase 4, etc.).
+
+const SECURITY_HEADERS: Record<string, string> = {
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    // wasm-unsafe-eval required for Pyodide (Phase 4)
+    "script-src 'self' 'wasm-unsafe-eval'",
+    // unsafe-inline required for Tailwind v4 (runtime style injection)
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'",
+    "upgrade-insecure-requests",
+  ].join("; "),
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Resource-Policy": "same-origin",
+};
+
+// ─── Route classification ──────────────────────────────────────────────────
+
+function isPublicRoute(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/verify/") ||
+    pathname.startsWith("/contact") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/favicon")
+  );
+}
+
+function isOnboardingRoute(pathname: string): boolean {
+  return pathname.startsWith("/onboarding");
+}
+
+// ─── Middleware ────────────────────────────────────────────────────────────
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Always apply security headers
+  let response = NextResponse.next({ request });
+
+  const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
+  const supabaseAnonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
+
+  // If env vars aren't set yet (local dev without .env.local), skip auth checks
+  if (!supabaseUrl || !supabaseAnonKey) {
+    const res = NextResponse.next({ request });
+    applySecurityHeaders(res);
+    return res;
+  }
+
+  // Create Supabase client — MUST use this cookie pattern for SSR session refresh
+  // Explicit CookieMethodsServer type needed to avoid implicit-any on setAll params.
+  const cookieMethods: CookieMethodsServer = {
+    getAll: () => request.cookies.getAll(),
+    setAll: (cookiesToSet) => {
+      cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+      response = NextResponse.next({ request });
+      cookiesToSet.forEach(({ name, value, options }) =>
+        response.cookies.set(name, value, options),
+      );
+    },
+  };
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: cookieMethods,
+  });
+
+  // IMPORTANT: Do NOT add any logic between createServerClient and getUser().
+  // The session refresh mutates cookies and must propagate to the response.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // ── Routing logic ──────────────────────────────────────────────────────
+
+  if (!user) {
+    // Unauthenticated user trying to access a protected route
+    if (!isPublicRoute(pathname)) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirectTo", pathname);
+      const redirectResponse = NextResponse.redirect(loginUrl);
+      applySecurityHeaders(redirectResponse);
+      return redirectResponse;
+    }
+  } else {
+    // Authenticated user — check onboarding completion
+    // We use app_metadata.onboarding_complete set by the callback route
+    // to avoid a DB query on every request.
+    const isOnboardingComplete = user.app_metadata?.["onboarding_complete"] === true;
+
+    if (!isOnboardingComplete && !isOnboardingRoute(pathname) && !isPublicRoute(pathname)) {
+      const onboardingUrl = new URL("/onboarding", request.url);
+      const redirectResponse = NextResponse.redirect(onboardingUrl);
+      applySecurityHeaders(redirectResponse);
+      return redirectResponse;
+    }
+
+    // Completed-onboarding user visiting /login or /onboarding → redirect to dashboard
+    if (isOnboardingComplete && (pathname === "/login" || isOnboardingRoute(pathname))) {
+      const dashboardUrl = new URL("/dashboard", request.url);
+      const redirectResponse = NextResponse.redirect(dashboardUrl);
+      applySecurityHeaders(redirectResponse);
+      return redirectResponse;
+    }
+  }
+
+  applySecurityHeaders(response);
+  return response;
+}
+
+function applySecurityHeaders(response: NextResponse): void {
+  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     * - public folder files
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};

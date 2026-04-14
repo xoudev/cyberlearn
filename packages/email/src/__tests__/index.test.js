@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const vitest_1 = require("vitest");
+(0, vitest_1.describe)("@cyberlearn/email", () => {
+  (0, vitest_1.it)("package is importable", () => {
+    // Placeholder test — email template tests will be added in Phase 7 (Notifications)
+    (0, vitest_1.expect)(true).toBe(true);
+  });
+});
+//# sourceMappingURL=index.test.js.map

@@ -1,0 +1,46 @@
+{
+  "name": "@cyberlearn/admin",
+  "version": "0.0.1",
+  "private": true,
+  "description": "CyberLearn admin dashboard — admin.cyberlearn.app",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@cyberlearn/db": "workspace:*",
+    "@cyberlearn/lib": "workspace:*",
+    "@cyberlearn/types": "workspace:*",
+    "@cyberlearn/ui": "workspace:*",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:",
+    "@t3-oss/env-nextjs": "catalog:",
+    "@supabase/supabase-js": "catalog:",
+    "@supabase/ssr": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "react-hook-form": "catalog:",
+    "@hookform/resolvers": "catalog:",
+    "next-intl": "catalog:",
+    "@sentry/nextjs": "catalog:",
+    "@upstash/ratelimit": "catalog:",
+    "@upstash/redis": "catalog:",
+    "framer-motion": "catalog:"
+  },
+  "devDependencies": {
+    "@cyberlearn/config": "workspace:*",
+    "typescript": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "typescript-eslint": "catalog:",
+    "@next/eslint-plugin-next": "catalog:"
+  }
+}

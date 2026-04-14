@@ -1,0 +1,9 @@
+{
+  "extends": "@cyberlearn/config/tsconfig/library.json",
+  "compilerOptions": {
+    "paths": {
+      "@cyberlearn/db": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "prisma"]
+}

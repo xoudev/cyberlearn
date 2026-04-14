@@ -1,0 +1,21 @@
+{
+  "name": "@cyberlearn/config",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared ESLint, TypeScript, and tooling configurations",
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
+    "./tsconfig/library.json": "./tsconfig/library.json",
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/next": "./eslint/next.js"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@eslint/js": "catalog:",
+    "typescript-eslint": "catalog:",
+    "eslint-plugin-react": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "@next/eslint-plugin-next": "catalog:"
+  }
+}

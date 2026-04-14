@@ -1,0 +1,47 @@
+{
+  "name": "@cyberlearn/db",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Prisma client, schema, migrations, and database utilities",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./supabase/server": "./src/supabase/server.ts",
+    "./supabase/client": "./src/supabase/client.ts",
+    "./supabase/admin": "./src/supabase/admin.ts",
+    "./prisma": "./src/prisma.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:prod": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@prisma/client": "catalog:",
+    "@supabase/supabase-js": "catalog:",
+    "@supabase/ssr": "catalog:"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@cyberlearn/config": "workspace:*",
+    "prisma": "catalog:",
+    "tsx": "^4.19.3",
+    "typescript": "catalog:",
+    "@types/node": "catalog:",
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "eslint": "catalog:",
+    "typescript-eslint": "catalog:"
+  }
+}

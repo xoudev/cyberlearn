@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npm --version)",
+      "Bash(npm install:*)",
+      "Bash(npm root:*)",
+      "Bash(export PATH=\"$PATH:$\\(npm root -g\\)/.bin\")",
+      "Bash(pnpm --version)",
+      "Bash(chmod +x:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm format:check)",
+      "Bash(pnpm format:*)",
+      "Bash(pnpm --filter @cyberlearn/db db:generate)",
+      "Bash(pnpm --filter @cyberlearn/types test)",
+      "Bash(pnpm --filter @cyberlearn/lib test)",
+      "Bash(pnpm --filter @cyberlearn/db build)"
+    ]
+  }
+}
