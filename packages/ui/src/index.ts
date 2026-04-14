@@ -1,5 +1,14 @@
-// @cyberlearn/ui
-// Shared UI components: shadcn/ui base components + custom brand components.
-// Will be populated in Phase 2 (Design System).
+// @cyberlearn/ui — brand components shared across all apps.
+// shadcn primitives live in each app under components/ui/ (not shared).
 
-export {};
+export { XPBar } from "./components/xp-bar.js";
+export { LevelBadge } from "./components/level-badge.js";
+export { RarityBadge, type BadgeRarity } from "./components/rarity-badge.js";
+export {
+  LessonCard,
+  type LessonDifficulty,
+  type LessonStatus,
+} from "./components/lesson-card.js";
+export { PathProgress } from "./components/path-progress.js";
+export { NotificationBell } from "./components/notification-bell.js";
+export { cn } from "./lib/utils.js";

@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="min-h-screen p-8" style={{ backgroundColor: "var(--color-bg-base)" }}>
+    <>
       <h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
         Tableau de bord
       </h1>
@@ -22,6 +22,6 @@ export default async function DashboardPage() {
       <p className="mt-1 text-sm" style={{ color: "var(--color-text-muted)" }}>
         Phase 1 scaffold — le vrai dashboard arrive en Phase 3.
       </p>
-    </main>
+    </>
   );
 }

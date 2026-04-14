@@ -28,7 +28,22 @@
     "@tanstack/react-query": "catalog:",
     "react-hook-form": "catalog:",
     "@hookform/resolvers": "catalog:",
+    "next-themes": "catalog:",
     "next-intl": "catalog:",
+    "lucide-react": "catalog:",
+    "sonner": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "tailwind-merge": "catalog:",
+    "@tanstack/react-table": "catalog:",
+    "date-fns": "catalog:",
+    "@radix-ui/react-avatar": "catalog:",
+    "@radix-ui/react-dialog": "catalog:",
+    "@radix-ui/react-dropdown-menu": "catalog:",
+    "@radix-ui/react-progress": "catalog:",
+    "@radix-ui/react-separator": "catalog:",
+    "@radix-ui/react-slot": "catalog:",
+    "@radix-ui/react-tooltip": "catalog:",
     "@sentry/nextjs": "catalog:",
     "@upstash/ratelimit": "catalog:",
     "@upstash/redis": "catalog:",
@@ -42,6 +57,8 @@
     "@types/react-dom": "catalog:",
     "eslint": "catalog:",
     "typescript-eslint": "catalog:",
-    "@next/eslint-plugin-next": "catalog:"
+    "@next/eslint-plugin-next": "catalog:",
+    "tailwindcss": "catalog:",
+    "@tailwindcss/postcss": "catalog:"
   }
 }

@@ -1,0 +1,131 @@
+/*
+ * CyberLearn design tokens — source of truth for both apps.
+ *
+ * Import in each app's globals.css:
+ *   @import "@cyberlearn/ui/tokens.css";
+ *
+ * Standard approach (compatible with shadcn/ui and next-themes class strategy):
+ *   :root          → light theme values
+ *   .dark          → dark theme overrides (next-themes adds class="dark" to <html>)
+ *
+ * next-themes is configured with defaultTheme="dark" so dark is the default.
+ */
+
+/* ─── Light theme (:root) ─────────────────────────────────────────────────── */
+
+:root {
+  /* Brand (same in both themes) */
+  --color-brand-blue: #0024ff;
+  --color-brand-turquoise: #0affd4;
+
+  /* Backgrounds */
+  --color-bg-base: #ffffff;
+  --color-bg-elevated: #f8f9fc;
+  --color-bg-overlay: #f0f2f8;
+
+  /* Borders */
+  --color-border-subtle: #e5e7f0;
+  --color-border-default: #d1d5e0;
+
+  /* Text */
+  --color-text-primary: #030219;
+  --color-text-secondary: #4a4960;
+  --color-text-muted: #8b8aa3;
+  --color-text-disabled: #c8c7d6;
+
+  /* Semantic */
+  --color-success: #00b899;
+  --color-warning: #d97706;
+  --color-danger: #e11d48;
+  --color-info: #2563eb;
+
+  /* Badge rarities */
+  --color-rarity-common: #64748b;
+  --color-rarity-rare: #2563eb;
+  --color-rarity-epic: #9333ea;
+  --color-rarity-legendary: #d97706;
+
+  /* Border radius */
+  --radius: 0.5rem;
+
+  /* Sidebar dimensions */
+  --sidebar-width: 240px;
+  --sidebar-width-collapsed: 60px;
+
+  /* ── shadcn semantic aliases ───────────────────────────────────────────── */
+
+  --background: var(--color-bg-base);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-bg-elevated);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-bg-overlay);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-brand-blue);
+  --primary-foreground: #ffffff;
+  /* secondary/muted intentionally more contrasting than bg-elevated/bg-overlay
+     so Progress tracks and Skeleton are visible against card backgrounds */
+  --secondary: #e4e6f4;
+  --secondary-foreground: var(--color-text-secondary);
+  --muted: #dddff0;
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-brand-turquoise);
+  --accent-foreground: var(--color-bg-base);
+  --destructive: var(--color-danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--color-border-default);
+  --input: var(--color-border-subtle);
+  --ring: var(--color-brand-blue);
+
+  /* Sidebar shadcn vars */
+  --sidebar: var(--color-bg-elevated);
+  --sidebar-foreground: var(--color-text-primary);
+  --sidebar-primary: var(--color-brand-blue);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--color-bg-overlay);
+  --sidebar-accent-foreground: var(--color-text-primary);
+  --sidebar-border: var(--color-border-subtle);
+  --sidebar-ring: var(--color-brand-blue);
+}
+
+/* ─── Dark theme (.dark class on <html>, set by next-themes) ─────────────── */
+
+.dark {
+  /* Backgrounds */
+  --color-bg-base: #030219;
+  --color-bg-elevated: #0a0826;
+  --color-bg-overlay: #110f33;
+
+  /* Borders */
+  --color-border-subtle: #1f1b47;
+  --color-border-default: #2a2560;
+
+  /* Text */
+  --color-text-primary: #f5f5fa;
+  --color-text-secondary: #b8b5d1;
+  --color-text-muted: #6b6890;
+  --color-text-disabled: #3f3d5c;
+
+  /* Semantic */
+  --color-success: #0affd4;
+  --color-warning: #ffb020;
+  --color-danger: #ff4d6d;
+  --color-info: #4d8bff;
+
+  /* Badge rarities */
+  --color-rarity-common: #b8b5d1;
+  --color-rarity-rare: #4d8bff;
+  --color-rarity-epic: #b14dff;
+  --color-rarity-legendary: #ffb020;
+
+  /* shadcn aliases update automatically via var(--color-*) chain */
+  --ring: var(--color-brand-turquoise);
+  /* secondary/muted need explicit dark overrides — cannot derive from bg-elevated
+     because bg-elevated is the same as card backgrounds in dark mode */
+  --secondary: #1e1a50;
+  --secondary-foreground: var(--color-text-secondary);
+  --muted: #1e1a50;
+  --muted-foreground: var(--color-text-muted);
+  --sidebar-primary: var(--color-brand-turquoise);
+  --sidebar-primary-foreground: var(--color-bg-base);
+  --sidebar-ring: var(--color-brand-turquoise);
+}
