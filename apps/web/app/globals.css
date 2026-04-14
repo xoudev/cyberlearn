@@ -1,70 +1,95 @@
 @import "tailwindcss";
+@import "@cyberlearn/ui/tokens.css";
 
-/* =============================================================================
-   Design tokens — Phase 0 values, will be polished in Phase 2 (Design System)
-   ============================================================================= */
+/*
+ * Dark mode variant for Tailwind v4.
+ * next-themes adds class="dark" to <html> when dark mode is active.
+ * This enables dark: prefixed Tailwind utilities (e.g., dark:bg-background).
+ */
+@custom-variant dark (&:is(.dark *));
 
-@theme {
-  /* Brand */
-  --color-brand-blue: #0024ff;
-  --color-brand-turquoise: #0affd4;
+/*
+ * Map design tokens → Tailwind v4 color utilities.
+ *
+ * @theme inline generates CSS utilities without emitting extra variables.
+ * Gives us: bg-background, text-foreground, border-border, bg-card, etc.
+ * These are used by shadcn components and our brand components.
+ */
+@theme inline {
+  /* shadcn semantic colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-  /* Backgrounds (dark mode base) */
-  --color-bg-base: #030219;
-  --color-bg-elevated: #0a0826;
-  --color-bg-overlay: #110f33;
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Borders */
-  --color-border-subtle: #1f1b47;
-  --color-border-default: #2a2560;
+  /* Brand utilities */
+  --color-brand-blue: var(--color-brand-blue);
+  --color-brand-turquoise: var(--color-brand-turquoise);
 
-  /* Text */
-  --color-text-primary: #f5f5fa;
-  --color-text-secondary: #b8b5d1;
-  --color-text-muted: #6b6890;
-  --color-text-disabled: #3f3d5c;
+  /* Semantic utilities */
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-info: var(--color-info);
 
-  /* Semantic */
-  --color-success: #0affd4;
-  --color-warning: #ffb020;
-  --color-danger: #ff4d6d;
-  --color-info: #4d8bff;
+  /* Rarity utilities */
+  --color-rarity-common: var(--color-rarity-common);
+  --color-rarity-rare: var(--color-rarity-rare);
+  --color-rarity-epic: var(--color-rarity-epic);
+  --color-rarity-legendary: var(--color-rarity-legendary);
 
-  /* Badge rarities */
-  --color-rarity-common: #b8b5d1;
-  --color-rarity-rare: #4d8bff;
-  --color-rarity-epic: #b14dff;
+  /* Border radius scale */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
 }
 
-/* Base styles */
+/* ─── Base styles ─────────────────────────────────────────────────────────── */
+
 html {
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
 }
 
-/* Light mode overrides — applied in Phase 2 via data-theme="light" */
-[data-theme="light"] {
-  --color-bg-base: #ffffff;
-  --color-bg-elevated: #f8f9fc;
-  --color-bg-overlay: #f0f2f8;
-  --color-border-subtle: #e5e7f0;
-  --color-border-default: #d1d5e0;
-  --color-text-primary: #030219;
-  --color-text-secondary: #4a4960;
-  --color-text-muted: #8b8aa3;
-  --color-text-disabled: #c8c7d6;
-}
-
-/* Smooth transition for theme switching */
-* {
-  transition-property: background-color, border-color, color;
+/* Smooth theme transitions (off when prefers-reduced-motion) */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke;
   transition-duration: 150ms;
   transition-timing-function: ease;
 }
 
-/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
   }

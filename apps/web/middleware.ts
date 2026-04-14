@@ -5,20 +5,27 @@ import { type NextRequest, NextResponse } from "next/server";
 // Implemented directly instead of using the unmaintained next-safe-middleware.
 // Update the CSP when adding new external origins (Pyodide CDN in Phase 4, etc.).
 
+const isDev = process.env.NODE_ENV === "development";
+
+// In dev, Next.js HMR requires 'unsafe-eval' and injects inline scripts.
+// In prod, keep strict — no eval, no inline.
 const SECURITY_HEADERS: Record<string, string> = {
   "Content-Security-Policy": [
     "default-src 'self'",
-    // wasm-unsafe-eval required for Pyodide (Phase 4)
-    "script-src 'self' 'wasm-unsafe-eval'",
+    isDev
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
+      : "script-src 'self' 'wasm-unsafe-eval'",
     // unsafe-inline required for Tailwind v4 (runtime style injection)
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    isDev
+      ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:*"
+      : "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
     "frame-ancestors 'none'",
     "form-action 'self'",
     "base-uri 'self'",
-    "upgrade-insecure-requests",
+    ...(isDev ? [] : ["upgrade-insecure-requests"]),
   ].join("; "),
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
   "X-Content-Type-Options": "nosniff",
@@ -30,6 +37,10 @@ const SECURITY_HEADERS: Record<string, string> = {
 };
 
 // ─── Route classification ──────────────────────────────────────────────────
+
+function isDevRoute(pathname: string): boolean {
+  return pathname.startsWith("/dev");
+}
 
 function isPublicRoute(pathname: string): boolean {
   return (
@@ -51,6 +62,13 @@ function isOnboardingRoute(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Block /dev/* in production — return 404, not 403 (don't reveal the route exists)
+  if (isDevRoute(pathname) && process.env.NODE_ENV === "production") {
+    const notFound = new NextResponse(null, { status: 404 });
+    applySecurityHeaders(notFound);
+    return notFound;
+  }
 
   // Always apply security headers
   let response = NextResponse.next({ request });
