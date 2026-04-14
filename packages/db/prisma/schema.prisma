@@ -1,0 +1,559 @@
+// packages/db/prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// USERS & AUTH
+// ============================================================
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+model User {
+  id           String   @id @db.Uuid // Direct link with Supabase auth.users
+  email        String   @unique
+  username     String?  @unique @db.VarChar(32) // Null until onboarding is complete
+  displayName  String   @db.VarChar(64)
+  avatarUrl    String?
+  bio          String?  @db.VarChar(280)
+  role         UserRole @default(STUDENT)
+  xpTotal      Int      @default(0)
+  level        Int      @default(1)
+  streakDays   Int      @default(0)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  preferences      UserPreferences?
+  lessonProgress   UserLessonProgress[]
+  pathProgress     UserPathProgress[]
+  badges           UserBadge[]
+  certificates     Certificate[]
+  notifications    Notification[]
+  reviewSchedules  ReviewSchedule[]
+  contactTickets   ContactTicket[]
+  ratings          Rating[]
+  questions        LessonQuestion[]
+  answers          LessonAnswer[]
+  auditLogs        AuditLog[]          @relation("ActorLogs")
+  placementResult  UserPlacementResult?
+  skipWaivers      UserSkipWaiver[]
+
+  @@index([username])
+  @@index([role])
+  @@map("users")
+}
+
+model UserPreferences {
+  userId             String  @id @db.Uuid
+  theme              String  @default("dark") // "dark" | "light" | "system"
+  locale             String  @default("fr")
+  emailNotifications Boolean @default(true)
+  reviewReminders    Boolean @default(true)
+  weeklyDigest       Boolean @default(true)
+  publicProfile      Boolean @default(true) // Controls First Blood & public profile visibility
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// ============================================================
+// PLACEMENT TEST
+// ============================================================
+
+model PlacementQuestion {
+  id              String     @id @default(uuid()) @db.Uuid
+  category        Category
+  difficulty      Difficulty
+  question        String     @db.Text
+  options         Json // Array: [{ id: "a", text: "..." }, ...] — safe to expose to client
+  correctOptionId String     @db.VarChar(10) // NEVER sent to client — validated server-side only
+  explanation     String?    @db.Text // Shown after test completion
+  orderIndex      Int
+  isActive        Boolean    @default(true)
+
+  @@index([category, difficulty, isActive])
+  @@map("placement_questions")
+}
+
+model UserPlacementResult {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @unique @db.Uuid
+  devScore      Int // 0-100
+  cybersecScore Int // 0-100
+  networkScore  Int // 0-100
+  completedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_placement_results")
+}
+
+// Tracks which lesson prerequisites are waived for a user (from placement test results).
+// A waiver lets users access advanced lessons without completing beginner/intermediate ones,
+// but does NOT award XP or mark lessons as COMPLETED.
+model UserSkipWaiver {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  lessonId    String   @db.Uuid
+  grantedAt   DateTime @default(now())
+  grantReason String   @default("placement_test")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("user_skip_waivers")
+}
+
+// ============================================================
+// LESSONS & CONTENT
+// ============================================================
+
+enum Category {
+  DEV
+  CYBERSEC
+  NETWORK
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Lesson {
+  id               String        @id @default(uuid()) @db.Uuid
+  refCode          String        @unique // Format: CL-LSN-001-V01
+  slug             String        @unique
+  title            String        @db.VarChar(200)
+  description      String        @db.VarChar(500)
+  category         Category
+  difficulty       Difficulty
+  estimatedMinutes Int
+  xpReward         Int
+  contentMdx       String        @db.Text
+  coverImageUrl    String?
+  status           ContentStatus @default(DRAFT)
+  version          Int           @default(1)
+  authorId         String        @db.Uuid
+  avgRating        Float? // Recomputed in transaction on each Rating mutation
+  ratingsCount     Int           @default(0)
+  publishedAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  pathLessons     PathLesson[]
+  progress        UserLessonProgress[]
+  reviewSchedules ReviewSchedule[]
+  badgeRewards    LessonBadgeReward[]
+  ratings         Rating[]
+  questions       LessonQuestion[]
+  prerequisites   LessonPrerequisite[] @relation("LessonPrerequisites")
+  prerequisiteOf  LessonPrerequisite[] @relation("PrerequisiteOf")
+  skipWaivers     UserSkipWaiver[]
+
+  @@index([category, difficulty, status])
+  @@index([slug])
+  @@map("lessons")
+}
+
+model LessonPrerequisite {
+  lessonId       String @db.Uuid
+  prerequisiteId String @db.Uuid
+
+  lesson       Lesson @relation("LessonPrerequisites", fields: [lessonId], references: [id], onDelete: Cascade)
+  prerequisite Lesson @relation("PrerequisiteOf", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, prerequisiteId])
+  @@map("lesson_prerequisites")
+}
+
+// ============================================================
+// PATHS (PARCOURS)
+// ============================================================
+
+model Path {
+  id                  String        @id @default(uuid()) @db.Uuid
+  refCode             String        @unique // Format: CL-PATH-001-V01
+  slug                String        @unique
+  title               String        @db.VarChar(200)
+  description         String        @db.VarChar(1000)
+  category            Category
+  difficulty          Difficulty
+  estimatedHours      Int
+  coverImageUrl       String?
+  certificateTemplate String? // Reference to PDF template
+  certificateBadgeId  String?       @db.Uuid
+  status              ContentStatus @default(DRAFT)
+  version             Int           @default(1)
+  avgRating           Float? // Recomputed in transaction on each Rating mutation
+  ratingsCount        Int           @default(0)
+  publishedAt         DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  lessons      PathLesson[]
+  progress     UserPathProgress[]
+  certificates Certificate[]
+  ratings      Rating[]
+
+  @@index([category, status])
+  @@map("paths")
+}
+
+model PathLesson {
+  pathId     String  @db.Uuid
+  lessonId   String  @db.Uuid
+  position   Int
+  isRequired Boolean @default(true)
+
+  path   Path   @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@id([pathId, lessonId])
+  @@unique([pathId, position])
+  @@map("path_lessons")
+}
+
+// ============================================================
+// GAMIFICATION
+// ============================================================
+
+enum BadgeRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum BadgeCriterionType {
+  LESSON_COMPLETED
+  PATH_COMPLETED
+  XP_THRESHOLD
+  STREAK_DAYS
+  CATEGORY_MASTERY
+  PERFECT_QUIZ
+  CUSTOM
+}
+
+model Badge {
+  id            String             @id @default(uuid()) @db.Uuid
+  refCode       String             @unique // Format: CL-BDG-001
+  name          String             @unique @db.VarChar(100)
+  description   String             @db.VarChar(500)
+  iconUrl       String
+  rarity        BadgeRarity
+  criterionType BadgeCriterionType
+  criterionData Json // { lessonId: "...", count: 5, etc. }
+  xpReward      Int                @default(0)
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+
+  userBadges    UserBadge[]
+  lessonRewards LessonBadgeReward[]
+
+  @@map("badges")
+}
+
+model LessonBadgeReward {
+  lessonId String @db.Uuid
+  badgeId  String @db.Uuid
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  badge  Badge  @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, badgeId])
+  @@map("lesson_badge_rewards")
+}
+
+model UserBadge {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @db.Uuid
+  badgeId  String   @db.Uuid
+  earnedAt DateTime @default(now())
+  context  Json? // Acquisition context (lessonId, pathId...)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// ============================================================
+// RATINGS & Q&A
+// ============================================================
+
+// Rating only allowed when UserLessonProgress/UserPathProgress status = COMPLETED
+model Rating {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  lessonId  String?  @db.Uuid
+  pathId    String?  @db.Uuid
+  score     Int      @db.SmallInt // 1-5, validated by Zod in the service layer
+  feedback  String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  path   Path?   @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@unique([userId, pathId])
+  @@index([lessonId])
+  @@index([pathId])
+  @@map("ratings")
+}
+
+model LessonQuestion {
+  id         String   @id @default(uuid()) @db.Uuid
+  lessonId   String   @db.Uuid
+  userId     String   @db.Uuid
+  title      String   @db.VarChar(200)
+  content    String   @db.Text
+  isResolved Boolean  @default(false)
+  isHidden   Boolean  @default(false) // Soft-delete for moderation
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  lesson  Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers LessonAnswer[]
+
+  @@index([lessonId, isHidden])
+  @@index([userId])
+  @@map("lesson_questions")
+}
+
+model LessonAnswer {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @db.Uuid
+  userId     String   @db.Uuid
+  content    String   @db.Text
+  isAccepted Boolean  @default(false) // Marked by the question author
+  isHidden   Boolean  @default(false)
+  upvotes    Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question LessonQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, isHidden])
+  @@map("lesson_answers")
+}
+
+// ============================================================
+// PROGRESS TRACKING
+// ============================================================
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model UserLessonProgress {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @db.Uuid
+  lessonId         String         @db.Uuid
+  status           ProgressStatus @default(IN_PROGRESS)
+  attempts         Int            @default(0)
+  bestScore        Int? // 0-100
+  timeSpentSeconds Int            @default(0)
+  startedAt        DateTime       @default(now())
+  completedAt      DateTime?
+  lastAccessedAt   DateTime       @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, status])
+  @@map("user_lesson_progress")
+}
+
+model UserPathProgress {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  pathId        String         @db.Uuid
+  status        ProgressStatus @default(IN_PROGRESS)
+  startedAt     DateTime       @default(now())
+  completedAt   DateTime?
+  certificateId String?        @unique @db.Uuid
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path        Path         @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  certificate Certificate? @relation(fields: [certificateId], references: [id])
+
+  @@unique([userId, pathId])
+  @@index([userId, status])
+  @@map("user_path_progress")
+}
+
+// ============================================================
+// CERTIFICATIONS
+// ============================================================
+
+model Certificate {
+  id            String    @id @default(uuid()) @db.Uuid
+  publicId      String    @unique @default(uuid()) @db.Uuid // For public URL /verify/{publicId}
+  userId        String    @db.Uuid
+  pathId        String    @db.Uuid
+  issuedAt      DateTime  @default(now())
+  expiresAt     DateTime?
+  sha256Hash    String    @unique // Hash of content for tamper detection
+  pdfStorageKey String // Path in Supabase Storage
+  revokedAt     DateTime?
+  revokedReason String?
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path         Path              @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  pathProgress UserPathProgress?
+
+  @@index([publicId])
+  @@index([userId])
+  @@map("certificates")
+}
+
+// ============================================================
+// NOTIFICATIONS & SPACED REPETITION
+// ============================================================
+
+enum NotificationType {
+  REVIEW_REMINDER
+  BADGE_EARNED
+  LEVEL_UP
+  PATH_COMPLETED
+  CERTIFICATE_ISSUED
+  ANNOUNCEMENT
+  TICKET_UPDATE
+}
+
+model Notification {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @db.Uuid
+  type         NotificationType
+  title        String           @db.VarChar(200)
+  body         String           @db.VarChar(1000)
+  actionUrl    String?
+  metadata     Json?
+  scheduledFor DateTime         @default(now())
+  sentAt       DateTime?
+  readAt       DateTime?
+  emailSent    Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([scheduledFor, sentAt])
+  @@map("notifications")
+}
+
+// SM-2 simplified: ease factor + interval + repetitions
+model ReviewSchedule {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  lessonId       String   @db.Uuid
+  easeFactor     Float    @default(2.5)
+  intervalDays   Int      @default(1)
+  repetitions    Int      @default(0)
+  nextReviewAt   DateTime
+  lastReviewedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([nextReviewAt])
+  @@map("review_schedules")
+}
+
+// ============================================================
+// CONTACT & TICKETS (Jira sync)
+// ============================================================
+
+enum TicketTheme {
+  BUG
+  QUESTION
+  FEATURE_REQUEST
+  SECURITY
+  CONTENT_ERROR
+  OTHER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model ContactTicket {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String?      @db.Uuid // Nullable for guests
+  email        String
+  subject      String       @db.VarChar(200)
+  theme        TicketTheme
+  message      String       @db.Text
+  jiraIssueKey String?      @unique // e.g. "CYBL-123"
+  jiraIssueUrl String?
+  status       TicketStatus @default(OPEN)
+  ipAddress    String? // SHA-256 hashed (GDPR)
+  userAgent    String?      @db.VarChar(500)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([userId])
+  @@map("contact_tickets")
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String   @db.VarChar(100) // e.g. "lesson.create", "user.role.update"
+  targetType String   @db.VarChar(50)
+  targetId   String?
+  metadata   Json?
+  ipAddress  String? // SHA-256 hashed (GDPR)
+  userAgent  String?  @db.VarChar(500)
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("ActorLogs", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,59 @@
+{
+  "name": "cyberlearn",
+  "private": true,
+  "version": "0.0.1",
+  "description": "CyberLearn — Interactive learning platform for dev, cybersecurity, and network/systems",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "biome format --write .",
+    "format:check": "biome check --formatter-enabled=true .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs}": ["biome format --write"],
+    "*.{json,css,md}": ["biome format --write"]
+  },
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"],
+    "rules": {
+      "subject-case": [2, "never", ["sentence-case", "start-case", "pascal-case", "upper-case"]],
+      "type-enum": [
+        2,
+        "always",
+        [
+          "feat",
+          "fix",
+          "docs",
+          "style",
+          "refactor",
+          "test",
+          "chore",
+          "perf",
+          "ci",
+          "revert",
+          "security"
+        ]
+      ]
+    }
+  },
+  "devDependencies": {
+    "turbo": "^2.5.2",
+    "@biomejs/biome": "catalog:",
+    "husky": "catalog:",
+    "lint-staged": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:"
+  }
+}

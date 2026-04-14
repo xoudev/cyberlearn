@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* =============================================================================
+   Design tokens — Phase 0 values, will be polished in Phase 2 (Design System)
+   ============================================================================= */
+
+@theme {
+  /* Brand */
+  --color-brand-blue: #0024ff;
+  --color-brand-turquoise: #0affd4;
+
+  /* Backgrounds (dark mode base) */
+  --color-bg-base: #030219;
+  --color-bg-elevated: #0a0826;
+  --color-bg-overlay: #110f33;
+
+  /* Borders */
+  --color-border-subtle: #1f1b47;
+  --color-border-default: #2a2560;
+
+  /* Text */
+  --color-text-primary: #f5f5fa;
+  --color-text-secondary: #b8b5d1;
+  --color-text-muted: #6b6890;
+  --color-text-disabled: #3f3d5c;
+
+  /* Semantic */
+  --color-success: #0affd4;
+  --color-warning: #ffb020;
+  --color-danger: #ff4d6d;
+  --color-info: #4d8bff;
+
+  /* Badge rarities */
+  --color-rarity-common: #b8b5d1;
+  --color-rarity-rare: #4d8bff;
+  --color-rarity-epic: #b14dff;
+}
+
+/* Base styles */
+html {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+}
+
+/* Light mode overrides — applied in Phase 2 via data-theme="light" */
+[data-theme="light"] {
+  --color-bg-base: #ffffff;
+  --color-bg-elevated: #f8f9fc;
+  --color-bg-overlay: #f0f2f8;
+  --color-border-subtle: #e5e7f0;
+  --color-border-default: #d1d5e0;
+  --color-text-primary: #030219;
+  --color-text-secondary: #4a4960;
+  --color-text-muted: #8b8aa3;
+  --color-text-disabled: #c8c7d6;
+}
+
+/* Smooth transition for theme switching */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
