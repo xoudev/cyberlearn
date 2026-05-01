@@ -77,40 +77,42 @@ export function LessonRating({
       return (
         <div>
           <div style={railHeadStyle}>Évaluer · verrouillé</div>
-          <div style={{ padding: "16px", textAlign: "center" }}>
+          <div
+            style={{
+              padding: 18,
+              border: "1px dashed #1F1B47",
+              background: "rgba(5,4,26,0.5)",
+              textAlign: "center",
+            }}
+          >
             {/* Lock icon + label */}
             <div
               style={{
                 display: "flex",
-                justifyContent: "center",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 6,
-                marginBottom: 12,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "#44406B",
+                marginBottom: 14,
               }}
             >
               <svg
-                width="12"
-                height="12"
-                viewBox="0 0 16 16"
+                width="10"
+                height="10"
+                viewBox="0 0 11 11"
                 fill="none"
-                stroke="#3F3D5C"
-                strokeWidth="1.5"
+                stroke="currentColor"
+                strokeWidth="1.2"
                 strokeLinecap="round"
               >
-                <rect x="3" y="7" width="10" height="7" rx="1" />
-                <path d="M5 7V5C5 3.3 6.3 2 8 2C9.7 2 11 3.3 11 5V7" />
+                <rect x="2" y="5" width="7" height="5" rx="0.5" />
+                <path d="M3.5 5 V3.5 C3.5 2.4 4.4 1.5 5.5 1.5 C6.6 1.5 7.5 2.4 7.5 3.5 V5" />
               </svg>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  color: "#3F3D5C",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                }}
-              >
-                locked
-              </span>
+              locked
             </div>
 
             {/* Empty stars */}
@@ -120,13 +122,13 @@ export function LessonRating({
                   key={i}
                   width="16"
                   height="16"
-                  viewBox="0 0 24 24"
+                  viewBox="0 0 18 18"
                   fill="none"
                   stroke="#2A2560"
-                  strokeWidth="1.5"
+                  strokeWidth="1.3"
                   aria-hidden="true"
                 >
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  <path d="M9 2 L11.2 6.5 L16 7.3 L12.5 10.8 L13.4 15.5 L9 13.3 L4.6 15.5 L5.5 10.8 L2 7.3 L6.8 6.5 Z" />
                 </svg>
               ))}
             </div>

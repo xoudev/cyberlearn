@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
+import { DeleteLessonButton } from "./_components/delete-lesson-button";
 
 export const metadata: Metadata = { title: "Leçons" };
 
@@ -42,7 +43,12 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
       xpReward: true,
       estimatedMinutes: true,
       createdAt: true,
-      _count: { select: { progress: { where: { status: "COMPLETED" } } } },
+      _count: {
+        select: {
+          progress: { where: { status: "COMPLETED" } },
+          pathLessons: true,
+        },
+      },
     },
   });
 
@@ -137,7 +143,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 80px",
+            gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 80px 40px",
             padding: "12px 16px",
             borderBottom: "1px solid #1F1B47",
             fontFamily: "var(--font-mono)",
@@ -154,6 +160,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
           <span style={{ textAlign: "right" }}>XP</span>
           <span style={{ textAlign: "right" }}>Compétions</span>
           <span style={{ textAlign: "right" }}>Statut</span>
+          <span />
         </div>
 
         {lessons.length === 0 ? (
@@ -182,7 +189,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
                 key={lesson.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 80px",
+                  gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 80px 40px",
                   padding: "12px 16px",
                   borderBottom: "1px solid #1A1640",
                   alignItems: "center",
@@ -290,6 +297,17 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
                     {status.label}
                   </span>
                 </div>
+
+                <DeleteLessonButton
+                  lessonId={lesson.id}
+                  lessonTitle={lesson.title}
+                  disabled={lesson.status === "PUBLISHED" || lesson._count.pathLessons > 0}
+                  disabledReason={
+                    lesson.status === "PUBLISHED"
+                      ? "Archivez la leçon avant de la supprimer"
+                      : "Cette leçon appartient à un parcours"
+                  }
+                />
               </div>
             );
           })

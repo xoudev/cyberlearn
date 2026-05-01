@@ -1,7 +1,7 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { notFound } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -92,4 +92,84 @@ export async function createLessonAction(
   }
 
   redirect("/lessons");
+}
+
+// ── Delete ──────────────────────────────────────────────────────────────────────
+
+const deleteLessonSchema = z.object({
+  lessonId: z.string().uuid(),
+});
+
+export type DeleteLessonState = {
+  error?: string;
+  success?: boolean;
+};
+
+export async function deleteLessonAction(
+  _prev: DeleteLessonState,
+  formData: FormData,
+): Promise<DeleteLessonState> {
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) notFound();
+
+  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  let role = jwtRole;
+  if (!role) {
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
+    role = dbUser?.role ?? undefined;
+  }
+  if (role !== "ADMIN") notFound();
+
+  const parsed = deleteLessonSchema.safeParse({ lessonId: formData.get("lessonId") });
+  if (!parsed.success) return { error: "Identifiant invalide." };
+
+  const { lessonId } = parsed.data;
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      _count: { select: { progress: true, pathLessons: true } },
+    },
+  });
+
+  if (!lesson) return { error: "Leçon introuvable." };
+  if (lesson.status === "PUBLISHED") {
+    return { error: "Impossible de supprimer une leçon publiée. Archivez-la d'abord." };
+  }
+  if (lesson._count.progress > 0) {
+    return {
+      error: `Suppression bloquée : ${String(lesson._count.progress)} étudiant(s) ont commencé cette leçon.`,
+    };
+  }
+  if (lesson._count.pathLessons > 0) {
+    return { error: "Suppression bloquée : cette leçon appartient à un ou plusieurs parcours." };
+  }
+
+  try {
+    // All child relations have onDelete: Cascade — a single delete suffices.
+    await prisma.lesson.delete({ where: { id: lessonId } });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: "lesson.delete",
+        targetType: "Lesson",
+        targetId: lessonId,
+        metadata: { title: lesson.title, status: lesson.status },
+      },
+    });
+  } catch (e) {
+    return {
+      error: `Erreur lors de la suppression : ${e instanceof Error ? e.message : "inconnue"}`,
+    };
+  }
+
+  revalidatePath("/lessons");
+  return { success: true };
 }

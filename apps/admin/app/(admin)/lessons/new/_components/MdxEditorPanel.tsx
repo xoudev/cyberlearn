@@ -568,6 +568,298 @@ function Sep() {
   );
 }
 
+// ── MDX Authoring Guide ─────────────────────────────────────────────────────────
+
+interface GuideEntry {
+  label: string;
+  snippet: string;
+  description?: string;
+}
+
+interface GuideSection {
+  title: string;
+  accent: string;
+  entries: GuideEntry[];
+}
+
+const GUIDE_SECTIONS: GuideSection[] = [
+  {
+    title: "Markdown",
+    accent: "#6B6890",
+    entries: [
+      { label: "H1", snippet: "# Titre principal\n" },
+      { label: "H2", snippet: "## Section\n" },
+      { label: "H3", snippet: "### Sous-section\n" },
+      { label: "Gras", snippet: "**texte en gras**" },
+      { label: "Italique", snippet: "*texte en italique*" },
+      { label: "Code", snippet: "`code inline`" },
+      { label: "Liste", snippet: "- Élément 1\n- Élément 2\n- Élément 3\n" },
+      { label: "Lien", snippet: "[texte](https://example.com)" },
+      { label: "Image", snippet: "![description](https://url-image.jpg)\n" },
+      { label: "HR", snippet: "\n---\n\n" },
+      { label: "Bloc code", snippet: "```python\n# code ici\nprint('Hello')\n```\n" },
+    ],
+  },
+  {
+    title: "Callout",
+    accent: "#4D8BFF",
+    entries: [
+      {
+        label: "info",
+        snippet: '<Callout type="info">\n  Texte informatif pour l\'étudiant.\n</Callout>\n',
+      },
+      {
+        label: "warning",
+        snippet: '<Callout type="warning">\n  Point d\'attention important.\n</Callout>\n',
+      },
+      {
+        label: "danger",
+        snippet: '<Callout type="danger">\n  Erreur ou pratique à éviter absolument.\n</Callout>\n',
+      },
+      {
+        label: "success",
+        snippet: '<Callout type="success">\n  Bonne pratique ou résultat attendu.\n</Callout>\n',
+      },
+    ],
+  },
+  {
+    title: "Quiz",
+    accent: "#FFB020",
+    entries: [
+      {
+        label: "QCM",
+        snippet:
+          '<Quiz\n  id="q-1"\n  question="Quelle commande liste les fichiers ?"\n  options={["ls", "cd", "pwd", "rm"]}\n  correct={0}\n/>\n',
+      },
+    ],
+  },
+  {
+    title: "CodePlayground",
+    accent: "#0AFFD4",
+    entries: [
+      {
+        label: "Python",
+        snippet: '<CodePlayground language="python">\nprint("Hello, World!")\n</CodePlayground>\n',
+        description: "Pyodide · WASM · Python 3.11",
+      },
+      {
+        label: "JavaScript",
+        snippet:
+          '<CodePlayground language="javascript">\nconsole.log("Hello, World!");\n</CodePlayground>\n',
+        description: "Web Worker · ES2022",
+      },
+      {
+        label: "C",
+        snippet:
+          '<CodePlayground language="c">\n#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}\n</CodePlayground>\n',
+        description: "jscpp · C11 standard",
+      },
+      {
+        label: "ASM x86-64",
+        snippet:
+          '<CodePlayground language="asm">\nglobal main\nsection .text\nmain:\n    mov rax, 42\n    println rax\n    ret\n</CodePlayground>\n',
+        description: "Simulateur NASM · mov add sub push pop cmp jmp call ret",
+      },
+    ],
+  },
+  {
+    title: "SimulatedTerminal",
+    accent: "#B14DFF",
+    entries: [
+      {
+        label: "bash",
+        snippet: '<SimulatedTerminal shell="bash" />\n',
+        description: "ls · pwd · whoami · cat · echo · mkdir · clear · help",
+      },
+      {
+        label: "bash-admin",
+        snippet: '<SimulatedTerminal shell="bash" scenario="bash-admin" />\n',
+        description: "ps aux · df -h · free -h · ss -tlnp · systemctl · journalctl · who",
+      },
+      {
+        label: "bash-scripting",
+        snippet: '<SimulatedTerminal shell="bash" scenario="bash-scripting" />\n',
+        description: "cat script.sh · bash -n · chmod +x · history · echo $SHELL",
+      },
+      {
+        label: "ps-basics",
+        snippet: '<SimulatedTerminal shell="powershell" scenario="powershell-basics" />\n',
+        description: "Get-ChildItem · Get-Date · $PSVersionTable · Get-Process",
+      },
+      {
+        label: "ps-sec",
+        snippet: '<SimulatedTerminal shell="powershell" scenario="powershell-sec" />\n',
+        description: "Get-LocalUser · Get-NetTCPConnection · Get-WinEvent · netstat -ano",
+      },
+    ],
+  },
+];
+
+const SANDBOX_DEFAULTS: Record<string, string> = {
+  python: 'print("Hello, World!")',
+  javascript: 'console.log("Hello, World!");',
+  c: '#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
+  asm: "global main\nsection .text\nmain:\n    mov rax, 42\n    println rax\n    ret",
+};
+
+function GuideRow({
+  entry,
+  accent,
+  onInsert,
+}: {
+  entry: GuideEntry;
+  accent: string;
+  onInsert: (s: string) => void;
+}): React.ReactElement {
+  const [done, setDone] = useState(false);
+  const [hov, setHov] = useState(false);
+  const firstLine = entry.snippet.split("\n")[0] ?? "";
+  const preview = firstLine.length > 36 ? firstLine.slice(0, 33) + "…" : firstLine;
+
+  return (
+    <div style={{ borderBottom: "1px solid rgba(31,27,71,0.45)", padding: "5px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <code
+          style={{
+            flex: 1,
+            fontFamily: MONO,
+            fontSize: 10.5,
+            color: "#44406B",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {preview || entry.label}
+        </code>
+        <button
+          type="button"
+          title={entry.snippet}
+          onMouseEnter={() => {
+            setHov(true);
+          }}
+          onMouseLeave={() => {
+            setHov(false);
+          }}
+          onClick={() => {
+            onInsert(entry.snippet);
+            setDone(true);
+            setTimeout(() => {
+              setDone(false);
+            }, 900);
+          }}
+          style={{
+            flexShrink: 0,
+            height: 20,
+            padding: "0 8px",
+            border: `1px solid ${done ? "rgba(10,255,212,0.4)" : hov ? `${accent}66` : "rgba(31,27,71,0.8)"}`,
+            background: done ? "rgba(10,255,212,0.1)" : hov ? `${accent}11` : "transparent",
+            color: done ? "#0AFFD4" : hov ? accent : "#6B6890",
+            fontFamily: MONO,
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            cursor: "pointer",
+            borderRadius: 2,
+            transition: "all 120ms ease",
+          }}
+        >
+          {done ? "✓" : entry.label}
+        </button>
+      </div>
+      {entry.description && (
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 9,
+            color: "#3F3D5C",
+            letterSpacing: "0.04em",
+            marginTop: 2,
+          }}
+        >
+          {entry.description}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactElement {
+  return (
+    <div style={{ height: "100%", overflowY: "auto", background: "#060422" }}>
+      <div
+        style={{
+          fontFamily: MONO,
+          fontSize: 9,
+          color: "#3F3D5C",
+          letterSpacing: "0.12em",
+          padding: "10px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          borderBottom: "1px solid rgba(31,27,71,0.6)",
+          position: "sticky",
+          top: 0,
+          background: "#060422",
+          zIndex: 1,
+        }}
+      >
+        <span
+          style={{
+            width: 4,
+            height: 4,
+            borderRadius: "50%",
+            background: TURQ,
+            display: "inline-block",
+            boxShadow: `0 0 6px ${TURQ}`,
+          }}
+        />
+        GUIDE MDX
+        <span style={{ marginLeft: "auto", color: "#2A2560" }}>clic → insérer dans l'éditeur</span>
+      </div>
+      <div style={{ padding: "4px 16px 32px" }}>
+        {GUIDE_SECTIONS.map((section) => (
+          <div key={section.title} style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: section.accent,
+                  flexShrink: 0,
+                  boxShadow: `0 0 5px ${section.accent}88`,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  color: section.accent,
+                  textTransform: "uppercase",
+                }}
+              >
+                {section.title}
+              </span>
+              <div style={{ flex: 1, height: 1, background: "rgba(31,27,71,0.5)" }} />
+            </div>
+            {section.entries.map((entry) => (
+              <GuideRow
+                key={entry.label}
+                entry={entry}
+                accent={section.accent}
+                onInsert={onInsert}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Monaco theme (defined once) ────────────────────────────────────────────────
 
 const THEME_DEFINED = { current: false };
@@ -622,7 +914,10 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
   const [split, setSplit] = useState(true);
   const [codeLang, setCodeLang] = useState("bash");
   const [calloutType, setCalloutType] = useState<"info" | "warning" | "danger" | "success">("info");
+  const [sandboxLang, setSandboxLang] = useState<"python" | "javascript" | "c" | "asm">("python");
+  const [terminalShell, setTerminalShell] = useState<"bash" | "powershell">("bash");
   const [preview, setPreview] = useState(value);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Debounced preview update
   useEffect(() => {
@@ -972,31 +1267,108 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
         />
 
         {/* Sandbox */}
-        <TBtn
-          label={
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="2,4 1,6 2,8" />
-              <polyline points="10,4 11,6 10,8" />
-              <path d="M5 3 L7 3" />
-              <rect x="3" y="2" width="6" height="8" rx="1" />
-            </svg>
-          }
-          title="Sandbox Python"
-          onClick={() => {
-            insertAt(
-              '<CodePlayground language="python">\nprint("Hello, World!")\n</CodePlayground>\n',
-            );
-          }}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <TBtn
+            label={
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="2,4 1,6 2,8" />
+                <polyline points="10,4 11,6 10,8" />
+                <path d="M5 3 L7 3" />
+                <rect x="3" y="2" width="6" height="8" rx="1" />
+              </svg>
+            }
+            title="Sandbox interactif"
+            onClick={() => {
+              const defaultCode = SANDBOX_DEFAULTS[sandboxLang] ?? "";
+              insertAt(
+                `<CodePlayground language="${sandboxLang}">\n${defaultCode}\n</CodePlayground>\n`,
+              );
+            }}
+          />
+          <select
+            value={sandboxLang}
+            onChange={(e) => {
+              setSandboxLang(e.target.value as "python" | "javascript" | "c" | "asm");
+            }}
+            style={{
+              height: 22,
+              background: "#0A0826",
+              border: `1px solid ${BORDER}`,
+              color: "#6B6890",
+              fontFamily: MONO,
+              fontSize: 9,
+              cursor: "pointer",
+              padding: "0 4px",
+              outline: "none",
+              borderRadius: 2,
+            }}
+          >
+            {(["python", "javascript", "c", "asm"] as const).map((l) => (
+              <option key={l} value={l} style={{ background: "#0A0826" }}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Terminal */}
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <TBtn
+            label={
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="1" y="2" width="10" height="8" rx="1" />
+                <polyline points="3,5 5,6 3,7" />
+                <line x1="6" y1="7" x2="9" y2="7" />
+              </svg>
+            }
+            title="Terminal simulé"
+            onClick={() => {
+              insertAt(`<SimulatedTerminal shell="${terminalShell}" />\n`);
+            }}
+          />
+          <select
+            value={terminalShell}
+            onChange={(e) => {
+              setTerminalShell(e.target.value as "bash" | "powershell");
+            }}
+            style={{
+              height: 22,
+              background: "#0A0826",
+              border: `1px solid ${BORDER}`,
+              color: "#6B6890",
+              fontFamily: MONO,
+              fontSize: 9,
+              cursor: "pointer",
+              padding: "0 4px",
+              outline: "none",
+              borderRadius: 2,
+            }}
+          >
+            {(["bash", "powershell"] as const).map((s) => (
+              <option key={s} value={s} style={{ background: "#0A0826" }}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <Sep />
 
@@ -1021,8 +1393,49 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
           }}
         />
 
-        {/* Right side — split toggle */}
+        {/* Right side — guide + split toggle */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showGuide;
+              if (next && !split) setSplit(true);
+              setShowGuide(next);
+            }}
+            title={showGuide ? "Masquer le guide" : "Guide MDX — référence des composants"}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              height: 26,
+              padding: "0 9px",
+              background: showGuide ? "rgba(77,139,255,0.08)" : "transparent",
+              border: `1px solid ${showGuide ? "rgba(77,139,255,0.3)" : BORDER}`,
+              borderRadius: 3,
+              color: showGuide ? "#4D8BFF" : "#6B6890",
+              fontFamily: MONO,
+              fontSize: 9,
+              letterSpacing: "0.1em",
+              cursor: "pointer",
+              transition: "all 140ms ease",
+              flexShrink: 0,
+            }}
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+            >
+              <circle cx="5" cy="5" r="4" />
+              <path d="M3.5 4 C3.5 3 6.5 3 6.5 5 C6.5 6 5 6 5 7" />
+              <circle cx="5" cy="8.2" r="0.5" fill="currentColor" stroke="none" />
+            </svg>
+            GUIDE
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -1124,44 +1537,47 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
           />
         </div>
 
-        {/* Live preview */}
-        {split && (
-          <div
-            style={{
-              height: 620,
-              overflow: "auto",
-              padding: "16px 20px 32px",
-              background: "#060422",
-            }}
-          >
+        {/* Live preview / Guide */}
+        {split &&
+          (showGuide ? (
+            <MdxGuide onInsert={insertAt} />
+          ) : (
             <div
               style={{
-                fontFamily: MONO,
-                fontSize: 9,
-                color: "#3F3D5C",
-                letterSpacing: "0.12em",
-                marginBottom: 16,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
+                height: 620,
+                overflow: "auto",
+                padding: "16px 20px 32px",
+                background: "#060422",
               }}
             >
-              <span
+              <div
                 style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: "50%",
-                  background: TURQ,
-                  display: "inline-block",
-                  boxShadow: `0 0 6px ${TURQ}`,
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  color: "#3F3D5C",
+                  letterSpacing: "0.12em",
+                  marginBottom: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
-              />
-              PREVIEW
-              <span style={{ marginLeft: "auto", color: "#2A2560" }}>350ms debounce</span>
+              >
+                <span
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: "50%",
+                    background: TURQ,
+                    display: "inline-block",
+                    boxShadow: `0 0 6px ${TURQ}`,
+                  }}
+                />
+                PREVIEW
+                <span style={{ marginLeft: "auto", color: "#2A2560" }}>350ms debounce</span>
+              </div>
+              <MdxPreview content={preview} />
             </div>
-            <MdxPreview content={preview} />
-          </div>
-        )}
+          ))}
       </div>
 
       {/* ── Status bar ────────────────────────────────────────────────── */}

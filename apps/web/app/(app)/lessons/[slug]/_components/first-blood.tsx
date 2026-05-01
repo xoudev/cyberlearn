@@ -4,9 +4,9 @@ import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
 
 const RANK_META = [
-  { label: "01", color: "#FFB020", glow: "rgba(255,176,32,0.35)", title: "1er finisher" },
+  { label: "01", color: "#FFB547", glow: "rgba(255,181,71,0.35)", title: "1er finisher" },
   { label: "02", color: "#B8B5D1", glow: "rgba(184,181,209,0.25)", title: "2ème finisher" },
-  { label: "03", color: "#C17A3E", glow: "rgba(193,122,62,0.25)", title: "3ème finisher" },
+  { label: "03", color: "#D97757", glow: "rgba(217,119,87,0.25)", title: "3ème finisher" },
 ] as const;
 
 interface Props {
@@ -43,6 +43,12 @@ export async function FirstBlood({
 
   // ── Rail variant: vertical list in right rail ────────────────────────────────
   if (variant === "rail") {
+    const HEX_GRADIENTS = [
+      "linear-gradient(135deg, #0AFFD4, #08D4B0)",
+      "linear-gradient(135deg, #0024FF, #6E8BFF)",
+      "linear-gradient(135deg, #FF4757, #FFB547)",
+    ] as const;
+
     return (
       <div>
         {/* Section header */}
@@ -62,124 +68,121 @@ export async function FirstBlood({
             borderBottom: "1px solid #1F1B47",
           }}
         >
-          <span
-            style={{
-              width: 5,
-              height: 5,
-              borderRadius: "50%",
-              background: "#FF4757",
-              boxShadow: "0 0 6px #FF4757",
-              flexShrink: 0,
-            }}
-          />
-          Premiers arrivés
+          First Blood · <b style={{ color: "#0AFFD4", fontWeight: 700 }}>top {entries.length}</b>
         </div>
 
-        {entries.map(({ entry, meta, name, avatar, profileUrl, dateStr }, rankIdx) => {
-          const inner = (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 16px",
-                borderBottom: "1px solid #1F1B47",
-              }}
-            >
-              {/* Rank */}
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 700,
-                  fontSize: 11,
-                  color: meta?.color ?? "#B8B5D1",
-                  letterSpacing: "0.08em",
-                  minWidth: 28,
-                  flexShrink: 0,
-                }}
-              >
-                #{meta?.label ?? String(rankIdx + 1).padStart(2, "0")}
-              </span>
-
-              {/* Avatar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {entries.map(({ entry, meta, name, avatar, profileUrl, dateStr }, rankIdx) => {
+            const hexGradient = HEX_GRADIENTS[rankIdx] ?? HEX_GRADIENTS[2];
+            const inner = (
               <div
+                className="first-blood-row"
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: "#1F1B47",
-                  border: `1px solid ${meta?.color ?? "#1F1B47"}`,
-                  overflow: "hidden",
-                  flexShrink: 0,
-                  position: "relative",
+                  display: "grid",
+                  gridTemplateColumns: "28px 32px 1fr auto",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 12px",
                 }}
               >
-                {avatar ? (
-                  <Image src={avatar} alt={name} fill style={{ objectFit: "cover" }} sizes="28px" />
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontFamily: "var(--font-mono)",
-                      fontWeight: 700,
-                      fontSize: 11,
-                      color: meta?.color ?? "#B8B5D1",
-                    }}
-                  >
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                {/* Rank */}
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    letterSpacing: "0.04em",
+                    color: meta?.color ?? "#B8B5D1",
+                  }}
+                >
+                  #{meta?.label ?? String(rankIdx + 1).padStart(2, "0")}
+                </span>
+
+                {/* Hexagonal avatar */}
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    background: hexGradient,
+                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  {avatar ? (
+                    <Image
+                      src={avatar}
+                      alt={name}
+                      fill
+                      style={{
+                        objectFit: "cover",
+                        clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                      }}
+                      sizes="30px"
+                    />
+                  ) : (
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 700,
+                        fontSize: 11,
+                        color: "#030219",
+                      }}
+                    >
+                      {name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                {/* Name */}
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    color: meta?.color ?? "#B8B5D1",
+                    fontWeight: 500,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {name}
+                </span>
+
+                {/* Date */}
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "#6B6890",
+                    letterSpacing: "0.04em",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {dateStr}
+                </span>
               </div>
+            );
 
-              {/* Name */}
-              <span
-                style={{
-                  fontFamily: "var(--font-body, sans-serif)",
-                  fontSize: 13,
-                  color: "#F5F5FA",
-                  flex: 1,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
+            return profileUrl ? (
+              <Link
+                key={entry.user.id}
+                href={profileUrl}
+                style={{ textDecoration: "none" }}
+                title={meta?.title}
               >
-                {name}
-              </span>
-
-              {/* Date */}
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  color: "#6B6890",
-                  flexShrink: 0,
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {dateStr}
-              </span>
-            </div>
-          );
-
-          return profileUrl ? (
-            <Link
-              key={entry.user.id}
-              href={profileUrl}
-              style={{ textDecoration: "none" }}
-              title={meta?.title}
-            >
-              {inner}
-            </Link>
-          ) : (
-            <div key={entry.user.id} title={meta?.title}>
-              {inner}
-            </div>
-          );
-        })}
+                {inner}
+              </Link>
+            ) : (
+              <div key={entry.user.id} title={meta?.title}>
+                {inner}
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }

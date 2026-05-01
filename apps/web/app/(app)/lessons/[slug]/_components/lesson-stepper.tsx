@@ -191,7 +191,7 @@ export function LessonStepper({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1.85fr) minmax(280px, 1fr)",
+          gridTemplateColumns: "minmax(0, 1.85fr) minmax(300px, 1fr)",
           gap: 56,
           alignItems: "start",
         }}
@@ -199,7 +199,10 @@ export function LessonStepper({
         {/* Article + navigation */}
         <div>
           {/* MDX content — flows directly, no card wrapper per design */}
-          <article className="prose lesson-content max-w-none" style={{ paddingBottom: 20 }}>
+          <article
+            className="prose lesson-content max-w-none"
+            style={{ paddingBottom: 20, counterReset: `h2-counter ${String(currentStep)}` }}
+          >
             {children}
           </article>
 
@@ -263,8 +266,8 @@ function StepperTimeline({
       style={{
         margin: "0 0 64px",
         padding: "28px 8px 24px",
-        borderTop: "1px solid #2A2560",
-        borderBottom: "1px solid #2A2560",
+        borderTop: "1px solid #1F1B47",
+        borderBottom: "1px solid #1F1B47",
         position: "relative",
         overflowX: "auto",
       }}
@@ -301,7 +304,7 @@ function StepperTimeline({
             right: 14,
             top: 47,
             height: 1,
-            background: "#2A2560",
+            background: "#1F1B47",
             zIndex: 0,
           }}
         />
@@ -457,12 +460,7 @@ function StepperRail({
           }}
         >
           <span>Dans cette leçon</span>
-          <b
-            style={{
-              color: completedCount === sections.length ? "#0AFFD4" : "#B8B5D1",
-              fontWeight: 700,
-            }}
-          >
+          <b style={{ color: "#0AFFD4", fontWeight: 700 }}>
             {completedCount}/{sections.length}
           </b>
         </div>

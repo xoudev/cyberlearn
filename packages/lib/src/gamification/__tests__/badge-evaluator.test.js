@@ -188,7 +188,10 @@ const BASE_CTX = {
     const result = (0, badge_evaluator_js_1.evaluateBadges)(
       [earned, pending],
       new Set(["earned"]),
-      { ...BASE_CTX, xpTotal: 100 },
+      {
+        ...BASE_CTX,
+        xpTotal: 100,
+      },
     );
     (0, vitest_1.expect)(result).toEqual(["pending"]);
   });

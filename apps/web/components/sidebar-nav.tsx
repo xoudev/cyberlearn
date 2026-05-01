@@ -141,6 +141,41 @@ function IconUser() {
     </svg>
   );
 }
+function IconTrophy() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={15}
+      height={15}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 2 H11 V8 C11 10.2 9.2 12 7 12 C4.8 12 3 10.2 3 8 V2" />
+      <path d="M3 4 H1.5 C1.5 6 2.5 7 3 7" />
+      <path d="M11 4 H12.5 C12.5 6 11.5 7 11 7" />
+      <path d="M7 12 V14 M5 14 H9" />
+    </svg>
+  );
+}
+function IconFlash() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={15}
+      height={15}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 2 L4 9 H8 L7 14 L12 7 H8 Z" />
+    </svg>
+  );
+}
 
 // ── Nav sections ──────────────────────────────────────────────────────────────
 
@@ -154,6 +189,8 @@ const LEARN_ITEMS = [
 ] as const;
 
 const ACTIVITY_ITEMS = [
+  { href: "/leaderboard", label: "Classement", Icon: IconTrophy, count: null },
+  { href: "/challenges", label: "Défis", Icon: IconFlash, count: null },
   { href: "/profile", label: "Profil", Icon: IconUser, count: null },
 ] as const;
 

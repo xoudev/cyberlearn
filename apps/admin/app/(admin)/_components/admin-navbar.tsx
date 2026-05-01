@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useAdminMobileSidebar } from "./admin-shell-client";
 
 interface AdminNavbarProps {
@@ -48,31 +49,14 @@ export function AdminNavbar({ initials, handle }: AdminNavbarProps): React.React
 
       {/* Logo + brand */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            background: `linear-gradient(135deg, ${DANGER}, #8B1A2E)`,
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="2" fill="#fff" />
-          </svg>
-        </div>
-
-        <div
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 800,
-            fontSize: 14,
-            letterSpacing: "-0.03em",
-            color: "#F5F5FA",
-          }}
-        >
-          cyber<span style={{ color: "#B8B5D1", fontWeight: 400 }}>learn</span>
-        </div>
+        <Image
+          src="/Admin_logo.png"
+          alt="CyberLearn Admin"
+          width={140}
+          height={32}
+          style={{ width: "auto", height: 32, objectFit: "contain" }}
+          priority
+        />
 
         <div
           className="admin-navbar-brand-tag"
