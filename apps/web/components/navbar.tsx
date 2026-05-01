@@ -96,30 +96,6 @@ export async function Navbar(): Promise<React.ReactElement> {
       <SidebarTrigger style={{ width: 26, height: 26, flexShrink: 0 }} />
 
       {/* ── Mobile logo — only shown when sidebar is hidden in drawer ────── */}
-      <Link
-        href="/dashboard"
-        className="md:hidden"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          textDecoration: "none",
-          flexShrink: 0,
-        }}
-      >
-        <Image src="/icon_app.png" alt="CyberLearn" width={22} height={22} priority />
-        <span
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "#F5F5FA",
-            whiteSpace: "nowrap",
-          }}
-        >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
-        </span>
-      </Link>
 
       {/* ── Search (hidden on mobile) ───────────────────────────────────── */}
       <form

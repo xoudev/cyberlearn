@@ -8,6 +8,11 @@ const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", 
 export const metadata: Metadata = {
   title: { default: "Admin — Cyber Learn", template: "%s — Admin" },
   description: "Administration dashboard — CyberLearn Platform",
+  icons: {
+    icon: "/Admin_logo.png",
+    shortcut: "/Admin_logo.png",
+    apple: "/Admin_logo.png",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

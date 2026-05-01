@@ -95,7 +95,8 @@
       "Bash(cp /tmp/final_app-sidebar.tsx /home/jordan/repositories/Cyberlearn/apps/web/components/app-sidebar.tsx)",
       "Bash(cp /tmp/final_navbar.tsx /home/jordan/repositories/Cyberlearn/apps/web/components/navbar.tsx)",
       "Bash(cp /tmp/final_sidebar-nav.tsx /home/jordan/repositories/Cyberlearn/apps/web/components/sidebar-nav.tsx)",
-      "Bash(cp /tmp/final_sidebar.tsx /home/jordan/repositories/Cyberlearn/apps/web/components/ui/sidebar.tsx)"
+      "Bash(cp /tmp/final_sidebar.tsx /home/jordan/repositories/Cyberlearn/apps/web/components/ui/sidebar.tsx)",
+      "Bash(git *)"
     ]
   }
 }

@@ -1,7 +1,7 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { notFound } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -116,4 +116,66 @@ export async function createPathAction(
   }
 
   redirect("/paths");
+}
+
+// ── Delete ──────────────────────────────────────────────────────────────────────
+
+export type DeletePathState = {
+  error?: string;
+  success?: boolean;
+};
+
+export async function deletePathAction(
+  _prev: DeletePathState,
+  formData: FormData,
+): Promise<DeletePathState> {
+  const supabase = await getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) notFound();
+
+  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  let role = jwtRole;
+  if (!role) {
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
+    role = dbUser?.role ?? undefined;
+  }
+  if (role !== "ADMIN") notFound();
+
+  const pathId = formData.get("pathId");
+  if (typeof pathId !== "string" || !pathId) return { error: "Identifiant invalide." };
+  const parsed = z.string().uuid().safeParse(pathId);
+  if (!parsed.success) return { error: "Identifiant invalide." };
+
+  const path = await prisma.path.findUnique({
+    where: { id: parsed.data },
+    select: { id: true, title: true, status: true },
+  });
+
+  if (!path) return { error: "Parcours introuvable." };
+  if (path.status === "PUBLISHED") {
+    return { error: "Impossible de supprimer un parcours publié. Archivez-le d'abord." };
+  }
+
+  try {
+    await prisma.path.delete({ where: { id: parsed.data } });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: "path.delete",
+        targetType: "Path",
+        targetId: parsed.data,
+        metadata: { title: path.title, status: path.status },
+      },
+    });
+  } catch (e) {
+    return {
+      error: `Erreur lors de la suppression : ${e instanceof Error ? e.message : "inconnue"}`,
+    };
+  }
+
+  revalidatePath("/paths");
+  return { success: true };
 }

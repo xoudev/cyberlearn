@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
+import { DeletePathButton } from "./_components/delete-path-button";
 
 export const metadata: Metadata = { title: "Parcours" };
 
@@ -87,6 +88,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
 
   return (
     <div className="admin-page-content">
+      <style>{`.edit-path-btn:hover{color:#4D8BFF!important;border-color:rgba(77,139,255,0.3)!important;background:rgba(77,139,255,0.06)!important}`}</style>
       {/* Header */}
       <div className="admin-page-header">
         <div>
@@ -191,6 +193,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
                 <th style={{ ...thStyle, textAlign: "right" }}>Certifs</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>Note</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>Statut</th>
+                <th style={{ ...thStyle, width: 72 }} />
               </tr>
             </thead>
             <tbody>
@@ -205,20 +208,22 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
                       <span style={{ color: "#44406B", letterSpacing: "0.04em" }}>{p.refCode}</span>
                     </td>
                     <td style={{ ...tdStyle, maxWidth: 280 }}>
-                      <div
-                        style={{
-                          fontWeight: 600,
-                          color: "#F5F5FA",
-                          fontSize: 13,
-                          marginBottom: 2,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {p.title}
-                      </div>
-                      <div style={{ fontSize: 10, color: "#44406B" }}>{p.slug}</div>
+                      <Link href={`/paths/${p.id}/edit`} style={{ textDecoration: "none" }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#F5F5FA",
+                            fontSize: 13,
+                            marginBottom: 2,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {p.title}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#44406B" }}>{p.slug}</div>
+                      </Link>
                     </td>
                     <td style={tdStyle}>
                       <span
@@ -303,6 +308,55 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
                         />
                         {status.label}
                       </span>
+                    </td>
+                    <td style={{ ...tdStyle, width: 72, padding: "14px 8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          gap: 4,
+                        }}
+                      >
+                        <Link
+                          href={`/paths/${p.id}/edit`}
+                          title="Modifier le parcours"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 28,
+                            height: 28,
+                            border: "1px solid transparent",
+                            borderRadius: 4,
+                            color: "#44406B",
+                            transition: "all 120ms ease",
+                            flexShrink: 0,
+                            textDecoration: "none",
+                          }}
+                          className="edit-path-btn"
+                        >
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 14 14"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.5}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M9.5 2.5 L11.5 4.5 L4.5 11.5 L2 12 L2.5 9.5 Z" />
+                            <path d="M8 4 L10 6" />
+                          </svg>
+                        </Link>
+                        <DeletePathButton
+                          pathId={p.id}
+                          pathTitle={p.title}
+                          disabled={p.status === "PUBLISHED"}
+                          disabledReason="Archivez le parcours avant de le supprimer"
+                        />
+                      </div>
                     </td>
                   </tr>
                 );

@@ -161,7 +161,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           className="breadcrumb-link"
           style={{ color: "inherit", textDecoration: "none" }}
         >
-          <b style={{ color: "#B8B5D1", fontWeight: 500 }}>{cat.slug}</b>
+          <b style={{ color: "#F5F5FA", fontWeight: 500 }}>{cat.slug}</b>
         </Link>
         <span style={{ color: "#1F1B47" }}>/</span>
         <span style={{ color: "#0AFFD4" }}>{lesson.slug}.lesson</span>
@@ -366,20 +366,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         isCompleted={isCompleted}
         sections={sections}
         railExtra={
-          <>
-            <Suspense fallback={null}>
-              <FirstBlood lessonId={lesson.id} variant="rail" />
-            </Suspense>
-            <LessonRating
-              variant="rail"
-              lessonId={lesson.id}
-              isCompleted={isCompleted}
-              initialScore={userRating?.score ?? null}
-              initialFeedback={userRating?.feedback ?? null}
-              avgRating={ratingData?.avgRating ?? null}
-              ratingsCount={ratingData?.ratingsCount ?? 0}
-            />
-          </>
+          <Suspense fallback={null}>
+            <FirstBlood lessonId={lesson.id} variant="rail" />
+          </Suspense>
         }
       >
         {mdxSections.map((src, i) => (

@@ -16,8 +16,8 @@ const SECURITY_HEADERS: Record<string, string> = {
     isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net"
       : "script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
-    // unsafe-inline required for Tailwind v4 (runtime style injection)
-    "style-src 'self' 'unsafe-inline'",
+    // unsafe-inline required for Tailwind v4; cdn.jsdelivr.net for Monaco CSS
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
     "img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com",
     "font-src 'self' data:",
     // blob: for Monaco worker creation; cdn.jsdelivr.net for Pyodide + Monaco loader

@@ -88,23 +88,89 @@ self.onmessage = (e) => {
   return new Worker(URL.createObjectURL(blob));
 }
 
+// ── C worker factory (jscpp via CDN, same blob pattern as Pyodide) ────────────
+
+// jscpp browser bundle exposes global JSCPP via UMD wrapper
+const JSCPP_URL = "https://cdn.jsdelivr.net/npm/jscpp@2.3.1/browser/bundle.js";
+
+function createCWorker(): Worker {
+  const code = `
+let jscppReady = false;
+let jscppError = null;
+const pending = [];
+
+function initJscpp() {
+  try {
+    self.importScripts("${JSCPP_URL}");
+    jscppReady = true;
+  } catch (e) {
+    jscppError = "Échec du chargement de jscpp : " + e.message;
+  }
+  for (const task of pending) runCode(task);
+  pending.length = 0;
+}
+
+function runCode({ id, code }) {
+  if (jscppError) {
+    self.postMessage({ id, output: "", error: jscppError });
+    return;
+  }
+  let output = "";
+  try {
+    JSCPP.run(code, "", {
+      maxTimeout: 10000,
+      stdio: { write: function(s) { output += s; } }
+    });
+    self.postMessage({ id, output, error: null });
+  } catch (e) {
+    self.postMessage({ id, output, error: e.message });
+  }
+}
+
+self.onmessage = function(e) {
+  if (!jscppReady && !jscppError) {
+    pending.push(e.data);
+  } else {
+    runCode(e.data);
+  }
+};
+
+initJscpp();
+`;
+  const blob = new Blob([code], { type: "application/javascript" });
+  return new Worker(URL.createObjectURL(blob));
+}
+
 // ── Worker singleton cache per language ────────────────────────────────────────
 
 let pyWorker: Worker | null = null;
 let jsWorker: Worker | null = null;
+let cWorker: Worker | null = null;
+let asmWorker: Worker | null = null;
 
-function getWorker(language: "python" | "javascript"): Worker {
+type Language = "python" | "javascript" | "c" | "asm";
+
+function getWorker(language: Language): Worker {
   if (language === "python") {
     pyWorker ??= createPyodideWorker();
     return pyWorker;
   }
-  jsWorker ??= createJsWorker();
-  return jsWorker;
+  if (language === "javascript") {
+    jsWorker ??= createJsWorker();
+    return jsWorker;
+  }
+  if (language === "c") {
+    cWorker ??= createCWorker();
+    return cWorker;
+  }
+  // SAFETY: new URL() is resolved by webpack at build time for worker bundling
+  asmWorker ??= new Worker(new URL("../_workers/asm.worker.ts", import.meta.url));
+  return asmWorker;
 }
 
 // ── Execution ──────────────────────────────────────────────────────────────────
 
-function runInWorker(language: "python" | "javascript", code: string): Promise<RunResult> {
+function runInWorker(language: Language, code: string): Promise<RunResult> {
   return new Promise((resolve) => {
     const id = Math.random().toString(36).slice(2);
     const worker = getWorker(language);
@@ -129,7 +195,7 @@ function runInWorker(language: "python" | "javascript", code: string): Promise<R
 
 export interface CodePlaygroundProps {
   id?: string;
-  language?: "python" | "javascript";
+  language?: Language;
   /** Starter code as a JSX string expression or via `starterCode` prop. */
   children?: string;
   /** Alias for `children` — preferred in MDX since text between JSX tags becomes a <p>, not a string. */
@@ -230,9 +296,24 @@ export function CodePlayground({
 
   const MonacoEditor = EditorRef.current;
 
-  const sandboxLabel = language === "python" ? "Python Sandbox" : "JS Sandbox";
-  const sandboxBadge = language === "python" ? "Pyodide · WASM" : "Web Worker";
-  const langExt = language === "python" ? "py" : "js";
+  const LANG_META: Record<Language, { label: string; badge: string; ext: string; color: string }> =
+    {
+      python: { label: "Python Sandbox", badge: "Pyodide · WASM", ext: "py", color: "#0AFFD4" },
+      javascript: {
+        label: "JavaScript Sandbox",
+        badge: "Web Worker · ES6",
+        ext: "js",
+        color: "#FFB020",
+      },
+      c: { label: "C Sandbox", badge: "jscpp · CDN", ext: "c", color: "#4D8BFF" },
+      asm: { label: "Assembly x86-64", badge: "NASM · Simulé", ext: "asm", color: "#FF4757" },
+    };
+  const {
+    label: sandboxLabel,
+    badge: sandboxBadge,
+    ext: langExt,
+    color: langColor,
+  } = LANG_META[language];
 
   const runStatus: "ready" | "loading" | "success" | "error" = running
     ? "loading"
@@ -263,7 +344,6 @@ export function CodePlayground({
         border: "1px solid #1F1B47",
         background: "#0A0826",
         position: "relative",
-        overflow: "hidden",
       }}
     >
       {/* Header */}
@@ -295,8 +375,8 @@ export function CodePlayground({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: language === "python" ? "#0AFFD4" : "#FFB020",
-              boxShadow: `0 0 8px ${language === "python" ? "rgba(10,255,212,0.7)" : "rgba(255,176,32,0.7)"}`,
+              background: langColor,
+              boxShadow: `0 0 8px ${langColor}99`,
               animation: "pulse 2s ease-in-out infinite",
             }}
           />
@@ -309,10 +389,10 @@ export function CodePlayground({
             fontWeight: 700,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: language === "python" ? "#0AFFD4" : "#FFB020",
+            color: langColor,
             padding: "4px 8px",
-            border: `1px solid ${language === "python" ? "rgba(10,255,212,0.35)" : "rgba(255,176,32,0.35)"}`,
-            background: language === "python" ? "rgba(10,255,212,0.05)" : "rgba(255,176,32,0.05)",
+            border: `1px solid ${langColor}59`,
+            background: `${langColor}0D`,
           }}
         >
           {sandboxBadge}
@@ -323,8 +403,16 @@ export function CodePlayground({
       {editorLoaded && MonacoEditor ? (
         <MonacoEditor
           height="220px"
-          language={language === "python" ? "python" : "javascript"}
-          value={code}
+          language={
+            language === "python"
+              ? "python"
+              : language === "c"
+                ? "c"
+                : language === "asm"
+                  ? "plaintext"
+                  : "javascript"
+          }
+          defaultValue={initialCode}
           onChange={(v) => {
             setCode(v ?? "");
           }}
@@ -336,10 +424,22 @@ export function CodePlayground({
             minimap: { enabled: false },
             lineNumbers: "on",
             scrollBeyondLastLine: false,
-            wordWrap: "on",
+            wordWrap: "off",
             padding: { top: 12, bottom: 12 },
             overviewRulerLanes: 0,
+            overviewRulerBorder: false,
+            hideCursorInOverviewRuler: true,
             renderLineHighlight: "none",
+            glyphMargin: false,
+            automaticLayout: true,
+            fixedOverflowWidgets: true,
+            scrollbar: {
+              vertical: "hidden",
+              horizontal: "auto",
+              useShadows: false,
+              verticalScrollbarSize: 0,
+              alwaysConsumeMouseWheel: false,
+            },
           }}
         />
       ) : (
@@ -489,7 +589,14 @@ export function CodePlayground({
               color: "#44406B",
             }}
           >
-            main.{langExt} · {language === "python" ? "python 3.11" : "es2022"}
+            main.{langExt} ·{" "}
+            {language === "python"
+              ? "python 3.11"
+              : language === "javascript"
+                ? "es2022"
+                : language === "c"
+                  ? "C11 · jscpp"
+                  : "x86-64 · NASM"}
           </span>
         </div>
       </div>
@@ -576,7 +683,7 @@ function normalizeOutput(s: string): string {
  * Python: keeps from the last `File "<exec>"` line onwards.
  * JS: drops `at eval` / `at <anonymous>` internal frames.
  */
-function cleanError(error: string, lang: "python" | "javascript"): string {
+function cleanError(error: string, lang: Language): string {
   if (lang === "python") {
     const execIdx = error.lastIndexOf('  File "<exec>"');
     if (execIdx !== -1) return error.slice(execIdx).trim();
