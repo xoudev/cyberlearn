@@ -17,13 +17,12 @@ export default function AdminLoginPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const supabase = createSupabaseBrowserClient();
-
   async function handleMagicLink(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
+    const supabase = createSupabaseBrowserClient();
     const callbackUrl = new URL("/auth/callback", window.location.origin);
 
     const { error: authError } = await supabase.auth.signInWithOtp({
@@ -43,6 +42,7 @@ export default function AdminLoginPage(): React.ReactElement {
     setError(null);
     setIsLoading(true);
 
+    const supabase = createSupabaseBrowserClient();
     const callbackUrl = new URL("/auth/callback", window.location.origin);
 
     const { error: authError } = await supabase.auth.signInWithOAuth({

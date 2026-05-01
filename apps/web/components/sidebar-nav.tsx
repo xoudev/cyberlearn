@@ -237,9 +237,8 @@ export function SidebarNav({
   const { state, isMobile } = useSidebar();
   // On mobile the sidebar is always shown expanded inside the Sheet drawer
   const collapsed = !isMobile && state === "collapsed";
-  const supabase = createSupabaseBrowserClient();
-
   async function handleSignOut() {
+    const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     router.push("/login");
   }
