@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { computeLevel, evaluateBadges, computeNewStreak } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
@@ -23,6 +24,7 @@ const EMPTY_RESULT: CompleteLessonResult = {
 };
 
 export async function completeLesson(lessonId: string): Promise<CompleteLessonResult> {
+  if (!z.string().uuid().safeParse(lessonId).success) return EMPTY_RESULT;
   const authUser = await requireRequestUser();
 
   // Parallel fetch — lesson, user gamification state, existing progress, all active badges

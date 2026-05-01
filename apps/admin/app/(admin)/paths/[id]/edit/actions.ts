@@ -76,7 +76,9 @@ export async function updatePathAction(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const arr = JSON.parse(lessonIdsRaw);
       if (Array.isArray(arr)) {
-        orderedLessonIds = (arr as unknown[]).filter((v): v is string => typeof v === "string");
+        orderedLessonIds = (arr as unknown[])
+          .filter((v): v is string => typeof v === "string")
+          .slice(0, 500);
       }
     } catch {
       /* ignore parse errors */

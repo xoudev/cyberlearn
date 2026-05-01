@@ -21,7 +21,7 @@ async function requireUser(supabase) {
   return {
     id: user.id,
     email: user.email,
-    role: user.app_metadata?.["user_role"],
+    role: user.app_metadata?.user_role,
   };
 }
 /**

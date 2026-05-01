@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { checkAuthRateLimit } from "@/lib/rate-limit";
 
 /**
  * Admin Supabase Auth callback.
@@ -13,6 +14,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const cookieStore = await cookies();
+
+  const allowed = await checkAuthRateLimit(request);
+  if (!allowed) {
+    return NextResponse.redirect(new URL("/login?error=rate_limited", origin));
+  }
 
   if (!code) {
     return NextResponse.redirect(new URL("/login?error=missing_code", origin));

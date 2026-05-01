@@ -1,4 +1,4 @@
-import { type Notification, type NotificationType } from "@prisma/client";
+import type { Notification, NotificationType } from "@prisma/client";
 export type NotificationItem = Pick<
   Notification,
   "id" | "type" | "title" | "body" | "actionUrl" | "readAt" | "createdAt" | "metadata"

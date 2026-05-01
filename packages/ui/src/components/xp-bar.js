@@ -9,8 +9,12 @@ function XPBar({ currentXP, xpForNextLevel, level, showValues = false, className
   const target = xpForNextLevel > 0 ? Math.min((currentXP / xpForNextLevel) * 100, 100) : 0;
   const [width, setWidth] = (0, react_1.useState)(0);
   (0, react_1.useEffect)(() => {
-    const id = requestAnimationFrame(() => setWidth(target));
-    return () => cancelAnimationFrame(id);
+    const id = requestAnimationFrame(() => {
+      setWidth(target);
+    });
+    return () => {
+      cancelAnimationFrame(id);
+    };
   }, [target]);
   return (0, jsx_runtime_1.jsxs)("div", {
     className: (0, utils_js_1.cn)("w-full space-y-1.5", className),
@@ -39,13 +43,13 @@ function XPBar({ currentXP, xpForNextLevel, level, showValues = false, className
         "aria-valuenow": currentXP,
         "aria-valuemin": 0,
         "aria-valuemax": xpForNextLevel,
-        "aria-label": `Niveau ${level} — ${currentXP} / ${xpForNextLevel} XP`,
+        "aria-label": `Niveau ${String(level)} — ${String(currentXP)} / ${String(xpForNextLevel)} XP`,
         className: "h-2 w-full overflow-hidden rounded-full",
         style: { backgroundColor: "#1F1B47" },
         children: (0, jsx_runtime_1.jsx)("div", {
           className: "h-full rounded-full",
           style: {
-            width: `${width}%`,
+            width: `${String(width)}%`,
             background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
             boxShadow: "0 0 12px rgba(10,255,212,0.5)",
             transition: "width 800ms ease-out",

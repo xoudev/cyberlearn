@@ -98,7 +98,10 @@
       "Bash(cp /tmp/final_sidebar.tsx /home/jordan/repositories/Cyberlearn/apps/web/components/ui/sidebar.tsx)",
       "Bash(git *)",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(grep -v \"^/home/jordan/repositories/Cyberlearn/apps/web:$\")"
+      "Bash(grep -v \"^/home/jordan/repositories/Cyberlearn/apps/web:$\")",
+      "Bash(grep -rn 'dangerouslySetInnerHTML\\\\|$queryRawUnsafe\\\\|$executeRawUnsafe' /home/jordan/repositories/Cyberlearn/apps/ '--include=*.ts' '--include=*.tsx')",
+      "Bash(grep -rn 'dangerouslySetInnerHTML\\\\|$queryRawUnsafe\\\\|$executeRawUnsafe' /home/jordan/repositories/Cyberlearn/packages/ '--include=*.ts' '--include=*.tsx')",
+      "Bash(grep -v \"node_modules\\\\|\\\\.d\\\\.ts\\\\|\\\\.js$\\\\|\\\\.js.map\")"
     ]
   }
 }

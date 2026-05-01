@@ -41,7 +41,7 @@ export declare const lessonRepository: {
       xpReward: number;
       coverImageUrl: string | null;
       refCode: string;
-      progressStatus: ProgressStatus | null;
+      progressStatus: import("@prisma/client").$Enums.ProgressStatus | null;
     }[];
   }>;
   /** Count published lessons grouped by category. Used for filter badges. */
