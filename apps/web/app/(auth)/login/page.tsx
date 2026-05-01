@@ -33,7 +33,7 @@ function CornerBrackets(): React.ReactElement {
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export default function LoginPage(): React.ReactElement {
+function LoginContent(): React.ReactElement {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
 
@@ -1093,5 +1093,13 @@ function GhostButton({
     >
       {children}
     </button>
+  );
+}
+
+export default function LoginPage(): React.ReactElement {
+  return (
+    <React.Suspense>
+      <LoginContent />
+    </React.Suspense>
   );
 }
