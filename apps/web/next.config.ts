@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // @react-pdf/renderer uses native canvas — must not be bundled by webpack
+  serverExternalPackages: ["@react-pdf/renderer", "canvas"],
   // Validate env at build time (fail fast if required vars are missing)
   // Full env schema is in lib/env.ts
   typescript: {

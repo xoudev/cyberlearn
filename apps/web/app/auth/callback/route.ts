@@ -53,6 +53,16 @@ export async function GET(request: NextRequest) {
   // ── Upsert user row in public.users ───────────────────────────────────────
   // On first login, creates the row. On subsequent logins, updates lastActiveAt.
   // username is left null until onboarding is complete.
+
+  // Purge any orphaned row with the same email but a different id — this can
+  // happen when a Supabase Auth user is manually deleted and recreated, which
+  // generates a new UUID while leaving the old public.users row behind.
+  if (user.email) {
+    await prisma.user.deleteMany({
+      where: { email: user.email, id: { not: user.id } },
+    });
+  }
+
   const existingUser = await prisma.user.upsert({
     where: { id: user.id },
     create: {
@@ -70,10 +80,16 @@ export async function GET(request: NextRequest) {
   });
 
   // ── Check onboarding status ───────────────────────────────────────────────
-  const isOnboardingComplete = existingUser.username !== null;
-
-  if (!isOnboardingComplete) {
+  // Step 1 (identity): username must be set
+  const hasUsername = existingUser.username !== null;
+  if (!hasUsername) {
     return NextResponse.redirect(new URL("/onboarding", origin));
+  }
+
+  // Step 2–3 (avatar + placement): check app_metadata flag set at the end of step 3
+  const isOnboardingComplete = user.app_metadata?.["onboarding_complete"] === true;
+  if (!isOnboardingComplete) {
+    return NextResponse.redirect(new URL("/onboarding/avatar", origin));
   }
 
   // Sanitize the redirect target — only allow relative paths on the same origin
@@ -90,7 +106,7 @@ function extractDisplayName(user: { user_metadata?: Record<string, unknown> }): 
     (meta["full_name"] as string | undefined) ??
     (meta["name"] as string | undefined) ??
     (meta["user_name"] as string | undefined) ??
-    "Utilisateur"
+    ""
   );
 }
 

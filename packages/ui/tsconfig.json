@@ -1,6 +1,7 @@
 {
   "extends": "@cyberlearn/config/tsconfig/library.json",
   "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
     "paths": {
       "@cyberlearn/ui": ["./src/index.ts"]

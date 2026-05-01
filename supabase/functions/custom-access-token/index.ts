@@ -9,8 +9,9 @@
  * Setup:
  * 1. Deploy this function: `supabase functions deploy custom-access-token`
  * 2. In Supabase dashboard → Authentication → Hooks:
- *    Enable "Customize Access Token (JWT)" and point it to this function.
- * 3. Set the hook secret as an environment variable: CUSTOM_ACCESS_TOKEN_SECRET
+ *    Enable "Customize Access Token (JWT)" → HTTPS → point to this function.
+ * 3. Copy the signing secret Supabase shows and set it as:
+ *    Edge Functions → custom-access-token → Secrets → CUSTOM_ACCESS_TOKEN_SECRET
  *
  * Docs: https://supabase.com/docs/guides/auth/auth-hooks#custom-access-token-hook
  */
@@ -25,25 +26,51 @@ interface WebhookPayload {
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
-  // Use service role key to bypass RLS when reading user roles
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   { auth: { persistSession: false } },
 );
 
-Deno.serve(async (req: Request) => {
-  // Verify the request is from Supabase (hook secret validation)
-  const hookSecret = Deno.env.get("CUSTOM_ACCESS_TOKEN_SECRET");
-  if (hookSecret) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${hookSecret}`) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-  }
+/**
+ * Verifies the Supabase HTTPS hook signature.
+ * Supabase sends: Authorization: v1,<hmac-sha256-hex>
+ * Secret format:  v1,whsec_<base64-encoded-key>
+ */
+async function verifyHookSignature(
+  secret: string,
+  body: string,
+  authHeader: string,
+): Promise<boolean> {
+  try {
+    const whsecPrefix = "v1,whsec_";
+    if (!secret.startsWith(whsecPrefix)) return false;
 
-  const payload = (await req.json()) as WebhookPayload;
+    const base64Key = secret.slice(whsecPrefix.length);
+    const keyBytes = Uint8Array.from(atob(base64Key), (c) => c.charCodeAt(0));
+
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyBytes,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+
+    if (!authHeader.startsWith("v1,")) return false;
+    const signatureHex = authHeader.slice(3);
+    const signatureBytes = new Uint8Array(
+      (signatureHex.match(/../g) ?? []).map((h) => parseInt(h, 16)),
+    );
+
+    const bodyBytes = new TextEncoder().encode(body);
+    return await crypto.subtle.verify("HMAC", cryptoKey, signatureBytes, bodyBytes);
+  } catch {
+    return false;
+  }
+}
+
+Deno.serve(async (req: Request) => {
+  const body = await req.text();
+  const payload = JSON.parse(body) as WebhookPayload;
   const { user_id: userId, claims } = payload;
 
   // Fetch the user's role from public.users
@@ -54,14 +81,13 @@ Deno.serve(async (req: Request) => {
     .single<{ role: string }>();
 
   if (error || !user) {
-    // User row may not exist yet (first-time OAuth before callback creates it)
-    // Return the original claims unmodified — the row will be created in /auth/callback
+    // User row may not exist yet (first OAuth before callback creates it)
+    // Return original claims unmodified — row will be created in /auth/callback
     return new Response(JSON.stringify({ claims }), {
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // Inject the role into app_metadata so it's available in the JWT
   const enrichedClaims = {
     ...claims,
     app_metadata: {

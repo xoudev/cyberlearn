@@ -1,58 +1,45 @@
-import Link from "next/link";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-} from "@/components/ui/sidebar";
+import React from "react";
+import { SidebarWrapper } from "@/components/sidebar-wrapper";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { computeLevel } from "@cyberlearn/lib";
+import { prisma } from "@cyberlearn/db";
+import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 
-/**
- * Application sidebar with main navigation.
- * Rendered server-side — active link state is handled client-side by SidebarNav.
- * The collapsible state is managed by <SidebarProvider> via cookie.
- */
-export function AppSidebar() {
+export async function AppSidebar(): Promise<React.ReactElement> {
+  let level = 1;
+  let xpCurrent = 0;
+  let xpNeeded = 100;
+  let xpPercent = 0;
+  let inProgressCount = 0;
+
+  try {
+    const [authUser, dbUser] = await Promise.all([getRequestUser(), getSharedUserProfile()]);
+
+    if (authUser) {
+      const ipCount = await prisma.userLessonProgress.count({
+        where: { userId: authUser.id, status: "IN_PROGRESS" },
+      });
+      inProgressCount = ipCount;
+    }
+
+    const computed = computeLevel(dbUser?.xpTotal ?? 0);
+    level = computed.level;
+    xpCurrent = computed.current;
+    xpNeeded = computed.needed;
+    xpPercent = computed.needed > 0 ? Math.min((computed.current / computed.needed) * 100, 100) : 0;
+  } catch {
+    // Unauthenticated edge case — sidebar renders with fallback zeros
+  }
+
   return (
-    <Sidebar collapsible="icon">
-      {/* Logo / brand */}
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="h-10 font-bold" tooltip="Cyber Learn">
-              <Link href="/dashboard" aria-label="Accueil Cyber Learn">
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-xs font-black"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, var(--color-brand-blue), var(--color-brand-turquoise))",
-                    color: "#ffffff",
-                  }}
-                  aria-hidden="true"
-                >
-                  CL
-                </span>
-                <span className="font-bold tracking-tight">Cyber Learn</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-
-      {/* Navigation — client component for usePathname active state */}
-      <SidebarContent>
-        <SidebarNav />
-      </SidebarContent>
-
-      {/* Footer — reserved for user info (Phase 5) */}
-      <SidebarFooter />
-
-      {/* Narrow rail visible when sidebar is collapsed */}
-      <SidebarRail />
-    </Sidebar>
+    <SidebarWrapper>
+      <SidebarNav
+        inProgressCount={inProgressCount}
+        level={level}
+        xpCurrent={xpCurrent}
+        xpNeeded={xpNeeded}
+        xpPercent={xpPercent}
+      />
+    </SidebarWrapper>
   );
 }

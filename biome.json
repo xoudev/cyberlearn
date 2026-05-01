@@ -36,7 +36,8 @@
       "coverage",
       ".turbo",
       "*.min.js",
-      "pnpm-lock.yaml"
+      "pnpm-lock.yaml",
+      "docs/"
     ]
   }
 }

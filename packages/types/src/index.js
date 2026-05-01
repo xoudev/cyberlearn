@@ -31,4 +31,5 @@ var __exportStar =
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./schemas/user.schema.js"), exports);
 __exportStar(require("./schemas/placement-test.schema.js"), exports);
+__exportStar(require("./schemas/import.schema.js"), exports);
 //# sourceMappingURL=index.js.map

@@ -1,0 +1,129 @@
+/* ==========================================================================
+   Cyber Learn — Daily Revisions
+   Reuses dashboard-v2 review-row styles.
+   ========================================================================== */
+
+@import url('./dashboard-v2.css');
+
+.main { padding: 0; }
+.rv-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 56px 120px;
+  position: relative;
+}
+
+/* breadcrumb */
+.rv-breadcrumb {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--fg-tertiary);
+  margin-bottom: 28px;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.rv-breadcrumb .p { color: var(--brand-turquoise); }
+.rv-breadcrumb b { color: var(--fg-secondary); font-weight: 500; }
+.rv-breadcrumb .slash { color: var(--fg-disabled); }
+.rv-breadcrumb .current { color: var(--fg-primary); font-weight: 500; }
+.rv-breadcrumb .caret {
+  display: inline-block; width: 7px; height: 13px;
+  background: var(--brand-turquoise);
+  box-shadow: 0 0 8px var(--brand-turquoise);
+  margin-left: 4px; vertical-align: -2px;
+  animation: blink 1s step-end infinite;
+}
+
+/* eyebrow + title */
+.rv-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-tertiary);
+  margin-bottom: 14px;
+}
+.rv-eyebrow::before { content: '// '; color: var(--fg-disabled); }
+.rv-eyebrow b { color: var(--brand-turquoise); font-weight: 500; }
+
+.rv-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(40px, 5.5vw, 72px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  color: var(--fg-primary);
+  margin: 0 0 32px;
+  max-width: 920px;
+  text-wrap: balance;
+  padding-bottom: 8px;
+}
+.rv-title em {
+  font-style: normal;
+  background: linear-gradient(180deg, #FFB547, #FF4757);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.rv-sub {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--fg-secondary);
+  max-width: 620px;
+  margin: 0 0 44px;
+}
+
+/* warning + muted due states */
+.review-row__due--soon { color: var(--fg-tertiary) !important; }
+.review-row__due--soon::before { background: var(--fg-tertiary) !important; box-shadow: 0 0 6px var(--fg-tertiary) !important; }
+
+/* primary CTA */
+.rv-cta-row {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 32px;
+}
+.rv-primary {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 16px 32px;
+  background: var(--brand-blue);
+  color: #fff;
+  border: 1px solid var(--brand-blue);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: 0 0 20px rgba(0,36,255,0.45);
+  transition: all var(--dur-base);
+}
+.rv-primary::before, .rv-primary::after {
+  content: ''; position: absolute; width: 9px; height: 9px;
+  border-color: var(--brand-turquoise);
+  border-style: solid; border-width: 0;
+  pointer-events: none;
+}
+.rv-primary::before { top: -1px; left: -1px; border-top-width: 1.5px; border-left-width: 1.5px; }
+.rv-primary::after { bottom: -1px; right: -1px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+.rv-primary:hover { background: var(--brand-blue-hover); box-shadow: 0 0 28px rgba(0,36,255,0.65); }
+.rv-primary .arrow {
+  color: var(--brand-turquoise);
+  text-shadow: 0 0 8px rgba(10,255,212,0.6);
+  font-weight: 500;
+}
+
+.rv-secondary {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-tertiary);
+  text-decoration: none;
+  padding: 16px 8px;
+}
+.rv-secondary:hover { color: var(--brand-turquoise); }
+
+@keyframes blink { 0%,50% { opacity: 1 } 50.01%,100% { opacity: 0 } }

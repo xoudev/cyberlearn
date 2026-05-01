@@ -12,16 +12,20 @@ const isDev = process.env.NODE_ENV === "development";
 const SECURITY_HEADERS: Record<string, string> = {
   "Content-Security-Policy": [
     "default-src 'self'",
+    // Dev: unsafe-eval for HMR + Monaco; Prod: wasm-unsafe-eval for Pyodide + Monaco CDN
     isDev
-      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
-      : "script-src 'self' 'wasm-unsafe-eval'",
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net"
+      : "script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
     // unsafe-inline required for Tailwind v4 (runtime style injection)
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com",
     "font-src 'self' data:",
+    // blob: for Monaco worker creation; cdn.jsdelivr.net for Pyodide + Monaco loader
     isDev
-      ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:*"
-      : "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net"
+      : "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net",
+    // blob: required for Monaco editor web workers and Pyodide blob worker
+    "worker-src 'self' blob:",
     "frame-ancestors 'none'",
     "form-action 'self'",
     "base-uri 'self'",
@@ -48,6 +52,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/verify/") ||
+    pathname.startsWith("/u/") ||
     pathname.startsWith("/contact") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon")
@@ -130,7 +135,13 @@ export async function middleware(request: NextRequest) {
     }
 
     // Completed-onboarding user visiting /login or /onboarding → redirect to dashboard
-    if (isOnboardingComplete && (pathname === "/login" || isOnboardingRoute(pathname))) {
+    // Exception: result page is shown once right after completing the placement test
+    const isPlacementResult = pathname === "/onboarding/placement-test/result";
+    if (
+      isOnboardingComplete &&
+      (pathname === "/login" || isOnboardingRoute(pathname)) &&
+      !isPlacementResult
+    ) {
       const dashboardUrl = new URL("/dashboard", request.url);
       const redirectResponse = NextResponse.redirect(dashboardUrl);
       applySecurityHeaders(redirectResponse);

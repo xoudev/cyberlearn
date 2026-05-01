@@ -91,9 +91,13 @@ const SidebarProvider = React.forwardRef<
     );
 
     // Helper to toggle the sidebar.
+    // HACK: Read matchMedia directly instead of the cached isMobile state to avoid the
+    // SSR/hydration timing window where isMobile is false even on a mobile viewport.
     const toggleSidebar = React.useCallback(() => {
-      return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-    }, [isMobile, setOpen, setOpenMobile]);
+      const onMobile =
+        typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+      return onMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev);
+    }, [setOpen, setOpenMobile]);
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
@@ -234,7 +238,7 @@ const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
+            "fixed inset-y-0 z-[50] hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
