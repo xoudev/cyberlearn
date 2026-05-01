@@ -68,8 +68,9 @@ export function PlacementTestForm({
   const [selected, setSelected] = useState<Record<string, string>>({});
 
   const grouped = questions.reduce<Record<string, PlacementQuestion[]>>((acc, q) => {
-    acc[q.category] ??= [];
-    acc[q.category].push(q);
+    const arr = acc[q.category] ?? [];
+    arr.push(q);
+    acc[q.category] = arr;
     return acc;
   }, {});
 
