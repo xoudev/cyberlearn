@@ -22,7 +22,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
         letterSpacing: "0.1em",
       }}
     >
-      // chargement éditeur…
+      {"// chargement éditeur…"}
     </div>
   ),
 });
@@ -66,7 +66,7 @@ function renderInline(text: string): React.ReactNode {
           {part.slice(1, -1)}
         </code>
       );
-    const lm = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    const lm = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part);
     if (lm)
       return (
         <span key={i} style={{ color: "#4D8BFF", textDecoration: "underline", cursor: "pointer" }}>
@@ -88,14 +88,14 @@ function parseProps(src: string): Record<string, string> {
 }
 
 function PreviewComponent({ source }: { source: string }): React.ReactElement {
-  const nameMatch = source.match(/^<([A-Z]\w*)/);
+  const nameMatch = /^<([A-Z]\w*)/.exec(source);
   const name = nameMatch?.[1] ?? "Unknown";
-  const propsStr = source.match(/^<[A-Z]\w*\s+([\s\S]*?)[\s/>]/)?.[1] ?? "";
+  const propsStr = /^<[A-Z]\w*\s+([\s\S]*?)[\s/>]/.exec(source)?.[1] ?? "";
   const props = parseProps(propsStr);
-  const inner = source.match(/>([^<]*)<\/[A-Z]/)?.[1]?.trim() ?? "";
+  const inner = />([^<]*)<\/[A-Z]/.exec(source)?.[1]?.trim() ?? "";
 
   if (name === "Callout") {
-    const type = props["type"] ?? "info";
+    const type = props.type ?? "info";
     const meta: Record<string, { border: string; bg: string; color: string; label: string }> = {
       info: { border: "#4D8BFF", bg: "rgba(77,139,255,0.08)", color: "#4D8BFF", label: "INFO" },
       warning: {
@@ -108,7 +108,8 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
       success: { border: TURQ, bg: "rgba(10,255,212,0.08)", color: TURQ, label: "SUCCÈS" },
     };
     // SAFETY: fallback to info when type is unknown
-    const c = meta[type] ?? meta["info"]!;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const c = meta[type] ?? meta.info!;
     return (
       <div
         style={{
@@ -159,14 +160,14 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
             marginBottom: 8,
           }}
         >
-          QUIZ — {props["id"] ?? "?"}
+          QUIZ — {props.id ?? "?"}
         </div>
         <p style={{ margin: 0, fontSize: 13, color: "#F5F5FA", fontWeight: 600 }}>
-          {props["question"] ?? "Question…"}
+          {props.question ?? "Question…"}
         </p>
-        {props["options"] && (
+        {props.options && (
           <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6B6890", fontFamily: MONO }}>
-            {props["options"]}
+            {props.options}
           </p>
         )}
       </div>
@@ -174,7 +175,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
   }
 
   if (name === "CodeBlock" || name === "CodePlayground") {
-    const lang = props["lang"] ?? props["language"] ?? "code";
+    const lang = props.lang ?? props.language ?? "code";
     return (
       <div
         style={{
@@ -241,7 +242,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         }}
       >
         <span style={{ fontFamily: MONO, fontSize: 11, color: "#6B6890" }}>
-          🖼 {props["alt"] ?? props["src"] ?? "image"}
+          🖼 {props.alt ?? props.src ?? "image"}
         </span>
       </div>
     );
@@ -290,7 +291,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
     }
 
     // H1
-    const h1 = line.match(/^#\s+(.+)/);
+    const h1 = /^#\s+(.+)/.exec(line);
     if (h1) {
       elements.push(
         <h1
@@ -314,7 +315,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
     }
 
     // H2
-    const h2 = line.match(/^##\s+(.+)/);
+    const h2 = /^##\s+(.+)/.exec(line);
     if (h2) {
       elements.push(
         <h2
@@ -336,7 +337,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
     }
 
     // H3
-    const h3 = line.match(/^###\s+(.+)/);
+    const h3 = /^###\s+(.+)/.exec(line);
     if (h3) {
       elements.push(
         <h3
@@ -503,7 +504,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
           letterSpacing: "0.08em",
         }}
       >
-        // commencez à écrire du MDX…
+        {"// commencez à écrire du MDX…"}
       </div>
     );
   }
@@ -815,7 +816,9 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
           }}
         />
         GUIDE MDX
-        <span style={{ marginLeft: "auto", color: "#2A2560" }}>clic → insérer dans l'éditeur</span>
+        <span style={{ marginLeft: "auto", color: "#2A2560" }}>
+          clic → insérer dans l&apos;éditeur
+        </span>
       </div>
       <div style={{ padding: "4px 16px 32px" }}>
         {GUIDE_SECTIONS.map((section) => (
@@ -867,6 +870,7 @@ const THEME_DEFINED = { current: false };
 function defineTheme(monaco: Parameters<BeforeMount>[0]) {
   if (THEME_DEFINED.current) return;
   THEME_DEFINED.current = true;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   monaco.editor.defineTheme("cyberlearn", {
     base: "vs-dark",
     inherit: true,
@@ -955,7 +959,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
     if (!ed) return;
     const sel = ed.getSelection();
     if (!sel) return;
-    const inner = ed.getModel()?.getValueInRange(sel) || placeholder;
+    const inner = ed.getModel()?.getValueInRange(sel) ?? placeholder;
     ed.executeEdits("toolbar", [
       { range: sel, text: `${before}${inner}${after}`, forceMoveMarkers: true },
     ]);

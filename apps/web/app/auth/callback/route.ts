@@ -16,7 +16,7 @@ import { type NextRequest, NextResponse } from "next/server";
  * 3. Check if onboarding is complete (username is set)
  * 4. Redirect accordingly
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
@@ -87,13 +87,13 @@ export async function GET(request: NextRequest) {
   }
 
   // Step 2–3 (avatar + placement): check app_metadata flag set at the end of step 3
-  const isOnboardingComplete = user.app_metadata?.["onboarding_complete"] === true;
+  const isOnboardingComplete = user.app_metadata.onboarding_complete === true;
   if (!isOnboardingComplete) {
     return NextResponse.redirect(new URL("/onboarding/avatar", origin));
   }
 
   // Sanitize the redirect target — only allow relative paths on the same origin
-  const safeRedirect = isSafeRedirect(redirectTo, origin) ? redirectTo : "/dashboard";
+  const safeRedirect = isSafeRedirect(redirectTo) ? redirectTo : "/dashboard";
 
   return NextResponse.redirect(new URL(safeRedirect, origin));
 }
@@ -103,22 +103,20 @@ export async function GET(request: NextRequest) {
 function extractDisplayName(user: { user_metadata?: Record<string, unknown> }): string {
   const meta = user.user_metadata ?? {};
   return (
-    (meta["full_name"] as string | undefined) ??
-    (meta["name"] as string | undefined) ??
-    (meta["user_name"] as string | undefined) ??
+    (meta.full_name as string | undefined) ??
+    (meta.name as string | undefined) ??
+    (meta.user_name as string | undefined) ??
     ""
   );
 }
 
 function extractAvatarUrl(user: { user_metadata?: Record<string, unknown> }): string | null {
   const meta = user.user_metadata ?? {};
-  return (
-    (meta["avatar_url"] as string | undefined) ?? (meta["picture"] as string | undefined) ?? null
-  );
+  return (meta.avatar_url as string | undefined) ?? (meta.picture as string | undefined) ?? null;
 }
 
 /** Ensures the redirect target is a relative path (no open redirect). */
-function isSafeRedirect(url: string, _origin: string): boolean {
+function isSafeRedirect(url: string): boolean {
   // Must be a relative path starting with /
   return url.startsWith("/") && !url.startsWith("//");
 }

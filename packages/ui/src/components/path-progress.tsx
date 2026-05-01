@@ -59,12 +59,12 @@ export function PathProgress({
           aria-valuenow={completedLessons}
           aria-valuemin={0}
           aria-valuemax={totalLessons}
-          aria-label={`${percent}% du parcours complété`}
+          aria-label={`${String(percent)}% du parcours complété`}
         >
           <div
             className="h-full rounded-full transition-[width] duration-700 ease-out"
             style={{
-              width: `${percent}%`,
+              width: `${String(percent)}%`,
               background: isComplete
                 ? "var(--color-success)"
                 : "linear-gradient(90deg, var(--color-brand-blue), var(--color-brand-turquoise))",

@@ -64,7 +64,8 @@ function SectionTitle({ children }: { children: React.ReactNode }): React.ReactE
         borderBottom: `1px solid ${BORDER}`,
       }}
     >
-      // {children}
+      {"// "}
+      {children}
     </div>
   );
 }
@@ -82,16 +83,16 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
     ]);
 
   const envVars = [
-    { label: "NEXT_PUBLIC_SUPABASE_URL", defined: !!process.env["NEXT_PUBLIC_SUPABASE_URL"] },
+    { label: "NEXT_PUBLIC_SUPABASE_URL", defined: !!process.env.NEXT_PUBLIC_SUPABASE_URL },
     {
       label: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-      defined: !!process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+      defined: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     },
-    { label: "SUPABASE_SERVICE_ROLE_KEY", defined: !!process.env["SUPABASE_SERVICE_ROLE_KEY"] },
-    { label: "DATABASE_URL", defined: !!process.env["DATABASE_URL"] },
-    { label: "IP_HASH_SALT", defined: !!process.env["IP_HASH_SALT"] },
-    { label: "NEXT_PUBLIC_SITE_URL", defined: !!process.env["NEXT_PUBLIC_SITE_URL"] },
-    { label: "NEXT_PUBLIC_ADMIN_URL", defined: !!process.env["NEXT_PUBLIC_ADMIN_URL"] },
+    { label: "SUPABASE_SERVICE_ROLE_KEY", defined: !!process.env.SUPABASE_SERVICE_ROLE_KEY },
+    { label: "DATABASE_URL", defined: !!process.env.DATABASE_URL },
+    { label: "IP_HASH_SALT", defined: !!process.env.IP_HASH_SALT },
+    { label: "NEXT_PUBLIC_SITE_URL", defined: !!process.env.NEXT_PUBLIC_SITE_URL },
+    { label: "NEXT_PUBLIC_ADMIN_URL", defined: !!process.env.NEXT_PUBLIC_ADMIN_URL },
   ];
 
   const allEnvOk = envVars.every((v) => v.defined);
@@ -220,9 +221,9 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
             <SectionTitle>Informations plateforme</SectionTitle>
             {[
               { label: "Version Node.js", val: process.version },
-              { label: "Environnement", val: process.env["NODE_ENV"] ?? "development" },
-              { label: "Site URL", val: process.env["NEXT_PUBLIC_SITE_URL"] ?? "—" },
-              { label: "Admin URL", val: process.env["NEXT_PUBLIC_ADMIN_URL"] ?? "—" },
+              { label: "Environnement", val: process.env.NODE_ENV },
+              { label: "Site URL", val: process.env.NEXT_PUBLIC_SITE_URL ?? "—" },
+              { label: "Admin URL", val: process.env.NEXT_PUBLIC_ADMIN_URL ?? "—" },
             ].map((item) => (
               <div
                 key={item.label}

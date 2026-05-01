@@ -23,10 +23,10 @@ const updateLessonSchema = z.object({
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
 });
 
-export type UpdateLessonState = {
+export interface UpdateLessonState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
-};
+}
 
 export async function updateLessonAction(
   id: string,
@@ -47,7 +47,7 @@ export async function updateLessonAction(
   if (!parsed.success) {
     const fieldErrors: UpdateLessonState["fieldErrors"] = {};
     for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
-      fieldErrors[field] = errs?.[0];
+      fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
   }
@@ -76,7 +76,12 @@ export async function updateLessonAction(
   try {
     await prisma.lesson.update({
       where: { id },
-      data: { ...data, coverImageUrl: coverImageUrl || null, status, publishedAt },
+      data: {
+        ...data,
+        coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
+        status,
+        publishedAt,
+      },
     });
 
     await prisma.auditLog.create({

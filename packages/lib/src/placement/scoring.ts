@@ -73,7 +73,7 @@ export function getRecommendedPathSlug(
   const mastered = getMasteredCategories(scores);
 
   // Recommend the path for the highest-scoring mastered category
-  const candidates: Array<{ category: "DEV" | "CYBERSEC" | "NETWORK"; score: number }> = [];
+  const candidates: { category: "DEV" | "CYBERSEC" | "NETWORK"; score: number }[] = [];
 
   if (mastered.CYBERSEC) candidates.push({ category: "CYBERSEC", score: scores.cybersecScore });
   if (mastered.DEV) candidates.push({ category: "DEV", score: scores.devScore });

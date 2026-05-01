@@ -22,8 +22,12 @@ export function XPBar({
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => setWidth(target));
-    return () => cancelAnimationFrame(id);
+    const id = requestAnimationFrame(() => {
+      setWidth(target);
+    });
+    return () => {
+      cancelAnimationFrame(id);
+    };
   }, [target]);
 
   return (
@@ -46,14 +50,14 @@ export function XPBar({
         aria-valuenow={currentXP}
         aria-valuemin={0}
         aria-valuemax={xpForNextLevel}
-        aria-label={`Niveau ${level} — ${currentXP} / ${xpForNextLevel} XP`}
+        aria-label={`Niveau ${String(level)} — ${String(currentXP)} / ${String(xpForNextLevel)} XP`}
         className="h-2 w-full overflow-hidden rounded-full"
         style={{ backgroundColor: "#1F1B47" }}
       >
         <div
           className="h-full rounded-full"
           style={{
-            width: `${width}%`,
+            width: `${String(width)}%`,
             background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
             boxShadow: "0 0 12px rgba(10,255,212,0.5)",
             transition: "width 800ms ease-out",

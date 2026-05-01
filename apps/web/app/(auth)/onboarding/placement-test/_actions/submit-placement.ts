@@ -48,7 +48,7 @@ export async function submitPlacementTest(
   }
 
   // ── Parse and validate submitted answers ─────────────────────────────────
-  const rawAnswers: Array<{ questionId: string; selectedOptionId: string }> = [];
+  const rawAnswers: { questionId: string; selectedOptionId: string }[] = [];
 
   for (const [key, value] of formData.entries()) {
     if (key.startsWith("answer_")) {
@@ -96,7 +96,7 @@ export async function submitPlacementTest(
   // ── Determine skip waivers ───────────────────────────────────────────────
   // Fetch all BEGINNER + INTERMEDIATE lessons in mastered categories
   const categoriesToWaive = (
-    Object.entries(mastered) as Array<["DEV" | "CYBERSEC" | "NETWORK", boolean]>
+    Object.entries(mastered) as ["DEV" | "CYBERSEC" | "NETWORK", boolean][]
   )
     .filter(([, isMastered]) => isMastered)
     .map(([category]) => category);

@@ -183,7 +183,8 @@ const FEATURED_END_DATE = new Date(Date.now() + 2.5 * 86400 * 1000);
 
 // The featured challenge: highest-XP AVAILABLE/IN_PROGRESS entry (hardcoded to c4 — JWT Forgery, 520 XP)
 // SAFETY: index 3 is always present in the static CHALLENGES literal defined above.
-const FEATURED = CHALLENGES[3] as Challenge;
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const FEATURED = CHALLENGES[3]!;
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
 
@@ -462,7 +463,7 @@ function Featured({ challenge }: { challenge: Challenge }): React.ReactElement {
         <span className="feat__corner tr" />
         <span className="feat__corner bl" />
         <span className="feat__corner br" />
-        <span className="feat__coords">// PAYLOAD.LIVE</span>
+        <span className="feat__coords">{"// PAYLOAD.LIVE"}</span>
         <span className="feat__coords feat__coords--right">[CTF · 0x4D]</span>
         <div className="feat__cover-glyph">
           <IconTarget size={140} />
@@ -478,7 +479,8 @@ function Featured({ challenge }: { challenge: Challenge }): React.ReactElement {
         </span>
 
         <div className="feat__ref">
-          // {challenge.id.toUpperCase()} ·{" "}
+          {"// "}
+          {challenge.id.toUpperCase()} ·{" "}
           {(challenge.title.split(" ")[0] ?? challenge.id).toUpperCase()}
         </div>
 
@@ -553,7 +555,10 @@ function CCCard({ challenge }: { challenge: Challenge }): React.ReactElement {
 
       {/* Body */}
       <div className="cc__body">
-        <div className="cc__ref">// {challenge.id.toUpperCase()}</div>
+        <div className="cc__ref">
+          {"// "}
+          {challenge.id.toUpperCase()}
+        </div>
         <h3 className="cc__title">{challenge.title}</h3>
         <p className="cc__desc">{challenge.description}</p>
       </div>
@@ -561,7 +566,10 @@ function CCCard({ challenge }: { challenge: Challenge }): React.ReactElement {
       {/* Progress bar (IN_PROGRESS only) */}
       {isProg && (
         <div className="cc__progbar">
-          <div className="cc__progbar-fill" style={{ width: `${challenge.progress ?? 0}%` }} />
+          <div
+            className="cc__progbar-fill"
+            style={{ width: `${String(challenge.progress ?? 0)}%` }}
+          />
         </div>
       )}
 
@@ -658,7 +666,7 @@ export default function ChallengesPage(): React.ReactElement {
     setType((prev) => (prev === t ? "TOUS" : t));
   }
 
-  const CAT_PILLS: Array<{ label: string; value: CatFilter; dot: string }> = [
+  const CAT_PILLS: { label: string; value: CatFilter; dot: string }[] = [
     { label: "TOUS", value: "TOUS", dot: "all" },
     { label: "CYBERSEC", value: "CYBERSEC", dot: "cyber" },
     { label: "DEV", value: "DEV", dot: "dev" },
@@ -709,7 +717,7 @@ export default function ChallengesPage(): React.ReactElement {
       {/* ── Filters ─────────────────────────────────────────────────── */}
       <div className="chx-filters">
         <div className="chx-filters__row">
-          <span className="chx-filters__label">// CAT</span>
+          <span className="chx-filters__label">{"// CAT"}</span>
           {CAT_PILLS.map(({ label, value, dot }) => (
             <button
               key={value}
@@ -726,7 +734,7 @@ export default function ChallengesPage(): React.ReactElement {
 
           <span className="chx-filters__split" />
 
-          <span className="chx-filters__label">// TYPE</span>
+          <span className="chx-filters__label">{"// TYPE"}</span>
           {(["CTF", "PUZZLE", "LAB"] as const).map((t) => (
             <button
               key={t}
@@ -776,7 +784,7 @@ export default function ChallengesPage(): React.ReactElement {
       {/* ── Section heading ─────────────────────────────────────────── */}
       <div className="chx-section-head">
         <div>
-          <span className="chx-section-head__eyebrow">// AVAILABLE.STACK</span>
+          <span className="chx-section-head__eyebrow">{"// AVAILABLE.STACK"}</span>
           <h2 className="chx-section-head__title">Tous les défis</h2>
         </div>
         <span className="chx-section-head__count">

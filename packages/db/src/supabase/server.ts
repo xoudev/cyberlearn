@@ -21,8 +21,8 @@ import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
  * in apps/web/lib/env.ts and apps/admin/lib/env.ts at startup.
  */
 export function createSupabaseServerClient(cookieMethods: CookieMethodsServer) {
-  const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
-  const supabaseAnonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
@@ -31,7 +31,6 @@ export function createSupabaseServerClient(cookieMethods: CookieMethodsServer) {
     );
   }
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: cookieMethods,
-  });
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  return createServerClient(supabaseUrl, supabaseAnonKey, { cookies: cookieMethods });
 }

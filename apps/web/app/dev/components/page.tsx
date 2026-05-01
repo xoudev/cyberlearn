@@ -1,3 +1,4 @@
+import React from "react";
 import {
   XPBar,
   LevelBadge,
@@ -66,7 +67,7 @@ function DemoCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function DevComponentsPage() {
+export default function DevComponentsPage(): React.JSX.Element {
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-base)" }}>
       {/* Header */}

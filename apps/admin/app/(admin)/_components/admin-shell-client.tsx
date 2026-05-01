@@ -10,7 +10,9 @@ interface SidebarContextValue {
 
 const SidebarCtx = createContext<SidebarContextValue>({
   open: false,
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   toggle: () => {},
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   close: () => {},
 });
 
@@ -23,12 +25,22 @@ export function AdminShellClient({ children }: { children: React.ReactNode }): R
 
   return (
     <SidebarCtx.Provider
-      value={{ open, toggle: () => setOpen((v) => !v), close: () => setOpen(false) }}
+      value={{
+        open,
+        toggle: () => {
+          setOpen((v) => !v);
+        },
+        close: () => {
+          setOpen(false);
+        },
+      }}
     >
       {open && (
         <div
           aria-hidden="true"
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            setOpen(false);
+          }}
           style={{
             position: "fixed",
             inset: 0,

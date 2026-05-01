@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma } from "@cyberlearn/db";
 
@@ -17,7 +18,7 @@ export const getRequestUser = cache(async () => {
 });
 
 /** Redirects to /login if unauthenticated. Drop-in replacement for requireUser(supabase). */
-export async function requireRequestUser() {
+export async function requireRequestUser(): Promise<User> {
   const user = await getRequestUser();
   if (!user) redirect("/login");
   return user;

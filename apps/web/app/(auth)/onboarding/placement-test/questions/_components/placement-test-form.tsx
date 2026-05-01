@@ -68,8 +68,8 @@ export function PlacementTestForm({
   const [selected, setSelected] = useState<Record<string, string>>({});
 
   const grouped = questions.reduce<Record<string, PlacementQuestion[]>>((acc, q) => {
-    if (!acc[q.category]) acc[q.category] = [];
-    acc[q.category]!.push(q);
+    acc[q.category] ??= [];
+    acc[q.category].push(q);
     return acc;
   }, {});
 
@@ -403,9 +403,9 @@ export function PlacementTestForm({
                                 value={opt.id}
                                 required
                                 checked={isSelected}
-                                onChange={() =>
-                                  setSelected((prev) => ({ ...prev, [q.id]: opt.id }))
-                                }
+                                onChange={() => {
+                                  setSelected((prev) => ({ ...prev, [q.id]: opt.id }));
+                                }}
                                 style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
                               />
                               {/* Custom radio indicator */}

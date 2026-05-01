@@ -15,7 +15,7 @@ import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { evaluateBadges } from "@cyberlearn/lib";
 import { CertificateDocument } from "@/lib/pdf/certificate-template";
 
-const APP_URL = process.env["NEXT_PUBLIC_APP_URL"] ?? "https://cyberlearn.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cyberlearn.app";
 const BUCKET = "certificates";
 
 export async function generateCertificate(userId: string, pathId: string): Promise<string | null> {
@@ -40,7 +40,7 @@ export async function generateCertificate(userId: string, pathId: string): Promi
 
   const pdfBuffer = await renderToBuffer(
     <CertificateDocument
-      displayName={user.displayName ?? "Utilisateur"}
+      displayName={user.displayName}
       pathTitle={path.title}
       issuedAt={issuedAt}
       publicId={certRecord.publicId}

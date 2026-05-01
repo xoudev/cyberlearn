@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { requireRequestUser } from "@/lib/auth";
-import { leaderboardRepository, type LeaderboardEntry } from "@cyberlearn/db";
+import { leaderboardRepository } from "@cyberlearn/db";
 import { ClassementClient } from "./_components/ClassementClient";
 
 export const metadata: Metadata = { title: "Classement — CyberLearn" };

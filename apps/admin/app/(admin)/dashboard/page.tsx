@@ -100,28 +100,28 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     {
       label: "Utilisateurs",
       val: userCount.toLocaleString("fr-FR"),
-      delta: `+${usersThisWeek} cette semaine`,
+      delta: `+${String(usersThisWeek)} cette semaine`,
       arrow: "↑",
       danger: false,
     },
     {
       label: "Leçons publiées",
       val: lessonCount.toLocaleString("fr-FR"),
-      delta: `+${lessonThisMonth} ce mois-ci`,
+      delta: `+${String(lessonThisMonth)} ce mois-ci`,
       arrow: "↑",
       danger: false,
     },
     {
       label: "Certificats émis",
       val: certCount.toLocaleString("fr-FR"),
-      delta: `+${certThisWeek} cette semaine`,
+      delta: `+${String(certThisWeek)} cette semaine`,
       arrow: "↑",
       danger: false,
     },
     {
       label: "Tickets ouverts",
       val: openTickets.toLocaleString("fr-FR"),
-      delta: `${criticalTickets} critique${criticalTickets !== 1 ? "s" : ""}`,
+      delta: `${String(criticalTickets)} critique${criticalTickets !== 1 ? "s" : ""}`,
       arrow: "!",
       danger: true,
     },
@@ -207,7 +207,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
               margin: "0 0 10px",
             }}
           >
-            Aperçu <em style={{ fontStyle: "normal", color: DANGER }}>// admin</em>
+            Aperçu <em style={{ fontStyle: "normal", color: DANGER }}>{"// admin"}</em>
           </h1>
           <div
             style={{
@@ -265,7 +265,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                 marginBottom: 14,
               }}
             >
-              // {s.label}
+              {`// ${s.label}`}
             </div>
 
             <div
@@ -370,7 +370,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
               }}
             >
               {criticalTickets > 0
-                ? `${criticalTickets} critique${criticalTickets !== 1 ? "s" : ""} (bug ou sécurité) — action requise`
+                ? `${String(criticalTickets)} critique${criticalTickets !== 1 ? "s" : ""} (bug ou sécurité) — action requise`
                 : "Aucun ticket critique pour le moment"}
             </div>
           </div>
@@ -453,7 +453,8 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                 margin: 0,
               }}
             >
-              // activité <b style={{ color: DANGER }}>récente</b>
+              {"// activité "}
+              <b style={{ color: DANGER }}>récente</b>
             </h2>
             <Link
               href="/audit"
@@ -493,7 +494,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                       colSpan={4}
                       style={{ ...td, textAlign: "center", color: "#6B6890", padding: "40px 16px" }}
                     >
-                      // aucune activité récente
+                      {"// aucune activité récente"}
                     </td>
                   </tr>
                 ) : (
@@ -600,7 +601,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                 margin: 0,
               }}
             >
-              // <b style={{ color: DANGER }}>nouveaux</b> utilisateurs
+              {"// "}
+              <b style={{ color: DANGER }}>nouveaux</b>
+              {" utilisateurs"}
             </h2>
             <Link
               href="/users"
@@ -640,7 +643,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                       colSpan={4}
                       style={{ ...td, textAlign: "center", color: "#6B6890", padding: "40px 16px" }}
                     >
-                      // aucun utilisateur
+                      {"// aucun utilisateur"}
                     </td>
                   </tr>
                 ) : (

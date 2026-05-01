@@ -24,7 +24,7 @@ export async function requireAdminAction(): Promise<{
 
   if (!user) redirect("/login");
 
-  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  const jwtRole = user.app_metadata.user_role as string | undefined;
   let role: string | undefined = jwtRole;
 
   if (!role) {

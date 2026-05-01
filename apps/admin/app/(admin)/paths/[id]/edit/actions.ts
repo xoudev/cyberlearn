@@ -21,10 +21,10 @@ const updatePathSchema = z.object({
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
 });
 
-export type UpdatePathState = {
+export interface UpdatePathState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
-};
+}
 
 export async function updatePathAction(
   id: string,
@@ -45,7 +45,7 @@ export async function updatePathAction(
   if (!parsed.success) {
     const fieldErrors: UpdatePathState["fieldErrors"] = {};
     for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
-      fieldErrors[field] = errs?.[0];
+      fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
   }
@@ -90,7 +90,12 @@ export async function updatePathAction(
     await prisma.$transaction([
       prisma.path.update({
         where: { id },
-        data: { ...data, coverImageUrl: coverImageUrl || null, status, publishedAt },
+        data: {
+          ...data,
+          coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
+          status,
+          publishedAt,
+        },
       }),
       prisma.pathLesson.deleteMany({ where: { pathId: id } }),
       ...(orderedLessonIds.length > 0

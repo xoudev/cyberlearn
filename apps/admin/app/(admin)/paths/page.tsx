@@ -173,7 +173,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
           }}
         >
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-            // aucun parcours pour l&apos;instant
+            {"// aucun parcours pour l'instant"}
           </p>
         </div>
       ) : (

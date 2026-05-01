@@ -179,11 +179,6 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
           lessons.map((lesson) => {
             const diff = DIFF_COLORS[lesson.difficulty] ?? DIFF_DEFAULT;
             const status = STATUS_COLORS[lesson.status] ?? STATUS_DEFAULT;
-            const dateStr = lesson.createdAt.toLocaleDateString("fr-FR", {
-              day: "2-digit",
-              month: "short",
-              year: "2-digit",
-            });
             return (
               <div
                 key={lesson.id}

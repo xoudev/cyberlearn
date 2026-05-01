@@ -1,3 +1,4 @@
+import React from "react";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
   return (
     <html lang="fr" className={`dark ${jakarta.variable} ${jetbrains.variable}`}>
       <body>{children}</body>

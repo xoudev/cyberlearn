@@ -43,7 +43,11 @@ interface Props {
 
 const HEX_CLIP = "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)";
 
-type RarityMeta = { color: string; grad: string; glow: string };
+interface RarityMeta {
+  color: string;
+  grad: string;
+  glow: string;
+}
 
 const RARITY_META: Record<string, RarityMeta> = {
   LEGENDARY: {
@@ -129,7 +133,9 @@ function BadgeImageWithFallback({
       width={size}
       height={size}
       style={{ objectFit: "contain" }}
-      onError={() => setFailed(true)}
+      onError={() => {
+        setFailed(true);
+      }}
     />
   );
 }
@@ -284,7 +290,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
             textTransform: "uppercase",
           }}
         >
-          // Aucune activité pour l&#39;instant
+          {"// Aucune activité pour l'instant"}
         </p>
       </div>
     );
@@ -396,7 +402,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
             textTransform: "uppercase",
           }}
         >
-          // Aucun certificat délivré pour l&#39;instant
+          {"// Aucun certificat délivré pour l'instant"}
         </p>
       </div>
     );
@@ -441,7 +447,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               marginRight: 12,
             }}
           >
-            // CERT.PREVIEW
+            {"// CERT.PREVIEW"}
           </span>
           Dernier certificat délivré
         </h3>
@@ -710,7 +716,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
 
 // ── Profile content (tabs) ────────────────────────────────────────────────────
 
-export function ProfileContent({ badges, lessons, certs }: Props) {
+export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Element {
   const [active, setActive] = useState<"activity" | "badges" | "certs">("badges");
 
   const tabs = [
@@ -736,7 +742,9 @@ export function ProfileContent({ badges, lessons, certs }: Props) {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActive(tab.id)}
+              onClick={() => {
+                setActive(tab.id);
+              }}
               style={{
                 position: "relative",
                 padding: "14px 22px",
@@ -824,7 +832,7 @@ export function ProfileContent({ badges, lessons, certs }: Props) {
                 textTransform: "uppercase",
               }}
             >
-              // Aucun badge obtenu pour l&#39;instant
+              {"// Aucun badge obtenu pour l'instant"}
             </p>
           </div>
         ) : (

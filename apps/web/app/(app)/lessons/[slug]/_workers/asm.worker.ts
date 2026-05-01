@@ -14,7 +14,12 @@
 // Limits: 10 000 cycles, simple stack (no memory load/store)
 
 type Regs = Map<string, bigint>;
-type Flags = { ZF: boolean; SF: boolean; CF: boolean; OF: boolean };
+interface Flags {
+  ZF: boolean;
+  SF: boolean;
+  CF: boolean;
+  OF: boolean;
+}
 
 const R64 = [
   "rax",
@@ -171,7 +176,7 @@ function parse(src: string): {
 
     if (inData) {
       // varname db "string", 0
-      const m = line.match(/^(\w+)\s+db\s+"([^"]*)"/);
+      const m = /^(\w+)\s+db\s+"([^"]*)"/.exec(line);
       if (m?.[1] && m[2] !== undefined) {
         data.set(m[1], m[2].replace(/\\n/g, "\n").replace(/\\t/g, "\t"));
       }
@@ -185,7 +190,7 @@ function parse(src: string): {
     }
 
     // Label + instruction on the same line
-    const lblInstr = line.match(/^(\w+):\s+(.+)$/);
+    const lblInstr = /^(\w+):\s+(.+)$/.exec(line);
     if (lblInstr?.[1] && lblInstr[2]) {
       labels.set(lblInstr[1], instrs.length);
       line = lblInstr[2].trim();
@@ -233,6 +238,7 @@ function run(src: string): { output: string; error: string | null } {
   let cycles = 0;
 
   while (ip < instrs.length && cycles++ < 10_000) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const instr = instrs[ip]!;
     const { op, args, lineNo } = instr;
     const a0 = args[0] ?? "";
@@ -310,6 +316,7 @@ function run(src: string): { output: string; error: string | null } {
         }
         case "pop": {
           if (stack.length === 0) throw new Error("Stack underflow");
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           setReg(regs, a0, stack.pop()!);
           setReg(regs, "rsp", getReg(regs, "rsp") + 8n);
           ip++;
@@ -389,6 +396,7 @@ function run(src: string): { output: string; error: string | null } {
           break;
         }
         case "ret": {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           ip = callStack.length === 0 ? instrs.length : callStack.pop()!;
           break;
         }
@@ -417,7 +425,7 @@ function run(src: string): { output: string; error: string | null } {
     } catch (e) {
       return {
         output: out.join(""),
-        error: `Ligne ${lineNo} : ${e instanceof Error ? e.message : String(e)}`,
+        error: `Ligne ${String(lineNo)} : ${e instanceof Error ? e.message : String(e)}`,
       };
     }
   }

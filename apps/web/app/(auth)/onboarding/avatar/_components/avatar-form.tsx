@@ -163,7 +163,9 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 <button
                   key={path}
                   type="button"
-                  onClick={() => setSelected(path)}
+                  onClick={() => {
+                    setSelected(path);
+                  }}
                   style={{
                     position: "relative",
                     aspectRatio: "1 / 1",

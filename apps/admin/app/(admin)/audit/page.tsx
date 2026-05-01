@@ -121,7 +121,7 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
           }}
         >
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-            // aucune entrée dans le journal
+            {"// aucune entrée dans le journal"}
           </p>
         </div>
       ) : (
@@ -142,9 +142,10 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
             <tbody>
               {logs.map((log) => {
                 const style = getActionStyle(log.action);
-                const actor = log.actor?.username
-                  ? `@${log.actor.username}`
-                  : (log.actor?.displayName ?? log.actor?.email?.split("@")[0] ?? "system");
+                const actorRecord = log.actor;
+                const actor = actorRecord?.username
+                  ? `@${actorRecord.username}`
+                  : (actorRecord?.displayName ?? actorRecord?.email.split("@").at(0) ?? "system");
                 const initials = actor.replace("@", "").slice(0, 2).toUpperCase();
 
                 const metaStr = log.metadata ? JSON.stringify(log.metadata).slice(0, 60) : null;

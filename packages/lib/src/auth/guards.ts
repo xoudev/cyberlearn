@@ -37,7 +37,7 @@ export async function requireUser(supabase: {
   return {
     id: user.id,
     email: user.email,
-    role: user.app_metadata?.["user_role"] as string | undefined,
+    role: user.app_metadata?.user_role as string | undefined,
   };
 }
 

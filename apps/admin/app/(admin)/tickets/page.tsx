@@ -165,7 +165,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           }}
         >
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-            // aucun ticket pour l&apos;instant
+            {"// aucun ticket pour l'instant"}
           </p>
         </div>
       ) : (

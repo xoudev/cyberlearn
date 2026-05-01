@@ -158,7 +158,7 @@ export function AdminSidebar({
     >
       {/* Main nav */}
       <div style={{ padding: "18px 0 0" }}>
-        <div style={sectionLabel}>// ADMIN</div>
+        <div style={sectionLabel}>{"// ADMIN"}</div>
         <nav>
           {mainItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -211,7 +211,7 @@ export function AdminSidebar({
 
       {/* System nav */}
       <div style={{ padding: "18px 0 0" }}>
-        <div style={sectionLabel}>// SYSTÈME</div>
+        <div style={sectionLabel}>{"// SYSTÈME"}</div>
         <nav>
           {sysItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");

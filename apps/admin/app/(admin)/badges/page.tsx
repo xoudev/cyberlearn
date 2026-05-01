@@ -130,7 +130,7 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
           }}
         >
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-            // aucun badge défini
+            {"// aucun badge défini"}
           </p>
         </div>
       ) : (

@@ -5,7 +5,7 @@ import { prisma, notificationRepository } from "@cyberlearn/db";
 // Sends REVIEW_REMINDER notifications to users with lessons due today.
 export async function GET(request: Request): Promise<NextResponse> {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env["CRON_SECRET"] ?? ""}`) {
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET ?? ""}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

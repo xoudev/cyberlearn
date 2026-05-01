@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useActionState, useState, useTransition } from "react";
+import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { updateProfileAction, type UpdateProfileState } from "./_actions/profile-actions";
 
@@ -198,7 +198,9 @@ function SegToggle<T extends string>({
         <button
           key={opt.value}
           type="button"
-          onClick={() => onChange(opt.value)}
+          onClick={() => {
+            onChange(opt.value);
+          }}
           style={{
             background: value === opt.value ? "rgba(10,255,212,0.08)" : "transparent",
             border: 0,
@@ -324,7 +326,7 @@ export default function ProfileEditPage(): React.ReactElement {
             margin: "0 0 36px",
           }}
         >
-          <span style={{ color: "#44406B" }}>// </span>session sécurisée · modifications locales
+          <span style={{ color: "#44406B" }}>{"// "}</span>session sécurisée · modifications locales
         </p>
 
         {/* Global error */}
@@ -389,7 +391,8 @@ export default function ProfileEditPage(): React.ReactElement {
                 padding: "0 8px",
               }}
             >
-              // IDENTITY.CONFIG · <b style={{ color: "#0AFFD4", fontWeight: 500 }}>EDIT</b>
+              {"// IDENTITY.CONFIG · "}
+              <b style={{ color: "#0AFFD4", fontWeight: 500 }}>EDIT</b>
             </span>
 
             {/* NOM AFFICHÉ */}
@@ -533,7 +536,9 @@ export default function ProfileEditPage(): React.ReactElement {
                 <textarea
                   name="bio"
                   value={bio}
-                  onChange={(e) => setBio(e.target.value)}
+                  onChange={(e) => {
+                    setBio(e.target.value);
+                  }}
                   maxLength={MAX_BIO + 50}
                   placeholder="Parle de toi en quelques lignes…"
                   rows={4}
@@ -644,7 +649,7 @@ export default function ProfileEditPage(): React.ReactElement {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    // actuel
+                    {"// actuel"}
                   </span>
                 </div>
 
@@ -661,7 +666,9 @@ export default function ProfileEditPage(): React.ReactElement {
                     <button
                       key={g}
                       type="button"
-                      onClick={() => setAvatar(g)}
+                      onClick={() => {
+                        setAvatar(g);
+                      }}
                       className="pe-avopt"
                       aria-label={`Avatar ${g}`}
                       style={{

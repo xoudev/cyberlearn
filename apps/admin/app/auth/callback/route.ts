@@ -9,7 +9,7 @@ import { type NextRequest, NextResponse } from "next/server";
  * then verifies the user has the ADMIN role (injected into app_metadata
  * by the Supabase Auth Hook). Non-admin users are rejected.
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const cookieStore = await cookies();
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=no_user", origin));
   }
 
-  const role = user.app_metadata?.["user_role"] as string | undefined;
+  const role = user.app_metadata.user_role as string | undefined;
 
   if (role !== "ADMIN") {
     // Sign out the non-admin user to avoid leaving a dangling session

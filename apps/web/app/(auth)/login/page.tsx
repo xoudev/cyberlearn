@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 // ── GitHub SVG ────────────────────────────────────────────────────────────────
 function IconGitHub(): React.ReactElement {
@@ -34,7 +34,6 @@ function CornerBrackets(): React.ReactElement {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function LoginPage(): React.ReactElement {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
 
@@ -45,6 +44,7 @@ export default function LoginPage(): React.ReactElement {
 
   const supabase = createSupabaseBrowserClient();
 
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   async function handleMagicLink(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -545,7 +545,12 @@ export default function LoginPage(): React.ReactElement {
           }}
         >
           {magicLinkSent ? (
-            <SuccessState email={email} onReset={() => setMagicLinkSent(false)} />
+            <SuccessState
+              email={email}
+              onReset={() => {
+                setMagicLinkSent(false);
+              }}
+            />
           ) : (
             <AuthPanel
               email={email}
@@ -578,6 +583,7 @@ function AuthPanel({
 }: {
   email: string;
   onEmailChange: (v: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   onMagicLink: (e: React.FormEvent<HTMLFormElement>) => void;
   onGitHub: () => void;
   error: string | null;
@@ -708,7 +714,9 @@ function AuthPanel({
             id="email"
             type="email"
             value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
+            onChange={(e) => {
+              onEmailChange(e.target.value);
+            }}
             required
             autoComplete="email"
             placeholder="vous@exemple.com"

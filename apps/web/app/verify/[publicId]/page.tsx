@@ -42,7 +42,7 @@ function QrPlaceholder({ size = 80 }: { size?: number }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(10, ${cellSize}px)`,
+        gridTemplateColumns: `repeat(10, ${String(cellSize)}px)`,
         gap: 0,
         width: size,
         height: size,
@@ -138,7 +138,7 @@ export default async function CertVerifyPage({
     .replace(/(.{16})/g, "$1 · ")
     .trim()
     .slice(0, 79);
-  const certCode = `CYL-${cert.issuedAt.getFullYear()}-${String(cert.issuedAt.getMonth() + 1).padStart(2, "0")}-${cert.id.slice(0, 4).toUpperCase()}`;
+  const certCode = `CYL-${String(cert.issuedAt.getFullYear())}-${String(cert.issuedAt.getMonth() + 1).padStart(2, "0")}-${cert.id.slice(0, 4).toUpperCase()}`;
 
   return (
     <div
@@ -520,7 +520,7 @@ export default async function CertVerifyPage({
                 marginBottom: 10,
               }}
             >
-              // Décerné à
+              {"// Décerné à"}
             </div>
             <h1
               style={{
@@ -588,7 +588,11 @@ export default async function CertVerifyPage({
               {[
                 { lbl: "Délivré le", val: issuedStr, accent: false },
                 { lbl: "Score final", val: "—", accent: true },
-                { lbl: "Missions", val: `${lessonCount} / ${lessonCount}`, accent: false },
+                {
+                  lbl: "Missions",
+                  val: `${String(lessonCount)} / ${String(lessonCount)}`,
+                  accent: false,
+                },
               ].map(({ lbl, val, accent }) => (
                 <div key={lbl} style={{ background: "#0A0826", padding: "14px 18px" }}>
                   <div
@@ -719,7 +723,7 @@ export default async function CertVerifyPage({
                 letterSpacing: "0.02em",
               }}
             >
-              <b style={{ color: "#F5F5FA" }}>// REVOKE.LOG</b>
+              <b style={{ color: "#F5F5FA" }}>{"// REVOKE.LOG"}</b>
               <br />
               Révoqué le {revokedStr} — Raison :{" "}
               <span style={{ color: "#fff" }}>{cert.revokedReason}</span>.

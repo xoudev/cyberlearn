@@ -138,7 +138,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             marginBottom: 14,
           }}
         >
-          <span style={{ color: "#44406B" }}>// </span>
+          <span style={{ color: "#44406B" }}>{"// "}</span>
           SESSION · <b style={{ color: "#0AFFD4", fontWeight: 500 }}>SM-2</b> · COURBE D&apos;OUBLI
         </div>
 
@@ -544,7 +544,11 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
 
 // ── Upcoming list ─────────────────────────────────────────────────────────────
 
-type Schedule = { id: string; nextReviewAt: Date; lesson: { title: string; difficulty: string } };
+interface Schedule {
+  id: string;
+  nextReviewAt: Date;
+  lesson: { title: string; difficulty: string };
+}
 
 function UpcomingSection({ schedules, now }: { schedules: Schedule[]; now: Date }) {
   return (
@@ -559,7 +563,7 @@ function UpcomingSection({ schedules, now }: { schedules: Schedule[]; now: Date 
           marginBottom: 14,
         }}
       >
-        <span style={{ color: "#44406B" }}>// </span>PROCHAINES RÉVISIONS
+        <span style={{ color: "#44406B" }}>{"// "}</span>PROCHAINES RÉVISIONS
       </div>
       <div style={{ border: "1px solid #2A2560", overflow: "hidden" }}>
         {schedules.map((s, i) => {

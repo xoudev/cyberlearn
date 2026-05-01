@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deletePathAction } from "../_actions/path-actions";
 
@@ -35,7 +35,7 @@ export function DeletePathButton({
   pathTitle: string;
   disabled?: boolean;
   disabledReason?: string;
-}) {
+}): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,7 @@ export function DeletePathButton({
       <button
         type="button"
         title={disabled ? (disabledReason ?? "Action non disponible") : "Supprimer le parcours"}
-        disabled={disabled || isPending}
+        disabled={(disabled ?? false) || isPending}
         onClick={() => {
           handleDelete();
         }}
@@ -85,7 +85,7 @@ export function DeletePathButton({
           border: `1px solid ${hov && !disabled ? "rgba(255,71,87,0.3)" : "transparent"}`,
           borderRadius: 4,
           color: disabled ? "#2A2560" : hov ? "#FF4757" : "#44406B",
-          cursor: disabled || isPending ? "not-allowed" : "pointer",
+          cursor: (disabled ?? false) || isPending ? "not-allowed" : "pointer",
           transition: "all 120ms ease",
           flexShrink: 0,
         }}
@@ -129,7 +129,9 @@ export function DeletePathButton({
           {error}
           <button
             type="button"
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+            }}
             style={{
               marginLeft: 8,
               color: "#44406B",

@@ -302,7 +302,8 @@ function PathCard({ path }: { path: SerializedPath }) {
             letterSpacing: "0.14em",
           }}
         >
-          // <b style={{ color: cat.color, fontWeight: 700 }}>{path.refCode}</b>
+          {"// "}
+          <b style={{ color: cat.color, fontWeight: 700 }}>{path.refCode}</b>
         </div>
         {/* Cert icon */}
         {path.hasCert && (
@@ -449,7 +450,7 @@ function PathCard({ path }: { path: SerializedPath }) {
                 left: 0,
                 top: 0,
                 bottom: 0,
-                width: `${pct}%`,
+                width: `${String(pct)}%`,
                 background:
                   path.status === "done" ? "#0AFFD4" : "linear-gradient(90deg, #0024FF, #0AFFD4)",
                 boxShadow: "0 0 10px rgba(10,255,212,0.5)",
@@ -774,7 +775,13 @@ export function PathsCollection({
               { id: "NETWORK", label: "Réseau", color: "#0AFFD4" },
             ] as const
           ).map(({ id, label, color }) => (
-            <button key={id} onClick={() => setFilter(id)} style={pillStyle(filter === id, color)}>
+            <button
+              key={id}
+              onClick={() => {
+                setFilter(id);
+              }}
+              style={pillStyle(filter === id, color)}
+            >
               <span
                 style={{
                   width: 7,
@@ -823,7 +830,9 @@ export function PathsCollection({
             type="text"
             placeholder="/ chercher un parcours..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
             style={{
               width: "100%",
               height: "100%",

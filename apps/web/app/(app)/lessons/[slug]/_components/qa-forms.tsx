@@ -13,13 +13,14 @@ import {
 export function PostQuestionForm({
   lessonId,
   lessonSlug,
-}: { lessonId: string; lessonSlug: string }) {
+}: { lessonId: string; lessonSlug: string }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -39,7 +40,9 @@ export function PostQuestionForm({
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+        }}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -94,12 +97,14 @@ export function PostQuestionForm({
           marginBottom: 4,
         }}
       >
-        // Nouvelle question
+        {"// Nouvelle question"}
       </div>
 
       <input
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e) => {
+          setTitle(e.target.value);
+        }}
         placeholder="Titre de ta question (10–200 caractères)"
         maxLength={200}
         required
@@ -107,7 +112,9 @@ export function PostQuestionForm({
       />
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e) => {
+          setContent(e.target.value);
+        }}
         placeholder="Décris ta question en détail (20–5000 caractères)"
         maxLength={5000}
         required
@@ -125,7 +132,13 @@ export function PostQuestionForm({
         <button type="submit" disabled={isPending} style={BTN_PRIMARY}>
           {isPending ? "Envoi…" : "Publier la question"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} style={BTN_GHOST}>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+          }}
+          style={BTN_GHOST}
+        >
           Annuler
         </button>
       </div>
@@ -138,12 +151,13 @@ export function PostQuestionForm({
 export function PostAnswerForm({
   questionId,
   lessonSlug,
-}: { questionId: string; lessonSlug: string }) {
+}: { questionId: string; lessonSlug: string }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -162,7 +176,9 @@ export function PostAnswerForm({
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+        }}
         style={{ ...BTN_GHOST, fontSize: 10, padding: "6px 12px" }}
       >
         Répondre
@@ -177,7 +193,9 @@ export function PostAnswerForm({
     >
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e) => {
+          setContent(e.target.value);
+        }}
         placeholder="Ta réponse (10–5000 caractères)"
         maxLength={5000}
         required
@@ -193,7 +211,13 @@ export function PostAnswerForm({
         <button type="submit" disabled={isPending} style={BTN_PRIMARY}>
           {isPending ? "Envoi…" : "Publier"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} style={BTN_GHOST}>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+          }}
+          style={BTN_GHOST}
+        >
           Annuler
         </button>
       </div>
@@ -207,7 +231,7 @@ export function AcceptAnswerButton({
   answerId,
   lessonSlug,
   isAccepted,
-}: { answerId: string; lessonSlug: string; isAccepted: boolean }) {
+}: { answerId: string; lessonSlug: string; isAccepted: boolean }): React.JSX.Element {
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -258,7 +282,7 @@ export function UpvoteButton({
   answerId,
   lessonSlug,
   upvotes,
-}: { answerId: string; lessonSlug: string; upvotes: number }) {
+}: { answerId: string; lessonSlug: string; upvotes: number }): React.JSX.Element {
   const [count, setCount] = useState(upvotes);
   const [voted, setVoted] = useState(false);
   const [isPending, startTransition] = useTransition();

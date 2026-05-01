@@ -42,11 +42,13 @@ export function ImportClient(): React.ReactElement {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file) processFile(file);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processFile(file);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function processFile(file: File) {
@@ -116,7 +118,9 @@ export function ImportClient(): React.ReactElement {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Drop zone */}
         <div
-          onDragOver={(e) => e.preventDefault()}
+          onDragOver={(e) => {
+            e.preventDefault();
+          }}
           onDrop={handleFileDrop}
           style={{
             border: "2px dashed #2A2560",
@@ -229,7 +233,9 @@ export function ImportClient(): React.ReactElement {
             {importedId && (
               <button
                 type="button"
-                onClick={() => router.push(`/lessons/${importedId}/edit`)}
+                onClick={() => {
+                  router.push(`/lessons/${importedId}/edit`);
+                }}
                 style={{
                   marginTop: 10,
                   fontFamily: "var(--font-mono)",
@@ -243,7 +249,7 @@ export function ImportClient(): React.ReactElement {
                   cursor: "pointer",
                 }}
               >
-                Ouvrir l'éditeur →
+                Ouvrir l&apos;éditeur →
               </button>
             )}
           </div>
@@ -419,7 +425,7 @@ export function ImportClient(): React.ReactElement {
                 paddingTop: 20,
               }}
             >
-              Validez le fichier pour voir l'aperçu…
+              Validez le fichier pour voir l&apos;aperçu…
             </div>
           )}
         </div>
@@ -585,7 +591,7 @@ function MetadataPreview({
           marginBottom: 4,
         }}
       >
-        // Métadonnées extraites
+        {"// Métadonnées extraites"}
       </div>
       {rows.map(([key, value]) => (
         <div key={key}>

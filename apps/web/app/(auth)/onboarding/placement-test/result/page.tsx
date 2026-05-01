@@ -103,7 +103,7 @@ function ScoreBar({
         <div
           style={{
             height: "100%",
-            width: `${score}%`,
+            width: `${String(score)}%`,
             background: `linear-gradient(90deg, ${color}99, ${color})`,
             boxShadow: `0 0 12px ${color}88`,
             transition: "width 700ms ease-out",
@@ -118,10 +118,10 @@ export default async function PlacementResultPage({
   searchParams,
 }: ResultPageProps): Promise<React.ReactElement> {
   const params = await searchParams;
-  const devScore = Math.min(100, Math.max(0, Number(params["dev"] ?? 0)));
-  const cyberSec = Math.min(100, Math.max(0, Number(params["cybersec"] ?? 0)));
-  const network = Math.min(100, Math.max(0, Number(params["network"] ?? 0)));
-  const recPath = typeof params["path"] === "string" ? params["path"] : null;
+  const devScore = Math.min(100, Math.max(0, Number(params.dev ?? 0)));
+  const cyberSec = Math.min(100, Math.max(0, Number(params.cybersec ?? 0)));
+  const network = Math.min(100, Math.max(0, Number(params.network ?? 0)));
+  const recPath = typeof params.path === "string" ? params.path : null;
 
   const scores = [
     { label: "Développement", score: devScore, color: CAT_COLORS.DEV ?? "#6E8BFF" },
