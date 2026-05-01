@@ -1,10 +1,10 @@
 "use server";
 
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdminAction } from "@/lib/auth";
 
 const createLessonSchema = z.object({
   refCode: z.string().regex(/^CL-LSN-\d{3}-V\d{2}$/, "Format: CL-LSN-001-V01"),
@@ -33,19 +33,7 @@ export async function createLessonAction(
   _prev: CreateLessonState,
   formData: FormData,
 ): Promise<CreateLessonState> {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound();
-
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role = jwtRole;
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
-    role = dbUser?.role ?? undefined;
-  }
-  if (role !== "ADMIN") notFound();
+  const admin = await requireAdminAction();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = createLessonSchema.safeParse(raw);
@@ -65,7 +53,7 @@ export async function createLessonAction(
       data: {
         ...data,
         coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
-        authorId: user.id,
+        authorId: admin.id,
         status: publishNow ? "PUBLISHED" : "DRAFT",
         publishedAt: publishNow ? new Date() : null,
       },
@@ -73,7 +61,7 @@ export async function createLessonAction(
 
     await prisma.auditLog.create({
       data: {
-        actorId: user.id,
+        actorId: admin.id,
         action: "lesson.create",
         targetType: "Lesson",
         targetId: lesson.id,
@@ -109,19 +97,7 @@ export async function deleteLessonAction(
   _prev: DeleteLessonState,
   formData: FormData,
 ): Promise<DeleteLessonState> {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound();
-
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role = jwtRole;
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
-    role = dbUser?.role ?? undefined;
-  }
-  if (role !== "ADMIN") notFound();
+  const admin = await requireAdminAction();
 
   const parsed = deleteLessonSchema.safeParse({ lessonId: formData.get("lessonId") });
   if (!parsed.success) return { error: "Identifiant invalide." };
@@ -152,22 +128,19 @@ export async function deleteLessonAction(
   }
 
   try {
-    // All child relations have onDelete: Cascade — a single delete suffices.
     await prisma.lesson.delete({ where: { id: lessonId } });
 
     await prisma.auditLog.create({
       data: {
-        actorId: user.id,
+        actorId: admin.id,
         action: "lesson.delete",
         targetType: "Lesson",
         targetId: lessonId,
         metadata: { title: lesson.title, status: lesson.status },
       },
     });
-  } catch (e) {
-    return {
-      error: `Erreur lors de la suppression : ${e instanceof Error ? e.message : "inconnue"}`,
-    };
+  } catch {
+    return { error: "Une erreur est survenue lors de la suppression." };
   }
 
   revalidatePath("/lessons");

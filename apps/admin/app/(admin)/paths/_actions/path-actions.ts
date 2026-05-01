@@ -1,10 +1,10 @@
 "use server";
 
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdminAction } from "@/lib/auth";
 
 const createPathSchema = z.object({
   refCode: z.string().regex(/^CL-PATH-\d{3}-V\d{2}$/, "Format: CL-PATH-001-V01"),
@@ -31,19 +31,7 @@ export async function createPathAction(
   _prev: CreatePathState,
   formData: FormData,
 ): Promise<CreatePathState> {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound();
-
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role = jwtRole;
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
-    role = dbUser?.role ?? undefined;
-  }
-  if (role !== "ADMIN") notFound();
+  const admin = await requireAdminAction();
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = createPathSchema.safeParse(raw);
@@ -58,7 +46,7 @@ export async function createPathAction(
 
   const { coverImageUrl, publishNow, ...data } = parsed.data;
 
-  // Parse ordered lesson IDs from the hidden JSON input
+  // Parse ordered lesson IDs from the hidden JSON input — cap at 500 to prevent oversized transactions
   const lessonIdsRaw = formData.get("lessonIds");
   let orderedLessonIds: string[] = [];
   if (typeof lessonIdsRaw === "string" && lessonIdsRaw.length > 2) {
@@ -67,7 +55,9 @@ export async function createPathAction(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const parsed = JSON.parse(lessonIdsRaw);
       if (Array.isArray(parsed)) {
-        orderedLessonIds = (parsed as unknown[]).filter((v): v is string => typeof v === "string");
+        orderedLessonIds = (parsed as unknown[])
+          .filter((v): v is string => typeof v === "string")
+          .slice(0, 500);
       }
     } catch {
       /* ignore parse errors */
@@ -97,7 +87,7 @@ export async function createPathAction(
 
     await prisma.auditLog.create({
       data: {
-        actorId: user.id,
+        actorId: admin.id,
         action: "path.create",
         targetType: "Path",
         targetId: path.id,
@@ -129,19 +119,7 @@ export async function deletePathAction(
   _prev: DeletePathState,
   formData: FormData,
 ): Promise<DeletePathState> {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound();
-
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role = jwtRole;
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
-    role = dbUser?.role ?? undefined;
-  }
-  if (role !== "ADMIN") notFound();
+  const admin = await requireAdminAction();
 
   const pathId = formData.get("pathId");
   if (typeof pathId !== "string" || !pathId) return { error: "Identifiant invalide." };
@@ -163,17 +141,15 @@ export async function deletePathAction(
 
     await prisma.auditLog.create({
       data: {
-        actorId: user.id,
+        actorId: admin.id,
         action: "path.delete",
         targetType: "Path",
         targetId: parsed.data,
         metadata: { title: path.title, status: path.status },
       },
     });
-  } catch (e) {
-    return {
-      error: `Erreur lors de la suppression : ${e instanceof Error ? e.message : "inconnue"}`,
-    };
+  } catch {
+    return { error: "Une erreur est survenue lors de la suppression." };
   }
 
   revalidatePath("/paths");

@@ -85,7 +85,6 @@ exports.lessonRepository = {
         xpReward: row.xpReward,
         coverImageUrl: row.coverImageUrl,
         refCode: row.refCode,
-        // SAFETY: unique constraint ensures at most one progress row per user+lesson
         progressStatus: row.progress[0]?.status ?? null,
       })),
     };

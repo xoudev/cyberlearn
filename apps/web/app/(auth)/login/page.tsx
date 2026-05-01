@@ -35,7 +35,9 @@ function CornerBrackets(): React.ReactElement {
 // ── Page ──────────────────────────────────────────────────────────────────────
 function LoginContent(): React.ReactElement {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
+  const rawRedirect = searchParams.get("redirectTo") ?? "/dashboard";
+  // Client-side sanitization — allow only simple relative paths (server validates again in callback)
+  const redirectTo = /^\/[a-zA-Z0-9/_-]*$/.test(rawRedirect) ? rawRedirect : "/dashboard";
 
   const [email, setEmail] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);

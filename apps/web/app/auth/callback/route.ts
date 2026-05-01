@@ -2,6 +2,7 @@ import { prisma } from "@cyberlearn/db";
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { checkAuthRateLimit } from "@/lib/rate-limit";
 
 /**
  * Supabase Auth callback handler.
@@ -21,6 +22,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const code = searchParams.get("code");
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
   const cookieStore = await cookies();
+
+  const allowed = await checkAuthRateLimit(request);
+  if (!allowed) {
+    return NextResponse.redirect(new URL("/login?error=rate_limited", origin));
+  }
 
   if (!code) {
     // Missing code — redirect to login with an error
@@ -117,6 +123,6 @@ function extractAvatarUrl(user: { user_metadata?: Record<string, unknown> }): st
 
 /** Ensures the redirect target is a relative path (no open redirect). */
 function isSafeRedirect(url: string): boolean {
-  // Must be a relative path starting with /
-  return url.startsWith("/") && !url.startsWith("//");
+  // Must start with / but not // (protocol-relative) or /\ (backslash bypass)
+  return url.startsWith("/") && !url.startsWith("//") && !url.includes("\\");
 }

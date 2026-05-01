@@ -8,7 +8,7 @@ function createPrismaClient() {
   });
 }
 exports.prisma = globalThis.__prisma ?? createPrismaClient();
-if (process.env["NODE_ENV"] !== "production") {
+if (process.env.NODE_ENV !== "production") {
   globalThis.__prisma = exports.prisma;
 }
 //# sourceMappingURL=prisma.js.map

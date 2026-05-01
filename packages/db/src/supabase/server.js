@@ -23,16 +23,15 @@ const ssr_1 = require("@supabase/ssr");
  * in apps/web/lib/env.ts and apps/admin/lib/env.ts at startup.
  */
 function createSupabaseServerClient(cookieMethods) {
-  const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
-  const supabaseAnonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. " +
         "Ensure your .env.local is configured and env validation passed.",
     );
   }
-  return (0, ssr_1.createServerClient)(supabaseUrl, supabaseAnonKey, {
-    cookies: cookieMethods,
-  });
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
+  return (0, ssr_1.createServerClient)(supabaseUrl, supabaseAnonKey, { cookies: cookieMethods });
 }
 //# sourceMappingURL=server.js.map

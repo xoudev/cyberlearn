@@ -18,7 +18,7 @@ import { CertificateDocument } from "@/lib/pdf/certificate-template";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cyberlearn.app";
 const BUCKET = "certificates";
 
-export async function generateCertificate(userId: string, pathId: string): Promise<string | null> {
+async function generateCertificate(userId: string, pathId: string): Promise<string | null> {
   const [user, path] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } }),
     prisma.path.findUnique({ where: { id: pathId }, select: { title: true } }),
