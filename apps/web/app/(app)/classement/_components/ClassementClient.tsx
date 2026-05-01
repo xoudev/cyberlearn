@@ -94,8 +94,8 @@ function HexAvatar({ mono, grad, size = 36 }: { mono: string; grad: string; size
         style={{
           position: "relative",
           zIndex: 1,
-          width: `calc(100% - ${Math.round(s * 0.14)}px)`,
-          height: `calc(100% - ${Math.round(s * 0.14)}px)`,
+          width: `calc(100% - ${String(Math.round(s * 0.14))}px)`,
+          height: `calc(100% - ${String(Math.round(s * 0.14))}px)`,
           display: "grid",
           placeItems: "center",
           clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
@@ -133,7 +133,8 @@ function PodiumCard({
 }: { entry: LeaderboardEntry; rank: number; isMe: boolean }) {
   const rk = isMe
     ? { color: "#0AFFD4", grad: "linear-gradient(135deg, #5FFFE6 0%, #0AFFD4 50%, #0024FF 100%)" }
-    : (RK_COLORS[rank] ?? RK_COLORS[3]!);
+    : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      (RK_COLORS[rank] ?? RK_COLORS[3]!);
   const mono = getMonogram(entry.displayName, entry.username);
   const tier = getTier(entry.level);
   const isGold = rank === 1 && !isMe;
@@ -541,7 +542,8 @@ function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
   const mono = getMonogram(entry.displayName, entry.username);
   const tier = getTier(entry.level);
   const tc = getTierClass(entry.level);
-  const tierStyle = TIER_COLORS[tc] ?? TIER_COLORS["novice"]!;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const tierStyle = TIER_COLORS[tc] ?? TIER_COLORS.novice!;
 
   const rkColors = RK_COLORS[entry.rank];
   const rankGrad = isMe
@@ -750,10 +752,14 @@ interface Props {
   currentEntry: LeaderboardEntry | null;
 }
 
-export function ClassementClient({ entries, userRank, currentUserId, currentEntry }: Props) {
+export function ClassementClient({
+  entries,
+  userRank,
+  currentUserId,
+  currentEntry,
+}: Props): React.JSX.Element {
   const [filter, setFilter] = useState<"global" | "mois" | "sem">("global");
 
-  const top3 = entries.slice(0, 3);
   // Podium order: silver (rank 2), gold (rank 1), bronze (rank 3)
   const podiumOrder = [
     entries.find((e) => e.rank === 2),
@@ -762,7 +768,6 @@ export function ClassementClient({ entries, userRank, currentUserId, currentEntr
   ].filter(Boolean) as LeaderboardEntry[];
 
   const top12 = entries.filter((e) => e.rank <= 12);
-  const midCount = Math.max(0, userRank - 12 - 3);
   // Rows around the current user (2 above, me, 2 below)
   const nearMeIdx = entries.findIndex((e) => e.userId === currentUserId);
   const contextRows =
@@ -850,7 +855,7 @@ export function ClassementClient({ entries, userRank, currentUserId, currentEntr
                 marginBottom: 14,
               }}
             >
-              <span style={{ color: "#44406B" }}>// </span>
+              <span style={{ color: "#44406B" }}>{"// "}</span>
               SAISON · 04 · 2026 · <b style={{ color: "#0AFFD4", fontWeight: 500 }}>LIVE</b>
             </span>
             <h1
@@ -881,7 +886,9 @@ export function ClassementClient({ entries, userRank, currentUserId, currentEntr
             {FILTERS.map((f) => (
               <button
                 key={f.id}
-                onClick={() => setFilter(f.id)}
+                onClick={() => {
+                  setFilter(f.id);
+                }}
                 style={{
                   background: filter === f.id ? "rgba(10,255,212,0.08)" : "transparent",
                   border: 0,
@@ -1005,7 +1012,7 @@ export function ClassementClient({ entries, userRank, currentUserId, currentEntr
                 margin: 0,
               }}
             >
-              <span style={{ color: "#6B6890" }}>// </span>JOUEURS · TOP MONDIAL
+              <span style={{ color: "#6B6890" }}>{"// "}</span>JOUEURS · TOP MONDIAL
             </h3>
             <span
               style={{

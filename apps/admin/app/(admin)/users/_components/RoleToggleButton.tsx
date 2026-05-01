@@ -21,7 +21,7 @@ export function RoleToggleButton({
     const newRole = isAdmin ? "STUDENT" : "ADMIN";
     // SAFETY: newRole is always a valid literal
     startTransition(async () => {
-      await updateUserRoleAction(userId, newRole as "STUDENT" | "ADMIN");
+      await updateUserRoleAction(userId, newRole);
     });
   }
 

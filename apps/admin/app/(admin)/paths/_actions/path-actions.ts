@@ -22,10 +22,10 @@ const createPathSchema = z.object({
   publishNow: z.coerce.boolean().optional(),
 });
 
-export type CreatePathState = {
+export interface CreatePathState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
-};
+}
 
 export async function createPathAction(
   _prev: CreatePathState,
@@ -37,7 +37,7 @@ export async function createPathAction(
   } = await supabase.auth.getUser();
   if (!user) notFound();
 
-  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  const jwtRole = user.app_metadata.user_role as string | undefined;
   let role = jwtRole;
   if (!role) {
     const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
@@ -51,7 +51,7 @@ export async function createPathAction(
   if (!parsed.success) {
     const fieldErrors: CreatePathState["fieldErrors"] = {};
     for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
-      fieldErrors[field] = errs?.[0];
+      fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
   }
@@ -78,7 +78,7 @@ export async function createPathAction(
     const path = await prisma.path.create({
       data: {
         ...data,
-        coverImageUrl: coverImageUrl || null,
+        coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
         status: publishNow ? "PUBLISHED" : "DRAFT",
         publishedAt: publishNow ? new Date() : null,
         ...(orderedLessonIds.length > 0
@@ -120,10 +120,10 @@ export async function createPathAction(
 
 // ── Delete ──────────────────────────────────────────────────────────────────────
 
-export type DeletePathState = {
+export interface DeletePathState {
   error?: string;
   success?: boolean;
-};
+}
 
 export async function deletePathAction(
   _prev: DeletePathState,
@@ -135,7 +135,7 @@ export async function deletePathAction(
   } = await supabase.auth.getUser();
   if (!user) notFound();
 
-  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  const jwtRole = user.app_metadata.user_role as string | undefined;
   let role = jwtRole;
   if (!role) {
     const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });

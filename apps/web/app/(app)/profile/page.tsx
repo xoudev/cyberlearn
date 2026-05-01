@@ -233,7 +233,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   // Highest rarity badge for avatar ring
   const earnedRarities = user.badges.map((ub) => ub.badge.rarity as string);
   // SAFETY: topRarity always returns one of the RARITY_ORDER values
-  const avatarRarity = topRarity(earnedRarities) as Rarity;
+  const avatarRarity = topRarity(earnedRarities);
 
   // Serialize badges (drop Date objects)
   const serializedBadges: SerializedBadge[] = user.badges.map((ub) => ({
@@ -637,7 +637,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             padding: "0 8px",
           }}
         >
-          // SYS.XP
+          {"// SYS.XP"}
         </span>
 
         {/* Level number */}

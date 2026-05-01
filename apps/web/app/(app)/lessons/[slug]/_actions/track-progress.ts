@@ -11,7 +11,7 @@ export interface CompleteLessonResult {
   xpGained: number;
   leveledUp: boolean;
   newLevel: number;
-  newBadges: Array<{ name: string; rarity: string }>;
+  newBadges: { name: string; rarity: string }[];
 }
 
 const EMPTY_RESULT: CompleteLessonResult = {

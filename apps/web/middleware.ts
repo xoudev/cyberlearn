@@ -65,7 +65,7 @@ function isOnboardingRoute(pathname: string): boolean {
 
 // ─── Middleware ────────────────────────────────────────────────────────────
 
-export async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   // Block /dev/* in production — return 404, not 403 (don't reveal the route exists)
@@ -78,8 +78,8 @@ export async function middleware(request: NextRequest) {
   // Always apply security headers
   let response = NextResponse.next({ request });
 
-  const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
-  const supabaseAnonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // If env vars aren't set yet (local dev without .env.local), skip auth checks
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -100,6 +100,7 @@ export async function middleware(request: NextRequest) {
       );
     },
   };
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: cookieMethods,
   });
@@ -125,7 +126,7 @@ export async function middleware(request: NextRequest) {
     // Authenticated user — check onboarding completion
     // We use app_metadata.onboarding_complete set by the callback route
     // to avoid a DB query on every request.
-    const isOnboardingComplete = user.app_metadata?.["onboarding_complete"] === true;
+    const isOnboardingComplete = user.app_metadata.onboarding_complete === true;
 
     if (!isOnboardingComplete && !isOnboardingRoute(pathname) && !isPublicRoute(pathname)) {
       const onboardingUrl = new URL("/onboarding", request.url);

@@ -617,7 +617,7 @@ export default function HomePage(): React.ReactElement {
                           marginBottom: 10,
                         }}
                       >
-                        // CYL-CERT · VERIFIED
+                        {"// CYL-CERT · VERIFIED"}
                       </div>
                       <div
                         style={{
@@ -987,7 +987,7 @@ export default function HomePage(): React.ReactElement {
                 marginBottom: 24,
               }}
             >
-              // READY · PLAYER · ONE
+              {"// READY · PLAYER · ONE"}
             </div>
             <h2
               style={{

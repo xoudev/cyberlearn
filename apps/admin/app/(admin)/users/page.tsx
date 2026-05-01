@@ -123,7 +123,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
           }}
         >
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-            // aucun utilisateur enregistré
+            {"// aucun utilisateur enregistré"}
           </p>
         </div>
       ) : (
@@ -150,9 +150,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
             <tbody>
               {users.map((u) => {
                 const isAdmin = u.role === "ADMIN";
-                const handle = u.username
-                  ? `@${u.username}`
-                  : (u.displayName ?? u.email.split("@")[0] ?? "—");
+                const handle = u.username ? `@${u.username}` : u.displayName || u.email;
                 const initials = handle.replace("@", "").slice(0, 2).toUpperCase();
 
                 return (

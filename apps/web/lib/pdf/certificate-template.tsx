@@ -161,7 +161,7 @@ export function CertificateDocument({
   sha256Hash,
   qrCodeDataUrl,
   appUrl,
-}: CertificateTemplateProps) {
+}: CertificateTemplateProps): React.ReactElement {
   const dateStr = issuedAt.toLocaleDateString("fr-FR", {
     year: "numeric",
     month: "long",
@@ -187,7 +187,7 @@ export function CertificateDocument({
 
         {/* Body */}
         <View style={styles.body}>
-          <Text style={styles.label}>// certificat d&apos;achèvement</Text>
+          <Text style={styles.label}>{"// certificat d'achèvement"}</Text>
           <Text style={styles.certTitle}>{pathTitle}</Text>
           <View style={styles.accentLine} />
 

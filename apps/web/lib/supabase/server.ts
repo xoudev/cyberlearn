@@ -12,6 +12,7 @@ import type { CookieOptions } from "@supabase/ssr";
  * const { data: { user } } = await supabase.auth.getUser();
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export async function getSupabaseServerClient() {
   const cookieStore = await cookies();
 

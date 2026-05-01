@@ -27,7 +27,7 @@ export async function completeOnboarding(
   const parsed = onboardingSchema.safeParse({
     username: formData.get("username"),
     displayName: formData.get("displayName"),
-    bio: formData.get("bio") || undefined,
+    bio: formData.get("bio") ?? undefined,
   });
 
   if (!parsed.success) {

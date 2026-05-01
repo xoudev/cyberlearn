@@ -258,7 +258,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
             },
             {
               label: "Streak actuel",
-              value: `${user.streakDays} j`,
+              value: `${String(user.streakDays)} j`,
               color: user.streakDays > 0 ? "#FFB020" : "#6B6890",
             },
           ].map(({ label, value, color }) => (
@@ -384,7 +384,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {user.lessonProgress.map((lp, i) => {
-                const catColor = CAT_COLOR[lp.lesson.category as Category] ?? "#6B6890";
+                const catColor = CAT_COLOR[lp.lesson.category] ?? "#6B6890";
                 const dateStr = lp.completedAt
                   ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
                       lp.completedAt,

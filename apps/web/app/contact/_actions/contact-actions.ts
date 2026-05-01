@@ -11,11 +11,11 @@ const contactSchema = z.object({
   email: z.string().email(),
 });
 
-export type ContactFormState = {
+export interface ContactFormState {
   success?: boolean;
   error?: string;
   fieldErrors?: Partial<Record<keyof z.infer<typeof contactSchema>, string>>;
-};
+}
 
 export async function submitContactAction(
   _prev: ContactFormState,
@@ -33,7 +33,7 @@ export async function submitContactAction(
     const fieldErrors: ContactFormState["fieldErrors"] = {};
     for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
       const key = field as keyof typeof fieldErrors;
-      if (errs?.[0]) fieldErrors[key] = errs[0];
+      if (errs[0]) fieldErrors[key] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
   }

@@ -9,7 +9,7 @@ import baseConfig from "./base.js";
  * ESLint config for Next.js apps.
  * Extends base config with React, React Hooks, and Next.js specific rules.
  */
-export default tseslint.config(...baseConfig, {
+export default tseslint.config({ ignores: [".next/**"] }, ...baseConfig, {
   plugins: {
     react: reactPlugin,
     "react-hooks": reactHooksPlugin,

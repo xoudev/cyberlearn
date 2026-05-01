@@ -8,6 +8,20 @@ import tseslint from "typescript-eslint";
  * Biome handles formatting; ESLint focuses exclusively on code quality.
  */
 export default tseslint.config(
+  {
+    // Ignore compiled output (JS/d.ts/maps emitted by tsc alongside source files)
+    // and config files that are not part of any tsconfig project.
+    ignores: [
+      "**/*.js",
+      "**/*.cjs",
+      "**/*.mjs",
+      "**/*.d.ts",
+      "**/*.d.ts.map",
+      "**/*.js.map",
+      "**/vitest.config.ts",
+      "**/eslint.config.js",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,

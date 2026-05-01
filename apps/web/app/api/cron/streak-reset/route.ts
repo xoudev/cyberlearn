@@ -5,7 +5,7 @@ import { prisma } from "@cyberlearn/db";
 // Resets streakDays to 0 for users who missed yesterday — their streak is broken.
 export async function GET(request: Request): Promise<NextResponse> {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env["CRON_SECRET"] ?? ""}`) {
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET ?? ""}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

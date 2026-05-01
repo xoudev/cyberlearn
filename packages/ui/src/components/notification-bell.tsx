@@ -25,8 +25,12 @@ export function NotificationBell({ unreadCount = 0, onClick, className }: Notifi
     <button
       type="button"
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+        setHovered(true);
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+      }}
       className={cn(
         "relative flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-150",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
@@ -40,7 +44,7 @@ export function NotificationBell({ unreadCount = 0, onClick, className }: Notifi
       }}
       aria-label={
         hasUnread
-          ? `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`
+          ? `${String(unreadCount)} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`
           : "Notifications"
       }
     >

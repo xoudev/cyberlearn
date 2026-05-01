@@ -16,7 +16,9 @@ export function SidebarWrapper({ children }: SidebarWrapperProps): React.ReactEl
       {openMobile && (
         <div
           aria-hidden="true"
-          onClick={() => setOpenMobile(false)}
+          onClick={() => {
+            setOpenMobile(false);
+          }}
           className="sidebar-mobile-backdrop"
         />
       )}

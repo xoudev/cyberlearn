@@ -374,7 +374,9 @@ export function OnboardingForm({
                 rows={3}
                 maxLength={BIO_MAX}
                 placeholder="Qui es-tu ? Qu'est-ce qui t'a amené ici ?"
-                onChange={(e) => setBioLen(e.target.value.length)}
+                onChange={(e) => {
+                  setBioLen(e.target.value.length);
+                }}
                 style={{
                   padding: "12px 14px",
                   background: "transparent",

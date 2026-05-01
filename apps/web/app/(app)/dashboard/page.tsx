@@ -1626,7 +1626,7 @@ function StatsBig({
 
   return (
     <div className="dash-stats-grid">
-      {items.map((it, i) => (
+      {items.map((it) => (
         <div
           key={it.label}
           className="dash-stats-cell"
@@ -1702,7 +1702,7 @@ function StatsBig({
 
 // ── Paths grid ────────────────────────────────────────────────────────────────
 
-type FeaturedPath = {
+interface FeaturedPath {
   id: string;
   slug: string;
   title: string;
@@ -1711,7 +1711,7 @@ type FeaturedPath = {
   difficulty: string;
   estimatedHours: number;
   _count: { lessons: number; progress: number };
-};
+}
 
 const DIFF_COLORS_DASH: Record<string, string> = {
   BEGINNER: "#0AFFD4",
@@ -1737,7 +1737,7 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
         }}
       >
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-          // aucun parcours publié pour le moment
+          {"// aucun parcours publié pour le moment"}
         </p>
       </div>
     );
@@ -1746,7 +1746,6 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
   const [primary, secondary] = paths;
   if (!primary) return null;
 
-  const primDiffColor = DIFF_COLORS_DASH[primary.difficulty] ?? "#6B6890";
   const primCat = CAT_LABELS_DASH[primary.category] ?? primary.category;
 
   return (

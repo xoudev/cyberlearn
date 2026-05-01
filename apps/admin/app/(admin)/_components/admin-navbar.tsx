@@ -73,7 +73,7 @@ export function AdminNavbar({ initials, handle }: AdminNavbarProps): React.React
             textTransform: "uppercase",
           }}
         >
-          // ADMIN PANEL
+          {"// ADMIN PANEL"}
         </div>
 
         <div

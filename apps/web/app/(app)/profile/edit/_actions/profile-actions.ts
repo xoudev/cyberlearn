@@ -30,11 +30,11 @@ const updateProfileSchema = z.object({
   theme: z.enum(["dark", "light"]),
 });
 
-export type UpdateProfileState = {
+export interface UpdateProfileState {
   success?: boolean;
   error?: string;
   fieldErrors?: Partial<Record<keyof z.infer<typeof updateProfileSchema>, string>>;
-};
+}
 
 export async function updateProfileAction(
   _prev: UpdateProfileState,
@@ -56,7 +56,7 @@ export async function updateProfileAction(
     const fieldErrors: UpdateProfileState["fieldErrors"] = {};
     for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
       const key = field as keyof typeof fieldErrors;
-      if (errs?.[0]) fieldErrors[key] = errs[0];
+      if (errs[0]) fieldErrors[key] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
   }

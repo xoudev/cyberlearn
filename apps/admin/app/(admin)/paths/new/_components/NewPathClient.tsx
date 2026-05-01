@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useActionState, useState, useRef } from "react";
+import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { createPathAction, type CreatePathState } from "../../_actions/path-actions";
 
@@ -140,9 +140,15 @@ function LessonRow({
   return (
     <li
       draggable
-      onDragStart={(e) => onDragStart(e, lesson.id)}
-      onDragOver={(e) => onDragOver(e, lesson.id)}
-      onDrop={(e) => onDrop(e, lesson.id)}
+      onDragStart={(e) => {
+        onDragStart(e, lesson.id);
+      }}
+      onDragOver={(e) => {
+        onDragOver(e, lesson.id);
+      }}
+      onDrop={(e) => {
+        onDrop(e, lesson.id);
+      }}
       onDragEnd={onDragEnd}
       style={{
         display: "grid",
@@ -296,7 +302,9 @@ function LessonRow({
       {/* remove */}
       <button
         type="button"
-        onClick={() => onRemove(lesson.id)}
+        onClick={() => {
+          onRemove(lesson.id);
+        }}
         aria-label="Retirer"
         style={{
           display: "grid",
@@ -369,7 +377,9 @@ function LessonPicker({
           display: "flex",
           flexDirection: "column",
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         {/* header */}
         <div
@@ -392,7 +402,7 @@ function LessonPicker({
               color: "#B8B5D1",
             }}
           >
-            <span style={{ color: "#44406B" }}>// </span>AJOUTER UNE LEÇON
+            <span style={{ color: "#44406B" }}>{"// "}</span>AJOUTER UNE LEÇON
           </span>
           <button
             type="button"
@@ -413,7 +423,9 @@ function LessonPicker({
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${BORDER}` }}>
           <input
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+            }}
             placeholder="Rechercher…"
             autoFocus
             style={{ ...BASE_INPUT, padding: "10px 14px" }}
@@ -510,7 +522,9 @@ function LessonPicker({
 
 const initialState: CreatePathState = {};
 
-export function NewPathClient({ availableLessons }: { availableLessons: AvailableLesson[] }) {
+export function NewPathClient({
+  availableLessons,
+}: { availableLessons: AvailableLesson[] }): React.JSX.Element {
   const [state, action, isPending] = useActionState(createPathAction, initialState);
   const [lessons, setLessons] = useState<AvailableLesson[]>([]);
   const [dragState, setDragState] = useState<DragState>({ dragId: null, overId: null });
@@ -542,9 +556,15 @@ export function NewPathClient({ availableLessons }: { availableLessons: Availabl
     });
     setDragState({ dragId: null, overId: null });
   };
-  const onDragEnd = () => setDragState({ dragId: null, overId: null });
-  const onRemove = (id: string) => setLessons((arr) => arr.filter((l) => l.id !== id));
-  const onAdd = (lesson: AvailableLesson) => setLessons((arr) => [...arr, lesson]);
+  const onDragEnd = () => {
+    setDragState({ dragId: null, overId: null });
+  };
+  const onRemove = (id: string) => {
+    setLessons((arr) => arr.filter((l) => l.id !== id));
+  };
+  const onAdd = (lesson: AvailableLesson) => {
+    setLessons((arr) => [...arr, lesson]);
+  };
 
   const totals = lessons.reduce(
     (acc, l) => ({
@@ -580,7 +600,9 @@ export function NewPathClient({ availableLessons }: { availableLessons: Availabl
           available={availableLessons}
           selected={lessons.map((l) => l.id)}
           onAdd={onAdd}
-          onClose={() => setPickerOpen(false)}
+          onClose={() => {
+            setPickerOpen(false);
+          }}
         />
       )}
 
@@ -1076,7 +1098,7 @@ export function NewPathClient({ availableLessons }: { availableLessons: Availabl
                     margin: 0,
                   }}
                 >
-                  <span style={{ color: "#44406B" }}>// </span>
+                  <span style={{ color: "#44406B" }}>{"// "}</span>
                   <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
                 </h3>
                 <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#44406B" }}>
@@ -1097,7 +1119,7 @@ export function NewPathClient({ availableLessons }: { availableLessons: Availabl
                     letterSpacing: "0.06em",
                   }}
                 >
-                  Aucune leçon ajoutée · clique sur "Ajouter une leçon" pour commencer
+                  Aucune leçon ajoutée · clique sur &quot;Ajouter une leçon&quot; pour commencer
                 </div>
               ) : (
                 <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -1120,7 +1142,9 @@ export function NewPathClient({ availableLessons }: { availableLessons: Availabl
               {/* add button */}
               <button
                 type="button"
-                onClick={() => setPickerOpen(true)}
+                onClick={() => {
+                  setPickerOpen(true);
+                }}
                 className="pe-add"
                 style={{
                   width: "100%",
@@ -1180,7 +1204,7 @@ export function NewPathClient({ availableLessons }: { availableLessons: Availabl
                 {[
                   { lbl: "Leçons", val: String(totals.count).padStart(2, "0"), brand: true },
                   { lbl: "Durée totale", val: `${(totals.dur / 60).toFixed(1)} h`, brand: false },
-                  { lbl: "XP cumulés", val: `+${totals.xp}`, brand: true },
+                  { lbl: "XP cumulés", val: `+${String(totals.xp)}`, brand: true },
                   { lbl: "Difficulté moy.", val: `${avgDiff} / 4`, brand: false },
                 ].map((cell, i) => (
                   <div

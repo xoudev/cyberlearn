@@ -70,7 +70,9 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+    };
   }, [onClose]);
 
   return (
@@ -88,7 +90,9 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
     >
       {/* Panel */}
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
         style={{
           position: "fixed",
           top: "50%",
@@ -171,7 +175,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               flexShrink: 0,
             }}
           />
-          // mission_accomplie
+          {"// mission_accomplie"}
         </div>
 
         {/* Hex checkmark + lesson title */}
@@ -239,7 +243,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 marginBottom: 4,
               }}
             >
-              // leçon validée
+              {"// leçon validée"}
             </div>
             <div
               style={{
@@ -363,7 +367,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 marginBottom: 8,
               }}
             >
-              // badges débloqués
+              {"// badges débloqués"}
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {result.newBadges.map((badge) => {
@@ -433,7 +437,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               cursor: "pointer",
             }}
           >
-            // fermer
+            {"// fermer"}
           </button>
           <Link
             href={primaryUrl}

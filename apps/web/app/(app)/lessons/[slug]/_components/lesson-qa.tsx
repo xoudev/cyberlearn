@@ -1,16 +1,16 @@
 import React from "react";
 import { PostQuestionForm, PostAnswerForm, AcceptAnswerButton, UpvoteButton } from "./qa-forms";
 
-type Answer = {
+interface Answer {
   id: string;
   content: string;
   isAccepted: boolean;
   upvotes: number;
   createdAt: Date;
   user: { id?: string; displayName: string | null; username: string | null; level: number };
-};
+}
 
-type Question = {
+interface Question {
   id: string;
   title: string;
   content: string;
@@ -19,7 +19,7 @@ type Question = {
   user: { id?: string; displayName: string | null; username: string | null; level: number };
   answers: Answer[];
   _count: { answers: number };
-};
+}
 
 interface LessonQAProps {
   lessonId: string;
@@ -28,7 +28,12 @@ interface LessonQAProps {
   questions: Question[];
 }
 
-export function LessonQA({ lessonId, lessonSlug, currentUserId, questions }: LessonQAProps) {
+export function LessonQA({
+  lessonId,
+  lessonSlug,
+  currentUserId,
+  questions,
+}: LessonQAProps): React.JSX.Element {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {/* Header */}

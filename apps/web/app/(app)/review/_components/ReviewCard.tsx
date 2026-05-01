@@ -206,7 +206,9 @@ export function ReviewCard({
         <div style={{ display: "flex", gap: 10 }}>
           <button
             type="button"
-            onClick={() => handleReview(1)}
+            onClick={() => {
+              handleReview(1);
+            }}
             disabled={isPending}
             style={{
               flex: 1,
@@ -227,7 +229,9 @@ export function ReviewCard({
           </button>
           <button
             type="button"
-            onClick={() => handleReview(3)}
+            onClick={() => {
+              handleReview(3);
+            }}
             disabled={isPending}
             style={{
               flex: 1,
@@ -248,7 +252,9 @@ export function ReviewCard({
           </button>
           <button
             type="button"
-            onClick={() => handleReview(5)}
+            onClick={() => {
+              handleReview(5);
+            }}
             disabled={isPending}
             style={{
               flex: 1,

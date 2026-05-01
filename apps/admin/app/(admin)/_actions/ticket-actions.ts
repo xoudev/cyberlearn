@@ -17,7 +17,7 @@ export async function updateTicketStatusAction(
   } = await supabase.auth.getUser();
   if (!user) notFound();
 
-  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  const jwtRole = user.app_metadata.user_role as string | undefined;
   let role = jwtRole;
   if (!role) {
     const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });

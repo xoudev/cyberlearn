@@ -30,7 +30,7 @@ function colorize(type: string, raw: string): React.ReactNode {
     return <span style={{ color: "#3F3D5C" }}>{raw}</span>;
   }
   if (type === "out") {
-    const m = raw.match(/^(\[.\])\s(.+:\s)(.+)$/);
+    const m = /^(\[.\])\s(.+:\s)(.+)$/.exec(raw);
     if (m) {
       return (
         <>
@@ -78,7 +78,9 @@ export function LandingTerminal(): React.ReactElement {
         setVisibleCount(0);
         setDone(false);
       }, 4000);
-      return () => clearTimeout(t);
+      return () => {
+        clearTimeout(t);
+      };
     }
     if (visibleCount >= LINES.length) {
       setDone(true);
@@ -86,8 +88,12 @@ export function LandingTerminal(): React.ReactElement {
     }
     const line = LINES[visibleCount];
     const delay = line?.type === "cmd" ? 600 : 280;
-    const t = setTimeout(() => setVisibleCount((c) => c + 1), delay);
-    return () => clearTimeout(t);
+    const t = setTimeout(() => {
+      setVisibleCount((c) => c + 1);
+    }, delay);
+    return () => {
+      clearTimeout(t);
+    };
   }, [visibleCount, done]);
 
   return (

@@ -37,7 +37,7 @@ export function TicketStatusSelect({
     });
   }
 
-  const color = STATUS_COLORS[currentStatus] ?? "#6B6890";
+  const color = STATUS_COLORS[currentStatus];
 
   return (
     <select

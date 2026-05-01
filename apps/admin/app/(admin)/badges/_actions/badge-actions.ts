@@ -22,7 +22,7 @@ const createBadgeSchema = z.object({
     "FIRST_LOGIN",
     "MANUAL",
   ]),
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
   criterionData: z
     .string()
     .trim()
@@ -30,6 +30,7 @@ const createBadgeSchema = z.object({
     .transform((v) => {
       // SAFETY: JSON.parse returns any; Prisma JsonValue accepts it
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return JSON.parse(v);
       } catch {
         return {};
@@ -38,10 +39,10 @@ const createBadgeSchema = z.object({
   xpReward: z.coerce.number().int().nonnegative().max(10000),
 });
 
-export type CreateBadgeState = {
+export interface CreateBadgeState {
   error?: string;
   fieldErrors?: Partial<Record<string, string>>;
-};
+}
 
 export async function createBadgeAction(
   _prev: CreateBadgeState,
@@ -53,7 +54,7 @@ export async function createBadgeAction(
   } = await supabase.auth.getUser();
   if (!user) notFound();
 
-  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  const jwtRole = user.app_metadata.user_role as string | undefined;
   let role = jwtRole;
   if (!role) {
     const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
@@ -67,7 +68,7 @@ export async function createBadgeAction(
   if (!parsed.success) {
     const fieldErrors: CreateBadgeState["fieldErrors"] = {};
     for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
-      if (errs?.[0]) fieldErrors[field] = errs[0];
+      if (errs[0]) fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
   }

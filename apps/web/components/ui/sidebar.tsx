@@ -27,7 +27,7 @@ const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
-type SidebarContextProps = {
+interface SidebarContextProps {
   state: "expanded" | "collapsed";
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -35,7 +35,7 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
-};
+}
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
@@ -96,7 +96,7 @@ const SidebarProvider = React.forwardRef<
     const toggleSidebar = React.useCallback(() => {
       const onMobile =
         typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-      return onMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev);
+      onMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev);
     }, [setOpen, setOpenMobile]);
 
     // Adds a keyboard shortcut to toggle the sidebar.
@@ -109,7 +109,9 @@ const SidebarProvider = React.forwardRef<
       };
 
       window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+      };
     }, [toggleSidebar]);
 
     // We add a state so that we can do data-state="expanded" or "collapsed".

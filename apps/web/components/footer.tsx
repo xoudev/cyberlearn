@@ -1,7 +1,8 @@
+import React from "react";
 import Link from "next/link";
 
 /** Minimal footer shown at the bottom of authenticated app pages. */
-export function Footer() {
+export function Footer(): React.JSX.Element {
   return (
     <footer
       className="border-t px-6 py-4"

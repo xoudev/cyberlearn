@@ -16,7 +16,7 @@ export async function GET(
     select: { pdfStorageKey: true, revokedAt: true, path: { select: { title: true } } },
   });
 
-  if (!cert || cert.revokedAt !== null || cert.pdfStorageKey === "pending") {
+  if (cert?.revokedAt !== null || cert.pdfStorageKey === "pending") {
     return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
   }
 

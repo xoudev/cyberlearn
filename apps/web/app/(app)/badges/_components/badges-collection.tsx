@@ -280,7 +280,9 @@ function BadgeImageWithFallback({
       width={width}
       height={height}
       style={{ objectFit: "contain" }}
-      onError={() => setFailed(true)}
+      onError={() => {
+        setFailed(true);
+      }}
     />
   );
 }
@@ -326,7 +328,8 @@ function LockIcon() {
 
 function BadgeCard({ badge }: { badge: SerializedBadge }) {
   const [hovered, setHovered] = useState(false);
-  const r = RARITY_META[badge.rarity] ?? (RARITY_META.COMMON as (typeof RARITY_META)[string]);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const r = RARITY_META[badge.rarity] ?? RARITY_META.COMMON!;
   const isLeg = badge.rarity === "LEGENDARY";
   const hexW = isLeg ? 132 : 96;
   const hexH = isLeg ? 152 : 110;
@@ -334,8 +337,12 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
 
   return (
     <article
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+        setHovered(true);
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+      }}
       style={{
         position: "relative",
         padding: isLeg ? "32px 24px 26px" : "26px 20px 22px",
@@ -449,7 +456,8 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
           color: "#6F6B99",
         }}
       >
-        // <b style={{ color: badge.earned ? r.color : "#44406B" }}>{badge.refCode}</b>
+        {"// "}
+        <b style={{ color: badge.earned ? r.color : "#44406B" }}>{badge.refCode}</b>
       </div>
 
       {/* Lock icon (unearned) */}
@@ -663,7 +671,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
                 left: 0,
                 top: 0,
                 bottom: 0,
-                width: `${pct}%`,
+                width: `${String(pct)}%`,
                 background: r.grad,
                 boxShadow: `0 0 8px ${r.color}`,
               }}
@@ -685,7 +693,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
             textAlign: "center",
           }}
         >
-          // verrouillé
+          {"// verrouillé"}
         </div>
       )}
     </article>
@@ -705,7 +713,8 @@ function SectionHeader({
   earned: number;
   total: number;
 }) {
-  const meta = RARITY_META[rarity] ?? (RARITY_META.COMMON as (typeof RARITY_META)[string]);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const meta = RARITY_META[rarity] ?? RARITY_META.COMMON!;
   return (
     <div
       style={{
@@ -762,7 +771,7 @@ export function BadgesCollection({
   totalCount,
   rarityTotals,
   rarityEarned,
-}: Props) {
+}: Props): React.JSX.Element {
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
@@ -997,7 +1006,9 @@ export function BadgesCollection({
             <button
               key={pill.id}
               type="button"
-              onClick={() => setActiveFilter(pill.id)}
+              onClick={() => {
+                setActiveFilter(pill.id);
+              }}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -1076,7 +1087,9 @@ export function BadgesCollection({
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
             placeholder="/ chercher un badge..."
             style={{
               width: "100%",
@@ -1125,7 +1138,7 @@ export function BadgesCollection({
               textTransform: "uppercase",
             }}
           >
-            // Aucun badge trouvé
+            {"// Aucun badge trouvé"}
           </p>
         </div>
       )}

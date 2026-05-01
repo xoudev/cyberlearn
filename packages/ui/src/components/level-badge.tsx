@@ -39,7 +39,7 @@ export function LevelBadge({ level, size, className }: LevelBadgeProps) {
         boxShadow:
           "0 1px 3px color-mix(in srgb, var(--color-brand-blue) 40%, transparent), inset 0 1px 0 rgba(255,255,255,0.15)",
       }}
-      aria-label={`Niveau ${level}`}
+      aria-label={`Niveau ${String(level)}`}
     >
       {showLabel && (
         <span

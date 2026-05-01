@@ -5,7 +5,7 @@ import { leaderboardRepository, type LeaderboardEntry } from "@cyberlearn/db";
 
 export const metadata = { title: "Classement — CyberLearn" };
 
-export default async function LeaderboardPage() {
+export default async function LeaderboardPage(): Promise<React.JSX.Element> {
   const authUser = await requireRequestUser();
   const [entries, userRank] = await Promise.all([
     leaderboardRepository.findTopUsers(100),
@@ -229,7 +229,7 @@ function PodiumCard({
           fontSize: 9,
           letterSpacing: "0.12em",
           color: colors.color,
-          background: `${colors.bg}`,
+          background: colors.bg,
           border: `1px solid ${colors.border}`,
           padding: "2px 8px",
         }}

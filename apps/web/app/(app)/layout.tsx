@@ -5,7 +5,9 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: { children: React.ReactNode }): Promise<React.JSX.Element> {
   const cookieStore = await cookies();
 
   const sidebarCookie = cookieStore.get("sidebar_state")?.value;

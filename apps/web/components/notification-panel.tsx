@@ -24,7 +24,10 @@ interface NotificationPanelProps {
   userId: string;
 }
 
-export function NotificationPanel({ initialUnreadCount, userId }: NotificationPanelProps) {
+export function NotificationPanel({
+  initialUnreadCount,
+  userId,
+}: NotificationPanelProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(initialUnreadCount);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -46,7 +49,9 @@ export function NotificationPanel({ initialUnreadCount, userId }: NotificationPa
       }
     }
     if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [open]);
 
   // Load notifications when panel opens
@@ -327,7 +332,6 @@ export function NotificationPanel({ initialUnreadCount, userId }: NotificationPa
 function NotificationRow({
   item,
   onRead,
-  isPending,
 }: {
   item: NotificationItem;
   onRead: (id: string) => void;

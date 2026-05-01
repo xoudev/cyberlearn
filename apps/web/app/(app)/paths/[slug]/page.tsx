@@ -133,7 +133,7 @@ export default async function PathDetailPage({
     });
   }
 
-  const pathStatus = userPathProgress?.status;
+  const pathStatus = userPathProgress.status;
 
   return (
     <div className="path-page">
@@ -310,7 +310,7 @@ export default async function PathDetailPage({
               { label: "Missions", value: String(totalLessons), unit: "", xp: false, cert: false },
               {
                 label: "Durée estimée",
-                value: `~${path.estimatedHours}`,
+                value: `~${String(path.estimatedHours)}`,
                 unit: "h",
                 xp: false,
                 cert: false,
@@ -491,7 +491,7 @@ export default async function PathDetailPage({
             <div
               style={{
                 height: "100%",
-                width: `${pct}%`,
+                width: `${String(pct)}%`,
                 background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
                 boxShadow: "0 0 12px rgba(10,255,212,0.55)",
                 position: "relative",
@@ -537,7 +537,7 @@ export default async function PathDetailPage({
                   display: "flex",
                   alignItems: "center",
                   gap: 16,
-                  margin: `${modIdx === 0 ? 0 : 32}px 0 22px`,
+                  margin: `${String(modIdx === 0 ? 0 : 32)}px 0 22px`,
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
                   fontSize: 12,
@@ -1014,10 +1014,10 @@ export default async function PathDetailPage({
             <div
               style={{
                 position: "relative",
-                background: userPathProgress?.certificateId
+                background: userPathProgress.certificateId
                   ? "linear-gradient(135deg, rgba(10,255,212,0.06), transparent 60%), rgba(5,4,26,0.7)"
                   : "linear-gradient(135deg, rgba(0,36,255,0.08), transparent 60%), rgba(5,4,26,0.7)",
-                border: `1px solid ${userPathProgress?.certificateId ? "rgba(10,255,212,0.25)" : "#1F1B47"}`,
+                border: `1px solid ${userPathProgress.certificateId ? "rgba(10,255,212,0.25)" : "#1F1B47"}`,
                 padding: "22px",
                 display: "grid",
                 gridTemplateColumns: "minmax(0, 1fr) 64px",
@@ -1039,7 +1039,7 @@ export default async function PathDetailPage({
                     marginBottom: 10,
                   }}
                 >
-                  {userPathProgress?.certificateId ? "// CERT · DÉBLOQUÉ" : "// CERT · À DÉBLOQUER"}
+                  {userPathProgress.certificateId ? "// CERT · DÉBLOQUÉ" : "// CERT · À DÉBLOQUER"}
                 </div>
                 <h4
                   style={{
@@ -1066,7 +1066,7 @@ export default async function PathDetailPage({
                   <br />
                   Signé · <b style={{ color: "#B8B5D1" }}>SHA-256</b>
                 </div>
-                {userPathProgress?.certificateId && (
+                {userPathProgress.certificateId && (
                   <a
                     href={`/api/certificates/${userPathProgress.certificateId}/download`}
                     className="link-action"

@@ -19,7 +19,7 @@ export default function AdminLoginPage(): React.ReactElement {
 
   const supabase = createSupabaseBrowserClient();
 
-  async function handleMagicLink(e: React.FormEvent<HTMLFormElement>) {
+  async function handleMagicLink(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
@@ -133,7 +133,7 @@ export default function AdminLoginPage(): React.ReactElement {
               marginBottom: 10,
             }}
           >
-            // admin.cyberlearn
+            {"// admin.cyberlearn"}
           </div>
           <h1
             style={{
@@ -197,13 +197,17 @@ export default function AdminLoginPage(): React.ReactElement {
           <>
             {/* Magic link form */}
             <form
-              onSubmit={handleMagicLink}
+              onSubmit={(e) => {
+                void handleMagicLink(e);
+              }}
               style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}
             >
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
                 placeholder="adresse@exemple.com"
                 required
                 autoComplete="email"

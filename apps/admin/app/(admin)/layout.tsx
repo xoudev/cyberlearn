@@ -23,7 +23,7 @@ export default async function AdminLayout({
 
   // JWT role (set by Supabase Auth Hook in production).
   // Falls back to the DB role in dev where the hook may not be running.
-  const jwtRole = user.app_metadata?.["user_role"] as string | undefined;
+  const jwtRole = user.app_metadata.user_role as string | undefined;
   let role = jwtRole;
   if (!role) {
     const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });

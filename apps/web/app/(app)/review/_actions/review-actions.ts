@@ -16,12 +16,12 @@ export async function submitReviewAction(
     where: { id: scheduleId },
   });
 
-  if (!schedule || schedule.userId !== authUser.id) {
+  if (schedule?.userId !== authUser.id) {
     return { success: false };
   }
 
   // SAFETY: quality values are constrained by the caller's type
-  const result = computeSm2(quality as 1 | 3 | 5, {
+  const result = computeSm2(quality, {
     easeFactor: schedule.easeFactor,
     intervalDays: schedule.intervalDays,
     repetitions: schedule.repetitions,
