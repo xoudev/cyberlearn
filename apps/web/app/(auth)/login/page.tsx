@@ -42,14 +42,13 @@ export default function LoginPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const supabase = createSupabaseBrowserClient();
-
   // eslint-disable-next-line @typescript-eslint/no-deprecated
   async function handleMagicLink(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
+    const supabase = createSupabaseBrowserClient();
     const callbackUrl = new URL("/auth/callback", window.location.origin);
     callbackUrl.searchParams.set("redirectTo", redirectTo);
 
@@ -70,6 +69,7 @@ export default function LoginPage(): React.ReactElement {
     setError(null);
     setIsLoading(true);
 
+    const supabase = createSupabaseBrowserClient();
     const callbackUrl = new URL("/auth/callback", window.location.origin);
     callbackUrl.searchParams.set("redirectTo", redirectTo);
 
