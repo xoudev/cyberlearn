@@ -1,0 +1,598 @@
+"use client";
+
+import React, { useEffect, useId, useRef, useState } from "react";
+import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
+import { useLessonCompletion } from "./lesson-completion-context";
+
+// Pinned Pyodide version for reproducibility
+const PYODIDE_VERSION = "0.27.5";
+const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js`;
+
+const WORKER_TIMEOUT_MS = 10_000;
+
+interface RunResult {
+  output: string;
+  error: string | null;
+}
+
+// ── Pyodide worker factory (blob URL, no network for JS fallback) ──────────────
+
+function createPyodideWorker(): Worker {
+  const code = `
+let pyodide = null;
+let loading = false;
+const pending = [];
+
+async function initPyodide() {
+  if (loading) return;
+  loading = true;
+  try {
+    self.importScripts("${PYODIDE_URL}");
+    pyodide = await self.loadPyodide();
+  } catch (e) {
+    self.postMessage({ id: "__init_error__", error: "Échec du chargement de Python : " + e.message });
+    loading = false;
+    return;
+  }
+  for (const task of pending) runCode(task);
+  pending.length = 0;
+}
+
+async function runCode({ id, code }) {
+  const out = [];
+  try {
+    pyodide.setStdout({ batched: (msg) => out.push(msg) });
+    pyodide.setStderr({ batched: (msg) => out.push("\\u001b[31m" + msg + "\\u001b[0m") });
+    await pyodide.runPythonAsync(code);
+    self.postMessage({ id, output: out.join("\\n"), error: null });
+  } catch (e) {
+    self.postMessage({ id, output: out.join("\\n"), error: e.message });
+  }
+}
+
+self.onmessage = (e) => {
+  if (!pyodide) {
+    pending.push(e.data);
+    if (!loading) initPyodide();
+  } else {
+    runCode(e.data);
+  }
+};
+
+initPyodide();
+`;
+  const blob = new Blob([code], { type: "application/javascript" });
+  return new Worker(URL.createObjectURL(blob));
+}
+
+function createJsWorker(): Worker {
+  const code = `
+self.onmessage = (e) => {
+  const { id, code } = e.data;
+  const logs = [];
+  const fakeConsole = {
+    log: (...a) => logs.push(a.map(String).join(" ")),
+    warn: (...a) => logs.push("[warn] " + a.map(String).join(" ")),
+    error: (...a) => logs.push("[error] " + a.map(String).join(" ")),
+  };
+  try {
+    // eslint-disable-next-line no-new-func
+    new Function("console", code)(fakeConsole);
+    self.postMessage({ id, output: logs.join("\\n"), error: null });
+  } catch (err) {
+    self.postMessage({ id, output: logs.join("\\n"), error: err.message });
+  }
+};
+`;
+  const blob = new Blob([code], { type: "application/javascript" });
+  return new Worker(URL.createObjectURL(blob));
+}
+
+// ── Worker singleton cache per language ────────────────────────────────────────
+
+let pyWorker: Worker | null = null;
+let jsWorker: Worker | null = null;
+
+function getWorker(language: "python" | "javascript"): Worker {
+  if (language === "python") {
+    pyWorker ??= createPyodideWorker();
+    return pyWorker;
+  }
+  jsWorker ??= createJsWorker();
+  return jsWorker;
+}
+
+// ── Execution ──────────────────────────────────────────────────────────────────
+
+function runInWorker(language: "python" | "javascript", code: string): Promise<RunResult> {
+  return new Promise((resolve) => {
+    const id = Math.random().toString(36).slice(2);
+    const worker = getWorker(language);
+
+    const timer = setTimeout(() => {
+      resolve({ output: "", error: "Timeout : exécution interrompue après 10 secondes." });
+    }, WORKER_TIMEOUT_MS);
+
+    const handler = (e: MessageEvent<{ id: string; output: string; error: string | null }>) => {
+      if (e.data.id !== id) return;
+      clearTimeout(timer);
+      worker.removeEventListener("message", handler);
+      resolve({ output: e.data.output, error: e.data.error });
+    };
+
+    worker.addEventListener("message", handler);
+    worker.postMessage({ id, code });
+  });
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
+export interface CodePlaygroundProps {
+  id?: string;
+  language?: "python" | "javascript";
+  /** Starter code as a JSX string expression or via `starterCode` prop. */
+  children?: string;
+  /** Alias for `children` — preferred in MDX since text between JSX tags becomes a <p>, not a string. */
+  starterCode?: string;
+  expectedOutput?: string;
+  validate?: boolean;
+  title?: string;
+}
+
+export function CodePlayground({
+  id,
+  language = "python",
+  children = "",
+  starterCode,
+  expectedOutput,
+  validate,
+  title,
+}: CodePlaygroundProps): React.ReactElement {
+  const autoId = useId();
+  const itemId = id ?? autoId;
+
+  const initialCode = (starterCode ?? children).trim();
+  const [code, setCode] = useState(initialCode);
+  const [result, setResult] = useState<RunResult | null>(null);
+  const [running, setRunning] = useState(false);
+  const [editorLoaded, setEditorLoaded] = useState(false);
+  const EditorRef = useRef<typeof MonacoEditorComp | null>(null);
+
+  const completion = useLessonCompletion();
+
+  // Register as required if validate prop is set
+  useEffect(() => {
+    if (!validate || !completion) return;
+    completion.register(itemId);
+    return () => {
+      completion.unregister(itemId);
+    };
+  }, [itemId, validate, completion]);
+
+  // Load Monaco lazily
+  useEffect(() => {
+    void import("@monaco-editor/react").then((mod) => {
+      EditorRef.current = mod.default;
+      setEditorLoaded(true);
+    });
+  }, []);
+
+  // Define the custom CyberLearn Monaco theme before mount
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    // SAFETY: BeforeMount provides the full Monaco namespace; defineTheme is a standard API
+    (
+      monaco as { editor: { defineTheme: (name: string, data: unknown) => void } }
+    ).editor.defineTheme("cyberlearn-dark", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "6B6890", fontStyle: "italic" },
+        { token: "keyword", foreground: "4D8BFF" },
+        { token: "string", foreground: "0AFFD4" },
+        { token: "number", foreground: "FFB020" },
+        { token: "type", foreground: "B14DFF" },
+        { token: "identifier", foreground: "E0DDFF" },
+      ],
+      colors: {
+        "editor.background": "#0A0826",
+        "editor.foreground": "#E0DDFF",
+        "editor.lineHighlightBackground": "#1A1838",
+        "editorLineNumber.foreground": "#3F3D5C",
+        "editorLineNumber.activeForeground": "#0AFFD4",
+        "editor.selectionBackground": "#2A2560",
+        "editorCursor.foreground": "#0AFFD4",
+        "editor.inactiveSelectionBackground": "#1F1B47",
+        "editorIndentGuide.background1": "#1F1B47",
+        "editorWhitespace.foreground": "#2A2560",
+      },
+    });
+  };
+
+  const isValidated =
+    validate &&
+    expectedOutput !== undefined &&
+    result !== null &&
+    result.error === null &&
+    normalizeOutput(result.output) === normalizeOutput(expectedOutput);
+
+  // Mark done when validation passes
+  useEffect(() => {
+    if (isValidated) completion?.markDone(itemId);
+  }, [isValidated, itemId, completion]);
+
+  async function handleRun() {
+    setRunning(true);
+    setResult(null);
+    const r = await runInWorker(language, code);
+    setResult(r);
+    setRunning(false);
+  }
+
+  const MonacoEditor = EditorRef.current;
+
+  const sandboxLabel = language === "python" ? "Python Sandbox" : "JS Sandbox";
+  const sandboxBadge = language === "python" ? "Pyodide · WASM" : "Web Worker";
+  const langExt = language === "python" ? "py" : "js";
+
+  const runStatus: "ready" | "loading" | "success" | "error" = running
+    ? "loading"
+    : result === null
+      ? "ready"
+      : result.error
+        ? "error"
+        : "success";
+
+  const STATUS_LABEL: Record<typeof runStatus, string> = {
+    ready: "PRÊT",
+    loading: "COMPILATION...",
+    success: "OK",
+    error: "ERREUR RUNTIME",
+  };
+  const STATUS_COLOR: Record<typeof runStatus, string> = {
+    ready: "#0AFFD4",
+    loading: "#FFB020",
+    success: "#0AFFD4",
+    error: "#FF4757",
+  };
+  const statusColor = STATUS_COLOR[runStatus];
+
+  return (
+    <div
+      style={{
+        margin: "32px 0",
+        border: "1px solid #1F1B47",
+        background: "#0A0826",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 16px",
+          borderBottom: "1px solid #1F1B47",
+          background: "rgba(5,4,26,0.6)",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: 11,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "#B8B5D1",
+            fontWeight: 600,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: language === "python" ? "#0AFFD4" : "#FFB020",
+              boxShadow: `0 0 8px ${language === "python" ? "rgba(10,255,212,0.7)" : "rgba(255,176,32,0.7)"}`,
+              animation: "pulse 2s ease-in-out infinite",
+            }}
+          />
+          {title ?? sandboxLabel}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: language === "python" ? "#0AFFD4" : "#FFB020",
+            padding: "4px 8px",
+            border: `1px solid ${language === "python" ? "rgba(10,255,212,0.35)" : "rgba(255,176,32,0.35)"}`,
+            background: language === "python" ? "rgba(10,255,212,0.05)" : "rgba(255,176,32,0.05)",
+          }}
+        >
+          {sandboxBadge}
+        </span>
+      </div>
+
+      {/* Monaco or textarea fallback */}
+      {editorLoaded && MonacoEditor ? (
+        <MonacoEditor
+          height="220px"
+          language={language === "python" ? "python" : "javascript"}
+          value={code}
+          onChange={(v) => {
+            setCode(v ?? "");
+          }}
+          theme="cyberlearn-dark"
+          beforeMount={handleBeforeMount}
+          options={{
+            fontSize: 13,
+            fontFamily: "JetBrains Mono, monospace",
+            minimap: { enabled: false },
+            lineNumbers: "on",
+            scrollBeyondLastLine: false,
+            wordWrap: "on",
+            padding: { top: 12, bottom: 12 },
+            overviewRulerLanes: 0,
+            renderLineHighlight: "none",
+          }}
+        />
+      ) : (
+        <textarea
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value);
+          }}
+          style={{
+            display: "block",
+            width: "100%",
+            height: 220,
+            background: "#0A0826",
+            border: "none",
+            color: "#B8B5D1",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: 13,
+            lineHeight: 1.7,
+            padding: "12px 20px",
+            resize: "vertical",
+            outline: "none",
+          }}
+          spellCheck={false}
+        />
+      )}
+
+      {/* Action bar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          borderTop: "1px solid #1F1B47",
+          background: "rgba(5,4,26,0.7)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            void handleRun();
+          }}
+          disabled={running}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "0 22px",
+            minHeight: 44,
+            fontFamily: "var(--font-mono, monospace)",
+            fontWeight: 700,
+            fontSize: 11,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            background: running ? "rgba(0,36,255,0.4)" : "#0024FF",
+            color: "#ffffff",
+            border: 0,
+            borderRight: "1px solid rgba(0,36,255,0.5)",
+            cursor: running ? "wait" : "pointer",
+            transition: "background 180ms ease",
+            boxShadow: running ? "none" : "inset 0 0 0 1px rgba(255,255,255,0.15)",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (!running) e.currentTarget.style.background = "#1F3BFF";
+          }}
+          onMouseLeave={(e) => {
+            if (!running) e.currentTarget.style.background = "#0024FF";
+          }}
+        >
+          {running ? (
+            <span
+              style={{
+                fontSize: 14,
+                animation: "spin 0.9s linear infinite",
+                display: "inline-block",
+              }}
+            >
+              ⟳
+            </span>
+          ) : (
+            <span style={{ fontSize: 9, lineHeight: 1 }}>▶</span>
+          )}
+          {running ? "EXÉCUTION..." : "EXÉCUTER"}
+        </button>
+
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 16px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: statusColor,
+                boxShadow: `0 0 6px ${statusColor}`,
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: statusColor,
+              }}
+            >
+              {STATUS_LABEL[runStatus]}
+            </span>
+            {isValidated && (
+              <span
+                style={{
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 9,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#0AFFD4",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <svg viewBox="0 0 12 12" width={8} height={8} fill="none">
+                  <path
+                    d="M2 6 L5 9 L10 3"
+                    stroke="#0AFFD4"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Validé
+              </span>
+            )}
+          </div>
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 10,
+              letterSpacing: "0.1em",
+              color: "#44406B",
+            }}
+          >
+            main.{langExt} · {language === "python" ? "python 3.11" : "es2022"}
+          </span>
+        </div>
+      </div>
+
+      {/* Output area */}
+      {result !== null && (
+        <div
+          style={{
+            borderTop: "1px solid #1F1B47",
+            background: "#030219",
+            padding: "16px 18px",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: 12.5,
+            lineHeight: 1.7,
+            minHeight: 80,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {result.output.trim().length > 0 &&
+            result.output
+              .trim()
+              .split("\n")
+              .map((line, i) => (
+                <div key={i} style={{ display: "flex", gap: 8 }}>
+                  <span style={{ color: "#0AFFD4", flexShrink: 0, userSelect: "none" }}>
+                    &gt;&gt;&gt;
+                  </span>
+                  <span style={{ color: "#E0DDFF" }}>{line}</span>
+                </div>
+              ))}
+          {result.error &&
+            cleanError(result.error, language)
+              .split("\n")
+              .filter(Boolean)
+              .map((line, i) => (
+                <div key={i} style={{ display: "flex", gap: 8 }}>
+                  <span style={{ color: "#FF4757", flexShrink: 0, userSelect: "none" }}>!!!</span>
+                  <span style={{ color: "#FF4757" }}>{line}</span>
+                </div>
+              ))}
+          {!result.output.trim() && !result.error && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <span style={{ color: "#0AFFD4", flexShrink: 0, userSelect: "none" }}>
+                &gt;&gt;&gt;
+              </span>
+              <span style={{ color: "#3F3D5C", fontStyle: "italic" }}>(aucune sortie)</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {validate && expectedOutput !== undefined && (
+        <div
+          style={{
+            padding: "6px 18px",
+            background: "rgba(3,2,25,0.5)",
+            borderTop: "1px solid #1F1B47",
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: 9,
+            letterSpacing: "0.12em",
+            color: "#3F3D5C",
+          }}
+        >
+          Sortie attendue : <b style={{ color: "#6B6890" }}>{expectedOutput}</b>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin  { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+      `}</style>
+    </div>
+  );
+}
+
+function normalizeOutput(s: string): string {
+  return s.trim().replace(/\r\n/g, "\n");
+}
+
+/**
+ * Strips internal Pyodide/Node call stack frames so learners only see
+ * the relevant error lines from their own code.
+ *
+ * Python: keeps from the last `File "<exec>"` line onwards.
+ * JS: drops `at eval` / `at <anonymous>` internal frames.
+ */
+function cleanError(error: string, lang: "python" | "javascript"): string {
+  if (lang === "python") {
+    const execIdx = error.lastIndexOf('  File "<exec>"');
+    if (execIdx !== -1) return error.slice(execIdx).trim();
+    // Fallback: drop lines that reference Pyodide internals
+    const cleaned = error
+      .split("\n")
+      .filter((l) => !l.includes("/lib/python") && !l.includes("_pyodide"))
+      .join("\n")
+      .trim();
+    return cleaned || error;
+  }
+  // JavaScript: drop V8 internal frames
+  const cleaned = error
+    .split("\n")
+    .filter((l) => !/^\s+at (eval|<anonymous>|Function)/.test(l))
+    .join("\n")
+    .trim();
+  return cleaned || error;
+}

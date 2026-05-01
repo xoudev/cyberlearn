@@ -11,10 +11,6 @@ export interface OnboardingActionState {
   message?: string;
 }
 
-/**
- * Server Action: completes onboarding by setting username + displayName.
- * After this, the user is redirected to the placement test (optional) or dashboard.
- */
 export async function completeOnboarding(
   _prev: OnboardingActionState,
   formData: FormData,
@@ -28,10 +24,10 @@ export async function completeOnboarding(
     redirect("/login");
   }
 
-  // ── Validate input ───────────────────────────────────────────────────────
   const parsed = onboardingSchema.safeParse({
     username: formData.get("username"),
     displayName: formData.get("displayName"),
+    bio: formData.get("bio") || undefined,
   });
 
   if (!parsed.success) {
@@ -41,9 +37,8 @@ export async function completeOnboarding(
     };
   }
 
-  const { username, displayName } = parsed.data;
+  const { username, displayName, bio } = parsed.data;
 
-  // ── Check username availability ──────────────────────────────────────────
   const existingUser = await prisma.user.findUnique({
     where: { username },
     select: { id: true },
@@ -56,11 +51,10 @@ export async function completeOnboarding(
     };
   }
 
-  // ── Save username + displayName + create preferences ────────────────────
   await prisma.$transaction([
     prisma.user.update({
       where: { id: user.id },
-      data: { username, displayName },
+      data: { username, displayName, bio: bio ?? null },
     }),
     prisma.userPreferences.upsert({
       where: { userId: user.id },
@@ -69,12 +63,6 @@ export async function completeOnboarding(
     }),
   ]);
 
-  // ── Determine next step ──────────────────────────────────────────────────
-  const skipPlacementTest = formData.get("skipPlacementTest") === "true";
-
-  if (skipPlacementTest) {
-    redirect("/dashboard");
-  }
-
-  redirect("/onboarding/placement-test");
+  // onboarding_complete is set only after the avatar + placement steps
+  redirect("/onboarding/avatar");
 }

@@ -1,0 +1,434 @@
+"use client";
+
+import React, { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
+import type { NotificationItem } from "@cyberlearn/db";
+import {
+  getNotificationsAction,
+  markNotificationReadAction,
+  markAllNotificationsReadAction,
+} from "@/app/(app)/_actions/notification-actions";
+
+const TYPE_ICON: Record<string, string> = {
+  LEVEL_UP: "⬆",
+  BADGE_EARNED: "🏅",
+  PATH_COMPLETED: "✓",
+  CERTIFICATE_ISSUED: "📜",
+  REVIEW_REMINDER: "⏰",
+  ANNOUNCEMENT: "📣",
+  TICKET_UPDATE: "🎫",
+};
+
+interface NotificationPanelProps {
+  initialUnreadCount: number;
+  userId: string;
+}
+
+export function NotificationPanel({ initialUnreadCount, userId }: NotificationPanelProps) {
+  const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(initialUnreadCount);
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Close panel when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  // Load notifications when panel opens
+  useEffect(() => {
+    if (!open || loaded) return;
+    startTransition(async () => {
+      const res = await getNotificationsAction();
+      if (res.success && res.notifications) {
+        setItems(res.notifications);
+        setUnread(res.unreadCount ?? 0);
+        setLoaded(true);
+      }
+    });
+  }, [open, loaded]);
+
+  // Supabase Realtime — increment badge on new notifications
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `userId=eq.${userId}`,
+        },
+        (payload) => {
+          setUnread((c) => c + 1);
+          // If panel is open, prepend the new item
+          if (open) {
+            const incoming = payload.new as NotificationItem;
+            setItems((prev) => [incoming, ...prev]);
+          } else {
+            // Force reload next time panel opens
+            setLoaded(false);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, open]);
+
+  const handleMarkRead = useCallback((id: string) => {
+    startTransition(async () => {
+      await markNotificationReadAction(id);
+      setItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date() } : n)));
+      setUnread((c) => Math.max(0, c - 1));
+    });
+  }, []);
+
+  const handleMarkAllRead = useCallback(() => {
+    startTransition(async () => {
+      await markAllNotificationsReadAction();
+      setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date() })));
+      setUnread(0);
+    });
+  }, []);
+
+  const handleBellClick = useCallback(() => {
+    setOpen((o) => !o);
+  }, []);
+
+  const hasUnread = unread > 0;
+
+  return (
+    <div style={{ position: "relative" }}>
+      {/* Bell button */}
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleBellClick}
+        aria-label={hasUnread ? `${String(unread)} notifications non lues` : "Notifications"}
+        className="notif-bell"
+        style={{
+          position: "relative",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 36,
+          height: 36,
+          background: open ? "rgba(10,255,212,0.06)" : "transparent",
+          border: `1px solid ${open ? "rgba(10,255,212,0.2)" : "transparent"}`,
+          cursor: "pointer",
+          color: open ? "#0AFFD4" : "#6B6890",
+          transition: "all 150ms ease",
+        }}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+
+        {hasUnread && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: 2,
+              right: 2,
+              minWidth: 16,
+              height: 16,
+              padding: "0 4px",
+              fontSize: 9,
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              lineHeight: "16px",
+              textAlign: "center",
+              background: "linear-gradient(135deg, #FF4757, #FF6B6B)",
+              color: "#fff",
+              borderRadius: 999,
+              boxShadow: "0 0 0 2px #030219",
+            }}
+          >
+            {unread > 99 ? "99+" : String(unread)}
+          </span>
+        )}
+      </button>
+
+      {/* Panel */}
+      {open && (
+        <div
+          ref={panelRef}
+          style={{
+            position: "absolute",
+            top: "calc(100% + 10px)",
+            right: 0,
+            width: 360,
+            maxHeight: 480,
+            background: "#0A0826",
+            border: "1px solid #2A2560",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px #2A2560",
+            overflowY: "auto",
+            zIndex: 1000,
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "14px 18px",
+              borderBottom: "1px solid #1F1B47",
+              position: "sticky",
+              top: 0,
+              background: "#0A0826",
+              zIndex: 1,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "#6B6890",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <span
+                  style={{ width: 12, height: 1, background: "#0AFFD4", display: "inline-block" }}
+                />
+                Notifications
+              </span>
+              {hasUnread && (
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    color: "#0AFFD4",
+                    background: "rgba(10,255,212,0.1)",
+                    border: "1px solid rgba(10,255,212,0.2)",
+                    padding: "2px 6px",
+                  }}
+                >
+                  {String(unread)} non lue{unread > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+            {hasUnread && (
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                disabled={isPending}
+                className="link-action"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "#4D8BFF",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Tout lire
+              </button>
+            )}
+          </div>
+
+          {/* List */}
+          {isPending && !loaded ? (
+            <div
+              style={{
+                padding: "32px 18px",
+                textAlign: "center",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "#6B6890",
+              }}
+            >
+              Chargement…
+            </div>
+          ) : items.length === 0 ? (
+            <div style={{ padding: "40px 18px", textAlign: "center" }}>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#2A2560"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ marginBottom: 10, margin: "0 auto 10px" }}
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <p
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "#6B6890",
+                  margin: 0,
+                }}
+              >
+                Aucune notification
+              </p>
+            </div>
+          ) : (
+            <div>
+              {items.map((item) => (
+                <NotificationRow
+                  key={item.id}
+                  item={item}
+                  onRead={handleMarkRead}
+                  isPending={isPending}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NotificationRow({
+  item,
+  onRead,
+  isPending,
+}: {
+  item: NotificationItem;
+  onRead: (id: string) => void;
+  isPending: boolean;
+}) {
+  const isUnread = !item.readAt;
+  const icon = TYPE_ICON[item.type] ?? "•";
+  const dateStr = new Intl.RelativeTimeFormat("fr", { numeric: "auto" }).format(
+    Math.round((item.createdAt.getTime() - Date.now()) / (1000 * 60)),
+    "minutes",
+  );
+
+  return (
+    <div
+      className="notif-row"
+      style={{
+        display: "flex",
+        gap: 12,
+        padding: "14px 18px",
+        borderBottom: "1px solid #1A1640",
+        background: isUnread ? "rgba(10,255,212,0.02)" : "transparent",
+        cursor: item.actionUrl ? "pointer" : "default",
+      }}
+      onClick={() => {
+        if (isUnread) onRead(item.id);
+        if (item.actionUrl) window.location.href = item.actionUrl;
+      }}
+    >
+      {/* Icon */}
+      <span
+        style={{
+          width: 32,
+          height: 32,
+          background: isUnread ? "rgba(10,255,212,0.08)" : "rgba(42,37,96,0.3)",
+          border: `1px solid ${isUnread ? "rgba(10,255,212,0.2)" : "#1F1B47"}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 14,
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </span>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            fontWeight: isUnread ? 600 : 400,
+            color: isUnread ? "#F5F5FA" : "#B8B5D1",
+            marginBottom: 3,
+            lineHeight: 1.4,
+          }}
+        >
+          {item.title}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "#6B6890",
+            lineHeight: 1.5,
+            marginBottom: 4,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {item.body}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "#44406B",
+            letterSpacing: "0.06em",
+          }}
+        >
+          {dateStr}
+        </div>
+      </div>
+
+      {/* Unread dot */}
+      {isUnread && (
+        <span
+          aria-hidden="true"
+          style={{
+            width: 6,
+            height: 6,
+            background: "#0AFFD4",
+            borderRadius: 999,
+            marginTop: 6,
+            flexShrink: 0,
+            boxShadow: "0 0 6px rgba(10,255,212,0.6)",
+          }}
+        />
+      )}
+    </div>
+  );
+}

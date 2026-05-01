@@ -19,7 +19,8 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "clean": "turbo run clean && rm -rf node_modules",
-    "prepare": "husky"
+    "prepare": "husky",
+    "reset:users": "node scripts/reset-users.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs}": ["biome format --write"],

@@ -31,7 +31,12 @@
     "@sentry/nextjs": "catalog:",
     "@upstash/ratelimit": "catalog:",
     "@upstash/redis": "catalog:",
-    "framer-motion": "catalog:"
+    "framer-motion": "catalog:",
+    "gray-matter": "catalog:",
+    "@mdx-js/mdx": "catalog:",
+    "@monaco-editor/react": "catalog:",
+    "rehype-sanitize": "catalog:",
+    "remark-gfm": "catalog:"
   },
   "devDependencies": {
     "@cyberlearn/config": "workspace:*",

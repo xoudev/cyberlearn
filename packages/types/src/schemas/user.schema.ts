@@ -21,7 +21,7 @@ export const onboardingSchema = z.object({
     .trim()
     .min(1, "Display name is required")
     .max(64, "Display name must be at most 64 characters"),
-  // Avatar upload is handled separately via Supabase Storage (Phase 2+)
+  bio: z.string().trim().max(280, "Bio must be at most 280 characters").optional(),
 });
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;

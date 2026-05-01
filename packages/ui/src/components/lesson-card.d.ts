@@ -1,33 +1,39 @@
 import type { ReactNode } from "react";
-/** Difficulty values must match the Difficulty enum in Prisma */
+import React from "react";
 export type LessonDifficulty = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
 export type LessonStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
+export type LessonCategory = "CYBERSEC" | "DEV" | "NETWORK";
 interface LessonCardProps {
   title: string;
   slug: string;
   difficulty: LessonDifficulty;
-  durationMinutes?: number;
+  category: string;
+  durationMinutes?: number | undefined;
   xpReward: number;
-  status?: LessonStatus;
-  /** Optional category badge (e.g. DEV, CYBERSEC, NETWORK) */
-  category?: string;
-  /** Rendered as a link wrapper — pass an <a> or Next.js <Link> */
-  wrapper?: (children: ReactNode) => ReactNode;
-  className?: string;
+  status?: LessonStatus | undefined;
+  description?: string | undefined;
+  refCode?: string | undefined;
+  currentSection?: number | undefined;
+  totalSections?: number | undefined;
+  /** "catalog" = full card with cover; "compact" = minimal list card */
+  variant?: "catalog" | "compact" | undefined;
+  /** Client-only: wrap with arbitrary JSX. Cannot be passed from Server Components — use <Link><LessonCard /></Link> pattern instead. */
+  wrapper?: ((children: ReactNode) => ReactNode) | undefined;
+  className?: string | undefined;
 }
-/**
- * Card component for a lesson.
- * Designed for use in lesson lists and path detail pages.
- */
 export declare function LessonCard({
   title,
+  description,
   difficulty,
+  category,
   durationMinutes,
   xpReward,
   status,
-  category,
+  refCode,
+  currentSection,
+  totalSections,
+  variant,
   wrapper,
-  className,
-}: LessonCardProps): import("react/jsx-runtime").JSX.Element;
+}: LessonCardProps): React.ReactElement;
 export {};
 //# sourceMappingURL=lesson-card.d.ts.map

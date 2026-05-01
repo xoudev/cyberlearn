@@ -4,7 +4,7 @@ exports.prisma = void 0;
 const client_1 = require("@prisma/client");
 function createPrismaClient() {
   return new client_1.PrismaClient({
-    log: process.env["NODE_ENV"] === "development" ? ["query", "warn", "error"] : ["warn", "error"],
+    log: ["warn", "error"],
   });
 }
 exports.prisma = globalThis.__prisma ?? createPrismaClient();

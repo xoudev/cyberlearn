@@ -4,16 +4,19 @@ export declare const onboardingSchema: z.ZodObject<
   {
     username: z.ZodString;
     displayName: z.ZodString;
+    bio: z.ZodOptional<z.ZodString>;
   },
   "strip",
   z.ZodTypeAny,
   {
     username: string;
     displayName: string;
+    bio?: string | undefined;
   },
   {
     username: string;
     displayName: string;
+    bio?: string | undefined;
   }
 >;
 export type OnboardingInput = z.infer<typeof onboardingSchema>;

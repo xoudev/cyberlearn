@@ -1,0 +1,235 @@
+/* ==========================================================================
+   Cyber Learn — Design Tokens
+   Dark mode first. All tokens are CSS custom properties.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ---------- BRAND COLORS ---------- */
+  --brand-blue: #0024FF;          /* Primary actions, links, focus */
+  --brand-blue-hover: #1F3BFF;
+  --brand-blue-press: #001ACC;
+  --brand-turquoise: #0AFFD4;     /* Success, progress, XP, gamification */
+  --brand-turquoise-hover: #3DFFDD;
+  --brand-turquoise-press: #08D4B0;
+  --brand-gradient: linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%);
+
+  /* ---------- BACKGROUND SURFACES ---------- */
+  --bg-base: #030219;             /* App base */
+  --bg-raised: #07052099;         /* Navbar / sidebar overlay */
+  --bg-card: #0A0826;             /* Cards, panels */
+  --bg-card-hover: #110E33;
+  --bg-elevated: #14113D;         /* Hover rows, selected items */
+  --bg-input: #05041A;
+  --bg-code: #06041F;
+
+  /* ---------- BORDERS ---------- */
+  --border: #2A2560;              /* Default component border */
+  --border-subtle: #1A1640;
+  --border-strong: #3D3785;
+  --border-focus: #0024FF;
+  --border-turquoise: #0AFFD4;
+
+  /* ---------- TEXT ---------- */
+  --fg-primary: #F5F5FA;
+  --fg-secondary: #B8B5D1;
+  --fg-tertiary: #6F6B99;
+  --fg-disabled: #44406B;
+  --fg-inverse: #030219;
+  --fg-on-brand: #FFFFFF;
+
+  /* ---------- SEMANTIC COLORS ---------- */
+  --success: #0AFFD4;
+  --success-bg: rgba(10, 255, 212, 0.08);
+  --success-border: rgba(10, 255, 212, 0.35);
+
+  --info: #0024FF;
+  --info-bg: rgba(0, 36, 255, 0.12);
+  --info-border: rgba(0, 36, 255, 0.45);
+
+  --warning: #FFB547;
+  --warning-bg: rgba(255, 181, 71, 0.08);
+  --warning-border: rgba(255, 181, 71, 0.35);
+
+  --danger: #FF4757;
+  --danger-bg: rgba(255, 71, 87, 0.08);
+  --danger-border: rgba(255, 71, 87, 0.35);
+
+  /* ---------- CATEGORY COLORS ---------- */
+  --cat-cybersec: #FF4757;        /* Cybersecurity — red */
+  --cat-dev: #0024FF;             /* Development — blue */
+  --cat-network: #0AFFD4;         /* Networks — turquoise */
+
+  /* ---------- DIFFICULTY ---------- */
+  --diff-beginner: #0AFFD4;
+  --diff-intermediate: #0024FF;
+  --diff-advanced: #FF4757;
+
+  /* ---------- TYPOGRAPHY FAMILIES ---------- */
+  --font-display: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ---------- TYPE SCALE ---------- */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-5xl: 64px;
+
+  /* ---------- LETTER SPACING ---------- */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-caps: 0.08em;        /* For uppercase eyebrow labels */
+
+  /* ---------- LINE HEIGHTS ---------- */
+  --lh-tight: 1.1;
+  --lh-snug: 1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.65;
+
+  /* ---------- SPACING ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ---------- RADII ---------- */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* ---------- MOTION ---------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+
+  /* ---------- LAYOUT ---------- */
+  --sidebar-w: 240px;
+  --rail-w: 320px;
+  --navbar-h: 56px;
+}
+
+/* ==========================================================================
+   SEMANTIC TYPE CLASSES
+   ========================================================================== */
+
+.type-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-4xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-primary);
+}
+
+.type-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-3xl);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-primary);
+}
+
+.type-h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-2xl);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-primary);
+}
+
+.type-h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-xl);
+  line-height: var(--lh-snug);
+  color: var(--fg-primary);
+}
+
+.type-h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  line-height: var(--lh-snug);
+  color: var(--fg-primary);
+}
+
+.type-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--text-base);
+  line-height: var(--lh-relaxed);
+  color: var(--fg-secondary);
+}
+
+.type-body-strong {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--fg-primary);
+}
+
+.type-small {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+  color: var(--fg-secondary);
+}
+
+.type-eyebrow {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  line-height: 1;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--fg-tertiary);
+}
+
+.type-code {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg-primary);
+}
+
+/* ==========================================================================
+   BASE RESET
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-base);
+  color: var(--fg-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--lh-relaxed);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

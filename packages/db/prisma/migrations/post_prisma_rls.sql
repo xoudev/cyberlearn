@@ -63,8 +63,8 @@ CREATE POLICY "users_admin_all" ON public.users FOR ALL
 
 DROP POLICY IF EXISTS "prefs_self_all" ON public.user_preferences;
 CREATE POLICY "prefs_self_all" ON public.user_preferences FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.uid() = "userId")
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "prefs_admin_all" ON public.user_preferences;
 CREATE POLICY "prefs_admin_all" ON public.user_preferences FOR ALL
@@ -114,7 +114,7 @@ CREATE POLICY "path_lessons_admin_all" ON public.path_lessons FOR ALL
 
 DROP POLICY IF EXISTS "badges_select_active" ON public.badges;
 CREATE POLICY "badges_select_active" ON public.badges FOR SELECT
-  USING (is_active = true OR public.current_user_role() = 'ADMIN');
+  USING ("isActive" = true OR public.current_user_role() = 'ADMIN');
 
 DROP POLICY IF EXISTS "badges_admin_all" ON public.badges;
 CREATE POLICY "badges_admin_all" ON public.badges FOR ALL
@@ -130,7 +130,7 @@ CREATE POLICY "badge_rewards_select" ON public.lesson_badge_rewards FOR SELECT
 
 DROP POLICY IF EXISTS "user_badges_self_select" ON public.user_badges;
 CREATE POLICY "user_badges_self_select" ON public.user_badges FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "user_badges_admin_all" ON public.user_badges;
 CREATE POLICY "user_badges_admin_all" ON public.user_badges FOR ALL
@@ -140,15 +140,15 @@ CREATE POLICY "user_badges_admin_all" ON public.user_badges FOR ALL
 
 DROP POLICY IF EXISTS "progress_self_select" ON public.user_lesson_progress;
 CREATE POLICY "progress_self_select" ON public.user_lesson_progress FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "progress_self_insert" ON public.user_lesson_progress;
 CREATE POLICY "progress_self_insert" ON public.user_lesson_progress FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "progress_self_update" ON public.user_lesson_progress;
 CREATE POLICY "progress_self_update" ON public.user_lesson_progress FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "progress_admin_all" ON public.user_lesson_progress;
 CREATE POLICY "progress_admin_all" ON public.user_lesson_progress FOR ALL
@@ -158,8 +158,8 @@ CREATE POLICY "progress_admin_all" ON public.user_lesson_progress FOR ALL
 
 DROP POLICY IF EXISTS "path_progress_self_all" ON public.user_path_progress;
 CREATE POLICY "path_progress_self_all" ON public.user_path_progress FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.uid() = "userId")
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "path_progress_admin_all" ON public.user_path_progress;
 CREATE POLICY "path_progress_admin_all" ON public.user_path_progress FOR ALL
@@ -174,7 +174,7 @@ CREATE POLICY "certificates_select_public" ON public.certificates FOR SELECT
 
 DROP POLICY IF EXISTS "certificates_admin_write" ON public.certificates;
 CREATE POLICY "certificates_admin_write" ON public.certificates FOR INSERT
-  USING (public.current_user_role() = 'ADMIN');
+  WITH CHECK (public.current_user_role() = 'ADMIN');
 
 DROP POLICY IF EXISTS "certificates_admin_update" ON public.certificates;
 CREATE POLICY "certificates_admin_update" ON public.certificates FOR UPDATE
@@ -184,14 +184,14 @@ CREATE POLICY "certificates_admin_update" ON public.certificates FOR UPDATE
 
 DROP POLICY IF EXISTS "notifications_self_all" ON public.notifications;
 CREATE POLICY "notifications_self_all" ON public.notifications FOR ALL
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = "userId");
 
 -- ─── REVIEW_SCHEDULES ────────────────────────────────────────────────────────
 
 DROP POLICY IF EXISTS "review_self_all" ON public.review_schedules;
 CREATE POLICY "review_self_all" ON public.review_schedules FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.uid() = "userId")
+  WITH CHECK (auth.uid() = "userId");
 
 -- ─── RATINGS ─────────────────────────────────────────────────────────────────
 
@@ -201,11 +201,11 @@ CREATE POLICY "ratings_select_all" ON public.ratings FOR SELECT
 
 DROP POLICY IF EXISTS "ratings_self_write" ON public.ratings;
 CREATE POLICY "ratings_self_write" ON public.ratings FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "ratings_self_update" ON public.ratings;
 CREATE POLICY "ratings_self_update" ON public.ratings FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "ratings_admin_all" ON public.ratings;
 CREATE POLICY "ratings_admin_all" ON public.ratings FOR ALL
@@ -215,15 +215,15 @@ CREATE POLICY "ratings_admin_all" ON public.ratings FOR ALL
 
 DROP POLICY IF EXISTS "questions_select_visible" ON public.lesson_questions;
 CREATE POLICY "questions_select_visible" ON public.lesson_questions FOR SELECT
-  USING (is_hidden = false OR auth.uid() = user_id OR public.current_user_role() = 'ADMIN');
+  USING ("isHidden" = false OR auth.uid() = "userId" OR public.current_user_role() = 'ADMIN');
 
 DROP POLICY IF EXISTS "questions_self_insert" ON public.lesson_questions;
 CREATE POLICY "questions_self_insert" ON public.lesson_questions FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "questions_self_update" ON public.lesson_questions;
 CREATE POLICY "questions_self_update" ON public.lesson_questions FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "questions_admin_all" ON public.lesson_questions;
 CREATE POLICY "questions_admin_all" ON public.lesson_questions FOR ALL
@@ -233,15 +233,15 @@ CREATE POLICY "questions_admin_all" ON public.lesson_questions FOR ALL
 
 DROP POLICY IF EXISTS "answers_select_visible" ON public.lesson_answers;
 CREATE POLICY "answers_select_visible" ON public.lesson_answers FOR SELECT
-  USING (is_hidden = false OR auth.uid() = user_id OR public.current_user_role() = 'ADMIN');
+  USING ("isHidden" = false OR auth.uid() = "userId" OR public.current_user_role() = 'ADMIN');
 
 DROP POLICY IF EXISTS "answers_self_insert" ON public.lesson_answers;
 CREATE POLICY "answers_self_insert" ON public.lesson_answers FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "answers_self_update" ON public.lesson_answers;
 CREATE POLICY "answers_self_update" ON public.lesson_answers FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "answers_admin_all" ON public.lesson_answers;
 CREATE POLICY "answers_admin_all" ON public.lesson_answers FOR ALL
@@ -255,7 +255,7 @@ CREATE POLICY "tickets_insert_public" ON public.contact_tickets FOR INSERT
 
 DROP POLICY IF EXISTS "tickets_self_select" ON public.contact_tickets;
 CREATE POLICY "tickets_self_select" ON public.contact_tickets FOR SELECT
-  USING (auth.uid() = user_id OR public.current_user_role() = 'ADMIN');
+  USING (auth.uid() = "userId" OR public.current_user_role() = 'ADMIN');
 
 DROP POLICY IF EXISTS "tickets_admin_all" ON public.contact_tickets;
 CREATE POLICY "tickets_admin_all" ON public.contact_tickets FOR ALL
@@ -275,7 +275,7 @@ CREATE POLICY "audit_admin_select" ON public.audit_logs FOR SELECT
 
 DROP POLICY IF EXISTS "placement_q_select_auth" ON public.placement_questions;
 CREATE POLICY "placement_q_select_auth" ON public.placement_questions FOR SELECT
-  USING (is_active = true OR public.current_user_role() = 'ADMIN');
+  USING ("isActive" = true OR public.current_user_role() = 'ADMIN');
 
 DROP POLICY IF EXISTS "placement_q_admin_all" ON public.placement_questions;
 CREATE POLICY "placement_q_admin_all" ON public.placement_questions FOR ALL
@@ -285,8 +285,8 @@ CREATE POLICY "placement_q_admin_all" ON public.placement_questions FOR ALL
 
 DROP POLICY IF EXISTS "placement_result_self" ON public.user_placement_results;
 CREATE POLICY "placement_result_self" ON public.user_placement_results FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.uid() = "userId")
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "placement_result_admin" ON public.user_placement_results;
 CREATE POLICY "placement_result_admin" ON public.user_placement_results FOR ALL
@@ -296,8 +296,8 @@ CREATE POLICY "placement_result_admin" ON public.user_placement_results FOR ALL
 
 DROP POLICY IF EXISTS "skip_waivers_self" ON public.user_skip_waivers;
 CREATE POLICY "skip_waivers_self" ON public.user_skip_waivers FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.uid() = "userId")
+  WITH CHECK (auth.uid() = "userId");
 
 DROP POLICY IF EXISTS "skip_waivers_admin" ON public.user_skip_waivers;
 CREATE POLICY "skip_waivers_admin" ON public.user_skip_waivers FOR ALL

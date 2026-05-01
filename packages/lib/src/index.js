@@ -1,6 +1,6 @@
 "use strict";
 // @cyberlearn/lib
-// Shared business logic: auth guards, placement scoring, XP/levels, SM-2, etc.
+// Shared business logic: auth guards, placement scoring, XP/levels, MDX utils.
 var __createBinding =
   (this && this.__createBinding) ||
   (Object.create
@@ -31,4 +31,11 @@ var __exportStar =
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./auth/guards.js"), exports);
 __exportStar(require("./placement/scoring.js"), exports);
+__exportStar(require("./xp.js"), exports);
+__exportStar(require("./mdx/sanitize.js"), exports);
+__exportStar(require("./mdx/toc.js"), exports);
+__exportStar(require("./mdx/split-sections.js"), exports);
+__exportStar(require("./gamification/badge-evaluator.js"), exports);
+__exportStar(require("./gamification/streak.js"), exports);
+__exportStar(require("./sm2.js"), exports);
 //# sourceMappingURL=index.js.map
