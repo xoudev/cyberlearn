@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 
 export const metadata: Metadata = { title: "Badges" };
@@ -24,14 +25,14 @@ const RARITY_COLORS: Record<string, RarityStyle> = {
 };
 
 const CRITERION_LABEL: Record<string, string> = {
-  LESSON_COMPLETED: "Leçon complétée",
+  LESSON_COMPLETED: "Leçons complétées",
   PATH_COMPLETED: "Parcours complété",
   XP_THRESHOLD: "Seuil XP",
   STREAK_DAYS: "Jours de streak",
-  LESSON_COUNT: "Nombre de leçons",
+  CATEGORY_MASTERY: "Maîtrise catégorie",
+  LESSON_SPECIFIC: "Leçon spécifique",
   PERFECT_QUIZ: "Quiz parfait",
-  FIRST_LOGIN: "Première connexion",
-  MANUAL: "Manuel",
+  CUSTOM: "Personnalisé",
 };
 
 const BORDER = "#1F1B47";
@@ -118,6 +119,28 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
             {String(activeCount)} actifs · {String(inactiveCount)} inactifs
           </p>
         </div>
+        <Link
+          href="/badges/new"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "11px 20px",
+            background: "#0024FF",
+            border: "1px solid #0024FF",
+            color: "#fff",
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            textDecoration: "none",
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+          Nouveau badge
+        </Link>
       </div>
 
       {badges.length === 0 ? (
@@ -127,11 +150,36 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
             textAlign: "center",
             border: `1px dashed ${BORDER}`,
             background: "rgba(5,4,26,0.4)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 16,
           }}
         >
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
             {"// aucun badge défini"}
           </p>
+          <Link
+            href="/badges/new"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              background: "#0024FF",
+              border: "1px solid #0024FF",
+              color: "#fff",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+            Créer le premier badge
+          </Link>
         </div>
       ) : (
         <div
@@ -148,6 +196,7 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
                 <th style={{ ...thStyle, textAlign: "right" }}>XP</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>Obtenus</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>Statut</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -259,6 +308,25 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
                           Inactif
                         </span>
                       )}
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right" }}>
+                      <Link
+                        href={`/badges/${b.id}/edit`}
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          color: "#4D8BFF",
+                          textDecoration: "none",
+                          border: "1px solid rgba(77,139,255,0.25)",
+                          padding: "5px 12px",
+                          display: "inline-block",
+                        }}
+                      >
+                        Éditer
+                      </Link>
                     </td>
                   </tr>
                 );

@@ -310,6 +310,38 @@ aside[data-state="collapsed"] .sidebar-label {
   }
 }
 
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -800px 0;
+  }
+  100% {
+    background-position: 800px 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #1f1b47 0%,
+    #1f1b47 30%,
+    #2a2560 50%,
+    #1f1b47 70%,
+    #1f1b47 100%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    background: #1f1b47;
+  }
+}
+
 /* ─── Syntax highlighting theme (rehype-highlight / highlight.js) ────────── */
 /* Matches the design-system.md code block spec */
 
@@ -2909,4 +2941,111 @@ article.lesson-content blockquote p code {
   .cc__btn {
     transition: none;
   }
+}
+
+/* ─── Challenge instructions — prose typography ──────────────────────────── */
+
+.challenge-instructions p {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.75;
+  color: #b8b5d1;
+  margin: 0 0 16px;
+}
+.challenge-instructions h1,
+.challenge-instructions h2 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: #f5f5fa;
+  margin: 28px 0 12px;
+}
+.challenge-instructions h1 {
+  font-size: 20px;
+}
+.challenge-instructions h2 {
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+.challenge-instructions h3 {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b6890;
+  margin: 24px 0 10px;
+}
+.challenge-instructions ul,
+.challenge-instructions ol {
+  padding-left: 1.4em;
+  margin: 0 0 16px;
+  color: #b8b5d1;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.challenge-instructions ul > li::marker {
+  color: #0affd4;
+}
+.challenge-instructions ol > li::marker {
+  color: #4d8bff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.challenge-instructions code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: rgba(10, 8, 38, 0.8);
+  border: 1px solid #1f1b47;
+  color: #0affd4;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.challenge-instructions pre {
+  background: #0a0826;
+  border: 1px solid #1f1b47;
+  border-left: 3px solid #0affd4;
+  border-radius: 6px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 0 0 20px;
+}
+.challenge-instructions pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  color: #b8b5d1;
+}
+.challenge-instructions blockquote {
+  border-left: 3px solid #2a2560;
+  padding: 10px 16px;
+  margin: 0 0 16px;
+  color: #6b6890;
+  font-style: italic;
+}
+.challenge-instructions strong {
+  color: #f5f5fa;
+  font-weight: 600;
+}
+.challenge-instructions a {
+  color: #4d8bff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.challenge-instructions hr {
+  border: none;
+  border-top: 1px solid #1f1b47;
+  margin: 24px 0;
+}
+
+/* ── Legal pages ──────────────────────────────────────────────────────────── */
+.legal-back-link {
+  color: #6b6890;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  text-decoration: none;
+  transition: color 200ms;
+}
+.legal-back-link:hover {
+  color: #b8b5d1;
 }

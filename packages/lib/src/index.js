@@ -38,4 +38,5 @@ __exportStar(require("./mdx/split-sections.js"), exports);
 __exportStar(require("./gamification/badge-evaluator.js"), exports);
 __exportStar(require("./gamification/streak.js"), exports);
 __exportStar(require("./sm2.js"), exports);
+__exportStar(require("./terminal/scenarios.js"), exports);
 //# sourceMappingURL=index.js.map

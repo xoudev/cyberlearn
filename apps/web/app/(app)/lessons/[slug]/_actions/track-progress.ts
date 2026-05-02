@@ -66,6 +66,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
       streakDays,
       totalLessonsCompleted: lessonCounts.total + 1,
       categoryLessonCounts: catCounts,
+      completedLessonId: lessonId,
     });
   }
 
@@ -135,6 +136,23 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
         ]
       : []),
     ...(notifications.length > 0 ? [prisma.notification.createMany({ data: notifications })] : []),
+    // Schedule first review for tomorrow — SM-2 starts here
+    ...(isFirstCompletion
+      ? [
+          prisma.reviewSchedule.upsert({
+            where: { userId_lessonId: { userId: authUser.id, lessonId } },
+            create: {
+              userId: authUser.id,
+              lessonId,
+              nextReviewAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+              easeFactor: 2.5,
+              intervalDays: 1,
+              repetitions: 0,
+            },
+            update: {},
+          }),
+        ]
+      : []),
   ]);
 
   revalidatePath(`/lessons/${lesson.slug}`);

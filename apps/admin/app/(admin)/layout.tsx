@@ -38,13 +38,15 @@ export default async function AdminLayout({
   const initials = emailPrefix.slice(0, 2).toUpperCase();
   const handle = "@" + emailPrefix;
 
-  const [lessonCount, pathCount, badgeCount, userCount, ticketCount] = await Promise.all([
-    prisma.lesson.count({ where: { status: "PUBLISHED" } }),
-    prisma.path.count({ where: { status: "PUBLISHED" } }),
-    prisma.badge.count(),
-    prisma.user.count(),
-    prisma.contactTicket.count({ where: { status: "OPEN" } }),
-  ]);
+  const [lessonCount, pathCount, badgeCount, challengeCount, userCount, ticketCount] =
+    await Promise.all([
+      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
+      prisma.path.count({ where: { status: "PUBLISHED" } }),
+      prisma.badge.count(),
+      prisma.challenge.count({ where: { isActive: true } }),
+      prisma.user.count(),
+      prisma.contactTicket.count({ where: { status: "OPEN" } }),
+    ]);
 
   return (
     <div style={{ background: "#030219", minHeight: "100vh" }}>
@@ -58,6 +60,7 @@ export default async function AdminLayout({
             lessons: lessonCount,
             paths: pathCount,
             badges: badgeCount,
+            challenges: challengeCount,
             users: userCount,
             tickets: ticketCount,
           }}

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { badgeRepository, prisma } from "@cyberlearn/db";
 import { BadgesCollection } from "./_components/badges-collection";
 import type { BadgeGroup, SerializedBadge, BadgeProgress } from "./_components/badges-collection";
+import { Skeleton } from "@/components/ui/skeleton";
 import { requireRequestUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Badges" };
@@ -23,7 +24,9 @@ interface UserStats {
   streakDays: number;
   completedTotal: number;
   completedByCategory: Record<string, number>;
+  completedLessonIds: Set<string>;
   completedPaths: number;
+  certifiedPaths: number;
 }
 
 function computeProgress(
@@ -41,6 +44,9 @@ function computeProgress(
       return { done: Math.min(stats.completedTotal, count), total: count, label: "leçons" };
     }
     case "PATH_COMPLETED": {
+      if (data.withCertificate === true) {
+        return { done: Math.min(stats.certifiedPaths, 1), total: 1, label: "certificat" };
+      }
       const count = typeof data.count === "number" ? data.count : 1;
       return { done: Math.min(stats.completedPaths, count), total: count, label: "parcours" };
     }
@@ -65,6 +71,12 @@ function computeProgress(
         label: `leçons ${category.toLowerCase()}`,
       };
     }
+    case "LESSON_SPECIFIC": {
+      const lessonId = typeof data.lessonId === "string" ? data.lessonId : "";
+      if (!lessonId) return null;
+      const done = stats.completedLessonIds.has(lessonId) ? 1 : 0;
+      return { done, total: 1, label: "leçon spécifique" };
+    }
     default:
       return null;
   }
@@ -72,33 +84,97 @@ function computeProgress(
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default async function BadgesPage(): Promise<React.ReactElement> {
+export default function BadgesPage(): React.ReactElement {
+  return (
+    <Suspense fallback={<BadgesSkeleton />}>
+      <BadgesContent />
+    </Suspense>
+  );
+}
+
+function BadgesSkeleton(): React.ReactElement {
+  return (
+    <div className="page-container">
+      <div style={{ marginBottom: 40 }}>
+        <Skeleton style={{ height: 36, width: 160, marginBottom: 12 }} />
+        <Skeleton style={{ height: 14, width: 220 }} />
+      </div>
+      {Array.from({ length: 2 }).map((_, gi) => (
+        <div key={gi} style={{ marginBottom: 48 }}>
+          <Skeleton style={{ height: 20, width: 100, marginBottom: 20 }} />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: 16,
+            }}
+          >
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "#0A0826",
+                  border: "1px solid #1F1B47",
+                  borderRadius: 12,
+                  padding: "32px 24px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 14,
+                }}
+              >
+                <Skeleton
+                  style={{
+                    width: 96,
+                    height: 112,
+                    borderRadius: 0,
+                    clipPath: "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)",
+                  }}
+                />
+                <Skeleton style={{ height: 14, width: "70%" }} />
+                <Skeleton style={{ height: 12, width: "50%" }} />
+                <Skeleton style={{ height: 22, width: 80, borderRadius: 99 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+async function BadgesContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
   // Parallel data fetch: all active badges + user earned badges + user stats
-  const [allBadges, earnedUserBadges, user, completedLessons, completedPaths] = await Promise.all([
-    badgeRepository.findAllActive(),
-    badgeRepository.findUserBadges(authUser.id),
+  const [allBadges, earnedUserBadges, user, completedLessons, completedPaths, certifiedPaths] =
+    await Promise.all([
+      badgeRepository.findAllActive(),
+      badgeRepository.findUserBadges(authUser.id),
 
-    prisma.user.findUnique({
-      where: { id: authUser.id },
-      select: { xpTotal: true, streakDays: true },
-    }),
+      prisma.user.findUnique({
+        where: { id: authUser.id },
+        select: { xpTotal: true, streakDays: true },
+      }),
 
-    // All completed lessons with category for CATEGORY_MASTERY progress
-    prisma.userLessonProgress.findMany({
-      where: { userId: authUser.id, status: "COMPLETED" },
-      select: { lesson: { select: { category: true } } },
-    }),
+      // All completed lessons with lessonId + category for CATEGORY_MASTERY and LESSON_SPECIFIC
+      prisma.userLessonProgress.findMany({
+        where: { userId: authUser.id, status: "COMPLETED" },
+        select: { lessonId: true, lesson: { select: { category: true } } },
+      }),
 
-    prisma.userPathProgress.count({
-      where: { userId: authUser.id, status: "COMPLETED" },
-    }),
-  ]);
+      prisma.userPathProgress.count({
+        where: { userId: authUser.id, status: "COMPLETED" },
+      }),
+
+      prisma.certificate.count({ where: { userId: authUser.id } }),
+    ]);
 
   // Build stats object
   const completedByCategory: Record<string, number> = {};
+  const completedLessonIds = new Set<string>();
   for (const row of completedLessons) {
+    completedLessonIds.add(row.lessonId);
     const cat = row.lesson.category;
     completedByCategory[cat] = (completedByCategory[cat] ?? 0) + 1;
   }
@@ -108,18 +184,39 @@ export default async function BadgesPage(): Promise<React.ReactElement> {
     streakDays: user?.streakDays ?? 0,
     completedTotal: completedLessons.length,
     completedByCategory,
+    completedLessonIds,
     completedPaths,
+    certifiedPaths,
   };
 
   // Build earned lookup: badgeId → formatted date string
+  const fmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
   const earnedMap = new Map<string, string>(
-    earnedUserBadges.map((ub) => [
-      ub.badgeId,
-      new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" }).format(
-        ub.earnedAt,
-      ),
-    ]),
+    earnedUserBadges.map((ub) => [ub.badgeId, fmt.format(ub.earnedAt)]),
   );
+
+  // Retroactively award badges whose progress is at 100% but were never triggered.
+  // Idempotent: skipDuplicates prevents double-awards across page visits.
+  const retroactiveIds = allBadges
+    .filter((b) => {
+      if (earnedMap.has(b.id)) return false;
+      const progress = computeProgress(b.criterionType, b.criterionData, stats);
+      return progress !== null && progress.total > 0 && progress.done >= progress.total;
+    })
+    .map((b) => b.id);
+
+  if (retroactiveIds.length > 0) {
+    await prisma.userBadge.createMany({
+      data: retroactiveIds.map((badgeId) => ({
+        userId: authUser.id,
+        badgeId,
+        context: { source: "retroactive" },
+      })),
+      skipDuplicates: true,
+    });
+    const nowStr = fmt.format(new Date());
+    for (const id of retroactiveIds) earnedMap.set(id, nowStr);
+  }
 
   // Rarity counters
   const rarityTotals: Record<string, number> = {};

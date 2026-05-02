@@ -2,7 +2,8 @@
 // @cyberlearn/db
 // Prisma client, Supabase client factories, repositories, and database types.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TicketStatus =
+exports.ChallengeType =
+  exports.TicketStatus =
   exports.TicketTheme =
   exports.NotificationType =
   exports.ProgressStatus =
@@ -15,6 +16,7 @@ exports.TicketStatus =
   exports.createSupabaseAdminClient =
   exports.createSupabaseBrowserClient =
   exports.createSupabaseServerClient =
+  exports.challengeRepository =
   exports.leaderboardRepository =
   exports.notificationRepository =
   exports.qaRepository =
@@ -94,6 +96,13 @@ Object.defineProperty(exports, "leaderboardRepository", {
   enumerable: true,
   get: function () {
     return leaderboard_repository_js_1.leaderboardRepository;
+  },
+});
+var challenge_repository_js_1 = require("./repositories/challenge.repository.js");
+Object.defineProperty(exports, "challengeRepository", {
+  enumerable: true,
+  get: function () {
+    return challenge_repository_js_1.challengeRepository;
   },
 });
 var server_js_1 = require("./supabase/server.js");
@@ -176,6 +185,12 @@ Object.defineProperty(exports, "TicketStatus", {
   enumerable: true,
   get: function () {
     return client_1.TicketStatus;
+  },
+});
+Object.defineProperty(exports, "ChallengeType", {
+  enumerable: true,
+  get: function () {
+    return client_1.ChallengeType;
   },
 });
 //# sourceMappingURL=index.js.map

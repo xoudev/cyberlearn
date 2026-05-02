@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "BadgeCriterionType" ADD VALUE IF NOT EXISTS 'LESSON_SPECIFIC';

@@ -134,11 +134,12 @@ export async function checkAndIssueCertificates(userId: string, lessonId: string
 
 /** Evaluates and awards any PATH_COMPLETED badges triggered by a newly completed path. */
 async function awardPathCompletedBadges(userId: string, pathId: string): Promise<void> {
-  const [allBadges, earnedIds, user, lessonCounts] = await Promise.all([
+  const [allBadges, earnedIds, user, lessonCounts, totalCertificates] = await Promise.all([
     badgeRepository.findAllActive(),
     badgeRepository.findUserBadgeIds(userId),
     userRepository.findForGamification(userId),
     userRepository.countCompletedLessonsByCategory(userId),
+    prisma.certificate.count({ where: { userId } }),
   ]);
 
   if (!user || allBadges.length === 0) return;
@@ -149,6 +150,7 @@ async function awardPathCompletedBadges(userId: string, pathId: string): Promise
     totalLessonsCompleted: lessonCounts.total,
     categoryLessonCounts: lessonCounts.byCategory,
     completedPathId: pathId,
+    totalCertificates,
   });
 
   if (newBadgeIds.length === 0) return;

@@ -101,7 +101,11 @@
       "Bash(grep -v \"^/home/jordan/repositories/Cyberlearn/apps/web:$\")",
       "Bash(grep -rn 'dangerouslySetInnerHTML\\\\|$queryRawUnsafe\\\\|$executeRawUnsafe' /home/jordan/repositories/Cyberlearn/apps/ '--include=*.ts' '--include=*.tsx')",
       "Bash(grep -rn 'dangerouslySetInnerHTML\\\\|$queryRawUnsafe\\\\|$executeRawUnsafe' /home/jordan/repositories/Cyberlearn/packages/ '--include=*.ts' '--include=*.tsx')",
-      "Bash(grep -v \"node_modules\\\\|\\\\.d\\\\.ts\\\\|\\\\.js$\\\\|\\\\.js.map\")"
+      "Bash(grep -v \"node_modules\\\\|\\\\.d\\\\.ts\\\\|\\\\.js$\\\\|\\\\.js.map\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")",
+      "Bash(wait)",
+      "Bash(grep -v \"Use \\\\`node\")"
     ]
   }
 }

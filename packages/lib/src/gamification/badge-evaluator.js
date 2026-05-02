@@ -19,6 +19,9 @@ function isCriterionMet(badge, ctx) {
     case "LESSON_COMPLETED":
       return ctx.totalLessonsCompleted >= num(d, "count");
     case "PATH_COMPLETED": {
+      if (d.withCertificate === true) {
+        return (ctx.totalCertificates ?? 0) >= 1;
+      }
       if (!ctx.completedPathId) return false;
       const required = str(d, "pathId");
       return required === "" || required === ctx.completedPathId;
@@ -31,6 +34,11 @@ function isCriterionMet(badge, ctx) {
       const cat = str(d, "category");
       const count = num(d, "count");
       return count > 0 && (ctx.categoryLessonCounts[cat] ?? 0) >= count;
+    }
+    case "LESSON_SPECIFIC": {
+      if (!ctx.completedLessonId) return false;
+      const required = str(d, "lessonId");
+      return required !== "" && required === ctx.completedLessonId;
     }
     case "PERFECT_QUIZ":
     case "CUSTOM":

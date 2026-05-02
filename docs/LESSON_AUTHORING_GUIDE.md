@@ -356,6 +356,29 @@ main:
 | `commands` | `Record<string, string>` | — | Commandes personnalisées supplémentaires |
 | `title` | string | — | Titre affiché dans la barre du terminal |
 | `height` | number | `320` | Hauteur en pixels |
+| `expectedCommands` | `string[]` | — | Commandes que l'étudiant doit taper pour valider l'exercice |
+| `hints` | `string[]` | — | Indices affichés sous le terminal |
+| `onComplete` | `() => void` | — | Callback déclenché quand toutes les `expectedCommands` ont été tapées |
+
+**Exercice avec validation :**
+
+```jsx
+<SimulatedTerminal
+  shell="bash"
+  scenario="nmap-basic"
+  title="Exercice — Reconnaissance réseau"
+  expectedCommands={["nmap -sV 192.168.1.100", "nmap -A 192.168.1.100"]}
+  hints={[
+    "L'option -sV détecte les versions des services.",
+    "L'option -A active le mode agressif (sV + sC + OS detection).",
+  ]}
+/>
+```
+
+- La barre de titre affiche `0/2 cmd` → `✓ 2/2 cmd` au fur et à mesure
+- Chaque commande attendue tapée affiche `✓ Bonne commande !` en turquoise dans le terminal
+- `onComplete` est déclenché quand toutes sont validées (utile si le terminal est dans un stepper d'exercice)
+- Les hints sont toujours visibles (non masqués) — les mettre si le scénario est pédagogique, pas si c'est une évaluation libre
 
 #### Scénarios disponibles
 
@@ -420,6 +443,38 @@ Commandes disponibles : `nmap -sV -sC target.ctf`, `nmap -p- --min-rate 5000 tar
 
 ---
 
+**`nmap-basic`** — Reconnaissance réseau avec Nmap (cible : `192.168.1.100`) :
+```jsx
+<SimulatedTerminal shell="bash" scenario="nmap-basic" title="Terminal — Scan réseau" />
+```
+Commandes disponibles : `nmap 192.168.1.100`, `nmap -sV 192.168.1.100`, `nmap -p 80 192.168.1.100`, `nmap -p 22 192.168.1.100`, `nmap -p 1-1000 192.168.1.100`, `nmap -A 192.168.1.100`, `nmap -sV -sC 192.168.1.100`, `nmap -p- 192.168.1.100`
+
+---
+
+**`sqli-basic`** — Injection SQL avec sqlmap (cible : `http://vulnerable.ctf/login`) :
+```jsx
+<SimulatedTerminal shell="bash" scenario="sqli-basic" title="Terminal — SQLi" />
+```
+Commandes disponibles : `sqlmap -u 'http://vulnerable.ctf/login?id=1'`, `sqlmap -u '...' --dbs`, `sqlmap -u '...' --tables`, `sqlmap -u '...' -D ctf_database --tables`, `sqlmap -u '...' -D ctf_database -T secrets --dump`, `sqlmap -u '...' -D ctf_database -T users --dump`
+
+---
+
+**`file-recon`** — Exploration de fichiers Linux (répertoire avec fichiers cachés) :
+```jsx
+<SimulatedTerminal shell="bash" scenario="file-recon" title="Terminal — Exploration fichiers" />
+```
+Commandes disponibles : `ls`, `ls -la`, `ls -la .hidden`, `cat notes.txt`, `cat config.bak`, `cat .hidden/flag.txt`, `cat .hidden/credentials.old`, `whoami`, `find . -name '*.txt'`, `find . -name '*.bak'`, `find . -type f`, `cat script.sh`
+
+---
+
+**`network-recon`** — Reconnaissance réseau locale :
+```jsx
+<SimulatedTerminal shell="bash" scenario="network-recon" title="Terminal — Réseau" />
+```
+Commandes disponibles : `ping 8.8.8.8`, `ping -c 3 192.168.1.1`, `traceroute 8.8.8.8`, `netstat -tuln`, `netstat -an`, `ss -tlnp`, `ss -s`, `ip addr`, `ip route`
+
+---
+
 **Commandes personnalisées** (pour tout scénario) :
 
 Si aucun scénario existant ne convient, ajouter des commandes spécifiques :
@@ -442,6 +497,106 @@ Les commandes du `scenario` + les commandes `commands` sont fusionnées — `com
 
 ---
 
+### 5.5 LessonVideo — Vidéo pédagogique
+
+Intègre une vidéo hébergée sur Supabase Storage (ou toute URL `.mp4`/`.webm`).
+
+| Prop | Type | Défaut | Description |
+|------|------|--------|-------------|
+| `src` | `string` | — | URL de la vidéo (obligatoire) |
+| `title` | `string` | — | Titre affiché dans l'en-tête |
+| `caption` | `string` | — | Légende sous la vidéo |
+| `aspect` | `"16/9"` \| `"4/3"` \| `"1/1"` | `"16/9"` | Ratio d'affichage |
+
+```mdx
+<LessonVideo
+  src="https://xxx.supabase.co/storage/v1/object/public/lessons/intro-nmap.mp4"
+  title="Démonstration nmap"
+  caption="Scan d'une machine cible avec nmap -sV"
+/>
+```
+
+```mdx
+{/* Ratio 4:3 pour screencasts */}
+<LessonVideo
+  src="https://xxx.supabase.co/storage/v1/object/public/lessons/demo.mp4"
+  aspect="4/3"
+/>
+```
+
+---
+
+### 5.6 LessonImage — Image annotée
+
+Affiche une image avec bordure et légende optionnelle. Utilise `next/image` pour les URLs Supabase (optimisation automatique) et `<img>` pour les autres domaines.
+
+| Prop | Type | Défaut | Description |
+|------|------|--------|-------------|
+| `src` | `string` | — | URL de l'image (obligatoire) |
+| `alt` | `string` | — | Texte alternatif (obligatoire, accessibilité) |
+| `caption` | `string` | — | Légende sous l'image |
+| `width` | `number` | `1200` | Largeur intrinsèque en pixels |
+| `height` | `number` | `675` | Hauteur intrinsèque en pixels |
+| `variant` | `"default"` \| `"full"` \| `"inline"` | `"default"` | Mise en page |
+
+- `"default"` — centré avec marge
+- `"full"` — pleine largeur (déborde des marges de contenu)
+- `"inline"` — flotte à droite du texte (max 320px)
+
+```mdx
+<LessonImage
+  src="https://xxx.supabase.co/storage/v1/object/public/lessons/tcp-handshake.png"
+  alt="Schéma du handshake TCP à trois voies"
+  caption="Établissement d'une connexion TCP : SYN → SYN-ACK → ACK"
+  width={1200}
+  height={600}
+/>
+```
+
+```mdx
+{/* Image flottante à droite */}
+<LessonImage
+  src="https://xxx.supabase.co/storage/v1/object/public/lessons/osi-model.png"
+  alt="Modèle OSI 7 couches"
+  variant="inline"
+  width={400}
+  height={500}
+/>
+```
+
+---
+
+### 5.7 ExternalLink — Lien externe
+
+Lien vers une ressource externe. Deux variantes : carte cliquable (`card`, défaut) ou lien inline (`link`). Tous les liens s'ouvrent dans un nouvel onglet avec `rel="noopener noreferrer"`. Seuls les protocoles `https://` et `http://` sont autorisés.
+
+| Prop | Type | Défaut | Description |
+|------|------|--------|-------------|
+| `href` | `string` | — | URL de destination (obligatoire, doit être une URL valide) |
+| `children` | `string` | — | Texte du lien (affiche l'URL si absent) |
+| `description` | `string` | — | Description courte (carte uniquement) |
+| `variant` | `"card"` \| `"link"` | `"card"` | Style d'affichage |
+
+```mdx
+{/* Carte (défaut) */}
+<ExternalLink
+  href="https://nmap.org/book/man.html"
+  description="Documentation officielle des options et techniques de scan"
+>
+  Nmap Reference Guide
+</ExternalLink>
+```
+
+```mdx
+{/* Lien inline dans un paragraphe */}
+Pour en savoir plus, consultez la{" "}
+<ExternalLink href="https://owasp.org/www-project-top-ten/" variant="link">
+  liste OWASP Top 10
+</ExternalLink>.
+```
+
+---
+
 ## 6. Règles de contenu
 
 ### Ce qu'on DOIT avoir dans chaque leçon
@@ -457,7 +612,7 @@ Les commandes du `scenario` + les commandes `commands` sont fusionnées — `com
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` — rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<CodePlayground>`, `<SimulatedTerminal>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<CodePlayground>`, `<SimulatedTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 
