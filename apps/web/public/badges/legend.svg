@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <polygon points="40,4 72,22 72,58 40,76 8,58 8,22" fill="#0A0826" stroke="#FFB020" stroke-width="1.5" opacity="0.9"/>
+  <polygon points="40,10 66,25 66,55 40,70 14,55 14,25" fill="none" stroke="#FFB020" stroke-width="0.5" opacity="0.3"/>
+  <!-- Crown -->
+  <polygon points="24,52 24,36 32,44 40,24 48,44 56,36 56,52" fill="none" stroke="#FFB020" stroke-width="2" stroke-linejoin="round"/>
+  <rect x="22" y="52" width="36" height="5" rx="2" fill="#FFB020" opacity="0.8"/>
+  <!-- Jewels -->
+  <circle cx="40" cy="28" r="2.5" fill="#FFB020"/>
+  <circle cx="30" cy="44" r="2" fill="#FFB020" opacity="0.6"/>
+  <circle cx="50" cy="44" r="2" fill="#FFB020" opacity="0.6"/>
+</svg>

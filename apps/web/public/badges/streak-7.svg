@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <polygon points="40,4 72,22 72,58 40,76 8,58 8,22" fill="#0A0826" stroke="#FFB020" stroke-width="1.5" opacity="0.9"/>
+  <polygon points="40,10 66,25 66,55 40,70 14,55 14,25" fill="none" stroke="#FFB020" stroke-width="0.5" opacity="0.3"/>
+  <!-- Flame -->
+  <path d="M40 58 C28 50 26 40 32 32 C33 38 36 39 36 39 C34 32 38 24 40 20 C42 26 44 28 44 28 C44 24 46 22 48 24 C52 30 52 40 46 46 C46 46 48 42 46 40 C44 50 52 52 40 58 Z" fill="#FFB020" opacity="0.9"/>
+  <path d="M40 54 C34 48 33 42 36 38 C36 41 38 42 38 42 C37 38 39 34 40 32 C41 36 42 37 43 35 C45 39 45 45 41 49 C41 49 42 46 41 45 C40 49 44 51 40 54 Z" fill="#FF6B00" opacity="0.8"/>
+</svg>
