@@ -11,7 +11,7 @@ export function VerifyForm(): React.JSX.Element {
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const id = value.trim();
     if (!UUID_RE.test(id)) {
