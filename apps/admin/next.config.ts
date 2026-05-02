@@ -1,6 +1,15 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.join(__dirname, "../../"),
+  outputFileTracingIncludes: {
+    "/*": [
+      "../../node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/libquery_engine*",
+      "../../node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client/libquery_engine*",
+      "../../packages/db/node_modules/.prisma/client/libquery_engine*",
+    ],
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
