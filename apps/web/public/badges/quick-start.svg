@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <polygon points="40,4 72,22 72,58 40,76 8,58 8,22" fill="#0A0826" stroke="#4D8BFF" stroke-width="1.5" opacity="0.9"/>
+  <polygon points="40,10 66,25 66,55 40,70 14,55 14,25" fill="none" stroke="#4D8BFF" stroke-width="0.5" opacity="0.3"/>
+  <!-- Rocket -->
+  <path d="M40 20 C40 20 28 34 28 46 C28 50 31 53 34 54 L34 48 C34 48 37 50 40 50 C43 50 46 48 46 48 L46 54 C49 53 52 50 52 46 C52 34 40 20 40 20 Z" fill="#4D8BFF" opacity="0.9"/>
+  <circle cx="40" cy="38" r="4" fill="#0A0826"/>
+  <circle cx="40" cy="38" r="2.5" fill="#4D8BFF" opacity="0.6"/>
+  <!-- Flames -->
+  <path d="M35 54 C33 58 34 62 37 60 C38 58 39 56 40 58 C41 56 42 58 43 60 C46 62 47 58 45 54 Z" fill="#FFB020" opacity="0.8"/>
+  <!-- Fins -->
+  <path d="M28 46 L22 54 L28 52 Z" fill="#4D8BFF" opacity="0.6"/>
+  <path d="M52 46 L58 54 L52 52 Z" fill="#4D8BFF" opacity="0.6"/>
+</svg>
