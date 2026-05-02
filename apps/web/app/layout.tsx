@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { SplashScreen } from "@/components/splash-screen";
 import { CookieBanner } from "@/components/cookie-banner";
 import "./globals.css";
@@ -34,8 +34,9 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): Promise<React.JSX.Element> {
-  const cookieStore = await cookies();
+  const [cookieStore, headersList] = await Promise.all([cookies(), headers()]);
   const consentCookie = cookieStore.get("cl_consent");
+  const nonce = headersList.get("x-nonce") ?? "";
 
   return (
     <html
@@ -56,6 +57,7 @@ export default async function RootLayout({
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange={false}
+          nonce={nonce}
         >
           <SplashScreen />
           {children}
