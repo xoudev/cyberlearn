@@ -12,6 +12,10 @@ export interface BadgeEvaluationContext {
   categoryLessonCounts: Partial<Record<string, number>>;
   /** Set when the trigger is a path completion. */
   completedPathId?: string;
+  /** Total certificates issued to this user. Required for withCertificate badges. */
+  totalCertificates?: number;
+  /** The lesson ID that just triggered this evaluation (real-time, first completion only). */
+  completedLessonId?: string;
 }
 /**
  * Returns the IDs of badges that should be newly awarded.

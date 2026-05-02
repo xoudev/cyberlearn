@@ -1,13 +1,28 @@
 "use client";
 
 import "@xterm/xterm/css/xterm.css";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import type { Terminal as TerminalType } from "@xterm/xterm";
+import { getTerminalScenario } from "@cyberlearn/lib";
 
-// ── Scenarios ─────────────────────────────────────────────────────────────────
+// ── Props schema (runtime validation of MDX-supplied props) ───────────────────
+
+const simulatedTerminalPropsSchema = z.object({
+  id: z.string().optional(),
+  scenario: z.string().optional(),
+  commands: z.record(z.string()).optional(),
+  title: z.string().optional(),
+  height: z.number().positive().optional(),
+  shell: z.enum(["bash", "powershell"]).optional(),
+  expectedCommands: z.array(z.string().max(200)).optional(),
+  hints: z.array(z.string().max(500)).optional(),
+  onComplete: z.function().optional(),
+});
+
+// ── Inline scenarios (kept for backwards compat — not moved to lib) ───────────
 
 const SCENARIOS: Record<string, Record<string, string>> = {
-  // ── CTF scenarios ──────────────────────────────────────────────────────────
   "ctf-web": {
     "curl http://target.ctf/": [
       "HTTP/1.1 200 OK",
@@ -135,8 +150,6 @@ const SCENARIOS: Record<string, Record<string, string>> = {
       "00000010: 5253 4942 4c45 7d0a                      RSIBLE}.",
     ].join("\r\n"),
   },
-
-  // ── Linux basics ───────────────────────────────────────────────────────────
   "linux-basics": {
     ls: "Documents/  Downloads/  notes.txt  script.py",
     pwd: "/home/etudiant",
@@ -153,8 +166,6 @@ const SCENARIOS: Record<string, Record<string, string>> = {
     "cat notes.txt": "Apprendre Linux, une commande à la fois.",
     "uname -a": "Linux cyberlearn 6.x.0 #1 SMP x86_64 GNU/Linux",
   },
-
-  // ── Bash admin & scripting ─────────────────────────────────────────────────
   "bash-admin": {
     "ps aux | grep nginx": [
       "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND",
@@ -191,11 +202,6 @@ const SCENARIOS: Record<string, Record<string, string>> = {
       "*/5 * * * * /opt/scripts/healthcheck.sh >> /var/log/health.log 2>&1",
     ].join("\r\n"),
     who: "etudiant pts/0        2024-01-15 08:01 (10.0.0.5)",
-    "last -n 5": [
-      "etudiant pts/0        10.0.0.5       Mon Jan 15 08:01   still logged in",
-      "etudiant pts/0        10.0.0.5       Sun Jan 14 22:45 - 23:12  (00:27)",
-      "root     tty1                        Sun Jan 14 14:00 - 14:05  (00:05)",
-    ].join("\r\n"),
     "ss -tlnp": [
       "State  Recv-Q Send-Q  Local Address:Port  Peer Address:Port Process",
       "LISTEN 0      128           0.0.0.0:22         0.0.0.0:*     users:(('sshd',pid=412))",
@@ -229,26 +235,14 @@ const SCENARIOS: Record<string, Record<string, string>> = {
       "  123  bash -n script.sh",
       "  124  chmod +x script.sh",
       "  125  ./script.sh",
-      "  126  echo $SHELL",
-      "  127  history | tail -8",
     ].join("\r\n"),
-    "set -o | grep -E 'errexit|nounset|pipefail'": [
-      "errexit        \ton",
-      "nounset        \ton",
-      "pipefail       \ton",
-    ].join("\r\n"),
-    "trap 'echo ERR ligne $LINENO' ERR": "",
   },
-
-  // ── Network tools ──────────────────────────────────────────────────────────
   "network-tools": {
     "ping -c 3 8.8.8.8": [
       "PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.",
       "64 bytes from 8.8.8.8: icmp_seq=1 ttl=55 time=12.3 ms",
       "64 bytes from 8.8.8.8: icmp_seq=2 ttl=55 time=11.8 ms",
       "64 bytes from 8.8.8.8: icmp_seq=3 ttl=55 time=12.1 ms",
-      "",
-      "--- 8.8.8.8 ping statistics ---",
       "3 packets transmitted, 3 received, 0% packet loss",
       "rtt min/avg/max = 11.8/12.1/12.3 ms",
     ].join("\r\n"),
@@ -274,42 +268,30 @@ const SCENARIOS: Record<string, Record<string, string>> = {
       "Nmap done: 1 IP address (1 host up) scanned in 2.34 seconds",
     ].join("\r\n"),
   },
-
-  // ── Git basics ─────────────────────────────────────────────────────────────
   "git-basics": {
     "git status": [
       "On branch main",
       "Your branch is up to date with 'origin/main'.",
       "",
       "Changes not staged for commit:",
-      '  (use "git add <file>..." to update what will be committed)',
-      "",
       "\tmodified:   README.md",
       "\tmodified:   src/index.ts",
-      "",
-      "no changes added to commit",
     ].join("\r\n"),
     "git log --oneline": [
       "a1b2c3d feat: add user authentication",
       "e4f5g6h fix: resolve login redirect issue",
       "i7j8k9l chore: update dependencies",
-      "l0m1n2o feat: initial project setup",
     ].join("\r\n"),
     "git branch": "* main\n  feat/new-feature\n  fix/bug-123",
     "git diff README.md": [
       "diff --git a/README.md b/README.md",
-      "index 1a2b3c4..5d6e7f8 100644",
       "--- a/README.md",
       "+++ b/README.md",
       "@@ -1,3 +1,4 @@",
-      " # Mon Projet",
-      " ",
       "+Projet mis à jour avec de nouvelles fonctionnalités.",
       " Documentation disponible dans /docs",
     ].join("\r\n"),
   },
-
-  // ── PowerShell ─────────────────────────────────────────────────────────────
   "powershell-basics": {
     "Get-ChildItem": [
       "",
@@ -319,30 +301,9 @@ const SCENARIOS: Record<string, Record<string, string>> = {
       "----                 -------------         ------ ----",
       "d-----        15/01/2024    08:00                Desktop",
       "d-----        15/01/2024    08:00                Documents",
-      "d-----        14/01/2024    22:30                Downloads",
-      "-a----        15/01/2024    09:12           2048  notes.txt",
-      "-a----        15/01/2024    08:45           4096  script.ps1",
-    ].join("\r\n"),
-    ls: [
-      "",
-      "    Répertoire : C:\\Users\\etudiant",
-      "",
-      "Mode                 LastWriteTime         Length Name",
-      "----                 -------------         ------ ----",
-      "d-----        15/01/2024    08:00                Desktop",
-      "d-----        15/01/2024    08:00                Documents",
-      "-a----        15/01/2024    09:12           2048  notes.txt",
-      "-a----        15/01/2024    08:45           4096  script.ps1",
-    ].join("\r\n"),
-    dir: [
-      "",
-      "    Répertoire : C:\\Users\\etudiant",
-      "",
-      "Mode                 LastWriteTime         Length Name",
-      "----                 -------------         ------ ----",
-      "d-----        15/01/2024    08:00                Desktop",
       "-a----        15/01/2024    09:12           2048  notes.txt",
     ].join("\r\n"),
+    ls: "Desktop/  Documents/  Downloads/  notes.txt  script.ps1",
     "Get-Location": ["", "Path", "----", "C:\\Users\\etudiant"].join("\r\n"),
     pwd: "C:\\Users\\etudiant",
     "Get-Date": new Date().toLocaleString("fr-FR"),
@@ -352,34 +313,12 @@ const SCENARIOS: Record<string, Record<string, string>> = {
       "----                           -----",
       "PSVersion                      7.4.0",
       "PSEdition                      Core",
-      "GitCommitId                    7.4.0",
       "OS                             Microsoft Windows 11 Pro",
-      "Platform                       Win32NT",
-      "PSCompatibleVersions           {1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0, 7.4.0}",
     ].join("\r\n"),
     "$env:USERNAME": "etudiant",
     "$env:COMPUTERNAME": "CYBERLEARN-PC",
-    "$env:OS": "Windows_NT",
-    "Get-Host": [
-      "",
-      "Name             : ConsoleHost",
-      "Version          : 7.4.0",
-      "InstanceId       : a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "UI               : System.Management.Automation.Internal.Host.InternalHostUserInterface",
-      "CurrentCulture   : fr-FR",
-      "CurrentUICulture : fr-FR",
-    ].join("\r\n"),
     "Get-Content notes.txt": "Apprendre PowerShell, une commande à la fois.",
     "cat notes.txt": "Apprendre PowerShell, une commande à la fois.",
-    "Get-Process | Select-Object -First 8": [
-      "",
-      "Handles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName",
-      "-------  ------    -----      -----     ------     --  -- -----------",
-      "    412      28    15360      22528       2.34   1234   1 chrome",
-      "    256      18     8192      12288       0.12   2345   1 Code",
-      "    128      12     4096       8192       0.05   3456   1 explorer",
-      "     98       8     2048       4096       0.01   4567   1 notepad",
-    ].join("\r\n"),
   },
   "powershell-sec": {
     "Get-Process | Sort-Object CPU -Descending | Select-Object -First 5": [
@@ -388,7 +327,6 @@ const SCENARIOS: Record<string, Record<string, string>> = {
       "-------  ------    -----      -----     ------     --  -- -----------",
       "   1024      64    98304     102400     145.23   5678   1 chrome",
       "    512      32    45056      51200      42.87   1234   1 Code",
-      "    256      18    12288      16384      12.34   3456   1 powershell",
     ].join("\r\n"),
     "Get-NetTCPConnection -State Listen | Select-Object LocalPort,OwningProcess | Sort-Object LocalPort":
       [
@@ -398,75 +336,22 @@ const SCENARIOS: Record<string, Record<string, string>> = {
         "       80          1234",
         "      443          1234",
         "     3389          2345",
-        "     5985          4567",
       ].join("\r\n"),
     "netstat -ano": [
-      "",
-      "Connexions actives",
-      "",
-      "  Proto  Adresse locale          Adresse distante        État            PID",
       "  TCP    0.0.0.0:80              0.0.0.0:0               LISTENING       1234",
       "  TCP    0.0.0.0:443             0.0.0.0:0               LISTENING       1234",
       "  TCP    0.0.0.0:3389            0.0.0.0:0               LISTENING       2345",
-      "  TCP    10.0.0.12:52341         93.184.216.34:443       ESTABLISHED     5678",
     ].join("\r\n"),
     "Get-LocalUser": [
-      "",
       "Name               Enabled Description",
       "----               ------- -----------",
       "Administrateur     False   Compte intégré pour l'administration",
-      "DefaultAccount     False   Compte utilisateur géré par le système",
       "etudiant           True    Compte principal",
-      "Invité             False   Compte intégré pour les accès invités",
-    ].join("\r\n"),
-    "Get-LocalGroupMember -Group Administrateurs": [
-      "",
-      "ObjectClass Name                   PrincipalSource",
-      "----------- ----                   ---------------",
-      "Utilisateur CYBERLEARN-PC\\etudiant Local",
-      "Utilisateur CYBERLEARN-PC\\Administrateur Local",
-    ].join("\r\n"),
-    "Get-Service | Where-Object Status -eq 'Running' | Select-Object -First 8": [
-      "",
-      "Status   Name               DisplayName",
-      "------   ----               -----------",
-      "Running  BITS               Service de transfert intelligent",
-      "Running  Dnscache           Client DNS",
-      "Running  EventLog           Journal des événements Windows",
-      "Running  LanmanServer       Serveur",
-      "Running  Schedule           Planificateur de tâches",
-      "Running  Spooler            Spouleur d'impression",
-      "Running  W32Time            Horloge Windows",
-      "Running  WinRM              Gestion à distance de Windows",
-    ].join("\r\n"),
-    "Get-WinEvent -LogName Security -MaxEvents 5 | Select-Object TimeCreated,Id,Message": [
-      "",
-      "TimeCreated             Id Message",
-      "-----------             -- -------",
-      "15/01/2024 09:12:05   4624 L'ouverture de session d'un compte a réussi. (etudiant)",
-      "15/01/2024 09:10:33   4688 Un nouveau processus a été créé. (powershell.exe)",
-      "15/01/2024 08:55:21   4648 Tentative d'ouverture de session avec informations d'identification explicites.",
-      "15/01/2024 08:45:10   4624 L'ouverture de session d'un compte a réussi. (SYSTEM)",
-    ].join("\r\n"),
-    "Invoke-WebRequest http://192.168.1.10/api/status -UseBasicParsing": [
-      "",
-      "StatusCode        : 200",
-      "StatusDescription : OK",
-      'Content           : {"status":"ok","version":"2.1.0","uptime":86400}',
-      "Headers           : {[Content-Type, application/json], [Server, nginx/1.24.0]}",
-    ].join("\r\n"),
-    "Test-Connection 8.8.8.8 -Count 3": [
-      "",
-      "Source        Destination     IPV4Address      Bytes    Time(ms)",
-      "------        -----------     -----------      -----    --------",
-      "CYBERLEARN-PC 8.8.8.8         8.8.8.8          32       12",
-      "CYBERLEARN-PC 8.8.8.8         8.8.8.8          32       11",
-      "CYBERLEARN-PC 8.8.8.8         8.8.8.8          32       13",
     ].join("\r\n"),
   },
 };
 
-// ── Common commands ────────────────────────────────────────────────────────────
+// ── Common commands ───────────────────────────────────────────────────────────
 
 const COMMON_COMMANDS: Record<string, string> = {
   help: "Commandes disponibles : ls, pwd, whoami, cat, clear\nTape une commande pour interagir.",
@@ -489,24 +374,18 @@ const PS_COMMON_COMMANDS: Record<string, string> = {
     "  Get-Service                 Voir les services",
     "  Get-Content (cat)           Lire un fichier",
     "  Get-Location (pwd)          Répertoire courant",
-    "  Get-Date                    Date et heure",
-    "  Get-LocalUser               Comptes locaux",
-    "  Get-NetTCPConnection        Connexions réseau",
-    "  Test-Connection             Ping",
-    "  Invoke-WebRequest           Requête HTTP",
     "  Clear-Host (cls)            Effacer l'écran",
   ].join("\r\n"),
   cls: "__CLEAR__",
   "Clear-Host": "__CLEAR__",
   exit: "Session fermée.",
   "Write-Host 'hello'": "hello",
-  'Write-Output "hello"': "hello",
   "Get-Date": new Date().toLocaleString("fr-FR"),
   "$env:USERNAME": "etudiant",
   "$env:COMPUTERNAME": "CYBERLEARN-PC",
 };
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// ── Component props ───────────────────────────────────────────────────────────
 
 export interface SimulatedTerminalProps {
   id?: string;
@@ -515,31 +394,67 @@ export interface SimulatedTerminalProps {
   title?: string;
   height?: number;
   shell?: "bash" | "powershell";
+  /** Commands the learner must enter to validate the exercise */
+  expectedCommands?: string[];
+  /** Hints shown below the terminal */
+  hints?: string[];
+  /** Called once all expectedCommands have been entered */
+  onComplete?: () => void;
 }
 
-export function SimulatedTerminal({
-  scenario,
-  commands: extraCommands,
-  title,
-  height = 320,
-  shell = "bash",
-}: SimulatedTerminalProps): React.ReactElement {
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.ReactElement {
+  // Runtime prop validation — warn on bad values in dev, never throw
+  const parsed = simulatedTerminalPropsSchema.safeParse(rawProps);
+  if (!parsed.success && process.env.NODE_ENV !== "production") {
+    console.warn("[SimulatedTerminal] invalid props:", parsed.error.flatten());
+  }
+
+  const {
+    scenario,
+    commands: extraCommands,
+    title,
+    height = 320,
+    shell = "bash",
+    expectedCommands = [],
+    hints = [],
+    onComplete,
+  } = rawProps;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<TerminalType | null>(null);
   const inputRef = useRef("");
   const mounted = useRef(false);
 
+  // Track which expected commands have been completed (ref for closure stability)
+  const completedSetRef = useRef(new Set<string>());
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const expectedCommandsRef = useRef(expectedCommands);
+  expectedCommandsRef.current = expectedCommands;
+
+  // Reflected as state so the progress bar re-renders
+  const [completedCount, setCompletedCount] = useState(0);
+
   const isPs = shell === "powershell";
+
+  // Merge: common + inline scenario + lib scenario + extra
+  const libScenario = scenario ? getTerminalScenario(scenario) : undefined;
+  const inlineScenario = scenario ? (SCENARIOS[scenario] ?? {}) : {};
 
   const commandMap: Record<string, string> = {
     ...COMMON_COMMANDS,
     ...(isPs ? PS_COMMON_COMMANDS : {}),
-    ...(scenario ? (SCENARIOS[scenario] ?? {}) : {}),
-    ...extraCommands,
+    ...inlineScenario,
+    ...(libScenario?.commands ?? {}),
+    ...(extraCommands ?? {}),
   };
 
   const defaultTitle = isPs ? "Windows PowerShell" : "bash — etudiant@cyberlearn";
   const resolvedTitle = title ?? defaultTitle;
+
+  const totalExpected = expectedCommandsRef.current.length;
 
   useEffect(() => {
     if (mounted.current || !containerRef.current) return;
@@ -593,7 +508,6 @@ export function SimulatedTerminal({
 
       termRef.current = term;
 
-      // Prompt helper
       const prompt = (): void => {
         if (isPs) {
           term.write("\r\n\x1b[34mPS \x1b[33mC:\\Users\\etudiant\x1b[0m\x1b[37m>\x1b[0m ");
@@ -604,14 +518,10 @@ export function SimulatedTerminal({
         }
       };
 
-      // Not-found error
       const notFound = (cmd: string): void => {
         if (isPs) {
           term.writeln(
-            `\x1b[31mLe terme '${cmd}' n'est pas reconnu comme nom d'applet de commande,\x1b[0m`,
-          );
-          term.writeln(
-            "\x1b[31mde fonction, de fichier de script ou de programme exécutable.\x1b[0m",
+            `\x1b[31mLe terme '${cmd}' n'est pas reconnu comme nom d'applet de commande.\x1b[0m`,
           );
           term.writeln(
             "\x1b[33mAstuce : tape \x1b[37mhelp\x1b[33m pour voir les commandes.\x1b[0m",
@@ -622,11 +532,10 @@ export function SimulatedTerminal({
       };
 
       // Welcome message
-      if (isPs) {
-        term.writeln("\x1b[34m");
-        term.writeln("    Windows PowerShell");
-        term.writeln("    Copyright (C) Microsoft Corporation. Tous droits réservés.");
-        term.writeln("\x1b[0m");
+      if (libScenario?.initialMessage) {
+        term.writeln(`\x1b[38;5;60m› ${libScenario.initialMessage}\x1b[0m`);
+      } else if (isPs) {
+        term.writeln("\x1b[34m    Windows PowerShell\x1b[0m");
         term.writeln(
           "\x1b[38;5;60mSimulé par \x1b[34mCyberLearn\x1b[38;5;60m · Tape \x1b[37mhelp\x1b[38;5;60m pour la liste des commandes\x1b[0m",
         );
@@ -642,7 +551,6 @@ export function SimulatedTerminal({
       }
       prompt();
 
-      // Input handling
       term.onData((data) => {
         const code = data.charCodeAt(0);
 
@@ -663,6 +571,26 @@ export function SimulatedTerminal({
             prompt();
           } else if (response !== undefined) {
             term.writeln(response);
+
+            // Check if this is an expected command
+            const expected = expectedCommandsRef.current;
+            if (
+              expected.length > 0 &&
+              expected.includes(cmd) &&
+              !completedSetRef.current.has(cmd)
+            ) {
+              completedSetRef.current.add(cmd);
+              term.writeln("\x1b[1;32m✓ Bonne commande !\x1b[0m");
+              setCompletedCount(completedSetRef.current.size);
+
+              if (completedSetRef.current.size === expected.length) {
+                term.writeln(
+                  "\x1b[1;32m✓ Exercice complété — toutes les commandes validées.\x1b[0m",
+                );
+                onCompleteRef.current?.();
+              }
+            }
+
             prompt();
           } else {
             notFound(cmd);
@@ -675,7 +603,8 @@ export function SimulatedTerminal({
             term.write("\b \b");
           }
         } else if (code >= 32) {
-          // Printable char
+          // Printable char — max 200 chars to prevent abuse
+          if (inputRef.current.length >= 200) return;
           inputRef.current += data;
           term.write(data);
         }
@@ -735,27 +664,97 @@ export function SimulatedTerminal({
           {resolvedTitle}
         </span>
 
-        {/* Badge */}
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 10,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "#44406B",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ color: accentColor }}>›</span>
-          {badgeLabel}
-        </span>
+        {/* Badge / progress */}
+        {totalExpected > 0 ? (
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: completedCount === totalExpected ? "#0AFFD4" : "#44406B",
+              flexShrink: 0,
+            }}
+          >
+            {completedCount === totalExpected ? "✓ " : ""}
+            {String(completedCount)}/{String(totalExpected)} cmd
+          </span>
+        ) : (
+          <span
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 10,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#44406B",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ color: accentColor }}>›</span>
+            {badgeLabel}
+          </span>
+        )}
       </div>
 
       {/* Terminal container */}
       <div ref={containerRef} style={{ height, padding: "6px 0", overflow: "hidden" }} />
+
+      {/* Hints panel — rendered below the terminal */}
+      {hints.length > 0 && (
+        <div
+          style={{
+            borderTop: "1px solid #1F1B47",
+            padding: "14px 18px",
+            background: "rgba(5,4,26,0.5)",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 10,
+              color: "#0AFFD4",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              marginBottom: 10,
+            }}
+          >
+            {"// "} Indices ({String(hints.length)})
+          </div>
+          <ul
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            {hints.map((hint, i) => (
+              <li
+                key={i}
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 12,
+                  color: "#B8B5D1",
+                  lineHeight: 1.55,
+                }}
+              >
+                <span style={{ color: "#0AFFD4", flexShrink: 0 }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span>{hint}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

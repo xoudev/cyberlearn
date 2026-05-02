@@ -18,6 +18,9 @@ import { SectionPane } from "./_components/section-pane";
 import { Quiz } from "./_components/quiz";
 import { CodePlayground } from "./_components/code-playground";
 import { SimulatedTerminal } from "./_components/simulated-terminal";
+import { LessonVideo } from "./_components/lesson-video";
+import { LessonImage } from "./_components/lesson-image";
+import { ExternalLink } from "./_components/external-link";
 
 // ── Design meta maps — aligned with catalog.css / lesson-v2.css ───────────────
 
@@ -376,7 +379,15 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           <SectionPane key={i} index={i}>
             <MDXRemote
               source={src}
-              components={{ pre: CodeBlock, Quiz, CodePlayground, SimulatedTerminal }}
+              components={{
+                pre: CodeBlock,
+                Quiz,
+                CodePlayground,
+                SimulatedTerminal,
+                LessonVideo,
+                LessonImage,
+                ExternalLink,
+              }}
               options={{
                 parseFrontmatter: true,
                 mdxOptions: {

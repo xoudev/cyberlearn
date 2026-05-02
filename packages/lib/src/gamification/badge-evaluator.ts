@@ -15,6 +15,10 @@ export interface BadgeEvaluationContext {
   categoryLessonCounts: Partial<Record<string, number>>;
   /** Set when the trigger is a path completion. */
   completedPathId?: string;
+  /** Total certificates issued to this user. Required for withCertificate badges. */
+  totalCertificates?: number;
+  /** The lesson ID that just triggered this evaluation (real-time, first completion only). */
+  completedLessonId?: string;
 }
 
 // ── Safe JSON accessors ────────────────────────────────────────────────────────
@@ -40,6 +44,9 @@ function isCriterionMet(badge: BadgeLike, ctx: BadgeEvaluationContext): boolean 
       return ctx.totalLessonsCompleted >= num(d, "count");
 
     case "PATH_COMPLETED": {
+      if ((d as Record<string, unknown>).withCertificate === true) {
+        return (ctx.totalCertificates ?? 0) >= 1;
+      }
       if (!ctx.completedPathId) return false;
       const required = str(d, "pathId");
       return required === "" || required === ctx.completedPathId;
@@ -55,6 +62,12 @@ function isCriterionMet(badge: BadgeLike, ctx: BadgeEvaluationContext): boolean 
       const cat = str(d, "category");
       const count = num(d, "count");
       return count > 0 && (ctx.categoryLessonCounts[cat] ?? 0) >= count;
+    }
+
+    case "LESSON_SPECIFIC": {
+      if (!ctx.completedLessonId) return false;
+      const required = str(d, "lessonId");
+      return required !== "" && required === ctx.completedLessonId;
     }
 
     case "PERFECT_QUIZ":

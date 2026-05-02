@@ -1,5 +1,6 @@
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { computeLevel } from "@cyberlearn/lib";
 import { prisma, leaderboardRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
@@ -28,17 +29,87 @@ function getNextRankName(level: number): string {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default async function DashboardPage(): Promise<React.ReactElement> {
+export default function DashboardPage(): React.ReactElement {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardSkeleton(): React.ReactElement {
+  return (
+    <div className="page-container" style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+      {/* Status strip */}
+      <Skeleton style={{ height: 13, width: "55%" }} />
+      {/* Hero grid */}
+      <div className="dash-hero-grid">
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <Skeleton style={{ height: 12, width: 140 }} />
+          <Skeleton style={{ height: 80, width: "55%" }} />
+          <Skeleton style={{ height: 14, width: "50%" }} />
+        </div>
+        <div
+          style={{
+            background: "#0A0826",
+            border: "1px solid #1F1B47",
+            padding: 28,
+          }}
+        >
+          <Skeleton style={{ height: 12, width: "35%", marginBottom: 14 }} />
+          <Skeleton style={{ height: 96, width: "30%", marginBottom: 14 }} />
+          <Skeleton style={{ height: 12, width: "100%", marginBottom: 8 }} />
+          <Skeleton style={{ height: 10, width: "65%" }} />
+        </div>
+      </div>
+      {/* Continue section */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <Skeleton style={{ height: 36, width: "30%" }} />
+        <Skeleton style={{ height: 200, background: "#0A0826", border: "1px solid #1F1B47" }} />
+      </div>
+      {/* Reviews section */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <Skeleton style={{ height: 36, width: "30%" }} />
+        <div style={{ border: "1px solid #2A2560" }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                padding: "18px 24px",
+                borderBottom: i < 2 ? "1px solid #2A2560" : "none",
+                display: "flex",
+                gap: 16,
+                alignItems: "center",
+              }}
+            >
+              <Skeleton style={{ width: 44, height: 44, flexShrink: 0 }} />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                <Skeleton style={{ height: 14, width: "75%" }} />
+                <Skeleton style={{ height: 11, width: "45%" }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function DashboardContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
+
+  const now = new Date();
 
   const [
     dbUser,
     inProgressRows,
-    completedRows,
+    dueReviews,
     completedTotal,
     badgeRows,
     userRank,
-    featuredPaths,
+    allPaths,
+    placementResult,
+    recentLessons,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
@@ -62,23 +133,21 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       orderBy: { lastAccessedAt: "desc" },
       take: 1,
     }),
-    prisma.userLessonProgress.findMany({
-      where: { userId: authUser.id, status: "COMPLETED" },
+    prisma.reviewSchedule.findMany({
+      where: { userId: authUser.id, nextReviewAt: { lte: now } },
+      orderBy: { nextReviewAt: "asc" },
+      take: 3,
       include: {
         lesson: {
           select: {
-            id: true,
             slug: true,
             title: true,
             difficulty: true,
             category: true,
             estimatedMinutes: true,
-            xpReward: true,
           },
         },
       },
-      orderBy: { completedAt: "desc" },
-      take: 3,
     }),
     prisma.userLessonProgress.count({
       where: { userId: authUser.id, status: "COMPLETED" },
@@ -92,8 +161,6 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     leaderboardRepository.findUserRank(authUser.id),
     prisma.path.findMany({
       where: { status: "PUBLISHED" },
-      orderBy: { createdAt: "desc" },
-      take: 2,
       select: {
         id: true,
         slug: true,
@@ -103,7 +170,22 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         difficulty: true,
         estimatedHours: true,
         _count: { select: { lessons: true, progress: { where: { status: "COMPLETED" } } } },
+        progress: {
+          where: { userId: authUser.id },
+          select: { status: true },
+          take: 1,
+        },
       },
+    }),
+    prisma.userPlacementResult.findUnique({
+      where: { userId: authUser.id },
+      select: { devScore: true, cybersecScore: true, networkScore: true },
+    }),
+    prisma.userLessonProgress.findMany({
+      where: { userId: authUser.id, status: "COMPLETED" },
+      select: { lesson: { select: { category: true } } },
+      orderBy: { completedAt: "desc" },
+      take: 20,
     }),
   ]);
 
@@ -116,11 +198,49 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   const rankName = getRankName(level);
   const nextRank = getNextRankName(level);
 
+  // ── Path recommendation scoring ───────────────────────────────────────────
+  const preferredDifficulty =
+    level <= 5 ? "BEGINNER" : level <= 12 ? "INTERMEDIATE" : level <= 20 ? "ADVANCED" : "EXPERT";
+
+  const placementScores: Record<string, number> = {
+    DEV: placementResult?.devScore ?? 50,
+    CYBERSEC: placementResult?.cybersecScore ?? 50,
+    NETWORK: placementResult?.networkScore ?? 50,
+  };
+
+  const categoryMomentum: Record<string, number> = {};
+  for (const row of recentLessons) {
+    const cat = row.lesson.category;
+    categoryMomentum[cat] = (categoryMomentum[cat] ?? 0) + 1;
+  }
+
+  const featuredPaths: FeaturedPath[] = allPaths
+    .filter((p) => p.progress[0]?.status !== "COMPLETED")
+    .map((p) => {
+      let score = 0;
+      if (p.progress[0]?.status === "IN_PROGRESS") score += 50;
+      if (p.difficulty === preferredDifficulty) score += 15;
+      score += ((placementScores[p.category] ?? 50) / 100) * 25;
+      score += Math.min((categoryMomentum[p.category] ?? 0) * 3, 15);
+      return { score, path: p };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map(({ path }) => ({
+      id: path.id,
+      slug: path.slug,
+      title: path.title,
+      description: path.description,
+      category: path.category,
+      difficulty: path.difficulty,
+      estimatedHours: path.estimatedHours,
+      _count: { lessons: path._count.lessons, progress: path._count.progress },
+    }));
+
   const resumeLesson = inProgressRows[0];
 
   // Stable session indicator from last chars of user UUID
   const sessionId = authUser.id.slice(-4).toUpperCase();
-  const now = new Date();
   const dateStr = now
     .toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
     .toUpperCase();
@@ -284,16 +404,16 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         <SectionLabel
           eyebrow="02 · à réviser"
           title={
-            completedRows.length > 0
-              ? `${String(completedRows.length)} leçon${completedRows.length > 1 ? "s" : ""} demande${completedRows.length > 1 ? "nt" : ""} ton attention.`
+            dueReviews.length > 0
+              ? `${String(dueReviews.length)} leçon${dueReviews.length > 1 ? "s" : ""} demande${dueReviews.length > 1 ? "nt" : ""} ton attention.`
               : "Rien à réviser pour l'instant."
           }
-          ctaLabel={completedRows.length > 0 ? "Tout réviser →" : undefined}
-          ctaHref="/lessons?status=COMPLETED"
+          ctaLabel={dueReviews.length > 0 ? "Tout réviser →" : undefined}
+          ctaHref="/review"
         />
 
-        {completedRows.length > 0 ? (
-          <ReviewsBlock rows={completedRows} />
+        {dueReviews.length > 0 ? (
+          <ReviewsBlock rows={dueReviews} />
         ) : (
           <div
             style={{
@@ -1165,8 +1285,8 @@ function ReviewsBlock({
   rows,
 }: {
   rows: {
-    lessonId: string;
-    completedAt: Date | null;
+    id: string;
+    nextReviewAt: Date;
     lesson: {
       slug: string;
       title: string;
@@ -1176,6 +1296,7 @@ function ReviewsBlock({
     };
   }[];
 }) {
+  const now = new Date();
   return (
     <div
       style={{
@@ -1191,22 +1312,18 @@ function ReviewsBlock({
             : row.lesson.category === "DEV"
               ? "Développement"
               : "Réseaux";
-        const daysAgo = row.completedAt
-          ? Math.floor((Date.now() - row.completedAt.getTime()) / 86_400_000)
-          : null;
+        const overdueDays = Math.floor((now.getTime() - row.nextReviewAt.getTime()) / 86_400_000);
         const dueLabel =
-          daysAgo === 0
+          overdueDays <= 0
             ? "Dû aujourd'hui"
-            : daysAgo === 1
-              ? "Dû demain"
-              : daysAgo !== null
-                ? `il y a ${String(daysAgo)} j`
-                : "récemment";
+            : overdueDays === 1
+              ? "En retard de 1 j"
+              : `En retard de ${String(overdueDays)} j`;
         const index = String(i + 1).padStart(2, "0");
 
         return (
           <div
-            key={row.lessonId}
+            key={row.id}
             className="review-row review-row-layout"
             style={{
               borderBottom: i < rows.length - 1 ? "1px solid #2A2560" : "none",

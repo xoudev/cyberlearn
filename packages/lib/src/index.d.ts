@@ -7,4 +7,5 @@ export * from "./mdx/split-sections.js";
 export * from "./gamification/badge-evaluator.js";
 export * from "./gamification/streak.js";
 export * from "./sm2.js";
+export * from "./terminal/scenarios.js";
 //# sourceMappingURL=index.d.ts.map

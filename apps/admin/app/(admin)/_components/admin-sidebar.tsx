@@ -10,6 +10,7 @@ interface SidebarCounts {
   lessons: number;
   paths: number;
   badges: number;
+  challenges: number;
   users: number;
   tickets: number;
 }
@@ -63,6 +64,14 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
         <svg viewBox="0 0 16 16" {...s}>
           <path d="M8 1.5 L10 3 L12.5 2.7 L13 5.2 L14.5 7 L13 8.8 L12.5 11.3 L10 11 L8 12.5 L6 11 L3.5 11.3 L3 8.8 L1.5 7 L3 5.2 L3.5 2.7 L6 3 Z" />
           <circle cx="8" cy="7" r="2" />
+        </svg>
+      );
+    case "target":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <circle cx="8" cy="8" r="5.5" />
+          <circle cx="8" cy="8" r="2.5" />
+          <path d="M8 1 V3.5 M8 12.5 V15 M1 8 H3.5 M12.5 8 H15" />
         </svg>
       );
     case "users":
@@ -120,6 +129,13 @@ export function AdminSidebar({
     { label: "Leçons", href: "/lessons", icon: "book", count: counts.lessons, danger: false },
     { label: "Parcours", href: "/paths", icon: "route", count: counts.paths, danger: false },
     { label: "Badges", href: "/badges", icon: "badge", count: counts.badges, danger: false },
+    {
+      label: "Challenges",
+      href: "/challenges",
+      icon: "target",
+      count: counts.challenges,
+      danger: false,
+    },
     { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users, danger: false },
     { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets, danger: true },
   ];

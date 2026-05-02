@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { cookies } from "next/headers";
+import { SplashScreen } from "@/components/splash-screen";
+import { CookieBanner } from "@/components/cookie-banner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -28,9 +31,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
+}: Readonly<{ children: React.ReactNode }>): Promise<React.JSX.Element> {
+  const cookieStore = await cookies();
+  const consentCookie = cookieStore.get("cl_consent");
+
   return (
     <html
       lang="fr"
@@ -51,7 +57,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange={false}
         >
+          <SplashScreen />
           {children}
+          <CookieBanner initialConsent={consentCookie?.value} />
         </ThemeProvider>
       </body>
     </html>

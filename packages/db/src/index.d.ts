@@ -12,6 +12,8 @@ export { notificationRepository } from "./repositories/notification.repository.j
 export type { NotificationItem } from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
 export type { LeaderboardEntry } from "./repositories/leaderboard.repository.js";
+export { challengeRepository } from "./repositories/challenge.repository.js";
+export type { ChallengeWithProgress } from "./repositories/challenge.repository.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
 export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
@@ -38,6 +40,10 @@ export type {
   ContactTicket,
   AuditLog,
   PlacementQuestion,
+  Challenge,
+  UserChallengeProgress,
+  ChallengeHint,
+  ChallengeHintReveal,
 } from "@prisma/client";
 export {
   UserRole,
@@ -50,5 +56,6 @@ export {
   NotificationType,
   TicketTheme,
   TicketStatus,
+  ChallengeType,
 } from "@prisma/client";
 //# sourceMappingURL=index.d.ts.map

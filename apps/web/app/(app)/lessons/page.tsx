@@ -1,8 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
 import { LessonCard } from "@cyberlearn/ui";
 import type { Category, Difficulty, ProgressStatus } from "@cyberlearn/db";
+import { Skeleton } from "@/components/ui/skeleton";
 import { requireRequestUser } from "@/lib/auth";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -65,7 +66,101 @@ export default async function LessonsPage({
   searchParams,
 }: PageProps): Promise<React.ReactElement> {
   const p = await searchParams;
+  return (
+    <div className="page-container">
+      {/* ── Breadcrumb (static, renders immediately) ─────────────────────── */}
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+          letterSpacing: "0.04em",
+          color: "#3F3D5C",
+          marginBottom: 22,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <span style={{ color: "#0AFFD4" }}>$</span>
+        <span>~/</span>
+        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
+        <span style={{ color: "#2A2560" }}>/</span>
+        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>leçons</span>
+        {/* Blinking cursor */}
+        <span
+          style={{
+            display: "inline-block",
+            width: 7,
+            height: 13,
+            background: "#0AFFD4",
+            boxShadow: "0 0 8px #0AFFD4",
+            marginLeft: 4,
+            verticalAlign: "-2px",
+            animation: "blink 1s step-end infinite",
+          }}
+          aria-hidden="true"
+        />
+      </div>
+      <Suspense fallback={<LessonsBodySkeleton />}>
+        <LessonsBody p={p} />
+      </Suspense>
+    </div>
+  );
+}
 
+function LessonsBodySkeleton(): React.ReactElement {
+  return (
+    <>
+      {/* Header */}
+      <div className="catalog-header-grid" style={{ marginBottom: 32 }}>
+        <div>
+          <Skeleton style={{ height: 52, width: "40%", marginBottom: 14 }} />
+          <Skeleton style={{ height: 14, width: "70%" }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <Skeleton style={{ height: 11, width: "55%" }} />
+          <Skeleton style={{ height: 11, width: "40%" }} />
+        </div>
+      </div>
+      {/* Filters */}
+      <div className="filter-bar" style={{ marginBottom: 24, alignItems: "center" }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} style={{ width: 90, height: 34 }} />
+        ))}
+      </div>
+      {/* Cards grid */}
+      <div className="lessons-catalog-grid">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              background: "#0A0826",
+              border: "1px solid #1F1B47",
+              borderRadius: 12,
+              padding: 20,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <div style={{ display: "flex", gap: 8 }}>
+              <Skeleton style={{ width: 64, height: 20, borderRadius: 99 }} />
+              <Skeleton style={{ width: 80, height: 20, borderRadius: 99 }} />
+            </div>
+            <Skeleton style={{ height: 16, width: "85%" }} />
+            <Skeleton style={{ height: 13, width: "65%" }} />
+            <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+              <Skeleton style={{ width: 44, height: 12 }} />
+              <Skeleton style={{ width: 56, height: 12 }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement> {
   const rawCategory = str(p, "category");
   const rawDifficulty = str(p, "difficulty");
   const rawStatus = str(p, "status");
@@ -99,41 +194,7 @@ export default async function LessonsPage({
   const completedCount = lessons.filter((l) => l.progressStatus === "COMPLETED").length;
 
   return (
-    <div className="page-container">
-      {/* ── Breadcrumb ───────────────────────────────────────────────────── */}
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          color: "#3F3D5C",
-          marginBottom: 22,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: "#0AFFD4" }}>$</span>
-        <span>~/</span>
-        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: "#2A2560" }}>/</span>
-        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>leçons</span>
-        {/* Blinking cursor */}
-        <span
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 13,
-            background: "#0AFFD4",
-            boxShadow: "0 0 8px #0AFFD4",
-            marginLeft: 4,
-            verticalAlign: "-2px",
-            animation: "blink 1s step-end infinite",
-          }}
-          aria-hidden="true"
-        />
-      </div>
-
+    <>
       {/* ── Header: two-column grid ──────────────────────────────────────── */}
       <div className="catalog-header-grid">
         {/* Left: title + subtitle */}
@@ -394,7 +455,7 @@ export default async function LessonsPage({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
