@@ -15,7 +15,7 @@ import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { evaluateBadges } from "@cyberlearn/lib";
 import { CertificateDocument } from "@/lib/pdf/certificate-template";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://cyberlearn.app";
+const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
 const BUCKET = "certificates";
 
 async function generateCertificate(userId: string, pathId: string): Promise<string | null> {
