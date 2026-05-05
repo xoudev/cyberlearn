@@ -42,10 +42,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const authHeader = request.headers.get("authorization");
-    console.log("[send-email] auth header:", authHeader?.slice(0, 20));
-    console.log("[send-email] secret prefix:", env.SUPABASE_HOOK_SECRET.slice(0, 15));
+    console.error("[send-email] auth header prefix:", authHeader?.slice(0, 20));
+    console.error("[send-email] secret prefix:", env.SUPABASE_HOOK_SECRET.slice(0, 15));
     if (!verifySignature(rawBody, authHeader, env.SUPABASE_HOOK_SECRET)) {
-      console.log("[send-email] signature mismatch");
+      console.error("[send-email] signature mismatch");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
