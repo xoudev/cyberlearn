@@ -21,18 +21,18 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().startsWith("re_"),
     RESEND_FROM_EMAIL: z.string().email(),
 
-    // Jira integration (contact form → tickets)
-    JIRA_BASE_URL: z.string().url(),
-    JIRA_API_EMAIL: z.string().email(),
-    JIRA_API_TOKEN: z.string().min(1),
-    JIRA_PROJECT_KEY: z.string().min(1),
+    // Jira integration (contact form → tickets) — optional until Phase implemented
+    JIRA_BASE_URL: z.string().url().optional(),
+    JIRA_API_EMAIL: z.string().email().optional(),
+    JIRA_API_TOKEN: z.string().min(1).optional(),
+    JIRA_PROJECT_KEY: z.string().min(1).optional(),
 
-    // Rate limiting (Upstash Redis)
-    UPSTASH_REDIS_REST_URL: z.string().url(),
-    UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+    // Rate limiting (Upstash Redis) — optional, degrades gracefully without Redis
+    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
-    // Cloudflare Turnstile captcha (server-side validation)
-    TURNSTILE_SECRET_KEY: z.string().min(1),
+    // Cloudflare Turnstile captcha — optional until Phase implemented
+    TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
 
     // IP address pseudonymization salt (GDPR — SHA-256 hashing)
     IP_SALT: z.string().min(32),
@@ -45,7 +45,7 @@ export const env = createEnv({
     SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
 
     // Cron job security token (validated in /api/cron/* handlers)
-    CRON_SECRET: z.string().min(32),
+    CRON_SECRET: z.string().min(32).optional(),
   },
 
   client: {
@@ -57,8 +57,8 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: z.string().url(),
     NEXT_PUBLIC_ADMIN_URL: z.string().url(),
 
-    // Cloudflare Turnstile site key (public, used in the browser)
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
+    // Cloudflare Turnstile site key — optional until Phase implemented
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   },
 
   runtimeEnv: {
