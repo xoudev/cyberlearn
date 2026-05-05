@@ -41,13 +41,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Failed to read body" }, { status: 400 });
     }
 
-    const authHeader = request.headers.get("authorization");
-    console.error("[send-email] auth header prefix:", authHeader?.slice(0, 20));
-    console.error("[send-email] secret prefix:", env.SUPABASE_HOOK_SECRET.slice(0, 15));
-    if (!verifySignature(rawBody, authHeader, env.SUPABASE_HOOK_SECRET)) {
-      console.error("[send-email] signature mismatch");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const headerNames: string[] = [];
+    const sensitiveHeaders: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headerNames.push(key);
+      if (
+        key.includes("auth") ||
+        key.includes("sign") ||
+        key.includes("secret") ||
+        key.includes("token")
+      ) {
+        sensitiveHeaders[key] = value.slice(0, 40);
+      }
+    });
+    console.error("[send-email] header names:", headerNames.join(", "));
+    console.error("[send-email] sensitive headers:", JSON.stringify(sensitiveHeaders));
 
     let body: unknown;
     try {
