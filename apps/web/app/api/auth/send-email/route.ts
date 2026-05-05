@@ -15,42 +15,86 @@ const hookPayloadSchema = z.object({
   }),
 });
 
+async function verifyWebhookSignature(
+  rawBody: string,
+  webhookId: string,
+  webhookTimestamp: string,
+  webhookSignature: string,
+): Promise<boolean> {
+  // Reject stale webhooks (>5 minutes old)
+  const ts = parseInt(webhookTimestamp, 10);
+  if (Number.isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) {
+    return false;
+  }
+
+  // Secret may be stored as "v1,whsec_<base64>", "whsec_<base64>", or plain base64
+  const secretBase64 = env.SUPABASE_HOOK_SECRET.replace(/^v1,whsec_/, "").replace(/^whsec_/, "");
+  const keyBytes = Uint8Array.from(atob(secretBase64), (c) => c.charCodeAt(0));
+
+  const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signatureBytes = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(signedContent),
+  );
+  const expectedSig = btoa(
+    Array.from(new Uint8Array(signatureBytes))
+      .map((b) => String.fromCharCode(b))
+      .join(""),
+  );
+
+  // webhook-signature may contain multiple space-separated "v1,<sig>" values
+  return webhookSignature.split(" ").some((s) => {
+    const [, sig] = s.split(",");
+    return sig === expectedSig;
+  });
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     let rawBody: string;
     try {
       rawBody = await request.text();
     } catch {
-      return NextResponse.json({ error: "Failed to read body" }, { status: 400 });
+      return new NextResponse(null, { status: 400 });
     }
 
-    const headerNames: string[] = [];
-    const sensitiveHeaders: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      headerNames.push(key);
-      if (
-        key.includes("auth") ||
-        key.includes("sign") ||
-        key.includes("secret") ||
-        key.includes("token")
-      ) {
-        sensitiveHeaders[key] = value.slice(0, 40);
-      }
-    });
-    console.error("[send-email] header names:", headerNames.join(", "));
-    console.error("[send-email] sensitive headers:", JSON.stringify(sensitiveHeaders));
+    const webhookId = request.headers.get("webhook-id");
+    const webhookTimestamp = request.headers.get("webhook-timestamp");
+    const webhookSignature = request.headers.get("webhook-signature");
+
+    if (!webhookId || !webhookTimestamp || !webhookSignature) {
+      return new NextResponse(null, { status: 401 });
+    }
+
+    const valid = await verifyWebhookSignature(
+      rawBody,
+      webhookId,
+      webhookTimestamp,
+      webhookSignature,
+    );
+    if (!valid) {
+      return new NextResponse(null, { status: 401 });
+    }
 
     let body: unknown;
     try {
       body = JSON.parse(rawBody);
     } catch {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+      return NextResponse.json({});
     }
 
     const parsed = hookPayloadSchema.safeParse(body);
     if (!parsed.success) {
       // Unknown hook event — acknowledge silently
-      return NextResponse.json({ success: true });
+      return NextResponse.json({});
     }
 
     const { user, email_data } = parsed.data;
@@ -63,12 +107,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       from: env.RESEND_FROM_EMAIL,
       to: user.email,
       magicLink,
+      // SAFETY: email_action_type comes from Supabase schema, values match EmailActionType
       type: email_action_type as EmailActionType,
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({});
   } catch (err) {
     console.error("[send-email] Unhandled error:", err);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({}, { status: 500 });
   }
 }
