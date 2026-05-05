@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@cyberlearn/db": "workspace:*",
+    "@cyberlearn/email": "workspace:*",
     "@cyberlearn/lib": "workspace:*",
     "@cyberlearn/types": "workspace:*",
     "@cyberlearn/ui": "workspace:*",

@@ -230,6 +230,9 @@ importers:
       '@cyberlearn/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@cyberlearn/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@cyberlearn/lib':
         specifier: workspace:*
         version: link:../../packages/lib
