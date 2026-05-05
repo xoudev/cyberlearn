@@ -27,7 +27,7 @@ export async function sendMagicLink(
   }
 
   const { email } = parsed.data;
-  const callbackUrl = `${env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+  const callbackUrl = `${env.NEXT_PUBLIC_SITE_URL}/auth/confirm`;
 
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin.auth.admin.generateLink({

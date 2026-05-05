@@ -65,6 +65,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/api/") ||
     pathname === "/verify" ||
     pathname.startsWith("/verify/") ||
+    pathname === "/auth/confirm" ||
     pathname.startsWith("/u/") ||
     pathname.startsWith("/contact") ||
     pathname.startsWith("/legal/") ||
