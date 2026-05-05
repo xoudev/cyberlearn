@@ -138,7 +138,7 @@ export function PlacementTestForm({
             }}
           >
             {questions.length} questions rapides pour calibrer ton point de départ. Aucun XP
-            n&apos;est attribué — c&apos;est uniquement pour t&apos;orienter.
+            n&apos;est attribué, c&apos;est uniquement pour t&apos;orienter.
           </p>
 
           {/* Stats grid */}
@@ -560,7 +560,7 @@ export function PlacementTestForm({
               e.currentTarget.style.color = "#6F6B99";
             }}
           >
-            Passer — aller au tableau de bord
+            Passer · aller au tableau de bord
           </a>
         </div>
       </form>

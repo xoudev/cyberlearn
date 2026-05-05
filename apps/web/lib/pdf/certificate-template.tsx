@@ -171,7 +171,7 @@ export function CertificateDocument({
   const hashShort = `${sha256Hash.slice(0, 16)}…${sha256Hash.slice(-8)}`;
 
   return (
-    <Document title={`Certificat — ${pathTitle}`} author="CyberLearn" subject={pathTitle}>
+    <Document title={`Certificat · ${pathTitle}`} author="CyberLearn" subject={pathTitle}>
       <Page size="A4" orientation="landscape" style={styles.page}>
         {/* Corner brackets */}
         <View style={styles.cornerTL} />

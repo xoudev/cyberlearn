@@ -886,7 +886,7 @@ export function BadgesCollection({
               lineHeight: 1.55,
             }}
           >
-            Badges groupés par rareté. Continue à grinder pour débloquer le reste — chaque palier
+            Badges groupés par rareté. Continue à grinder pour débloquer le reste, chaque palier
             raconte une compétence.
           </p>
         </div>

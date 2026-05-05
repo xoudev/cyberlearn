@@ -107,7 +107,7 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
             margin: "6px 0 0",
           }}
         >
-          {String(logs.length)} entrées récentes — rétention 1 an
+          {String(logs.length)} entrées récentes · rétention 1 an
         </p>
       </div>
 
@@ -212,7 +212,7 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
                           {metaStr.length >= 60 ? "…" : ""}
                         </span>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
                     <td

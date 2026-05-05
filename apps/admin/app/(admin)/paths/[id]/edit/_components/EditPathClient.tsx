@@ -596,7 +596,7 @@ export function EditPathClient({
     ? (
         lessons.reduce((s, l) => s + (DIFF_DIAMONDS[l.difficulty] ?? 1), 0) / lessons.length
       ).toFixed(1)
-    : "—";
+    : "-";
 
   const STATUS_OPTS = [
     { value: "DRAFT", label: "◌  Brouillon", color: "#6B6890" },

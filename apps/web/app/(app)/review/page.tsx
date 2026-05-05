@@ -5,7 +5,7 @@ import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { ReviewCard } from "./_components/ReviewCard";
 
-export const metadata: Metadata = { title: "Révisions — CyberLearn" };
+export const metadata: Metadata = { title: "Révisions · CyberLearn" };
 
 export default async function ReviewPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();

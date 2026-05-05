@@ -578,7 +578,7 @@ export function NewPathClient({
     ? (
         lessons.reduce((s, l) => s + (DIFF_DIAMONDS[l.difficulty] ?? 1), 0) / lessons.length
       ).toFixed(1)
-    : "—";
+    : "-";
 
   return (
     <>

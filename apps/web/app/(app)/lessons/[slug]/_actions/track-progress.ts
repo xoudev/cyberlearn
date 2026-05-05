@@ -87,7 +87,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
       userId: authUser.id,
       type: "LEVEL_UP",
       title: `Niveau ${String(newLevel)} atteint !`,
-      body: `+${String(lesson.xpReward)} XP — tu passes au niveau ${String(newLevel)}.`,
+      body: `+${String(lesson.xpReward)} XP, tu passes au niveau ${String(newLevel)}.`,
       actionUrl: "/profile",
       metadata: { previousLevel: user.level, newLevel, xpTotal: newXpTotal },
     });

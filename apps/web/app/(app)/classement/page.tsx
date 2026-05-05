@@ -4,7 +4,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { leaderboardRepository } from "@cyberlearn/db";
 import { ClassementClient } from "./_components/ClassementClient";
 
-export const metadata: Metadata = { title: "Classement — CyberLearn" };
+export const metadata: Metadata = { title: "Classement · CyberLearn" };
 export const dynamic = "force-dynamic";
 
 export default async function ClassementPage(): Promise<React.ReactElement> {

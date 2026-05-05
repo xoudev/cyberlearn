@@ -255,7 +255,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
                           {t.jiraIssueKey} ↗
                         </a>
                       ) : (
-                        <span style={{ color: "#44406B" }}>—</span>
+                        <span style={{ color: "#44406B" }}>-</span>
                       )}
                     </td>
                     <td

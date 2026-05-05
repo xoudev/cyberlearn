@@ -585,7 +585,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
 
               if (completedSetRef.current.size === expected.length) {
                 term.writeln(
-                  "\x1b[1;32m✓ Exercice complété — toutes les commandes validées.\x1b[0m",
+                  "\x1b[1;32m✓ Exercice complété, toutes les commandes validées.\x1b[0m",
                 );
                 onCompleteRef.current?.();
               }

@@ -694,7 +694,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
           )
         ) : (
           <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#44406B", margin: 0 }}>
-            Suppression impossible — {String(badge._count.userBadges)} utilisateur(s) ont déjà ce
+            Suppression impossible : {String(badge._count.userBadges)} utilisateur(s) ont déjà ce
             badge. Désactive-le plutôt.
           </p>
         )}

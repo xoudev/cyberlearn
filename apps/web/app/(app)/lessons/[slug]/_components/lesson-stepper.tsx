@@ -410,7 +410,7 @@ function StepperTimeline({
                   letterSpacing: "0.08em",
                 }}
               >
-                {isDone ? "✓" : isCurrent ? "~ en cours" : "—"}
+                {isDone ? "✓" : isCurrent ? "~ en cours" : "-"}
               </div>
             </button>
           );
@@ -521,7 +521,7 @@ function StepperRail({
                     letterSpacing: "0.06em",
                   }}
                 >
-                  {isDone ? "✓" : isCurrent ? "~" : "—"}
+                  {isDone ? "✓" : isCurrent ? "~" : "-"}
                 </span>
               </button>
             );

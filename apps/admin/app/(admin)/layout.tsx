@@ -8,7 +8,7 @@ import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
 
 export const metadata: Metadata = {
-  title: { default: "Admin — Cyber Learn", template: "%s — Admin" },
+  title: { default: "Admin · Cyber Learn", template: "%s · Admin" },
 };
 
 export default async function AdminLayout({

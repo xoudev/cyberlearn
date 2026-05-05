@@ -677,7 +677,7 @@ export function ScriptRunner({
               flexShrink: 0,
             }}
           />
-          Challenge résolu — FLAG correct
+          Challenge résolu · FLAG correct
         </div>
       ) : isLocked ? (
         <div
@@ -692,7 +692,7 @@ export function ScriptRunner({
             textTransform: "uppercase",
           }}
         >
-          Challenge verrouillé — complète les prérequis
+          Challenge verrouillé · complète les prérequis
         </div>
       ) : attemptsExhausted ? (
         <div

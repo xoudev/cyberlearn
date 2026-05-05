@@ -433,7 +433,7 @@ function run(src: string): { output: string; error: string | null } {
   if (cycles >= 10_000) {
     return {
       output: out.join(""),
-      error: "Timeout : 10 000 cycles atteints — boucle infinie ?",
+      error: "Timeout : 10 000 cycles atteints, boucle infinie ?",
     };
   }
 

@@ -1124,7 +1124,7 @@ function TerminalCard({
             marginBottom: 12,
           }}
         >
-          Leçon · <b style={{ color: "#0AFFD4", fontWeight: 600 }}>en cours</b> — reprends
+          Leçon · <b style={{ color: "#0AFFD4", fontWeight: 600 }}>en cours</b> · reprends
         </div>
 
         <h3

@@ -320,7 +320,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             {titleMain}
             {titleEm !== null && (
               <>
-                {" — "}
+                {" · "}
                 <em style={{ fontStyle: "normal", color: "#FF4D6D" }}>{titleEm}</em>
               </>
             )}

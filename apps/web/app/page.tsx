@@ -262,7 +262,7 @@ export default function HomePage(): React.ReactElement {
                 maxWidth: 520,
               }}
             >
-              Apprends en piratant, en codant et en cassant des systèmes — dans un sandbox dédié,
+              Apprends en piratant, en codant et en cassant des systèmes, dans un sandbox dédié,
               accompagné·e de mentors et d&apos;une communauté FR.
             </p>
 

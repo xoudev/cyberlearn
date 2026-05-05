@@ -57,11 +57,11 @@ export function ImportClient(): React.ReactElement {
     setImported(false);
 
     if (!file.name.endsWith(".mdx")) {
-      setFileError("Fichier invalide — seuls les fichiers .mdx sont acceptés.");
+      setFileError("Fichier invalide, seuls les fichiers .mdx sont acceptés.");
       return;
     }
     if (file.size > 512 * 1024) {
-      setFileError("Fichier trop grand — maximum 500 Ko.");
+      setFileError("Fichier trop grand, maximum 500 Ko.");
       return;
     }
 
@@ -105,7 +105,7 @@ export function ImportClient(): React.ReactElement {
       } else if (result.status === "rate_limited") {
         setValidation({
           valid: false,
-          errors: [{ message: "Limite atteinte — 10 imports maximum par heure." }],
+          errors: [{ message: "Limite atteinte, 10 imports maximum par heure." }],
           warnings: [],
         });
       }
@@ -576,7 +576,7 @@ function MetadataPreview({
     ["estimatedMinutes", `${String(metadata.estimatedMinutes)} min`],
     ["xpReward", `${String(metadata.xpReward)} XP`],
     ["coverImageUrl", metadata.coverImageUrl ?? "null"],
-    ["prerequisites", metadata.prerequisites.length > 0 ? metadata.prerequisites.join(", ") : "—"],
+    ["prerequisites", metadata.prerequisites.length > 0 ? metadata.prerequisites.join(", ") : "-"],
   ];
 
   return (

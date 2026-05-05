@@ -387,7 +387,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               }}
             >
               Un court test pour calibrer ton niveau et suggérer les bons parcours. Aucune pression
-              — tu peux le passer à tout moment si tu préfères explorer librement.
+              , tu peux le passer à tout moment si tu préfères explorer librement.
             </p>
 
             {/* Stats grid */}

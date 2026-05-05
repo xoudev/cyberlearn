@@ -550,12 +550,12 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 style={selectStyle}
                 defaultValue={challenge.prerequisiteId ?? ""}
               >
-                <option value="">— Aucun prérequis —</option>
+                <option value="">Aucun prérequis</option>
                 {prerequisites
                   .filter((p) => p.id !== challenge.id)
                   .map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.refCode} — {p.title}
+                      {p.refCode} · {p.title}
                     </option>
                   ))}
               </select>

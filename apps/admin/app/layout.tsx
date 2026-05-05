@@ -7,8 +7,8 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans",
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Admin — Cyber Learn", template: "%s — Admin" },
-  description: "Administration dashboard — CyberLearn Platform",
+  title: { default: "Admin · Cyber Learn", template: "%s · Admin" },
+  description: "Administration dashboard · CyberLearn Platform",
   icons: {
     icon: "/Admin_logo.png",
     shortcut: "/Admin_logo.png",

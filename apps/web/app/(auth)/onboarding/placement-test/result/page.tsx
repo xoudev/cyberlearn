@@ -490,7 +490,7 @@ export default async function PlacementResultPage({
                   margin: 0,
                 }}
               >
-                Tu pars de zéro — c&apos;est le meilleur moment. Explore nos parcours pour choisir
+                Tu pars de zéro, c&apos;est le meilleur moment. Explore nos parcours pour choisir
                 ton point d&apos;entrée.
               </p>
             </div>

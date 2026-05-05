@@ -124,7 +124,7 @@ export function Quiz({
           }}
         >
           {isCorrect && <span style={{ color: "#0AFFD4" }}>✓ Correct</span>}
-          {isWrong && <span style={{ color: "#FF4757" }}>✗ Incorrect — réessaye</span>}
+          {isWrong && <span style={{ color: "#FF4757" }}>✗ Incorrect · réessaye</span>}
           {!state.submitted && questionNumber !== undefined && questionCount !== undefined && (
             <span style={{ color: "#44406B" }}>
               {String(questionNumber).padStart(2, "0")}/{String(questionCount).padStart(2, "0")}
@@ -159,7 +159,7 @@ export function Quiz({
           let bg = "rgba(5,4,26,0.5)";
           let textColor = "#B8B5D1";
           let letterColor = "#3F3D5C";
-          let stateLabel = "—";
+          let stateLabel = "-";
 
           if (isThisCorrect) {
             borderLeftColor = "#0AFFD4";

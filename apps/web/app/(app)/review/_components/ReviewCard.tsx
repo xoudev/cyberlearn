@@ -58,7 +58,7 @@ export function ReviewCard({
         ? { text: "Bien mémorisé ! +XP", color: "#0AFFD4" }
         : result === "hard"
           ? { text: "À revoir dans 1 jour", color: "#FFB020" }
-          : { text: "Retour en révision —  demain", color: "#FF4757" };
+          : { text: "Retour en révision ·  demain", color: "#FF4757" };
 
     return (
       <div

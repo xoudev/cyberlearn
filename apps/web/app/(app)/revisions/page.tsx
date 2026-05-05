@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Révisions — CyberLearn" };
+export const metadata: Metadata = { title: "Révisions · CyberLearn" };
 export const dynamic = "force-dynamic";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

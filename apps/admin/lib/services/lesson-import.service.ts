@@ -69,7 +69,7 @@ export async function validateMdxContent(fileContent: string): Promise<ImportVal
         valid: false,
         errors: [
           {
-            message: `Contenu rejeté — injection potentielle détectée (pattern: ${pattern.toString()})`,
+            message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()})`,
           },
         ],
         warnings,

@@ -281,7 +281,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
                           </span>
                         </span>
                       ) : (
-                        <span style={{ color: "#44406B" }}>—</span>
+                        <span style={{ color: "#44406B" }}>-</span>
                       )}
                     </td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>
