@@ -52,7 +52,8 @@ function LoginContent(): React.ReactElement {
     e.preventDefault();
     setOauthError(null);
     setIsLoading(true);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData();
+    fd.set("email", email);
     fd.set("redirectTo", redirectTo);
     const result = await sendMagicLink({ error: null }, fd);
     setIsLoading(false);

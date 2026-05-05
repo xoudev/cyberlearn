@@ -22,7 +22,8 @@ export default function AdminLoginPage(): React.ReactElement {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData();
+    fd.set("email", email);
     const result = await sendAdminMagicLink({ error: null }, fd);
     setIsLoading(false);
     if (result.error) {
