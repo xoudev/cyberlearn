@@ -136,11 +136,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     cookies: cookieMethods,
   });
 
-  // IMPORTANT: Do NOT add any logic between createServerClient and getUser().
-  // The session refresh mutates cookies and must propagate to the response.
+  // getSession() reads the JWT from cookies without a network round-trip — fast
+  // enough for routing decisions. Server components use getUser() for security.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   // ── Routing logic ──────────────────────────────────────────────────────
 
