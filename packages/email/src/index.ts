@@ -1,5 +1,2 @@
-// @cyberlearn/email
-// React Email templates for transactional emails sent via Resend.
-// Will be populated in Phase 7 (Notifications & SM-2).
-
-export {};
+export { MagicLinkEmail, getMagicLinkSubject, sendMagicLinkEmail } from "./templates/magic-link";
+export type { EmailActionType } from "./templates/magic-link";
