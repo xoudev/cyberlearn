@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useActionState } from "react";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { useSearchParams } from "next/navigation";
+import { sendMagicLink } from "./actions";
 
 // ── GitHub SVG ────────────────────────────────────────────────────────────────
 function IconGitHub(): React.ReactElement {
@@ -41,34 +42,25 @@ function LoginContent(): React.ReactElement {
 
   const [email, setEmail] = useState("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [actionState] = useActionState(sendMagicLink, { error: null });
 
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  async function handleMagicLink(e: React.FormEvent<HTMLFormElement>) {
+  const error = oauthError ?? actionState.error;
+
+  async function handleMagicLink(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
+    setOauthError(null);
     setIsLoading(true);
-
-    const supabase = createSupabaseBrowserClient();
-    const callbackUrl = new URL("/auth/callback", window.location.origin);
-    callbackUrl.searchParams.set("redirectTo", redirectTo);
-
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: callbackUrl.toString(), shouldCreateUser: true },
-    });
-
-    if (authError) {
-      setError("Une erreur s'est produite. Veuillez réessayer.");
-    } else {
-      setMagicLinkSent(true);
-    }
+    const fd = new FormData(e.currentTarget);
+    fd.set("redirectTo", redirectTo);
+    const result = await sendMagicLink({ error: null }, fd);
     setIsLoading(false);
+    if (!result.error) setMagicLinkSent(true);
   }
 
   async function handleGitHubOAuth() {
-    setError(null);
+    setOauthError(null);
     setIsLoading(true);
 
     const supabase = createSupabaseBrowserClient();
@@ -81,7 +73,7 @@ function LoginContent(): React.ReactElement {
     });
 
     if (authError) {
-      setError("Impossible de se connecter avec GitHub. Veuillez réessayer.");
+      setOauthError("Impossible de se connecter avec GitHub. Veuillez réessayer.");
       setIsLoading(false);
     }
   }
