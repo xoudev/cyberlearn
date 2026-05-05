@@ -1,8 +1,25 @@
+import crypto from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { sendMagicLinkEmail } from "@cyberlearn/email";
 import type { EmailActionType } from "@cyberlearn/email";
 import { env } from "@/lib/env";
+
+// Supabase signs the hook body with HMAC-SHA256.
+// Secret format: "v1,whsec_<base64>"
+// Authorization header format: "v1,<hex_signature>"
+function verifySignature(rawBody: string, authHeader: string | null, secret: string): boolean {
+  if (!authHeader) return false;
+  try {
+    const base64Secret = secret.replace("v1,whsec_", "");
+    const keyBytes = Buffer.from(base64Secret, "base64");
+    const signature = authHeader.replace("v1,", "");
+    const expected = crypto.createHmac("sha256", keyBytes).update(rawBody).digest("hex");
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch {
+    return false;
+  }
+}
 
 const hookPayloadSchema = z.object({
   user: z.object({
@@ -17,23 +34,31 @@ const hookPayloadSchema = z.object({
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    let rawBody: string;
+    try {
+      rawBody = await request.text();
+    } catch {
+      return NextResponse.json({ error: "Failed to read body" }, { status: 400 });
+    }
 
-    if (token !== env.SUPABASE_HOOK_SECRET) {
+    const authHeader = request.headers.get("authorization");
+    console.log("[send-email] auth header:", authHeader?.slice(0, 20));
+    console.log("[send-email] secret prefix:", env.SUPABASE_HOOK_SECRET.slice(0, 15));
+    if (!verifySignature(rawBody, authHeader, env.SUPABASE_HOOK_SECRET)) {
+      console.log("[send-email] signature mismatch");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     let body: unknown;
     try {
-      body = await request.json();
+      body = JSON.parse(rawBody);
     } catch {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
     const parsed = hookPayloadSchema.safeParse(body);
     if (!parsed.success) {
-      // Unknown hook event type — acknowledge silently so Supabase doesn't fail
+      // Unknown hook event — acknowledge silently
       return NextResponse.json({ success: true });
     }
 
