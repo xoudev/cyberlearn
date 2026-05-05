@@ -35,7 +35,7 @@ export const env = createEnv({
     TURNSTILE_SECRET_KEY: z.string().min(1),
 
     // IP address pseudonymization salt (GDPR — SHA-256 hashing)
-    IP_HASH_SALT: z.string().min(32),
+    IP_SALT: z.string().min(32),
 
     // Monitoring
     SENTRY_DSN: z.string().url().optional(),
@@ -71,7 +71,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
-    IP_HASH_SALT: process.env.IP_HASH_SALT,
+    IP_SALT: process.env.IP_SALT,
     SENTRY_DSN: process.env.SENTRY_DSN,
     SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
     CRON_SECRET: process.env.CRON_SECRET,
