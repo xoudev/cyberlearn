@@ -37,6 +37,9 @@ export const env = createEnv({
     // IP address pseudonymization salt (GDPR — SHA-256 hashing)
     IP_SALT: z.string().min(32),
 
+    // Supabase Auth Hook secret — verifies hook requests come from Supabase
+    SUPABASE_HOOK_SECRET: z.string().min(16),
+
     // Monitoring
     SENTRY_DSN: z.string().url().optional(),
     SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
@@ -72,6 +75,7 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
     IP_SALT: process.env.IP_SALT,
+    SUPABASE_HOOK_SECRET: process.env.SUPABASE_HOOK_SECRET,
     SENTRY_DSN: process.env.SENTRY_DSN,
     SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
     CRON_SECRET: process.env.CRON_SECRET,
