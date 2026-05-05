@@ -105,7 +105,31 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")",
       "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")",
       "Bash(wait)",
-      "Bash(grep -v \"Use \\\\`node\")"
+      "Bash(grep -v \"Use \\\\`node\")",
+      "Bash(vercel --version)",
+      "Bash(vercel env *)",
+      "Read(//home/jordan/.local/share/com.vercel.cli/**)",
+      "Read(//home/jordan/.config/vercel/**)",
+      "Read(//home/jordan/**)",
+      "Bash(vercel logs *)",
+      "Bash(vercel inspect *)",
+      "Bash(vercel ls *)",
+      "Bash(vercel --prod)",
+      "Bash(vercel alias *)",
+      "Bash(vercel project *)",
+      "Bash(tee /tmp/vercel_deploy.log)",
+      "Bash(DIRECT_URL=\"postgresql://postgres:RQXfmcW4pQ7qyXuz@db.dzxjspfarvprzxjuukpt.supabase.co:5432/postgres?sslmode=require\" pnpm *)",
+      "Bash(timeout 5 nc -zv db.dzxjspfarvprzxjuukpt.supabase.co 5432)",
+      "Bash(timeout 5 nc -zv aws-1-eu-central-1.pooler.supabase.com 5432)",
+      "Bash(PGPASSWORD=\"RQXfmcW4pQ7qyXuz\" psql \"postgresql://postgres@db.dzxjspfarvprzxjuukpt.supabase.co:5432/postgres?sslmode=require\" -c \"SELECT version\\(\\);\")",
+      "Bash(PRISMA_ADVISORY_LOCK_TIMEOUT_MS=30000 pnpm --filter @cyberlearn/db db:migrate:prod)",
+      "Bash(supabase db *)",
+      "Bash(vercel)",
+      "Bash(vercel whoami *)",
+      "Bash(nc -zv aws-1-eu-central-1.pooler.supabase.com 5432)",
+      "Bash(nc -zv aws-1-eu-central-1.pooler.supabase.com 6543)",
+      "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/aws-1-eu-central-1.pooler.supabase.com/5432')",
+      "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/aws-1-eu-central-1.pooler.supabase.com/6543')"
     ]
   }
 }
