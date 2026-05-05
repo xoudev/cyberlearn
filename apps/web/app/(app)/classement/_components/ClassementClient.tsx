@@ -258,7 +258,7 @@ function PodiumCard({
         <span style={{ color: "#0AFFD4", ...MONO, fontWeight: 500, fontSize: isGold ? 20 : 16 }}>
           @
         </span>
-        {entry.username ?? entry.displayName ?? "—"}
+        {entry.username ?? entry.displayName ?? "-"}
       </h2>
       <p
         style={{
@@ -367,7 +367,7 @@ function YouBanner({
   totalPlayers,
 }: { entry: LeaderboardEntry | null; userRank: number; totalPlayers: number }) {
   const handle = entry?.username ?? entry?.displayName ?? "moi";
-  const tier = entry ? getTier(entry.level) : "—";
+  const tier = entry ? getTier(entry.level) : "-";
   const topPct = totalPlayers > 0 ? Math.round((userRank / totalPlayers) * 100) : 0;
 
   return (
@@ -503,7 +503,7 @@ function YouBanner({
             color: "transparent",
           }}
         >
-          {entry ? fmtXp(entry.xpTotal) : "—"}
+          {entry ? fmtXp(entry.xpTotal) : "-"}
         </span>
       </div>
 
@@ -529,7 +529,7 @@ function YouBanner({
             color: "#F5F5FA",
           }}
         >
-          {entry?.level ?? "—"}
+          {entry?.level ?? "-"}
         </span>
       </div>
     </section>
@@ -602,7 +602,7 @@ function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
             }}
           >
             <span style={{ color: "#0AFFD4", ...MONO, fontWeight: 500 }}>@</span>
-            {entry.username ?? entry.displayName ?? "—"}
+            {entry.username ?? entry.displayName ?? "-"}
           </span>
           <span
             style={{

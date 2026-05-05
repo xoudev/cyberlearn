@@ -370,7 +370,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
               }}
             >
               {criticalTickets > 0
-                ? `${String(criticalTickets)} critique${criticalTickets !== 1 ? "s" : ""} (bug ou sécurité) — action requise`
+                ? `${String(criticalTickets)} critique${criticalTickets !== 1 ? "s" : ""} (bug ou sécurité) · action requise`
                 : "Aucun ticket critique pour le moment"}
             </div>
           </div>

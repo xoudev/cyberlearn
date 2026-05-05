@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: {
     default: "Mentions légales",
-    template: "%s — Cyber Learn",
+    template: "%s · Cyber Learn",
   },
 };
 

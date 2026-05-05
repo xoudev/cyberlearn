@@ -37,7 +37,7 @@ export async function FirstBlood({
           month: "short",
           year: "numeric",
         }).format(completedAt)
-      : "—";
+      : "-";
     return { entry, meta, name, avatar, profileUrl, dateStr };
   });
 

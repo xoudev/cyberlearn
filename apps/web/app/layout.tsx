@@ -21,7 +21,7 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: {
     default: "Cyber Learn",
-    template: "%s — Cyber Learn",
+    template: "%s · Cyber Learn",
   },
   description: "Plateforme d'apprentissage interactif en cybersécurité, développement et réseaux.",
   icons: {

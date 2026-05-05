@@ -125,7 +125,7 @@ function FlagForm({
               marginBottom: 6,
             }}
           >
-            FLAG CORRECT — CHALLENGE RÉSOLU
+            FLAG CORRECT · CHALLENGE RÉSOLU
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890" }}>
             XP crédités sur ton profil.
@@ -300,7 +300,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
       </button>
 
       <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#6B6890", margin: 0 }}>
-        Sur l&apos;honneur — valide uniquement si tu as réellement résolu le challenge.
+        Sur l&apos;honneur · valide uniquement si tu as réellement résolu le challenge.
       </p>
     </form>
   );
@@ -370,7 +370,7 @@ export function ChallengeAction({
           }}
         >
           <IconCheck size={16} />
-          Challenge résolu — bien joué.
+          Challenge résolu · bien joué.
         </div>
       </div>
     );

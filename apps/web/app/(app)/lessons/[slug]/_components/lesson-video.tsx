@@ -35,7 +35,7 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
           margin: "1.5rem 0",
         }}
       >
-        [LessonVideo] prop invalide — vérifiez `src`
+        [LessonVideo] prop invalide, vérifiez `src`
       </div>
     );
   }

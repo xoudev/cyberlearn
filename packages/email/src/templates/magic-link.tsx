@@ -22,11 +22,11 @@ interface MagicLinkEmailProps {
 }
 
 const SUBJECT: Record<EmailActionType, string> = {
-  magiclink: "Ton lien de connexion — Cyber Learn",
-  signup: "Confirme ton compte — Cyber Learn",
-  recovery: "Réinitialise ton accès — Cyber Learn",
+  magiclink: "Ton lien de connexion · Cyber Learn",
+  signup: "Confirme ton compte · Cyber Learn",
+  recovery: "Réinitialise ton accès · Cyber Learn",
   invite: "Tu es invité sur Cyber Learn",
-  email_change: "Confirme ton nouvel email — Cyber Learn",
+  email_change: "Confirme ton nouvel email · Cyber Learn",
 };
 
 const HEADING: Record<EmailActionType, string> = {
@@ -91,7 +91,7 @@ export function MagicLinkEmail({
 
           <Section style={styles.footer}>
             <Text style={styles.footerText}>
-              Cyber Learn — Plateforme d'apprentissage en cybersécurité & développement
+              Cyber Learn · Plateforme d'apprentissage en cybersécurité & développement
             </Text>
             <Text style={styles.footerText}>
               <a href="https://cyberlearn.fr" style={styles.footerLink}>

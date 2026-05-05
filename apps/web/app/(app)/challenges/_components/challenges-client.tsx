@@ -564,7 +564,7 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
             DÉFIS &amp; <em>CHALLENGES</em>
           </h1>
           <p className="chx-sub">
-            Teste tes compétences en conditions réelles. CTF, puzzles de code, labs réseau&nbsp;— le
+            Teste tes compétences en conditions réelles. CTF, puzzles de code, labs réseau, le
             terrain attaque, à toi de défendre.
           </p>
         </div>

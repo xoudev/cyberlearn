@@ -349,10 +349,10 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         <div style={{ marginTop: 16 }}>
           <Field label="Prérequis (optionnel)" name="prerequisiteId" error={fe.prerequisiteId}>
             <select id="prerequisiteId" name="prerequisiteId" style={selectStyle}>
-              <option value="">— Aucun prérequis —</option>
+              <option value="">Aucun prérequis</option>
               {prerequisites.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.refCode} — {p.title}
+                  {p.refCode} · {p.title}
                 </option>
               ))}
             </select>

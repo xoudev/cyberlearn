@@ -295,7 +295,7 @@ export function SidebarNav({
       {/* ── Logo area ─────────────────────────────────────────────────────── */}
       <Link
         href="/dashboard"
-        aria-label="CyberLearn — accueil"
+        aria-label="CyberLearn · accueil"
         className="sidebar-logo-link"
         style={{
           display: "flex",

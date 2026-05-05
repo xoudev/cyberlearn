@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Mes certificats — CyberLearn" };
+export const metadata: Metadata = { title: "Mes certificats · CyberLearn" };
 
 const DIFF_COLORS: Record<string, { color: string; label: string }> = {
   BEGINNER: { color: "#0AFFD4", label: "Débutant" },
@@ -12,7 +12,7 @@ const DIFF_COLORS: Record<string, { color: string; label: string }> = {
   ADVANCED: { color: "#B14DFF", label: "Avancé" },
   EXPERT: { color: "#FFB020", label: "Expert" },
 };
-const DIFF_DEFAULT = { color: "#6B6890", label: "—" };
+const DIFF_DEFAULT = { color: "#6B6890", label: "-" };
 
 const CAT_LABEL: Record<string, string> = {
   DEV: "Développement",

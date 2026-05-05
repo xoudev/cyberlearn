@@ -160,7 +160,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
             marginBottom: 8,
           }}
         >
-          QUIZ — {props.id ?? "?"}
+          QUIZ · {props.id ?? "?"}
         </div>
         <p style={{ margin: 0, fontSize: 13, color: "#F5F5FA", fontWeight: 600 }}>
           {props.question ?? "Question…"}
@@ -1406,7 +1406,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
               if (next && !split) setSplit(true);
               setShowGuide(next);
             }}
-            title={showGuide ? "Masquer le guide" : "Guide MDX — référence des composants"}
+            title={showGuide ? "Masquer le guide" : "Guide MDX · référence des composants"}
             style={{
               display: "flex",
               alignItems: "center",

@@ -264,7 +264,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                     marginBottom: 4,
                   }}
                 >
-                  #{String(hint.orderIndex + 1)} —{" "}
+                  #{String(hint.orderIndex + 1)} ·{" "}
                   {hint.xpCost > 0 ? `${String(hint.xpCost)} XP` : "gratuit"}
                 </div>
                 <div

@@ -389,7 +389,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
                       lp.completedAt,
                     )
-                  : "—";
+                  : "-";
 
                 return (
                   <div

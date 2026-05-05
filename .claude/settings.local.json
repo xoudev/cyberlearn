@@ -129,7 +129,21 @@
       "Bash(nc -zv aws-1-eu-central-1.pooler.supabase.com 5432)",
       "Bash(nc -zv aws-1-eu-central-1.pooler.supabase.com 6543)",
       "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/aws-1-eu-central-1.pooler.supabase.com/5432')",
-      "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/aws-1-eu-central-1.pooler.supabase.com/6543')"
+      "Bash(timeout 5 bash -c 'cat < /dev/null > /dev/tcp/aws-1-eu-central-1.pooler.supabase.com/6543')",
+      "Bash(supabase functions *)",
+      "Bash(grep -E '\">|`|{\"|'\\\\''|\\\\.tsx.*\"')",
+      "Bash(perl -pi -e 's/ — Cyber Learn/ · Cyber Learn/g; s/ — CyberLearn/ · CyberLearn/g; s/ — Admin/ · Admin/g' packages/email/src/templates/magic-link.tsx apps/web/app/layout.tsx apps/web/app/legal/layout.tsx 'apps/web/app/\\(app\\)/certifs/page.tsx' 'apps/web/app/\\(app\\)/leaderboard/page.tsx' 'apps/web/app/\\(app\\)/classement/page.tsx' 'apps/web/app/\\(app\\)/revisions/page.tsx' 'apps/web/app/\\(app\\)/review/page.tsx' 'apps/web/app/verify/[publicId]/page.tsx' apps/web/lib/pdf/certificate-template.tsx apps/admin/app/layout.tsx 'apps/admin/app/\\(admin\\)/layout.tsx')",
+      "Bash(perl -pi -e 's/Cyber Learn — Plateforme/Cyber Learn · Plateforme/g' packages/email/src/templates/magic-link.tsx)",
+      "Bash(perl -pi -e \"s/en cours<\\\\\\\\/b> — reprends/en cours<\\\\\\\\/b> · reprends/g\" \"apps/web/app/\\(app\\)/dashboard/page.tsx\")",
+      "Bash(perl -pi -e 's/XP — tu passes au niveau/XP, tu passes au niveau/g' 'apps/web/app/\\(app\\)/lessons/[slug]/_actions/track-progress.ts' 'apps/web/app/\\(app\\)/challenges/_actions/challenge-actions.ts')",
+      "Bash(perl -pi -e 's/Challenge résolu — FLAG correct/Challenge résolu · FLAG correct/g; s/Challenge verrouillé — complète les prérequis/Challenge verrouillé · complète les prérequis/g' 'apps/web/app/\\(app\\)/challenges/[slug]/_components/script-runner.tsx')",
+      "Bash(perl -pi -e 's/FLAG CORRECT — CHALLENGE RÉSOLU/FLAG CORRECT · CHALLENGE RÉSOLU/g; s/Sur l'\\\\''honneur — valide/Sur l'\\\\''honneur · valide/g; s/Challenge résolu — bien joué/Challenge résolu · bien joué/g' 'apps/web/app/\\(app\\)/challenges/[slug]/_components/challenge-action.tsx')",
+      "Bash(perl -pi -e 's/honneur — valide/honneur · valide/g' 'apps/web/app/\\(app\\)/challenges/[slug]/_components/challenge-action.tsx')",
+      "Bash(perl -pi -e 's/attribué — c/attribué, c/g' 'apps/web/app/\\(auth\\)/onboarding/placement-test/questions/_components/placement-test-form.tsx' 'apps/web/app/\\(auth\\)/onboarding/placement-test/_components/placement-test-form.tsx')",
+      "Bash(perl -pi -e 's/: \"—\"/: \"-\"/g' 'apps/web/app/\\(app\\)/lessons/[slug]/_components/lesson-stepper.tsx')",
+      "Bash(perl -pi -e 's/invalide — vérifiez/invalide, vérifiez/g' 'apps/web/app/\\(app\\)/lessons/[slug]/_components/lesson-video.tsx')",
+      "Bash(perl -pi -e 's/invalides — vérifiez/invalides, vérifiez/g' 'apps/web/app/\\(app\\)/lessons/[slug]/_components/lesson-image.tsx')",
+      "Bash(perl -pi -e 's/\"—\"/\"-\"/g' \"apps/admin/app/\\(admin\\)/settings/page.tsx\")"
     ]
   }
 }

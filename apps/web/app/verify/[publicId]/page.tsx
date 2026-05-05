@@ -17,7 +17,7 @@ export async function generateMetadata({
     select: { path: { select: { title: true } }, user: { select: { displayName: true } } },
   });
   if (!cert) return { title: "Certificat introuvable" };
-  return { title: `Certificat — ${cert.user.displayName} · ${cert.path.title}` };
+  return { title: `Certificat · ${cert.user.displayName} · ${cert.path.title}` };
 }
 
 // ── QR placeholder ────────────────────────────────────────────────────────────
@@ -587,7 +587,7 @@ export default async function CertVerifyPage({
             >
               {[
                 { lbl: "Délivré le", val: issuedStr, accent: false },
-                { lbl: "Score final", val: "—", accent: true },
+                { lbl: "Score final", val: "-", accent: true },
                 {
                   lbl: "Missions",
                   val: `${String(lessonCount)} / ${String(lessonCount)}`,
@@ -725,7 +725,7 @@ export default async function CertVerifyPage({
             >
               <b style={{ color: "#F5F5FA" }}>{"// REVOKE.LOG"}</b>
               <br />
-              Révoqué le {revokedStr} — Raison :{" "}
+              Révoqué le {revokedStr} · Raison :{" "}
               <span style={{ color: "#fff" }}>{cert.revokedReason}</span>.
               <br />
               Ce certificat a été retiré du registre public et ne peut plus être utilisé comme

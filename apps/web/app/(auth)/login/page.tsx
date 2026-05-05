@@ -310,7 +310,7 @@ function LoginContent(): React.ReactElement {
               maxWidth: 520,
             }}
           >
-            Dev, Cybersec, Réseau. Reprends exactement là où tu en es — leçons, quiz et parcours
+            Dev, Cybersec, Réseau. Reprends exactement là où tu en es, leçons, quiz et parcours
             t&apos;attendent.
           </p>
 
@@ -441,7 +441,7 @@ function LoginContent(): React.ReactElement {
                   n: "05",
                   c: (
                     <span>
-                      <span style={{ color: "#0AFFD4" }}>{">"}</span> Session ouverte —{" "}
+                      <span style={{ color: "#0AFFD4" }}>{">"}</span> Session ouverte ·{" "}
                       <span style={{ color: "#0AFFD4" }}>accès autorisé</span>
                     </span>
                   ),

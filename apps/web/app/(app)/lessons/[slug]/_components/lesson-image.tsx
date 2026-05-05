@@ -32,7 +32,7 @@ export function LessonImage(rawProps: LessonImageProps): React.JSX.Element {
           margin: "1.5rem 0",
         }}
       >
-        [LessonImage] props invalides — vérifiez `src` et `alt`
+        [LessonImage] props invalides, vérifiez `src` et `alt`
       </div>
     );
   }

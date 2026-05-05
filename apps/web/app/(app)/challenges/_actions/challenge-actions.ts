@@ -206,7 +206,7 @@ async function awardChallengeXp(
               userId,
               type: "LEVEL_UP",
               title: `Niveau ${String(newLevel)} atteint !`,
-              body: `+${String(xpReward)} XP — tu passes au niveau ${String(newLevel)}.`,
+              body: `+${String(xpReward)} XP, tu passes au niveau ${String(newLevel)}.`,
               actionUrl: "/profile",
               metadata: { newLevel, xpTotal: newXpTotal },
             },

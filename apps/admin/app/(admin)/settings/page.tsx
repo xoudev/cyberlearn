@@ -222,8 +222,8 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
             {[
               { label: "Version Node.js", val: process.version },
               { label: "Environnement", val: process.env.NODE_ENV },
-              { label: "Site URL", val: process.env.NEXT_PUBLIC_SITE_URL ?? "—" },
-              { label: "Admin URL", val: process.env.NEXT_PUBLIC_ADMIN_URL ?? "—" },
+              { label: "Site URL", val: process.env.NEXT_PUBLIC_SITE_URL ?? "-" },
+              { label: "Admin URL", val: process.env.NEXT_PUBLIC_ADMIN_URL ?? "-" },
             ].map((item) => (
               <div
                 key={item.label}

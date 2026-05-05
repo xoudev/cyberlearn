@@ -3,7 +3,7 @@ import Image from "next/image";
 import { requireRequestUser } from "@/lib/auth";
 import { leaderboardRepository, type LeaderboardEntry } from "@cyberlearn/db";
 
-export const metadata = { title: "Classement — CyberLearn" };
+export const metadata = { title: "Classement · CyberLearn" };
 
 export default async function LeaderboardPage(): Promise<React.JSX.Element> {
   const authUser = await requireRequestUser();
@@ -205,7 +205,7 @@ function PodiumCard({
   isCurrentUser,
 }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean }) {
   const colors = PODIUM_COLORS[rank] ?? PODIUM_DEFAULT;
-  const name = entry.displayName ?? entry.username ?? "—";
+  const name = entry.displayName ?? entry.username ?? "-";
 
   return (
     <div
@@ -276,7 +276,7 @@ function LeaderboardRow({
   entry,
   isCurrentUser,
 }: { entry: LeaderboardEntry; isCurrentUser: boolean }) {
-  const name = entry.displayName ?? entry.username ?? "—";
+  const name = entry.displayName ?? entry.username ?? "-";
 
   return (
     <div
