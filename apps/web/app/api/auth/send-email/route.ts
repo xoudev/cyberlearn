@@ -1,25 +1,8 @@
-import crypto from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { sendMagicLinkEmail } from "@cyberlearn/email";
 import type { EmailActionType } from "@cyberlearn/email";
 import { env } from "@/lib/env";
-
-// Supabase signs the hook body with HMAC-SHA256.
-// Secret format: "v1,whsec_<base64>"
-// Authorization header format: "v1,<hex_signature>"
-function verifySignature(rawBody: string, authHeader: string | null, secret: string): boolean {
-  if (!authHeader) return false;
-  try {
-    const base64Secret = secret.replace("v1,whsec_", "");
-    const keyBytes = Buffer.from(base64Secret, "base64");
-    const signature = authHeader.replace("v1,", "");
-    const expected = crypto.createHmac("sha256", keyBytes).update(rawBody).digest("hex");
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-  } catch {
-    return false;
-  }
-}
 
 const hookPayloadSchema = z.object({
   user: z.object({
