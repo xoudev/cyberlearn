@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
+import { sendAdminMagicLink } from "./actions";
 
 function IconGitHub(): React.ReactElement {
   return (
@@ -21,21 +22,14 @@ export default function AdminLoginPage(): React.ReactElement {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
-    const supabase = createSupabaseBrowserClient();
-    const callbackUrl = new URL("/auth/callback", window.location.origin);
-
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: callbackUrl.toString(), shouldCreateUser: false },
-    });
-
-    if (authError) {
-      setError("Erreur lors de l'envoi. Vérifiez l'adresse e-mail.");
+    const fd = new FormData(e.currentTarget);
+    const result = await sendAdminMagicLink({ error: null }, fd);
+    setIsLoading(false);
+    if (result.error) {
+      setError(result.error);
     } else {
       setMagicLinkSent(true);
     }
-    setIsLoading(false);
   }
 
   async function handleGitHubOAuth() {
