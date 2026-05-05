@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
+import { prisma } from "@cyberlearn/db";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
@@ -47,7 +48,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/login?error=no_user", origin));
   }
 
-  const role = user.app_metadata.user_role as string | undefined;
+  // JWT role (set by Supabase Auth Hook in production).
+  // Falls back to the DB role when the hook is not yet configured.
+  const jwtRole = user.app_metadata.user_role as string | undefined;
+  let role = jwtRole;
+  if (!role) {
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
+    role = dbUser?.role ?? undefined;
+  }
 
   if (role !== "ADMIN") {
     // Sign out the non-admin user to avoid leaving a dangling session
