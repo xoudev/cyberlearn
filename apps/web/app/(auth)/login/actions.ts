@@ -26,7 +26,7 @@ export async function sendMagicLink(
     return { error: "Adresse email invalide." };
   }
 
-  const { email, redirectTo } = parsed.data;
+  const { email } = parsed.data;
   const callbackUrl = `${env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
 
   const admin = createSupabaseAdminClient();
