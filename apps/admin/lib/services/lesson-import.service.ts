@@ -68,12 +68,20 @@ export async function validateMdxContent(fileContent: string): Promise<ImportVal
   const bodyWithoutCode = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
 
   for (const pattern of INJECTION_PATTERNS) {
-    if (pattern.test(bodyWithoutCode)) {
+    const match = pattern.exec(bodyWithoutCode);
+    if (match) {
+      // Find the line number in the original body for the matched position
+      const matchIndexInStripped = match.index;
+      const snippet = bodyWithoutCode
+        .slice(Math.max(0, matchIndexInStripped - 40), matchIndexInStripped + 60)
+        .replace(/\n/g, " ")
+        .trim();
+
       return {
         valid: false,
         errors: [
           {
-            message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()})`,
+            message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()}) — contexte : "…${snippet}…"`,
           },
         ],
         warnings,
