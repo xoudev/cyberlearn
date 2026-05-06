@@ -43,6 +43,7 @@
     "date-fns": "catalog:",
     "framer-motion": "catalog:",
     "lucide-react": "catalog:",
+    "mermaid": "^11.0.0",
     "next": "catalog:",
     "next-intl": "catalog:",
     "next-mdx-remote": "catalog:",

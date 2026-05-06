@@ -22,6 +22,7 @@ import { LessonVideo } from "./_components/lesson-video";
 import { LessonImage } from "./_components/lesson-image";
 import { ExternalLink } from "./_components/external-link";
 import { Callout } from "./_components/callout";
+import { Diagram } from "./_components/diagram";
 
 // ── Design meta maps — aligned with catalog.css / lesson-v2.css ───────────────
 
@@ -389,6 +390,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                 LessonImage,
                 ExternalLink,
                 Callout,
+                Diagram,
               }}
               options={{
                 parseFrontmatter: true,

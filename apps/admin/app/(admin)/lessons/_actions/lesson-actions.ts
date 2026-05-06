@@ -82,6 +82,25 @@ export async function createLessonAction(
   redirect("/lessons");
 }
 
+// ── Next refCode ──────────────────────────────────────────────────────────────
+
+export async function getNextRefCodeAction(): Promise<{ nextRefCode: string }> {
+  await requireAdminAction();
+
+  const last = await prisma.lesson.findFirst({
+    orderBy: { refCode: "desc" },
+    select: { refCode: true },
+  });
+
+  if (!last) return { nextRefCode: "CL-LSN-001-V01" };
+
+  const match = /^CL-LSN-(\d{3})-V\d{2}$/.exec(last.refCode);
+  if (!match?.[1]) return { nextRefCode: "CL-LSN-001-V01" };
+
+  const next = parseInt(match[1], 10) + 1;
+  return { nextRefCode: `CL-LSN-${String(next).padStart(3, "0")}-V01` };
+}
+
 // ── Delete ──────────────────────────────────────────────────────────────────────
 
 const deleteLessonSchema = z.object({
