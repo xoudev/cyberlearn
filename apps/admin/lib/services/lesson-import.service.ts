@@ -63,8 +63,12 @@ export async function validateMdxContent(fileContent: string): Promise<ImportVal
   const metadata = metaParsed.data;
 
   // ── Layer 3: Injection detection + MDX dry-run compile ───────────────────
+  // Strip fenced and inline code blocks so patterns like onChange= in code
+  // examples don't trigger false positives.
+  const bodyWithoutCode = body.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+
   for (const pattern of INJECTION_PATTERNS) {
-    if (pattern.test(body)) {
+    if (pattern.test(bodyWithoutCode)) {
       return {
         valid: false,
         errors: [
