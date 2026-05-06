@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useRef } from "react";
 import {
   LessonCompletionContext,
   type LessonCompletionContextType,
@@ -31,36 +31,47 @@ export function SectionPane({
 }): React.ReactElement | null {
   const stepper = useContext(StepperContext);
 
+  // Use a ref so the callbacks below don't change when exerciseState changes.
+  // Without this, every quiz answer would create a new completion object, which
+  // triggers re-registration effects in Quiz/CodePlayground and causes an
+  // infinite register → markDone → unregister → register loop.
+  const stepperRef = useRef(stepper);
+  stepperRef.current = stepper;
+
   const register = useCallback(
     (id: string) => {
-      stepper?.registerExercise(index, id);
+      stepperRef.current?.registerExercise(index, id);
     },
-    [stepper, index],
+    [index],
   );
   const unregister = useCallback(
     (id: string) => {
-      stepper?.unregisterExercise(index, id);
+      stepperRef.current?.unregisterExercise(index, id);
     },
-    [stepper, index],
+    [index],
   );
   const markDone = useCallback(
     (id: string) => {
-      stepper?.markExerciseDone(index, id);
+      stepperRef.current?.markExerciseDone(index, id);
     },
-    [stepper, index],
+    [index],
   );
-
-  const stepComp = stepper?.getStepCompletion(index) ?? { isAllComplete: true, pendingCount: 0 };
 
   const ctx = useMemo<LessonCompletionContextType>(
     () => ({
       register,
       unregister,
       markDone,
-      isAllComplete: stepComp.isAllComplete,
-      pendingCount: stepComp.pendingCount,
+      // getStepCompletion is read on access via the ref so these values are always
+      // fresh without making the ctx object change on every exercise state update.
+      get isAllComplete() {
+        return stepperRef.current?.getStepCompletion(index).isAllComplete ?? true;
+      },
+      get pendingCount() {
+        return stepperRef.current?.getStepCompletion(index).pendingCount ?? 0;
+      },
     }),
-    [register, unregister, markDone, stepComp.isAllComplete, stepComp.pendingCount],
+    [register, unregister, markDone, index],
   );
 
   if (stepper !== null && stepper.currentStep !== index) return null;
