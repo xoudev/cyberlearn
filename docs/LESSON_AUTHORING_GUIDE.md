@@ -597,6 +597,100 @@ Pour en savoir plus, consultez la{" "}
 
 ---
 
+### 5.8 Diagram — Diagrammes Mermaid
+
+Schémas vectoriels rendus côté client via [Mermaid.js](https://mermaid.js.org). Remplace les diagrammes ASCII. Idéal pour les architectures réseau, flux de données, protocoles, modèles objet.
+
+| Prop | Type | Défaut | Description |
+|---|---|---|---|
+| `children` | string | — | Syntaxe Mermaid du diagramme (obligatoire) |
+| `caption` | string | — | Légende affichée sous le diagramme |
+
+#### Flowchart — Flux et architectures
+
+```mdx
+<Diagram caption="Architecture d'une application web 3-tiers">
+flowchart LR
+  A([Client]) -->|HTTPS| B[Serveur Web]
+  B --> C[(Base de données)]
+  B --> D[Cache Redis]
+</Diagram>
+```
+
+#### Flowchart avec décisions
+
+```mdx
+<Diagram caption="Cycle de vie d'une requête HTTP">
+flowchart TD
+  A([Requête client]) --> B{Cache CDN ?}
+  B -->|Oui| C[Réponse en cache]
+  B -->|Non| D[Serveur d'origine]
+  D --> E[Base de données]
+  E --> D
+  D --> F([Réponse client])
+</Diagram>
+```
+
+#### Sequence diagram — Échanges entre acteurs
+
+```mdx
+<Diagram caption="Handshake TCP — 3 phases">
+sequenceDiagram
+  participant C as Client
+  participant S as Serveur
+  C->>S: SYN (seq=100)
+  S->>C: SYN-ACK (seq=200, ack=101)
+  C->>S: ACK (ack=201)
+  Note over C,S: Connexion établie
+</Diagram>
+```
+
+#### Class diagram — Modèles objet
+
+```mdx
+<Diagram>
+classDiagram
+  class Paquet {
+    +String src_ip
+    +String dst_ip
+    +int port
+    +bytes payload
+    +checksum() bool
+  }
+  class PaquetTCP {
+    +int seq_num
+    +int ack_num
+    +bool syn
+    +bool ack
+  }
+  Paquet <|-- PaquetTCP
+</Diagram>
+```
+
+#### Gitgraph — Flux de branches Git
+
+```mdx
+<Diagram>
+gitGraph
+  commit id: "init"
+  branch feature/auth
+  checkout feature/auth
+  commit id: "add login"
+  commit id: "add JWT"
+  checkout main
+  merge feature/auth id: "merge auth"
+  commit id: "deploy"
+</Diagram>
+```
+
+**Règles d'usage :**
+- Utiliser pour les architectures, flux réseau, protocoles, modèles de données
+- Ne pas dépasser 15–20 nœuds — au-delà, préférer une `<LessonImage>`
+- Toujours ajouter une `caption` pour les schémas pédagogiques
+- Référence complète des syntaxes : [mermaid.js.org/syntax](https://mermaid.js.org/syntax/flowchart.html)
+
+---
+
 ## 6. Règles de contenu
 
 ### Ce qu'on DOIT avoir dans chaque leçon
@@ -612,7 +706,7 @@ Pour en savoir plus, consultez la{" "}
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` — rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<CodePlayground>`, `<SimulatedTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<CodePlayground>`, `<SimulatedTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

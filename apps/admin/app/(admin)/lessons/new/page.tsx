@@ -1,8 +1,12 @@
 "use client";
 
-import React, { useActionState, useState } from "react";
+import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
-import { createLessonAction, type CreateLessonState } from "../_actions/lesson-actions";
+import {
+  createLessonAction,
+  getNextRefCodeAction,
+  type CreateLessonState,
+} from "../_actions/lesson-actions";
 import { MdxEditorPanel } from "./_components/MdxEditorPanel";
 
 export const dynamic = "force-dynamic";
@@ -120,6 +124,17 @@ const initialState: CreateLessonState = {};
 export default function NewLessonPage(): React.ReactElement {
   const [state, action, isPending] = useActionState(createLessonAction, initialState);
   const [mdx, setMdx] = useState(MDX_STARTER);
+  const [refCode, setRefCode] = useState("");
+
+  useEffect(() => {
+    getNextRefCodeAction()
+      .then(({ nextRefCode }) => {
+        setRefCode(nextRefCode);
+      })
+      .catch(() => {
+        // Leave field empty so admin can type manually
+      });
+  }, []);
 
   return (
     <>
@@ -253,6 +268,10 @@ export default function NewLessonPage(): React.ReactElement {
                 type="text"
                 required
                 placeholder="CL-LSN-001-V01"
+                value={refCode}
+                onChange={(e) => {
+                  setRefCode(e.target.value);
+                }}
                 className="le-input"
                 style={BASE_INPUT}
               />
