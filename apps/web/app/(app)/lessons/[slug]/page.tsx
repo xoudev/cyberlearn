@@ -21,6 +21,7 @@ import { SimulatedTerminal } from "./_components/simulated-terminal";
 import { LessonVideo } from "./_components/lesson-video";
 import { LessonImage } from "./_components/lesson-image";
 import { ExternalLink } from "./_components/external-link";
+import { Callout } from "./_components/callout";
 
 // ── Design meta maps — aligned with catalog.css / lesson-v2.css ───────────────
 
@@ -387,6 +388,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                 LessonVideo,
                 LessonImage,
                 ExternalLink,
+                Callout,
               }}
               options={{
                 parseFrontmatter: true,
