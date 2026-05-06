@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useReducer } from "react";
+import React, { useEffect, useReducer, useRef } from "react";
 import { useLessonCompletion } from "./lesson-completion-context";
 
 interface QuizProps {
@@ -46,20 +46,23 @@ export function Quiz({
 }: QuizProps): React.ReactElement {
   const [state, dispatch] = useReducer(quizReducer, { selected: null, submitted: false });
   const completion = useLessonCompletion();
+  // Ref to always call the latest callbacks without triggering re-registration
+  // when isAllComplete/pendingCount change (which would cause an infinite loop).
+  const completionRef = useRef(completion);
+  completionRef.current = completion;
 
   useEffect(() => {
-    if (!completion) return;
-    completion.register(id);
+    completionRef.current?.register(id);
     return () => {
-      completion.unregister(id);
+      completionRef.current?.unregister(id);
     };
-  }, [id, completion]);
+  }, [id]);
 
   useEffect(() => {
     if (state.submitted && state.selected === correct) {
-      completion?.markDone(id);
+      completionRef.current?.markDone(id);
     }
-  }, [state.submitted, state.selected, correct, id, completion]);
+  }, [state.submitted, state.selected, correct, id]);
 
   const isCorrect = state.submitted && state.selected === correct;
   const isWrong = state.submitted && state.selected !== correct;

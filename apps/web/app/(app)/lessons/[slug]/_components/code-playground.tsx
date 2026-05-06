@@ -225,15 +225,17 @@ export function CodePlayground({
   const EditorRef = useRef<typeof MonacoEditorComp | null>(null);
 
   const completion = useLessonCompletion();
+  const completionRef = useRef(completion);
+  completionRef.current = completion;
 
   // Register as required if validate prop is set
   useEffect(() => {
-    if (!validate || !completion) return;
-    completion.register(itemId);
+    if (!validate) return;
+    completionRef.current?.register(itemId);
     return () => {
-      completion.unregister(itemId);
+      completionRef.current?.unregister(itemId);
     };
-  }, [itemId, validate, completion]);
+  }, [itemId, validate]);
 
   // Load Monaco lazily
   useEffect(() => {
@@ -283,8 +285,8 @@ export function CodePlayground({
 
   // Mark done when validation passes
   useEffect(() => {
-    if (isValidated) completion?.markDone(itemId);
-  }, [isValidated, itemId, completion]);
+    if (isValidated) completionRef.current?.markDone(itemId);
+  }, [isValidated, itemId]);
 
   async function handleRun() {
     setRunning(true);
