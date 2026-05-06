@@ -30,7 +30,7 @@ export async function sendAdminMagicLink(
       return { error: "Accès refusé." };
     }
 
-    const callbackUrl = `${env.NEXT_PUBLIC_ADMIN_URL}/auth/callback`;
+    const callbackUrl = `${env.NEXT_PUBLIC_ADMIN_URL}/auth/confirm`;
 
     const admin = createSupabaseAdminClient();
     const { data, error } = await admin.auth.admin.generateLink({
