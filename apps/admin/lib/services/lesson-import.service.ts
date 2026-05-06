@@ -16,7 +16,7 @@ const INJECTION_PATTERNS = [
   /<embed[\s>]/i,
   /javascript:/i,
   /data:text\/html/i,
-  /on\w+\s*=/i, // inline event handlers
+  /\bon[A-Z][a-zA-Z]*\s*=/, // inline event handlers (camelCase: onChange=, onClick=, …)
   /dangerouslySetInnerHTML/i,
 ];
 
