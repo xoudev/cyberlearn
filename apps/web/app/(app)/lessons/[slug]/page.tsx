@@ -47,6 +47,8 @@ import { LessonImage } from "./_components/lesson-image";
 import { ExternalLink } from "./_components/external-link";
 import { Callout } from "./_components/callout";
 import { Diagram } from "./_components/diagram";
+import { QuizGroup } from "./_components/quiz-group";
+import { PythonChallenge } from "./_components/python-challenge";
 
 // ── Design meta maps — aligned with catalog.css / lesson-v2.css ───────────────
 
@@ -415,6 +417,8 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                 ExternalLink,
                 Callout,
                 Diagram,
+                QuizGroup,
+                PythonChallenge,
               }}
               options={{
                 parseFrontmatter: true,

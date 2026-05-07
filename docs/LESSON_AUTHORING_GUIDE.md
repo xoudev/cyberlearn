@@ -223,6 +223,46 @@ Question à choix multiple intégrée dans la leçon. Auto-correctif côté clie
 
 ---
 
+### 5.2b QuizGroup — Série de QCM séquentiels
+
+Groupe plusieurs `<Quiz>` en une séquence verrouillée : la question suivante n'apparaît qu'une fois la précédente répondue correctement. Une barre de progression montre l'avancement.
+
+```mdx
+<QuizGroup>
+  <Quiz
+    id="q-1"
+    question="Quel port utilise HTTPS par défaut ?"
+    options={["80", "443", "8080", "22"]}
+    correct={1}
+  />
+  <Quiz
+    id="q-2"
+    question="Quelle couche OSI gère le routage IP ?"
+    options={["Liaison", "Réseau", "Transport", "Application"]}
+    correct={1}
+  />
+  <Quiz
+    id="q-3"
+    question="Que signifie l'acronyme TLS ?"
+    options={["Transport Layer Security", "Trusted Link System", "Token Login Service", "Terminal Layer Setup"]}
+    correct={0}
+  />
+</QuizGroup>
+```
+
+**Comportement :**
+- Affiche une seule question à la fois
+- Les questions répondues correctement passent en vue compacte (ligne avec ✓)
+- Barre de progression avec points au-dessus du groupe
+- Chaque `<Quiz>` à l'intérieur doit toujours avoir un `id` unique
+
+**Règles d'usage :**
+- Utiliser pour regrouper 2 à 5 questions liées à une même notion
+- Ne pas imbriquer des `<QuizGroup>` l'un dans l'autre
+- Les `<Quiz>` enfants ne doivent pas être seuls en dehors du groupe si on veut la progression séquentielle
+
+---
+
 ### 5.3 CodePlayground — Sandbox interactif
 
 Éditeur de code exécutable directement dans le navigateur. **Aucun serveur impliqué** — tout s'exécute localement.
@@ -691,6 +731,70 @@ gitGraph
 
 ---
 
+### 5.9 PythonChallenge — Exercice Python avec tests automatiques
+
+Éditeur Python style LeetCode : l'étudiant écrit son code, clique "Lancer les tests", et doit faire passer tous les cas de test pour débloquer la suite. Exécution 100% locale via Pyodide (WASM), aucun serveur.
+
+```mdx
+<PythonChallenge
+  id="py-somme-n"
+  title="Calculer la somme des entiers de 1 à n"
+  description="Écris une fonction solution(n) qui retourne la somme des entiers de 1 à n inclus. Par exemple, solution(5) doit retourner 15."
+  starterCode="def solution(n):
+    pass"
+  tests={[
+    { input: "solution(1)", expected: "1" },
+    { input: "solution(5)", expected: "15" },
+    { input: "solution(10)", expected: "55" },
+    { input: "solution(0)", expected: "0", label: "Cas limite — n=0" },
+  ]}
+/>
+```
+
+**Props :**
+
+| Prop | Type | Description |
+|---|---|---|
+| `id` | string | Identifiant unique dans la leçon (obligatoire) |
+| `title` | string | Titre du challenge (défaut : "Python Challenge") |
+| `description` | string | Énoncé de l'exercice en texte |
+| `starterCode` | string | Code initial affiché dans l'éditeur (recommandé) |
+| `tests` | `TestCase[]` | Tableau de cas de test (obligatoire, au moins 1) |
+
+**Structure d'un TestCase :**
+
+| Champ | Type | Description |
+|---|---|---|
+| `input` | string | Expression Python à évaluer (ex: `"solution(5)"`) |
+| `expected` | string | Valeur attendue — résultat de `str(expression)` en Python |
+| `label` | string | Étiquette affichée dans les résultats (défaut : "Test N") |
+
+**Comment définir les valeurs `expected` :**
+
+La valeur comparée est toujours `str(expression)` côté Python. Exemples :
+
+| Valeur retournée | `expected` à mettre |
+|---|---|
+| `15` (int) | `"15"` |
+| `3.14` (float) | `"3.14"` |
+| `True` / `False` | `"True"` / `"False"` |
+| `None` | `"None"` |
+| `[1, 2, 3]` (liste) | `"[1, 2, 3]"` |
+| `{'a': 1}` (dict) | `"{'a': 1}"` |
+| `"hello"` (str) | `"hello"` (sans guillemets — c'est `str("hello")`) |
+
+**Règles d'usage :**
+- Le `id` doit être unique dans la leçon (préfixe `py-` recommandé)
+- Toujours inclure un cas limite (n=0, liste vide, chaîne vide…)
+- Le `starterCode` doit indiquer la signature de la fonction attendue
+- Limiter à 8 cas de test maximum — les afficher tous ralentirait l'UX
+- L'exercice bloque la progression : ne pas l'utiliser si l'objectif est d'explorer librement
+
+**Bibliothèques disponibles :** tout ce que Pyodide embarque — `math`, `random`, `hashlib`, `json`, `base64`, `itertools`, `collections`, `re`, `string`, etc.  
+**Non disponible :** I/O fichier, réseau, `subprocess`, bibliothèques natives C.
+
+---
+
 ## 6. Règles de contenu
 
 ### Ce qu'on DOIT avoir dans chaque leçon
@@ -706,7 +810,7 @@ gitGraph
 - **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` — rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
-- Les `<Callout>`, `<Quiz>`, `<CodePlayground>`, `<SimulatedTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
+- Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<SimulatedTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
 
 ### Pédagogie
 

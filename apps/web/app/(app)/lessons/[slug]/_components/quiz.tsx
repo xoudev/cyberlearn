@@ -13,6 +13,12 @@ interface QuizProps {
   correct: number;
   questionNumber?: number;
   questionCount?: number;
+  /** Injected by QuizGroup: called once the correct answer is submitted. */
+  onCorrect?: () => void;
+  /** Injected by QuizGroup: true when this is the currently active question. */
+  isGroupActive?: boolean;
+  /** Injected by QuizGroup: true when this question has already been answered correctly. */
+  isGroupDone?: boolean;
 }
 
 interface QuizState {
@@ -47,7 +53,10 @@ export function Quiz({
   correct,
   questionNumber,
   questionCount,
-}: QuizProps): React.ReactElement {
+  onCorrect,
+  isGroupActive,
+  isGroupDone,
+}: QuizProps): React.ReactElement | null {
   const items = options ?? choices ?? [];
   const [state, dispatch] = useReducer(quizReducer, { selected: null, submitted: false });
   const completion = useLessonCompletion();
@@ -55,6 +64,8 @@ export function Quiz({
   // when isAllComplete/pendingCount change (which would cause an infinite loop).
   const completionRef = useRef(completion);
   completionRef.current = completion;
+  const onCorrectRef = useRef(onCorrect);
+  onCorrectRef.current = onCorrect;
 
   useEffect(() => {
     completionRef.current?.register(id);
@@ -66,16 +77,62 @@ export function Quiz({
   useEffect(() => {
     if (state.submitted && state.selected === correct) {
       completionRef.current?.markDone(id);
+      onCorrectRef.current?.();
     }
   }, [state.submitted, state.selected, correct, id]);
+
+  // Not yet reached in the group — QuizGroup prevents rendering this case,
+  // but guard here as a safety net.
+  if (isGroupActive === false && !isGroupDone) return null;
+
+  // Already answered correctly in the group — show compact done row.
+  if (isGroupDone) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "12px 20px",
+          border: "1px solid rgba(10,255,212,0.15)",
+          background: "rgba(10,255,212,0.03)",
+          fontFamily: "var(--font-body, sans-serif)",
+          fontSize: 13,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono, monospace)",
+            fontSize: 11,
+            color: "#0AFFD4",
+            flexShrink: 0,
+          }}
+        >
+          ✓
+        </span>
+        <span
+          style={{
+            color: "#6B6890",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {question}
+        </span>
+      </div>
+    );
+  }
 
   const isCorrect = state.submitted && state.selected === correct;
   const isWrong = state.submitted && state.selected !== correct;
 
+  const inGroup = isGroupActive !== undefined || isGroupDone !== undefined;
+
   return (
     <section
       style={{
-        margin: "56px 0 0",
+        margin: inGroup ? "0" : "56px 0 0",
         padding: "32px 32px 28px",
         border: "1px solid #1F1B47",
         background: "rgba(10,8,38,0.5)",
