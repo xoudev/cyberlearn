@@ -51,8 +51,22 @@ function getMermaid(): Promise<MermaidAPI> {
   return mermaidPromise;
 }
 
+// MDX wraps text between JSX tags in <p> elements rather than passing raw
+// strings. This helper recursively collects all text leaf nodes from any
+// React child tree so both `children="..."` and MDX prose children work.
+function extractText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractText).join("\n");
+  if (React.isValidElement(node)) {
+    return extractText((node.props as { children?: React.ReactNode }).children);
+  }
+  return "";
+}
+
 interface DiagramProps {
-  children: string;
+  children: React.ReactNode;
   caption?: string;
 }
 
@@ -71,7 +85,9 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
     async function render() {
       try {
         const mermaid = await getMermaid();
-        const { svg } = await mermaid.render(diagramId, children.trim());
+        const source = extractText(children).trim();
+        if (!source) return;
+        const { svg } = await mermaid.render(diagramId, source);
         if (cancelled || !containerRef.current) return;
         // SAFETY: SVG produced by mermaid from admin-authored diagram syntax only.
         // Mermaid's renderer outputs sanitized SVG with no JS event handlers.
