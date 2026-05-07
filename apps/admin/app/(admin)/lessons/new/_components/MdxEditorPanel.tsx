@@ -281,6 +281,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
   const elements: React.ReactElement[] = [];
   let idx = 0;
   let k = 0;
+  let h2Idx = 0;
 
   while (idx < lines.length) {
     const line = lines[idx] ?? "";
@@ -297,14 +298,13 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
         <h1
           key={k++}
           style={{
-            fontFamily: MONO,
-            fontWeight: 800,
-            fontSize: 20,
+            fontFamily: "var(--font-body, sans-serif)",
+            fontWeight: 700,
+            fontSize: 22,
             color: "#F5F5FA",
-            margin: "20px 0 10px",
+            margin: "20px 0 12px",
             letterSpacing: "-0.02em",
-            borderBottom: `1px solid #1F1B47`,
-            paddingBottom: 8,
+            lineHeight: 1.2,
           }}
         >
           {renderInline(h1[1] ?? "")}
@@ -317,18 +317,33 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
     // H2
     const h2 = /^##\s+(.+)/.exec(line);
     if (h2) {
+      h2Idx++;
       elements.push(
         <h2
           key={k++}
           style={{
-            fontFamily: MONO,
+            fontFamily: "var(--font-body, sans-serif)",
             fontWeight: 700,
-            fontSize: 15,
+            fontSize: 22,
             color: "#F5F5FA",
-            margin: "18px 0 8px",
+            margin: "24px 0 10px",
+            paddingLeft: 14,
+            borderLeft: "3px solid #0AFFD4",
+            letterSpacing: "-0.02em",
+            lineHeight: 1.15,
           }}
         >
-          <span style={{ color: TURQ, marginRight: 6, fontSize: 11 }}>##</span>
+          <span
+            style={{
+              fontFamily: MONO,
+              fontSize: 11,
+              color: "#3F3D5C",
+              marginRight: 8,
+              fontWeight: 500,
+            }}
+          >
+            {String(h2Idx).padStart(2, "0")}
+          </span>
           {renderInline(h2[1] ?? "")}
         </h2>,
       );
@@ -343,13 +358,12 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
         <h3
           key={k++}
           style={{
-            fontFamily: MONO,
+            fontFamily: "var(--font-body, sans-serif)",
             fontWeight: 600,
-            fontSize: 12,
+            fontSize: 15,
             color: "#B8B5D1",
-            margin: "14px 0 6px",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
+            margin: "16px 0 6px",
+            letterSpacing: "0.01em",
           }}
         >
           {renderInline(h3[1] ?? "")}
@@ -442,7 +456,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
                 gap: 8,
               }}
             >
-              <span style={{ color: DANGER, flexShrink: 0, marginTop: 1 }}>›</span>
+              <span style={{ color: TURQ, flexShrink: 0, marginTop: 1 }}>›</span>
               <span>{renderInline(item)}</span>
             </li>
           ))}
@@ -485,7 +499,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
     }
     if (paras.length > 0) {
       elements.push(
-        <p key={k++} style={{ color: "#B8B5D1", fontSize: 13, lineHeight: 1.75, margin: "8px 0" }}>
+        <p key={k++} style={{ color: "#B8B5D1", fontSize: 15, lineHeight: 1.75, margin: "10px 0" }}>
           {renderInline(paras.join(" "))}
         </p>,
       );
