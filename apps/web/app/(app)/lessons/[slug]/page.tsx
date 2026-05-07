@@ -5,6 +5,30 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
+
+// Strips mdxFlowExpression / mdxTextExpression nodes (prose JS like {variable}) from the
+// unist tree while leaving mdxJsxAttributeValueExpression nodes intact. This lets
+// blockJS:false preserve JSX attribute expressions (options={[...]}, correct={1}) without
+// also evaluating untrusted inline expressions that would throw ReferenceErrors at runtime.
+function remarkStripProseExpressions() {
+  return (tree: unknown): void => {
+    // SAFETY: unist Root always has { children?: unknown[] }; we only access .type and .children.
+    stripNode(tree as { type?: string; children?: unknown[] });
+  };
+}
+function stripNode(node: { type?: string; children?: unknown[] }): void {
+  if (!node.children) return;
+  for (let i = node.children.length - 1; i >= 0; i--) {
+    const child = node.children[i];
+    if (typeof child !== "object" || child === null) continue;
+    const c = child as { type?: string; children?: unknown[] };
+    if (c.type === "mdxFlowExpression" || c.type === "mdxTextExpression") {
+      node.children.splice(i, 1);
+    } else {
+      stripNode(c);
+    }
+  }
+}
 import { requireRequestUser } from "@/lib/auth";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import { lessonRepository, ratingRepository, qaRepository, prisma } from "@cyberlearn/db";
@@ -394,16 +418,15 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               }}
               options={{
                 parseFrontmatter: true,
-                // blockJS/blockDangerousJS: false — lesson content is admin-only
-                // (requireAdmin() on all mutations). next-mdx-remote's default blockJS:true
-                // strips JSX expression props like options={[...]} and correct={1}, breaking
-                // Quiz and CodePlayground. blockDangerousJS:true activates
-                // CreateRemoveDangerousCallsPlugin which throws on valid lesson AST nodes,
-                // crashing the RSC render. Both are safe to disable for admin-authored content.
+                // blockJS: false — next-mdx-remote's default blockJS:true strips all JSX
+                // expression props (options={[...]}, correct={1}), breaking Quiz/CodePlayground.
+                // remarkStripProseExpressions replaces the prose-expression safety: it strips
+                // mdxFlowExpression/mdxTextExpression nodes ({variable} in prose) while leaving
+                // mdxJsxAttributeValueExpression nodes intact. Content is admin-only so this
+                // is safe (requireAdmin() on all mutations).
                 blockJS: false,
-                blockDangerousJS: false,
                 mdxOptions: {
-                  remarkPlugins: [remarkGfm],
+                  remarkPlugins: [remarkGfm, remarkStripProseExpressions],
                   // rehypeSanitize is intentionally absent here: lesson content is admin-only
                   // (enforced by requireAdmin() on all lesson mutations), and rehypeSanitize
                   // silently drops mdxJsxFlowElement nodes, which would strip CodePlayground,
