@@ -6,7 +6,10 @@ import { useLessonCompletion } from "./lesson-completion-context";
 interface QuizProps {
   id: string;
   question: string;
-  choices: string[];
+  /** Primary prop name used in MDX template and authoring guide. */
+  options?: string[];
+  /** Legacy alias — kept for backwards compatibility. */
+  choices?: string[];
   correct: number;
   questionNumber?: number;
   questionCount?: number;
@@ -39,11 +42,13 @@ const LETTER = ["A", "B", "C", "D", "E", "F"];
 export function Quiz({
   id,
   question,
+  options,
   choices,
   correct,
   questionNumber,
   questionCount,
 }: QuizProps): React.ReactElement {
+  const items = options ?? choices ?? [];
   const [state, dispatch] = useReducer(quizReducer, { selected: null, submitted: false });
   const completion = useLessonCompletion();
   // Ref to always call the latest callbacks without triggering re-registration
@@ -153,7 +158,7 @@ export function Quiz({
 
       {/* Choices */}
       <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        {choices.map((choice, i) => {
+        {items.map((choice, i) => {
           const isSelected = state.selected === i;
           const isThisCorrect = state.submitted && i === correct;
           const isThisWrong = state.submitted && isSelected && i !== correct;
