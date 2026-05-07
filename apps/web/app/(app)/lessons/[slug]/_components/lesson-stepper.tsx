@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useMemo,
   useReducer,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -89,6 +90,8 @@ export function LessonStepper({
     required: new Map<number, Set<string>>(),
     done: new Map<number, Set<string>>(),
   });
+  const exerciseStateRef = useRef(exerciseState);
+  exerciseStateRef.current = exerciseState;
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -107,17 +110,20 @@ export function LessonStepper({
     dispatchExercise({ type: "done", step, id });
   }, []);
 
+  // Stable — reads exerciseState via ref so ctx doesn't change on every register/unregister.
+  // Without this, every exercise state update would propagate a new ctx to all SectionPane
+  // consumers, causing a cascade of re-renders that exceeds React's render guard.
   const getStepCompletion = useCallback(
     (step: number) => {
-      const req = exerciseState.required.get(step) ?? new Set<string>();
-      const done = exerciseState.done.get(step) ?? new Set<string>();
+      const req = exerciseStateRef.current.required.get(step) ?? new Set<string>();
+      const done = exerciseStateRef.current.done.get(step) ?? new Set<string>();
       const pending = [...req].filter((id) => !done.has(id));
       return {
         isAllComplete: req.size === 0 || pending.length === 0,
         pendingCount: pending.length,
       };
     },
-    [exerciseState],
+    [], // stable — reads via ref
   );
 
   const ctx = useMemo<StepperContextType>(
