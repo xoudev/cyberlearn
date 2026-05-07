@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
+import type mermaidLib from "mermaid";
+type MermaidAPI = typeof mermaidLib;
 
 // Mermaid is imported dynamically inside useEffect so it is never evaluated
 // during SSR — mermaid accesses browser globals (window, document) at module
@@ -38,16 +40,14 @@ const MERMAID_THEME = {
 };
 
 // Module-level promise so mermaid is loaded and initialized only once.
-let mermaidPromise: Promise<typeof import("mermaid").default> | null = null;
+let mermaidPromise: Promise<MermaidAPI> | null = null;
 
-function getMermaid() {
-  if (!mermaidPromise) {
-    mermaidPromise = import("mermaid").then((mod) => {
-      const m = mod.default;
-      m.initialize(MERMAID_THEME);
-      return m;
-    });
-  }
+function getMermaid(): Promise<MermaidAPI> {
+  mermaidPromise ??= import("mermaid").then((mod) => {
+    const m = mod.default;
+    m.initialize(MERMAID_THEME);
+    return m;
+  });
   return mermaidPromise;
 }
 
