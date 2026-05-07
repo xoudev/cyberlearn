@@ -76,7 +76,13 @@ export function QuizGroup({ children }: QuizGroupProps): React.ReactElement {
             {
               key: i,
               // exactOptionalPropertyTypes: omit onCorrect entirely when not active
-              ...(isActive ? { onCorrect: () => setMaxVisible((v) => Math.max(v, i + 1)) } : {}),
+              ...(isActive
+                ? {
+                    onCorrect: () => {
+                      setMaxVisible((v) => Math.max(v, i + 1));
+                    },
+                  }
+                : {}),
               isGroupActive: isActive,
               isGroupDone: isDone,
               questionNumber: i + 1,

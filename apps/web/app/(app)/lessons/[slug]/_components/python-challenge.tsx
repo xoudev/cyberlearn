@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
 import { useLessonCompletion } from "./lesson-completion-context";
 
@@ -132,8 +132,7 @@ export function PythonChallenge({
   starterCode = "",
   tests,
 }: PythonChallengeProps): React.ReactElement {
-  const autoId = useId();
-  const itemId = id ?? autoId;
+  const itemId = id;
   const initialCode = starterCode.trim();
   const [code, setCode] = useState(initialCode);
   const [running, setRunning] = useState(false);
@@ -494,7 +493,7 @@ export function PythonChallenge({
           }}
         >
           {testResults.map((result, i) => {
-            const label = tests[i]?.label ?? `Test ${i + 1}`;
+            const label = tests[i]?.label ?? `Test ${String(i + 1)}`;
             return (
               <div
                 key={i}
