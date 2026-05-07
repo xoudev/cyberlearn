@@ -394,6 +394,11 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               }}
               options={{
                 parseFrontmatter: true,
+                // blockJS: false — lesson content is admin-only (requireAdmin() on all mutations).
+                // next-mdx-remote's default blockJS:true strips JSX expression props like
+                // options={[...]} and correct={1}, breaking Quiz and CodePlayground components.
+                // blockDangerousJS remains true (default) to block eval/Function calls.
+                blockJS: false,
                 mdxOptions: {
                   remarkPlugins: [remarkGfm],
                   // rehypeSanitize is intentionally absent here: lesson content is admin-only
