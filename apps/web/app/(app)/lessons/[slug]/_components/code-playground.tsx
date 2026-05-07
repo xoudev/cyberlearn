@@ -193,12 +193,24 @@ function runInWorker(language: Language, code: string): Promise<RunResult> {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
+// MDX wraps text children in React elements (<p>, etc.) instead of passing
+// raw strings. This helper extracts all text leaf nodes so both prop styles work.
+function extractCodeText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractCodeText).join("\n");
+  if (React.isValidElement(node)) {
+    return extractCodeText((node.props as { children?: React.ReactNode }).children);
+  }
+  return "";
+}
+
 export interface CodePlaygroundProps {
   id?: string;
   language?: Language;
-  /** Starter code as a JSX string expression or via `starterCode` prop. */
-  children?: string;
-  /** Alias for `children` — preferred in MDX since text between JSX tags becomes a <p>, not a string. */
+  /** Starter code — either via children or the `starterCode` prop. */
+  children?: React.ReactNode;
   starterCode?: string;
   expectedOutput?: string;
   validate?: boolean;
@@ -208,7 +220,7 @@ export interface CodePlaygroundProps {
 export function CodePlayground({
   id,
   language = "python",
-  children = "",
+  children,
   starterCode,
   expectedOutput,
   validate,
@@ -217,7 +229,7 @@ export function CodePlayground({
   const autoId = useId();
   const itemId = id ?? autoId;
 
-  const initialCode = (starterCode ?? children).trim();
+  const initialCode = (starterCode ?? extractCodeText(children)).trim();
   const [code, setCode] = useState(initialCode);
   const [result, setResult] = useState<RunResult | null>(null);
   const [running, setRunning] = useState(false);
