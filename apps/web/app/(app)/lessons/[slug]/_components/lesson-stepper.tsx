@@ -194,14 +194,7 @@ export function LessonStepper({
       )}
 
       {/* Content grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.85fr) minmax(300px, 1fr)",
-          gap: 56,
-          alignItems: "start",
-        }}
-      >
+      <div className="lesson-stepper-grid">
         {/* Article + navigation */}
         <div>
           {/* MDX content — flows directly, no card wrapper per design */}
@@ -232,7 +225,7 @@ export function LessonStepper({
         </div>
 
         {/* Right rail */}
-        <aside style={{ position: "sticky", top: 24 }}>
+        <aside className="lesson-stepper-rail">
           <StepperRail
             sections={sections}
             currentStep={currentStep}
@@ -598,21 +591,7 @@ function SectionNavBar({
       )}
 
       {/* Sticky section nav */}
-      <div
-        style={{
-          marginTop: 48,
-          display: "grid",
-          gridTemplateColumns: "1fr auto 2fr",
-          alignItems: "stretch",
-          border: "1px solid #1F1B47",
-          background: "rgba(10, 8, 38, 0.6)",
-          position: "sticky",
-          bottom: 16,
-          backdropFilter: "blur(8px)",
-          zIndex: 5,
-          overflow: "hidden",
-        }}
-      >
+      <div className="section-nav-bar">
         {/* Gradient border overlay */}
         <div
           aria-hidden="true"
@@ -676,18 +655,7 @@ function SectionNavBar({
         </button>
 
         {/* Center: current section info */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            padding: "12px 24px",
-            borderLeft: "1px solid #1F1B47",
-            borderRight: "1px solid #1F1B47",
-            textAlign: "center",
-            minWidth: 160,
-          }}
-        >
+        <div className="section-nav-center">
           <span
             style={{
               fontFamily: "var(--font-mono, monospace)",

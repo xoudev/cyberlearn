@@ -1679,6 +1679,66 @@ article.lesson-content blockquote p code {
   }
 }
 
+/* ─── Lesson stepper — responsive grid + rail + nav bar ─────────────────── */
+.lesson-stepper-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .lesson-stepper-grid {
+    grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr);
+    gap: 56px;
+  }
+}
+
+.lesson-stepper-rail {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .lesson-stepper-rail {
+    display: block;
+    position: sticky;
+    top: 24px;
+  }
+}
+
+.section-nav-bar {
+  margin-top: 48px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: stretch;
+  border: 1px solid #1f1b47;
+  background: rgba(10, 8, 38, 0.6);
+  position: sticky;
+  bottom: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 5;
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .section-nav-bar {
+    grid-template-columns: 1fr auto 2fr;
+  }
+}
+
+.section-nav-center {
+  display: none;
+}
+@media (min-width: 640px) {
+  .section-nav-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 12px 24px;
+    border-left: 1px solid #1f1b47;
+    border-right: 1px solid #1f1b47;
+    text-align: center;
+    min-width: 160px;
+  }
+}
+
 /* ─── First Blood rail row hover ────────────────────────────────────────────── */
 .first-blood-row {
   border: 1px solid transparent;

@@ -215,7 +215,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
             style={{
               fontFamily: "var(--font-display, sans-serif)",
               fontWeight: 800,
-              fontSize: "clamp(48px, 6vw, 80px)",
+              fontSize: "clamp(28px, 6vw, 80px)",
               lineHeight: 0.95,
               letterSpacing: "-0.035em",
               color: "#F5F5FA",
