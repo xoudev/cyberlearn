@@ -1,8 +1,10 @@
 "use server";
 
+import { headers } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { getRequestUser } from "@/lib/auth";
+import { checkContactForm } from "@/lib/rate-limit";
 
 const contactSchema = z.object({
   subject: z.string().trim().min(5).max(200),
@@ -36,6 +38,17 @@ export async function submitContactAction(
       if (errs[0]) fieldErrors[key] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
+  }
+
+  const headerStore = await headers();
+  const rawIp = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  // Rate limit MUST come before any Turnstile captcha check (added in a future phase)
+  // so that an attacker cannot burn captcha quota at no cost
+  const contactLimit = await checkContactForm(rawIp);
+  if (!contactLimit.success) {
+    return {
+      error: `Trop de demandes. Réessayez dans ${String(contactLimit.retryAfterSeconds)} secondes.`,
+    };
   }
 
   const { subject, theme, message, email } = parsed.data;
