@@ -3,14 +3,14 @@
 // Loaded via new Worker('/pyodide-worker.js') from script-runner.tsx.
 // Architecture rule: Pyodide runs in Web Worker only, 10s timeout enforced by caller.
 
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js");
+importScripts("/runtimes/pyodide/pyodide.js");
 
 let pyodideReady = null;
 
 function initPyodide() {
   if (!pyodideReady) {
     pyodideReady = loadPyodide({
-      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/",
+      indexURL: "/runtimes/pyodide/",
     }).then((py) => {
       self.postMessage({ type: "ready" });
       return py;

@@ -4,8 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
 import { useLessonCompletion } from "./lesson-completion-context";
 
-const PYODIDE_VERSION = "0.27.5";
-const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js`;
+const PYODIDE_WORKER_URL = "/runtimes/pyodide/pyodide.js";
+const PYODIDE_INDEX_URL = "/runtimes/pyodide/";
 const CHALLENGE_WORKER_TIMEOUT_MS = 15_000;
 
 export interface TestCase {
@@ -41,8 +41,8 @@ async function initPyodide() {
   if (loading) return;
   loading = true;
   try {
-    self.importScripts("${PYODIDE_URL}");
-    pyodide = await self.loadPyodide();
+    self.importScripts("${PYODIDE_WORKER_URL}");
+    pyodide = await self.loadPyodide({ indexURL: "${PYODIDE_INDEX_URL}" });
   } catch (e) {
     self.postMessage({ id: "__init_error__", results: [] });
     loading = false;
