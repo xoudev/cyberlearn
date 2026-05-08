@@ -22,14 +22,14 @@ export const authRateLimit = _legacyRedis
   : null;
 
 export async function checkAuthRateLimit(request: { headers: Headers }): Promise<boolean> {
+  // Fail-open: if Redis is unconfigured, allow the request rather than blocking all auth.
+  // The magic-link *generation* endpoint is fail-closed; the callback is not, because
+  // a Redis outage must not prevent legitimate users from completing their login.
   if (!authRateLimit) return true;
 
   const forwarded = request.headers.get("x-forwarded-for");
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
-  const hashedIp = crypto
-    .createHmac("sha256", process.env.IP_SALT ?? "cyberlearn-default-salt")
-    .update(rawIp)
-    .digest("hex");
+  const hashedIp = crypto.createHmac("sha256", getSalt()).update(rawIp).digest("hex");
 
   const { success } = await authRateLimit.limit(hashedIp);
   return success;
@@ -85,11 +85,18 @@ function getLimiter(key: string, factory: (redis: Redis) => Ratelimit): Ratelimi
   return instance;
 }
 
+function getSalt(): string {
+  const salt = process.env.IP_SALT;
+  if (!salt || salt.length < 32) {
+    throw new Error(
+      "[rate-limit] IP_SALT must be set (>= 32 chars). Generate with: openssl rand -hex 32",
+    );
+  }
+  return salt;
+}
+
 function pseudonymize(value: string): string {
-  return crypto
-    .createHmac("sha256", process.env.IP_SALT ?? "cyberlearn-default-salt")
-    .update(value)
-    .digest("hex");
+  return crypto.createHmac("sha256", getSalt()).update(value).digest("hex");
 }
 
 function toResult(r: {
@@ -115,7 +122,7 @@ export async function checkMagicLinkPerEmail(email: string): Promise<RateLimitRe
         limiter: Ratelimit.slidingWindow(5, "10 m"),
         prefix: "rl:ml:email",
       }),
-  ).limit(pseudonymize(email));
+  ).limit(pseudonymize(email.trim().toLowerCase()));
   return toResult(result);
 }
 

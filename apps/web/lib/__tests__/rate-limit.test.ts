@@ -6,7 +6,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Env stubs — must be set before the module is imported ────────────────────
 // getRedis() reads process.env directly (not the t3-oss typed env)
@@ -185,5 +185,50 @@ describe("isolation — different identifiers don't share counters", () => {
     // emailB is untouched
     const passB = await checkMagicLinkPerEmail(emailB);
     expect(passB.success).toBe(true);
+  });
+});
+
+describe("email case normalization — bypass prevention", () => {
+  it("Jordan@EXAMPLE.com and jordan@example.com share the same counter", async () => {
+    const base = uid();
+    const emailMixed = `Jordan-${base}@EXAMPLE.com`;
+    const emailLower = `jordan-${base}@example.com`;
+    // Exhaust the limit using mixed-case
+    for (let i = 0; i < 5; i++) await checkMagicLinkPerEmail(emailMixed);
+    // Lowercase variant must see the same exhausted counter
+    const r = await checkMagicLinkPerEmail(emailLower);
+    expect(r.success).toBe(false);
+  });
+
+  it("trailing whitespace does not create a separate counter", async () => {
+    const base = uid();
+    const emailClean = `user-${base}@example.com`;
+    const emailPadded = `  user-${base}@example.com  `;
+    for (let i = 0; i < 5; i++) await checkMagicLinkPerEmail(emailClean);
+    const r = await checkMagicLinkPerEmail(emailPadded);
+    expect(r.success).toBe(false);
+  });
+});
+
+describe("getSalt() — missing or invalid IP_SALT throws", () => {
+  // Temporarily override IP_SALT per test; restore afterward so other suites are unaffected
+  it("throws when IP_SALT is not set", async () => {
+    vi.stubEnv("IP_SALT", "");
+    await expect(checkMagicLinkPerEmail("probe@example.com")).rejects.toThrow(
+      "[rate-limit] IP_SALT must be set",
+    );
+  });
+
+  it("throws when IP_SALT is shorter than 32 chars", async () => {
+    vi.stubEnv("IP_SALT", "tooshort");
+    await expect(checkMagicLinkPerEmail("probe@example.com")).rejects.toThrow(
+      "[rate-limit] IP_SALT must be set",
+    );
+  });
+
+  afterEach(() => {
+    // Restore the salt for subsequent test suites
+    vi.stubEnv("IP_SALT", "a-test-salt-that-is-at-least-32-characters-long");
+    counters.clear();
   });
 });
