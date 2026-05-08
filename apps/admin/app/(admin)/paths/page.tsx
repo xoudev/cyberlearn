@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { DeletePathButton } from "./_components/delete-path-button";
+import { StatusBadge } from "../_components/status-badge";
+import { updatePathStatusAction } from "./_actions/path-actions";
 
 export const metadata: Metadata = { title: "Parcours" };
 
@@ -10,25 +12,13 @@ interface DiffColor {
   color: string;
   bg: string;
 }
-interface StatColor {
-  color: string;
-  label: string;
-}
-
 const DIFF_DEFAULT: DiffColor = { color: "#6B6890", bg: "rgba(42,37,96,0.3)" };
-const STATUS_DEFAULT: StatColor = { color: "#6B6890", label: "Inconnu" };
 
 const DIFF_COLORS: Record<string, DiffColor> = {
   BEGINNER: { color: "#0AFFD4", bg: "rgba(10,255,212,0.1)" },
   INTERMEDIATE: { color: "#4D8BFF", bg: "rgba(77,139,255,0.1)" },
   ADVANCED: { color: "#B14DFF", bg: "rgba(177,77,255,0.1)" },
   EXPERT: { color: "#FFB020", bg: "rgba(255,176,32,0.1)" },
-};
-
-const STATUS_COLORS: Record<string, StatColor> = {
-  DRAFT: { color: "#6B6890", label: "Brouillon" },
-  PUBLISHED: { color: "#0AFFD4", label: "Publié" },
-  ARCHIVED: { color: "#FF4757", label: "Archivé" },
 };
 
 const CAT_LABEL: Record<string, string> = {
@@ -199,7 +189,6 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
             <tbody>
               {paths.map((p) => {
                 const diff = DIFF_COLORS[p.difficulty] ?? DIFF_DEFAULT;
-                const status = STATUS_COLORS[p.status] ?? STATUS_DEFAULT;
                 const cat = CAT_LABEL[p.category] ?? p.category;
 
                 return (
@@ -285,29 +274,13 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
                       )}
                     </td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          color: status.color,
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: 5,
-                            height: 5,
-                            borderRadius: "50%",
-                            background: status.color,
-                            flexShrink: 0,
-                          }}
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <StatusBadge
+                          entityId={p.id}
+                          currentStatus={p.status as "DRAFT" | "PUBLISHED" | "ARCHIVED"}
+                          action={updatePathStatusAction}
                         />
-                        {status.label}
-                      </span>
+                      </div>
                     </td>
                     <td style={{ ...tdStyle, width: 72, padding: "14px 8px" }}>
                       <div

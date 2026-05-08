@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { prisma, ContentStatus } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 
 const createPathSchema = z.object({
@@ -106,6 +106,42 @@ export async function createPathAction(
   }
 
   redirect("/paths");
+}
+
+// ── Update status ─────────────────────────────────────────────────────────────
+
+export async function updatePathStatusAction(
+  pathId: string,
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
+): Promise<{ error?: string }> {
+  const admin = await requireAdminAction();
+
+  if (!z.string().uuid().safeParse(pathId).success) return { error: "ID invalide." };
+  if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
+
+  const path = await prisma.path.findUnique({
+    where: { id: pathId },
+    select: { id: true, title: true, status: true },
+  });
+  if (!path) return { error: "Parcours introuvable." };
+
+  const data: { status: ContentStatus; publishedAt?: Date } = { status };
+  if (status === "PUBLISHED") data.publishedAt = new Date();
+
+  await prisma.path.update({ where: { id: pathId }, data });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: admin.id,
+      action: "path.status",
+      targetType: "Path",
+      targetId: pathId,
+      metadata: { from: path.status, to: status },
+    },
+  });
+
+  revalidatePath("/paths");
+  return {};
 }
 
 // ── Delete ──────────────────────────────────────────────────────────────────────

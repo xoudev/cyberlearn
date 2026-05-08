@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { DeleteLessonButton } from "./_components/delete-lesson-button";
+import { StatusBadge } from "../_components/status-badge";
+import { updateLessonStatusAction } from "./_actions/lesson-actions";
 
 export const metadata: Metadata = { title: "Leçons" };
 
@@ -10,23 +12,12 @@ interface DiffColor {
   color: string;
   bg: string;
 }
-interface StatColor {
-  color: string;
-  label: string;
-}
 const DIFF_DEFAULT: DiffColor = { color: "#6B6890", bg: "rgba(42,37,96,0.3)" };
-const STATUS_DEFAULT: StatColor = { color: "#6B6890", label: "Inconnu" };
 const DIFF_COLORS: Record<string, DiffColor> = {
   BEGINNER: { color: "#0AFFD4", bg: "rgba(10,255,212,0.1)" },
   INTERMEDIATE: { color: "#4D8BFF", bg: "rgba(77,139,255,0.1)" },
   ADVANCED: { color: "#B14DFF", bg: "rgba(177,77,255,0.1)" },
   EXPERT: { color: "#FFB020", bg: "rgba(255,176,32,0.1)" },
-};
-
-const STATUS_COLORS: Record<string, StatColor> = {
-  DRAFT: { color: "#6B6890", label: "Brouillon" },
-  PUBLISHED: { color: "#0AFFD4", label: "Publié" },
-  ARCHIVED: { color: "#FF4757", label: "Archivé" },
 };
 
 export default async function AdminLessonsPage(): Promise<React.ReactElement> {
@@ -143,7 +134,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 80px 40px",
+            gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 110px 40px",
             padding: "12px 16px",
             borderBottom: "1px solid #1F1B47",
             fontFamily: "var(--font-mono)",
@@ -178,13 +169,12 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
         ) : (
           lessons.map((lesson) => {
             const diff = DIFF_COLORS[lesson.difficulty] ?? DIFF_DEFAULT;
-            const status = STATUS_COLORS[lesson.status] ?? STATUS_DEFAULT;
             return (
               <div
                 key={lesson.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 80px 40px",
+                  gridTemplateColumns: "120px 1fr 100px 100px 80px 80px 110px 40px",
                   padding: "12px 16px",
                   borderBottom: "1px solid #1A1640",
                   alignItems: "center",
@@ -271,26 +261,12 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
                   {String(lesson._count.progress)}
                 </span>
 
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9,
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      color: status.color,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {status.label}
-                  </span>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <StatusBadge
+                    entityId={lesson.id}
+                    currentStatus={lesson.status as "DRAFT" | "PUBLISHED" | "ARCHIVED"}
+                    action={updateLessonStatusAction}
+                  />
                 </div>
 
                 <DeleteLessonButton

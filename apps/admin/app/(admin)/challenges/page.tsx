@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
+import { ActiveToggle } from "./_components/active-toggle";
 
 export const metadata: Metadata = { title: "Challenges" };
 
@@ -255,18 +256,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
                   <td style={{ ...cell, color: "#0AFFD4", fontWeight: 700 }}>{c.xpReward}</td>
                   <td style={cell}>{c._count.progress}</td>
                   <td style={cell}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        width: 7,
-                        height: 7,
-                        borderRadius: "50%",
-                        background: c.isActive ? "#0AFFD4" : "#6B6890",
-                        marginRight: 6,
-                        boxShadow: c.isActive ? "0 0 6px rgba(10,255,212,0.5)" : "none",
-                      }}
-                    />
-                    {c.isActive ? "Actif" : "Inactif"}
+                    <ActiveToggle challengeId={c.id} isActive={c.isActive} />
                   </td>
                   <td style={cell}>
                     <Link
