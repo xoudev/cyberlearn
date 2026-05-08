@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useOptimistic, useTransition } from "react";
 
 type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
@@ -22,23 +21,25 @@ export function StatusBadge({
   currentStatus: ContentStatus;
   action: (id: string, status: ContentStatus) => Promise<{ error?: string }>;
 }): React.JSX.Element {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState<ContentStatus>(currentStatus);
+  const [optimisticStatus, setOptimisticStatus] = useOptimistic(confirmed);
 
-  const meta = META[currentStatus];
-  const options = ALL.filter((s) => s !== currentStatus);
+  const meta = META[optimisticStatus];
+  const options = ALL.filter((s) => s !== optimisticStatus);
 
   function pick(next: ContentStatus) {
     setOpen(false);
     setError(null);
     startTransition(async () => {
+      setOptimisticStatus(next);
       const res = await action(entityId, next);
       if (res.error) {
         setError(res.error);
       } else {
-        router.refresh();
+        setConfirmed(next);
       }
     });
   }

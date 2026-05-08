@@ -33,14 +33,6 @@ export async function updateLessonAction(
   _prev: UpdateLessonState,
   formData: FormData,
 ): Promise<UpdateLessonState> {
-  const admin = await requireAdminAction();
-
-  const existing = await prisma.lesson.findUnique({
-    where: { id },
-    select: { id: true, refCode: true, slug: true, status: true, publishedAt: true },
-  });
-  if (!existing) notFound();
-
   const raw = Object.fromEntries(formData.entries());
   const parsed = updateLessonSchema.safeParse(raw);
 
@@ -52,47 +44,65 @@ export async function updateLessonAction(
     return { error: "Formulaire invalide.", fieldErrors };
   }
 
+  const [admin, existing] = await Promise.all([
+    requireAdminAction(),
+    prisma.lesson.findUnique({
+      where: { id },
+      select: { id: true, refCode: true, slug: true, status: true, publishedAt: true },
+    }),
+  ]);
+  if (!existing) notFound();
+
   const { coverImageUrl, status, ...data } = parsed.data;
 
-  if (data.refCode !== existing.refCode) {
-    const conflict = await prisma.lesson.findFirst({
-      where: { refCode: data.refCode, NOT: { id } },
-      select: { id: true },
-    });
-    if (conflict)
+  const refCodeChanged = data.refCode !== existing.refCode;
+  const slugChanged = data.slug !== existing.slug;
+
+  if (refCodeChanged || slugChanged) {
+    const [refConflict, slugConflict] = await Promise.all([
+      refCodeChanged
+        ? prisma.lesson.findFirst({
+            where: { refCode: data.refCode, NOT: { id } },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+      slugChanged
+        ? prisma.lesson.findFirst({
+            where: { slug: data.slug, NOT: { id } },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    if (refConflict)
       return { error: "Ce refCode existe déjà.", fieldErrors: { refCode: "Déjà utilisé" } };
-  }
-  if (data.slug !== existing.slug) {
-    const conflict = await prisma.lesson.findFirst({
-      where: { slug: data.slug, NOT: { id } },
-      select: { id: true },
-    });
-    if (conflict) return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
+    if (slugConflict)
+      return { error: "Ce slug existe déjà.", fieldErrors: { slug: "Déjà utilisé" } };
   }
 
   const publishedAt =
     status === "PUBLISHED" && existing.status !== "PUBLISHED" ? new Date() : existing.publishedAt;
 
   try {
-    await prisma.lesson.update({
-      where: { id },
-      data: {
-        ...data,
-        coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
-        status,
-        publishedAt,
-      },
-    });
-
-    await prisma.auditLog.create({
-      data: {
-        actorId: admin.id,
-        action: "lesson.update",
-        targetType: "Lesson",
-        targetId: id,
-        metadata: { title: data.title, status },
-      },
-    });
+    await prisma.$transaction([
+      prisma.lesson.update({
+        where: { id },
+        data: {
+          ...data,
+          coverImageUrl: coverImageUrl !== "" ? (coverImageUrl ?? null) : null,
+          status,
+          publishedAt,
+        },
+      }),
+      prisma.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "lesson.update",
+          targetType: "Lesson",
+          targetId: id,
+          metadata: { title: data.title, status },
+        },
+      }),
+    ]);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur inconnue";
     if (msg.includes("Unique constraint") && msg.includes("refCode"))

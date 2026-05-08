@@ -108,31 +108,33 @@ export async function updateLessonStatusAction(
   lessonId: string,
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
 ): Promise<{ error?: string }> {
-  const admin = await requireAdminAction();
-
   if (!z.string().uuid().safeParse(lessonId).success) return { error: "ID invalide." };
   if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
 
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { id: true, title: true, status: true },
-  });
+  const [admin, lesson] = await Promise.all([
+    requireAdminAction(),
+    prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, status: true },
+    }),
+  ]);
   if (!lesson) return { error: "Leçon introuvable." };
 
-  const data: { status: ContentStatus; publishedAt?: Date } = { status };
-  if (status === "PUBLISHED") data.publishedAt = new Date();
+  const updateData: { status: ContentStatus; publishedAt?: Date } = { status };
+  if (status === "PUBLISHED") updateData.publishedAt = new Date();
 
-  await prisma.lesson.update({ where: { id: lessonId }, data });
-
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "lesson.status",
-      targetType: "Lesson",
-      targetId: lessonId,
-      metadata: { from: lesson.status, to: status },
-    },
-  });
+  await prisma.$transaction([
+    prisma.lesson.update({ where: { id: lessonId }, data: updateData }),
+    prisma.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "lesson.status",
+        targetType: "Lesson",
+        targetId: lessonId,
+        metadata: { from: lesson.status, to: status },
+      },
+    }),
+  ]);
 
   revalidatePath("/lessons");
   return {};
