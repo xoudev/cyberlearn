@@ -138,7 +138,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   // getSession() reads the JWT from cookies without a network round-trip — fast
   // enough for routing decisions. Server components use getUser() for security.
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const {
     data: { session },
   } = await supabase.auth.getSession();
