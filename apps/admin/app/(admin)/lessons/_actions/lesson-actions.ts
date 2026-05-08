@@ -129,18 +129,13 @@ export async function deleteLessonAction(
       id: true,
       title: true,
       status: true,
-      _count: { select: { progress: true, pathLessons: true } },
+      _count: { select: { pathLessons: true } },
     },
   });
 
   if (!lesson) return { error: "Leçon introuvable." };
   if (lesson.status === "PUBLISHED") {
     return { error: "Impossible de supprimer une leçon publiée. Archivez-la d'abord." };
-  }
-  if (lesson._count.progress > 0) {
-    return {
-      error: `Suppression bloquée : ${String(lesson._count.progress)} étudiant(s) ont commencé cette leçon.`,
-    };
   }
   if (lesson._count.pathLessons > 0) {
     return { error: "Suppression bloquée : cette leçon appartient à un ou plusieurs parcours." };
