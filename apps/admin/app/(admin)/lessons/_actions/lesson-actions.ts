@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma } from "@cyberlearn/db";
+import { prisma, ContentStatus } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 
 const createLessonSchema = z.object({
@@ -99,6 +99,42 @@ export async function getNextRefCodeAction(): Promise<{ nextRefCode: string }> {
 
   const next = parseInt(match[1], 10) + 1;
   return { nextRefCode: `CL-LSN-${String(next).padStart(3, "0")}-V01` };
+}
+
+// ── Update status ─────────────────────────────────────────────────────────────
+
+export async function updateLessonStatusAction(
+  lessonId: string,
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
+): Promise<{ error?: string }> {
+  const admin = await requireAdminAction();
+
+  if (!z.string().uuid().safeParse(lessonId).success) return { error: "ID invalide." };
+  if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: { id: true, title: true, status: true },
+  });
+  if (!lesson) return { error: "Leçon introuvable." };
+
+  const data: { status: ContentStatus; publishedAt?: Date } = { status };
+  if (status === "PUBLISHED") data.publishedAt = new Date();
+
+  await prisma.lesson.update({ where: { id: lessonId }, data });
+
+  await prisma.auditLog.create({
+    data: {
+      actorId: admin.id,
+      action: "lesson.status",
+      targetType: "Lesson",
+      targetId: lessonId,
+      metadata: { from: lesson.status, to: status },
+    },
+  });
+
+  revalidatePath("/lessons");
+  return {};
 }
 
 // ── Delete ──────────────────────────────────────────────────────────────────────
