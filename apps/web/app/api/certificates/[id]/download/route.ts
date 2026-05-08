@@ -26,7 +26,7 @@ export async function GET(
   });
 
   if (!cert || cert.pdfStorageKey === "pending") {
-    console.info("[certificates/download] not found or pending", {
+    console.warn("[certificates/download] not found or pending", {
       certId: id,
       actorId: user.id,
     });
@@ -44,10 +44,10 @@ export async function GET(
     .from(BUCKET)
     .createSignedUrl(cert.pdfStorageKey, SIGNED_TTL, { download: filename });
 
-  if (error ?? !data) {
+  if (!data) {
     console.error("[certificates/download] signed url error", {
       certId: id,
-      code: error?.message,
+      code: error.message,
     });
     return new Response(null, { status: 500 });
   }

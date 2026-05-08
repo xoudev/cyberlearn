@@ -34,26 +34,26 @@ vi.mock("@upstash/ratelimit", () => {
   });
 
   // Instance method
-  (Ratelimit.prototype as { limit: (id: string) => Promise<unknown> }).limit = async function (
+  (Ratelimit.prototype as { limit: (id: string) => Promise<unknown> }).limit = function (
     this: { limit_: number; prefix_: string },
     identifier: string,
-  ) {
+  ): Promise<unknown> {
     const key = `${this.prefix_}:${identifier}`;
     const count = (counters.get(key) ?? 0) + 1;
     counters.set(key, count);
     const success = count <= this.limit_;
-    return {
+    return Promise.resolve({
       success,
       limit: this.limit_,
       remaining: Math.max(0, this.limit_ - count),
       reset: Date.now() + 600_000,
-    };
+    });
   };
 
   // Static factory — encodes limit into an object the constructor reads
   (
     Ratelimit as unknown as { slidingWindow: (limit: number, window: string) => { limit: number } }
-  ).slidingWindow = vi.fn((limit: number, _window: string) => ({ limit }));
+  ).slidingWindow = vi.fn((limit: number) => ({ limit }));
 
   return { Ratelimit };
 });
