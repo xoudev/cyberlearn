@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, ContentStatus } from "@cyberlearn/db";
+import { prisma } from "@cyberlearn/db";
+import type { ContentStatus } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 
 const createLessonSchema = z.object({
