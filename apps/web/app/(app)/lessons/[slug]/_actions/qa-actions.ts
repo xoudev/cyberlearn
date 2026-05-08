@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRequestUser } from "@/lib/auth";
 import { qaRepository } from "@cyberlearn/db";
+import { checkQaSubmission } from "@/lib/rate-limit";
 
 const questionSchema = z.object({
   lessonId: z.string().uuid(),
@@ -29,6 +30,11 @@ export async function postQuestionAction(
 ): Promise<QaActionResult> {
   const user = await requireRequestUser();
 
+  const qaLimit = await checkQaSubmission(user.id);
+  if (!qaLimit.success) {
+    return { success: false, error: "Trop de messages. Réessayez dans une minute." };
+  }
+
   const parsed = questionSchema.safeParse({ lessonId, title, content });
   if (!parsed.success) {
     const msg = parsed.error.issues[0]?.message ?? "Données invalides.";
@@ -47,6 +53,11 @@ export async function postAnswerAction(
   lessonSlug: string,
 ): Promise<QaActionResult> {
   const user = await requireRequestUser();
+
+  const qaLimit = await checkQaSubmission(user.id);
+  if (!qaLimit.success) {
+    return { success: false, error: "Trop de messages. Réessayez dans une minute." };
+  }
 
   const parsed = answerSchema.safeParse({ questionId, content });
   if (!parsed.success) {

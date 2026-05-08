@@ -1,9 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { sendMagicLinkEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
+import { checkMagicLinkPerEmail, checkMagicLinkPerIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().email(),
@@ -27,6 +29,21 @@ export async function sendMagicLink(
   }
 
   const { email } = parsed.data;
+
+  const headerStore = await headers();
+  const rawIp = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+
+  const [emailLimit, ipLimit] = await Promise.all([
+    checkMagicLinkPerEmail(email),
+    checkMagicLinkPerIp(rawIp),
+  ]);
+  if (!emailLimit.success || !ipLimit.success) {
+    const retry = Math.max(emailLimit.retryAfterSeconds, ipLimit.retryAfterSeconds);
+    return {
+      error: `Trop de demandes. Réessayez dans ${String(retry)} secondes.`,
+    };
+  }
+
   const callbackUrl = `${env.NEXT_PUBLIC_SITE_URL}/auth/confirm`;
 
   const admin = createSupabaseAdminClient();

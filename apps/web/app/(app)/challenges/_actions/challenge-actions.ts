@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma, challengeRepository } from "@cyberlearn/db";
 import { computeLevel, computeNewStreak } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
+import { checkHintReveal } from "@/lib/rate-limit";
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 
@@ -120,8 +121,13 @@ export async function completeChallengeAction(challengeId: string): Promise<{ er
 export async function revealHintAction(
   hintId: string,
 ): Promise<{ content?: string; error?: string }> {
-  if (!z.string().uuid().safeParse(hintId).success) return { error: "ID invalide." };
   const user = await requireRequestUser();
+  if (!z.string().uuid().safeParse(hintId).success) return { error: "ID invalide." };
+
+  const hintLimit = await checkHintReveal(user.id);
+  if (!hintLimit.success) {
+    return { error: "Trop d'indices révélés. Réessayez plus tard." };
+  }
 
   const hint = await prisma.challengeHint.findUnique({
     where: { id: hintId },
