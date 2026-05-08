@@ -2,10 +2,10 @@
 
 // "use client" justified: useActionState, bound action, controlled type field, delete confirmation
 
-import React, { useActionState, useState, useTransition } from "react";
+import React, { useActionState, useState, useOptimistic, useTransition } from "react";
 import {
   updateChallengeAction,
-  toggleChallengeActiveAction,
+  setChallengeActiveAction,
   deleteChallengeAction,
 } from "../../../_actions/challenge-admin-actions";
 import type { ChallengeFormState } from "../../../_actions/challenge-admin-actions";
@@ -103,11 +103,16 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
   const [togglePending, startToggle] = useTransition();
   const [deletePending, startDelete] = useTransition();
   const [deleteError, setDeleteError] = useState<string | undefined>();
+  const [confirmedActive, setConfirmedActive] = useState(challenge.isActive);
+  const [optimisticActive, setOptimisticActive] = useOptimistic(confirmedActive);
   const fe = state.fieldErrors ?? {};
 
   function handleToggleActive(): void {
+    const next = !optimisticActive;
     startToggle(async () => {
-      await toggleChallengeActiveAction(challenge.id);
+      setOptimisticActive(next);
+      const res = await setChallengeActiveAction(challenge.id, next);
+      if (!res.error) setConfirmedActive(next);
     });
   }
 
@@ -197,7 +202,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 13,
-              color: challenge.isActive ? "#0AFFD4" : "#6B6890",
+              color: optimisticActive ? "#0AFFD4" : "#6B6890",
               display: "flex",
               alignItems: "center",
               gap: 6,
@@ -208,12 +213,12 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 width: 7,
                 height: 7,
                 borderRadius: "50%",
-                background: challenge.isActive ? "#0AFFD4" : "#6B6890",
+                background: optimisticActive ? "#0AFFD4" : "#6B6890",
                 display: "inline-block",
-                boxShadow: challenge.isActive ? "0 0 6px rgba(10,255,212,0.5)" : "none",
+                boxShadow: optimisticActive ? "0 0 6px rgba(10,255,212,0.5)" : "none",
               }}
             />
-            {challenge.isActive ? "ACTIF" : "INACTIF"}
+            {optimisticActive ? "ACTIF" : "INACTIF"}
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
@@ -224,8 +229,8 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               padding: "7px 16px",
               background: "transparent",
-              border: `1px solid ${challenge.isActive ? "rgba(255,77,109,0.4)" : "rgba(10,255,212,0.3)"}`,
-              color: challenge.isActive ? "#FF4D6D" : "#0AFFD4",
+              border: `1px solid ${optimisticActive ? "rgba(255,77,109,0.4)" : "rgba(10,255,212,0.3)"}`,
+              color: optimisticActive ? "#FF4D6D" : "#0AFFD4",
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 10,
@@ -235,7 +240,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
               opacity: togglePending ? 0.5 : 1,
             }}
           >
-            {challenge.isActive ? "Désactiver" : "Activer"}
+            {optimisticActive ? "Désactiver" : "Activer"}
           </button>
         </div>
       </div>
