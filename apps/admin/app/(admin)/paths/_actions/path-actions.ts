@@ -115,31 +115,33 @@ export async function updatePathStatusAction(
   pathId: string,
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
 ): Promise<{ error?: string }> {
-  const admin = await requireAdminAction();
-
   if (!z.string().uuid().safeParse(pathId).success) return { error: "ID invalide." };
   if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
 
-  const path = await prisma.path.findUnique({
-    where: { id: pathId },
-    select: { id: true, title: true, status: true },
-  });
+  const [admin, path] = await Promise.all([
+    requireAdminAction(),
+    prisma.path.findUnique({
+      where: { id: pathId },
+      select: { id: true, status: true },
+    }),
+  ]);
   if (!path) return { error: "Parcours introuvable." };
 
-  const data: { status: ContentStatus; publishedAt?: Date } = { status };
-  if (status === "PUBLISHED") data.publishedAt = new Date();
+  const updateData: { status: ContentStatus; publishedAt?: Date } = { status };
+  if (status === "PUBLISHED") updateData.publishedAt = new Date();
 
-  await prisma.path.update({ where: { id: pathId }, data });
-
-  await prisma.auditLog.create({
-    data: {
-      actorId: admin.id,
-      action: "path.status",
-      targetType: "Path",
-      targetId: pathId,
-      metadata: { from: path.status, to: status },
-    },
-  });
+  await prisma.$transaction([
+    prisma.path.update({ where: { id: pathId }, data: updateData }),
+    prisma.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "path.status",
+        targetType: "Path",
+        targetId: pathId,
+        metadata: { from: path.status, to: status },
+      },
+    }),
+  ]);
 
   revalidatePath("/paths");
   return {};

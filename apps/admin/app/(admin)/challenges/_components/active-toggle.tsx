@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { toggleChallengeActiveAction } from "../_actions/challenge-admin-actions";
+import React, { useState, useOptimistic, useTransition } from "react";
+import { setChallengeActiveAction } from "../_actions/challenge-admin-actions";
 
 export function ActiveToggle({
   challengeId,
@@ -11,22 +10,27 @@ export function ActiveToggle({
   challengeId: string;
   isActive: boolean;
 }): React.JSX.Element {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [confirmed, setConfirmed] = useState(isActive);
+  const [optimisticActive, setOptimisticActive] = useOptimistic(confirmed);
 
   function handleToggle() {
+    const next = !optimisticActive;
     startTransition(async () => {
-      await toggleChallengeActiveAction(challengeId);
-      router.refresh();
+      setOptimisticActive(next);
+      const res = await setChallengeActiveAction(challengeId, next);
+      if (!res.error) {
+        setConfirmed(next);
+      }
     });
   }
 
-  const color = isActive ? "#0AFFD4" : "#6B6890";
+  const color = optimisticActive ? "#0AFFD4" : "#6B6890";
 
   return (
     <button
       type="button"
-      title={isActive ? "Désactiver le challenge" : "Activer le challenge"}
+      title={optimisticActive ? "Désactiver le challenge" : "Activer le challenge"}
       disabled={isPending}
       onClick={handleToggle}
       style={{
@@ -56,12 +60,12 @@ export function ActiveToggle({
             height: 5,
             borderRadius: "50%",
             background: color,
-            boxShadow: isActive ? "0 0 6px rgba(10,255,212,0.5)" : "none",
+            boxShadow: optimisticActive ? "0 0 6px rgba(10,255,212,0.5)" : "none",
             flexShrink: 0,
           }}
         />
       )}
-      {isActive ? "Actif" : "Inactif"}
+      {optimisticActive ? "Actif" : "Inactif"}
     </button>
   );
 }

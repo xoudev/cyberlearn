@@ -162,21 +162,16 @@ export async function updateChallengeAction(
 
 // ── Toggle active ──────────────────────────────────────────────────────────────
 
-export async function toggleChallengeActiveAction(id: string): Promise<void> {
+export async function setChallengeActiveAction(
+  id: string,
+  isActive: boolean,
+): Promise<{ error?: string }> {
   await requireAdminAction();
-  if (!z.string().uuid().safeParse(id).success) return;
+  if (!z.string().uuid().safeParse(id).success) return { error: "ID invalide." };
 
-  const challenge = await prisma.challenge.findUnique({
-    where: { id },
-    select: { isActive: true },
-  });
-  if (!challenge) return;
-
-  await prisma.challenge.update({
-    where: { id },
-    data: { isActive: !challenge.isActive },
-  });
+  await prisma.challenge.update({ where: { id }, data: { isActive } });
   revalidatePath("/challenges");
+  return {};
 }
 
 // ── Delete ─────────────────────────────────────────────────────────────────────
