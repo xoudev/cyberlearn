@@ -37,7 +37,8 @@
       ".turbo",
       "*.min.js",
       "pnpm-lock.yaml",
-      "docs/"
+      "docs/",
+      "apps/web/public/runtimes/"
     ]
   }
 }
