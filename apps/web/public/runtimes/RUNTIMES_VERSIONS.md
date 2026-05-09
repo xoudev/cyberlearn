@@ -35,22 +35,56 @@ a version bump.
 5. Update the version reference in `public/pyodide-worker.js` comment
 6. Commit all changed files together
 
-## JSCPP — NOT BUNDLED (build required)
+## JSCPP 2.0.9 (browser IIFE bundle)
 
-The C++ challenge runner (`code-playground.tsx`) currently loads from a broken
-CDN URL: `https://cdn.jsdelivr.net/npm/jscpp@2.3.1/browser/bundle.js` (HTTP 404).
+**Source**: npm registry — `JSCPP@2.0.9` (package `lib/commonjs.js`, bundled with esbuild)
+**Date captured**: 2026-05-09
+**Served at**: `/runtimes/jscpp/`
+**Tarball SHA-256**: `fa83b3ef9eefb1ee496eb06a70bbb96012d9004bf4529313001fd2ab07d629f6`
 
-**Root cause**: JSCPP exists on npm as `JSCPP` (uppercase), latest version `2.0.9`.
-Version `2.3.1` does not exist. The `browser/bundle.js` path does not exist in any
-published version — the package only ships `lib/commonjs.js` (Node.js CommonJS).
+| File | Size | SHA-256 |
+|------|------|---------|
+| `bundle.js` | 1 063 277 B | `326e3d3c6aef358db734f8d8a1b053e13054d339ca694663d637a603b16d6d07` |
 
-**To bundle JSCPP locally**, a browser UMD build must be produced first:
-1. Extract the npm tarball (`JSCPP-2.0.9.tgz`)
-2. Run webpack/browserify on `lib/commonjs.js` targeting UMD
-3. Verify the output bundle runs in a Web Worker (`importScripts`)
-4. Commit `apps/web/public/runtimes/jscpp/bundle.js` with SHA-256 documented here
-5. Update `scripts/verify-runtimes.sh` to include the new file
-6. Update `code-playground.tsx` to use `/runtimes/jscpp/bundle.js`
+**Total**: ~1.0 MB
 
-This build step is tracked as sub-step C of PR 1.4 (Code Runner Hardening).
-Until then, the C++ tab in CodePlayground loads but fails silently (404 on importScripts).
+### Background
+
+JSCPP exists on npm as `JSCPP` (uppercase), max version `2.0.9`. The CDN URL
+previously referenced in `code-playground.tsx` (`jscpp@2.3.1/browser/bundle.js`)
+points to a version and path that do not exist — that URL has always been a 404.
+
+The npm package ships only `lib/commonjs.js` (Node.js CommonJS). To run in a
+Web Worker via `importScripts`, it must be bundled as a browser IIFE that exposes
+`self.JSCPP`. This was done with esbuild 0.27.7 using `--format=iife --global-name=JSCPP`.
+
+The `printf` runtime dependency uses Node.js built-ins (`util`, `stream`) for
+features not exercised by JSCPP (object inspection, stream writing). These are
+stubbed with empty shims in `scripts/build-jscpp/build.sh`.
+
+### API (JSCPP.run)
+
+```js
+// Synchronous. Called from inside a Web Worker.
+JSCPP.run(
+  code,           // C++ source string (requires "using namespace std;" — std:: prefix unsupported)
+  input,          // stdin string, e.g. ""
+  {
+    maxTimeout: 10000,           // ms, throws "Time limit exceeded." on breach
+    stdio: { write(s) { ... } } // called with each output chunk
+  }
+);
+// Returns: exit code (integer, 0 = success)
+// Throws:  on parse error or runtime error
+```
+
+### Rebuild procedure
+
+1. Bump `JSCPP_VERSION` in `scripts/build-jscpp/build.sh` if upgrading
+2. Update `JSCPP_TARBALL_SHA256` in the same file (get from `sha256sum JSCPP-x.y.z.tgz`)
+3. Run `bash scripts/build-jscpp/build.sh`
+4. Copy the SHA-256 printed at the end into:
+   - `scripts/verify-runtimes.sh` (jscpp/bundle.js line)
+   - This file (table above)
+5. Run `bash scripts/verify-runtimes.sh` to confirm
+6. Commit `bundle.js` + `verify-runtimes.sh` + this file together
