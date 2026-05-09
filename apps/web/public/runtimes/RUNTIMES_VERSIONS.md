@@ -16,11 +16,12 @@ a version bump.
 | File | Size | SHA-256 |
 |------|------|---------|
 | `pyodide.js` | 14 928 B | `7fdbe66e53f68f6a4e93c295a667371759be093d2bd402bb44545514584039b6` |
+| `pyodide.asm.js` | 1 253 804 B | `3a889f073e628c2196c705b42fa0e955ba2e25c034b1e3dd589c35be675bc01b` |
+| `pyodide.asm.wasm` | 10 103 326 B | `f7fefe563134714a17abd65516d94960e8dbd96fe6778a7a842947fc9686b3a1` |
 | `pyodide-lock.json` | 112 205 B | `be1807745da93daa09d360b109c17a0e526e74d664d1f1b9870aafcce98ce426` |
 | `python_stdlib.zip` | 2 358 894 B | `6030964967e447c887abc46c5f0967c55688644d759496de82a3ef09f49f5cba` |
-| `pyodide.asm.wasm` | 10 103 326 B | `f7fefe563134714a17abd65516d94960e8dbd96fe6778a7a842947fc9686b3a1` |
 
-**Total**: ~13 MB
+**Total**: ~14.2 MB
 
 ### Upgrade procedure
 
