@@ -65,6 +65,20 @@ When compacting, preserve: current phase number, list of completed phases, activ
 - `docs/PATCH_IMPORT_LESSONS.md` — Import MDX feature spec (Phase 9)
 - `docs/adr/` — Architecture Decision Records
 
+## Hardening en cours
+Le plan de hardening v1 est dans `docs/hardening/v1-plan.md`. Il liste 6 PRs
+séquentielles à exécuter avant toute nouvelle feature. Référence-le
+systématiquement avant de proposer du travail.
+
+## Conventions Storage
+
+- Tout bucket Supabase Storage est PRIVÉ par défaut. Aucun bucket public.
+- L'accès aux fichiers se fait via service_role côté serveur + URLs signées
+  à TTL court (60s pour les téléchargements ponctuels, max 1h).
+- Toute exception au "privé par défaut" doit faire l'objet d'une ADR
+  explicite dans docs/adr/ avec justification sécu et plan de mitigation.
+- MIME types restreints au strict nécessaire par bucket (jamais "any").
+
 @.claude/rules/security.md
 @.claude/rules/code-conventions.md
 @.claude/rules/architecture.md

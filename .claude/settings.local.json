@@ -143,7 +143,13 @@
       "Bash(perl -pi -e 's/: \"—\"/: \"-\"/g' 'apps/web/app/\\(app\\)/lessons/[slug]/_components/lesson-stepper.tsx')",
       "Bash(perl -pi -e 's/invalide — vérifiez/invalide, vérifiez/g' 'apps/web/app/\\(app\\)/lessons/[slug]/_components/lesson-video.tsx')",
       "Bash(perl -pi -e 's/invalides — vérifiez/invalides, vérifiez/g' 'apps/web/app/\\(app\\)/lessons/[slug]/_components/lesson-image.tsx')",
-      "Bash(perl -pi -e 's/\"—\"/\"-\"/g' \"apps/admin/app/\\(admin\\)/settings/page.tsx\")"
+      "Bash(perl -pi -e 's/\"—\"/\"-\"/g' \"apps/admin/app/\\(admin\\)/settings/page.tsx\")",
+      "Bash(vercel projects *)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(grep -v \"\\\\.js$\\\\|\\\\.js\\\\.map$\\\\|\\\\.d\\\\.ts$\\\\|tsbuildinfo\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(bash *)",
+      "Bash(tar -tzf -)"
     ]
   }
 }

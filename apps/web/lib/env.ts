@@ -9,6 +9,7 @@ import { z } from "zod";
  * All variables must also be documented in /.env.example.
  */
 export const env = createEnv({
+  emptyStringAsUndefined: true,
   server: {
     // Database (Supabase Postgres via Prisma)
     DATABASE_URL: z.string().url(),

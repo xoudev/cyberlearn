@@ -23,12 +23,13 @@ DEST="$(dirname "$0")/../apps/web/public/runtimes/pyodide"
 # each file after download, then paste the output here and rerun verify.
 declare -A EXPECTED_HASHES=(
   [pyodide.js]="7fdbe66e53f68f6a4e93c295a667371759be093d2bd402bb44545514584039b6"
+  [pyodide.asm.js]="3a889f073e628c2196c705b42fa0e955ba2e25c034b1e3dd589c35be675bc01b"
+  [pyodide.asm.wasm]="f7fefe563134714a17abd65516d94960e8dbd96fe6778a7a842947fc9686b3a1"
   [pyodide-lock.json]="be1807745da93daa09d360b109c17a0e526e74d664d1f1b9870aafcce98ce426"
   [python_stdlib.zip]="6030964967e447c887abc46c5f0967c55688644d759496de82a3ef09f49f5cba"
-  [pyodide.asm.wasm]="f7fefe563134714a17abd65516d94960e8dbd96fe6778a7a842947fc9686b3a1"
 )
 
-FILES=(pyodide.js pyodide-lock.json python_stdlib.zip pyodide.asm.wasm)
+FILES=(pyodide.js pyodide.asm.js pyodide.asm.wasm pyodide-lock.json python_stdlib.zip)
 
 mkdir -p "$DEST"
 
@@ -63,4 +64,4 @@ if [[ $FAILED -ne 0 ]]; then
 fi
 
 echo ""
-echo "All files verified. Pyodide ${PYODIDE_VERSION} ready in ${DEST}"
+echo "All files verified. Pyodide ${PYODIDE_VERSION} ready in ${DEST} (5 files)"
