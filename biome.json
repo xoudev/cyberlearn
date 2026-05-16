@@ -38,7 +38,8 @@
       "*.min.js",
       "pnpm-lock.yaml",
       "docs/",
-      "apps/web/public/runtimes/"
+      "apps/web/public/runtimes/",
+      ".vercel/"
     ]
   }
 }
