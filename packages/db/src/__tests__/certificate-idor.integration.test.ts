@@ -58,8 +58,8 @@ describe("Certificate IDOR — ownership query filter (integration)", () => {
     if (aErr ?? !aData.user) throw new Error(`User A: ${aErr?.message}`);
     if (bErr ?? !bData.user) throw new Error(`User B: ${bErr?.message}`);
 
-    userAId = aData.user!.id;
-    userBId = bData.user!.id;
+    userAId = aData.user.id;
+    userBId = bData.user.id;
 
     const now = new Date().toISOString();
     await adminClient.from("users").insert([
