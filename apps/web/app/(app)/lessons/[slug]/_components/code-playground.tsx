@@ -4,65 +4,11 @@ import React, { useEffect, useId, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
 import { useLessonCompletion } from "./lesson-completion-context";
 
-// Pinned Pyodide version for reproducibility
-const PYODIDE_VERSION = "0.27.5";
-const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js`;
-
 const WORKER_TIMEOUT_MS = 10_000;
 
 interface RunResult {
   output: string;
   error: string | null;
-}
-
-// ── Pyodide worker factory (blob URL, no network for JS fallback) ──────────────
-
-function createPyodideWorker(): Worker {
-  const code = `
-let pyodide = null;
-let loading = false;
-const pending = [];
-
-async function initPyodide() {
-  if (loading) return;
-  loading = true;
-  try {
-    self.importScripts("${PYODIDE_URL}");
-    pyodide = await self.loadPyodide();
-  } catch (e) {
-    self.postMessage({ id: "__init_error__", error: "Échec du chargement de Python : " + e.message });
-    loading = false;
-    return;
-  }
-  for (const task of pending) runCode(task);
-  pending.length = 0;
-}
-
-async function runCode({ id, code }) {
-  const out = [];
-  try {
-    pyodide.setStdout({ batched: (msg) => out.push(msg) });
-    pyodide.setStderr({ batched: (msg) => out.push("\\u001b[31m" + msg + "\\u001b[0m") });
-    await pyodide.runPythonAsync(code);
-    self.postMessage({ id, output: out.join("\\n"), error: null });
-  } catch (e) {
-    self.postMessage({ id, output: out.join("\\n"), error: e.message });
-  }
-}
-
-self.onmessage = (e) => {
-  if (!pyodide) {
-    pending.push(e.data);
-    if (!loading) initPyodide();
-  } else {
-    runCode(e.data);
-  }
-};
-
-initPyodide();
-`;
-  const blob = new Blob([code], { type: "application/javascript" });
-  return new Worker(URL.createObjectURL(blob));
 }
 
 function createJsWorker(): Worker {
@@ -152,7 +98,7 @@ type Language = "python" | "javascript" | "c" | "asm";
 
 function getWorker(language: Language): Worker {
   if (language === "python") {
-    pyWorker ??= createPyodideWorker();
+    pyWorker ??= new Worker("/workers/py-runner.js");
     return pyWorker;
   }
   if (language === "javascript") {
