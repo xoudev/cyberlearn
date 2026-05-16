@@ -157,24 +157,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-build-
 
+      - name: Create placeholder .env for web build
+        # Next.js loads .env files via @next/env before spawning page-data
+        # workers. Shell env vars (step-level env:) do not reach those workers.
+        # Writing a .env file is the only reliable way to feed placeholders
+        # through Next.js's own env loading pipeline.
+        # All values satisfy the Zod schemas in apps/web/lib/env.ts.
+        working-directory: apps/web
+        run: |
+          cat > .env << 'ENVEOF'
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cyberlearn
+          DIRECT_URL=postgresql://postgres:postgres@localhost:5432/cyberlearn
+          SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key-for-ci-build
+          RESEND_API_KEY=re_placeholder_key_for_ci_build
+          RESEND_FROM_EMAIL=noreply@cyberlearn.app
+          IP_SALT=placeholder-ip-salt-for-ci-build-32chars
+          SUPABASE_HOOK_SECRET=placeholder-hook-secret-ci
+          NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key-for-ci
+          NEXT_PUBLIC_SITE_URL=https://cyberlearn.app
+          NEXT_PUBLIC_ADMIN_URL=https://admin.cyberlearn.app
+          ENVEOF
+
       - name: Build
-        # Provide valid-format placeholder env vars so that @t3-oss/env-nextjs
-        # validation passes during next build. SKIP_ENV_VALIDATION does not
-        # reach Next.js page-data-collection workers — placeholders are the
-        # only reliable approach. These values are never used at runtime.
         run: pnpm build
-        env:
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/cyberlearn"
-          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/cyberlearn"
-          SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key-for-ci-build"
-          RESEND_API_KEY: "re_placeholder_key_for_ci_build"
-          RESEND_FROM_EMAIL: "noreply@cyberlearn.app"
-          IP_SALT: "placeholder-ip-salt-for-ci-build-32chars"
-          SUPABASE_HOOK_SECRET: "placeholder-hook-secret-ci"
-          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key-for-ci"
-          NEXT_PUBLIC_SITE_URL: "https://cyberlearn.app"
-          NEXT_PUBLIC_ADMIN_URL: "https://admin.cyberlearn.app"
 
   # ─── 6. Runtime integrity ─────────────────────────────────────────────────
   verify-runtimes:
