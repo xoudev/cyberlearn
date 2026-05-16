@@ -4,8 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
 import { useLessonCompletion } from "./lesson-completion-context";
 
-const PYODIDE_WORKER_URL = "/runtimes/pyodide/pyodide.js";
-const PYODIDE_INDEX_URL = "/runtimes/pyodide/";
 const CHALLENGE_WORKER_TIMEOUT_MS = 15_000;
 
 export interface TestCase {
@@ -30,67 +28,10 @@ interface WorkerTestMessage {
 // Separate worker singleton — never shared with CodePlayground
 let challengeWorker: Worker | null = null;
 
-function createChallengeWorker(): Worker {
-  // SAFETY: blob-URL worker; no network access, no DOM. Pyodide loaded via importScripts.
-  const src = `
-let pyodide = null;
-let loading = false;
-const pending = [];
-
-async function initPyodide() {
-  if (loading) return;
-  loading = true;
-  try {
-    self.importScripts("${PYODIDE_WORKER_URL}");
-    pyodide = await self.loadPyodide({ indexURL: "${PYODIDE_INDEX_URL}" });
-  } catch (e) {
-    self.postMessage({ id: "__init_error__", results: [] });
-    loading = false;
-    return;
-  }
-  for (const task of pending) runTests(task);
-  pending.length = 0;
-}
-
-async function runTests({ id, code, tests }) {
-  const results = [];
-  for (const test of tests) {
-    try {
-      // Run user code then capture str(expression) — all in main namespace (builtins always present)
-      const snippet = code + "\\n__challenge_result__ = str(" + test.input + ")";
-      await pyodide.runPythonAsync(snippet);
-      const actual = String(pyodide.globals.get("__challenge_result__") ?? "None");
-      results.push({ input: test.input, expected: test.expected, actual, passed: actual === test.expected });
-    } catch (e) {
-      const msg = e && e.message ? e.message : String(e);
-      const clean = msg.split("\\n")
-        .filter(function(l) { return !l.includes("/lib/python") && !l.includes("_pyodide"); })
-        .join("\\n").trim();
-      results.push({ input: test.input, expected: test.expected, actual: clean || msg, passed: false, isError: true });
-    }
-  }
-  self.postMessage({ id, results });
-}
-
-self.onmessage = function(e) {
-  if (!pyodide) {
-    pending.push(e.data);
-    if (!loading) initPyodide();
-  } else {
-    runTests(e.data);
-  }
-};
-
-initPyodide();
-`;
-  const blob = new Blob([src], { type: "application/javascript" });
-  return new Worker(URL.createObjectURL(blob));
-}
-
 function runTestsInWorker(code: string, tests: TestCase[]): Promise<TestResult[]> {
   return new Promise((resolve) => {
     const id = Math.random().toString(36).slice(2);
-    challengeWorker ??= createChallengeWorker();
+    challengeWorker ??= new Worker("/workers/py-runner.js");
     const worker = challengeWorker;
 
     const timer = setTimeout(() => {
