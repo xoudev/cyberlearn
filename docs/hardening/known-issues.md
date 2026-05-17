@@ -6,19 +6,61 @@ Tracking des limitations connues introduites pendant le hardening,
 ## main build regression (resolved on C.3)
 
 Avant la PR C.3, main avait une régression latente : depuis le
-cleanup des compiled artifacts (PR 1 fix), apps/web ne pouvait
-pas être build from-scratch — résolution des imports './prisma.js'
+cleanup des compiled artifacts (PR 1 fix), les apps ne pouvaient
+pas être buildées from-scratch — résolution des imports `'./prisma.js'`
 cassée. Le cache turbo masquait le problème puisque rien n'avait
-forcé un rebuild de web entre le cleanup et la PR C.3.
+forcé un rebuild entre le cleanup et la PR C.3.
 
-Résolu en ajoutant @cyberlearn/db à transpilePackages dans les
-next.config.ts des deux apps. @cyberlearn/email aussi ajouté à
-apps/admin pour cohérence.
+### Analyse du root cause
 
-Leçon : faire un `pnpm build` from-scratch (sans cache turbo)
-périodiquement, surtout après des changements de structure de
-packages ou de tooling. Idéalement, ajouter à terme un job CI
-qui build sans cache (genre une fois par jour ou sur main push).
+`@cyberlearn/db` utilise NodeNext module resolution : les imports
+internes ont des extensions `.js` explicites (`import './prisma.js'`).
+Sur un checkout CI sans artifacts compilés, webpack cherche
+`prisma.js` littéralement et échoue — même avec `transpilePackages`
+qui indique à Next.js de traiter le package, mais pas à webpack
+comment résoudre les extensions.
+
+### Fix : deux couches complémentaires
+
+**Couche 1 — `transpilePackages`** (commit `0c71994`) :
+Ajoute `@cyberlearn/db` (et `@cyberlearn/email` sur admin) à
+`transpilePackages` dans les deux `next.config.ts`. Nécessaire
+pour que Next.js inclue les packages workspace dans son pipeline
+de compilation. Seul, insuffisant : CI continuait à échouer.
+
+**Couche 2 — `extensionAlias`** (commit `8cc36a5`) :
+```typescript
+webpack: (config) => {
+  // CRITICAL — ne pas retirer (voir ci-dessous)
+  config.resolve.extensionAlias = {
+    ".js": [".ts", ".tsx", ".js", ".jsx"],
+  };
+  return config;
+},
+```
+Indique à webpack : quand tu vois un import `.js`, essaie d'abord
+`.ts` / `.tsx`. Les sources `.ts` étant dans git, webpack les
+trouve même sans artifacts compilés.
+
+Tests locaux (30 artifacts db cachés, simulation CI clean state) :
+- `transpilePackages` + `extensionAlias` : ✅ build OK
+- `extensionAlias` seul : ✅ build OK (c'est la couche active)
+- `transpilePackages` seul : ❌ `Module not found: Can't resolve './prisma.js'`
+
+### CRITICAL : ne pas retirer extensionAlias
+
+`extensionAlias` dans les deux `next.config.ts` est le fix actif.
+Le retirer casse le build sur tout checkout CI ou développeur qui
+n'a pas de `.next` cache et pas d'artifacts `packages/db/src/*.js`
+sur disque. Ce commentaire et cette entrée existent pour qu'on ne
+le retire jamais "pour faire le ménage".
+
+### Leçon
+
+Faire un `pnpm build` from-scratch (sans cache turbo) périodiquement,
+surtout après des changements de structure de packages ou de tooling.
+Idéalement, ajouter un job CI qui build sans cache (une fois par
+jour ou sur push sur main).
 
 ## Tests e2e à ajouter
 
