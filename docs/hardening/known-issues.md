@@ -12,6 +12,20 @@ route serait modifiée en gardant la query intacte ne serait pas
 détectée. À porter en test e2e Playwright quand Playwright sera
 configuré dans apps/web (planifié avant beta).
 
+## C.3 — expectedOutput exposé dans le DOM (by design)
+
+Le composant code-playground.tsx (L588) affiche expectedOutput en
+clair dans le DOM ("Sortie attendue : {expectedOutput}"). Pour les
+challenges actuels (type "écris du code qui produit cette sortie"),
+c'est by design — la sortie attendue fait partie de l'énoncé.
+
+Si on ajoute des challenges où la sortie doit être devinée (mot
+de passe, hash, etc.), à reconsidérer : ne pas rendre
+expectedOutput dans le DOM, comparer côté serveur uniquement.
+
+Surfacé par /security-review sur C.3 — pas un bug v1, mais à
+garder en tête.
+
 ## C.2 — Dispatch par shape dans py-runner.js
 
 Le worker partagé `apps/web/public/workers/py-runner.js` dispatche

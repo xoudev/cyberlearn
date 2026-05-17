@@ -17,7 +17,21 @@
  * Hardening: all network/storage APIs are neutralized AFTER
  * loadPyodide() completes — see pyodide-worker.js (sub-step B) for
  * the parallel implementation in challenges SCRIPT mode.
+ *
+ * Message handler hardening (defense against validation bypass):
+ *   - _addListener saved before importScripts so user code cannot
+ *     inject capture-phase listeners that fire before our handler
+ *   - self.addEventListener overridden to throw for "message" /
+ *     "messageerror" types (capture-phase bypass vector closed)
+ *   - self.onmessage frozen via defineProperty (writable:false,
+ *     configurable:false) — property assignment override prevented
+ *   - self.onerror frozen similarly — error swallowing prevented
+ *   - Real handler registered via saved _addListener, inaccessible
+ *     to user code running inside runPythonAsync(...)
  */
+
+// Save the original before importScripts — Pyodide must not affect this reference.
+const _addListener = self.addEventListener.bind(self);
 
 // importScripts must run at top level, before any neutralization.
 importScripts("/runtimes/pyodide/pyodide.js");
@@ -92,7 +106,45 @@ initPyodide().catch((err) => {
   self.postMessage({ type: "error", error: String(err) });
 });
 
-self.onmessage = async (event) => {
+// Block capture-phase message listener injection from user code.
+// Two vectors closed:
+//   a) Own property frozen (configurable:false) → delete self.addEventListener fails
+//   b) Prototype also frozen → Object.getPrototypeOf(self).addEventListener.call(...) blocked
+const _blockedAddListener = (type, listener, options) => {
+  if (type === "message" || type === "messageerror") {
+    throw new Error("Adding message listeners is not allowed.");
+  }
+  return _addListener(type, listener, options);
+};
+Object.defineProperty(self, "addEventListener", {
+  value: _blockedAddListener,
+  writable: false,
+  configurable: false,
+  enumerable: false,
+});
+try {
+  Object.defineProperty(Object.getPrototypeOf(self), "addEventListener", {
+    value: _blockedAddListener,
+    writable: false,
+    configurable: false,
+  });
+} catch (_) {
+  // Skip if prototype property is already non-configurable in this engine
+}
+
+// Freeze onmessage and onerror — property assignment cannot override them.
+Object.defineProperty(self, "onmessage", {
+  value: null,
+  writable: false,
+  configurable: false,
+});
+Object.defineProperty(self, "onerror", {
+  value: null,
+  writable: false,
+  configurable: false,
+});
+
+async function handleMessage(event) {
   const { id, code, tests } = event.data;
 
   if (Array.isArray(tests)) {
@@ -160,4 +212,7 @@ self.onmessage = async (event) => {
       self.postMessage({ id, output: output.join("\n"), error: err.message });
     }
   }
-};
+}
+
+// Real handler — registered via saved original, invisible to user code.
+_addListener("message", handleMessage);
