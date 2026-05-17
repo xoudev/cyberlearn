@@ -39,10 +39,11 @@ const nextConfig: NextConfig = {
   },
   // Transpile internal workspace packages
   transpilePackages: [
-    "@cyberlearn/ui",
+    "@cyberlearn/db",
+    "@cyberlearn/email",
     "@cyberlearn/lib",
     "@cyberlearn/types",
-    "@cyberlearn/email",
+    "@cyberlearn/ui",
   ],
 };
 

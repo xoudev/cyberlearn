@@ -3,6 +3,23 @@
 Tracking des limitations connues introduites pendant le hardening,
 à adresser dans des PRs ultérieures.
 
+## main build regression (resolved on C.3)
+
+Avant la PR C.3, main avait une régression latente : depuis le
+cleanup des compiled artifacts (PR 1 fix), apps/web ne pouvait
+pas être build from-scratch — résolution des imports './prisma.js'
+cassée. Le cache turbo masquait le problème puisque rien n'avait
+forcé un rebuild de web entre le cleanup et la PR C.3.
+
+Résolu en ajoutant @cyberlearn/db à transpilePackages dans les
+next.config.ts des deux apps. @cyberlearn/email aussi ajouté à
+apps/admin pour cohérence.
+
+Leçon : faire un `pnpm build` from-scratch (sans cache turbo)
+périodiquement, surtout après des changements de structure de
+packages ou de tooling. Idéalement, ajouter à terme un job CI
+qui build sans cache (genre une fois par jour ou sur main push).
+
 ## Tests e2e à ajouter
 
 ### IDOR certificats (PR 1.1)

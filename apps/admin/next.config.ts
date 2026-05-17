@@ -29,7 +29,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  transpilePackages: ["@cyberlearn/ui", "@cyberlearn/lib", "@cyberlearn/types"],
+  transpilePackages: [
+    "@cyberlearn/db",
+    "@cyberlearn/email",
+    "@cyberlearn/lib",
+    "@cyberlearn/types",
+    "@cyberlearn/ui",
+  ],
 };
 
 export default nextConfig;
