@@ -106,3 +106,18 @@ tracé ici pour audit.
 Échoue car la DB de test n'est pas seedée avec les leçons attendues.
 Pré-existant, pas une régression de PR 1. À fixer en PR séparée
 (seed de test à compléter ou test à adapter).
+
+## Production NODE_ENV mismatch (CSP)
+
+En production sur www.cyberlearn.fr, le middleware sert la branche
+CSP `isDev` (unsafe-eval + unsafe-inline) au lieu de la branche prod
+(nonce + strict-dynamic). Indique que `process.env.NODE_ENV` n'est
+pas `"production"` en prod — probablement une env var Vercel mal
+configurée ou un build mode incorrect.
+
+Impact : pas un bypass de sécurité direct, mais une réduction de la
+protection CSP en prod (XSS plus exposable, pas de nonce strict).
+À traiter en PR séparée : investiguer la config Vercel et restaurer
+la branche prod CSP.
+
+Surfacé lors du fix wasm-unsafe-eval (PR C.3).

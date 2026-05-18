@@ -16,9 +16,11 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       // strict-dynamic allows scripts transitively loaded by nonce-trusted scripts
       // (Next.js chunk loading, Monaco dynamic imports, etc.)
       // cdn.jsdelivr.net kept as host fallback for browsers without strict-dynamic support
+      // 'wasm-unsafe-eval' required for Pyodide WebAssembly compilation
+      // (cdn.jsdelivr.net Monaco loader + local /runtimes/pyodide/* WASM).
       isDev
-        ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net"
-        : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net`,
+        ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net"
+        : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval' https://cdn.jsdelivr.net`,
       // unsafe-inline required for Tailwind v4 JIT; cdn.jsdelivr.net for Monaco CSS
       "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
       "img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com",
