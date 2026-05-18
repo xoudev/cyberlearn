@@ -11,29 +11,6 @@ interface RunResult {
   error: string | null;
 }
 
-function createJsWorker(): Worker {
-  const code = `
-self.onmessage = (e) => {
-  const { id, code } = e.data;
-  const logs = [];
-  const fakeConsole = {
-    log: (...a) => logs.push(a.map(String).join(" ")),
-    warn: (...a) => logs.push("[warn] " + a.map(String).join(" ")),
-    error: (...a) => logs.push("[error] " + a.map(String).join(" ")),
-  };
-  try {
-    // eslint-disable-next-line no-new-func
-    new Function("console", code)(fakeConsole);
-    self.postMessage({ id, output: logs.join("\\n"), error: null });
-  } catch (err) {
-    self.postMessage({ id, output: logs.join("\\n"), error: err.message });
-  }
-};
-`;
-  const blob = new Blob([code], { type: "application/javascript" });
-  return new Worker(URL.createObjectURL(blob));
-}
-
 // ── C worker factory (jscpp via CDN, same blob pattern as Pyodide) ────────────
 
 // jscpp browser bundle exposes global JSCPP via UMD wrapper
@@ -102,7 +79,7 @@ function getWorker(language: Language): Worker {
     return pyWorker;
   }
   if (language === "javascript") {
-    jsWorker ??= createJsWorker();
+    jsWorker ??= new Worker("/workers/js-runner.js");
     return jsWorker;
   }
   if (language === "c") {

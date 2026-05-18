@@ -3,6 +3,65 @@
 Tracking des limitations connues introduites pendant le hardening,
 à adresser dans des PRs ultérieures.
 
+## main build regression (resolved on C.3)
+
+Avant la PR C.3, main avait une régression latente : depuis le
+cleanup des compiled artifacts (PR 1 fix), les apps ne pouvaient
+pas être buildées from-scratch — résolution des imports `'./prisma.js'`
+cassée. Le cache turbo masquait le problème puisque rien n'avait
+forcé un rebuild entre le cleanup et la PR C.3.
+
+### Analyse du root cause
+
+`@cyberlearn/db` utilise NodeNext module resolution : les imports
+internes ont des extensions `.js` explicites (`import './prisma.js'`).
+Sur un checkout CI sans artifacts compilés, webpack cherche
+`prisma.js` littéralement et échoue — même avec `transpilePackages`
+qui indique à Next.js de traiter le package, mais pas à webpack
+comment résoudre les extensions.
+
+### Fix : deux couches complémentaires
+
+**Couche 1 — `transpilePackages`** (commit `0c71994`) :
+Ajoute `@cyberlearn/db` (et `@cyberlearn/email` sur admin) à
+`transpilePackages` dans les deux `next.config.ts`. Nécessaire
+pour que Next.js inclue les packages workspace dans son pipeline
+de compilation. Seul, insuffisant : CI continuait à échouer.
+
+**Couche 2 — `extensionAlias`** (commit `8cc36a5`) :
+```typescript
+webpack: (config) => {
+  // CRITICAL — ne pas retirer (voir ci-dessous)
+  config.resolve.extensionAlias = {
+    ".js": [".ts", ".tsx", ".js", ".jsx"],
+  };
+  return config;
+},
+```
+Indique à webpack : quand tu vois un import `.js`, essaie d'abord
+`.ts` / `.tsx`. Les sources `.ts` étant dans git, webpack les
+trouve même sans artifacts compilés.
+
+Tests locaux (30 artifacts db cachés, simulation CI clean state) :
+- `transpilePackages` + `extensionAlias` : ✅ build OK
+- `extensionAlias` seul : ✅ build OK (c'est la couche active)
+- `transpilePackages` seul : ❌ `Module not found: Can't resolve './prisma.js'`
+
+### CRITICAL : ne pas retirer extensionAlias
+
+`extensionAlias` dans les deux `next.config.ts` est le fix actif.
+Le retirer casse le build sur tout checkout CI ou développeur qui
+n'a pas de `.next` cache et pas d'artifacts `packages/db/src/*.js`
+sur disque. Ce commentaire et cette entrée existent pour qu'on ne
+le retire jamais "pour faire le ménage".
+
+### Leçon
+
+Faire un `pnpm build` from-scratch (sans cache turbo) périodiquement,
+surtout après des changements de structure de packages ou de tooling.
+Idéalement, ajouter un job CI qui build sans cache (une fois par
+jour ou sur push sur main).
+
 ## Tests e2e à ajouter
 
 ### IDOR certificats (PR 1.1)
@@ -11,6 +70,20 @@ query Prisma directement, pas la route HTTP. Une régression où la
 route serait modifiée en gardant la query intacte ne serait pas
 détectée. À porter en test e2e Playwright quand Playwright sera
 configuré dans apps/web (planifié avant beta).
+
+## C.3 — expectedOutput exposé dans le DOM (by design)
+
+Le composant code-playground.tsx (L588) affiche expectedOutput en
+clair dans le DOM ("Sortie attendue : {expectedOutput}"). Pour les
+challenges actuels (type "écris du code qui produit cette sortie"),
+c'est by design — la sortie attendue fait partie de l'énoncé.
+
+Si on ajoute des challenges où la sortie doit être devinée (mot
+de passe, hash, etc.), à reconsidérer : ne pas rendre
+expectedOutput dans le DOM, comparer côté serveur uniquement.
+
+Surfacé par /security-review sur C.3 — pas un bug v1, mais à
+garder en tête.
 
 ## C.2 — Dispatch par shape dans py-runner.js
 
@@ -33,3 +106,18 @@ tracé ici pour audit.
 Échoue car la DB de test n'est pas seedée avec les leçons attendues.
 Pré-existant, pas une régression de PR 1. À fixer en PR séparée
 (seed de test à compléter ou test à adapter).
+
+## Production NODE_ENV mismatch (CSP)
+
+En production sur www.cyberlearn.fr, le middleware sert la branche
+CSP `isDev` (unsafe-eval + unsafe-inline) au lieu de la branche prod
+(nonce + strict-dynamic). Indique que `process.env.NODE_ENV` n'est
+pas `"production"` en prod — probablement une env var Vercel mal
+configurée ou un build mode incorrect.
+
+Impact : pas un bypass de sécurité direct, mais une réduction de la
+protection CSP en prod (XSS plus exposable, pas de nonce strict).
+À traiter en PR séparée : investiguer la config Vercel et restaurer
+la branche prod CSP.
+
+Surfacé lors du fix wasm-unsafe-eval (PR C.3).
