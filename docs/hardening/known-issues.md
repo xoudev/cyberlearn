@@ -121,3 +121,8 @@ protection CSP en prod (XSS plus exposable, pas de nonce strict).
 la branche prod CSP.
 
 Surfacé lors du fix wasm-unsafe-eval (PR C.3).
+
+**RESOLVED** (PR #3 deploy) — Vérification post-merge le 18/05/2026 :
+la CSP prod retourne maintenant `'nonce-...' 'strict-dynamic'` (branche
+prod du middleware). L'anomalie était probablement une stale config sur
+l'ancien deploy Vercel — résolue par effet de bord du redeploy de PR C.3.
