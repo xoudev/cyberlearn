@@ -782,6 +782,39 @@ Explore les commandes de base dans ce terminal simulé :
       status: "PUBLISHED" as const,
       publishedAt: new Date(),
     },
+    // C sandbox — minimal interactive C lesson (validates cpp-runner.js worker)
+    {
+      refCode: "CL-LSN-010-V01",
+      slug: "c-hello-world",
+      title: "C : Hello World et arithmétique",
+      description: "Premier programme en C : afficher du texte et effectuer un calcul simple.",
+      category: "DEV" as const,
+      difficulty: "BEGINNER" as const,
+      estimatedMinutes: 5,
+      xpReward: 10,
+      contentMdx: `# C : Hello World
+
+Ton premier programme en C utilise printf pour afficher du texte, et
+une multiplication simple pour montrer l'arithmétique de base.
+
+Lance le code et observe la sortie :
+
+<CodePlayground language="c" title="hello.c">
+{\`#include <stdio.h>
+
+int main() {
+    printf("Hello from C!\\n");
+    int x = 6;
+    int y = 7;
+    printf("6 * 7 = %d\\n", x * y);
+    return 0;
+}\`}
+</CodePlayground>
+`,
+      authorId: ADMIN_ID,
+      status: "PUBLISHED" as const,
+      publishedAt: new Date(),
+    },
   ];
 
   const createdLessons: Record<string, string> = {};
