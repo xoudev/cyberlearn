@@ -11,59 +11,6 @@ interface RunResult {
   error: string | null;
 }
 
-// ── C worker factory (jscpp via CDN, same blob pattern as Pyodide) ────────────
-
-// jscpp browser bundle exposes global JSCPP via UMD wrapper
-const JSCPP_URL = "https://cdn.jsdelivr.net/npm/jscpp@2.3.1/browser/bundle.js";
-
-function createCWorker(): Worker {
-  const code = `
-let jscppReady = false;
-let jscppError = null;
-const pending = [];
-
-function initJscpp() {
-  try {
-    self.importScripts("${JSCPP_URL}");
-    jscppReady = true;
-  } catch (e) {
-    jscppError = "Échec du chargement de jscpp : " + e.message;
-  }
-  for (const task of pending) runCode(task);
-  pending.length = 0;
-}
-
-function runCode({ id, code }) {
-  if (jscppError) {
-    self.postMessage({ id, output: "", error: jscppError });
-    return;
-  }
-  let output = "";
-  try {
-    JSCPP.run(code, "", {
-      maxTimeout: 10000,
-      stdio: { write: function(s) { output += s; } }
-    });
-    self.postMessage({ id, output, error: null });
-  } catch (e) {
-    self.postMessage({ id, output, error: e.message });
-  }
-}
-
-self.onmessage = function(e) {
-  if (!jscppReady && !jscppError) {
-    pending.push(e.data);
-  } else {
-    runCode(e.data);
-  }
-};
-
-initJscpp();
-`;
-  const blob = new Blob([code], { type: "application/javascript" });
-  return new Worker(URL.createObjectURL(blob));
-}
-
 // ── Worker singleton cache per language ────────────────────────────────────────
 
 let pyWorker: Worker | null = null;
@@ -83,7 +30,7 @@ function getWorker(language: Language): Worker {
     return jsWorker;
   }
   if (language === "c") {
-    cWorker ??= createCWorker();
+    cWorker ??= new Worker("/workers/cpp-runner.js");
     return cWorker;
   }
   // SAFETY: new URL() is resolved by webpack at build time for worker bundling
