@@ -85,6 +85,19 @@ expectedOutput dans le DOM, comparer côté serveur uniquement.
 Surfacé par /security-review sur C.3 — pas un bug v1, mais à
 garder en tête.
 
+## C.5 — Labels UI mentionnant "CDN" mais chargement local
+
+`code-playground.tsx` contient encore deux labels UI qui mentionnent
+"CDN" alors que JSCPP est désormais bundlé localement depuis C.4 :
+- L192 : `badge: "jscpp · CDN"`
+- L482 : `"C11 · jscpp"`
+
+Pas un bug fonctionnel, mais le label "CDN" est trompeur pour
+l'utilisateur depuis C.4. À corriger en C.5 (cleanup final
+`code-playground.tsx`).
+
+Surfacé pendant C.4.
+
 ## C.2 — Dispatch par shape dans py-runner.js
 
 Le worker partagé `apps/web/public/workers/py-runner.js` dispatche
