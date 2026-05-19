@@ -98,6 +98,12 @@ l'utilisateur depuis C.4. À corriger en C.5 (cleanup final
 
 Surfacé pendant C.4.
 
+**RESOLVED** (PR C.5 — chore/code-playground-cleanup, 2026-05-19)
+Le label `"jscpp · CDN"` (L192 de code-playground.tsx) remplacé par
+`"jscpp"`. Le label `"C11 · jscpp"` (L482) intentionnellement préservé
+car il ne mentionne pas "CDN" — l'harmonisation des formats de labels
+est tracée séparément (à voir dans une PR UI dédiée).
+
 ## C.2 — Dispatch par shape dans py-runner.js
 
 Le worker partagé `apps/web/public/workers/py-runner.js` dispatche

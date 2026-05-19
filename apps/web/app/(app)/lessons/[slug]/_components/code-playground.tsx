@@ -189,7 +189,7 @@ export function CodePlayground({
         ext: "js",
         color: "#FFB020",
       },
-      c: { label: "C Sandbox", badge: "jscpp · CDN", ext: "c", color: "#4D8BFF" },
+      c: { label: "C Sandbox", badge: "jscpp", ext: "c", color: "#4D8BFF" },
       asm: { label: "Assembly x86-64", badge: "NASM · Simulé", ext: "asm", color: "#FF4757" },
     };
   const {
