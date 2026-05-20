@@ -85,6 +85,18 @@ expectedOutput dans le DOM, comparer côté serveur uniquement.
 Surfacé par /security-review sur C.3 — pas un bug v1, mais à
 garder en tête.
 
+## D — asm worker hors scope hardening v1
+
+L'asm worker (`apps/web/app/(app)/lessons/[slug]/_workers/asm.worker.ts`
+ou équivalent) est couvert structurellement par `invalidateWorker(language)`
+dans `code-playground.tsx` — un timeout sur une leçon ASM terminera et
+invalidera correctement le singleton `asmWorker`. Mais le worker lui-même
+n'est pas encore fonctionnel en v1 (aucune leçon ASM publiée, runtime
+non configuré). Test manuel impossible à ce stade. À valider quand
+l'asm worker sera activé.
+
+Surfacé pendant D.
+
 ## C.5 — Labels UI mentionnant "CDN" mais chargement local
 
 `code-playground.tsx` contient encore deux labels UI qui mentionnent
