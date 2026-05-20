@@ -85,6 +85,46 @@ expectedOutput dans le DOM, comparer côté serveur uniquement.
 Surfacé par /security-review sur C.3 — pas un bug v1, mais à
 garder en tête.
 
+## E.1 — script-src 'unsafe-eval' requis par JSCPP
+
+La CSP appliquée aux workers (`/workers/:path*` et `/runtimes/:path*`
+via `next.config.ts headers()`) doit inclure `'unsafe-eval'` parce que
+JSCPP, l'interpréteur C utilisé pour les leçons C/C++, parse et
+exécute du code C via `eval()` JavaScript en interne.
+
+Discovery : pendant les tests E.1, "call to eval() blocked by CSP"
+retourné par JSCPP au runtime.
+
+Sécu pas significativement dégradée : le worker est isolé (pas de
+DOM, pas de fetch, pas de cookies, pas de localStorage). `'unsafe-eval'`
+augmente la surface d'attaque XSS uniquement si du code arbitraire
+externe peut s'exécuter dans le worker — bloqué par `script-src 'self'`
+qui interdit tout script externe.
+
+Tracé pour une éventuelle PR future de remplacement de JSCPP par
+un compilateur C en WASM pur (Emception, etc.) qui n'aurait pas
+besoin de `'unsafe-eval'`.
+
+Surfacé pendant E.1 (test 5-ter).
+
+## E.2 — worker-src blob: requis par Monaco
+
+`worker-src 'self' blob:` dans `middleware.ts` ne peut pas être réduit
+à `worker-src 'self'` sans casser Monaco Editor. `@monaco-editor/react`
+charge ses language server workers (TypeScript, JSON, CSS) via blob
+URLs générées par webpack — comportement par défaut sans
+`MonacoEnvironment` override.
+
+Le retrait de `blob:` nécessiterait soit :
+- un `MonacoEnvironment.getWorker()` custom pointant sur des fichiers
+  statiques servis depuis `/workers/` (bundler config non triviale)
+- ou le remplacement de Monaco par un éditeur sans blob workers
+
+Tracé pour une PR dédiée (E.4 ou Phase 2 Monaco polish).
+
+Surfacé pendant E.2 (audit confirmé : pas de `MonacoEnvironment` custom
+dans le code applicatif, donc comportement par défaut blob: actif).
+
 ## D — asm worker hors scope hardening v1
 
 L'asm worker (`apps/web/app/(app)/lessons/[slug]/_workers/asm.worker.ts`

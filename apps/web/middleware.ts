@@ -31,6 +31,7 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
         : "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net",
       // blob: required for Monaco editor web workers and Pyodide blob worker
       "worker-src 'self' blob:",
+      "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
       "base-uri 'self'",
@@ -190,13 +191,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
-     * - public folder files
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Exclude _next internals, favicon, common asset extensions,
+    // AND /workers/* + /runtimes/* — these static script paths get
+    // their own stricter CSP via next.config.ts headers().
+    "/((?!_next/static|_next/image|favicon.ico|workers|runtimes|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
