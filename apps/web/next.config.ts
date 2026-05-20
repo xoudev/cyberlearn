@@ -45,6 +45,35 @@ const nextConfig: NextConfig = {
     "@cyberlearn/types",
     "@cyberlearn/ui",
   ],
+  headers() {
+    // Defense-in-depth: stricter CSP on static script paths under our
+    // control (workers and runtimes). These paths serve trusted code
+    // that has no need for cross-origin requests or arbitrary script
+    // injection. Already neutralized inside workers at the JS level;
+    // this is a browser-enforced additional layer.
+    const workerCsp = [
+      // 'unsafe-eval' required by JSCPP (uses eval() for C parsing/interpretation)
+      // 'wasm-unsafe-eval' required by Pyodide (WebAssembly.instantiateStreaming)
+      // Cohérent avec la CSP du main thread qui contient déjà ces directives.
+      // Defense-in-depth maintenue par script-src 'self' (no external scripts)
+      // + connect-src 'self' (no external fetches) + object-src 'none' + base-uri 'none'.
+      "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'",
+      "connect-src 'self'", // Pyodide fetches pyodide.asm.wasm from /runtimes/
+      "object-src 'none'",
+      "base-uri 'none'",
+    ].join("; ");
+
+    return Promise.resolve([
+      {
+        source: "/workers/:path*",
+        headers: [{ key: "Content-Security-Policy", value: workerCsp }],
+      },
+      {
+        source: "/runtimes/:path*",
+        headers: [{ key: "Content-Security-Policy", value: workerCsp }],
+      },
+    ]);
+  },
   webpack: (config) => {
     // CRITICAL: required for workspace packages using NodeNext .js
     // imports (e.g. @cyberlearn/db imports './prisma.js' which
