@@ -38,23 +38,36 @@ function getWorker(language: Language): Worker {
   return asmWorker;
 }
 
+function invalidateWorker(language: Language): void {
+  if (language === "python") pyWorker = null;
+  else if (language === "javascript") jsWorker = null;
+  else if (language === "c") cWorker = null;
+  else asmWorker = null;
+}
+
 // ── Execution ──────────────────────────────────────────────────────────────────
 
 function runInWorker(language: Language, code: string): Promise<RunResult> {
   return new Promise((resolve) => {
     const id = Math.random().toString(36).slice(2);
     const worker = getWorker(language);
-
-    const timer = setTimeout(() => {
-      resolve({ output: "", error: "Timeout : exécution interrompue après 10 secondes." });
-    }, WORKER_TIMEOUT_MS);
+    let timedOut = false;
 
     const handler = (e: MessageEvent<{ id: string; output: string; error: string | null }>) => {
       if (e.data.id !== id) return;
+      if (timedOut) return;
       clearTimeout(timer);
       worker.removeEventListener("message", handler);
       resolve({ output: e.data.output, error: e.data.error });
     };
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      worker.removeEventListener("message", handler);
+      worker.terminate();
+      invalidateWorker(language);
+      resolve({ output: "", error: "Timeout : exécution interrompue après 10 secondes." });
+    }, WORKER_TIMEOUT_MS);
 
     worker.addEventListener("message", handler);
     worker.postMessage({ id, code });

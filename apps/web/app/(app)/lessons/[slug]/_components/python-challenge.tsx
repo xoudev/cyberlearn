@@ -33,8 +33,21 @@ function runTestsInWorker(code: string, tests: TestCase[]): Promise<TestResult[]
     const id = Math.random().toString(36).slice(2);
     challengeWorker ??= new Worker("/workers/py-runner.js");
     const worker = challengeWorker;
+    let timedOut = false;
+
+    const handler = (e: MessageEvent<WorkerTestMessage>) => {
+      if (e.data.id !== id) return;
+      if (timedOut) return;
+      clearTimeout(timer);
+      worker.removeEventListener("message", handler);
+      resolve(e.data.results ?? []);
+    };
 
     const timer = setTimeout(() => {
+      timedOut = true;
+      worker.removeEventListener("message", handler);
+      worker.terminate();
+      challengeWorker = null;
       resolve(
         tests.map((t) => ({
           input: t.input,
@@ -45,13 +58,6 @@ function runTestsInWorker(code: string, tests: TestCase[]): Promise<TestResult[]
         })),
       );
     }, CHALLENGE_WORKER_TIMEOUT_MS);
-
-    const handler = (e: MessageEvent<WorkerTestMessage>) => {
-      if (e.data.id !== id) return;
-      clearTimeout(timer);
-      worker.removeEventListener("message", handler);
-      resolve(e.data.results ?? []);
-    };
 
     worker.addEventListener("message", handler);
     worker.postMessage({ id, code, tests });
