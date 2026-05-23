@@ -6,7 +6,7 @@ import Link from "next/link";
 const COOKIE_NAME = "cl_consent";
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 365 days in seconds
 
-function setConsentCookie(value: "accepted" | "rejected"): void {
+function setConsentCookie(value: "acknowledged"): void {
   document.cookie = `${COOKIE_NAME}=${value}; max-age=${String(COOKIE_MAX_AGE)}; path=/; SameSite=Lax`;
 }
 
@@ -26,21 +26,15 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
 
   if (!visible) return null;
 
-  function handleAccept(): void {
-    setConsentCookie("accepted");
-    setVisible(false);
-  }
-
-  function handleReject(): void {
-    setConsentCookie("rejected");
+  function handleAcknowledge(): void {
+    setConsentCookie("acknowledged");
     setVisible(false);
   }
 
   return (
     <div
-      role="dialog"
-      aria-label="Gestion des cookies"
-      aria-live="polite"
+      role="region"
+      aria-labelledby="cookie-notice-title"
       style={{
         position: "fixed",
         bottom: 0,
@@ -57,6 +51,9 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
         gap: "12px",
       }}
     >
+      <h2 id="cookie-notice-title" className="sr-only">
+        Information cookies
+      </h2>
       <p
         style={{
           margin: 0,
@@ -67,43 +64,17 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
           lineHeight: "1.5",
         }}
       >
-        Ce site utilise des cookies strictement nécessaires à son fonctionnement (authentification,
-        préférences). Aucun cookie publicitaire.{" "}
-        <Link href="/legal/cgu#cookies" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+        Ce site utilise uniquement des cookies strictement nécessaires à son fonctionnement
+        (authentification, préférences de session). Ces cookies sont exemptés de consentement au
+        titre de l&apos;article 82 de la loi Informatique et Libertés.{" "}
+        <Link href="/privacy#cookies" style={{ color: "#4D8BFF", textDecoration: "none" }}>
           En savoir plus
         </Link>
       </p>
 
       <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
         <button
-          onClick={handleReject}
-          style={{
-            padding: "6px 16px",
-            fontSize: "12px",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 600,
-            background: "transparent",
-            border: "1px solid #2A2560",
-            borderRadius: "0px",
-            color: "#6B6890",
-            cursor: "pointer",
-            transition: "border-color 200ms, color 200ms",
-          }}
-          onMouseEnter={(e) => {
-            const btn = e.currentTarget;
-            btn.style.borderColor = "#4D8BFF";
-            btn.style.color = "#B8B5D1";
-          }}
-          onMouseLeave={(e) => {
-            const btn = e.currentTarget;
-            btn.style.borderColor = "#2A2560";
-            btn.style.color = "#6B6890";
-          }}
-        >
-          REFUSER
-        </button>
-        <button
-          onClick={handleAccept}
+          onClick={handleAcknowledge}
           style={{
             padding: "6px 16px",
             fontSize: "12px",
@@ -123,7 +94,7 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
             (e.currentTarget as HTMLButtonElement).style.background = "#0024FF";
           }}
         >
-          ACCEPTER
+          J&apos;AI COMPRIS
         </button>
       </div>
     </div>

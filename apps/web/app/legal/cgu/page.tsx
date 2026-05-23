@@ -158,11 +158,12 @@ export default function CguPage(): React.JSX.Element {
           tiers n’est utilisé.
         </p>
         <p style={{ marginTop: "12px" }}>
-          Un cookie de consentement (
+          Un cookie de notice (
           <code style={{ color: "#0AFFD4", fontFamily: "var(--font-mono)", fontSize: "12px" }}>
             cl_consent
           </code>
-          ) est stocké localement pour mémoriser vos préférences. Il expire après 365 jours.
+          ) est stocké localement pour mémoriser que vous avez pris connaissance des informations
+          relatives aux cookies. Il expire après 365 jours.
         </p>
       </Section>
 
