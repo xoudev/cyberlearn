@@ -70,6 +70,7 @@ const {
   checkContactForm,
   checkQaSubmission,
   checkHintReveal,
+  checkDataExport,
 } = await import("@/lib/rate-limit");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -174,6 +175,23 @@ describe("checkHintReveal — 20 / hour", () => {
   });
 });
 
+describe("checkDataExport — 1 / 24h", () => {
+  it("allows the first request", async () => {
+    const userId = uid();
+    const r = await checkDataExport(userId);
+    expect(r.success).toBe(true);
+    expect(r.retryAfterSeconds).toBe(0);
+  });
+
+  it("blocks the second request and returns retryAfterSeconds > 0", async () => {
+    const userId = uid();
+    await checkDataExport(userId);
+    const r = await checkDataExport(userId);
+    expect(r.success).toBe(false);
+    expect(r.retryAfterSeconds).toBeGreaterThan(0);
+  });
+});
+
 describe("isolation — different identifiers don't share counters", () => {
   it("two emails have independent counters", async () => {
     const emailA = `${uid()}@example.com`;
@@ -230,5 +248,41 @@ describe("getSalt() — missing or invalid IP_SALT throws", () => {
     // Restore the salt for subsequent test suites
     vi.stubEnv("IP_SALT", "a-test-salt-that-is-at-least-32-characters-long");
     counters.clear();
+  });
+});
+
+describe("fail-open — Upstash not configured", () => {
+  // Uses a fresh module instance (vi.resetModules) so the singleton state
+  // (_redis, _warnedMissing) starts clean and the env change takes effect.
+  afterEach(() => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://mock.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "mock-token");
+  });
+
+  it("returns PASS_THROUGH and warns exactly once; second call skips warn", async () => {
+    vi.resetModules();
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation((): void => undefined);
+
+    const { checkDataExport: checkDataExportFresh } = await import("@/lib/rate-limit");
+
+    const r1 = await checkDataExportFresh(uid());
+    expect(r1.success).toBe(true);
+    expect(r1.limit).toBe(Infinity);
+    expect(r1.remaining).toBe(Infinity);
+    expect(r1.retryAfterSeconds).toBe(0);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not configured"),
+    );
+
+    // Second call — _warnedMissing flag must suppress duplicate warn
+    await checkDataExportFresh(uid());
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+
+    warnSpy.mockRestore();
   });
 });
