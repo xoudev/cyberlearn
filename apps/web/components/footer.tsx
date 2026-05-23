@@ -23,8 +23,11 @@ export function Footer(): React.JSX.Element {
           <Link href="/legal/cgu" className="transition-colors hover:text-foreground">
             CGU
           </Link>
-          <Link href="/legal/cgv" className="transition-colors hover:text-foreground">
-            CGV
+          <Link href="/privacy" className="transition-colors hover:text-foreground">
+            Confidentialité
+          </Link>
+          <Link href="/legal" className="transition-colors hover:text-foreground">
+            Mentions légales
           </Link>
         </nav>
       </div>
