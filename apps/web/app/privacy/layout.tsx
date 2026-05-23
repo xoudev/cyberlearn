@@ -4,12 +4,12 @@ import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
   title: {
-    default: "Mentions légales",
+    default: "Politique de confidentialité",
     template: "%s · Cyber Learn",
   },
 };
 
-export default function LegalLayout({
+export default function PrivacyLayout({
   children,
 }: {
   children: React.ReactNode;
