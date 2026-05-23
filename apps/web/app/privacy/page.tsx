@@ -325,7 +325,7 @@ export default function PrivacyPage(): React.JSX.Element {
         </Subsection>
       </Section>
 
-      <Section title="8. Cookies">
+      <Section title="8. Cookies" id="cookies">
         <p style={{ marginBottom: "16px" }}>
           Cyber Learn utilise uniquement des{" "}
           <strong style={{ color: "#B8B5D1" }}>cookies strictement nécessaires</strong> au
@@ -391,12 +391,14 @@ const ulStyle: React.CSSProperties = {
 function Section({
   title,
   children,
+  id,
 }: {
   title: string;
   children: React.ReactNode;
+  id?: string;
 }): React.JSX.Element {
   return (
-    <section style={{ marginBottom: "40px" }}>
+    <section id={id} style={{ marginBottom: "40px" }}>
       <h2
         style={{
           fontSize: "20px",

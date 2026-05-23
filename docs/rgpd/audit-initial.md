@@ -271,6 +271,15 @@ RGPD Art. 44 (pas de transfert hors EEE pour ce sous-traitant).
 - Durees de conservation declarees dans la PP et le registre.
 - Middleware mis a jour : `/legal` et `/privacy` ajoutes aux routes publiques.
 
+### Q3 — Cookie banner — RESOLU par PR 2.3 (feat/cookie-banner-notice)
+
+- Banner refactore en notice de transparence mono-bouton (J'AI COMPRIS).
+- cl_consent valeur "acknowledged" au lieu de "accepted/rejected".
+- role="region" + aria-labelledby pour a11y.
+- Texte aligne sur l'article 82 de la loi Informatique et Libertes (exemption cookies strictement necessaires).
+- legal/cgu/page.tsx : "cookie de consentement" corrige en "cookie de notice".
+- Coherent avec Q1 (aucun analytics) et Q2 (Sentry inactif) : aucun service opt-in a activer.
+
 ### Gaps restants — traces dans docs/backlog/post-v1.md
 
 - Droits utilisateur backend (export, suppression, anonymisation) : PR 2.4.
