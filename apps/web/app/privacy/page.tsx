@@ -279,8 +279,21 @@ export default function PrivacyPage(): React.JSX.Element {
               profil),
             </li>
             <li>
-              Demandant l’export ou la suppression de votre compte depuis votre espace personnel
-              (fonctionnalité à venir),
+              Téléchargeant l’export de vos données depuis votre espace personnel{" "}
+              <a href="/settings/data" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+                /settings/data
+              </a>
+              ,
+            </li>
+            <li>
+              Demandant la suppression de votre compte (bientôt disponible ; en attendant, contactez{" "}
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                style={{ color: "#4D8BFF", textDecoration: "none" }}
+              >
+                {CONTACT_EMAIL}
+              </a>{" "}
+              pour exercer ce droit),
             </li>
             <li>
               Adressant un email à{" "}

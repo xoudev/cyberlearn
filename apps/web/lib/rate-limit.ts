@@ -1,6 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import crypto from "node:crypto";
+import { pseudonymize } from "./pseudonymize";
 
 // ── Legacy auth limiter (fail-open, keeps auth/confirm + auth/callback working) ──
 
@@ -29,7 +29,7 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
 
   const forwarded = request.headers.get("x-forwarded-for");
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
-  const hashedIp = crypto.createHmac("sha256", getSalt()).update(rawIp).digest("hex");
+  const hashedIp = pseudonymize(rawIp);
 
   const { success } = await authRateLimit.limit(hashedIp);
   return success;
@@ -83,20 +83,6 @@ function getLimiter(key: string, factory: (redis: Redis) => Ratelimit): Ratelimi
   const instance = factory(getRedis());
   _limiters.set(key, instance);
   return instance;
-}
-
-function getSalt(): string {
-  const salt = process.env.IP_SALT;
-  if (!salt || salt.length < 32) {
-    throw new Error(
-      "[rate-limit] IP_SALT must be set (>= 32 chars). Generate with: openssl rand -hex 32",
-    );
-  }
-  return salt;
-}
-
-function pseudonymize(value: string): string {
-  return crypto.createHmac("sha256", getSalt()).update(value).digest("hex");
 }
 
 function toResult(r: {
@@ -169,6 +155,21 @@ export async function checkHintReveal(userId: string): Promise<RateLimitResult> 
     "hint",
     (r) =>
       new Ratelimit({ redis: r, limiter: Ratelimit.slidingWindow(20, "1 h"), prefix: "rl:hint" }),
+  ).limit(userId);
+  return toResult(result);
+}
+
+/** 1 data export per user per 24 hours. */
+export async function checkDataExport(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return DEV_PASS;
+  const result = await getLimiter(
+    "export",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(1, "24 h"),
+        prefix: "rl:export",
+      }),
   ).limit(userId);
   return toResult(result);
 }
