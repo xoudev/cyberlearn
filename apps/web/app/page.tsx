@@ -1094,25 +1094,32 @@ export default function HomePage(): React.ReactElement {
               </span>
             </Link>
             <div style={{ display: "flex", gap: 28 }}>
-              {["Parcours", "Tarifs", "Entreprises", "Communauté", "Mentions légales"].map(
-                (label) => (
-                  <a
-                    key={label}
-                    href="#"
-                    className="footer-link"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "#6B6890",
-                      textDecoration: "none",
-                    }}
-                  >
-                    {label}
-                  </a>
-                ),
-              )}
+              {(
+                [
+                  { label: "Parcours", href: "#" },
+                  { label: "Tarifs", href: "#" },
+                  { label: "Entreprises", href: "#" },
+                  { label: "Communauté", href: "#" },
+                  { label: "Confidentialité", href: "/privacy" },
+                  { label: "Mentions légales", href: "/legal" },
+                ] as { label: string; href: string }[]
+              ).map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="footer-link"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "#6B6890",
+                    textDecoration: "none",
+                  }}
+                >
+                  {label}
+                </a>
+              ))}
             </div>
             <span
               style={{
@@ -1122,7 +1129,7 @@ export default function HomePage(): React.ReactElement {
                 letterSpacing: "0.06em",
               }}
             >
-              © 2024 Cyber Learn
+              © {new Date().getFullYear()} Cyber Learn
             </span>
           </div>
         </footer>
