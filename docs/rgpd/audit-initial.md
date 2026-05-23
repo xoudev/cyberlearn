@@ -271,6 +271,18 @@ RGPD Art. 44 (pas de transfert hors EEE pour ce sous-traitant).
 - Durees de conservation declarees dans la PP et le registre.
 - Middleware mis a jour : `/legal` et `/privacy` ajoutes aux routes publiques.
 
+### Art. 20 (portabilite) — RESOLU par PR 2.4.A (feat/rgpd-export)
+
+- Endpoint GET /api/me/export retourne JSON exhaustif avec les donnees du user (16 modeles Prisma, AuditLog exclu).
+- Rate limit 1 export par userId par 24h (sliding window Upstash, prefix "rl:export").
+- AuditLog "user.data.exported" avec IP pseudonymisee (HMAC-SHA256).
+- Notifications limitees aux 1000 dernieres (ordonnees par scheduledFor DESC).
+- Certificats inclus avec downloadUrl + verifyUrl.
+- Q&A answers enrichies avec questionTitle.
+- Page /settings/data avec bouton telechargement.
+- Refactor : pseudonymize() extrait dans apps/web/lib/pseudonymize.ts (etait prive dans rate-limit.ts).
+- /privacy Section 7 mise a jour : mention "a venir" retiree pour l'export, conservee pour la suppression (PR 2.4.B).
+
 ### Q3 — Cookie banner — RESOLU par PR 2.3 (feat/cookie-banner-notice)
 
 - Banner refactore en notice de transparence mono-bouton (J'AI COMPRIS).

@@ -215,14 +215,14 @@ describe("getSalt() — missing or invalid IP_SALT throws", () => {
   it("throws when IP_SALT is not set", async () => {
     vi.stubEnv("IP_SALT", "");
     await expect(checkMagicLinkPerEmail("probe@example.com")).rejects.toThrow(
-      "[rate-limit] IP_SALT must be set",
+      "IP_SALT must be set",
     );
   });
 
   it("throws when IP_SALT is shorter than 32 chars", async () => {
     vi.stubEnv("IP_SALT", "tooshort");
     await expect(checkMagicLinkPerEmail("probe@example.com")).rejects.toThrow(
-      "[rate-limit] IP_SALT must be set",
+      "IP_SALT must be set",
     );
   });
 
