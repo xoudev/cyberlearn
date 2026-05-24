@@ -35,11 +35,10 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
   return success;
 }
 
-// ── New per-action limiters (fail-closed in prod, bypass in development only) ──
+// ── New per-action limiters (fail-open when Redis unconfigured) ──
 
-// NODE_ENV=test → real path runs so unit tests can exercise limiter logic.
 // NODE_ENV=development → bypass (no Redis required locally).
-// NODE_ENV=production without Upstash vars → throws at first call (impossible to miss).
+// Other environments: real path runs; if Redis is unconfigured, falls back to fail-open.
 const IS_DEV = process.env.NODE_ENV === "development";
 
 export interface RateLimitResult {
@@ -52,7 +51,7 @@ export interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
-const DEV_PASS: RateLimitResult = {
+const PASS_THROUGH: RateLimitResult = {
   success: true,
   limit: Infinity,
   remaining: Infinity,
@@ -61,15 +60,20 @@ const DEV_PASS: RateLimitResult = {
 };
 
 let _redis: Redis | null = null;
+let _warnedMissing = false;
 
-function getRedis(): Redis {
+function getRedis(): Redis | null {
   if (_redis) return _redis;
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
-    throw new Error(
-      "[rate-limit] UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set in production.",
-    );
+    if (!_warnedMissing) {
+      console.warn(
+        "[rate-limit] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not configured — rate limiting disabled (fail-open).",
+      );
+      _warnedMissing = true;
+    }
+    return null;
   }
   _redis = new Redis({ url, token });
   return _redis;
@@ -77,10 +81,12 @@ function getRedis(): Redis {
 
 const _limiters = new Map<string, Ratelimit>();
 
-function getLimiter(key: string, factory: (redis: Redis) => Ratelimit): Ratelimit {
+function getLimiter(key: string, factory: (redis: Redis) => Ratelimit): Ratelimit | null {
   const cached = _limiters.get(key);
   if (cached) return cached;
-  const instance = factory(getRedis());
+  const redis = getRedis();
+  if (!redis) return null;
+  const instance = factory(redis);
   _limiters.set(key, instance);
   return instance;
 }
@@ -99,8 +105,8 @@ function toResult(r: {
 
 /** 5 magic link requests per email per 10 minutes. */
 export async function checkMagicLinkPerEmail(email: string): Promise<RateLimitResult> {
-  if (IS_DEV) return DEV_PASS;
-  const result = await getLimiter(
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
     "ml:email",
     (r) =>
       new Ratelimit({
@@ -108,25 +114,27 @@ export async function checkMagicLinkPerEmail(email: string): Promise<RateLimitRe
         limiter: Ratelimit.slidingWindow(5, "10 m"),
         prefix: "rl:ml:email",
       }),
-  ).limit(pseudonymize(email.trim().toLowerCase()));
-  return toResult(result);
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(pseudonymize(email.trim().toLowerCase())));
 }
 
 /** 20 magic link requests per IP per 10 minutes (burst/enumeration protection). */
 export async function checkMagicLinkPerIp(rawIp: string): Promise<RateLimitResult> {
-  if (IS_DEV) return DEV_PASS;
-  const result = await getLimiter(
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
     "ml:ip",
     (r) =>
       new Ratelimit({ redis: r, limiter: Ratelimit.slidingWindow(20, "10 m"), prefix: "rl:ml:ip" }),
-  ).limit(pseudonymize(rawIp));
-  return toResult(result);
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(pseudonymize(rawIp)));
 }
 
 /** 3 contact form submissions per IP per 10 minutes. */
 export async function checkContactForm(rawIp: string): Promise<RateLimitResult> {
-  if (IS_DEV) return DEV_PASS;
-  const result = await getLimiter(
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
     "contact",
     (r) =>
       new Ratelimit({
@@ -134,35 +142,38 @@ export async function checkContactForm(rawIp: string): Promise<RateLimitResult> 
         limiter: Ratelimit.slidingWindow(3, "10 m"),
         prefix: "rl:contact",
       }),
-  ).limit(pseudonymize(rawIp));
-  return toResult(result);
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(pseudonymize(rawIp)));
 }
 
 /** 5 Q&A posts (questions or answers) per user per minute. */
 export async function checkQaSubmission(userId: string): Promise<RateLimitResult> {
-  if (IS_DEV) return DEV_PASS;
-  const result = await getLimiter(
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
     "qa",
     (r) => new Ratelimit({ redis: r, limiter: Ratelimit.slidingWindow(5, "1 m"), prefix: "rl:qa" }),
-  ).limit(userId);
-  return toResult(result);
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
 }
 
 /** 20 hint reveals per user per hour. */
 export async function checkHintReveal(userId: string): Promise<RateLimitResult> {
-  if (IS_DEV) return DEV_PASS;
-  const result = await getLimiter(
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
     "hint",
     (r) =>
       new Ratelimit({ redis: r, limiter: Ratelimit.slidingWindow(20, "1 h"), prefix: "rl:hint" }),
-  ).limit(userId);
-  return toResult(result);
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
 }
 
 /** 1 data export per user per 24 hours. */
 export async function checkDataExport(userId: string): Promise<RateLimitResult> {
-  if (IS_DEV) return DEV_PASS;
-  const result = await getLimiter(
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
     "export",
     (r) =>
       new Ratelimit({
@@ -170,6 +181,7 @@ export async function checkDataExport(userId: string): Promise<RateLimitResult> 
         limiter: Ratelimit.slidingWindow(1, "24 h"),
         prefix: "rl:export",
       }),
-  ).limit(userId);
-  return toResult(result);
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
 }
