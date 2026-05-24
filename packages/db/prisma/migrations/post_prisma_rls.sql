@@ -28,6 +28,7 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.placement_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_placement_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_skip_waivers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_deletion_tokens ENABLE ROW LEVEL SECURITY;
 
 -- ─── Helper: read the user role from the JWT ─────────────────────────────────
 -- Called in policies instead of querying public.users every time.
@@ -301,4 +302,19 @@ CREATE POLICY "skip_waivers_self" ON public.user_skip_waivers FOR ALL
 
 DROP POLICY IF EXISTS "skip_waivers_admin" ON public.user_skip_waivers;
 CREATE POLICY "skip_waivers_admin" ON public.user_skip_waivers FOR ALL
+  USING (public.current_user_role() = 'ADMIN');
+
+-- ─── ACCOUNT_DELETION_TOKENS ─────────────────────────────────────────────────
+-- Users may only SELECT their own tokens (read-only: confirms a pending request exists).
+-- INSERT/UPDATE/DELETE are reserved for service_role (Prisma), which bypasses RLS.
+-- Allowing writes via the anon key would let a user pre-insert a crafted tokenHash,
+-- bypassing the email-confirmation gate entirely.
+-- Admins can read all tokens (support / audit trail).
+
+DROP POLICY IF EXISTS "deletion_tokens_own" ON public.account_deletion_tokens;
+CREATE POLICY "deletion_tokens_own" ON public.account_deletion_tokens FOR SELECT
+  USING (auth.uid() = "userId");
+
+DROP POLICY IF EXISTS "deletion_tokens_admin_select" ON public.account_deletion_tokens;
+CREATE POLICY "deletion_tokens_admin_select" ON public.account_deletion_tokens FOR SELECT
   USING (public.current_user_role() = 'ADMIN');

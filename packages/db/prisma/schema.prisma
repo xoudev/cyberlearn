@@ -51,6 +51,7 @@ model User {
   skipWaivers        UserSkipWaiver[]
   challengeProgress  UserChallengeProgress[]
   hintReveals        ChallengeHintReveal[]
+  deletionTokens     AccountDeletionToken[]
 
   @@index([username])
   @@index([role])
@@ -400,7 +401,7 @@ model UserBadge {
 // Rating only allowed when UserLessonProgress/UserPathProgress status = COMPLETED
 model Rating {
   id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
+  userId    String?  @db.Uuid // null after RGPD anonymization
   lessonId  String?  @db.Uuid
   pathId    String?  @db.Uuid
   score     Int      @db.SmallInt // 1-5, validated by Zod in the service layer
@@ -408,7 +409,7 @@ model Rating {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
   lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   path   Path?   @relation(fields: [pathId], references: [id], onDelete: Cascade)
 
@@ -422,7 +423,7 @@ model Rating {
 model LessonQuestion {
   id         String   @id @default(uuid()) @db.Uuid
   lessonId   String   @db.Uuid
-  userId     String   @db.Uuid
+  userId     String?  @db.Uuid // null after RGPD anonymization
   title      String   @db.VarChar(200)
   content    String   @db.Text
   isResolved Boolean  @default(false)
@@ -431,7 +432,7 @@ model LessonQuestion {
   updatedAt  DateTime @updatedAt
 
   lesson  Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   answers LessonAnswer[]
 
   @@index([lessonId, isHidden])
@@ -442,7 +443,7 @@ model LessonQuestion {
 model LessonAnswer {
   id         String   @id @default(uuid()) @db.Uuid
   questionId String   @db.Uuid
-  userId     String   @db.Uuid
+  userId     String?  @db.Uuid // null after RGPD anonymization
   content    String   @db.Text
   isAccepted Boolean  @default(false) // Marked by the question author
   isHidden   Boolean  @default(false)
@@ -451,7 +452,7 @@ model LessonAnswer {
   updatedAt  DateTime @updatedAt
 
   question LessonQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([questionId, isHidden])
   @@map("lesson_answers")
@@ -512,8 +513,9 @@ model UserPathProgress {
 model Certificate {
   id            String    @id @default(uuid()) @db.Uuid
   publicId      String    @unique @default(uuid()) @db.Uuid // For public URL /verify/{publicId}
-  userId        String    @db.Uuid
+  userId        String?   @db.Uuid // null after RGPD anonymization
   pathId        String    @db.Uuid
+  holderName    String? // Snapshot at issuance; set to "Utilisateur supprimé" on RGPD deletion
   issuedAt      DateTime  @default(now())
   expiresAt     DateTime?
   sha256Hash    String    @unique // Hash of content for tamper detection
@@ -521,7 +523,7 @@ model Certificate {
   revokedAt     DateTime?
   revokedReason String?
 
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   path         Path              @relation(fields: [pathId], references: [id], onDelete: Cascade)
   pathProgress UserPathProgress?
 
@@ -607,7 +609,7 @@ enum TicketStatus {
 model ContactTicket {
   id           String       @id @default(uuid()) @db.Uuid
   userId       String?      @db.Uuid // Nullable for guests
-  email        String
+  email        String? // Nullable after RGPD anonymization
   subject      String       @db.VarChar(200)
   theme        TicketTheme
   message      String       @db.Text
@@ -631,20 +633,44 @@ model ContactTicket {
 // ============================================================
 
 model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  actorId    String?  @db.Uuid
-  action     String   @db.VarChar(100) // e.g. "lesson.create", "user.role.update"
-  targetType String   @db.VarChar(50)
-  targetId   String?
-  metadata   Json?
-  ipAddress  String? // SHA-256 hashed (GDPR)
-  userAgent  String?  @db.VarChar(500)
-  createdAt  DateTime @default(now())
+  id            String   @id @default(uuid()) @db.Uuid
+  actorId       String?  @db.Uuid // null after RGPD anonymization (FK preserved as UUID)
+  actorHashedId String? // HMAC-SHA256 of actorId set during RGPD anonymization
+  anonymized    Boolean  @default(false)
+  action        String   @db.VarChar(100) // e.g. "lesson.create", "user.role.update"
+  targetType    String   @db.VarChar(50)
+  targetId      String?
+  metadata      Json?
+  ipAddress     String? // SHA-256 hashed (GDPR)
+  userAgent     String?  @db.VarChar(500)
+  createdAt     DateTime @default(now())
 
   actor User? @relation("ActorLogs", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([actorId, createdAt])
+  @@index([actorHashedId])
   @@index([targetType, targetId])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================
+// RGPD — ACCOUNT DELETION
+// ============================================================
+
+model AccountDeletionToken {
+  id        String    @id @default(cuid())
+  userId    String    @db.Uuid
+  tokenHash String    @unique // SHA-256 of the plain token sent by email
+  expiresAt DateTime
+  usedAt    DateTime?
+  ip        String? // HMAC-SHA256 pseudonymized
+  userAgent String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("account_deletion_tokens")
 }
