@@ -14,10 +14,15 @@ export async function generateMetadata({
   if (!UUID_RE.test(publicId)) return { title: "Certificat introuvable" };
   const cert = await prisma.certificate.findUnique({
     where: { publicId },
-    select: { path: { select: { title: true } }, user: { select: { displayName: true } } },
+    select: {
+      path: { select: { title: true } },
+      user: { select: { displayName: true } },
+      holderName: true,
+    },
   });
   if (!cert) return { title: "Certificat introuvable" };
-  return { title: `Certificat · ${cert.user.displayName} · ${cert.path.title}` };
+  const holderDisplay = cert.user?.displayName ?? cert.holderName ?? "Certificat";
+  return { title: `Certificat · ${holderDisplay} · ${cert.path.title}` };
 }
 
 // ── QR placeholder ────────────────────────────────────────────────────────────
@@ -533,9 +538,9 @@ export default async function CertVerifyPage({
                 margin: "0 0 8px",
               }}
             >
-              {cert.user.displayName}
+              {cert.user?.displayName ?? cert.holderName ?? "Utilisateur supprimé"}
             </h1>
-            {cert.user.username && (
+            {cert.user?.username != null && (
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
