@@ -185,3 +185,19 @@ export async function checkDataExport(userId: string): Promise<RateLimitResult> 
   if (!limiter) return PASS_THROUGH;
   return toResult(await limiter.limit(userId));
 }
+
+/** 3 deletion requests per user per 24 hours. */
+export async function checkAccountDeletionRequest(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "deletion",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(3, "24 h"),
+        prefix: "rl:deletion",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
