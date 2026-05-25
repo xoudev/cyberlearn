@@ -7,7 +7,7 @@ interface Answer {
   isAccepted: boolean;
   upvotes: number;
   createdAt: Date;
-  user: { id?: string; displayName: string | null; username: string | null; level: number };
+  user: { id?: string; displayName: string | null; username: string | null; level: number } | null;
 }
 
 interface Question {
@@ -16,7 +16,7 @@ interface Question {
   content: string;
   isResolved: boolean;
   createdAt: Date;
-  user: { id?: string; displayName: string | null; username: string | null; level: number };
+  user: { id?: string; displayName: string | null; username: string | null; level: number } | null;
   answers: Answer[];
   _count: { answers: number };
 }
@@ -129,7 +129,7 @@ function QuestionCard({
   lessonSlug,
   currentUserId,
 }: { question: Question; lessonSlug: string; currentUserId: string }) {
-  const isAuthor = question.user.id === currentUserId;
+  const isAuthor = question.user?.id === currentUserId;
   const dateStr = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
     question.createdAt,
   );
@@ -328,8 +328,10 @@ function AnswerRow({
 
 function UserPill({
   user,
-}: { user: { displayName: string | null; username: string | null; level: number } }) {
-  const name = user.displayName ?? user.username ?? "Utilisateur";
+}: {
+  user: { displayName: string | null; username: string | null; level: number } | null;
+}) {
+  const name = user?.displayName ?? user?.username ?? "Utilisateur supprimé";
   return (
     <span
       style={{
@@ -345,7 +347,9 @@ function UserPill({
         style={{
           width: 16,
           height: 16,
-          background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
+          background: user
+            ? "linear-gradient(135deg, #0024FF, #0AFFD4)"
+            : "linear-gradient(135deg, #3F3D5C, #2A2560)",
           clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
           display: "inline-flex",
           alignItems: "center",
@@ -358,8 +362,8 @@ function UserPill({
       >
         {name.charAt(0).toUpperCase()}
       </span>
-      <span style={{ color: "#F5F5FA", fontWeight: 600 }}>{name}</span>
-      <span style={{ color: "#0AFFD4", fontSize: 9 }}>LVL·{user.level}</span>
+      <span style={{ color: user ? "#F5F5FA" : "#6B6890", fontWeight: 600 }}>{name}</span>
+      {user && <span style={{ color: "#0AFFD4", fontSize: 9 }}>LVL·{user.level}</span>}
     </span>
   );
 }
