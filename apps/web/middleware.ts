@@ -74,6 +74,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/legal" ||
     pathname.startsWith("/legal/") ||
     pathname === "/privacy" ||
+    pathname.startsWith("/account/delete/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon")
   );
