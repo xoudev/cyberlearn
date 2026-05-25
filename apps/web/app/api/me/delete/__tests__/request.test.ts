@@ -178,7 +178,7 @@ describe("POST /api/me/delete/request — happy path", () => {
         to: "user@example.com",
         displayName: "Alice",
         confirmUrl: expect.stringContaining(
-          "https://cyberlearn.app/account/delete/confirm?token=",
+          "https://cyberlearn.app/api/me/delete/confirm?token=",
         ) as string,
       }),
     );
