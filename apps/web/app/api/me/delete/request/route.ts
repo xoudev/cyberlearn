@@ -58,7 +58,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
 
   // 7. Send confirmation email — plain token travels exactly once, via email only
-  const confirmUrl = `${env.NEXT_PUBLIC_SITE_URL}/account/delete/confirm?token=${plainToken}`;
+  const confirmUrl = `${env.NEXT_PUBLIC_SITE_URL}/api/me/delete/confirm?token=${plainToken}`;
   await sendDeletionConfirmEmail({
     apiKey: env.RESEND_API_KEY,
     from: env.RESEND_FROM_EMAIL,

@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { AccountDeletionConfirmEmail } from "../templates/account-deletion-confirm.js";
 
 const CONFIRM_URL =
-  "https://cyberlearn.app/account/delete/confirm?token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  "https://cyberlearn.app/api/me/delete/confirm?token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 describe("AccountDeletionConfirmEmail — rendered HTML", () => {
   it("contains the confirm button with the correct href", async () => {
