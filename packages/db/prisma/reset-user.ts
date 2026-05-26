@@ -19,14 +19,16 @@ async function main() {
 
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, email: true, displayName: true },
+    select: { id: true },
   });
   if (!user) {
-    console.error(`No user found with email: ${email}`);
+    console.error("No user found with the specified email");
     process.exit(1);
   }
 
-  console.log(`Resetting: ${user.displayName ?? user.email} (${user.id})`);
+  // RGPD-compliant logging (docs/security/logging.md) :
+  // ne log que l'UUID interne, jamais l'email (PII).
+  console.log(`Resetting user ${user.id}`);
 
   const [progress, badges, notifications] = await Promise.all([
     prisma.userLessonProgress.deleteMany({ where: { userId: user.id } }),
