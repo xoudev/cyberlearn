@@ -70,15 +70,19 @@ Règles applicables à chaque entrée `auditLog` :
 
 ## Sentry / monitoring externe
 
-À l'init Sentry (planifié PR 3), configurer impérativement :
+RÉSOLU par PR 3 (`feat/sentry-init-csp-polish`). Config appliquée :
 
-- `beforeSend` hook pour scrub email/IP/tokens des events
-- `integrations.Replay` avec `maskAllInputs: true` (si Replay activé)
-- Tags sans PII (pas de email tag direct, utiliser hash)
-- Breadcrumbs filtrés sur les routes contenant des PII
-  (ex: `/api/me/*`)
+- `beforeSend` → `scrubEvent()` sur 100% des events (emails, tokens, cookies, headers)
+- `Sentry.replayIntegration({ maskAllInputs: true })` — saisie masquée dans les replays
+- `beforeBreadcrumb` → `filterBreadcrumb()` — routes `/api/me/(delete|export)` droppées
+- Tags : aucun tag PII ; `user.email` et `user.ip_address` supprimés dans `scrubEvent`
+- UUIDs utilisateur dans `user.id` supprimés ; HMAC pseudonyms (64 hex) préservés
 
-Tracé dans docs/backlog/post-v1.md.
+Implémentation : `apps/web/lib/sentry/scrub-event.ts`
+Tests : `apps/web/lib/sentry/__tests__/scrub-event.test.ts`
+Référence détaillée : `docs/security/sentry-config.md`
+
+Pour Sentry sur `apps/admin` : voir docs/backlog/post-v1.md.
 
 ## Migration future — structured logger
 
