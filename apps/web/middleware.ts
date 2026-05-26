@@ -27,8 +27,8 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       "font-src 'self' data:",
       // blob: for Monaco worker creation; cdn.jsdelivr.net for Pyodide + Monaco loader
       isDev
-        ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net"
-        : "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net",
+        ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://*.ingest.sentry.io"
+        : "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.ingest.sentry.io",
       // blob: required for Monaco editor web workers and Pyodide blob worker
       "worker-src 'self' blob:",
       "object-src 'none'",
@@ -36,6 +36,10 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       "form-action 'self'",
       "base-uri 'self'",
       ...(isDev ? [] : ["upgrade-insecure-requests"]),
+      // CSP violation reporting — only when endpoint is configured
+      ...(process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI
+        ? [`report-uri ${process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI}`]
+        : []),
     ].join("; "),
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",

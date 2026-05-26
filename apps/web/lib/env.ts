@@ -41,9 +41,11 @@ export const env = createEnv({
     // Supabase Auth Hook secret — verifies hook requests come from Supabase
     SUPABASE_HOOK_SECRET: z.string().min(16),
 
-    // Monitoring
+    // Monitoring (Sentry) — all optional, no-op when absent
     SENTRY_DSN: z.string().url().optional(),
     SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
+    SENTRY_ORG: z.string().min(1).optional(),
+    SENTRY_PROJECT: z.string().min(1).optional(),
 
     // Cron job security token (validated in /api/cron/* handlers)
     CRON_SECRET: z.string().min(32).optional(),
@@ -60,6 +62,12 @@ export const env = createEnv({
 
     // Cloudflare Turnstile site key — optional until Phase implemented
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
+
+    // Sentry public DSN (safe to expose — used in browser + server configs)
+    NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+
+    // CSP reporting endpoint (Sentry tunnel for violations)
+    NEXT_PUBLIC_SENTRY_CSP_REPORT_URI: z.string().url().optional(),
   },
 
   runtimeEnv: {
@@ -79,12 +87,16 @@ export const env = createEnv({
     SUPABASE_HOOK_SECRET: process.env.SUPABASE_HOOK_SECRET,
     SENTRY_DSN: process.env.SENTRY_DSN,
     SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+    SENTRY_ORG: process.env.SENTRY_ORG,
+    SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     CRON_SECRET: process.env.CRON_SECRET,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_ADMIN_URL: process.env.NEXT_PUBLIC_ADMIN_URL,
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    NEXT_PUBLIC_SENTRY_CSP_REPORT_URI: process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI,
   },
 
   // Skip validation in CI environments that don't set all vars

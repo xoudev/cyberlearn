@@ -1,5 +1,6 @@
 import path from "path";
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // Must point to the monorepo root so Next.js file tracing follows imports
@@ -90,4 +91,21 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Spread optional vars only when defined — exactOptionalPropertyTypes rejects `string | undefined`
+  ...(process.env.SENTRY_ORG && { org: process.env.SENTRY_ORG }),
+  ...(process.env.SENTRY_PROJECT && { project: process.env.SENTRY_PROJECT }),
+  ...(process.env.SENTRY_AUTH_TOKEN && { authToken: process.env.SENTRY_AUTH_TOKEN }),
+  // Suppress plugin output in non-CI builds (avoids noise in local dev)
+  silent: !process.env.CI,
+  // Upload wider set of files to improve stack trace symbolication
+  widenClientFileUpload: true,
+  // Delete source maps from the server bundle after upload (not served publicly)
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  // Remove Sentry logger statements from the production bundle
+  disableLogger: true,
+  // Don't auto-create Vercel Cron monitors (we manage cron separately)
+  automaticVercelMonitors: false,
+});

@@ -34,12 +34,15 @@
 - Job de purge automatique des logs (12 mois auth, 6 mois apps)
 - Job d'anonymisation des certificats lors d'une suppression de compte
 
-### Sentry et observability (PR 3 à venir)
+### Sentry et observability — RÉSOLU par PR 3 (feat/sentry-init-csp-polish)
 
-- Init Sentry avec config RGPD-safe (sendDefaultPii: false, beforeSend
-  scrub, région EU)
-- Ou désinstaller @sentry/nextjs si non utilisé
-- Documenter dans /privacy si activé
+- ~~Init Sentry avec config RGPD-safe~~ : résolu, voir docs/security/sentry-config.md
+
+**Tâches post-launch restantes :**
+
+- **Init Sentry sur apps/admin** — même pattern que apps/web, PR dédiée à créer
+- **Audit Sentry events 30j post-launch** — vérifier qu'aucun PII ne leak malgré le scrubbing
+  (inspecter les events Sentry dans le dashboard, chercher patterns email/UUID dans messages)
 
 ---
 
