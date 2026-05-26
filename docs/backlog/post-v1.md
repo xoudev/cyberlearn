@@ -80,6 +80,21 @@ reste tracké par défaut). Hérité de PR 1.4.
 
 
 
+### Migration vers structured logger (Pino / Bunyan / etc.)
+
+Toutes les occurrences `console.*` en production sont fonctionnelles
+mais non structurées. Post-launch, migrer vers un structured logger
+(Pino, Bunyan, ou équivalent) pour :
+- Logs JSON structurés (niveau, timestamp, requestId)
+- Filtrage automatique des champs PII via `redact` config
+- Intégration provider externe (Datadog, Axiom, Vector)
+- Traçabilité request-scoped (middleware → handler → service)
+
+Périmètre : ~15 call-sites `console.*` en production dans apps/web/.
+Convention cible déjà dans docs/security/logging.md.
+Pas bloquant pour le launch — les call-sites actuels sont SAFE.
+Décision de l'outil exact à faire en temps voulu.
+
 ### Design des emails — PR design dédiée plus tard
 
 Le template account-deletion-confirm.tsx est fonctionnel mais le design

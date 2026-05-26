@@ -67,7 +67,10 @@ export async function sendMagicLink(
       type: "magiclink",
     });
   } catch (err) {
-    console.error("[sendMagicLink] Resend error:", err);
+    console.error(
+      "[sendMagicLink] Resend error:",
+      err instanceof Error ? err.message : String(err),
+    );
     return { error: "Erreur lors de l'envoi. Veuillez réessayer." };
   }
 

@@ -55,7 +55,10 @@ export async function requestDeletion(
       confirmUrl,
     });
   } catch (err) {
-    console.error("[rgpd] sendDeletionConfirmEmail failed:", err);
+    console.error(
+      "[rgpd] sendDeletionConfirmEmail failed:",
+      err instanceof Error ? err.message : String(err),
+    );
     return { success: false, error: "email_failed" };
   }
 

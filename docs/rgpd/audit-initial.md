@@ -305,6 +305,27 @@ Implémentation :
 - legal/cgu/page.tsx : "cookie de consentement" corrige en "cookie de notice".
 - Coherent avec Q1 (aucun analytics) et Q2 (Sentry inactif) : aucun service opt-in a activer.
 
+### Audit logs serveur — RESOLU par PR 2.5 (security/rgpd-logging-audit)
+
+Audit exhaustif de toutes les occurrences console.* et auditLog.create dans
+apps/web/ et packages/db/. 18 call-sites console + 4 auditLog.create analyses.
+
+Classification :
+- A (SAFE) : 15 call-sites — aucun PII, ou dev-only, ou donnees deja pseudonymisees
+- B (LEAK) : 2 call-sites dans packages/db/prisma/reset-user.ts (script dev)
+  - Ligne 25 : email passe en arg CLI loggue → remplace par message generique
+  - Ligne 29 : displayName ?? email loggue → remplace par UUID seul
+- C (UNCERTAIN → resolu B) : 3 call-sites Resend SDK
+  - lib/rgpd/request-deletion.ts:58
+  - app/(auth)/login/actions.ts:70
+  - app/api/auth/send-email/route.ts:116
+  - Fix applique : err instanceof Error ? err.message : String(err)
+  - Decision : err.message Resend ne contient pas les donnees de la requete
+
+auditLog.create : 4 call-sites, tous conformes (IPs pseudonymisees HMAC-SHA256).
+
+Convention formalisee dans docs/security/logging.md.
+
 ### Gaps restants — traces dans docs/backlog/post-v1.md
 
 - Droits utilisateur backend (export, suppression, anonymisation) : PR 2.4.
