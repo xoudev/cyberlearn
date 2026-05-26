@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import React from "react";
+import { prisma } from "@cyberlearn/db";
+import { requireRequestUser } from "@/lib/auth";
+import { DeleteAccountSection } from "./_components/DeleteAccountSection";
 
 export const metadata: Metadata = {
   title: "Mes données — Cyber Learn",
@@ -60,7 +64,22 @@ function BracketCorners({ color }: { color: string }): React.JSX.Element {
   );
 }
 
-export default function DataPage(): React.JSX.Element {
+export default async function DataPage(): Promise<React.JSX.Element> {
+  const authUser = await requireRequestUser();
+
+  const [activeToken, certificateCount] = await Promise.all([
+    prisma.accountDeletionToken.findFirst({
+      where: {
+        userId: authUser.id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { expiresAt: true },
+    }),
+    prisma.certificate.count({ where: { userId: authUser.id } }),
+  ]);
+
   return (
     <>
       <div className="page-container">
@@ -286,116 +305,11 @@ export default function DataPage(): React.JSX.Element {
               </a>
             </div>
 
-            {/* ── Suppression — placeholder PR 2.4.B ──────────────────────────── */}
-            <div
-              style={{
-                position: "relative",
-                background: "rgba(5,4,26,0.6)",
-                border: "1px solid #1F1B47",
-                padding: "18px 20px",
-                opacity: 0.5,
-              }}
-            >
-              <BracketCorners color="#2A2560" />
-
-              {/* Eyebrow */}
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "#3F3D5C",
-                  marginBottom: 14,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: 16,
-                    height: 1,
-                    background: "#3F3D5C",
-                    display: "inline-block",
-                    flexShrink: 0,
-                  }}
-                />
-                Effacement
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5,
-                    color: "#3F3D5C",
-                    letterSpacing: "0.18em",
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      border: "1px solid #3F3D5C",
-                    }}
-                  />
-                  INACTIF
-                </span>
-              </div>
-
-              {/* Title */}
-              <h2
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  fontSize: 24,
-                  letterSpacing: "-0.02em",
-                  color: "#44406B",
-                  margin: "0 0 10px",
-                }}
-              >
-                Article 17 RGPD
-              </h2>
-
-              {/* Description */}
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "#3F3D5C",
-                  lineHeight: "1.6",
-                  margin: "0 0 12px",
-                }}
-              >
-                Conformément à l&apos;article 17 du RGPD (droit à l&apos;effacement), vous pourrez
-                supprimer votre compte et toutes les données associées de manière permanente.
-              </p>
-
-              {/* Info row */}
-              <div
-                style={{
-                  paddingTop: 12,
-                  borderTop: "1px dashed #1F1B47",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "#3F3D5C",
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  gap: "4px 8px",
-                }}
-              >
-                <span>Statut</span>
-                <b style={{ color: "#44406B", fontWeight: 500 }}>Bientôt</b>
-                <span style={{ color: "#1F1B47" }}>·</span>
-                <span>PR</span>
-                <b style={{ color: "#44406B", fontWeight: 500 }}>2.4.B</b>
-              </div>
-            </div>
+            {/* ── Suppression — Art. 17 ────────────────────────────────────────── */}
+            <DeleteAccountSection
+              pendingExpiresAt={activeToken?.expiresAt.toISOString() ?? null}
+              certificateCount={certificateCount}
+            />
           </div>
         </div>
       </div>

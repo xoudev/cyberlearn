@@ -286,14 +286,12 @@ export default function PrivacyPage(): React.JSX.Element {
               ,
             </li>
             <li>
-              Demandant la suppression de votre compte (bientôt disponible ; en attendant, contactez{" "}
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                style={{ color: "#4D8BFF", textDecoration: "none" }}
-              >
-                {CONTACT_EMAIL}
-              </a>{" "}
-              pour exercer ce droit),
+              Demandant la suppression de votre compte depuis la section{" "}
+              <Link href="/settings/data" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+                Mes données
+              </Link>
+              . La suppression est définitive et prend effet immédiatement après confirmation par
+              email (Art. 17 RGPD),
             </li>
             <li>
               Adressant un email à{" "}
