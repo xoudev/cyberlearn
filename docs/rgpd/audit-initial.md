@@ -271,6 +271,19 @@ RGPD Art. 44 (pas de transfert hors EEE pour ce sous-traitant).
 - Durees de conservation declarees dans la PP et le registre.
 - Middleware mis a jour : `/legal` et `/privacy` ajoutes aux routes publiques.
 
+### Art. 17 (droit à l'effacement) — RESOLU par PR 2.4.B (feat/rgpd-deletion-*)
+
+- Schema + RLS : PR 2.4.B.1 (feat/rgpd-deletion-schema)
+- Endpoints + email + token flow : PR 2.4.B.2 (feat/rgpd-deletion-endpoints)
+- UI /settings/data + polish pages /account/delete/* : PR 2.4.B.3 (feat/rgpd-deletion-ui)
+
+Implémentation :
+- POST /api/me/delete/request : génère token CSPRNG 32 bytes → SHA-256 en DB, plain dans email uniquement
+- GET /api/me/delete/confirm : valide token → deleteAccount() Prisma transaction → auth.users Supabase delete
+- lib/rgpd/request-deletion.ts : logique extraite et réutilisée par l'endpoint et le Server Action
+- /settings/data : Server Component + DeleteAccountSection client avec Dialog de confirmation
+- /account/delete/error et /success : pages HUD design
+
 ### Art. 20 (portabilite) — RESOLU par PR 2.4.A (feat/rgpd-export)
 
 - Endpoint GET /api/me/export retourne JSON exhaustif avec les donnees du user (16 modeles Prisma, AuditLog exclu).
