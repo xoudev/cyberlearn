@@ -3,6 +3,7 @@ import React from "react";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { DeleteAccountSection } from "./_components/DeleteAccountSection";
+import { ExportDataButton } from "./_components/ExportDataButton";
 
 export const metadata: Metadata = {
   title: "Mes données — Cyber Learn",
@@ -281,28 +282,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
               </div>
 
               {/* CTA */}
-              <a
-                href="/api/me/export"
-                download
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 20px",
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                  background: "transparent",
-                  border: "1px solid #0024FF",
-                  color: "#F5F5FA",
-                  textDecoration: "none",
-                }}
-              >
-                <span style={{ color: "#0AFFD4" }}>&#9656;</span>
-                Télécharger l&apos;export
-              </a>
+              <ExportDataButton />
             </div>
 
             {/* ── Suppression — Art. 17 ────────────────────────────────────────── */}
