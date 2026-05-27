@@ -90,7 +90,7 @@ export default async function AdminSettingsPage(): Promise<React.ReactElement> {
     },
     { label: "SUPABASE_SERVICE_ROLE_KEY", defined: !!process.env.SUPABASE_SERVICE_ROLE_KEY },
     { label: "DATABASE_URL", defined: !!process.env.DATABASE_URL },
-    { label: "IP_HASH_SALT", defined: !!process.env.IP_HASH_SALT },
+    { label: "IP_SALT", defined: !!process.env.IP_SALT },
     { label: "NEXT_PUBLIC_SITE_URL", defined: !!process.env.NEXT_PUBLIC_SITE_URL },
     { label: "NEXT_PUBLIC_ADMIN_URL", defined: !!process.env.NEXT_PUBLIC_ADMIN_URL },
   ];

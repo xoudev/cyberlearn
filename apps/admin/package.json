@@ -10,7 +10,9 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next"
+    "clean": "rm -rf .next",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@cyberlearn/db": "workspace:*",
@@ -47,6 +49,8 @@
     "@types/react-dom": "catalog:",
     "eslint": "catalog:",
     "typescript-eslint": "catalog:",
-    "@next/eslint-plugin-next": "catalog:"
+    "@next/eslint-plugin-next": "catalog:",
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:"
   }
 }

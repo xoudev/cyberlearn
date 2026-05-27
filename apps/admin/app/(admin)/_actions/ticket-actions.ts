@@ -1,44 +1,43 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { notFound } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
+import { requireAdminAction } from "@/lib/auth";
+
+const updateStatusSchema = z.object({
+  ticketId: z.string().uuid(),
+  status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]),
+});
 
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 
 export async function updateTicketStatusAction(
   ticketId: string,
   status: TicketStatus,
-): Promise<void> {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound();
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdminAction();
 
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role = jwtRole;
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
-    role = dbUser?.role ?? undefined;
+  const input = updateStatusSchema.safeParse({ ticketId, status });
+  if (!input.success) {
+    return { ok: false, error: "Paramètres invalides." };
   }
-  if (role !== "ADMIN") notFound();
 
   await prisma.contactTicket.update({
-    where: { id: ticketId },
-    data: { status },
+    where: { id: input.data.ticketId },
+    data: { status: input.data.status },
   });
 
   await prisma.auditLog.create({
     data: {
-      actorId: user.id,
+      actorId: admin.id,
       action: "ticket.status.update",
       targetType: "ContactTicket",
-      targetId: ticketId,
-      metadata: { status },
+      targetId: input.data.ticketId,
+      metadata: { status: input.data.status },
     },
   });
 
   revalidatePath("/tickets");
+  return { ok: true };
 }

@@ -202,3 +202,19 @@ Triggers possibles :
 - Sponsoring particuliers ("offrir une certif")
 
 → Voir docs/infra/cost-roadmap.md pour les implications infra.
+
+
+
+
+## Audit Zod sur toutes les Server Actions admin
+
+Le security-review PR 5 a flagué 2 Server Actions sans Zod safeParse
+(user-actions, ticket-actions). Bien que les autres CRUD admin
+(lessons, badges, paths, challenges) utilisent déjà requireAdminAction(),
+il faut vérifier que **chaque** Server Action admin valide ses inputs
+avec Zod.
+
+Action : grep "export async function" apps/admin/ + audit manuel ligne
+par ligne. Cible : 100% des Server Actions admin avec safeParse au début.
+
+Tracé pour PR post-launch dédiée "audit-zod-admin".
