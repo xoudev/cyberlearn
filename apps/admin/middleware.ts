@@ -12,13 +12,16 @@ const SECURITY_HEADERS: Record<string, string> = {
     "img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com",
     "font-src 'self' data:",
     isDev
-      ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net"
-      : "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net",
+      ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io"
+      : "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io",
     "worker-src 'self' blob:",
     "frame-ancestors 'none'",
     "form-action 'self'",
     "base-uri 'self'",
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
+    ...(process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI
+      ? [`report-uri ${process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI}`]
+      : []),
   ].join("; "),
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
   "X-Content-Type-Options": "nosniff",
@@ -27,6 +30,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Resource-Policy": "same-origin",
+  "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
 };
 
 export function middleware(): NextResponse {

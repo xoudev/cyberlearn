@@ -1,42 +1,41 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { notFound } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
+import { requireAdminAction } from "@/lib/auth";
+
+const updateRoleSchema = z.object({
+  userId: z.string().uuid(),
+  newRole: z.enum(["STUDENT", "ADMIN"]),
+});
 
 export async function updateUserRoleAction(
   userId: string,
   newRole: "STUDENT" | "ADMIN",
-): Promise<void> {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound();
+): Promise<{ ok: boolean; error?: string }> {
+  const admin = await requireAdminAction();
 
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role = jwtRole;
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
-    role = dbUser?.role ?? undefined;
+  const input = updateRoleSchema.safeParse({ userId, newRole });
+  if (!input.success) {
+    return { ok: false, error: "Paramètres invalides." };
   }
-  if (role !== "ADMIN") notFound();
 
   await prisma.user.update({
-    where: { id: userId },
-    data: { role: newRole },
+    where: { id: input.data.userId },
+    data: { role: input.data.newRole },
   });
 
   await prisma.auditLog.create({
     data: {
-      actorId: user.id,
+      actorId: admin.id,
       action: "user.role.update",
       targetType: "User",
-      targetId: userId,
-      metadata: { newRole },
+      targetId: input.data.userId,
+      metadata: { newRole: input.data.newRole },
     },
   });
 
   revalidatePath("/users");
+  return { ok: true };
 }

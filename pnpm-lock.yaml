@@ -318,6 +318,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 3.2.4(vitest@3.2.4(@types/debug@4.1.13)(@types/node@22.19.17)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       eslint:
         specifier: 'catalog:'
         version: 9.39.4(jiti@2.6.1)
@@ -327,6 +330,9 @@ importers:
       typescript-eslint:
         specifier: 'catalog:'
         version: 8.58.2(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.17)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/web:
     dependencies:
