@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { cookies, headers } from "next/headers";
 import { SplashScreen } from "@/components/splash-screen";
 import { CookieBanner } from "@/components/cookie-banner";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -62,6 +63,7 @@ export default async function RootLayout({
           <SplashScreen />
           {children}
           <CookieBanner initialConsent={consentCookie?.value} />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

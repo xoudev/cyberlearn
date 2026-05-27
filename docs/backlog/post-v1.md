@@ -114,3 +114,91 @@ post-launch ou avant launch si temps. Pas critique pour le run.
 
 Reference : voir style Linear / Vercel pour emails dark mode +
 terminal aesthetic.
+
+
+### Audit Replay Sentry 30j post-launch
+
+Avec maskAllText: false, les emails affichés en clair côté DOM
+(page profil, etc.) peuvent apparaître dans les Replays Sentry.
+
+À faire 30j post-launch :
+- Visiter quelques Replays dans Sentry
+- Confirmer qu'aucun PII (email) n'apparaît
+- Si leak détecté : switch maskAllText: true (UI illisible mais
+  zero PII risk)
+
+
+
+## Infrastructure & coûts
+
+### v1 (current — free tier max)
+- Vercel Hobby (non-commercial)
+- Supabase Free
+- Resend Free (100 emails/jour)
+- Upstash Free (10k cmd/jour)
+- Sentry Free (5k events/mois)
+- Coût : ~0.58€/mois (domaine seul)
+
+### v1.5 — WebVM integration
+- Add: Cloudflare R2 pour disk images (egress gratuit)
+- Setup: pipeline build/deploy disks
+- Coût additionnel : 0-5€/mois
+
+### v2 — Migration VPS OVH (DevOps showcase)
+**Objectif** : montée en compétence DevOps + portfolio CV.
+
+**Stack cible** :
+- VPS OVH Value (6.99€/mois) — 1 vCPU, 4GB RAM, 80GB SSD
+- Docker + Docker Compose pour orchestration
+- Caddy/Nginx reverse proxy + Let's Encrypt
+- PostgreSQL self-hosted (avec backups vers R2)
+- Redis self-hosted
+- Glitchtip (Sentry self-hosted) ou keep Sentry Cloud
+- Loki + Grafana pour logs
+- Prometheus + Grafana pour metrics
+- GitHub Actions → SSH deploy pipeline
+- UFW firewall + fail2ban + SSH keys-only
+- OVH VPS Backup add-on (1.59€/mois)
+
+**Coût cible v2** : ~10-15€/mois.
+
+### Si monétisation un jour
+- Vercel Pro (20$/mois) ou VPS Option B
+- Supabase Pro (25$/mois) si scale
+- Stripe pour paiements
+- Conformité légale française (auto-entrepreneur min)
+
+### Alertes budget à configurer
+- Upstash : 2$/mois
+- Vercel : 5$/mois
+- Resend : monitor manuel hebdo
+- OVH (futur) : VPS Backup activé
+## Modèle économique v1
+
+**Position v1 : 100% gratuit pour les users + 100% free tier infra.**
+
+- Pas de monétisation (cohérent avec ToS Vercel Hobby)
+- Pas de paywall, pas de subscription, pas de certs payants
+- Pas de tracking commercial (cohérent RGPD minimal)
+- Coût pour Jordan : ~0.58€/mois (domaine OVH uniquement)
+
+### Quand ré-évaluer
+
+Re-considérer la monétisation **uniquement après** :
+- 6+ mois de production
+- 100+ users actifs récurrents (DAU > 20)
+- Demandes spontanées d'users prêts à payer pour features avancées
+- Limites free tier régulièrement atteintes
+
+Avant ces signaux : pas de monétisation. Focus 100% sur le produit +
+expérience pédagogique + traction.
+
+### Si monétisation future
+
+Triggers possibles :
+- Certifications payantes (5-15€ par certif délivré)
+- Subscription Pro (5-10€/mois pour features avancées)
+- Sponsoring entreprises (placement leçons partenaires)
+- Sponsoring particuliers ("offrir une certif")
+
+→ Voir docs/infra/cost-roadmap.md pour les implications infra.
