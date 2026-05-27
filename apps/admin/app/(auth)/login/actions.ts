@@ -1,10 +1,12 @@
 "use server";
 
+import { headers } from "next/headers";
 import { z } from "zod";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { sendMagicLinkEmail } from "@cyberlearn/email";
 import { prisma } from "@cyberlearn/db";
 import { env } from "@/lib/env";
+import { checkAuthRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().email(),
@@ -14,6 +16,12 @@ export async function sendAdminMagicLink(
   _prev: { error: string | null },
   formData: FormData,
 ): Promise<{ error: string | null }> {
+  const headersList = await headers();
+  const allowed = await checkAuthRateLimit({ headers: headersList });
+  if (!allowed) {
+    return { error: "Trop de tentatives. Réessaye dans 15 minutes." };
+  }
+
   try {
     const parsed = schema.safeParse({ email: formData.get("email") });
 
