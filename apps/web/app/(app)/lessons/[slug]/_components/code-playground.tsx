@@ -21,28 +21,47 @@ let asmWorker: Worker | null = null;
 type Language = "python" | "javascript" | "c" | "asm";
 
 function getWorker(language: Language): Worker {
-  if (language === "python") {
-    pyWorker ??= new Worker("/workers/py-runner.js");
-    return pyWorker;
+  switch (language) {
+    case "python":
+      pyWorker ??= new Worker("/workers/py-runner.js");
+      return pyWorker;
+    case "javascript":
+      jsWorker ??= new Worker("/workers/js-runner.js");
+      return jsWorker;
+    case "c":
+      cWorker ??= new Worker("/workers/cpp-runner.js");
+      return cWorker;
+    case "asm":
+      // SAFETY: new URL() is resolved by webpack at build time for worker bundling
+      asmWorker ??= new Worker(new URL("../_workers/asm.worker.ts", import.meta.url));
+      return asmWorker;
+    default: {
+      const _exhaustive: never = language;
+      throw new Error(`Unhandled language: ${String(_exhaustive)}`);
+    }
   }
-  if (language === "javascript") {
-    jsWorker ??= new Worker("/workers/js-runner.js");
-    return jsWorker;
-  }
-  if (language === "c") {
-    cWorker ??= new Worker("/workers/cpp-runner.js");
-    return cWorker;
-  }
-  // SAFETY: new URL() is resolved by webpack at build time for worker bundling
-  asmWorker ??= new Worker(new URL("../_workers/asm.worker.ts", import.meta.url));
-  return asmWorker;
 }
 
 function invalidateWorker(language: Language): void {
-  if (language === "python") pyWorker = null;
-  else if (language === "javascript") jsWorker = null;
-  else if (language === "c") cWorker = null;
-  else asmWorker = null;
+  switch (language) {
+    case "python":
+      pyWorker = null;
+      break;
+    case "javascript":
+      jsWorker = null;
+      break;
+    case "c":
+      cWorker = null;
+      break;
+    case "asm":
+      asmWorker = null;
+      break;
+    default: {
+      // Exhaustiveness check — compile error if a new Language member is added without handling it here
+      const _exhaustive: never = language;
+      throw new Error(`Unhandled language: ${String(_exhaustive)}`);
+    }
+  }
 }
 
 // ── Execution ──────────────────────────────────────────────────────────────────
