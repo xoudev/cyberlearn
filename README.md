@@ -2,17 +2,43 @@
 
 Gamified interactive learning platform for cybersecurity, software development, and network/systems — built for the French-speaking community.
 
-## Prerequisites
+Projet étudiant solo. Construit pour apprendre, pas pour lever des fonds.
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Node.js | **22.x LTS** | Use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) |
-| pnpm | **9.x** | `npm install -g pnpm@9` |
-| Git | any recent | Required for Husky hooks |
+## Status v1
 
-> **Why pnpm 9?** The monorepo uses `catalog:` entries in `pnpm-workspace.yaml` to pin shared dependency versions — a feature available since pnpm 8.9. pnpm 9 is the current stable series.
+**Free tier max — 100% gratuit pour les users, ~0.58€/mois d'infra (domaine OVH).**
 
-## Repository structure
+- Hébergé sur Vercel Hobby (usage non-commercial)
+- Base de données Supabase Free (Postgres + Auth + Storage + Realtime)
+- Rate limiting Upstash Redis, emails Resend, monitoring Sentry
+
+Stack principale : Next.js 15 App Router · TypeScript strict · Prisma 6 · Tailwind v4 · Turborepo · pnpm workspaces
+
+Voir [docs/infra/cost-roadmap.md](docs/infra/cost-roadmap.md) pour le détail des quotas, pièges free tier et plan de monétisation éventuelle.
+
+## Roadmap publique
+
+| Phase | Status | Description |
+|---|---|---|
+| **v1** | En cours | Free tier complet. Monorepo Turborepo + Next.js 15 + Supabase. Leçons interactives, XP, badges, certificats, terminal simulé, sandboxes Python/JS/C/ASM. |
+| **v1.5** | Backlog | Intégration WebVM (CheerpX) — vrai Linux dans le browser pour les leçons DevOps/Cybersec/Réseaux. |
+| **v2** | Backlog | Migration VPS OVH self-hosted (Docker, Caddy, Postgres, Redis, monitoring Grafana/Loki/Prometheus). DevOps showcase. |
+
+Voir [docs/backlog/terminal-v2-webvm.md](docs/backlog/terminal-v2-webvm.md) pour le détail de v1.5.
+
+## Sécurité
+
+- RGPD compliant (Art. 17 suppression + Art. 20 export)
+- CSP strict nonce-based + HSTS
+- RLS Postgres sur toutes les tables + RBAC admin séparé (sous-domaine isolé)
+- Audit logs complets sur toutes les mutations admin
+- Sentry monitoring avec PII scrubbing (emails, IPs hachées SHA-256)
+- Cookie isolation web/admin (scoped `cyberlearn.fr` vs `admin.cyberlearn.fr`)
+- Robots.txt `noindex` sur admin
+
+## Architecture
+
+Voir [docs/architecture.md](docs/architecture.md) pour le détail complet.
 
 ```
 cyberlearn/
@@ -32,6 +58,26 @@ cyberlearn/
 ├── turbo.json         # Turborepo pipeline
 └── pnpm-workspace.yaml # Workspace + shared dependency catalog
 ```
+
+## Coûts
+
+Voir [docs/infra/cost-roadmap.md](docs/infra/cost-roadmap.md).
+
+## Contributing
+
+Pas de contributions externes acceptées en v1 — projet solo en cours de construction. Le code est public à titre de portfolio.
+
+---
+
+## Prerequisites
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Node.js | **22.x LTS** | Use [fnm](https://github.com/Schniz/fnm) or [nvm](https://github.com/nvm-sh/nvm) |
+| pnpm | **9.x** | `npm install -g pnpm@9` |
+| Git | any recent | Required for Husky hooks |
+
+> **Why pnpm 9?** The monorepo uses `catalog:` entries in `pnpm-workspace.yaml` to pin shared dependency versions — a feature available since pnpm 8.9. pnpm 9 is the current stable series.
 
 ## First-time setup
 
