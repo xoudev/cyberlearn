@@ -34,6 +34,7 @@ export default function LessonsLoading(): React.ReactElement {
             style={{
               background: "#0A0826",
               border: "1px solid #1F1B47",
+              borderRadius: 12,
               padding: 20,
               display: "flex",
               flexDirection: "column",

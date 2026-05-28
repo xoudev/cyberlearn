@@ -700,7 +700,14 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       </div>
 
       {/* Terminal container */}
-      <div ref={containerRef} style={{ height, padding: "6px 0", overflow: "hidden" }} />
+      <div
+        ref={containerRef}
+        style={{
+          height,
+          padding: "16px 18px",
+          overflow: "hidden",
+        }}
+      />
 
       {/* Hints panel — rendered below the terminal */}
       {hints.length > 0 && (

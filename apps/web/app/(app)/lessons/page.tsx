@@ -5,6 +5,7 @@ import { LessonCard } from "@cyberlearn/ui";
 import type { Category, Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireRequestUser } from "@/lib/auth";
+import { LessonsSearchBar } from "./_components/lessons-search-bar";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -326,54 +327,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
         <StatusSelect params={p} active={activeStatus} />
 
         {/* Search */}
-        <form method="get" action="/lessons">
-          {activeCategory && <input type="hidden" name="category" value={activeCategory} />}
-          {activeDifficulty && <input type="hidden" name="difficulty" value={activeDifficulty} />}
-          {activeStatus && <input type="hidden" name="status" value={activeStatus} />}
-          <div style={{ position: "relative", height: 34, minWidth: 220 }}>
-            <svg
-              viewBox="0 0 16 16"
-              width={14}
-              height={14}
-              fill="none"
-              style={{
-                position: "absolute",
-                left: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#3F3D5C",
-                pointerEvents: "none",
-              }}
-            >
-              <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth={1.5} />
-              <path
-                d="M11 11 L14 14"
-                stroke="currentColor"
-                strokeWidth={1.5}
-                strokeLinecap="round"
-              />
-            </svg>
-            <input
-              type="search"
-              name="q"
-              defaultValue={rawSearch}
-              placeholder="/ rechercher une leçon..."
-              style={{
-                width: "100%",
-                height: "100%",
-                padding: "0 12px 0 36px",
-                background: "#05041A",
-                border: "1px solid #2A2560",
-                color: "#F5F5FA",
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                borderRadius: 0,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-          </div>
-        </form>
+        <LessonsSearchBar initialQuery={rawSearch} />
       </div>
 
       {/* ── Grid ─────────────────────────────────────────────────────────── */}
