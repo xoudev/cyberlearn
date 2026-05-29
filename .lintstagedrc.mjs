@@ -17,8 +17,10 @@ export default {
   },
 
   "*.{json,css,md}": (files) => {
-    // lint-staged passes absolute paths — check for /docs/ or /runtimes/ anywhere in the path
-    const biomeFiles = files.filter((f) => !f.includes("/docs/") && !isRuntimeFile(f));
+    // docs/ is in biome's ignore list; .md is not supported by biome's formatter
+    const biomeFiles = files.filter(
+      (f) => !f.includes("/docs/") && !f.endsWith(".md") && !isRuntimeFile(f),
+    );
     if (biomeFiles.length === 0) return [];
     return `biome format --write ${biomeFiles.map((f) => JSON.stringify(resolve(f))).join(" ")}`;
   },
