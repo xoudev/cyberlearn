@@ -10,17 +10,10 @@ export const dynamic = "force-dynamic";
 export default async function ClassementPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
   const [entries, userRank] = await Promise.all([
-    leaderboardRepository.findTopUsers(100),
+    leaderboardRepository.findTopUsers(100, authUser.id),
     leaderboardRepository.findUserRank(authUser.id),
   ]);
-  const currentEntry = entries.find((e) => e.userId === authUser.id) ?? null;
+  const currentEntry = entries.find((e) => e.isCurrentUser) ?? null;
 
-  return (
-    <ClassementClient
-      entries={entries}
-      userRank={userRank}
-      currentUserId={authUser.id}
-      currentEntry={currentEntry}
-    />
-  );
+  return <ClassementClient entries={entries} userRank={userRank} currentEntry={currentEntry} />;
 }
