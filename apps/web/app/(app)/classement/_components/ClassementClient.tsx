@@ -20,7 +20,7 @@ function getTierClass(level: number): "master" | "expert" | "adept" | "novice" {
 }
 
 function getMonogram(displayName: string | null, username: string | null): string {
-  const name = displayName ?? username ?? "??";
+  const name = displayName ?? username ?? "Anonyme";
   const parts = name.split(/[\s._-]/);
   if (parts.length >= 2) return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
   return name.slice(0, 2).toUpperCase();
@@ -258,7 +258,7 @@ function PodiumCard({
         <span style={{ color: "#0AFFD4", ...MONO, fontWeight: 500, fontSize: isGold ? 20 : 16 }}>
           @
         </span>
-        {entry.username ?? entry.displayName ?? "-"}
+        {entry.username ?? entry.displayName ?? "Anonyme"}
       </h2>
       <p
         style={{
@@ -602,7 +602,7 @@ function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
             }}
           >
             <span style={{ color: "#0AFFD4", ...MONO, fontWeight: 500 }}>@</span>
-            {entry.username ?? entry.displayName ?? "-"}
+            {entry.username ?? entry.displayName ?? "Anonyme"}
           </span>
           <span
             style={{
@@ -748,16 +748,10 @@ function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
 interface Props {
   entries: LeaderboardEntry[];
   userRank: number;
-  currentUserId: string;
   currentEntry: LeaderboardEntry | null;
 }
 
-export function ClassementClient({
-  entries,
-  userRank,
-  currentUserId,
-  currentEntry,
-}: Props): React.JSX.Element {
+export function ClassementClient({ entries, userRank, currentEntry }: Props): React.JSX.Element {
   const [filter, setFilter] = useState<"global" | "mois" | "sem">("global");
 
   // Podium order: silver (rank 2), gold (rank 1), bronze (rank 3)
@@ -769,7 +763,7 @@ export function ClassementClient({
 
   const top12 = entries.filter((e) => e.rank <= 12);
   // Rows around the current user (2 above, me, 2 below)
-  const nearMeIdx = entries.findIndex((e) => e.userId === currentUserId);
+  const nearMeIdx = entries.findIndex((e) => e.isCurrentUser);
   const contextRows =
     nearMeIdx >= 0
       ? entries.slice(Math.max(12, nearMeIdx - 2), Math.min(entries.length, nearMeIdx + 3))
@@ -979,10 +973,10 @@ export function ClassementClient({
           >
             {podiumOrder.map((entry) => (
               <PodiumCard
-                key={entry.userId}
+                key={entry.rank}
                 entry={entry}
                 rank={entry.rank}
-                isMe={entry.userId === currentUserId}
+                isMe={entry.isCurrentUser}
               />
             ))}
           </section>
@@ -1063,7 +1057,7 @@ export function ClassementClient({
 
             {/* Top rows */}
             {top12.map((entry) => (
-              <TableRow key={entry.userId} entry={entry} isMe={entry.userId === currentUserId} />
+              <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
             ))}
 
             {/* Ellipsis */}
@@ -1106,7 +1100,7 @@ export function ClassementClient({
             {/* Context rows around current user */}
             {userRank > 15 &&
               contextRows.map((entry) => (
-                <TableRow key={entry.userId} entry={entry} isMe={entry.userId === currentUserId} />
+                <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
               ))}
           </div>
         </div>

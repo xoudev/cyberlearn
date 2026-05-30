@@ -7,12 +7,13 @@ export const metadata = { title: "Classement · CyberLearn" };
 
 export default async function LeaderboardPage(): Promise<React.JSX.Element> {
   const authUser = await requireRequestUser();
-  const [entries, userRank] = await Promise.all([
-    leaderboardRepository.findTopUsers(100),
-    leaderboardRepository.findUserRank(authUser.id),
+  const [entries, position] = await Promise.all([
+    leaderboardRepository.findTopUsers(100, authUser.id),
+    leaderboardRepository.findCurrentUserPosition(authUser.id),
   ]);
 
-  const currentUser = entries.find((e) => e.userId === authUser.id);
+  // A HIDDEN user has no public position (rank null) — show a "masqué" notice
+  // instead of a rank. position fields are already anonymized server-side.
 
   return (
     <div className="leaderboard-page">
@@ -82,21 +83,28 @@ export default async function LeaderboardPage(): Promise<React.JSX.Element> {
         >
           Ta position
         </div>
-        <div
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 28,
-            fontWeight: 700,
-            color: "#0AFFD4",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          #{String(userRank)}
-        </div>
-        {currentUser && (
+        {position !== null && position.visibility !== "HIDDEN" && position.rank !== null ? (
           <>
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: 28,
+                fontWeight: 700,
+                color: "#0AFFD4",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              #{String(position.rank)}
+            </div>
             <div style={{ width: 1, height: 32, background: "#2A2560" }} />
-            <UserAvatar entry={currentUser} size={32} />
+            <UserAvatar
+              entry={{
+                displayName: position.displayName,
+                username: position.username,
+                avatarUrl: position.avatarUrl,
+              }}
+              size={32}
+            />
             <div>
               <div
                 style={{
@@ -106,13 +114,35 @@ export default async function LeaderboardPage(): Promise<React.JSX.Element> {
                   color: "#F5F5FA",
                 }}
               >
-                {currentUser.displayName ?? currentUser.username ?? "Toi"}
+                {position.displayName ?? position.username ?? "Anonyme"}
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    color: "#0AFFD4",
+                    marginLeft: 8,
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  TOI
+                </span>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#6B6890" }}>
-                {String(currentUser.xpTotal)} XP · LVL {String(currentUser.level)}
+                {String(position.xpTotal)} XP · LVL {String(position.level)}
               </div>
             </div>
           </>
+        ) : (
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 13,
+              color: "#B8B5D1",
+              letterSpacing: "0.02em",
+            }}
+          >
+            Tu es masqué du classement
+          </div>
         )}
       </div>
 
@@ -124,10 +154,10 @@ export default async function LeaderboardPage(): Promise<React.JSX.Element> {
             const actual = entry;
             return (
               <PodiumCard
-                key={actual.userId}
+                key={actual.rank}
                 entry={actual}
                 rank={rank}
-                isCurrentUser={actual.userId === authUser.id}
+                isCurrentUser={actual.isCurrentUser}
               />
             );
           })}
@@ -161,11 +191,7 @@ export default async function LeaderboardPage(): Promise<React.JSX.Element> {
             </div>
 
             {entries.map((entry) => (
-              <LeaderboardRow
-                key={entry.userId}
-                entry={entry}
-                isCurrentUser={entry.userId === authUser.id}
-              />
+              <LeaderboardRow key={entry.rank} entry={entry} isCurrentUser={entry.isCurrentUser} />
             ))}
           </div>
         </div>
@@ -205,7 +231,7 @@ function PodiumCard({
   isCurrentUser,
 }: { entry: LeaderboardEntry; rank: number; isCurrentUser: boolean }) {
   const colors = PODIUM_COLORS[rank] ?? PODIUM_DEFAULT;
-  const name = entry.displayName ?? entry.username ?? "-";
+  const name = entry.displayName ?? entry.username ?? "Anonyme";
 
   return (
     <div
@@ -276,7 +302,7 @@ function LeaderboardRow({
   entry,
   isCurrentUser,
 }: { entry: LeaderboardEntry; isCurrentUser: boolean }) {
-  const name = entry.displayName ?? entry.username ?? "-";
+  const name = entry.displayName ?? entry.username ?? "Anonyme";
 
   return (
     <div
@@ -391,7 +417,13 @@ function LeaderboardRow({
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
-function UserAvatar({ entry, size }: { entry: LeaderboardEntry; size: number }) {
+function UserAvatar({
+  entry,
+  size,
+}: {
+  entry: { displayName: string | null; username: string | null; avatarUrl: string | null };
+  size: number;
+}) {
   const name = entry.displayName ?? entry.username ?? "?";
   const realUrl =
     entry.avatarUrl && !entry.avatarUrl.startsWith("__glyph:") ? entry.avatarUrl : null;

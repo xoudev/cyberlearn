@@ -14,7 +14,10 @@ export { qaRepository } from "./repositories/qa.repository.js";
 export { notificationRepository } from "./repositories/notification.repository.js";
 export type { NotificationItem } from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
-export type { LeaderboardEntry } from "./repositories/leaderboard.repository.js";
+export type {
+  LeaderboardEntry,
+  CurrentUserPosition,
+} from "./repositories/leaderboard.repository.js";
 export { challengeRepository } from "./repositories/challenge.repository.js";
 export type { ChallengeWithProgress } from "./repositories/challenge.repository.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
@@ -53,6 +56,7 @@ export type {
 
 export {
   UserRole,
+  LeaderboardVisibility,
   Category,
   Difficulty,
   ContentStatus,
