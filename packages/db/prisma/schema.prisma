@@ -20,6 +20,14 @@ enum UserRole {
   ADMIN
 }
 
+// Controls how a user appears on the public leaderboard.
+// Anonymization is enforced server-side in leaderboardRepository — never client-side.
+enum LeaderboardVisibility {
+  HIDDEN // Excluded from the leaderboard entirely (not listed, not ranked)
+  ANONYMOUS // Ranked and counted, shown as "Anonyme" — no name, username, or avatar
+  PUBLIC // Full identity (name, username, avatar) visible to everyone
+}
+
 model User {
   id           String   @id @db.Uuid // Direct link with Supabase auth.users
   email        String   @unique
@@ -35,23 +43,23 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  preferences      UserPreferences?
-  lessonProgress   UserLessonProgress[]
-  pathProgress     UserPathProgress[]
-  badges           UserBadge[]
-  certificates     Certificate[]
-  notifications    Notification[]
-  reviewSchedules  ReviewSchedule[]
-  contactTickets   ContactTicket[]
-  ratings          Rating[]
-  questions        LessonQuestion[]
-  answers          LessonAnswer[]
-  auditLogs        AuditLog[]          @relation("ActorLogs")
-  placementResult    UserPlacementResult?
-  skipWaivers        UserSkipWaiver[]
-  challengeProgress  UserChallengeProgress[]
-  hintReveals        ChallengeHintReveal[]
-  deletionTokens     AccountDeletionToken[]
+  preferences       UserPreferences?
+  lessonProgress    UserLessonProgress[]
+  pathProgress      UserPathProgress[]
+  badges            UserBadge[]
+  certificates      Certificate[]
+  notifications     Notification[]
+  reviewSchedules   ReviewSchedule[]
+  contactTickets    ContactTicket[]
+  ratings           Rating[]
+  questions         LessonQuestion[]
+  answers           LessonAnswer[]
+  auditLogs         AuditLog[]              @relation("ActorLogs")
+  placementResult   UserPlacementResult?
+  skipWaivers       UserSkipWaiver[]
+  challengeProgress UserChallengeProgress[]
+  hintReveals       ChallengeHintReveal[]
+  deletionTokens    AccountDeletionToken[]
 
   @@index([username])
   @@index([role])
@@ -65,7 +73,12 @@ model UserPreferences {
   emailNotifications Boolean @default(true)
   reviewReminders    Boolean @default(true)
   weeklyDigest       Boolean @default(true)
+  streakReminder     Boolean @default(true) // Email before a daily streak is lost (toggle UI pending)
   publicProfile      Boolean @default(true) // Controls First Blood & public profile visibility
+
+  // Defaults to ANONYMOUS (privacy-first). Absence of a row is also treated as
+  // ANONYMOUS by the leaderboard repository (pre-onboarding users have no row).
+  leaderboardVisibility LeaderboardVisibility @default(ANONYMOUS)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -263,10 +276,10 @@ model Challenge {
   xpReward       Int
   timeLimitMin   Int           @default(0) // 0 = no time limit
   maxAttempts    Int           @default(3)
-  flag           String?       // CTF/SCRIPT — expected answer (plaintext, admin-only readable)
-  starterCode    String?       // SCRIPT only — pre-populated Python code in the runner
-  attachmentUrl  String?       // URL to downloadable challenge file (binary, pcap, zip…)
-  resourceUrl    String?       // Target URL or connection info (e.g. nc host 1337)
+  flag           String? // CTF/SCRIPT — expected answer (plaintext, admin-only readable)
+  starterCode    String? // SCRIPT only — pre-populated Python code in the runner
+  attachmentUrl  String? // URL to downloadable challenge file (binary, pcap, zip…)
+  resourceUrl    String? // Target URL or connection info (e.g. nc host 1337)
   isActive       Boolean       @default(true)
   orderIndex     Int           @default(0)
   prerequisiteId String?       @db.Uuid
@@ -300,11 +313,11 @@ model UserChallengeProgress {
 }
 
 model ChallengeHint {
-  id          String  @id @default(uuid()) @db.Uuid
-  challengeId String  @db.Uuid
-  orderIndex  Int     @default(0)
-  content     String  @db.Text
-  xpCost      Int     @default(0) // XP penalty to reveal; 0 = free
+  id          String @id @default(uuid()) @db.Uuid
+  challengeId String @db.Uuid
+  orderIndex  Int    @default(0)
+  content     String @db.Text
+  xpCost      Int    @default(0) // XP penalty to reveal; 0 = free
 
   challenge Challenge             @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   reveals   ChallengeHintReveal[]
@@ -665,8 +678,8 @@ model AccountDeletionToken {
   expiresAt DateTime
   usedAt    DateTime?
   ip        String? // HMAC-SHA256 pseudonymized
-  userAgent String?  @db.VarChar(500)
-  createdAt DateTime @default(now())
+  userAgent String?   @db.VarChar(500)
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

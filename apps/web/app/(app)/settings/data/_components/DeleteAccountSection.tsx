@@ -4,59 +4,11 @@ import React, { useActionState, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { requestDeletionAction, type RequestDeletionState } from "../_actions/request-deletion";
+import { BracketCorners } from "../../_components/BracketCorners";
 
 interface Props {
   pendingExpiresAt: string | null;
   certificateCount: number;
-}
-
-function BracketCorners({ color }: { color: string }): React.JSX.Element {
-  const s = (pos: React.CSSProperties): React.CSSProperties => ({
-    position: "absolute",
-    width: 20,
-    height: 20,
-    ...pos,
-  });
-  return (
-    <>
-      <span
-        aria-hidden="true"
-        style={s({
-          top: -1,
-          left: -1,
-          borderTop: `2px solid ${color}`,
-          borderLeft: `2px solid ${color}`,
-        })}
-      />
-      <span
-        aria-hidden="true"
-        style={s({
-          top: -1,
-          right: -1,
-          borderTop: `2px solid ${color}`,
-          borderRight: `2px solid ${color}`,
-        })}
-      />
-      <span
-        aria-hidden="true"
-        style={s({
-          bottom: -1,
-          left: -1,
-          borderBottom: `2px solid ${color}`,
-          borderLeft: `2px solid ${color}`,
-        })}
-      />
-      <span
-        aria-hidden="true"
-        style={s({
-          bottom: -1,
-          right: -1,
-          borderBottom: `2px solid ${color}`,
-          borderRight: `2px solid ${color}`,
-        })}
-      />
-    </>
-  );
 }
 
 const INITIAL_STATE: RequestDeletionState = {};

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { usernameSchema, onboardingSchema, updateProfileSchema } from "../user.schema.js";
+import {
+  usernameSchema,
+  onboardingSchema,
+  updateProfileSchema,
+  leaderboardVisibilitySchema,
+  updatePrivacySchema,
+} from "../user.schema.js";
 
 // ─── usernameSchema ───────────────────────────────────────────────────────────
 
@@ -150,5 +156,65 @@ describe("updateProfileSchema", () => {
     expect(
       updateProfileSchema.safeParse({ avatarUrl: "https://example.com/avatar.png" }).success,
     ).toBe(true);
+  });
+});
+
+// ─── leaderboardVisibilitySchema ──────────────────────────────────────────────
+
+describe("leaderboardVisibilitySchema", () => {
+  it("accepts the three valid enum values", () => {
+    expect(leaderboardVisibilitySchema.safeParse("HIDDEN").success).toBe(true);
+    expect(leaderboardVisibilitySchema.safeParse("ANONYMOUS").success).toBe(true);
+    expect(leaderboardVisibilitySchema.safeParse("PUBLIC").success).toBe(true);
+  });
+
+  it("rejects an arbitrary string outside the enum", () => {
+    expect(leaderboardVisibilitySchema.safeParse("ADMIN").success).toBe(false);
+    expect(leaderboardVisibilitySchema.safeParse("EVERYONE").success).toBe(false);
+  });
+
+  it("rejects an empty string", () => {
+    expect(leaderboardVisibilitySchema.safeParse("").success).toBe(false);
+  });
+
+  it("rejects a non-string value", () => {
+    expect(leaderboardVisibilitySchema.safeParse(42).success).toBe(false);
+  });
+
+  it("rejects lowercase variants (enum is case-sensitive)", () => {
+    expect(leaderboardVisibilitySchema.safeParse("public").success).toBe(false);
+  });
+});
+
+// ─── updatePrivacySchema ──────────────────────────────────────────────────────
+
+describe("updatePrivacySchema", () => {
+  it("accepts a valid visibility + publicProfile pair", () => {
+    expect(
+      updatePrivacySchema.safeParse({ leaderboardVisibility: "ANONYMOUS", publicProfile: true })
+        .success,
+    ).toBe(true);
+  });
+
+  it("rejects an arbitrary visibility value", () => {
+    expect(
+      updatePrivacySchema.safeParse({ leaderboardVisibility: "ADMIN", publicProfile: true })
+        .success,
+    ).toBe(false);
+    expect(
+      updatePrivacySchema.safeParse({ leaderboardVisibility: "EVERYONE", publicProfile: true })
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejects a missing publicProfile", () => {
+    expect(updatePrivacySchema.safeParse({ leaderboardVisibility: "PUBLIC" }).success).toBe(false);
+  });
+
+  it("rejects a non-boolean publicProfile (e.g. the string 'true')", () => {
+    expect(
+      updatePrivacySchema.safeParse({ leaderboardVisibility: "PUBLIC", publicProfile: "true" })
+        .success,
+    ).toBe(false);
   });
 });
