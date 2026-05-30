@@ -97,6 +97,7 @@ describe("leaderboardRepository (integration, real DB)", () => {
   });
 
   afterAll(async () => {
+    if (!configured) return; // no DB configured (e.g. CI without DATABASE_URL) → nothing to clean
     await prisma.user.deleteMany({ where: { id: { in: ALL_IDS } } });
   });
 
