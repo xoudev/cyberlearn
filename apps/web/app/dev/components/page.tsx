@@ -15,7 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 function Section({
   title,
@@ -86,7 +85,6 @@ export default function DevComponentsPage(): React.JSX.Element {
             Dev only · bloqué en production
           </p>
         </div>
-        <ThemeToggle />
       </div>
 
       <div className="mx-auto max-w-5xl space-y-12 px-8 py-10">

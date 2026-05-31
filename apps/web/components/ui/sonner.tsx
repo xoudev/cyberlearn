@@ -1,18 +1,16 @@
 "use client";
 
 import { CircleCheck, Info, LoaderCircle, OctagonX, TriangleAlert } from "lucide-react";
-import { useTheme } from "next-themes";
 import { Toaster as Sonner } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-const Toaster = ({ theme: propTheme, ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
-  const resolvedTheme = (propTheme ?? theme) as NonNullable<ToasterProps["theme"]>;
-
+// Dark-only app (see RootLayout forcedTheme): toasts are always dark and never
+// keyed off the stored/OS theme, so a light-styled toast can't slip through.
+const Toaster = ({ theme = "dark", ...props }: ToasterProps) => {
   return (
     <Sonner
-      theme={resolvedTheme}
+      theme={theme}
       className="toaster group"
       icons={{
         success: <CircleCheck className="h-4 w-4" />,
