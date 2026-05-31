@@ -47,16 +47,16 @@ export default async function RootLayout({
     >
       <body className="font-sans antialiased">
         {/*
-         * next-themes injects a script in <head> before hydration to prevent
-         * the flash-of-wrong-theme. defaultTheme="dark" + class strategy adds
-         * class="dark" to <html> by default.
-         * suppressHydrationWarning is required because next-themes modifies
-         * the <html> class attribute server → client.
+         * Dark-only for launch: the light theme isn't designed yet, so the
+         * provider is pinned with forcedTheme="dark". This overrides any stored
+         * value or setTheme() call, so the app always renders dark regardless of
+         * the OS preference. suppressHydrationWarning is required because
+         * next-themes sets the <html> class before hydration.
          */}
         <ThemeProvider
           attribute="class"
+          forcedTheme="dark"
           defaultTheme="dark"
-          enableSystem
           disableTransitionOnChange={false}
           nonce={nonce}
         >
