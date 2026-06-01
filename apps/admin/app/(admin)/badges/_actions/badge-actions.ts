@@ -65,7 +65,10 @@ function buildCriterionData(
 
 // ── Shared schemas ─────────────────────────────────────────────────────────────
 
-export const VALID_CRITERION_TYPES = [
+// NOTE: must NOT be exported. This file has "use server", so Next.js only allows
+// async-function exports (next-flight-loader/action-validate). Exporting this
+// array throws at runtime: 'A "use server" file can only export async functions'.
+const VALID_CRITERION_TYPES = [
   "LESSON_COMPLETED",
   "PATH_COMPLETED",
   "XP_THRESHOLD",
