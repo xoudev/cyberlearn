@@ -1,6 +1,11 @@
 import path from "path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { loadRootEnv } from "../../scripts/load-root-env.mjs";
+
+// Load the monorepo-root .env files so NEXT_PUBLIC_* vars are inlined at build
+// time. `next dev` runs from this app dir and won't read the root .env itself.
+loadRootEnv(path.join(__dirname, "../../"));
 
 const nextConfig: NextConfig = {
   // Must point to the monorepo root so Next.js file tracing follows imports
