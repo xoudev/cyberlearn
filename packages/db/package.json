@@ -12,6 +12,7 @@
     "./prisma": "./src/prisma.ts"
   },
   "scripts": {
+    "postinstall": "prisma generate",
     "build": "prisma generate && tsc",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",

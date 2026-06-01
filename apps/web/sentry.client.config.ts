@@ -24,6 +24,15 @@ Sentry.init({
     }),
   ],
 
+  // Browser-extension noise (translation tools like Firefox/Chrome Translate,
+  // Grammarly, password managers) mutate the DOM, so React's commit phase throws
+  // DOMExceptions whose stack is entirely inside react-dom — not our code. Benign
+  // and unactionable. Matched on message substring.
+  ignoreErrors: [
+    "The node to be removed is not a child of this node",
+    "The node before which the new node is to be inserted is not a child of this node",
+  ],
+
   // Strip PII before every event leaves the browser
   beforeSend(event) {
     return scrubEvent(event);
