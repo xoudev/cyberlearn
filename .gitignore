@@ -9,6 +9,19 @@ dist/
 build/
 out/
 
+# packages/db is consumed as TS source via the @cyberlearn/db alias and must
+# never emit JS (tsconfig has noEmit). Guard against stale .js/.d.ts/maps next to
+# the sources re-appearing and shadowing the .ts (scoped to src/ + prisma/ so the
+# legitimate eslint.config.js at the package root is preserved).
+packages/db/src/**/*.js
+packages/db/src/**/*.d.ts
+packages/db/src/**/*.js.map
+packages/db/src/**/*.d.ts.map
+packages/db/prisma/**/*.js
+packages/db/prisma/**/*.d.ts
+packages/db/prisma/**/*.js.map
+packages/db/prisma/**/*.d.ts.map
+
 # Environment files — NEVER commit real env files
 .env
 .env.local
