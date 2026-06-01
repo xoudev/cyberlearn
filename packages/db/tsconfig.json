@@ -1,6 +1,11 @@
 {
   "extends": "@cyberlearn/config/tsconfig/library.json",
   "compilerOptions": {
+    // packages/db is consumed as TS source via the @cyberlearn/db workspace
+    // alias (transpiled by Next / Vitest). It must NEVER emit JS: stale .js/.d.ts
+    // next to the sources shadowed the .ts under Vitest. "build" runs prisma
+    // generate + a type-check only (tsc honours this noEmit).
+    "noEmit": true,
     "paths": {
       "@cyberlearn/db": ["./src/index.ts"]
     }
