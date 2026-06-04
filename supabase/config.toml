@@ -1,0 +1,64 @@
+# Supabase local stack config — used by `supabase start` in CI (job `integration`)
+# and for local development. Values here are the standard local dev defaults of
+# `supabase start`; the anon / service_role keys it mints are fixed, PUBLIC dev
+# keys — never production secrets.
+#
+# Note (Cas A): the `custom-access-token` auth hook is intentionally NOT served
+# here. The RLS/IDOR integration tests rely on auth.uid() (native GoTrue) and the
+# service_role client for setup; they never need an ADMIN `user_role` claim, so
+# the hook (and its HMAC) is irrelevant to this disposable test stack.
+
+project_id = "cyberlearn"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[edge_runtime]
+enabled = false
+
+# Analytics (Logflare + its Vector sidecar) is not needed for tests and fails to
+# boot in CI ("409 ... Vector service not configured"). Disable it.
+[analytics]
+enabled = false
