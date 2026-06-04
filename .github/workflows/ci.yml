@@ -230,7 +230,10 @@ jobs:
           version: latest
 
       - name: Start Supabase local stack
-        run: supabase start
+        # Exclude services the integration tests don't need. `vector`/`logflare`
+        # (analytics) otherwise fail in CI with "409 ... Vector service not
+        # configured"; studio/imgproxy/edge-runtime just save pull time.
+        run: supabase start -x vector,logflare,studio,imgproxy,edge-runtime
 
       - name: Export local stack env (exact names the tests read)
         run: |
