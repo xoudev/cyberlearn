@@ -191,3 +191,73 @@ jobs:
 
       - name: Verify Pyodide runtime integrity (SHA-256)
         run: bash scripts/verify-runtimes.sh
+
+  # ─── 7. Integration tests (RLS / IDOR / storage) ──────────────────────────
+  # Runs the db integration specs against a disposable Supabase local stack
+  # (`supabase start`). Uses ONLY the fixed local dev keys minted by the CLI —
+  # never production secrets. NOT (yet) a required status check: kept advisory
+  # until a stable green window + the sabotage→red proof.
+  integration:
+    name: Integration (RLS/IDOR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @cyberlearn/db db:generate
+
+      - name: Ensure psql is available
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Pinned after bring-up to the resolved working version (see PR notes).
+          version: latest
+
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Export local stack env (exact names the tests read)
+        run: |
+          supabase status -o json > /tmp/sb-status.json
+          echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(jq -r '.ANON_KEY' /tmp/sb-status.json)" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(jq -r '.SERVICE_ROLE_KEY' /tmp/sb-status.json)" >> "$GITHUB_ENV"
+          echo "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres" >> "$GITHUB_ENV"
+          echo "DIRECT_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres" >> "$GITHUB_ENV"
+
+      - name: Provision schema (Prisma migrations)
+        run: pnpm --filter @cyberlearn/db exec prisma migrate deploy
+
+      - name: Provision RLS policies + certificates bucket
+        run: |
+          DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          # post_prisma_rls.sql is a bare file (not a Prisma migration) → applied here.
+          psql "$DB" -v ON_ERROR_STOP=1 -f packages/db/prisma/migrations/post_prisma_rls.sql
+          # Private bucket (public=false), mirroring prod so storage RLS asserts the right scenario.
+          psql "$DB" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('certificates', 'certificates', false) on conflict (id) do nothing;"
+
+      - name: Seed database
+        run: pnpm --filter @cyberlearn/db db:seed
+
+      - name: Run integration tests (RLS / IDOR / storage)
+        run: pnpm --filter @cyberlearn/db test:integration
+
+      - name: Stop Supabase local stack
+        if: always()
+        run: supabase stop
