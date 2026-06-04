@@ -57,3 +57,8 @@ enable_confirmations = false
 
 [edge_runtime]
 enabled = false
+
+# Analytics (Logflare + its Vector sidecar) is not needed for tests and fails to
+# boot in CI ("409 ... Vector service not configured"). Disable it.
+[analytics]
+enabled = false
