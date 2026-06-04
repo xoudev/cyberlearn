@@ -226,14 +226,14 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          # Pinned after bring-up to the resolved working version (see PR notes).
-          version: latest
+          # Pinned: the `latest` CLI runs an "Updating vector buckets" step on
+          # `start` that 409s in CI (S3 Vectors, a 2026 feature). This stable
+          # 2025 release predates it.
+          version: 2.64.0
 
       - name: Start Supabase local stack
-        # Exclude services the integration tests don't need. `vector`/`logflare`
-        # (analytics) otherwise fail in CI with "409 ... Vector service not
-        # configured"; studio/imgproxy/edge-runtime just save pull time.
-        run: supabase start -x vector,logflare,studio,imgproxy,edge-runtime
+        # Exclude services the integration tests don't need (saves image pulls).
+        run: supabase start -x studio,imgproxy,vector,logflare
 
       - name: Export local stack env (exact names the tests read)
         run: |
