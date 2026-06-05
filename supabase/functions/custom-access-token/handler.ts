@@ -1,8 +1,9 @@
 // Request handler for the custom-access-token auth hook. Kept separate from
-// index.ts (which calls Deno.serve) so it can be unit-tested without binding a
-// port. Dependencies (env reader + role lookup) are injectable for tests.
+// index.ts (which calls Deno.serve and wires the real Supabase client) so it
+// can be unit-tested without binding a port and without importing
+// @supabase/supabase-js (whose npm:@types/node reference breaks `deno test` in
+// this monorepo). Dependencies (env reader + role lookup) are injected.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { evaluateSignature } from "./verify.ts";
 
 interface WebhookPayload {
@@ -16,24 +17,6 @@ export interface HookDeps {
   /** Returns the user's role from the DB, or null if unknown. */
   lookupRole: (userId: string) => Promise<string | null>;
 }
-
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  { auth: { persistSession: false } },
-);
-
-export const defaultDeps: HookDeps = {
-  getEnv: (key) => Deno.env.get(key),
-  lookupRole: async (userId) => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", userId)
-      .single<{ role: string }>();
-    return error || !data ? null : data.role;
-  },
-};
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -56,10 +39,7 @@ function jsonResponse(body: unknown, status = 200): Response {
  *
  * Role derivation (DB lookup on user_id) is identical in both modes.
  */
-export async function handleHookRequest(
-  req: Request,
-  deps: HookDeps = defaultDeps,
-): Promise<Response> {
+export async function handleHookRequest(req: Request, deps: HookDeps): Promise<Response> {
   let claims: Record<string, unknown> = {};
 
   try {
