@@ -65,10 +65,10 @@ export async function handleHookRequest(req: Request, deps: HookDeps): Promise<R
     }
 
     // Only enforce mode acts on a bad outcome; monitor mode falls through.
-    if (enforce) {
-      if (outcome.reason === "missing-secret")
-        return jsonResponse({ error: "hook not configured" }, 500);
-      if (!outcome.ok) return jsonResponse({ error: "invalid signature" }, 401);
+    if (enforce && !outcome.ok) {
+      return outcome.reason === "missing-secret"
+        ? jsonResponse({ error: "hook not configured" }, 500)
+        : jsonResponse({ error: "invalid signature" }, 401);
     }
 
     // ── Enrich claims with the DB-derived role (unchanged) ───────────────────
