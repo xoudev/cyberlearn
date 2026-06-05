@@ -192,7 +192,23 @@ jobs:
       - name: Verify Pyodide runtime integrity (SHA-256)
         run: bash scripts/verify-runtimes.sh
 
-  # ─── 7. Integration tests (RLS / IDOR / storage) ──────────────────────────
+  # ─── 7. Auth hook signature verification (Deno unit test) ─────────────────
+  # Synthetic proof that the custom-access-token hook authenticates GoTrue's
+  # Standard Webhooks signature: valid -> accepted, invalid/absent/expired ->
+  # rejected. Signs with the same library GoTrue uses, so "valid accepted"
+  # proves we won't reject genuine auth calls.
+  hook-verify:
+    name: Auth hook signature
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+
+      - name: Verify hook signature logic
+        run: deno test --allow-net supabase/functions/custom-access-token/verify.test.ts
+
+  # ─── 8. Integration tests (RLS / IDOR / storage) ──────────────────────────
   # Runs the db integration specs against a disposable Supabase local stack
   # (`supabase start`). Uses ONLY the fixed local dev keys minted by the CLI —
   # never production secrets. NOT (yet) a required status check: kept advisory
