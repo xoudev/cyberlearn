@@ -48,3 +48,32 @@ export function verifyHookSignature(
     throw new SignatureError(err instanceof Error ? err.message : "invalid signature");
   }
 }
+
+/**
+ * Non-throwing wrapper used by both monitor and enforce modes: returns a
+ * structured outcome instead of throwing so the caller can log it and decide
+ * whether to act on it. `detail` carries the standardwebhooks reason (invalid /
+ * missing headers / timestamp too old) for observability in monitor mode.
+ */
+export type VerifyOutcome =
+  | { ok: true }
+  | { ok: false; reason: "missing-secret" | "signature"; detail: string };
+
+export function evaluateSignature(
+  secret: string,
+  rawBody: string,
+  headers: WebhookHeaders,
+): VerifyOutcome {
+  if (!secret)
+    return { ok: false, reason: "missing-secret", detail: "CUSTOM_ACCESS_TOKEN_SECRET not set" };
+  try {
+    verifyHookSignature(secret, rawBody, headers);
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: "signature",
+      detail: err instanceof Error ? err.message : "invalid signature",
+    };
+  }
+}

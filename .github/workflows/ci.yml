@@ -205,8 +205,8 @@ jobs:
 
       - uses: denoland/setup-deno@v2
 
-      - name: Verify hook signature logic
-        run: deno test --allow-net supabase/functions/custom-access-token/verify.test.ts
+      - name: Verify hook signature logic (verify + handler, both modes)
+        run: deno test --allow-net supabase/functions/custom-access-token/
 
   # ─── 8. Integration tests (RLS / IDOR / storage) ──────────────────────────
   # Runs the db integration specs against a disposable Supabase local stack
