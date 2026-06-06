@@ -274,6 +274,20 @@ jobs:
       - name: Seed database
         run: pnpm --filter @cyberlearn/db db:seed
 
+      - name: Assert no schema/DB drift (no leftover column DEFAULTs)
+        # Proves the gen_random_uuid() drift on the challenge id columns is gone:
+        # a DB->schema diff that still needed a DROP DEFAULT would mean residual
+        # drift. Targeted on DROP DEFAULT so unrelated diffs don't fail this.
+        working-directory: packages/db
+        run: |
+          DIFF=$(pnpm exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script)
+          echo "----- migrate diff (DB -> schema) -----"
+          echo "$DIFF"
+          if echo "$DIFF" | grep -qiE 'DROP DEFAULT'; then
+            echo "::error::residual column DEFAULT drift detected"; exit 1
+          fi
+          echo "no DEFAULT drift ✅"
+
       - name: Run integration tests (RLS / IDOR / storage)
         run: pnpm --filter @cyberlearn/db test:integration
 
