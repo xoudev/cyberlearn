@@ -4,9 +4,9 @@
 //
 // Run: deno test --allow-net supabase/functions/custom-access-token/verify.test.ts
 
-import { assertThrows } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals, assertThrows } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
-import { SignatureError, verifyHookSignature } from "./verify.ts";
+import { evaluateSignature, SignatureError, verifyHookSignature } from "./verify.ts";
 
 // Bare base64 secret (what standardwebhooks/GoTrue use)...
 const SECRET_B64 = "dGVzdHNlY3JldGtleWZvcnVuaXR0ZXN0aW5nMTIzNDU2";
@@ -55,4 +55,24 @@ Deno.test("tampered body -> 401 (signature no longer matches)", () => {
     claims: { app_metadata: { user_role: "ADMIN" } },
   });
   assertThrows(() => verifyHookSignature(FULL_SECRET, tampered, h), SignatureError);
+});
+
+// ── evaluateSignature (non-throwing wrapper used by both modes) ───────────────
+
+Deno.test("evaluateSignature: valid -> { ok: true }", () => {
+  assertEquals(evaluateSignature(FULL_SECRET, BODY, sign(BODY)), { ok: true });
+});
+
+Deno.test("evaluateSignature: invalid -> reason 'signature'", () => {
+  const h = sign(BODY);
+  h.signature = "v1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  const out = evaluateSignature(FULL_SECRET, BODY, h);
+  assertEquals(out.ok, false);
+  if (!out.ok) assertEquals(out.reason, "signature");
+});
+
+Deno.test("evaluateSignature: missing secret -> reason 'missing-secret'", () => {
+  const out = evaluateSignature("", BODY, sign(BODY));
+  assertEquals(out.ok, false);
+  if (!out.ok) assertEquals(out.reason, "missing-secret");
 });
