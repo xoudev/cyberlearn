@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { requireUser } from "@cyberlearn/lib";
 import { prisma } from "@cyberlearn/db";
+import { QuizPanel } from "./_components/quiz-panel";
 
 export async function generateMetadata({
   params,
@@ -112,6 +113,14 @@ export default async function PathDetailPage({
   const doneLessons = completedLessonIds.size;
   const totalLessons = path.lessons.length;
   const pct = totalLessons > 0 ? Math.round((doneLessons / totalLessons) * 100) : 0;
+  const lessonsComplete = totalLessons > 0 && doneLessons >= totalLessons;
+
+  // Active quiz gates certificate issuance (pieces 2/4). Only its existence is
+  // needed here — questions/answers never touch this server component.
+  const activeQuiz = await prisma.quiz.findFirst({
+    where: { pathId: path.id, isActive: true },
+    select: { id: true },
+  });
 
   // Sequential unlock: lesson is unlocked if all previous are completed (or first)
   type NodeState = "completed" | "unlocked" | "locked";
@@ -1118,6 +1127,14 @@ export default async function PathDetailPage({
               </div>
             </div>
           )}
+
+          {/* Final quiz → certificate gate */}
+          <QuizPanel
+            pathId={path.id}
+            hasQuiz={activeQuiz !== null}
+            lessonsComplete={lessonsComplete}
+            pathCompleted={pathStatus === "COMPLETED"}
+          />
 
           {/* Badges teaser */}
           <div
