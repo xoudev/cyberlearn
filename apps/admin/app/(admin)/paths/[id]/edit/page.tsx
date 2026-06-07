@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
 import { EditPathClient } from "./_components/EditPathClient";
@@ -66,21 +67,35 @@ export default async function EditPathPage({
   const currentLessons = path.lessons.map((pl) => pl.lesson);
 
   return (
-    <EditPathClient
-      path={{
-        id: path.id,
-        refCode: path.refCode,
-        slug: path.slug,
-        title: path.title,
-        description: path.description,
-        category: path.category,
-        difficulty: path.difficulty,
-        estimatedHours: path.estimatedHours,
-        coverImageUrl: path.coverImageUrl ?? "",
-        status: path.status,
-      }}
-      currentLessons={currentLessons}
-      availableLessons={availableLessons}
-    />
+    <>
+      <Link
+        href={`/paths/${id}/quiz`}
+        style={{
+          display: "inline-block",
+          marginBottom: 16,
+          fontSize: 13,
+          color: "#0AFFD4",
+          textDecoration: "none",
+        }}
+      >
+        → Gérer le quiz final
+      </Link>
+      <EditPathClient
+        path={{
+          id: path.id,
+          refCode: path.refCode,
+          slug: path.slug,
+          title: path.title,
+          description: path.description,
+          category: path.category,
+          difficulty: path.difficulty,
+          estimatedHours: path.estimatedHours,
+          coverImageUrl: path.coverImageUrl ?? "",
+          status: path.status,
+        }}
+        currentLessons={currentLessons}
+        availableLessons={availableLessons}
+      />
+    </>
   );
 }
