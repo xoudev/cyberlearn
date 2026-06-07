@@ -318,3 +318,38 @@ CREATE POLICY "deletion_tokens_own" ON public.account_deletion_tokens FOR SELECT
 DROP POLICY IF EXISTS "deletion_tokens_admin_select" ON public.account_deletion_tokens;
 CREATE POLICY "deletion_tokens_admin_select" ON public.account_deletion_tokens FOR SELECT
   USING (public.current_user_role() = 'ADMIN');
+
+-- ─── QUIZ ────────────────────────────────────────────────────────────────────
+-- Quiz metadata is not sensitive: any authenticated user may read it. Writes are
+-- admin-managed server-side (service_role bypasses RLS) → no client write policy.
+
+ALTER TABLE public.quiz ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "quiz_select_authenticated" ON public.quiz;
+CREATE POLICY "quiz_select_authenticated" ON public.quiz FOR SELECT
+  USING (auth.uid() IS NOT NULL);
+
+-- ─── QUIZ_QUESTIONS ──────────────────────────────────────────────────────────
+-- SERVER-ONLY. Questions carry correctOptionId (the answer key). RLS is
+-- row-level, so the only way to hide that column from clients is to deny the
+-- whole table. No policy = full deny for anon + authenticated; the server reads
+-- them via service_role (which bypasses RLS) and strips correctOptionId before
+-- sending questions to the client.
+
+ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
+-- (intentionally no policy — RLS enabled with zero policies denies all client access)
+
+-- ─── QUIZ_ATTEMPTS ───────────────────────────────────────────────────────────
+-- Read: own attempts only. Admin: read all. Writes (score / passed) are created
+-- exclusively by the server (service_role). A client INSERT/UPDATE could forge
+-- passed = true and unlock a certificate, so no client write policy exists.
+
+ALTER TABLE public.quiz_attempts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "attempts_self_select" ON public.quiz_attempts;
+CREATE POLICY "attempts_self_select" ON public.quiz_attempts FOR SELECT
+  USING (auth.uid() = "userId");
+
+DROP POLICY IF EXISTS "attempts_admin_select" ON public.quiz_attempts;
+CREATE POLICY "attempts_admin_select" ON public.quiz_attempts FOR SELECT
+  USING (public.current_user_role() = 'ADMIN');
