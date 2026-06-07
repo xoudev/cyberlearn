@@ -106,4 +106,81 @@ export const quizRepository = {
       },
     });
   },
+
+  // ── Admin CRUD (admin-gated callers only; reads include correctOptionId) ─────
+
+  /** Full quiz for a path + active-question count (for the "not ready" warning). */
+  async findQuizByPathAdmin(pathId: string) {
+    const quiz = await prisma.quiz.findUnique({ where: { pathId } });
+    if (!quiz) return null;
+    const activeQuestionCount = await prisma.quizQuestion.count({
+      where: { quizId: quiz.id, isActive: true },
+    });
+    return { ...quiz, activeQuestionCount };
+  },
+
+  /** One quiz per path (pathId @unique) → upsert. */
+  upsertQuizByPath(input: {
+    pathId: string;
+    passThreshold: number;
+    questionsToDraw: number;
+    isActive: boolean;
+  }) {
+    return prisma.quiz.upsert({
+      where: { pathId: input.pathId },
+      create: {
+        pathId: input.pathId,
+        passThreshold: input.passThreshold,
+        questionsToDraw: input.questionsToDraw,
+        isActive: input.isActive,
+      },
+      update: {
+        passThreshold: input.passThreshold,
+        questionsToDraw: input.questionsToDraw,
+        isActive: input.isActive,
+      },
+    });
+  },
+
+  /** Admin question list — includes correctOptionId (the admin edits the key). */
+  findQuestionsAdmin(quizId: string) {
+    return prisma.quizQuestion.findMany({
+      where: { quizId },
+      orderBy: { orderIndex: "asc" },
+    });
+  },
+
+  findQuestionById(id: string) {
+    return prisma.quizQuestion.findUnique({ where: { id } });
+  },
+
+  createQuestion(input: {
+    quizId: string;
+    question: string;
+    options: Prisma.InputJsonValue;
+    correctOptionId: string;
+    explanation: string | null;
+    orderIndex: number;
+    isActive: boolean;
+  }) {
+    return prisma.quizQuestion.create({ data: input });
+  },
+
+  updateQuestion(
+    id: string,
+    data: {
+      question: string;
+      options: Prisma.InputJsonValue;
+      correctOptionId: string;
+      explanation: string | null;
+      orderIndex: number;
+      isActive: boolean;
+    },
+  ) {
+    return prisma.quizQuestion.update({ where: { id }, data });
+  },
+
+  deleteQuestion(id: string) {
+    return prisma.quizQuestion.delete({ where: { id } });
+  },
 };
