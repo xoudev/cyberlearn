@@ -30,6 +30,7 @@ describe("RLS policies (integration)", () => {
   let publishedLessonId: string;
   let draftLessonId: string;
   let createdDraftLessonId: string; // Created by test setup, cleaned up in afterAll
+  let quizId: string; // Created by test setup (with a question + a User B attempt)
 
   beforeAll(async () => {
     supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"] ?? "";
@@ -146,12 +147,53 @@ describe("RLS policies (integration)", () => {
     if (progressInsertError)
       throw new Error(`Failed to insert progress: ${progressInsertError.message}`);
 
+    // ── Quiz fixtures (created via service_role; clients must NOT write these) ──
+    const { data: anyPath } = await adminClient.from("paths").select("id").limit(1).single();
+    if (!anyPath) throw new Error("No paths — run seed first");
+
+    quizId = randomUUID();
+    const { error: quizErr } = await adminClient.from("quiz").insert({
+      id: quizId,
+      pathId: anyPath.id,
+      questionsToDraw: 5,
+      updatedAt: new Date().toISOString(),
+    });
+    if (quizErr) throw new Error(`Failed to insert quiz: ${quizErr.message}`);
+
+    const { error: qErr } = await adminClient.from("quiz_questions").insert({
+      id: randomUUID(),
+      quizId,
+      question: "RLS test question?",
+      options: [
+        { id: "a", text: "A" },
+        { id: "b", text: "B" },
+      ],
+      correctOptionId: "a", // must never be readable by clients
+      orderIndex: 0,
+    });
+    if (qErr) throw new Error(`Failed to insert quiz_question: ${qErr.message}`);
+
+    // An attempt owned by User B — User A must not be able to read it.
+    const { error: aErr2 } = await adminClient.from("quiz_attempts").insert({
+      id: randomUUID(),
+      userId: userBId,
+      quizId,
+      score: 80,
+      passed: true,
+      answers: [{ questionId: "q1", selected: "a", correct: true }],
+    });
+    if (aErr2) throw new Error(`Failed to insert quiz_attempt: ${aErr2.message}`);
+
     configured = true;
   });
 
   afterAll(async () => {
     if (!configured) return;
     await adminClient.from("user_lesson_progress").delete().in("userId", [userAId, userBId]);
+    if (quizId) {
+      // Cascades to quiz_questions + quiz_attempts.
+      await adminClient.from("quiz").delete().eq("id", quizId);
+    }
     if (createdDraftLessonId) {
       await adminClient.from("lessons").delete().eq("id", createdDraftLessonId);
     }
@@ -267,6 +309,74 @@ describe("RLS policies (integration)", () => {
         .eq("isActive", true);
       expect(error).toBeNull();
       expect(data?.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ── quiz (metadata: authenticated read OK) ──────────────────────────────────
+
+  describe("quiz", () => {
+    it("authenticated user can read quiz metadata", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA.from("quiz").select("id, pathId").eq("id", quizId);
+      expect(error).toBeNull();
+      expect(data?.length).toBe(1);
+    });
+  });
+
+  // ── quiz_questions (server-only: clients cannot read → answer key stays hidden)
+
+  describe("quiz_questions", () => {
+    it("anon cannot read quiz_questions", async () => {
+      if (!configured) return;
+      const { data, error } = await anonClient.from("quiz_questions").select("*");
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("authenticated user cannot read quiz_questions (correctOptionId stays hidden)", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA.from("quiz_questions").select("*").eq("quizId", quizId);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+  });
+
+  // ── quiz_attempts (own read only; writes are server-only) ───────────────────
+
+  describe("quiz_attempts", () => {
+    it("user B can read their own attempt", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { data, error } = await clientB
+        .from("quiz_attempts")
+        .select("id, score")
+        .eq("userId", userBId);
+      expect(error).toBeNull();
+      expect(data?.length).toBe(1);
+    });
+
+    it("user A cannot read user B's attempt", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA.from("quiz_attempts").select("*").eq("userId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("client cannot insert an attempt (forging passed=true is server-only)", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("quiz_attempts").insert({
+        id: randomUUID(),
+        userId: userAId,
+        quizId,
+        score: 100,
+        passed: true,
+        answers: [],
+      });
+      expect(error).not.toBeNull(); // RLS denies: no client INSERT policy exists
     });
   });
 });

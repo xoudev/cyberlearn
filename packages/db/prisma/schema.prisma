@@ -60,6 +60,7 @@ model User {
   challengeProgress UserChallengeProgress[]
   hintReveals       ChallengeHintReveal[]
   deletionTokens    AccountDeletionToken[]
+  quizAttempts      QuizAttempt[]
 
   @@index([username])
   @@index([role])
@@ -233,6 +234,7 @@ model Path {
   progress     UserPathProgress[]
   certificates Certificate[]
   ratings      Rating[]
+  quiz         Quiz?
 
   @@index([category, status])
   @@map("paths")
@@ -531,6 +533,8 @@ model Certificate {
   holderName    String? // Snapshot at issuance; set to "Utilisateur supprimé" on RGPD deletion
   issuedAt      DateTime  @default(now())
   expiresAt     DateTime?
+  score         Int? // Final quiz score (%) at issuance; null for legacy / path-completion-only certs
+  passThreshold Int? // Snapshot of the quiz pass threshold at issuance
   sha256Hash    String    @unique // Hash of content for tamper detection
   pdfStorageKey String // Path in Supabase Storage
   revokedAt     DateTime?
@@ -540,9 +544,67 @@ model Certificate {
   path         Path              @relation(fields: [pathId], references: [id], onDelete: Cascade)
   pathProgress UserPathProgress?
 
+  // One cert per user per path. userId is nullable, so RGPD-anonymized rows
+  // (userId = NULL) never conflict (NULLs are distinct in a Postgres unique index).
+  @@unique([userId, pathId])
   @@index([publicId])
   @@index([userId])
   @@map("certificates")
+}
+
+// ============================================================
+// QUIZZES (final path quiz → score → certificate gate)
+// ============================================================
+
+model Quiz {
+  id              String   @id @default(uuid()) @db.Uuid
+  pathId          String   @unique @db.Uuid
+  passThreshold   Int      @default(70) // Percent required to pass
+  questionsToDraw Int // Number of questions randomly drawn per attempt
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  path      Path           @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@map("quiz")
+}
+
+model QuizQuestion {
+  id              String   @id @default(uuid()) @db.Uuid
+  quizId          String   @db.Uuid
+  question        String   @db.Text
+  options         Json // Array: [{ id: "a", text: "..." }, ...] — safe to expose to client
+  correctOptionId String   @db.VarChar(10) // SERVER-ONLY — never sent to client; the whole table is RLS-denied
+  explanation     String?  @db.Text // Shown after submission
+  orderIndex      Int
+  isActive        Boolean  @default(true)
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, isActive])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  quizId      String    @db.Uuid
+  score       Int // Percent (0–100)
+  passed      Boolean
+  // User selection + correct/incorrect per question. MUST NOT include
+  // correctOptionId (reading one's own attempt would leak the answer key).
+  answers     Json
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId, quizId])
+  @@map("quiz_attempts")
 }
 
 // ============================================================
