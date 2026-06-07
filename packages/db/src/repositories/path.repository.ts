@@ -71,4 +71,17 @@ export const pathRepository = {
       },
     });
   },
+
+  /**
+   * Whether the user has completed all lessons of a path. Mirrors the existing
+   * `completedCount >= totalIds.length` gate (true also for a 0-lesson path,
+   * preserving current behaviour).
+   */
+  async areLessonsComplete(userId: string, pathId: string): Promise<boolean> {
+    const [total, completed] = await Promise.all([
+      this.findLessonIds(pathId),
+      this.countCompletedLessons(userId, pathId),
+    ]);
+    return completed >= total.length;
+  },
 };
