@@ -20,6 +20,12 @@ export type {
 } from "./repositories/leaderboard.repository.js";
 export { challengeRepository } from "./repositories/challenge.repository.js";
 export type { ChallengeWithProgress } from "./repositories/challenge.repository.js";
+export { quizRepository } from "./repositories/quiz.repository.js";
+export type {
+  QuizOption,
+  DrawableQuestion,
+  ScorableQuestion,
+} from "./repositories/quiz.repository.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
 export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
@@ -52,6 +58,9 @@ export type {
   UserChallengeProgress,
   ChallengeHint,
   ChallengeHintReveal,
+  Quiz,
+  QuizQuestion,
+  QuizAttempt,
 } from "@prisma/client";
 
 export {

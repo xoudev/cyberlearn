@@ -11,3 +11,4 @@ export * from "./gamification/badge-evaluator.js";
 export * from "./gamification/streak.js";
 export * from "./sm2.js";
 export * from "./terminal/scenarios.js";
+export * from "./quiz/quiz.js";

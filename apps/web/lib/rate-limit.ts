@@ -201,3 +201,35 @@ export async function checkAccountDeletionRequest(userId: string): Promise<RateL
   if (!limiter) return PASS_THROUGH;
   return toResult(await limiter.limit(userId));
 }
+
+/** 10 quiz starts per user per hour (anti re-roll of the question draw). */
+export async function checkQuizStart(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "quiz:start",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(10, "1 h"),
+        prefix: "rl:quiz:start",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
+/** 20 quiz submissions per user per hour (anti submit spam). */
+export async function checkQuizSubmit(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "quiz:submit",
+    (r) =>
+      new Ratelimit({
+        redis: r,
+        limiter: Ratelimit.slidingWindow(20, "1 h"),
+        prefix: "rl:quiz:submit",
+      }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
