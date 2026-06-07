@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { quizRepository } from "@cyberlearn/db";
+import { pathRepository, quizRepository } from "@cyberlearn/db";
 import {
   type AttemptResultItem,
   type QuizOption,
@@ -14,6 +14,7 @@ import {
   scoreSubmission,
   validateSubmission,
 } from "@cyberlearn/lib";
+import { issueCertificate } from "@/lib/certificates/issue";
 import { requireRequestUser } from "@/lib/auth";
 import { checkQuizStart, checkQuizSubmit } from "@/lib/rate-limit";
 
@@ -51,6 +52,13 @@ export async function startQuizAttempt(pathId: string): Promise<StartQuizResult>
 
   const quiz = await quizRepository.findActiveQuizByPathId(parsedPathId.data);
   if (!quiz) return { ok: false, error: "Aucun quiz actif pour ce parcours." };
+
+  // Upstream lock: the quiz is only reachable once all lessons are complete.
+  // Closes the "quiz before lessons" dead-end (a passing attempt would be refused
+  // at issuance, then lesson-completion would skip emission because a quiz exists).
+  if (!(await pathRepository.areLessonsComplete(user.id, parsedPathId.data))) {
+    return { ok: false, error: "Termine d'abord toutes les leçons du parcours." };
+  }
 
   const now = new Date();
   const latest = await quizRepository.findLatestAttempt(user.id, quiz.id);
@@ -146,6 +154,13 @@ export async function submitQuizAttempt(
     answers: { drawnQuestionIds: drawnIds, responses },
   });
 
-  // No certificate emission here (piece 4). Return explanations for the review UI.
+  // Gate: a passing attempt issues the certificate (with the score). issueCertificate
+  // re-checks lessons-complete + idempotence internally, so calling it on every pass
+  // is safe (no double issuance, no emission without completed lessons).
+  if (passed && quiz) {
+    await issueCertificate(user.id, quiz.pathId, { score, passThreshold: threshold });
+  }
+
+  // Return explanations for the review UI.
   return { ok: true, score, passed, results };
 }
