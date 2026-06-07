@@ -28,7 +28,10 @@ export const quizRepository = {
   },
 
   findQuizById(id: string) {
-    return prisma.quiz.findUnique({ where: { id }, select: { id: true, passThreshold: true } });
+    return prisma.quiz.findUnique({
+      where: { id },
+      select: { id: true, pathId: true, passThreshold: true },
+    });
   },
 
   countActiveQuestions(quizId: string) {

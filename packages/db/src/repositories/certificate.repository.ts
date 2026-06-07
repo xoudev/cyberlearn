@@ -6,6 +6,10 @@ export interface CreateCertificateInput {
   sha256Hash: string;
   pdfStorageKey: string;
   expiresAt?: Date;
+  /** Final quiz score (%) at issuance. Omitted for paths without a quiz (stays null). */
+  score?: number;
+  /** Snapshot of the quiz pass threshold at issuance. */
+  passThreshold?: number;
 }
 
 export const certificateRepository = {
