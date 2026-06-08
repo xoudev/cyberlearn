@@ -2,8 +2,12 @@
 // answer validation, and attempt guards. No DB, no I/O — all unit-testable.
 // The server (repositories + actions) wires these against Prisma.
 
-/** Server-side question cooldown / resume window. Promote to Quiz.cooldownMinutes later. */
-export const QUIZ_COOLDOWN_MINUTES = 30;
+/** Cooldown after a finished (submitted or expired) attempt before a new start. 48h. */
+export const QUIZ_COOLDOWN_MINUTES = 2880;
+
+/** Hard time limit for one exam attempt. The countdown + the server expiry guard
+ *  are both anchored to the attempt's startedAt with this window. */
+export const EXAM_TIME_LIMIT_MINUTES = 30;
 
 export interface QuizOption {
   id: string;
@@ -148,4 +152,22 @@ export function isInCooldown(attempt: AttemptLike, now: Date, windowMinutes: num
     attempt.submittedAt !== null &&
     now.getTime() - attempt.submittedAt.getTime() < windowMinutes * 60_000
   );
+}
+
+/**
+ * An un-submitted attempt whose time limit has elapsed. The server treats it as
+ * a failed attempt (not resumable, late submit rejected) so closing the tab
+ * cannot dodge the timer.
+ */
+export function isExpired(attempt: AttemptLike, now: Date, limitMinutes: number): boolean {
+  return (
+    attempt.submittedAt === null &&
+    now.getTime() - attempt.startedAt.getTime() > limitMinutes * 60_000
+  );
+}
+
+/** Whole seconds left on an attempt's countdown (0 once the limit is reached). */
+export function remainingSeconds(startedAt: Date, now: Date, limitMinutes: number): number {
+  const elapsedMs = now.getTime() - startedAt.getTime();
+  return Math.max(0, Math.ceil((limitMinutes * 60_000 - elapsedMs) / 1000));
 }
