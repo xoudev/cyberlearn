@@ -1130,7 +1130,7 @@ export default async function PathDetailPage({
 
           {/* Final quiz → certificate gate */}
           <QuizPanel
-            pathId={path.id}
+            pathSlug={path.slug}
             hasQuiz={activeQuiz !== null}
             lessonsComplete={lessonsComplete}
             pathCompleted={pathStatus === "COMPLETED"}

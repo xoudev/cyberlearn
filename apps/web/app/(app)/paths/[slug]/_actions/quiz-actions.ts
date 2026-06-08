@@ -5,9 +5,11 @@ import { pathRepository, quizRepository } from "@cyberlearn/db";
 import {
   type AttemptResultItem,
   type QuizOption,
+  EXAM_TIME_LIMIT_MINUTES,
   QUIZ_COOLDOWN_MINUTES,
   checkCanSubmit,
   drawQuestions,
+  isExpired,
   isInCooldown,
   isPassed,
   isResumable,
@@ -63,8 +65,23 @@ export async function startQuizAttempt(pathId: string): Promise<StartQuizResult>
   const now = new Date();
   const latest = await quizRepository.findLatestAttempt(user.id, quiz.id);
 
-  // Resume: a recent un-submitted attempt — a refresh must not burn a try.
-  if (latest && isResumable(latest, now, QUIZ_COOLDOWN_MINUTES)) {
+  // Time-limit guard (resume side): an in-progress attempt whose timer expired
+  // while the learner was away is finalized as failed — closing the tab cannot
+  // dodge the chrono. The cooldown then applies.
+  if (latest && isExpired(latest, now, EXAM_TIME_LIMIT_MINUTES)) {
+    await quizRepository.updateAttemptResult(latest.id, {
+      score: 0,
+      passed: false,
+      answers: { drawnQuestionIds: readDrawnIds(latest.answers), expired: true },
+    });
+    return {
+      ok: false,
+      error: "Temps écoulé sur ta tentative. Réessaie après le délai d'attente.",
+    };
+  }
+
+  // Resume: an in-progress attempt still within its time limit (refresh must not burn a try).
+  if (latest && isResumable(latest, now, EXAM_TIME_LIMIT_MINUTES)) {
     const ids = readDrawnIds(latest.answers);
     const pool = await quizRepository.findActiveQuestionsForDraw(quiz.id);
     const byId = new Map(pool.map((q) => [q.id, q]));
@@ -74,9 +91,9 @@ export async function startQuizAttempt(pathId: string): Promise<StartQuizResult>
     return { ok: true, attemptId: latest.id, questions };
   }
 
-  // Cooldown: a recently submitted attempt blocks a new start.
+  // Cooldown: a finished (submitted or expired) attempt blocks a new start (48h).
   if (latest && isInCooldown(latest, now, QUIZ_COOLDOWN_MINUTES)) {
-    return { ok: false, error: "Tu pourras retenter ce quiz dans quelques minutes." };
+    return { ok: false, error: "Examen déjà passé récemment. Réessaie après le délai d'attente." };
   }
 
   // Fresh draw. Never serve fewer than questionsToDraw (would distort the denominator).
@@ -123,6 +140,19 @@ export async function submitQuizAttempt(
       ok: false,
       error: guard.reason === "not-owner" ? "Accès refusé." : "Tentative déjà soumise.",
     };
+  }
+
+  // Time-limit guard (submit side): a submission past the limit (+ 60s network
+  // grace) fails the attempt regardless of answers. The on-time auto-submit at 0
+  // lands within the grace and is scored normally.
+  const elapsedSeconds = (Date.now() - attempt.startedAt.getTime()) / 1000;
+  if (elapsedSeconds > EXAM_TIME_LIMIT_MINUTES * 60 + 60) {
+    await quizRepository.updateAttemptResult(attempt.id, {
+      score: 0,
+      passed: false,
+      answers: { drawnQuestionIds: readDrawnIds(attempt.answers), expired: true },
+    });
+    return { ok: true, score: 0, passed: false, results: [] };
   }
 
   const drawnIds = readDrawnIds(attempt.answers);
