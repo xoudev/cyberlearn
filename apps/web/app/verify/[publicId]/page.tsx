@@ -144,6 +144,11 @@ export default async function CertVerifyPage({
     .trim()
     .slice(0, 79);
   const certCode = `CYL-${String(cert.issuedAt.getFullYear())}-${String(cert.issuedAt.getMonth() + 1).padStart(2, "0")}-${cert.id.slice(0, 4).toUpperCase()}`;
+  // Canonical issuer host — same source as the verify URL (no hardcoded .app).
+  const issuerHost = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(
+    /^https?:\/\//,
+    "",
+  );
 
   return (
     <div
@@ -844,7 +849,7 @@ export default async function CertVerifyPage({
         >
           {[
             { lbl: "Plateforme", val: "Cyber Learn" },
-            { lbl: "Émetteur", val: "cyberlearn.app" },
+            { lbl: "Émetteur", val: issuerHost },
             { lbl: "Algorithme", val: "SHA-256" },
             {
               lbl: "Expiration",

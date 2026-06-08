@@ -1552,6 +1552,39 @@
 }
 
 /* ==========================================================================
+   QUESTION — fixed full-viewport takeover
+   The exam (taking phase) fills the viewport: the topbar (chrono) and the
+   bottom nav are pinned, and only the question area scrolls if a question is
+   unusually tall — so everything stays visible without scrolling the page.
+   ========================================================================== */
+.exam-root--fixed {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.exam-root--fixed .q-app {
+  height: 100%;
+  min-height: 0;
+}
+.exam-root--fixed .q-topbar,
+.exam-root--fixed .q-nav {
+  position: static;
+  flex-shrink: 0;
+}
+.exam-root--fixed .q-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.exam-root--fixed .q-stage {
+  padding: 22px 0;
+}
+
+/* ==========================================================================
    RESPONSIVE
    ========================================================================== */
 @media (max-width: 900px) {
