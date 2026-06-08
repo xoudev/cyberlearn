@@ -45,6 +45,7 @@ const DIFF_META: Record<string, { label: string; level: 1 | 2 | 3; color: string
   BEGINNER: { label: "Débutant", level: 1, color: "#0AFFD4" },
   INTERMEDIATE: { label: "Intermédiaire", level: 2, color: "#6E8BFF" },
   ADVANCED: { label: "Avancé", level: 3, color: "#FF4757" },
+  EXPERT: { label: "Expert", level: 3, color: "#FFB020" },
 };
 
 const CATEGORY_DEFAULT = { label: "?", color: "#B8B5D1", kind: "cyber" as const };

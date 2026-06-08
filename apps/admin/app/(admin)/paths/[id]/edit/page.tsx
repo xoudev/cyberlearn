@@ -71,14 +71,24 @@ export default async function EditPathPage({
       <Link
         href={`/paths/${id}/quiz`}
         style={{
-          display: "inline-block",
-          marginBottom: 16,
-          fontSize: 13,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 20,
+          padding: "9px 16px",
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
           color: "#0AFFD4",
+          background: "rgba(10,255,212,0.06)",
+          border: "1px solid rgba(10,255,212,0.35)",
+          borderRadius: 0,
           textDecoration: "none",
         }}
       >
-        → Gérer le quiz final
+        Gérer le quiz final →
       </Link>
       <EditPathClient
         path={{
