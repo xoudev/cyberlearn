@@ -1,5 +1,6 @@
 import React from "react";
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { LOGO_DATA_URL } from "./logo-data";
 
 /**
  * Certificate PDF — reproduces the docs/design/paths/certificate.css visual
@@ -59,6 +60,8 @@ const styles = StyleSheet.create({
 
   // header
   head: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  brandRow: { flexDirection: "row", alignItems: "center" },
+  brandLogo: { width: 30, height: 30, objectFit: "contain", marginRight: 11 },
   brandName: { fontSize: 16, fontFamily: "Helvetica-Bold", letterSpacing: -0.2, color: INK },
   brandTag: {
     fontSize: 8,
@@ -148,6 +151,8 @@ const styles = StyleSheet.create({
   signRole: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: INK_MUTED },
   signRoleB: { color: INK2, fontFamily: "Helvetica-Bold" },
 
+  emblem: { alignItems: "center", justifyContent: "flex-end" },
+  emblemLogo: { width: 54, height: 54, objectFit: "contain" },
   qrBlock: { alignItems: "center" },
   qr: {
     width: 76,
@@ -225,11 +230,14 @@ export function CertificateDocument({
         <View style={styles.inner}>
           {/* header */}
           <View style={styles.head}>
-            <View>
-              <Text style={styles.brandName}>
-                cyber<Text style={{ color: TURQ }}>learn</Text>
-              </Text>
-              <Text style={styles.brandTag}>Certificat de complétion</Text>
+            <View style={styles.brandRow}>
+              <Image src={LOGO_DATA_URL} style={styles.brandLogo} />
+              <View>
+                <Text style={styles.brandName}>
+                  cyber<Text style={{ color: TURQ }}>learn</Text>
+                </Text>
+                <Text style={styles.brandTag}>Certificat de complétion</Text>
+              </View>
             </View>
             <View style={styles.idBox}>
               <Text style={styles.idLbl}>Certificat N°</Text>
@@ -281,8 +289,12 @@ export function CertificateDocument({
               <Text style={styles.signMark}>Cyber Learn</Text>
               <View style={styles.signRule} />
               <Text style={styles.signRole}>
-                Délivré par <Text style={styles.signRoleB}>cyberlearn.app</Text>
+                Délivré par <Text style={styles.signRoleB}>{verifyHost}</Text>
               </Text>
+            </View>
+
+            <View style={styles.emblem}>
+              <Image src={LOGO_DATA_URL} style={styles.emblemLogo} />
             </View>
 
             <View style={styles.qrBlock}>

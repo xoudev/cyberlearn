@@ -694,6 +694,61 @@ export function NewPathClient({
           </div>
         </div>
 
+        {/* Quiz management needs a pathId → only available after the first save. */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 14,
+            marginBottom: 28,
+            padding: "12px 16px",
+            background: "rgba(10,8,38,0.5)",
+            border: "1px solid #1F1B47",
+            borderLeft: "3px solid #2A2560",
+          }}
+        >
+          <span
+            aria-disabled="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "9px 16px",
+              fontFamily: MONO,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "#44406B",
+              background: "transparent",
+              border: "1px solid #1F1B47",
+              cursor: "not-allowed",
+            }}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3.5" y="7" width="9" height="6.5" rx="1" />
+              <path d="M5.2 7 V5 C5.2 3.4 6.4 2.2 8 2.2 C9.6 2.2 10.8 3.4 10.8 5 V7" />
+            </svg>
+            Gérer le quiz final
+          </span>
+          <span
+            style={{ fontFamily: MONO, fontSize: 11, color: "#6B6890", letterSpacing: "0.02em" }}
+          >
+            {"Enregistre le parcours d'abord pour gérer le quiz final."}
+          </span>
+        </div>
+
         {state.error && (
           <div
             style={{

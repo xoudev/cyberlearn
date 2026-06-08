@@ -667,7 +667,7 @@ function TakingScreen(props: {
   const pct = questionCount > 0 ? ((index + 1) / questionCount) * 100 : 0;
 
   return (
-    <div className="exam-root">
+    <div className="exam-root exam-root--fixed">
       <div className="exam-bg" aria-hidden="true">
         <div className="exam-bg__glow1" />
         <div className="exam-bg__grid" />
