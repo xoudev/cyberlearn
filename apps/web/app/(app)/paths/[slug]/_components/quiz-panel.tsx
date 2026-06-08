@@ -1,9 +1,10 @@
 import Link from "next/link";
 import React from "react";
+import { ClaimCertificatePanel } from "./claim-certificate";
 
 interface QuizPanelProps {
   pathSlug: string;
-  /** An active quiz exists for this path. When false, the panel renders nothing. */
+  /** An active quiz exists for this path. */
   hasQuiz: boolean;
   /** All lessons of the path are complete (server-derived). */
   lessonsComplete: boolean;
@@ -44,7 +45,16 @@ export function QuizPanel({
   lessonsComplete,
   pathCompleted,
 }: QuizPanelProps): React.JSX.Element | null {
-  if (!hasQuiz) return null;
+  // No active quiz: the path completes via lessons. Once they're all done (and the
+  // path isn't already completed), let the learner claim the certificate so a
+  // 100%-complete, quiz-less path is never a dead-end. (Completed paths show the
+  // certificate card elsewhere.)
+  if (!hasQuiz) {
+    if (!pathCompleted && lessonsComplete) {
+      return <ClaimCertificatePanel pathSlug={pathSlug} />;
+    }
+    return null;
+  }
 
   if (pathCompleted) {
     return (
