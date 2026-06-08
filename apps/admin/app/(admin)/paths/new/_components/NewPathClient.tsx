@@ -24,6 +24,52 @@ const TURQ = "#0AFFD4";
 const MONO = "var(--font-mono)";
 const BODY_F = "var(--font-sans)";
 
+// Canonical public host (same source as the verify link / cert) — no hardcoded .app.
+const SITE_HOST = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(
+  /^https?:\/\//,
+  "",
+);
+
+const ACCENT_MAP: Record<string, string> = {
+  à: "a",
+  â: "a",
+  ä: "a",
+  á: "a",
+  ã: "a",
+  é: "e",
+  è: "e",
+  ê: "e",
+  ë: "e",
+  î: "i",
+  ï: "i",
+  í: "i",
+  ì: "i",
+  ô: "o",
+  ö: "o",
+  ó: "o",
+  ò: "o",
+  õ: "o",
+  ù: "u",
+  û: "u",
+  ü: "u",
+  ú: "u",
+  ç: "c",
+  ñ: "n",
+  ý: "y",
+  ÿ: "y",
+};
+
+/** Slugify a title into a URL slug matching the server rule /^[a-z0-9-]+$/. */
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .split("")
+    .map((c) => ACCENT_MAP[c] ?? c)
+    .join("")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 const BASE_INPUT: React.CSSProperties = {
   width: "100%",
   background: "#0A0826",
@@ -524,11 +570,20 @@ const initialState: CreatePathState = {};
 
 export function NewPathClient({
   availableLessons,
-}: { availableLessons: AvailableLesson[] }): React.JSX.Element {
+  nextRefCode,
+}: {
+  availableLessons: AvailableLesson[];
+  nextRefCode: string;
+}): React.JSX.Element {
   const [state, action, isPending] = useActionState(createPathAction, initialState);
   const [lessons, setLessons] = useState<AvailableLesson[]>([]);
   const [dragState, setDragState] = useState<DragState>({ dragId: null, overId: null });
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Smart defaults: refCode pre-filled with the next sequence, slug derived from
+  // the title until the admin edits it manually.
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
 
   const onDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.effectAllowed = "move";
@@ -780,6 +835,7 @@ export function NewPathClient({
                 name="refCode"
                 type="text"
                 required
+                defaultValue={nextRefCode}
                 placeholder="CL-PATH-001-V01"
                 className="le-input"
                 style={BASE_INPUT}
@@ -826,13 +882,19 @@ export function NewPathClient({
                   name="slug"
                   type="text"
                   required
+                  value={slug}
+                  onChange={(e) => {
+                    // Lenient while typing manually: keep dashes, just drop invalid chars.
+                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"));
+                    setSlugTouched(true);
+                  }}
                   placeholder="nom-du-parcours"
                   className="le-input"
                   style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
                 />
               </div>
               <Help>
-                cyberlearn.app/parcours/<b style={{ color: TURQ }}>votre-slug</b>
+                {SITE_HOST}/parcours/<b style={{ color: TURQ }}>{slug || "votre-slug"}</b>
               </Help>
               <FieldErr msg={state.fieldErrors?.slug} />
             </div>
@@ -848,6 +910,12 @@ export function NewPathClient({
               type="text"
               required
               maxLength={200}
+              value={title}
+              onChange={(e) => {
+                const v = e.target.value;
+                setTitle(v);
+                if (!slugTouched) setSlug(slugify(v));
+              }}
               placeholder="Titre du parcours"
               className="le-input"
               style={{ ...BASE_INPUT, fontSize: 15, padding: "14px 16px" }}
