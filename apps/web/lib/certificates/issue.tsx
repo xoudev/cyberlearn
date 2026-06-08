@@ -33,8 +33,14 @@ async function generateCertificatePdf(
   opts: IssueOptions,
 ): Promise<string | null> {
   const [user, path] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } }),
-    prisma.path.findUnique({ where: { id: pathId }, select: { title: true } }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true, username: true },
+    }),
+    prisma.path.findUnique({
+      where: { id: pathId },
+      select: { title: true, _count: { select: { lessons: true } } },
+    }),
   ]);
   if (!user || !path) return null;
 
@@ -55,10 +61,12 @@ async function generateCertificatePdf(
   const pdfBuffer = await renderToBuffer(
     <CertificateDocument
       displayName={user.displayName}
+      username={user.username}
       pathTitle={path.title}
       issuedAt={issuedAt}
       publicId={certRecord.publicId}
-      sha256Hash=""
+      score={opts.score ?? null}
+      lessonCount={path._count.lessons}
       qrCodeDataUrl={qrCodeDataUrl}
       appUrl={APP_URL}
     />,
