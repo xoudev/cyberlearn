@@ -53,8 +53,8 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 22,
     paddingHorizontal: 52,
-    paddingTop: 34,
-    paddingBottom: 26,
+    paddingTop: 20,
+    paddingBottom: 18,
     flexDirection: "column",
   },
 
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
 
   // body (centered)
   body: { flex: 1, alignItems: "center", justifyContent: "center" },
-  eyebrowRow: { flexDirection: "row", alignItems: "center", marginBottom: 22 },
+  eyebrowRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   eyebrowRule: { width: 30, height: 1.5, backgroundColor: TURQ },
   eyebrowText: {
     fontSize: 10,
@@ -94,22 +94,22 @@ const styles = StyleSheet.create({
   },
   attest: { fontSize: 12, color: INK2 },
   name: {
-    fontSize: 46,
+    fontSize: 36,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: -1.2,
+    letterSpacing: -1,
     color: INK,
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 2,
   },
-  handle: { fontSize: 11, letterSpacing: 0.8, color: TURQ, marginBottom: 22 },
-  forLabel: { fontSize: 12, color: INK2, marginBottom: 8 },
+  handle: { fontSize: 11, letterSpacing: 0.8, color: TURQ, marginBottom: 10 },
+  forLabel: { fontSize: 12, color: INK2, marginBottom: 5 },
   pathTitle: {
-    fontSize: 27,
+    fontSize: 22,
     fontFamily: "Helvetica-Bold",
     letterSpacing: -0.5,
     color: BLUE_LT,
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 14,
   },
 
   // meta row
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     borderBottomColor: LINE,
   },
   metaCell: {
-    paddingVertical: 11,
+    paddingVertical: 9,
     paddingHorizontal: 26,
     borderRightWidth: 1,
     borderRightColor: LINE,
@@ -138,25 +138,26 @@ const styles = StyleSheet.create({
   metaVal: { fontSize: 17, fontFamily: "Helvetica-Bold", letterSpacing: -0.2, color: INK },
   metaValSm: { fontSize: 10, color: INK_MUTED, fontFamily: "Helvetica" },
 
-  // footer
+  // footer — three equal columns so the emblem is centered on the page
   foot: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginTop: 26,
+    alignItems: "center",
+    marginTop: 14,
   },
-  sign: { alignItems: "center", width: 200 },
-  signMark: { fontSize: 24, fontFamily: "Helvetica-Oblique", color: INK, marginBottom: 6 },
-  signRule: { width: 160, height: 1, backgroundColor: LINE_STRONG, marginBottom: 8 },
+  footColLeft: { flex: 1, alignItems: "flex-start" },
+  footColCenter: { flex: 1, alignItems: "center" },
+  footColRight: { flex: 1, alignItems: "flex-end" },
+  sign: { alignItems: "center" },
+  signMark: { fontSize: 19, fontFamily: "Helvetica-Oblique", color: INK, marginBottom: 6 },
+  signRule: { width: 150, height: 1, backgroundColor: LINE_STRONG, marginBottom: 8 },
   signRole: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: INK_MUTED },
   signRoleB: { color: INK2, fontFamily: "Helvetica-Bold" },
 
-  emblem: { alignItems: "center", justifyContent: "flex-end" },
-  emblemLogo: { width: 54, height: 54, objectFit: "contain" },
+  emblemLogo: { width: 42, height: 42, objectFit: "contain" },
   qrBlock: { alignItems: "center" },
   qr: {
-    width: 76,
-    height: 76,
+    width: 66,
+    height: 66,
     backgroundColor: "#F4F5FA",
     borderWidth: 1,
     borderColor: LINE_STRONG,
@@ -167,13 +168,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: "uppercase",
     color: INK_MUTED,
-    marginTop: 7,
+    marginTop: 5,
   },
 
   // bottom verification strip
   strip: {
-    marginTop: 22,
-    paddingTop: 14,
+    marginTop: 10,
+    paddingTop: 9,
     borderTopWidth: 1,
     borderTopColor: LINE,
     flexDirection: "row",
@@ -227,7 +228,7 @@ export function CertificateDocument({
         <View style={styles.frameOuter} fixed />
         <View style={styles.frameInner} fixed />
 
-        <View style={styles.inner}>
+        <View style={styles.inner} wrap={false}>
           {/* header */}
           <View style={styles.head}>
             <View style={styles.brandRow}>
@@ -283,23 +284,27 @@ export function CertificateDocument({
             </View>
           </View>
 
-          {/* footer */}
+          {/* footer — signature (left) · emblem (centered) · QR (right) */}
           <View style={styles.foot}>
-            <View style={styles.sign}>
-              <Text style={styles.signMark}>Cyber Learn</Text>
-              <View style={styles.signRule} />
-              <Text style={styles.signRole}>
-                Délivré par <Text style={styles.signRoleB}>{verifyHost}</Text>
-              </Text>
+            <View style={styles.footColLeft}>
+              <View style={styles.sign}>
+                <Text style={styles.signMark}>Cyber Learn</Text>
+                <View style={styles.signRule} />
+                <Text style={styles.signRole}>
+                  Délivré par <Text style={styles.signRoleB}>{verifyHost}</Text>
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.emblem}>
+            <View style={styles.footColCenter}>
               <Image src={LOGO_DATA_URL} style={styles.emblemLogo} />
             </View>
 
-            <View style={styles.qrBlock}>
-              <Image src={qrCodeDataUrl} style={styles.qr} />
-              <Text style={styles.qrCap}>Scanner pour vérifier</Text>
+            <View style={styles.footColRight}>
+              <View style={styles.qrBlock}>
+                <Image src={qrCodeDataUrl} style={styles.qr} />
+                <Text style={styles.qrCap}>Scanner pour vérifier</Text>
+              </View>
             </View>
           </View>
 
