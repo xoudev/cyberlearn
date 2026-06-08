@@ -592,7 +592,21 @@ export default async function CertVerifyPage({
             >
               {[
                 { lbl: "Délivré le", val: issuedStr, accent: false },
-                { lbl: "Score final", val: "-", accent: true },
+                {
+                  lbl: "Score final",
+                  val:
+                    cert.score !== null ? (
+                      <>
+                        {cert.score}
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#6B6890" }}>
+                          {" / 100"}
+                        </span>
+                      </>
+                    ) : (
+                      "—"
+                    ),
+                  accent: true,
+                },
                 {
                   lbl: "Missions",
                   val: `${String(lessonCount)} / ${String(lessonCount)}`,
