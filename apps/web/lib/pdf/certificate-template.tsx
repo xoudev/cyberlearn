@@ -1,164 +1,209 @@
 import React from "react";
-import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+
+/**
+ * Certificate PDF — reproduces the docs/design/paths/certificate.css visual
+ * (landscape A4, dark on-brand theme, centered composition, double frame,
+ * brand accent ribbon, meta row, QR + verification strip) within the
+ * constraints of @react-pdf/renderer (no CSS gradients / clip-path / shadows →
+ * approximated with solid brand colors and bordered Views; built-in Helvetica
+ * to keep generation dependency-free).
+ */
+
+const INK = "#F3F2FA";
+const INK2 = "#C3C0DC";
+const INK_MUTED = "#8E8BB2";
+const PAGE = "#07052A";
+const LINE = "#2A2560";
+const LINE_STRONG = "#3C3680";
+const TURQ = "#0AFFD4";
+const BLUE_LT = "#6EA8FF";
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#030219",
+    backgroundColor: PAGE,
     fontFamily: "Helvetica",
-    padding: 0,
+    color: INK,
     position: "relative",
+    padding: 22,
   },
-  // Corner bracket accents
-  cornerTL: {
+  // brand accent ribbon along the top edge (gradient → solid turquoise)
+  topbar: { position: "absolute", top: 0, left: 0, right: 0, height: 5, backgroundColor: TURQ },
+  // double frame
+  frameOuter: {
     position: "absolute",
-    top: 28,
-    left: 28,
-    width: 20,
-    height: 20,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderTopColor: "#0AFFD4",
-    borderLeftColor: "#0AFFD4",
+    top: 22,
+    left: 22,
+    right: 22,
+    bottom: 22,
+    borderWidth: 1,
+    borderColor: LINE,
   },
-  cornerTR: {
+  frameInner: {
     position: "absolute",
-    top: 28,
-    right: 28,
-    width: 20,
-    height: 20,
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderTopColor: "#0AFFD4",
-    borderRightColor: "#0AFFD4",
+    top: 27,
+    left: 27,
+    right: 27,
+    bottom: 27,
+    borderWidth: 1,
+    borderColor: "rgba(60,54,128,0.45)",
   },
-  cornerBL: {
-    position: "absolute",
-    bottom: 28,
-    left: 28,
-    width: 20,
-    height: 20,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderBottomColor: "#0AFFD4",
-    borderLeftColor: "#0AFFD4",
+  inner: {
+    flex: 1,
+    margin: 22,
+    paddingHorizontal: 52,
+    paddingTop: 34,
+    paddingBottom: 26,
+    flexDirection: "column",
   },
-  cornerBR: {
-    position: "absolute",
-    bottom: 28,
-    right: 28,
-    width: 20,
-    height: 20,
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
-    borderBottomColor: "#0AFFD4",
-    borderRightColor: "#0AFFD4",
-  },
-  // Header bar
-  headerBar: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#1F1B47",
-    paddingHorizontal: 56,
-    paddingVertical: 22,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  brand: { color: "#0AFFD4", fontSize: 11, fontFamily: "Helvetica-Bold", letterSpacing: 2 },
-  refCode: { color: "#3F3D5C", fontSize: 9, fontFamily: "Helvetica", letterSpacing: 1 },
-  // Body
-  body: { paddingHorizontal: 56, paddingTop: 52, flex: 1 },
-  label: {
-    color: "#3F3D5C",
+
+  // header
+  head: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  brandName: { fontSize: 16, fontFamily: "Helvetica-Bold", letterSpacing: -0.2, color: INK },
+  brandTag: {
     fontSize: 8,
-    fontFamily: "Helvetica",
-    letterSpacing: 2,
+    letterSpacing: 1.4,
     textTransform: "uppercase",
-    marginBottom: 10,
+    color: INK_MUTED,
+    marginTop: 4,
   },
-  certTitle: {
-    color: "#F5F5FA",
-    fontSize: 32,
+  idBox: { alignItems: "flex-end" },
+  idLbl: { fontSize: 8, letterSpacing: 1.8, textTransform: "uppercase", color: INK_MUTED },
+  idVal: {
+    fontSize: 12,
+    letterSpacing: 0.6,
+    color: TURQ,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: -1,
-    marginBottom: 8,
+    marginTop: 5,
   },
-  recipientRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 40 },
-  recipientLabel: {
-    color: "#6B6890",
-    fontSize: 9,
-    fontFamily: "Helvetica",
-    letterSpacing: 1,
+
+  // body (centered)
+  body: { flex: 1, alignItems: "center", justifyContent: "center" },
+  eyebrowRow: { flexDirection: "row", alignItems: "center", marginBottom: 22 },
+  eyebrowRule: { width: 30, height: 1.5, backgroundColor: TURQ },
+  eyebrowText: {
+    fontSize: 10,
+    letterSpacing: 3.5,
     textTransform: "uppercase",
-  },
-  recipientName: {
-    color: "#F5F5FA",
-    fontSize: 20,
+    color: TURQ,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: -0.5,
+    marginHorizontal: 13,
   },
-  // Divider
-  divider: { height: 1, backgroundColor: "#1F1B47", marginBottom: 40 },
-  // Stats row
-  statsRow: { flexDirection: "row", gap: 48, marginBottom: 48 },
-  statItem: { flexDirection: "column" },
-  statLabel: {
-    color: "#3F3D5C",
-    fontSize: 8,
-    fontFamily: "Helvetica",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
+  attest: { fontSize: 12, color: INK2 },
+  name: {
+    fontSize: 46,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: -1.2,
+    color: INK,
+    marginTop: 10,
     marginBottom: 4,
   },
-  statValue: { color: "#F5F5FA", fontSize: 18, fontFamily: "Helvetica-Bold" },
-  // Footer
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: "#1F1B47",
-    paddingHorizontal: 56,
-    paddingVertical: 20,
+  handle: { fontSize: 11, letterSpacing: 0.8, color: TURQ, marginBottom: 22 },
+  forLabel: { fontSize: 12, color: INK2, marginBottom: 8 },
+  pathTitle: {
+    fontSize: 27,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: -0.5,
+    color: BLUE_LT,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+
+  // meta row
+  metaRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: LINE,
+    borderBottomWidth: 1,
+    borderBottomColor: LINE,
+  },
+  metaCell: {
+    paddingVertical: 11,
+    paddingHorizontal: 26,
+    borderRightWidth: 1,
+    borderRightColor: LINE,
     alignItems: "center",
   },
-  hashLabel: {
-    color: "#3F3D5C",
+  metaCellLast: { borderRightWidth: 0 },
+  metaLbl: {
     fontSize: 8,
-    fontFamily: "Helvetica",
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: INK_MUTED,
+    marginBottom: 6,
+  },
+  metaVal: { fontSize: 17, fontFamily: "Helvetica-Bold", letterSpacing: -0.2, color: INK },
+  metaValSm: { fontSize: 10, color: INK_MUTED, fontFamily: "Helvetica" },
+
+  // footer
+  foot: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: 26,
+  },
+  sign: { alignItems: "center", width: 200 },
+  signMark: { fontSize: 24, fontFamily: "Helvetica-Oblique", color: INK, marginBottom: 6 },
+  signRule: { width: 160, height: 1, backgroundColor: LINE_STRONG, marginBottom: 8 },
+  signRole: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: INK_MUTED },
+  signRoleB: { color: INK2, fontFamily: "Helvetica-Bold" },
+
+  qrBlock: { alignItems: "center" },
+  qr: {
+    width: 76,
+    height: 76,
+    backgroundColor: "#F4F5FA",
+    borderWidth: 1,
+    borderColor: LINE_STRONG,
+    padding: 4,
+  },
+  qrCap: {
+    fontSize: 7.5,
     letterSpacing: 1,
     textTransform: "uppercase",
-    marginBottom: 3,
+    color: INK_MUTED,
+    marginTop: 7,
   },
-  hashValue: { color: "#6B6890", fontSize: 8, fontFamily: "Helvetica", letterSpacing: 0.5 },
-  verifyLabel: {
-    color: "#3F3D5C",
-    fontSize: 8,
-    fontFamily: "Helvetica",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 3,
+
+  // bottom verification strip
+  strip: {
+    marginTop: 22,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: LINE,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  verifyUrl: { color: "#0AFFD4", fontSize: 8, fontFamily: "Helvetica" },
-  qrContainer: { flexDirection: "column", alignItems: "center", gap: 4 },
-  qrLabel: { color: "#3F3D5C", fontSize: 7, fontFamily: "Helvetica", letterSpacing: 1 },
-  accentLine: { width: 48, height: 2, backgroundColor: "#0AFFD4", marginBottom: 28 },
+  stripSeg: { flexDirection: "row", alignItems: "center" },
+  stripText: { fontSize: 8.5, letterSpacing: 0.4, color: INK_MUTED },
+  stripB: { color: INK2, fontFamily: "Helvetica-Bold" },
+  stripUrl: { color: TURQ },
+  stripDiv: { width: 1, height: 11, backgroundColor: LINE_STRONG, marginHorizontal: 12 },
 });
 
 export interface CertificateTemplateProps {
   displayName: string;
+  username?: string | null;
   pathTitle: string;
   issuedAt: Date;
   publicId: string;
-  sha256Hash: string;
+  /** Final exam score (%) — null for path-completion-only certs. */
+  score?: number | null;
+  /** Number of lessons (missions) in the path. */
+  lessonCount: number;
   qrCodeDataUrl: string; // data:image/png;base64,... from qrcode library
   appUrl: string;
 }
 
 export function CertificateDocument({
   displayName,
+  username,
   pathTitle,
   issuedAt,
   publicId,
-  sha256Hash,
+  score,
+  lessonCount,
   qrCodeDataUrl,
   appUrl,
 }: CertificateTemplateProps): React.ReactElement {
@@ -167,71 +212,101 @@ export function CertificateDocument({
     month: "long",
     day: "numeric",
   });
-  const verifyUrl = `${appUrl}/verify/${publicId}`;
-  const hashShort = `${sha256Hash.slice(0, 16)}…${sha256Hash.slice(-8)}`;
+  const verifyHost = appUrl.replace(/^https?:\/\//, "");
+  const certCode = `CL-${String(issuedAt.getFullYear())}-${publicId.slice(0, 6).toUpperCase()}`;
 
   return (
     <Document title={`Certificat · ${pathTitle}`} author="CyberLearn" subject={pathTitle}>
       <Page size="A4" orientation="landscape" style={styles.page}>
-        {/* Corner brackets */}
-        <View style={styles.cornerTL} />
-        <View style={styles.cornerTR} />
-        <View style={styles.cornerBL} />
-        <View style={styles.cornerBR} />
+        <View style={styles.topbar} fixed />
+        <View style={styles.frameOuter} fixed />
+        <View style={styles.frameInner} fixed />
 
-        {/* Header */}
-        <View style={styles.headerBar}>
-          <Text style={styles.brand}>CYBERLEARN</Text>
-          <Text style={styles.refCode}>CERT · {publicId.slice(0, 8).toUpperCase()}</Text>
-        </View>
-
-        {/* Body */}
-        <View style={styles.body}>
-          <Text style={styles.label}>{"// certificat d'achèvement"}</Text>
-          <Text style={styles.certTitle}>{pathTitle}</Text>
-          <View style={styles.accentLine} />
-
-          <Text style={styles.recipientLabel}>Décerné à</Text>
-          <Text style={styles.recipientName}>{displayName}</Text>
-
-          <View style={styles.divider} />
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Date d&apos;émission</Text>
-              <Text style={styles.statValue}>{dateStr}</Text>
+        <View style={styles.inner}>
+          {/* header */}
+          <View style={styles.head}>
+            <View>
+              <Text style={styles.brandName}>
+                cyber<Text style={{ color: TURQ }}>learn</Text>
+              </Text>
+              <Text style={styles.brandTag}>Certificat de complétion</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Statut</Text>
-              <Text style={{ ...styles.statValue, color: "#0AFFD4" }}>Validé</Text>
+            <View style={styles.idBox}>
+              <Text style={styles.idLbl}>Certificat N°</Text>
+              <Text style={styles.idVal}>{certCode}</Text>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Vérification</Text>
-              <Text
-                style={{
-                  ...styles.statValue,
-                  fontSize: 13,
-                  color: "#B8B5D1",
-                  fontFamily: "Helvetica",
-                }}
-              >
-                SHA-256 · Publique
+          </View>
+
+          {/* body */}
+          <View style={styles.body}>
+            <View style={styles.eyebrowRow}>
+              <View style={styles.eyebrowRule} />
+              <Text style={styles.eyebrowText}>Certificat</Text>
+              <View style={styles.eyebrowRule} />
+            </View>
+
+            <Text style={styles.attest}>Ce certificat atteste que</Text>
+            <Text style={styles.name}>{displayName}</Text>
+            {username != null && username !== "" && <Text style={styles.handle}>@{username}</Text>}
+
+            <Text style={styles.forLabel}>Pour avoir complété le parcours</Text>
+            <Text style={styles.pathTitle}>{pathTitle}</Text>
+
+            {/* meta row */}
+            <View style={styles.metaRow}>
+              <View style={styles.metaCell}>
+                <Text style={styles.metaLbl}>Délivré le</Text>
+                <Text style={styles.metaVal}>{dateStr}</Text>
+              </View>
+              <View style={styles.metaCell}>
+                <Text style={styles.metaLbl}>Score final</Text>
+                <Text style={{ ...styles.metaVal, color: BLUE_LT }}>
+                  {score ?? "—"}
+                  {score != null && <Text style={styles.metaValSm}> / 100</Text>}
+                </Text>
+              </View>
+              <View style={{ ...styles.metaCell, ...styles.metaCellLast }}>
+                <Text style={styles.metaLbl}>Missions</Text>
+                <Text style={styles.metaVal}>
+                  {lessonCount}
+                  <Text style={styles.metaValSm}> / {lessonCount}</Text>
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* footer */}
+          <View style={styles.foot}>
+            <View style={styles.sign}>
+              <Text style={styles.signMark}>Cyber Learn</Text>
+              <View style={styles.signRule} />
+              <Text style={styles.signRole}>
+                Délivré par <Text style={styles.signRoleB}>cyberlearn.app</Text>
               </Text>
             </View>
-          </View>
-        </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View>
-            <Text style={styles.hashLabel}>Empreinte SHA-256</Text>
-            <Text style={styles.hashValue}>{hashShort}</Text>
-            <Text style={[styles.verifyLabel, { marginTop: 10 }]}>Vérifier en ligne</Text>
-            <Text style={styles.verifyUrl}>{verifyUrl}</Text>
+            <View style={styles.qrBlock}>
+              <Image src={qrCodeDataUrl} style={styles.qr} />
+              <Text style={styles.qrCap}>Scanner pour vérifier</Text>
+            </View>
           </View>
-          <View style={styles.qrContainer}>
-            <Image src={qrCodeDataUrl} style={{ width: 80, height: 80 }} />
-            <Text style={styles.qrLabel}>SCANNER</Text>
+
+          {/* verification strip */}
+          <View style={styles.strip}>
+            <View style={styles.stripSeg}>
+              <Text style={styles.stripText}>
+                <Text style={styles.stripB}>Authentique</Text> · Signature SHA-256
+              </Text>
+            </View>
+            <View style={styles.stripDiv} />
+            <View style={styles.stripSeg}>
+              <Text style={styles.stripText}>
+                Vérifier :{" "}
+                <Text style={styles.stripUrl}>
+                  {verifyHost}/verify/{publicId.slice(0, 8)}
+                </Text>
+              </Text>
+            </View>
           </View>
         </View>
       </Page>
