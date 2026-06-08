@@ -1,6 +1,5 @@
 import React from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
 import { EditPathClient } from "./_components/EditPathClient";
@@ -67,45 +66,21 @@ export default async function EditPathPage({
   const currentLessons = path.lessons.map((pl) => pl.lesson);
 
   return (
-    <>
-      <Link
-        href={`/paths/${id}/quiz`}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 20,
-          padding: "9px 16px",
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "#0AFFD4",
-          background: "rgba(10,255,212,0.06)",
-          border: "1px solid rgba(10,255,212,0.35)",
-          borderRadius: 0,
-          textDecoration: "none",
-        }}
-      >
-        Gérer le quiz final →
-      </Link>
-      <EditPathClient
-        path={{
-          id: path.id,
-          refCode: path.refCode,
-          slug: path.slug,
-          title: path.title,
-          description: path.description,
-          category: path.category,
-          difficulty: path.difficulty,
-          estimatedHours: path.estimatedHours,
-          coverImageUrl: path.coverImageUrl ?? "",
-          status: path.status,
-        }}
-        currentLessons={currentLessons}
-        availableLessons={availableLessons}
-      />
-    </>
+    <EditPathClient
+      path={{
+        id: path.id,
+        refCode: path.refCode,
+        slug: path.slug,
+        title: path.title,
+        description: path.description,
+        category: path.category,
+        difficulty: path.difficulty,
+        estimatedHours: path.estimatedHours,
+        coverImageUrl: path.coverImageUrl ?? "",
+        status: path.status,
+      }}
+      currentLessons={currentLessons}
+      availableLessons={availableLessons}
+    />
   );
 }
