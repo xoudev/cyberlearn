@@ -994,7 +994,7 @@ article.lesson-content blockquote p code {
    padding), so every page uses the available desktop width consistently. A
    gutter is kept on mobile/tablet so content never touches the screen edges. */
 .page-container {
-  max-width: 1340px;
+  max-width: 1760px;
   /* width:100% is REQUIRED: .page-container is a direct flex child of the app
      shell <main> (display:flex; flex-direction:column). On a flex item, auto
      horizontal margins (margin: 0 auto) suppress align-items:stretch, so without
@@ -1909,9 +1909,9 @@ article.lesson-content blockquote p code {
 
 /* Page container */
 .chx {
-  /* Mirror the shared .page-container standard (1340 full-bleed on desktop,
+  /* Mirror the shared .page-container standard (1760 full-bleed on desktop,
      gutters on tablet/mobile) so the challenges pages match every other page. */
-  max-width: 1340px;
+  max-width: 1760px;
   width: 100%;
   margin: 0 auto;
   padding: 24px 16px 80px;
