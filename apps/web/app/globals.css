@@ -995,6 +995,13 @@ article.lesson-content blockquote p code {
    gutter is kept on mobile/tablet so content never touches the screen edges. */
 .page-container {
   max-width: 1340px;
+  /* width:100% is REQUIRED: .page-container is a direct flex child of the app
+     shell <main> (display:flex; flex-direction:column). On a flex item, auto
+     horizontal margins (margin: 0 auto) suppress align-items:stretch, so without
+     an explicit width the item shrinks to its content (narrow-content pages like
+     the dashboard/revisions collapse). width:100% gives it a definite size that
+     fills the column up to max-width, then the auto margins re-center it. */
+  width: 100%;
   margin: 0 auto;
   padding: 24px 16px 80px;
   position: relative;
@@ -1902,14 +1909,22 @@ article.lesson-content blockquote p code {
 
 /* Page container */
 .chx {
-  max-width: 1320px;
+  /* Mirror the shared .page-container standard (1340 full-bleed on desktop,
+     gutters on tablet/mobile) so the challenges pages match every other page. */
+  max-width: 1340px;
+  width: 100%;
   margin: 0 auto;
-  padding: 40px 56px 120px;
+  padding: 24px 16px 80px;
   position: relative;
 }
-@media (max-width: 767px) {
+@media (min-width: 768px) {
   .chx {
-    padding: 24px 16px 80px;
+    padding: 32px 24px 100px;
+  }
+}
+@media (min-width: 1280px) {
+  .chx {
+    padding: 40px 0 120px;
   }
 }
 

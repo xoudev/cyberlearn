@@ -16,7 +16,6 @@ const RESPONSIVE_CSS = `
   .settings-shell__grid { grid-template-columns: 1fr !important; gap: 24px !important; }
   .settings-shell__nav { position: static !important; }
 }
-@media (max-width: 760px) { .settings-shell { padding: 28px 20px 100px !important; } }
 @media (max-width: 720px) { .settings-shell__head { grid-template-columns: 1fr !important; gap: 16px !important; } }
 @media (max-width: 600px) { .settings-profile__row { grid-template-columns: 1fr !important; } }
 @media (max-width: 680px) { .settings-visibility { grid-template-columns: 1fr !important; } }
@@ -35,10 +34,7 @@ export default async function SettingsLayout({
   const username = dbUser?.username ?? "agent";
 
   return (
-    <div
-      className="settings-shell"
-      style={{ maxWidth: 1240, margin: "0 auto", padding: "40px 56px 140px", width: "100%" }}
-    >
+    <div className="page-container settings-shell">
       <style>{RESPONSIVE_CSS}</style>
 
       {/* Breadcrumb */}

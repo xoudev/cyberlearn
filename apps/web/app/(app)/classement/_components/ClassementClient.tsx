@@ -784,14 +784,7 @@ export function ClassementClient({ entries, userRank, currentEntry }: Props): Re
         .cl-row:not(.cl-row-head):hover{background:rgba(10,255,212,0.03)!important}
       `}</style>
 
-      <div
-        style={{
-          maxWidth: 1320,
-          margin: "0 auto",
-          padding: "40px 56px 120px",
-          position: "relative",
-        }}
-      >
+      <div className="page-container">
         {/* Breadcrumb */}
         <div
           style={{

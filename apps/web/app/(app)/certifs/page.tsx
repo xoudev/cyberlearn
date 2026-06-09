@@ -43,7 +43,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
   const revokedCerts = certs.filter((c) => c.revokedAt);
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 56px 120px" }}>
+    <div className="page-container">
       {/* Header */}
       <div style={{ marginBottom: 36 }}>
         <div
