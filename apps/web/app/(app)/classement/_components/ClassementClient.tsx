@@ -847,17 +847,27 @@ export function ClassementClient({ entries, userRank, currentEntry }: Props): Re
             </span>
             <h1
               style={{
-                ...MONO,
-                fontWeight: 600,
-                fontSize: "clamp(36px, 5vw, 64px)",
-                lineHeight: 0.95,
-                letterSpacing: "-0.02em",
+                ...DISPLAY,
+                fontWeight: 800,
+                fontSize: "clamp(40px, 5.5vw, 72px)",
+                lineHeight: 1,
+                letterSpacing: "-0.035em",
                 color: "#F5F5FA",
                 margin: 0,
               }}
             >
-              <span style={{ color: "#0AFFD4", fontWeight: 500, marginRight: 14 }}>&gt;</span>
-              CLASSEMENT GLOBAL
+              <em
+                style={{
+                  fontStyle: "normal",
+                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                Classement
+              </em>{" "}
+              global.
             </h1>
           </div>
 
