@@ -15,7 +15,18 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       where: { status: "PUBLISHED" },
       include: {
         lessons: {
-          include: { lesson: { select: { xpReward: true } } },
+          orderBy: { position: "asc" },
+          include: {
+            lesson: {
+              select: {
+                id: true,
+                slug: true,
+                title: true,
+                estimatedMinutes: true,
+                xpReward: true,
+              },
+            },
+          },
         },
       },
       orderBy: { publishedAt: "desc" },
@@ -54,6 +65,23 @@ export default async function PathsPage(): Promise<React.ReactElement> {
     const xpTotal = path.lessons.reduce((sum, pl) => sum + pl.lesson.xpReward, 0);
     const progressDone = path.lessons.filter((pl) => completedLessonIds.has(pl.lessonId)).length;
 
+    // For in-progress paths: the next mission = the first lesson (by position)
+    // the user has NOT completed yet. Drives the hero "Prochaine mission" panel.
+    let nextLesson: SerializedPath["nextLesson"] = null;
+    if (status === "inprog") {
+      const idx = path.lessons.findIndex((pl) => !completedLessonIds.has(pl.lessonId));
+      const pl = idx >= 0 ? path.lessons[idx] : undefined;
+      if (pl) {
+        nextLesson = {
+          n: String(idx + 1).padStart(2, "0"),
+          title: pl.lesson.title,
+          slug: pl.lesson.slug,
+          xpReward: pl.lesson.xpReward,
+          estimatedMinutes: pl.lesson.estimatedMinutes,
+        };
+      }
+    }
+
     return {
       id: path.id,
       slug: path.slug,
@@ -69,6 +97,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       status,
       progressDone,
       progressTotal: lessonCount,
+      nextLesson,
     } satisfies SerializedPath;
   });
 
