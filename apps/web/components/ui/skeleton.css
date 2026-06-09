@@ -1,0 +1,51 @@
+/* ==========================================================================
+   Shared skeleton primitive — co-located, scoped to the .cl-skel* classes.
+   Visual language: dark surfaces (matching the app cards) with a subtle
+   turquoise -> blue accent sweep, in line with the brand tokens.
+   Reproduced locally; nothing is imported from docs/design.
+   ========================================================================== */
+
+@keyframes cl-skel-shimmer {
+  0% {
+    background-position: -700px 0;
+  }
+  100% {
+    background-position: 700px 0;
+  }
+}
+
+/* Base placeholder block. Resting colour matches the old skeleton (#1f1b47)
+   so dimensions/contrast are unchanged; the moving highlight adds the brand
+   turquoise/blue accent on top. */
+.cl-skel {
+  background-color: #1f1b47;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 30%,
+    color-mix(in oklab, #0affd4 16%, transparent) 46%,
+    color-mix(in oklab, #6e8bff 18%, transparent) 54%,
+    transparent 70%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 700px 100%;
+  animation: cl-skel-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* Standard card surface shared by the loading states (matches the real
+   cards: #0a0826 fill + #1f1b47 hairline). Override border/radius inline
+   where a specific card differs, to keep skeletons layout-accurate. */
+.cl-skel-card {
+  background: #0a0826;
+  border: 1px solid #1f1b47;
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-skel {
+    animation: none;
+    background-image: none;
+  }
+}
