@@ -248,9 +248,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
           : "#0AFFD4";
 
   return (
-    <div
-      style={{ maxWidth: 1320, padding: "28px 56px 96px", margin: "0 auto", position: "relative" }}
-    >
+    <div className="chx">
       {/* ── Breadcrumb ───────────────────────────────────────────────────────── */}
       <div
         style={{
