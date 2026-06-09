@@ -40,7 +40,7 @@ export default async function ReviewPage(): Promise<React.ReactElement> {
   });
 
   return (
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: "40px 56px 120px" }}>
+    <div className="page-container">
       {/* Header */}
       <div style={{ marginBottom: 36 }}>
         <div
