@@ -937,6 +937,7 @@
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
   background: var(--bg-input);
   transition: background var(--dur-base);
@@ -945,13 +946,14 @@
   content: "";
   position: absolute;
   inset: 1.4px;
+  z-index: 0;
   clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
   background: var(--bg-base);
   transition: background var(--dur-base);
 }
 .exam-root .q-dot span {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   transition: color var(--dur-base);
 }
 .exam-root .q-dot.is-answered::before {
@@ -968,10 +970,10 @@
   box-shadow: 0 0 12px rgba(10, 255, 212, 0.6);
 }
 .exam-root .q-dot.is-current::after {
-  background: rgba(10, 255, 212, 0.18);
+  background: var(--teal);
 }
 .exam-root .q-dot.is-current span {
-  color: var(--teal);
+  color: #05041a;
 }
 
 /* ==========================================================================
