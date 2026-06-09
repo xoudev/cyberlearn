@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Image from "next/image";
+import {
+  BadgeMedallion,
+  BADGE_RARITY_LABELS,
+  BADGE_RARITY_VAR,
+  toBadgeRarity,
+} from "@cyberlearn/ui";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,254 +43,35 @@ interface Props {
   rarityEarned: Record<string, number>;
 }
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Rarity chrome (card strip / border / progress) — all derived from the one
+//    centralised token (var --color-rarity-*), so there is a single scale. ─────
 
-const HEX_CLIP = "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)";
-
-const RARITY_META: Record<
-  string,
-  {
-    color: string;
-    borderColor: string;
-    grad: string;
-    glow: string;
-    secColor: string;
-    pillActiveBg: string;
-    stripShadow: string;
-  }
-> = {
-  LEGENDARY: {
-    color: "#FFB547",
-    borderColor: "rgba(255,181,71,0.35)",
-    grad: "linear-gradient(135deg, #FFB547, #FF4757)",
-    glow: "rgba(255,181,71,0.18)",
-    secColor: "#FFB547",
-    pillActiveBg: "rgba(255,181,71,0.08)",
-    stripShadow: "0 0 12px rgba(255,181,71,0.6)",
-  },
-  EPIC: {
-    color: "#0AFFD4",
-    borderColor: "rgba(10,255,212,0.30)",
-    grad: "linear-gradient(135deg, #0AFFD4, #0024FF)",
-    glow: "rgba(10,255,212,0.18)",
-    secColor: "#0AFFD4",
-    pillActiveBg: "rgba(10,255,212,0.08)",
-    stripShadow: "0 0 12px rgba(10,255,212,0.6)",
-  },
-  RARE: {
-    color: "#6E8BFF",
-    borderColor: "rgba(110,139,255,0.28)",
-    grad: "linear-gradient(135deg, #6E8BFF, #4A3FCC)",
-    glow: "rgba(110,139,255,0.18)",
-    secColor: "#6E8BFF",
-    pillActiveBg: "rgba(110,139,255,0.08)",
-    stripShadow: "0 0 12px rgba(110,139,255,0.5)",
-  },
-  COMMON: {
-    color: "#B8B5D1",
-    borderColor: "#2A2560",
-    grad: "linear-gradient(135deg, #B8B5D1, #6F6B99)",
-    glow: "rgba(184,181,209,0.10)",
-    secColor: "#B8B5D1",
-    pillActiveBg: "rgba(184,181,209,0.06)",
-    stripShadow: "0 0 8px rgba(184,181,209,0.4)",
-  },
-};
+function rarityChrome(rarity: string): {
+  color: string;
+  borderColor: string;
+  grad: string;
+  glow: string;
+  secColor: string;
+  stripShadow: string;
+} {
+  const v = BADGE_RARITY_VAR[toBadgeRarity(rarity)];
+  return {
+    color: v,
+    borderColor: `color-mix(in oklab, ${v} 30%, #1f1b47)`,
+    grad: `linear-gradient(135deg, ${v}, color-mix(in oklab, ${v} 50%, #05041a))`,
+    glow: `color-mix(in oklab, ${v} 16%, transparent)`,
+    secColor: v,
+    stripShadow: `0 0 12px color-mix(in oklab, ${v} 55%, transparent)`,
+  };
+}
 
 const RARITY_PILL_COLOR: Record<string, string> = {
-  all: "#B8B5D1",
-  legendary: "#FFB547",
-  epic: "#0AFFD4",
-  rare: "#6E8BFF",
-  common: "#B8B5D1",
+  all: "var(--color-rarity-common)",
+  legendary: "var(--color-rarity-legendary)",
+  epic: "var(--color-rarity-epic)",
+  rare: "var(--color-rarity-rare)",
+  common: "var(--color-rarity-common)",
 };
-
-// ── Criterion type → glyph name mapping ──────────────────────────────────────
-
-const CRITERION_GLYPH: Record<string, string> = {
-  LESSON_COMPLETED: "book",
-  STREAK_DAYS: "flame",
-  XP_THRESHOLD: "bolt",
-  PATH_COMPLETED: "layers",
-  CATEGORY_MASTERY: "radar",
-  PERFECT_QUIZ: "flag",
-};
-
-// ── Glyph SVGs (40×40 viewBox, stroke-based — matches design exactly) ─────────
-
-function BadgeGlyph({
-  criterionType,
-  size = 36,
-  color = "currentColor",
-}: { criterionType: string; size?: number; color?: string }) {
-  const name = CRITERION_GLYPH[criterionType] ?? "flag";
-  const s = {
-    width: size,
-    height: size,
-    fill: "none",
-    stroke: color,
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-  switch (name) {
-    case "drop":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path
-            d="M20 4 C20 13 28 16 28 24 C28 28 24.5 32 20 32 C15.5 32 12 28 12 24 C12 16 20 13 20 4 Z"
-            fill={color}
-            fillOpacity="0.25"
-          />
-        </svg>
-      );
-    case "skull":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path
-            d="M10 18 C10 11 14 6 20 6 C26 6 30 11 30 18 V24 L27 27 V32 H23 V28 H17 V32 H13 V27 L10 24 Z"
-            fill={color}
-            fillOpacity="0.2"
-          />
-          <circle cx="16" cy="20" r="2" fill={color} />
-          <circle cx="24" cy="20" r="2" fill={color} />
-          <path d="M19 26 L20 28 L21 26" />
-        </svg>
-      );
-    case "crown":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path d="M6 14 L10 26 H30 L34 14 L27 19 L20 8 L13 19 Z" fill={color} fillOpacity="0.22" />
-          <path d="M10 30 H30" />
-        </svg>
-      );
-    case "flame":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path
-            d="M20 4 C20 11 15 13 15 20 C15 22 16 23 17.5 23 C16 25 15 27 15 29 C15 33 18 36 21 36 C25 36 28 33 28 28 C28 22 22 20 22 14 C22 11 21 7 20 4 Z"
-            fill={color}
-            fillOpacity="0.25"
-          />
-        </svg>
-      );
-    case "radar":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <circle cx="20" cy="20" r="14" />
-          <circle cx="20" cy="20" r="8" />
-          <circle cx="20" cy="20" r="2" fill={color} />
-          <path d="M20 20 L32 12" />
-        </svg>
-      );
-    case "bolt":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path d="M22 4 L10 22 H19 L17 36 L30 18 H21 Z" fill={color} fillOpacity="0.22" />
-        </svg>
-      );
-    case "db":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <ellipse cx="20" cy="10" rx="12" ry="4" />
-          <path d="M8 10 V22 C8 25 13 27 20 27 C27 27 32 25 32 22 V10" />
-          <path d="M8 22 V32 C8 35 13 37 20 37 C27 37 32 35 32 32 V22" />
-        </svg>
-      );
-    case "bug":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <rect x="12" y="14" width="16" height="18" rx="6" />
-          <path d="M14 22 H8 M26 22 H32 M14 16 L9 12 M26 16 L31 12 M14 30 L9 34 M26 30 L31 34" />
-          <path d="M16 10 C16 7 18 6 20 6 C22 6 24 7 24 10" />
-        </svg>
-      );
-    case "stack":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <rect x="8" y="10" width="24" height="6" />
-          <rect x="8" y="20" width="24" height="6" />
-          <rect x="8" y="30" width="24" height="6" />
-          <path d="M14 13 H18 M14 23 H18 M14 33 H18" />
-        </svg>
-      );
-    case "lock":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <rect x="10" y="18" width="20" height="16" rx="2" />
-          <path d="M14 18 V12 C14 8.5 16.5 6 20 6 C23.5 6 26 8.5 26 12 V18" />
-          <circle cx="20" cy="26" r="2" fill={color} />
-        </svg>
-      );
-    case "flag":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path d="M10 6 V36" />
-          <path d="M10 8 H30 L26 14 L30 20 H10 Z" fill={color} fillOpacity="0.25" />
-        </svg>
-      );
-    case "layers":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path d="M20 6 L34 13 L20 20 L6 13 Z" />
-          <path d="M6 20 L20 27 L34 20" />
-          <path d="M6 27 L20 34 L34 27" />
-        </svg>
-      );
-    case "user":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <circle cx="20" cy="14" r="6" />
-          <path d="M8 34 C8 27 13 23 20 23 C27 23 32 27 32 34" />
-        </svg>
-      );
-    case "book":
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path d="M8 8 H18 C20 8 21 9 21 11 V34 C21 32 20 31 18 31 H8 Z" />
-          <path d="M32 8 H22 C20 8 19 9 19 11 V34 C19 32 20 31 22 31 H32 Z" />
-        </svg>
-      );
-    default:
-      return (
-        <svg viewBox="0 0 40 40" {...s} aria-hidden="true">
-          <path d="M10 6 V36" />
-          <path d="M10 8 H30 L26 14 L30 20 H10 Z" fill={color} fillOpacity="0.25" />
-        </svg>
-      );
-  }
-}
-
-function BadgeImageWithFallback({
-  src,
-  alt,
-  width,
-  height,
-  criterionType,
-  color,
-}: {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-  criterionType: string;
-  color: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <BadgeGlyph criterionType={criterionType} size={width} color={color} />;
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      style={{ objectFit: "contain" }}
-      onError={() => {
-        setFailed(true);
-      }}
-    />
-  );
-}
 
 // ── Check / Lock icons ────────────────────────────────────────────────────────
 
@@ -328,11 +114,8 @@ function LockIcon() {
 
 function BadgeCard({ badge }: { badge: SerializedBadge }) {
   const [hovered, setHovered] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const r = RARITY_META[badge.rarity] ?? RARITY_META.COMMON!;
+  const r = rarityChrome(badge.rarity);
   const isLeg = badge.rarity === "LEGENDARY";
-  const hexW = isLeg ? 132 : 96;
-  const hexH = isLeg ? 152 : 110;
   const pct = badge.progress ? Math.round((badge.progress.done / badge.progress.total) * 100) : 0;
 
   return (
@@ -359,7 +142,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
         transition: "transform 280ms cubic-bezier(0.16,1,0.3,1), border-color 180ms ease",
       }}
     >
-      {/* Bottom atmospheric glow — simulates bcard::before radial gradient */}
+      {/* Bottom atmospheric glow */}
       <div
         style={{
           position: "absolute",
@@ -481,67 +264,15 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
         </div>
       )}
 
-      {/* Hexagonal medallion — outer wrapper carries drop-shadow so it shows outside clip-path */}
-      <div
-        style={{
-          margin: isLeg ? "10px 0 22px" : "8px 0 18px",
-          filter: badge.earned
-            ? `drop-shadow(0 0 6px ${r.color}) drop-shadow(0 0 14px ${r.glow})`
-            : "drop-shadow(0 0 4px rgba(42,37,96,0.8))",
-        }}
-        aria-hidden="true"
-      >
-        <div
-          style={{
-            position: "relative",
-            width: hexW,
-            height: hexH,
-            display: "grid",
-            placeItems: "center",
-            clipPath: HEX_CLIP,
-          }}
-        >
-          {/* Gradient ring — fills full hex */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: badge.earned ? r.grad : "linear-gradient(135deg, #2A2560, #1A1640)",
-              opacity: badge.earned ? 1 : 0.7,
-            }}
-          />
-          {/* Inner dark fill — creates the ring gap */}
-          <div
-            style={{
-              position: "absolute",
-              top: 3,
-              left: 3,
-              right: 3,
-              bottom: 3,
-              background: "#0A0826",
-              clipPath: HEX_CLIP,
-            }}
-          />
-          {/* Badge icon */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 1,
-              filter: badge.earned ? `drop-shadow(0 0 10px ${r.color})` : "none",
-              opacity: badge.earned ? 1 : 0.55,
-            }}
-          >
-            <BadgeImageWithFallback
-              src={badge.iconUrl}
-              alt={badge.name}
-              width={isLeg ? 52 : 36}
-              height={isLeg ? 52 : 36}
-              criterionType={badge.criterionType}
-              color={badge.earned ? r.color : "#44406B"}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Hexagonal medallion — shared component */}
+      <BadgeMedallion
+        rarity={toBadgeRarity(badge.rarity)}
+        size={isLeg ? "lg" : "md"}
+        state={badge.earned ? "unlocked" : "locked"}
+        iconUrl={badge.iconUrl}
+        name={badge.name}
+        style={{ margin: isLeg ? "10px 0 22px" : "8px 0 18px" }}
+      />
 
       {/* Rarity label */}
       <div
@@ -555,15 +286,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
           marginBottom: 8,
         }}
       >
-        ·{" "}
-        {badge.rarity === "LEGENDARY"
-          ? "Légendaire"
-          : badge.rarity === "EPIC"
-            ? "Épique"
-            : badge.rarity === "RARE"
-              ? "Rare"
-              : "Commun"}{" "}
-        ·
+        · {BADGE_RARITY_LABELS[toBadgeRarity(badge.rarity)]} ·
       </div>
 
       {/* Name */}
@@ -592,7 +315,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
           maxWidth: isLeg ? 320 : 260,
         }}
       >
-        {badge.earned ? badge.description : badge.description}
+        {badge.description}
       </p>
 
       {/* Footer: earned date or progress */}
@@ -713,8 +436,7 @@ function SectionHeader({
   earned: number;
   total: number;
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const meta = RARITY_META[rarity] ?? RARITY_META.COMMON!;
+  const meta = rarityChrome(rarity);
   return (
     <div
       style={{
@@ -908,19 +630,23 @@ export function BadgesCollection({
             }}
           >
             <span>
-              <b style={{ color: "#FFB547" }}>{rarityEarned.LEGENDARY ?? 0}</b> légendaire
+              <b style={{ color: "var(--color-rarity-legendary)" }}>
+                {rarityEarned.LEGENDARY ?? 0}
+              </b>{" "}
+              légendaire
             </span>
             <span style={{ color: "#44406B" }}>/</span>
             <span>
-              <b style={{ color: "#0AFFD4" }}>{rarityEarned.EPIC ?? 0}</b> épiques
+              <b style={{ color: "var(--color-rarity-epic)" }}>{rarityEarned.EPIC ?? 0}</b> épiques
             </span>
             <span style={{ color: "#44406B" }}>/</span>
             <span>
-              <b style={{ color: "#6E8BFF" }}>{rarityEarned.RARE ?? 0}</b> rares
+              <b style={{ color: "var(--color-rarity-rare)" }}>{rarityEarned.RARE ?? 0}</b> rares
             </span>
             <span style={{ color: "#44406B" }}>/</span>
             <span>
-              <b style={{ color: "#B8B5D1" }}>{rarityEarned.COMMON ?? 0}</b> communs
+              <b style={{ color: "var(--color-rarity-common)" }}>{rarityEarned.COMMON ?? 0}</b>{" "}
+              communs
             </span>
           </div>
 
@@ -1001,7 +727,7 @@ export function BadgesCollection({
 
         {pills.map((pill) => {
           const isActive = activeFilter === pill.id;
-          const dotColor = RARITY_PILL_COLOR[pill.id] ?? "#B8B5D1";
+          const dotColor = RARITY_PILL_COLOR[pill.id] ?? "var(--color-rarity-common)";
           return (
             <button
               key={pill.id}
@@ -1027,7 +753,9 @@ export function BadgesCollection({
                 textTransform: "uppercase",
                 cursor: "pointer",
                 borderRadius: 0,
-                boxShadow: isActive ? `0 0 0 1px ${dotColor}40, 0 0 18px ${dotColor}30` : "none",
+                boxShadow: isActive
+                  ? `0 0 0 1px color-mix(in oklab, ${dotColor} 25%, transparent), 0 0 18px color-mix(in oklab, ${dotColor} 19%, transparent)`
+                  : "none",
               }}
             >
               <span
@@ -1045,7 +773,7 @@ export function BadgesCollection({
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   padding: "1px 6px",
-                  border: `1px solid ${isActive ? `${dotColor}60` : "#2A2560"}`,
+                  border: `1px solid ${isActive ? `color-mix(in oklab, ${dotColor} 38%, transparent)` : "#2A2560"}`,
                   letterSpacing: "0.04em",
                   color: isActive ? dotColor : "#6F6B99",
                 }}

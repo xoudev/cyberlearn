@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import type { NotificationItem } from "@cyberlearn/db";
+import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
 import {
   getNotificationsAction,
   markNotificationReadAction,
@@ -18,6 +19,17 @@ const TYPE_ICON: Record<string, string> = {
   ANNOUNCEMENT: "📣",
   TICKET_UPDATE: "🎫",
 };
+
+// BADGE_EARNED notifications carry the badge rarity in their metadata JSON.
+function badgeRarityFromMeta(item: NotificationItem): BadgeRarity {
+  // SAFETY: notification metadata is untyped JSON; narrow before reading rarity.
+  const meta = (item as { metadata?: unknown }).metadata;
+  if (meta !== null && typeof meta === "object" && "rarity" in meta) {
+    const r = (meta as { rarity: unknown }).rarity;
+    if (typeof r === "string") return toBadgeRarity(r);
+  }
+  return "COMMON";
+}
 
 interface NotificationPanelProps {
   initialUnreadCount: number;
@@ -361,21 +373,25 @@ function NotificationRow({
       }}
     >
       {/* Icon */}
-      <span
-        style={{
-          width: 32,
-          height: 32,
-          background: isUnread ? "rgba(10,255,212,0.08)" : "rgba(42,37,96,0.3)",
-          border: `1px solid ${isUnread ? "rgba(10,255,212,0.2)" : "#1F1B47"}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 14,
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </span>
+      {item.type === "BADGE_EARNED" ? (
+        <BadgeMedallion rarity={badgeRarityFromMeta(item)} size="xs" style={{ flexShrink: 0 }} />
+      ) : (
+        <span
+          style={{
+            width: 32,
+            height: 32,
+            background: isUnread ? "rgba(10,255,212,0.08)" : "rgba(42,37,96,0.3)",
+            border: `1px solid ${isUnread ? "rgba(10,255,212,0.2)" : "#1F1B47"}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </span>
+      )}
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>

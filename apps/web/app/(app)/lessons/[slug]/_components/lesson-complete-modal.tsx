@@ -2,25 +2,17 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  BadgeMedallion,
+  BADGE_RARITY_LABELS,
+  BADGE_RARITY_VAR,
+  toBadgeRarity,
+} from "@cyberlearn/ui";
 import type { CompleteLessonResult } from "../_actions/track-progress";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const HEX_CLIP = "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)";
-
-const RARITY_COLOR: Record<string, string> = {
-  LEGENDARY: "#FFB547",
-  EPIC: "#0AFFD4",
-  RARE: "#6E8BFF",
-  COMMON: "#B8B5D1",
-};
-
-const RARITY_LABEL: Record<string, string> = {
-  LEGENDARY: "Légendaire",
-  EPIC: "Épique",
-  RARE: "Rare",
-  COMMON: "Commun",
-};
 
 // ── XP counter hook ───────────────────────────────────────────────────────────
 
@@ -371,8 +363,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {result.newBadges.map((badge) => {
-                const color = RARITY_COLOR[badge.rarity] ?? "#B8B5D1";
-                const label = RARITY_LABEL[badge.rarity] ?? badge.rarity;
+                const color = BADGE_RARITY_VAR[toBadgeRarity(badge.rarity)];
+                const label = BADGE_RARITY_LABELS[toBadgeRarity(badge.rarity)];
                 return (
                   <div
                     key={badge.name}
@@ -387,15 +379,10 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                       fontSize: 11,
                     }}
                   >
-                    <span
-                      style={{
-                        width: 5,
-                        height: 5,
-                        background: color,
-                        transform: "rotate(45deg)",
-                        boxShadow: `0 0 6px ${color}`,
-                        flexShrink: 0,
-                      }}
+                    <BadgeMedallion
+                      rarity={toBadgeRarity(badge.rarity)}
+                      size="xs"
+                      name={badge.name}
                     />
                     <span style={{ color: "#F5F5FA", fontWeight: 600 }}>{badge.name}</span>
                     <span
