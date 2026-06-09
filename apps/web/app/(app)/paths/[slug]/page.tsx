@@ -276,13 +276,13 @@ const BADGE_GLYPHS: Record<string, React.JSX.Element> = {
     </svg>
   ),
 };
-const PLACEHOLDER_BADGES: { rarity: string; glyph: string }[] = [
-  { rarity: "common", glyph: "drop" },
-  { rarity: "rare", glyph: "db" },
-  { rarity: "rare", glyph: "bug" },
-  { rarity: "epic", glyph: "key" },
-  { rarity: "epic", glyph: "radar" },
-  { rarity: "legendary", glyph: "flag" },
+const PLACEHOLDER_BADGES: { rarity: string; glyph: string; unlocked: boolean }[] = [
+  { rarity: "common", glyph: "drop", unlocked: true },
+  { rarity: "rare", glyph: "db", unlocked: true },
+  { rarity: "rare", glyph: "bug", unlocked: false },
+  { rarity: "epic", glyph: "key", unlocked: false },
+  { rarity: "epic", glyph: "radar", unlocked: false },
+  { rarity: "legendary", glyph: "flag", unlocked: false },
 ];
 const BADGE_LOCK = (
   <svg
@@ -601,11 +601,14 @@ export default async function PathDetailPage({
             <h3 className="ablock__title">Badges du parcours</h3>
             <div className="badge-grid">
               {PLACEHOLDER_BADGES.map((b) => (
-                <div key={b.glyph} className={`badge badge--${b.rarity} is-locked`}>
+                <div
+                  key={b.glyph}
+                  className={`badge badge--${b.rarity}${b.unlocked ? "" : " is-locked"}`}
+                >
                   <span className="badge__hex">
                     <span className="facet" />
                     {BADGE_GLYPHS[b.glyph]}
-                    <span className="badge__lock">{BADGE_LOCK}</span>
+                    {!b.unlocked && <span className="badge__lock">{BADGE_LOCK}</span>}
                   </span>
                 </div>
               ))}

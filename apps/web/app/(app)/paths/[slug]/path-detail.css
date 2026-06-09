@@ -219,7 +219,7 @@
 .pd2 .pd2-title {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(40px, 5.2vw, 72px);
+  font-size: clamp(46px, 5.6vw, 82px);
   line-height: 0.94;
   letter-spacing: -0.045em;
   color: var(--fg-primary);
@@ -542,7 +542,7 @@
   width: 74px;
   height: 84px;
   filter: drop-shadow(0 0 14px rgba(0, 36, 255, 0.6));
-  animation: nodePulse 2.4s ease-in-out infinite;
+  animation: pd2-nodePulse 2.4s ease-in-out infinite;
 }
 .pd2 .cp-row--active .cp-node::before {
   background: linear-gradient(160deg, #2a6bff, #0024ff);
@@ -561,7 +561,7 @@
   inset: -8px;
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
   border: 1px solid rgba(10, 200, 255, 0.5);
-  animation: ringPulse 2.4s ease-out infinite;
+  animation: pd2-ringPulse 2.4s ease-out infinite;
 }
 .pd2 .cp-row--locked .cp-node::before {
   background: var(--border);
@@ -1347,7 +1347,7 @@
     opacity: 0.4;
   }
 }
-@keyframes nodePulse {
+@keyframes pd2-nodePulse {
   0%,
   100% {
     filter: drop-shadow(0 0 12px rgba(0, 36, 255, 0.5));
@@ -1356,7 +1356,7 @@
     filter: drop-shadow(0 0 26px rgba(40, 120, 255, 0.95));
   }
 }
-@keyframes ringPulse {
+@keyframes pd2-ringPulse {
   0% {
     transform: scale(0.9);
     opacity: 0.8;
