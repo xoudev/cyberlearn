@@ -189,7 +189,7 @@ const LEARN_ITEMS = [
 ] as const;
 
 const ACTIVITY_ITEMS = [
-  { href: "/leaderboard", label: "Classement", Icon: IconTrophy, count: null },
+  { href: "/classement", label: "Classement", Icon: IconTrophy, count: null },
   { href: "/challenges", label: "Défis", Icon: IconFlash, count: null },
   { href: "/profile", label: "Profil", Icon: IconUser, count: null },
 ] as const;
