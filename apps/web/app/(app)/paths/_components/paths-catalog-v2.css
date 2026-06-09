@@ -761,11 +761,13 @@
 }
 
 /* ==========================================================================
-   SECONDARY ROW (active wide card + trophy)
+   SECONDARY ROW (active cards + trophies)
+   Uniform equal-width grid (mirrors the discover grid: 3 → 2 → 1 cols) so
+   every card in this section keeps the same footprint regardless of mix.
    ========================================================================== */
 .pc2-root .pc2-duo {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 .pc2-root .active-card {
@@ -1405,7 +1407,8 @@
   }
 }
 @media (max-width: 1180px) {
-  .pc2-root .pc2-discover {
+  .pc2-root .pc2-discover,
+  .pc2-root .pc2-duo {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1421,12 +1424,10 @@
     border-left: 0;
     border-top: 1px solid var(--border);
   }
-  .pc2-root .pc2-duo {
-    grid-template-columns: 1fr;
-  }
 }
 @media (max-width: 720px) {
-  .pc2-root .pc2-discover {
+  .pc2-root .pc2-discover,
+  .pc2-root .pc2-duo {
     grid-template-columns: 1fr;
   }
   .pc2-root .active-card {
