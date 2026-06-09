@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import "./paths-catalog-v2.css";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,14 @@ export interface SerializedPath {
   status: "idle" | "inprog" | "done";
   progressDone: number;
   progressTotal: number;
+  /** Next not-yet-completed lesson (in-progress paths only) — drives the hero panel. */
+  nextLesson: {
+    n: string;
+    title: string;
+    slug: string;
+    xpReward: number;
+    estimatedMinutes: number;
+  } | null;
 }
 
 interface Props {
@@ -30,570 +39,441 @@ interface Props {
   totalHours: number;
 }
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Design meta ─────────────────────────────────────────────────────────────────
 
-const CATEGORY_META: Record<
-  string,
-  { label: string; color: string; kind: "cyber" | "dev" | "net" }
-> = {
-  CYBERSEC: { label: "Cybersec", color: "#FF4757", kind: "cyber" },
-  DEV: { label: "Dev", color: "#6E8BFF", kind: "dev" },
-  NETWORK: { label: "Réseau", color: "#0AFFD4", kind: "net" },
+type Kind = "cyber" | "dev" | "net";
+
+const CATEGORY_META: Record<string, { label: string; kind: Kind }> = {
+  CYBERSEC: { label: "Cybersec", kind: "cyber" },
+  DEV: { label: "Dev", kind: "dev" },
+  NETWORK: { label: "Réseau", kind: "net" },
 };
 
-const DIFF_META: Record<string, { label: string; level: 1 | 2 | 3; color: string }> = {
-  BEGINNER: { label: "Débutant", level: 1, color: "#0AFFD4" },
-  INTERMEDIATE: { label: "Intermédiaire", level: 2, color: "#6E8BFF" },
-  ADVANCED: { label: "Avancé", level: 3, color: "#FF4757" },
-  EXPERT: { label: "Expert", level: 3, color: "#FFB020" },
+const DIFF_META: Record<string, { label: string; level: 1 | 2 | 3 }> = {
+  BEGINNER: { label: "Débutant", level: 1 },
+  INTERMEDIATE: { label: "Intermédiaire", level: 2 },
+  ADVANCED: { label: "Avancé", level: 3 },
+  EXPERT: { label: "Expert", level: 3 },
 };
 
-const CATEGORY_DEFAULT = { label: "?", color: "#B8B5D1", kind: "cyber" as const };
-const DIFF_DEFAULT = { label: "?", level: 1 as const, color: "#B8B5D1" };
+const CATEGORY_DEFAULT = { label: "?", kind: "cyber" as Kind };
+const DIFF_DEFAULT = { label: "?", level: 1 as const };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+type Filter = "all" | "CYBERSEC" | "DEV" | "NETWORK";
+const PILLS: { id: Filter; cls: string; label: string }[] = [
+  { id: "all", cls: "all", label: "Tous" },
+  { id: "CYBERSEC", cls: "cyber", label: "Cybersec" },
+  { id: "DEV", cls: "dev", label: "Dev" },
+  { id: "NETWORK", cls: "net", label: "Réseau" },
+];
 
-function KindIcon({ kind, size = 70 }: { kind: "cyber" | "dev" | "net"; size?: number }) {
-  const s: React.SVGProps<SVGSVGElement> = {
-    width: size,
-    height: size,
-    viewBox: "0 0 64 64",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.4,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  };
-  if (kind === "cyber")
-    return (
-      <svg {...s}>
-        <path d="M32 6 L52 14 V32 C52 44 42 52 32 58 C22 52 12 44 12 32 V14 Z" />
-        <path d="M24 32 L30 38 L42 24" />
-      </svg>
-    );
-  if (kind === "dev")
-    return (
-      <svg {...s}>
-        <path d="M22 20 L8 32 L22 44" />
-        <path d="M42 20 L56 32 L42 44" />
-        <path d="M36 14 L28 50" />
-      </svg>
-    );
+const fmtXp = (n: number): string => n.toLocaleString("fr-FR");
+const pctOf = (p: SerializedPath): number =>
+  p.progressTotal > 0 ? Math.round((p.progressDone / p.progressTotal) * 100) : 0;
+
+// ── Shared markup ───────────────────────────────────────────────────────────────
+
+const ARROW = (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M3 8 H13 M9 4 L13 8 L9 12" />
+  </svg>
+);
+
+const CERT_ICON = (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="8" cy="6" r="3" />
+    <path d="M5.5 8.5 L4.5 14 L8 12 L11.5 14 L10.5 8.5" />
+  </svg>
+);
+
+function Brackets(): React.JSX.Element {
   return (
-    <svg {...s}>
-      <circle cx="32" cy="14" r="4" />
-      <circle cx="14" cy="48" r="4" />
-      <circle cx="50" cy="48" r="4" />
-      <path d="M32 18 L14 44 M32 18 L50 44 M18 48 L46 48" />
-    </svg>
+    <>
+      <span className="bk tl" />
+      <span className="bk tr" />
+      <span className="bk bl" />
+      <span className="bk br" />
+    </>
   );
 }
 
-function DiffBars({ level, color }: { level: 1 | 2 | 3; color: string }) {
+function DiffBars({ level }: { level: 1 | 2 | 3 }): React.JSX.Element {
   return (
-    <span style={{ display: "inline-flex", gap: 2 }}>
-      {([1, 2, 3] as const).map((i) => (
-        <span
-          key={i}
-          style={{
-            width: 3,
-            height: 7,
-            background: i <= level ? color : "#3F3D5C",
-          }}
-        />
-      ))}
+    <span className={`diff-bars lv${String(level)}`}>
+      <span />
+      <span />
+      <span />
     </span>
   );
 }
 
-function PathCard({ path }: { path: SerializedPath }) {
+function KindGlyph({ kind, size }: { kind: Kind; size: number }): React.JSX.Element {
+  const s = {
+    width: size,
+    height: size,
+    viewBox: "0 0 64 64",
+    fill: "none" as const,
+    stroke: "currentColor",
+    strokeWidth: 1.3,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  if (kind === "cyber") {
+    return (
+      <svg className="kind-ico" {...s}>
+        <path d="M32 5 L53 13 V31 C53 44 43 53 32 59 C21 53 11 44 11 31 V13 Z" />
+        <path d="M23 32 L29 38 L42 23" />
+      </svg>
+    );
+  }
+  if (kind === "dev") {
+    return (
+      <svg className="kind-ico" {...s}>
+        <path d="M22 19 L7 32 L22 45" />
+        <path d="M42 19 L57 32 L42 45" />
+        <path d="M37 12 L27 52" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="kind-ico" {...s}>
+      <circle cx="32" cy="12" r="4.5" />
+      <circle cx="12" cy="48" r="4.5" />
+      <circle cx="52" cy="48" r="4.5" />
+      <path d="M32 16.5 L13 43 M32 16.5 L51 43 M16 48 L48 48" />
+      <circle cx="32" cy="32" r="2.2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function SectionLabel({ tag, count }: { tag: string; count: string }): React.JSX.Element {
+  return (
+    <div className="pc2-section">
+      <span className="pc2-section__tag">{tag}</span>
+      <span className="pc2-section__count">{count}</span>
+      <span className="pc2-section__rule" />
+    </div>
+  );
+}
+
+// ── Tier cards ──────────────────────────────────────────────────────────────────
+
+function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
   const cat = CATEGORY_META[path.category] ?? CATEGORY_DEFAULT;
   const diff = DIFF_META[path.difficulty] ?? DIFF_DEFAULT;
-  const pct =
-    path.progressTotal > 0 ? Math.round((path.progressDone / path.progressTotal) * 100) : 0;
-
-  const cardBorder =
-    path.status === "inprog"
-      ? "rgba(10,255,212,0.4)"
-      : path.status === "done"
-        ? "rgba(10,255,212,0.35)"
-        : "#1F1B47";
-
-  const cardShadow =
-    path.status === "inprog"
-      ? "0 0 0 1px rgba(10,255,212,0.16), 0 0 28px rgba(10,255,212,0.07), inset 3px 0 0 #0AFFD4"
-      : path.status === "done"
-        ? "0 0 0 1px rgba(10,255,212,0.12)"
-        : "none";
-
+  const pct = pctOf(path);
   return (
-    <article
-      style={{
-        position: "relative",
-        background:
-          path.status === "done"
-            ? "linear-gradient(135deg, rgba(10,255,212,0.06), transparent 60%), #0A0826"
-            : "#0A0826",
-        border: `1px solid ${cardBorder}`,
-        boxShadow: cardShadow,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        transition: "border-color 200ms ease, transform 200ms ease",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-        if (path.status === "idle") (e.currentTarget as HTMLElement).style.borderColor = "#2A2560";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-        if (path.status === "idle") (e.currentTarget as HTMLElement).style.borderColor = cardBorder;
-      }}
-    >
-      {/* Cover */}
-      <div
-        style={{
-          position: "relative",
-          height: 168,
-          background: "#05041A",
-          borderBottom: "1px solid #1F1B47",
-          display: "grid",
-          placeItems: "center",
-          overflow: "hidden",
-        }}
-      >
-        {/* Grid texture */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "linear-gradient(to right, rgba(42,37,96,0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.5) 1px, transparent 1px)",
-            backgroundSize: "18px 18px",
-            maskImage: "radial-gradient(ellipse at center, black 20%, transparent 80%)",
-            WebkitMaskImage: "radial-gradient(ellipse at center, black 20%, transparent 80%)",
-          }}
-        />
-        {/* Radial color glow */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: `radial-gradient(ellipse 70% 80% at 50% 50%, ${cat.color}33, transparent 70%)`,
-          }}
-        />
-        {/* Scan lines */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 1,
-            backgroundImage:
-              "repeating-linear-gradient(to bottom, transparent 0, transparent 3px, rgba(10,255,212,0.04) 3px, rgba(10,255,212,0.04) 4px)",
-            mixBlendMode: "overlay",
-            pointerEvents: "none",
-          }}
-        />
-        {/* Kind icon */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-            color: cat.color,
-            filter: `drop-shadow(0 0 16px ${cat.color})`,
-          }}
-        >
-          <KindIcon kind={cat.kind} size={70} />
-        </div>
-        {/* Category badge */}
-        <div
-          style={{
-            position: "absolute",
-            top: 12,
-            left: 12,
-            zIndex: 3,
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 9.5,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: cat.color,
-            background: "rgba(3,2,25,0.85)",
-            border: `1px solid ${cat.color}66`,
-            padding: "4px 9px",
-          }}
-        >
-          {cat.label}
-        </div>
-        {/* Difficulty / certified badge */}
-        {path.status === "done" ? (
-          <div
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              zIndex: 3,
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 10,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "#030219",
-              background: "#0AFFD4",
-              padding: "5px 12px",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              boxShadow: "0 0 18px rgba(10,255,212,0.5)",
-              clipPath: "polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)",
-            }}
-          >
-            <svg
-              width="9"
-              height="9"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 8 L7 12 L13 4" />
-            </svg>
-            Certifié
-          </div>
-        ) : (
-          <div
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              zIndex: 3,
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 9.5,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#B8B5D1",
-              background: "rgba(3,2,25,0.85)",
-              border: "1px solid #2A2560",
-              padding: "4px 9px",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <DiffBars level={diff.level} color={diff.color} />
+    <article className={`hero-path hero-path--${cat.kind}`}>
+      <Brackets />
+      <div className="hero-path__main">
+        <div className="hero-path__topline">
+          <span className="state-chip">
+            <span className="state-chip__dot" />
+            En cours
+          </span>
+          <span className="dom-tag">
+            <span className="dom-tag__dot" />
+            {cat.label}
+          </span>
+          <span className="diff-tag">
+            <DiffBars level={diff.level} />
             {diff.label}
-          </div>
-        )}
-        {/* Ref code */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 10,
-            left: 12,
-            zIndex: 3,
-            fontFamily: "var(--font-mono)",
-            fontSize: 9.5,
-            color: "#3F3D5C",
-            letterSpacing: "0.14em",
-          }}
-        >
-          {"// "}
-          <b style={{ color: cat.color, fontWeight: 700 }}>{path.refCode}</b>
-        </div>
-        {/* Cert icon */}
-        {path.hasCert && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 10,
-              right: 12,
-              zIndex: 3,
-              fontFamily: "var(--font-mono)",
-              fontSize: 9.5,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "#0AFFD4",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ filter: "drop-shadow(0 0 6px #0AFFD4)" }}
-            >
-              <circle cx="8" cy="6" r="3" />
-              <path d="M5.5 8.5 L4.5 14 L8 12 L11.5 14 L10.5 8.5" />
-            </svg>
-            Certificat
-          </div>
-        )}
-      </div>
-
-      {/* Body */}
-      <div
-        style={{
-          padding: "22px 22px 20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-          flex: 1,
-        }}
-      >
-        <h3
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 22,
-            lineHeight: 1.18,
-            letterSpacing: "-0.02em",
-            color: "#F5F5FA",
-            margin: 0,
-          }}
-        >
-          {path.title}
-        </h3>
-        <p
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 13.5,
-            lineHeight: 1.55,
-            color: "#B8B5D1",
-            margin: 0,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {path.description}
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: 14,
-            alignItems: "center",
-            flexWrap: "wrap",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            color: "#6B6890",
-            textTransform: "uppercase",
-            paddingTop: 8,
-          }}
-        >
-          <span>
-            <b style={{ color: "#F5F5FA", fontWeight: 700 }}>{path.lessonCount}</b> missions
           </span>
-          <span style={{ color: "#44406B" }}>·</span>
-          <span>
-            <b style={{ color: "#F5F5FA", fontWeight: 700 }}>~{path.estimatedHours}h</b>
-          </span>
-          <span style={{ color: "#44406B" }}>·</span>
-          <span style={{ color: "#0AFFD4", fontWeight: 700, letterSpacing: "0.1em" }}>
-            +{path.xpTotal.toLocaleString("fr-FR")} XP
+          <span className="refcode">
+            {"// "}
+            <b>{path.refCode}</b>
           </span>
         </div>
-
-        {/* Progress */}
-        <div style={{ marginTop: 4 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "#6B6890",
-              marginBottom: 6,
-            }}
-          >
+        <h2 className="hero-path__title">{path.title}</h2>
+        <p className="hero-path__desc">{path.description}</p>
+        <div className="hero-path__stats">
+          <span>
+            <b>{path.lessonCount}</b> missions
+          </span>
+          <span className="sep">·</span>
+          <span>
+            <b>~{path.estimatedHours}H</b>
+          </span>
+          <span className="sep">·</span>
+          <span className="xp">+{fmtXp(path.xpTotal)} XP</span>
+          {path.hasCert && (
+            <>
+              <span className="sep">·</span>
+              <span className="cert">
+                {CERT_ICON}
+                Certificat
+              </span>
+            </>
+          )}
+        </div>
+        <div className="hero-path__foot">
+          <div className="hero-prog">
             <span>
-              {path.status === "idle" && "Non commencé"}
-              {path.status === "inprog" && (
-                <>
-                  <b style={{ color: "#F5F5FA", fontWeight: 700 }}>{path.progressDone}</b> /{" "}
-                  {path.progressTotal} missions
-                </>
-              )}
-              {path.status === "done" && (
-                <b style={{ color: "#F5F5FA", fontWeight: 700 }}>Parcours complété</b>
-              )}
+              <b>{path.progressDone}</b> / {path.progressTotal} missions complétées
             </span>
-            <span style={{ color: "#0AFFD4", fontWeight: 700 }}>{pct}%</span>
+            <span className="pct">{pct}%</span>
           </div>
-          <div
-            style={{
-              position: "relative",
-              height: 3,
-              background: "#05041A",
-              borderTop: "1px solid #1F1B47",
-              borderBottom: "1px solid #1F1B47",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: `${String(pct)}%`,
-                background:
-                  path.status === "done" ? "#0AFFD4" : "linear-gradient(90deg, #0024FF, #0AFFD4)",
-                boxShadow: "0 0 10px rgba(10,255,212,0.5)",
-                transition: "width 600ms ease-out",
-              }}
-            />
+          <div className="bar-thick">
+            <div className="bar-thick__fill" style={{ width: `${String(pct)}%` }} />
+          </div>
+          <div className="hero-path__cta-row">
+            <Link href={`/paths/${path.slug}`} className="btn-primary">
+              Continuer le parcours {ARROW}
+            </Link>
+            <Link href={`/paths/${path.slug}`} className="btn-ghost">
+              Aperçu
+            </Link>
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <div style={{ display: "flex", gap: 8, padding: "0 22px 22px" }}>
-        {path.status === "done" ? (
-          <Link
-            href={`/paths/${path.slug}`}
-            style={{
-              flex: 1,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "11px 18px",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              background: "transparent",
-              border: "1px solid rgba(10,255,212,0.4)",
-              color: "#0AFFD4",
-              textDecoration: "none",
-              transition: "border-color 180ms ease, background 180ms ease",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(10,255,212,0.06)";
-              (e.currentTarget as HTMLAnchorElement).style.borderColor = "#0AFFD4";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
-              (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(10,255,212,0.4)";
-            }}
-          >
-            Voir le certificat
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 8 H13 M9 4 L13 8 L9 12" />
-            </svg>
-          </Link>
-        ) : (
-          <Link
-            href={`/paths/${path.slug}`}
-            style={{
-              flex: 1,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: "11px 18px",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              background: "#0024FF",
-              border: "1px solid #0024FF",
-              color: "#fff",
-              textDecoration: "none",
-              boxShadow: "0 0 18px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.05)",
-              transition: "background 180ms ease, box-shadow 180ms ease",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = "#1F3BFF";
-              (e.currentTarget as HTMLAnchorElement).style.boxShadow =
-                "0 0 26px rgba(0,36,255,0.5)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.background = "#0024FF";
-              (e.currentTarget as HTMLAnchorElement).style.boxShadow =
-                "0 0 18px rgba(0,36,255,0.35), inset 0 0 0 1px rgba(255,255,255,0.05)";
-            }}
-          >
-            {path.status === "inprog" ? "Continuer" : "Commencer"}
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 8 H13 M9 4 L13 8 L9 12" />
-            </svg>
+      <div className="hero-path__console">
+        <div className="hero-glyph">
+          <span className="hero-glyph__halo" />
+          <KindGlyph kind={cat.kind} size={132} />
+        </div>
+        {path.nextLesson && (
+          <Link href={`/lessons/${path.nextLesson.slug}`} className="hero-next">
+            <div className="hero-next__lbl">Prochaine mission · {path.nextLesson.n}</div>
+            <h3 className="hero-next__title">{path.nextLesson.title}</h3>
+            <div className="hero-next__meta">
+              <span>
+                +{path.nextLesson.xpReward} XP · {path.nextLesson.estimatedMinutes} MIN
+              </span>
+              <span className="go">Accéder →</span>
+            </div>
           </Link>
         )}
-        <Link
-          href={`/paths/${path.slug}`}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            padding: "11px 18px",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            background: "transparent",
-            border: "1px solid #1F1B47",
-            color: "#B8B5D1",
-            textDecoration: "none",
-            transition: "border-color 180ms ease, color 180ms ease",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLAnchorElement).style.borderColor = "#2A2560";
-            (e.currentTarget as HTMLAnchorElement).style.color = "#F5F5FA";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLAnchorElement).style.borderColor = "#1F1B47";
-            (e.currentTarget as HTMLAnchorElement).style.color = "#B8B5D1";
-          }}
-        >
-          Aperçu
-        </Link>
       </div>
     </article>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+function ActiveCard({ path }: { path: SerializedPath }): React.JSX.Element {
+  const cat = CATEGORY_META[path.category] ?? CATEGORY_DEFAULT;
+  const pct = pctOf(path);
+  return (
+    <Link href={`/paths/${path.slug}`} className={`active-card active-card--${cat.kind}`}>
+      <Brackets />
+      <div className="active-card__glyph">
+        <KindGlyph kind={cat.kind} size={56} />
+      </div>
+      <div className="active-card__body">
+        <div className="active-card__top">
+          <span className="state-chip">
+            <span className="state-chip__dot" />
+            En cours
+          </span>
+          <span className="active-card__refcode">
+            {"// "}
+            <b>{path.refCode}</b>
+          </span>
+        </div>
+        <h3 className="active-card__title">{path.title}</h3>
+        <div className="active-card__stats">
+          <span>
+            <b>{path.lessonCount}</b> missions
+          </span>
+          <span className="sep">·</span>
+          <span>
+            <b>~{path.estimatedHours}H</b>
+          </span>
+          <span className="sep">·</span>
+          <span className="xp">+{fmtXp(path.xpTotal)} XP</span>
+          {path.hasCert && (
+            <>
+              <span className="sep">·</span>
+              <span className="cert-mini">{CERT_ICON}</span>
+            </>
+          )}
+        </div>
+        <div className="active-card__progline">
+          <span>
+            <b>{path.progressDone}</b> / {path.progressTotal} missions
+          </span>
+          <span className="pct">{pct}%</span>
+        </div>
+        <div className="bar-mid">
+          <div className="bar-mid__fill" style={{ width: `${String(pct)}%` }} />
+        </div>
+        <span className="active-card__cta">Continuer {ARROW}</span>
+      </div>
+    </Link>
+  );
+}
 
-type Filter = "all" | "CYBERSEC" | "DEV" | "NETWORK";
+function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
+  return (
+    <Link href={`/paths/${path.slug}`} className="trophy-card">
+      <Brackets />
+      <span className="trophy-card__seal">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="9" r="4.5" />
+          <path d="M8 12.5 L6.5 21 L12 18 L17.5 21 L16 12.5" />
+        </svg>
+      </span>
+      <div className="trophy-card__body">
+        <div className="trophy-card__eyebrow">Certifié</div>
+        <div className="trophy-card__refcode">
+          {"// "}
+          <b>{path.refCode}</b>
+        </div>
+        <h3 className="trophy-card__title">{path.title}</h3>
+        <div className="trophy-card__done">
+          <span className="ck">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 8 L7 12 L13 4" />
+            </svg>
+          </span>
+          Parcours complété · 100%
+        </div>
+        <div className="trophy-card__stats">
+          <span>
+            <b>{path.lessonCount}</b> missions
+          </span>
+          <span className="sep">·</span>
+          <span>
+            <b>~{path.estimatedHours}H</b>
+          </span>
+          <span className="sep">·</span>
+          <span className="xp">+{fmtXp(path.xpTotal)} XP gagnés</span>
+        </div>
+      </div>
+      <div className="trophy-card__foot">
+        <span className="btn-trophy">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="2" y="4" width="12" height="8" />
+            <path d="M5 14 L6.5 12.5 M11 14 L9.5 12.5" />
+            <circle cx="8" cy="8" r="1.6" />
+          </svg>
+          Voir le certificat
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function GameCard({ path }: { path: SerializedPath }): React.JSX.Element {
+  const cat = CATEGORY_META[path.category] ?? CATEGORY_DEFAULT;
+  const diff = DIFF_META[path.difficulty] ?? DIFF_DEFAULT;
+  return (
+    <Link href={`/paths/${path.slug}`} className={`game-card game-card--${cat.kind}`}>
+      <Brackets />
+      <div className="game-card__cover">
+        <span className="game-card__cat">{cat.label}</span>
+        <span className="game-card__diff">
+          <DiffBars level={diff.level} />
+          {diff.label}
+        </span>
+        <span className="game-card__glyph">
+          <KindGlyph kind={cat.kind} size={64} />
+        </span>
+        <span className="game-card__id">
+          {"// "}
+          <b>{path.refCode}</b>
+        </span>
+      </div>
+      <div className="game-card__body">
+        <h3 className="game-card__title">{path.title}</h3>
+        <p className="game-card__desc">{path.description}</p>
+        <div className="game-card__stats">
+          <span>
+            <b>{path.lessonCount}</b> miss.
+          </span>
+          <span className="sep">·</span>
+          <span>
+            <b>~{path.estimatedHours}H</b>
+          </span>
+          <span className="sep">·</span>
+          <span className="xp">+{fmtXp(path.xpTotal)} XP</span>
+          {path.hasCert && (
+            <>
+              <span className="sep">·</span>
+              <span className="cert-mini">{CERT_ICON}</span>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="game-card__foot">
+        <span className="btn-start">Commencer {ARROW}</span>
+      </div>
+    </Link>
+  );
+}
+
+function EmptyState({ filterLabel }: { filterLabel: string }): React.JSX.Element {
+  return (
+    <div className="pc2-empty">
+      <div className="pc2-empty__glyph">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 48 48"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="8" y="12" width="32" height="26" />
+          <path d="M8 18 H40 M14 25 H22 M14 30 H30" />
+          <path d="M30 28 L40 38" />
+        </svg>
+      </div>
+      <h3 className="pc2-empty__title">Aucun parcours trouvé</h3>
+      <p className="pc2-empty__sub">{`// 0 résultat pour le filtre « ${filterLabel} »`}</p>
+      <span className="pc2-empty__cmd">
+        <span className="p">$</span> reset --filter=all
+      </span>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export function PathsCollection({
   paths,
@@ -617,291 +497,147 @@ export function PathsCollection({
   }, [paths, filter, search]);
 
   const idleCount = paths.length - inProgCount - doneCount;
+  const filterLabel = PILLS.find((p) => p.id === filter)?.label ?? "Tous";
 
-  const pillStyle = (active: boolean, color: string): React.CSSProperties => ({
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    height: 34,
-    padding: "0 16px",
-    background: active ? `${color}0F` : "transparent",
-    border: `1px solid ${active ? color : "#1F1B47"}`,
-    color: active ? color : "#B8B5D1",
-    fontFamily: "var(--font-mono)",
-    fontWeight: 600,
-    fontSize: 11,
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
-    cursor: "pointer",
-    borderRadius: 0,
-    boxShadow: active ? `0 0 0 1px ${color}33, 0 0 18px ${color}29` : "none",
-    transition: "all 180ms ease",
-  });
+  const inprog = filtered.filter((p) => p.status === "inprog");
+  const done = filtered.filter((p) => p.status === "done");
+  const idle = filtered.filter((p) => p.status === "idle");
+  const hero = inprog[0];
+  const secondary: { p: SerializedPath; type: "active" | "trophy" }[] = [
+    ...inprog.slice(1).map((p) => ({ p, type: "active" as const })),
+    ...done.map((p) => ({ p, type: "trophy" as const })),
+  ];
 
   return (
-    <div className="page-container">
-      {/* Breadcrumb */}
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          letterSpacing: "0.04em",
-          color: "#6B6890",
-          marginBottom: 26,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span style={{ color: "#0AFFD4" }}>$</span>
-        <span>~/</span>
-        <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span style={{ color: "#F5F5FA", fontWeight: 500 }}>parcours</span>
-        <span
-          style={{
-            display: "inline-block",
-            width: 7,
-            height: 13,
-            background: "#0AFFD4",
-            boxShadow: "0 0 8px #0AFFD4",
-            marginLeft: 4,
-            verticalAlign: "-2px",
-            animation: "blink 1s step-end infinite",
-          }}
-        />
-      </div>
-
-      {/* Header */}
-      <div className="catalog-header-grid">
-        <div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 800,
-              fontSize: "clamp(40px, 5.2vw, 72px)",
-              lineHeight: 0.95,
-              letterSpacing: "-0.04em",
-              color: "#F5F5FA",
-              margin: "0 0 14px",
-            }}
-          >
-            <em
-              style={{
-                fontStyle: "normal",
-                background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              {paths.length}
-            </em>{" "}
-            parcours disponibles
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 16,
-              lineHeight: 1.55,
-              color: "#B8B5D1",
-              margin: 0,
-              maxWidth: 540,
-            }}
-          >
-            Chaque parcours mène d&apos;une compétence brute à un certificat vérifiable.
-          </p>
+    <div className="pc2-root">
+      <div className="pc2">
+        {/* breadcrumb */}
+        <div className="pc2-crumb">
+          <span className="p">$</span>
+          <span>~/</span>
+          <b>cyberlearn</b>
+          <span className="slash">/</span>
+          <span className="current">parcours</span>
+          <span className="caret" />
         </div>
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              gap: 18,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#6B6890",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-            }}
-          >
-            <span>
-              <b style={{ color: "#0AFFD4" }}>{inProgCount}</b> en cours
-            </span>
-            <span style={{ color: "#44406B" }}>/</span>
-            <span>
-              <b style={{ color: "#FFB547" }}>{doneCount}</b> certifié
-            </span>
-            <span style={{ color: "#44406B" }}>/</span>
-            <span>
-              <b style={{ color: "#F5F5FA" }}>{idleCount}</b> à découvrir
-            </span>
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#6B6890",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-            }}
-          >
-            + <b style={{ color: "#F5F5FA" }}>{totalHours}</b> heures de contenu ·{" "}
-            <b style={{ color: "#F5F5FA" }}>{totalXp.toLocaleString("fr-FR")}</b> XP total
-          </div>
-        </div>
-      </div>
 
-      {/* Filter bar */}
-      <div className="filter-bar" style={{ alignItems: "center" }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#6B6890",
-            marginRight: 4,
-          }}
-        >
-          › DOMAINE
-        </span>
-        <div style={{ display: "flex", gap: 6 }}>
-          {(
-            [
-              { id: "all", label: "Tous", color: "#B8B5D1" },
-              { id: "CYBERSEC", label: "Cybersec", color: "#FF4757" },
-              { id: "DEV", label: "Dev", color: "#6E8BFF" },
-              { id: "NETWORK", label: "Réseau", color: "#0AFFD4" },
-            ] as const
-          ).map(({ id, label, color }) => (
-            <button
-              key={id}
-              onClick={() => {
-                setFilter(id);
-              }}
-              style={pillStyle(filter === id, color)}
-            >
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  background: color,
-                  transform: "rotate(45deg)",
-                  boxShadow: filter === id ? `0 0 6px ${color}` : "none",
-                  flexShrink: 0,
+        {/* header */}
+        <header className="pc2-head">
+          <div>
+            <h1 className="pc2-title">
+              <em>{paths.length}</em> parcours disponibles
+            </h1>
+            <p className="pc2-sub">
+              {
+                "Chaque parcours mène d'une compétence brute à un certificat vérifiable. Tu progresses mission par mission."
+              }
+            </p>
+          </div>
+          <div className="pc2-telemetry">
+            <div className="pc2-telemetry__row">
+              <span>
+                <b className="ip">{inProgCount}</b> en cours
+              </span>
+              <span className="pc2-telemetry__sep" />
+              <span>
+                <b className="cp">{doneCount}</b> certifié
+              </span>
+              <span className="pc2-telemetry__sep" />
+              <span>
+                <b>{idleCount}</b> à découvrir
+              </span>
+            </div>
+            <div className="pc2-telemetry__rule" />
+            <div className="pc2-telemetry__row">
+              <span>
+                <b>{totalHours}</b> H de contenu
+              </span>
+              <span className="pc2-telemetry__sep" />
+              <span>
+                <b>{fmtXp(totalXp)}</b> XP total
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* filters */}
+        <div className="pc2-filters">
+          <span className="pc2-filters__label">› DOMAINE</span>
+          <div className="pc2-filters__group">
+            {PILLS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`pc2-pill pc2-pill--${p.cls}${filter === p.id ? " is-active" : ""}`}
+                onClick={() => {
+                  setFilter(p.id);
                 }}
+              >
+                <span className="pc2-pill__dot" />
+                <span>{p.label}</span>
+              </button>
+            ))}
+          </div>
+          <span className="pc2-filters__sep" />
+          <label className="pc2-search">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
+              <path
+                d="M11 11 L14 14"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
               />
-              {label}
-            </button>
-          ))}
+            </svg>
+            <input
+              type="text"
+              placeholder="/ chercher un parcours..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+            />
+          </label>
         </div>
 
-        {/* Separator */}
-        <span style={{ width: 1, height: 20, background: "#1F1B47", margin: "0 6px" }} />
+        {filtered.length === 0 && <EmptyState filterLabel={filterLabel} />}
 
-        {/* Search */}
-        <label
-          style={{
-            marginLeft: "auto",
-            position: "relative",
-            height: 34,
-            minWidth: 220,
-            display: "block",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 16 16"
-            fill="none"
-            style={{
-              position: "absolute",
-              left: 12,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#6B6890",
-            }}
-          >
-            <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M11 11 L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <input
-            type="text"
-            placeholder="/ chercher un parcours..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-            style={{
-              width: "100%",
-              height: "100%",
-              padding: "0 12px 0 36px",
-              background: "#05041A",
-              border: "1px solid #1F1B47",
-              color: "#F5F5FA",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              outline: "none",
-              borderRadius: 0,
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#0AFFD4";
-              e.currentTarget.style.boxShadow = "0 0 0 1px rgba(10,255,212,0.3)";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = "#1F1B47";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          />
-        </label>
+        {hero && (
+          <>
+            <SectionLabel
+              tag="Reprendre"
+              count={`// ${String(inprog.length)} parcours actif${inprog.length > 1 ? "s" : ""}`}
+            />
+            <HeroPath path={hero} />
+          </>
+        )}
+
+        {secondary.length > 0 && (
+          <>
+            <SectionLabel tag="Progression" count="// secondaires · certifiés" />
+            <div className="pc2-duo">
+              {secondary.map(({ p, type }) =>
+                type === "active" ? (
+                  <ActiveCard key={p.id} path={p} />
+                ) : (
+                  <TrophyCard key={p.id} path={p} />
+                ),
+              )}
+            </div>
+          </>
+        )}
+
+        {idle.length > 0 && (
+          <>
+            <SectionLabel tag="À découvrir" count={`// ${String(idle.length)} parcours`} />
+            <div className="pc2-discover">
+              {idle.map((p) => (
+                <GameCard key={p.id} path={p} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
-
-      {/* Grid */}
-      {filtered.length === 0 ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: 320,
-            gap: 16,
-          }}
-        >
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#3F3D5C"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21 l-4.35-4.35" />
-          </svg>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 14,
-              color: "#6B6890",
-              letterSpacing: "0.06em",
-              margin: 0,
-            }}
-          >
-            Aucun parcours trouvé
-          </p>
-        </div>
-      ) : (
-        <div className="grid-2-col">
-          {filtered.map((path) => (
-            <PathCard key={path.id} path={path} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
