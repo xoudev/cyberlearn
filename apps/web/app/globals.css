@@ -310,37 +310,8 @@ aside[data-state="collapsed"] .sidebar-label {
   }
 }
 
-/* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
-
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: -800px 0;
-  }
-  100% {
-    background-position: 800px 0;
-  }
-}
-
-.skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    #1f1b47 0%,
-    #1f1b47 30%,
-    #2a2560 50%,
-    #1f1b47 70%,
-    #1f1b47 100%
-  );
-  background-size: 800px 100%;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite;
-  border-radius: 6px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer {
-    animation: none;
-    background: #1f1b47;
-  }
-}
+/* Skeleton shimmer moved to a scoped, co-located stylesheet:
+   apps/web/components/ui/skeleton.css (.cl-skel / .cl-skel-card). */
 
 /* ─── Syntax highlighting theme (rehype-highlight / highlight.js) ────────── */
 /* Matches the design-system.md code block spec */
