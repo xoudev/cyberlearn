@@ -988,21 +988,25 @@ article.lesson-content blockquote p code {
 
 /* Responsive layout utilities (mobile-first) ──────────────────────────── */
 
-/* Standard app page container (replaces per-page inline maxWidth/padding) */
+/* Standard app page container (replaces per-page inline maxWidth/padding).
+   Matches the v2 paths containers (.pd2 / .pc2): wide max-width and a full-bleed
+   content column on desktop (the app shell <main> provides no horizontal
+   padding), so every page uses the available desktop width consistently. A
+   gutter is kept on mobile/tablet so content never touches the screen edges. */
 .page-container {
-  max-width: 1320px;
+  max-width: 1340px;
   margin: 0 auto;
   padding: 24px 16px 80px;
   position: relative;
 }
 @media (min-width: 768px) {
   .page-container {
-    padding: 32px 32px 100px;
+    padding: 32px 24px 100px;
   }
 }
 @media (min-width: 1280px) {
   .page-container {
-    padding: 40px 56px 120px;
+    padding: 40px 0 120px;
   }
 }
 
