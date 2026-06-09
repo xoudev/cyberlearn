@@ -323,13 +323,6 @@
   filter: drop-shadow(0 0 6px var(--brand-turquoise));
   flex-shrink: 0;
 }
-.pd2 .brief__cell--cert.is-off {
-  color: var(--fg-tertiary);
-}
-.pd2 .brief__cell--cert.is-off svg {
-  color: var(--fg-disabled);
-  filter: none;
-}
 .pd2 .brief__cta {
   margin-top: 18px;
   width: 100%;

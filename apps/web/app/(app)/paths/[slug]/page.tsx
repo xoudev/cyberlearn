@@ -394,6 +394,9 @@ export default async function PathDetailPage({
   const pathCompleted = pathStatus === "COMPLETED";
   const hasQuiz = activeQuiz !== null;
   const hasCertConcept = path.certificateTemplate !== null;
+  // The certificate is "obtained" once it's been issued (same signal the final-boss
+  // node uses for its download link). Drives the MISSION.BRIEF certificate cell.
+  const certObtained = userPathProgress.certificateId !== null;
 
   // serpentine state → card visual state
   const cardState = (s: NodeState): CardState =>
@@ -465,24 +468,39 @@ export default async function PathDetailPage({
               <div className="lbl">XP total</div>
               <div className="val">{xpTotal.toLocaleString("fr-FR")}</div>
             </div>
-            <div className={`brief__cell brief__cell--cert${hasCertConcept ? "" : " is-off"}`}>
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="10" cy="8" r="4" />
-                <path d="M7 11.5 L6 17 L10 15 L14 17 L13 11.5" />
-              </svg>
+            <div className="brief__cell brief__cell--cert">
+              {certObtained ? (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 10.5 L8.5 15 L16 6" />
+                </svg>
+              ) : (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="10" cy="8" r="4" />
+                  <path d="M7 11.5 L6 17 L10 15 L14 17 L13 11.5" />
+                </svg>
+              )}
               <span>
                 Certificat
                 <br />
-                {hasCertConcept ? "inclus" : "—"}
+                {certObtained ? "disponible" : "inclus"}
               </span>
             </div>
           </div>
