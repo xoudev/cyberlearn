@@ -44,7 +44,6 @@ export type {
   Path,
   PathLesson,
   Badge,
-  LessonBadgeReward,
   Rating,
   LessonQuestion,
   LessonAnswer,
