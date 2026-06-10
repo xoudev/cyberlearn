@@ -8,14 +8,24 @@ import { BADGE_RARITY_VAR } from "./badge-tokens.js";
 export type BadgeMedallionSize = "xs" | "sm" | "md" | "lg";
 export type BadgeMedallionState = "locked" | "unlocked";
 
-/** The single canonical hexagon geometry — shared by EVERY badge medallion. */
-const HEX_CLIP = "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)";
+/**
+ * The single canonical hexagon — a REGULAR pointy-top hexagon drawn as an SVG
+ * <polygon> (NOT a CSS clip-path + border). The viewBox carries the exact
+ * √3/2 width:height ratio of a regular hexagon, so the shape can never
+ * stretch, and the rarity outline is a real SVG stroke — uniform thickness on
+ * all six edges. Pointy-top is kept: its two vertical edges stay parallel to
+ * the card sides, and the badge artwork SVGs are pointy-top hexagons too.
+ */
+const HEX_VIEWBOX = "0 0 86.6 100";
+const HEX_POINTS = "43.3,0 86.6,25 86.6,75 43.3,100 0,75 0,25";
+/** width / height of a regular pointy-top hexagon (√3/2). */
+const HEX_RATIO = 0.866;
 
-const SIZES: Record<BadgeMedallionSize, { w: number; h: number; icon: number; ring: number }> = {
-  xs: { w: 30, h: 34, icon: 27, ring: 1.5 },
-  sm: { w: 52, h: 60, icon: 46, ring: 2 },
-  md: { w: 96, h: 110, icon: 86, ring: 3 },
-  lg: { w: 124, h: 142, icon: 110, ring: 3 },
+const SIZES: Record<BadgeMedallionSize, { h: number; icon: number; ring: number }> = {
+  xs: { h: 34, icon: 27, ring: 1.5 },
+  sm: { h: 60, icon: 46, ring: 2 },
+  md: { h: 110, icon: 86, ring: 3 },
+  lg: { h: 142, icon: 110, ring: 3 },
 };
 
 /** The single consistent fallback glyph (an award star), used everywhere the
@@ -104,13 +114,10 @@ export function BadgeMedallion({
   style,
 }: BadgeMedallionProps): React.ReactElement {
   const s = SIZES[size];
+  // Width derives from height at the regular-hexagon ratio — never stretched.
+  const w = Math.round(s.h * HEX_RATIO * 10) / 10;
   const locked = state === "locked";
   const rarityColor = BADGE_RARITY_VAR[rarity];
-  const ringPx = `${String(s.ring)}px`;
-
-  const ringBg = locked
-    ? "linear-gradient(145deg, #2a2560, #1a1640)"
-    : `linear-gradient(145deg, ${rarityColor}, color-mix(in oklab, ${rarityColor} 38%, #05041a))`;
 
   const glow = locked
     ? "drop-shadow(0 0 4px rgba(42,37,96,0.8))"
@@ -121,23 +128,32 @@ export function BadgeMedallion({
       <div
         style={{
           position: "relative",
-          width: s.w,
+          width: w,
           height: s.h,
           display: "grid",
           placeItems: "center",
-          clipPath: HEX_CLIP,
         }}
       >
-        {/* Rarity ring */}
-        <div
-          style={{ position: "absolute", inset: 0, background: ringBg, opacity: locked ? 0.7 : 1 }}
+        {/* Plate + rarity outline: ONE polygon. vector-effect keeps the stroke
+            at exactly `ring`px on all six edges at every rendered size. */}
+        <svg
+          viewBox={HEX_VIEWBOX}
+          width={w}
+          height={s.h}
+          preserveAspectRatio="xMidYMid meet"
+          style={{ position: "absolute", inset: 0, overflow: "visible" }}
           aria-hidden="true"
-        />
-        {/* Inner dark fill — creates the ring gap */}
-        <div
-          style={{ position: "absolute", inset: ringPx, background: "#0a0826", clipPath: HEX_CLIP }}
-          aria-hidden="true"
-        />
+        >
+          <polygon
+            points={HEX_POINTS}
+            fill="#0a0826"
+            stroke={locked ? "#2a2560" : rarityColor}
+            strokeWidth={s.ring}
+            strokeOpacity={locked ? 0.8 : 1}
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
         {/* Icon */}
         <div
           style={{
