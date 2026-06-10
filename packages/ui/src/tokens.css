@@ -111,11 +111,11 @@
   --color-danger: #ff4d6d;
   --color-info: #4d8bff;
 
-  /* Badge rarities */
+  /* Badge rarities — single canonical ramp (epic is purple, NOT brand turquoise) */
   --color-rarity-common: #b8b5d1;
-  --color-rarity-rare: #4d8bff;
+  --color-rarity-rare: #6e8bff;
   --color-rarity-epic: #b14dff;
-  --color-rarity-legendary: #ffb020;
+  --color-rarity-legendary: #ffb547;
 
   /* shadcn aliases update automatically via var(--color-*) chain */
   --ring: var(--color-brand-turquoise);

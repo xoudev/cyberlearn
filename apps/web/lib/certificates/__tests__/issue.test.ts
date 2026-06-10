@@ -55,7 +55,7 @@ import { issueCertificate } from "../issue";
 beforeEach(() => {
   vi.clearAllMocks();
   m.create.mockResolvedValue({ id: "cert-1", publicId: "pub-1" });
-  m.pathFindUnique.mockResolvedValue({ title: "Path", slug: "path" });
+  m.pathFindUnique.mockResolvedValue({ title: "Path", slug: "path", _count: { lessons: 2 } });
   m.userFindUnique.mockResolvedValue({ displayName: "Alice" });
   m.certCount.mockResolvedValue(0);
 });

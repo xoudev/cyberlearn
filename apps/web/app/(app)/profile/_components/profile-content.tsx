@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import {
+  BadgeMedallion,
+  BADGE_RARITY_LABELS,
+  BADGE_RARITY_VAR,
+  toBadgeRarity,
+} from "@cyberlearn/ui";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -41,117 +46,17 @@ interface Props {
 
 // ── Rarity tokens ─────────────────────────────────────────────────────────────
 
-const HEX_CLIP = "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)";
-
-interface RarityMeta {
-  color: string;
-  grad: string;
-  glow: string;
-}
-
-const RARITY_META: Record<string, RarityMeta> = {
-  LEGENDARY: {
-    color: "#FFB547",
-    grad: "linear-gradient(135deg, #FFB547, #FF4757)",
-    glow: "rgba(255,181,71,0.18)",
-  },
-  EPIC: {
-    color: "#0AFFD4",
-    grad: "linear-gradient(135deg, #0AFFD4, #0024FF)",
-    glow: "rgba(10,255,212,0.18)",
-  },
-  RARE: {
-    color: "#6E8BFF",
-    grad: "linear-gradient(135deg, #6E8BFF, #4A3FCC)",
-    glow: "rgba(110,139,255,0.18)",
-  },
-  COMMON: {
-    color: "#B8B5D1",
-    grad: "linear-gradient(135deg, #B8B5D1, #6F6B99)",
-    glow: "rgba(184,181,209,0.10)",
-  },
-};
-
-const RARITY_META_DEFAULT: RarityMeta = {
-  color: "#B8B5D1",
-  grad: "linear-gradient(135deg, #B8B5D1, #6F6B99)",
-  glow: "rgba(184,181,209,0.10)",
-};
-
 const CAT_COLOR: Record<string, string> = {
   CYBERSEC: "#FF4757",
   DEV: "#6E8BFF",
   NETWORK: "#0AFFD4",
 };
 
-// ── Badge icon fallback ───────────────────────────────────────────────────────
-
-const CRITERION_PATHS: Record<string, string> = {
-  LESSON_COMPLETED: "M4 4h8v1H4zm0 3h8v1H4zm0 3h5v1H4zM2 2h12v12H2V2zm1 1v10h10V3H3z",
-  STREAK_DAYS:
-    "M8 1C8 1 5 5.5 5 8a3 3 0 006 0c0-2.5-3-7-3-7zm0 3.5S9.5 6.5 9.5 8A1.5 1.5 0 016.5 8C6.5 6.5 8 4.5 8 4.5z",
-  XP_THRESHOLD: "M8 1l1.9 4.1L14 6l-3 2.9.7 4.1L8 11l-3.7 2 .7-4.1L2 6l4.1-.9L8 1z",
-  PATH_COMPLETED: "M2 8c0-3.3 2.7-6 6-6s6 2.7 6 6-2.7 6-6 6-6-2.7-6-6zm9-1H8V4l-3 4h2.5v3L11 7z",
-  CATEGORY_MASTERY: "M8 1l1.5 4.5H14l-3.8 2.7 1.4 4.3L8 9.8l-3.6 2.7 1.4-4.3L2 5.5h4.5L8 1z",
-  PERFECT_QUIZ:
-    "M8 2a6 6 0 100 12A6 6 0 008 2zm0 2a4 4 0 110 8A4 4 0 018 4zm0 2a2 2 0 100 4 2 2 0 000-4z",
-};
-
-function BadgeGlyph({
-  criterionType,
-  size = 36,
-  color = "currentColor",
-}: { criterionType: string; size?: number; color?: string }) {
-  const d =
-    CRITERION_PATHS[criterionType] ?? "M8 2a6 6 0 100 12A6 6 0 008 2zM7 6h2v4H7zm0 5h2v2H7z";
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill={color} aria-hidden="true">
-      <path d={d} />
-    </svg>
-  );
-}
-
-function BadgeImageWithFallback({
-  src,
-  alt,
-  size,
-  criterionType,
-  color,
-}: {
-  src: string;
-  alt: string;
-  size: number;
-  criterionType: string;
-  color: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <BadgeGlyph criterionType={criterionType} size={size} color={color} />;
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      width={size}
-      height={size}
-      style={{ objectFit: "contain" }}
-      onError={() => {
-        setFailed(true);
-      }}
-    />
-  );
-}
-
 // ── Badge card ────────────────────────────────────────────────────────────────
 
 function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
-  const r = RARITY_META[badge.rarity] ?? RARITY_META_DEFAULT;
-  const rarityLabel =
-    badge.rarity === "LEGENDARY"
-      ? "Légendaire"
-      : badge.rarity === "EPIC"
-        ? "Épique"
-        : badge.rarity === "RARE"
-          ? "Rare"
-          : "Commun";
+  const rarity = toBadgeRarity(badge.rarity);
+  const v = BADGE_RARITY_VAR[rarity];
 
   return (
     <article
@@ -172,7 +77,7 @@ function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
         style={{
           position: "absolute",
           inset: 0,
-          background: `radial-gradient(ellipse 80% 60% at 50% 100%, ${r.glow}, transparent 70%)`,
+          background: `radial-gradient(ellipse 80% 60% at 50% 100%, color-mix(in oklab, ${v} 16%, transparent), transparent 70%)`,
           opacity: 0.55,
           pointerEvents: "none",
         }}
@@ -187,48 +92,20 @@ function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
           left: 0,
           right: 0,
           height: 2,
-          background: `linear-gradient(90deg, transparent, ${r.color}, transparent)`,
-          boxShadow: `0 0 10px ${r.color}`,
+          background: `linear-gradient(90deg, transparent, ${v}, transparent)`,
+          boxShadow: `0 0 10px color-mix(in oklab, ${v} 60%, transparent)`,
         }}
         aria-hidden="true"
       />
 
-      {/* Hex medallion */}
-      <div
-        style={{
-          position: "relative",
-          width: 88,
-          height: 100,
-          marginBottom: 18,
-          display: "grid",
-          placeItems: "center",
-        }}
-        aria-hidden="true"
-      >
-        {/* Gradient ring */}
-        <div style={{ position: "absolute", inset: 0, background: r.grad, clipPath: HEX_CLIP }} />
-        {/* Inner fill */}
-        <div
-          style={{ position: "absolute", inset: 2, background: "#0A0826", clipPath: HEX_CLIP }}
-        />
-        {/* Icon */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            color: r.color,
-            filter: `drop-shadow(0 0 10px ${r.color})`,
-          }}
-        >
-          <BadgeImageWithFallback
-            src={badge.iconUrl}
-            alt={badge.name}
-            size={36}
-            criterionType={badge.criterionType}
-            color={r.color}
-          />
-        </div>
-      </div>
+      {/* Hex medallion — shared component (earned-only) */}
+      <BadgeMedallion
+        rarity={rarity}
+        size="md"
+        iconUrl={badge.iconUrl}
+        name={badge.name}
+        style={{ marginBottom: 18 }}
+      />
 
       {/* Rarity label */}
       <div
@@ -238,11 +115,11 @@ function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
           fontSize: 9.5,
           letterSpacing: "0.2em",
           textTransform: "uppercase",
-          color: r.color,
+          color: v,
           marginBottom: 8,
         }}
       >
-        · {rarityLabel} ·
+        · {BADGE_RARITY_LABELS[rarity]} ·
       </div>
 
       {/* Name */}
