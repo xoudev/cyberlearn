@@ -11,6 +11,14 @@ const m = vi.hoisted(() => ({
   userFindUnique: vi.fn(),
   certUpdate: vi.fn(),
   certCount: vi.fn(),
+  findAllActive: vi.fn(),
+  evaluateBadges: vi.fn(),
+  transaction: vi.fn(),
+  tx: {
+    userBadge: { createManyAndReturn: vi.fn() },
+    user: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
+    notification: { createMany: vi.fn() },
+  },
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -23,7 +31,7 @@ vi.mock("@cyberlearn/db", () => ({
   certificateRepository: { create: m.create },
   notificationRepository: { create: m.notify },
   badgeRepository: {
-    findAllActive: vi.fn().mockResolvedValue([]),
+    findAllActive: m.findAllActive,
     findUserBadgeIds: vi.fn().mockResolvedValue(new Set()),
     findCriterionFacts: vi.fn().mockResolvedValue({
       completedLessons: [],
@@ -38,6 +46,7 @@ vi.mock("@cyberlearn/db", () => ({
     path: { findUnique: m.pathFindUnique },
     user: { findUnique: m.userFindUnique },
     certificate: { update: m.certUpdate, count: m.certCount },
+    $transaction: m.transaction,
   },
 }));
 vi.mock("@cyberlearn/db/supabase/admin", () => ({
@@ -52,7 +61,7 @@ vi.mock("qrcode", () => ({
   default: { toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,AA") },
 }));
 vi.mock("@cyberlearn/lib", () => ({
-  evaluateBadges: vi.fn().mockReturnValue([]),
+  evaluateBadges: m.evaluateBadges,
   buildBadgeCriterionStats: vi.fn().mockReturnValue({
     xpTotal: 0,
     streakDays: 0,
@@ -63,6 +72,8 @@ vi.mock("@cyberlearn/lib", () => ({
     completedPathIds: new Set(),
     totalCertificates: 0,
   }),
+  // Used by the awardBadges helper for the level recompute on credit.
+  computeLevel: (xp: number) => ({ level: Math.floor(xp / 100) + 1, current: 0, needed: 100 }),
 }));
 vi.mock("@/lib/pdf/certificate-template", () => ({ CertificateDocument: () => null }));
 
@@ -74,6 +85,11 @@ beforeEach(() => {
   m.pathFindUnique.mockResolvedValue({ title: "Path", slug: "path", _count: { lessons: 2 } });
   m.userFindUnique.mockResolvedValue({ displayName: "Alice" });
   m.certCount.mockResolvedValue(0);
+  m.findAllActive.mockResolvedValue([]);
+  m.evaluateBadges.mockReturnValue([]);
+  m.transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(m.tx));
+  m.tx.userBadge.createManyAndReturn.mockResolvedValue([]);
+  m.tx.user.findUniqueOrThrow.mockResolvedValue({ xpTotal: 0 });
 });
 
 describe("issueCertificate — gate + idempotence guards", () => {
@@ -136,5 +152,55 @@ describe("issueCertificate — gate + idempotence guards", () => {
     expect(m.upsertProgress).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "u1", pathId: "p1", status: "COMPLETED" }),
     );
+  });
+});
+
+describe("issueCertificate — path badge awarding through the shared helper", () => {
+  it("inserts the badge, credits its xpReward and notifies with the xp in metadata", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+    m.findAllActive.mockResolvedValue([
+      {
+        id: "b1",
+        name: "Architecte",
+        description: "Complétez un parcours entier.",
+        rarity: "EPIC",
+        xpReward: 75,
+        isActive: true,
+        criterionType: "PATH_COMPLETED",
+        criterionData: { count: 1 },
+      },
+    ]);
+    m.evaluateBadges.mockReturnValue(["b1"]);
+    m.tx.userBadge.createManyAndReturn.mockResolvedValue([{ badgeId: "b1" }]);
+    m.tx.user.findUniqueOrThrow.mockResolvedValue({ xpTotal: 200 });
+
+    await issueCertificate("u1", "p1", { score: 90 });
+
+    // Row stamped with xpCredited at insertion.
+    expect(m.tx.userBadge.createManyAndReturn).toHaveBeenCalledWith({
+      data: [{ userId: "u1", badgeId: "b1", context: { pathId: "p1", xpCredited: 75 } }],
+      skipDuplicates: true,
+      select: { badgeId: true },
+    });
+    // XP credited + level recomputed (fake computeLevel: floor(xp/100)+1).
+    expect(m.tx.user.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { xpTotal: 275, level: 3 },
+    });
+    // Notification carries the xpReward.
+    const notifArg = m.tx.notification.createMany.mock.calls[0]?.[0] as {
+      data: { metadata: Record<string, unknown> }[];
+    };
+    expect(notifArg.data[0]?.metadata).toEqual({ badgeId: "b1", rarity: "EPIC", xpReward: 75 });
+  });
+
+  it("skips the transaction entirely when no badge unlocks", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+
+    await issueCertificate("u1", "p1");
+
+    expect(m.transaction).not.toHaveBeenCalled();
   });
 });

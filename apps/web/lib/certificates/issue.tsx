@@ -16,6 +16,7 @@ import {
 } from "@cyberlearn/db";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { buildBadgeCriterionStats, evaluateBadges } from "@cyberlearn/lib";
+import { awardBadges } from "@/lib/badges/award";
 import { CertificateDocument } from "@/lib/pdf/certificate-template";
 
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
@@ -179,21 +180,11 @@ async function awardPathCompletedBadges(userId: string, pathId: string): Promise
 
   if (newBadgeIds.length === 0) return;
 
+  // Shared award primitive: inserts the rows, credits Badge.xpReward (+ level
+  // recompute) and notifies — all atomically, and only for rows actually
+  // inserted, so concurrent or repeated calls never double-credit.
   const earnedBadges = allBadges.filter((b) => newBadgeIds.includes(b.id));
-  await prisma.$transaction([
-    prisma.userBadge.createMany({
-      data: newBadgeIds.map((badgeId) => ({ userId, badgeId, context: { pathId } })),
-      skipDuplicates: true,
-    }),
-    prisma.notification.createMany({
-      data: earnedBadges.map((badge) => ({
-        userId,
-        type: "BADGE_EARNED" as const,
-        title: `Badge obtenu : ${badge.name}`,
-        body: badge.description,
-        actionUrl: "/badges",
-        metadata: { badgeId: badge.id, rarity: badge.rarity as string },
-      })),
-    }),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    await awardBadges(tx, userId, earnedBadges, { pathId });
+  });
 }
