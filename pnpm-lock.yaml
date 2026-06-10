@@ -541,6 +541,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@cyberlearn/lib':
+        specifier: workspace:*
+        version: link:../lib
       '@prisma/client':
         specifier: 'catalog:'
         version: 6.19.3(prisma@6.19.3(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3)

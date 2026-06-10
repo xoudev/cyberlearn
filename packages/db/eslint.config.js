@@ -2,8 +2,8 @@ import baseConfig from "@cyberlearn/config/eslint/base";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  // Seed/reset scripts are not library code — intentional console.log output
-  { ignores: ["prisma/seed.ts", "prisma/reset-user.ts"] },
+  // Seed/reset/backfill scripts are not library code — intentional console.log output
+  { ignores: ["prisma/seed.ts", "prisma/reset-user.ts", "prisma/backfill-badge-xp.ts"] },
   ...baseConfig,
   {
     languageOptions: {

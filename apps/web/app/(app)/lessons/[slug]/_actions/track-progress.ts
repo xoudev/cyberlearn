@@ -10,14 +10,16 @@ import {
 } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
+import { awardBadges } from "@/lib/badges/award";
 import { checkAndIssueCertificates } from "@/app/(app)/paths/[slug]/_actions/generate-certificate";
 
 export interface CompleteLessonResult {
   alreadyCompleted: boolean;
+  /** Total XP credited by this completion: lesson reward + earned-badge rewards. */
   xpGained: number;
   leveledUp: boolean;
   newLevel: number;
-  newBadges: { name: string; rarity: string }[];
+  newBadges: { name: string; rarity: string; xpReward: number }[];
 }
 
 const EMPTY_RESULT: CompleteLessonResult = {
@@ -48,10 +50,9 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
   const isFirstCompletion = existing?.status !== "COMPLETED";
   const now = new Date();
 
-  // ── XP + level ─────────────────────────────────────────────────────────────
+  // ── XP + level (lesson reward only — badge rewards are credited in-tx) ─────
   const newXpTotal = isFirstCompletion ? user.xpTotal + lesson.xpReward : user.xpTotal;
   const { level: newLevel } = computeLevel(newXpTotal);
-  const leveledUp = newLevel > user.level;
 
   // ── Streak ─────────────────────────────────────────────────────────────────
   const { streakDays, lastActiveAt } = computeNewStreak(user.streakDays, user.lastActiveAt, now);
@@ -75,42 +76,12 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
     );
   }
 
-  // ── Build atomic transaction ───────────────────────────────────────────────
+  // ── Atomic transaction (interactive: the badge credit depends on which
+  //    userBadge rows actually get inserted) ─────────────────────────────────
   const earnedBadges = allBadges.filter((b) => newBadgeIds.includes(b.id));
 
-  const notifications: {
-    userId: string;
-    type: "LEVEL_UP" | "BADGE_EARNED";
-    title: string;
-    body: string;
-    actionUrl: string;
-    metadata: Record<string, string | number>;
-  }[] = [];
-
-  if (leveledUp) {
-    notifications.push({
-      userId: authUser.id,
-      type: "LEVEL_UP",
-      title: `Niveau ${String(newLevel)} atteint !`,
-      body: `+${String(lesson.xpReward)} XP, tu passes au niveau ${String(newLevel)}.`,
-      actionUrl: "/profile",
-      metadata: { previousLevel: user.level, newLevel, xpTotal: newXpTotal },
-    });
-  }
-
-  for (const badge of earnedBadges) {
-    notifications.push({
-      userId: authUser.id,
-      type: "BADGE_EARNED",
-      title: `Badge obtenu : ${badge.name}`,
-      body: badge.description,
-      actionUrl: "/badges",
-      metadata: { badgeId: badge.id, rarity: badge.rarity },
-    });
-  }
-
-  await prisma.$transaction([
-    prisma.userLessonProgress.upsert({
+  const { award, finalLevel } = await prisma.$transaction(async (tx) => {
+    await tx.userLessonProgress.upsert({
       where: { userId_lessonId: { userId: authUser.id, lessonId } },
       create: {
         userId: authUser.id,
@@ -123,42 +94,52 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
         status: "COMPLETED",
         completedAt: now,
       },
-    }),
-    prisma.user.update({
+    });
+
+    await tx.user.update({
       where: { id: authUser.id },
       data: { xpTotal: newXpTotal, level: newLevel, streakDays, lastActiveAt },
-    }),
-    ...(newBadgeIds.length > 0
-      ? [
-          prisma.userBadge.createMany({
-            data: newBadgeIds.map((badgeId) => ({
-              userId: authUser.id,
-              badgeId,
-              context: { lessonId },
-            })),
-            skipDuplicates: true,
-          }),
-        ]
-      : []),
-    ...(notifications.length > 0 ? [prisma.notification.createMany({ data: notifications })] : []),
+    });
+
+    // Insert userBadge rows, credit their xpReward on top of the lesson XP,
+    // and notify — only for rows actually inserted (idempotent re-awards).
+    const awardResult = await awardBadges(tx, authUser.id, earnedBadges, { lessonId });
+
+    const txXpTotal = awardResult.newXpTotal ?? newXpTotal;
+    const txLevel = awardResult.newLevel ?? newLevel;
+
+    if (txLevel > user.level) {
+      const totalGained = lesson.xpReward + awardResult.xpGained;
+      await tx.notification.create({
+        data: {
+          userId: authUser.id,
+          type: "LEVEL_UP",
+          title: `Niveau ${String(txLevel)} atteint !`,
+          body: `+${String(totalGained)} XP, tu passes au niveau ${String(txLevel)}.`,
+          actionUrl: "/profile",
+          metadata: { previousLevel: user.level, newLevel: txLevel, xpTotal: txXpTotal },
+        },
+      });
+    }
+
     // Schedule first review for tomorrow — SM-2 starts here
-    ...(isFirstCompletion
-      ? [
-          prisma.reviewSchedule.upsert({
-            where: { userId_lessonId: { userId: authUser.id, lessonId } },
-            create: {
-              userId: authUser.id,
-              lessonId,
-              nextReviewAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-              easeFactor: 2.5,
-              intervalDays: 1,
-              repetitions: 0,
-            },
-            update: {},
-          }),
-        ]
-      : []),
-  ]);
+    if (isFirstCompletion) {
+      await tx.reviewSchedule.upsert({
+        where: { userId_lessonId: { userId: authUser.id, lessonId } },
+        create: {
+          userId: authUser.id,
+          lessonId,
+          nextReviewAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+          easeFactor: 2.5,
+          intervalDays: 1,
+          repetitions: 0,
+        },
+        update: {},
+      });
+    }
+
+    return { award: awardResult, finalLevel: txLevel };
+  });
 
   revalidatePath(`/lessons/${lesson.slug}`);
   revalidatePath("/lessons");
@@ -173,9 +154,13 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
 
   return {
     alreadyCompleted: !isFirstCompletion,
-    xpGained: isFirstCompletion ? lesson.xpReward : 0,
-    leveledUp,
-    newLevel,
-    newBadges: earnedBadges.map((b) => ({ name: b.name, rarity: b.rarity as string })),
+    xpGained: isFirstCompletion ? lesson.xpReward + award.xpGained : 0,
+    leveledUp: finalLevel > user.level,
+    newLevel: finalLevel,
+    newBadges: award.awarded.map((b) => ({
+      name: b.name,
+      rarity: b.rarity,
+      xpReward: b.xpReward,
+    })),
   };
 }
