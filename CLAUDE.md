@@ -57,18 +57,27 @@ packages/config → Shared ESLint, TSConfig, Biome configs
 
 ## Compact Instructions
 
-When compacting, preserve: current phase number, list of completed phases, active file paths being edited, any unresolved bugs or blockers, and the architecture decisions made so far. The full brief is in `docs/PROJECT_BRIEF.md` — re-read it after compaction if context about a specific phase is lost.
+When compacting, preserve: current phase number, list of completed phases, active file paths being edited, any unresolved bugs or blockers, and the architecture decisions made so far. The full brief is in `CyberLearn.md` (repo root) — re-read it after compaction if context about a specific phase is lost.
 
 ## Reference Documents
 
-- `docs/PROJECT_BRIEF.md` — Full 1674-line project brief with all specs
-- `docs/PATCH_IMPORT_LESSONS.md` — Import MDX feature spec (Phase 9)
+- `CyberLearn.md` — Full project brief with all specs (repo root)
+- `CyberLearn_Patch_ImportLessons.md` — Import MDX feature spec (Phase 9, repo root)
 - `docs/adr/` — Architecture Decision Records
 
-## Hardening en cours
-Le plan de hardening v1 est dans `docs/hardening/v1-plan.md`. Il liste 6 PRs
-séquentielles à exécuter avant toute nouvelle feature. Référence-le
-systématiquement avant de proposer du travail.
+## Hardening
+Les notes de hardening vivent dans `docs/hardening/` (`incidents.md`,
+`known-issues.md`).
+
+## RLS — versionnée dans les migrations
+Les policies RLS font partie de la chaîne de migrations Prisma (baseline :
+`20260610200000_rls_baseline` — 56 policies + helper `current_user_role()`).
+Toute migration qui crée une table DOIT activer la RLS et poser ses policies
+dans le MÊME fichier de migration (`DROP POLICY IF EXISTS` + `CREATE POLICY`).
+Les évolutions de policies existantes = leur propre migration, même pattern.
+Aucune application manuelle de RLS hors migration. La CI (job Integration,
+step « Assert RLS coverage ») échoue si une table public n'a pas la RLS ou si
+le compte de policies régresse sous 56.
 
 ## Conventions Storage
 

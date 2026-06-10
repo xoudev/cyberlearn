@@ -263,13 +263,34 @@ jobs:
       - name: Provision schema (Prisma migrations)
         run: pnpm --filter @cyberlearn/db exec prisma migrate deploy
 
-      - name: Provision RLS policies + certificates bucket
+      - name: Provision certificates bucket
+        # RLS is no longer applied here: the 20260610200000_rls_baseline migration
+        # folded post_prisma_rls.sql into the chain, so `migrate deploy` above
+        # already applied it. The step below PROVES it did.
         run: |
-          DB="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-          # post_prisma_rls.sql is a bare file (not a Prisma migration) → applied here.
-          psql "$DB" -v ON_ERROR_STOP=1 -f packages/db/prisma/migrations/post_prisma_rls.sql
           # Private bucket (public=false), mirroring prod so storage RLS asserts the right scenario.
-          psql "$DB" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('certificates', 'certificates', false) on conflict (id) do nothing;"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('certificates', 'certificates', false) on conflict (id) do nothing;"
+
+      - name: Assert RLS coverage (applied by migrate deploy alone)
+        # Gate 1 — no public table without RLS. Allowlist: _prisma_migrations is
+        # Prisma's own tracking table (no RLS by design; deliberately NOT hardened
+        # — enabling RLS on it could break migrate deploy itself).
+        # Gate 2 — tripwire on the policy count: >= the 56 baseline policies.
+        # Deliberately >=, not ==, so adding policies needs no CI edit; a DROP
+        # that regresses the count below the baseline still fails loudly.
+        # Both gates are fail-closed: `if ! [ ... ]` treats an empty/non-numeric
+        # psql result (connection error) as a failure, never as a pass.
+        # Behavior (not just existence) stays proven by the RLS/IDOR tests below.
+        run: |
+          EXPOSED=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -t -A -c "SELECT coalesce(string_agg(tablename, ', '), '') FROM pg_tables WHERE schemaname = 'public' AND NOT rowsecurity AND tablename NOT IN ('_prisma_migrations');")
+          if ! [ -z "$EXPOSED" ]; then
+            echo "::error::public tables without RLS: $EXPOSED"; exit 1
+          fi
+          COUNT=$(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -t -A -c "SELECT count(*) FROM pg_policies WHERE schemaname = 'public';")
+          if ! [ "$COUNT" -ge 56 ]; then
+            echo "::error::pg_policies count regressed or unreadable: '$COUNT' (expected >= 56)"; exit 1
+          fi
+          echo "RLS coverage OK: no exposed table, $COUNT policies"
 
       - name: Seed database
         run: pnpm --filter @cyberlearn/db db:seed

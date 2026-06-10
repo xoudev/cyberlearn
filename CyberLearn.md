@@ -764,11 +764,17 @@ model AuditLog {
 
 ### Politiques RLS (Row Level Security) Supabase
 
-> **À activer sur TOUTES les tables.** Voici les policies critiques à appliquer via une migration SQL post-Prisma.
+> **À activer sur TOUTES les tables.**
+>
+> **OBSOLÈTE (flow)** : le fichier `post_prisma_rls.sql` « à exécuter après
+> chaque migrate » n'existe plus. Depuis la migration
+> `packages/db/prisma/migrations/20260610200000_rls_baseline/`, les policies
+> sont versionnées DANS la chaîne de migrations Prisma et appliquées par
+> `prisma migrate deploy` — source canonique : ce fichier de migration, pas
+> le snapshot historique ci-dessous (liste de tables incomplète).
 
 ```sql
--- migrations/post_prisma_rls.sql
--- À exécuter après chaque prisma migrate
+-- Snapshot historique du brief (spec d'origine, conservé pour référence)
 
 -- Activation RLS sur toutes les tables
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -1340,7 +1346,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - Setup projet Supabase + récupération des credentials
 - Schéma Prisma complet
 - Migrations Prisma générées
-- Migration SQL post-Prisma pour activer RLS et créer les policies
+- Policies RLS versionnées dans la chaîne de migrations Prisma (depuis `20260610200000_rls_baseline`)
 - Auth Hook Supabase (Edge Function) pour injecter `user_role` dans le JWT
 - Pages `/login`, `/auth/callback`, `/onboarding`
 - Magic Link + GitHub OAuth fonctionnels
