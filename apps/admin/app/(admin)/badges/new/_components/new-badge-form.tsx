@@ -92,8 +92,8 @@ const CRITERION_LABELS: Record<string, string> = {
   STREAK_DAYS: "Jours de streak consécutifs",
   CATEGORY_MASTERY: "Maîtrise d'une catégorie",
   LESSON_SPECIFIC: "Leçon spécifique complétée",
-  PERFECT_QUIZ: "Quiz parfait (attribution manuelle)",
-  CUSTOM: "Personnalisé (attribution manuelle)",
+  PERFECT_QUIZ: "Quiz parfaits (N scores de 100 %)",
+  CUSTOM: "Personnalisé (événement)",
 };
 
 const CATEGORY_OPTIONS = ["DEV", "CYBERSEC", "NETWORK", "CLOUD", "OSINT"] as const;
@@ -107,14 +107,7 @@ function CriterionFields({
   lessons: LessonOption[];
   criterionError?: string;
 }) {
-  if (type === "" || type === "PERFECT_QUIZ" || type === "CUSTOM") {
-    return type === "PERFECT_QUIZ" || type === "CUSTOM" ? (
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#44406B", margin: 0 }}>
-        Ce badge s&apos;attribue manuellement depuis le profil utilisateur. Aucun critère
-        automatique.
-      </p>
-    ) : null;
-  }
+  if (type === "") return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -273,6 +266,39 @@ function CriterionFields({
               style={INPUT_STYLE}
             />
           )}
+        </Field>
+      )}
+
+      {type === "PERFECT_QUIZ" && (
+        <Field
+          label="Nombre de quiz parfaits *"
+          hint="L'utilisateur doit obtenir N scores de 100 % aux quiz de parcours."
+        >
+          <input
+            name="criterion_count"
+            type="number"
+            min={1}
+            max={999}
+            required
+            defaultValue={1}
+            style={INPUT_STYLE}
+          />
+        </Field>
+      )}
+
+      {type === "CUSTOM" && (
+        <Field
+          label="Événement *"
+          hint="Attribué quand l'événement se produit. Supporté : placement_test_passed (au moins une catégorie maîtrisée au test de positionnement)."
+        >
+          <input
+            name="criterion_event"
+            type="text"
+            required
+            maxLength={100}
+            placeholder="placement_test_passed"
+            style={INPUT_STYLE}
+          />
         </Field>
       )}
     </div>

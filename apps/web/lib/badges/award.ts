@@ -16,9 +16,9 @@
 // by a badge does not re-run evaluation within the same pass, so a badge
 // whose XP crosses an XP_THRESHOLD unlocks at the next event or sweep.
 
-import { prisma } from "@cyberlearn/db";
+import { badgeRepository, prisma, userRepository } from "@cyberlearn/db";
 import type { Prisma } from "@cyberlearn/db";
-import { computeLevel } from "@cyberlearn/lib";
+import { buildBadgeCriterionStats, computeLevel, evaluateBadges } from "@cyberlearn/lib";
 
 /** Structural shape — full Prisma Badge rows satisfy it. */
 export interface AwardableBadge {
@@ -104,6 +104,39 @@ export async function awardBadges(
   }
 
   return { awarded, xpGained, newXpTotal, newLevel };
+}
+
+/**
+ * Event-hook award: evaluates ONLY the given criterion types against the
+ * user's persisted facts and awards whatever unlocks, with notifications.
+ *
+ * Used by the real-time hooks — PERFECT_QUIZ on quiz submission, CUSTOM on
+ * placement-test submission. Both run AFTER their triggering rows are
+ * persisted, so the facts already include the trigger and no delta is needed.
+ * Criterion semantics (count targets, event matching) live in
+ * computeBadgeProgress: a {count: 3} badge only unlocks on the third event.
+ */
+export async function evaluateAndAwardBadges(
+  userId: string,
+  criterionTypes: readonly string[],
+  context: Record<string, string>,
+): Promise<AwardBadgesResult> {
+  const allBadges = await badgeRepository.findAllActive();
+  const candidates = allBadges.filter((b) => criterionTypes.includes(b.criterionType));
+  if (candidates.length === 0) return EMPTY_AWARD;
+
+  const [user, earnedIds, facts] = await Promise.all([
+    userRepository.findForGamification(userId),
+    badgeRepository.findUserBadgeIds(userId),
+    badgeRepository.findCriterionFacts(userId),
+  ]);
+  if (!user) return EMPTY_AWARD;
+
+  const newIds = evaluateBadges(candidates, earnedIds, buildBadgeCriterionStats(facts, user));
+  if (newIds.length === 0) return EMPTY_AWARD;
+
+  const earnedBadges = candidates.filter((b) => newIds.includes(b.id));
+  return prisma.$transaction((tx) => awardBadges(tx, userId, earnedBadges, context));
 }
 
 /**

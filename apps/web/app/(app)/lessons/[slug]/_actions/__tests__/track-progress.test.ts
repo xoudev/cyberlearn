@@ -70,6 +70,8 @@ beforeEach(() => {
     completedLessons: [],
     completedPathIds: [],
     totalCertificates: 0,
+    perfectQuizCount: 0,
+    placementScores: null,
   });
   m.transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(m.tx));
   m.tx.userBadge.createManyAndReturn.mockResolvedValue([{ badgeId: "b1" }]);

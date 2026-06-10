@@ -105,8 +105,8 @@ const CRITERION_LABELS: Record<string, string> = {
   STREAK_DAYS: "Jours de streak consécutifs",
   CATEGORY_MASTERY: "Maîtrise d'une catégorie",
   LESSON_SPECIFIC: "Leçon spécifique complétée",
-  PERFECT_QUIZ: "Quiz parfait (attribution manuelle)",
-  CUSTOM: "Personnalisé (attribution manuelle)",
+  PERFECT_QUIZ: "Quiz parfaits (N scores de 100 %)",
+  CUSTOM: "Personnalisé (événement)",
 };
 
 const CATEGORY_OPTIONS = ["DEV", "CYBERSEC", "NETWORK", "CLOUD", "OSINT"] as const;
@@ -135,6 +135,10 @@ function extractDefaultCriterionValues(
       };
     case "LESSON_SPECIFIC":
       return { criterion_lessonId: typeof d.lessonId === "string" ? d.lessonId : "" };
+    case "PERFECT_QUIZ":
+      return { criterion_count: String(typeof d.count === "number" ? d.count : 1) };
+    case "CUSTOM":
+      return { criterion_event: typeof d.event === "string" ? d.event : "" };
     default:
       return {};
   }
@@ -151,13 +155,7 @@ function CriterionFields({
   defaults: Record<string, string | boolean>;
   criterionError?: string;
 }) {
-  if (type === "" || type === "PERFECT_QUIZ" || type === "CUSTOM") {
-    return type === "PERFECT_QUIZ" || type === "CUSTOM" ? (
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#44406B", margin: 0 }}>
-        Ce badge s&apos;attribue manuellement. Aucun critère automatique.
-      </p>
-    ) : null;
-  }
+  if (type === "") return null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -299,6 +297,34 @@ function CriterionFields({
               style={INPUT_STYLE}
             />
           )}
+        </Field>
+      )}
+
+      {type === "PERFECT_QUIZ" && (
+        <Field label="Nombre de quiz parfaits *">
+          <input
+            name="criterion_count"
+            type="number"
+            min={1}
+            max={999}
+            required
+            defaultValue={defaults.criterion_count as string}
+            style={INPUT_STYLE}
+          />
+        </Field>
+      )}
+
+      {type === "CUSTOM" && (
+        <Field label="Événement *">
+          <input
+            name="criterion_event"
+            type="text"
+            required
+            maxLength={100}
+            defaultValue={defaults.criterion_event as string}
+            placeholder="placement_test_passed"
+            style={INPUT_STYLE}
+          />
         </Field>
       )}
     </div>
