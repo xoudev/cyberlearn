@@ -13,7 +13,6 @@ ALTER TABLE public.lesson_prerequisites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.paths ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.path_lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.lesson_badge_rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_badges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_lesson_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_path_progress ENABLE ROW LEVEL SECURITY;
@@ -120,12 +119,6 @@ CREATE POLICY "badges_select_active" ON public.badges FOR SELECT
 DROP POLICY IF EXISTS "badges_admin_all" ON public.badges;
 CREATE POLICY "badges_admin_all" ON public.badges FOR ALL
   USING (public.current_user_role() = 'ADMIN');
-
--- ─── LESSON_BADGE_REWARDS ────────────────────────────────────────────────────
-
-DROP POLICY IF EXISTS "badge_rewards_select" ON public.lesson_badge_rewards;
-CREATE POLICY "badge_rewards_select" ON public.lesson_badge_rewards FOR SELECT
-  USING (true);
 
 -- ─── USER_BADGES ─────────────────────────────────────────────────────────────
 
