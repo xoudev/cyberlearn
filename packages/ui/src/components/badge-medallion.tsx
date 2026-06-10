@@ -12,10 +12,10 @@ export type BadgeMedallionState = "locked" | "unlocked";
 const HEX_CLIP = "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)";
 
 const SIZES: Record<BadgeMedallionSize, { w: number; h: number; icon: number; ring: number }> = {
-  xs: { w: 30, h: 34, icon: 15, ring: 1.5 },
-  sm: { w: 52, h: 60, icon: 24, ring: 2 },
-  md: { w: 96, h: 110, icon: 40, ring: 3 },
-  lg: { w: 124, h: 142, icon: 50, ring: 3 },
+  xs: { w: 30, h: 34, icon: 27, ring: 1.5 },
+  sm: { w: 52, h: 60, icon: 46, ring: 2 },
+  md: { w: 96, h: 110, icon: 86, ring: 3 },
+  lg: { w: 124, h: 142, icon: 110, ring: 3 },
 };
 
 /** The single consistent fallback glyph (an award star), used everywhere the
