@@ -26,4 +26,35 @@ export const badgeRepository = {
       orderBy: { earnedAt: "desc" },
     });
   },
+
+  /**
+   * Raw facts needed to evaluate every badge criterion for a user.
+   * Feed into buildBadgeCriterionStats (@cyberlearn/lib); callers apply any
+   * not-yet-persisted trigger delta (e.g. the lesson being completed now).
+   */
+  async findCriterionFacts(userId: string): Promise<{
+    completedLessons: { lessonId: string; category: string }[];
+    completedPathIds: string[];
+    totalCertificates: number;
+  }> {
+    const [completedLessons, completedPaths, totalCertificates] = await Promise.all([
+      prisma.userLessonProgress.findMany({
+        where: { userId, status: "COMPLETED" },
+        select: { lessonId: true, lesson: { select: { category: true } } },
+      }),
+      prisma.userPathProgress.findMany({
+        where: { userId, status: "COMPLETED" },
+        select: { pathId: true },
+      }),
+      prisma.certificate.count({ where: { userId } }),
+    ]);
+    return {
+      completedLessons: completedLessons.map((r) => ({
+        lessonId: r.lessonId,
+        category: r.lesson.category,
+      })),
+      completedPathIds: completedPaths.map((r) => r.pathId),
+      totalCertificates,
+    };
+  },
 };

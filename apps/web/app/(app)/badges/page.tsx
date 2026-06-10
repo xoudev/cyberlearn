@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { badgeRepository, prisma } from "@cyberlearn/db";
+import { buildBadgeCriterionStats, computeBadgeProgress } from "@cyberlearn/lib";
 import { BadgesCollection } from "./_components/badges-collection";
 import type { BadgeGroup, SerializedBadge, BadgeProgress } from "./_components/badges-collection";
 import { BadgesSkeleton } from "./_components/badges-skeleton";
@@ -17,68 +18,35 @@ const RARITY_LABEL: Record<string, string> = {
   COMMON: "Commun",
 };
 
-// ── Progress computation ───────────────────────────────────────────────────────
+// ── Progress label (UI only) ───────────────────────────────────────────────────
+// The progress LOGIC lives in @cyberlearn/lib (computeBadgeProgress — the single
+// source of truth shared with real-time awarding). This maps a criterion to its
+// French unit label for the progress bar.
 
-interface UserStats {
-  xpTotal: number;
-  streakDays: number;
-  completedTotal: number;
-  completedByCategory: Record<string, number>;
-  completedLessonIds: Set<string>;
-  completedPaths: number;
-  certifiedPaths: number;
-}
-
-function computeProgress(
-  criterionType: string,
-  // SAFETY: criterionData is untyped Json from Prisma — we narrow below
-  criterionData: unknown,
-  stats: UserStats,
-): BadgeProgress | null {
-  const data = criterionData as Record<string, unknown>;
+function progressLabel(criterionType: string, criterionData: unknown): string {
+  const data =
+    typeof criterionData === "object" && criterionData !== null
+      ? (criterionData as Record<string, unknown>)
+      : {};
 
   switch (criterionType) {
-    case "LESSON_COMPLETED": {
-      const count = typeof data.count === "number" ? data.count : 0;
-      if (count <= 0) return null;
-      return { done: Math.min(stats.completedTotal, count), total: count, label: "leçons" };
-    }
-    case "PATH_COMPLETED": {
-      if (data.withCertificate === true) {
-        return { done: Math.min(stats.certifiedPaths, 1), total: 1, label: "certificat" };
-      }
-      const count = typeof data.count === "number" ? data.count : 1;
-      return { done: Math.min(stats.completedPaths, count), total: count, label: "parcours" };
-    }
-    case "XP_THRESHOLD": {
-      const threshold = typeof data.threshold === "number" ? data.threshold : 0;
-      if (threshold <= 0) return null;
-      return { done: Math.min(stats.xpTotal, threshold), total: threshold, label: "XP" };
-    }
-    case "STREAK_DAYS": {
-      const days = typeof data.days === "number" ? data.days : 0;
-      if (days <= 0) return null;
-      return { done: Math.min(stats.streakDays, days), total: days, label: "jours" };
-    }
+    case "LESSON_COMPLETED":
+      return "leçons";
+    case "XP_THRESHOLD":
+      return "XP";
+    case "STREAK_DAYS":
+      return "jours";
     case "CATEGORY_MASTERY": {
-      const category = typeof data.category === "string" ? data.category : "";
-      const count = typeof data.count === "number" ? data.count : 0;
-      if (!category || count <= 0) return null;
-      const done = stats.completedByCategory[category] ?? 0;
-      return {
-        done: Math.min(done, count),
-        total: count,
-        label: `leçons ${category.toLowerCase()}`,
-      };
+      if (Array.isArray(data.categories)) return "catégories";
+      const category = typeof data.category === "string" ? data.category.toLowerCase() : "";
+      return category ? `leçons ${category}` : "leçons";
     }
-    case "LESSON_SPECIFIC": {
-      const lessonId = typeof data.lessonId === "string" ? data.lessonId : "";
-      if (!lessonId) return null;
-      const done = stats.completedLessonIds.has(lessonId) ? 1 : 0;
-      return { done, total: 1, label: "leçon spécifique" };
-    }
+    case "PATH_COMPLETED":
+      return data.withCertificate === true ? "certificat" : "parcours";
+    case "LESSON_SPECIFIC":
+      return "leçon spécifique";
     default:
-      return null;
+      return "";
   }
 }
 
@@ -95,48 +63,22 @@ export default function BadgesPage(): React.ReactElement {
 async function BadgesContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
-  // Parallel data fetch: all active badges + user earned badges + user stats
-  const [allBadges, earnedUserBadges, user, completedLessons, completedPaths, certifiedPaths] =
-    await Promise.all([
-      badgeRepository.findAllActive(),
-      badgeRepository.findUserBadges(authUser.id),
+  // Parallel data fetch: all active badges + user earned badges + criterion facts
+  const [allBadges, earnedUserBadges, user, facts] = await Promise.all([
+    badgeRepository.findAllActive(),
+    badgeRepository.findUserBadges(authUser.id),
+    prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: { xpTotal: true, streakDays: true },
+    }),
+    badgeRepository.findCriterionFacts(authUser.id),
+  ]);
 
-      prisma.user.findUnique({
-        where: { id: authUser.id },
-        select: { xpTotal: true, streakDays: true },
-      }),
-
-      // All completed lessons with lessonId + category for CATEGORY_MASTERY and LESSON_SPECIFIC
-      prisma.userLessonProgress.findMany({
-        where: { userId: authUser.id, status: "COMPLETED" },
-        select: { lessonId: true, lesson: { select: { category: true } } },
-      }),
-
-      prisma.userPathProgress.count({
-        where: { userId: authUser.id, status: "COMPLETED" },
-      }),
-
-      prisma.certificate.count({ where: { userId: authUser.id } }),
-    ]);
-
-  // Build stats object
-  const completedByCategory: Record<string, number> = {};
-  const completedLessonIds = new Set<string>();
-  for (const row of completedLessons) {
-    completedLessonIds.add(row.lessonId);
-    const cat = row.lesson.category;
-    completedByCategory[cat] = (completedByCategory[cat] ?? 0) + 1;
-  }
-
-  const stats: UserStats = {
+  // Same stats shape as the real-time award sites — single source of truth.
+  const stats = buildBadgeCriterionStats(facts, {
     xpTotal: user?.xpTotal ?? 0,
     streakDays: user?.streakDays ?? 0,
-    completedTotal: completedLessons.length,
-    completedByCategory,
-    completedLessonIds,
-    completedPaths,
-    certifiedPaths,
-  };
+  });
 
   // Build earned lookup: badgeId → formatted date string
   const fmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -149,7 +91,7 @@ async function BadgesContent(): Promise<React.ReactElement> {
   const retroactiveIds = allBadges
     .filter((b) => {
       if (earnedMap.has(b.id)) return false;
-      const progress = computeProgress(b.criterionType, b.criterionData, stats);
+      const progress = computeBadgeProgress(b.criterionType, b.criterionData, stats);
       return progress !== null && progress.total > 0 && progress.done >= progress.total;
     })
     .map((b) => b.id);
@@ -184,7 +126,12 @@ async function BadgesContent(): Promise<React.ReactElement> {
       .map((b) => {
         const earned = earnedMap.has(b.id);
         const earnedDateStr = earnedMap.get(b.id) ?? null;
-        const progress = earned ? null : computeProgress(b.criterionType, b.criterionData, stats);
+        const rawProgress = earned
+          ? null
+          : computeBadgeProgress(b.criterionType, b.criterionData, stats);
+        const progress: BadgeProgress | null = rawProgress
+          ? { ...rawProgress, label: progressLabel(b.criterionType, b.criterionData) }
+          : null;
 
         return {
           id: b.id,
@@ -207,7 +154,8 @@ async function BadgesContent(): Promise<React.ReactElement> {
     } satisfies BadgeGroup;
   }).filter((g) => g.badges.length > 0);
 
-  const earnedCount = earnedUserBadges.length;
+  // earnedMap includes badges granted retroactively on this very render.
+  const earnedCount = earnedMap.size;
   const totalCount = allBadges.length;
 
   return (

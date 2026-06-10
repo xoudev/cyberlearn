@@ -24,11 +24,15 @@ vi.mock("@cyberlearn/db", () => ({
   notificationRepository: { create: m.notify },
   badgeRepository: {
     findAllActive: vi.fn().mockResolvedValue([]),
-    findUserBadgeIds: vi.fn().mockResolvedValue([]),
+    findUserBadgeIds: vi.fn().mockResolvedValue(new Set()),
+    findCriterionFacts: vi.fn().mockResolvedValue({
+      completedLessons: [],
+      completedPathIds: [],
+      totalCertificates: 0,
+    }),
   },
   userRepository: {
     findForGamification: vi.fn().mockResolvedValue({ xpTotal: 0, streakDays: 0 }),
-    countCompletedLessonsByCategory: vi.fn().mockResolvedValue({ total: 0, byCategory: {} }),
   },
   prisma: {
     path: { findUnique: m.pathFindUnique },
@@ -47,7 +51,19 @@ vi.mock("@react-pdf/renderer", () => ({
 vi.mock("qrcode", () => ({
   default: { toDataURL: vi.fn().mockResolvedValue("data:image/png;base64,AA") },
 }));
-vi.mock("@cyberlearn/lib", () => ({ evaluateBadges: vi.fn().mockReturnValue([]) }));
+vi.mock("@cyberlearn/lib", () => ({
+  evaluateBadges: vi.fn().mockReturnValue([]),
+  buildBadgeCriterionStats: vi.fn().mockReturnValue({
+    xpTotal: 0,
+    streakDays: 0,
+    totalLessonsCompleted: 0,
+    categoryLessonCounts: {},
+    completedLessonIds: new Set(),
+    completedPathsCount: 0,
+    completedPathIds: new Set(),
+    totalCertificates: 0,
+  }),
+}));
 vi.mock("@/lib/pdf/certificate-template", () => ({ CertificateDocument: () => null }));
 
 import { issueCertificate } from "../issue";

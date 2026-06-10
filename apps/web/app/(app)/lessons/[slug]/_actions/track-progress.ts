@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { computeLevel, evaluateBadges, computeNewStreak } from "@cyberlearn/lib";
+import {
+  buildBadgeCriterionStats,
+  computeLevel,
+  computeNewStreak,
+  evaluateBadges,
+} from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
 import { checkAndIssueCertificates } from "@/app/(app)/paths/[slug]/_actions/generate-certificate";
@@ -54,20 +59,20 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
   // ── Badge evaluation (only on first completion) ────────────────────────────
   let newBadgeIds: string[] = [];
   if (isFirstCompletion && allBadges.length > 0) {
-    const [earnedIds, lessonCounts] = await Promise.all([
+    const [earnedIds, facts] = await Promise.all([
       badgeRepository.findUserBadgeIds(authUser.id),
-      userRepository.countCompletedLessonsByCategory(authUser.id),
+      badgeRepository.findCriterionFacts(authUser.id),
     ]);
-    const catCounts = { ...lessonCounts.byCategory };
-    catCounts[lesson.category] = (catCounts[lesson.category] ?? 0) + 1;
+    // The triggering lesson is not persisted yet — count it as completed.
+    if (!facts.completedLessons.some((l) => l.lessonId === lessonId)) {
+      facts.completedLessons.push({ lessonId, category: lesson.category });
+    }
 
-    newBadgeIds = evaluateBadges(allBadges, earnedIds, {
-      xpTotal: newXpTotal,
-      streakDays,
-      totalLessonsCompleted: lessonCounts.total + 1,
-      categoryLessonCounts: catCounts,
-      completedLessonId: lessonId,
-    });
+    newBadgeIds = evaluateBadges(
+      allBadges,
+      earnedIds,
+      buildBadgeCriterionStats(facts, { xpTotal: newXpTotal, streakDays }),
+    );
   }
 
   // ── Build atomic transaction ───────────────────────────────────────────────
