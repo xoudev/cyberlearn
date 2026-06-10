@@ -55,9 +55,17 @@ function buildCriterionData(
         return { data: null, error: lessonId.error.issues[0]?.message ?? "Leçon requise" };
       return { data: { lessonId: lessonId.data } };
     }
-    case "PERFECT_QUIZ":
-    case "CUSTOM":
-      return { data: {} };
+    case "PERFECT_QUIZ": {
+      const count = z.coerce.number().int().min(1).safeParse(formData.get("criterion_count"));
+      if (!count.success)
+        return { data: null, error: "Nombre de quiz parfaits requis (entier ≥ 1)" };
+      return { data: { count: count.data } };
+    }
+    case "CUSTOM": {
+      const event = z.string().trim().min(1).max(100).safeParse(formData.get("criterion_event"));
+      if (!event.success) return { data: null, error: "Événement requis" };
+      return { data: { event: event.data } };
+    }
     default:
       return { data: null, error: "Type de critère inconnu" };
   }

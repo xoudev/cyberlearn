@@ -7,7 +7,12 @@ import {
   PLACEMENT_MASTERY_THRESHOLD,
   WAIVED_DIFFICULTIES,
 } from "@cyberlearn/types";
-import { computePlacementScores, getMasteredCategories } from "@cyberlearn/lib";
+import {
+  PLACEMENT_TEST_PASSED_EVENT,
+  computePlacementScores,
+  getMasteredCategories,
+} from "@cyberlearn/lib";
+import { evaluateAndAwardBadges } from "@/lib/badges/award";
 import { setOnboardingComplete } from "../../../_actions/finalize-onboarding";
 import { redirect } from "next/navigation";
 
@@ -161,8 +166,12 @@ export async function submitPlacementTest(
     }
   }
 
-  // Award "Quick Start" badge if any category is mastered — Phase 5 TODO
-  // BadgeEvaluator will handle this once implemented
+  // CUSTOM placement_test_passed badges. Must run BEFORE redirect(), which
+  // throws to perform the navigation. The placement result is already
+  // persisted above, so the evaluation reads it straight from the DB.
+  if (categoriesToWaive.length > 0) {
+    await evaluateAndAwardBadges(user.id, ["CUSTOM"], { event: PLACEMENT_TEST_PASSED_EVENT });
+  }
 
   await setOnboardingComplete(user.id);
 

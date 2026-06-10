@@ -36,18 +36,26 @@ export const badgeRepository = {
     completedLessons: { lessonId: string; category: string }[];
     completedPathIds: string[];
     totalCertificates: number;
+    perfectQuizCount: number;
+    placementScores: { devScore: number; cybersecScore: number; networkScore: number } | null;
   }> {
-    const [completedLessons, completedPaths, totalCertificates] = await Promise.all([
-      prisma.userLessonProgress.findMany({
-        where: { userId, status: "COMPLETED" },
-        select: { lessonId: true, lesson: { select: { category: true } } },
-      }),
-      prisma.userPathProgress.findMany({
-        where: { userId, status: "COMPLETED" },
-        select: { pathId: true },
-      }),
-      prisma.certificate.count({ where: { userId } }),
-    ]);
+    const [completedLessons, completedPaths, totalCertificates, perfectQuizCount, placementScores] =
+      await Promise.all([
+        prisma.userLessonProgress.findMany({
+          where: { userId, status: "COMPLETED" },
+          select: { lessonId: true, lesson: { select: { category: true } } },
+        }),
+        prisma.userPathProgress.findMany({
+          where: { userId, status: "COMPLETED" },
+          select: { pathId: true },
+        }),
+        prisma.certificate.count({ where: { userId } }),
+        prisma.quizAttempt.count({ where: { userId, score: 100 } }),
+        prisma.userPlacementResult.findUnique({
+          where: { userId },
+          select: { devScore: true, cybersecScore: true, networkScore: true },
+        }),
+      ]);
     return {
       completedLessons: completedLessons.map((r) => ({
         lessonId: r.lessonId,
@@ -55,6 +63,8 @@ export const badgeRepository = {
       })),
       completedPathIds: completedPaths.map((r) => r.pathId),
       totalCertificates,
+      perfectQuizCount,
+      placementScores,
     };
   },
 };

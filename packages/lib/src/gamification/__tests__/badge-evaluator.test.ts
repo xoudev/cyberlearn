@@ -33,6 +33,8 @@ const BASE_STATS: BadgeCriterionStats = {
   completedPathsCount: 0,
   completedPathIds: new Set(),
   totalCertificates: 0,
+  perfectQuizCount: 0,
+  placementMasteredCount: 0,
 };
 
 // ── buildBadgeCriterionStats ──────────────────────────────────────────────────
@@ -48,6 +50,8 @@ describe("buildBadgeCriterionStats", () => {
         ],
         completedPathIds: ["p1", "p2"],
         totalCertificates: 1,
+        perfectQuizCount: 2,
+        placementScores: null,
       },
       { xpTotal: 250, streakDays: 4 },
     );
@@ -60,6 +64,23 @@ describe("buildBadgeCriterionStats", () => {
     expect(stats.completedPathsCount).toBe(2);
     expect(stats.completedPathIds.has("p2")).toBe(true);
     expect(stats.totalCertificates).toBe(1);
+    expect(stats.perfectQuizCount).toBe(2);
+    expect(stats.placementMasteredCount).toBe(0);
+  });
+
+  it("derives placementMasteredCount from scores using the mastery threshold (70)", () => {
+    const stats = buildBadgeCriterionStats(
+      {
+        completedLessons: [],
+        completedPathIds: [],
+        totalCertificates: 0,
+        perfectQuizCount: 0,
+        placementScores: { devScore: 80, cybersecScore: 60, networkScore: 70 },
+      },
+      { xpTotal: 0, streakDays: 0 },
+    );
+    // DEV (80) and NETWORK (70) reach the threshold, CYBERSEC (60) does not.
+    expect(stats.placementMasteredCount).toBe(2);
   });
 });
 
@@ -383,20 +404,66 @@ describe("LESSON_SPECIFIC criterion", () => {
   });
 });
 
-// ── PERFECT_QUIZ / CUSTOM ─────────────────────────────────────────────────────
+// ── PERFECT_QUIZ ──────────────────────────────────────────────────────────────
 
-describe("PERFECT_QUIZ and CUSTOM criteria", () => {
-  it("never auto-awards PERFECT_QUIZ (event-hook award only)", () => {
-    const badge = makeBadge("b6", "PERFECT_QUIZ", {});
-    const result = evaluateBadges([badge], new Set(), { ...BASE_STATS, xpTotal: 99999 });
-    expect(result).toHaveLength(0);
-    expect(computeBadgeProgress("PERFECT_QUIZ", {}, BASE_STATS)).toBeNull();
+describe("PERFECT_QUIZ criterion", () => {
+  // BEHAVIOUR CHANGE (badge event hooks): previously always null, awarded by
+  // nothing. Now driven by perfectQuizCount with {count} (default 1).
+  it("awards when the perfect-quiz count reaches the target", () => {
+    const badge = makeBadge("b6", "PERFECT_QUIZ", { count: 3 });
+    const result = evaluateBadges([badge], new Set(), { ...BASE_STATS, perfectQuizCount: 3 });
+    expect(result).toEqual(["b6"]);
   });
 
-  it("never auto-awards CUSTOM (event-hook award only)", () => {
+  it("reports partial progress below the target", () => {
+    expect(
+      computeBadgeProgress("PERFECT_QUIZ", { count: 3 }, { ...BASE_STATS, perfectQuizCount: 1 }),
+    ).toEqual({ done: 1, total: 3 });
+  });
+
+  it("defaults to count 1 for {} (one perfect quiz unlocks)", () => {
+    const badge = makeBadge("b6", "PERFECT_QUIZ", {});
+    expect(evaluateBadges([badge], new Set(), BASE_STATS)).toHaveLength(0);
+    expect(evaluateBadges([badge], new Set(), { ...BASE_STATS, perfectQuizCount: 1 })).toEqual([
+      "b6",
+    ]);
+  });
+
+  it("treats a non-positive count as misconfigured", () => {
+    expect(
+      computeBadgeProgress("PERFECT_QUIZ", { count: 0 }, { ...BASE_STATS, perfectQuizCount: 9 }),
+    ).toBeNull();
+  });
+});
+
+// ── CUSTOM ────────────────────────────────────────────────────────────────────
+
+describe("CUSTOM criterion", () => {
+  // BEHAVIOUR CHANGE (badge event hooks): previously always null. The
+  // placement_test_passed event is now wired: ≥ 1 mastered category unlocks.
+  it("awards placement_test_passed when at least one category is mastered", () => {
     const badge = makeBadge("b7", "CUSTOM", { event: "placement_test_passed" });
-    const result = evaluateBadges([badge], new Set(), { ...BASE_STATS, xpTotal: 99999 });
-    expect(result).toHaveLength(0);
+    const result = evaluateBadges([badge], new Set(), {
+      ...BASE_STATS,
+      placementMasteredCount: 1,
+    });
+    expect(result).toEqual(["b7"]);
+  });
+
+  it("does not award placement_test_passed without a mastered category", () => {
+    const badge = makeBadge("b7", "CUSTOM", { event: "placement_test_passed" });
+    expect(evaluateBadges([badge], new Set(), BASE_STATS)).toHaveLength(0);
+    expect(computeBadgeProgress("CUSTOM", { event: "placement_test_passed" }, BASE_STATS)).toEqual({
+      done: 0,
+      total: 1,
+    });
+  });
+
+  it("never awards an unknown or missing event", () => {
+    const stats = { ...BASE_STATS, placementMasteredCount: 3, xpTotal: 99999 };
+    expect(computeBadgeProgress("CUSTOM", { event: "some_future_event" }, stats)).toBeNull();
+    expect(computeBadgeProgress("CUSTOM", {}, stats)).toBeNull();
+    expect(computeBadgeProgress("CUSTOM", null, stats)).toBeNull();
   });
 });
 
