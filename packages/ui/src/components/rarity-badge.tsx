@@ -5,12 +5,16 @@ import { cn } from "../lib/utils.js";
 /** Badge rarities must match the BadgeRarity enum in Prisma */
 export type BadgeRarity = "COMMON" | "RARE" | "EPIC" | "LEGENDARY";
 
-const RARITY_LABELS: Record<BadgeRarity, string> = {
+/** French rarity labels (UPPERCASE-rendered at call sites). Single source of truth. */
+export const BADGE_RARITY_LABELS: Record<BadgeRarity, string> = {
   COMMON: "Commun",
   RARE: "Rare",
   EPIC: "Épique",
   LEGENDARY: "Légendaire",
 };
+
+/** Canonical display order (rarest first). */
+export const BADGE_RARITY_ORDER: BadgeRarity[] = ["LEGENDARY", "EPIC", "RARE", "COMMON"];
 
 const rarityBadgeVariants = cva(
   "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide",
@@ -69,7 +73,7 @@ export function RarityBadge({ rarity, showDot = false, className }: RarityBadgeP
           aria-hidden="true"
         />
       )}
-      {RARITY_LABELS[rarity]}
+      {BADGE_RARITY_LABELS[rarity]}
     </span>
   );
 }

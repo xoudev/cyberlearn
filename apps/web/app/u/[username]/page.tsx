@@ -5,39 +5,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
 import { computeLevel } from "@cyberlearn/lib";
-import type { BadgeRarity, Category } from "@cyberlearn/db";
+import { BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
+import type { Category } from "@cyberlearn/db";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-
-const RARITY_META: Record<
-  BadgeRarity,
-  { color: string; bg: string; border: string; glow: string }
-> = {
-  COMMON: {
-    color: "#0AFFD4",
-    bg: "rgba(10,255,212,0.06)",
-    border: "rgba(10,255,212,0.25)",
-    glow: "rgba(10,255,212,0.2)",
-  },
-  RARE: {
-    color: "#4D8BFF",
-    bg: "rgba(77,139,255,0.06)",
-    border: "rgba(77,139,255,0.25)",
-    glow: "rgba(77,139,255,0.2)",
-  },
-  EPIC: {
-    color: "#B14DFF",
-    bg: "rgba(177,77,255,0.06)",
-    border: "rgba(177,77,255,0.25)",
-    glow: "rgba(177,77,255,0.2)",
-  },
-  LEGENDARY: {
-    color: "#FFB020",
-    bg: "rgba(255,176,32,0.06)",
-    border: "rgba(255,176,32,0.25)",
-    glow: "rgba(255,176,32,0.2)",
-  },
-};
 
 const CAT_COLOR: Partial<Record<Category, string>> = {
   CYBERSEC: "#FF4757",
@@ -329,39 +300,20 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(56px, 56px))",
-                gap: 10,
+                gridTemplateColumns: "repeat(auto-fill, 52px)",
+                gap: 12,
               }}
             >
-              {user.badges.map((ub) => {
-                const meta = RARITY_META[ub.badge.rarity];
-                return (
-                  <div
-                    key={ub.id}
-                    title={ub.badge.name}
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: "50%",
-                      background: meta.bg,
-                      border: `2px solid ${meta.border}`,
-                      boxShadow: `0 0 10px ${meta.glow}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <Image
-                      src={ub.badge.iconUrl}
-                      alt={ub.badge.name}
-                      width={32}
-                      height={32}
-                      style={{ objectFit: "contain" }}
-                    />
-                  </div>
-                );
-              })}
+              {user.badges.map((ub) => (
+                <div key={ub.id} title={ub.badge.name}>
+                  <BadgeMedallion
+                    rarity={toBadgeRarity(ub.badge.rarity)}
+                    size="sm"
+                    iconUrl={ub.badge.iconUrl}
+                    name={ub.badge.name}
+                  />
+                </div>
+              ))}
             </div>
           </section>
         )}

@@ -2,6 +2,12 @@ import React, { Suspense } from "react";
 import Link from "next/link";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import { computeLevel } from "@cyberlearn/lib";
+import {
+  BadgeMedallion,
+  BADGE_RARITY_LABELS,
+  BADGE_RARITY_VAR,
+  toBadgeRarity,
+} from "@cyberlearn/ui";
 import { prisma, leaderboardRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 
@@ -96,7 +102,9 @@ async function DashboardContent(): Promise<React.ReactElement> {
     }),
     prisma.userBadge.findMany({
       where: { userId: authUser.id },
-      include: { badge: { select: { name: true, description: true, rarity: true } } },
+      include: {
+        badge: { select: { name: true, description: true, rarity: true, iconUrl: true } },
+      },
       orderBy: { earnedAt: "desc" },
       take: 3,
     }),
@@ -1414,62 +1422,19 @@ function ReviewsBlock({
 
 // ── Trophy shelf ──────────────────────────────────────────────────────────────
 
-const RARITY_STYLES: Record<
-  string,
-  { color: string; grad: string; glow: string; stripBg: string }
-> = {
-  LEGENDARY: {
-    color: "#FFB547",
-    grad: "linear-gradient(135deg, #FFB547, #FF4757)",
-    glow: "rgba(255,181,71,0.22)",
-    stripBg: "linear-gradient(90deg, transparent, #FFB547, transparent)",
-  },
-  EPIC: {
-    color: "#0AFFD4",
-    grad: "linear-gradient(135deg, #0AFFD4, #0024FF)",
-    glow: "rgba(10,255,212,0.22)",
-    stripBg: "linear-gradient(90deg, transparent, #0AFFD4, transparent)",
-  },
-  RARE: {
-    color: "#6E8BFF",
-    grad: "linear-gradient(135deg, #6E8BFF, #4A3FCC)",
-    glow: "rgba(110,139,255,0.22)",
-    stripBg: "linear-gradient(90deg, transparent, #6E8BFF, transparent)",
-  },
-  COMMON: {
-    color: "#B8B5D1",
-    grad: "linear-gradient(135deg, #B8B5D1, #6F6B99)",
-    glow: "rgba(184,181,209,0.15)",
-    stripBg: "linear-gradient(90deg, transparent, #B8B5D1, transparent)",
-  },
-};
-
-const RARITY_LABELS: Record<string, string> = {
-  LEGENDARY: "Légendaire",
-  EPIC: "Épique",
-  RARE: "Rare",
-  COMMON: "Commun",
-};
-
 function TrophyShelf({
   badges,
 }: {
   badges: {
     earnedAt: Date;
-    badge: { name: string; description: string; rarity: string };
+    badge: { name: string; description: string; rarity: string; iconUrl: string };
   }[];
 }) {
   return (
     <div className="trophy-shelf-grid">
       {badges.map((ub) => {
-        const r = RARITY_STYLES[ub.badge.rarity] ??
-          RARITY_STYLES.COMMON ?? {
-            color: "#B8B5D1",
-            grad: "linear-gradient(135deg, #B8B5D1, #6F6B99)",
-            glow: "rgba(184,181,209,0.15)",
-            stripBg: "linear-gradient(90deg, transparent, #B8B5D1, transparent)",
-          };
-        const rl = RARITY_LABELS[ub.badge.rarity] ?? "Commun";
+        const rarity = toBadgeRarity(ub.badge.rarity);
+        const v = BADGE_RARITY_VAR[rarity];
         const dateStr = ub.earnedAt.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
         return (
@@ -1495,63 +1460,20 @@ function TrophyShelf({
                 left: 0,
                 right: 0,
                 height: 3,
-                background: r.stripBg,
-                boxShadow: `0 0 12px ${r.color}99`,
+                background: `linear-gradient(90deg, transparent, ${v}, transparent)`,
+                boxShadow: `0 0 12px color-mix(in oklab, ${v} 60%, transparent)`,
               }}
               aria-hidden="true"
             />
 
-            {/* Hexagonal medallion */}
-            <div
-              style={{
-                width: 104,
-                height: 120,
-                position: "relative",
-                marginBottom: 22,
-                display: "grid",
-                placeItems: "center",
-                clipPath: "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)",
-              }}
-              aria-hidden="true"
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: r.grad,
-                  clipPath: "inherit",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 3,
-                  background: "#0A0826",
-                  clipPath: "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)",
-                }}
-              />
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 40 40"
-                fill="none"
-                stroke={r.color}
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  position: "relative",
-                  zIndex: 1,
-                  filter: `drop-shadow(0 0 12px ${r.color})`,
-                }}
-              >
-                <path
-                  d="M20 4 C20 13 28 16 28 24 C28 28 24.5 32 20 32 C15.5 32 12 28 12 24 C12 16 20 13 20 4 Z"
-                  fill="currentColor"
-                  fillOpacity="0.25"
-                />
-              </svg>
-            </div>
+            {/* Hexagonal medallion — shared component (earned-only showcase) */}
+            <BadgeMedallion
+              rarity={rarity}
+              size="md"
+              iconUrl={ub.badge.iconUrl}
+              name={ub.badge.name}
+              style={{ marginBottom: 22 }}
+            />
 
             <span
               style={{
@@ -1561,10 +1483,10 @@ function TrophyShelf({
                 letterSpacing: "0.2em",
                 textTransform: "uppercase",
                 marginBottom: 10,
-                color: r.color,
+                color: v,
               }}
             >
-              · {rl} ·
+              · {BADGE_RARITY_LABELS[rarity]} ·
             </span>
             <h3
               style={{
