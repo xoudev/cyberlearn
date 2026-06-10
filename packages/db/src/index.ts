@@ -31,6 +31,8 @@ export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
 
 // Re-export Prisma generated types for use across the monorepo
+// (Prisma namespace gives consumers Prisma.TransactionClient & co.)
+export type { Prisma } from "@prisma/client";
 export type {
   User,
   UserPreferences,

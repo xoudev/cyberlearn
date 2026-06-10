@@ -6,6 +6,7 @@ import { BadgesCollection } from "./_components/badges-collection";
 import type { BadgeGroup, SerializedBadge, BadgeProgress } from "./_components/badges-collection";
 import { BadgesSkeleton } from "./_components/badges-skeleton";
 import { requireRequestUser } from "@/lib/auth";
+import { retroAwardBadges } from "@/lib/badges/award";
 
 export const metadata: Metadata = { title: "Badges" };
 
@@ -86,27 +87,20 @@ async function BadgesContent(): Promise<React.ReactElement> {
     earnedUserBadges.map((ub) => [ub.badgeId, fmt.format(ub.earnedAt)]),
   );
 
-  // Retroactively award badges whose progress is at 100% but were never triggered.
-  // Idempotent: skipDuplicates prevents double-awards across page visits.
-  const retroactiveIds = allBadges
-    .filter((b) => {
-      if (earnedMap.has(b.id)) return false;
-      const progress = computeBadgeProgress(b.criterionType, b.criterionData, stats);
-      return progress !== null && progress.total > 0 && progress.done >= progress.total;
-    })
-    .map((b) => b.id);
+  // Retroactively award badges whose progress is at 100% but were never
+  // triggered — atomic (insert + xpReward credit in one transaction) and
+  // SILENT: the catch-up sweep never notifies; only real-time triggers do.
+  // Idempotent: only rows actually inserted are credited.
+  const retroBadges = allBadges.filter((b) => {
+    if (earnedMap.has(b.id)) return false;
+    const progress = computeBadgeProgress(b.criterionType, b.criterionData, stats);
+    return progress !== null && progress.total > 0 && progress.done >= progress.total;
+  });
 
-  if (retroactiveIds.length > 0) {
-    await prisma.userBadge.createMany({
-      data: retroactiveIds.map((badgeId) => ({
-        userId: authUser.id,
-        badgeId,
-        context: { source: "retroactive" },
-      })),
-      skipDuplicates: true,
-    });
+  if (retroBadges.length > 0) {
+    const { awarded } = await retroAwardBadges(authUser.id, retroBadges);
     const nowStr = fmt.format(new Date());
-    for (const id of retroactiveIds) earnedMap.set(id, nowStr);
+    for (const badge of awarded) earnedMap.set(badge.id, nowStr);
   }
 
   // Rarity counters

@@ -396,6 +396,11 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                     >
                       {label}
                     </span>
+                    {badge.xpReward > 0 && (
+                      <span style={{ color: "#0AFFD4", fontSize: 10, fontWeight: 700 }}>
+                        +{badge.xpReward} XP
+                      </span>
+                    )}
                   </div>
                 );
               })}
