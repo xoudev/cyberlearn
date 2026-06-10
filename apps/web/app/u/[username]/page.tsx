@@ -10,11 +10,31 @@ import type { Category } from "@cyberlearn/db";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const CAT_COLOR: Partial<Record<Category, string>> = {
-  CYBERSEC: "#FF4757",
-  DEV: "#6E8BFF",
-  NETWORK: "#0AFFD4",
+const MONO: React.CSSProperties = { fontFamily: "var(--font-mono, monospace)" };
+const SANS: React.CSSProperties = { fontFamily: "var(--font-sans, sans-serif)" };
+
+const CAT_META: Partial<Record<Category, { color: string; label: string }>> = {
+  CYBERSEC: { color: "#FF4757", label: "Cybersec" },
+  DEV: { color: "#6E8BFF", label: "Développement" },
+  NETWORK: { color: "#0AFFD4", label: "Réseaux" },
 };
+const CAT_DEFAULT = { color: "#6B6890", label: "—" };
+
+/** Regular pointy-top hexagon — same canonical geometry as the badge medallion. */
+const HEX_CLIP = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
+
+// Scoped responsive rules (inline styles can't express media queries).
+const RESPONSIVE_CSS = `
+.pub-stats { display: grid; grid-template-columns: repeat(3, 1fr); }
+.pub-hero { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+.pub-row:hover { background: rgba(255,255,255,0.02) !important; }
+@media (max-width: 760px) {
+  .pub-stats { grid-template-columns: 1fr; }
+  .pub-stats > div { border-right: none !important; border-bottom: 1px solid #2a2560; }
+  .pub-stats > div:last-child { border-bottom: none; }
+  .pub-level { width: 100%; }
+}
+`;
 
 // ── Metadata ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +47,76 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `@${username}` };
 }
 
+// ── Shared bits ───────────────────────────────────────────────────────────────
+
+function CornerBrackets({ color }: { color: string }): React.ReactElement {
+  return (
+    <>
+      {(["tl", "tr", "bl", "br"] as const).map((pos) => (
+        <span
+          key={pos}
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            width: 14,
+            height: 14,
+            [pos.startsWith("t") ? "top" : "bottom"]: -1,
+            [pos.endsWith("l") ? "left" : "right"]: -1,
+            borderColor: color,
+            borderStyle: "solid",
+            borderWidth: 0,
+            opacity: 0.8,
+            pointerEvents: "none",
+            ...(pos === "tl"
+              ? { borderTopWidth: 2, borderLeftWidth: 2 }
+              : pos === "tr"
+                ? { borderTopWidth: 2, borderRightWidth: 2 }
+                : pos === "bl"
+                  ? { borderBottomWidth: 2, borderLeftWidth: 2 }
+                  : { borderBottomWidth: 2, borderRightWidth: 2 }),
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+function SectionLabel({ eyebrow, title }: { eyebrow: string; title: string }): React.ReactElement {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div
+        style={{
+          ...MONO,
+          fontSize: 11,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "#6F6B99",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ width: 24, height: 1, background: "#3D3785", display: "inline-block" }} />
+        {eyebrow}
+      </div>
+      <h2
+        style={{
+          ...SANS,
+          fontWeight: 700,
+          fontSize: "clamp(22px, 3vw, 30px)",
+          lineHeight: 1,
+          letterSpacing: "-0.02em",
+          color: "#F5F5FA",
+          margin: 0,
+        }}
+      >
+        {title}
+      </h2>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function PublicProfilePage({ params }: Props): Promise<React.ReactElement> {
@@ -35,7 +125,8 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   const user = await userRepository.findPublicProfile(username);
   if (!user) notFound();
 
-  const { level } = computeLevel(user.xpTotal);
+  const { level, current, needed } = computeLevel(user.xpTotal);
+  const xpPercent = needed > 0 ? Math.min((current / needed) * 100, 100) : 0;
   const joinedStr = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
     user.createdAt,
   );
@@ -44,352 +135,524 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
     <div
       style={{
         minHeight: "100vh",
-        background: "#030219",
-        display: "flex",
-        justifyContent: "center",
-        padding: "60px 24px 80px",
+        background:
+          "linear-gradient(rgba(42,37,96,0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(42,37,96,0.14) 1px, transparent 1px), #030219",
+        backgroundSize: "44px 44px, 44px 44px, auto",
+        padding: "48px 24px 100px",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 720 }}>
-        {/* ── Back link ────────────────────────────────────────────────── */}
-        <Link
-          href="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
-            color: "#6B6890",
-            letterSpacing: "0.08em",
-            textDecoration: "none",
-            marginBottom: 36,
-            textTransform: "uppercase",
-          }}
-        >
-          ← cyberlearn
-        </Link>
-
-        {/* ── Hero header ──────────────────────────────────────────────── */}
+      <style>{RESPONSIVE_CSS}</style>
+      <div style={{ width: "100%", maxWidth: 1140, margin: "0 auto" }}>
+        {/* ── Top bar: back link + eyebrow ─────────────────────────────── */}
         <div
           style={{
             display: "flex",
-            alignItems: "flex-start",
-            gap: 24,
-            padding: "28px",
-            background: "#0A0826",
-            border: "1px solid #1F1B47",
-            borderRadius: 14,
-            marginBottom: 20,
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            marginBottom: 36,
+            flexWrap: "wrap",
           }}
         >
-          {/* Avatar */}
-          <div
+          <Link
+            href="/"
             style={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              background: "#1F1B47",
-              border: "2px solid #2A2560",
-              overflow: "hidden",
-              flexShrink: 0,
-              position: "relative",
-            }}
-          >
-            {user.avatarUrl && !user.avatarUrl.startsWith("__glyph:") ? (
-              <Image
-                src={user.avatarUrl}
-                alt={user.displayName}
-                fill
-                style={{ objectFit: "cover" }}
-                sizes="80px"
-              />
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontWeight: 700,
-                  fontSize: 26,
-                  color: "#0AFFD4",
-                }}
-              >
-                {user.displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-
-          {/* Identity */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h1
-              style={{
-                fontFamily: "var(--font-sans, sans-serif)",
-                fontWeight: 700,
-                fontSize: 22,
-                color: "#F5F5FA",
-                letterSpacing: "-0.01em",
-                margin: "0 0 4px",
-              }}
-            >
-              {user.displayName}
-            </h1>
-            <p
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 11,
-                color: "#6B6890",
-                letterSpacing: "0.04em",
-                margin: "0 0 10px",
-              }}
-            >
-              @{user.username}
-            </p>
-            {user.bio && (
-              <p
-                style={{
-                  fontFamily: "var(--font-sans, sans-serif)",
-                  fontSize: 13,
-                  color: "#B8B5D1",
-                  margin: "0 0 12px",
-                  lineHeight: 1.5,
-                }}
-              >
-                {user.bio}
-              </p>
-            )}
-            <span
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 10,
-                color: "#3F3D5C",
-                letterSpacing: "0.08em",
-              }}
-            >
-              Membre depuis {joinedStr}
-            </span>
-          </div>
-
-          {/* Level badge */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
+              display: "inline-flex",
               alignItems: "center",
-              gap: 4,
-              padding: "10px 18px",
-              background: "rgba(10,255,212,0.06)",
-              border: "1px solid rgba(10,255,212,0.2)",
-              borderRadius: 10,
-              flexShrink: 0,
+              gap: 8,
+              ...MONO,
+              fontSize: 11,
+              color: "#6B6890",
+              letterSpacing: "0.08em",
+              textDecoration: "none",
+              textTransform: "uppercase",
             }}
           >
-            <span
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 9,
-                color: "#0AFFD4",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-              }}
-            >
-              Niveau
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-mono, monospace)",
-                fontWeight: 700,
-                fontSize: 28,
-                color: "#F5F5FA",
-                lineHeight: 1,
-              }}
-            >
-              {level}
-            </span>
-          </div>
+            ← cyberlearn
+          </Link>
+          <span
+            style={{
+              ...MONO,
+              fontSize: 10,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "#44406B",
+            }}
+          >
+            {"// "}profil public ·{" "}
+            <b style={{ color: "#0AFFD4", fontWeight: 500 }}>@{user.username}</b>
+          </span>
         </div>
 
-        {/* ── Stats ────────────────────────────────────────────────────── */}
-        <div
+        {/* ── Hero — player card ───────────────────────────────────────── */}
+        <article
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-            marginBottom: 24,
+            position: "relative",
+            padding: "36px 36px 34px",
+            background:
+              "radial-gradient(ellipse 60% 90% at 18% 0%, rgba(0,36,255,0.12), transparent 60%), rgba(10,8,38,0.6)",
+            border: "1px solid #2A2560",
+            marginBottom: 22,
+            overflow: "hidden",
+          }}
+        >
+          <CornerBrackets color="#0AFFD4" />
+          {/* Top strip */}
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 2,
+              background: "linear-gradient(90deg, transparent, #0AFFD4, transparent)",
+              boxShadow: "0 0 12px rgba(10,255,212,0.5)",
+            }}
+          />
+
+          <div className="pub-hero">
+            {/* Hexagonal avatar */}
+            <div
+              style={{
+                position: "relative",
+                width: 96,
+                height: 110,
+                flexShrink: 0,
+                filter: "drop-shadow(0 0 14px rgba(10,255,212,0.25))",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(145deg, #0024FF, #0AFFD4)",
+                  clipPath: HEX_CLIP,
+                }}
+                aria-hidden="true"
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 3,
+                  background: "#0A0826",
+                  clipPath: HEX_CLIP,
+                  overflow: "hidden",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                {user.avatarUrl && !user.avatarUrl.startsWith("__glyph:") ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt={user.displayName}
+                    fill
+                    style={{ objectFit: "cover" }}
+                    sizes="96px"
+                  />
+                ) : (
+                  <span
+                    style={{
+                      ...SANS,
+                      fontWeight: 800,
+                      fontSize: 38,
+                      letterSpacing: "-0.03em",
+                      background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    {user.displayName.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Identity */}
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <div
+                style={{
+                  ...MONO,
+                  fontSize: 11,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "#6F6B99",
+                  marginBottom: 12,
+                }}
+              >
+                <span style={{ color: "#44406B" }}>{"// "}</span>
+                OPÉRATEUR · MEMBRE DEPUIS{" "}
+                <b style={{ color: "#B8B5D1", fontWeight: 500 }}>{joinedStr}</b>
+              </div>
+              <h1
+                style={{
+                  ...SANS,
+                  fontWeight: 800,
+                  fontSize: "clamp(34px, 4.6vw, 58px)",
+                  lineHeight: 0.95,
+                  letterSpacing: "-0.035em",
+                  margin: "0 0 10px",
+                  color: "#F5F5FA",
+                }}
+              >
+                <em
+                  style={{
+                    fontStyle: "normal",
+                    background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  {user.displayName}
+                </em>
+                .
+              </h1>
+              <p
+                style={{
+                  ...MONO,
+                  fontSize: 12,
+                  color: "#6B6890",
+                  letterSpacing: "0.04em",
+                  margin: user.bio ? "0 0 12px" : 0,
+                }}
+              >
+                @{user.username}
+              </p>
+              {user.bio && (
+                <p
+                  style={{
+                    fontFamily: "var(--font-body, sans-serif)",
+                    fontSize: 14,
+                    color: "#B8B5D1",
+                    margin: 0,
+                    lineHeight: 1.55,
+                    maxWidth: 480,
+                  }}
+                >
+                  {user.bio}
+                </p>
+              )}
+            </div>
+
+            {/* Level block */}
+            <div
+              className="pub-level"
+              style={{
+                position: "relative",
+                padding: "20px 26px 18px",
+                background:
+                  "linear-gradient(135deg, rgba(0,36,255,0.12) 0%, rgba(10,255,212,0.06) 100%), rgba(5,4,26,0.7)",
+                border: "1px solid rgba(10,255,212,0.25)",
+                minWidth: 250,
+              }}
+            >
+              <div
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "#0AFFD4",
+                  marginBottom: 8,
+                }}
+              >
+                <b style={{ fontWeight: 700 }}>&gt;</b> Niveau actuel
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 12 }}>
+                <span
+                  style={{
+                    ...SANS,
+                    fontWeight: 800,
+                    fontSize: 56,
+                    lineHeight: 0.9,
+                    letterSpacing: "-0.05em",
+                    background: "linear-gradient(180deg, #F5F5FA 0%, #6E8BFF 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  {level}
+                </span>
+                <span
+                  style={{
+                    ...MONO,
+                    fontSize: 10,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "#6F6B99",
+                  }}
+                >
+                  → LVL {level + 1}
+                </span>
+              </div>
+              {/* XP bar (derived from public xpTotal) */}
+              <div
+                style={{
+                  height: 8,
+                  background: "rgba(5,4,26,0.9)",
+                  border: "1px solid #2A2560",
+                  overflow: "hidden",
+                  marginBottom: 8,
+                }}
+                role="progressbar"
+                aria-valuenow={Math.round(xpPercent)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${xpPercent.toFixed(1)}%`,
+                    background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
+                    boxShadow: "0 0 14px rgba(10,255,212,0.6)",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  ...MONO,
+                  fontSize: 10,
+                  color: "#6F6B99",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                <span>
+                  <b style={{ color: "#F5F5FA", fontWeight: 600 }}>
+                    {current.toLocaleString("fr-FR")}
+                  </b>{" "}
+                  / {needed.toLocaleString("fr-FR")} XP
+                </span>
+                <span>{Math.round(xpPercent)}%</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        {/* ── Stats strip ──────────────────────────────────────────────── */}
+        <div
+          className="pub-stats"
+          style={{
+            border: "1px solid #2A2560",
+            background: "rgba(5,4,26,0.5)",
+            marginBottom: 56,
           }}
         >
           {[
             {
-              label: "XP Total",
+              label: "XP total",
               value: `+${user.xpTotal.toLocaleString("fr-FR")}`,
               color: "#0AFFD4",
+              sub: "expérience cumulée",
             },
             {
               label: "Streak actuel",
-              value: `${String(user.streakDays)} j`,
-              color: user.streakDays > 0 ? "#FFB020" : "#6B6890",
+              value: `${String(user.streakDays)}j`,
+              color: user.streakDays > 0 ? "#FFB547" : "#6B6890",
+              sub: user.streakDays > 0 ? "🔥 en cours" : "à relancer",
             },
-          ].map(({ label, value, color }) => (
+            {
+              label: "Badges obtenus",
+              value: String(user.badges.length),
+              color: "#F5F5FA",
+              sub: "trophées gagnés",
+            },
+          ].map((stat, i) => (
             <div
-              key={label}
+              key={stat.label}
               style={{
-                padding: "16px 20px",
-                background: "#0A0826",
-                border: "1px solid #1F1B47",
-                borderRadius: 10,
+                padding: "26px 28px 22px",
+                borderRight: i < 2 ? "1px solid #2A2560" : "none",
               }}
             >
-              <p
+              <div
                 style={{
-                  fontFamily: "var(--font-mono, monospace)",
+                  ...MONO,
                   fontSize: 10,
-                  color: "#3F3D5C",
-                  letterSpacing: "0.14em",
+                  letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  margin: "0 0 8px",
+                  color: "#6F6B99",
+                  marginBottom: 14,
                 }}
               >
-                {label}
-              </p>
-              <p
+                {stat.label}
+              </div>
+              <div
                 style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontWeight: 700,
-                  fontSize: 24,
-                  color,
-                  margin: 0,
+                  ...SANS,
+                  fontWeight: 800,
+                  fontSize: 38,
                   lineHeight: 1,
+                  letterSpacing: "-0.03em",
+                  color: stat.color,
+                  marginBottom: 10,
                 }}
               >
-                {value}
-              </p>
+                {stat.value}
+              </div>
+              <div
+                style={{
+                  ...MONO,
+                  fontSize: 10.5,
+                  color: "#44406B",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {stat.sub}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* ── Badges ───────────────────────────────────────────────────── */}
+        {/* ── Badges (earned-only — public showcase) ───────────────────── */}
         {user.badges.length > 0 && (
-          <section style={{ marginBottom: 32 }}>
-            <h2
-              style={{
-                fontFamily: "var(--font-sans, sans-serif)",
-                fontWeight: 600,
-                fontSize: 15,
-                color: "#F5F5FA",
-                letterSpacing: "-0.01em",
-                margin: "0 0 16px",
-              }}
-            >
-              Badges
-              <span
-                style={{
-                  marginLeft: 8,
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontWeight: 400,
-                  fontSize: 11,
-                  color: "#6B6890",
-                }}
-              >
-                {user.badges.length}
-              </span>
-            </h2>
-
+          <section style={{ marginBottom: 56 }}>
+            <SectionLabel
+              eyebrow={`01 · trophées · ${String(user.badges.length)}`}
+              title="Badges obtenus."
+            />
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, 52px)",
-                gap: 12,
+                gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
+                gap: "26px 14px",
               }}
             >
               {user.badges.map((ub) => (
-                <div key={ub.id} title={ub.badge.name}>
+                <div
+                  key={ub.id}
+                  title={ub.badge.name}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 12,
+                    textAlign: "center",
+                  }}
+                >
                   <BadgeMedallion
                     rarity={toBadgeRarity(ub.badge.rarity)}
-                    size="sm"
+                    size="md"
                     iconUrl={ub.badge.iconUrl}
                     name={ub.badge.name}
                   />
+                  <span
+                    style={{
+                      ...MONO,
+                      fontSize: 10,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "#6F6B99",
+                      maxWidth: 120,
+                    }}
+                  >
+                    {ub.badge.name}
+                  </span>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* ── Recent lessons ────────────────────────────────────────────── */}
+        {/* ── Recent lessons ───────────────────────────────────────────── */}
         {user.lessonProgress.length > 0 && (
           <section>
-            <h2
-              style={{
-                fontFamily: "var(--font-sans, sans-serif)",
-                fontWeight: 600,
-                fontSize: 15,
-                color: "#F5F5FA",
-                letterSpacing: "-0.01em",
-                margin: "0 0 16px",
-              }}
-            >
-              Leçons terminées récemment
-            </h2>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <SectionLabel eyebrow="02 · activité" title="Leçons terminées récemment." />
+            <div style={{ border: "1px solid #2A2560", background: "rgba(10,8,38,0.4)" }}>
               {user.lessonProgress.map((lp, i) => {
-                const catColor = CAT_COLOR[lp.lesson.category] ?? "#6B6890";
+                const cat = CAT_META[lp.lesson.category] ?? CAT_DEFAULT;
                 const dateStr = lp.completedAt
                   ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
                       lp.completedAt,
                     )
-                  : "-";
+                  : "—";
 
                 return (
                   <div
-                    key={i}
+                    key={`${lp.lesson.slug}-${String(i)}`}
+                    className="pub-row"
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 14,
-                      padding: "12px 16px",
-                      background: "#0A0826",
-                      border: "1px solid #1F1B47",
-                      borderRadius: 8,
+                      gap: 18,
+                      padding: "14px 20px",
+                      borderBottom:
+                        i < user.lessonProgress.length - 1 ? "1px solid #1F1B47" : "none",
+                      transition: "background 150ms ease",
                     }}
                   >
-                    <div
-                      style={{
-                        width: 3,
-                        height: 28,
-                        background: catColor,
-                        borderRadius: 2,
-                        flexShrink: 0,
-                        boxShadow: `0 0 6px ${catColor}60`,
-                      }}
-                    />
-                    <p
-                      style={{
-                        fontFamily: "var(--font-sans, sans-serif)",
-                        fontWeight: 500,
-                        fontSize: 13,
-                        color: "#F5F5FA",
-                        margin: 0,
-                        flex: 1,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {lp.lesson.title}
-                    </p>
                     <span
                       style={{
-                        fontFamily: "var(--font-mono, monospace)",
-                        fontSize: 10,
-                        color: "#3F3D5C",
-                        letterSpacing: "0.04em",
+                        ...SANS,
+                        fontWeight: 800,
+                        fontSize: 22,
+                        lineHeight: 1,
+                        letterSpacing: "-0.02em",
+                        color: "#44406B",
+                        fontVariantNumeric: "tabular-nums",
+                        width: 34,
                         flexShrink: 0,
                       }}
                     >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          ...MONO,
+                          fontSize: 9.5,
+                          fontWeight: 600,
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: cat.color,
+                          marginBottom: 3,
+                        }}
+                      >
+                        {cat.label}
+                      </div>
+                      <p
+                        style={{
+                          ...SANS,
+                          fontWeight: 600,
+                          fontSize: 15,
+                          color: "#F5F5FA",
+                          margin: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {lp.lesson.title}
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        ...MONO,
+                        fontSize: 10.5,
+                        color: "#6F6B99",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 5,
+                          height: 5,
+                          background: "#0AFFD4",
+                          transform: "rotate(45deg)",
+                          boxShadow: "0 0 6px rgba(10,255,212,0.6)",
+                        }}
+                      />
                       {dateStr}
                     </span>
                   </div>
