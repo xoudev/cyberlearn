@@ -1,3 +1,5 @@
+import { getMasteredCategories } from "../placement/scoring.js";
+
 // Minimal structural type — callers pass Prisma Badge objects which satisfy this shape.
 // Avoids a circular dep: @cyberlearn/lib must not import @cyberlearn/db.
 export interface BadgeLike {
@@ -46,6 +48,10 @@ export interface BadgeCriterionStats {
   completedPathIds: ReadonlySet<string>;
   /** Total certificates issued to the user (drives PATH_COMPLETED withCertificate). */
   totalCertificates: number;
+  /** Quiz attempts scored exactly 100 (drives PERFECT_QUIZ). */
+  perfectQuizCount: number;
+  /** Categories mastered on the placement test — 0 when not taken (drives CUSTOM). */
+  placementMasteredCount: number;
 }
 
 /** Raw per-user facts, as returned by `badgeRepository.findCriterionFacts`. */
@@ -53,6 +59,8 @@ export interface BadgeCriterionFacts {
   completedLessons: { lessonId: string; category: string }[];
   completedPathIds: string[];
   totalCertificates: number;
+  perfectQuizCount: number;
+  placementScores: { devScore: number; cybersecScore: number; networkScore: number } | null;
 }
 
 /** Derive the full stats object from raw facts + the user's gamification numbers. */
@@ -64,6 +72,9 @@ export function buildBadgeCriterionStats(
   for (const lesson of facts.completedLessons) {
     categoryLessonCounts[lesson.category] = (categoryLessonCounts[lesson.category] ?? 0) + 1;
   }
+  const placementMasteredCount = facts.placementScores
+    ? Object.values(getMasteredCategories(facts.placementScores)).filter(Boolean).length
+    : 0;
   return {
     xpTotal: user.xpTotal,
     streakDays: user.streakDays,
@@ -73,8 +84,16 @@ export function buildBadgeCriterionStats(
     completedPathsCount: facts.completedPathIds.length,
     completedPathIds: new Set(facts.completedPathIds),
     totalCertificates: facts.totalCertificates,
+    perfectQuizCount: facts.perfectQuizCount,
+    placementMasteredCount,
   };
 }
+
+/**
+ * The only CUSTOM criterion event currently wired: fired by the placement-test
+ * submission when at least one category is mastered.
+ */
+export const PLACEMENT_TEST_PASSED_EVENT = "placement_test_passed";
 
 // ── Safe JSON accessors ────────────────────────────────────────────────────────
 // criterionData is untyped Json from Prisma; a missing or mistyped key reads as
@@ -112,9 +131,8 @@ function strArrayOrNull(data: unknown, key: string): string[] | null {
  * Compute a badge criterion's progress against the user's stats.
  *
  * Returns null when the criterion can never be satisfied automatically:
- * misconfigured criterionData (missing/invalid/<= 0 thresholds), or a type
- * that is awarded by explicit event hooks rather than evaluation
- * (PERFECT_QUIZ, CUSTOM).
+ * misconfigured criterionData (missing/invalid/<= 0 thresholds), or a CUSTOM
+ * event that no hook fires.
  *
  * Canonical semantics per type:
  *  - LESSON_COMPLETED  {count}            — total completed lessons.
@@ -127,6 +145,9 @@ function strArrayOrNull(data: unknown, key: string): string[] | null {
  *                      {pathId}           — that SPECIFIC path completed;
  *                      {count} (default 1) — N paths completed (any).
  *  - LESSON_SPECIFIC   {lessonId}         — that lesson completed (history).
+ *  - PERFECT_QUIZ      {count} (default 1) — N quiz attempts scored 100.
+ *  - CUSTOM            {event}            — placement_test_passed: at least
+ *                                           one placement category mastered.
  */
 export function computeBadgeProgress(
   criterionType: string,
@@ -187,11 +208,18 @@ export function computeBadgeProgress(
       return { done: stats.completedLessonIds.has(lessonId) ? 1 : 0, total: 1 };
     }
 
-    // Awarded by explicit event hooks (quiz submission, placement test), never
-    // by evaluation.
-    case "PERFECT_QUIZ":
-    case "CUSTOM":
-      return null;
+    case "PERFECT_QUIZ": {
+      // Default 1 preserves the historical meaning of `{}`: "one perfect quiz".
+      const count = numOrNull(criterionData, "count") ?? 1;
+      if (count <= 0) return null;
+      return { done: Math.min(stats.perfectQuizCount, count), total: count };
+    }
+
+    case "CUSTOM": {
+      const event = strOrNull(criterionData, "event");
+      if (event !== PLACEMENT_TEST_PASSED_EVENT) return null;
+      return { done: stats.placementMasteredCount > 0 ? 1 : 0, total: 1 };
+    }
 
     default:
       return null;

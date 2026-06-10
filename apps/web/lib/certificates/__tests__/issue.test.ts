@@ -37,6 +37,8 @@ vi.mock("@cyberlearn/db", () => ({
       completedLessons: [],
       completedPathIds: [],
       totalCertificates: 0,
+      perfectQuizCount: 0,
+      placementScores: null,
     }),
   },
   userRepository: {
@@ -71,6 +73,8 @@ vi.mock("@cyberlearn/lib", () => ({
     completedPathsCount: 0,
     completedPathIds: new Set(),
     totalCertificates: 0,
+    perfectQuizCount: 0,
+    placementMasteredCount: 0,
   }),
   // Used by the awardBadges helper for the level recompute on credit.
   computeLevel: (xp: number) => ({ level: Math.floor(xp / 100) + 1, current: 0, needed: 100 }),

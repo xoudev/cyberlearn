@@ -16,6 +16,7 @@ import {
   scoreSubmission,
   validateSubmission,
 } from "@cyberlearn/lib";
+import { evaluateAndAwardBadges } from "@/lib/badges/award";
 import { issueCertificate } from "@/lib/certificates/issue";
 import { requireRequestUser } from "@/lib/auth";
 import { checkQuizStart, checkQuizSubmit } from "@/lib/rate-limit";
@@ -183,6 +184,13 @@ export async function submitQuizAttempt(
     passed,
     answers: { drawnQuestionIds: drawnIds, responses },
   });
+
+  // PERFECT_QUIZ badges hook on the freshly persisted attempt — NOT inside
+  // issueCertificate, whose gates (lessons complete + first issuance) would
+  // miss a perfect score on a retake. Idempotent across retakes by construction.
+  if (score === 100) {
+    await evaluateAndAwardBadges(user.id, ["PERFECT_QUIZ"], { quizId: attempt.quizId });
+  }
 
   // Gate: a passing attempt issues the certificate (with the score). issueCertificate
   // re-checks lessons-complete + idempotence internally, so calling it on every pass
