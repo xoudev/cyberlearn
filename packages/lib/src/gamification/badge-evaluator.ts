@@ -7,76 +7,201 @@ export interface BadgeLike {
   criterionData: unknown;
 }
 
-export interface BadgeEvaluationContext {
+/**
+ * THE single source of truth for badge criteria.
+ *
+ * `computeBadgeProgress` answers both questions every consumer has:
+ *  - real-time awarding (lesson completion, path completion):   done >= total
+ *  - retroactive awarding + progress UI on /badges:             {done, total}
+ *
+ * It replaces the former pair of divergent implementations (`isCriterionMet`
+ * here vs `computeProgress` in the /badges page) which disagreed on
+ * PATH_COMPLETED keys, LESSON_SPECIFIC history, and misconfigured data.
+ */
+
+export interface BadgeProgress {
+  /** Progress achieved, capped at `total`. */
+  done: number;
+  /** Target to reach. Always > 0 when progress is non-null. */
+  total: number;
+}
+
+/**
+ * Everything the criteria can be evaluated against. Pure data — callers build
+ * it from `badgeRepository.findCriterionFacts` via `buildBadgeCriterionStats`,
+ * applying any not-yet-persisted trigger delta themselves (e.g. the lesson
+ * being completed right now).
+ */
+export interface BadgeCriterionStats {
   xpTotal: number;
   streakDays: number;
   totalLessonsCompleted: number;
   /** Completed lessons count per category key (e.g. "DEV", "CYBERSEC", "NETWORK"). */
   categoryLessonCounts: Partial<Record<string, number>>;
-  /** Set when the trigger is a path completion. */
-  completedPathId?: string;
-  /** Total certificates issued to this user. Required for withCertificate badges. */
-  totalCertificates?: number;
-  /** The lesson ID that just triggered this evaluation (real-time, first completion only). */
-  completedLessonId?: string;
+  /** IDs of every lesson the user has completed (drives LESSON_SPECIFIC). */
+  completedLessonIds: ReadonlySet<string>;
+  /** Number of paths the user has completed (drives PATH_COMPLETED count mode). */
+  completedPathsCount: number;
+  /** IDs of every path the user has completed (drives PATH_COMPLETED pathId mode). */
+  completedPathIds: ReadonlySet<string>;
+  /** Total certificates issued to the user (drives PATH_COMPLETED withCertificate). */
+  totalCertificates: number;
+}
+
+/** Raw per-user facts, as returned by `badgeRepository.findCriterionFacts`. */
+export interface BadgeCriterionFacts {
+  completedLessons: { lessonId: string; category: string }[];
+  completedPathIds: string[];
+  totalCertificates: number;
+}
+
+/** Derive the full stats object from raw facts + the user's gamification numbers. */
+export function buildBadgeCriterionStats(
+  facts: BadgeCriterionFacts,
+  user: { xpTotal: number; streakDays: number },
+): BadgeCriterionStats {
+  const categoryLessonCounts: Partial<Record<string, number>> = {};
+  for (const lesson of facts.completedLessons) {
+    categoryLessonCounts[lesson.category] = (categoryLessonCounts[lesson.category] ?? 0) + 1;
+  }
+  return {
+    xpTotal: user.xpTotal,
+    streakDays: user.streakDays,
+    totalLessonsCompleted: facts.completedLessons.length,
+    categoryLessonCounts,
+    completedLessonIds: new Set(facts.completedLessons.map((l) => l.lessonId)),
+    completedPathsCount: facts.completedPathIds.length,
+    completedPathIds: new Set(facts.completedPathIds),
+    totalCertificates: facts.totalCertificates,
+  };
 }
 
 // ── Safe JSON accessors ────────────────────────────────────────────────────────
+// criterionData is untyped Json from Prisma; a missing or mistyped key reads as
+// null so the criterion is treated as misconfigured (never awardable) instead
+// of silently always-true.
 
-function num(data: unknown, key: string): number {
-  if (typeof data !== "object" || data === null) return 0;
+function numOrNull(data: unknown, key: string): number | null {
+  if (typeof data !== "object" || data === null) return null;
   const v = (data as Record<string, unknown>)[key];
-  return typeof v === "number" ? v : 0;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
-function str(data: unknown, key: string): string {
-  if (typeof data !== "object" || data === null) return "";
+function strOrNull(data: unknown, key: string): string | null {
+  if (typeof data !== "object" || data === null) return null;
   const v = (data as Record<string, unknown>)[key];
-  return typeof v === "string" ? v : "";
+  return typeof v === "string" ? v : null;
 }
 
-// ── Criterion evaluator ────────────────────────────────────────────────────────
+function boolIsTrue(data: unknown, key: string): boolean {
+  if (typeof data !== "object" || data === null) return false;
+  return (data as Record<string, unknown>)[key] === true;
+}
 
-function isCriterionMet(badge: BadgeLike, ctx: BadgeEvaluationContext): boolean {
-  const d = badge.criterionData;
-  switch (badge.criterionType) {
-    case "LESSON_COMPLETED":
-      return ctx.totalLessonsCompleted >= num(d, "count");
+function strArrayOrNull(data: unknown, key: string): string[] | null {
+  if (typeof data !== "object" || data === null) return null;
+  const v = (data as Record<string, unknown>)[key];
+  if (!Array.isArray(v)) return null;
+  const strings = v.filter((item): item is string => typeof item === "string");
+  return strings.length > 0 ? strings : null;
+}
 
-    case "PATH_COMPLETED": {
-      if ((d as Record<string, unknown>).withCertificate === true) {
-        return (ctx.totalCertificates ?? 0) >= 1;
-      }
-      if (!ctx.completedPathId) return false;
-      const required = str(d, "pathId");
-      return required === "" || required === ctx.completedPathId;
+// ── Unified criterion progress ─────────────────────────────────────────────────
+
+/**
+ * Compute a badge criterion's progress against the user's stats.
+ *
+ * Returns null when the criterion can never be satisfied automatically:
+ * misconfigured criterionData (missing/invalid/<= 0 thresholds), or a type
+ * that is awarded by explicit event hooks rather than evaluation
+ * (PERFECT_QUIZ, CUSTOM).
+ *
+ * Canonical semantics per type:
+ *  - LESSON_COMPLETED  {count}            — total completed lessons.
+ *  - XP_THRESHOLD      {threshold}        — total XP.
+ *  - STREAK_DAYS       {days}             — current streak.
+ *  - CATEGORY_MASTERY  {category, count}  — completed lessons in ONE category;
+ *                      {categories: []}   — at least one completed lesson in
+ *                                           EACH listed category.
+ *  - PATH_COMPLETED    {withCertificate: true} — at least one certificate;
+ *                      {pathId}           — that SPECIFIC path completed;
+ *                      {count} (default 1) — N paths completed (any).
+ *  - LESSON_SPECIFIC   {lessonId}         — that lesson completed (history).
+ */
+export function computeBadgeProgress(
+  criterionType: string,
+  criterionData: unknown,
+  stats: BadgeCriterionStats,
+): BadgeProgress | null {
+  switch (criterionType) {
+    case "LESSON_COMPLETED": {
+      const count = numOrNull(criterionData, "count");
+      if (count === null || count <= 0) return null;
+      return { done: Math.min(stats.totalLessonsCompleted, count), total: count };
     }
 
-    case "XP_THRESHOLD":
-      return ctx.xpTotal >= num(d, "threshold");
+    case "XP_THRESHOLD": {
+      const threshold = numOrNull(criterionData, "threshold");
+      if (threshold === null || threshold <= 0) return null;
+      return { done: Math.min(stats.xpTotal, threshold), total: threshold };
+    }
 
-    case "STREAK_DAYS":
-      return ctx.streakDays >= num(d, "days");
+    case "STREAK_DAYS": {
+      const days = numOrNull(criterionData, "days");
+      if (days === null || days <= 0) return null;
+      return { done: Math.min(stats.streakDays, days), total: days };
+    }
 
     case "CATEGORY_MASTERY": {
-      const cat = str(d, "category");
-      const count = num(d, "count");
-      return count > 0 && (ctx.categoryLessonCounts[cat] ?? 0) >= count;
+      // Multi-category form: at least one completed lesson in EACH category.
+      const categories = strArrayOrNull(criterionData, "categories");
+      if (categories !== null) {
+        const done = categories.filter((cat) => (stats.categoryLessonCounts[cat] ?? 0) >= 1).length;
+        return { done, total: categories.length };
+      }
+      // Single-category form: N completed lessons in one category.
+      const category = strOrNull(criterionData, "category");
+      const count = numOrNull(criterionData, "count");
+      if (!category || count === null || count <= 0) return null;
+      return { done: Math.min(stats.categoryLessonCounts[category] ?? 0, count), total: count };
+    }
+
+    case "PATH_COMPLETED": {
+      if (boolIsTrue(criterionData, "withCertificate")) {
+        return { done: Math.min(stats.totalCertificates, 1), total: 1 };
+      }
+      const pathId = strOrNull(criterionData, "pathId");
+      if (pathId !== null && pathId !== "") {
+        return { done: stats.completedPathIds.has(pathId) ? 1 : 0, total: 1 };
+      }
+      // Count mode. Default 1 preserves the historical meaning of `{}` and
+      // `{pathId: ""}`: "complete any one path".
+      const count = numOrNull(criterionData, "count") ?? 1;
+      if (count <= 0) return null;
+      return { done: Math.min(stats.completedPathsCount, count), total: count };
     }
 
     case "LESSON_SPECIFIC": {
-      if (!ctx.completedLessonId) return false;
-      const required = str(d, "lessonId");
-      return required !== "" && required === ctx.completedLessonId;
+      const lessonId = strOrNull(criterionData, "lessonId");
+      if (!lessonId) return null;
+      return { done: stats.completedLessonIds.has(lessonId) ? 1 : 0, total: 1 };
     }
 
+    // Awarded by explicit event hooks (quiz submission, placement test), never
+    // by evaluation.
     case "PERFECT_QUIZ":
     case "CUSTOM":
-      return false; // Manual award only via admin
+      return null;
 
     default:
-      return false;
+      return null;
   }
+}
+
+/** True when the criterion is fully satisfied. */
+export function isBadgeUnlocked(badge: BadgeLike, stats: BadgeCriterionStats): boolean {
+  const progress = computeBadgeProgress(badge.criterionType, badge.criterionData, stats);
+  return progress !== null && progress.total > 0 && progress.done >= progress.total;
 }
 
 /**
@@ -86,9 +211,9 @@ function isCriterionMet(badge: BadgeLike, ctx: BadgeEvaluationContext): boolean 
 export function evaluateBadges(
   allBadges: readonly BadgeLike[],
   alreadyEarned: ReadonlySet<string>,
-  ctx: BadgeEvaluationContext,
+  stats: BadgeCriterionStats,
 ): string[] {
   return allBadges
-    .filter((b) => b.isActive && !alreadyEarned.has(b.id) && isCriterionMet(b, ctx))
+    .filter((b) => b.isActive && !alreadyEarned.has(b.id) && isBadgeUnlocked(b, stats))
     .map((b) => b.id);
 }
