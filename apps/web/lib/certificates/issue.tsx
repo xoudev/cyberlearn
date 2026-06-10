@@ -15,7 +15,7 @@ import {
   userRepository,
 } from "@cyberlearn/db";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
-import { evaluateBadges } from "@cyberlearn/lib";
+import { buildBadgeCriterionStats, evaluateBadges } from "@cyberlearn/lib";
 import { CertificateDocument } from "@/lib/pdf/certificate-template";
 
 const APP_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr";
@@ -160,24 +160,22 @@ export async function issueCertificate(
 
 /** Evaluates and awards any PATH_COMPLETED badges triggered by a newly completed path. */
 async function awardPathCompletedBadges(userId: string, pathId: string): Promise<void> {
-  const [allBadges, earnedIds, user, lessonCounts, totalCertificates] = await Promise.all([
+  const [allBadges, earnedIds, user, facts] = await Promise.all([
     badgeRepository.findAllActive(),
     badgeRepository.findUserBadgeIds(userId),
     userRepository.findForGamification(userId),
-    userRepository.countCompletedLessonsByCategory(userId),
-    prisma.certificate.count({ where: { userId } }),
+    badgeRepository.findCriterionFacts(userId),
   ]);
 
   if (!user || allBadges.length === 0) return;
 
-  const newBadgeIds = evaluateBadges(allBadges, earnedIds, {
-    xpTotal: user.xpTotal,
-    streakDays: user.streakDays,
-    totalLessonsCompleted: lessonCounts.total,
-    categoryLessonCounts: lessonCounts.byCategory,
-    completedPathId: pathId,
-    totalCertificates,
-  });
+  // The triggering path is normally already persisted as COMPLETED at this
+  // point (linkCertificate / upsertProgress run first) — merge it defensively.
+  if (!facts.completedPathIds.includes(pathId)) {
+    facts.completedPathIds.push(pathId);
+  }
+
+  const newBadgeIds = evaluateBadges(allBadges, earnedIds, buildBadgeCriterionStats(facts, user));
 
   if (newBadgeIds.length === 0) return;
 

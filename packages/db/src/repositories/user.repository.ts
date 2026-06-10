@@ -14,23 +14,6 @@ export const userRepository = {
     });
   },
 
-  /** Total completed lessons count + per-category breakdown for badge evaluation. */
-  async countCompletedLessonsByCategory(userId: string): Promise<{
-    total: number;
-    byCategory: Partial<Record<string, number>>;
-  }> {
-    const rows = await prisma.userLessonProgress.findMany({
-      where: { userId, status: "COMPLETED" },
-      select: { lesson: { select: { category: true } } },
-    });
-    const byCategory: Partial<Record<string, number>> = {};
-    for (const row of rows) {
-      const cat = row.lesson.category as string;
-      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
-    }
-    return { total: rows.length, byCategory };
-  },
-
   /** Full profile data for authenticated user's own profile page. */
   async findProfile(userId: string) {
     return prisma.user.findUnique({
