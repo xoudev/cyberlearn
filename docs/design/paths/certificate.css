@@ -1,0 +1,169 @@
+/* ==========================================================================
+   Cyber Learn — Certificate (print-ready PDF template) · v3 dark
+   Landscape A4 · on-brand dark theme · brand-gradient accents · real QR.
+   ========================================================================== */
+
+@import url('./colors_and_type.css');
+
+:root {
+  --cert-w: 297mm; --cert-h: 210mm;
+  --ink:        #F3F2FA;   /* primary text */
+  --ink-2:      #C3C0DC;   /* body */
+  --ink-muted:  #8E8BB2;   /* labels — readable on dark */
+  --ink-faint:  #6B6890;
+  --page:       #07052A;
+  --line:       #2A2560;
+  --line-strong:#3C3680;
+  --accent:     #0024FF;   /* brand blue (decorative) */
+  --blue-lt:    #6EA8FF;   /* legible blue on dark */
+  --turq:       #0AFFD4;
+  --brand-grad: linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%);
+  --brand-grad-text: linear-gradient(115deg, #6EA8FF 0%, #0AFFD4 100%);
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: #020111;
+  display: grid; place-items: center;
+  min-height: 100vh;
+  font-family: var(--font-body);
+}
+
+.cert-stage { display: grid; place-items: center; padding: 28px; }
+.cert-fit { transform-origin: top left; }
+
+/* toolbar (screen only) */
+.cert-toolbar { position: fixed; top: 18px; right: 18px; z-index: 50; display: flex; gap: 10px; }
+.cert-print {
+  display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; cursor: pointer; text-decoration: none;
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--accent); color: #fff; border: 1px solid var(--accent); box-shadow: 0 0 22px rgba(0,36,255,0.4);
+  transition: background var(--dur-base);
+}
+.cert-print:hover { background: #1F3BFF; }
+.cert-hint {
+  display: inline-flex; align-items: center; padding: 11px 14px; font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.1em; color: #B8B5D1; border: 1px solid #34304f; background: rgba(10,8,38,0.6);
+}
+
+/* ==========================================================================
+   PAGE
+   ========================================================================== */
+.cert-page {
+  position: relative; width: var(--cert-w); height: var(--cert-h);
+  color: var(--ink); overflow: hidden;
+  background:
+    radial-gradient(ellipse 62% 52% at 12% -4%, rgba(0,36,255,0.24), transparent 58%),
+    radial-gradient(ellipse 58% 58% at 102% 104%, rgba(10,255,212,0.13), transparent 60%),
+    var(--page);
+  box-shadow: 0 40px 120px -40px rgba(0,0,0,0.9);
+}
+/* faint grid texture */
+.cert-page::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(60,54,128,0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(60,54,128,0.18) 1px, transparent 1px);
+  background-size: 12mm 12mm;
+  mask-image: radial-gradient(ellipse at center, black 0%, black 42%, transparent 86%);
+}
+/* brand gradient ribbon along the very top edge */
+.cert-topbar { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--brand-grad); z-index: 4; box-shadow: 0 0 22px rgba(10,255,212,0.35); }
+
+/* large faint brand watermark */
+.cert-wm { position: absolute; left: 50%; top: 53%; transform: translate(-50%,-50%); width: 360px; height: 360px; z-index: 0; opacity: 0.06; pointer-events: none; }
+
+/* thin frame */
+.cert-frame { position: absolute; inset: 8mm; border: 1px solid var(--line); pointer-events: none; }
+.cert-frame::after { content: ''; position: absolute; inset: 1.6mm; border: 1px solid rgba(60,54,128,0.45); }
+
+.cert-inner { position: absolute; inset: 8mm; padding: 12mm 18mm 10mm; display: flex; flex-direction: column; z-index: 2; }
+
+/* ---------- header ---------- */
+.cert-head { display: flex; align-items: flex-start; justify-content: space-between; }
+.cert-brand { display: flex; align-items: center; gap: 12px; }
+.cert-brand__logo { width: 34px; height: 34px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(10,255,212,0.25)); }
+.cert-brand__name { font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; color: var(--ink); }
+.cert-brand__name span { color: var(--turq); }
+.cert-brand__tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted); margin-top: 4px; }
+.cert-head__id { text-align: right; font-family: var(--font-mono); }
+.cert-head__id .lbl { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-muted); }
+.cert-head__id .val { font-size: 12px; letter-spacing: 0.06em; color: var(--turq); font-weight: 600; margin-top: 5px; }
+
+/* ---------- body ---------- */
+.cert-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; }
+.cert-eyebrow {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.36em; text-transform: uppercase;
+  color: var(--turq); display: inline-flex; align-items: center; gap: 13px; margin-bottom: 9mm;
+}
+.cert-eyebrow::before, .cert-eyebrow::after { content: ''; width: 30px; height: 1.5px; background: var(--turq); box-shadow: 0 0 8px rgba(10,255,212,0.6); }
+
+.cert-attest { font-family: var(--font-body); font-size: 13.5px; color: var(--ink-2); letter-spacing: 0.01em; }
+.cert-name {
+  font-family: var(--font-display); font-weight: 800; font-size: 56px; line-height: 1.02;
+  letter-spacing: -0.03em; color: var(--ink); margin: 10px 0 6px; white-space: nowrap;
+}
+.cert-handle { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; color: var(--turq); margin-bottom: 9mm; }
+
+.cert-for { font-family: var(--font-body); font-size: 13.5px; color: var(--ink-2); margin-bottom: 9px; }
+.cert-path {
+  font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: -0.02em; line-height: 1.12;
+  background: var(--brand-grad-text); -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin-bottom: 9mm;
+}
+
+/* meta row */
+.cert-meta { display: flex; align-items: stretch; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.cert-meta__cell { padding: 12px 26px; border-right: 1px solid var(--line); text-align: center; }
+.cert-meta__cell:last-child { border-right: 0; }
+.cert-meta__lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 6px; }
+.cert-meta__val { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--ink); }
+.cert-meta__val .sm { font-size: 11px; color: var(--ink-muted); font-weight: 600; }
+.cert-meta__cell--xp .cert-meta__val { color: var(--turq); }
+.cert-meta__cell--score .cert-meta__val { color: var(--blue-lt); }
+
+/* ---------- footer ---------- */
+.cert-foot { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16mm; margin-top: 8mm; }
+
+/* signature */
+.cert-sign { text-align: center; }
+.cert-sign__mark { font-family: 'Caveat', cursive; font-size: 38px; line-height: 1; color: var(--ink); margin-bottom: 6px; }
+.cert-sign__rule { height: 1px; background: var(--line-strong); margin-bottom: 9px; }
+.cert-sign__role { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); }
+.cert-sign__role b { color: var(--ink-2); font-weight: 600; }
+
+/* brand emblem (the logo itself acts as the seal) */
+.cert-emblem { position: relative; display: grid; place-items: center; }
+.cert-emblem::before { content: ''; position: absolute; width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(circle, rgba(10,255,212,0.16), transparent 68%); }
+.cert-emblem img { position: relative; width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(0,80,255,0.35)); }
+
+/* QR (light tile stays scannable on dark page) */
+.cert-qr-block { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.cert-qr { width: 27mm; height: 27mm; background: #F4F5FA; border: 1px solid var(--line-strong); padding: 1.5mm; box-shadow: 0 0 0 1px rgba(10,255,212,0.12), 0 0 22px -8px rgba(10,255,212,0.4); }
+.cert-qr svg { display: block; width: 100%; height: 100%; }
+.cert-qr__cap { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); }
+
+/* bottom verification strip */
+.cert-strip {
+  margin-top: 8mm; padding-top: 5mm; border-top: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.04em; color: var(--ink-muted);
+}
+.cert-strip .seg { display: inline-flex; align-items: center; gap: 7px; }
+.cert-strip b { color: var(--ink-2); font-weight: 700; }
+.cert-strip .url { color: var(--turq); }
+.cert-strip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--turq); box-shadow: 0 0 6px var(--turq); }
+.cert-strip .div { width: 1px; height: 11px; background: var(--line-strong); }
+
+/* ==========================================================================
+   PRINT
+   ========================================================================== */
+@page { size: A4 landscape; margin: 0; }
+@media print {
+  html, body { background: var(--page) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; height: auto; display: block; }
+  .cert-toolbar { display: none !important; }
+  .cert-stage { padding: 0; display: block; }
+  .cert-fit { transform: none !important; width: auto !important; height: auto !important; }
+  .cert-page { box-shadow: none; width: var(--cert-w); height: var(--cert-h); page-break-after: avoid; }
+}

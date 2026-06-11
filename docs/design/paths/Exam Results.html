@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Résultats de l'examen — Réseaux · Cyber Learn</title>
+  <link rel="stylesheet" href="exam-results.css" />
+</head>
+<body>
+  <div class="r-bg">
+    <div class="r-bg__glow"></div>
+    <div class="r-bg__grid"></div>
+  </div>
+
+  <div class="r-toggle" id="toggle">
+    <button data-v="pass" class="is-active">Réussi</button>
+    <span class="sep"></span>
+    <button data-v="fail">Échoué</button>
+  </div>
+
+  <div class="r-app is-pass" id="app">
+    <div class="r-wrap">
+      <div class="r-crumb">
+        <span class="p">$</span><span>~/</span><b>cyberlearn</b>
+        <span class="slash">/</span><span>reseaux-fondamentaux</span>
+        <span class="slash">/</span><span class="current">résultats</span>
+      </div>
+
+      <!-- HERO -->
+      <section class="r-hero">
+        <div class="r-gauge">
+          <svg viewBox="0 0 200 200">
+            <circle class="r-gauge__track" cx="100" cy="100" r="86"></circle>
+            <circle class="r-gauge__fill" id="gaugeFill" cx="100" cy="100" r="86"></circle>
+          </svg>
+          <div class="r-gauge__center">
+            <div class="r-gauge__pct" id="scorePct">85%</div>
+            <div class="r-gauge__sub" id="scoreSub">17 / 20 correctes</div>
+          </div>
+        </div>
+
+        <div class="r-status">
+          <span class="r-status__badge" id="statusBadge">
+            <span class="ico" id="statusIco"></span>
+            <span id="statusLabel">Réussi</span>
+          </span>
+          <h1 class="r-status__title" id="statusTitle">Examen validé.</h1>
+          <p class="r-status__desc" id="statusDesc"></p>
+
+          <div class="r-substats">
+            <div class="r-substats__cell"><div class="r-substats__val ok" id="okCount">17</div><div class="r-substats__lbl">Correctes</div></div>
+            <div class="r-substats__cell"><div class="r-substats__val no" id="noCount">3</div><div class="r-substats__lbl">Incorrectes</div></div>
+            <div class="r-substats__cell"><div class="r-substats__val" id="timeUsed">11:24</div><div class="r-substats__lbl">Temps utilisé</div></div>
+          </div>
+
+          <div class="r-compare">
+            <span class="r-compare__txt">Ton score</span>
+            <div class="r-compare__bar">
+              <div class="r-compare__fill" id="compareFill" style="width:85%"></div>
+              <div class="r-compare__mark" style="left:70%"></div>
+            </div>
+            <span class="r-compare__txt" id="compareTxt"><b>+15 pts</b> au-dessus du seuil</span>
+          </div>
+
+          <!-- PASS-only -->
+          <div class="r-pass-block">
+            <div class="r-action">
+              <a href="Certificate Template.html" class="r-btn r-btn--cert">
+                <span class="bk tl"></span><span class="bk tr"></span><span class="bk bl"></span><span class="bk br"></span>
+                <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M7 11.5 L6 17 L10 15 L14 17 L13 11.5"/></svg>
+                Voir mon certificat
+              </a>
+              <a href="Path Detail v2.html" class="r-btn r-btn--ghost">Retour au parcours</a>
+            </div>
+          </div>
+
+          <!-- FAIL-only -->
+          <div class="r-retry-block r-cooldown-block">
+            <div class="r-action">
+              <button class="r-btn r-btn--retry" disabled>
+                <span class="lock"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1"/><path d="M5.2 7 V5 C5.2 3.4 6.4 2.2 8 2.2 C9.6 2.2 10.8 3.4 10.8 5 V7"/></svg></span>
+                Réessayer dans 47:51:08
+              </button>
+              <a href="Path Detail v2.html" class="r-btn r-btn--ghost">Revoir le parcours</a>
+            </div>
+            <div class="r-cooldown" style="margin-top:16px">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="11" r="6.4"/><path d="M10 8 V11 L12.2 12.6"/><path d="M7.7 3.5 H12.3"/></svg>
+              <span>Une seule tentative par session. Prochaine tentative possible le <b>5 juin, 14:32</b> — révise les modules avant de réessayer.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- congrats (pass only) -->
+      <div class="r-congrats">
+        <span class="r-congrats__ico"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M7 11.5 L6 17 L10 15 L14 17 L13 11.5"/></svg></span>
+        <span class="r-congrats__txt"><b>Félicitations !</b> Tu as validé l'examen <b>Réseaux — Les fondamentaux</b>. Ton certificat vérifiable et <b>+200 XP bonus</b> ont été ajoutés à ton profil.</span>
+      </div>
+
+      <!-- CORRECTION -->
+      <section class="r-review">
+        <div class="r-review__head">
+          <span class="r-review__title">// Correction détaillée</span>
+          <div class="r-review__legend">
+            <span><i class="ok"></i>Correcte</span>
+            <span><i class="no"></i>Incorrecte</span>
+          </div>
+        </div>
+        <div id="reviewList"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    // 20 questions; we show a representative subset in the review.
+    const REVIEW = [
+      { q: 'Quel protocole de la couche transport garantit une livraison fiable et ordonnée des paquets ?',
+        opts: ['UDP', 'TCP', 'ICMP', 'ARP'], correct: 1, chosen: 1,
+        why: 'TCP établit une connexion (handshake), numérote les segments et retransmet ceux qui sont perdus — d\'où une livraison fiable et ordonnée. UDP, lui, est sans connexion et ne garantit rien.' },
+      { q: 'Quelle plage d’adresses correspond à un réseau privé selon la RFC 1918 ?',
+        opts: ['8.8.0.0/16', '192.168.0.0/16', '172.0.0.0/8', '100.64.0.0/10'], correct: 1, chosen: 2,
+        why: 'La RFC 1918 réserve <code>10.0.0.0/8</code>, <code>172.16.0.0/12</code> et <code>192.168.0.0/16</code> aux réseaux privés. <code>172.0.0.0/8</code> est un piège : c\'est <code>172.16.0.0/12</code> qui est privé, pas tout le <code>/8</code>.' },
+      { q: 'Combien de bits compose une adresse IPv6 ?',
+        opts: ['32 bits', '64 bits', '128 bits', '256 bits'], correct: 2, chosen: 2,
+        why: 'IPv6 utilise des adresses de 128 bits (contre 32 pour IPv4), ce qui porte l\'espace d\'adressage à 2¹²⁸ adresses.' },
+      { q: 'À quoi sert principalement le NAT (Network Address Translation) ?',
+        opts: ['Filtrer les ports ouverts', 'Traduire des adresses privées en adresse publique', 'Chiffrer le trafic sortant', 'Accélérer la résolution DNS'], correct: 1, chosen: 1,
+        why: 'Le NAT permet à plusieurs hôtes d\'un réseau privé de partager une seule adresse IP publique, en réécrivant les adresses source/destination des paquets.' },
+      { q: 'Quel mécanisme attribue automatiquement une adresse IP à un hôte qui rejoint le réseau ?',
+        opts: ['NAT', 'DHCP', 'DNS', 'VLAN'], correct: 1, chosen: 3,
+        why: 'DHCP (Dynamic Host Configuration Protocol) attribue dynamiquement adresse IP, masque, passerelle et DNS. Un VLAN segmente un réseau au niveau 2 mais n\'attribue pas d\'adresse.' },
+      { q: 'Quel équipement interconnecte des réseaux différents et achemine les paquets entre eux ?',
+        opts: ['Un hub', 'Un routeur', 'Un répéteur', 'Un point d’accès'], correct: 1, chosen: 1,
+        why: 'Le routeur opère en couche 3 et achemine les paquets entre réseaux distincts grâce à sa table de routage. Le hub et le répéteur travaillent en couche 1.' },
+    ];
+    const KEYS = ['A', 'B', 'C', 'D'];
+    const CK = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8 L7 12 L13 4"/></svg>';
+    const X = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4 L12 12 M12 4 L4 12"/></svg>';
+    const CHEV = '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3 L11 8 L6 13"/></svg>';
+
+    const listEl = document.getElementById('reviewList');
+    REVIEW.forEach((r, idx) => {
+      const wrong = r.chosen !== r.correct;
+      const item = document.createElement('div');
+      item.className = 'r-q' + (wrong ? ' is-wrong' : '') + (idx === 1 ? ' is-open' : '');
+      let ansHtml = '';
+      r.opts.forEach((o, i) => {
+        let cls = '', tag = '';
+        if (i === r.correct) { cls = 'r-ans--correct'; tag = '<span class="r-ans__tag">Bonne réponse</span>'; }
+        else if (i === r.chosen && wrong) { cls = 'r-ans--chosen-wrong'; tag = '<span class="r-ans__tag">Ta réponse</span>'; }
+        ansHtml += '<div class="r-ans ' + cls + '"><span class="r-ans__key">' + KEYS[i] + '</span><span class="r-ans__text">' + o + '</span>' + tag + '</div>';
+      });
+      item.innerHTML =
+        '<button class="r-q__head">' +
+          '<span class="r-q__mark">' + (wrong ? X : CK) + '</span>' +
+          '<span><span class="r-q__num">Question ' + String(idx + 1).padStart(2, '0') + (wrong ? ' · Incorrecte' : ' · Correcte') + '</span><span class="r-q__q">' + r.q + '</span></span>' +
+          '<span class="r-q__chev">' + CHEV + '</span>' +
+        '</button>' +
+        '<div class="r-q__body">' +
+          '<div class="r-q__answers">' + ansHtml + '</div>' +
+          '<div class="r-explain"><span class="r-explain__ico"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="7"/><path d="M9 8 V13 M9 5.5 V5.6"/></svg></span>' +
+            '<div class="r-explain__txt"><span class="lbl">// Explication</span>' + r.why + '</div></div>' +
+        '</div>';
+      item.querySelector('.r-q__head').addEventListener('click', () => item.classList.toggle('is-open'));
+      listEl.appendChild(item);
+    });
+
+    // gauge geometry
+    const R = 86, C = 2 * Math.PI * R;
+    const gauge = document.getElementById('gaugeFill');
+    gauge.style.strokeDasharray = C;
+
+    const PASS = {
+      pct: 85, ok: 17, no: 3, sub: '17 / 20 correctes', time: '11:24',
+      label: 'Réussi', title: 'Examen validé.',
+      desc: 'Bien joué — tu dépasses le seuil de réussite de <b>70 %</b>. Le parcours est désormais <span class="ac">certifié</span>.',
+      compareW: 85, compareTxt: '<b>+15 pts</b> au-dessus du seuil',
+      ico: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8 L7 12 L13 4"/></svg>'
+    };
+    const FAIL = {
+      pct: 55, ok: 11, no: 9, sub: '11 / 20 correctes', time: '14:02',
+      label: 'Échoué', title: 'Seuil non atteint.',
+      desc: 'Il te manque <b>15 points</b> pour valider. Le seuil de réussite est de <span class="ac">70 %</span> — révise puis retente après le délai d\'attente.',
+      compareW: 55, compareTxt: '<b>−15 pts</b> sous le seuil',
+      ico: '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4 L12 12 M12 4 L4 12"/></svg>'
+    };
+
+    const app = document.getElementById('app');
+    function setVariant(v) {
+      const d = v === 'pass' ? PASS : FAIL;
+      app.classList.toggle('is-pass', v === 'pass');
+      app.classList.toggle('is-fail', v === 'fail');
+      document.getElementById('scorePct').textContent = d.pct + '%';
+      document.getElementById('scoreSub').textContent = d.sub;
+      document.getElementById('okCount').textContent = d.ok;
+      document.getElementById('noCount').textContent = d.no;
+      document.getElementById('timeUsed').textContent = d.time;
+      document.getElementById('statusLabel').textContent = d.label;
+      document.getElementById('statusIco').innerHTML = d.ico;
+      document.getElementById('statusTitle').textContent = d.title;
+      document.getElementById('statusDesc').innerHTML = d.desc;
+      document.getElementById('compareFill').style.width = d.compareW + '%';
+      document.getElementById('compareTxt').innerHTML = d.compareTxt;
+      // animate gauge
+      gauge.style.strokeDashoffset = C;
+      requestAnimationFrame(() => { gauge.style.strokeDashoffset = C * (1 - d.pct / 100); });
+    }
+    setVariant('pass');
+
+    document.getElementById('toggle').addEventListener('click', (e) => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      document.querySelectorAll('.r-toggle button').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      setVariant(btn.dataset.v);
+    });
+  })();
+  </script>
+</body>
+</html>

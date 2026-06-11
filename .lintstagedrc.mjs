@@ -8,18 +8,22 @@ import { resolve } from "node:path";
 //    "No files were processed" error that would abort the commit.
 // Vendor runtime files are committed as-is from CDN — must not be reformatted.
 const isRuntimeFile = (f) => f.includes("/public/runtimes/");
+// docs/ holds design mockups (.jsx/.html/.css), not app code: biome ignores
+// them via files.ignore, so passing them along would abort the commit with
+// "No files were processed". Normalize separators so Windows paths match too.
+const isDocsFile = (f) => f.replace(/\\/g, "/").includes("/docs/");
 
 export default {
   "*.{ts,tsx,js,jsx,mjs,cjs}": (files) => {
-    const biomeFiles = files.filter((f) => !isRuntimeFile(f));
+    const biomeFiles = files.filter((f) => !isRuntimeFile(f) && !isDocsFile(f));
     if (biomeFiles.length === 0) return [];
     return `biome format --write ${biomeFiles.map((f) => JSON.stringify(resolve(f))).join(" ")}`;
   },
 
   "*.{json,css,md}": (files) => {
-    // docs/ is in biome's ignore list; .md is not supported by biome's formatter
+    // .md is not supported by biome's formatter
     const biomeFiles = files.filter(
-      (f) => !f.includes("/docs/") && !f.endsWith(".md") && !isRuntimeFile(f),
+      (f) => !isDocsFile(f) && !f.endsWith(".md") && !isRuntimeFile(f),
     );
     if (biomeFiles.length === 0) return [];
     return `biome format --write ${biomeFiles.map((f) => JSON.stringify(resolve(f))).join(" ")}`;

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Examen en cours — Réseaux · Cyber Learn</title>
+  <link rel="stylesheet" href="exam-question.css" />
+</head>
+<body>
+  <div class="q-bg">
+    <div class="q-bg__glow"></div>
+    <div class="q-bg__grid"></div>
+  </div>
+
+  <div class="q-toggle" id="toggle">
+    <button data-mode="desktop" class="is-active">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="9"/><path d="M6 14 H10 M8 11.5 V14" stroke-linecap="round"/></svg>
+      Desktop
+    </button>
+    <button data-mode="mobile">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1.5" width="8" height="13" rx="1.5"/><path d="M7 12.5 H9" stroke-linecap="round"/></svg>
+      Mobile
+    </button>
+  </div>
+
+  <div class="q-app" id="app">
+    <!-- TOP BAR -->
+    <header class="q-topbar">
+      <div class="q-exam">
+        <span class="q-exam__mark">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 L13 4 V8 C13 11 10.8 13 8 14 C5.2 13 3 11 3 8 V4 Z"/></svg>
+        </span>
+        <span class="q-exam__txt">
+          <span class="q-exam__label">// EXAMEN FINAL</span>
+          <span class="q-exam__name">Réseaux — Les fondamentaux</span>
+        </span>
+      </div>
+
+      <div class="q-progress">
+        <div class="q-progress__count">Question <b id="curNum">03</b> <span class="tot">/ 10</span></div>
+        <div class="q-progress__bar"><div class="q-progress__fill" id="progFill" style="width:30%"></div></div>
+      </div>
+
+      <div class="q-timer" id="timer">
+        <span class="q-timer__ico"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="11" r="6.4"/><path d="M10 8 V11 L12.2 12.6"/><path d="M7.7 3.5 H12.3"/></svg></span>
+        <span class="q-timer__val" id="timerVal">12:48</span>
+      </div>
+    </header>
+
+    <!-- mobile dot strip -->
+    <div class="q-mobile-dots" id="mobileDots"></div>
+
+    <!-- QUESTION -->
+    <main class="q-main">
+      <div class="q-stage">
+        <div class="q-card">
+          <div class="q-eyebrow">// QUESTION <span id="eyebrowNum">03</span> <span class="pts">2 points</span></div>
+          <h1 class="q-text" id="qText"></h1>
+          <div class="q-options" id="options"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- NAV -->
+    <nav class="q-nav">
+      <button class="q-btn q-btn--ghost" id="prevBtn">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8 H3 M7 4 L3 8 L7 12"/></svg>
+        Précédent
+      </button>
+      <div class="q-dots" id="dots"></div>
+      <button class="q-btn q-btn--next" id="nextBtn">
+        Suivant
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8 H13 M9 4 L13 8 L9 12"/></svg>
+      </button>
+    </nav>
+  </div>
+
+  <script>
+  (function () {
+    const QUESTIONS = [
+      { q: 'Quel protocole de la couche transport garantit une livraison fiable et ordonnée des paquets ?',
+        pts: 2, opts: ['UDP', 'TCP', 'ICMP', 'ARP'] },
+      { q: 'Dans le modèle OSI, à quelle couche opère un commutateur (switch) classique ?',
+        pts: 2, opts: ['Couche 1 — Physique', 'Couche 2 — Liaison de données', 'Couche 3 — Réseau', 'Couche 4 — Transport'] },
+      { q: 'Quelle plage d’adresses correspond à un réseau privé selon la RFC 1918 ?',
+        pts: 2, opts: ['8.8.0.0/16', '<code>192.168.0.0/16</code>', '172.0.0.0/8', '100.64.0.0/10'] },
+      { q: 'Quel port TCP est utilisé par défaut pour le trafic HTTPS ?',
+        pts: 2, opts: ['80', '21', '443', '8080'] },
+      { q: 'Que permet principalement le protocole DNS ?',
+        pts: 2, opts: ['Chiffrer les communications', 'Résoudre des noms de domaine en adresses IP', 'Attribuer dynamiquement des adresses IP', 'Router les paquets entre réseaux'] },
+      { q: 'Quel mécanisme attribue automatiquement une adresse IP à un hôte qui rejoint le réseau ?',
+        pts: 2, opts: ['NAT', 'DHCP', 'DNS', 'VLAN'] },
+      { q: 'Combien de bits compose une adresse IPv6 ?',
+        pts: 2, opts: ['32 bits', '64 bits', '128 bits', '256 bits'] },
+      { q: 'À quoi sert principalement le NAT (Network Address Translation) ?',
+        pts: 2, opts: ['Filtrer les ports ouverts', 'Traduire des adresses privées en adresse publique', 'Chiffrer le trafic sortant', 'Accélérer la résolution DNS'] },
+      { q: 'Quelle commande permet de tester la connectivité ICMP vers un hôte ?',
+        pts: 2, opts: ['<code>ping</code>', '<code>grep</code>', '<code>chmod</code>', '<code>ssh</code>'] },
+      { q: 'Quel équipement interconnecte des réseaux différents et achemine les paquets entre eux ?',
+        pts: 2, opts: ['Un hub', 'Un routeur', 'Un répéteur', 'Un point d’accès'] },
+    ];
+    const KEYS = ['A', 'B', 'C', 'D'];
+    const answers = new Array(QUESTIONS.length).fill(null);
+    // pre-fill earlier questions to demonstrate "answered" state
+    answers[0] = 1; answers[1] = 1;
+    let current = 2; // showing question 03
+
+    const el = (id) => document.getElementById(id);
+    const optionsEl = el('options'), dotsEl = el('dots'), mobileDotsEl = el('mobileDots');
+
+    function pad(n) { return String(n + 1).padStart(2, '0'); }
+
+    function render() {
+      const Q = QUESTIONS[current];
+      el('curNum').textContent = pad(current);
+      el('eyebrowNum').textContent = pad(current);
+      el('qText').innerHTML = Q.q;
+      el('progFill').style.width = (((current + 1) / QUESTIONS.length) * 100) + '%';
+      document.querySelector('.q-eyebrow .pts').textContent = Q.pts + ' points';
+
+      // options
+      optionsEl.innerHTML = '';
+      Q.opts.forEach((opt, i) => {
+        const b = document.createElement('button');
+        b.className = 'q-opt' + (answers[current] === i ? ' is-selected' : '');
+        b.innerHTML =
+          '<span class="q-opt__key"><span>' + KEYS[i] + '</span></span>' +
+          '<span class="q-opt__text">' + opt + '</span>' +
+          '<span class="q-opt__check"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8 L7 12 L13 4"/></svg></span>';
+        b.addEventListener('click', () => { answers[current] = i; render(); });
+        optionsEl.appendChild(b);
+      });
+
+      // nav buttons
+      el('prevBtn').disabled = current === 0;
+      const nextBtn = el('nextBtn');
+      if (current === QUESTIONS.length - 1) {
+        nextBtn.className = 'q-btn q-btn--finish';
+        nextBtn.innerHTML = 'Terminer l’examen <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8 L7 12 L13 4"/></svg>';
+      } else {
+        nextBtn.className = 'q-btn q-btn--next';
+        nextBtn.innerHTML = 'Suivant <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8 H13 M9 4 L13 8 L9 12"/></svg>';
+      }
+
+      // dots
+      dotsEl.innerHTML = ''; mobileDotsEl.innerHTML = '';
+      QUESTIONS.forEach((_, i) => {
+        const cls = (answers[i] !== null ? ' is-answered' : '') + (i === current ? ' is-current' : '');
+        const d = document.createElement('button');
+        d.className = 'q-dot' + cls;
+        d.innerHTML = '<span>' + pad(i) + '</span>';
+        d.title = 'Question ' + pad(i);
+        d.addEventListener('click', () => { current = i; render(); });
+        dotsEl.appendChild(d);
+        const m = document.createElement('i'); m.className = cls.trim(); mobileDotsEl.appendChild(m);
+      });
+    }
+
+    el('prevBtn').addEventListener('click', () => { if (current > 0) { current--; render(); } });
+    el('nextBtn').addEventListener('click', () => {
+      if (current < QUESTIONS.length - 1) { current++; render(); }
+      else { window.location.href = 'Exam Results.html'; }
+    });
+
+    render();
+
+    // countdown timer
+    (function () {
+      let remaining = 12 * 60 + 48; // 12:48
+      const valEl = el('timerVal'), timerEl = el('timer');
+      function tick() {
+        const m = Math.floor(remaining / 60), s = remaining % 60;
+        valEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        timerEl.classList.toggle('is-low', remaining <= 5 * 60); // red under 5:00
+        if (remaining > 0) remaining--;
+      }
+      tick(); setInterval(tick, 1000);
+    })();
+
+    // device toggle
+    (function () {
+      const app = el('app'), toggle = el('toggle');
+      toggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('button'); if (!btn) return;
+        toggle.querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        app.classList.toggle('is-mobile', btn.dataset.mode === 'mobile');
+      });
+    })();
+  })();
+  </script>
+</body>
+</html>
