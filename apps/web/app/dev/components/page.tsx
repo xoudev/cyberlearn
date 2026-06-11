@@ -1,4 +1,5 @@
 import React from "react";
+import { notFound } from "next/navigation";
 import {
   XPBar,
   LevelBadge,
@@ -67,6 +68,11 @@ function DemoCard({ children }: { children: React.ReactNode }) {
 }
 
 export default function DevComponentsPage(): React.JSX.Element {
+  // Dev-only showcase of the @cyberlearn/ui brand components. Nothing links
+  // to it, but as a public route it still shipped in the production bundle;
+  // 404 it outside development.
+  if (process.env.NODE_ENV === "production") notFound();
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-base)" }}>
       {/* Header */}
