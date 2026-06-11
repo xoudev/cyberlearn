@@ -37,14 +37,21 @@ function quoteFrontmatter(txt) {
 }
 
 function fixCodePlayground(txt) {
-  return txt.replace(/<CodePlayground([^>]*?)>([\s\S]*?)<\/CodePlayground>/g, (_m, attrs, code) => {
+  txt = txt.replace(/<CodePlayground([^>]*?)>([\s\S]*?)<\/CodePlayground>/g, (_m, attrs, code) => {
     let lang = "python";
     const lm = attrs.match(/language="(\w+)"/);
     if (lm) lang = lm[1];
     let c = code.replace(/^\n+/, "").replace(/\n+$/, "");
+    // Some lessons wrap the code in an inner ```lang fence; unwrap it.
+    const fence = c.match(/^```[\w-]*\n([\s\S]*?)\n```$/);
+    if (fence) c = fence[1];
     c = c.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
     return `<CodePlayground language="${lang}" starterCode={\`${c}\`} />`;
   });
+  // Outside starterCode template literals, JSX string attributes cannot use
+  // \" (acorn rejects it). Replace \" with a single quote in those regions.
+  const parts = txt.split(/(starterCode=\{`[\s\S]*?`\})/);
+  return parts.map((p, i) => (i % 2 === 1 ? p : p.replaceAll('\\"', "'"))).join("");
 }
 
 const dirs = sub ? [sub] : readdirSync(ROOT);

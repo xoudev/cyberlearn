@@ -1,0 +1,189 @@
+---
+refCode: CL-LSN-029-V01
+slug: c-boucles
+title: "Boucles en C : for, while et do-while"
+description: "Répétez des traitements en C avec les boucles for, while et do-while, et contrôlez leur exécution avec break et continue."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 160
+prerequisites: ["CL-LSN-028-V01"]
+---
+
+Imaginez que vous deviez afficher les nombres de 1 à 100. Les écrire un par un
+serait fastidieux et illisible. Les boucles servent justement à cela : répéter
+un traitement sans dupliquer le code. Vous écrivez les instructions une seule
+fois, et l'ordinateur les exécute autant de fois que nécessaire. C'est l'un des
+outils les plus puissants de la programmation.
+
+En C, vous disposez de trois boucles : `for`, `while` et `do-while`. Elles font
+toutes la même chose au fond - répéter - mais chacune est adaptée à une
+situation différente. Dans cette leçon, vous allez les découvrir une par une,
+puis apprendre à contrôler finement leur déroulement avec `break` et `continue`.
+
+## La boucle for
+
+La boucle `for` est idéale quand vous savez à l'avance combien de fois répéter.
+Elle se compose de trois parties, séparées par des points-virgules :
+l'initialisation, la condition, et l'incrément.
+
+<Callout type="info">
+Les trois parties du `for` :
+1. **Initialisation** : prépare la variable de comptage (exécutée une seule fois).
+2. **Condition** : testée avant chaque tour ; tant qu'elle est vraie, la boucle continue.
+3. **Incrément** : modifie la variable après chaque tour (souvent `i++`).
+</Callout>
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int n = 7;
+    for (int i = 1; i <= 10; i++) {
+        printf("%d x %d = %d\\n", n, i, n * i);
+    }
+    return 0;
+}
+\`\`\``} />
+
+Ici, `i` part de 1, la boucle continue tant que `i` est inférieur ou égal à 10,
+et `i` augmente de 1 à chaque tour. On obtient ainsi la table de multiplication
+de 7, sans répéter dix fois la même ligne.
+
+## La boucle while
+
+La boucle `while` répète un bloc tant qu'une condition reste vraie. On l'utilise
+quand on ne connaît pas forcément le nombre de tours à l'avance. La condition est
+testée avant chaque tour : si elle est fausse dès le départ, le bloc n'est jamais
+exécuté.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int compte = 5;
+    while (compte > 0) {
+        printf("Decollage dans %d...\\n", compte);
+        compte--;
+    }
+    printf("Decollage !\\n");
+    return 0;
+}
+\`\`\``} />
+
+<Callout type="warning">
+Pensez toujours à faire évoluer la condition à l'intérieur du `while`. Si vous
+oubliez `compte--`, la condition reste vraie pour toujours : c'est une boucle
+infinie, et votre programme ne s'arrête jamais.
+</Callout>
+
+## do-while
+
+La boucle `do-while` ressemble à `while`, mais elle place la condition à la fin.
+Conséquence : le bloc est exécuté au moins une fois, même si la condition est
+fausse dès le départ. C'est la différence essentielle avec `while`, qui peut ne
+jamais s'exécuter.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int valeur = 10;
+    do {
+        printf("Cette ligne s'affiche au moins une fois (valeur = %d).\\n", valeur);
+        valeur++;
+    } while (valeur < 5);
+    return 0;
+}
+\`\`\``} />
+
+Ici, la condition `valeur < 5` est fausse dès l'entrée (10 n'est pas inférieur à
+5), mais le message s'affiche quand même une fois grâce au `do-while`. Avec un
+simple `while`, rien ne se serait affiché.
+
+## break et continue
+
+Deux mots-clés permettent de contrôler le déroulement d'une boucle. `break`
+interrompt complètement la boucle et passe à la suite du programme. `continue`
+saute le reste du tour courant et passe directement au tour suivant.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    for (int i = 1; i <= 10; i++) {
+        if (i == 7) {
+            break; /* on arrete la boucle a 7 */
+        }
+        if (i % 2 == 0) {
+            continue; /* on ignore les nombres pairs */
+        }
+        printf("Nombre impair : %d\\n", i);
+    }
+    return 0;
+}
+\`\`\``} />
+
+Dans cet exemple, `continue` ignore les nombres pairs, et `break` arrête tout dès
+que `i` vaut 7. Seuls 1, 3 et 5 sont donc affichés.
+
+## À vous de jouer
+
+<QuizGroup>
+<Quiz
+  question="Quelle boucle utilise-t-on de préférence quand on connaît à l'avance le nombre exact de répétitions ?"
+  options={["La boucle for", "La boucle while", "La boucle do-while", "Aucune des trois"]}
+  correctIndex={0}
+  explanation="Le for regroupe initialisation, condition et incrément : il est parfait quand le nombre de tours est connu d'avance."
+/>
+<Quiz
+  question="Quelle est la différence essentielle entre while et do-while ?"
+  options={[
+    "while teste la condition avant le bloc, do-while la teste après donc s'exécute au moins une fois",
+    "do-while ne peut jamais s'exécuter",
+    "while ne peut pas utiliser de condition",
+    "Il n'y a aucune différence entre les deux"
+  ]}
+  correctIndex={0}
+  explanation="do-while place la condition à la fin : le bloc tourne au moins une fois, même si la condition est fausse dès le départ."
+/>
+<Quiz
+  question="Que fait le mot-clé continue dans une boucle ?"
+  options={[
+    "Il met fin au programme",
+    "Il saute le reste du tour courant et passe au tour suivant",
+    "Il interrompt totalement la boucle",
+    "Il redémarre la boucle depuis le début"
+  ]}
+  correctIndex={1}
+  explanation="continue ignore le reste du tour en cours et reprend directement au tour suivant. C'est break qui interrompt totalement la boucle."
+/>
+</QuizGroup>
+
+À votre tour d'écrire une boucle. Complétez ce programme pour qu'il calcule la
+somme de tous les entiers de 1 à 100 (le résultat attendu est 5050).
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int somme = 0;
+    for (int i = 1; i <= 100; i++) {
+        somme = somme + i;
+    }
+    printf("Somme de 1 a 100 = %d\\n", somme);
+    return 0;
+}
+\`\`\``} />
+
+Essayez ensuite de modifier ce code pour n'additionner que les nombres pairs, ou
+pour afficher chaque nombre pair entre 1 et 20.
+
+## Récapitulatif
+
+- Une **boucle** répète un traitement sans dupliquer le code.
+- La boucle **for** convient quand le nombre de tours est connu : `for (init; condition; incrément)`.
+- La boucle **while** répète tant qu'une condition reste vraie ; elle peut ne jamais s'exécuter.
+- La boucle **do-while** teste la condition à la fin : le bloc s'exécute **au moins une fois**.
+- **break** interrompt totalement la boucle ; **continue** saute au tour suivant.
+- Attention aux **boucles infinies** : faites toujours évoluer la condition.

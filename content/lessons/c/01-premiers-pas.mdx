@@ -1,0 +1,181 @@
+---
+refCode: CL-LSN-025-V01
+slug: c-premiers-pas
+title: "Premiers pas en C : structure d'un programme"
+description: "Découvrez le langage C : la structure d'un programme, la fonction main, les directives #include, la compilation et l'affichage avec printf."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 130
+prerequisites: []
+---
+
+Le langage **C** est l'un des langages les plus influents de l'histoire de l'informatique. Créé au début des années 1970 par Dennis Ritchie, il sert aujourd'hui de fondation à une immense partie des logiciels qui nous entourent : systèmes d'exploitation (Linux, Windows, macOS reposent en grande partie sur du C), pilotes matériels, systèmes embarqués (votre micro-ondes, votre voiture, vos objets connectés), moteurs de jeux vidéo et bibliothèques de calcul haute performance.
+
+On dit du C que c'est un langage **bas niveau** : il vous donne un contrôle très fin sur la mémoire et sur la machine, tout en restant lisible par un humain. Cette proximité avec le matériel explique sa rapidité légendaire. Apprendre le C, c'est comprendre ce qui se passe réellement sous le capot de presque tous les autres langages que vous croiserez ensuite. Dans cette première leçon, vous allez écrire, comprendre et exécuter vos premiers programmes.
+
+<Callout type="info">
+Pas besoin d'installer quoi que ce soit pour cette leçon : les blocs de code ci-dessous sont réellement compilés et exécutés directement dans votre navigateur. Cliquez sur « Exécuter » et observez la sortie.
+</Callout>
+
+## L'anatomie d'un programme C
+
+Tout programme C suit une structure de base que l'on retrouve partout. Voici notre premier programme, le traditionnel « Hello, World! ».
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    printf("Hello, World!\\n");
+    return 0;
+}`} />
+
+Décortiquons chaque élément, ligne par ligne :
+
+- `#include <stdio.h>` est une **directive de préprocesseur**. Elle demande d'inclure la bibliothèque standard d'entrées/sorties (*standard input/output*), qui contient notamment la fonction `printf`. Sans cette ligne, le compilateur ne saurait pas ce que `printf` signifie.
+- `int main(void)` déclare la **fonction principale**. C'est le point d'entrée du programme : quand vous lancez l'exécutable, c'est ici que tout commence. Le mot `void` entre parenthèses indique que `main` ne reçoit aucun argument.
+- Les **accolades** ouvrante et fermante délimitent le corps de la fonction : tout ce qui se trouve entre elles constitue les instructions à exécuter.
+- `return 0;` renvoie la valeur `0` au système d'exploitation. Par convention, `0` signifie « le programme s'est terminé sans erreur ». Une valeur différente de zéro signalerait un problème.
+
+<Callout type="info">
+La directive `#include <stdio.h>` ne contient pas de point-virgule à la fin, contrairement aux instructions normales. C'est une particularité des directives de préprocesseur, qui sont traitées avant la compilation proprement dite. Le `.h` signifie *header* (en-tête) : c'est un fichier qui décrit les fonctions disponibles.
+</Callout>
+
+## printf en détail
+
+La fonction `printf` (pour *print formatted*) est votre outil principal pour afficher du texte à l'écran. Vous lui passez une chaîne de caractères entre guillemets, et elle l'affiche.
+
+Un élément essentiel est la séquence `\n`, appelée **caractère de saut de ligne**. Elle ne s'affiche pas comme deux caractères, mais provoque un passage à la ligne suivante. Sans elle, plusieurs `printf` s'enchaîneraient sur une seule et même ligne.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    printf("Bonjour ");
+    printf("tout le monde !\\n");
+    printf("Ligne une\\n");
+    printf("Ligne deux\\n");
+    printf("Sans saut... ");
+    printf("on continue sur la meme ligne.\\n");
+    return 0;
+}`} />
+
+Observez bien la sortie : les deux premiers `printf` produisent une seule ligne car le premier ne contient pas de `\n`. À l'inverse, « Ligne une » et « Ligne deux » sont séparées car chacune se termine par `\n`.
+
+## La compilation
+
+Contrairement à des langages interprétés comme Python ou JavaScript, le C doit être **compilé** avant de pouvoir s'exécuter. Le cycle théorique se déroule en trois étapes :
+
+1. Vous écrivez votre **code source** dans un fichier texte, par exemple `programme.c`.
+2. Un **compilateur** (le plus courant étant `gcc`, le *GNU Compiler Collection*) traduit ce code en langage machine, compréhensible directement par le processeur.
+3. Le résultat est un fichier **exécutable** que l'on peut lancer.
+
+En pratique, sur une machine, la commande ressemblerait à ceci :
+
+```bash
+gcc programme.c -o programme
+./programme
+```
+
+La première ligne compile `programme.c` et produit un exécutable nommé `programme` (option `-o` pour *output*). La seconde lance ce programme.
+
+<Callout type="info">
+Sur cette plateforme, toute cette mécanique de compilation est gérée automatiquement pour vous : il vous suffit d'écrire votre code et de cliquer sur « Exécuter ». Mais il est important de comprendre qu'en coulisses, votre code passe bien par un compilateur avant de tourner.
+</Callout>
+
+## Les commentaires
+
+Les **commentaires** sont des notes que vous laissez dans le code pour vous-même ou pour d'autres développeurs. Le compilateur les ignore totalement : ils n'ont aucun effet sur l'exécution. Le C propose deux formes :
+
+- Le commentaire **sur une ligne**, introduit par `//` : tout ce qui suit jusqu'à la fin de la ligne est ignoré.
+- Le commentaire **sur plusieurs lignes**, encadré par `/*` et `*/` : tout ce qui se trouve entre ces deux marqueurs est ignoré, même sur plusieurs lignes.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    // Ceci est un commentaire sur une seule ligne
+    printf("Le commentaire au-dessus est ignore.\\n");
+
+    /* Ceci est un commentaire
+       qui s'etend sur
+       plusieurs lignes. */
+    printf("Et celui du dessus aussi.\\n");
+
+    printf("Resultat : 2 + 3 = %d\\n", 2 + 3); // commentaire en fin de ligne
+    return 0;
+}`} />
+
+Bien commenter son code est une excellente habitude : cela rend vos programmes plus faciles à relire et à corriger. Attention toutefois à ne pas surcharger : un bon commentaire explique le *pourquoi*, pas seulement le *quoi*.
+
+## À vous de jouer
+
+Testez votre compréhension avec ces quelques questions, puis passez à l'exercice de code.
+
+<QuizGroup>
+
+<Quiz
+  question="Quel est le rôle de la ligne 'return 0;' à la fin de la fonction main ?"
+  options={[
+    "Elle affiche le chiffre 0 à l'écran",
+    "Elle signale au système d'exploitation que le programme s'est terminé sans erreur",
+    "Elle relance le programme depuis le début",
+    "Elle est obligatoire mais ne sert strictement à rien"
+  ]}
+  correct={1}
+  explanation="Par convention, renvoyer 0 indique une fin normale du programme. Une valeur non nulle signalerait une erreur au système."
+/>
+
+<Quiz
+  question="À quoi sert la fonction main dans un programme C ?"
+  options={[
+    "C'est le point d'entrée : l'exécution du programme commence par elle",
+    "C'est une fonction d'affichage équivalente à printf",
+    "C'est le nom obligatoire de la première bibliothèque incluse",
+    "C'est un simple commentaire décoratif"
+  ]}
+  correct={0}
+  explanation="La fonction main est le point de départ de tout programme C. Quand on lance l'exécutable, c'est son corps qui s'exécute en premier."
+/>
+
+<Quiz
+  question="Que provoque la séquence '\n' dans une chaîne passée à printf ?"
+  options={[
+    "Elle affiche littéralement les caractères barre oblique et n",
+    "Elle efface la ligne précédente",
+    "Elle provoque un saut à la ligne suivante",
+    "Elle met le texte en gras"
+  ]}
+  correct={2}
+  explanation="La séquence '\n' est le caractère de saut de ligne. Elle déplace l'affichage au début de la ligne suivante."
+/>
+
+</QuizGroup>
+
+Maintenant, place à la pratique. Le programme ci-dessous affiche un petit motif sur plusieurs lignes. Exécutez-le, puis amusez-vous à modifier les chaînes ou à ajouter vos propres lignes.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    printf("*\\n");
+    printf("**\\n");
+    printf("***\\n");
+    printf("****\\n");
+    printf("*****\\n");
+    printf("\\n");
+    printf("Bravo, vous avez ecrit votre premier motif !\\n");
+    return 0;
+}`} />
+
+## Récapitulatif
+
+Vous venez de poser les fondations du langage C. Retenez l'essentiel :
+
+- Le **C** est un langage compilé et bas niveau, omniprésent dans les systèmes, l'embarqué et les applications performantes.
+- Tout programme contient une fonction `int main(void)`, son **point d'entrée**, dont le corps est délimité par des accolades.
+- La directive `#include <stdio.h>` rend disponibles les fonctions d'entrée/sortie comme `printf`.
+- `printf` affiche du texte ; la séquence `\n` provoque un **saut de ligne**.
+- Le code source passe par un **compilateur** (`gcc`) qui produit un exécutable - automatisé pour vous sur la plateforme.
+- `return 0;` signale une fin de programme **sans erreur**.
+- Les **commentaires** (`//` sur une ligne, `/* */` sur plusieurs) documentent le code et sont ignorés à la compilation.
+
+Dans la prochaine leçon, vous découvrirez les **variables** et les **types** de données, pour stocker et manipuler de l'information dans vos programmes.
+
+OK 01-premiers-pas.mdx écrit

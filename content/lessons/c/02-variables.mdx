@@ -1,0 +1,153 @@
+---
+refCode: CL-LSN-026-V01
+slug: c-variables-types
+title: "Variables et types en C"
+description: "Déclarez et utilisez des variables en C : les types fondamentaux (int, float, double, char), la déclaration, l'initialisation et l'affichage formaté avec printf."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 140
+prerequisites: ["CL-LSN-025-V01"]
+---
+
+En C, chaque variable possède un **type fixe**, décidé au moment de sa déclaration et qui ne change jamais ensuite. On dit que le C est un langage **typé statiquement** : le compilateur connaît le type de chaque variable avant même que le programme ne s'exécute. Ce choix a un avantage immédiat : il permet au compilateur de réserver exactement la bonne quantité de mémoire et de détecter de nombreuses erreurs très tôt.
+
+Comprendre les types est donc la première étape indispensable pour écrire du code C correct. Dans cette leçon, vous allez découvrir les types fondamentaux, apprendre à déclarer et initialiser des variables, puis afficher leurs valeurs proprement avec `printf`.
+
+## Les types fondamentaux
+
+Le C propose quelques types de base que vous utiliserez constamment :
+
+- `int` - un nombre entier (par exemple 42 ou -7). Il occupe généralement 4 octets.
+- `float` - un nombre à virgule flottante en simple précision (environ 4 octets).
+- `double` - un nombre à virgule flottante en double précision, plus précis (environ 8 octets).
+- `char` - un seul caractère, comme 'A' ou '?' (1 octet).
+
+Les tailles exactes peuvent varier selon la machine, mais ces ordres de grandeur sont valables presque partout. Voici un programme qui déclare une variable de chaque type et l'affiche.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int age = 30;
+    float taille = 1.75f;
+    double pi = 3.14159265358979;
+    char initiale = 'C';
+
+    printf("age     : %d\\n", age);
+    printf("taille  : %f\\n", taille);
+    printf("pi      : %f\\n", pi);
+    printf("initiale: %c\\n", initiale);
+    return 0;
+}`} />
+
+## Déclaration et initialisation
+
+La syntaxe pour créer une variable suit toujours le même schéma : `type nom = valeur;`. On peut séparer la **déclaration** (annoncer le type et le nom) de l'**initialisation** (donner une première valeur), mais il est fortement conseillé de toujours initialiser une variable au moment de la déclarer. Une variable déclarée sans valeur contient une donnée imprévisible.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int score;          /* declaration seule */
+    score = 100;        /* affectation plus tard */
+
+    int niveau = 1;     /* declaration + initialisation */
+    double solde = 250.50;
+
+    printf("score : %d\\n", score);
+    printf("niveau: %d\\n", niveau);
+    printf("solde : %f\\n", solde);
+    return 0;
+}`} />
+
+## printf et les spécificateurs de format
+
+La fonction `printf` affiche du texte, mais pour insérer la valeur d'une variable il faut un **spécificateur de format** introduit par `%`. Chaque type a le sien :
+
+- `%d` pour un `int` (entier)
+- `%f` pour un `float` ou un `double`
+- `%c` pour un `char` (caractère)
+- `%s` pour une chaîne de caractères
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int annee = 2026;
+    double prix = 19.99;
+    char lettre = 'Z';
+    char mot[] = "CyberLearn";
+
+    printf("entier    : %d\\n", annee);
+    printf("decimal   : %f\\n", prix);
+    printf("caractere : %c\\n", lettre);
+    printf("chaine    : %s\\n", mot);
+    return 0;
+}`} />
+
+<Callout type="warning">
+Utiliser le mauvais spécificateur est une erreur classique. Si vous écrivez `printf("%d", prix)` alors que `prix` est un `float` ou un `double`, l'affichage sera faux (souvent un grand nombre absurde). Le type de la variable et le spécificateur doivent toujours correspondre : `%d` pour les entiers, `%f` pour les nombres à virgule.
+</Callout>
+
+## Constantes
+
+Parfois, une valeur ne doit jamais changer. Le C offre deux façons de créer des constantes. Le mot-clé `const` crée une variable en lecture seule : toute tentative de la modifier provoque une erreur de compilation. La directive `#define` du préprocesseur, elle, remplace simplement un nom par un texte avant la compilation.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+#define MAX_VIES 3
+
+int main(void) {
+    const double TVA = 0.20;
+    double prix_ht = 100.0;
+    double prix_ttc = prix_ht * (1.0 + TVA);
+
+    printf("vies max : %d\\n", MAX_VIES);
+    printf("prix TTC : %f\\n", prix_ttc);
+    return 0;
+}`} />
+
+## À vous de jouer
+
+<QuizGroup>
+<Quiz
+  question="Quel spécificateur de format utilise-t-on dans printf pour afficher une variable de type int ?"
+  options={["%c", "%f", "%d", "%s"]}
+  correctIndex={2}
+  explanation="%d affiche un entier (int). %f sert aux float et double, %c à un caractère, %s à une chaîne."
+/>
+<Quiz
+  question="Quelle déclaration initialise correctement un caractère en C ?"
+  options={["char c = 'A';", "char c = 'A';", "char c = A;", "int c = 'A.0';"]}
+  correctIndex={0}
+  explanation="Un char se note entre apostrophes simples : 'A'. Les guillemets doubles désignent une chaîne, pas un caractère unique."
+/>
+<Quiz
+  question="Que se passe-t-il si on tente de modifier une variable déclarée avec const ?"
+  options={["La valeur change sans erreur", "Le compilateur signale une erreur", "Le programme plante toujours à l'exécution", "La variable devient un double"]}
+  correctIndex={1}
+  explanation="const rend la variable en lecture seule : toute modification est refusée dès la compilation."
+/>
+</QuizGroup>
+
+Pour finir, écrivez le calcul de l'aire d'un cercle en utilisant une constante `PI`. La formule est aire = PI x rayon x rayon.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+#define PI 3.14159
+
+int main(void) {
+    double rayon = 5.0;
+    double aire = PI * rayon * rayon;
+
+    printf("rayon : %f\\n", rayon);
+    printf("aire  : %f\\n", aire);
+    return 0;
+}`} />
+
+## Récapitulatif
+
+- Le C est **typé statiquement** : chaque variable a un type fixe défini à la déclaration.
+- Les types fondamentaux sont `int` (entier), `float` et `double` (virgule flottante), `char` (caractère).
+- La syntaxe de déclaration est `type nom = valeur;` ; il faut toujours initialiser ses variables.
+- Les spécificateurs `printf` doivent correspondre au type : `%d`, `%f`, `%c`, `%s`.
+- Utiliser `%d` pour un `float` produit un affichage erroné.
+- `const` et `#define` permettent de définir des valeurs qui ne changent pas.

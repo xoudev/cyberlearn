@@ -1,0 +1,195 @@
+---
+refCode: CL-LSN-028-V01
+slug: c-conditions
+title: "Conditions en C : if, else et switch"
+description: "Faites prendre des décisions à vos programmes C avec if, else if, else, l'opérateur ternaire et l'instruction switch, en travaillant sur des valeurs codées en dur."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 150
+prerequisites: ["CL-LSN-027-V01"]
+---
+
+Jusqu'ici, vos programmes C suivaient toujours le même chemin, ligne après ligne. Mais un programme utile doit réagir aux situations : afficher une mention selon une note, choisir un message selon un jour de la semaine, autoriser ou refuser un accès. Pour cela, le langage C met à votre disposition des structures de décision. Dans cette leçon, nous allons explorer `if`, `else if`, `else`, l'opérateur ternaire et l'instruction `switch`. Comme vous ne savez pas encore lire une saisie clavier, nous travaillerons sur des valeurs codées en dur dans le code : il vous suffira de changer une valeur et de relancer pour observer un autre comportement.
+
+## if / else if / else
+
+L'instruction `if` exécute un bloc de code seulement si une condition est vraie. En C, une condition vaut faux quand elle est égale à zéro, et vrai dans tous les autres cas. On encadre le bloc à exécuter par des accolades. On peut enchaîner plusieurs tests avec `else if`, puis terminer par un `else` qui couvre tous les cas restants.
+
+Dans l'exemple suivant, nous catégorisons une note codée en dur pour lui attribuer une mention. Changez la valeur de `note` puis relancez le programme pour voir une autre mention s'afficher.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int note = 14;
+
+    if (note >= 16) {
+        printf("Mention tres bien\n");
+    } else if (note >= 14) {
+        printf("Mention bien\n");
+    } else if (note >= 10) {
+        printf("Admis\n");
+    } else {
+        printf("Recale\n");
+    }
+
+    return 0;
+}
+```
+
+Notez bien l'opérateur de comparaison `>=` (supérieur ou égal). Attention à ne pas confondre `=` (affectation) et `==` (test d'égalité) : c'est l'une des erreurs les plus fréquentes des débutants.
+
+## L'opérateur ternaire
+
+Quand une décision se résume à choisir entre deux valeurs, l'opérateur ternaire offre une écriture compacte. Sa forme est `condition ? valeur_si_vrai : valeur_si_faux`. Il renvoie directement une valeur, ce qui est pratique pour l'affecter à une variable ou la passer à `printf`.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int age = 20;
+
+    const char *statut = (age >= 18) ? "majeur" : "mineur";
+    printf("Cette personne est %s\n", statut);
+
+    int nombre = 7;
+    printf("%d est %s\n", nombre, (nombre % 2 == 0) ? "pair" : "impair");
+
+    return 0;
+}
+```
+
+Le ternaire reste lisible pour des choix simples. Si la logique devient complexe, préférez un `if / else` classique : la clarté prime toujours sur la concision.
+
+## switch
+
+Quand vous comparez une même variable entière (ou un `char`) à plusieurs valeurs précises, l'instruction `switch` est souvent plus lisible qu'une longue chaîne de `else if`. Chaque `case` correspond à une valeur ; le mot-clé `break` arrête le `switch` une fois le bon cas traité ; le `default` couvre toutes les valeurs non prévues.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int jour = 3;
+
+    switch (jour) {
+        case 1:
+            printf("Lundi\n");
+            break;
+        case 2:
+            printf("Mardi\n");
+            break;
+        case 3:
+            printf("Mercredi\n");
+            break;
+        default:
+            printf("Autre jour\n");
+            break;
+    }
+
+    return 0;
+}
+```
+
+<Callout type="warning">
+Si vous oubliez le `break` à la fin d'un `case`, l'exécution continue dans le `case` suivant : c'est le fall-through. Avec une valeur `jour` de 1, un `switch` sans aucun `break` afficherait Lundi, puis Mardi, puis Mercredi. Sauf intention précise, placez toujours un `break` à la fin de chaque `case`.
+</Callout>
+
+## Conditions imbriquées et combinées
+
+On peut placer un `if` à l'intérieur d'un autre `if` : ce sont des conditions imbriquées. Mais bien souvent, on préfère combiner plusieurs tests sur une seule ligne grâce aux opérateurs logiques. Le ET logique `&&` est vrai quand ses deux côtés sont vrais ; le OU logique `||` est vrai quand au moins un côté est vrai.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int age = 25;
+    int solde = 120;
+
+    if (age >= 18 && solde >= 100) {
+        printf("Acces autorise au service premium\n");
+    } else {
+        printf("Acces refuse\n");
+    }
+
+    int estWeekend = 1;
+    int estFerie = 0;
+    if (estWeekend || estFerie) {
+        printf("Jour de repos\n");
+    } else {
+        printf("Jour travaille\n");
+    }
+
+    return 0;
+}
+```
+
+Les opérateurs `&&` et `||` sont dits à court-circuit : si le résultat est déjà connu par le premier opérande, le second n'est pas évalué.
+
+## À vous de jouer
+
+<QuizGroup>
+<Quiz
+  question="Que vaut l'expression (5 == 5) en C ?"
+  options={["0 (faux)", "1 (vrai)", "Une erreur de compilation", "La valeur 5"]}
+  correctIndex={1}
+  explanation="Une comparaison vraie vaut 1 en C, et une comparaison fausse vaut 0."
+/>
+<Quiz
+  question="Dans un switch, qu'arrive-t-il si on oublie le break a la fin d'un case ?"
+  options={[
+    "Le programme s'arrete avec une erreur",
+    "Seul le case courant s'execute, puis le switch s'arrete",
+    "L'execution continue dans le case suivant (fall-through)",
+    "Le default est execute automatiquement"
+  ]}
+  correctIndex={2}
+  explanation="Sans break, on tombe dans le case suivant : c'est le fall-through. Il faut un break sauf intention contraire."
+/>
+<Quiz
+  question="Quelle est la bonne forme de l'operateur ternaire ?"
+  options={[
+    "condition : a ? b",
+    "condition ? a : b",
+    "if condition then a else b",
+    "condition && a || b"
+  ]}
+  correctIndex={1}
+  explanation="La syntaxe est condition ? valeur_si_vrai : valeur_si_faux."
+/>
+</QuizGroup>
+
+Mettez en pratique : ce programme classe une température codée en dur. Modifiez la valeur de `temperature` et relancez pour voir le message changer.
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int temperature = 22;
+
+    if (temperature < 0) {
+        printf("Il gele\n");
+    } else if (temperature < 15) {
+        printf("Il fait frais\n");
+    } else if (temperature < 26) {
+        printf("Temperature agreable\n");
+    } else {
+        printf("Il fait chaud\n");
+    }
+
+    const char *tenue = (temperature < 15) ? "Prends une veste" : "Tee-shirt suffit";
+    printf("%s\n", tenue);
+
+    return 0;
+}
+```
+
+## Récapitulatif
+
+- `if`, `else if` et `else` permettent d'exécuter du code selon qu'une condition est vraie (non nulle) ou fausse (nulle).
+- Ne confondez jamais `=` (affectation) et `==` (test d'égalité).
+- L'opérateur ternaire `condition ? a : b` est idéal pour un choix simple entre deux valeurs.
+- `switch` compare une variable entière ou `char` à plusieurs `case` ; `break` évite le fall-through et `default` couvre les autres cas.
+- Combinez vos conditions avec `&&` (ET) et `||` (OU) pour des tests plus expressifs.
+
+OK 04-conditions.mdx écrit

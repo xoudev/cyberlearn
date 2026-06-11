@@ -1,0 +1,273 @@
+---
+refCode: CL-LSN-036-V01
+slug: c-projet
+title: "Projet : un gestionnaire d'inventaire en C"
+description: "Mettez en pratique tout le parcours C en construisant un gestionnaire d'inventaire : structures pour les articles, tableau de structures, fonctions de recherche et de calcul."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 600
+prerequisites: ["CL-LSN-034-V01", "CL-LSN-035-V01"]
+---
+
+Bravo, vous voilà arrivé à la dernière leçon du parcours C. Jusqu'ici, vous avez appris les types, les variables, les conditions, les boucles, les fonctions, les tableaux, les pointeurs et les structures, chacun dans son coin. Il est temps d'assembler toutes ces briques pour construire un vrai petit programme utile : un **gestionnaire d'inventaire**.
+
+L'idée est simple et concrète. Imaginez la réserve d'une petite boutique. Chaque article possède un nom, une quantité en stock et un prix unitaire. Notre programme va stocker ces articles, les afficher, calculer la valeur totale du stock et retrouver un article à partir de son nom. Tout ce dont nous avons besoin tient dans les outils que vous maîtrisez déjà.
+
+Cette leçon est volontairement pratique. Chaque étape vient avec un exemple exécutable que vous pouvez lancer et modifier. À la fin, vous repartirez avec un vrai projet personnel à réaliser sur votre propre machine, avec un compilateur comme `gcc`, pour transformer ce squelette en application complète.
+
+## L'architecture
+
+Tout commence par la modélisation des données. Un article n'est pas une simple valeur : c'est un regroupement de trois informations. C'est exactement le rôle d'une `struct`. Nous définissons donc un type `Article` qui contient un nom (un tableau de caractères de taille fixe), une quantité entière et un prix flottant.
+
+L'inventaire dans son ensemble est alors tout naturellement un **tableau de structures** de taille fixe. Pas besoin d'allocation dynamique pour l'instant : on réserve par exemple 100 emplacements à l'avance, et on garde un compteur du nombre d'articles réellement utilisés.
+
+<Diagram
+  type="flowchart"
+  nodes={[
+    ["Article", "nom + quantite + prix"],
+    ["Inventaire", "tableau de Article"],
+    ["Fonctions", "afficher / total / rechercher"]
+  ]}
+/>
+
+Voici la définition de la structure et l'initialisation de quelques articles.
+
+<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+
+struct Article {
+    char nom[32];
+    int quantite;
+    float prix;
+};
+
+int main(void) {
+    struct Article inventaire[3] = {
+        {"Clavier", 12, 29.90f},
+        {"Souris", 25, 14.50f},
+        {"Ecran", 4, 159.00f}
+    };
+
+    printf("Premier article : %s\\\\n", inventaire[0].nom);
+    printf("Quantite : %d\\\\n", inventaire[0].quantite);
+    printf("Prix : %.2f\\\\n", inventaire[0].prix);
+    return 0;
+}\`}`} />
+
+<Callout type="info">
+Le nom est stocké dans un `char[32]`, ce qui limite à 31 caractères plus le caractère de fin de chaîne. C'est suffisant pour des noms courts et cela évite toute allocation dynamique.
+</Callout>
+
+## Étape 1 : afficher l'inventaire
+
+Première fonction utile : parcourir le tableau et afficher chaque article proprement. On passe le tableau et le nombre d'articles en paramètres. La fonction ne renvoie rien (`void`), elle se contente d'imprimer.
+
+<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+
+struct Article {
+    char nom[32];
+    int quantite;
+    float prix;
+};
+
+void afficher_inventaire(struct Article articles[], int taille) {
+    printf("--- Inventaire ---\\\\n");
+    for (int i = 0; i < taille; i++) {
+        printf("%-10s | qte: %3d | prix: %7.2f\\\\n",
+               articles[i].nom, articles[i].quantite, articles[i].prix);
+    }
+}
+
+int main(void) {
+    struct Article inventaire[3] = {
+        {"Clavier", 12, 29.90f},
+        {"Souris", 25, 14.50f},
+        {"Ecran", 4, 159.00f}
+    };
+    afficher_inventaire(inventaire, 3);
+    return 0;
+}\`}`} />
+
+Notez l'usage des largeurs de champ dans `printf` (`%-10s`, `%3d`, `%7.2f`) pour aligner les colonnes. C'est un petit détail qui rend la sortie bien plus lisible.
+
+## Étape 2 : calculer la valeur totale
+
+L'inventaire d'une boutique a une valeur marchande. Pour chaque article, cette valeur vaut `quantite * prix`. La valeur totale du stock est la somme de toutes ces valeurs. On écrit donc une fonction qui parcourt le tableau et accumule le résultat dans un `float`.
+
+<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+
+struct Article {
+    char nom[32];
+    int quantite;
+    float prix;
+};
+
+float valeur_totale(struct Article articles[], int taille) {
+    float total = 0.0f;
+    for (int i = 0; i < taille; i++) {
+        total += articles[i].quantite * articles[i].prix;
+    }
+    return total;
+}
+
+int main(void) {
+    struct Article inventaire[3] = {
+        {"Clavier", 12, 29.90f},
+        {"Souris", 25, 14.50f},
+        {"Ecran", 4, 159.00f}
+    };
+    printf("Valeur totale du stock : %.2f euros\\\\n",
+           valeur_totale(inventaire, 3));
+    return 0;
+}\`}`} />
+
+<Callout type="info">
+La fonction renvoie un `float`, ce qui permet de l'utiliser directement dans un `printf` ou de stocker le résultat dans une variable pour d'autres calculs.
+</Callout>
+
+## Étape 3 : rechercher un article
+
+Retrouver un article par son nom est l'opération la plus fréquente. Comme un nom est une chaîne de caractères, on ne peut pas le comparer avec `==`. On utilise la fonction `strcmp` de `string.h`, qui renvoie `0` quand les deux chaînes sont identiques.
+
+Notre fonction de recherche renvoie l'**indice** de l'article trouvé, ou `-1` si aucun article ne correspond. Cette convention du `-1` est classique en C pour signaler une absence.
+
+<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+#include <string.h>
+
+struct Article {
+    char nom[32];
+    int quantite;
+    float prix;
+};
+
+int rechercher(struct Article articles[], int taille, const char cible[]) {
+    for (int i = 0; i < taille; i++) {
+        if (strcmp(articles[i].nom, cible) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int main(void) {
+    struct Article inventaire[3] = {
+        {"Clavier", 12, 29.90f},
+        {"Souris", 25, 14.50f},
+        {"Ecran", 4, 159.00f}
+    };
+
+    int idx = rechercher(inventaire, 3, "Souris");
+    if (idx != -1) {
+        printf("Trouve a l'indice %d, quantite %d\\\\n",
+               idx, inventaire[idx].quantite);
+    } else {
+        printf("Article introuvable\\\\n");
+    }
+    return 0;
+}\`}`} />
+
+## À vous de jouer
+
+Avant de passer à votre projet personnel, vérifions que les notions clés sont bien en place.
+
+<QuizGroup>
+<Quiz
+  question="Pourquoi utilise-t-on strcmp plutot que == pour comparer deux noms d'articles ?"
+  options={[
+    "Parce que == ne fonctionne jamais en C",
+    "Parce que == compare les adresses des tableaux, pas leur contenu",
+    "Parce que strcmp est plus rapide a ecrire",
+    "Parce que les noms sont des nombres flottants"
+  ]}
+  correctIndex={1}
+  explanation="Un nom est un tableau de char. L'operateur == comparerait les adresses mémoire, pas les caractères. strcmp parcourt et compare le contenu caractère par caractère."
+/>
+<Quiz
+  question="Que renvoie notre fonction rechercher lorsqu'aucun article ne correspond ?"
+  options={[
+    "0",
+    "La valeur -1",
+    "Le dernier indice du tableau",
+    "Une chaine vide"
+  ]}
+  correctIndex={1}
+  explanation="La convention retenue est de renvoyer -1 pour signaler l'absence, car -1 n'est jamais un indice valide dans un tableau."
+/>
+<Quiz
+  question="Comment calcule-t-on la valeur d'un seul article dans le stock ?"
+  options={[
+    "En additionnant quantite et prix",
+    "En multipliant quantite par prix",
+    "En divisant prix par quantite",
+    "En prenant uniquement le prix"
+  ]}
+  correctIndex={1}
+  explanation="La valeur d'un article vaut quantite * prix. La somme de ces produits sur tout l'inventaire donne la valeur totale du stock."
+/>
+</QuizGroup>
+
+Place à la pratique. Dans l'exercice ci-dessous, écrivez l'esprit d'une fonction qui retrouve l'article le plus cher de l'inventaire. On garde l'indice du meilleur candidat rencontré et on le met à jour dès qu'on trouve plus cher.
+
+<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+
+struct Article {
+    char nom[32];
+    int quantite;
+    float prix;
+};
+
+int article_le_plus_cher(struct Article articles[], int taille) {
+    int meilleur = 0;
+    for (int i = 1; i < taille; i++) {
+        if (articles[i].prix > articles[meilleur].prix) {
+            meilleur = i;
+        }
+    }
+    return meilleur;
+}
+
+int main(void) {
+    struct Article inventaire[3] = {
+        {"Clavier", 12, 29.90f},
+        {"Souris", 25, 14.50f},
+        {"Ecran", 4, 159.00f}
+    };
+
+    int idx = article_le_plus_cher(inventaire, 3);
+    printf("Article le plus cher : %s (%.2f)\\\\n",
+           inventaire[idx].nom, inventaire[idx].prix);
+    return 0;
+}\`}`} />
+
+## Votre projet personnel
+
+<Callout type="success">
+Vous avez maintenant tous les morceaux d'un vrai logiciel. La prochaine étape consiste à les assembler dans un programme interactif, compilé sur votre propre machine. C'est le meilleur moyen de transformer ces connaissances en savoir-faire durable.
+</Callout>
+
+Sur la plateforme, nous évitons `scanf`, l'allocation dynamique et les fichiers pour garder les exemples sûrs et reproductibles. Mais sur votre ordinateur, avec `gcc`, vous n'avez plus ces limites. Voici un projet progressif à réaliser hors plateforme. Avancez fonctionnalité par fonctionnalité, en compilant et en testant à chaque étape.
+
+1. **Menu interactif.** Affichez un menu en boucle (ajouter, afficher, rechercher, valeur totale, quitter). Lisez le choix de l'utilisateur avec `scanf` et dirigez le programme avec un `switch`.
+2. **Saisie au clavier.** Ajoutez une fonction qui lit le nom, la quantité et le prix d'un nouvel article au clavier, puis l'insère dans le tableau en incrémentant le compteur d'articles.
+3. **Suppression d'articles.** Permettez de retirer un article par son nom. Décalez les éléments suivants pour combler le trou, et décrémentez le compteur.
+4. **Sauvegarde dans un fichier.** Utilisez `fopen`, `fprintf` et `fclose` pour écrire l'inventaire dans un fichier texte, puis une fonction de chargement qui relit ce fichier au démarrage du programme.
+5. **Allocation dynamique.** Remplacez le tableau de taille fixe par un tableau alloué avec `malloc`, agrandi avec `realloc` quand il se remplit, et libéré avec `free` à la fin. Vous gérez alors un nombre vraiment variable d'articles.
+
+Quand votre programme fonctionne, compilez-le proprement avec `gcc -Wall -Wextra -o inventaire inventaire.c`, corrigez tous les avertissements, puis poussez le projet sur **GitHub** avec un petit fichier README expliquant comment le compiler et l'utiliser. Ce sera votre première vraie réalisation en C, visible dans votre portfolio.
+
+## Récapitulatif
+
+Au fil de tout le parcours C, vous avez acquis les compétences suivantes :
+
+- Déclarer et manipuler des **variables** et des **types** (entiers, flottants, caractères).
+- Contrôler le flux avec des **conditions** (`if`, `switch`) et des **boucles** (`for`, `while`).
+- Découper un programme en **fonctions** réutilisables avec paramètres et valeur de retour.
+- Stocker des collections de données dans des **tableaux** de taille fixe.
+- Comprendre les **pointeurs** et le passage par adresse.
+- Regrouper des données hétérogènes dans des **structures** et les organiser en tableaux de `struct`.
+- Comparer des chaînes avec `strcmp` et formater des sorties lisibles avec `printf`.
+- Assembler tous ces outils dans un **projet complet** : un gestionnaire d'inventaire.
+
+Félicitations pour avoir terminé le parcours C. Vous avez désormais des bases solides pour aborder des langages de plus haut niveau ou pour vous rapprocher du système avec des projets plus ambitieux.
+
+OK 12-projet.mdx écrit

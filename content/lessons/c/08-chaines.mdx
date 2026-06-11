@@ -1,0 +1,268 @@
+---
+refCode: CL-LSN-032-V01
+slug: c-chaines
+title: "Chaînes de caractères en C"
+description: "Manipulez du texte en C : les chaînes comme tableaux de char terminés par un caractère nul, et les fonctions de string.h (strlen, strcpy, strcmp, strcat)."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 350
+prerequisites: ["CL-LSN-031-V01"]
+---
+
+En C, il n'existe pas de type natif dédié au texte. Là où d'autres langages
+proposent un type `string` tout prêt, le C vous demande de construire vos
+chaînes vous-même, à partir d'une brique plus simple : le caractère, c'est-à-dire
+le type `char`. Une chaîne de caractères en C n'est donc rien d'autre qu'un
+tableau de `char` rangés les uns à la suite des autres en mémoire. Cette approche
+peut sembler austère, mais elle vous donne un contrôle total sur le texte et vous
+fait comprendre ce qui se passe réellement sous le capot des langages de plus
+haut niveau.
+
+Dans cette leçon, vous allez apprendre comment une chaîne est représentée, le
+rôle crucial du caractère nul de fin, puis les fonctions essentielles fournies
+par les en-têtes `string.h` et `ctype.h` pour mesurer, copier, concaténer,
+comparer et transformer du texte.
+
+## Une chaîne = un tableau de char
+
+Quand vous écrivez `char mot[] = "Bonjour";`, le compilateur réserve un tableau
+de `char` et y place chaque lettre : `'B'`, `'o'`, `'n'`, `'j'`, `'o'`, `'u'`,
+`'r'`. Mais il ajoute aussi, en silence, un huitième caractère invisible à la
+fin : le caractère nul, noté `'\0'`. Ce caractère a la valeur numérique zéro et
+sert de marqueur de fin. Le tableau `mot` occupe donc 8 cases en mémoire, pas 7.
+
+C'est ce `'\0'` qui permet aux fonctions du langage de savoir où s'arrête la
+chaîne : elles avancent case par case jusqu'à tomber dessus. Sans lui, le
+programme continuerait à lire la mémoire bien au-delà du texte, avec des
+résultats imprévisibles.
+
+Le programme ci-dessous parcourt chaque caractère d'une chaîne en s'arrêtant
+dès qu'il rencontre le caractère nul.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    char mot[] = "Bonjour";
+    int i = 0;
+
+    while (mot[i] != '\\0') {
+        printf("Caractere %d : %c\\n", i, mot[i]);
+        i++;
+    }
+    printf("Longueur trouvee : %d caracteres\\n", i);
+    return 0;
+}`} />
+
+<Callout type="info">
+Toute chaîne en C se termine par le caractère nul `'\0'` (valeur zéro). Il
+n'est jamais affiché, mais il occupe une case mémoire. Un tableau qui doit
+contenir un mot de 7 lettres doit donc pouvoir stocker au moins 8 `char`. Oublier
+de réserver cette place est l'une des erreurs les plus fréquentes en C.
+</Callout>
+
+## strlen et parcours
+
+Compter les caractères à la main, comme dans l'exemple précédent, fonctionne,
+mais l'en-tête `string.h` fournit une fonction dédiée : `strlen`. Elle renvoie le
+nombre de caractères de la chaîne, sans compter le `'\0'` final. Autrement dit,
+pour `"Bonjour"`, `strlen` renvoie 7, alors que le tableau occupe 8 cases.
+
+`strlen` fonctionne exactement comme notre boucle : elle avance jusqu'au
+caractère nul et compte les pas effectués. Connaître la longueur d'une chaîne est
+indispensable pour la parcourir, la copier ou vérifier qu'elle tient dans un
+tableau de destination.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    char phrase[] = "Apprendre le C";
+    size_t longueur = strlen(phrase);
+
+    printf("La phrase fait %zu caracteres.\\n", longueur);
+
+    for (size_t i = 0; i < longueur; i++) {
+        printf("[%zu] = %c\\n", i, phrase[i]);
+    }
+    return 0;
+}`} />
+
+Notez le type `size_t` renvoyé par `strlen` : c'est un entier non signé pensé
+pour représenter des tailles. Le format `%zu` lui correspond dans `printf`.
+
+## string.h : strcpy, strcat, strcmp
+
+L'en-tête `string.h` regroupe les fonctions de manipulation de chaînes. Trois
+d'entre elles reviennent constamment.
+
+`strcpy(dest, source)` copie la chaîne `source` (caractère nul compris) dans le
+tableau `dest`. Vous devez vous assurer que `dest` est assez grand pour
+l'accueillir, sinon vous débordez en mémoire.
+
+`strcat(dest, source)` ajoute `source` à la suite de `dest` : c'est la
+concaténation. Là encore, `dest` doit avoir assez de place pour les deux chaînes
+réunies plus le `'\0'`.
+
+`strcmp(a, b)` compare deux chaînes caractère par caractère. Elle renvoie `0` si
+elles sont identiques, une valeur négative si `a` vient avant `b` dans l'ordre
+alphabétique, et positive sinon.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    char salutation[50];
+
+    strcpy(salutation, "Bonjour");
+    strcat(salutation, ", ");
+    strcat(salutation, "monde");
+    printf("Resultat : %s\\n", salutation);
+
+    if (strcmp("chat", "chat") == 0) {
+        printf("Les deux chaines sont identiques.\\n");
+    }
+    if (strcmp("abc", "abd") < 0) {
+        printf("'abc' vient avant 'abd'.\\n");
+    }
+    return 0;
+}`} />
+
+<Callout type="warning">
+On ne compare JAMAIS deux chaînes avec `==` en C. L'opérateur `==` compare les
+adresses des tableaux, pas leur contenu : deux chaînes identiques rangées à des
+endroits différents donneraient un résultat faux. Pour comparer le texte,
+utilisez toujours `strcmp`, et souvenez-vous qu'elle renvoie `0` (donc « faux »
+au sens booléen) quand les chaînes sont égales.
+</Callout>
+
+## ctype.h
+
+L'en-tête `ctype.h` fournit des fonctions qui agissent sur un caractère unique
+plutôt que sur une chaîne entière. Elles servent à tester ou à transformer un
+`char`.
+
+Pour transformer : `toupper(c)` renvoie la version majuscule d'une lettre,
+`tolower(c)` sa version minuscule. Si `c` n'est pas une lettre, il est renvoyé
+inchangé.
+
+Pour tester : `isdigit(c)` renvoie une valeur non nulle si `c` est un chiffre,
+`isalpha(c)` s'il s'agit d'une lettre, `isspace(c)` pour un espace ou une
+tabulation, et ainsi de suite. Ces fonctions renvoient `0` quand le test échoue.
+
+Le programme suivant met une chaîne entière en majuscules en appliquant
+`toupper` à chaque caractère.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int main(void) {
+    char mot[] = "cyberlearn42";
+    size_t n = strlen(mot);
+
+    for (size_t i = 0; i < n; i++) {
+        mot[i] = toupper(mot[i]);
+    }
+    printf("En majuscules : %s\\n", mot);
+
+    int chiffres = 0;
+    for (size_t i = 0; i < n; i++) {
+        if (isdigit(mot[i])) {
+            chiffres++;
+        }
+    }
+    printf("Nombre de chiffres : %d\\n", chiffres);
+    return 0;
+}`} />
+
+## À vous de jouer
+
+<QuizGroup>
+
+<Quiz
+  question="Quel caractère marque la fin d'une chaîne en C ?"
+  options={[
+    "Le caractère espace ' '",
+    "Le caractère nul '\\0'",
+    "Le caractère de fin de ligne '\\n'",
+    "Le caractère '#'"
+  ]}
+  correctIndex={1}
+  explanation="Toute chaîne C se termine par le caractère nul '\0', de valeur zéro. C'est lui qui indique aux fonctions où la chaîne s'arrête."
+/>
+
+<Quiz
+  question="Comment compare-t-on correctement le contenu de deux chaînes en C ?"
+  options={[
+    "Avec l'opérateur == (par exemple a == b)",
+    "Avec la fonction strcmp, qui renvoie 0 si elles sont égales",
+    "Avec la fonction strlen sur chacune des deux chaînes",
+    "Avec l'opérateur != suivi de strcat"
+  ]}
+  correctIndex={1}
+  explanation="L'opérateur == compare des adresses, pas du texte. On utilise strcmp, qui renvoie 0 lorsque les deux chaînes ont exactement le même contenu."
+/>
+
+<Quiz
+  question="Que renvoie strlen pour la chaîne 'chat' ?"
+  options={[
+    "3, car on ne compte pas la première lettre",
+    "4, le nombre de caractères sans compter le '\\0'",
+    "5, en incluant le caractère nul de fin",
+    "0, car strlen ne fonctionne que sur des tableaux vides"
+  ]}
+  correctIndex={1}
+  explanation="strlen compte les caractères visibles sans inclure le '\0' final. Pour 'chat', elle renvoie 4, même si le tableau occupe 5 cases en mémoire."
+/>
+
+</QuizGroup>
+
+Mettez maintenant tout cela en pratique. Le programme ci-dessous compte le
+nombre de voyelles d'une chaîne en testant chaque caractère après l'avoir mis en
+minuscule.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+int est_voyelle(char c) {
+    char minuscule = tolower(c);
+    if (minuscule == 'a' || minuscule == 'e' || minuscule == 'i' ||
+        minuscule == 'o' || minuscule == 'u' || minuscule == 'y') {
+        return 1;
+    }
+    return 0;
+}
+
+int main(void) {
+    char phrase[] = "Apprendre le langage C";
+    size_t n = strlen(phrase);
+    int voyelles = 0;
+
+    for (size_t i = 0; i < n; i++) {
+        if (est_voyelle(phrase[i])) {
+            voyelles++;
+        }
+    }
+    printf("Phrase : %s\\n", phrase);
+    printf("Nombre de voyelles : %d\\n", voyelles);
+    return 0;
+}`} />
+
+## Récapitulatif
+
+- En C, une chaîne est un tableau de `char` terminé par le caractère nul `'\0'` ;
+  ce n'est pas un type natif.
+- Le `'\0'` occupe une case mémoire et sert de marqueur de fin : prévoyez
+  toujours une case de plus que le nombre de lettres.
+- `strlen` (de `string.h`) renvoie la longueur d'une chaîne sans compter le
+  `'\0'`, sous forme de `size_t`.
+- `strcpy` copie, `strcat` concatène, `strcmp` compare ; toutes exigent une
+  destination assez grande quand elles écrivent.
+- On ne compare jamais deux chaînes avec `==` : il faut `strcmp`, qui renvoie `0`
+  en cas d'égalité.
+- `ctype.h` agit caractère par caractère : `toupper`, `tolower` transforment ;
+  `isdigit`, `isalpha`, `isspace` testent.
+
+OK 08-chaines.mdx écrit

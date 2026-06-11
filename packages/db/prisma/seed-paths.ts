@@ -76,6 +76,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-024-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-003-V01",
+    slug: "c-programmation",
+    title: "C : programmation système et bas niveau",
+    description:
+      "Plongez dans le C, langage fondateur des systèmes : structure d'un programme, types, contrôle de flux, fonctions, tableaux, chaînes, et surtout les pointeurs et structures. Code compilé et exécuté dans le navigateur, jusqu'à un gestionnaire d'inventaire.",
+    category: "DEV",
+    difficulty: "BEGINNER",
+    estimatedHours: 7,
+    lessons: [
+      "CL-LSN-025-V01",
+      "CL-LSN-026-V01",
+      "CL-LSN-027-V01",
+      "CL-LSN-028-V01",
+      "CL-LSN-029-V01",
+      "CL-LSN-030-V01",
+      "CL-LSN-031-V01",
+      "CL-LSN-032-V01",
+      "CL-LSN-033-V01",
+      "CL-LSN-034-V01",
+      "CL-LSN-035-V01",
+      "CL-LSN-036-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

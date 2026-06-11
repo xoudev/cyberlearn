@@ -1,0 +1,170 @@
+---
+refCode: CL-LSN-034-V01
+slug: c-passage-adresse
+title: "Pointeurs et passage par adresse"
+description: "Exploitez les pointeurs en pratique : passer une variable par adresse à une fonction pour la modifier, et le lien étroit entre pointeurs et tableaux en C."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 420
+prerequisites: ["CL-LSN-033-V01"]
+---
+
+En C, lorsque vous appelez une fonction et que vous lui transmettez une variable, la fonction ne reçoit pas la variable elle-même : elle reçoit une **copie** de sa valeur. C'est ce qu'on appelle le passage par valeur. La fonction travaille alors dans son propre coin, sur sa propre copie, et tout ce qu'elle modifie disparaît dès qu'elle se termine. La variable d'origine, restée chez l'appelant, n'a pas bougé d'un poil.
+
+Cette mécanique est parfaite quand on veut simplement lire une valeur, mais elle devient frustrante dès que l'on souhaite qu'une fonction **modifie durablement** une variable de l'appelant. La solution s'appuie sur les pointeurs : au lieu de passer la valeur, on passe l'**adresse** de la variable. La fonction reçoit alors un plan d'accès vers la case mémoire d'origine et peut écrire directement dedans. C'est le passage par adresse, et c'est l'outil central de cette leçon.
+
+<Callout type="info">
+Rappel : l'opérateur `&` placé devant une variable donne son adresse, et l'opérateur `*` placé devant un pointeur donne accès à la valeur pointée (déréférencement). Ces deux opérateurs sont les deux faces d'une même pièce.
+</Callout>
+
+## Passage par valeur vs par adresse
+
+Commençons par observer l'échec. Voici une fonction `doubler` qui reçoit un entier par valeur et tente de le doubler. Elle modifie bien sa copie locale, mais l'original reste inchangé.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void doubler(int n) {
+    n = n * 2;
+    printf("Dans la fonction : n = %d\\n", n);
+}
+
+int main(void) {
+    int valeur = 21;
+    doubler(valeur);
+    printf("Apres l'appel : valeur = %d\\n", valeur);
+    return 0;
+}`} />
+
+La fonction affiche bien 42 de son côté, mais l'appelant continue d'afficher 21. La copie a été doublée, pas l'original. Réparons cela avec le passage par adresse : la fonction reçoit désormais un pointeur sur entier (`int *`), et écrit dans la case pointée via `*p`.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void doubler(int *p) {
+    *p = *p * 2;
+    printf("Dans la fonction : *p = %d\\n", *p);
+}
+
+int main(void) {
+    int valeur = 21;
+    doubler(&valeur);
+    printf("Apres l'appel : valeur = %d\\n", valeur);
+    return 0;
+}`} />
+
+Cette fois, l'appelant affiche 42. La fonction a reçu l'adresse de `valeur` grâce à `&valeur`, puis a modifié directement le contenu de cette adresse avec `*p`. Le changement persiste après le retour de la fonction.
+
+<Callout type="info">
+La différence tient en un mot : copie ou adresse. Par valeur, la fonction reçoit un clone jetable. Par adresse, elle reçoit le chemin vers la vraie variable et peut la transformer pour de bon.
+</Callout>
+
+## Retourner plusieurs résultats
+
+Une fonction C ne peut renvoyer qu'une seule valeur avec `return`. Mais grâce aux pointeurs, elle peut **remplir plusieurs variables** de l'appelant. Le motif consiste à passer les adresses des variables à remplir, puis à écrire dedans depuis la fonction.
+
+Dans l'exemple suivant, `minMax` parcourt un tableau et dépose le minimum et le maximum dans deux variables fournies par l'appelant.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void minMax(int t[], int taille, int *pmin, int *pmax) {
+    int mn = t[0];
+    int mx = t[0];
+    for (int i = 1; i < taille; i++) {
+        if (t[i] < mn) mn = t[i];
+        if (t[i] > mx) mx = t[i];
+    }
+    *pmin = mn;
+    *pmax = mx;
+}
+
+int main(void) {
+    int notes[5] = {12, 7, 19, 3, 15};
+    int plus_bas, plus_haut;
+    minMax(notes, 5, &plus_bas, &plus_haut);
+    printf("Min = %d, Max = %d\\n", plus_bas, plus_haut);
+    return 0;
+}`} />
+
+Un seul appel, deux résultats récupérés. C'est le motif idiomatique du C pour contourner la limite du `return` unique.
+
+## Pointeurs et tableaux
+
+Voici une idée fondamentale en C : le **nom d'un tableau est l'adresse de son premier élément**. Écrire `notes` revient quasiment à écrire `&notes[0]`. C'est pourquoi, lorsqu'on passe un tableau à une fonction, on ne passe jamais une copie : on passe un pointeur vers le premier élément. La fonction travaille donc directement sur le tableau d'origine.
+
+La fonction `somme` ci-dessous reçoit un tableau et sa taille, puis additionne ses éléments. Le paramètre `int t[]` est en réalité un `int *` déguisé.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int somme(int t[], int taille) {
+    int total = 0;
+    for (int i = 0; i < taille; i++) {
+        total = total + t[i];
+    }
+    return total;
+}
+
+int main(void) {
+    int valeurs[6] = {4, 8, 15, 16, 23, 42};
+    int resultat = somme(valeurs, 6);
+    printf("Somme = %d\\n", resultat);
+    return 0;
+}`} />
+
+<Callout type="warning">
+Une fonction qui reçoit un tableau ne connaît PAS sa taille : le pointeur ne mémorise que l'adresse de départ, pas le nombre d'éléments. Vous devez TOUJOURS transmettre la taille en paramètre séparé. Oublier de le faire mène à des lectures hors limites et à des comportements indéfinis.
+</Callout>
+
+## À vous de jouer
+
+<QuizGroup>
+<Quiz
+  question="Que reçoit une fonction lorsqu'on lui passe une variable par valeur ?"
+  options={["L'adresse de la variable", "Une copie de la valeur de la variable", "Un pointeur vers la variable", "Rien, la fonction lit la variable globale"]}
+  correctIndex={1}
+  explanation="Par valeur, la fonction reçoit une copie jetable ; modifier cette copie ne touche pas l'original."
+/>
+<Quiz
+  question="Pour qu'une fonction modifie durablement une variable de l'appelant, on lui passe :"
+  options={["la variable par valeur", "le nom de la variable entre guillemets", "l'adresse de la variable via un pointeur", "une copie protégée"]}
+  correctIndex={2}
+  explanation="On passe l'adresse avec & et la fonction écrit dans la case d'origine via le déréférencement *."
+/>
+<Quiz
+  question="Pourquoi faut-il passer la taille d'un tableau à une fonction ?"
+  options={["Parce que le pointeur reçu ne contient pas le nombre d'éléments", "Parce que le C interdit les tableaux sans taille", "Pour que la fonction soit plus rapide", "Ce n'est jamais nécessaire"]}
+  correctIndex={0}
+  explanation="Le nom du tableau se dégrade en pointeur vers le premier element ; l'info de taille est perdue et doit etre transmise separement."
+/>
+</QuizGroup>
+
+Pour terminer, écrivez une fonction `doublerTab` qui double chaque élément d'un tableau passé en paramètre. Comme le tableau est reçu via un pointeur, les modifications s'appliquent directement au tableau de l'appelant.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void doublerTab(int t[], int taille) {
+    for (int i = 0; i < taille; i++) {
+        t[i] = t[i] * 2;
+    }
+}
+
+int main(void) {
+    int donnees[4] = {3, 5, 7, 9};
+    doublerTab(donnees, 4);
+    for (int i = 0; i < 4; i++) {
+        printf("donnees[%d] = %d\\n", i, donnees[i]);
+    }
+    return 0;
+}`} />
+
+Notez qu'aucun `return` n'est nécessaire : la fonction modifie le tableau d'origine en place, puisqu'elle travaille sur ses vraies cases mémoire.
+
+## Récapitulatif
+
+- Le **passage par valeur** transmet une copie : modifier le paramètre ne change pas la variable de l'appelant.
+- Le **passage par adresse** transmet un pointeur (`&variable`) ; la fonction écrit dans l'original via le déréférencement (`*p`).
+- Ce mécanisme permet à une fonction de **retourner plusieurs résultats** en remplissant des variables fournies par l'appelant.
+- Le **nom d'un tableau** vaut l'adresse de son premier élément ; passer un tableau à une fonction passe donc un pointeur, jamais une copie.
+- Une fonction **ignore la taille** du tableau reçu : il faut toujours la transmettre comme paramètre séparé.
+- Les opérateurs `&` (adresse de) et `*` (valeur pointée) sont les deux outils clés de toute manipulation par pointeur.
+
+OK 10-passage-adresse.mdx écrit

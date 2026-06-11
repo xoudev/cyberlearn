@@ -1,0 +1,198 @@
+---
+refCode: CL-LSN-030-V01
+slug: c-fonctions
+title: "Fonctions et portée en C"
+description: "Structurez votre code C en fonctions : déclaration, type de retour, paramètres, prototypes, et la distinction entre variables locales et globales."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 180
+prerequisites: ["CL-LSN-029-V01"]
+---
+
+Jusqu'ici, vous avez écrit tout votre code à l'intérieur d'une seule fonction : `main`. Cela fonctionne pour de petits programmes, mais dès qu'un projet grandit, entasser des centaines de lignes dans `main` devient vite illisible et difficile à maintenir.
+
+La solution s'appelle la **fonction**. Une fonction est une brique de code réutilisable qui porte un nom, reçoit éventuellement des informations en entrée et renvoie éventuellement un résultat. Vous en avez déjà utilisé sans le savoir : `printf`, `strlen` ou `sqrt` sont des fonctions fournies par les bibliothèques standard.
+
+Dans cette leçon, vous allez apprendre à écrire vos propres fonctions, à comprendre le rôle du type de retour, à déclarer des prototypes, et à maîtriser la portée des variables (locale ou globale) ainsi que le passage des paramètres par valeur.
+
+## Définir une fonction
+
+La forme générale d'une fonction est la suivante : un type de retour, un nom, une liste de paramètres entre parenthèses, puis un bloc de code délimité par des accolades.
+
+```text
+type_retour nom(parametres) {
+    // instructions
+    return valeur;
+}
+```
+
+Le mot-clé `return` renvoie une valeur à l'endroit qui a appelé la fonction, et termine immédiatement son exécution. Voici une fonction `carre` qui calcule le carré d'un entier.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int carre(int n) {
+    return n * n;
+}
+
+int main(void) {
+    int resultat = carre(5);
+    printf("Le carre de 5 est %d\\n", resultat);
+    printf("Le carre de 9 est %d\\n", carre(9));
+    return 0;
+}
+\`\`\``} />
+
+Ici, `carre` reçoit un entier nommé `n` et renvoie un `int`. Dans `main`, on appelle `carre(5)` : la valeur 5 est transmise au paramètre `n`, la fonction calcule `n * n`, puis renvoie 25.
+
+## Le type de retour et void
+
+Toutes les fonctions ne renvoient pas une valeur. Certaines se contentent d'agir, par exemple afficher du texte. Dans ce cas, on utilise le type spécial `void`, qui signifie « rien à retourner ». Une fonction `void` peut quand même utiliser `return;` seul pour s'arrêter plus tôt, mais sans valeur.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+void afficher_ligne(void) {
+    printf("------------------------\\n");
+}
+
+int additionner(int a, int b) {
+    return a + b;
+}
+
+int main(void) {
+    afficher_ligne();
+    printf("3 + 4 = %d\\n", additionner(3, 4));
+    afficher_ligne();
+    return 0;
+}
+\`\`\``} />
+
+Notez la différence : `additionner` renvoie un `int` que l'on peut utiliser dans un `printf`, alors que `afficher_ligne` ne renvoie rien et s'appelle simplement comme une instruction.
+
+## Les prototypes
+
+En C, le compilateur lit le fichier de haut en bas. Si vous appelez une fonction dans `main` alors qu'elle est définie **après** `main`, le compilateur ne la connaît pas encore au moment de l'appel et signale une erreur.
+
+La solution est le **prototype** : une déclaration qui annonce la signature de la fonction (type de retour, nom, types des paramètres) suivie d'un point-virgule, placée avant `main`. La définition complète peut alors venir plus loin.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int maximum(int a, int b);
+
+int main(void) {
+    printf("Le max de 12 et 7 est %d\\n", maximum(12, 7));
+    return 0;
+}
+
+int maximum(int a, int b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+\`\`\``} />
+
+<Callout type="info">
+L'ordre de déclaration compte. Une fonction doit être connue du compilateur avant d'être appelée. Deux options : la définir entièrement avant `main`, ou bien placer un prototype avant `main` et la définir ailleurs. Les prototypes sont indispensables dans les vrais projets, où ils sont regroupés dans des fichiers d'en-tête (`.h`).
+</Callout>
+
+## Portée des variables
+
+La **portée** (scope) désigne la zone du programme où une variable existe et reste accessible.
+
+Une variable déclarée à l'intérieur d'une fonction est **locale** : elle n'existe que pendant l'exécution de cette fonction et reste invisible ailleurs. Une variable déclarée en dehors de toute fonction est **globale** : elle est accessible partout, mais on l'utilise avec prudence car elle complique le suivi des modifications.
+
+Point essentiel : en C, les paramètres sont transmis **par valeur**. La fonction reçoit une **copie** de la valeur, pas la variable d'origine. Modifier le paramètre à l'intérieur de la fonction ne touche donc jamais la variable appelante.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int compteur_global = 100;
+
+void essayer_de_modifier(int x) {
+    x = x + 50;
+    printf("Dans la fonction, x vaut %d\\n", x);
+}
+
+int main(void) {
+    int nombre = 10;
+    printf("Avant l'appel, nombre vaut %d\\n", nombre);
+    essayer_de_modifier(nombre);
+    printf("Apres l'appel, nombre vaut %d\\n", nombre);
+    printf("La globale compteur_global vaut %d\\n", compteur_global);
+    return 0;
+}
+\`\`\``} />
+
+Exécutez ce programme : après l'appel, `nombre` vaut toujours 10, même si la fonction a ajouté 50 à sa copie locale.
+
+<Callout type="warning">
+Modifier un paramètre à l'intérieur d'une fonction ne change PAS la variable d'origine, car la fonction travaille sur une copie. Si vous avez réellement besoin qu'une fonction modifie une variable de l'appelant, il faudra utiliser les pointeurs, que nous découvrirons dans une prochaine leçon.
+</Callout>
+
+## À vous de jouer
+
+<QuizGroup>
+<Quiz
+  question="Que renvoie l'appel carre(4) avec la fonction int carre(int n) { return n * n; } ?"
+  options={["8", "16", "4", "Rien, la fonction est void"]}
+  correctIndex={1}
+  explanation="La fonction renvoie n * n, soit 4 * 4 = 16."
+/>
+<Quiz
+  question="À quoi sert le type de retour void ?"
+  options={[
+    "À indiquer que la fonction ne prend aucun paramètre",
+    "À indiquer que la fonction ne renvoie aucune valeur",
+    "À rendre la fonction globale",
+    "À déclarer un prototype"
+  ]}
+  correctIndex={1}
+  explanation="void signifie que la fonction n'a aucune valeur à retourner. Elle agit mais ne renvoie rien."
+/>
+<Quiz
+  question="Une fonction reçoit un paramètre par valeur et le modifie. Que devient la variable d'origine dans l'appelant ?"
+  options={[
+    "Elle est modifiée elle aussi",
+    "Elle reste inchangée car la fonction travaille sur une copie",
+    "Le programme plante",
+    "Elle devient globale"
+  ]}
+  correctIndex={1}
+  explanation="Le passage par valeur transmet une copie. La variable d'origine n'est jamais touchée sans pointeur."
+/>
+</QuizGroup>
+
+Pour finir, écrivez une fonction `factorielle` qui calcule le produit de tous les entiers de 1 à n, puis testez-la depuis `main`.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+long factorielle(int n) {
+    long resultat = 1;
+    for (int i = 2; i <= n; i = i + 1) {
+        resultat = resultat * i;
+    }
+    return resultat;
+}
+
+int main(void) {
+    printf("5! = %ld\\n", factorielle(5));
+    printf("7! = %ld\\n", factorielle(7));
+    return 0;
+}
+\`\`\``} />
+
+Essayez aussi d'ajouter une fonction `max_de_deux(int a, int b)` qui renvoie le plus grand des deux nombres, puis appelez-la dans `main`.
+
+## Récapitulatif
+
+- Une **fonction** regroupe du code réutilisable : `type_retour nom(parametres) { ... return ...; }`.
+- `return` renvoie une valeur et termine la fonction.
+- Le type `void` indique qu'une fonction ne renvoie aucune valeur.
+- Un **prototype** déclare la signature d'une fonction avant `main` lorsqu'elle est définie plus loin.
+- Une variable **locale** n'existe que dans sa fonction ; une variable **globale** est accessible partout.
+- Les paramètres sont passés **par valeur** : la fonction reçoit une copie et ne modifie pas la variable d'origine (il faudra les pointeurs pour cela).

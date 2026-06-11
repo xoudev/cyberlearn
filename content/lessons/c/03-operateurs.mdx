@@ -1,0 +1,178 @@
+---
+refCode: CL-LSN-027-V01
+slug: c-operateurs
+title: "Opérateurs et expressions en C"
+description: "Calculez et comparez en C : opérateurs arithmétiques, la division entière, le modulo, les opérateurs de comparaison et les opérateurs logiques."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 140
+prerequisites: ["CL-LSN-026-V01"]
+---
+
+Jusqu'ici, vous savez déclarer des variables et afficher des valeurs. Mais un programme ne se contente pas de stocker des données : il les **manipule**. Additionner deux nombres, vérifier si un utilisateur est majeur, déterminer si une année est bissextile... tout cela repose sur des **opérateurs**.
+
+Un opérateur est un symbole qui combine une ou plusieurs valeurs pour produire un résultat. L'ensemble « valeurs + opérateurs » forme une **expression**, et toute expression a une valeur. Dans cette leçon, vous allez découvrir les familles d'opérateurs les plus utiles en C, ainsi qu'un piège classique qui surprend tous les débutants.
+
+## Opérateurs arithmétiques
+
+Les opérateurs arithmétiques sont les plus intuitifs car vous les connaissez déjà des mathématiques :
+
+- `+` addition
+- `-` soustraction
+- `*` multiplication
+- `/` division
+- `%` modulo (reste de la division entière)
+
+Il existe aussi deux opérateurs très pratiques : l'**incrémentation** `++` (ajoute 1) et la **décrémentation** `--` (retire 1). On les utilise énormément dans les boucles.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int a = 10;
+    int b = 3;
+
+    printf("Somme       : %d\\n", a + b);
+    printf("Difference  : %d\\n", a - b);
+    printf("Produit     : %d\\n", a * b);
+
+    int compteur = 5;
+    compteur++;
+    printf("Apres ++    : %d\\n", compteur);
+    compteur--;
+    printf("Apres --    : %d\\n", compteur);
+
+    return 0;
+}
+\`\`\``} />
+
+## La division entière (PIÈGE)
+
+Voici le piège qui surprend presque tous les débutants. En C, quand vous divisez deux entiers, le résultat est **lui aussi un entier** : la partie décimale est purement et simplement supprimée (pas d'arrondi, on coupe).
+
+Ainsi, `7 / 2` ne donne **pas** `3.5` mais `3`. Pour obtenir `3.5`, il faut qu'au moins un des deux nombres soit un nombre à virgule (`float` ou `double`), par exemple `7.0 / 2.0`.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int entier = 7 / 2;          /* division entiere : 3 */
+    double reel = 7.0 / 2.0;     /* division reelle  : 3.5 */
+
+    printf("7 / 2     = %d\\n", entier);
+    printf("7.0 / 2.0 = %.1f\\n", reel);
+
+    return 0;
+}
+\`\`\``} />
+
+<Callout type="warning">
+Si les deux opérandes sont des entiers, la division est une division entière et la partie après la virgule est perdue. Pour un résultat décimal, écrivez au moins un opérande avec un point (`7.0`) ou stockez le résultat dans un `double` après conversion.
+</Callout>
+
+## Le modulo %
+
+L'opérateur `%` (modulo) donne le **reste** de la division entière. Par exemple `7 % 2` vaut `1`, car 7 divisé par 2 fait 3 avec un reste de 1.
+
+Le modulo est extrêmement utile en pratique :
+
+- **Tester la parité** : si `n % 2` vaut `0`, le nombre est pair, sinon il est impair.
+- **Gérer des cycles** : pour faire tourner un compteur de 0 à 4 en boucle, on utilise `compteur % 5`.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    printf("17 %% 5 = %d\\n", 17 % 5);   /* reste : 2 */
+    printf("17 / 5 = %d\\n", 17 / 5);    /* quotient : 3 */
+
+    int n = 8;
+    printf("%d est pair ? reste = %d\\n", n, n % 2);
+
+    return 0;
+}
+\`\`\``} />
+
+## Comparaison et logique
+
+Pour prendre des décisions, on a besoin de **comparer** des valeurs. Les opérateurs de comparaison renvoient un résultat « vrai » ou « faux » :
+
+- `==` égal à (attention : deux signes égal !)
+- `!=` différent de
+- `<` `>` `<=` `>=` inférieur, supérieur, et leurs variantes « ou égal »
+
+On combine ces tests avec les **opérateurs logiques** : `&&` (ET), `||` (OU) et `!` (NON).
+
+Point crucial : en C, il n'existe pas de vrai type booléen « historique ». La règle est simple : **`0` signifie faux, et toute autre valeur signifie vrai**. Une comparaison vraie produit `1`, une comparaison fausse produit `0`.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int age = 20;
+
+    printf("age == 20 : %d\\n", age == 20);   /* 1 (vrai) */
+    printf("age != 20 : %d\\n", age != 20);   /* 0 (faux) */
+    printf("age >= 18 : %d\\n", age >= 18);   /* 1 (vrai) */
+
+    int majeur = (age >= 18) && (age < 100);
+    printf("majeur et plausible : %d\\n", majeur);
+
+    return 0;
+}
+\`\`\``} />
+
+<Callout type="info">
+En C, `0` vaut faux et toute valeur non nulle vaut vrai. C'est pourquoi `if (compteur)` se lit « si compteur est non nul ». Une comparaison qui réussit renvoie toujours `1`.
+</Callout>
+
+## À vous de jouer
+
+<QuizGroup>
+<Quiz
+  question="En C, que vaut l'expression 7 / 2 lorsque les deux nombres sont des entiers (int) ?"
+  options={["3.5", "3", "4", "1"]}
+  correct={1}
+  explanation="La division entre deux int est une division entière : la partie décimale est coupée, donc 7 / 2 donne 3."
+/>
+<Quiz
+  question="Quel opérateur permet de récupérer le reste d'une division entière ?"
+  options={["/", "%", "*", "//"]}
+  correct={1}
+  explanation="L'opérateur % (modulo) renvoie le reste. Par exemple 7 % 2 vaut 1."
+/>
+<Quiz
+  question="En C, quelle valeur est considérée comme 'faux' ?"
+  options={["1", "-1", "0", "Toute valeur non nulle"]}
+  correct={2}
+  explanation="Seul 0 est faux. Toute autre valeur (1, -1, 42...) est considérée comme vraie."
+/>
+</QuizGroup>
+
+Pour finir, écrivez un petit programme qui teste la parité d'un nombre grâce au modulo, puis affiche un message clair.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int nombre = 9;
+
+    if (nombre % 2 == 0) {
+        printf("%d est pair\\n", nombre);
+    } else {
+        printf("%d est impair\\n", nombre);
+    }
+
+    /* Essayez de changer la valeur de 'nombre' ci-dessus ! */
+    return 0;
+}
+\`\`\``} />
+
+## Récapitulatif
+
+- Les **opérateurs arithmétiques** `+ - * / %` combinent des valeurs ; `++` et `--` ajoutent ou retirent 1.
+- La **division entière** coupe la partie décimale : `7 / 2` donne `3`, pas `3.5`. Il faut un nombre à virgule (`7.0 / 2.0`) pour un résultat décimal.
+- Le **modulo `%`** donne le reste ; il sert à tester la parité (`n % 2`) ou à gérer des cycles.
+- Les **opérateurs de comparaison** (`== != < > <= >=`) et **logiques** (`&& || !`) servent à prendre des décisions.
+- En C, **`0` vaut faux** et toute valeur non nulle vaut vrai ; une comparaison vraie renvoie `1`.
