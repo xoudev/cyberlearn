@@ -3,6 +3,8 @@
 
 export { prisma } from "./prisma.js";
 export { lessonRepository } from "./repositories/lesson.repository.js";
+export { statsRepository } from "./repositories/stats.repository.js";
+export type { LandingStats } from "./repositories/stats.repository.js";
 export type { LessonFilters } from "./repositories/lesson.repository.js";
 export { badgeRepository } from "./repositories/badge.repository.js";
 export { userRepository } from "./repositories/user.repository.js";

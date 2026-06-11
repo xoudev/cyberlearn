@@ -63,16 +63,14 @@ correspondantes seront implémentées :
 
 ### Données figées / fake sur la landing
 
-Les statistiques affichées sur la landing page (compteurs leçons,
-users, badges, etc.) sont actuellement hardcodées dans le composant.
-À connecter aux vraies sources lors d'une PR landing dédiée :
+**Fait** pour le strip de stats : la landing est passée en RSC
+(`app/page.tsx`, `revalidate: 3600`) et lit `statsRepository.findLandingStats()`
+(domaines actifs, leçons publiées, parcours publiés), avec fallback statique
+si la DB est injoignable (builds CI sur DATABASE_URL placeholder).
 
-- Compteur leçons → query DB (Lesson WHERE status = PUBLISHED).count()
-- Compteur users actifs → query DB (User WHERE lastConnectionAt > now() - 30d).count()
-- Identifier les autres compteurs et les wirer
-
-Approche recommandée : SSR avec revalidation (ex: revalidate: 3600
-toutes les heures) pour éviter le coût d'une requête à chaque visite.
+Reste éventuel : un compteur « users actifs 30j » n'est affiché nulle part
+aujourd'hui ; à ajouter au strip seulement si le design le réclame
+(query : User WHERE lastConnectionAt > now() - 30d).
 
 ### Convention .gitignore /docs
 
