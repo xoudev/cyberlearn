@@ -1,0 +1,233 @@
+---
+refCode: CL-LSN-040-V01
+slug: asm-logique-binaire
+title: "Opérations logiques et binaires"
+description: "Manipulez les bits directement : les opérations AND, OR, XOR, NOT et les décalages SHL et SHR, fondamentales pour les masques et l'optimisation bas niveau."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 380
+prerequisites: ["CL-LSN-038-V01"]
+---
+
+Jusqu'ici, vous avez manipulé des registres comme s'ils contenaient de simples
+nombres. Mais en dessous de chaque nombre se cache une réalité plus fine : une
+suite de bits, des zéros et des uns. Un registre de 64 bits, c'est tout
+simplement 64 cases qui valent chacune 0 ou 1. L'assembleur vous donne accès
+direct à ces cases, et c'est précisément ce qui fait sa puissance au plus bas
+niveau.
+
+Dans cette leçon, vous allez apprendre à agir bit à bit. Plutôt que d'ajouter
+ou de soustraire des nombres entiers, vous allez combiner les bits deux à deux
+avec des opérations logiques, puis les faire glisser à gauche ou à droite. Ces
+techniques sont partout : dans les masques de permissions, dans le chiffrement,
+dans les pilotes matériels et dans toutes les optimisations où chaque cycle
+compte. Maîtriser la logique binaire, c'est comprendre comment la machine pense
+vraiment.
+
+## AND, OR, XOR, NOT
+
+Les opérations logiques travaillent bit par bit. Pour combiner deux nombres,
+le processeur aligne leurs bits et applique la règle position par position.
+Voici les tables de vérité, où a et b sont des bits valant 0 ou 1.
+
+Pour AND (et logique), le résultat vaut 1 seulement si les deux bits valent 1 :
+
+```text
+a  b  | a AND b
+0  0  |   0
+0  1  |   0
+1  0  |   0
+1  1  |   1
+```
+
+Pour OR (ou logique), le résultat vaut 1 si au moins un des deux bits vaut 1 :
+
+```text
+a  b  | a OR b
+0  0  |   0
+0  1  |   1
+1  0  |   1
+1  1  |   1
+```
+
+Pour XOR (ou exclusif), le résultat vaut 1 si les deux bits sont différents :
+
+```text
+a  b  | a XOR b
+0  0  |   0
+0  1  |   1
+1  0  |   1
+1  1  |   0
+```
+
+Enfin, NOT inverse chaque bit : un 0 devient 1, un 1 devient 0.
+
+Prenons un exemple concret. Le nombre 12 s'écrit 1100 en binaire, et le nombre
+10 s'écrit 1010. Pour calculer 12 AND 10, on aligne les bits et on garde un 1
+seulement là où les deux ont un 1 : 1100 AND 1010 donne 1000, soit 8 en
+décimal. Pour 12 OR 10, on garde un 1 dès qu'au moins un bit vaut 1 : 1100 OR
+1010 donne 1110, soit 14.
+
+Voici AND et OR en assembleur. Souvenez-vous que l'on écrit les valeurs en
+décimal, mais que le raisonnement se fait sur leurs bits.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 12      ; 12 = 1100 en binaire
+    and rax, 10      ; 10 = 1010, 1100 AND 1010 = 1000 = 8
+    println rax
+    mov rbx, 12      ; on repart de 12
+    or rbx, 10       ; 1100 OR 1010 = 1110 = 14
+    println rbx
+    ret`} />
+
+<Callout type="info">
+L'opération AND sert avant tout à isoler des bits : c'est ce qu'on appelle un
+masque. Si vous voulez ne garder que certains bits d'une valeur, vous la
+combinez avec AND et un masque qui contient des 1 aux positions à conserver et
+des 0 ailleurs. Par exemple, AND avec 1 ne garde que le bit le plus à droite,
+ce qui permet de tester si un nombre est pair ou impair.
+</Callout>
+
+## XOR, l'astuce
+
+XOR a une propriété très utilisée par les programmeurs assembleur : appliquer
+XOR entre une valeur et elle-même donne toujours zéro. La raison vient de la
+table de vérité : 0 XOR 0 vaut 0, et 1 XOR 1 vaut 0. Comme chaque bit est
+identique à lui-même, tous les bits du résultat tombent à 0.
+
+C'est pourquoi l'idiome `xor rax, rax` est partout : c'est la façon la plus
+rapide et la plus compacte de mettre un registre à zéro. Elle est souvent
+préférée à `mov rax, 0` car elle produit un code machine plus court.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 999     ; rax contient une valeur quelconque
+    xor rax, rax     ; idiome : remet rax a zero
+    println rax      ; affiche 0
+    mov rbx, 12      ; 1100
+    xor rbx, 10      ; 1100 XOR 1010 = 0110 = 6
+    println rbx
+    ret`} />
+
+<Callout type="info">
+XOR sert aussi à comparer ou à basculer des bits. Comme un bit XOR 1 inverse ce
+bit, et qu'un bit XOR 0 le laisse inchangé, on peut activer ou désactiver des
+drapeaux précis sans toucher au reste. C'est un outil clé dans le chiffrement
+et la manipulation de drapeaux.
+</Callout>
+
+## Décalages SHL et SHR
+
+Décaler, c'est faire glisser tous les bits d'un cran vers la gauche ou vers la
+droite. L'instruction `shl` (shift left) pousse les bits vers la gauche et
+introduit des 0 à droite. L'instruction `shr` (shift right) pousse les bits
+vers la droite et introduit des 0 à gauche.
+
+Le point essentiel : en binaire, décaler à gauche d'une position revient à
+multiplier par 2, et décaler à droite revient à diviser par 2 (division
+entière). C'est exactement le même principe qu'en décimal, où ajouter un zéro à
+droite multiplie par 10.
+
+Par exemple, 5 s'écrit 0101. Après `shl` de 1, on obtient 1010, soit 10 :
+5 multiplié par 2.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 5       ; 5 = 0101 en binaire
+    shl rax, 1       ; decale a gauche : 1010 = 10 (5 x 2)
+    println rax
+    shl rax, 1       ; encore : 10100 = 20 (10 x 2)
+    println rax
+    shr rax, 1       ; decale a droite : 1010 = 10 (20 / 2)
+    println rax
+    ret`} />
+
+## Cas pratique
+
+Comme `shl` multiplie par 2 à chaque décalage, décaler de n positions multiplie
+par 2 puissance n. Décaler de 3 positions multiplie donc par 8. C'est beaucoup
+plus rapide qu'une multiplication classique, et les compilateurs utilisent
+cette astuce dès qu'ils multiplient par une puissance de 2.
+
+Multiplions 7 par 8 sans utiliser `imul`, simplement avec un décalage.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 7       ; valeur de depart
+    shl rax, 3       ; decale de 3 : multiplie par 8 (2^3)
+    println rax      ; affiche 56
+    ret`} />
+
+## À vous de jouer
+
+Testez votre compréhension avant de coder vous-même.
+
+<Quiz
+  question="Que fait l'instruction xor rax, rax ?"
+  options={[
+    'Elle double la valeur de rax',
+    'Elle met rax a zero',
+    'Elle inverse tous les bits de rax',
+    'Elle copie rbx dans rax'
+  ]}
+  correctIndex={1}
+  explanation="Une valeur combinee avec elle-meme par XOR donne toujours zero, car chaque bit identique produit 0. C'est l'idiome standard pour remettre un registre a zero."
+/>
+
+<Quiz
+  question="Quel est le resultat de 12 AND 10 (1100 AND 1010) ?"
+  options={[
+    '14',
+    '2',
+    '8',
+    '6'
+  ]}
+  correctIndex={2}
+  explanation="AND garde un 1 seulement la ou les deux bits valent 1. 1100 AND 1010 donne 1000, soit 8 en decimal."
+/>
+
+<Quiz
+  question="Que fait shl rax, 1 a la valeur contenue dans rax ?"
+  options={[
+    'Il la divise par 2',
+    'Il la multiplie par 2',
+    'Il inverse ses bits',
+    'Il ne change rien'
+  ]}
+  correctIndex={1}
+  explanation="Decaler les bits d'un cran vers la gauche revient a multiplier la valeur par 2, car chaque bit prend un poids deux fois plus grand."
+/>
+
+À votre tour d'écrire du code. Partez de la valeur 3, doublez-la deux fois avec
+`shl` pour atteindre 12, puis isolez ses bits de poids faible en appliquant un
+AND avec 10. Le résultat attendu est 8, comme dans le tout premier exemple.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 3       ; 3 = 0011
+    shl rax, 1       ; x2 -> 6
+    shl rax, 1       ; x2 -> 12 = 1100
+    and rax, 10      ; 1100 AND 1010 = 1000 = 8
+    println rax
+    ret`} />
+
+## Récapitulatif
+
+- En dessous des nombres, un registre est une suite de bits valant 0 ou 1.
+- AND vaut 1 seulement si les deux bits valent 1 ; il sert à isoler des bits
+  via un masque.
+- OR vaut 1 dès qu'au moins un bit vaut 1 ; il sert à activer des bits.
+- XOR vaut 1 si les bits diffèrent ; `xor rax, rax` remet un registre à zéro.
+- NOT inverse chaque bit.
+- `shl` décale à gauche et multiplie par 2 ; décaler de n revient à multiplier
+  par 2 puissance n.
+- `shr` décale à droite et divise par 2 (division entière).
+- Les décalages sont bien plus rapides que la multiplication pour les
+  puissances de 2.

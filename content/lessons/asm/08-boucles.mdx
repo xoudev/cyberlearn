@@ -1,0 +1,165 @@
+---
+refCode: CL-LSN-044-V01
+slug: asm-boucles
+title: "Construire des boucles en assembleur"
+description: "Répétez des instructions au niveau processeur en combinant un compteur, une comparaison et un saut conditionnel, pour reproduire les boucles for et while."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-043-V01"]
+---
+
+En assembleur, il n'existe aucun mot-clé `for` ni `while`. Pourtant, le processeur répète des instructions des milliards de fois par seconde. Le secret tient en deux ingrédients seulement : un **label** (une étiquette qui marque un point du programme) et un **saut conditionnel** qui revient vers ce label tant qu'une condition reste vraie. Une boucle, en langage machine, c'est exactement cela : du code qui se relit lui-même en remontant vers une étiquette, jusqu'à ce qu'un test décide d'arrêter.
+
+Dans cette leçon, vous allez assembler vos premières boucles à la main. Vous verrez comment un simple compteur, une comparaison `cmp` et un saut `jl` ou `jnz` suffisent à reproduire toutes les boucles que vous connaissez dans les langages de haut niveau. Vous apprendrez aussi à accumuler un résultat au fil des tours et à éviter le piège classique : la boucle infinie.
+
+## L'anatomie d'une boucle
+
+Toute boucle bien formée contient quatre éléments. Le **compteur** est une valeur stockée dans un registre, qui sert à savoir où l'on en est. Le **corps** regroupe les instructions que l'on veut répéter. L'**incrément** (ou décrément) fait évoluer le compteur à chaque tour. Enfin, le **test de sortie** compare le compteur à une borne et décide, via un saut conditionnel, si l'on recommence ou si l'on continue après la boucle.
+
+Voici une boucle qui compte de 1 à 5. Lisez-la de haut en bas : on initialise `rcx` à 1, on affiche, on incrémente, puis on compare. Tant que `rcx` est strictement inférieur à 6, le saut `jl` nous renvoie au label `boucle`.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rcx, 1          ; compteur initialisé à 1
+boucle:
+    println rcx         ; corps : on affiche la valeur
+    inc rcx             ; incrément : rcx passe au suivant
+    cmp rcx, 6          ; test : compare rcx à la borne 6
+    jl boucle           ; tant que rcx < 6, on remonte
+    ret`} />
+
+Le mécanisme est limpide. L'instruction `cmp rcx, 6` ne modifie pas `rcx` : elle calcule discrètement la différence et positionne des indicateurs internes. Le saut `jl` (jump if less) lit ces indicateurs et ne saute que si `rcx` est plus petit que 6. Au sixième passage, `rcx` vaut 6, la condition devient fausse, le saut est ignoré et le programme tombe sur le `ret`.
+
+<Callout type="warning">
+Une boucle ne se termine QUE si le compteur évolue vers la condition de sortie. Si vous oubliez le `inc rcx`, ou si vous comparez à une borne que le compteur n'atteint jamais, le saut conditionnel sera toujours pris : c'est la boucle infinie. L'environnement coupe l'exécution au bout de 10000 cycles, mais une vraie machine resterait bloquée. Vérifiez toujours que chaque tour rapproche le compteur de sa sortie.
+</Callout>
+
+## Boucle décroissante
+
+On peut aussi compter à rebours. Plutôt que d'incrémenter jusqu'à une borne haute, on part d'une valeur et on décrémente jusqu'à zéro. Cette forme est très courante car la comparaison à zéro est gratuite : après un `dec`, le processeur sait déjà si le résultat est nul.
+
+Dans l'exemple suivant, `rcx` part de 5 et descend. À chaque tour, `dec rcx` retire 1, puis `jnz` (jump if not zero) remonte tant que le résultat n'est pas zéro. Quand `rcx` atteint 0, le saut n'est plus pris.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rcx, 5          ; on part de 5
+rebours:
+    println rcx         ; affiche 5, 4, 3, 2, 1
+    dec rcx             ; retire 1 au compteur
+    jnz rebours         ; tant que rcx n'est pas zéro, on remonte
+    ret`} />
+
+Notez que `dec` positionne lui-même l'indicateur de zéro : pas besoin d'un `cmp` séparé. C'est pour cette raison que les boucles décroissantes vers zéro sont souvent plus compactes que les boucles croissantes.
+
+## Accumuler un résultat
+
+Une boucle ne sert pas qu'à afficher : elle permet surtout de construire un résultat progressivement. L'idée est de réserver un registre comme **accumulateur**, de le mettre à zéro avant la boucle, puis d'y ajouter quelque chose à chaque tour. À la sortie, le registre contient le total.
+
+Calculons la somme des entiers de 1 à 10. Le registre `rax` joue l'accumulateur, `rcx` joue le compteur. À chaque passage, on ajoute `rcx` dans `rax`, puis on incrémente `rcx`.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 0          ; accumulateur : la somme, à zéro au départ
+    mov rcx, 1          ; compteur de 1 à 10
+somme:
+    add rax, rcx        ; on ajoute le compteur à la somme
+    inc rcx             ; on passe au nombre suivant
+    cmp rcx, 11         ; a-t-on dépassé 10 ?
+    jle somme           ; tant que rcx <= 10, on continue
+    println rax         ; affiche 55 (1+2+...+10)
+    ret`} />
+
+Observez bien l'ordre : on accumule d'abord, on incrémente ensuite, et le test utilise `jle` avec la borne 11 pour inclure 10. Déplacer une seule de ces lignes change le résultat. La somme finale est 55, affichée une seule fois après la boucle.
+
+## Boucle avec multiplication
+
+Les boucles brillent pour les calculs répétitifs comme les puissances ou les tables. Pour élever un nombre à une puissance, on multiplie un accumulateur par la base autant de fois que l'exposant l'indique. L'instruction `imul` multiplie ; il suffit de la placer dans le corps.
+
+Calculons 2 puissance 4, soit 2 multiplié par lui-même quatre fois. `rax` part de 1 (élément neutre de la multiplication) et `rcx` compte les quatre tours en décroissant.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 1          ; accumulateur du produit, neutre = 1
+    mov rcx, 4          ; nombre de multiplications restantes
+puissance:
+    imul rax, 2         ; on multiplie par la base 2
+    dec rcx             ; un tour de moins
+    jnz puissance       ; tant qu'il reste des tours, on remonte
+    println rax         ; affiche 16 (2^4)
+    ret`} />
+
+Le résultat est 16. En changeant la base dans `imul rax, 2` et le nombre de tours dans `mov rcx, 4`, vous calculez n'importe quelle puissance entière. Le même schéma, avec un compteur affiché à chaque tour, produirait une table de multiplication.
+
+## À vous de jouer
+
+Vérifiez votre compréhension avec ces questions, puis attaquez l'exercice.
+
+<QuizGroup>
+<Quiz
+  question="Dans la boucle 'compter de 1 à 5', quelle instruction garantit que la boucle finira par s'arrêter ?"
+  options={[
+    "println rcx, car afficher consomme du temps",
+    "inc rcx, car le compteur progresse vers la borne testée",
+    "mov rcx, 1, car elle fixe le point de depart",
+    "ret, car elle termine le programme"
+  ]}
+  correctIndex={1}
+  explanation="Sans une instruction qui fait evoluer le compteur vers la condition de sortie (ici inc rcx), le saut conditionnel serait toujours pris et la boucle tournerait a l'infini."
+/>
+
+<Quiz
+  question="Après un 'dec rcx', quel saut remonte au label tant que le compteur n'a pas atteint zéro ?"
+  options={[
+    "jz, jump if zero",
+    "jg, jump if greater",
+    "jnz, jump if not zero",
+    "jmp, saut inconditionnel"
+  ]}
+  correctIndex={2}
+  explanation="jnz saute uniquement si le resultat de la derniere operation n'est pas nul. Comme dec positionne deja l'indicateur de zero, jnz suffit a boucler jusqu'a zero sans cmp."
+/>
+
+<Quiz
+  question="Pour sommer 1 à 10 avec un accumulateur dans rax, pourquoi le test utilise-t-il 'cmp rcx, 11' suivi de 'jle' ?"
+  options={[
+    "Pour inclure 10 dans la somme : on continue tant que rcx <= 10",
+    "Parce que imul exige toujours la valeur 11",
+    "Pour sauter par-dessus l'instruction add",
+    "Parce que rax ne peut pas depasser 11"
+  ]}
+  correctIndex={0}
+  explanation="On veut additionner jusqu'a 10 inclus. cmp rcx, 11 avec jle (jump if less or equal) poursuit la boucle tant que rcx vaut au plus 10, donc 10 est bien compte avant l'arret."
+/>
+</QuizGroup>
+
+Exercice : complétez ou ajustez ce programme pour qu'il calcule la **somme des nombres pairs de 2 à 10** (soit 2+4+6+8+10 = 30). Le compteur avance de 2 en 2.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 0          ; accumulateur de la somme
+    mov rcx, 2          ; on commence au premier pair
+pairs:
+    add rax, rcx        ; on ajoute le pair courant
+    add rcx, 2          ; on saute au pair suivant
+    cmp rcx, 10         ; a-t-on depasse 10 ?
+    jle pairs           ; tant que rcx <= 10, on continue
+    println rax         ; doit afficher 30
+    ret`} />
+
+## Récapitulatif
+
+- Une boucle en assembleur = un **label** + un **saut conditionnel** qui y revient tant qu'une condition tient.
+- Elle se compose de quatre parties : **compteur**, **corps**, **incrément/décrément**, **test de sortie**.
+- `cmp` ne modifie pas le compteur : elle prépare les indicateurs lus par `jl`, `jle`, `jg`, `je`, etc.
+- Une boucle **décroissante** vers zéro tire parti de `dec` + `jnz`, sans `cmp` séparé.
+- Pour **accumuler**, on met un registre à zéro (ou à 1 pour un produit) avant la boucle et on l'enrichit à chaque tour.
+- Règle d'or : le compteur DOIT évoluer vers sa sortie à chaque passage, sinon c'est la boucle infinie.
+
+OK 08-boucles.mdx écrit

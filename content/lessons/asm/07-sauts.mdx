@@ -1,0 +1,136 @@
+---
+refCode: CL-LSN-043-V01
+slug: asm-sauts
+title: "Les sauts conditionnels"
+description: "Construisez la logique de décision en assembleur : le saut inconditionnel jmp et les sauts conditionnels (je, jne, jg, jl...) pour reproduire les structures if et else."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 420
+prerequisites: ["CL-LSN-042-V01"]
+---
+
+En langage de haut niveau, vous écrivez `if`, `else if` et `else` sans réfléchir à ce qui se passe en dessous. Mais le processeur, lui, ne connaît aucune de ces structures. Il ne sait faire qu'une seule chose en matière de décision : sauter, ou ne pas sauter, vers un endroit précis du programme. Toute la logique conditionnelle que vous connaissez se construit à partir de ce mécanisme minimaliste.
+
+Dans cette leçon, vous allez apprendre à diriger le flux d'exécution avec les labels et l'instruction `jmp`, puis à prendre des décisions grâce aux sauts conditionnels qui s'appuient sur une comparaison. À la fin, vous saurez reproduire fidèlement une cascade `if / else if / else` en assembleur, brique par brique.
+
+## Les labels et jmp
+
+Un **label** (ou étiquette) est simplement un nom suivi de deux-points qui marque une position dans le code. Il ne produit aucune instruction : il sert de point de repère, une destination que l'on peut viser. L'instruction `jmp` réalise un **saut inconditionnel** : elle transfère immédiatement l'exécution vers le label indiqué, sans poser de question. Tout ce qui se trouve entre le `jmp` et le label visé est purement et simplement ignoré.
+
+Observez l'exemple suivant. La ligne qui afficherait « jamais affiche » est sautée, car `jmp suite` envoie directement le processeur au label `suite`.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    jmp suite
+    printlns "jamais affiche"
+suite:
+    printlns "on a saute par dessus"
+    ret`} />
+
+<Callout type="info">
+Un label n'occupe aucune place et ne coûte rien : c'est juste une adresse nommée. Vous pouvez en poser autant que vous voulez. Choisissez des noms parlants (`fin`, `positif`, `boucle`) plutôt que des numéros : votre code restera lisible même quand les sauts se multiplient.
+</Callout>
+
+## Les sauts conditionnels
+
+Le saut inconditionnel est utile, mais il ne décide rien. Pour décider, il faut d'abord **comparer**, puis sauter seulement si une condition est vraie. La comparaison se fait avec `cmp`, qui confronte deux valeurs sans les modifier. Le saut conditionnel qui suit lit le résultat de cette comparaison et agit en conséquence.
+
+Voici les sauts conditionnels essentiels, à placer juste après un `cmp` :
+
+- `je` (jump if equal) : saute si les deux valeurs sont égales.
+- `jne` (jump if not equal) : saute si elles sont différentes.
+- `jg` (jump if greater) : saute si la première est plus grande.
+- `jl` (jump if less) : saute si la première est plus petite.
+- `jge` : saute si la première est plus grande ou égale.
+- `jle` : saute si la première est plus petite ou égale.
+
+Le schéma mental à retenir : on écrit `cmp a, b`, puis on lit la condition comme « si a est ... que b ». Dans l'exemple, on compare 7 à 5 ; comme 7 est plus grand, `jg` déclenche le saut vers `plus_grand`. Sans le `jmp fin`, on tomberait ensuite dans la branche du bas.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 7
+    cmp rax, 5
+    jg plus_grand
+    printlns "petit ou egal"
+    jmp fin
+plus_grand:
+    printlns "plus grand"
+fin:
+    ret`} />
+
+## Reproduire if / else if / else
+
+Une simple comparaison ne suffit pas toujours. Souvent, vous voulez trois issues ou plus. Le cas classique est le **signe d'un nombre** : négatif, nul, ou positif. On enchaîne alors plusieurs comparaisons, chacune redirigeant vers son label, et on termine chaque branche par un `jmp fin` pour éviter de continuer dans la branche suivante.
+
+Lisez attentivement : on compare le nombre à zéro. S'il est plus petit, on va vers `negatif`. Sinon, on teste l'égalité avec `je nul`. Si aucune des deux conditions n'est vraie, c'est que le nombre est positif, donc on affiche directement la branche par défaut.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, -4
+    cmp rax, 0
+    jl negatif
+    je nul
+    printlns "positif"
+    jmp fin
+negatif:
+    printlns "negatif"
+    jmp fin
+nul:
+    printlns "nul"
+fin:
+    ret`} />
+
+<Callout type="warning">
+Le piège le plus fréquent du débutant : oublier le `jmp fin` à la fin d'une branche. Sans lui, l'exécution ne s'arrête pas au bon endroit et « tombe » dans la branche suivante, affichant deux messages au lieu d'un. Chaque branche qui se termine doit explicitement sauter vers `fin`. Le processeur ne devine rien : il continue toujours sur la ligne d'en dessous tant qu'aucun saut ne l'en empêche.
+</Callout>
+
+## À vous de jouer
+
+<QuizGroup>
+<Quiz
+  question="Vous venez d'écrire cmp rax, rbx. Quel saut prendre pour aller au label egaux uniquement si les deux valeurs sont identiques ?"
+  options={["jne egaux", "je egaux", "jg egaux", "jmp egaux"]}
+  correct={1}
+  explanation="je signifie jump if equal : il ne saute que lorsque les deux valeurs comparees sont egales. jmp sauterait toujours, sans condition."
+/>
+<Quiz
+  question="A quoi sert un label en assembleur ?"
+  options={["A declarer une variable en memoire", "A marquer une position dans le code que l'on peut viser avec un saut", "A reserver un registre", "A afficher du texte a l'ecran"]}
+  correct={1}
+  explanation="Un label est une etiquette : il nomme une position dans le code. Il ne produit aucune instruction et sert de destination aux sauts comme jmp, je ou jg."
+/>
+<Quiz
+  question="Apres cmp rax, 10 avec rax valant 3, quel saut va effectivement se declencher ?"
+  options={["jg ailleurs (plus grand)", "je ailleurs (egal)", "jl ailleurs (plus petit)", "jge ailleurs (plus grand ou egal)"]}
+  correct={2}
+  explanation="rax vaut 3 et on le compare a 10 : 3 est plus petit que 10. Seul jl (jump if less) declenche le saut. jg, je et jge restent inactifs."
+/>
+</QuizGroup>
+
+Mettez-vous maintenant en situation. Dans le code ci-dessous, la valeur de `rax` est comparée à 18. Modifiez la valeur de départ et relancez pour vérifier que la bonne branche s'affiche selon que la personne est majeure ou mineure.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 20
+    cmp rax, 18
+    jge majeur
+    printlns "mineur"
+    jmp fin
+majeur:
+    printlns "majeur"
+fin:
+    ret`} />
+
+## Récapitulatif
+
+- Un **label** (`nom:`) est une étiquette qui marque une position ; il ne génère aucune instruction.
+- `jmp label` réalise un **saut inconditionnel** : on saute toujours, sans condition.
+- `cmp a, b` compare deux valeurs sans les modifier et prépare le terrain pour un saut conditionnel.
+- Les **sauts conditionnels** dépendent du `cmp` précédent : `je` (égal), `jne` (différent), `jg` (plus grand), `jl` (plus petit), `jge` (plus grand ou égal), `jle` (plus petit ou égal).
+- Pour un `if / else`, on saute vers une branche si la condition est vraie, sinon on exécute la branche par défaut.
+- Pour `if / else if / else`, on enchaîne plusieurs comparaisons et on termine **chaque** branche par `jmp fin` pour ne pas tomber dans la suivante.

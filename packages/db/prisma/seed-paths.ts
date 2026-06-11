@@ -100,6 +100,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-036-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-004-V01",
+    slug: "assembleur-x86",
+    title: "Assembleur x86-64 : au coeur du processeur",
+    description:
+      "Descendez au plus près de la machine : registres, arithmétique, opérations binaires, la pile, comparaisons, sauts, boucles et fonctions en assembleur x86-64. Code exécuté dans un simulateur intégré, jusqu'à de vrais algorithmes et une calculatrice.",
+    category: "DEV",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 7,
+    lessons: [
+      "CL-LSN-037-V01",
+      "CL-LSN-038-V01",
+      "CL-LSN-039-V01",
+      "CL-LSN-040-V01",
+      "CL-LSN-041-V01",
+      "CL-LSN-042-V01",
+      "CL-LSN-043-V01",
+      "CL-LSN-044-V01",
+      "CL-LSN-045-V01",
+      "CL-LSN-046-V01",
+      "CL-LSN-047-V01",
+      "CL-LSN-048-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

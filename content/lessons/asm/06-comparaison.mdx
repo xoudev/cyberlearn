@@ -1,0 +1,152 @@
+---
+refCode: CL-LSN-042-V01
+slug: asm-comparaison
+title: "Comparaison et drapeaux"
+description: "Comparez des valeurs au niveau processeur avec cmp et test, comprenez le rôle des drapeaux (flags), et préparez le terrain pour les sauts conditionnels."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 380
+prerequisites: ["CL-LSN-038-V01"]
+---
+
+Jusqu'ici, vos programmes assembleur suivaient une ligne droite : une instruction, puis la suivante, du début à la fin. Mais un vrai programme doit décider. Faut-il afficher 'réussi' ou 'échoué' ? Cette valeur est-elle nulle ? Quel est le plus grand de deux nombres ? Pour décider, le processeur a besoin de comparer.
+
+Le problème, c'est que le processeur ne sait pas vraiment dire 'est-ce que a est plus grand que b ?' en une seule pensée. À la place, il fait une soustraction discrète et observe le résultat. Selon ce résultat, il lève ou abaisse de petits indicateurs internes appelés drapeaux (en anglais flags). Ces drapeaux sont la mémoire à très court terme du processeur : ils retiennent ce qui vient de se passer. L'instruction reine pour cette comparaison s'appelle cmp, et sa cousine pour tester la nullité s'appelle test. Dans cette leçon, vous allez apprendre à positionner ces drapeaux et à les lire, ce qui ouvrira ensuite la porte aux sauts conditionnels.
+
+## L'instruction cmp
+
+L'instruction cmp, pour compare, prend deux opérandes. Quand vous écrivez cmp a, b, le processeur calcule a moins b, mais ne stocke ce résultat nulle part. La valeur de a n'est pas modifiée. Tout ce qui change, ce sont les drapeaux : ils mémorisent la nature du résultat de cette soustraction invisible.
+
+Pourquoi une soustraction ? Parce qu'elle révèle tout. Si a moins b vaut zéro, alors a et b sont égaux. Si le résultat est négatif, alors a est plus petit que b. Si le résultat est positif, alors a est plus grand que b. En observant le signe et la nullité du résultat, le processeur connaît la relation complète entre les deux valeurs, sans jamais l'écrire en mémoire.
+
+<Callout type="info">
+Deux drapeaux nous intéressent surtout ici. Le drapeau zéro (zero flag, ZF) passe à 1 quand le résultat est exactement zéro, donc quand les deux valeurs comparées sont égales. Le drapeau de signe (sign flag, SF) passe à 1 quand le résultat est négatif, donc quand la première valeur est plus petite que la seconde. Vous n'avez pas à lire ces drapeaux à la main : les sauts conditionnels comme je ou jg le font pour vous, en coulisses.
+</Callout>
+
+Retenez bien l'ordre : cmp a, b se lit comme une question sur a par rapport à b. On place toujours le cmp juste avant un saut conditionnel, qui décidera de la suite en fonction des drapeaux.
+
+## Utiliser cmp avec un saut
+
+Voyons le motif complet. On compare une valeur, puis on saute vers un label si la condition est vraie. Le saut je (jump if equal) part lorsque le drapeau zéro est levé, c'est-à-dire quand les deux opérandes de cmp étaient égales. Sinon, on continue normalement.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 5
+    cmp rax, 5
+    je egal
+    printlns "different"
+    jmp fin
+egal:
+    printlns "egal"
+fin:
+    ret`} />
+
+Suivez le fil : on met 5 dans rax, on compare rax à 5, l'égalité lève le drapeau zéro, donc je saute vers le label egal et affiche 'egal'. Le jmp fin sert de garde-fou : sans lui, après avoir affiché 'different', l'exécution tomberait quand même dans le label egal. Essayez de changer le 5 du mov en 7 : la comparaison échoue, je ne saute pas, et le programme affiche 'different'.
+
+## L'instruction test
+
+Très souvent, on veut juste savoir si une valeur est nulle. On pourrait écrire cmp rax, 0, mais il existe un raccourci classique : test rax, rax. L'instruction test calcule un ET logique (and) entre ses deux opérandes, positionne les drapeaux selon le résultat, mais ne stocke rien, exactement comme cmp.
+
+Pourquoi test rax, rax dit-il si rax est zéro ? Parce que rax ET rax vaut toujours rax lui-même. Le résultat est donc zéro si et seulement si rax est zéro. Dans ce cas, le drapeau zéro se lève, et un je partira.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 0
+    test rax, rax
+    je nul
+    printlns "non nul"
+    jmp fin
+nul:
+    printlns "nul"
+fin:
+    ret`} />
+
+Ici rax vaut 0, donc le ET logique donne zéro, le drapeau zéro se lève, et je saute vers nul pour afficher 'nul'. Remplacez le mov rax, 0 par mov rax, 42 pour voir le programme afficher 'non nul'.
+
+## Comparer pour le plus grand
+
+Pour décider lequel de deux nombres est le plus grand, on combine cmp avec le saut jg (jump if greater). Le saut jg part quand la première valeur du cmp est strictement plus grande que la seconde.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 8
+    mov rbx, 3
+    cmp rax, rbx
+    jg raxplusgrand
+    printlns "rbx est le max"
+    jmp fin
+raxplusgrand:
+    printlns "rax est le max"
+fin:
+    ret`} />
+
+On compare rax (8) à rbx (3). Comme 8 est plus grand que 3, jg saute vers raxplusgrand et affiche 'rax est le max'. Inversez les valeurs, par exemple mov rax, 1 et mov rbx, 9, et c'est l'autre message qui s'affiche.
+
+## À vous de jouer
+
+Vérifiez votre compréhension avant de passer aux sauts conditionnels en détail.
+
+<Quiz
+  question="Que fait exactement l'instruction cmp a, b ?"
+  options={[
+    "Elle stocke a moins b dans a",
+    "Elle calcule a moins b sans stocker le résultat et positionne les drapeaux",
+    "Elle additionne a et b puis met le résultat dans b",
+    "Elle copie b dans a"
+  ]}
+  correctIndex={1}
+  explanation="cmp réalise la soustraction a moins b uniquement pour positionner les drapeaux. Aucun opérande n'est modifié."
+/>
+
+<Quiz
+  question="Pourquoi test rax, rax permet-il de savoir si rax vaut zéro ?"
+  options={[
+    "Parce que rax ET rax vaut rax, donc le résultat est zéro seulement si rax est zéro",
+    "Parce que test additionne rax avec lui-même",
+    "Parce que test remet toujours rax à zéro",
+    "Parce que test compare rax à 1"
+  ]}
+  correctIndex={0}
+  explanation="L'ET logique de rax avec lui-même redonne rax. Le drapeau zéro ne se lève donc que si rax est nul."
+/>
+
+<Quiz
+  question="Quel saut prend lorsque le drapeau zéro est levé après un cmp ?"
+  options={[
+    "jg",
+    "jl",
+    "je",
+    "jmp"
+  ]}
+  correctIndex={2}
+  explanation="je (jump if equal) part quand le drapeau zéro est levé, c'est-à-dire quand les deux valeurs comparées étaient égales."
+/>
+
+Maintenant, à votre clavier. Complétez ce programme pour qu'il affiche 'egaux' si rax et rbx contiennent la même valeur, et 'differents' sinon. Modifiez les valeurs de départ pour tester les deux chemins.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 4
+    mov rbx, 4
+    cmp rax, rbx
+    je egaux
+    printlns "differents"
+    jmp fin
+egaux:
+    printlns "egaux"
+fin:
+    ret`} />
+
+## Récapitulatif
+
+- cmp a, b calcule a moins b sans rien stocker et positionne les drapeaux selon le résultat.
+- Le drapeau zéro (ZF) se lève quand le résultat est nul, donc quand les valeurs sont égales.
+- Le drapeau de signe (SF) se lève quand le résultat est négatif, donc quand la première valeur est plus petite.
+- test a, b fait un ET logique sans stocker ; test rax, rax teste élégamment si rax vaut zéro.
+- On enchaîne toujours cmp ou test avec un saut conditionnel : je pour l'égalité, jne pour la différence, jg pour le strictement plus grand.
+- Ces drapeaux sont la base des décisions : ils préparent le terrain pour les sauts conditionnels que vous approfondirez ensuite.

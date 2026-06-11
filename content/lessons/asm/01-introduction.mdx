@@ -1,0 +1,138 @@
+---
+refCode: CL-LSN-037-V01
+slug: asm-introduction
+title: "Introduction à l'assembleur x86-64"
+description: "Découvrez le langage le plus proche du processeur : les registres, l'instruction mov, et comment afficher des valeurs. Votre premier programme en assembleur."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 200
+prerequisites: []
+---
+
+Quand tu écris du Python ou du JavaScript, tu parles un langage de haut niveau, confortable et lisible. Mais le processeur, lui, ne comprend rien à tout cela. Il n'exécute qu'une chose : des instructions extrêmement simples, gravées dans le silicium. L'assembleur est le langage qui traduit ces instructions sous une forme lisible par un humain. C'est le langage le plus proche de la machine.
+
+Pourquoi apprendre l'assembleur en 2026, alors que personne n'écrit d'applications entières dans ce langage ? Pour trois raisons. D'abord, pour **comprendre la machine** : tu vois enfin ce qui se passe vraiment quand ton code tourne. Ensuite, pour la **sécurité** : la plupart des failles bas niveau (débordements de tampon, corruption de mémoire) se raisonnent au niveau de l'assembleur. Enfin, pour le **reverse engineering** : analyser un binaire dont on n'a pas le code source, c'est lire de l'assembleur.
+
+Dans cette leçon, tu vas découvrir les registres, l'instruction `mov`, et comment afficher des valeurs. À la fin, tu auras écrit ton tout premier programme.
+
+## Les registres
+
+Le processeur a besoin d'un endroit où poser les valeurs sur lesquelles il travaille. Plutôt que d'aller chercher chaque nombre dans la mémoire principale (lente), il dispose de petites mémoires internes ultra-rapides appelées **registres**. Pense à eux comme aux cases de travail posées juste sous les doigts du processeur.
+
+En x86-64, les registres généraux les plus courants s'appellent `rax`, `rbx`, `rcx`, `rdx`, et il en existe d'autres comme `rsi`, `rdi`, ou `r8` à `r15`. Le `r` signifie « registre » et indique la version 64 bits. Chacun peut contenir un entier.
+
+<Callout type="info">
+Le préfixe change la taille manipulée : `rax` est le registre 64 bits complet, `eax` désigne ses 32 bits de poids faible, `ax` ses 16 bits, et `al` ses 8 bits de poids faible. Dans cette leçon débutante, nous resterons sur les registres 64 bits comme `rax`.
+</Callout>
+
+## L'instruction mov
+
+L'instruction la plus fondamentale est `mov`. Elle copie une valeur dans un registre. Sa syntaxe est toujours la même : `mov destination, source`. La valeur de la source est copiée dans la destination, et la source n'est pas modifiée.
+
+Par exemple, `mov rax, 7` place le nombre 7 dans le registre `rax`. On peut aussi copier le contenu d'un registre vers un autre : `mov rbx, rax` recopie la valeur de `rax` dans `rbx`. Attention à l'ordre : la destination vient toujours en premier, la source en second.
+
+Voyons cela en action. Le programme ci-dessous place une valeur dans `rax` puis l'affiche.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 7          ; on copie 7 dans rax
+    println rax         ; affiche 7 puis saute une ligne
+    ret`} />
+
+## Afficher des valeurs
+
+Pour voir le résultat de notre travail, le simulateur fournit des pseudo-instructions d'affichage :
+
+- `println` affiche un entier suivi d'un saut de ligne.
+- `print` affiche un entier sans saut de ligne.
+- `printlns "texte"` affiche une chaîne de caractères suivie d'un saut de ligne.
+- `prints "texte"` affiche une chaîne sans saut de ligne.
+
+On peut combiner un texte et un nombre pour produire une sortie lisible. Ici, on affiche d'abord un libellé, puis la valeur calculée.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 10
+    mov rbx, 32
+    add rax, rbx        ; rax = 10 + 32 = 42
+    prints "Resultat = " ; texte sans saut de ligne
+    println rax          ; affiche 42 puis saute une ligne
+    ret`} />
+
+## Structure d'un programme
+
+Tout programme du simulateur suit la même ossature. Il faut déclarer le point d'entrée avec `global main`, ouvrir la section qui contient les instructions avec `section .text`, poser le label `main:` où commence l'exécution, et terminer par `ret` pour rendre la main.
+
+Voici un programme complet et commenté qui calcule une petite expression et affiche le résultat.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 6          ; rax = 6
+    mov rbx, 4          ; rbx = 4
+    add rax, rbx        ; rax = 6 + 4 = 10
+    imul rax, rax       ; rax = 10 * 10 = 100
+    prints "Carre de 10 = "
+    println rax         ; affiche 100
+    ret`} />
+
+## À vous de jouer
+
+Teste ce que tu as compris avec ces quelques questions.
+
+<Quiz
+  question="À quoi sert l'instruction mov ?"
+  options={[
+    'À additionner deux registres',
+    'À copier une valeur dans une destination',
+    'À afficher un entier à l écran',
+    'À terminer le programme'
+  ]}
+  correctIndex={1}
+  explanation="mov copie la source dans la destination ; elle ne calcule rien et n affiche rien."
+/>
+
+<Quiz
+  question="Dans 'mov rax, rbx', que se passe-t-il ?"
+  options={[
+    'La valeur de rax est copiée dans rbx',
+    'rax et rbx sont échangés',
+    'La valeur de rbx est copiée dans rax',
+    'rax est mis à zéro'
+  ]}
+  correctIndex={2}
+  explanation="La destination vient en premier : rbx (source) est copié dans rax (destination)."
+/>
+
+<Quiz
+  question="Quelle pseudo-instruction affiche un entier suivi d'un saut de ligne ?"
+  options={[
+    'print',
+    'prints',
+    'println',
+    'printlns'
+  ]}
+  correctIndex={2}
+  explanation="println affiche un entier et passe à la ligne ; printlns fait pareil mais pour une chaîne."
+/>
+
+À ton tour d'écrire un peu de code. Place deux valeurs dans deux registres différents, puis affiche l'une des deux avec `println`.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 21         ; place 21 dans rax
+    mov rbx, 99         ; place 99 dans rbx
+    println rax         ; affiche le contenu de rax
+    ret`} />
+
+## Récapitulatif
+
+- L'**assembleur** est le langage le plus proche du processeur ; il sert à comprendre la machine, à raisonner sur la sécurité et à faire du reverse engineering.
+- Les **registres** (`rax`, `rbx`, `rcx`, `rdx`...) sont de petites mémoires ultra-rapides internes au CPU.
+- L'instruction `mov destination, source` copie une valeur ; la destination vient toujours en premier.
+- Les pseudo-instructions `println`, `print`, `printlns` et `prints` permettent d'afficher entiers et textes.
+- Un programme suit toujours la structure `global main` / `section .text` / `main:` / `ret`.
