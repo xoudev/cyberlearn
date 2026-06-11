@@ -82,7 +82,8 @@ Implémentation : `apps/web/lib/sentry/scrub-event.ts`
 Tests : `apps/web/lib/sentry/__tests__/scrub-event.test.ts`
 Référence détaillée : `docs/security/sentry-config.md`
 
-Pour Sentry sur `apps/admin` : voir docs/backlog/post-v1.md.
+Sentry sur `apps/admin` : en place (même pattern + `scrubEvent` partagé — voir
+docs/security/sentry-config.md, section « apps/admin — statut »).
 
 ## Migration future — structured logger
 
