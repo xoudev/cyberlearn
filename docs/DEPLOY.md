@@ -128,6 +128,54 @@ Pense à mettre à jour `NEXT_PUBLIC_SITE_URL` avec le vrai domaine.
 
 ---
 
+## Base de données — migrations & RLS
+
+Le schéma **et** les policies RLS s'appliquent par la même commande :
+
+```sh
+pnpm --filter @cyberlearn/db db:migrate:prod   # prisma migrate deploy (via DIRECT_URL)
+```
+
+Depuis la migration `20260610200000_rls_baseline`, les 56 policies + le helper
+`current_user_role()` font partie de la chaîne de migrations Prisma : plus
+**aucune** étape psql manuelle après le deploy. Règle pour la suite : toute
+migration qui crée une table active la RLS et pose ses policies **dans le même
+fichier de migration** (pattern `DROP POLICY IF EXISTS` + `CREATE POLICY`).
+
+### Vérification après deploy (Supabase Studio → SQL Editor)
+
+```sql
+-- 1. Aucune table public exposée (hors _prisma_migrations, table interne Prisma)
+SELECT tablename FROM pg_tables
+WHERE schemaname = 'public' AND NOT rowsecurity
+  AND tablename NOT IN ('_prisma_migrations');
+-- attendu : 0 ligne
+
+-- 2. Compte de policies (>= 56, la baseline)
+SELECT count(*) FROM pg_policies WHERE schemaname = 'public';
+```
+
+Le Security Advisor (**Database → Advisors**) doit rester muet sur
+`rls_disabled_in_public`. Le job CI « Integration » prouve la même chose sur
+base fraîche à chaque PR (step « Assert RLS coverage »).
+
+### Si la migration échoue (P3018)
+
+La baseline est transactionnelle (`BEGIN`/`COMMIT` explicites) : en cas d'échec
+(ex. `lock_timeout` derrière une requête longue), rollback complet, aucun état
+intermédiaire — la RLS existante reste en place. Débloquer puis rejouer :
+
+```sh
+pnpm --filter @cyberlearn/db exec prisma migrate resolve --rolled-back 20260610200000_rls_baseline
+pnpm --filter @cyberlearn/db db:migrate:prod
+```
+
+NB : la baseline est idempotente et s'exécute « pour de vrai » sur la prod
+existante (qui portait déjà les policies posées à la main) — elle re-pose le
+même état, en une transaction.
+
+---
+
 ## Déploiements suivants
 
 Chaque push sur `main` déclenche automatiquement un nouveau déploiement Vercel.

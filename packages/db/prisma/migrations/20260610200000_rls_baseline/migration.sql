@@ -1,8 +1,59 @@
 -- =============================================================================
--- post_prisma_rls.sql
--- Run this AFTER every `prisma migrate deploy` to (re)apply RLS policies.
--- The script is idempotent: DROP POLICY IF EXISTS before CREATE POLICY.
+-- RLS baseline — folds post_prisma_rls.sql into the migration chain.
+--
+-- Until this migration, the 56 policies + helper lived in a bare SQL file
+-- applied by hand after every `prisma migrate deploy` (psql step in CI,
+-- manual psql in prod). A forgotten run meant tables without RLS, exposed
+-- through the Supabase Data API. From now on `migrate deploy` applies RLS
+-- itself. Rules going forward:
+--   - any migration that CREATES a table MUST enable RLS and add its
+--     policies in the same migration file;
+--   - changes to existing policies get their own migration, same
+--     DROP POLICY IF EXISTS + CREATE POLICY pattern.
+--
+-- Idempotence: this migration runs FOR REAL on databases that already carry
+-- the policies (prod applied them manually until now). Every statement is
+-- re-runnable: ENABLE ROW LEVEL SECURITY is a no-op when already enabled,
+-- the helper is CREATE OR REPLACE, and every policy is DROP IF EXISTS +
+-- CREATE. Re-applying is a catalog-only no-op that re-poses the same state.
+--
+-- Atomicity: the explicit BEGIN/COMMIT is deliberate. Prisma 6.x happens to
+-- send a multi-statement migration as one implicit-transaction batch, but
+-- that behavior is undocumented and was removed in Prisma 7.4+ (statement
+-- splitting). With the explicit transaction the baseline applies or rolls
+-- back as a unit: concurrent queries briefly BLOCK on the ACCESS EXCLUSIVE
+-- locks (bounded by lock_timeout below) and can never observe a
+-- dropped-but-not-recreated policy. If the migration fails: full rollback,
+-- then `prisma migrate resolve --rolled-back 20260610200000_rls_baseline`
+-- and re-run `migrate deploy` (see docs/DEPLOY.md).
 -- =============================================================================
+
+BEGIN;
+
+-- Fail fast instead of queueing behind a long-running query: every ALTER
+-- TABLE / DROP POLICY / CREATE POLICY below takes an ACCESS EXCLUSIVE lock,
+-- and everything else then queues behind us. On timeout the transaction
+-- rolls back; resolve --rolled-back and re-deploy at a quieter moment.
+SET LOCAL lock_timeout = '5s';
+
+-- ─── auth stubs — shadow-DB only ─────────────────────────────────────────────
+-- `prisma migrate dev` replays the history on a throwaway shadow database:
+-- bare Postgres, no Supabase `auth` schema, so the auth.uid() / auth.jwt()
+-- references below would fail to resolve. On ANY real Supabase database
+-- (prod, CI local stack, dev) the `auth` schema exists and this block is a
+-- strict no-op — it never replaces an existing schema or function.
+
+DO $rls_auth_stubs$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'auth') THEN
+    CREATE SCHEMA auth;
+    CREATE FUNCTION auth.uid() RETURNS uuid
+      LANGUAGE sql STABLE AS $stub$ SELECT NULL::uuid $stub$;
+    CREATE FUNCTION auth.jwt() RETURNS jsonb
+      LANGUAGE sql STABLE AS $stub$ SELECT NULL::jsonb $stub$;
+  END IF;
+END
+$rls_auth_stubs$;
 
 -- ─── Enable RLS on all tables ────────────────────────────────────────────────
 
@@ -346,3 +397,19 @@ CREATE POLICY "attempts_self_select" ON public.quiz_attempts FOR SELECT
 DROP POLICY IF EXISTS "attempts_admin_select" ON public.quiz_attempts;
 CREATE POLICY "attempts_admin_select" ON public.quiz_attempts FOR SELECT
   USING (public.current_user_role() = 'ADMIN');
+
+-- ─── CHALLENGES (gap closed BY this baseline) ────────────────────────────────
+-- These four tables (migrations 20260501000001/20260501000002) were never
+-- covered by post_prisma_rls.sql — exactly the exposure this baseline exists
+-- to eliminate; the CI coverage gate caught them on its first run. All app
+-- access is server-side Prisma (table owner bypasses RLS) and no supabase-js
+-- code reads them. Same pattern as quiz_questions: RLS enabled with ZERO
+-- policies = full deny for anon + authenticated, until a client-side use
+-- case ships its own policies in its own migration.
+
+ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_challenge_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.challenge_hints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.challenge_hint_reveals ENABLE ROW LEVEL SECURITY;
+
+COMMIT;
