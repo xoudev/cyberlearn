@@ -101,7 +101,7 @@ export default function DevComponentsPage(): React.JSX.Element {
             className="text-xs font-semibold uppercase tracking-widest"
             style={{ color: "var(--color-brand-turquoise)" }}
           >
-            Brand components — @cyberlearn/ui
+            Brand components - @cyberlearn/ui
           </p>
           <Separator />
         </div>
@@ -269,7 +269,7 @@ export default function DevComponentsPage(): React.JSX.Element {
             className="text-xs font-semibold uppercase tracking-widest"
             style={{ color: "var(--color-brand-blue)" }}
           >
-            shadcn/ui — primitives
+            shadcn/ui - primitives
           </p>
           <Separator />
         </div>

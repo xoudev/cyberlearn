@@ -25,7 +25,7 @@
 - **Mise à jour /privacy section 8** avec les cookies ajoutés
 - **Mise à jour du registre des traitements**
 
-### Droits utilisateur (PR 2.4 — partiellement résolu)
+### Droits utilisateur (PR 2.4 - partiellement résolu)
 
 - ~~Endpoint /api/me/export~~ : résolu PR 2.4.A
 - ~~Endpoint /api/me/delete~~ : résolu PR 2.4.B
@@ -34,14 +34,14 @@
 - Job de purge automatique des logs (12 mois auth, 6 mois apps)
 - Job d'anonymisation des certificats lors d'une suppression de compte
 
-### Sentry et observability — RÉSOLU par PR 3 (feat/sentry-init-csp-polish)
+### Sentry et observability - RÉSOLU par PR 3 (feat/sentry-init-csp-polish)
 
 - ~~Init Sentry avec config RGPD-safe~~ : résolu, voir docs/security/sentry-config.md
 
 **Tâches post-launch restantes :**
 
-- ~~**Init Sentry sur apps/admin**~~ — **fait** (`sentry.{client,server,edge}.config.ts` + `withSentryConfig`, scrubEvent partagé)
-- **Audit Sentry events 30j post-launch** — vérifier qu'aucun PII ne leak malgré le scrubbing
+- ~~**Init Sentry sur apps/admin**~~ - **fait** (`sentry.{client,server,edge}.config.ts` + `withSentryConfig`, scrubEvent partagé)
+- **Audit Sentry events 30j post-launch** - vérifier qu'aucun PII ne leak malgré le scrubbing
   (inspecter les events Sentry dans le dashboard, chercher patterns email/UUID dans messages)
 
 ---
@@ -58,7 +58,7 @@ correspondantes seront implémentées :
 - Tarifs → /pricing (uniquement si monétisation, PR future)
 - Entreprises → /business (uniquement si offre B2B, PR future)
 - Communauté → /community (uniquement si feature communauté
-  implémentée — Q&A par leçon est déjà rattachée au contenu
+  implémentée - Q&A par leçon est déjà rattachée au contenu
   pédagogique, hors forum global)
 
 ### Données figées / fake sur la landing
@@ -74,7 +74,7 @@ aujourd'hui ; à ajouter au strip seulement si le design le réclame
 
 ### Convention .gitignore /docs
 
-**Résolu** (PR #66) : la règle large `/docs` est supprimée — elle ignorait
+**Résolu** (PR #66) : la règle large `/docs` est supprimée - elle ignorait
 silencieusement tout nouveau fichier de doc. `docs/` est tracké par défaut ;
 un commentaire de garde dans `.gitignore` documente le piège. Si un besoin de
 notes privées revient, créer un sous-dossier dédié gitignoré explicitement.
@@ -93,10 +93,10 @@ mais non structurées. Post-launch, migrer vers un structured logger
 
 Périmètre : ~15 call-sites `console.*` en production dans apps/web/.
 Convention cible déjà dans docs/security/logging.md.
-Pas bloquant pour le launch — les call-sites actuels sont SAFE.
+Pas bloquant pour le launch - les call-sites actuels sont SAFE.
 Décision de l'outil exact à faire en temps voulu.
 
-### Design des emails — PR design dédiée plus tard
+### Design des emails - PR design dédiée plus tard
 
 Le template account-deletion-confirm.tsx est fonctionnel mais le design
 ne suit pas l'identité visuelle Cyber Learn.
@@ -129,7 +129,7 @@ Avec maskAllText: false, les emails affichés en clair côté DOM
 
 ## Infrastructure & coûts
 
-### v1 (current — free tier max)
+### v1 (current - free tier max)
 - Vercel Hobby (non-commercial)
 - Supabase Free
 - Resend Free (100 emails/jour)
@@ -137,16 +137,16 @@ Avec maskAllText: false, les emails affichés en clair côté DOM
 - Sentry Free (5k events/mois)
 - Coût : ~0.58€/mois (domaine seul)
 
-### v1.5 — WebVM integration
+### v1.5 - WebVM integration
 - Add: Cloudflare R2 pour disk images (egress gratuit)
 - Setup: pipeline build/deploy disks
 - Coût additionnel : 0-5€/mois
 
-### v2 — Migration VPS OVH (DevOps showcase)
+### v2 - Migration VPS OVH (DevOps showcase)
 **Objectif** : montée en compétence DevOps + portfolio CV.
 
 **Stack cible** :
-- VPS OVH Value (6.99€/mois) — 1 vCPU, 4GB RAM, 80GB SSD
+- VPS OVH Value (6.99€/mois) - 1 vCPU, 4GB RAM, 80GB SSD
 - Docker + Docker Compose pour orchestration
 - Caddy/Nginx reverse proxy + Let's Encrypt
 - PostgreSQL self-hosted (avec backups vers R2)
