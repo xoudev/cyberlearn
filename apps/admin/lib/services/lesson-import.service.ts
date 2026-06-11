@@ -20,6 +20,12 @@ const INJECTION_PATTERNS = [
   /dangerouslySetInnerHTML/i,
 ];
 
+/** Batch awareness for multi-file imports. */
+export interface BatchValidationContext {
+  /** refCodes declared by the OTHER files of the same batch. */
+  peerRefCodes: readonly string[];
+}
+
 /**
  * Four-layer validation pipeline for MDX lesson import.
  *
@@ -27,8 +33,15 @@ const INJECTION_PATTERNS = [
  * Layer 2 - Metadata Zod validation
  * Layer 3 - MDX body: injection check + dry-run compile
  * Layer 4 - Business rules: refCode/slug uniqueness, prerequisites exist
+ *
+ * With a batch context, a prerequisite that is missing from the database but
+ * declared by a sibling file downgrades to a warning: the batch import orders
+ * files topologically, so the sibling lands first.
  */
-export async function validateMdxContent(fileContent: string): Promise<ImportValidationResult> {
+export async function validateMdxContent(
+  fileContent: string,
+  batch?: BatchValidationContext,
+): Promise<ImportValidationResult> {
   const errors: ImportValidationError[] = [];
   const warnings: string[] = [];
 
@@ -145,13 +158,19 @@ export async function validateMdxContent(fileContent: string): Promise<ImportVal
       select: { refCode: true },
     });
     const foundRefCodes = new Set(prereqLessons.map((l) => l.refCode));
+    const peerRefCodes = new Set(batch?.peerRefCodes ?? []);
     for (const prereq of metadata.prerequisites) {
-      if (!foundRefCodes.has(prereq)) {
-        errors.push({
-          field: "prerequisites",
-          message: `Prerequis introuvable: ${prereq}`,
-        });
+      if (foundRefCodes.has(prereq)) continue;
+      if (peerRefCodes.has(prereq)) {
+        warnings.push(
+          `Prérequis ${prereq} absent de la base mais fourni par le lot (il sera importé avant)`,
+        );
+        continue;
       }
+      errors.push({
+        field: "prerequisites",
+        message: `Prerequis introuvable: ${prereq}`,
+      });
     }
   }
 
@@ -213,4 +232,60 @@ export async function importValidatedLesson(
   });
 
   return { lessonId: lesson.id, refCode: lesson.refCode, contentHash };
+}
+
+// ── Batch ordering ────────────────────────────────────────────────────────────
+
+export interface BatchOrderItem {
+  /** Stable identifier of the file inside the batch (e.g. its name). */
+  id: string;
+  refCode: string;
+  prerequisites: readonly string[];
+}
+
+export interface BatchOrderResult {
+  /** Item ids in a prerequisite-safe import order (dependencies first). */
+  ordered: string[];
+  /** Item ids stuck in a prerequisite cycle inside the batch. */
+  cyclic: string[];
+}
+
+/**
+ * Orders a batch so that any file whose prerequisites are provided by sibling
+ * files imports AFTER them (Kahn's algorithm on the intra-batch edges only;
+ * prerequisites already in the database are irrelevant to the ordering).
+ * Files stuck behind an intra-batch prerequisite cycle (members of the cycle
+ * AND their dependents) are reported in `cyclic` instead of ordered.
+ *
+ * Precondition: refCodes are unique across items. Callers must reject
+ * intra-batch duplicates beforehand (last declarer wins in the edge map).
+ */
+export function orderBatchByPrerequisites(items: readonly BatchOrderItem[]): BatchOrderResult {
+  const byRefCode = new Map(items.map((it) => [it.refCode, it]));
+  const indegree = new Map<string, number>(items.map((it) => [it.id, 0]));
+  const dependents = new Map<string, string[]>(items.map((it) => [it.id, []]));
+
+  for (const item of items) {
+    for (const prereq of item.prerequisites) {
+      const provider = byRefCode.get(prereq);
+      if (provider === undefined || provider.id === item.id) continue;
+      indegree.set(item.id, (indegree.get(item.id) ?? 0) + 1);
+      dependents.get(provider.id)?.push(item.id);
+    }
+  }
+
+  const queue = items.filter((it) => (indegree.get(it.id) ?? 0) === 0).map((it) => it.id);
+  const ordered: string[] = [];
+  for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
+    ordered.push(id);
+    for (const dep of dependents.get(id) ?? []) {
+      const next = (indegree.get(dep) ?? 0) - 1;
+      indegree.set(dep, next);
+      if (next === 0) queue.push(dep);
+    }
+  }
+
+  const orderedSet = new Set(ordered);
+  const cyclic = items.filter((it) => !orderedSet.has(it.id)).map((it) => it.id);
+  return { ordered, cyclic };
 }
