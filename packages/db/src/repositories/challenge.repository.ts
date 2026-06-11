@@ -95,7 +95,7 @@ export const challengeRepository = {
         hints: {
           orderBy: { orderIndex: "asc" },
           select: { id: true, orderIndex: true, xpCost: true },
-          // content is NOT included — fetched per-hint only when revealed
+          // content is NOT included - fetched per-hint only when revealed
         },
         orderIndex: true,
         _count: { select: { progress: { where: { status: "COMPLETED" } } } },

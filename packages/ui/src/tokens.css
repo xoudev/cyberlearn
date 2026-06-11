@@ -1,5 +1,5 @@
 /*
- * CyberLearn design tokens — source of truth for both apps.
+ * CyberLearn design tokens - source of truth for both apps.
  *
  * Import in each app's globals.css:
  *   @import "@cyberlearn/ui/tokens.css";
@@ -111,7 +111,7 @@
   --color-danger: #ff4d6d;
   --color-info: #4d8bff;
 
-  /* Badge rarities — single canonical ramp (epic is purple, NOT brand turquoise) */
+  /* Badge rarities - single canonical ramp (epic is purple, NOT brand turquoise) */
   --color-rarity-common: #b8b5d1;
   --color-rarity-rare: #6e8bff;
   --color-rarity-epic: #b14dff;
@@ -123,7 +123,7 @@
   --secondary-foreground: var(--color-text-secondary);
   --muted: #1e1a50;
   --muted-foreground: var(--color-text-muted);
-  /* Sidebar — spec: design-system.md */
+  /* Sidebar - spec: design-system.md */
   --sidebar: #030219;
   --sidebar-foreground: #6b6890;
   --sidebar-primary: #0affd4;

@@ -7,7 +7,7 @@ import { prisma } from "@cyberlearn/db";
 /**
  * Single `supabase.auth.getUser()` call per server request, deduplicated via
  * React.cache. Previously Navbar, AppSidebar, and every page each made their
- * own call — 3+ round-trips to the Supabase auth server per page load.
+ * own call - 3+ round-trips to the Supabase auth server per page load.
  */
 export const getRequestUser = cache(async () => {
   const supabase = await getSupabaseServerClient();
@@ -25,7 +25,7 @@ export async function requireRequestUser(): Promise<User> {
 }
 
 /**
- * Shared DB user profile — covers every field needed by Navbar + AppSidebar.
+ * Shared DB user profile - covers every field needed by Navbar + AppSidebar.
  * React.cache ensures only one Prisma query per request, regardless of how
  * many layout components call this.
  */

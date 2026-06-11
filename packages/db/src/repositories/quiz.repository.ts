@@ -6,7 +6,7 @@ export interface QuizOption {
   text: string;
 }
 
-/** Client-safe question shape (NO correctOptionId — never selected at serve). */
+/** Client-safe question shape (NO correctOptionId - never selected at serve). */
 export interface DrawableQuestion {
   id: string;
   question: string;
@@ -38,7 +38,7 @@ export const quizRepository = {
     return prisma.quizQuestion.count({ where: { quizId, isActive: true } });
   },
 
-  /** SERVE: the select intentionally OMITS correctOptionId — the answer key
+  /** SERVE: the select intentionally OMITS correctOptionId - the answer key
    *  never leaves Prisma at draw time. */
   async findActiveQuestionsForDraw(quizId: string): Promise<DrawableQuestion[]> {
     const rows = await prisma.quizQuestion.findMany({
@@ -142,7 +142,7 @@ export const quizRepository = {
     });
   },
 
-  /** Admin question list — includes correctOptionId (the admin edits the key). */
+  /** Admin question list - includes correctOptionId (the admin edits the key). */
   findQuestionsAdmin(quizId: string) {
     return prisma.quizQuestion.findMany({
       where: { quizId },

@@ -4,7 +4,7 @@ import { prisma } from "@cyberlearn/db";
 import { Redis } from "@upstash/redis";
 
 // Vercel Cron: runs every 6 hours (see vercel.json).
-// Keeps Supabase and Upstash warm — Supabase Free pauses after 7 days of inactivity.
+// Keeps Supabase and Upstash warm - Supabase Free pauses after 7 days of inactivity.
 
 function isAuthorized(req: NextRequest): boolean {
   const auth = req.headers.get("authorization");
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     redis: "unknown" as "ok" | "error" | "unknown",
   };
 
-  // Ping Postgres (Supabase) — minimal query to keep the DB warm
+  // Ping Postgres (Supabase) - minimal query to keep the DB warm
   try {
     await prisma.$queryRaw`SELECT 1`;
     results.postgres = "ok";
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Ping Redis (Upstash) — minimal GET to keep the instance warm
+  // Ping Redis (Upstash) - minimal GET to keep the instance warm
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (url && token) {

@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 import { cn } from "../lib/utils.js";
 
 interface NotificationBellProps {
-  /** Number of unread notifications — hides the badge when 0 */
+  /** Number of unread notifications - hides the badge when 0 */
   unreadCount?: number;
   /** Called when the bell icon is clicked */
   onClick?: () => void;

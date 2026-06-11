@@ -34,7 +34,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
 
       {/* Cards */}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {/* ── Export — Art. 20 ─────────────────────────────────────────────── */}
+        {/* ── Export - Art. 20 ─────────────────────────────────────────────── */}
         <div
           style={{
             position: "relative",
@@ -153,7 +153,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
           <ExportDataButton />
         </div>
 
-        {/* ── Suppression — Art. 17 ────────────────────────────────────────── */}
+        {/* ── Suppression - Art. 17 ────────────────────────────────────────── */}
         <DeleteAccountSection
           pendingExpiresAt={activeToken?.expiresAt.toISOString() ?? null}
           certificateCount={certificateCount}

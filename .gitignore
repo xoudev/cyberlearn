@@ -22,7 +22,7 @@ packages/db/prisma/**/*.d.ts
 packages/db/prisma/**/*.js.map
 packages/db/prisma/**/*.d.ts.map
 
-# Environment files — NEVER commit real env files
+# Environment files: NEVER commit real env files
 .env
 .env.local
 .env.*.local
@@ -67,5 +67,5 @@ test-results/
 # NOTE: do NOT re-add a broad `/docs` ignore. It was introduced in 1f83cd3 to
 # keep then-local hardening notes untracked, but it silently ignored every NEW
 # file under docs/ (runbooks, design sources) while the already-tracked ones
-# stayed tracked — a trap. Nothing under docs/ is generated output; if a
+# stayed tracked (a trap). Nothing under docs/ is generated output; if a
 # generator ever lands, ignore its exact output subdirectory only.

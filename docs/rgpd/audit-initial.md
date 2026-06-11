@@ -1,4 +1,4 @@
-# Audit RGPD initial — Cyber Learn
+# Audit RGPD initial - Cyber Learn
 
 Date : 2026-05-23
 Methodologie : audit automatise du codebase (grep/find sur apps/, packages/, schema.prisma,
@@ -45,7 +45,7 @@ Politique de confidentialite.
 
 ### Composant
 
-`apps/web/components/cookie-banner.tsx` — banniere fixee en bas de page, cote client (`"use client"`).
+`apps/web/components/cookie-banner.tsx` - banniere fixee en bas de page, cote client (`"use client"`).
 
 ### Flow complet
 
@@ -71,7 +71,7 @@ Politique de confidentialite.
 
 **Rien n'est actuellement gate par ce consentement.** Coherent car il n'y a ni analytics (Q1), ni
 Sentry actif (Q2). La banniere informe l'utilisateur de l'existence de cookies strictement necessaires
-(authentification, preferences) — aucun service opt-in a activer.
+(authentification, preferences) - aucun service opt-in a activer.
 
 ### Contenu de la banniere (texte actuel)
 
@@ -94,7 +94,7 @@ Lien : `/legal/cgu#cookies`
 | `displayName`  | VarChar(64)         | Nom affiche                                  | Moyenne     |
 | `avatarUrl`    | String?             | URL avatar (GitHub OAuth ou upload)          | Faible      |
 | `bio`          | VarChar(280)?       | Bio publique optionnelle                     | Faible      |
-| `role`         | UserRole            | STUDENT/ADMIN — controle d'acces             | Moyenne     |
+| `role`         | UserRole            | STUDENT/ADMIN - controle d'acces             | Moyenne     |
 | `xpTotal`      | Int                 | Gamification                                 | Faible      |
 | `level`        | Int                 | Gamification                                 | Faible      |
 | `streakDays`   | Int                 | Gamification                                 | Faible      |
@@ -110,7 +110,7 @@ Preferences non sensibles : theme, locale, flags email-notifications, publicProf
 | Champ        | Stocke ?        | Commentaire                                              |
 |--------------|-----------------|----------------------------------------------------------|
 | `email`      | **Oui**         | Email saisi dans le formulaire (peut etre different de l'email de compte) |
-| `message`    | **Oui (Text)**  | Contenu libre — peut contenir des donnees personnelles   |
+| `message`    | **Oui (Text)**  | Contenu libre - peut contenir des donnees personnelles   |
 | `subject`    | Oui             | VarChar(200)                                             |
 | `ipAddress`  | **Non** (NULL)  | Champ existe dans schema (`// SHA-256 hashed (GDPR)`) mais le code `submitContactAction` ne le peuple pas actuellement |
 | `userAgent`  | **Non** (NULL)  | Meme situation                                           |
@@ -120,7 +120,7 @@ Preferences non sensibles : theme, locale, flags email-notifications, publicProf
 | Champ        | Valeur stockee       | Commentaire                                   |
 |--------------|----------------------|-----------------------------------------------|
 | `ipAddress`  | SHA-256 + IP_SALT    | Pseudonymise par schema design                |
-| `userAgent`  | VarChar(500)         | Stocke en clair — navigateur/OS, pas de PII directe |
+| `userAgent`  | VarChar(500)         | Stocke en clair - navigateur/OS, pas de PII directe |
 | `actorId`    | UUID reference User  | Indirectement identifiant                     |
 
 ### Autres modeles avec user-generated content
@@ -174,7 +174,7 @@ Detection : `package.json` de tous les workspaces + `.env.example`.
 | **Jira (Atlassian)**    | Ticketing contact (email + message)        | US/EU Cloud      | A verifier   |
 
 Note : Cloudflare Turnstile est configure (env var presente) mais l'implementation cote serveur
-n'est pas finalisee — le commentaire dans `contact-actions.ts:45` indique "added in a future phase".
+n'est pas finalisee - le commentaire dans `contact-actions.ts:45` indique "added in a future phase".
 
 ---
 
@@ -190,7 +190,7 @@ URL du pooler (confirme la region) :
 aws-1-eu-central-1.pooler.supabase.com
 ```
 
-**Region : eu-central-1 — Francfort, Allemagne (UE)**
+**Region : eu-central-1 - Francfort, Allemagne (UE)**
 
 Toutes les donnees personnelles stockees dans Supabase Postgres restent dans l'UE. Conforme
 RGPD Art. 44 (pas de transfert hors EEE pour ce sous-traitant).
@@ -202,7 +202,7 @@ RGPD Art. 44 (pas de transfert hors EEE pour ce sous-traitant).
 | Endpoint                                      | IP lue | Stockage IP          | UA lu | Stockage UA |
 |-----------------------------------------------|--------|----------------------|-------|-------------|
 | `app/(auth)/login/actions.ts:34`              | Oui    | Redis (pseudonymise) | Non   | N/A         |
-| `app/contact/_actions/contact-actions.ts:44`  | Oui    | Redis (pseudonymise) | Non   | N/A — champ existe dans schema mais non peuple |
+| `app/contact/_actions/contact-actions.ts:44`  | Oui    | Redis (pseudonymise) | Non   | N/A - champ existe dans schema mais non peuple |
 | `lib/rate-limit.ts` (general)                 | Oui    | Redis (pseudonymise) | Non   | N/A         |
 | `admin/lib/rate-limit.ts`                     | Oui    | Redis (pseudonymise) | Non   | N/A         |
 
@@ -217,52 +217,52 @@ RGPD Art. 44 (pas de transfert hors EEE pour ce sous-traitant).
 
 ### Obligatoires (non-conformite RGPD directe)
 
-1. **Page Politique de confidentialite manquante** (`/legal/privacy`) — Art. 13 RGPD : information
+1. **Page Politique de confidentialite manquante** (`/legal/privacy`) - Art. 13 RGPD : information
    des personnes au moment de la collecte. Doit couvrir : donnees collectees, finalites, sous-traitants,
    durees de conservation, droits des personnes, DPO ou point de contact.
 
-2. **Mentions legales manquantes** — obligation legale francaise (LCEN Art. 6). Doit contenir :
+2. **Mentions legales manquantes** - obligation legale francaise (LCEN Art. 6). Doit contenir :
    editeur, hebergeur, directeur de publication.
 
-3. **Footer : lien Politique de confidentialite absent** — requis pour que les utilisateurs
+3. **Footer : lien Politique de confidentialite absent** - requis pour que les utilisateurs
    puissent y acceder facilement (CNIL recommandation).
 
-4. **Durees de conservation non definies** — Art. 5(1)(e) RGPD (limitation de conservation).
+4. **Durees de conservation non definies** - Art. 5(1)(e) RGPD (limitation de conservation).
    A definir au minimum pour : User (jusqu'a suppression), ContactTicket, AuditLog, ReviewSchedule.
 
-5. **Droit a l'effacement (Art. 17) non implemente** — pas de route "Supprimer mon compte".
+5. **Droit a l'effacement (Art. 17) non implemente** - pas de route "Supprimer mon compte".
    Suppression Supabase auth.users + cascade Prisma necessaire.
 
 ### Importants (bonne pratique / risque modere)
 
-6. **Droit a la portabilite (Art. 20) absent** — pas d'export JSON/CSV des donnees personnelles.
+6. **Droit a la portabilite (Art. 20) absent** - pas d'export JSON/CSV des donnees personnelles.
 
-7. **Droit d'acces complet (Art. 15) partiel** — profil editable (username, bio, avatar) mais pas
+7. **Droit d'acces complet (Art. 15) partiel** - profil editable (username, bio, avatar) mais pas
    de vue exhaustive de toutes les donnees stockees sur l'utilisateur.
 
-8. **DPA sous-traitants non confirmes** — Resend, Upstash, Cloudflare Turnstile, Jira : verifier
+8. **DPA sous-traitants non confirmes** - Resend, Upstash, Cloudflare Turnstile, Jira : verifier
    que chaque sous-traitant a signe un DPA (Data Processing Agreement) valide ou que les SCCs
    (Standard Contractual Clauses) sont en place pour les transferts hors UE.
 
-9. **Gestion des cookies : lien absent du footer** — bouton/lien "Gerer les cookies" permettant
+9. **Gestion des cookies : lien absent du footer** - bouton/lien "Gerer les cookies" permettant
    de modifier son choix ulterieurement.
 
 ### A surveiller (risque futur)
 
-10. **Sentry : activation future** — si `SENTRY_DSN` est configure, ajouter : scrubbing PII
+10. **Sentry : activation future** - si `SENTRY_DSN` est configure, ajouter : scrubbing PII
     (`beforeSend`), DPA Sentry, mise a jour PP.
 
-11. **ContactTicket.ipAddress non peuple** — incoherence entre schema (champ prevu) et code (non
+11. **ContactTicket.ipAddress non peuple** - incoherence entre schema (champ prevu) et code (non
     implemente). Soit supprimer le champ, soit implementer le hachage (identique a rate-limit).
 
-12. **Cloudflare Turnstile** — quand l'implementation sera finalisee, ajouter Cloudflare a la
+12. **Cloudflare Turnstile** - quand l'implementation sera finalisee, ajouter Cloudflare a la
     liste des sous-traitants dans la PP.
 
 ---
 
 ## Statut au 23/05/2026
 
-### Gaps obligatoires — RESOLUS par PR 2.2 (feat/rgpd-pages-legales)
+### Gaps obligatoires - RESOLUS par PR 2.2 (feat/rgpd-pages-legales)
 
 - Page `/privacy` (Politique de confidentialite) creee avec durées de conservation, sous-traitants, droits utilisateur, cookies.
 - Page `/legal` (Mentions legales) creee : editeur non-professionnel, hebergeur Vercel, PI, droit applicable.
@@ -271,7 +271,7 @@ RGPD Art. 44 (pas de transfert hors EEE pour ce sous-traitant).
 - Durees de conservation declarees dans la PP et le registre.
 - Middleware mis a jour : `/legal` et `/privacy` ajoutes aux routes publiques.
 
-### Art. 17 (droit à l'effacement) — RESOLU par PR 2.4.B (feat/rgpd-deletion-*)
+### Art. 17 (droit à l'effacement) - RESOLU par PR 2.4.B (feat/rgpd-deletion-*)
 
 - Schema + RLS : PR 2.4.B.1 (feat/rgpd-deletion-schema)
 - Endpoints + email + token flow : PR 2.4.B.2 (feat/rgpd-deletion-endpoints)
@@ -284,7 +284,7 @@ Implémentation :
 - /settings/data : Server Component + DeleteAccountSection client avec Dialog de confirmation
 - /account/delete/error et /success : pages HUD design
 
-### Art. 20 (portabilite) — RESOLU par PR 2.4.A (feat/rgpd-export)
+### Art. 20 (portabilite) - RESOLU par PR 2.4.A (feat/rgpd-export)
 
 - Endpoint GET /api/me/export retourne JSON exhaustif avec les donnees du user (16 modeles Prisma, AuditLog exclu).
 - Rate limit 1 export par userId par 24h (sliding window Upstash, prefix "rl:export").
@@ -296,7 +296,7 @@ Implémentation :
 - Refactor : pseudonymize() extrait dans apps/web/lib/pseudonymize.ts (etait prive dans rate-limit.ts).
 - /privacy Section 7 mise a jour : mention "a venir" retiree pour l'export, conservee pour la suppression (PR 2.4.B).
 
-### Q3 — Cookie banner — RESOLU par PR 2.3 (feat/cookie-banner-notice)
+### Q3 - Cookie banner - RESOLU par PR 2.3 (feat/cookie-banner-notice)
 
 - Banner refactore en notice de transparence mono-bouton (J'AI COMPRIS).
 - cl_consent valeur "acknowledged" au lieu de "accepted/rejected".
@@ -305,13 +305,13 @@ Implémentation :
 - legal/cgu/page.tsx : "cookie de consentement" corrige en "cookie de notice".
 - Coherent avec Q1 (aucun analytics) et Q2 (Sentry inactif) : aucun service opt-in a activer.
 
-### Audit logs serveur — RESOLU par PR 2.5 (security/rgpd-logging-audit)
+### Audit logs serveur - RESOLU par PR 2.5 (security/rgpd-logging-audit)
 
 Audit exhaustif de toutes les occurrences console.* et auditLog.create dans
 apps/web/ et packages/db/. 18 call-sites console + 4 auditLog.create analyses.
 
 Classification :
-- A (SAFE) : 15 call-sites — aucun PII, ou dev-only, ou donnees deja pseudonymisees
+- A (SAFE) : 15 call-sites - aucun PII, ou dev-only, ou donnees deja pseudonymisees
 - B (LEAK) : 2 call-sites dans packages/db/prisma/reset-user.ts (script dev)
   - Ligne 25 : email passe en arg CLI loggue → remplace par message generique
   - Ligne 29 : displayName ?? email loggue → remplace par UUID seul
@@ -326,7 +326,7 @@ auditLog.create : 4 call-sites, tous conformes (IPs pseudonymisees HMAC-SHA256).
 
 Convention formalisee dans docs/security/logging.md.
 
-### Gaps restants — traces dans docs/backlog/post-v1.md
+### Gaps restants - traces dans docs/backlog/post-v1.md
 
 - Droits utilisateur backend (export, suppression, anonymisation) : PR 2.4.
 - Jobs de purge automatique des logs : PR 2.4 ou post-launch.

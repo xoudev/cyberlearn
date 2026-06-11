@@ -69,7 +69,7 @@ function getRedis(): Redis | null {
   if (!url || !token) {
     if (!_warnedMissing) {
       console.warn(
-        "[rate-limit] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not configured — rate limiting disabled (fail-open).",
+        "[rate-limit] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not configured - rate limiting disabled (fail-open).",
       );
       _warnedMissing = true;
     }

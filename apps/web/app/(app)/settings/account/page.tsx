@@ -66,7 +66,7 @@ function AccountRow({
 export default async function AccountSettingsPage(): Promise<React.JSX.Element> {
   const user = await requireRequestUser();
 
-  const email = user.email ?? "—";
+  const email = user.email ?? "-";
   const verified = Boolean(user.email_confirmed_at);
   const providers = [...new Set((user.identities ?? []).map((i) => i.provider))];
   const methodLabel =
@@ -114,7 +114,7 @@ export default async function AccountSettingsPage(): Promise<React.JSX.Element> 
         >
           Ton compte utilise une authentification{" "}
           <span style={{ color: S.fg2 }}>sans mot de passe</span>. Chaque connexion génère un lien à
-          usage unique — il n&apos;y a ni mot de passe ni double authentification à gérer.
+          usage unique - il n&apos;y a ni mot de passe ni double authentification à gérer.
         </p>
       </SettingsCard>
     </div>

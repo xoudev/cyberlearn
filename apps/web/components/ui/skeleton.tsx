@@ -16,9 +16,9 @@ function resolveRadius(radius: Radius | undefined): string | number | undefined 
 }
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Convenience width — number is treated as px, string as a CSS length. */
+  /** Convenience width - number is treated as px, string as a CSS length. */
   w?: number | string;
-  /** Convenience height — number is treated as px, string as a CSS length. */
+  /** Convenience height - number is treated as px, string as a CSS length. */
   h?: number | string;
   /** Border-radius shorthand: "pill", "circle", or a px value. */
   radius?: Radius;
@@ -26,7 +26,7 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 
 /**
  * The single shared shimmer block. Size it with `w`/`h` (or `style`); every
- * loading state in the app composes this primitive — no per-page shimmer.
+ * loading state in the app composes this primitive - no per-page shimmer.
  */
 function Skeleton({ className, w, h, radius, style, ...props }: SkeletonProps): React.ReactElement {
   return (
@@ -72,7 +72,7 @@ interface SkeletonTextProps {
   style?: React.CSSProperties;
 }
 
-/** A stack of text lines (full width, short last line) — the common paragraph. */
+/** A stack of text lines (full width, short last line) - the common paragraph. */
 function SkeletonText({
   lines = 3,
   lastWidth = "60%",

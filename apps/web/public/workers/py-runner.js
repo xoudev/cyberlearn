@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * Shared Python Web Worker — handles two protocols dispatched by message shape:
+ * Shared Python Web Worker - handles two protocols dispatched by message shape:
  *
  * Run mode (CodePlayground):
  *   inbound:  { id, code }
@@ -17,7 +17,7 @@
  * Hardening: ALL neutralizations (network, storage, addEventListener
  * freeze, onmessage/onerror freeze) run INSIDE loadPyodide().then(),
  * AFTER Pyodide has fully initialized. Pyodide itself calls
- * self.addEventListener("message") internally during its async boot —
+ * self.addEventListener("message") internally during its async boot -
  * freezing before that completes kills the init Promise.
  *
  * Message handler hardening (defense against validation bypass):
@@ -26,15 +26,15 @@
  *   - self.addEventListener overridden to throw for "message" /
  *     "messageerror" types (capture-phase bypass vector closed)
  *   - self.onmessage frozen via defineProperty (writable:false,
- *     configurable:false) — property assignment override prevented
- *   - self.onerror frozen similarly — error swallowing prevented
+ *     configurable:false) - property assignment override prevented
+ *   - self.onerror frozen similarly - error swallowing prevented
  *   - Real handler registered via saved _addListener, inaccessible
  *     to user code running inside runPythonAsync(...)
- *   - All freezes applied AFTER loadPyodide() — Pyodide needs
+ *   - All freezes applied AFTER loadPyodide() - Pyodide needs
  *     addEventListener during its own async init sequence.
  */
 
-// Save the original before importScripts — Pyodide must not affect this reference.
+// Save the original before importScripts - Pyodide must not affect this reference.
 const _addListener = self.addEventListener.bind(self);
 
 // importScripts must run at top level, before any neutralization.
@@ -45,11 +45,11 @@ let pyodideReady = null;
 function initPyodide() {
   if (!pyodideReady) {
     pyodideReady = loadPyodide({ indexURL: "/runtimes/pyodide/" }).then((py) => {
-      // ── Hardening — ALL neutralizations AFTER loadPyodide() completes ───────
+      // ── Hardening - ALL neutralizations AFTER loadPyodide() completes ───────
       // Pyodide uses fetch/importScripts/addEventListener during boot;
       // safe to block only after init.
 
-      // 1. Network APIs — block any outbound call from user code
+      // 1. Network APIs - block any outbound call from user code
       self.fetch = () => {
         throw new Error("Network access is not allowed in challenge code.");
       };
@@ -63,7 +63,7 @@ function initPyodide() {
         throw new Error("Network access is not allowed in challenge code.");
       };
 
-      // 1b. sendBeacon — not in WorkerNavigator spec but defensively blocked;
+      // 1b. sendBeacon - not in WorkerNavigator spec but defensively blocked;
       //     some Chromium versions have exposed it on navigator in Workers.
       if (typeof self.navigator !== "undefined" && self.navigator.sendBeacon) {
         self.navigator.sendBeacon = () => {
@@ -71,16 +71,16 @@ function initPyodide() {
         };
       }
 
-      // 2. Storage APIs — prevent cross-challenge state pollution
+      // 2. Storage APIs - prevent cross-challenge state pollution
       self.indexedDB = undefined;
       self.caches = undefined;
 
-      // 3. Dynamic script loading — prevent loading arbitrary code mid-run
+      // 3. Dynamic script loading - prevent loading arbitrary code mid-run
       self.importScripts = () => {
         throw new Error("Dynamic script loading is not allowed.");
       };
 
-      // 4. Python-level micropip block — fetch neutralization above already
+      // 4. Python-level micropip block - fetch neutralization above already
       //    prevents network calls, but this gives a clean ImportError at import
       //    time rather than a fetch error.
       py.runPython(`
@@ -100,7 +100,7 @@ del _BlockedImport
 `);
 
       // 5. Block capture-phase message listener injection from user code.
-      //    Must run AFTER loadPyodide() — Pyodide calls addEventListener
+      //    Must run AFTER loadPyodide() - Pyodide calls addEventListener
       //    internally during its async initialization sequence.
       //    Two vectors closed:
       //    a) Own property frozen (configurable:false) → delete self.addEventListener fails
@@ -127,7 +127,7 @@ del _BlockedImport
         // Skip if prototype property is already non-configurable in this engine
       }
 
-      // 6. Freeze onmessage and onerror — property assignment cannot override them.
+      // 6. Freeze onmessage and onerror - property assignment cannot override them.
       Object.defineProperty(self, "onmessage", {
         value: null,
         writable: false,
@@ -155,7 +155,7 @@ async function handleMessage(event) {
   const { id, code, tests } = event.data;
 
   if (Array.isArray(tests)) {
-    // ── Test mode — PythonChallenge protocol ──────────────────────────────────
+    // ── Test mode - PythonChallenge protocol ──────────────────────────────────
     // Inbound:  { id, code, tests: TestCase[] }
     // Outbound: { id, results: TestResult[] }
     let py;
@@ -205,7 +205,7 @@ async function handleMessage(event) {
     }
     self.postMessage({ id, results });
   } else {
-    // ── Run mode — CodePlayground protocol ────────────────────────────────────
+    // ── Run mode - CodePlayground protocol ────────────────────────────────────
     // Inbound:  { id, code }
     // Outbound: { id, output, error }
     const output = [];
@@ -221,5 +221,5 @@ async function handleMessage(event) {
   }
 }
 
-// Real handler — registered via saved original, invisible to user code.
+// Real handler - registered via saved original, invisible to user code.
 _addListener("message", handleMessage);

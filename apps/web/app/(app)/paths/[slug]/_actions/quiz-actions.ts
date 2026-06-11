@@ -67,7 +67,7 @@ export async function startQuizAttempt(pathId: string): Promise<StartQuizResult>
   const latest = await quizRepository.findLatestAttempt(user.id, quiz.id);
 
   // Time-limit guard (resume side): an in-progress attempt whose timer expired
-  // while the learner was away is finalized as failed — closing the tab cannot
+  // while the learner was away is finalized as failed - closing the tab cannot
   // dodge the chrono. The cooldown then applies.
   if (latest && isExpired(latest, now, EXAM_TIME_LIMIT_MINUTES)) {
     await quizRepository.updateAttemptResult(latest.id, {
@@ -159,7 +159,7 @@ export async function submitQuizAttempt(
   const drawnIds = readDrawnIds(attempt.answers);
   if (drawnIds.length === 0) return { ok: false, error: "Tentative corrompue." };
 
-  // Server-authoritative set (includes correctOptionId) — never returned to the client.
+  // Server-authoritative set (includes correctOptionId) - never returned to the client.
   const drawn = await quizRepository.findQuestionsByIds(drawnIds);
 
   // Reject any questionId outside the draw or any invalid optionId (zero trust).
@@ -173,7 +173,7 @@ export async function submitQuizAttempt(
   const { score, results } = scoreSubmission(drawn, parsedAnswers.data);
   const passed = isPassed(score, threshold);
 
-  // Stored answers: selection + correct/incorrect only — NEVER correctOptionId.
+  // Stored answers: selection + correct/incorrect only - NEVER correctOptionId.
   const responses = results.map((r) => ({
     questionId: r.questionId,
     selected: r.selected,
@@ -185,7 +185,7 @@ export async function submitQuizAttempt(
     answers: { drawnQuestionIds: drawnIds, responses },
   });
 
-  // PERFECT_QUIZ badges hook on the freshly persisted attempt — NOT inside
+  // PERFECT_QUIZ badges hook on the freshly persisted attempt - NOT inside
   // issueCertificate, whose gates (lessons complete + first issuance) would
   // miss a perfect score on a retake. Idempotent across retakes by construction.
   if (score === 100) {

@@ -191,7 +191,7 @@ export function ExamFlow(props: Props): React.JSX.Element {
     [attemptId, answers, deadlineMs, timeLimitMinutes, router],
   );
 
-  // Countdown — anchored to the server startedAt (via deadlineMs). Auto-submits at 0.
+  // Countdown, anchored to the server startedAt (via deadlineMs). Auto-submits at 0.
   useEffect(() => {
     if (phase !== "taking" || deadlineMs === null) return;
     const tick = () => {
@@ -347,7 +347,7 @@ function IntroScreen(props: {
   else if (!lessonsComplete)
     statusNote = "Termine toutes les leçons du parcours pour débloquer l'examen.";
   else if (cooldownUntilMs !== null)
-    statusNote = "Examen déjà passé récemment — réessaie après le délai d'attente (48 h).";
+    statusNote = "Examen déjà passé récemment : réessaie après le délai d'attente (48 h).";
 
   return (
     <div className="exam-root">
@@ -892,7 +892,7 @@ function ResultsScreen(props: {
               <p className="r-status__desc">
                 {passed ? (
                   <>
-                    {"Bien joué — tu dépasses le seuil de réussite de "}
+                    {"Bien joué, tu dépasses le seuil de réussite de "}
                     <b>{passThreshold} %</b>
                     {". Le parcours est désormais "}
                     <span className="ac">certifié</span>.
@@ -901,7 +901,7 @@ function ResultsScreen(props: {
                   <>
                     {`Il te manque ${String(Math.abs(delta))} points pour valider. Le seuil de réussite est de `}
                     <span className="ac">{passThreshold} %</span>
-                    {" — révise puis retente après le délai d'attente."}
+                    {" : révise puis retente après le délai d'attente."}
                   </>
                 )}
               </p>
@@ -995,7 +995,7 @@ function ResultsScreen(props: {
                     <span>
                       {"Une seule tentative par session. Nouvelle tentative possible après le "}
                       <b>{"délai d'attente de 48 h"}</b>
-                      {" — révise les modules avant de réessayer."}
+                      {" : révise les modules avant de réessayer."}
                     </span>
                   </div>
                 </>
@@ -1152,7 +1152,7 @@ function ReviewRow(props: {
           })}
           {item.selected === null && (
             <div className="r-ans r-ans--chosen-wrong">
-              <span className="r-ans__key">—</span>
+              <span className="r-ans__key">-</span>
               <span className="r-ans__text">Aucune réponse donnée</span>
               <span className="r-ans__tag">Ta réponse</span>
             </div>

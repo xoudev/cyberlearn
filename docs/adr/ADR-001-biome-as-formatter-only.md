@@ -1,4 +1,4 @@
-# ADR-001 — Biome as formatter only (ESLint for linting)
+# ADR-001 - Biome as formatter only (ESLint for linting)
 
 **Date**: 2026-04-14
 **Status**: Accepted
@@ -24,7 +24,7 @@ This is the standard split adopted by the broader ecosystem:
 
 ## Consequences
 
-- `pnpm format` / `pnpm format:check` — Biome only (formatting)
-- `pnpm lint` — ESLint only (code quality)
+- `pnpm format` / `pnpm format:check` - Biome only (formatting)
+- `pnpm lint` - ESLint only (code quality)
 - No rule conflicts between the two tools
 - Biome's linting capabilities are not used; if they become notably superior to ESLint in a specific area, this decision should be revisited

@@ -59,7 +59,7 @@ export async function requireAdmin(supabase: {
   const user = await requireUser(supabase);
 
   if (user.role !== "ADMIN") {
-    // 404 instead of 403 — do not reveal that this route exists to non-admins
+    // 404 instead of 403 - do not reveal that this route exists to non-admins
     notFound();
   }
 

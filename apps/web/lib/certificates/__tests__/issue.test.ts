@@ -96,7 +96,7 @@ beforeEach(() => {
   m.tx.user.findUniqueOrThrow.mockResolvedValue({ xpTotal: 0 });
 });
 
-describe("issueCertificate — gate + idempotence guards", () => {
+describe("issueCertificate - gate + idempotence guards", () => {
   it("no-op when lessons are not complete (no cert created)", async () => {
     m.areLessonsComplete.mockResolvedValue(false);
     m.findProgress.mockResolvedValue(null);
@@ -159,7 +159,7 @@ describe("issueCertificate — gate + idempotence guards", () => {
   });
 });
 
-describe("issueCertificate — path badge awarding through the shared helper", () => {
+describe("issueCertificate - path badge awarding through the shared helper", () => {
   it("inserts the badge, credits its xpReward and notifies with the xp in metadata", async () => {
     m.areLessonsComplete.mockResolvedValue(true);
     m.findProgress.mockResolvedValue(null);

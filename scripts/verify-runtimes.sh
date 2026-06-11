@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
-# verify-runtimes.sh — CI integrity check for bundled runtime files
+# verify-runtimes.sh - CI integrity check for bundled runtime files
 #
 # Recomputes SHA-256 hashes of the committed runtime files in
 # apps/web/public/runtimes/ and fails if any mismatch is detected.
 #
-# Run in CI after checkout (no network access needed — checks committed files).
+# Run in CI after checkout (no network access needed - checks committed files).
 # =============================================================================
 set -euo pipefail
 
@@ -50,7 +50,7 @@ check_file "${JSCPP}/bundle.js"             "326e3d3c6aef358db734f8d8a1b053e1305
 # ─────────────────────────────────────────────────────────────────────────────
 if [[ $FAILED -ne 0 ]]; then
   echo ""
-  echo "Runtime integrity check FAILED — files may have been tampered with or are outdated."
+  echo "Runtime integrity check FAILED - files may have been tampered with or are outdated."
   exit 1
 fi
 

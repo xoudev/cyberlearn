@@ -8,7 +8,7 @@ import { notificationRepository } from "@cyberlearn/db";
 import { NotificationPanel } from "./notification-panel";
 
 // ── Glyph avatar helper ────────────────────────────────────────────────────────
-// avatarUrl stored as "__glyph:{name}" — never pass to next/image
+// avatarUrl stored as "__glyph:{name}" - never pass to next/image
 
 const GLYPH_PATHS: Record<string, string> = {
   skull:
@@ -73,7 +73,7 @@ export async function Navbar(): Promise<React.ReactElement> {
       unreadCount = await notificationRepository.findUnreadCount(userId);
     }
   } catch {
-    // Unauthenticated or DB error — render with fallback values
+    // Unauthenticated or DB error - render with fallback values
   }
 
   return (
@@ -95,7 +95,7 @@ export async function Navbar(): Promise<React.ReactElement> {
       {/* ── Sidebar trigger (hamburger) ─────────────────────────────────── */}
       <SidebarTrigger style={{ width: 26, height: 26, flexShrink: 0 }} />
 
-      {/* ── Mobile logo — only shown when sidebar is hidden in drawer ────── */}
+      {/* ── Mobile logo - only shown when sidebar is hidden in drawer ────── */}
 
       {/* ── Search (hidden on mobile) ───────────────────────────────────── */}
       <form

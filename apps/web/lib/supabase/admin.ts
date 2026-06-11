@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 
 /**
  * Supabase admin client (service_role).
- * Use ONLY server-side for privileged operations — never expose to the client.
+ * Use ONLY server-side for privileged operations - never expose to the client.
  * autoRefreshToken / persistSession disabled: this is a one-shot server call.
  */
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

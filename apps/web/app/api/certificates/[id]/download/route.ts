@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const BUCKET = "certificates";
-const SIGNED_TTL = 60; // 60 seconds — short-lived to limit forwarding window
+const SIGNED_TTL = 60; // 60 seconds - short-lived to limit forwarding window
 
 export async function GET(
   _request: Request,
@@ -19,7 +19,7 @@ export async function GET(
   } = await supabase.auth.getUser();
   if (!user) return new Response(null, { status: 404 });
 
-  // Ownership + revocation checked in a single query — no sequential disclosure
+  // Ownership + revocation checked in a single query - no sequential disclosure
   const cert = await prisma.certificate.findFirst({
     where: { id, userId: user.id, revokedAt: null },
     select: { pdfStorageKey: true, path: { select: { title: true } } },

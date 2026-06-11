@@ -12,7 +12,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const path = await prisma.path.findUnique({ where: { slug }, select: { title: true } });
-  return { title: path ? `Examen — ${path.title}` : "Examen" };
+  return { title: path ? `Examen : ${path.title}` : "Examen" };
 }
 
 export default async function ExamPage({

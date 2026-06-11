@@ -7,7 +7,7 @@ export type LessonDifficulty = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPER
 export type LessonStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 export type LessonCategory = "CYBERSEC" | "DEV" | "NETWORK";
 
-// ── Design tokens — per CatalogGrid.jsx / catalog.css reference ───────────────
+// ── Design tokens - per CatalogGrid.jsx / catalog.css reference ───────────────
 
 const CAT_META = {
   DEV: {
@@ -59,7 +59,7 @@ const STATUS_META = {
   COMPLETED: { label: "TERMINÉ", color: "#0AFFD4" },
 } satisfies Record<LessonStatus, { label: string; color: string }>;
 
-// ── Category SVG icons — 64×64 from CatalogGrid.jsx reference ─────────────────
+// ── Category SVG icons - 64×64 from CatalogGrid.jsx reference ─────────────────
 
 const SVG_BASE: CSSProperties = { display: "block" };
 const iconStroke = {
@@ -189,7 +189,7 @@ interface LessonCardProps {
   totalSections?: number | undefined;
   /** "catalog" = full card with cover; "compact" = minimal list card */
   variant?: "catalog" | "compact" | undefined;
-  /** Client-only: wrap with arbitrary JSX. Cannot be passed from Server Components — use <Link><LessonCard /></Link> pattern instead. */
+  /** Client-only: wrap with arbitrary JSX. Cannot be passed from Server Components - use <Link><LessonCard /></Link> pattern instead. */
   wrapper?: ((children: ReactNode) => ReactNode) | undefined;
   className?: string | undefined;
 }
@@ -245,7 +245,7 @@ export function LessonCard({
   return wrapper ? <>{wrapper(card)}</> : card;
 }
 
-// ── Catalog card — full reference design ──────────────────────────────────────
+// ── Catalog card - full reference design ──────────────────────────────────────
 
 function CatalogCard({
   title,
@@ -329,7 +329,7 @@ function CatalogCard({
         if (bar instanceof HTMLElement && !isInProgress) bar.style.opacity = "0";
       }}
     >
-      {/* Left category accent bar — appears on hover (always visible on in-progress) */}
+      {/* Left category accent bar - appears on hover (always visible on in-progress) */}
       <span
         data-accent-bar=""
         aria-hidden="true"
@@ -412,7 +412,7 @@ function CatalogCard({
           {catLabel}
         </span>
 
-        {/* Difficulty badge — parallelogram + bars */}
+        {/* Difficulty badge - parallelogram + bars */}
         <span
           style={{
             display: "inline-flex",
@@ -462,7 +462,7 @@ function CatalogCard({
             WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
           }}
         />
-        {/* Radial glow — per category */}
+        {/* Radial glow - per category */}
         <span
           aria-hidden="true"
           style={{
@@ -566,7 +566,7 @@ function CatalogCard({
         )}
       </div>
 
-      {/* ── Progress section — in-progress cards only ──────────────── */}
+      {/* ── Progress section - in-progress cards only ──────────────── */}
       {isInProgress &&
         totalSections !== undefined &&
         totalSections > 0 &&
@@ -698,7 +698,7 @@ function CatalogCard({
   );
 }
 
-// ── Compact card — minimal list view (used on dashboard, etc.) ────────────────
+// ── Compact card - minimal list view (used on dashboard, etc.) ────────────────
 
 function CompactCard({
   title,

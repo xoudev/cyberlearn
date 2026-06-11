@@ -28,7 +28,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
     xpNeeded = computed.needed;
     xpPercent = computed.needed > 0 ? Math.min((computed.current / computed.needed) * 100, 100) : 0;
   } catch {
-    // Unauthenticated edge case — sidebar renders with fallback zeros
+    // Unauthenticated edge case - sidebar renders with fallback zeros
   }
 
   return (

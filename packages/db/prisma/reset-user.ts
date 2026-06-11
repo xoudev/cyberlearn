@@ -1,5 +1,5 @@
 /**
- * Dev-only — resets a user's gamification state and progress.
+ * Dev-only - resets a user's gamification state and progress.
  * Run with: pnpm --filter @cyberlearn/db tsx prisma/reset-user.ts <email>
  *
  * Resets: XP, level, streak, all lesson progress, all earned badges, all notifications.

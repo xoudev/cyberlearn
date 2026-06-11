@@ -75,7 +75,7 @@ afterEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("POST /api/me/delete/request — auth", () => {
+describe("POST /api/me/delete/request - auth", () => {
   it("returns 401 when user is not authenticated", async () => {
     mockSupabase.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
     const res = await POST(makeRequest());
@@ -85,7 +85,7 @@ describe("POST /api/me/delete/request — auth", () => {
   });
 });
 
-describe("POST /api/me/delete/request — rate limit", () => {
+describe("POST /api/me/delete/request - rate limit", () => {
   it("returns 429 with Retry-After when rate limit exceeded", async () => {
     mockCheckDeletion.mockResolvedValueOnce(BLOCKED);
     const res = await POST(makeRequest());
@@ -106,7 +106,7 @@ describe("POST /api/me/delete/request — rate limit", () => {
   });
 });
 
-describe("POST /api/me/delete/request — user not found", () => {
+describe("POST /api/me/delete/request - user not found", () => {
   it("returns 404 when DB user does not exist", async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null);
     const res = await POST(makeRequest());
@@ -116,7 +116,7 @@ describe("POST /api/me/delete/request — user not found", () => {
   });
 });
 
-describe("POST /api/me/delete/request — happy path", () => {
+describe("POST /api/me/delete/request - happy path", () => {
   it("returns 202 with a message", async () => {
     const res = await POST(makeRequest());
     expect(res.status).toBe(202);
@@ -137,7 +137,7 @@ describe("POST /api/me/delete/request — happy path", () => {
   });
 });
 
-describe("POST /api/me/delete/request — requestDeletion failures", () => {
+describe("POST /api/me/delete/request - requestDeletion failures", () => {
   it("returns 502 when requestDeletion returns email_failed", async () => {
     mockRequestDeletion.mockResolvedValueOnce({ success: false, error: "email_failed" });
     const res = await POST(makeRequest());

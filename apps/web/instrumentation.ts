@@ -1,4 +1,4 @@
-// Next.js instrumentation file — Sentry SDK init for server + edge runtimes.
+// Next.js instrumentation file - Sentry SDK init for server + edge runtimes.
 // See: https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
 import * as Sentry from "@sentry/nextjs";

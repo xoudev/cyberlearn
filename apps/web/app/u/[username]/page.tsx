@@ -18,9 +18,9 @@ const CAT_META: Partial<Record<Category, { color: string; label: string }>> = {
   DEV: { color: "#6E8BFF", label: "Développement" },
   NETWORK: { color: "#0AFFD4", label: "Réseaux" },
 };
-const CAT_DEFAULT = { color: "#6B6890", label: "—" };
+const CAT_DEFAULT = { color: "#6B6890", label: "-" };
 
-/** Regular pointy-top hexagon — same canonical geometry as the badge medallion. */
+/** Regular pointy-top hexagon; same canonical geometry as the badge medallion. */
 const HEX_CLIP = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
 
 // Scoped responsive rules (inline styles can't express media queries).
@@ -184,7 +184,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
           </span>
         </div>
 
-        {/* ── Hero — player card ───────────────────────────────────────── */}
+        {/* ── Hero: player card ────────────────────────────────────────── */}
         <article
           style={{
             position: "relative",
@@ -509,7 +509,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
           ))}
         </div>
 
-        {/* ── Badges (earned-only — public showcase) ───────────────────── */}
+        {/* ── Badges (earned-only, public showcase) ────────────────────── */}
         {user.badges.length > 0 && (
           <section style={{ marginBottom: 56 }}>
             <SectionLabel
@@ -570,7 +570,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
                       lp.completedAt,
                     )
-                  : "—";
+                  : "-";
 
                 return (
                   <div

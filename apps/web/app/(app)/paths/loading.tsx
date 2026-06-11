@@ -106,7 +106,7 @@ export default function PathsLoading(): React.ReactElement {
           <Skeleton w={230} h={34} radius={0} style={{ marginLeft: "auto" }} />
         </div>
 
-        {/* "Reprendre" — hero active path */}
+        {/* "Reprendre" - hero active path */}
         <SectionLabelSkeleton />
         <Pc2Card
           style={{
@@ -190,7 +190,7 @@ export default function PathsLoading(): React.ReactElement {
           </div>
         </Pc2Card>
 
-        {/* "Progression" — secondary row: 3 equal cards */}
+        {/* "Progression" - secondary row: 3 equal cards */}
         <SectionLabelSkeleton />
         <div className="pc2-duo">
           {Array.from({ length: 3 }).map((_, i) => (

@@ -28,7 +28,7 @@ export interface PlacementActionState {
  * stores results, and grants prerequisite skip waivers.
  *
  * Security:
- * - Correct answers are fetched from the DB server-side — NEVER from the client
+ * - Correct answers are fetched from the DB server-side - NEVER from the client
  * - A user can only submit the placement test once (checked with findUnique)
  * - Scores are validated: 0 ≤ score ≤ 100
  * - No XP awarded, no lessons marked COMPLETED (brief requirement)

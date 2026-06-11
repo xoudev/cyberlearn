@@ -2,23 +2,23 @@
 
 ---
 
-## 2026-05-23 — Incident cascade login après merge PR 2.4.A
+## 2026-05-23 - Incident cascade login après merge PR 2.4.A
 
 ### Symptôme initial
 
 "An error occurred in the Server Components render" sur /login.
 Login email ET GitHub OAuth tous deux cassés en prod.
 
-### Diagnostic — 3 causes en cascade
+### Diagnostic - 3 causes en cascade
 
-**Cause 1 — Upstash Redis instance supprimée**
+**Cause 1 - Upstash Redis instance supprimée**
 
 - Module load throw : `[rate-limit] UPSTASH_REDIS_REST_URL must be set`
 - Instance cyberlearn-ratelimit auto-deleted après 14j inactivité (free tier)
 - Fix : Création nouvelle DB Upstash Frankfurt + env vars Vercel
 - Login email refonctionne
 
-**Cause 2 — Espace trailing dans Site URL Supabase**
+**Cause 2 - Espace trailing dans Site URL Supabase**
 
 - Erreur GoTrue : `parse "https://cyberlearn.fr ": invalid character " " in host name`
 - Espace fantôme dans la config Supabase Auth (Site URL)
@@ -26,7 +26,7 @@ Login email ET GitHub OAuth tous deux cassés en prod.
 - Fix : Edit Supabase Auth, URL Configuration, enlever l'espace
 - Login GitHub ne crash plus mais redirige vers /
 
-**Cause 3 — Mismatch www / sans-www**
+**Cause 3 - Mismatch www / sans-www**
 
 - Site URL Supabase = `https://cyberlearn.fr` (sans www)
 - Domaine canonique servi = `https://www.cyberlearn.fr` (avec www)

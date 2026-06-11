@@ -23,10 +23,10 @@ const INJECTION_PATTERNS = [
 /**
  * Four-layer validation pipeline for MDX lesson import.
  *
- * Layer 1 — Frontmatter parsing (gray-matter)
- * Layer 2 — Metadata Zod validation
- * Layer 3 — MDX body: injection check + dry-run compile
- * Layer 4 — Business rules: refCode/slug uniqueness, prerequisites exist
+ * Layer 1 - Frontmatter parsing (gray-matter)
+ * Layer 2 - Metadata Zod validation
+ * Layer 3 - MDX body: injection check + dry-run compile
+ * Layer 4 - Business rules: refCode/slug uniqueness, prerequisites exist
  */
 export async function validateMdxContent(fileContent: string): Promise<ImportValidationResult> {
   const errors: ImportValidationError[] = [];
@@ -81,7 +81,7 @@ export async function validateMdxContent(fileContent: string): Promise<ImportVal
         valid: false,
         errors: [
           {
-            message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()}) — contexte : "…${snippet}…"`,
+            message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()}) - contexte : "…${snippet}…"`,
           },
         ],
         warnings,

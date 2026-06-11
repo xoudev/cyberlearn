@@ -1,4 +1,4 @@
-# Sentry configuration — Cyber Learn (apps/web)
+# Sentry configuration - Cyber Learn (apps/web)
 
 SDK : `@sentry/nextjs` v9.x
 Init : PR 3 (`feat/sentry-init-csp-polish`)
@@ -38,14 +38,14 @@ Chaque event passe par `scrubEvent()` dans `beforeSend` avant envoi.
 
 ### Étapes de scrubbing (dans l'ordre)
 
-1. **URL de la requête** — paramètres `token`, `code`, `email`, `key` → `[REDACTED]`
-2. **Headers** — clé `authorization`, `cookie`, `set-cookie`, `password`, `token` → `[REDACTED]`
-3. **Cookies** — remplacés en bloc par `"[REDACTED]"`
-4. **Message** — regex email (`[\w.+-]+@[\w-]+\.[\w.-]+`) → `[EMAIL]`
-5. **Message** — regex token base64url 32+ chars → `[TOKEN]`
-6. **Exception values** — même regex que message
-7. **Extra** — scrubObject récursif (clés PII → REDACTED, valeurs string → scrubString)
-8. **Tags** — scrubObject récursif
+1. **URL de la requête** - paramètres `token`, `code`, `email`, `key` → `[REDACTED]`
+2. **Headers** - clé `authorization`, `cookie`, `set-cookie`, `password`, `token` → `[REDACTED]`
+3. **Cookies** - remplacés en bloc par `"[REDACTED]"`
+4. **Message** - regex email (`[\w.+-]+@[\w-]+\.[\w.-]+`) → `[EMAIL]`
+5. **Message** - regex token base64url 32+ chars → `[TOKEN]`
+6. **Exception values** - même regex que message
+7. **Extra** - scrubObject récursif (clés PII → REDACTED, valeurs string → scrubString)
+8. **Tags** - scrubObject récursif
 9. **user.email** → supprimé
 10. **user.ip_address** → supprimé
 11. **user.id** UUID (36 chars) → supprimé ; HMAC pseudonym (64 hex chars) → préservé
@@ -53,8 +53,8 @@ Chaque event passe par `scrubEvent()` dans `beforeSend` avant envoi.
 ### Modifier les patterns PII
 
 Éditer `apps/web/lib/sentry/scrub-event.ts` :
-- `EMAIL_REGEX` — pattern de détection d'emails
-- `TOKEN_REGEX` — pattern de détection de tokens
+- `EMAIL_REGEX` - pattern de détection d'emails
+- `TOKEN_REGEX` - pattern de détection de tokens
 - Tableau de clés redactées dans `scrubObject` → modifier le regex `/^(email|password|token|...)/i`
 - Paramètres URL → modifier le tableau `["token", "code", "email", "key"]`
 
@@ -82,7 +82,7 @@ Pour ajouter une route sensible, éditer le regex dans `filterBreadcrumb()` :
 
 | Variable | Scope | Description |
 |----------|-------|-------------|
-| `NEXT_PUBLIC_SENTRY_DSN` | Client + Server | DSN public — init conditionnelle si absent |
+| `NEXT_PUBLIC_SENTRY_DSN` | Client + Server | DSN public - init conditionnelle si absent |
 | `SENTRY_AUTH_TOKEN` | Build only | Upload source maps vers Sentry |
 | `SENTRY_ORG` | Build only | Slug organisation (`cyberlearn`) |
 | `SENTRY_PROJECT` | Build only | Slug projet (`javascript-nextjs`) |
@@ -94,16 +94,16 @@ Pour ajouter une route sensible, éditer le regex dans `filterBreadcrumb()` :
 2. Créer un nouveau token avec scope `project:releases` + `org:read`
 3. Mettre à jour dans Vercel (Production + Preview environments)
 4. Invalider l'ancien token dans Sentry
-5. Vérifier le prochain déploiement Vercel — les source maps doivent s'uploader
+5. Vérifier le prochain déploiement Vercel - les source maps doivent s'uploader
 
 ---
 
 ## Quotas et limites
 
 Plan Sentry Free :
-- **5 000 errors/mois** — suffisant pour les premiers mois, surveiller après launch
-- **50 replays/mois** — activé sur erreur seulement, donc quotient rare
-- **1 M transactions/mois** — à 10% de sampling, cela représente 10M requêtes
+- **5 000 errors/mois** - suffisant pour les premiers mois, surveiller après launch
+- **50 replays/mois** - activé sur erreur seulement, donc quotient rare
+- **1 M transactions/mois** - à 10% de sampling, cela représente 10M requêtes
 
 Surveillance : configurer une alerte Sentry si le quota atteint 80%.
 
@@ -112,14 +112,14 @@ Surveillance : configurer une alerte Sentry si le quota atteint 80%.
 ## CSP et Sentry
 
 Le header `Content-Security-Policy` dans `middleware.ts` autorise :
-- `connect-src https://*.ingest.sentry.io` — envoi des events
-- `report-uri ${NEXT_PUBLIC_SENTRY_CSP_REPORT_URI}` — violations CSP vers Sentry
+- `connect-src https://*.ingest.sentry.io` - envoi des events
+- `report-uri ${NEXT_PUBLIC_SENTRY_CSP_REPORT_URI}` - violations CSP vers Sentry
 
 `worker-src blob:` (déjà présent) couvre le worker Sentry Replay.
 
 ---
 
-## apps/admin — statut
+## apps/admin - statut
 
 Fait : Sentry est initialisé sur `apps/admin` selon le même pattern
 (`sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`

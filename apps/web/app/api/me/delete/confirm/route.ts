@@ -8,7 +8,7 @@ import { pseudonymize } from "@/lib/pseudonymize";
 import { deleteAccount } from "@/lib/rgpd/delete-account";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-// base64url alphabet only — rejects any value that can't be a valid token
+// base64url alphabet only - rejects any value that can't be a valid token
 const tokenParamSchema = z
   .string()
   .min(1)
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/account/delete/error?reason=used", origin));
   }
 
-  // ── 3. Consume token before deletion — prevents double-fire on retried requests ──
+  // ── 3. Consume token before deletion - prevents double-fire on retried requests ──
   await prisma.accountDeletionToken.update({
     where: { id: record.id },
     data: { usedAt: new Date() },
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/account/delete/error?reason=internal", origin));
   }
 
-  // ── 6. Delete Supabase Auth identity (RGPD Art. 17 — full erasure) ───────
+  // ── 6. Delete Supabase Auth identity (RGPD Art. 17 - full erasure) ───────
   // deleteAccount() removes the row from public.users; this removes auth.users.
   // Both must succeed for a complete RGPD deletion.
   const supabaseAdmin = createSupabaseAdminClient();
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // ── 7. Sign out — wipes session cookies so the deleted user can't keep browsing ──
+  // ── 7. Sign out - wipes session cookies so the deleted user can't keep browsing ──
   const cookieStore = await cookies();
   const supabase = createSupabaseServerClient({
     getAll: () => cookieStore.getAll(),

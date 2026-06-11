@@ -1,5 +1,5 @@
 /**
- * Development seed — creates realistic but fake data for local development.
+ * Development seed - creates realistic but fake data for local development.
  * Run with: pnpm --filter @cyberlearn/db db:seed
  *
  * Creates:
@@ -228,9 +228,9 @@ Les données utilisateur ne sont jamais interprétées comme du code SQL.
 
 ## Types d'injections SQL
 
-- **In-band SQLi** — le résultat est renvoyé directement dans la réponse HTTP
-- **Blind SQLi** — pas de retour direct ; l'attaquant observe les temps de réponse ou les erreurs
-- **Out-of-band SQLi** — extraction via un canal secondaire (DNS, HTTP sortant)
+- **In-band SQLi** - le résultat est renvoyé directement dans la réponse HTTP
+- **Blind SQLi** - pas de retour direct ; l'attaquant observe les temps de réponse ou les erreurs
+- **Out-of-band SQLi** - extraction via un canal secondaire (DNS, HTTP sortant)
 
 ## Bonnes pratiques
 
@@ -294,7 +294,7 @@ Un XSS peut permettre de :
 <p>Bienvenue <?= htmlspecialchars($_GET['name'], ENT_QUOTES, 'UTF-8') ?></p>
 \`\`\`
 
-En React / Next.js, JSX encode automatiquement les variables — la protection est intégrée :
+En React / Next.js, JSX encode automatiquement les variables - la protection est intégrée :
 
 \`\`\`tsx
 // Sûr : React encode le HTML automatiquement
@@ -432,7 +432,7 @@ Le modèle OSI (Open Systems Interconnection) est un cadre conceptuel qui divise
 | 7 | Application | Protocoles HTTP, DNS, SMTP, FTP |
 | 6 | Présentation | Encodage, chiffrement, compression |
 | 5 | Session | Gestion des sessions de communication |
-| 4 | Transport | TCP / UDP — fiabilité et ports |
+| 4 | Transport | TCP / UDP - fiabilité et ports |
 | 3 | Réseau | Routage IP, adressage logique |
 | 2 | Liaison | MAC, commutateurs, trames |
 | 1 | Physique | Câbles, signaux électriques/optiques |
@@ -446,18 +446,18 @@ Chaque couche a une **responsabilité unique** et communique uniquement avec les
 
 ## Couches clés à retenir
 
-### Couche 3 — Réseau
+### Couche 3 - Réseau
 
 C'est ici que se fait le routage entre réseaux. Le protocole IP opère à ce niveau. Un **routeur** traite les paquets couche 3.
 
-### Couche 4 — Transport
+### Couche 4 - Transport
 
 - **TCP** : connexion établie, livraison garantie et ordonnée (HTTP, SSH)
 - **UDP** : sans connexion, rapide, sans garantie (DNS, streaming, jeux)
 
 Les **ports** (80, 443, 22…) appartiennent à la couche 4.
 
-### Couche 7 — Application
+### Couche 7 - Application
 
 Protocoles directement utilisés par les applications :
 - **HTTP/HTTPS** : navigation web
@@ -547,9 +547,9 @@ Accept: application/json
 HTTPS = HTTP + **TLS (Transport Layer Security)**
 
 Le chiffrement TLS garantit :
-1. **Confidentialité** — les données ne peuvent pas être lues par un tiers
-2. **Intégrité** — les données ne peuvent pas être modifiées en transit
-3. **Authentification** — le serveur est bien celui qu'il prétend être
+1. **Confidentialité** - les données ne peuvent pas être lues par un tiers
+2. **Intégrité** - les données ne peuvent pas être modifiées en transit
+3. **Authentification** - le serveur est bien celui qu'il prétend être
 
 ## Headers de sécurité essentiels
 
@@ -582,10 +582,10 @@ Git est un système de **contrôle de version distribué** créé par Linus Torv
 
 ## Concepts clés
 
-- **Dépôt (repository)** — répertoire versionné contenant l'historique complet du projet
-- **Commit** — instantané de l'état du projet à un moment donné
-- **Branche** — ligne de développement indépendante
-- **Merge** — fusion de deux branches
+- **Dépôt (repository)** - répertoire versionné contenant l'historique complet du projet
+- **Commit** - instantané de l'état du projet à un moment donné
+- **Branche** - ligne de développement indépendante
+- **Merge** - fusion de deux branches
 
 ## Commandes essentielles
 
@@ -694,7 +694,7 @@ dist/
       xpReward: 130,
       contentMdx: `# Attaques par force brute
 
-> **Leçon en cours de rédaction** — disponible prochainement.`,
+> **Leçon en cours de rédaction** - disponible prochainement.`,
       authorId: ADMIN_ID,
       status: "DRAFT" as const,
     },
@@ -710,11 +710,11 @@ dist/
       xpReward: 140,
       contentMdx: `# TCP/IP en profondeur
 
-> **Leçon en cours de rédaction** — disponible prochainement.`,
+> **Leçon en cours de rédaction** - disponible prochainement.`,
       authorId: ADMIN_ID,
       status: "DRAFT" as const,
     },
-    // Phase 4 demo — interactive components (Quiz + CodePlayground + Terminal)
+    // Phase 4 demo - interactive components (Quiz + CodePlayground + Terminal)
     {
       refCode: "CL-LSN-009-V01",
       slug: "python-interactif-demo",
@@ -782,7 +782,7 @@ Explore les commandes de base dans ce terminal simulé :
       status: "PUBLISHED" as const,
       publishedAt: new Date(),
     },
-    // C sandbox — minimal interactive C lesson (validates cpp-runner.js worker)
+    // C sandbox - minimal interactive C lesson (validates cpp-runner.js worker)
     {
       refCode: "CL-LSN-010-V01",
       slug: "c-hello-world",
@@ -836,7 +836,7 @@ int main() {
     create: {
       refCode: "CL-PATH-001-V01",
       slug: "cybersecurite-debutant",
-      title: "Cybersécurité — Niveau débutant",
+      title: "Cybersécurité - Niveau débutant",
       description:
         "Découvrez les bases de la cybersécurité : injections SQL, XSS, et les principes fondamentaux de la sécurité applicative.",
       category: "CYBERSEC",
@@ -853,7 +853,7 @@ int main() {
     create: {
       refCode: "CL-PATH-002-V01",
       slug: "reseaux-fondamentaux",
-      title: "Réseaux — Les fondamentaux",
+      title: "Réseaux - Les fondamentaux",
       description:
         "Maîtrisez les bases des réseaux informatiques : modèle OSI, protocoles TCP/IP, HTTP/HTTPS.",
       category: "NETWORK",
@@ -902,7 +902,7 @@ int main() {
 
   // ── Placement questions ───────────────────────────────────────────────────
   const placementQuestions = [
-    // DEV — Beginner
+    // DEV - Beginner
     {
       category: "DEV" as const,
       difficulty: "BEGINNER" as const,
@@ -918,7 +918,7 @@ int main() {
         "`let` déclare une variable réassignable. `const` déclare une liaison constante (la valeur peut être mutée si c'est un objet, mais la variable ne peut pas être réassignée).",
       orderIndex: 1,
     },
-    // DEV — Intermediate
+    // DEV - Intermediate
     {
       category: "DEV" as const,
       difficulty: "INTERMEDIATE" as const,
@@ -937,7 +937,7 @@ int main() {
         "La programmation fonctionnelle est un paradigme qui traite le calcul comme l'évaluation de fonctions mathématiques pures, sans état mutable ni effets de bord.",
       orderIndex: 2,
     },
-    // DEV — Intermediate
+    // DEV - Intermediate
     {
       category: "DEV" as const,
       difficulty: "INTERMEDIATE" as const,
@@ -953,7 +953,7 @@ int main() {
         "`async/await` est du sucre syntaxique sur les Promises, qui permet d'écrire du code asynchrone de façon synchrone et lisible.",
       orderIndex: 3,
     },
-    // DEV — Advanced
+    // DEV - Advanced
     {
       category: "DEV" as const,
       difficulty: "ADVANCED" as const,
@@ -972,7 +972,7 @@ int main() {
         "Le principe D de SOLID stipule que les modules de haut niveau et de bas niveau doivent tous dépendre d'abstractions (interfaces), et non l'un de l'autre directement.",
       orderIndex: 4,
     },
-    // DEV — Advanced
+    // DEV - Advanced
     {
       category: "DEV" as const,
       difficulty: "ADVANCED" as const,
@@ -989,7 +989,7 @@ int main() {
         "Une HashMap utilise une fonction de hachage pour calculer l'index directement, ce qui donne O(1) en moyenne pour les opérations de lecture/écriture/suppression.",
       orderIndex: 5,
     },
-    // CYBERSEC — Beginner
+    // CYBERSEC - Beginner
     {
       category: "CYBERSEC" as const,
       difficulty: "BEGINNER" as const,
@@ -1005,7 +1005,7 @@ int main() {
         "Les requêtes paramétrées séparent le code SQL des données, empêchant structurellement toute injection. Les autres approches sont des mitigations imparfaites.",
       orderIndex: 1,
     },
-    // CYBERSEC — Beginner
+    // CYBERSEC - Beginner
     {
       category: "CYBERSEC" as const,
       difficulty: "BEGINNER" as const,
@@ -1024,7 +1024,7 @@ int main() {
         "Le moindre privilège signifie que chaque utilisateur, processus ou composant ne doit disposer que des droits strictement nécessaires à sa tâche, réduisant la surface d'attaque.",
       orderIndex: 2,
     },
-    // CYBERSEC — Intermediate
+    // CYBERSEC - Intermediate
     {
       category: "CYBERSEC" as const,
       difficulty: "INTERMEDIATE" as const,
@@ -1043,7 +1043,7 @@ int main() {
         "Le CSP est un header HTTP qui indique au navigateur les sources de scripts, styles, et autres ressources qu'il peut charger, réduisant significativement les attaques XSS.",
       orderIndex: 3,
     },
-    // CYBERSEC — Intermediate
+    // CYBERSEC - Intermediate
     {
       category: "CYBERSEC" as const,
       difficulty: "INTERMEDIATE" as const,
@@ -1059,7 +1059,7 @@ int main() {
         "Le XSS permet d'injecter du JavaScript malveillant dans une page, qui s'exécute dans le navigateur de la victime et peut voler des cookies, tokens, etc.",
       orderIndex: 4,
     },
-    // CYBERSEC — Advanced
+    // CYBERSEC - Advanced
     {
       category: "CYBERSEC" as const,
       difficulty: "ADVANCED" as const,
@@ -1078,7 +1078,7 @@ int main() {
         "SSRF force le serveur à émettre des requêtes HTTP vers des ressources internes (métadonnées cloud, services internes) ou externes non autorisées, à partir d'une URL contrôlée par l'attaquant.",
       orderIndex: 5,
     },
-    // NETWORK — Beginner
+    // NETWORK - Beginner
     {
       category: "NETWORK" as const,
       difficulty: "BEGINNER" as const,
@@ -1094,7 +1094,7 @@ int main() {
         "Le modèle OSI (Open Systems Interconnection) comporte 7 couches : Physique, Liaison, Réseau, Transport, Session, Présentation, Application.",
       orderIndex: 1,
     },
-    // NETWORK — Beginner
+    // NETWORK - Beginner
     {
       category: "NETWORK" as const,
       difficulty: "BEGINNER" as const,
@@ -1113,7 +1113,7 @@ int main() {
         "TCP établit une connexion, garantit l'ordre et la livraison des paquets (handshake, accusés de réception). UDP est sans connexion : plus rapide mais sans garantie de livraison.",
       orderIndex: 2,
     },
-    // NETWORK — Intermediate
+    // NETWORK - Intermediate
     {
       category: "NETWORK" as const,
       difficulty: "INTERMEDIATE" as const,
@@ -1129,7 +1129,7 @@ int main() {
         "HTTPS utilise le port 443 par défaut. HTTP utilise le port 80. SSH utilise le port 22.",
       orderIndex: 3,
     },
-    // NETWORK — Intermediate
+    // NETWORK - Intermediate
     {
       category: "NETWORK" as const,
       difficulty: "INTERMEDIATE" as const,
@@ -1148,7 +1148,7 @@ int main() {
         "Un sous-réseau est une partition logique d'un réseau IP. La segmentation améliore la sécurité, les performances et facilite la gestion des adresses.",
       orderIndex: 4,
     },
-    // NETWORK — Advanced
+    // NETWORK - Advanced
     {
       category: "NETWORK" as const,
       difficulty: "ADVANCED" as const,
@@ -1164,7 +1164,7 @@ int main() {
       ],
       correctOptionId: "b",
       explanation:
-        "BGP est le protocole de routage de l'Internet. Il gère comment les paquets sont routés entre Autonomous Systems (AS) — les grands réseaux gérés par des opérateurs distincts.",
+        "BGP est le protocole de routage de l'Internet. Il gère comment les paquets sont routés entre Autonomous Systems (AS) - les grands réseaux gérés par des opérateurs distincts.",
       orderIndex: 5,
     },
   ];
@@ -1201,7 +1201,7 @@ int main() {
       id: C1,
       refCode: "CTF-001",
       slug: "sql-injection-bypass",
-      title: "Injection SQL — Bypass d'authentification",
+      title: "Injection SQL - Bypass d'authentification",
       description:
         "Un formulaire de connexion vulnérable attend ta visite. Exploite une injection SQL classique pour bypasser l'authentification et récupérer le flag.",
       instructions: `## Contexte
@@ -1253,7 +1253,7 @@ Une fois connecté, le serveur affiche : \`CTF{sql_bypass_1_or_1_always_true}\``
       id: C2,
       refCode: "CTF-002",
       slug: "base64-decoding",
-      title: "Base64 — L'encodage n'est pas du chiffrement",
+      title: "Base64 - L'encodage n'est pas du chiffrement",
       description:
         "Une chaîne encodée en Base64 se cache dans les headers HTTP de la réponse. Décode-la pour obtenir le flag.",
       instructions: `## Contexte
@@ -1270,7 +1270,7 @@ Décode ce header pour obtenir le flag.
 
 ## Rappel : Base64
 
-Base64 **encode** les données binaires en ASCII. Ce n'est **pas** du chiffrement — il n'y a pas de clé, n'importe qui peut décoder.
+Base64 **encode** les données binaires en ASCII. Ce n'est **pas** du chiffrement - il n'y a pas de clé, n'importe qui peut décoder.
 
 Tu peux décoder :
 - En Python : \`import base64; base64.b64decode("...")\`
@@ -1299,7 +1299,7 @@ Le résultat du décodage **est** le flag.`,
       id: C3,
       refCode: "SCRIPT-001",
       slug: "cesar-cipher-python",
-      title: "Chiffrement de César — Déchiffre en Python",
+      title: "Chiffrement de César - Déchiffre en Python",
       description:
         "Un message a été chiffré avec le chiffrement de César (décalage de 13). Écris un script Python pour le déchiffrer et afficher le flag.",
       instructions: `## Contexte
@@ -1386,7 +1386,7 @@ def caesar_decrypt(text, shift):
       id: C4,
       refCode: "PUZZLE-001",
       slug: "binaire-vers-ascii",
-      title: "Binaire → ASCII — Décode le message",
+      title: "Binaire → ASCII - Décode le message",
       description:
         "Un message secret a été converti en binaire. Chaque groupe de 8 bits représente un caractère ASCII. Retrouve le flag.",
       instructions: `## Message binaire
@@ -1443,7 +1443,7 @@ En binaire sur 8 bits : \`A\` = \`01000001\` (65), \`a\` = \`01100001\` (97).
       id: C5,
       refCode: "CTF-003",
       slug: "xss-reflechi-vol-cookie",
-      title: "XSS Réfléchi — Vol de cookie de session",
+      title: "XSS Réfléchi - Vol de cookie de session",
       description:
         "Une application web reflète sans filtrage les paramètres GET dans la page. Injecte du JavaScript pour exfiltrer le cookie de session.",
       instructions: `## Contexte
@@ -1503,7 +1503,7 @@ Le serveur de contrôle te retourne : \`CTF{xss_r3fl3ct3d_c00k13_st0l3n}\`
       id: C6,
       refCode: "SCRIPT-002",
       slug: "analyse-hash-md5",
-      title: "Crack de hash MD5 — Attaque par dictionnaire",
+      title: "Crack de hash MD5 - Attaque par dictionnaire",
       description:
         "Un hash MD5 a été récupéré depuis une base de données compromise. Écris un script Python pour retrouver le mot de passe original par attaque dictionnaire.",
       instructions: `## Contexte
@@ -1576,7 +1576,7 @@ for word in wordlist:
       id: C7,
       refCode: "CTF-004",
       slug: "jwt-alg-none-bypass",
-      title: "JWT — Bypass avec alg:none",
+      title: "JWT - Bypass avec alg:none",
       description:
         "Un serveur accepte les tokens JWT sans vérifier la signature si l'algorithme est défini sur 'none'. Forge un token admin et récupère le flag.",
       instructions: `## Contexte
@@ -1636,7 +1636,7 @@ L'endpoint admin retourne : \`CTF{jwt_alg_none_n3v3r_trust_cl13nt}\``,
       id: C8,
       refCode: "LAB-001",
       slug: "reconnaissance-osint",
-      title: "Reconnaissance OSINT — Trouver l'infrastructure",
+      title: "Reconnaissance OSINT - Trouver l'infrastructure",
       description:
         "Applique les techniques OSINT pour cartographier l'infrastructure d'une organisation cible fictive : sous-domaines, technologies, fuites d'informations.",
       instructions: `## Objectif du lab
@@ -1709,7 +1709,7 @@ Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur 
   ]);
 
   const hintDefs = [
-    // CTF-001 — SQL Injection
+    // CTF-001 - SQL Injection
     {
       challengeId: chC1.id,
       content:
@@ -1723,7 +1723,7 @@ Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur 
       xpCost: 30,
       orderIndex: 2,
     },
-    // CTF-002 — Base64
+    // CTF-002 - Base64
     {
       challengeId: chC2.id,
       content:
@@ -1731,7 +1731,7 @@ Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur 
       xpCost: 0,
       orderIndex: 1,
     },
-    // SCRIPT-001 — César
+    // SCRIPT-001 - César
     {
       challengeId: chC3.id,
       content:
@@ -1742,11 +1742,11 @@ Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur 
     {
       challengeId: chC3.id,
       content:
-        "Le flag chiffré commence par `SYNT{` — `S`→`F`, `Y`→`L`, `N`→`A`, `T`→`G`. Ça confirme le décalage de 13.",
+        "Le flag chiffré commence par `SYNT{` - `S`→`F`, `Y`→`L`, `N`→`A`, `T`→`G`. Ça confirme le décalage de 13.",
       xpCost: 40,
       orderIndex: 2,
     },
-    // CTF-003 — XSS
+    // CTF-003 - XSS
     {
       challengeId: chC5.id,
       content:
@@ -1768,7 +1768,7 @@ Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur 
       xpCost: 80,
       orderIndex: 3,
     },
-    // SCRIPT-002 — MD5
+    // SCRIPT-002 - MD5
     {
       challengeId: chC6.id,
       content:
@@ -1783,7 +1783,7 @@ Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur 
       xpCost: 60,
       orderIndex: 2,
     },
-    // CTF-004 — JWT
+    // CTF-004 - JWT
     {
       challengeId: chC7.id,
       content:

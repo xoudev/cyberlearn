@@ -1,4 +1,4 @@
-# CyberLearn — Fonctionnalités implémentées
+# CyberLearn - Fonctionnalités implémentées
 
 > Dernière mise à jour : mai 2026
 
@@ -21,9 +21,9 @@
 
 | Route | Description |
 |---|---|
-| `/onboarding` | Étape 1 — Infos (username, displayName, bio) |
-| `/onboarding/avatar` | Étape 2 — Choix d'avatar (glyphe ou upload) |
-| `/onboarding/placement-test` | Étape 3 — Introduction au test de placement |
+| `/onboarding` | Étape 1 - Infos (username, displayName, bio) |
+| `/onboarding/avatar` | Étape 2 - Choix d'avatar (glyphe ou upload) |
+| `/onboarding/placement-test` | Étape 3 - Introduction au test de placement |
 | `/onboarding/placement-test/questions` | Test adaptatif (DEV / CYBERSEC / RÉSEAU) |
 | `/onboarding/placement-test/result` | Résultats + génération des waivers |
 
@@ -48,8 +48,8 @@
 
 | Route | Description |
 |---|---|
-| `/api/cron/review-reminders` | Job cron — notifications de révisions SM-2 (quotidien) |
-| `/api/cron/streak-reset` | Job cron — reset du streak à minuit |
+| `/api/cron/review-reminders` | Job cron - notifications de révisions SM-2 (quotidien) |
+| `/api/cron/streak-reset` | Job cron - reset du streak à minuit |
 | `/api/certificates/[id]/download` | Téléchargement du certificat PDF |
 
 ---
@@ -83,7 +83,7 @@
 #### Challenges
 - **4 types** : CTF (soumission de flag), SCRIPT (sandbox Python WASM), PUZZLE (honor system), LAB
 - Sandbox Python dans le navigateur via Pyodide (Web Worker, timeout 10s)
-- **Éditeur de code avec coloration syntaxique** Python (tokenizer embarqué — keywords, builtins, strings, commentaires, nombres, décorateurs, opérateurs)
+- **Éditeur de code avec coloration syntaxique** Python (tokenizer embarqué - keywords, builtins, strings, commentaires, nombres, décorateurs, opérateurs)
 - Hints révélables progressivement (coût en XP configurable)
 - Compteur de tentatives et limite configurable
 - Prérequis entre challenges
@@ -208,41 +208,41 @@
 
 ## Packages partagés
 
-### `packages/db` — Couche données
+### `packages/db` - Couche données
 - **Prisma 6** avec 17+ modèles
 - 10 repositories (user, lesson, challenge, path, badge, certificate, notification, leaderboard, qa, rating)
 - Migrations versionnées
 - Row Level Security (RLS) Supabase sur toutes les tables
 - Seed avec 8 challenges de démonstration (CTF, SCRIPT, PUZZLE, LAB)
 
-### `packages/lib` — Logique métier
-- `xp.ts` — Calcul XP/niveau
-- `streak.ts` — Logique de streak
-- `sm2.ts` — Algorithme SuperMemo-2
-- `badge-evaluator.ts` — Évaluation des 8 critères de badge (fonction pure)
-- `mdx/sanitize.ts` — Sanitization MDX avec allowlist
-- `mdx/toc.ts` — Génération de table des matières
-- `mdx/split-sections.ts` — Découpage MDX en sections
-- `auth/guards.ts` — `requireUser()` / `requireAdmin()`
+### `packages/lib` - Logique métier
+- `xp.ts` - Calcul XP/niveau
+- `streak.ts` - Logique de streak
+- `sm2.ts` - Algorithme SuperMemo-2
+- `badge-evaluator.ts` - Évaluation des 8 critères de badge (fonction pure)
+- `mdx/sanitize.ts` - Sanitization MDX avec allowlist
+- `mdx/toc.ts` - Génération de table des matières
+- `mdx/split-sections.ts` - Découpage MDX en sections
+- `auth/guards.ts` - `requireUser()` / `requireAdmin()`
 
-### `packages/types` — Types partagés
+### `packages/types` - Types partagés
 - Schémas Zod pour toutes les validations (Server Actions, Route Handlers)
 - Types TypeScript inférés
 
-### `packages/ui` — Design tokens & composants UI
+### `packages/ui` - Design tokens & composants UI
 - Tokens CSS (couleurs, espacements, polices)
 - Composants : XPBar, LevelBadge, RarityBadge, LessonCard, PathProgress, NotificationBell, CertificatePreview
 
-### `packages/email` — Templates e-mail
+### `packages/email` - Templates e-mail
 - Templates React Email pour les notifications (révisions, badges, etc.)
 - Envoi via Resend
 
-### `packages/config` — Configuration partagée
+### `packages/config` - Configuration partagée
 - ESLint, TypeScript (strict + noUncheckedIndexedAccess), Biome
 
 ---
 
-## Modèle de données — résumé des enums
+## Modèle de données - résumé des enums
 
 | Enum | Valeurs |
 |---|---|

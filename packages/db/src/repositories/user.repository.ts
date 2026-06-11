@@ -38,7 +38,7 @@ export const userRepository = {
     });
   },
 
-  /** Public profile by username — returns null if not found or profile is private. */
+  /** Public profile by username - returns null if not found or profile is private. */
   async findPublicProfile(username: string) {
     const user = await prisma.user.findUnique({
       where: { username },

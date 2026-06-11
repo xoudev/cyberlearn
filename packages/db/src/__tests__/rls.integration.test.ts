@@ -2,7 +2,7 @@
  * RLS Integration Tests
  *
  * Verifies that Row Level Security policies are correctly applied.
- * Runs against the real Supabase database — requires NEXT_PUBLIC_SUPABASE_URL,
+ * Runs against the real Supabase database - requires NEXT_PUBLIC_SUPABASE_URL,
  * NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY to be set.
  *
  * These tests satisfy Phase 1 acceptance criterion:
@@ -79,7 +79,7 @@ describe("RLS policies (integration)", () => {
     userBId = bData.user.id;
 
     // Insert public.users rows (normally done by /auth/callback)
-    // updatedAt is NOT NULL without default — Prisma manages it normally, we set it manually here
+    // updatedAt is NOT NULL without default - Prisma manages it normally, we set it manually here
     const now = new Date().toISOString();
     const { error: usersInsertError } = await adminClient.from("users").insert([
       { id: userAId, email: TEST_USER_A_EMAIL, displayName: "RLS Test User A", updatedAt: now },
@@ -102,7 +102,7 @@ describe("RLS policies (integration)", () => {
       .limit(1)
       .single();
 
-    if (!published) throw new Error("No PUBLISHED lessons — run seed first");
+    if (!published) throw new Error("No PUBLISHED lessons - run seed first");
 
     publishedLessonId = published.id;
 
@@ -149,7 +149,7 @@ describe("RLS policies (integration)", () => {
 
     // ── Quiz fixtures (created via service_role; clients must NOT write these) ──
     const { data: anyPath } = await adminClient.from("paths").select("id").limit(1).single();
-    if (!anyPath) throw new Error("No paths — run seed first");
+    if (!anyPath) throw new Error("No paths - run seed first");
 
     quizId = randomUUID();
     const { error: quizErr } = await adminClient.from("quiz").insert({
@@ -173,7 +173,7 @@ describe("RLS policies (integration)", () => {
     });
     if (qErr) throw new Error(`Failed to insert quiz_question: ${qErr.message}`);
 
-    // An attempt owned by User B — User A must not be able to read it.
+    // An attempt owned by User B - User A must not be able to read it.
     const { error: aErr2 } = await adminClient.from("quiz_attempts").insert({
       id: randomUUID(),
       userId: userBId,

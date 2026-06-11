@@ -60,7 +60,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-/** Angular tag with clip-path — matches design reference */
+/** Angular tag with clip-path - matches design reference */
 function AngularTag({
   label,
   color,
@@ -224,10 +224,10 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
   const remaining = Math.max(0, challenge.maxAttempts - userAttempts);
   const solveCount: number = challenge._count.progress;
 
-  // Split title on " — " for colored em part
-  const titleParts = challenge.title.split(" — ");
+  // Split title on " - " for colored em part
+  const titleParts = challenge.title.split(" - ");
   const titleMain = titleParts[0] ?? challenge.title;
-  const titleEm = titleParts.length > 1 ? titleParts.slice(1).join(" — ") : null;
+  const titleEm = titleParts.length > 1 ? titleParts.slice(1).join(" - ") : null;
 
   const statusLabel =
     displayStatus === "COMPLETED"
@@ -595,7 +595,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             </div>
           </div>
 
-          {/* Python sandbox — SCRIPT type only */}
+          {/* Python sandbox - SCRIPT type only */}
           {challenge.type === "SCRIPT" && (
             <div style={{ marginBottom: 32 }}>
               <SectionHead label="Environnement Python" meta="Pyodide · WebAssembly · isolé" />
@@ -681,7 +681,7 @@ export default async function ChallengeDetailPage({ params }: Props): Promise<Re
             </div>
           )}
 
-          {/* Action panel — CTF, PUZZLE, LAB, LOCKED */}
+          {/* Action panel - CTF, PUZZLE, LAB, LOCKED */}
           {challenge.type !== "SCRIPT" && (
             <div style={{ marginBottom: 32 }}>
               <SectionHead label={challenge.type === "CTF" ? "Soumettre le flag" : "Validation"} />

@@ -88,7 +88,7 @@ const ArrowIcon = (
 );
 
 /**
- * Final "boss" node — the v2 home for the certificate gate. Folds the former
+ * Final "boss" node: the v2 home for the certificate gate. Folds the former
  * certificate card + QuizPanel (exam gate) + ClaimCertificatePanel into one node
  * driven by the same props, preserving every state / link / action:
  *  - pathCompleted              → validated; download PDF when certificateId set

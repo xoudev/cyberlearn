@@ -1,4 +1,4 @@
-# Compiled output — packages/db is consumed via TypeScript path alias
+# Compiled output - packages/db is consumed via TypeScript path alias
 # "@cyberlearn/db": ["./src/index.ts"], so .js/.d.ts/maps are never
 # needed. tsc emits them inline because library.json has no outDir.
 src/**/*.js

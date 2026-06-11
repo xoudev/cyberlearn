@@ -3,7 +3,7 @@ import { z } from "zod";
 
 /**
  * Server + client environment variable validation.
- * Validated at build time and startup — the app refuses to start with missing/invalid vars.
+ * Validated at build time and startup; the app refuses to start with missing/invalid vars.
  *
  * Add variables here as they're needed across phases.
  * All variables must also be documented in /.env.example.
@@ -15,33 +15,33 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
     DIRECT_URL: z.string().url(),
 
-    // Supabase service role — SERVER ONLY, never exposed to client
+    // Supabase service role: SERVER ONLY, never exposed to client
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
     // Transactional email (Resend)
     RESEND_API_KEY: z.string().startsWith("re_"),
     RESEND_FROM_EMAIL: z.string().email(),
 
-    // Jira integration (contact form → tickets) — optional until Phase implemented
+    // Jira integration (contact form → tickets): optional until Phase implemented
     JIRA_BASE_URL: z.string().url().optional(),
     JIRA_API_EMAIL: z.string().email().optional(),
     JIRA_API_TOKEN: z.string().min(1).optional(),
     JIRA_PROJECT_KEY: z.string().min(1).optional(),
 
-    // Rate limiting (Upstash Redis) — optional, degrades gracefully without Redis
+    // Rate limiting (Upstash Redis): optional, degrades gracefully without Redis
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
-    // Cloudflare Turnstile captcha — optional until Phase implemented
+    // Cloudflare Turnstile captcha: optional until Phase implemented
     TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
 
-    // IP address pseudonymization salt (GDPR — SHA-256 hashing)
+    // IP address pseudonymization salt (GDPR: SHA-256 hashing)
     IP_SALT: z.string().min(32),
 
-    // Supabase Auth Hook secret — verifies hook requests come from Supabase
+    // Supabase Auth Hook secret: verifies hook requests come from Supabase
     SUPABASE_HOOK_SECRET: z.string().min(16),
 
-    // Monitoring (Sentry) — all optional, no-op when absent
+    // Monitoring (Sentry): all optional, no-op when absent
     SENTRY_DSN: z.string().url().optional(),
     SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
     SENTRY_ORG: z.string().min(1).optional(),
@@ -60,10 +60,10 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: z.string().url(),
     NEXT_PUBLIC_ADMIN_URL: z.string().url(),
 
-    // Cloudflare Turnstile site key — optional until Phase implemented
+    // Cloudflare Turnstile site key: optional until Phase implemented
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
 
-    // Sentry public DSN (safe to expose — used in browser + server configs)
+    // Sentry public DSN (safe to expose; used in browser + server configs)
     NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
 
     // CSP reporting endpoint (Sentry tunnel for violations)

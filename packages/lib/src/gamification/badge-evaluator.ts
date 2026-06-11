@@ -1,6 +1,6 @@
 import { getMasteredCategories } from "../placement/scoring.js";
 
-// Minimal structural type — callers pass Prisma Badge objects which satisfy this shape.
+// Minimal structural type - callers pass Prisma Badge objects which satisfy this shape.
 // Avoids a circular dep: @cyberlearn/lib must not import @cyberlearn/db.
 export interface BadgeLike {
   id: string;
@@ -29,7 +29,7 @@ export interface BadgeProgress {
 }
 
 /**
- * Everything the criteria can be evaluated against. Pure data — callers build
+ * Everything the criteria can be evaluated against. Pure data - callers build
  * it from `badgeRepository.findCriterionFacts` via `buildBadgeCriterionStats`,
  * applying any not-yet-persisted trigger delta themselves (e.g. the lesson
  * being completed right now).
@@ -50,7 +50,7 @@ export interface BadgeCriterionStats {
   totalCertificates: number;
   /** Quiz attempts scored exactly 100 (drives PERFECT_QUIZ). */
   perfectQuizCount: number;
-  /** Categories mastered on the placement test — 0 when not taken (drives CUSTOM). */
+  /** Categories mastered on the placement test - 0 when not taken (drives CUSTOM). */
   placementMasteredCount: number;
 }
 
@@ -135,18 +135,18 @@ function strArrayOrNull(data: unknown, key: string): string[] | null {
  * event that no hook fires.
  *
  * Canonical semantics per type:
- *  - LESSON_COMPLETED  {count}            — total completed lessons.
- *  - XP_THRESHOLD      {threshold}        — total XP.
- *  - STREAK_DAYS       {days}             — current streak.
- *  - CATEGORY_MASTERY  {category, count}  — completed lessons in ONE category;
- *                      {categories: []}   — at least one completed lesson in
+ *  - LESSON_COMPLETED  {count}            - total completed lessons.
+ *  - XP_THRESHOLD      {threshold}        - total XP.
+ *  - STREAK_DAYS       {days}             - current streak.
+ *  - CATEGORY_MASTERY  {category, count}  - completed lessons in ONE category;
+ *                      {categories: []}   - at least one completed lesson in
  *                                           EACH listed category.
- *  - PATH_COMPLETED    {withCertificate: true} — at least one certificate;
- *                      {pathId}           — that SPECIFIC path completed;
- *                      {count} (default 1) — N paths completed (any).
- *  - LESSON_SPECIFIC   {lessonId}         — that lesson completed (history).
- *  - PERFECT_QUIZ      {count} (default 1) — N quiz attempts scored 100.
- *  - CUSTOM            {event}            — placement_test_passed: at least
+ *  - PATH_COMPLETED    {withCertificate: true} - at least one certificate;
+ *                      {pathId}           - that SPECIFIC path completed;
+ *                      {count} (default 1) - N paths completed (any).
+ *  - LESSON_SPECIFIC   {lessonId}         - that lesson completed (history).
+ *  - PERFECT_QUIZ      {count} (default 1) - N quiz attempts scored 100.
+ *  - CUSTOM            {event}            - placement_test_passed: at least
  *                                           one placement category mastered.
  */
 export function computeBadgeProgress(
@@ -234,7 +234,7 @@ export function isBadgeUnlocked(badge: BadgeLike, stats: BadgeCriterionStats): b
 
 /**
  * Returns the IDs of badges that should be newly awarded.
- * Pure function — no DB calls. Caller must supply active badges and already-earned set.
+ * Pure function - no DB calls. Caller must supply active badges and already-earned set.
  */
 export function evaluateBadges(
   allBadges: readonly BadgeLike[],

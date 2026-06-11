@@ -6,7 +6,7 @@ import type { OnMount, BeforeMount } from "@monaco-editor/react";
 
 type EditorInstance = Parameters<OnMount>[0];
 
-// ── Dynamic import — Monaco has no SSR support ─────────────────────────────────
+// ── Dynamic import - Monaco has no SSR support ─────────────────────────────────
 const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), {
   ssr: false,
   loading: () => (
@@ -33,7 +33,7 @@ const TURQ = "#0AFFD4";
 const MONO = "var(--font-mono)";
 const DANGER = "#FF4D6D";
 
-// ── Preview — inline markdown renderer ────────────────────────────────────────
+// ── Preview - inline markdown renderer ────────────────────────────────────────
 
 function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g);
@@ -1411,7 +1411,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
           }}
         />
 
-        {/* Right side — guide + split toggle */}
+        {/* Right side - guide + split toggle */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           <button
             type="button"

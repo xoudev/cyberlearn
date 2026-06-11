@@ -3,7 +3,7 @@
 // time and stamp context.xpCredited).
 //
 // IDEMPOTENCE: a full "recompute xpTotal from all sources and SET it" is NOT
-// safe here — review XP (review-actions awards 10% of a lesson's reward per
+// safe here - review XP (review-actions awards 10% of a lesson's reward per
 // review event) is not reconstructible from stored data, so a recompute would
 // destroy it. Instead each credited row is stamped with context.xpCredited in
 // the SAME transaction as the user XP update; re-running the script finds no

@@ -68,7 +68,7 @@ export type UpdatePrivacyInput = z.infer<typeof updatePrivacySchema>;
 // ─── Settings profile update ──────────────────────────────────────────────────
 
 // Built-in avatar SVGs (served from /public/avatars). Avatar uploads are not
-// supported yet, so the avatar must be one of these known paths — validated
+// supported yet, so the avatar must be one of these known paths - validated
 // server-side, never trusting an arbitrary client string.
 export const AVATAR_PATHS = [
   "/avatars/av-1.svg",

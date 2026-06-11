@@ -206,7 +206,7 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
             </span>
           </div>
 
-          {/* Progress track — 66% */}
+          {/* Progress track - 66% */}
           <div
             style={{
               position: "relative",

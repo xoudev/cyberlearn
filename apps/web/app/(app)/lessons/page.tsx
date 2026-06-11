@@ -313,7 +313,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
         </div>
       )}
 
-      {/* ── Footer strip — pagination ────────────────────────────────────── */}
+      {/* ── Footer strip - pagination ────────────────────────────────────── */}
       {totalPages > 1 && (
         <div
           style={{

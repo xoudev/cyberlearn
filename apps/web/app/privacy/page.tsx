@@ -199,7 +199,7 @@ export default function PrivacyPage(): React.JSX.Element {
             [
               "Vercel",
               "Hébergement du site et trafic HTTP",
-              "États-Unis (CDN) — les données utilisateur ne transitent pas par leurs serveurs de stockage",
+              "États-Unis (CDN) - les données utilisateur ne transitent pas par leurs serveurs de stockage",
             ],
             [
               "Resend",

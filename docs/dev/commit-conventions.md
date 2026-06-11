@@ -29,15 +29,15 @@ Follows [Conventional Commits](https://www.conventionalcommits.org/) with projec
 ## Subject rules
 
 - **Language**: French or English (team preference: French for user-facing descriptions).
-- **Case**: sentence-case allowed — `fix: Corriger le rate limit` ✅ or lower-case `fix: fix rate limit` ✅.
+- **Case**: sentence-case allowed - `fix: Corriger le rate limit` ✅ or lower-case `fix: fix rate limit` ✅.
 - **Banned**: start-case `Fix The Rate Limit`, pascal-case `FixRateLimit`, all-caps `FIX RATE LIMIT`.
 - **No period** at the end.
-- **Acronyms**: uppercase acronyms in subject are fine — `UI`, `API`, `RGPD`, `RLS`, `CSP`, `JWT`, `OAuth`.
+- **Acronyms**: uppercase acronyms in subject are fine - `UI`, `API`, `RGPD`, `RLS`, `CSP`, `JWT`, `OAuth`.
 
 ## Scope
 
 Lowercase. Examples: `auth`, `sentry`, `rgpd`, `db`, `cron`, `middleware`.
-Uppercase scopes like `(UI)`, `(API)` are fine — they appear in the scope position, not the subject.
+Uppercase scopes like `(UI)`, `(API)` are fine - they appear in the scope position, not the subject.
 
 ## Examples
 

@@ -17,7 +17,7 @@ import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
  * });
  * ```
  *
- * IMPORTANT: Do NOT use process.env directly here — env vars are validated
+ * IMPORTANT: Do NOT use process.env directly here - env vars are validated
  * in apps/web/lib/env.ts and apps/admin/lib/env.ts at startup.
  */
 export function createSupabaseServerClient(cookieMethods: CookieMethodsServer) {

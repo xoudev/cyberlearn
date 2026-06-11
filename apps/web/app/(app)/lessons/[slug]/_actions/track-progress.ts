@@ -34,7 +34,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
   if (!z.string().uuid().safeParse(lessonId).success) return EMPTY_RESULT;
   const authUser = await requireRequestUser();
 
-  // Parallel fetch — lesson, user gamification state, existing progress, all active badges
+  // Parallel fetch - lesson, user gamification state, existing progress, all active badges
   const [lesson, user, existing, allBadges] = await Promise.all([
     prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -50,7 +50,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
   const isFirstCompletion = existing?.status !== "COMPLETED";
   const now = new Date();
 
-  // ── XP + level (lesson reward only — badge rewards are credited in-tx) ─────
+  // ── XP + level (lesson reward only - badge rewards are credited in-tx) ─────
   const newXpTotal = isFirstCompletion ? user.xpTotal + lesson.xpReward : user.xpTotal;
   const { level: newLevel } = computeLevel(newXpTotal);
 
@@ -64,7 +64,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
       badgeRepository.findUserBadgeIds(authUser.id),
       badgeRepository.findCriterionFacts(authUser.id),
     ]);
-    // The triggering lesson is not persisted yet — count it as completed.
+    // The triggering lesson is not persisted yet - count it as completed.
     if (!facts.completedLessons.some((l) => l.lessonId === lessonId)) {
       facts.completedLessons.push({ lessonId, category: lesson.category });
     }
@@ -102,7 +102,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
     });
 
     // Insert userBadge rows, credit their xpReward on top of the lesson XP,
-    // and notify — only for rows actually inserted (idempotent re-awards).
+    // and notify - only for rows actually inserted (idempotent re-awards).
     const awardResult = await awardBadges(tx, authUser.id, earnedBadges, { lessonId });
 
     const txXpTotal = awardResult.newXpTotal ?? newXpTotal;
@@ -122,7 +122,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
       });
     }
 
-    // Schedule first review for tomorrow — SM-2 starts here
+    // Schedule first review for tomorrow - SM-2 starts here
     if (isFirstCompletion) {
       await tx.reviewSchedule.upsert({
         where: { userId_lessonId: { userId: authUser.id, lessonId } },

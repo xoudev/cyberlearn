@@ -277,7 +277,7 @@ export async function deleteBadgeAction(formData: FormData): Promise<void> {
   });
   if (!badge) return;
 
-  // Refuse deletion if users have already earned it — deactivate instead
+  // Refuse deletion if users have already earned it - deactivate instead
   if (badge._count.userBadges > 0) return;
 
   await prisma.badge.delete({ where: { id: id.data } });

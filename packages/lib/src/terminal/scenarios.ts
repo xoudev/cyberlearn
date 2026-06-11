@@ -1,4 +1,4 @@
-// Terminal scenario definitions — pure data, no DOM/browser deps
+// Terminal scenario definitions - pure data, no DOM/browser deps
 
 export interface TerminalScenario {
   /** Human-readable message shown on terminal mount */
@@ -70,7 +70,7 @@ export const TERMINAL_SCENARIOS: Record<string, TerminalScenario> = {
         "Nmap done: scanned in 8.12 seconds",
       ].join("\r\n"),
       "nmap -p- 192.168.1.100": [
-        "Starting Nmap 7.94 — scanning all 65535 ports...",
+        "Starting Nmap 7.94 - scanning all 65535 ports...",
         "PORT      STATE  SERVICE",
         "22/tcp    open   ssh",
         "80/tcp    open   http",

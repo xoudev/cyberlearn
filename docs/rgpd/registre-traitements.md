@@ -6,7 +6,7 @@
 **Contact :** privacy@cyberlearn.fr
 **Dernière mise à jour :** 23/05/2026
 
-## Traitement 1 — Gestion des comptes utilisateurs
+## Traitement 1 - Gestion des comptes utilisateurs
 
 | Item | Détail |
 |---|---|
@@ -19,7 +19,7 @@
 | Durée de conservation | Tant que le compte existe + anonymisation à 24 mois d'inactivité |
 | Mesures de sécurité | TLS 1.3, JWT, RLS Supabase, CSP, rate limiting |
 
-## Traitement 2 — Suivi pédagogique
+## Traitement 2 - Suivi pédagogique
 
 | Item | Détail |
 |---|---|
@@ -32,7 +32,7 @@
 | Durée de conservation | Tant que le compte existe ; certificats permanents (anonymisables) |
 | Mesures de sécurité | TLS 1.3, RLS Supabase |
 
-## Traitement 3 — Lutte contre l'abus
+## Traitement 3 - Lutte contre l'abus
 
 | Item | Détail |
 |---|---|
@@ -45,7 +45,7 @@
 | Durée de conservation | 30 jours max (Redis TTL) |
 | Mesures de sécurité | Pseudonymisation HMAC, salt rotatif |
 
-## Traitement 4 — Support utilisateur
+## Traitement 4 - Support utilisateur
 
 | Item | Détail |
 |---|---|
@@ -58,7 +58,7 @@
 | Durée de conservation | 3 mois après résolution / 12 mois si non résolu |
 | Mesures de sécurité | TLS 1.3, anti-spam Turnstile |
 
-## Traitement 5 — Logs de sécurité et audit
+## Traitement 5 - Logs de sécurité et audit
 
 | Item | Détail |
 |---|---|

@@ -145,7 +145,7 @@ export default function LessonDetailLoading(): React.ReactElement {
           </div>
         </div>
 
-        {/* Rail — hidden on mobile via CSS, shown on ≥1024px */}
+        {/* Rail - hidden on mobile via CSS, shown on ≥1024px */}
         <aside className="lesson-stepper-rail">
           <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
             <div>

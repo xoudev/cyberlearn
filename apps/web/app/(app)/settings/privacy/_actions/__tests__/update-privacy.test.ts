@@ -2,7 +2,7 @@
  * Unit tests for the updatePrivacyAction Server Action.
  *
  * Focus: server-side Zod validation. An invalid leaderboardVisibility must be
- * rejected and must never reach the database — that value drives leaderboard
+ * rejected and must never reach the database - that value drives leaderboard
  * anonymization, so a bad write would be a privacy hole.
  */
 
@@ -49,7 +49,7 @@ afterEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("updatePrivacyAction — rejects invalid input", () => {
+describe("updatePrivacyAction - rejects invalid input", () => {
   it("rejects an arbitrary leaderboardVisibility value and writes nothing", async () => {
     const result = await updatePrivacyAction(
       {},
@@ -79,7 +79,7 @@ describe("updatePrivacyAction — rejects invalid input", () => {
   });
 });
 
-describe("updatePrivacyAction — happy path", () => {
+describe("updatePrivacyAction - happy path", () => {
   it("persists a valid HIDDEN + publicProfile=false via upsert", async () => {
     const result = await updatePrivacyAction(
       {},

@@ -1,4 +1,4 @@
-// Single badge-award primitive — plain server module (NOT "use server"):
+// Single badge-award primitive - plain server module (NOT "use server"):
 // callable only from server code, never exposed as a client-invocable action.
 //
 // All three award sites (lesson completion, path completion, retroactive
@@ -10,7 +10,7 @@
 //  - Badge.xpReward of the inserted rows is credited to user.xpTotal inside
 //    the SAME transaction, with the level recomputed via computeLevel.
 //  - BADGE_EARNED notifications (metadata includes xpReward) are created for
-//    the inserted rows only — and skipped entirely for the retroactive sweep.
+//    the inserted rows only - and skipped entirely for the retroactive sweep.
 //
 // Known limit (documented, out of scope): threshold chaining. The XP credited
 // by a badge does not re-run evaluation within the same pass, so a badge
@@ -20,7 +20,7 @@ import { badgeRepository, prisma, userRepository } from "@cyberlearn/db";
 import type { Prisma } from "@cyberlearn/db";
 import { buildBadgeCriterionStats, computeLevel, evaluateBadges } from "@cyberlearn/lib";
 
-/** Structural shape — full Prisma Badge rows satisfy it. */
+/** Structural shape - full Prisma Badge rows satisfy it. */
 export interface AwardableBadge {
   id: string;
   name: string;
@@ -34,9 +34,9 @@ export interface AwardBadgesResult {
   awarded: AwardableBadge[];
   /** Sum of xpReward over `awarded`. */
   xpGained: number;
-  /** User's xpTotal after the credit — null when nothing was credited. */
+  /** User's xpTotal after the credit - null when nothing was credited. */
   newXpTotal: number | null;
-  /** User's level after the credit — null when nothing was credited. */
+  /** User's level after the credit - null when nothing was credited. */
   newLevel: number | null;
 }
 
@@ -110,7 +110,7 @@ export async function awardBadges(
  * Event-hook award: evaluates ONLY the given criterion types against the
  * user's persisted facts and awards whatever unlocks, with notifications.
  *
- * Used by the real-time hooks — PERFECT_QUIZ on quiz submission, CUSTOM on
+ * Used by the real-time hooks - PERFECT_QUIZ on quiz submission, CUSTOM on
  * placement-test submission. Both run AFTER their triggering rows are
  * persisted, so the facts already include the trigger and no delta is needed.
  * Criterion semantics (count targets, event matching) live in
@@ -140,7 +140,7 @@ export async function evaluateAndAwardBadges(
 }
 
 /**
- * Retroactive catch-up award: atomic AND silent — the sweep repairs past
+ * Retroactive catch-up award: atomic AND silent - the sweep repairs past
  * activity, it never notifies. Only real-time triggers notify.
  */
 export async function retroAwardBadges(

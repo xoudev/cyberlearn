@@ -106,7 +106,7 @@ export function MagicLinkEmail({
 }
 
 export function getMagicLinkSubject(type: string): string {
-  // SAFETY: Supabase Auth may pass an unrecognized type string at runtime — cast
+  // SAFETY: Supabase Auth may pass an unrecognized type string at runtime - cast
   // widens the Record type so the ?? fallback is type-valid for unknown keys.
   return (SUBJECT as Record<string, string | undefined>)[type] ?? SUBJECT.magiclink;
 }

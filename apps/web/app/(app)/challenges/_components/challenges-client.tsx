@@ -441,7 +441,7 @@ function CCCard({ challenge }: { challenge: ChallengeItem }): React.ReactElement
         <p className="cc__desc">{challenge.description}</p>
       </div>
 
-      {/* Progress bar (IN_PROGRESS only — shows attempts used) */}
+      {/* Progress bar (IN_PROGRESS only; shows attempts used) */}
       {isProg && (
         <div className="cc__progbar">
           <div className="cc__progbar-fill" style={{ width: `${String(attemptsUsedPct)}%` }} />

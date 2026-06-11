@@ -14,7 +14,7 @@ export interface UpdateProfileState {
  * Updates the signed-in user's display name, bio, and avatar.
  *
  * Auth-first, then Zod safeParse. avatarUrl is validated against the built-in
- * SVG allowlist (settingsProfileSchema) — an arbitrary string is rejected.
+ * SVG allowlist (settingsProfileSchema) - an arbitrary string is rejected.
  * Username is intentionally not editable here.
  */
 export async function updateProfileAction(

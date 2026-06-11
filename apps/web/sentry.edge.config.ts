@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 import { scrubEvent } from "@/lib/sentry/scrub-event";
 
 // Minimal config for the Edge runtime (middleware).
-// Edge has limited Node.js API access — keep integrations minimal.
+// Edge has limited Node.js API access; keep integrations minimal.
 Sentry.init({
   ...(process.env.NEXT_PUBLIC_SENTRY_DSN && { dsn: process.env.NEXT_PUBLIC_SENTRY_DSN }),
 

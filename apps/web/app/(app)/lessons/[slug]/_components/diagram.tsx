@@ -5,7 +5,7 @@ import type mermaidLib from "mermaid";
 type MermaidAPI = typeof mermaidLib;
 
 // Mermaid is imported dynamically inside useEffect so it is never evaluated
-// during SSR — mermaid accesses browser globals (window, document) at module
+// during SSR: mermaid accesses browser globals (window, document) at module
 // initialization time and would throw in a Node.js environment.
 
 const MERMAID_THEME = {

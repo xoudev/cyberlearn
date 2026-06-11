@@ -103,7 +103,7 @@ describe("backfillBadgeXp", () => {
   it("apply credits the delta, recomputes the level and stamps every row", async () => {
     const rows: FakeRow[] = [
       { id: "r1", userId: "u1", context: { lessonId: "l1" }, badge: { xpReward: 50 } },
-      // Already credited at insertion time by the runtime helper — untouched.
+      // Already credited at insertion time by the runtime helper - untouched.
       { id: "r2", userId: "u1", context: { xpCredited: 40 }, badge: { xpReward: 40 } },
       // Zero-XP badge: stamped so re-runs skip it, but no credit.
       { id: "r3", userId: "u2", context: null, badge: { xpReward: 0 } },
@@ -120,7 +120,7 @@ describe("backfillBadgeXp", () => {
     expect(report.totalUnstampedRows).toBe(2); // r1 + r3 (r2 already stamped)
     expect(users.u1.xpTotal).toBe(150);
     expect(users.u1.level).toBe(computeLevel(150).level);
-    expect(users.u2.xpTotal).toBe(10); // zero delta — no credit
+    expect(users.u2.xpTotal).toBe(10); // zero delta - no credit
     expect(rows[0]?.context).toEqual({ lessonId: "l1", xpCredited: 50 });
     expect(rows[2]?.context).toEqual({ xpCredited: 0 });
   });
@@ -140,7 +140,7 @@ describe("backfillBadgeXp", () => {
     const second = await backfillBadgeXp(true, asClient(db));
     expect(second.totalUnstampedRows).toBe(0);
     expect(second.users).toHaveLength(0);
-    expect(users.u1.xpTotal).toBe(60); // unchanged — no double credit
+    expect(users.u1.xpTotal).toBe(60); // unchanged - no double credit
     expect(db.getUserUpdateCalls()).toBe(updatesAfterFirst); // no extra writes
   });
 });

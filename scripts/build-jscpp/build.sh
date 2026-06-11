@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# build-jscpp/build.sh — Build JSCPP 2.0.9 as a browser IIFE bundle
+# build-jscpp/build.sh - Build JSCPP 2.0.9 as a browser IIFE bundle
 #
 # One-shot script. Run when bumping the JSCPP version or when the bundle needs
 # to be regenerated from scratch. The output is committed to git.
@@ -51,7 +51,7 @@ TARBALL="JSCPP-${JSCPP_VERSION}.tgz"
 
 actual=$(sha256sum "${TARBALL}" | cut -d' ' -f1)
 if [[ "${actual}" != "${JSCPP_TARBALL_SHA256}" ]]; then
-  echo "FATAL: tarball hash mismatch — possible tampering or version mismatch"
+  echo "FATAL: tarball hash mismatch - possible tampering or version mismatch"
   echo "  expected: ${JSCPP_TARBALL_SHA256}"
   echo "  actual:   ${actual}"
   exit 1

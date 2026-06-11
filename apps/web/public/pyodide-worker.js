@@ -1,5 +1,5 @@
 /* eslint-disable */
-// Pyodide Web Worker — executes Python code in isolation.
+// Pyodide Web Worker - executes Python code in isolation.
 // Loaded via new Worker('/pyodide-worker.js') from script-runner.tsx.
 // Architecture rule: Pyodide runs in Web Worker only, 10s timeout enforced by caller.
 
@@ -13,11 +13,11 @@ function initPyodide() {
     pyodideReady = loadPyodide({
       indexURL: "/runtimes/pyodide/",
     }).then((py) => {
-      // ── Hardening — all neutralizations AFTER loadPyodide() completes ────────
+      // ── Hardening - all neutralizations AFTER loadPyodide() completes ────────
       // Pyodide itself uses fetch/importScripts during boot; blocking them before
       // init would prevent startup. Safe to neutralize once py is fully loaded.
 
-      // 1. Network APIs — block any outbound call from user code
+      // 1. Network APIs - block any outbound call from user code
       self.fetch = () => {
         throw new Error("Network access is not allowed in challenge code.");
       };
@@ -31,7 +31,7 @@ function initPyodide() {
         throw new Error("Network access is not allowed in challenge code.");
       };
 
-      // 1b. sendBeacon — not in WorkerNavigator spec but defensively blocked;
+      // 1b. sendBeacon - not in WorkerNavigator spec but defensively blocked;
       //     some Chromium versions have exposed it on navigator in Workers.
       if (typeof self.navigator !== "undefined" && self.navigator.sendBeacon) {
         self.navigator.sendBeacon = () => {
@@ -39,16 +39,16 @@ function initPyodide() {
         };
       }
 
-      // 2. Storage APIs — prevent cross-challenge state pollution
+      // 2. Storage APIs - prevent cross-challenge state pollution
       self.indexedDB = undefined;
       self.caches = undefined;
 
-      // 3. Dynamic script loading — prevent loading arbitrary code mid-run
+      // 3. Dynamic script loading - prevent loading arbitrary code mid-run
       self.importScripts = () => {
         throw new Error("Dynamic script loading is not allowed.");
       };
 
-      // 4. Python-level micropip block — setCdnUrl is internal to Pyodide and not
+      // 4. Python-level micropip block - setCdnUrl is internal to Pyodide and not
       //    on the public PyodideInterface, so we block micropip via sys.meta_path
       //    instead. fetch neutralization above already prevents network calls, but
       //    this gives a clean ImportError at import time rather than a fetch error.

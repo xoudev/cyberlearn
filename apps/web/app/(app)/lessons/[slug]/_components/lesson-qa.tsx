@@ -70,7 +70,7 @@ export function LessonQA({
         </h3>
       </div>
 
-      {/* Question form — renders full-width below the header */}
+      {/* Question form - renders full-width below the header */}
       <div style={{ marginBottom: 24 }}>
         <PostQuestionForm lessonId={lessonId} lessonSlug={lessonSlug} />
       </div>

@@ -20,12 +20,12 @@ export async function getSupabaseServerClient() {
     getAll: () => cookieStore.getAll(),
     setAll: (toSet: { name: string; value: string; options: CookieOptions }[]) => {
       toSet.forEach(({ name, value, options }) => {
-        // cookies() is read-only in Server Components — writes are no-ops there.
+        // cookies() is read-only in Server Components - writes are no-ops there.
         // In Server Actions and Route Handlers, cookies() is writable.
         try {
           cookieStore.set(name, value, options);
         } catch {
-          // Silently ignore — called from a Server Component context
+          // Silently ignore - called from a Server Component context
         }
       });
     },
