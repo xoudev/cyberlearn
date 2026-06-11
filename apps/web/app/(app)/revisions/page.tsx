@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { RevisionsList, type ReviewRow } from "./_components/revisions-list";
 
 export const metadata: Metadata = { title: "Révisions · CyberLearn" };
 export const dynamic = "force-dynamic";
@@ -67,7 +68,16 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
       where: { userId: authUser.id, nextReviewAt: { lte: now } },
       orderBy: { nextReviewAt: "asc" },
       include: {
-        lesson: { select: { id: true, slug: true, title: true, category: true, difficulty: true } },
+        lesson: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            category: true,
+            difficulty: true,
+            xpReward: true,
+          },
+        },
       },
     }),
     prisma.reviewSchedule.findMany({
@@ -81,6 +91,27 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
   const totalMinutes = dueSchedules.reduce((sum, s) => sum + timeMinutes(s.lesson.difficulty), 0);
   const isEmpty = dueSchedules.length === 0;
   const count = dueSchedules.length;
+
+  const rows: ReviewRow[] = dueSchedules.map((s) => {
+    const due = dueLabel(s.nextReviewAt, now);
+    const cat = CAT_LABELS[s.lesson.category] ?? {
+      label: s.lesson.category,
+      color: "#6B6890",
+      border: "rgba(107,104,144,0.35)",
+    };
+    return {
+      scheduleId: s.id,
+      title: s.lesson.title,
+      slug: s.lesson.slug,
+      catLabel: cat.label,
+      catColor: cat.color,
+      catBorder: cat.border,
+      dueText: due.text,
+      dueToday: due.kind === "today",
+      est: timeEst(s.lesson.difficulty),
+      reviewXp: Math.floor(s.lesson.xpReward * 0.1),
+    };
+  });
 
   return (
     <>
@@ -297,163 +328,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               <div
                 style={{ border: "1px solid #2A2560", background: "#0A0826", overflow: "hidden" }}
               >
-                {dueSchedules.map((s, i) => {
-                  const due = dueLabel(s.nextReviewAt, now);
-                  const cat = CAT_LABELS[s.lesson.category] ?? {
-                    label: s.lesson.category,
-                    color: "#6B6890",
-                    border: "rgba(107,104,144,0.35)",
-                  };
-                  const est = timeEst(s.lesson.difficulty);
-                  return (
-                    <Link
-                      key={s.id}
-                      href={`/lessons/${s.lesson.slug}`}
-                      className="rv-row review-row-layout"
-                      style={{
-                        borderBottom:
-                          i < dueSchedules.length - 1 ? "1px solid rgba(31,27,71,0.6)" : "none",
-                        textDecoration: "none",
-                        transition: "background 150ms ease",
-                      }}
-                    >
-                      {/* index */}
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontWeight: 700,
-                          fontSize: 11,
-                          letterSpacing: "0.04em",
-                          color: "#6B6890",
-                          background: "#05041A",
-                          border: "1px solid #2A2560",
-                          width: 36,
-                          height: 28,
-                          display: "grid",
-                          placeItems: "center",
-                        }}
-                      >
-                        {String(i + 1).padStart(2, "0")}
-                      </div>
-
-                      {/* body */}
-                      <div>
-                        <div
-                          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: "var(--font-mono)",
-                              fontWeight: 700,
-                              fontSize: 10,
-                              letterSpacing: "0.12em",
-                              textTransform: "uppercase",
-                              padding: "2px 8px",
-                              border: `1px solid ${cat.border}`,
-                              color: cat.color,
-                              background: "rgba(0,0,0,0.2)",
-                            }}
-                          >
-                            {cat.label}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: "var(--font-mono)",
-                              fontSize: 10,
-                              color: "#44406B",
-                              letterSpacing: "0.08em",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            · micro-quiz
-                          </span>
-                        </div>
-                        <h3
-                          style={{
-                            fontFamily: "var(--font-sans)",
-                            fontWeight: 600,
-                            fontSize: 15,
-                            color: "#F5F5FA",
-                            margin: 0,
-                            letterSpacing: "-0.005em",
-                          }}
-                        >
-                          {s.lesson.title}
-                        </h3>
-                      </div>
-
-                      {/* due */}
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          color: due.kind === "today" ? "#FF4D6D" : "#6B6890",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: 5,
-                            height: 5,
-                            borderRadius: "50%",
-                            background: due.kind === "today" ? "#FF4D6D" : "#44406B",
-                            boxShadow: due.kind === "today" ? "0 0 6px #FF4D6D" : "none",
-                            display: "inline-block",
-                          }}
-                        />
-                        {due.text}
-                      </div>
-
-                      {/* time */}
-                      <div
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          color: "#44406B",
-                          letterSpacing: "0.08em",
-                          textTransform: "uppercase",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {est}
-                      </div>
-
-                      {/* go */}
-                      <div
-                        className="rv-go"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontWeight: 700,
-                          fontSize: 11,
-                          letterSpacing: "0.18em",
-                          textTransform: "uppercase",
-                          color: "#0AFFD4",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          whiteSpace: "nowrap",
-                          transition: "color 150ms ease",
-                        }}
-                      >
-                        Réviser
-                        <svg width={12} height={12} viewBox="0 0 14 14" fill="none">
-                          <path
-                            d="M3 7H11M8 4L11 7L8 10"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                    </Link>
-                  );
-                })}
+                <RevisionsList rows={rows} />
 
                 {/* Footer */}
                 <div
@@ -478,40 +353,8 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               </div>
             </section>
 
-            {/* CTAs */}
+            {/* CTA: grading happens in place now, only the back link remains */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 32 }}>
-              <Link
-                href={`/lessons/${dueSchedules[0]?.lesson.slug ?? ""}`}
-                className="btn-blue"
-                style={{
-                  position: "relative",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "16px 32px",
-                  background: "#0024FF",
-                  color: "#fff",
-                  border: "1px solid #0024FF",
-                  fontFamily: "var(--font-mono)",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  textDecoration: "none",
-                  boxShadow: "0 0 20px rgba(0,36,255,0.45)",
-                }}
-              >
-                Tout réviser{" "}
-                <span
-                  style={{
-                    color: "#0AFFD4",
-                    textShadow: "0 0 8px rgba(10,255,212,0.6)",
-                    fontWeight: 500,
-                  }}
-                >
-                  →
-                </span>
-              </Link>
               <Link
                 href="/dashboard"
                 className="back-link"
