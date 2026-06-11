@@ -1,0 +1,8 @@
+# Vendored third-party runtimes (Pyodide, JSCPP bundle) - not our code.
+apps/web/public/runtimes/
+# Static design mockups - reference material, not app code.
+docs/design/paths/
+# Compiled in-place tsc artifacts (gitignored, but be explicit for local runs).
+packages/*/src/**/*.js
+packages/db/prisma/**/*.js
+# Default Semgrep exclusions are kept (node_modules, .git, etc.).
