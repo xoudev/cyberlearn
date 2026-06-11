@@ -40,7 +40,7 @@
 
 **Tâches post-launch restantes :**
 
-- **Init Sentry sur apps/admin** — même pattern que apps/web, PR dédiée à créer
+- ~~**Init Sentry sur apps/admin**~~ — **fait** (`sentry.{client,server,edge}.config.ts` + `withSentryConfig`, scrubEvent partagé)
 - **Audit Sentry events 30j post-launch** — vérifier qu'aucun PII ne leak malgré le scrubbing
   (inspecter les events Sentry dans le dashboard, chercher patterns email/UUID dans messages)
 
@@ -76,10 +76,10 @@ toutes les heures) pour éviter le coût d'une requête à chaque visite.
 
 ### Convention .gitignore /docs
 
-Tracé pour cleanup futur : décider si on garde la convention actuelle
-(/docs gitignored avec git add -f sélectif) ou si on bascule sur
-une convention par sous-dossier (genre docs/private/* gitignored,
-reste tracké par défaut). Hérité de PR 1.4.
+**Résolu** (PR #66) : la règle large `/docs` est supprimée — elle ignorait
+silencieusement tout nouveau fichier de doc. `docs/` est tracké par défaut ;
+un commentaire de garde dans `.gitignore` documente le piège. Si un besoin de
+notes privées revient, créer un sous-dossier dédié gitignoré explicitement.
 
 
 
