@@ -8,6 +8,14 @@ import { loadRootEnv } from "../../scripts/load-root-env.mjs";
 loadRootEnv(path.join(__dirname, "../../"));
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // The multi-file lesson import sends batches up to 4 MB (zod-capped in
+      // the action); the Next.js default of 1 MB would fail at the transport
+      // layer with an opaque error before validation runs.
+      bodySizeLimit: "8mb",
+    },
+  },
   outputFileTracingRoot: path.join(__dirname, "../../"),
   outputFileTracingIncludes: {
     "/*": [
