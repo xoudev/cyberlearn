@@ -359,7 +359,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
               : "Rien à réviser pour l'instant."
           }
           ctaLabel={dueReviews.length > 0 ? "Tout réviser →" : undefined}
-          ctaHref="/review"
+          ctaHref="/revisions"
         />
 
         {dueReviews.length > 0 ? (
