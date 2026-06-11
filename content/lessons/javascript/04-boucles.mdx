@@ -1,0 +1,99 @@
+---
+refCode: CL-LSN-016-V01
+slug: js-boucles
+title: "Les boucles : for, while et for...of"
+description: "Répétez des actions efficacement avec les boucles for, while et for...of en JavaScript, et contrôlez leur déroulement avec break et continue."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 150
+prerequisites: ["CL-LSN-015-V01"]
+---
+
+Imaginez que vous deviez afficher les nombres de 1 à 100. Vous pourriez écrire cent lignes de `console.log`... ou utiliser une boucle. Une boucle permet de répéter un bloc d'instructions automatiquement, sans copier-coller. C'est l'un des outils les plus puissants de la programmation : il transforme une tâche répétitive et fastidieuse en quelques lignes élégantes.
+
+Dans cette leçon, vous allez découvrir les trois boucles les plus utilisées en JavaScript, puis apprendre à contrôler finement leur déroulement.
+
+## La boucle for
+
+La boucle `for` est idéale quand vous savez combien de fois répéter une action. Elle se compose de trois parties, séparées par des points-virgules : l'initialisation, la condition, et l'incrément.
+
+<CodePlayground language="javascript" starterCode={`for (let i = 1; i <= 5; i++) {
+  console.log("Tour numéro " + i);
+}`} />
+
+Ici, `i` démarre à 1, la boucle continue tant que `i` est inférieur ou égal à 5, et `i` augmente de 1 à chaque tour grâce à `i++`.
+
+<Callout type="info">
+Les trois parties du `for` se lisent ainsi : **initialisation** (`let i = 1`) exécutée une seule fois au départ ; **condition** (`i <= 5`) vérifiée avant chaque tour ; **incrément** (`i++`) exécuté à la fin de chaque tour.
+</Callout>
+
+## La boucle while
+
+La boucle `while` répète un bloc tant qu'une condition reste vraie. On l'utilise quand on ne connaît pas à l'avance le nombre de répétitions. Attention : vous devez faire évoluer la condition à l'intérieur de la boucle, sinon elle ne s'arrêtera jamais.
+
+<CodePlayground language="javascript" starterCode={`let compteur = 3;
+while (compteur > 0) {
+  console.log("Décollage dans " + compteur);
+  compteur = compteur - 1;
+}
+console.log("Décollage !");`} />
+
+À chaque tour, on décrémente `compteur`. Quand il atteint 0, la condition `compteur > 0` devient fausse et la boucle s'arrête.
+
+<Callout type="warning">
+Si vous oubliez de faire évoluer la condition (par exemple en retirant `compteur = compteur - 1`), vous créez une **boucle infinie** : le programme tourne sans fin et se bloque. Vérifiez toujours que votre condition finira par devenir fausse.
+</Callout>
+
+## for...of
+
+Un **tableau** est une liste ordonnée de valeurs, par exemple une liste de prénoms. La boucle `for...of` permet de parcourir un tableau élément par élément, sans se soucier des indices.
+
+<CodePlayground language="javascript" starterCode={`const fruits = ["pomme", "banane", "cerise"];
+for (const fruit of fruits) {
+  console.log("J'aime la " + fruit);
+}`} />
+
+À chaque tour, la variable `fruit` prend la valeur suivante du tableau. C'est plus lisible qu'une boucle `for` classique quand on veut simplement traiter chaque élément.
+
+## break et continue
+
+Deux mots-clés permettent de contrôler le déroulement d'une boucle. `break` interrompt complètement la boucle, tandis que `continue` saute le reste du tour courant et passe directement au suivant.
+
+<CodePlayground language="javascript" starterCode={`for (let i = 1; i <= 10; i++) {
+  if (i === 6) {
+    break; // on arrête tout dès que i vaut 6
+  }
+  if (i % 2 === 0) {
+    continue; // on saute les nombres pairs
+  }
+  console.log("Nombre impair : " + i);
+}`} />
+
+Ici, la boucle affiche les nombres impairs (`continue` ignore les pairs) et s'arrête net dès que `i` atteint 6 grâce à `break`.
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Dans une boucle for classique, quelle partie est exécutée une seule fois, au tout début ?" options={["La condition", "L'initialisation", "L'incrément"]} correct={1} />
+
+<Quiz id="q-2" question="Que provoque l'oubli de faire évoluer la condition d'une boucle while ?" options={["Une boucle infinie", "Une erreur de syntaxe", "L'arrêt immédiat de la boucle"]} correct={0} />
+
+<Quiz id="q-3" question="Quel mot-clé saute l'itération courante et passe directement à la suivante ?" options={["break", "return", "continue"]} correct={2} />
+
+Maintenant, à votre tour : calculez la somme de tous les nombres de 1 à 100 à l'aide d'une boucle.
+
+<CodePlayground language="javascript" starterCode={`let somme = 0;
+for (let i = 1; i <= 100; i++) {
+  somme = somme + i;
+}
+console.log("La somme de 1 à 100 vaut : " + somme);`} />
+
+## Récapitulatif
+
+- La boucle **`for`** répète un bloc un nombre connu de fois : initialisation, condition, incrément.
+- La boucle **`while`** répète tant qu'une condition est vraie ; il faut faire évoluer cette condition.
+- Une **boucle infinie** survient quand la condition ne devient jamais fausse : à éviter absolument.
+- **`for...of`** parcourt un tableau élément par élément, de façon lisible.
+- **`break`** interrompt la boucle, **`continue`** saute le reste du tour courant.
+
+OK 04-boucles.mdx écrit

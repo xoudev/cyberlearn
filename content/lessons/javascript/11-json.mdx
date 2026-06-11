@@ -1,0 +1,114 @@
+---
+refCode: CL-LSN-023-V01
+slug: js-json
+title: "Manipuler des données avec JSON"
+description: "JSON est le format d'échange de données du web. Apprenez à le lire, le produire et le manipuler avec JSON.parse et JSON.stringify en JavaScript."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 350
+prerequisites: ["CL-LSN-018-V01"]
+---
+
+Dès qu'une application web doit échanger des informations avec un serveur, lire un fichier de configuration ou sauvegarder des préférences, elle s'appuie presque toujours sur le même format : JSON. C'est le langage commun des API, des bases de données modernes et des outils de développement. Maîtriser JSON, c'est pouvoir faire communiquer votre code JavaScript avec le reste du monde.
+
+Dans cette leçon, vous allez découvrir ce qu'est JSON, comment transformer une chaîne JSON en objet exploitable, comment produire du JSON à partir de vos données, et comment manipuler le tout sans vous tromper.
+
+## Qu'est-ce que JSON
+
+JSON signifie *JavaScript Object Notation*. C'est un format texte, lisible par un humain comme par une machine, qui sert à représenter des données structurées. Sa syntaxe ressemble beaucoup à celle des objets JavaScript : on retrouve des paires clé-valeur, des tableaux, des nombres, des booléens et la valeur `null`.
+
+Voici un exemple de document JSON décrivant un utilisateur :
+
+```json
+{
+  "name": "Amélie",
+  "level": 7,
+  "isActive": true,
+  "skills": ["html", "css", "javascript"],
+  "address": null
+}
+```
+
+La grande différence avec un objet JavaScript classique : en JSON, **toutes les clés sont obligatoirement entre guillemets doubles**, et les chaînes de caractères aussi. On ne peut pas y mettre de fonctions, ni de commentaires, ni de virgule finale après le dernier élément. JSON ne connaît que six types : chaîne, nombre, booléen, `null`, tableau et objet.
+
+## JSON.parse
+
+Quand un serveur vous renvoie des données, il vous les transmet sous forme de **chaîne de caractères**. Pour pouvoir les utiliser dans votre code, vous devez les convertir en véritable objet JavaScript. C'est le rôle de `JSON.parse`.
+
+<CodePlayground language="javascript" starterCode={`const text = '{ "name": "Amélie", "level": 7, "skills": ["html", "css"] }';
+const user = JSON.parse(text);
+
+console.log(user.name);
+console.log(user.level + 1);
+console.log(user.skills[0]);`} />
+
+Une fois la chaîne analysée, `user` est un objet JavaScript ordinaire : vous accédez à ses propriétés avec la notation point, vous parcourez ses tableaux, vous faites des calculs avec ses nombres.
+
+## JSON.stringify
+
+L'opération inverse consiste à transformer un objet JavaScript en chaîne JSON, afin de l'envoyer sur le réseau ou de la stocker. C'est `JSON.stringify` qui s'en charge. Son deuxième argument vaut généralement `null`, et son troisième argument indique le nombre d'espaces d'indentation pour une sortie lisible.
+
+<CodePlayground language="javascript" starterCode={`const product = {
+  title: 'Clavier',
+  price: 49.9,
+  tags: ['azerty', 'usb'],
+};
+
+const compact = JSON.stringify(product);
+const pretty = JSON.stringify(product, null, 2);
+
+console.log(compact);
+console.log(pretty);`} />
+
+<Callout type="info">
+On utilise JSON.stringify partout : pour envoyer un corps de requête à une API, pour sauvegarder un objet dans le localStorage du navigateur, ou pour écrire un fichier de configuration. La version indentée est pratique pour le débogage et la lecture humaine.
+</Callout>
+
+## Manipuler des données
+
+Le scénario le plus courant combine les deux opérations : on parse une chaîne reçue, on modifie l'objet obtenu, puis on le re-stringifie pour le renvoyer. Voici une liste d'utilisateurs que l'on filtre pour ne garder que les membres actifs.
+
+<CodePlayground language="javascript" starterCode={`const raw = '[{"name":"Léa","active":true},{"name":"Tom","active":false},{"name":"Sara","active":true}]';
+
+const users = JSON.parse(raw);
+const activeUsers = users.filter((u) => u.active);
+
+console.log(activeUsers.length);
+
+const result = JSON.stringify(activeUsers, null, 2);
+console.log(result);`} />
+
+Entre le parse et le stringify, vous disposez d'un tableau d'objets JavaScript classique : vous pouvez le filtrer, le trier, ajouter ou supprimer des propriétés, exactement comme avec n'importe quelle structure de données.
+
+<Callout type="warning">
+Attention : JSON.parse lève une erreur si la chaîne fournie n'est pas un JSON valide (une virgule en trop, une clé sans guillemets, une chaîne tronquée). Enveloppez toujours l'appel dans un bloc try/catch quand la donnée vient d'une source externe, sinon votre programme plantera.
+</Callout>
+
+## À vous de jouer
+
+<Quiz id="q-1" question="En JSON strict, comment doivent être écrites les clés d'un objet ?" options={["Sans guillemets, comme en JavaScript", "Entre guillemets doubles obligatoirement", "Entre guillemets simples"]} correct={1} />
+
+<Quiz id="q-2" question="Que fait JSON.stringify ?" options={["Il transforme une chaîne JSON en objet JavaScript", "Il valide un fichier JSON", "Il transforme un objet JavaScript en chaîne JSON"]} correct={2} />
+
+<Quiz id="q-3" question="Que se passe-t-il si on passe une chaîne JSON invalide à JSON.parse ?" options={["Une erreur est levée", "La fonction renvoie null", "La fonction renvoie une chaîne vide"]} correct={0} />
+
+Entraînez-vous : parsez la chaîne, ajoutez un point au score, puis renvoyez le résultat en JSON indenté.
+
+<CodePlayground language="javascript" starterCode={`const data = '{ "player": "Max", "score": 41 }';
+
+const game = JSON.parse(data);
+game.score = game.score + 1;
+
+console.log(JSON.stringify(game, null, 2));`} />
+
+## Récapitulatif
+
+- JSON est un format texte d'échange de données, utilisé par les API, le stockage et la configuration.
+- Sa syntaxe ressemble aux objets JavaScript, mais les clés et les chaînes sont toujours entre guillemets doubles.
+- `JSON.parse` transforme une chaîne JSON en objet JavaScript exploitable.
+- `JSON.stringify` transforme un objet en chaîne JSON ; son troisième argument contrôle l'indentation.
+- On enchaîne souvent parse, modification puis stringify pour traiter des données.
+- `JSON.parse` lève une erreur sur une chaîne invalide : protégez-le avec try/catch.
+
+OK 11-json.mdx écrit

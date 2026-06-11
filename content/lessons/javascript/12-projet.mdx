@@ -1,0 +1,262 @@
+---
+refCode: CL-LSN-024-V01
+slug: js-projet
+title: "Projet : un quiz interactif en JavaScript"
+description: "Assemblez tout le parcours en construisant un moteur de quiz : stocker les questions, vérifier les réponses, calculer le score et afficher un bilan."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 600
+prerequisites: ["CL-LSN-022-V01", "CL-LSN-018-V01"]
+---
+
+Bravo, vous voilà arrivé à la dernière étape du parcours JavaScript. Jusqu'ici,
+vous avez appris des briques isolées : les variables, les tableaux, les objets,
+les fonctions, les boucles et la logique conditionnelle. Une compétence ne
+prend toute sa valeur que lorsqu'on l'assemble avec les autres pour produire
+quelque chose d'utile. C'est exactement ce que nous allons faire dans cette
+leçon-projet : construire, pas à pas, un véritable moteur de quiz interactif.
+
+Un moteur de quiz est un excellent projet de synthèse. Il oblige à modéliser des
+données (les questions), à écrire de la logique (vérifier une réponse), à
+parcourir des collections (calculer un score) et à restituer un résultat lisible
+(le bilan final). Chaque étape ci-dessous est exécutable directement dans
+l'éditeur intégré. À la fin, vous repartirez avec un projet personnel à
+développer pour transformer ce moteur en vraie application web.
+
+## L'architecture
+
+Avant d'écrire la moindre ligne, posons-nous une question essentielle : comment
+représenter une question dans le code ? Une question de quiz contient toujours
+les mêmes informations : un énoncé, une liste d'options, et l'indication de la
+bonne réponse. C'est typiquement le rôle d'un objet.
+
+Nous représentons donc une question par un objet à trois propriétés : l'énoncé
+(une chaîne), les options (un tableau de chaînes) et l'index de la bonne réponse
+(un nombre qui pointe vers la bonne case du tableau d'options). Le quiz complet,
+lui, devient simplement un tableau de ces objets.
+
+<Callout type="info">
+On numérote les options à partir de zéro, comme toutes les positions dans un
+tableau JavaScript. Si la bonne réponse est la première option, son index vaut
+0 ; si c'est la deuxième, il vaut 1, et ainsi de suite.
+</Callout>
+
+<Diagram>
+flowchart TD
+  A[Tableau de questions] --> B[Question 1 - objet]
+  A --> C[Question 2 - objet]
+  B --> D[enonce + options + bonneReponse]
+  C --> E[enonce + options + bonneReponse]
+  D --> F[verifierReponse]
+  E --> F
+  F --> G[calculerScore]
+  G --> H[Bilan affiche]
+</Diagram>
+
+## Étape 1 : stocker les questions
+
+Commençons par les données. Nous créons un tableau nommé `questions`, où chaque
+élément est un objet décrivant une question. Lancez le code pour voir comment on
+accède à l'énoncé de la première question et à ses options.
+
+<CodePlayground language="javascript" starterCode={`{\`const questions = [
+  {
+    enonce: 'Quel mot-cle declare une constante en JavaScript ?',
+    options: ['var', 'let', 'const', 'static'],
+    bonneReponse: 2,
+  },
+  {
+    enonce: 'Quelle methode ajoute un element a la fin d un tableau ?',
+    options: ['push', 'pop', 'shift', 'slice'],
+    bonneReponse: 0,
+  },
+  {
+    enonce: 'Que renvoie typeof [] ?',
+    options: ['array', 'object', 'list', 'undefined'],
+    bonneReponse: 1,
+  },
+];
+
+console.log('Nombre de questions :', questions.length);
+console.log('Premier enonce :', questions[0].enonce);
+console.log('Ses options :', questions[0].options.join(' / '));\`}`} />
+
+Remarquez comme cette structure est lisible : on pourrait ajouter cent questions
+sans changer une seule ligne de logique. Séparer les données du code est un
+principe fondamental que vous retrouverez dans tous vos futurs projets.
+
+## Étape 2 : vérifier une réponse
+
+Maintenant que les questions existent, écrivons la fonction qui décide si une
+réponse est correcte. Elle prend une question et l'index choisi par le joueur,
+puis compare cet index à celui de la bonne réponse. Elle renvoie `true` ou
+`false`.
+
+<CodePlayground language="javascript" starterCode={`{\`function verifierReponse(question, indexChoisi) {
+  return indexChoisi === question.bonneReponse;
+}
+
+const q = {
+  enonce: 'Quel mot-cle declare une constante ?',
+  options: ['var', 'let', 'const', 'static'],
+  bonneReponse: 2,
+};
+
+console.log('Choix 2 (const) :', verifierReponse(q, 2));
+console.log('Choix 0 (var) :', verifierReponse(q, 0));\`}`} />
+
+Cette fonction est volontairement minuscule : elle fait une seule chose, et elle
+la fait bien. C'est une excellente habitude. Une fonction courte est facile à
+tester, à comprendre et à réutiliser.
+
+## Étape 3 : calculer le score
+
+Il nous reste à parcourir toutes les questions, comparer chaque réponse du
+joueur à la bonne, et compter les succès. La fonction `calculerScore` reçoit le
+tableau des questions et un tableau des réponses du joueur (les index choisis),
+puis renvoie le nombre de bonnes réponses. On utilise ici `reduce`, parfait pour
+accumuler un total en parcourant un tableau.
+
+<CodePlayground language="javascript" starterCode={`{\`function verifierReponse(question, indexChoisi) {
+  return indexChoisi === question.bonneReponse;
+}
+
+function calculerScore(questions, reponses) {
+  return questions.reduce((total, question, i) => {
+    return total + (verifierReponse(question, reponses[i]) ? 1 : 0);
+  }, 0);
+}
+
+const questions = [
+  { enonce: 'Q1', options: ['a', 'b'], bonneReponse: 0 },
+  { enonce: 'Q2', options: ['a', 'b'], bonneReponse: 1 },
+  { enonce: 'Q3', options: ['a', 'b'], bonneReponse: 1 },
+];
+
+const reponsesJoueur = [0, 1, 0];
+console.log('Score :', calculerScore(questions, reponsesJoueur));\`}`} />
+
+Le joueur a répondu juste aux deux premières et faux à la dernière : le score
+affiché est donc 2. Si `reduce` vous intimide encore, sachez qu'une simple
+boucle `for` avec un compteur produirait exactement le même résultat.
+
+## À vous de jouer
+
+Testez votre compréhension avant l'exercice final.
+
+<QuizGroup>
+<Quiz
+  question="Dans notre modèle, où est stocké l'index de la bonne réponse ?"
+  options={[
+    "Dans une variable globale séparée",
+    "Dans la propriété bonneReponse de l'objet question",
+    "Dans le tableau des réponses du joueur",
+    "Dans la fonction calculerScore",
+  ]}
+  correctIndex={1}
+  explanation="Chaque objet question porte sa propre bonne réponse via la propriété bonneReponse."
+/>
+<Quiz
+  question="Que renvoie verifierReponse si indexChoisi vaut 1 et bonneReponse vaut 1 ?"
+  options={["false", "1", "true", "undefined"]}
+  correctIndex={2}
+  explanation="La comparaison stricte 1 === 1 vaut true : la réponse est correcte."
+/>
+<Quiz
+  question="Pourquoi séparer les questions (données) de la logique (fonctions) ?"
+  options={[
+    "Pour ralentir le programme",
+    "C'est obligatoire en JavaScript",
+    "Pour ajouter ou modifier des questions sans toucher au code",
+    "Pour utiliser plus de mémoire",
+  ]}
+  correctIndex={2}
+  explanation="Données et logique séparées rendent le code réutilisable et facile à faire évoluer."
+/>
+</QuizGroup>
+
+Assemblons à présent toutes les briques pour produire un bilan complet et
+lisible.
+
+<CodePlayground language="javascript" starterCode={`{\`const questions = [
+  { enonce: 'const declare ?', options: ['variable', 'constante'], bonneReponse: 1 },
+  { enonce: 'push ajoute ou ?', options: ['au debut', 'a la fin'], bonneReponse: 1 },
+  { enonce: 'typeof [] ?', options: ['object', 'array'], bonneReponse: 0 },
+];
+
+function verifierReponse(question, indexChoisi) {
+  return indexChoisi === question.bonneReponse;
+}
+
+function calculerScore(questions, reponses) {
+  return questions.reduce((total, q, i) => {
+    return total + (verifierReponse(q, reponses[i]) ? 1 : 0);
+  }, 0);
+}
+
+function afficherBilan(questions, reponses) {
+  const score = calculerScore(questions, reponses);
+  const total = questions.length;
+  console.log('=== BILAN DU QUIZ ===');
+  questions.forEach((q, i) => {
+    const ok = verifierReponse(q, reponses[i]) ? 'OK' : 'FAUX';
+    console.log((i + 1) + '. ' + q.enonce + ' -> ' + ok);
+  });
+  console.log('Resultat : ' + score + '/' + total + ' bonnes reponses');
+}
+
+const reponsesJoueur = [1, 1, 1];
+afficherBilan(questions, reponsesJoueur);\`}`} />
+
+Vous venez de construire un moteur de quiz fonctionnel, du modèle de données
+jusqu'au bilan. Modifiez le tableau `reponsesJoueur` et relancez : le bilan
+s'adapte tout seul.
+
+## Votre projet personnel
+
+<Callout type="success">
+Vous avez maintenant tout ce qu'il faut pour aller plus loin par vous-même.
+Votre mission : transformer ce moteur de quiz en une vraie application web que
+vous pourrez montrer dans votre portfolio.
+</Callout>
+
+L'idée est de partir des fonctions ci-dessus et de leur ajouter une véritable
+interface, de la persistance et des options de jeu. Construisez votre
+application par étapes progressives, en testant après chacune :
+
+1. **Interface HTML** - affichez la question courante et ses options sous forme
+   de boutons, et avancez d'une question au clic. C'est le pont entre votre
+   logique et l'écran.
+2. **Score en direct** - montrez le score qui progresse au fil des réponses, et
+   affichez le bilan final une fois la dernière question passée.
+3. **Minuteur** - ajoutez un compte à rebours par question : si le temps expire,
+   la réponse est comptée comme fausse et on passe à la suivante.
+4. **Catégories et niveaux** - proposez plusieurs jeux de questions (par exemple
+   Débutant, Intermédiaire, Avancé) que le joueur choisit avant de démarrer.
+5. **Sauvegarde locale** - mémorisez le meilleur score dans `localStorage` pour
+   le retrouver à la prochaine visite, même après avoir fermé le navigateur.
+
+Quand votre projet tourne, versionnez-le sur GitHub avec un README clair, puis
+déployez-le gratuitement sur GitHub Pages ou Vercel. Un projet en ligne, avec son
+code public, vaut mille promesses sur un CV.
+
+## Récapitulatif
+
+En terminant ce projet, vous mobilisez l'ensemble des compétences du parcours
+JavaScript :
+
+- Déclarer et manipuler des **variables** et des **constantes**.
+- Modéliser des données avec des **objets** et des **tableaux**.
+- Accéder aux propriétés et aux éléments par leur **clé** ou leur **index**.
+- Écrire des **fonctions** courtes, ciblées et réutilisables.
+- Utiliser la **logique conditionnelle** et la **comparaison stricte**.
+- Parcourir des collections avec `forEach`, `reduce` et les **boucles**.
+- Séparer **données** et **logique** pour un code maintenable.
+- Assembler plusieurs fonctions en une **application** cohérente.
+- Envisager la **persistance** et le **déploiement** d'un vrai projet.
+
+Félicitations : vous ne récitez plus du JavaScript, vous construisez avec. La
+suite, ce sont vos propres projets. Lancez-vous.
+
+OK 12-projet.mdx écrit

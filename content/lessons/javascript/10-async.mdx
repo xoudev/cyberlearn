@@ -1,0 +1,149 @@
+---
+refCode: CL-LSN-022-V01
+slug: js-async
+title: "Asynchrone : promesses et async/await"
+description: "Domptez le code asynchrone en JavaScript : le modèle non bloquant, les promesses (Promise), then/catch, et la syntaxe moderne async/await."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 450
+prerequisites: ["CL-LSN-021-V01"]
+---
+
+En JavaScript, certaines opérations prennent du temps : lire un fichier, interroger une base de données, attendre la réponse d'un serveur ou simplement patienter quelques secondes. Si le programme s'arrêtait complètement pendant ces opérations, l'interface deviendrait figée et inutilisable. C'est là qu'intervient l'**asynchrone** : un modèle qui permet de lancer une opération longue, puis de continuer à exécuter le reste du code sans attendre, et enfin de réagir lorsque le résultat est disponible.
+
+Dans cette leçon, vous allez comprendre pourquoi l'asynchrone est indispensable, découvrir les **promesses** (Promise), puis maîtriser la syntaxe moderne **async/await** qui rend ce code bien plus lisible. Toutes nos opérations longues seront simulées avec setTimeout ou des promesses résolues manuellement, afin de se concentrer sur la mécanique et non sur le réseau.
+
+## Le modèle non bloquant
+
+JavaScript s'exécute sur un **seul thread** : il ne fait qu'une chose à la fois. Pour ne pas bloquer ce thread unique pendant une opération longue, JavaScript délègue l'attente à l'environnement (le navigateur ou Node.js), puis exécute la suite du code. La fonction setTimeout illustre parfaitement ce comportement : elle planifie l'exécution d'une fonction plus tard, sans bloquer le reste.
+
+Observez l'ordre d'exécution dans l'exemple suivant. Le code synchrone s'exécute d'abord, et le code asynchrone (même avec un délai de zéro milliseconde) passe **après**.
+
+<CodePlayground language="javascript" starterCode={`console.log('1 - début (synchrone)');
+
+setTimeout(function () {
+  console.log('3 - asynchrone (différé)');
+}, 0);
+
+console.log('2 - fin (synchrone)');
+// Ordre affiché : 1, 2, 3`} />
+
+<Callout type="info">
+Même avec un délai de 0, le code de setTimeout est placé dans une file d'attente et n'est exécuté qu'une fois que tout le code synchrone courant est terminé. L'asynchrone ne veut pas dire « en même temps », mais « plus tard, sans bloquer ».
+</Callout>
+
+## Les promesses
+
+Une **promesse** (Promise) est un objet qui représente la valeur future d'une opération asynchrone. À sa création, on lui fournit une fonction recevant deux paramètres : resolve (pour signaler un succès) et reject (pour signaler une erreur). On lit ensuite le résultat avec then pour le succès et catch pour l'échec.
+
+Dans l'exemple ci-dessous, on simule une opération longue avec setTimeout : la promesse se résout après 500 millisecondes avec une valeur.
+
+<CodePlayground language="javascript" starterCode={`const operation = new Promise(function (resolve, reject) {
+  setTimeout(function () {
+    const succes = true;
+    if (succes) {
+      resolve('Données reçues');
+    } else {
+      reject(new Error('Échec de l opération'));
+    }
+  }, 500);
+});
+
+operation
+  .then(function (resultat) {
+    console.log('Succès :', resultat);
+  })
+  .catch(function (erreur) {
+    console.log('Erreur :', erreur.message);
+  });`} />
+
+Une promesse possède trois états : **en attente** (pending), **tenue** (fulfilled) ou **rompue** (rejected). Une fois résolue ou rejetée, elle ne change plus d'état.
+
+## async / await
+
+La syntaxe **async/await** est une couche de confort posée sur les promesses. Le mot-clé async devant une fonction indique qu'elle renvoie toujours une promesse. À l'intérieur, await met en pause la fonction jusqu'à ce que la promesse soit résolue, puis renvoie sa valeur - le tout sans bloquer le thread principal. Le code se lit alors presque comme du code synchrone, de haut en bas.
+
+Pour gérer les erreurs, on entoure les await d'un bloc try/catch. Réécrivons l'exemple précédent avec cette syntaxe moderne.
+
+<CodePlayground language="javascript" starterCode={`function operationLongue() {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      resolve('Données reçues');
+    }, 500);
+  });
+}
+
+async function principal() {
+  try {
+    const resultat = await operationLongue();
+    console.log('Succès :', resultat);
+  } catch (erreur) {
+    console.log('Erreur :', erreur.message);
+  }
+}
+
+principal();`} />
+
+## Enchaîner des opérations
+
+Souvent, une opération asynchrone dépend du résultat de la précédente. Avec async/await, il suffit d'aligner les await les uns après les autres : la lecture reste linéaire et claire. Ci-dessous, on simule deux étapes successives, chacune avec son propre délai.
+
+<CodePlayground language="javascript" starterCode={`function etape(nom, valeur, delai) {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      console.log('Terminé :', nom);
+      resolve(valeur);
+    }, delai);
+  });
+}
+
+async function enchainer() {
+  const jeton = await etape('authentification', 'token-123', 300);
+  console.log('Jeton obtenu :', jeton);
+
+  const profil = await etape('profil', 'Alice', 300);
+  console.log('Profil chargé :', profil);
+
+  console.log('Tout est prêt');
+}
+
+enchainer();`} />
+
+<Callout type="warning">
+Le mot-clé await ne peut s'utiliser qu'à l'intérieur d'une fonction déclarée async (ou au niveau supérieur d'un module). L'employer dans une fonction classique provoque une erreur de syntaxe.
+</Callout>
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Dans quel ordre s'affichent les messages : un console.log direct, puis un setTimeout(..., 0), puis un autre console.log direct ?" options={["Le setTimeout en premier, puis les deux console.log", "Les deux console.log d abord, puis le setTimeout", "Tout en même temps", "L ordre est imprévisible"]} correct={1} />
+
+<Quiz id="q-2" question="Quel mot-clé permet de mettre en pause une fonction async jusqu'à la résolution d'une promesse ?" options={["await", "then", "pause", "resolve"]} correct={0} />
+
+<Quiz id="q-3" question="Comment gère-t-on une erreur dans une fonction écrite avec async/await ?" options={["Avec un bloc try/catch autour des await", "Avec un setTimeout", "On ne peut pas gérer les erreurs", "Avec un console.log uniquement"]} correct={0} />
+
+À votre tour : complétez la fonction async pour attendre la promesse simulée et afficher sa valeur.
+
+<CodePlayground language="javascript" starterCode={`function chargerMessage() {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      resolve('Bonjour depuis une promesse');
+    }, 400);
+  });
+}
+
+async function afficher() {
+  const message = await chargerMessage();
+  console.log(message);
+}
+
+afficher();`} />
+
+## Récapitulatif
+
+- L'asynchrone permet de lancer une opération longue **sans bloquer** le thread unique de JavaScript.
+- setTimeout illustre le modèle non bloquant : le code différé s'exécute **après** tout le code synchrone courant.
+- Une **promesse** (Promise) représente une valeur future, avec resolve pour le succès et reject pour l'erreur, lus via then et catch.
+- **async/await** est une syntaxe plus lisible posée sur les promesses : await attend la résolution sans bloquer.
+- On gère les erreurs avec **try/catch** autour des await.
+- await ne s'utilise que dans une fonction **async** (ou au niveau supérieur d'un module).

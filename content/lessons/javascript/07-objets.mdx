@@ -1,0 +1,158 @@
+---
+refCode: CL-LSN-019-V01
+slug: js-objets
+title: "Objets et destructuration en JavaScript"
+description: "Modélisez des données structurées avec les objets JavaScript : propriétés, méthodes, accès par point ou crochets, et la destructuration moderne."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 350
+prerequisites: ["CL-LSN-017-V01"]
+---
+
+Jusqu'ici, vous avez manipulé des valeurs isolées : un nombre, une chaîne, un booléen. Mais dans un vrai programme, les données vont souvent par groupes. Un utilisateur n'est pas qu'un prénom : c'est un prénom, un âge, un e-mail, un rôle. Un produit, c'est un nom, un prix, une quantité en stock. Pour regrouper toutes ces informations liées dans une seule structure cohérente, JavaScript propose les **objets**.
+
+Un objet est une collection de paires **clé-valeur**. Chaque clé (aussi appelée propriété) porte un nom, et chaque nom pointe vers une valeur. C'est exactement comme une fiche d'identité : le champ « prénom » contient « Alice », le champ « âge » contient « 30 ». Dans cette leçon, vous allez apprendre à créer des objets, à lire et modifier leurs propriétés, à leur donner des comportements grâce aux méthodes, puis à extraire élégamment leurs valeurs avec la destructuration moderne.
+
+## Créer un objet
+
+On crée un objet avec des accolades. À l'intérieur, on écrit des paires `clé: valeur` séparées par des virgules. Par exemple, un objet utilisateur ressemble à `{ prenom: 'Alice', age: 30, actif: true }`. Les clés sont des chaînes (les guillemets sont souvent optionnels), et les valeurs peuvent être de n'importe quel type : nombre, chaîne, booléen, voire un autre objet.
+
+Pour lire une propriété, deux notations existent. La **notation par point** est la plus courante : `utilisateur.prenom`. La **notation par crochets** sert quand le nom de la propriété est dans une variable ou contient des caractères spéciaux : `utilisateur['prenom']`.
+
+<CodePlayground language="javascript" starterCode={`const utilisateur = {
+  prenom: 'Alice',
+  age: 30,
+  actif: true,
+};
+
+console.log(utilisateur.prenom); // Alice
+console.log(utilisateur['age']); // 30
+
+const cle = 'actif';
+console.log(utilisateur[cle]); // true`} />
+
+<Callout type="tip">
+Utilisez la notation par point dès que possible : elle est plus lisible. Réservez les crochets aux cas où le nom de la propriété est dynamique (stocké dans une variable).
+</Callout>
+
+## Modifier et ajouter des propriétés
+
+Les objets sont **mutables** : on peut changer la valeur d'une propriété existante, mais aussi en ajouter de nouvelles après la création. Il suffit d'affecter une valeur avec `=`. Si la clé existe déjà, elle est écrasée ; sinon, elle est créée. On peut aussi supprimer une propriété avec le mot-clé `delete`.
+
+<CodePlayground language="javascript" starterCode={`const produit = {
+  nom: 'Clavier',
+  prix: 49,
+};
+
+// Modifier une propriété existante
+produit.prix = 39;
+
+// Ajouter une nouvelle propriété
+produit.stock = 12;
+
+// Supprimer une propriété
+delete produit.stock;
+
+console.log(produit.nom);  // Clavier
+console.log(produit.prix); // 39`} />
+
+## Méthodes
+
+Une propriété peut contenir une fonction. On parle alors de **méthode** : c'est un comportement attaché à l'objet. À l'intérieur d'une méthode, le mot-clé `this` désigne l'objet lui-même, ce qui permet d'accéder à ses autres propriétés. Par exemple, une méthode `sePresenter` peut lire `this.prenom` pour construire un message personnalisé.
+
+<CodePlayground language="javascript" starterCode={`const personne = {
+  prenom: 'Karim',
+  age: 28,
+  sePresenter() {
+    return 'Je m\\'appelle ' + this.prenom + ' et j\\'ai ' + this.age + ' ans.';
+  },
+};
+
+console.log(personne.sePresenter());
+// Je m'appelle Karim et j'ai 28 ans.`} />
+
+<Callout type="warning">
+Le mot-clé `this` dépend de la façon dont la méthode est appelée. Pour l'instant, retenez la règle simple : dans `objet.methode()`, `this` est l'objet à gauche du point.
+</Callout>
+
+## Destructuration
+
+Lire plusieurs propriétés une à une est répétitif. La **destructuration** permet d'extraire des propriétés directement dans des variables, en une seule ligne. On écrit le nom des propriétés voulues entre accolades à gauche du `=`. Les noms des variables correspondent aux noms des clés. On peut aussi renommer une variable au passage ou donner une valeur par défaut.
+
+<CodePlayground language="javascript" starterCode={`const config = {
+  hote: 'localhost',
+  port: 5432,
+  ssl: false,
+};
+
+const { hote, port } = config;
+console.log(hote, port); // localhost 5432
+
+// Renommer et valeur par défaut
+const { ssl: secure = true, timeout = 30 } = config;
+console.log(secure);  // false
+console.log(timeout); // 30 (absent de config, défaut utilisé)`} />
+
+<Callout type="info">
+La destructuration rend le code plus court et plus lisible, surtout dans les paramètres de fonction. Au lieu de recevoir un objet entier et d'écrire `config.hote`, `config.port` partout, vous extrayez d'emblée les valeurs utiles. C'est un réflexe central en JavaScript moderne, notamment avec React.
+</Callout>
+
+## Objets et tableaux combinés
+
+Dans la vraie vie, on manipule rarement un objet seul : on a plutôt une **liste d'objets**, par exemple un catalogue de produits ou une liste d'utilisateurs. On range alors ces objets dans un tableau, et on les parcourt avec `map`, `filter` ou `forEach`. La destructuration combinée à `map` rend le parcours très expressif.
+
+<CodePlayground language="javascript" starterCode={`const etudiants = [
+  { nom: 'Alice', note: 16 },
+  { nom: 'Bob', note: 11 },
+  { nom: 'Chloe', note: 19 },
+];
+
+// Extraire seulement les noms
+const noms = etudiants.map(({ nom }) => nom);
+console.log(noms); // ['Alice', 'Bob', 'Chloe']
+
+// Garder les reçus (note >= 12)
+const recus = etudiants.filter((e) => e.note >= 12);
+console.log(recus.length); // 2`} />
+
+## À vous de jouer
+
+Testez votre compréhension avant de passer à l'exercice de code.
+
+<Quiz id="q-1" question="Comment lire la propriété 'titre' d'un objet appele livre avec la notation par point ?" options={["livre->titre", "livre.titre", "livre['titre'] uniquement", "titre.livre"]} correct={1} />
+
+<Quiz id="q-2" question="Dans une methode, a quoi fait reference le mot-cle this lors d'un appel objet.methode() ?" options={["A la fonction globale", "Au dernier objet cree", "A l'objet situe a gauche du point", "A une copie de l'objet"]} correct={2} />
+
+<Quiz id="q-3" question="Que fait la destructuration const { x } = obj ?" options={["Elle supprime x de obj", "Elle cree une variable x avec la valeur de obj.x", "Elle transforme obj en tableau", "Elle renomme obj en x"]} correct={1} />
+
+À votre tour d'écrire du code. Complétez l'exercice ci-dessous : créez un objet, ajoutez-lui une méthode, puis extrayez ses valeurs par destructuration.
+
+<CodePlayground language="javascript" starterCode={`// 1. Creez un objet voiture avec marque, modele et annee
+const voiture = {
+  marque: 'Renault',
+  modele: 'Clio',
+  annee: 2021,
+  resume() {
+    return this.marque + ' ' + this.modele + ' (' + this.annee + ')';
+  },
+};
+
+// 2. Appelez la methode
+console.log(voiture.resume()); // Renault Clio (2021)
+
+// 3. Extrayez marque et annee par destructuration
+const { marque, annee } = voiture;
+console.log(marque); // Renault
+console.log(annee);  // 2021`} />
+
+## Récapitulatif
+
+- Un **objet** regroupe des données liées sous forme de paires clé-valeur, écrites entre accolades.
+- On accède aux propriétés par **point** (`obj.cle`) ou par **crochets** (`obj['cle']`), utiles pour les clés dynamiques.
+- Les objets sont **mutables** : on modifie, ajoute (`obj.nouvelle = ...`) ou supprime (`delete obj.cle`) des propriétés à tout moment.
+- Une **méthode** est une fonction stockée dans une propriété ; `this` y désigne l'objet appelant.
+- La **destructuration** extrait des propriétés en variables en une ligne, avec renommage et valeurs par défaut possibles.
+- Un **tableau d'objets** se parcourt avec `map`, `filter` ou `forEach`, souvent combinés à la destructuration.
+
+OK 07-objets.mdx écrit

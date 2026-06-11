@@ -1,0 +1,105 @@
+---
+refCode: CL-LSN-020-V01
+slug: js-chaines
+title: "Chaînes de caractères et template literals"
+description: "Manipulez du texte en JavaScript : méthodes essentielles (toUpperCase, slice, split, replace, trim), indexation et les puissants template literals avec backticks."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 320
+prerequisites: ["CL-LSN-013-V01"]
+---
+
+Le texte est partout en programmation. Dès qu'un utilisateur saisit son nom dans un formulaire, qu'une API renvoie une réponse, ou que vous affichez un message à l'écran, vous manipulez des chaînes de caractères. En JavaScript, ce type de données s'appelle `string`, et savoir le travailler avec aisance est une compétence fondamentale.
+
+Dans cette leçon, vous allez découvrir les méthodes les plus utiles pour transformer du texte, apprendre à accéder à des caractères précis, à découper une phrase en morceaux, puis à assembler des chaînes de manière élégante grâce aux template literals. Ces outils vous serviront chaque jour, que vous construisiez une interface, nettoyiez des données ou génériez des messages dynamiques.
+
+## Méthodes essentielles
+
+Une chaîne possède de nombreuses méthodes intégrées qui renvoient une nouvelle valeur. Les plus courantes transforment la casse, nettoient les espaces ou cherchent du contenu. Retenez en particulier `toUpperCase` et `toLowerCase` pour la casse, `trim` pour supprimer les espaces autour d'un texte, `replace` pour substituer une partie, `includes` pour tester la présence d'un fragment, et `indexOf` pour retrouver sa position.
+
+<CodePlayground language="javascript" starterCode={`const message = '   Bonjour CyberLearn   ';
+console.log(message.trim());
+console.log(message.trim().toUpperCase());
+console.log('Apprendre'.toLowerCase());
+console.log('réseau et sécurité'.replace('et', '&'));
+console.log('cybersecurite'.includes('secu'));
+console.log('cybersecurite'.indexOf('secu'));`} />
+
+Notez que `includes` renvoie un booléen alors que `indexOf` renvoie un nombre (la position, ou -1 si le fragment est absent). Choisissez la méthode adaptée à votre besoin : un simple test, ou une position exacte.
+
+## Indexation et découpage
+
+Une chaîne se comporte comme une suite de caractères numérotés à partir de zéro. Le premier caractère est `chaine[0]`, le deuxième `chaine[1]`, et ainsi de suite. La propriété `chaine.length` donne le nombre total de caractères, donc le dernier se trouve à `chaine[chaine.length - 1]`.
+
+Pour extraire une portion, `slice(debut, fin)` renvoie les caractères de l'indice `debut` jusqu'à `fin` exclu. La méthode `substring` fonctionne de façon très similaire. Enfin, `split` découpe une chaîne en un tableau selon un séparateur que vous fournissez.
+
+<CodePlayground language="javascript" starterCode={`const mot = 'JavaScript';
+console.log(mot[0]);
+console.log(mot[mot.length - 1]);
+console.log(mot.slice(0, 4));
+console.log(mot.slice(4));
+console.log(mot.substring(4, 10));
+const phrase = 'le,reseau,est,partout';
+console.log(phrase.split(','));`} />
+
+`split` est précieux pour transformer une ligne CSV en liste de valeurs, ou pour compter les mots d'une phrase en découpant sur les espaces.
+
+## Template literals
+
+Les template literals utilisent les backticks (le caractère accent grave) au lieu des guillemets classiques. Leur grand atout : insérer directement une expression à l'aide de la syntaxe `${expression}`. Plus besoin d'enchaîner des additions de chaînes : tout se lit naturellement, sur une ou plusieurs lignes.
+
+<CodePlayground language="javascript" starterCode={`const prenom = 'Amel';
+const niveau = 7;
+console.log(\`Bonjour \${prenom}, tu es au niveau \${niveau}.\`);
+console.log(\`L'an prochain : niveau \${niveau + 1}.\`);
+
+const carte = \`Profil
+  Nom    : \${prenom}
+  Niveau : \${niveau}\`;
+console.log(carte);`} />
+
+<Callout type="info">
+Comparé à la concaténation classique avec l'opérateur d'addition, le template literal est plus lisible, gère les retours à la ligne sans astuce et limite les erreurs d'espaces oubliés. C'est aujourd'hui la façon recommandée d'assembler du texte dynamique.
+</Callout>
+
+## Immutabilité
+
+Un point essentiel : en JavaScript, les chaînes sont immuables. Aucune méthode ne modifie la chaîne d'origine. Chaque appel à `toUpperCase`, `slice` ou `replace` renvoie une nouvelle chaîne, et l'originale reste intacte. Si vous voulez conserver le résultat, vous devez le réassigner à une variable.
+
+<Callout type="warning">
+Écrire `texte.toUpperCase()` sans récupérer le retour ne change rien : la variable `texte` garde sa valeur initiale. Pensez toujours à stocker ou réutiliser la valeur renvoyée.
+</Callout>
+
+<CodePlayground language="javascript" starterCode={`let texte = 'cyberlearn';
+texte.toUpperCase();
+console.log(texte);
+
+texte = texte.toUpperCase();
+console.log(texte);`} />
+
+## À vous de jouer
+
+Testez votre compréhension avant de passer à l'exercice de code.
+
+<Quiz id="q-1" question="Que renvoie 'Réseau'.toLowerCase() ?" options={["RÉSEAU", "réseau", "Réseau"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle expression donne le dernier caractère d'une chaîne nommée mot ?" options={["mot[mot.length]", "mot[mot.length - 1]", "mot.last()"]} correct={1} />
+
+<Quiz id="q-3" question="Avec les template literals, comment insère-t-on une variable nom dans une chaîne ?" options={["Avec ${nom} entre backticks", "Avec {nom} entre guillemets", "Avec %nom% entre apostrophes"]} correct={0} />
+
+Maintenant, un petit défi : compter le nombre de mots d'une phrase. L'astuce consiste à nettoyer les espaces avec `trim`, puis à découper sur l'espace avec `split`, et enfin à lire la longueur du tableau obtenu.
+
+<CodePlayground language="javascript" starterCode={`const phrase = '  apprendre le code change tout  ';
+const mots = phrase.trim().split(' ');
+console.log(\`Nombre de mots : \${mots.length}\`);
+console.log(mots);`} />
+
+## Récapitulatif
+
+- Les méthodes `toUpperCase`, `toLowerCase`, `trim`, `replace`, `includes` et `indexOf` transforment ou inspectent le texte.
+- L'indexation commence à zéro ; le dernier caractère est à l'indice `length - 1`.
+- `slice` et `substring` extraient une portion ; `split` découpe une chaîne en tableau.
+- Les template literals avec backticks et `${expression}` offrent interpolation et multi-lignes.
+- Préférez les template literals à la concaténation pour la lisibilité.
+- Les chaînes sont immuables : récupérez toujours la valeur renvoyée par une méthode.

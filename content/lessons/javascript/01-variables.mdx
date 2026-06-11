@@ -1,0 +1,147 @@
+---
+refCode: CL-LSN-013-V01
+slug: js-variables
+title: "Variables et types en JavaScript"
+description: "Découvrez JavaScript : déclarer des variables avec let et const, et manipuler les types de base (number, string, boolean, null, undefined)."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 20
+xpReward: 120
+prerequisites: []
+---
+
+JavaScript est le langage du web. À l'origine conçu pour rendre les pages
+interactives dans le navigateur, il s'exécute aujourd'hui absolument partout :
+côté client dans Chrome ou Firefox, côté serveur avec Node.js, dans les
+applications mobiles, et même sur des objets connectés. Apprendre JavaScript,
+c'est donc se donner un outil universel pour construire des sites, des API et
+des programmes complets.
+
+Dans cette première leçon, nous allons poser les fondations : afficher des
+messages, stocker des données dans des variables, reconnaître les types de
+valeurs, et combiner tout cela avec quelques opérations simples. Aucune
+installation n'est nécessaire : chaque exemple ci-dessous s'exécute directement
+dans votre navigateur.
+
+## Afficher avec console.log()
+
+Le tout premier réflexe du développeur JavaScript est d'afficher une valeur
+pour vérifier ce que fait son code. On utilise pour cela la fonction
+`console.log()`. Tout ce que vous placez entre les parenthèses est affiché dans
+la console.
+
+<CodePlayground language="javascript" starterCode={`console.log("Bonjour CyberLearn !");
+console.log("JavaScript est partout.");
+console.log(42);`} />
+
+Vous pouvez passer plusieurs arguments séparés par des virgules : ils seront
+affichés côte à côte, séparés par un espace.
+
+## Déclarer des variables : let et const
+
+Une variable est une boîte étiquetée dans laquelle on range une valeur pour la
+réutiliser plus tard. En JavaScript moderne, on déclare une variable avec deux
+mots-clés : `let` et `const`.
+
+- `let` crée une variable que l'on pourra **réassigner** plus tard.
+- `const` crée une **constante** : une fois sa valeur fixée, on ne peut plus la
+  réassigner.
+
+<CodePlayground language="javascript" starterCode={`let score = 10;
+score = 25; // réassignation autorisée avec let
+console.log("Score :", score);
+
+const pseudo = "Ada";
+console.log("Pseudo :", pseudo);
+// Décommentez la ligne suivante pour voir l'erreur :
+// pseudo = "Linus"; // interdit avec const`} />
+
+<Callout type="warning">
+Privilégiez toujours `const` par défaut. N'utilisez `let` que lorsque vous
+savez que la valeur va réellement changer. Cette habitude rend votre code plus
+sûr : une constante ne peut pas être modifiée par accident. Évitez l'ancien
+mot-clé `var`, qui a des règles de portée surprenantes et est aujourd'hui
+considéré comme dépassé.
+</Callout>
+
+## Les types de base
+
+Chaque valeur en JavaScript possède un **type**. Voici les types primitifs
+fondamentaux que vous rencontrerez dès le départ :
+
+- `number` : les nombres, entiers ou décimaux, comme `7` ou `3.14`.
+- `string` : du texte, entre guillemets, comme `"Bonjour"`.
+- `boolean` : une valeur vraie ou fausse, `true` ou `false`.
+- `null` : une absence de valeur, voulue et explicite.
+- `undefined` : une variable déclarée mais à laquelle on n'a rien affecté.
+
+L'opérateur `typeof` permet de connaître le type d'une valeur. Observez les
+résultats :
+
+<CodePlayground language="javascript" starterCode={`console.log(typeof 42);          // "number"
+console.log(typeof "texte");     // "string"
+console.log(typeof true);        // "boolean"
+console.log(typeof undefined);   // "undefined"
+console.log(typeof null);        // "object" (une bizarrerie historique !)`} />
+
+<Callout type="info">
+Le résultat `typeof null` qui renvoie `"object"` est un bug historique de
+JavaScript conservé pour compatibilité. Retenez simplement que `null`
+représente une absence volontaire de valeur.
+</Callout>
+
+## Opérations et concaténation
+
+Sur les nombres, on dispose des opérateurs arithmétiques classiques : `+`, `-`,
+`*`, `/` et `%` (le reste de la division). Sur les chaînes de caractères,
+l'opérateur `+` sert à **concaténer**, c'est-à-dire à coller deux textes bout à
+bout.
+
+<CodePlayground language="javascript" starterCode={`const a = 8;
+const b = 3;
+console.log("Somme :", a + b);     // 11
+console.log("Reste :", a % b);     // 2
+
+const prenom = "Grace";
+const nom = "Hopper";
+console.log(prenom + " " + nom);   // "Grace Hopper"`} />
+
+Pour insérer des variables dans du texte de façon lisible, on préfère les
+**template literals** : une chaîne entourée de backticks dans laquelle on place
+les variables avec la syntaxe dollar-accolades.
+
+<CodePlayground language="javascript" starterCode={`const ville = "Paris";
+const temperature = 21;
+console.log(\`Il fait \${temperature} °C à \${ville}.\`);`} />
+
+## À vous de jouer
+
+Vérifiez vos acquis avec ces quiz, puis terminez par un petit exercice de code.
+
+<Quiz id="q-const" question="Quelle affirmation est correcte à propos de const et let ?" options={["const peut être réassigné, pas let", "let peut être réassigné, pas const", "Les deux peuvent toujours être réassignés", "Aucun des deux ne peut être réassigné"]} correct={1} />
+
+<Quiz id="q-typeof" question="Que renvoie typeof 'CyberLearn' ?" options={["'text'", "'char'", "'string'", "'object'"]} correct={2} />
+
+<Quiz id="q-template" question="Quel symbole entoure une template literal ?" options={["Des backticks ` `", "Des guillemets doubles", "Des apostrophes simples", "Des barres obliques"]} correct={0} />
+
+Maintenant, écrivez un programme qui calcule la moyenne de trois notes et
+l'affiche avec une template literal.
+
+<CodePlayground language="javascript" starterCode={`const note1 = 12;
+const note2 = 15;
+const note3 = 18;
+
+const moyenne = (note1 + note2 + note3) / 3;
+console.log(\`La moyenne est de \${moyenne}.\`);`} />
+
+## Récapitulatif
+
+- JavaScript s'exécute partout : navigateur, serveur, mobile.
+- `console.log()` affiche des valeurs pour observer son code.
+- `const` est non réassignable ; `let` l'est. On préfère `const` par défaut et
+  on évite `var`.
+- Les types de base sont : `number`, `string`, `boolean`, `null` et
+  `undefined`.
+- `typeof` révèle le type d'une valeur.
+- `+` additionne les nombres et concatène les chaînes ; les template literals
+  (backticks) facilitent l'insertion de variables dans du texte.

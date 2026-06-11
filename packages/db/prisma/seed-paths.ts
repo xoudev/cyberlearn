@@ -52,6 +52,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-012-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-002-V01",
+    slug: "javascript-moderne",
+    title: "JavaScript moderne : du navigateur à l'app",
+    description:
+      "Apprenez le langage du web : variables, opérateurs, conditions, boucles, fonctions fléchées, tableaux (map/filter/reduce), objets, closures, asynchrone (promesses, async/await) et JSON. Chaque leçon s'exécute dans le navigateur et le parcours se termine par un moteur de quiz à étendre.",
+    category: "DEV",
+    difficulty: "BEGINNER",
+    estimatedHours: 6,
+    lessons: [
+      "CL-LSN-013-V01",
+      "CL-LSN-014-V01",
+      "CL-LSN-015-V01",
+      "CL-LSN-016-V01",
+      "CL-LSN-017-V01",
+      "CL-LSN-018-V01",
+      "CL-LSN-019-V01",
+      "CL-LSN-020-V01",
+      "CL-LSN-021-V01",
+      "CL-LSN-022-V01",
+      "CL-LSN-023-V01",
+      "CL-LSN-024-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

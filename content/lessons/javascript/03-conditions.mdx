@@ -1,0 +1,116 @@
+---
+refCode: CL-LSN-015-V01
+slug: js-conditions
+title: "Conditions : if, else, switch et ternaire"
+description: "Faites des choix dans votre code avec if, else if, else, l'opérateur ternaire et switch, et comprenez les valeurs truthy et falsy en JavaScript."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 150
+prerequisites: ["CL-LSN-014-V01"]
+---
+
+Jusqu'ici, vos programmes exécutaient les instructions les unes après les autres, sans jamais dévier. Mais un vrai programme doit **réagir aux situations** : afficher un message différent selon l'heure, accorder ou refuser un accès, calculer une réduction selon le panier. Pour cela, JavaScript propose les **structures de décision**. Elles permettent à votre code de poser une question, puis de choisir un chemin selon la réponse. Dans cette leçon, vous découvrirez `if`, `else if`, `else`, l'opérateur ternaire, le `switch`, et la notion essentielle de valeurs *truthy* et *falsy*.
+
+## if / else if / else
+
+L'instruction `if` exécute un bloc de code **uniquement si** une condition est vraie. La condition est placée entre parenthèses, et le bloc à exécuter entre accolades. On peut enchaîner plusieurs cas avec `else if`, et prévoir un cas par défaut avec `else`.
+
+<CodePlayground language="javascript" starterCode={`const note = 14;
+
+if (note >= 16) {
+  console.log("Très bien");
+} else if (note >= 12) {
+  console.log("Bien");
+} else if (note >= 10) {
+  console.log("Passable");
+} else {
+  console.log("Insuffisant");
+}`} />
+
+JavaScript évalue les conditions de haut en bas et s'arrête **dès qu'une** est vraie. Ici, `note >= 16` est faux, mais `note >= 12` est vrai : on affiche « Bien » et on ignore le reste.
+
+## Valeurs truthy et falsy
+
+Une condition n'a pas besoin d'être un vrai booléen `true` ou `false`. JavaScript convertit automatiquement n'importe quelle valeur en booléen. Une valeur considérée comme fausse est dite *falsy* ; toutes les autres sont *truthy*.
+
+<CodePlayground language="javascript" starterCode={`const prenom = "";
+
+if (prenom) {
+  console.log("Bonjour " + prenom);
+} else {
+  console.log("Aucun prénom fourni");
+}
+// La chaîne vide est falsy : on affiche le second message`} />
+
+<Callout type="info">
+Il n'existe que **six** valeurs falsy en JavaScript : `false`, `0`, `""` (chaîne vide), `null`, `undefined` et `NaN`. Absolument tout le reste est truthy, y compris `"0"`, `"false"`, `[]` (tableau vide) et `{}` (objet vide).
+</Callout>
+
+## L'opérateur ternaire
+
+Quand un `if/else` ne fait que choisir entre **deux valeurs**, on peut l'écrire plus court avec l'opérateur ternaire. Sa syntaxe est : `condition ? valeurSiVrai : valeurSiFaux`. C'est la seule structure de JavaScript qui prend trois opérandes.
+
+<CodePlayground language="javascript" starterCode={`const age = 20;
+const statut = age >= 18 ? "majeur" : "mineur";
+console.log(statut); // "majeur"
+
+const heure = 9;
+const message = heure < 12 ? "Bonjour" : "Bonsoir";
+console.log(message); // "Bonjour"`} />
+
+Le ternaire **retourne une valeur**, ce qui est pratique pour l'affecter directement à une variable. Réservez-le aux cas simples : trop imbriqué, il devient illisible.
+
+## switch
+
+Lorsqu'on compare **une même valeur** à plusieurs possibilités, une longue série de `else if` devient lourde. Le `switch` est alors plus clair. Chaque `case` teste une égalité stricte, et `break` arrête le parcours. `default` gère les cas non prévus.
+
+<CodePlayground language="javascript" starterCode={`const jour = "mardi";
+
+switch (jour) {
+  case "samedi":
+  case "dimanche":
+    console.log("C'est le week-end !");
+    break;
+  case "mardi":
+    console.log("Bon courage, c'est mardi");
+    break;
+  default:
+    console.log("Jour de semaine ordinaire");
+}`} />
+
+<Callout type="warning">
+N'oubliez jamais le `break` ! Sans lui, JavaScript continue d'exécuter les `case` suivants même s'ils ne correspondent pas : c'est l'effet « cascade » (*fall-through*), source de bugs très difficiles à repérer.
+</Callout>
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Parmi ces valeurs, laquelle est truthy ?" options={["0", "\"\"", "\"0\"", "null"]} correct={2} />
+
+<Quiz id="q-2" question="Que manque-t-il le plus souvent dans un case de switch et provoque l'effet cascade ?" options={["return", "break", "default", "case"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle est la syntaxe correcte de l'opérateur ternaire ?" options={["condition : siVrai ? siFaux", "if condition ? siVrai : siFaux", "condition ? siVrai : siFaux", "condition ?? siVrai : siFaux"]} correct={2} />
+
+Entraînez-vous : catégorisez une température en complétant la logique ci-dessous.
+
+<CodePlayground language="javascript" starterCode={`const temperature = 28;
+let tenue;
+
+if (temperature >= 30) {
+  tenue = "T-shirt et short";
+} else if (temperature >= 15) {
+  tenue = "Pull léger";
+} else {
+  tenue = "Manteau";
+}
+
+console.log("Tenue conseillée : " + tenue);`} />
+
+## Récapitulatif
+
+- `if`, `else if` et `else` permettent de choisir un chemin parmi plusieurs ; JavaScript s'arrête à la première condition vraie.
+- Une condition est convertie en booléen : les valeurs **falsy** sont `false`, `0`, `""`, `null`, `undefined` et `NaN` ; tout le reste est **truthy**.
+- L'opérateur ternaire `condition ? a : b` retourne une valeur et remplace un `if/else` simple.
+- Le `switch` compare une valeur à plusieurs `case` ; pensez toujours au `break` pour éviter l'effet cascade.
+
+OK 03-conditions.mdx écrit

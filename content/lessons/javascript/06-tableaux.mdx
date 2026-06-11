@@ -1,0 +1,147 @@
+---
+refCode: CL-LSN-018-V01
+slug: js-tableaux
+title: "Tableaux et méthodes : map, filter, reduce"
+description: "Stockez et transformez des collections avec les tableaux JavaScript : indexation, méthodes de base (push, pop), et les méthodes fonctionnelles map, filter et reduce."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 350
+prerequisites: ["CL-LSN-017-V01"]
+---
+
+Jusqu'ici, vous avez manipulé des valeurs isolées : un nombre, une chaîne, un booléen. Mais la plupart des programmes réels travaillent sur des **listes de données** : une liste d'utilisateurs, un panier d'articles, les scores d'une partie, les lignes d'un journal de sécurité. En JavaScript, la structure qui sert à stocker et organiser ces collections s'appelle le **tableau** (en anglais, *array*).
+
+Le tableau est partout dans le JavaScript moderne. Savoir le parcourir, le transformer et l'agréger est une compétence centrale : c'est ce qui sépare un script qui affiche une valeur d'une application qui traite des centaines d'enregistrements. Dans cette leçon, nous allons partir des bases (création, indexation, longueur) puis monter vers les méthodes dites **fonctionnelles** : `map`, `filter` et `reduce`. Ces trois méthodes constituent un véritable trio gagnant pour écrire un code lisible et expressif.
+
+## Créer et lire un tableau
+
+Un tableau se déclare avec des crochets. On y place des valeurs séparées par des virgules. Chaque valeur occupe une position appelée **index**, et l'indexation commence à **zéro** : le premier élément a l'index `0`, le deuxième l'index `1`, et ainsi de suite.
+
+Pour lire un élément, on écrit le nom du tableau suivi de son index entre crochets, par exemple `fruits[0]` pour le premier élément. La propriété `length` donne le nombre d'éléments ; le dernier élément est donc à l'index `length - 1`, soit ici `fruits[fruits.length - 1]`.
+
+<CodePlayground language="javascript" starterCode={`const fruits = ["pomme", "banane", "cerise"];
+
+console.log(fruits[0]);
+console.log(fruits[2]);
+console.log(fruits.length);
+console.log(fruits[fruits.length - 1]);`} />
+
+Si vous demandez un index qui n'existe pas, JavaScript ne plante pas : il renvoie simplement `undefined`. C'est un piège classique à garder en tête.
+
+## Méthodes de base
+
+Un tableau n'est pas figé : on peut lui ajouter ou lui retirer des éléments. Les méthodes essentielles sont :
+
+- `push` ajoute un élément **à la fin**.
+- `pop` retire le **dernier** élément et le renvoie.
+- `unshift` ajoute un élément **au début**.
+- `shift` retire le **premier** élément et le renvoie.
+- `includes` indique si une valeur est présente (renvoie un booléen).
+- `indexOf` renvoie l'index d'une valeur, ou `-1` si elle est absente.
+
+<CodePlayground language="javascript" starterCode={`const panier = ["clavier", "souris"];
+
+panier.push("écran");
+console.log(panier);
+
+const retire = panier.pop();
+console.log(retire);
+
+panier.unshift("casque");
+console.log(panier);
+
+console.log(panier.includes("souris"));
+console.log(panier.indexOf("clavier"));`} />
+
+## forEach et map
+
+Pour exécuter une action sur chaque élément, on utilise `forEach`. Cette méthode parcourt le tableau et appelle une fonction pour chaque valeur, mais elle **ne renvoie rien** : on l'emploie pour des effets de bord, comme afficher du texte.
+
+La méthode `map` parcourt elle aussi le tableau, mais elle **retourne un nouveau tableau** contenant le résultat de la transformation appliquée à chaque élément. C'est l'outil idéal pour transformer une liste en une autre liste de même longueur.
+
+<CodePlayground language="javascript" starterCode={`const nombres = [1, 2, 3, 4];
+
+nombres.forEach((n) => {
+  console.log("Valeur :", n);
+});
+
+const doubles = nombres.map((n) => {
+  return n * 2;
+});
+
+console.log(doubles);
+console.log(nombres);`} />
+
+Remarquez que `nombres` reste inchangé après le `map` : la transformation produit une copie modifiée, pas une mutation de l'original.
+
+## filter et reduce
+
+Deux autres méthodes complètent le trio fonctionnel.
+
+`filter` parcourt le tableau et conserve uniquement les éléments pour lesquels la fonction de test renvoie `true`. Le résultat est un nouveau tableau, potentiellement plus court que l'original.
+
+<CodePlayground language="javascript" starterCode={`const ages = [12, 25, 17, 40, 8];
+
+const majeurs = ages.filter((age) => {
+  return age >= 18;
+});
+
+console.log(majeurs);
+console.log(ages.length);
+console.log(majeurs.length);`} />
+
+`reduce` est la plus puissante : elle **agrège** tout le tableau en **une seule valeur**. On lui passe une fonction qui reçoit un accumulateur et l'élément courant, ainsi qu'une valeur initiale pour l'accumulateur. À chaque tour, la fonction renvoie le nouvel accumulateur.
+
+<CodePlayground language="javascript" starterCode={`const prix = [10, 20, 5, 15];
+
+const total = prix.reduce((accumulateur, valeur) => {
+  return accumulateur + valeur;
+}, 0);
+
+console.log(total);`} />
+
+<Callout type="info">
+Les méthodes `map`, `filter` et `reduce` ne modifient JAMAIS le tableau d'origine. Elles renvoient une nouvelle valeur (un tableau pour map et filter, une valeur unique pour reduce). C'est ce qu'on appelle une approche immuable : vos données de départ restent intactes, ce qui rend le code plus prévisible et plus facile à déboguer.
+</Callout>
+
+## À vous de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Quel index correspond au premier élément d'un tableau en JavaScript ?" options={["1", "0", "-1", "Le premier élément n'a pas d'index"]} correct={1} />
+
+<Quiz id="q-2" question="Que retourne la méthode map ?" options={["Rien (undefined)", "Le tableau d'origine modifié", "Un nouveau tableau de même longueur avec les valeurs transformées", "Une seule valeur agrégée"]} correct={2} />
+
+<Quiz id="q-3" question="Quelle méthode utiliser pour additionner tous les nombres d'un tableau en une seule valeur ?" options={["reduce", "filter", "forEach", "includes"]} correct={0} />
+
+</QuizGroup>
+
+Mettez tout en pratique : filtrez d'abord les commandes payées, puis additionnez leurs montants avec `reduce`.
+
+<CodePlayground language="javascript" starterCode={`const commandes = [
+  { montant: 50, payee: true },
+  { montant: 30, payee: false },
+  { montant: 20, payee: true },
+];
+
+const totalPaye = commandes
+  .filter((c) => {
+    return c.payee === true;
+  })
+  .reduce((total, c) => {
+    return total + c.montant;
+  }, 0);
+
+console.log(totalPaye);`} />
+
+## Récapitulatif
+
+- Un tableau stocke une **collection ordonnée** de valeurs, déclarée avec des crochets.
+- L'**indexation commence à 0** ; `length` donne le nombre d'éléments.
+- `push` / `pop` agissent à la fin, `unshift` / `shift` au début ; `includes` et `indexOf` cherchent une valeur.
+- `forEach` parcourt sans rien renvoyer ; `map` transforme et renvoie un **nouveau tableau**.
+- `filter` conserve les éléments qui passent un test ; `reduce` agrège tout en **une seule valeur**.
+- `map`, `filter` et `reduce` sont **immuables** : ils ne modifient pas le tableau d'origine.
+
+OK 06-tableaux.mdx écrit

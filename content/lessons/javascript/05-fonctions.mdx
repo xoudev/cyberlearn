@@ -1,0 +1,129 @@
+---
+refCode: CL-LSN-017-V01
+slug: js-fonctions
+title: "Fonctions et fonctions fléchées"
+description: "Organisez votre code en fonctions réutilisables : déclaration classique, expressions de fonction, fonctions fléchées, paramètres, valeurs par défaut et return."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 180
+prerequisites: ["CL-LSN-016-V01"]
+---
+
+Quand on débute, on a souvent le réflexe de copier-coller le même bout de code à plusieurs endroits. Le problème, c'est que le jour où il faut corriger une erreur, il faut la corriger partout. C'est fatigant et c'est une source de bugs. Les développeurs résument ce principe par une formule célèbre : **DRY**, pour « Don't Repeat Yourself » (« ne te répète pas »).
+
+Les fonctions sont l'outil principal pour appliquer ce principe. Une fonction, c'est un bloc de code que l'on écrit une seule fois, auquel on donne un nom, et que l'on peut ensuite réutiliser autant de fois que nécessaire. On dit qu'on **factorise** le code. Dans cette leçon, vous allez apprendre à déclarer une fonction, à lui renvoyer un résultat, à découvrir la syntaxe moderne des fonctions fléchées, et à gérer les paramètres avec des valeurs par défaut.
+
+## Déclarer une fonction
+
+La forme la plus classique utilise le mot-clé `function`, suivi d'un nom, d'une liste de paramètres entre parenthèses, puis d'un bloc d'instructions entre accolades. Le mot-clé `return` permet de renvoyer une valeur à celui qui appelle la fonction.
+
+<CodePlayground language="javascript" starterCode={`function direBonjour(prenom) {
+  return "Bonjour " + prenom + " !";
+}
+
+const message = direBonjour("Lucie");
+console.log(message); // Bonjour Lucie !
+console.log(direBonjour("Karim")); // Bonjour Karim !`} />
+
+On écrit la logique une seule fois, et on l'appelle autant de fois qu'on veut, avec des valeurs différentes. C'est exactement l'idée du DRY.
+
+## return vs console.log
+
+C'est l'un des points qui troublent le plus les débutants. `console.log` **affiche** une information dans la console, mais ne donne rien en retour à votre programme. `return` **renvoie** une valeur que le reste du code peut récupérer et réutiliser.
+
+<CodePlayground language="javascript" starterCode={`function doubleAvecLog(n) {
+  console.log(n * 2); // affiche seulement
+}
+
+function doubleAvecReturn(n) {
+  return n * 2; // renvoie une valeur exploitable
+}
+
+const resultat = doubleAvecReturn(5);
+console.log(resultat + 1); // 11 : on peut réutiliser le résultat
+
+const rien = doubleAvecLog(5); // affiche 10
+console.log(rien); // undefined : rien n'a été renvoyé`} />
+
+<Callout type="warning">
+Une fonction sans `return` renvoie automatiquement `undefined`. Si vous essayez de réutiliser le résultat d'une fonction qui se contente d'un `console.log`, vous obtiendrez `undefined`. Pour calculer une valeur destinée à être réutilisée, utilisez toujours `return`.
+</Callout>
+
+## Les fonctions fléchées
+
+JavaScript propose une syntaxe plus courte pour écrire des fonctions : les **fonctions fléchées** (arrow functions). On remplace le mot-clé `function` par une flèche placée après les paramètres. Voici la même fonction écrite des deux façons.
+
+<CodePlayground language="javascript" starterCode={`// Version classique
+const triple = function (n) {
+  return n * 3;
+};
+
+// Version fléchée équivalente
+const tripleFleche = (n) => {
+  return n * 3;
+};
+
+console.log(triple(4)); // 12
+console.log(tripleFleche(4)); // 12`} />
+
+Lorsque le corps de la fonction se résume à une seule expression à renvoyer, on peut adopter la **forme courte** : on supprime les accolades et le mot-clé `return`. La valeur est alors renvoyée automatiquement (on parle de return implicite).
+
+<CodePlayground language="javascript" starterCode={`// Forme courte : return implicite, pas d'accolades
+const carre = (n) => n * n;
+const addition = (a, b) => a + b;
+
+console.log(carre(6)); // 36
+console.log(addition(3, 7)); // 10`} />
+
+<Callout type="info">
+Les fonctions fléchées sont surtout appréciées pour leur concision. Elles brillent dans les petits calculs et avec des méthodes comme `map` ou `filter`. Pour des fonctions courtes et lisibles, la forme courte avec return implicite est très agréable à lire.
+</Callout>
+
+## Paramètres et valeurs par défaut
+
+Une fonction peut recevoir plusieurs paramètres, séparés par des virgules. On peut aussi donner une **valeur par défaut** à un paramètre : elle sera utilisée si l'appelant ne fournit pas cet argument.
+
+<CodePlayground language="javascript" starterCode={`function saluer(prenom, salutation = "Bonjour") {
+  return salutation + " " + prenom + " !";
+}
+
+console.log(saluer("Sofia")); // Bonjour Sofia !
+console.log(saluer("Sofia", "Bonsoir")); // Bonsoir Sofia !
+
+const prix = (montant, tva = 0.2) => montant * (1 + tva);
+console.log(prix(100)); // 120
+console.log(prix(100, 0.05)); // 105`} />
+
+Les valeurs par défaut rendent vos fonctions plus souples : l'appelant ne renseigne que ce qui est utile, et le reste prend des valeurs raisonnables automatiquement.
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Quelle est la différence essentielle entre return et console.log dans une fonction ?" options={["Ils font exactement la même chose", "console.log affiche une valeur, return la renvoie pour qu'on la réutilise", "return affiche dans la console, console.log renvoie une valeur", "Aucun des deux ne sert dans une fonction"]} correct={1} />
+
+<Quiz id="q-2" question="Que renvoie la fonction fléchée courte : const carre = (n) => n * n; appelée avec carre(5) ?" options={["undefined", "10", "25", "Une erreur de syntaxe"]} correct={2} />
+
+<Quiz id="q-3" question="Avec function saluer(prenom, salutation = 'Salut'), que renvoie saluer('Ana') ?" options={["Salut Ana !", "undefined Ana !", "Ana Salut !", "Une erreur car salutation manque"]} correct={0} />
+
+Maintenant, écrivez vous-même une fonction. L'objectif : une fonction `moyenne` qui prend deux nombres et renvoie leur moyenne. Essayez d'abord en version classique, puis en version fléchée courte.
+
+<CodePlayground language="javascript" starterCode={`// Version classique
+function moyenne(a, b) {
+  return (a + b) / 2;
+}
+
+// Version fléchée courte (return implicite)
+const moyenneFleche = (a, b) => (a + b) / 2;
+
+console.log(moyenne(10, 20)); // 15
+console.log(moyenneFleche(8, 12)); // 10`} />
+
+## Récapitulatif
+
+- Les fonctions permettent de **factoriser** le code et d'appliquer le principe **DRY**.
+- On déclare une fonction classique avec `function nom(params)` et on renvoie un résultat avec `return`.
+- `return` renvoie une valeur réutilisable ; `console.log` se contente d'afficher. Sans `return`, une fonction renvoie `undefined`.
+- Les **fonctions fléchées** offrent une syntaxe plus courte ; en forme courte (une seule expression), le `return` est implicite.
+- Les **paramètres** se séparent par des virgules, et une **valeur par défaut** s'applique quand l'argument n'est pas fourni.
+
+OK 05-fonctions.mdx écrit
