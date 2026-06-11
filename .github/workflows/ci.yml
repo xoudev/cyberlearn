@@ -210,7 +210,7 @@ jobs:
 
   # ─── 8. Integration tests (RLS / IDOR / storage) ──────────────────────────
   # Runs the db integration specs against a disposable Supabase local stack
-  # (`supabase start`). Uses ONLY the fixed local dev keys minted by the CLI —
+  # (`supabase start`). Uses ONLY the fixed local dev keys minted by the CLI -
   # never production secrets. NOT (yet) a required status check: kept advisory
   # until a stable green window + the sabotage→red proof.
   integration:
@@ -272,10 +272,10 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('certificates', 'certificates', false) on conflict (id) do nothing;"
 
       - name: Assert RLS coverage (applied by migrate deploy alone)
-        # Gate 1 — no public table without RLS. Allowlist: _prisma_migrations is
-        # Prisma's own tracking table (no RLS by design; deliberately NOT hardened
-        # — enabling RLS on it could break migrate deploy itself).
-        # Gate 2 — tripwire on the policy count: >= the 56 baseline policies.
+        # Gate 1: no public table without RLS. Allowlist: _prisma_migrations is
+        # Prisma's own tracking table (no RLS by design; deliberately NOT
+        # hardened, since enabling RLS on it could break migrate deploy itself).
+        # Gate 2: tripwire on the policy count: >= the 56 baseline policies.
         # Deliberately >=, not ==, so adding policies needs no CI edit; a DROP
         # that regresses the count below the baseline still fails loudly.
         # Both gates are fail-closed: `if ! [ ... ]` treats an empty/non-numeric
@@ -315,3 +315,40 @@ jobs:
       - name: Stop Supabase local stack
         if: always()
         run: supabase stop
+
+  # ─── 9. Secrets scan (gitleaks) ────────────────────────────────────────────
+  # Scans the FULL git history for committed secrets, not just the diff:
+  # a key leaked five commits ago is just as burned as one leaked today.
+  # Direct CLI (pinned) instead of gitleaks-action: the action only scans PR
+  # commits and needs extra API permissions; the CLI is deterministic.
+  # Allowlist (pedagogical demo tokens, CI placeholders) lives in .gitleaks.toml.
+  gitleaks:
+    name: Secrets scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Scan full git history
+        run: gitleaks git --no-banner --redact --verbose .
+
+  # ─── 10. SAST (Semgrep) ──────────────────────────────────────────────────────
+  # Static analysis with the curated default + TypeScript/React rulesets.
+  # Vendored runtimes and design mockups are excluded via .semgrepignore.
+  semgrep:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep scan
+        run: semgrep scan --error --config p/default --config p/typescript --config p/react

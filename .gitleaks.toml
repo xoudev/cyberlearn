@@ -1,0 +1,27 @@
+# Gitleaks config. Extends the default ruleset; the allowlist below covers
+# pedagogical material and CI placeholders that pattern-match real secrets
+# but are not credentials.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Lesson/challenge content and CI build placeholders"
+paths = [
+  # Seeded lesson + CTF challenge content. Cybersecurity teaching material
+  # contains demo tokens by nature (e.g. the jwt.io example JWT in the
+  # "JWT alg=none" challenge). seed.js is the compiled twin that was
+  # tracked early in the history. Covers the files across the whole history.
+  '''packages/db/prisma/seed\.(ts|js)''',
+  # PII-scrubber tests: fake tokens/keys exist precisely to assert they
+  # get scrubbed.
+  '''apps/(web|admin)/lib/sentry/__tests__/scrub-event\.test\.ts''',
+  # Auth-hook signature tests (Deno): fixture webhook secrets used to sign
+  # synthetic requests, never real credentials.
+  '''supabase/functions/custom-access-token/.*\.test\.ts''',
+]
+regexes = [
+  # The CI Build job writes a placeholder .env (ci.yml); every fake value
+  # carries the word "placeholder".
+  '''placeholder''',
+]
