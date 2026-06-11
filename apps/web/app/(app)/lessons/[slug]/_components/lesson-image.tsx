@@ -7,7 +7,7 @@ const lessonImagePropsSchema = z.object({
   caption: z.string().optional(),
   width: z.coerce.number().int().positive().optional().default(1200),
   height: z.coerce.number().int().positive().optional().default(675),
-  /** "default" — centered with border | "full" — full bleed | "inline" — float in text */
+  /** "default" - centered with border | "full" - full bleed | "inline" - float in text */
   variant: z.enum(["default", "full", "inline"]).optional().default("default"),
 });
 

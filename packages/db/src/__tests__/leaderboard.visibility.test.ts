@@ -30,7 +30,7 @@ function rawUser(
   };
 }
 
-// A userId that matches no row — so every row is treated as "another user".
+// A userId that matches no row - so every row is treated as "another user".
 const VIEWER = "viewer";
 
 // ─── resolveVisibility ──────────────────────────────────────────────────────
@@ -50,9 +50,9 @@ describe("resolveVisibility", () => {
   });
 });
 
-// ─── buildLeaderboard — anonymization of OTHER users ──────────────────────────
+// ─── buildLeaderboard - anonymization of OTHER users ──────────────────────────
 
-describe("buildLeaderboard — other users", () => {
+describe("buildLeaderboard - other users", () => {
   it("nulls name, username, and avatar for an ANONYMOUS other user but keeps stats", () => {
     const [entry] = buildLeaderboard(
       [rawUser("anon-1", LeaderboardVisibility.ANONYMOUS, 100)],
@@ -123,9 +123,9 @@ describe("buildLeaderboard — other users", () => {
   });
 });
 
-// ─── buildLeaderboard — the current user's own row ────────────────────────────
+// ─── buildLeaderboard - the current user's own row ────────────────────────────
 
-describe("buildLeaderboard — current user sees themselves", () => {
+describe("buildLeaderboard - current user sees themselves", () => {
   it("reveals the current user's own identity even when they are ANONYMOUS", () => {
     const [entry] = buildLeaderboard([rawUser("me", LeaderboardVisibility.ANONYMOUS, 100)], "me");
     expect(entry?.isCurrentUser).toBe(true);
@@ -165,9 +165,9 @@ describe("buildLeaderboard — current user sees themselves", () => {
   });
 });
 
-// ─── buildLeaderboard — HIDDEN exclusion + ranks ──────────────────────────────
+// ─── buildLeaderboard - HIDDEN exclusion + ranks ──────────────────────────────
 
-describe("buildLeaderboard — HIDDEN exclusion and ranking", () => {
+describe("buildLeaderboard - HIDDEN exclusion and ranking", () => {
   it("excludes HIDDEN users entirely from the result", () => {
     const result = buildLeaderboard(
       [

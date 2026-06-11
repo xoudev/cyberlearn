@@ -337,7 +337,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
         />
       </section>
 
-      {/* ── 01. En cours — terminal card ─────────────────────────────────── */}
+      {/* ── 01. En cours: terminal card ──────────────────────────────────── */}
       <section className="animate-fade-up s-section">
         <SectionLabel
           eyebrow="01 · en cours"
@@ -439,7 +439,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
   );
 }
 
-// ── Status strip live indicator (client not needed — pure CSS animation) ──────
+// ── Status strip live indicator (client not needed: pure CSS animation) ───────
 
 function StatusLive() {
   return (
@@ -1466,7 +1466,7 @@ function TrophyShelf({
               aria-hidden="true"
             />
 
-            {/* Hexagonal medallion — shared component (earned-only showcase) */}
+            {/* Hexagonal medallion: shared component (earned-only showcase) */}
             <BadgeMedallion
               rarity={rarity}
               size="md"

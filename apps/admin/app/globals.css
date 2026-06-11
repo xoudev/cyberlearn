@@ -282,7 +282,7 @@ body::before {
   }
 }
 
-/* MDX Import — 3-panel layout: stacked mobile → 3-col desktop */
+/* MDX Import - 3-panel layout: stacked mobile → 3-col desktop */
 .import-grid {
   display: flex;
   flex-direction: column;

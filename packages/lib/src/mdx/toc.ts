@@ -18,7 +18,7 @@ function slugify(text: string): string {
 /**
  * Extracts h1/h2/h3 headings from raw MDX/Markdown source.
  * Used to render a table of contents in the lesson sidebar.
- * Simple regex approach — suitable for author-controlled lesson content.
+ * Simple regex approach - suitable for author-controlled lesson content.
  */
 export function extractToc(mdx: string): TocEntry[] {
   const headingRegex = /^(#{1,3})\s+(.+)$/gm;

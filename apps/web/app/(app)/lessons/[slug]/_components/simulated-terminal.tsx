@@ -20,7 +20,7 @@ const simulatedTerminalPropsSchema = z.object({
   onComplete: z.function().optional(),
 });
 
-// ── Inline scenarios (kept for backwards compat — not moved to lib) ───────────
+// ── Inline scenarios (kept for backwards compat - not moved to lib) ───────────
 
 const SCENARIOS: Record<string, Record<string, string>> = {
   "ctf-web": {
@@ -405,7 +405,7 @@ export interface SimulatedTerminalProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.ReactElement {
-  // Runtime prop validation — warn on bad values in dev, never throw
+  // Runtime prop validation - warn on bad values in dev, never throw
   const parsed = simulatedTerminalPropsSchema.safeParse(rawProps);
   if (!parsed.success && process.env.NODE_ENV !== "production") {
     console.warn("[SimulatedTerminal] invalid props:", parsed.error.flatten());
@@ -451,7 +451,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     ...(extraCommands ?? {}),
   };
 
-  const defaultTitle = isPs ? "Windows PowerShell" : "bash — etudiant@cyberlearn";
+  const defaultTitle = isPs ? "Windows PowerShell" : "bash - etudiant@cyberlearn";
   const resolvedTitle = title ?? defaultTitle;
 
   const totalExpected = expectedCommandsRef.current.length;
@@ -603,7 +603,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
             term.write("\b \b");
           }
         } else if (code >= 32) {
-          // Printable char — max 200 chars to prevent abuse
+          // Printable char - max 200 chars to prevent abuse
           if (inputRef.current.length >= 200) return;
           inputRef.current += data;
           term.write(data);
@@ -709,7 +709,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         }}
       />
 
-      {/* Hints panel — rendered below the terminal */}
+      {/* Hints panel - rendered below the terminal */}
       {hints.length > 0 && (
         <div
           style={{

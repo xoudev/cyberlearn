@@ -1,5 +1,5 @@
 -- =============================================================================
--- Storage RLS — Defense in depth for the certificates bucket
+-- Storage RLS - Defense in depth for the certificates bucket
 --
 -- Context:
 --   The application already uses service_role exclusively for all Storage
@@ -16,7 +16,7 @@
 --
 -- Avatars bucket:
 --   NOT included. The current implementation serves avatars as static SVG
---   files from /public/avatars/ — there is no Supabase Storage bucket for
+--   files from /public/avatars/ - there is no Supabase Storage bucket for
 --   avatars. Add policies here if a custom avatar upload feature is built.
 --
 -- Applying this migration:
@@ -26,7 +26,7 @@
 -- =============================================================================
 
 -- ----------------------------------------------------------------------------
--- SELECT — anon and authenticated users cannot list or read certificates
+-- SELECT - anon and authenticated users cannot list or read certificates
 -- ----------------------------------------------------------------------------
 DROP POLICY IF EXISTS "certificates_block_select" ON storage.objects;
 CREATE POLICY "certificates_block_select"
@@ -36,7 +36,7 @@ CREATE POLICY "certificates_block_select"
   USING (bucket_id <> 'certificates');
 
 -- ----------------------------------------------------------------------------
--- INSERT — anon and authenticated users cannot upload to certificates
+-- INSERT - anon and authenticated users cannot upload to certificates
 -- ----------------------------------------------------------------------------
 DROP POLICY IF EXISTS "certificates_block_insert" ON storage.objects;
 CREATE POLICY "certificates_block_insert"
@@ -46,7 +46,7 @@ CREATE POLICY "certificates_block_insert"
   WITH CHECK (bucket_id <> 'certificates');
 
 -- ----------------------------------------------------------------------------
--- UPDATE — anon and authenticated users cannot modify certificates objects
+-- UPDATE - anon and authenticated users cannot modify certificates objects
 -- ----------------------------------------------------------------------------
 DROP POLICY IF EXISTS "certificates_block_update" ON storage.objects;
 CREATE POLICY "certificates_block_update"
@@ -56,7 +56,7 @@ CREATE POLICY "certificates_block_update"
   USING (bucket_id <> 'certificates');
 
 -- ----------------------------------------------------------------------------
--- DELETE — anon and authenticated users cannot delete certificates objects
+-- DELETE - anon and authenticated users cannot delete certificates objects
 -- ----------------------------------------------------------------------------
 DROP POLICY IF EXISTS "certificates_block_delete" ON storage.objects;
 CREATE POLICY "certificates_block_delete"
@@ -66,4 +66,4 @@ CREATE POLICY "certificates_block_delete"
   USING (bucket_id <> 'certificates');
 
 -- service_role is exempt from RLS by default in Supabase and requires no
--- explicit policy — all server-side operations continue to work as-is.
+-- explicit policy - all server-side operations continue to work as-is.

@@ -179,7 +179,7 @@ describe("awardBadges", () => {
 });
 
 // ── evaluateAndAwardBadges (event hooks) ──────────────────────────────────────
-// Uses the REAL evaluator from @cyberlearn/lib — only the DB layer is faked.
+// Uses the REAL evaluator from @cyberlearn/lib - only the DB layer is faked.
 
 describe("evaluateAndAwardBadges", () => {
   it("awards a PERFECT_QUIZ badge once the persisted perfect count reaches its target", async () => {

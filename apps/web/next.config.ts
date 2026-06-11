@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       "../../packages/db/node_modules/.prisma/client/libquery_engine*",
     ],
   },
-  // @react-pdf/renderer uses native canvas — must not be bundled by webpack
+  // @react-pdf/renderer uses native canvas - must not be bundled by webpack
   serverExternalPackages: ["@react-pdf/renderer", "canvas"],
   // Validate env at build time (fail fast if required vars are missing)
   // Full env schema is in lib/env.ts
@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false,
   },
   images: {
-    // Allowlist external image domains (SSRF protection — no user-controlled URLs)
+    // Allowlist external image domains (SSRF protection - no user-controlled URLs)
     remotePatterns: [
       {
         protocol: "https",
@@ -97,7 +97,7 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Spread optional vars only when defined — exactOptionalPropertyTypes rejects `string | undefined`
+  // Spread optional vars only when defined - exactOptionalPropertyTypes rejects `string | undefined`
   ...(process.env.SENTRY_ORG && { org: process.env.SENTRY_ORG }),
   ...(process.env.SENTRY_PROJECT && { project: process.env.SENTRY_PROJECT }),
   ...(process.env.SENTRY_AUTH_TOKEN && { authToken: process.env.SENTRY_AUTH_TOKEN }),

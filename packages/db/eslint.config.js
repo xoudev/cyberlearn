@@ -2,7 +2,7 @@ import baseConfig from "@cyberlearn/config/eslint/base";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  // Seed/reset/backfill scripts are not library code — intentional console.log output
+  // Seed/reset/backfill scripts are not library code - intentional console.log output
   { ignores: ["prisma/seed.ts", "prisma/reset-user.ts", "prisma/backfill-badge-xp.ts"] },
   ...baseConfig,
   {
@@ -15,7 +15,7 @@ export default tseslint.config(
   },
   {
     // Repository and supabase factory functions return complex inferred types
-    // (Prisma queries, Supabase clients) — explicit return types add no safety.
+    // (Prisma queries, Supabase clients) - explicit return types add no safety.
     files: ["src/repositories/**/*.ts", "src/supabase/**/*.ts"],
     rules: {
       "@typescript-eslint/explicit-module-boundary-types": "off",

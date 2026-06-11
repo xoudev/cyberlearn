@@ -50,7 +50,7 @@ import { Diagram } from "./_components/diagram";
 import { QuizGroup } from "./_components/quiz-group";
 import { PythonChallenge } from "./_components/python-challenge";
 
-// ── Design meta maps — aligned with catalog.css / lesson-v2.css ───────────────
+// ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────
 
 const DIFF_META = {
   BEGINNER: {
@@ -403,7 +403,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         }
       >
         {mdxSections.map((src, i) => (
-          // SAFETY: index key is stable — sections don't reorder after page load
+          // SAFETY: index key is stable - sections don't reorder after page load
           <SectionPane key={i} index={i}>
             <MDXRemote
               source={src}
@@ -422,7 +422,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               }}
               options={{
                 parseFrontmatter: true,
-                // blockJS: false — next-mdx-remote's default blockJS:true strips all JSX
+                // blockJS: false - next-mdx-remote's default blockJS:true strips all JSX
                 // expression props (options={[...]}, correct={1}), breaking Quiz/CodePlayground.
                 // remarkStripProseExpressions replaces the prose-expression safety: it strips
                 // mdxFlowExpression/mdxTextExpression nodes ({variable} in prose) while leaving

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// /settings has no content of its own — it lands on the first section.
+// /settings has no content of its own - it lands on the first section.
 export default function SettingsIndexPage(): never {
   redirect("/settings/profile");
 }

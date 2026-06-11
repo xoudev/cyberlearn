@@ -84,7 +84,7 @@ export async function submitFlagAction(
     };
   }
 
-  // Correct — award XP and mark complete
+  // Correct: award XP and mark complete
   await awardChallengeXp(authUser.id, challengeId, challenge.xpReward, challenge.title);
   revalidatePath("/challenges");
   revalidatePath("/dashboard");
@@ -92,7 +92,7 @@ export async function submitFlagAction(
   return { correct: true };
 }
 
-// ── Complete (PUZZLE / LAB — honor system) ─────────────────────────────────────
+// ── Complete (PUZZLE / LAB: honor system) ──────────────────────────────────────
 
 export async function completeChallengeAction(challengeId: string): Promise<{ error?: string }> {
   if (!z.string().uuid().safeParse(challengeId).success) return { error: "ID invalide." };

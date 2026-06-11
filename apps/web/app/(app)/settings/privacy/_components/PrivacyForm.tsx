@@ -41,7 +41,7 @@ function VisibilityDetail(): React.JSX.Element {
       <span aria-hidden="true" style={{ position: "absolute", left: 0, color: S.turq }}>
         ›
       </span>
-      <strong style={{ color: S.fg, fontWeight: 600 }}>{term}</strong> — {body}
+      <strong style={{ color: S.fg, fontWeight: 600 }}>{term}</strong> - {body}
     </span>
   );
   return (

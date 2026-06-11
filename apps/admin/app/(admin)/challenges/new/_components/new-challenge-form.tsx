@@ -284,7 +284,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           </Field>
         </div>
 
-        {/* Flag — CTF and SCRIPT */}
+        {/* Flag - CTF and SCRIPT */}
         {(type === "CTF" || type === "SCRIPT") && (
           <div style={{ marginTop: 16 }}>
             <Field
@@ -303,7 +303,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           </div>
         )}
 
-        {/* Starter code — SCRIPT only */}
+        {/* Starter code - SCRIPT only */}
         {type === "SCRIPT" && (
           <div style={{ marginTop: 16 }}>
             <Field label="Code de départ (Python)" name="starterCode" error={fe.starterCode}>

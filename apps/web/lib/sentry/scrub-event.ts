@@ -1,7 +1,7 @@
 import type { Breadcrumb, ErrorEvent } from "@sentry/nextjs";
 
 const EMAIL_REGEX = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
-// Matches base64url tokens of 32+ chars — covers JWT segments, deletion tokens, etc.
+// Matches base64url tokens of 32+ chars - covers JWT segments, deletion tokens, etc.
 const TOKEN_REGEX = /\b[A-Za-z0-9_-]{32,}\b/g;
 
 function scrubString(input: string): string {
@@ -37,7 +37,7 @@ export function scrubEvent(event: ErrorEvent): ErrorEvent {
       });
       event.request.url = url.toString();
     } catch {
-      // Invalid URL — leave as-is rather than drop the event
+      // Invalid URL - leave as-is rather than drop the event
     }
   }
 

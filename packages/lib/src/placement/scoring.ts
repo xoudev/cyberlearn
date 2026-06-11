@@ -64,7 +64,7 @@ export function getMasteredCategories(scores: CategoryScores): MasteredCategorie
 /**
  * Returns the recommended path slug for the highest-scoring category.
  * Returns null if no category reaches the mastery threshold.
- * Path slugs here are the defaults seeded in dev — they may differ in production.
+ * Path slugs here are the defaults seeded in dev - they may differ in production.
  */
 export function getRecommendedPathSlug(
   scores: CategoryScores,

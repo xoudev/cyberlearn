@@ -2,10 +2,10 @@
 
 # CyberLearn
 
-**Plateforme d'apprentissage interactif — Développement · Cybersécurité · Réseaux & Systèmes**
+**Plateforme d'apprentissage interactif - Développement · Cybersécurité · Réseaux & Systèmes**
 
 Apprendre en pratiquant : leçons interactives, sandboxes de code dans le navigateur,
-parcours certifiants — pensé pour la communauté francophone.
+parcours certifiants - pensé pour la communauté francophone.
 
 [![CI](https://github.com/xoudev/cyberlearn-revamp/actions/workflows/ci.yml/badge.svg)](https://github.com/xoudev/cyberlearn-revamp/actions/workflows/ci.yml)
 ![Next.js 15](https://img.shields.io/badge/Next.js-15-black)
@@ -22,18 +22,18 @@ parcours certifiants — pensé pour la communauté francophone.
 
 ## Fonctionnalités
 
-- **Leçons interactives MDX** — quiz inline, terminal simulé, diagrammes, vidéos,
+- **Leçons interactives MDX** - quiz inline, terminal simulé, diagrammes, vidéos,
   et **sandboxes de code exécutées dans le navigateur** (Python via Pyodide,
   JavaScript, C, assembleur) dans des Web Workers durcis (réseau et storage bloqués).
-- **Parcours certifiants** — examens finaux à tirage aléatoire et temps limité,
+- **Parcours certifiants** - examens finaux à tirage aléatoire et temps limité,
   **certificats PDF vérifiables publiquement** (QR code, page `/verify`).
-- **Gamification** — XP, niveaux, streaks quotidiens, badges à 8 types de critères
+- **Gamification** - XP, niveaux, streaks quotidiens, badges à 8 types de critères
   (attribution temps réel + rattrapage rétroactif), classement public.
-- **Test de positionnement** à l'onboarding — dispense automatique des prérequis
+- **Test de positionnement** à l'onboarding - dispense automatique des prérequis
   déjà maîtrisés.
-- **Révisions espacées** — planification SM-2 par leçon.
+- **Révisions espacées** - planification SM-2 par leçon.
 - **Q&A par leçon**, notifications realtime, profils publics, avatars.
-- **Dashboard admin isolé** (sous-domaine dédié, rôle ADMIN) — CRUD leçons /
+- **Dashboard admin isolé** (sous-domaine dédié, rôle ADMIN) - CRUD leçons /
   parcours / badges / quiz, import MDX en masse, audit log complet.
 
 ## Stack
@@ -41,10 +41,10 @@ parcours certifiants — pensé pour la communauté francophone.
 | Domaine | Choix |
 |---|---|
 | Framework | Next.js 15 (App Router, RSC, Server Actions) |
-| Langage | TypeScript 5 strict — zéro `any` |
+| Langage | TypeScript 5 strict - zéro `any` |
 | Monorepo | Turborepo + pnpm 9 workspaces (`catalog:`) |
 | Base de données | Supabase Postgres + Prisma 6 (RLS versionnée dans les migrations) |
-| Auth | Supabase Auth — Magic Link + GitHub OAuth, rôle injecté dans le JWT par Edge Function |
+| Auth | Supabase Auth - Magic Link + GitHub OAuth, rôle injecté dans le JWT par Edge Function |
 | UI | Tailwind CSS v4 (CSS-first) + shadcn/ui + design system maison |
 | Validation | Zod sur toutes les entrées (Server Actions, Route Handlers, formulaires) |
 | State / data | TanStack Query v5 |
@@ -57,8 +57,8 @@ parcours certifiants — pensé pour la communauté francophone.
 ```
 cyberlearn/
 ├── apps/
-│   ├── web/            # App publique — cyberlearn.app (port 3000)
-│   └── admin/          # Dashboard admin — admin.cyberlearn.app (port 3001)
+│   ├── web/            # App publique - cyberlearn.app (port 3000)
+│   └── admin/          # Dashboard admin - admin.cyberlearn.app (port 3001)
 ├── packages/
 │   ├── db/             # Schéma Prisma, migrations (RLS incluse), repositories, clients Supabase
 │   ├── lib/            # Logique métier partagée (XP, SM-2, évaluateur de badges, scoring, guards)
@@ -72,22 +72,22 @@ cyberlearn/
 ```
 
 Principes : **server-first** (RSC par défaut), **repository pattern** (aucun appel
-Prisma dans les composants), code en anglais — le français est réservé aux textes UI.
+Prisma dans les composants), code en anglais - le français est réservé aux textes UI.
 
 ## Sécurité
 
 - **RLS Postgres sur toutes les tables**, versionnée dans la chaîne de migrations
-  Prisma — un gate CI fail-closed (« Assert RLS coverage ») échoue si une table
+  Prisma - un gate CI fail-closed (« Assert RLS coverage ») échoue si une table
   publique n'a pas la RLS ou si le compte de policies régresse.
 - **Tests d'intégration RLS / anti-IDOR** rejoués à chaque PR sur une stack
   Supabase éphémère, plus une vérification de la signature du hook JWT.
 - **CSP stricte nonce-based + HSTS** via middleware custom ([ADR-002](docs/adr/ADR-002-custom-security-headers-middleware.md)).
-- **Sandboxes durcies** — runtimes vendorés à hashes vérifiés en CI, workers sans
+- **Sandboxes durcies** - runtimes vendorés à hashes vérifiés en CI, workers sans
   accès réseau ni storage.
-- **RGPD** — suppression de compte (Art. 17, confirmation par email), export des
+- **RGPD** - suppression de compte (Art. 17, confirmation par email), export des
   données (Art. 20), [registre des traitements](docs/rgpd/registre-traitements.md),
   scrubbing PII dans Sentry (emails, IP hachées).
-- **Admin cloisonné** — sous-domaine séparé, RBAC, audit log sur toutes les
+- **Admin cloisonné** - sous-domaine séparé, RBAC, audit log sur toutes les
   mutations, `noindex`.
 
 Le détail vit dans [docs/hardening/](docs/hardening/), [docs/security/](docs/security/)
@@ -142,14 +142,14 @@ pnpm --filter @cyberlearn/admin dev        # admin seule
 
 Chaque PR passe huit jobs GitHub Actions :
 
-1. **Format check** — Biome
-2. **Lint** — ESLint + typescript-eslint strict
-3. **Typecheck** — TypeScript strict
-4. **Tests** — Vitest sur tous les packages
-5. **Build** — build production complet
-6. **Runtime integrity** — hashes des runtimes sandbox vendorés
-7. **Auth hook signature** — tests Deno de l'Edge Function JWT
-8. **Integration (RLS/IDOR)** — chaîne de migrations + RLS + tests d'accès sur
+1. **Format check** - Biome
+2. **Lint** - ESLint + typescript-eslint strict
+3. **Typecheck** - TypeScript strict
+4. **Tests** - Vitest sur tous les packages
+5. **Build** - build production complet
+6. **Runtime integrity** - hashes des runtimes sandbox vendorés
+7. **Auth hook signature** - tests Deno de l'Edge Function JWT
+8. **Integration (RLS/IDOR)** - chaîne de migrations + RLS + tests d'accès sur
    stack Supabase éphémère
 
 Conventions : [Conventional Commits](https://www.conventionalcommits.org)
@@ -158,15 +158,15 @@ Conventions : [Conventional Commits](https://www.conventionalcommits.org)
 
 ## Coûts & Roadmap
 
-**v1 : 100 % gratuit pour les utilisateurs, ~0,58 €/mois d'infra** (domaine) —
+**v1 : 100 % gratuit pour les utilisateurs, ~0,58 €/mois d'infra** (domaine) -
 Vercel Hobby, Supabase Free, Upstash, Resend, Sentry free tiers. Détail, pièges
 des free tiers et plan d'évolution : [docs/infra/cost-roadmap.md](docs/infra/cost-roadmap.md).
 
 | Phase | Statut | Contenu |
 |---|---|---|
-| **v1** | En cours | Free tier complet — leçons interactives, gamification, certificats, sandboxes |
-| **v1.5** | Backlog | WebVM (CheerpX) : vrai Linux dans le navigateur pour les leçons DevOps/Réseaux — [détail](docs/backlog/terminal-v2-webvm.md) |
-| **v2** | Backlog | Migration VPS self-hosted (Docker, Caddy, Postgres, monitoring Grafana/Loki) — vitrine DevOps |
+| **v1** | En cours | Free tier complet - leçons interactives, gamification, certificats, sandboxes |
+| **v1.5** | Backlog | WebVM (CheerpX) : vrai Linux dans le navigateur pour les leçons DevOps/Réseaux - [détail](docs/backlog/terminal-v2-webvm.md) |
+| **v2** | Backlog | Migration VPS self-hosted (Docker, Caddy, Postgres, monitoring Grafana/Loki) - vitrine DevOps |
 
 ## Documentation
 
@@ -181,5 +181,5 @@ des free tiers et plan d'évolution : [docs/infra/cost-roadmap.md](docs/infra/co
 
 ## Contributions & licence
 
-Projet solo en construction — les contributions externes ne sont pas acceptées
+Projet solo en construction - les contributions externes ne sont pas acceptées
 en v1. Le code est public à titre de vitrine ; tous droits réservés.

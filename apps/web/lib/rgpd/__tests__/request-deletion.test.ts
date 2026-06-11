@@ -1,5 +1,5 @@
 /**
- * Unit tests for requestDeletion (RGPD Art. 17 — token generation + email flow).
+ * Unit tests for requestDeletion (RGPD Art. 17 - token generation + email flow).
  *
  * Verifies: token is hashed before DB storage, plain token appears only in
  * the confirmUrl, email is sent with correct args, audit log is created,
@@ -57,7 +57,7 @@ afterEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("requestDeletion — happy path", () => {
+describe("requestDeletion - happy path", () => {
   it("returns { success: true, expiresAt } with expiresAt ~1h from now", async () => {
     const before = Date.now();
     const result = await requestDeletion(USER, META);
@@ -132,14 +132,14 @@ describe("requestDeletion — happy path", () => {
     const tokenHash = dbCall[0].data.tokenHash;
     const plainToken = new URL(emailCall[0].confirmUrl).searchParams.get("token") ?? "";
 
-    // Hashes are 64 hex chars, plain tokens are 43 base64url chars — can't be equal
+    // Hashes are 64 hex chars, plain tokens are 43 base64url chars - can't be equal
     expect(tokenHash).not.toBe(plainToken);
     expect(tokenHash).toHaveLength(64);
     expect(plainToken).toHaveLength(43);
   });
 });
 
-describe("requestDeletion — email failure", () => {
+describe("requestDeletion - email failure", () => {
   it("returns { success: false, error: 'email_failed' } when Resend throws", async () => {
     mockSendDeletionConfirmEmail.mockRejectedValueOnce(new Error("Resend timeout"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);

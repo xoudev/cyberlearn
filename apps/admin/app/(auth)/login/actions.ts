@@ -31,7 +31,7 @@ export async function sendAdminMagicLink(
 
     const { email } = parsed.data;
 
-    // Verify the user has ADMIN role before sending the link — security gate
+    // Verify the user has ADMIN role before sending the link (security gate)
     const dbUser = await prisma.user.findUnique({ where: { email }, select: { role: true } });
     if (dbUser?.role !== "ADMIN") {
       // Return generic error to avoid leaking whether the account exists

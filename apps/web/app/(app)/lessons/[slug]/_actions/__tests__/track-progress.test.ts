@@ -79,7 +79,7 @@ beforeEach(() => {
   m.tx.user.findUniqueOrThrow.mockResolvedValue({ xpTotal: 110 });
 });
 
-describe("completeLesson — badge xpReward crediting (interactive transaction)", () => {
+describe("completeLesson - badge xpReward crediting (interactive transaction)", () => {
   it("credits lesson XP + badge XP atomically and reports both to the client", async () => {
     const result = await completeLesson(LESSON_ID);
 

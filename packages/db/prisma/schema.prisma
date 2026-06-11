@@ -21,10 +21,10 @@ enum UserRole {
 }
 
 // Controls how a user appears on the public leaderboard.
-// Anonymization is enforced server-side in leaderboardRepository — never client-side.
+// Anonymization is enforced server-side in leaderboardRepository - never client-side.
 enum LeaderboardVisibility {
   HIDDEN // Excluded from the leaderboard entirely (not listed, not ranked)
-  ANONYMOUS // Ranked and counted, shown as "Anonyme" — no name, username, or avatar
+  ANONYMOUS // Ranked and counted, shown as "Anonyme" - no name, username, or avatar
   PUBLIC // Full identity (name, username, avatar) visible to everyone
 }
 
@@ -95,8 +95,8 @@ model PlacementQuestion {
   category        Category
   difficulty      Difficulty
   question        String     @db.Text
-  options         Json // Array: [{ id: "a", text: "..." }, ...] — safe to expose to client
-  correctOptionId String     @db.VarChar(10) // NEVER sent to client — validated server-side only
+  options         Json // Array: [{ id: "a", text: "..." }, ...] - safe to expose to client
+  correctOptionId String     @db.VarChar(10) // NEVER sent to client - validated server-side only
   explanation     String?    @db.Text // Shown after test completion
   orderIndex      Int
   isActive        Boolean    @default(true)
@@ -270,15 +270,15 @@ model Challenge {
   slug           String        @unique
   title          String        @db.VarChar(200)
   description    String        @db.VarChar(1000)
-  instructions   String        @db.Text // MDX — what the user must do
+  instructions   String        @db.Text // MDX - what the user must do
   category       Category
   difficulty     Difficulty
   type           ChallengeType
   xpReward       Int
   timeLimitMin   Int           @default(0) // 0 = no time limit
   maxAttempts    Int           @default(3)
-  flag           String? // CTF/SCRIPT — expected answer (plaintext, admin-only readable)
-  starterCode    String? // SCRIPT only — pre-populated Python code in the runner
+  flag           String? // CTF/SCRIPT - expected answer (plaintext, admin-only readable)
+  starterCode    String? // SCRIPT only - pre-populated Python code in the runner
   attachmentUrl  String? // URL to downloadable challenge file (binary, pcap, zip…)
   resourceUrl    String? // Target URL or connection info (e.g. nc host 1337)
   isActive       Boolean       @default(true)
@@ -563,8 +563,8 @@ model QuizQuestion {
   id              String   @id @default(uuid()) @db.Uuid
   quizId          String   @db.Uuid
   question        String   @db.Text
-  options         Json // Array: [{ id: "a", text: "..." }, ...] — safe to expose to client
-  correctOptionId String   @db.VarChar(10) // SERVER-ONLY — never sent to client; the whole table is RLS-denied
+  options         Json // Array: [{ id: "a", text: "..." }, ...] - safe to expose to client
+  correctOptionId String   @db.VarChar(10) // SERVER-ONLY - never sent to client; the whole table is RLS-denied
   explanation     String?  @db.Text // Shown after submission
   orderIndex      Int
   isActive        Boolean  @default(true)
@@ -717,7 +717,7 @@ model AuditLog {
 }
 
 // ============================================================
-// RGPD — ACCOUNT DELETION
+// RGPD - ACCOUNT DELETION
 // ============================================================
 
 model AccountDeletionToken {

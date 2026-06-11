@@ -714,7 +714,7 @@ export function EditPathClient({
           </p>
         </div>
 
-        {/* Quiz management — the path exists, so this is an active link. */}
+        {/* Quiz management - the path exists, so this is an active link. */}
         <div style={{ marginBottom: 28 }}>
           <Link
             href={`/paths/${path.id}/quiz`}

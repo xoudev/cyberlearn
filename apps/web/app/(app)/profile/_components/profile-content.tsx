@@ -98,7 +98,7 @@ function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
         aria-hidden="true"
       />
 
-      {/* Hex medallion — shared component (earned-only) */}
+      {/* Hex medallion - shared component (earned-only) */}
       <BadgeMedallion
         rarity={rarity}
         size="md"

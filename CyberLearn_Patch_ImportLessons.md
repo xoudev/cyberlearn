@@ -1,4 +1,4 @@
-# 📥 Patch brief — Feature "Import de leçons MDX"
+# 📥 Patch brief - Feature "Import de leçons MDX"
 
 > À intégrer dans le brief principal `CyberLearn_ClaudeCode_Prompt.md`. Ce patch ajoute une nouvelle sous-section 7.9.x et étend la Phase 9 de la roadmap.
 
@@ -16,10 +16,10 @@
 
 1. Admin navigue vers `/admin/lessons/import`
 2. Drop d'un fichier `.mdx` ou clic pour sélectionner (max 1 fichier à la fois, 500 Ko max)
-3. **Étape 1 — Validation** : parsing automatique du frontmatter YAML + du corps MDX
-4. **Étape 2 — Preview** : affichage du rendu final dans un panneau adjacent + liste des métadonnées extraites
-5. **Étape 3 — Review** : l'admin peut éditer les métadonnées (titre, refCode, catégorie, etc.) et le contenu MDX dans un éditeur Monaco avant import
-6. **Étape 4 — Import** : création de la leçon en statut `DRAFT`, redirection vers `/admin/lessons/[id]/edit` pour finalisation
+3. **Étape 1 - Validation** : parsing automatique du frontmatter YAML + du corps MDX
+4. **Étape 2 - Preview** : affichage du rendu final dans un panneau adjacent + liste des métadonnées extraites
+5. **Étape 3 - Review** : l'admin peut éditer les métadonnées (titre, refCode, catégorie, etc.) et le contenu MDX dans un éditeur Monaco avant import
+6. **Étape 4 - Import** : création de la leçon en statut `DRAFT`, redirection vers `/admin/lessons/[id]/edit` pour finalisation
 
 #### Format de fichier attendu
 
@@ -48,11 +48,11 @@ Contenu markdown/MDX standard...
 
 Toutes exécutées **côté serveur** dans une Server Action `importLesson(fileContent)` avec `requireAdmin()`.
 
-**Couche 1 — Parsing frontmatter** (`gray-matter`)
+**Couche 1 - Parsing frontmatter** (`gray-matter`)
 - Extraction du bloc YAML + du corps MDX
 - Si parsing échoue → erreur claire pointant la ligne problématique
 
-**Couche 2 — Validation Zod des métadonnées**
+**Couche 2 - Validation Zod des métadonnées**
 - Schéma `importLessonMetadataSchema` dans `packages/types/src/schemas/import.schema.ts` :
   ```typescript
   export const importLessonMetadataSchema = z.object({
@@ -69,7 +69,7 @@ Toutes exécutées **côté serveur** dans une Server Action `importLesson(fileC
   });
   ```
 
-**Couche 3 — Validation du corps MDX**
+**Couche 3 - Validation du corps MDX**
 - Compilation MDX via `@mdx-js/mdx` (dry-run, sans exécution)
 - Passage dans la même pipeline de sanitization que le rendu leçon (rehype-sanitize + allowlist stricte des composants)
 - Vérification qu'aucun composant interactif non-whitelisté n'est utilisé
@@ -77,7 +77,7 @@ Toutes exécutées **côté serveur** dans une Server Action `importLesson(fileC
 - Détection des code fences sans langage précisé (warning)
 - **Détection d'injections** : tags `<script>`, `<iframe>`, `<object>`, `<embed>`, handlers inline (`onclick`, `onload`, etc.), URLs `javascript:` et `data:` suspectes → rejet strict
 
-**Couche 4 — Vérifications métier**
+**Couche 4 - Vérifications métier**
 - Le `refCode` ne doit pas déjà exister en BDD → sinon erreur "Conflit: une leçon avec ce refCode existe déjà (ID: xxx)"
 - Le `slug` ne doit pas déjà exister → même erreur
 - Les `prerequisites` référencés doivent exister en BDD (les refCodes doivent matcher des leçons existantes)
@@ -86,13 +86,13 @@ Toutes exécutées **côté serveur** dans une Server Action `importLesson(fileC
 
 Layout en 3 panneaux (sur desktop) :
 
-1. **Panneau gauche** — Zone de drop + liste des warnings/errors
+1. **Panneau gauche** - Zone de drop + liste des warnings/errors
    - Code couleur : rouge pour erreurs bloquantes, jaune pour warnings non-bloquants
    - Chaque erreur liée à une ligne du fichier quand pertinent
-2. **Panneau central** — Éditeur Monaco (read/write) avec le contenu MDX
+2. **Panneau central** - Éditeur Monaco (read/write) avec le contenu MDX
    - Syntax highlighting MDX
    - Sauvegarde automatique dans le state React (pas encore en BDD)
-3. **Panneau droit** — Preview live du rendu (composant `<LessonPreview />`)
+3. **Panneau droit** - Preview live du rendu (composant `<LessonPreview />`)
    - Reflète en temps réel les modifications de l'éditeur
    - Debounce 300ms pour éviter les recompilations excessives
 
@@ -103,7 +103,7 @@ Sur mobile : panneaux empilés verticalement avec tabs de navigation.
 - **Route** `/admin/lessons/import` protégée par `requireAdmin()` dans le middleware + dans la page elle-même (defense in depth)
 - **Upload limité** à 500 Ko, extension `.mdx` uniquement, vérification du `Content-Type`
 - **Rate limiting** : 10 imports / heure / admin (anti-mistake, pas anti-abuse)
-- **Pas de fetch d'URL externe** depuis le parser MDX (pas de `remote-content`, pas de `<img src="https://...">` auto-téléchargée à l'import — les images externes sont conservées en tant qu'URL et validées par le CSP au rendu)
+- **Pas de fetch d'URL externe** depuis le parser MDX (pas de `remote-content`, pas de `<img src="https://...">` auto-téléchargée à l'import - les images externes sont conservées en tant qu'URL et validées par le CSP au rendu)
 - **Sanitization stricte** : la même pipeline que le rendu leçon, jamais d'exception "parce que c'est un admin qui importe"
 - **Audit log** : toute tentative d'import (succès, échec, rejet sécu) loggée dans `audit_logs` avec `action = "lesson.import.attempted"` ou `"lesson.import.success"` ou `"lesson.import.rejected"`, métadonnées incluant le `refCode`, les erreurs détectées, et un hash SHA-256 du contenu (pour traçabilité sans stocker le contenu en clair dans les logs)
 - **Transaction Postgres** : l'import en BDD se fait dans une transaction atomique (création lesson + création entrées prerequisites + entrée audit_log)
@@ -181,7 +181,7 @@ export async function importLesson(fileContent: string): Promise<ImportResult> {
 
 ## Ajout dans la Phase 9 de la roadmap
 
-À ajouter dans les livrables de la Phase 9 — Dashboard admin :
+À ajouter dans les livrables de la Phase 9 - Dashboard admin :
 
 ### Livrables additionnels pour l'import
 

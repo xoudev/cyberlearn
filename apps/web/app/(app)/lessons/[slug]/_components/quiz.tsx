@@ -8,7 +8,7 @@ interface QuizProps {
   question: string;
   /** Primary prop name used in MDX template and authoring guide. */
   options?: string[];
-  /** Legacy alias — kept for backwards compatibility. */
+  /** Legacy alias - kept for backwards compatibility. */
   choices?: string[];
   correct: number;
   questionNumber?: number;
@@ -81,11 +81,11 @@ export function Quiz({
     }
   }, [state.submitted, state.selected, correct, id]);
 
-  // Not yet reached in the group — QuizGroup prevents rendering this case,
+  // Not yet reached in the group - QuizGroup prevents rendering this case,
   // but guard here as a safety net.
   if (isGroupActive === false && !isGroupDone) return null;
 
-  // Already answered correctly in the group — show compact done row.
+  // Already answered correctly in the group - show compact done row.
   if (isGroupDone) {
     return (
       <div

@@ -114,7 +114,7 @@ export function ImportClient(): React.ReactElement {
 
   return (
     <div className="import-grid">
-      {/* Panel 1 — Drop zone + validation results */}
+      {/* Panel 1 - Drop zone + validation results */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Drop zone */}
         <div
@@ -300,7 +300,7 @@ export function ImportClient(): React.ReactElement {
         </div>
       </div>
 
-      {/* Panel 2 — MDX editor */}
+      {/* Panel 2 - MDX editor */}
       <div
         style={{
           display: "flex",
@@ -390,7 +390,7 @@ export function ImportClient(): React.ReactElement {
         </div>
       </div>
 
-      {/* Panel 3 — Preview */}
+      {/* Panel 3 - Preview */}
       <div
         style={{
           display: "flex",

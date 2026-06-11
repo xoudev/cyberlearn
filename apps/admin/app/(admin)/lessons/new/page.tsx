@@ -592,7 +592,7 @@ export default function NewLessonPage(): React.ReactElement {
             </div>
           </div>
 
-          {/* MDX Editor — Monaco + toolbar + split preview */}
+          {/* MDX Editor - Monaco + toolbar + split preview */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <Label req hint="// Monaco · MDX · split preview">
               Contenu MDX

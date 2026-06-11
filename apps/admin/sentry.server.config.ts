@@ -8,7 +8,7 @@ Sentry.init({
 
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
 
-  // Replay is browser-only — not configured here
+  // Replay is browser-only; not configured here
 
   beforeSend(event) {
     return scrubEvent(event);

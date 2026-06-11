@@ -1,4 +1,4 @@
-# Logging convention — Cyber Learn
+# Logging convention - Cyber Learn
 
 ## Règle générale
 
@@ -25,12 +25,12 @@ Cette convention est dérivée de :
 |--------|------|-------|
 | UUID interne (`userId`) | ✅ | UUID non guessable, non affiché à l'utilisateur |
 | ID de certificat / lesson / token | ✅ | Identifiant opaque |
-| Message d'erreur string (`err.message`) | ✅ | String seulement — jamais l'objet `err` complet |
+| Message d'erreur string (`err.message`) | ✅ | String seulement - jamais l'objet `err` complet |
 | IP pseudonymisée (`pseudonymize(ip)`) | ✅ | HMAC-SHA256 + `IP_SALT` |
-| Email | ❌ | Jamais — ni clair ni partiel |
+| Email | ❌ | Jamais - ni clair ni partiel |
 | Nom / displayName | ❌ | Jamais |
 | IP brute | ❌ | Toujours pseudonymiser avant stockage |
-| Objet `err` complet | ⚠️ | Risque SDK tiers — utiliser `err.message` uniquement |
+| Objet `err` complet | ⚠️ | Risque SDK tiers - utiliser `err.message` uniquement |
 
 ## Pattern Resend / SDK tiers
 
@@ -39,10 +39,10 @@ Les erreurs de SDK externe (Resend, Supabase Admin) **ne doivent pas**
 sérialiser les paramètres de la requête originale.
 
 ```ts
-// ❌ Risque — err peut contenir { request: { to: "user@example.com" } }
+// ❌ Risque - err peut contenir { request: { to: "user@example.com" } }
 console.error("[foo] Resend failed:", err);
 
-// ✅ Sûr — message string standardisé seulement
+// ✅ Sûr - message string standardisé seulement
 console.error("[foo] Resend failed:", err instanceof Error ? err.message : String(err));
 ```
 
@@ -56,16 +56,16 @@ if (process.env.NODE_ENV !== "production") {
 }
 ```
 
-## auditLog.create — champs PII
+## auditLog.create - champs PII
 
 Règles applicables à chaque entrée `auditLog` :
 
 | Champ | Valeur autorisée |
 |-------|-----------------|
 | `actorId` | UUID Prisma (FK) ou `null` (si supprimé) |
-| `actorHashedId` | `pseudonymize(userId)` — HMAC-SHA256 |
+| `actorHashedId` | `pseudonymize(userId)` - HMAC-SHA256 |
 | `ipAddress` | `pseudonymize(rawIp)` obligatoire |
-| `userAgent` | `.slice(0, 500)` — tronqué |
+| `userAgent` | `.slice(0, 500)` - tronqué |
 | `metadata` | Pas d'email, pas de nom, IPs pseudonymisées |
 
 ## Sentry / monitoring externe
@@ -73,8 +73,8 @@ Règles applicables à chaque entrée `auditLog` :
 RÉSOLU par PR 3 (`feat/sentry-init-csp-polish`). Config appliquée :
 
 - `beforeSend` → `scrubEvent()` sur 100% des events (emails, tokens, cookies, headers)
-- `Sentry.replayIntegration({ maskAllInputs: true })` — saisie masquée dans les replays
-- `beforeBreadcrumb` → `filterBreadcrumb()` — routes `/api/me/(delete|export)` droppées
+- `Sentry.replayIntegration({ maskAllInputs: true })` - saisie masquée dans les replays
+- `beforeBreadcrumb` → `filterBreadcrumb()` - routes `/api/me/(delete|export)` droppées
 - Tags : aucun tag PII ; `user.email` et `user.ip_address` supprimés dans `scrubEvent`
 - UUIDs utilisateur dans `user.id` supprimés ; HMAC pseudonyms (64 hex) préservés
 
@@ -82,10 +82,10 @@ Implémentation : `apps/web/lib/sentry/scrub-event.ts`
 Tests : `apps/web/lib/sentry/__tests__/scrub-event.test.ts`
 Référence détaillée : `docs/security/sentry-config.md`
 
-Sentry sur `apps/admin` : en place (même pattern + `scrubEvent` partagé — voir
-docs/security/sentry-config.md, section « apps/admin — statut »).
+Sentry sur `apps/admin` : en place (même pattern + `scrubEvent` partagé - voir
+docs/security/sentry-config.md, section « apps/admin - statut »).
 
-## Migration future — structured logger
+## Migration future - structured logger
 
 Toutes les occurrences `console.*` en production sont fonctionnelles
 mais non structurées. Post-launch, migrer vers un structured logger
@@ -96,5 +96,5 @@ mais non structurées. Post-launch, migrer vers un structured logger
 - Intégration provider externe (Datadog, Axiom, Vector)
 - Traçabilité request-scoped (middleware → handler → service)
 
-Voir docs/backlog/post-v1.md — tâche "Migration logger structuré".
+Voir docs/backlog/post-v1.md - tâche "Migration logger structuré".
 Décision de l'outil exact à faire en temps voulu.

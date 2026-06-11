@@ -1,7 +1,7 @@
 import type React from "react";
 import { MONO, S, SANS } from "./tokens";
 
-/** Design card corners — 1.5px L-shapes inset 7px (settings.css `.card__corners`). */
+/** Design card corners - 1.5px L-shapes inset 7px (settings.css `.card__corners`). */
 function CardCorners({ color }: { color: string }): React.JSX.Element {
   const c: React.CSSProperties = {
     position: "absolute",

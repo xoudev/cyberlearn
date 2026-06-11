@@ -21,7 +21,7 @@ export type RequestDeletionResult = RequestDeletionSuccess | RequestDeletionFail
  * email, and writes an audit log. Called by both the REST endpoint and the
  * Server Action so logic is not duplicated.
  *
- * Plain token leaves this function exactly once — via the email URL.
+ * Plain token leaves this function exactly once - via the email URL.
  * It is never stored in the DB and never returned to the caller.
  */
 export async function requestDeletion(

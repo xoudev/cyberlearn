@@ -58,7 +58,7 @@ function CornerBrackets({ color }: { color: string }): React.ReactElement {
   );
 }
 
-/** Gold hexagonal seal — same regular pointy-top geometry as the badge medallion. */
+/** Gold hexagonal seal: same regular pointy-top geometry as the badge medallion. */
 function CertSeal(): React.ReactElement {
   return (
     <svg
@@ -331,7 +331,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               lineHeight: 1.55,
             }}
           >
-            Complète un parcours entier — toutes les missions, puis l&apos;examen final — pour
+            Complète un parcours entier (toutes les missions, puis l&apos;examen final) pour
             décrocher ton premier certificat vérifiable.
           </p>
           <Link
@@ -433,7 +433,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                           marginBottom: 8,
                         }}
                       >
-                        — CERTIFIÉ
+                        - CERTIFIÉ
                       </div>
                       <div
                         style={{

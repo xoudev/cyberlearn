@@ -1,5 +1,5 @@
 /**
- * One-shot backfill — credit Badge.xpReward for badges earned before
+ * One-shot backfill - credit Badge.xpReward for badges earned before
  * crediting existed. Idempotent (rows are stamped with context.xpCredited in
  * the same transaction as the XP update; re-runs are no-ops).
  *
@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   }
 
   if (report.users.length === 0) {
-    console.log("Nothing to do — all rows already credited.");
+    console.log("Nothing to do - all rows already credited.");
   }
 }
 

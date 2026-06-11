@@ -37,7 +37,7 @@ function CornerBrackets(): React.ReactElement {
 function LoginContent(): React.ReactElement {
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirectTo") ?? "/dashboard";
-  // Client-side sanitization — allow only simple relative paths (server validates again in callback)
+  // Client-side sanitization - allow only simple relative paths (server validates again in callback)
   const redirectTo = /^\/[a-zA-Z0-9/_-]*$/.test(rawRedirect) ? rawRedirect : "/dashboard";
 
   const [email, setEmail] = useState("");
@@ -222,7 +222,7 @@ function LoginContent(): React.ReactElement {
           paddingTop: 44,
         }}
       >
-        {/* ── Left — editorial ─────────────────────────────────────────── */}
+        {/* ── Left - editorial ─────────────────────────────────────────── */}
         <div
           className="login-left-panel"
           style={{
@@ -529,7 +529,7 @@ function LoginContent(): React.ReactElement {
           </div>
         </div>
 
-        {/* ── Right — auth panel ───────────────────────────────────────── */}
+        {/* ── Right - auth panel ───────────────────────────────────────── */}
         <div
           className="login-right-panel"
           style={{

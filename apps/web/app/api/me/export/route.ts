@@ -5,7 +5,7 @@ import { buildExportPayload } from "@/lib/rgpd/build-export";
 import { pseudonymize } from "@/lib/pseudonymize";
 
 export async function GET(request: Request): Promise<Response> {
-  // 1. Auth — getUser() validates the JWT server-side
+  // 1. Auth - getUser() validates the JWT server-side
   const supabase = await getSupabaseServerClient();
   const {
     data: { user },
@@ -17,7 +17,7 @@ export async function GET(request: Request): Promise<Response> {
     });
   }
 
-  // 2. Rate limit — 1 export per user per 24 hours
+  // 2. Rate limit - 1 export per user per 24 hours
   const rl = await checkDataExport(user.id);
   if (!rl.success) {
     return new Response(JSON.stringify({ error: "rate_limited" }), {
@@ -32,7 +32,7 @@ export async function GET(request: Request): Promise<Response> {
   // 3. Build export payload (all Prisma queries in parallel)
   const payload = await buildExportPayload(user.id);
 
-  // 4. AuditLog — pseudonymize IP before storage (RGPD)
+  // 4. AuditLog - pseudonymize IP before storage (RGPD)
   const forwarded = request.headers.get("x-forwarded-for");
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
 

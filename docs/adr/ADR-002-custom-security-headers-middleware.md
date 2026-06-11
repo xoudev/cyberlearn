@@ -1,4 +1,4 @@
-# ADR-002 — Custom security headers middleware instead of `next-safe-middleware`
+# ADR-002 - Custom security headers middleware instead of `next-safe-middleware`
 
 **Date**: 2026-04-14
 **Status**: Accepted
@@ -28,5 +28,5 @@ Benefits:
 ## Consequences
 
 - Security headers live in `apps/web/middleware.ts` and `apps/admin/middleware.ts`
-- CSP must be updated manually when new external origins are added (Pyodide CDN, etc.) — this is intentional (allowlist discipline)
+- CSP must be updated manually when new external origins are added (Pyodide CDN, etc.) - this is intentional (allowlist discipline)
 - The `next-safe-middleware` package is not listed in any `package.json`

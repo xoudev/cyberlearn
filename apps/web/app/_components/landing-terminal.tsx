@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 
 const LINES: { type: "cmd" | "comment" | "code" | "out"; raw: string }[] = [
   { type: "cmd", raw: "$ cd ~/ctf/web-101 && cat exploit.py" },
-  { type: "comment", raw: "# Boolean-based blind SQLi — extract admin pwd" },
+  { type: "comment", raw: "# Boolean-based blind SQLi - extract admin pwd" },
   { type: "code", raw: "import requests" },
   { type: "code", raw: "def leak(i, c):" },
   { type: "code", raw: '    payload = f"\' OR ASCII(SUBSTR(p,{i},1))={c}-- "' },
@@ -41,7 +41,7 @@ function colorize(type: string, raw: string): React.ReactNode {
     }
     return raw;
   }
-  // code — basic keyword highlighting
+  // code - basic keyword highlighting
   return raw
     .split(/(import|def|return|for|if|in|range|chr)\b|(".*?")|(\d+(?:\.\d+)?)/)
     .map((seg, i) => {

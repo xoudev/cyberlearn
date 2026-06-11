@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@cyberlearn/db";
 
 // Vercel Cron: runs daily at midnight UTC (see vercel.json crons config).
-// Resets streakDays to 0 for users who missed yesterday — their streak is broken.
+// Resets streakDays to 0 for users who missed yesterday - their streak is broken.
 export async function GET(request: Request): Promise<NextResponse> {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET ?? ""}`) {

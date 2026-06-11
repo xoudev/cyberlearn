@@ -7,7 +7,7 @@ interface CodeBlockProps extends React.HTMLAttributes<HTMLPreElement> {
   children?: React.ReactNode;
   /** Display path/filename in header, e.g. "~/auth/login.py" */
   filename?: string;
-  /** "danger" shows a red DANGER badge — use for vulnerable code examples */
+  /** "danger" shows a red DANGER badge - use for vulnerable code examples */
   variant?: "default" | "danger";
 }
 

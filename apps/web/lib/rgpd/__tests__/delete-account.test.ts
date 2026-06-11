@@ -1,7 +1,7 @@
 /**
  * Unit tests for deleteAccount (RGPD Art. 17).
  *
- * Prisma is fully mocked — no live database required.
+ * Prisma is fully mocked - no live database required.
  * True transaction rollback atomicity (Postgres-level) is verified via
  * integration tests; here we verify call ordering, argument shapes, and
  * error propagation.
@@ -10,10 +10,10 @@
 import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// ── Env stub — pseudonymize reads IP_SALT at call time ────────────────────
+// ── Env stub - pseudonymize reads IP_SALT at call time ────────────────────
 vi.stubEnv("IP_SALT", "delete-account-test-salt-that-is-at-least-32-chars");
 
-// ── Hoisted mocks — must be created before vi.mock factories run ──────────
+// ── Hoisted mocks - must be created before vi.mock factories run ──────────
 
 const { mockTx, mockPrisma } = vi.hoisted(() => {
   const mockTx = {
@@ -92,7 +92,7 @@ beforeEach(() => {
   // Default user lookup: exists
   mockTx.user.findUnique.mockResolvedValue(MOCK_USER);
 
-  // Default counts — 2 certs, 1 question, 2 answers, 1 rating, 1 ticket, 3 audit logs
+  // Default counts - 2 certs, 1 question, 2 answers, 1 rating, 1 ticket, 3 audit logs
   mockTx.certificate.count.mockResolvedValue(2);
   mockTx.lessonQuestion.count.mockResolvedValue(1);
   mockTx.lessonAnswer.count.mockResolvedValue(2);
@@ -289,7 +289,7 @@ describe("HMAC-SHA256 determinism", () => {
   });
 });
 
-describe("performance — single transaction, updateMany only", () => {
+describe("performance - single transaction, updateMany only", () => {
   it("wraps all operations in exactly one $transaction call", async () => {
     await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
 

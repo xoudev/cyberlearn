@@ -7,7 +7,7 @@ import { claimCertificateAction } from "../_actions/generate-certificate";
 /**
  * Client island for the "claim certificate" action, used inside the (server)
  * final-boss node of the Path Detail v2 page when a path has NO active quiz and
- * every lesson is complete. Keeps the boss panel a Server Component — only this
+ * every lesson is complete. Keeps the boss panel a Server Component; only this
  * button is client. Wiring to claimCertificateAction is unchanged.
  */
 export function ClaimCertificateButton({ pathSlug }: { pathSlug: string }): React.JSX.Element {

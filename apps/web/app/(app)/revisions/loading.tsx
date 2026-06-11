@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  * Loading state for /revisions. Mirrors the real page's outer container
  * (.page-container), breadcrumb + eyebrow + big h1 + subtitle, and the bordered
  * review list (.review-row-layout rows on a #2A2560/#0A0826 surface) plus the
- * footer strip — so first paint occupies the same boxes (zero layout shift).
+ * footer strip - so first paint occupies the same boxes (zero layout shift).
  */
 export default function RevisionsLoading(): React.ReactElement {
   const ROWS = 6;

@@ -103,7 +103,7 @@ afterEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("requestDeletionAction — form validation", () => {
+describe("requestDeletionAction - form validation", () => {
   it("returns error when confirmation is not SUPPRIMER", async () => {
     const result = await requestDeletionAction({}, makeFormData("supprimer"));
     expect(result.success).toBeUndefined();
@@ -121,7 +121,7 @@ describe("requestDeletionAction — form validation", () => {
   });
 });
 
-describe("requestDeletionAction — rate limit", () => {
+describe("requestDeletionAction - rate limit", () => {
   it("returns error message when rate limited", async () => {
     mockCheckDeletion.mockResolvedValueOnce(BLOCKED);
     const result = await requestDeletionAction({}, makeFormData("SUPPRIMER"));
@@ -136,7 +136,7 @@ describe("requestDeletionAction — rate limit", () => {
   });
 });
 
-describe("requestDeletionAction — user not found", () => {
+describe("requestDeletionAction - user not found", () => {
   it("returns error when DB user does not exist", async () => {
     mockPrisma.user.findUnique.mockResolvedValueOnce(null);
     const result = await requestDeletionAction({}, makeFormData("SUPPRIMER"));
@@ -144,7 +144,7 @@ describe("requestDeletionAction — user not found", () => {
   });
 });
 
-describe("requestDeletionAction — requestDeletion failure", () => {
+describe("requestDeletionAction - requestDeletion failure", () => {
   it("returns error when requestDeletion fails", async () => {
     mockRequestDeletion.mockResolvedValueOnce({ success: false, error: "email_failed" });
     const result = await requestDeletionAction({}, makeFormData("SUPPRIMER"));
@@ -153,7 +153,7 @@ describe("requestDeletionAction — requestDeletion failure", () => {
   });
 });
 
-describe("requestDeletionAction — happy path", () => {
+describe("requestDeletionAction - happy path", () => {
   it("returns { success: true, expiresAt } as ISO string", async () => {
     const result = await requestDeletionAction({}, makeFormData("SUPPRIMER"));
     expect(result.success).toBe(true);

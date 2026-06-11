@@ -1,5 +1,5 @@
 /**
- * Storage RLS Integration Tests — PR 1.2
+ * Storage RLS Integration Tests - PR 1.2
  *
  * Verifies that the certificates bucket is unreachable by anon/authenticated
  * clients and remains accessible to the service_role backend.
@@ -21,7 +21,7 @@ const TEST_PASSWORD = "TestPassword123!";
 // Random suffix prevents collisions across parallel runs.
 const SENTINEL_KEY = `__sentinel/${randomUUID()}.pdf`;
 
-describe("Storage RLS — certificates bucket (integration)", () => {
+describe("Storage RLS - certificates bucket (integration)", () => {
   let supabaseUrl: string;
   let supabaseAnonKey: string;
   let adminClient: SupabaseClient;
@@ -66,7 +66,7 @@ describe("Storage RLS — certificates bucket (integration)", () => {
       updatedAt: now,
     });
 
-    // Upload sentinel via service_role — this proves the file EXISTS in the bucket.
+    // Upload sentinel via service_role - this proves the file EXISTS in the bucket.
     // If the RLS policies work, regular clients will not be able to see or read it.
     // Minimal PDF header: Supabase validates content-type against the bucket MIME allowlist.
     const blob = new Blob(
@@ -102,7 +102,7 @@ describe("Storage RLS — certificates bucket (integration)", () => {
 
   it("anon client cannot download from certificates bucket", async () => {
     if (!configured) return;
-    // Anon download must fail — the RLS SELECT policy blocks all rows in this bucket.
+    // Anon download must fail - the RLS SELECT policy blocks all rows in this bucket.
     const { data, error } = await anonClient.storage.from("certificates").download(SENTINEL_KEY);
     expect(data).toBeNull();
     expect(error).not.toBeNull();
@@ -111,7 +111,7 @@ describe("Storage RLS — certificates bucket (integration)", () => {
   it("authenticated client cannot list the certificates bucket", async () => {
     if (!configured) return;
     // The sentinel file exists (confirmed by service_role upload above).
-    // If RLS works, this list returns empty — not the sentinel row.
+    // If RLS works, this list returns empty - not the sentinel row.
     const authClient = await signInAsTestUser();
     const { data } = await authClient.storage.from("certificates").list("__sentinel");
     // Either null (policy error) or empty array (policy filters all rows)
@@ -129,7 +129,7 @@ describe("Storage RLS — certificates bucket (integration)", () => {
 
   it("service_role bypasses RLS and can list the certificates bucket", async () => {
     if (!configured) return;
-    // service_role ignores RLS — this is the mechanism our server-side code relies on.
+    // service_role ignores RLS - this is the mechanism our server-side code relies on.
     const { data, error } = await adminClient.storage.from("certificates").list("__sentinel");
     expect(error).toBeNull();
     // The sentinel file must be visible to service_role

@@ -306,7 +306,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         ))}
       </div>
 
-      {/* Alert banner — only when open tickets exist */}
+      {/* Alert banner - only when open tickets exist */}
       {openTickets > 0 && (
         <div
           style={{

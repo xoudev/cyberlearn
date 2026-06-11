@@ -11,7 +11,7 @@ function makeEvent(overrides: Partial<ErrorEvent> = {}): ErrorEvent {
 
 // ── scrubEvent ────────────────────────────────────────────────────────────────
 
-describe("scrubEvent — URL scrubbing", () => {
+describe("scrubEvent - URL scrubbing", () => {
   it("redacts ?token= query parameter from request.url", () => {
     const event = makeEvent({
       request: {
@@ -36,7 +36,7 @@ describe("scrubEvent — URL scrubbing", () => {
   });
 });
 
-describe("scrubEvent — header scrubbing", () => {
+describe("scrubEvent - header scrubbing", () => {
   it("redacts Authorization header value", () => {
     const event = makeEvent({
       request: {
@@ -56,7 +56,7 @@ describe("scrubEvent — header scrubbing", () => {
   });
 });
 
-describe("scrubEvent — exception scrubbing", () => {
+describe("scrubEvent - exception scrubbing", () => {
   it("replaces email address in exception.value with [EMAIL]", () => {
     const event = makeEvent({
       exception: {
@@ -68,7 +68,7 @@ describe("scrubEvent — exception scrubbing", () => {
   });
 });
 
-describe("scrubEvent — extra scrubbing", () => {
+describe("scrubEvent - extra scrubbing", () => {
   it("redacts email key in event.extra", () => {
     const event = makeEvent({ extra: { email: "alice@example.com", reason: "export" } });
     const result = scrubEvent(event);
@@ -77,7 +77,7 @@ describe("scrubEvent — extra scrubbing", () => {
   });
 });
 
-describe("scrubEvent — user scrubbing", () => {
+describe("scrubEvent - user scrubbing", () => {
   it("deletes user.email if present", () => {
     const event = makeEvent({ user: { email: "alice@example.com", id: "some-id" } });
     const result = scrubEvent(event);
@@ -91,7 +91,7 @@ describe("scrubEvent — user scrubbing", () => {
   });
 
   it("preserves user.id when it is a 64-char HMAC pseudonym (not a UUID)", () => {
-    const hmacId = "a".repeat(64); // 64 hex chars — HMAC output
+    const hmacId = "a".repeat(64); // 64 hex chars - HMAC output
     const event = makeEvent({ user: { id: hmacId } });
     const result = scrubEvent(event);
     expect(result.user!.id).toBe(hmacId);
@@ -106,7 +106,7 @@ describe("scrubEvent — user scrubbing", () => {
 
 // ── filterBreadcrumb ──────────────────────────────────────────────────────────
 
-describe("filterBreadcrumb — sensitive route filtering", () => {
+describe("filterBreadcrumb - sensitive route filtering", () => {
   it("drops navigation breadcrumb to /api/me/delete/confirm", () => {
     const bc: Breadcrumb = {
       category: "navigation",

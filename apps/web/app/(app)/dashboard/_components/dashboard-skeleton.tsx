@@ -4,7 +4,7 @@ import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 /**
  * Loading placeholder for the dashboard. Shared by both `loading.tsx` (route
  * navigation) and the in-page `<Suspense>` fallback so there is a single
- * source of truth — no per-page skeleton duplication. Dimensions mirror the
+ * source of truth: no per-page skeleton duplication. Dimensions mirror the
  * real content (status strip, hero grid, sections) to avoid layout shift.
  */
 export function DashboardSkeleton(): React.ReactElement {

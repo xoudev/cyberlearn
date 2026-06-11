@@ -2,7 +2,7 @@
   "name": "cyberlearn",
   "private": true,
   "version": "0.0.1",
-  "description": "CyberLearn — Interactive learning platform for dev, cybersecurity, and network/systems",
+  "description": "CyberLearn - Interactive learning platform for dev, cybersecurity, and network/systems",
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=9.0.0"

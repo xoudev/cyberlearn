@@ -342,7 +342,7 @@ function SettingsForm({
       {!isActive && (
         <p style={warnStyle}>
           {
-            "⚠️ Désactivé : plus aucun quiz requis — le certificat sera émis dès que toutes les leçons sont complétées."
+            "⚠️ Désactivé : plus aucun quiz requis ; le certificat sera émis dès que toutes les leçons sont complétées."
           }
         </p>
       )}
@@ -511,7 +511,7 @@ function QuestionRow({
         {question.options.map((o) => (
           <li key={o.id} style={{ color: o.id === question.correctOptionId ? TURQ : undefined }}>
             {o.id === question.correctOptionId ? "✓ " : ""}
-            <b>{o.id}</b> — {o.text}
+            <b>{o.id}</b> : {o.text}
           </li>
         ))}
       </ul>

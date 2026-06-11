@@ -10,7 +10,7 @@ import { AccountDeletionConfirmEmail } from "../templates/account-deletion-confi
 const CONFIRM_URL =
   "https://cyberlearn.app/api/me/delete/confirm?token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-describe("AccountDeletionConfirmEmail — rendered HTML", () => {
+describe("AccountDeletionConfirmEmail - rendered HTML", () => {
   it("contains the confirm button with the correct href", async () => {
     const html = await render(
       AccountDeletionConfirmEmail({ displayName: "Alice", confirmUrl: CONFIRM_URL }),

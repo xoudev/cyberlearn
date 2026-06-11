@@ -20,7 +20,7 @@ function readBoolean(value: FormDataEntryValue | null): boolean | undefined {
 /**
  * Updates the signed-in user's leaderboard visibility and public-profile flag.
  *
- * Auth-first (security rule #8), then Zod safeParse — never trust the form.
+ * Auth-first (security rule #8), then Zod safeParse - never trust the form.
  * leaderboardVisibility drives server-side anonymization in leaderboardRepository,
  * so an invalid value must never reach the database.
  */

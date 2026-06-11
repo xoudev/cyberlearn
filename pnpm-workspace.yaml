@@ -2,7 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Centralized versions — all packages reference these via "catalog:"
+# Centralized versions - all packages reference these via "catalog:"
 # to prevent version drift across the monorepo.
 catalog:
   # Core framework
@@ -78,7 +78,7 @@ catalog:
   "gray-matter": "^4.0.3"
   "@mdx-js/mdx": "^3.1.0"
 
-  # Typography (Tailwind plugin — used in apps/web for lesson content)
+  # Typography (Tailwind plugin - used in apps/web for lesson content)
   "@tailwindcss/typography": "^0.5.15"
 
   # Monitoring
@@ -95,7 +95,7 @@ catalog:
   "jsdom": "^26.1.0"
   "msw": "^2.7.5"
 
-  # Playwright (e2e — installed only in CI/test context)
+  # Playwright (e2e - installed only in CI/test context)
   "@playwright/test": "^1.51.1"
 
   # Linting & formatting

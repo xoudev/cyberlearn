@@ -17,7 +17,7 @@ const USER_A_EMAIL = "idor-cert-a@test.cyberlearn.internal";
 const USER_B_EMAIL = "idor-cert-b@test.cyberlearn.internal";
 const TEST_PASSWORD = "TestPassword123!";
 
-describe("Certificate IDOR — ownership query filter (integration)", () => {
+describe("Certificate IDOR - ownership query filter (integration)", () => {
   let adminClient: SupabaseClient;
   let configured = false;
   let userAId: string;
@@ -82,7 +82,7 @@ describe("Certificate IDOR — ownership query filter (integration)", () => {
     });
     pathId = path.id;
 
-    // Certificate owned by user B — this is what user A must NOT be able to access
+    // Certificate owned by user B - this is what user A must NOT be able to access
     const cert = await prisma.certificate.create({
       data: {
         userId: userBId,

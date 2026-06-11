@@ -21,7 +21,7 @@ export async function checkAndIssueCertificates(userId: string, lessonId: string
     if (!(await pathRepository.areLessonsComplete(userId, path.id))) continue;
 
     const quiz = await quizRepository.findActiveQuizByPathId(path.id);
-    if (quiz) continue; // gated on the quiz — emission happens on a passing attempt
+    if (quiz) continue; // gated on the quiz - emission happens on a passing attempt
 
     await issueCertificate(userId, path.id);
   }

@@ -59,7 +59,7 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Spread optional vars only when defined — exactOptionalPropertyTypes rejects `string | undefined`
+  // Spread optional vars only when defined - exactOptionalPropertyTypes rejects `string | undefined`
   ...(process.env.SENTRY_ORG && { org: process.env.SENTRY_ORG }),
   ...(process.env.SENTRY_PROJECT && { project: process.env.SENTRY_PROJECT }),
   ...(process.env.SENTRY_AUTH_TOKEN && { authToken: process.env.SENTRY_AUTH_TOKEN }),

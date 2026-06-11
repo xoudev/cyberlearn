@@ -1,5 +1,5 @@
 /**
- * Unit tests for updateNotificationsAction — booleans must be well-formed.
+ * Unit tests for updateNotificationsAction - booleans must be well-formed.
  */
 
 import { randomUUID } from "node:crypto";
