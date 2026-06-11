@@ -1,0 +1,20 @@
+# Gitleaks config. Extends the default ruleset; the allowlist below covers
+# pedagogical material and CI placeholders that pattern-match real secrets
+# but are not credentials.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Lesson/challenge content and CI build placeholders"
+paths = [
+  # Seeded lesson + CTF challenge content. Cybersecurity teaching material
+  # contains demo tokens by nature (e.g. the jwt.io example JWT in the
+  # "JWT alg=none" challenge). Covers the file across the whole history.
+  '''packages/db/prisma/seed\.ts''',
+]
+regexes = [
+  # The CI Build job writes a placeholder .env (ci.yml); every fake value
+  # carries the word "placeholder".
+  '''placeholder''',
+]
