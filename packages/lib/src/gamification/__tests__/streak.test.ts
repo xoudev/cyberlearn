@@ -3,7 +3,7 @@ import { computeNewStreak } from "../streak.js";
 
 // Use local-time Date constructors so tests are timezone-agnostic.
 // computeNewStreak uses setHours() (local time) for calendar-day comparison.
-// new Date(y, m, d, h) creates a date in local time — consistent with the implementation.
+// new Date(y, m, d, h) creates a date in local time - consistent with the implementation.
 
 // ── Same calendar day ─────────────────────────────────────────────────────────
 
@@ -80,7 +80,7 @@ describe("gap greater than 1 day", () => {
 
 describe("default now parameter", () => {
   it("uses current time when now is omitted", () => {
-    const longAgo = new Date(1970, 0, 1); // Jan 1, 1970 local — gap is certainly > 1 day
+    const longAgo = new Date(1970, 0, 1); // Jan 1, 1970 local - gap is certainly > 1 day
     const result = computeNewStreak(999, longAgo);
     expect(result.streakDays).toBe(1);
   });

@@ -1,5 +1,5 @@
 /**
- * Unit tests for updateThemeAction — only the three valid themes are accepted.
+ * Unit tests for updateThemeAction - only the three valid themes are accepted.
  */
 
 import { randomUUID } from "node:crypto";

@@ -1,5 +1,5 @@
 // Pure quiz logic: question draw, client-safe projection, server-side scoring,
-// answer validation, and attempt guards. No DB, no I/O — all unit-testable.
+// answer validation, and attempt guards. No DB, no I/O - all unit-testable.
 // The server (repositories + actions) wires these against Prisma.
 
 /** Cooldown after a finished (submitted or expired) attempt before a new start. 48h. */
@@ -14,7 +14,7 @@ export interface QuizOption {
   text: string;
 }
 
-/** Full question as stored in DB — carries the answer key. SERVER-ONLY. */
+/** Full question as stored in DB - carries the answer key. SERVER-ONLY. */
 export interface QuizQuestionFull {
   id: string;
   question: string;
@@ -23,7 +23,7 @@ export interface QuizQuestionFull {
   explanation?: string | null;
 }
 
-/** What the client receives — no correctOptionId, no explanation (pre-submit). */
+/** What the client receives - no correctOptionId, no explanation (pre-submit). */
 export interface ClientQuizQuestion {
   id: string;
   question: string;
@@ -57,7 +57,7 @@ function shuffle<T>(arr: readonly T[], rng: () => number): T[] {
 /**
  * Draw `n` questions at random and randomize both question order and each
  * question's option order. Caller MUST ensure `questions.length >= n` (the
- * action errors with "quiz not ready" otherwise — serving fewer would distort
+ * action errors with "quiz not ready" otherwise - serving fewer would distort
  * the denominator).
  */
 export function drawQuestions<T extends { id: string; options: QuizOption[] }>(
@@ -99,7 +99,7 @@ export function validateSubmission(
 
 /**
  * Score a submission against the drawn questions. Denominator is the number of
- * DRAWN questions (not the payload) — an omitted answer counts as wrong, so a
+ * DRAWN questions (not the payload) - an omitted answer counts as wrong, so a
  * user cannot raise their percentage by leaving questions blank.
  */
 export function scoreSubmission(

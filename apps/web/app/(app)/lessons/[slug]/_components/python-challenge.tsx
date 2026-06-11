@@ -25,7 +25,7 @@ interface WorkerTestMessage {
   results?: TestResult[];
 }
 
-// Separate worker singleton — never shared with CodePlayground
+// Separate worker singleton - never shared with CodePlayground
 let challengeWorker: Worker | null = null;
 
 function runTestsInWorker(code: string, tests: TestCase[]): Promise<TestResult[]> {

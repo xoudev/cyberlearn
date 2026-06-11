@@ -1,7 +1,7 @@
-# Supabase local stack config — used by `supabase start` in CI (job `integration`)
+# Supabase local stack config - used by `supabase start` in CI (job `integration`)
 # and for local development. Values here are the standard local dev defaults of
 # `supabase start`; the anon / service_role keys it mints are fixed, PUBLIC dev
-# keys — never production secrets.
+# keys - never production secrets.
 #
 # Note (Cas A): the `custom-access-token` auth hook is intentionally NOT served
 # here. The RLS/IDOR integration tests rely on auth.uid() (native GoTrue) and the

@@ -110,7 +110,7 @@ export function LessonStepper({
     dispatchExercise({ type: "done", step, id });
   }, []);
 
-  // Stable — reads exerciseState via ref so ctx doesn't change on every register/unregister.
+  // Stable - reads exerciseState via ref so ctx doesn't change on every register/unregister.
   // Without this, every exercise state update would propagate a new ctx to all SectionPane
   // consumers, causing a cascade of re-renders that exceeds React's render guard.
   const getStepCompletion = useCallback(
@@ -123,7 +123,7 @@ export function LessonStepper({
         pendingCount: pending.length,
       };
     },
-    [], // stable — reads via ref
+    [], // stable - reads via ref
   );
 
   const ctx = useMemo<StepperContextType>(
@@ -183,7 +183,7 @@ export function LessonStepper({
 
   return (
     <StepperContext.Provider value={ctx}>
-      {/* Timeline — only shown when multiple sections */}
+      {/* Timeline - only shown when multiple sections */}
       {sections.length > 1 && (
         <StepperTimeline
           sections={sections}
@@ -197,7 +197,7 @@ export function LessonStepper({
       <div className="lesson-stepper-grid">
         {/* Article + navigation */}
         <div>
-          {/* MDX content — flows directly, no card wrapper per design */}
+          {/* MDX content - flows directly, no card wrapper per design */}
           <article
             className="prose lesson-content max-w-none"
             style={{ paddingBottom: 20, counterReset: `h2-counter ${String(currentStep)}` }}
@@ -294,7 +294,7 @@ function StepperTimeline({
           minWidth: "max-content",
         }}
       >
-        {/* Connector line — top: label(28) + margin(12) + half-diamond(7) */}
+        {/* Connector line - top: label(28) + margin(12) + half-diamond(7) */}
         <div
           aria-hidden="true"
           style={{
@@ -442,7 +442,7 @@ function StepperRail({
     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       {/* TOC section */}
       <div>
-        {/* Section header — rail-v2__head style */}
+        {/* Section header - rail-v2__head style */}
         <div
           style={{
             display: "flex",
@@ -534,7 +534,7 @@ function StepperRail({
   );
 }
 
-// ── SectionNavBar — sticky bottom section navigation ─────────────────────────
+// ── SectionNavBar - sticky bottom section navigation ─────────────────────────
 
 function SectionNavBar({
   currentStep,

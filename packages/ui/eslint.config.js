@@ -12,7 +12,7 @@ export default tseslint.config(
     },
   },
   {
-    // Brand components export inferred React element types — explicit return types add noise.
+    // Brand components export inferred React element types - explicit return types add noise.
     files: ["src/components/**/*.tsx"],
     rules: {
       "@typescript-eslint/explicit-module-boundary-types": "off",

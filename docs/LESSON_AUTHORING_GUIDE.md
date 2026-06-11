@@ -1,4 +1,4 @@
-# CyberLearn — Guide de rédaction des leçons MDX
+# CyberLearn - Guide de rédaction des leçons MDX
 
 Ce document est destiné à être fourni à Claude pour générer des leçons complètes et prêtes à l'import.  
 Chaque leçon est un fichier `.mdx` avec un frontmatter YAML + un corps en MDX (Markdown + composants JSX).
@@ -189,7 +189,7 @@ Encadré coloré pour attirer l'attention. 4 types disponibles.
 
 **Règles d'usage :**
 - Max 1-2 callouts par section
-- Pas de callout pour du contenu ordinaire — réserver aux points vraiment importants
+- Pas de callout pour du contenu ordinaire - réserver aux points vraiment importants
 - Le contenu à l'intérieur peut contenir du Markdown inline (`**gras**`, `` `code` ``)
 
 ---
@@ -223,7 +223,7 @@ Question à choix multiple intégrée dans la leçon. Auto-correctif côté clie
 
 ---
 
-### 5.2b QuizGroup — Série de QCM séquentiels
+### 5.2b QuizGroup - Série de QCM séquentiels
 
 Groupe plusieurs `<Quiz>` en une séquence verrouillée : la question suivante n'apparaît qu'une fois la précédente répondue correctement. Une barre de progression montre l'avancement.
 
@@ -263,9 +263,9 @@ Groupe plusieurs `<Quiz>` en une séquence verrouillée : la question suivante n
 
 ---
 
-### 5.3 CodePlayground — Sandbox interactif
+### 5.3 CodePlayground - Sandbox interactif
 
-Éditeur de code exécutable directement dans le navigateur. **Aucun serveur impliqué** — tout s'exécute localement.
+Éditeur de code exécutable directement dans le navigateur. **Aucun serveur impliqué** - tout s'exécute localement.
 
 #### Python 3.11 (Pyodide · WASM)
 
@@ -279,7 +279,7 @@ for i in range(5):
 </CodePlayground>
 ```
 
-Bibliothèques disponibles : tout ce que Pyodide supporte nativement — `math`, `random`, `hashlib`, `json`, `base64`, `itertools`, `collections`, etc.  
+Bibliothèques disponibles : tout ce que Pyodide supporte nativement - `math`, `random`, `hashlib`, `json`, `base64`, `itertools`, `collections`, etc.  
 **Non disponible** : I/O fichier, réseau, `subprocess`, bibliothèques natives C.
 
 #### JavaScript ES2022 (Web Worker)
@@ -300,7 +300,7 @@ console.log("Fib(10) =", fibonacci(10));
 
 Sortie via `console.log()` / `console.error()`. Timeout 10 secondes.
 
-#### C — C11 standard (jscpp · CDN)
+#### C - C11 standard (jscpp · CDN)
 
 ```jsx
 <CodePlayground language="c">
@@ -319,7 +319,7 @@ int main() {
 Bibliothèques supportées : `stdio.h`, `stdlib.h`, `string.h`, `math.h`, `ctype.h`.  
 Timeout 10 secondes.
 
-#### Assembly x86-64 — Simulateur NASM (éducatif)
+#### Assembly x86-64 - Simulateur NASM (éducatif)
 
 ```jsx
 <CodePlayground language="asm">
@@ -370,7 +370,7 @@ main:
     ret
 ```
 
-**Limite** : 10 000 cycles — les boucles infinies sont détectées automatiquement.
+**Limite** : 10 000 cycles - les boucles infinies sont détectées automatiquement.
 
 **Règles d'usage :**
 - Commencer par `global main` + `section .text` + label `main:`
@@ -379,7 +379,7 @@ main:
 
 ---
 
-### 5.4 SimulatedTerminal — Terminal interactif
+### 5.4 SimulatedTerminal - Terminal interactif
 
 Émulateur de terminal xterm.js intégré. L'étudiant tape de vraies commandes et voit des réponses pré-définies.
 
@@ -391,14 +391,14 @@ main:
 
 | Prop | Type | Défaut | Description |
 |---|---|---|---|
-| `shell` | `"bash"` \| `"powershell"` | `"bash"` | Type de shell — change prompt, style, commandes |
-| `scenario` | string | — | Scénario prédéfini (voir liste ci-dessous) |
-| `commands` | `Record<string, string>` | — | Commandes personnalisées supplémentaires |
-| `title` | string | — | Titre affiché dans la barre du terminal |
+| `shell` | `"bash"` \| `"powershell"` | `"bash"` | Type de shell - change prompt, style, commandes |
+| `scenario` | string | - | Scénario prédéfini (voir liste ci-dessous) |
+| `commands` | `Record<string, string>` | - | Commandes personnalisées supplémentaires |
+| `title` | string | - | Titre affiché dans la barre du terminal |
 | `height` | number | `320` | Hauteur en pixels |
-| `expectedCommands` | `string[]` | — | Commandes que l'étudiant doit taper pour valider l'exercice |
-| `hints` | `string[]` | — | Indices affichés sous le terminal |
-| `onComplete` | `() => void` | — | Callback déclenché quand toutes les `expectedCommands` ont été tapées |
+| `expectedCommands` | `string[]` | - | Commandes que l'étudiant doit taper pour valider l'exercice |
+| `hints` | `string[]` | - | Indices affichés sous le terminal |
+| `onComplete` | `() => void` | - | Callback déclenché quand toutes les `expectedCommands` ont été tapées |
 
 **Exercice avec validation :**
 
@@ -406,7 +406,7 @@ main:
 <SimulatedTerminal
   shell="bash"
   scenario="nmap-basic"
-  title="Exercice — Reconnaissance réseau"
+  title="Exercice - Reconnaissance réseau"
   expectedCommands={["nmap -sV 192.168.1.100", "nmap -A 192.168.1.100"]}
   hints={[
     "L'option -sV détecte les versions des services.",
@@ -418,7 +418,7 @@ main:
 - La barre de titre affiche `0/2 cmd` → `✓ 2/2 cmd` au fur et à mesure
 - Chaque commande attendue tapée affiche `✓ Bonne commande !` en turquoise dans le terminal
 - `onComplete` est déclenché quand toutes sont validées (utile si le terminal est dans un stepper d'exercice)
-- Les hints sont toujours visibles (non masqués) — les mettre si le scénario est pédagogique, pas si c'est une évaluation libre
+- Les hints sont toujours visibles (non masqués) - les mettre si le scénario est pédagogique, pas si c'est une évaluation libre
 
 #### Scénarios disponibles
 
@@ -427,7 +427,7 @@ main:
 
 ---
 
-**`bash` (sans scénario)** — Shell minimaliste, commandes de base :
+**`bash` (sans scénario)** - Shell minimaliste, commandes de base :
 ```jsx
 <SimulatedTerminal shell="bash" />
 ```
@@ -435,7 +435,7 @@ Commandes supplémentaires : `mkdir`, `touch`, `cat`, `echo`
 
 ---
 
-**`bash-admin`** — Administration système Linux :
+**`bash-admin`** - Administration système Linux :
 ```jsx
 <SimulatedTerminal shell="bash" scenario="bash-admin" />
 ```
@@ -443,7 +443,7 @@ Commandes disponibles : `ps aux`, `df -h`, `free -h`, `systemctl status nginx`, 
 
 ---
 
-**`bash-scripting`** — Scripts shell Bash :
+**`bash-scripting`** - Scripts shell Bash :
 ```jsx
 <SimulatedTerminal shell="bash" scenario="bash-scripting" />
 ```
@@ -451,7 +451,7 @@ Commandes disponibles : `cat script.sh`, `bash -n script.sh`, `bash -x script.sh
 
 ---
 
-**`powershell-basics`** — PowerShell fondamentaux :
+**`powershell-basics`** - PowerShell fondamentaux :
 ```jsx
 <SimulatedTerminal shell="powershell" scenario="powershell-basics" />
 ```
@@ -459,7 +459,7 @@ Commandes disponibles : `Get-ChildItem`, `Get-ChildItem -Force`, `Get-Location`,
 
 ---
 
-**`powershell-sec`** — PowerShell orienté sécurité/forensics :
+**`powershell-sec`** - PowerShell orienté sécurité/forensics :
 ```jsx
 <SimulatedTerminal shell="powershell" scenario="powershell-sec" />
 ```
@@ -467,7 +467,7 @@ Commandes disponibles : `Get-NetTCPConnection`, `Get-NetTCPConnection -State Lis
 
 ---
 
-**`ctf-web`** — Simulation d'une cible CTF web (SQLi, LFI, enumération) :
+**`ctf-web`** - Simulation d'une cible CTF web (SQLi, LFI, enumération) :
 ```jsx
 <SimulatedTerminal shell="bash" scenario="ctf-web" />
 ```
@@ -475,7 +475,7 @@ Commandes disponibles : `curl http://target.ctf/`, `curl -I http://target.ctf/ad
 
 ---
 
-**`ctf-net`** — Simulation d'une cible CTF réseau (scan, énumération) :
+**`ctf-net`** - Simulation d'une cible CTF réseau (scan, énumération) :
 ```jsx
 <SimulatedTerminal shell="bash" scenario="ctf-net" />
 ```
@@ -483,33 +483,33 @@ Commandes disponibles : `nmap -sV -sC target.ctf`, `nmap -p- --min-rate 5000 tar
 
 ---
 
-**`nmap-basic`** — Reconnaissance réseau avec Nmap (cible : `192.168.1.100`) :
+**`nmap-basic`** - Reconnaissance réseau avec Nmap (cible : `192.168.1.100`) :
 ```jsx
-<SimulatedTerminal shell="bash" scenario="nmap-basic" title="Terminal — Scan réseau" />
+<SimulatedTerminal shell="bash" scenario="nmap-basic" title="Terminal - Scan réseau" />
 ```
 Commandes disponibles : `nmap 192.168.1.100`, `nmap -sV 192.168.1.100`, `nmap -p 80 192.168.1.100`, `nmap -p 22 192.168.1.100`, `nmap -p 1-1000 192.168.1.100`, `nmap -A 192.168.1.100`, `nmap -sV -sC 192.168.1.100`, `nmap -p- 192.168.1.100`
 
 ---
 
-**`sqli-basic`** — Injection SQL avec sqlmap (cible : `http://vulnerable.ctf/login`) :
+**`sqli-basic`** - Injection SQL avec sqlmap (cible : `http://vulnerable.ctf/login`) :
 ```jsx
-<SimulatedTerminal shell="bash" scenario="sqli-basic" title="Terminal — SQLi" />
+<SimulatedTerminal shell="bash" scenario="sqli-basic" title="Terminal - SQLi" />
 ```
 Commandes disponibles : `sqlmap -u 'http://vulnerable.ctf/login?id=1'`, `sqlmap -u '...' --dbs`, `sqlmap -u '...' --tables`, `sqlmap -u '...' -D ctf_database --tables`, `sqlmap -u '...' -D ctf_database -T secrets --dump`, `sqlmap -u '...' -D ctf_database -T users --dump`
 
 ---
 
-**`file-recon`** — Exploration de fichiers Linux (répertoire avec fichiers cachés) :
+**`file-recon`** - Exploration de fichiers Linux (répertoire avec fichiers cachés) :
 ```jsx
-<SimulatedTerminal shell="bash" scenario="file-recon" title="Terminal — Exploration fichiers" />
+<SimulatedTerminal shell="bash" scenario="file-recon" title="Terminal - Exploration fichiers" />
 ```
 Commandes disponibles : `ls`, `ls -la`, `ls -la .hidden`, `cat notes.txt`, `cat config.bak`, `cat .hidden/flag.txt`, `cat .hidden/credentials.old`, `whoami`, `find . -name '*.txt'`, `find . -name '*.bak'`, `find . -type f`, `cat script.sh`
 
 ---
 
-**`network-recon`** — Reconnaissance réseau locale :
+**`network-recon`** - Reconnaissance réseau locale :
 ```jsx
-<SimulatedTerminal shell="bash" scenario="network-recon" title="Terminal — Réseau" />
+<SimulatedTerminal shell="bash" scenario="network-recon" title="Terminal - Réseau" />
 ```
 Commandes disponibles : `ping 8.8.8.8`, `ping -c 3 192.168.1.1`, `traceroute 8.8.8.8`, `netstat -tuln`, `netstat -an`, `ss -tlnp`, `ss -s`, `ip addr`, `ip route`
 
@@ -533,19 +533,19 @@ Si aucun scénario existant ne convient, ajouter des commandes spécifiques :
 />
 ```
 
-Les commandes du `scenario` + les commandes `commands` sont fusionnées — `commands` a la priorité.
+Les commandes du `scenario` + les commandes `commands` sont fusionnées - `commands` a la priorité.
 
 ---
 
-### 5.5 LessonVideo — Vidéo pédagogique
+### 5.5 LessonVideo - Vidéo pédagogique
 
 Intègre une vidéo hébergée sur Supabase Storage (ou toute URL `.mp4`/`.webm`).
 
 | Prop | Type | Défaut | Description |
 |------|------|--------|-------------|
-| `src` | `string` | — | URL de la vidéo (obligatoire) |
-| `title` | `string` | — | Titre affiché dans l'en-tête |
-| `caption` | `string` | — | Légende sous la vidéo |
+| `src` | `string` | - | URL de la vidéo (obligatoire) |
+| `title` | `string` | - | Titre affiché dans l'en-tête |
+| `caption` | `string` | - | Légende sous la vidéo |
 | `aspect` | `"16/9"` \| `"4/3"` \| `"1/1"` | `"16/9"` | Ratio d'affichage |
 
 ```mdx
@@ -566,22 +566,22 @@ Intègre une vidéo hébergée sur Supabase Storage (ou toute URL `.mp4`/`.webm`
 
 ---
 
-### 5.6 LessonImage — Image annotée
+### 5.6 LessonImage - Image annotée
 
 Affiche une image avec bordure et légende optionnelle. Utilise `next/image` pour les URLs Supabase (optimisation automatique) et `<img>` pour les autres domaines.
 
 | Prop | Type | Défaut | Description |
 |------|------|--------|-------------|
-| `src` | `string` | — | URL de l'image (obligatoire) |
-| `alt` | `string` | — | Texte alternatif (obligatoire, accessibilité) |
-| `caption` | `string` | — | Légende sous l'image |
+| `src` | `string` | - | URL de l'image (obligatoire) |
+| `alt` | `string` | - | Texte alternatif (obligatoire, accessibilité) |
+| `caption` | `string` | - | Légende sous l'image |
 | `width` | `number` | `1200` | Largeur intrinsèque en pixels |
 | `height` | `number` | `675` | Hauteur intrinsèque en pixels |
 | `variant` | `"default"` \| `"full"` \| `"inline"` | `"default"` | Mise en page |
 
-- `"default"` — centré avec marge
-- `"full"` — pleine largeur (déborde des marges de contenu)
-- `"inline"` — flotte à droite du texte (max 320px)
+- `"default"` - centré avec marge
+- `"full"` - pleine largeur (déborde des marges de contenu)
+- `"inline"` - flotte à droite du texte (max 320px)
 
 ```mdx
 <LessonImage
@@ -606,15 +606,15 @@ Affiche une image avec bordure et légende optionnelle. Utilise `next/image` pou
 
 ---
 
-### 5.7 ExternalLink — Lien externe
+### 5.7 ExternalLink - Lien externe
 
 Lien vers une ressource externe. Deux variantes : carte cliquable (`card`, défaut) ou lien inline (`link`). Tous les liens s'ouvrent dans un nouvel onglet avec `rel="noopener noreferrer"`. Seuls les protocoles `https://` et `http://` sont autorisés.
 
 | Prop | Type | Défaut | Description |
 |------|------|--------|-------------|
-| `href` | `string` | — | URL de destination (obligatoire, doit être une URL valide) |
-| `children` | `string` | — | Texte du lien (affiche l'URL si absent) |
-| `description` | `string` | — | Description courte (carte uniquement) |
+| `href` | `string` | - | URL de destination (obligatoire, doit être une URL valide) |
+| `children` | `string` | - | Texte du lien (affiche l'URL si absent) |
+| `description` | `string` | - | Description courte (carte uniquement) |
 | `variant` | `"card"` \| `"link"` | `"card"` | Style d'affichage |
 
 ```mdx
@@ -637,16 +637,16 @@ Pour en savoir plus, consultez la{" "}
 
 ---
 
-### 5.8 Diagram — Diagrammes Mermaid
+### 5.8 Diagram - Diagrammes Mermaid
 
 Schémas vectoriels rendus côté client via [Mermaid.js](https://mermaid.js.org). Remplace les diagrammes ASCII. Idéal pour les architectures réseau, flux de données, protocoles, modèles objet.
 
 | Prop | Type | Défaut | Description |
 |---|---|---|---|
-| `children` | string | — | Syntaxe Mermaid du diagramme (obligatoire) |
-| `caption` | string | — | Légende affichée sous le diagramme |
+| `children` | string | - | Syntaxe Mermaid du diagramme (obligatoire) |
+| `caption` | string | - | Légende affichée sous le diagramme |
 
-#### Flowchart — Flux et architectures
+#### Flowchart - Flux et architectures
 
 ```mdx
 <Diagram caption="Architecture d'une application web 3-tiers">
@@ -671,10 +671,10 @@ flowchart TD
 </Diagram>
 ```
 
-#### Sequence diagram — Échanges entre acteurs
+#### Sequence diagram - Échanges entre acteurs
 
 ```mdx
-<Diagram caption="Handshake TCP — 3 phases">
+<Diagram caption="Handshake TCP - 3 phases">
 sequenceDiagram
   participant C as Client
   participant S as Serveur
@@ -685,7 +685,7 @@ sequenceDiagram
 </Diagram>
 ```
 
-#### Class diagram — Modèles objet
+#### Class diagram - Modèles objet
 
 ```mdx
 <Diagram>
@@ -707,7 +707,7 @@ classDiagram
 </Diagram>
 ```
 
-#### Gitgraph — Flux de branches Git
+#### Gitgraph - Flux de branches Git
 
 ```mdx
 <Diagram>
@@ -725,13 +725,13 @@ gitGraph
 
 **Règles d'usage :**
 - Utiliser pour les architectures, flux réseau, protocoles, modèles de données
-- Ne pas dépasser 15–20 nœuds — au-delà, préférer une `<LessonImage>`
+- Ne pas dépasser 15–20 nœuds - au-delà, préférer une `<LessonImage>`
 - Toujours ajouter une `caption` pour les schémas pédagogiques
 - Référence complète des syntaxes : [mermaid.js.org/syntax](https://mermaid.js.org/syntax/flowchart.html)
 
 ---
 
-### 5.9 PythonChallenge — Exercice Python avec tests automatiques
+### 5.9 PythonChallenge - Exercice Python avec tests automatiques
 
 Éditeur Python style LeetCode : l'étudiant écrit son code, clique "Lancer les tests", et doit faire passer tous les cas de test pour débloquer la suite. Exécution 100% locale via Pyodide (WASM), aucun serveur.
 
@@ -746,7 +746,7 @@ gitGraph
     { input: "solution(1)", expected: "1" },
     { input: "solution(5)", expected: "15" },
     { input: "solution(10)", expected: "55" },
-    { input: "solution(0)", expected: "0", label: "Cas limite — n=0" },
+    { input: "solution(0)", expected: "0", label: "Cas limite - n=0" },
   ]}
 />
 ```
@@ -766,7 +766,7 @@ gitGraph
 | Champ | Type | Description |
 |---|---|---|
 | `input` | string | Expression Python à évaluer (ex: `"solution(5)"`) |
-| `expected` | string | Valeur attendue — résultat de `str(expression)` en Python |
+| `expected` | string | Valeur attendue - résultat de `str(expression)` en Python |
 | `label` | string | Étiquette affichée dans les résultats (défaut : "Test N") |
 
 **Comment définir les valeurs `expected` :**
@@ -781,16 +781,16 @@ La valeur comparée est toujours `str(expression)` côté Python. Exemples :
 | `None` | `"None"` |
 | `[1, 2, 3]` (liste) | `"[1, 2, 3]"` |
 | `{'a': 1}` (dict) | `"{'a': 1}"` |
-| `"hello"` (str) | `"hello"` (sans guillemets — c'est `str("hello")`) |
+| `"hello"` (str) | `"hello"` (sans guillemets - c'est `str("hello")`) |
 
 **Règles d'usage :**
 - Le `id` doit être unique dans la leçon (préfixe `py-` recommandé)
 - Toujours inclure un cas limite (n=0, liste vide, chaîne vide…)
 - Le `starterCode` doit indiquer la signature de la fonction attendue
-- Limiter à 8 cas de test maximum — les afficher tous ralentirait l'UX
+- Limiter à 8 cas de test maximum - les afficher tous ralentirait l'UX
 - L'exercice bloque la progression : ne pas l'utiliser si l'objectif est d'explorer librement
 
-**Bibliothèques disponibles :** tout ce que Pyodide embarque — `math`, `random`, `hashlib`, `json`, `base64`, `itertools`, `collections`, `re`, `string`, etc.  
+**Bibliothèques disponibles :** tout ce que Pyodide embarque - `math`, `random`, `hashlib`, `json`, `base64`, `itertools`, `collections`, `re`, `string`, etc.  
 **Non disponible :** I/O fichier, réseau, `subprocess`, bibliothèques natives C.
 
 ---
@@ -807,7 +807,7 @@ La valeur comparée est toujours `str(expression)` côté Python. Exemples :
 
 ### Sécurité et sanitisation
 
-- **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` — rejetées à l'import
+- **Pas de balises HTML brutes** : `<script>`, `<iframe>`, `<object>`, `<embed>` - rejetées à l'import
 - **Pas de** `dangerouslySetInnerHTML`, `eval()`, `javascript:` URLs
 - **Pas de** `import` / `require` dans le corps de la leçon (uniquement des composants whitelistés)
 - Les `<Callout>`, `<Quiz>`, `<QuizGroup>`, `<CodePlayground>`, `<PythonChallenge>`, `<SimulatedTerminal>`, `<LessonVideo>`, `<LessonImage>`, `<ExternalLink>`, `<Diagram>` sont les seuls composants JSX autorisés
@@ -824,7 +824,7 @@ La valeur comparée est toujours `str(expression)` côté Python. Exemples :
 
 ## 7. Exemples complets
 
-### Leçon BEGINNER — Dev (Python)
+### Leçon BEGINNER - Dev (Python)
 
 ```mdx
 ---
@@ -867,7 +867,7 @@ print("Terminé !")
 </CodePlayground>
 
 <Callout type="info">
-  `range(5)` génère les valeurs 0, 1, 2, 3, 4 — **pas** 5. C'est une source d'erreur fréquente.
+  `range(5)` génère les valeurs 0, 1, 2, 3, 4 - **pas** 5. C'est une source d'erreur fréquente.
 </Callout>
 
 ## Itérer sur une liste
@@ -908,7 +908,7 @@ print(f"Somme : {total}")  # Attendu : 55
 
 ---
 
-### Leçon INTERMEDIATE — Cybersec (Réseau)
+### Leçon INTERMEDIATE - Cybersec (Réseau)
 
 ```mdx
 ---
@@ -946,7 +946,7 @@ nmap <cible>
 
 Essayez sur une cible CTF :
 
-<SimulatedTerminal shell="bash" scenario="ctf-net" title="Terminal — Reconnaissance" />
+<SimulatedTerminal shell="bash" scenario="ctf-net" title="Terminal - Reconnaissance" />
 
 ## Types de scans
 
@@ -969,14 +969,14 @@ Essayez sur une cible CTF :
 
 ## Récapitulatif
 
-- `nmap <cible>` — scan rapide des 1 000 ports courants
+- `nmap <cible>` - scan rapide des 1 000 ports courants
 - `-sV` détecte les versions, `-sC` lance les scripts par défaut
 - Toujours travailler sur des cibles autorisées
 ```
 
 ---
 
-### Leçon ADVANCED — Assembly
+### Leçon ADVANCED - Assembly
 
 ```mdx
 ---
@@ -1093,7 +1093,7 @@ Lorsque vous demandez à Claude de générer une leçon, fournissez :
 **Exemple de prompt :**
 
 ```
-Génère une leçon MDX pour CyberLearn sur "Les injections SQL — détection et exploitation basique".
+Génère une leçon MDX pour CyberLearn sur "Les injections SQL - détection et exploitation basique".
 - refCode: CL-LSN-031-V01
 - slug: injection-sql-bases
 - category: CYBERSEC, difficulty: INTERMEDIATE, estimatedMinutes: 40, xpReward: 450

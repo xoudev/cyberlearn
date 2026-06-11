@@ -58,7 +58,7 @@ export function DeleteAccountSection({
 
   const modal = (
     <>
-      {/* Overlay — click to close */}
+      {/* Overlay - click to close */}
       <div
         aria-hidden="true"
         onClick={() => {
@@ -519,7 +519,7 @@ export function DeleteAccountSection({
         )}
       </div>
 
-      {/* ── Portal modal — rendered directly into document.body ───────────── */}
+      {/* ── Portal modal - rendered directly into document.body ───────────── */}
       {mounted && open && createPortal(modal, document.body)}
     </>
   );

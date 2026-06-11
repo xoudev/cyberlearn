@@ -105,7 +105,7 @@ afterEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("GET /api/me/delete/confirm — missing token", () => {
+describe("GET /api/me/delete/confirm - missing token", () => {
   it("redirects to error?reason=missing when no token param", async () => {
     const res = await GET(makeRequest());
     expect(res.status).toBe(307);
@@ -113,7 +113,7 @@ describe("GET /api/me/delete/confirm — missing token", () => {
   });
 });
 
-describe("GET /api/me/delete/confirm — invalid token", () => {
+describe("GET /api/me/delete/confirm - invalid token", () => {
   it("redirects to error?reason=invalid when token has invalid chars", async () => {
     const res = await GET(makeRequest("../../etc/passwd"));
     expect(res.status).toBe(307);
@@ -128,7 +128,7 @@ describe("GET /api/me/delete/confirm — invalid token", () => {
   });
 });
 
-describe("GET /api/me/delete/confirm — expired token", () => {
+describe("GET /api/me/delete/confirm - expired token", () => {
   it("redirects to error?reason=expired when token is past expiresAt", async () => {
     mockPrisma.accountDeletionToken.findUnique.mockResolvedValueOnce({
       ...VALID_RECORD,
@@ -140,7 +140,7 @@ describe("GET /api/me/delete/confirm — expired token", () => {
   });
 });
 
-describe("GET /api/me/delete/confirm — already used token", () => {
+describe("GET /api/me/delete/confirm - already used token", () => {
   it("redirects to error?reason=used when token has usedAt set", async () => {
     mockPrisma.accountDeletionToken.findUnique.mockResolvedValueOnce({
       ...VALID_RECORD,
@@ -152,7 +152,7 @@ describe("GET /api/me/delete/confirm — already used token", () => {
   });
 });
 
-describe("GET /api/me/delete/confirm — happy path", () => {
+describe("GET /api/me/delete/confirm - happy path", () => {
   it("marks the token as used before calling deleteAccount", async () => {
     await GET(makeRequest(VALID_PLAIN_TOKEN));
     expect(mockPrisma.accountDeletionToken.update).toHaveBeenCalledWith(
@@ -198,7 +198,7 @@ describe("GET /api/me/delete/confirm — happy path", () => {
   });
 });
 
-describe("GET /api/me/delete/confirm — deleteAccount failure", () => {
+describe("GET /api/me/delete/confirm - deleteAccount failure", () => {
   it("redirects to error?reason=internal when deleteAccount throws", async () => {
     mockDeleteAccount.mockRejectedValueOnce(new Error("DB exploded"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
@@ -215,7 +215,7 @@ describe("GET /api/me/delete/confirm — deleteAccount failure", () => {
   });
 });
 
-describe("GET /api/me/delete/confirm — auth deletion failure", () => {
+describe("GET /api/me/delete/confirm - auth deletion failure", () => {
   it("redirects to error?reason=auth_cleanup_failed when Supabase Auth delete fails", async () => {
     mockAuthDeleteUser.mockResolvedValueOnce({
       error: { message: "user not found in auth", status: 404 },

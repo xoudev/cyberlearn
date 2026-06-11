@@ -57,7 +57,7 @@ function invalidateWorker(language: Language): void {
       asmWorker = null;
       break;
     default: {
-      // Exhaustiveness check — compile error if a new Language member is added without handling it here
+      // Exhaustiveness check - compile error if a new Language member is added without handling it here
       const _exhaustive: never = language;
       throw new Error(`Unhandled language: ${String(_exhaustive)}`);
     }
@@ -111,7 +111,7 @@ function extractCodeText(node: React.ReactNode): string {
 export interface CodePlaygroundProps {
   id?: string;
   language?: Language;
-  /** Starter code — either via children or the `starterCode` prop. */
+  /** Starter code - either via children or the `starterCode` prop. */
   children?: React.ReactNode;
   starterCode?: string;
   expectedOutput?: string;

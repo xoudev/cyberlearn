@@ -79,7 +79,7 @@ export function NotificationPanel({
     });
   }, [open, loaded]);
 
-  // Supabase Realtime — increment badge on new notifications
+  // Supabase Realtime - increment badge on new notifications
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     const channel = supabase

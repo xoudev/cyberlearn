@@ -14,7 +14,7 @@ export function ExportDataButton(): React.JSX.Element {
       if (response.status === 429) {
         const retryAfter = response.headers.get("retry-after");
         const minutes = retryAfter ? Math.ceil(parseInt(retryAfter, 10) / 60) : 60;
-        toast.error(`Limite atteinte — réessaie dans ${String(minutes)} min`, {
+        toast.error(`Limite atteinte - réessaie dans ${String(minutes)} min`, {
           description: "1 export autorisé par 24h (Art. 20 RGPD).",
           duration: 8000,
         });

@@ -11,7 +11,7 @@ function setConsentCookie(value: "acknowledged"): void {
 }
 
 interface CookieBannerProps {
-  /** Server-read initial value — avoids flash on revisit */
+  /** Server-read initial value - avoids flash on revisit */
   initialConsent: string | undefined;
 }
 

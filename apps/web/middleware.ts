@@ -36,7 +36,7 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       "form-action 'self'",
       "base-uri 'self'",
       ...(isDev ? [] : ["upgrade-insecure-requests"]),
-      // CSP violation reporting — only when endpoint is configured
+      // CSP violation reporting - only when endpoint is configured
       ...(process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI
         ? [`report-uri ${process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI}`]
         : []),
@@ -93,7 +93,7 @@ function isOnboardingRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
-  // Generate a fresh nonce for every request — used in CSP and forwarded to
+  // Generate a fresh nonce for every request - used in CSP and forwarded to
   // server components via x-nonce so Next.js stamps it on inline scripts.
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
@@ -101,14 +101,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
 
-  // Block /dev/* in production — return 404, not 403 (don't reveal route existence)
+  // Block /dev/* in production - return 404, not 403 (don't reveal route existence)
   if (isDevRoute(pathname) && process.env.NODE_ENV === "production") {
     const notFound = new NextResponse(null, { status: 404 });
     applySecurityHeaders(notFound, nonce);
     return notFound;
   }
 
-  // Default response — forwards our custom headers (including x-nonce) downstream
+  // Default response - forwards our custom headers (including x-nonce) downstream
   let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -121,7 +121,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return res;
   }
 
-  // Create Supabase client — MUST use this cookie pattern for SSR session refresh.
+  // Create Supabase client - MUST use this cookie pattern for SSR session refresh.
   // Explicit CookieMethodsServer type needed to avoid implicit-any on setAll params.
   const cookieMethods: CookieMethodsServer = {
     getAll: () => request.cookies.getAll(),
@@ -146,7 +146,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     cookies: cookieMethods,
   });
 
-  // getSession() reads the JWT from cookies without a network round-trip — fast
+  // getSession() reads the JWT from cookies without a network round-trip - fast
   // enough for routing decisions. Server components use getUser() for security.
   const {
     data: { session },
@@ -165,7 +165,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       return redirectResponse;
     }
   } else {
-    // Authenticated user — check onboarding completion
+    // Authenticated user - check onboarding completion
     // We use app_metadata.onboarding_complete set by the callback route
     // to avoid a DB query on every request.
     const isOnboardingComplete = user.app_metadata.onboarding_complete === true;
@@ -199,7 +199,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 export const config = {
   matcher: [
     // Exclude _next internals, favicon, common asset extensions,
-    // AND /workers/* + /runtimes/* — these static script paths get
+    // AND /workers/* + /runtimes/* - these static script paths get
     // their own stricter CSP via next.config.ts headers().
     "/((?!_next/static|_next/image|favicon.ico|workers|runtimes|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],

@@ -1,5 +1,5 @@
 /**
- * Supabase Auth Hook — Custom Access Token
+ * Supabase Auth Hook - Custom Access Token
  *
  * Injects the user's role from public.users into the JWT access token as
  * `user_role`, used by RLS policies (current_user_role()) and server guards
@@ -13,7 +13,7 @@
  *     impact). Use to validate the secret against real traffic.
  *   - "true"  (ENFORCE): reject unsigned/invalid/expired calls with 401 before
  *     the role lookup; 500 (fail closed) if the secret is unconfigured.
- * This hook is on the JWT issuance path (login + refresh) — roll out monitor →
+ * This hook is on the JWT issuance path (login + refresh) - roll out monitor →
  * enforce once the logs confirm 100% of real calls verify.
  *
  * Setup:

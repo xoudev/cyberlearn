@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Spy on the issuance module — we assert WHETHER it's called, not its internals.
+// Spy on the issuance module - we assert WHETHER it's called, not its internals.
 // vi.hoisted: the vi.mock factories are hoisted above these declarations.
 const m = vi.hoisted(() => ({
   issueCertificate: vi.fn(() => Promise.resolve({ issued: true })),
@@ -33,7 +33,7 @@ beforeEach(() => {
   findPublishedPathsForLesson.mockResolvedValue([PATH]);
 });
 
-describe("checkAndIssueCertificates — quiz gate", () => {
+describe("checkAndIssueCertificates - quiz gate", () => {
   it("path WITHOUT quiz + lessons complete → issues the certificate", async () => {
     areLessonsComplete.mockResolvedValue(true);
     findActiveQuizByPathId.mockResolvedValue(null);

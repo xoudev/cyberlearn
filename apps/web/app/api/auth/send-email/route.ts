@@ -93,7 +93,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const parsed = hookPayloadSchema.safeParse(body);
     if (!parsed.success) {
-      // Unknown hook event — acknowledge silently
+      // Unknown hook event - acknowledge silently
       return NextResponse.json({});
     }
 

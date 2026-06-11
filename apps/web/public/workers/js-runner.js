@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * JavaScript Web Worker — static execution sandbox for CodePlayground.
+ * JavaScript Web Worker - static execution sandbox for CodePlayground.
  *
  * Protocol:
  *   inbound:  { id, code }
@@ -10,7 +10,7 @@
  * at file load, before the first message arrives. No async init needed
  * (unlike py-runner.js which must wait for loadPyodide() to complete).
  *
- * new Function() is preserved as the execution mechanism — it is the
+ * new Function() is preserved as the execution mechanism - it is the
  * only way to run arbitrary JS strings in a classic Web Worker context.
  * The fakeConsole intercepts console.* calls in user code.
  *
@@ -20,13 +20,13 @@
  *   - self.addEventListener overridden to throw for "message" /
  *     "messageerror" types (capture-phase bypass vector closed)
  *   - self.onmessage frozen via defineProperty (writable:false,
- *     configurable:false) — property assignment override prevented
- *   - self.onerror frozen similarly — error swallowing prevented
+ *     configurable:false) - property assignment override prevented
+ *   - self.onerror frozen similarly - error swallowing prevented
  *   - Real handler registered via saved _addListener, inaccessible
  *     to user code running inside new Function(...)
  */
 
-// Save the original before any override — user code cannot reach this reference.
+// Save the original before any override - user code cannot reach this reference.
 const _addListener = self.addEventListener.bind(self);
 
 // 1. Network APIs
@@ -83,7 +83,7 @@ try {
   // Skip if prototype property is already non-configurable in this engine
 }
 
-// 5. Freeze onmessage and onerror — property assignment cannot override them.
+// 5. Freeze onmessage and onerror - property assignment cannot override them.
 Object.defineProperty(self, "onmessage", {
   value: null,
   writable: false,
@@ -95,7 +95,7 @@ Object.defineProperty(self, "onerror", {
   configurable: false,
 });
 
-// Real handler — registered via saved original, invisible to user code.
+// Real handler - registered via saved original, invisible to user code.
 function handleMessage(e) {
   const { id, code } = e.data;
   const logs = [];

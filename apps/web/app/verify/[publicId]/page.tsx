@@ -31,7 +31,7 @@ function QrPlaceholder({ size = 80 }: { size?: number }) {
   const cells = Array.from({ length: 100 }, (_, i) => {
     const x = i % 10;
     const y = Math.floor(i / 10);
-    // SAFETY: deterministic visual pattern — not a real QR code
+    // SAFETY: deterministic visual pattern, not a real QR code
     const inFinder = (cx: number, cy: number) => x >= cx && x < cx + 3 && y >= cy && y < cy + 3;
     const isFinder = inFinder(0, 0) || inFinder(7, 0) || inFinder(0, 7);
     if (isFinder) {
@@ -144,7 +144,7 @@ export default async function CertVerifyPage({
     .trim()
     .slice(0, 79);
   const certCode = `CYL-${String(cert.issuedAt.getFullYear())}-${String(cert.issuedAt.getMonth() + 1).padStart(2, "0")}-${cert.id.slice(0, 4).toUpperCase()}`;
-  // Canonical issuer host — same source as the verify URL (no hardcoded .app).
+  // Canonical issuer host: same source as the verify URL (no hardcoded .app).
   const issuerHost = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(
     /^https?:\/\//,
     "",
@@ -608,7 +608,7 @@ export default async function CertVerifyPage({
                         </span>
                       </>
                     ) : (
-                      "—"
+                      "-"
                     ),
                   accent: true,
                 },

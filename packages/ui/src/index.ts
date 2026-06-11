@@ -1,4 +1,4 @@
-// @cyberlearn/ui — brand components shared across all apps.
+// @cyberlearn/ui - brand components shared across all apps.
 // shadcn primitives live in each app under components/ui/ (not shared).
 
 export { XPBar } from "./components/xp-bar.js";

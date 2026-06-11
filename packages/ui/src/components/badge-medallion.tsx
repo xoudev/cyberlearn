@@ -9,10 +9,10 @@ export type BadgeMedallionSize = "xs" | "sm" | "md" | "lg";
 export type BadgeMedallionState = "locked" | "unlocked";
 
 /**
- * The single canonical hexagon — a REGULAR pointy-top hexagon drawn as an SVG
+ * The single canonical hexagon - a REGULAR pointy-top hexagon drawn as an SVG
  * <polygon> (NOT a CSS clip-path + border). The viewBox carries the exact
  * √3/2 width:height ratio of a regular hexagon, so the shape can never
- * stretch, and the rarity outline is a real SVG stroke — uniform thickness on
+ * stretch, and the rarity outline is a real SVG stroke - uniform thickness on
  * all six edges. Pointy-top is kept: its two vertical edges stay parallel to
  * the card sides, and the badge artwork SVGs are pointy-top hexagons too.
  */
@@ -114,7 +114,7 @@ export function BadgeMedallion({
   style,
 }: BadgeMedallionProps): React.ReactElement {
   const s = SIZES[size];
-  // Width derives from height at the regular-hexagon ratio — never stretched.
+  // Width derives from height at the regular-hexagon ratio - never stretched.
   const w = Math.round(s.h * HEX_RATIO * 10) / 10;
   const locked = state === "locked";
   const rarityColor = BADGE_RARITY_VAR[rarity];

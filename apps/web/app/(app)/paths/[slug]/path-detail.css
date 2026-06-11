@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Cyber Learn — Path Detail v2 (the checkpoint / quest-log path)
+   Cyber Learn - Path Detail v2 (the checkpoint / quest-log path)
    Faithful port of docs/design/paths/path-detail-v2.css, scoped under .pd2 so it
    never leaks into the rest of the app. Reproduced (not imported) per the brief:
    zero dependency on the docs/design folder. The app shell (navbar/sidebar) is

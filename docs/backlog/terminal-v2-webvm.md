@@ -1,6 +1,6 @@
-# Terminal v2 — Migration vers WebVM (CheerpX)
+# Terminal v2 - Migration vers WebVM (CheerpX)
 
-> Tracé pour v1.5/v2 — pas en v1.
+> Tracé pour v1.5/v2 - pas en v1.
 
 ## Pourquoi
 
@@ -12,7 +12,7 @@ SimulatedTerminal v1 fonctionne mais a des limites pédagogiques :
 Pour les leçons DevOps, Linux, Cybersécurité de base : un vrai Linux
 dans le browser change tout.
 
-## La techno — WebVM / CheerpX
+## La techno - WebVM / CheerpX
 
 CheerpX = émulateur x86 compilé en WASM. Vraie Debian (ou Alpine) qui
 tourne dans le browser, zéro backend.
@@ -31,11 +31,11 @@ Repo : https://github.com/leaningtech/webvm
 
 3 mécanismes à combiner :
 
-1. **Intercept command pattern** — listen sur stdin, match regex/exact,
+1. **Intercept command pattern** - listen sur stdin, match regex/exact,
    valide étape
-2. **Filesystem state check** — polling lecture fichier + hash, valide
+2. **Filesystem state check** - polling lecture fichier + hash, valide
    contenu attendu
-3. **Custom validation scripts** — script bash dans le disk image que
+3. **Custom validation scripts** - script bash dans le disk image que
    le frontend lance pour valider
 
 ## Sécurité

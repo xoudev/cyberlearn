@@ -122,7 +122,7 @@ export default function CguPage(): React.JSX.Element {
       <Section title="5. Données personnelles (RGPD)">
         <p>
           {COMPANY} collecte et traite vos données personnelles conformément au Règlement Général
-          sur la Protection des Données (RGPD — Règlement UE 2016/679) et à la loi Informatique et
+          sur la Protection des Données (RGPD - Règlement UE 2016/679) et à la loi Informatique et
           Libertés.
         </p>
         <p style={{ marginTop: "12px" }}>

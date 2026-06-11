@@ -462,7 +462,7 @@ export function ScriptRunner({
 
         {/* Editor: highlighted pre behind transparent textarea */}
         <div style={{ position: "relative" }}>
-          {/* Syntax-highlighted mirror — aria-hidden, pointer-events none */}
+          {/* Syntax-highlighted mirror - aria-hidden, pointer-events none */}
           <pre
             aria-hidden
             style={{
@@ -496,7 +496,7 @@ export function ScriptRunner({
             {"\n"}
           </pre>
 
-          {/* Transparent textarea — captures input, shows caret */}
+          {/* Transparent textarea - captures input, shows caret */}
           <textarea
             value={code}
             onChange={(e) => {
@@ -528,7 +528,7 @@ export function ScriptRunner({
             onKeyDown={(e) => {
               if (e.key === "Tab") {
                 e.preventDefault();
-                // capture before rAF — React nullifies currentTarget after handler returns
+                // capture before rAF - React nullifies currentTarget after handler returns
                 const target = e.currentTarget;
                 const start = target.selectionStart;
                 const end = target.selectionEnd;
@@ -649,7 +649,7 @@ export function ScriptRunner({
         ))}
       </div>
 
-      {/* Flag row — conditionally rendered */}
+      {/* Flag row - conditionally rendered */}
       {isCompleted ? (
         <div
           style={{

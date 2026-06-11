@@ -99,7 +99,7 @@ describe("requireAdmin", () => {
       app_metadata: { user_role: "USER" },
     });
 
-    // notFound() throws NEXT_HTTP_ERROR_FALLBACK;404 — distinct from redirect
+    // notFound() throws NEXT_HTTP_ERROR_FALLBACK;404 - distinct from redirect
     await expect(requireAdmin(supabase)).rejects.toThrow(NOT_FOUND_ERROR);
   });
 
@@ -112,7 +112,7 @@ describe("requireAdmin", () => {
   it("redirects to /login (not 404) when unauthenticated", async () => {
     const supabase = makeSupabase(null);
 
-    // redirect() throws NEXT_REDIRECT — distinct from notFound()'s error
+    // redirect() throws NEXT_REDIRECT - distinct from notFound()'s error
     await expect(requireAdmin(supabase)).rejects.toThrow(REDIRECT_ERROR);
   });
 });

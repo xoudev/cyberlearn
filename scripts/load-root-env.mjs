@@ -13,7 +13,7 @@ import path from "node:path";
  * @param {string} rootDir Absolute path to the monorepo root.
  */
 export function loadRootEnv(rootDir) {
-  // Keys present before we start come from the real shell — never override them.
+  // Keys present before we start come from the real shell - never override them.
   const shellKeys = new Set(Object.keys(process.env));
 
   // Lower-priority file first; .env.local then overrides .env (but not shell).

@@ -1,7 +1,7 @@
 import { prisma } from "../prisma.js";
 
 export const badgeRepository = {
-  /** All active badges — loaded once per request for badge evaluation. */
+  /** All active badges - loaded once per request for badge evaluation. */
   async findAllActive() {
     return prisma.badge.findMany({
       where: { isActive: true },
@@ -9,7 +9,7 @@ export const badgeRepository = {
     });
   },
 
-  /** Set of badge IDs already earned by a user — used to skip re-evaluation. */
+  /** Set of badge IDs already earned by a user - used to skip re-evaluation. */
   async findUserBadgeIds(userId: string): Promise<ReadonlySet<string>> {
     const rows = await prisma.userBadge.findMany({
       where: { userId },

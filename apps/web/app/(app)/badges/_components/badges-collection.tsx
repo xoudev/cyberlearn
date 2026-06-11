@@ -43,7 +43,7 @@ interface Props {
   rarityEarned: Record<string, number>;
 }
 
-// ── Rarity chrome (card strip / border / progress) — all derived from the one
+// ── Rarity chrome (card strip / border / progress): all derived from the one
 //    centralised token (var --color-rarity-*), so there is a single scale. ─────
 
 function rarityChrome(rarity: string): {
@@ -264,7 +264,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
         </div>
       )}
 
-      {/* Hexagonal medallion — shared component */}
+      {/* Hexagonal medallion: shared component */}
       <BadgeMedallion
         rarity={toBadgeRarity(badge.rarity)}
         size={isLeg ? "lg" : "md"}

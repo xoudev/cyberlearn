@@ -1,4 +1,4 @@
-// Certificate issuance — plain server module (NOT "use server"): callable only
+// Certificate issuance: plain server module (NOT "use server"), callable only
 // from server code (lesson-completion action + quiz-submit action), never
 // exposed as a client-invocable server action (which would let a client forge a
 // cert with an arbitrary userId/score).
@@ -51,7 +51,7 @@ async function generateCertificatePdf(
     pathId,
     sha256Hash: "pending", // filled after PDF generation
     pdfStorageKey: "pending",
-    // Omit when absent (exactOptionalPropertyTypes) — quiz-less certs keep score null.
+    // Omit when absent (exactOptionalPropertyTypes): quiz-less certs keep score null.
     ...(opts.score !== undefined ? { score: opts.score } : {}),
     ...(opts.passThreshold !== undefined ? { passThreshold: opts.passThreshold } : {}),
   });
@@ -138,7 +138,7 @@ export async function issueCertificate(
     ]);
   } else {
     // Preserve existing behaviour: mark COMPLETED even if PDF generation failed.
-    // (Pre-existing edge case — a COMPLETED path without a cert — tracked for a
+    // (Pre-existing edge case: a COMPLETED path without a cert, tracked for a
     // separate fix; not changed here.)
     await pathRepository.upsertProgress({
       userId,
@@ -171,7 +171,7 @@ async function awardPathCompletedBadges(userId: string, pathId: string): Promise
   if (!user || allBadges.length === 0) return;
 
   // The triggering path is normally already persisted as COMPLETED at this
-  // point (linkCertificate / upsertProgress run first) — merge it defensively.
+  // point (linkCertificate / upsertProgress run first); merge it defensively.
   if (!facts.completedPathIds.includes(pathId)) {
     facts.completedPathIds.push(pathId);
   }
@@ -181,7 +181,7 @@ async function awardPathCompletedBadges(userId: string, pathId: string): Promise
   if (newBadgeIds.length === 0) return;
 
   // Shared award primitive: inserts the rows, credits Badge.xpReward (+ level
-  // recompute) and notifies — all atomically, and only for rows actually
+  // recompute) and notifies, all atomically, and only for rows actually
   // inserted, so concurrent or repeated calls never double-credit.
   const earnedBadges = allBadges.filter((b) => newBadgeIds.includes(b.id));
   await prisma.$transaction(async (tx) => {

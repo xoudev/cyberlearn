@@ -14,7 +14,7 @@ Cohérent avec :
 
 Coût mensuel : ~0.58€/mois (domaine OVH, payé pour 3 ans).
 
-### Stack v1 — Free tier détaillé
+### Stack v1 - Free tier détaillé
 
 | Service | Plan | Limite Free | Risque dépassement |
 |---|---|---|---|
@@ -29,30 +29,30 @@ Coût mensuel : ~0.58€/mois (domaine OVH, payé pour 3 ans).
 
 ## Pièges et alertes
 
-### Piège 1 — Vercel Hobby = pas de commercial
+### Piège 1 - Vercel Hobby = pas de commercial
 
 Dans les ToS Vercel : usage non-commercial only. Si Cyber Learn devient
 monétisé (subs, certifs payants, sponsoring, ads), upgrade Pro
 obligatoire (20$/mois). Tant que v1 = 100% gratuit users, OK.
 
-### Piège 2 — Supabase Free pause après 7j d'inactivité
+### Piège 2 - Supabase Free pause après 7j d'inactivité
 
 Mitigation : cron keep-alive externe (cron-job.org) toutes les 6h qui
 ping Postgres + Redis. Voir docs/infra/keep-alive.md.
 
-### Piège 3 — Upstash quota 10k commands/jour
+### Piège 3 - Upstash quota 10k commands/jour
 
 Le plus serré des quotas. Rate limiting + session checks peuvent vite
 saturer.
 - Setup obligatoire : alerte budget Upstash à 2$/mois
 - Pay-as-you-go automatique au-delà (~0.20$/100k commands)
 
-### Piège 4 — Sentry 5k events/mois
+### Piège 4 - Sentry 5k events/mois
 
 Spike Protection activé par défaut. Pas de facture surprise sur Free.
 Mais en cas de bug critique en prod, quota explosé rapidement.
 
-### Piège 5 — Resend 100 emails/jour
+### Piège 5 - Resend 100 emails/jour
 
 Si coup de marketing avec 100+ inscriptions en 1h, les emails 101+
 échouent silencieusement. Monitorer le dashboard Resend.
@@ -65,7 +65,7 @@ Si coup de marketing avec 100+ inscriptions en 1h, les emails 101+
 - [ ] Supabase : monitor quota dashboard
 - [ ] 2FA activée sur tous les comptes (Vercel, Supabase, GitHub, OVH, Sentry, Upstash, Resend)
 
-## Phase v1.5 — WebVM integration
+## Phase v1.5 - WebVM integration
 
 **Objectif** : remplacer SimulatedTerminal par un vrai Linux dans le
 browser via CheerpX. Voir docs/backlog/terminal-v2-webvm.md.
@@ -79,13 +79,13 @@ browser via CheerpX. Voir docs/backlog/terminal-v2-webvm.md.
 
 **Total v1.5 : ~0.58-5€/mois.**
 
-## Phase v2 — Migration VPS OVH (DevOps showcase)
+## Phase v2 - Migration VPS OVH (DevOps showcase)
 
 **Objectif** : montée en compétence DevOps + portfolio CV.
 
 ### Stack cible
 
-- VPS OVH Value (6.99€/mois) — 1 vCPU, 4GB RAM, 80GB SSD, région Gravelines
+- VPS OVH Value (6.99€/mois) - 1 vCPU, 4GB RAM, 80GB SSD, région Gravelines
 - Docker + Docker Compose
 - Caddy reverse proxy + Let's Encrypt SSL
 - PostgreSQL self-hosted avec backups vers R2/B2
@@ -101,8 +101,8 @@ browser via CheerpX. Voir docs/backlog/terminal-v2-webvm.md.
 
 | Modèle | Coût mensuel |
 |---|---|
-| Option A — VPS + Supabase managed | ~8-13€/mois |
-| Option B — VPS + tout self-hosted | ~7-12€/mois |
+| Option A - VPS + Supabase managed | ~8-13€/mois |
+| Option B - VPS + tout self-hosted | ~7-12€/mois |
 
 **Plan recommandé pour CV** : Option B (mode hardcore showcase).
 

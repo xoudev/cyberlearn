@@ -51,7 +51,7 @@ export function NextBar({
   const diffLabel = DIFF_LABELS[next.difficulty] ?? next.difficulty;
   const diffColor = DIFF_COLORS[next.difficulty] ?? "#6E8BFF";
 
-  // Modal state lives here — NextBar stays mounted even after isCompleted flips to true
+  // Modal state lives here - NextBar stays mounted even after isCompleted flips to true
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
   const router = useRouter();
 
@@ -168,7 +168,7 @@ export function NextBar({
 
         {/* Actions */}
         <div style={{ display: "flex", alignItems: "stretch" }}>
-          {/* CompleteButton unmounts when isCompleted flips — that's fine, modal state is here */}
+          {/* CompleteButton unmounts when isCompleted flips - that's fine, modal state is here */}
           {!isCompleted && (
             <div
               style={{
@@ -228,7 +228,7 @@ export function NextBar({
         </div>
       </div>
 
-      {/* Modal rendered outside NextBar's conditional blocks — stays alive until explicitly closed */}
+      {/* Modal rendered outside NextBar's conditional blocks - stays alive until explicitly closed */}
       {completionResult !== null && (
         <LessonCompleteModal
           result={completionResult}

@@ -47,7 +47,7 @@ export async function createPathAction(
 
   const { coverImageUrl, publishNow, ...data } = parsed.data;
 
-  // Parse ordered lesson IDs from the hidden JSON input — cap at 500 to prevent oversized transactions
+  // Parse ordered lesson IDs from the hidden JSON input; cap at 500 to prevent oversized transactions
   const lessonIdsRaw = formData.get("lessonIds");
   let orderedLessonIds: string[] = [];
   if (typeof lessonIdsRaw === "string" && lessonIdsRaw.length > 2) {

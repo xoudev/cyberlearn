@@ -1,5 +1,5 @@
 /**
- * Leaderboard visibility — integration test against the real Supabase DB.
+ * Leaderboard visibility - integration test against the real Supabase DB.
  *
  * Seeds three users (PUBLIC / ANONYMOUS / HIDDEN) with astronomically high XP
  * (far above any real user, within INT4 range) so they deterministically take
@@ -19,7 +19,7 @@ import { leaderboardRepository } from "../repositories/leaderboard.repository.js
 
 // Marker XP band no real user can reach (level 100 ≈ 1.5M); fits INT4 (max ~2.147e9).
 const XP_MARKER = 2_000_000_000;
-const XP_HID = 2_000_000_003; // highest — if its exclusion failed, it would steal rank 1
+const XP_HID = 2_000_000_003; // highest - if its exclusion failed, it would steal rank 1
 const XP_PUB = 2_000_000_002;
 const XP_ANON = 2_000_000_001;
 
@@ -109,7 +109,7 @@ describe("leaderboardRepository (integration, real DB)", () => {
     const anonEntry = entries.find((e) => e.xpTotal === XP_ANON);
     const hidEntry = entries.find((e) => e.xpTotal === XP_HID);
 
-    // HIDDEN excluded entirely — not present in the payload at all.
+    // HIDDEN excluded entirely - not present in the payload at all.
     expect(hidEntry).toBeUndefined();
 
     // PUBLIC user (also the current user) keeps full identity at rank 1.

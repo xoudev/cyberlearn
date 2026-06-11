@@ -24,7 +24,7 @@ const TURQ = "#0AFFD4";
 const MONO = "var(--font-mono)";
 const BODY_F = "var(--font-sans)";
 
-// Canonical public host (same source as the verify link / cert) — no hardcoded .app.
+// Canonical public host (same source as the verify link / cert); no hardcoded .app.
 const SITE_HOST = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(
   /^https?:\/\//,
   "",

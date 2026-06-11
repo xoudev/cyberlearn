@@ -1,4 +1,4 @@
-# Déploiement Vercel — CyberLearn Web
+# Déploiement Vercel - CyberLearn Web
 
 ## Prérequis
 
@@ -25,12 +25,12 @@ git push origin main
 
 ---
 
-## 3. Configurer le projet (CRITIQUE — monorepo)
+## 3. Configurer le projet (CRITIQUE - monorepo)
 
 | Champ | Valeur |
 |-------|--------|
 | Framework Preset | Next.js |
-| Root Directory | *(laisser vide — racine du repo)* |
+| Root Directory | *(laisser vide - racine du repo)* |
 | Build Command | `pnpm turbo run build --filter=@cyberlearn/web` |
 | Output Directory | `apps/web/.next` |
 | Install Command | `pnpm install` |
@@ -110,7 +110,7 @@ Clique **Deploy**. Le premier build prend ~3-4 min.
 
 ## 6. Après le premier déploiement
 
-### Supabase — URLs de callback (obligatoire)
+### Supabase - URLs de callback (obligatoire)
 
 Dans **Supabase → Authentication → URL Configuration** :
 
@@ -128,7 +128,7 @@ Pense à mettre à jour `NEXT_PUBLIC_SITE_URL` avec le vrai domaine.
 
 ---
 
-## Base de données — migrations & RLS
+## Base de données - migrations & RLS
 
 Le schéma **et** les policies RLS s'appliquent par la même commande :
 
@@ -163,7 +163,7 @@ base fraîche à chaque PR (step « Assert RLS coverage »).
 
 La baseline est transactionnelle (`BEGIN`/`COMMIT` explicites) : en cas d'échec
 (ex. `lock_timeout` derrière une requête longue), rollback complet, aucun état
-intermédiaire — la RLS existante reste en place. Débloquer puis rejouer :
+intermédiaire - la RLS existante reste en place. Débloquer puis rejouer :
 
 ```sh
 pnpm --filter @cyberlearn/db exec prisma migrate resolve --rolled-back 20260610200000_rls_baseline
@@ -171,7 +171,7 @@ pnpm --filter @cyberlearn/db db:migrate:prod
 ```
 
 NB : la baseline est idempotente et s'exécute « pour de vrai » sur la prod
-existante (qui portait déjà les policies posées à la main) — elle re-pose le
+existante (qui portait déjà les policies posées à la main) - elle re-pose le
 même état, en une transaction.
 
 ---

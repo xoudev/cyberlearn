@@ -10,7 +10,7 @@ const ERROR_STATUS: Record<string, number> = {
 };
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  // 1. Auth — getUser() validates the JWT server-side (no network shortcut)
+  // 1. Auth - getUser() validates the JWT server-side (no network shortcut)
   const supabase = await getSupabaseServerClient();
   const {
     data: { user },
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // 2. Rate limit — 3 requests per user per 24 hours
+  // 2. Rate limit - 3 requests per user per 24 hours
   const rl = await checkAccountDeletionRequest(user.id);
   if (!rl.success) {
     return NextResponse.json(
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
   const userAgent = request.headers.get("user-agent") ?? "";
 
-  // 5. Delegate to shared lib — token generation, DB store, email, audit log
+  // 5. Delegate to shared lib - token generation, DB store, email, audit log
   const result = await requestDeletion(
     { id: user.id, email: dbUser.email, displayName: dbUser.displayName },
     { ip, userAgent },

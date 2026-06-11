@@ -8,7 +8,7 @@ const externalLinkPropsSchema = z.object({
   children: z.string().optional(),
   /** Optional short description shown below the link label */
   description: z.string().optional(),
-  /** "link" — inline text link | "card" (default) — standalone card block */
+  /** "link" - inline text link | "card" (default) - standalone card block */
   variant: z.enum(["card", "link"]).optional().default("card"),
 });
 

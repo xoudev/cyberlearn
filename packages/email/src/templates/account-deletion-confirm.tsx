@@ -67,7 +67,7 @@ export function AccountDeletionConfirmEmail({
 
             <Text style={styles.muted}>
               Ce lien expire dans <strong style={{ color: "#F5F5FA" }}>1 heure</strong>. Si vous
-              n'avez pas demandé cette suppression, ignorez ce mail — aucune action ne sera prise.
+              n'avez pas demandé cette suppression, ignorez ce mail - aucune action ne sera prise.
             </Text>
           </Section>
 

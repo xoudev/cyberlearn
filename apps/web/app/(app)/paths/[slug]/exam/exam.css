@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Cyber Learn — Exam screens (intro / question / results)
+   Cyber Learn: Exam screens (intro / question / results)
    Faithful port of docs/design/paths/{exam-intro,exam-question,exam-results}.css
    Scoped under .exam-root so it never leaks into the rest of the app.
    Reproduced (not imported) per the design brief: zero dependency on the folder.
@@ -1554,10 +1554,10 @@
 }
 
 /* ==========================================================================
-   QUESTION — fixed full-viewport takeover
+   QUESTION: fixed full-viewport takeover
    The exam (taking phase) fills the viewport: the topbar (chrono) and the
    bottom nav are pinned, and only the question area scrolls if a question is
-   unusually tall — so everything stays visible without scrolling the page.
+   unusually tall, so everything stays visible without scrolling the page.
    ========================================================================== */
 .exam-root--fixed {
   position: fixed;

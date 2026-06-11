@@ -12,7 +12,7 @@
 //               with their real identity (it is their own data) + isCurrentUser.
 //   PUBLIC    → full identity
 // A user with no preferences row (e.g. signed up but never finished onboarding)
-// is treated as ANONYMOUS — privacy-first fallback.
+// is treated as ANONYMOUS - privacy-first fallback.
 //
 // The output rows carry NO user id: a stable per-user identifier on an
 // anonymized row is a re-identification primitive (and a cross-session tracking
@@ -52,7 +52,7 @@ export interface LeaderboardEntry {
   xpTotal: number;
   streakDays: number;
   /**
-   * True only for a PUBLIC user whose profile page is itself public — i.e. the
+   * True only for a PUBLIC user whose profile page is itself public - i.e. the
    * only case where the leaderboard name may be rendered as a link to
    * /u/[username]. Always false for anonymized rows and for PUBLIC users who
    * kept their profile page private. Also false for the current user's own row
@@ -61,10 +61,10 @@ export interface LeaderboardEntry {
   hasPublicProfile: boolean;
 }
 
-/** The signed-in user's own standing. Always their real data — it is their own. */
+/** The signed-in user's own standing. Always their real data - it is their own. */
 export interface CurrentUserPosition {
   visibility: LeaderboardVisibility;
-  /** Null when HIDDEN — a hidden user has no position on the public board. */
+  /** Null when HIDDEN - a hidden user has no position on the public board. */
   rank: number | null;
   level: number;
   xpTotal: number;
@@ -116,7 +116,7 @@ export function buildLeaderboard(
       xpTotal: user.xpTotal,
       streakDays: user.streakDays,
       // A profile link is only offered for genuinely PUBLIC + public-profile
-      // users — never for the current user's own anonymized row.
+      // users - never for the current user's own anonymized row.
       hasPublicProfile: isPublic && (user.preferences?.publicProfile ?? false),
     });
   }

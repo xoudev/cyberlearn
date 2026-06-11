@@ -11,7 +11,7 @@ function buildRedis(): Redis | null {
 
 const redis = buildRedis();
 
-/** 5 requests per 15 minutes per IP — applied to auth endpoints. */
+/** 5 requests per 15 minutes per IP, applied to auth endpoints. */
 export const authRateLimit = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "15 m"), prefix: "rl:admin:auth" })
   : null;
@@ -26,7 +26,7 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
 
   const forwarded = request.headers.get("x-forwarded-for");
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
-  // RGPD pseudonymization — never store raw IPs
+  // RGPD pseudonymization: never store raw IPs
   const hashedIp = crypto
     .createHmac("sha256", process.env.IP_SALT ?? "cyberlearn-default-salt")
     .update(rawIp)

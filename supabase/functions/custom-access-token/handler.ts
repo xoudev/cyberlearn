@@ -31,7 +31,7 @@ function jsonResponse(body: unknown, status = 200): Response {
  *
  * HOOK_VERIFY_ENFORCE (default "false"):
  *   - "false" (MONITOR): verify if a secret is present, LOG the outcome, but
- *     ALWAYS return claims — never 401/500. Zero impact on token issuance,
+ *     ALWAYS return claims - never 401/500. Zero impact on token issuance,
  *     whatever the signature result. Use this to validate the secret against
  *     real GoTrue traffic before enforcing.
  *   - "true"  (ENFORCE): 401 on missing/invalid/expired signature (before the

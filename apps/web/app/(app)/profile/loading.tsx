@@ -172,7 +172,7 @@ export default function ProfileLoading(): React.ReactElement {
           <Skeleton w={200} h={11} style={{ marginLeft: "auto" }} />
         </div>
 
-        {/* Badge grid (default active tab) — 4 columns */}
+        {/* Badge grid (default active tab) - 4 columns */}
         <div
           style={{
             display: "grid",

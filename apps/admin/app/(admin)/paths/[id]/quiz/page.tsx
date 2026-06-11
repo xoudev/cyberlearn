@@ -23,7 +23,7 @@ export default async function PathQuizPage({
   });
   if (!path) notFound();
 
-  // Admin reads — these intentionally include correctOptionId (the admin owns the
+  // Admin reads: these intentionally include correctOptionId (the admin owns the
   // answer key). This path is admin-gated (the (admin) layout) and SEPARATE from
   // the learner serve, which strips the key.
   const quiz = await quizRepository.findQuizByPathAdmin(id);

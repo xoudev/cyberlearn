@@ -34,7 +34,7 @@ export const leaderboardRepository = {
   /**
    * Top users for the public leaderboard.
    *
-   * SECURITY: HIDDEN users are filtered out at the query level — excluded from
+   * SECURITY: HIDDEN users are filtered out at the query level - excluded from
    * the list AND from rank numbering. buildLeaderboard then strips name,
    * username, and avatar for ANONYMOUS users before the data leaves the server.
    * Ranks are continuous over the visible subset.
@@ -53,7 +53,7 @@ export const leaderboardRepository = {
    * The signed-in user's own standing. Rank counts only visible users with
    * strictly higher XP, so it stays consistent with findTopUsers. A HIDDEN user
    * gets rank null (no public position). This is the user's own data, so their
-   * real identity is returned — the UI shows "TOI" (and "masqué" when HIDDEN).
+   * real identity is returned - the UI shows "TOI" (and "masqué" when HIDDEN).
    */
   async findCurrentUserPosition(userId: string): Promise<CurrentUserPosition | null> {
     const user = await prisma.user.findUnique({
@@ -76,7 +76,7 @@ export const leaderboardRepository = {
    * Rank of a user among visible (non-HIDDEN) users, counting strictly higher
    * XP. Used by the dashboard stat; visibility-aware so it agrees with the
    * leaderboard ranks. A HIDDEN user still receives their numeric standing here
-   * — this powers their own private dashboard, not the public board.
+   * - this powers their own private dashboard, not the public board.
    */
   async findUserRank(userId: string): Promise<number> {
     const user = await prisma.user.findUnique({

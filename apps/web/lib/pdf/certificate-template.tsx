@@ -3,7 +3,7 @@ import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/render
 import { LOGO_DATA_URL } from "./logo-data";
 
 /**
- * Certificate PDF — reproduces the docs/design/paths/certificate.css visual
+ * Certificate PDF: reproduces the docs/design/paths/certificate.css visual
  * (landscape A4, dark on-brand theme, centered composition, double frame,
  * brand accent ribbon, meta row, QR + verification strip) within the
  * constraints of @react-pdf/renderer (no CSS gradients / clip-path / shadows →
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   metaVal: { fontSize: 17, fontFamily: "Helvetica-Bold", letterSpacing: -0.2, color: INK },
   metaValSm: { fontSize: 10, color: INK_MUTED, fontFamily: "Helvetica" },
 
-  // footer — three equal columns so the emblem is centered on the page
+  // footer: three equal columns so the emblem is centered on the page
   foot: {
     flexDirection: "row",
     alignItems: "center",
@@ -194,7 +194,7 @@ export interface CertificateTemplateProps {
   pathTitle: string;
   issuedAt: Date;
   publicId: string;
-  /** Final exam score (%) — null for path-completion-only certs. */
+  /** Final exam score (%); null for path-completion-only certs. */
   score?: number | null;
   /** Number of lessons (missions) in the path. */
   lessonCount: number;
@@ -270,7 +270,7 @@ export function CertificateDocument({
               <View style={styles.metaCell}>
                 <Text style={styles.metaLbl}>Score final</Text>
                 <Text style={{ ...styles.metaVal, color: BLUE_LT }}>
-                  {score ?? "—"}
+                  {score ?? "-"}
                   {score != null && <Text style={styles.metaValSm}> / 100</Text>}
                 </Text>
               </View>
@@ -284,7 +284,7 @@ export function CertificateDocument({
             </View>
           </View>
 
-          {/* footer — signature (left) · emblem (centered) · QR (right) */}
+          {/* footer: signature (left) · emblem (centered) · QR (right) */}
           <View style={styles.foot}>
             <View style={styles.footColLeft}>
               <View style={styles.sign}>

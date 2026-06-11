@@ -2,7 +2,7 @@ import { prisma } from "@cyberlearn/db";
 import { pseudonymize } from "@/lib/pseudonymize";
 
 export interface DeletionSummary {
-  hashedUserId: string; // pseudonymized — safe to surface to callers
+  hashedUserId: string; // pseudonymized - safe to surface to callers
   deletedAt: Date;
   certificatesAnonymized: number;
   questionsAnonymized: number;
@@ -16,7 +16,7 @@ export interface DeletionSummary {
  * Permanently deletes a user account in compliance with RGPD Art. 17.
  *
  * All operations run in a single Prisma interactive transaction so that any
- * mid-flight error causes a full rollback — the user record and its
+ * mid-flight error causes a full rollback - the user record and its
  * anonymized counterparts are either all committed or all untouched.
  *
  * Anonymization strategy:

@@ -2,7 +2,7 @@ import { createBrowserClient } from "@supabase/ssr";
 
 /**
  * Creates a Supabase client for use in Client Components ("use client").
- * Safe to call multiple times — the SDK handles deduplication internally.
+ * Safe to call multiple times - the SDK handles deduplication internally.
  *
  * Usage:
  * ```ts

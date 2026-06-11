@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# download-runtimes.sh — Download and verify Pyodide runtime files
+# download-runtimes.sh - Download and verify Pyodide runtime files
 #
 # Run this script whenever you upgrade Pyodide or need to (re)populate
 # apps/web/public/runtimes/pyodide/ from scratch.
@@ -19,7 +19,7 @@ BASE_URL="https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full"
 DEST="$(dirname "$0")/../apps/web/public/runtimes/pyodide"
 
 # Expected SHA-256 hashes for Pyodide 0.27.5 minimal boot set.
-# Update these hashes whenever PYODIDE_VERSION changes — run sha256sum on
+# Update these hashes whenever PYODIDE_VERSION changes - run sha256sum on
 # each file after download, then paste the output here and rerun verify.
 declare -A EXPECTED_HASHES=(
   [pyodide.js]="7fdbe66e53f68f6a4e93c295a667371759be093d2bd402bb44545514584039b6"
@@ -59,7 +59,7 @@ done
 
 if [[ $FAILED -ne 0 ]]; then
   echo ""
-  echo "INTEGRITY CHECK FAILED — do not use these files"
+  echo "INTEGRITY CHECK FAILED - do not use these files"
   exit 1
 fi
 

@@ -78,7 +78,7 @@ export function NotificationsForm({
           desc="Préviens-moi avant de perdre ma série quotidienne."
           info={
             <InfoTip title="Alerte de série">
-              Prochainement — l&apos;envoi de cette alerte est en cours de préparation.
+              Prochainement - l&apos;envoi de cette alerte est en cours de préparation.
             </InfoTip>
           }
         >

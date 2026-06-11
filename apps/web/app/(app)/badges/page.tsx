@@ -20,7 +20,7 @@ const RARITY_LABEL: Record<string, string> = {
 };
 
 // ── Progress label (UI only) ───────────────────────────────────────────────────
-// The progress LOGIC lives in @cyberlearn/lib (computeBadgeProgress — the single
+// The progress LOGIC lives in @cyberlearn/lib (computeBadgeProgress, the single
 // source of truth shared with real-time awarding). This maps a criterion to its
 // French unit label for the progress bar.
 
@@ -75,7 +75,7 @@ async function BadgesContent(): Promise<React.ReactElement> {
     badgeRepository.findCriterionFacts(authUser.id),
   ]);
 
-  // Same stats shape as the real-time award sites — single source of truth.
+  // Same stats shape as the real-time award sites: single source of truth.
   const stats = buildBadgeCriterionStats(facts, {
     xpTotal: user?.xpTotal ?? 0,
     streakDays: user?.streakDays ?? 0,
@@ -88,7 +88,7 @@ async function BadgesContent(): Promise<React.ReactElement> {
   );
 
   // Retroactively award badges whose progress is at 100% but were never
-  // triggered — atomic (insert + xpReward credit in one transaction) and
+  // triggered. Atomic (insert + xpReward credit in one transaction) and
   // SILENT: the catch-up sweep never notifies; only real-time triggers do.
   // Idempotent: only rows actually inserted are credited.
   const retroBadges = allBadges.filter((b) => {
@@ -113,7 +113,7 @@ async function BadgesContent(): Promise<React.ReactElement> {
     }
   }
 
-  // Build groups by rarity order — serialize all data (no Date objects)
+  // Build groups by rarity order; serialize all data (no Date objects)
   const groups: BadgeGroup[] = RARITY_ORDER.map((rarity) => {
     const badges: SerializedBadge[] = allBadges
       .filter((b) => b.rarity === rarity)

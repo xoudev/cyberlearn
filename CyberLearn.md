@@ -1,4 +1,4 @@
-# 🛡️ Cyber Learn — Brief de développement pour Claude Code
+# 🛡️ Cyber Learn - Brief de développement pour Claude Code
 
 > **À donner tel quel à Claude Code dans un dossier vide.** Ce document décrit l'intégralité du projet, les contraintes techniques, les exigences de sécurité, et la roadmap incrémentale. Lis-le **en entier** avant d'écrire la moindre ligne de code, puis travaille **phase par phase** en validant chaque livrable avant de passer à la suivante.
 
@@ -91,7 +91,7 @@ prisma: ^6.0.0
 ```
 cyberlearn/
 ├── apps/
-│   ├── web/                      # Site public — cyberlearn.app
+│   ├── web/                      # Site public - cyberlearn.app
 │   │   ├── app/
 │   │   │   ├── (marketing)/      # Landing, pricing, about
 │   │   │   ├── (auth)/           # Login, signup, callback
@@ -110,7 +110,7 @@ cyberlearn/
 │   │   ├── messages/             # next-intl (fr.json, en.json)
 │   │   └── middleware.ts         # Auth + headers + rate limit
 │   │
-│   └── admin/                    # Dashboard admin — admin.cyberlearn.app
+│   └── admin/                    # Dashboard admin - admin.cyberlearn.app
 │       ├── app/
 │       │   ├── (auth)/
 │       │   ├── (admin)/
@@ -168,15 +168,15 @@ cyberlearn/
 La charte fournie a des couleurs trop saturées pour du texte. Voici la palette **production** dérivée :
 
 ```css
-/* tokens.css — design tokens */
+/* tokens.css - design tokens */
 :root {
-  /* Brand — issus du logo */
+  /* Brand - issus du logo */
   --brand-blue-roi: #0024FF;        /* CTA primaires uniquement, jamais sur texte */
   --brand-turquoise: #0AFFD4;        /* Accents, hover, glow */
   --brand-gradient: linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%);
 
   /* Neutres dark mode (base) */
-  --bg-base: #030219;                /* Fond principal — depuis charte */
+  --bg-base: #030219;                /* Fond principal - depuis charte */
   --bg-elevated: #0A0826;            /* Cards, modals */
   --bg-overlay: #110F33;             /* Hover states */
   --border-subtle: #1F1B47;
@@ -238,16 +238,16 @@ La charte fournie a des couleurs trop saturées pour du texte. Voici la palette 
 
 ### Composants custom à créer (dans `packages/ui/`)
 
-- `<XPBar />` — barre de progression XP avec animation de remplissage
-- `<LevelBadge />` — badge circulaire avec niveau actuel
-- `<RarityBadge />` — badge avec couleur selon rareté
-- `<LessonCard />` — carte de leçon avec difficulté, durée, XP
-- `<PathProgress />` — visualisation de parcours type "skill tree"
-- `<CodeEditor />` — wrapper Monaco avec thème custom
-- `<SimulatedTerminal />` — wrapper xterm.js avec commandes pré-définies
-- `<QuizBlock />` — composant MDX pour quiz interactifs
-- `<NotificationBell />` — cloche avec dropdown realtime
-- `<CertificatePreview />` — aperçu du certificat avant impression
+- `<XPBar />` - barre de progression XP avec animation de remplissage
+- `<LevelBadge />` - badge circulaire avec niveau actuel
+- `<RarityBadge />` - badge avec couleur selon rareté
+- `<LessonCard />` - carte de leçon avec difficulté, durée, XP
+- `<PathProgress />` - visualisation de parcours type "skill tree"
+- `<CodeEditor />` - wrapper Monaco avec thème custom
+- `<SimulatedTerminal />` - wrapper xterm.js avec commandes pré-définies
+- `<QuizBlock />` - composant MDX pour quiz interactifs
+- `<NotificationBell />` - cloche avec dropdown realtime
+- `<CertificatePreview />` - aperçu du certificat avant impression
 
 ---
 
@@ -770,7 +770,7 @@ model AuditLog {
 > chaque migrate » n'existe plus. Depuis la migration
 > `packages/db/prisma/migrations/20260610200000_rls_baseline/`, les policies
 > sont versionnées DANS la chaîne de migrations Prisma et appliquées par
-> `prisma migrate deploy` — source canonique : ce fichier de migration, pas
+> `prisma migrate deploy` - source canonique : ce fichier de migration, pas
 > le snapshot historique ci-dessous (liste de tables incomplète).
 
 ```sql
@@ -849,14 +849,14 @@ CREATE POLICY "tickets_insert_public" ON public.contact_tickets FOR INSERT
 CREATE POLICY "tickets_self_select" ON public.contact_tickets FOR SELECT
   USING (auth.uid() = user_id OR current_user_role() = 'ADMIN');
 
--- (Compléter pour TOUTES les tables — aucune table sans policy)
+-- (Compléter pour TOUTES les tables - aucune table sans policy)
 ```
 
 > **Le rôle `user_role` doit être injecté dans le JWT Supabase via un Auth Hook custom (Edge Function) qui lit `users.role` et l'ajoute aux claims.**
 
 ---
 
-## 6. Sécurité — Exigences non négociables
+## 6. Sécurité - Exigences non négociables
 
 ### 6.1 Validation des entrées (OWASP A03)
 
@@ -1044,7 +1044,7 @@ const securityHeaders = {
 
 Quiz de 10-15 questions couvrant les 3 catégories (DEV, CYBERSEC, NETWORK) à 3 niveaux de difficulté. **Ce test ne distribue AUCUN XP et ne marque AUCUNE leçon comme `COMPLETED`.** Son rôle est strictement **indicatif et déblocant** :
 
-1. **Recommandation de point d'entrée** : en fonction du score par catégorie, la plateforme recommande un parcours de départ (ex: "Tu sembles à l'aise avec le dev, commence directement par le parcours `CL-PATH-005-V01 — Cybersécurité intermédiaire`").
+1. **Recommandation de point d'entrée** : en fonction du score par catégorie, la plateforme recommande un parcours de départ (ex: "Tu sembles à l'aise avec le dev, commence directement par le parcours `CL-PATH-005-V01 - Cybersécurité intermédiaire`").
 2. **Déblocage ciblé des prérequis** : les leçons de niveau `BEGINNER` et `INTERMEDIATE` des catégories où le user a prouvé sa maîtrise sont marquées comme "prérequis satisfaits" via une table dédiée `UserSkipWaiver` (à ajouter si besoin). Concrètement : le user peut accéder aux leçons avancées sans avoir fait les basiques, mais s'il les fait il gagne quand même l'XP normalement.
 3. **Badge spécial "Quick Start"** : attribué si le user réussit le placement test, sans impact sur les métriques de progression.
 
@@ -1171,7 +1171,7 @@ export function xpProgressInLevel(totalXp: number) {
 - **In-app** : table `notifications` + Supabase Realtime → `<NotificationBell />` dans le header
 - **Email** : Resend + templates React Email, opt-in/opt-out par type dans `UserPreferences`
 
-**Spaced Repetition (SM-2 simplifié — sur micro-quiz)** :
+**Spaced Repetition (SM-2 simplifié - sur micro-quiz)** :
 
 > **Principe clé** : la révision ne demande **jamais** à l'utilisateur de refaire une leçon entière. Chaque leçon génère automatiquement un **micro-quiz de révision** de 3 à 5 questions (sélectionnées aléatoirement depuis le pool de questions de la leçon ou définies explicitement par l'auteur dans un bloc MDX `<ReviewQuiz>`). Objectif : **2 minutes max par révision**.
 
@@ -1270,13 +1270,13 @@ App séparée dans `apps/admin/`. Sections :
 L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leçon entière sans quitter le navigateur**, sans connaître la syntaxe MDX par cœur.
 
 **Layout** : interface deux panneaux côte à côte (redimensionnables) :
-- **Panneau gauche — Éditeur** : éditeur de code basé sur **CodeMirror 6** (plus léger que Monaco pour du texte pur, pas besoin de LSP ici). Fonctionnalités :
+- **Panneau gauche - Éditeur** : éditeur de code basé sur **CodeMirror 6** (plus léger que Monaco pour du texte pur, pas besoin de LSP ici). Fonctionnalités :
   - Coloration syntaxique MDX (Markdown + JSX)
   - Numéros de ligne, indentation automatique
   - Raccourcis clavier courants : `Ctrl+B` → `**gras**`, `Ctrl+I` → `*italique*`, `Ctrl+K` → `[texte](url)`
   - Barre d'outils au-dessus de l'éditeur avec boutons pour insérer les composants MDX custom (voir ci-dessous)
 
-- **Panneau droit — Prévisualisation live** : rendu MDX en temps réel (debounce 300ms) via `next-mdx-remote/rsc` ou un composant client dédié. Affiche exactement ce que verra l'étudiant, **avec les composants interactifs fonctionnels** (`<Callout />`, `<Quiz />`, etc. — les sandboxes de code sont désactivées en preview pour performance).
+- **Panneau droit - Prévisualisation live** : rendu MDX en temps réel (debounce 300ms) via `next-mdx-remote/rsc` ou un composant client dédié. Affiche exactement ce que verra l'étudiant, **avec les composants interactifs fonctionnels** (`<Callout />`, `<Quiz />`, etc. - les sandboxes de code sont désactivées en preview pour performance).
 
 **Palette de composants MDX** : une barre latérale ou un menu déroulant `+ Insérer` listant les composants disponibles avec un clic qui insère le snippet MDX correspondant à la position du curseur :
 
@@ -1321,7 +1321,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 > 4. Un récap de ce qui a été fait + ce qui reste en TODO
 > **Ne passe à la phase suivante qu'après ma validation explicite.**
 
-### Phase 0 — Fondations (1-2 jours)
+### Phase 0 - Fondations (1-2 jours)
 
 **Livrables** :
 - Init monorepo Turborepo + pnpm workspaces
@@ -1340,7 +1340,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] `pnpm test` passe (même si juste un test trivial)
 - [ ] CI verte sur PR
 
-### Phase 1 — BDD & Auth (2-3 jours)
+### Phase 1 - BDD & Auth (2-3 jours)
 
 **Livrables** :
 - Setup projet Supabase + récupération des credentials
@@ -1352,7 +1352,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - Magic Link + GitHub OAuth fonctionnels
 - Middleware d'auth dans `apps/web`
 - Helpers `requireUser()` et `requireAdmin()`
-- **Placement Test optionnel** en fin d'onboarding (quiz statique seedé, 10-15 questions sur les 3 catégories) qui génère une recommandation de parcours et débloque les prérequis ciblés — **sans jamais marquer de leçon COMPLETED ni distribuer d'XP**
+- **Placement Test optionnel** en fin d'onboarding (quiz statique seedé, 10-15 questions sur les 3 catégories) qui génère une recommandation de parcours et débloque les prérequis ciblés - **sans jamais marquer de leçon COMPLETED ni distribuer d'XP**
 - Seed de dev : 1 admin + 2 students + 5 leçons + 2 parcours + 10 badges + 1 placement test
 
 **Critères d'acceptation** :
@@ -1364,7 +1364,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Onboarding obligatoire enforcé
 - [ ] Placement test : score high en CYBERSEC → parcours cyber recommandé, aucune leçon marquée COMPLETED, aucun XP attribué (vérifié en BDD)
 
-### Phase 2 — Design System (2 jours)
+### Phase 2 - Design System (2 jours)
 
 **Livrables** :
 - Setup Tailwind v4 + tokens CSS dans `packages/ui`
@@ -1381,7 +1381,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Navigation clavier complète
 - [ ] `prefers-reduced-motion` respecté
 
-### Phase 3 — Leçons (lecture) (2-3 jours)
+### Phase 3 - Leçons (lecture) (2-3 jours)
 
 **Livrables** :
 - Page `/lessons` : liste avec filtres (catégorie, difficulté, statut)
@@ -1397,7 +1397,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Tentative d'injection HTML dans MDX → bloquée
 - [ ] Test e2e : lecture d'une leçon → progress passe à IN_PROGRESS
 
-### Phase 4 — Composants interactifs (3-4 jours)
+### Phase 4 - Composants interactifs (3-4 jours)
 
 **Livrables** :
 - `<CodePlayground />` : Monaco + exécution Pyodide ou WebContainers selon langage
@@ -1413,7 +1413,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Complétion d'une leçon → XP attribuée → niveau recalculé
 - [ ] Tests unit sur `levelFromXp()` et `xpRequiredForLevel()`
 
-### Phase 5 — Gamification (2 jours)
+### Phase 5 - Gamification (2 jours)
 
 **Livrables** :
 - Service `BadgeEvaluator` qui évalue tous les badges éligibles après une action
@@ -1431,7 +1431,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Streak correct sur 7 jours simulés
 - [ ] First Blood : test e2e simulant 5 users terminant une leçon, vérifier que seuls les 3 premiers apparaissent
 
-### Phase 6 — Parcours & Certificats (2-3 jours)
+### Phase 6 - Parcours & Certificats (2-3 jours)
 
 **Livrables** :
 - Page `/paths` + `/paths/[slug]` avec visualisation skill-tree
@@ -1447,7 +1447,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] QR code scannable et fonctionnel
 - [ ] Téléchargement PDF depuis le profil
 
-### Phase 6 bis — Entraide & Feedback (1-2 jours)
+### Phase 6 bis - Entraide & Feedback (1-2 jours)
 
 **Livrables** :
 - Implémentation du modèle `Rating` + service `RatingService`
@@ -1475,7 +1475,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] `isHidden` : question masquée → invisible au public, visible admin
 
 
-### Phase 7 — Notifications & SM-2 (2 jours)
+### Phase 7 - Notifications & SM-2 (2 jours)
 
 **Livrables** :
 - Table `notifications` + Realtime subscription
@@ -1493,7 +1493,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Cron testable en local (`pnpm cron:review-reminders`)
 - [ ] Tests unit sur l'algo SM-2
 
-### Phase 8 — Contact & Jira (1-2 jours)
+### Phase 8 - Contact & Jira (1-2 jours)
 
 **Livrables** :
 - Page `/contact` avec formulaire
@@ -1508,7 +1508,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Captcha bloque les bots
 - [ ] Rate limit déclenche une 429 propre
 
-### Phase 9 — Dashboard admin (4-5 jours)
+### Phase 9 - Dashboard admin (4-5 jours)
 
 **Livrables** :
 - App `apps/admin` complète
@@ -1534,7 +1534,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - [ ] Éditeur : auto-save déclenché après 60s d'inactivité sans erreur
 - [ ] Publication d'une leçon → status passe à PUBLISHED, visible côté web
 
-### Phase 10 — Hardening & Polish (2-3 jours)
+### Phase 10 - Hardening & Polish (2-3 jours)
 
 **Livrables** :
 - Audit `pnpm audit` → 0 vulnérabilité high/critical
@@ -1633,7 +1633,7 @@ DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres"
 # ===== Supabase =====
 NEXT_PUBLIC_SUPABASE_URL="https://[REF].supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY=""
-SUPABASE_SERVICE_ROLE_KEY="" # SERVER ONLY — JAMAIS exposé au client
+SUPABASE_SERVICE_ROLE_KEY="" # SERVER ONLY - JAMAIS exposé au client
 
 # ===== Site =====
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
@@ -1672,7 +1672,7 @@ CRON_SECRET="" # Header secret pour les endpoints cron Vercel
 
 ## 11. Instructions finales pour Claude Code
 
-1. **Lis ce document en entier avant de commencer.** Si quelque chose n'est pas clair ou pose un problème technique, **arrête-toi et pose la question** — ne fais pas d'hypothèse silencieuse.
+1. **Lis ce document en entier avant de commencer.** Si quelque chose n'est pas clair ou pose un problème technique, **arrête-toi et pose la question** - ne fais pas d'hypothèse silencieuse.
 2. **Travaille phase par phase.** À la fin de chaque phase, présente :
    - Un récap des fichiers créés/modifiés
    - Les tests que tu as écrits
@@ -1708,7 +1708,7 @@ Une feature est terminée quand :
 
 ---
 
-## 13. Backlog v2 (hors scope initial — NE PAS implémenter)
+## 13. Backlog v2 (hors scope initial - NE PAS implémenter)
 
 Ces idées ont été évaluées mais volontairement écartées de la v1 pour éviter de disperser l'effort. **Claude Code ne doit pas les implémenter**, ne doit pas créer de tables pour elles, et ne doit pas laisser de "hooks" dans le code pour les préparer. Elles sont listées ici uniquement pour éviter qu'elles soient proposées spontanément.
 

@@ -1,13 +1,13 @@
 /* eslint-disable */
 /**
- * C/C++ Web Worker — static execution sandbox using JSCPP.
+ * C/C++ Web Worker - static execution sandbox using JSCPP.
  *
  * Protocol:
  *   inbound:  { id, code }
  *   outbound: { id, output, error }
  *
  * JSCPP is loaded synchronously via importScripts. No async init
- * phase (unlike py-runner.js/Pyodide) — hardening runs top-level,
+ * phase (unlike py-runner.js/Pyodide) - hardening runs top-level,
  * after importScripts completes, before any message is processed.
  *
  * Message handler hardening (defense against validation bypass):
@@ -16,16 +16,16 @@
  *   - self.addEventListener overridden to throw for "message" /
  *     "messageerror" types (capture-phase bypass vector closed)
  *   - self.onmessage frozen via defineProperty (writable:false,
- *     configurable:false) — property assignment override prevented
- *   - self.onerror frozen similarly — error swallowing prevented
+ *     configurable:false) - property assignment override prevented
+ *   - self.onerror frozen similarly - error swallowing prevented
  *   - Real handler registered via saved _addListener, inaccessible
  *     to user code running inside JSCPP.run(...)
  */
 
-// Save the original before any override — user code cannot reach this reference.
+// Save the original before any override - user code cannot reach this reference.
 const _addListener = self.addEventListener.bind(self);
 
-// Load JSCPP synchronously — exposes globalThis.JSCPP (var declaration in bundle IIFE).
+// Load JSCPP synchronously - exposes globalThis.JSCPP (var declaration in bundle IIFE).
 importScripts("/runtimes/jscpp/bundle.js");
 
 // 1. Network APIs
@@ -82,7 +82,7 @@ try {
   // Skip if prototype property is already non-configurable in this engine
 }
 
-// 5. Freeze onmessage and onerror — property assignment cannot override them.
+// 5. Freeze onmessage and onerror - property assignment cannot override them.
 Object.defineProperty(self, "onmessage", {
   value: null,
   writable: false,
@@ -94,7 +94,7 @@ Object.defineProperty(self, "onerror", {
   configurable: false,
 });
 
-// Real handler — registered via saved original, invisible to user code.
+// Real handler - registered via saved original, invisible to user code.
 function handleMessage(e) {
   const { id, code } = e.data;
   let output = "";

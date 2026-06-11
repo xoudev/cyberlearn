@@ -19,7 +19,7 @@ function readBoolean(value: FormDataEntryValue | null): boolean | undefined {
 
 /**
  * Updates the wired email-notification toggles (review reminders + product
- * digest). streakReminder is intentionally not accepted here — its delivery is
+ * digest). streakReminder is intentionally not accepted here - its delivery is
  * not built yet, so the UI keeps it disabled.
  */
 export async function updateNotificationsAction(

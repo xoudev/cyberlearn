@@ -7,7 +7,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
  *
  * In production the Supabase Auth Hook injects `user_role` into the JWT, so
  * the role is read from app_metadata without hitting the DB.
- * In dev the hook may not be running, so we fall back to a direct DB lookup —
+ * In dev the hook may not be running, so we fall back to a direct DB lookup,
  * the same pattern used in the (admin) layout.
  *
  * Returns 404 (not 403) to avoid revealing the route to non-admins.

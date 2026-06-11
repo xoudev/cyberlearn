@@ -21,7 +21,7 @@ export default function AdminDashboardLoading(): React.ReactElement {
         <Skeleton width={120} height={36} style={{ borderRadius: 8 }} />
       </div>
 
-      {/* Stats grid — 4 cards */}
+      {/* Stats grid - 4 cards */}
       <div className="admin-stats-grid">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} style={CARD}>

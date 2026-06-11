@@ -32,7 +32,7 @@ export function AdminNavbar({ initials, handle }: AdminNavbarProps): React.React
         borderBottom: "1px solid rgba(255,77,109,0.25)",
       }}
     >
-      {/* Hamburger — mobile only */}
+      {/* Hamburger - mobile only */}
       <button type="button" aria-label="Menu" onClick={toggle} className="admin-hamburger">
         <svg
           width="16"
@@ -104,7 +104,7 @@ export function AdminNavbar({ initials, handle }: AdminNavbarProps): React.React
         </div>
       </div>
 
-      {/* Search — hidden on mobile */}
+      {/* Search - hidden on mobile */}
       <div className="admin-navbar-search">
         <div
           style={{

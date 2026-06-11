@@ -50,7 +50,7 @@ export function XPBar({
         aria-valuenow={currentXP}
         aria-valuemin={0}
         aria-valuemax={xpForNextLevel}
-        aria-label={`Niveau ${String(level)} — ${String(currentXP)} / ${String(xpForNextLevel)} XP`}
+        aria-label={`Niveau ${String(level)} - ${String(currentXP)} / ${String(xpForNextLevel)} XP`}
         className="h-2 w-full overflow-hidden rounded-full"
         style={{ backgroundColor: "#1F1B47" }}
       >

@@ -1,5 +1,5 @@
 /**
- * Unit tests for updateProfileAction — focus on server-side Zod validation.
+ * Unit tests for updateProfileAction - focus on server-side Zod validation.
  * avatarUrl must be one of the built-in SVG paths; an arbitrary path is rejected
  * and never written.
  */
@@ -37,7 +37,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("updateProfileAction — rejects invalid input", () => {
+describe("updateProfileAction - rejects invalid input", () => {
   it("rejects an avatar outside the built-in allowlist and writes nothing", async () => {
     const result = await updateProfileAction(
       {},
@@ -57,7 +57,7 @@ describe("updateProfileAction — rejects invalid input", () => {
   });
 });
 
-describe("updateProfileAction — happy path", () => {
+describe("updateProfileAction - happy path", () => {
   it("persists displayName, bio, and avatar", async () => {
     const result = await updateProfileAction(
       {},

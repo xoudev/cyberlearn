@@ -2,7 +2,7 @@
   "name": "@cyberlearn/admin",
   "version": "0.0.1",
   "private": true,
-  "description": "CyberLearn admin dashboard — admin.cyberlearn.app",
+  "description": "CyberLearn admin dashboard - admin.cyberlearn.app",
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",

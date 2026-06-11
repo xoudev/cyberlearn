@@ -188,9 +188,9 @@ describe("STREAK_DAYS criterion", () => {
   });
 });
 
-// ── CATEGORY_MASTERY — single category (parity) ───────────────────────────────
+// ── CATEGORY_MASTERY - single category (parity) ───────────────────────────────
 
-describe("CATEGORY_MASTERY criterion — {category, count}", () => {
+describe("CATEGORY_MASTERY criterion - {category, count}", () => {
   it("awards badge when category count meets threshold", () => {
     const badge = makeBadge("b4", "CATEGORY_MASTERY", { category: "CYBERSEC", count: 10 });
     const result = evaluateBadges([badge], new Set(), {
@@ -228,9 +228,9 @@ describe("CATEGORY_MASTERY criterion — {category, count}", () => {
   });
 });
 
-// ── CATEGORY_MASTERY — multi category (NEW: the seeded "Explorateur" shape) ───
+// ── CATEGORY_MASTERY - multi category (NEW: the seeded "Explorateur" shape) ───
 
-describe("CATEGORY_MASTERY criterion — {categories: [...]}", () => {
+describe("CATEGORY_MASTERY criterion - {categories: [...]}", () => {
   const badge = makeBadge("b4m", "CATEGORY_MASTERY", {
     categories: ["DEV", "CYBERSEC", "NETWORK"],
   });
@@ -266,9 +266,9 @@ describe("CATEGORY_MASTERY criterion — {categories: [...]}", () => {
   });
 });
 
-// ── PATH_COMPLETED — withCertificate ──────────────────────────────────────────
+// ── PATH_COMPLETED - withCertificate ──────────────────────────────────────────
 
-describe("PATH_COMPLETED criterion — {withCertificate: true}", () => {
+describe("PATH_COMPLETED criterion - {withCertificate: true}", () => {
   const badge = makeBadge("b5c", "PATH_COMPLETED", { withCertificate: true });
 
   it("awards once the user holds at least one certificate", () => {
@@ -286,9 +286,9 @@ describe("PATH_COMPLETED criterion — {withCertificate: true}", () => {
   });
 });
 
-// ── PATH_COMPLETED — specific path ({pathId}) ─────────────────────────────────
+// ── PATH_COMPLETED - specific path ({pathId}) ─────────────────────────────────
 
-describe("PATH_COMPLETED criterion — {pathId}", () => {
+describe("PATH_COMPLETED criterion - {pathId}", () => {
   const badge = makeBadge("b5p", "PATH_COMPLETED", { pathId: "path-abc" });
 
   it("awards when that specific path is completed", () => {
@@ -317,9 +317,9 @@ describe("PATH_COMPLETED criterion — {pathId}", () => {
   });
 });
 
-// ── PATH_COMPLETED — count mode ({count} / {} / {pathId: ""}) ─────────────────
+// ── PATH_COMPLETED - count mode ({count} / {} / {pathId: ""}) ─────────────────
 
-describe("PATH_COMPLETED criterion — count mode", () => {
+describe("PATH_COMPLETED criterion - count mode", () => {
   it("empty pathId means any path (historical behaviour preserved)", () => {
     const badge = makeBadge("b5", "PATH_COMPLETED", { pathId: "" });
     const result = evaluateBadges([badge], new Set(), {

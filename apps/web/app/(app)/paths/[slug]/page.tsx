@@ -246,7 +246,7 @@ export default async function PathDetailPage({
   const lessonsComplete = totalLessons > 0 && doneLessons >= totalLessons;
 
   // Active quiz gates certificate issuance (pieces 2/4). Only its existence is
-  // needed here — questions/answers never touch this server component.
+  // needed here; questions/answers never touch this server component.
   const activeQuiz = await prisma.quiz.findFirst({
     where: { pathId: path.id, isActive: true },
     select: { id: true },
@@ -484,7 +484,7 @@ export default async function PathDetailPage({
         <aside className="pd2-aside">
           <div className="ablock">
             <div className="ablock__eyebrow">
-              — <b>01</b> · OBJECTIFS
+              - <b>01</b> · OBJECTIFS
             </div>
             <h3 className="ablock__title">Ce que tu vas maîtriser</h3>
             <ul className="skill-list">
