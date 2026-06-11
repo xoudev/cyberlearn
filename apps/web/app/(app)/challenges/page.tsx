@@ -4,6 +4,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { challengeRepository } from "@cyberlearn/db";
 import { ChallengesClient } from "./_components/challenges-client";
 import type { ChallengeItem } from "./_components/challenges-client";
+import { ChallengesWip } from "./_components/challenges-wip";
 
 export const metadata: Metadata = { title: "Défis & Challenges" };
 
@@ -20,6 +21,10 @@ function featuredWeekEndMs(): number {
 export default async function ChallengesPage(): Promise<React.ReactElement> {
   const user = await requireRequestUser();
   const raw = await challengeRepository.findAllActive(user.id);
+
+  // Content reboot: while no active challenge exists, the section reads as
+  // work-in-progress instead of an empty catalog.
+  if (raw.length === 0) return <ChallengesWip />;
 
   const titleById = new Map(raw.map((c) => [c.id, c.title]));
   const completedIds = new Set(raw.filter((c) => c.userStatus === "COMPLETED").map((c) => c.id));
