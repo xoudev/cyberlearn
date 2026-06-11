@@ -121,5 +121,6 @@ Le header `Content-Security-Policy` dans `middleware.ts` autorise :
 
 ## apps/admin — statut
 
-Sentry n'est pas encore initialisé sur `apps/admin`. À faire en PR dédiée
-post-launch (même pattern, même scrubEvent helper via import partagé ou copie).
+Fait : Sentry est initialisé sur `apps/admin` selon le même pattern
+(`sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
++ `withSentryConfig` dans `next.config.ts`), avec le même helper `scrubEvent`.

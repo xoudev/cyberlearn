@@ -22,10 +22,6 @@
     "prepare": "husky",
     "reset:users": "node scripts/reset-users.mjs"
   },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx,mjs,cjs}": ["biome format --write"],
-    "*.{json,css,md}": ["biome format --write"]
-  },
   "commitlint": {
     "extends": ["@commitlint/config-conventional"],
     "rules": {
