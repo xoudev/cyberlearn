@@ -64,4 +64,8 @@ test-results/
 .vercel
 .env*.local
 
-/docs
+# NOTE: do NOT re-add a broad `/docs` ignore. It was introduced in 1f83cd3 to
+# keep then-local hardening notes untracked, but it silently ignored every NEW
+# file under docs/ (runbooks, design sources) while the already-tracked ones
+# stayed tracked — a trap. Nothing under docs/ is generated output; if a
+# generator ever lands, ignore its exact output subdirectory only.
