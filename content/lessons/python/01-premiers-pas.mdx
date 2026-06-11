@@ -1,0 +1,133 @@
+---
+refCode: CL-LSN-001-V01
+slug: python-premiers-pas
+title: "Premiers pas en Python : variables et types"
+description: "Découvrez Python : écrire votre premier programme, créer des variables et manipuler les types de base (entiers, flottants, chaînes, booléens)."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 20
+xpReward: 120
+prerequisites: []
+---
+
+Bienvenue dans votre toute première leçon de Python ! Python est un langage de programmation réputé pour sa lisibilité : son code ressemble presque à de l'anglais courant, ce qui en fait un excellent point de départ pour apprendre à programmer. On le retrouve partout : sites web, intelligence artificielle, automatisation, cybersécurité et analyse de données.
+
+Dans cette leçon, vous allez écrire vos premières lignes de code, manipuler des variables et découvrir les types de base. La toute première instruction que tout débutant écrit est l'affichage d'un message à l'écran avec la fonction `print()` :
+
+```python
+print("Bonjour, le monde !")
+```
+
+## Afficher du texte avec print()
+
+La fonction `print()` envoie du texte vers la console. Le texte placé entre guillemets s'appelle une **chaîne de caractères** (en anglais, *string*). Vous pouvez appeler `print()` plusieurs fois pour afficher plusieurs lignes, et utiliser des **f-strings** (chaînes commençant par `f`) pour insérer des valeurs directement dans le texte.
+
+<CodePlayground language="python" starterCode={`print("Première ligne")
+print("Deuxième ligne")
+
+prenom = "Alice"
+age = 25
+print(f"Je m'appelle {prenom} et j'ai {age} ans.")`} />
+
+Remarquez la f-string : le préfixe `f` autorise l'usage d'accolades pour y glisser le contenu d'une variable. C'est la manière la plus claire et la plus moderne de composer du texte en Python.
+
+## Les variables
+
+Une **variable** est une étiquette qui pointe vers une valeur. On la crée avec le signe `=`, appelé opérateur d'**affectation** : à gauche le nom, à droite la valeur. Contrairement à d'autres langages, vous n'avez pas besoin de déclarer le type : Python le devine tout seul.
+
+```python
+score = 100
+nom = "Bob"
+```
+
+Quelques règles de **nommage** : un nom de variable peut contenir des lettres, des chiffres et des underscores `_`, mais ne peut pas commencer par un chiffre ni contenir d'espace. Par convention, on écrit les noms en minuscules avec des underscores (`nombre_de_points`). Choisissez des noms parlants : `prix_total` est bien plus clair que `x`.
+
+<CodePlayground language="python" starterCode={`ville = "Paris"
+population = 2100000
+ouvert = True
+
+print(ville)
+print(population)
+
+# Une variable peut être réaffectée
+population = population + 1000
+print(population)`} />
+
+## Les types de base
+
+Chaque valeur en Python possède un **type**. Les quatre types fondamentaux à connaître sont :
+
+- `int` : un nombre **entier**, comme `42` ou `-7`.
+- `float` : un nombre à virgule **flottante**, comme `3.14` ou `2.0`.
+- `str` : une **chaîne de caractères**, comme `"Bonjour"`.
+- `bool` : un **booléen**, qui vaut `True` ou `False`.
+
+La fonction `type()` vous indique le type d'une valeur. Vous pouvez aussi **convertir** une valeur d'un type à un autre avec `int()`, `float()` et `str()`. C'est très utile, par exemple, pour transformer le texte `"50"` en nombre `50` afin de pouvoir calculer avec.
+
+<CodePlayground language="python" starterCode={`print(type(42))
+print(type(3.14))
+print(type("Bonjour"))
+print(type(True))
+
+# Conversions
+texte = "50"
+nombre = int(texte)
+print(nombre + 10)
+
+prix = 19.99
+print("Le prix est " + str(prix) + " euros")`} />
+
+Notez que `int(texte) + 10` fonctionne, alors que `texte + 10` provoquerait une erreur : on ne peut pas additionner une chaîne et un entier sans conversion.
+
+## Opérations de base
+
+Python sait faire de l'arithmétique avec les opérateurs habituels :
+
+- `+` addition, `-` soustraction, `*` multiplication
+- `/` division (qui renvoie toujours un `float`)
+- `//` division entière (le quotient, sans le reste)
+- `%` modulo (le reste de la division)
+- `**` puissance (par exemple `2 ** 3` vaut `8`)
+
+Pour les chaînes, `+` réalise une **concaténation** (mise bout à bout), et les f-strings restent la solution la plus lisible pour mélanger texte et nombres.
+
+<CodePlayground language="python" starterCode={`print(7 + 3)
+print(7 / 2)
+print(7 // 2)
+print(7 % 2)
+print(2 ** 10)
+
+debut = "Cyber"
+fin = "Learn"
+print(debut + fin)
+
+heures = 5
+print(f"Il reste {heures * 60} minutes")`} />
+
+<Callout type="info">
+Piège classique du débutant : l'opérateur `/` renvoie **toujours** un flottant. Ainsi `10 / 2` donne `5.0` (un `float`) et non `5` (un `int`). Si vous voulez le quotient entier, utilisez `//` : `10 // 2` donne bien `5`.
+</Callout>
+
+## À vous de jouer
+
+Testez votre compréhension avec ces quelques exercices.
+
+<Quiz id="q-premiers-pas-print" question="Quelle fonction permet d'afficher du texte à l'écran ?" options={["show()", "print()", "echo()", "display()"]} correct={1} />
+
+<Quiz id="q-premiers-pas-division" question="Que renvoie l'expression 9 / 2 en Python ?" options={["4.5", "4", "5", "1"]} correct={0} />
+
+<Quiz id="q-premiers-pas-type" question="Quel est le type de la valeur True ?" options={["str", "int", "bool", "float"]} correct={2} />
+
+À présent, écrivez votre propre fonction. L'objectif : compléter `solution(a, b)` pour qu'elle renvoie la somme des deux nombres reçus.
+
+<PythonChallenge id="py-premiers-pas-somme" title="Additionner deux nombres" description="Complétez la fonction solution(a, b) pour qu'elle retourne la somme de a et b." starterCode="def solution(a, b):
+    pass" tests={[{ input: "solution(2, 3)", expected: "5" }, { input: "solution(10, 20)", expected: "30" }, { input: "solution(0, 0)", expected: "0", label: "Cas limite" }, { input: "solution(-5, 5)", expected: "0", label: "Nombres négatifs" }]} />
+
+## Récapitulatif
+
+- **`print()`** affiche du texte ; les **f-strings** (`f"... {variable} ..."`) insèrent des valeurs dans le texte.
+- Une **variable** se crée avec `=` ; choisissez des noms clairs, en minuscules avec des underscores.
+- Les **types de base** sont `int`, `float`, `str` et `bool` ; `type()` révèle le type d'une valeur.
+- On **convertit** entre types avec `int()`, `float()` et `str()`.
+- L'**arithmétique** utilise `+ - * / // % **` ; attention, `/` renvoie toujours un `float`, `//` donne le quotient entier.
+- La **concaténation** de chaînes se fait avec `+`, mais les f-strings sont souvent plus lisibles.

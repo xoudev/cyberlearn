@@ -1,0 +1,133 @@
+---
+refCode: CL-LSN-006-V01
+slug: python-dictionnaires
+title: "Dictionnaires et ensembles en Python"
+description: "Associez des clés à des valeurs avec les dictionnaires et gérez des collections uniques avec les ensembles (set) : création, accès, méthodes et cas d'usage concrets."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 320
+prerequisites: ["CL-LSN-005-V01"]
+---
+
+Jusqu'ici, vous avez manipulé des listes et des tuples, où chaque élément est repéré par sa **position** (un index numérique). Mais comment retrouver une information à partir d'un nom plutôt que d'un numéro ? C'est exactement le rôle du **dictionnaire**.
+
+Imaginez un annuaire téléphonique : vous ne cherchez pas la 47e ligne, vous cherchez le nom « Dupont » pour obtenir son numéro. Le dictionnaire fonctionne pareil : il associe une **clé** (le nom) à une **valeur** (le numéro). Cette structure, omniprésente en Python, est l'une des plus puissantes du langage.
+
+Nous verrons aussi les **ensembles** (`set`), des collections de valeurs **uniques**, parfaites pour éliminer les doublons ou comparer des groupes de données.
+
+## Créer un dictionnaire
+
+Un dictionnaire stocke des paires **clé-valeur**. On l'écrit avec des accolades, chaque paire reliant une clé à une valeur par un deux-points. Par exemple, un dictionnaire littéral s'écrit `{'nom': 'Dupont', 'age': 30}`.
+
+Les clés sont généralement des chaînes de caractères ou des nombres, et doivent être **uniques**. Les valeurs, elles, peuvent être de n'importe quel type : texte, nombre, liste, voire un autre dictionnaire.
+
+<CodePlayground language="python" starterCode={`# Un dictionnaire vide
+contacts = {}
+
+# Un dictionnaire rempli dès la création
+utilisateur = {
+    "nom": "Alice",
+    "age": 28,
+    "ville": "Lyon",
+}
+
+print(utilisateur)
+print(type(utilisateur))`} />
+
+On peut aussi créer un dictionnaire avec la fonction `dict()`, mais la notation avec accolades reste la plus courante et la plus lisible.
+
+## Accéder et modifier
+
+Pour lire une valeur, on indique sa clé entre crochets, comme `utilisateur["nom"]`. Pour ajouter ou modifier une entrée, on assigne simplement une valeur à une clé.
+
+<CodePlayground language="python" starterCode={`utilisateur = {"nom": "Alice", "age": 28}
+
+# Lire une valeur par sa clé
+print(utilisateur["nom"])  # Alice
+
+# Modifier une valeur existante
+utilisateur["age"] = 29
+
+# Ajouter une nouvelle clé
+utilisateur["ville"] = "Lyon"
+
+print(utilisateur)`} />
+
+Attention : si vous demandez une clé qui n'existe pas avec les crochets, Python lève une erreur `KeyError` et le programme s'arrête. La méthode `.get()` est plus sûre : elle renvoie `None` (ou une valeur par défaut que vous précisez) au lieu de planter.
+
+<CodePlayground language="python" starterCode={`utilisateur = {"nom": "Alice", "age": 28}
+
+# .get() ne plante pas si la clé manque
+print(utilisateur.get("ville"))            # None
+print(utilisateur.get("ville", "Inconnue"))  # Inconnue
+print(utilisateur.get("nom", "Inconnue"))    # Alice`} />
+
+<Callout type="warning">
+Accéder à une clé absente avec les crochets (`mon_dico["clef_absente"]`) déclenche une `KeyError` qui interrompt le programme. Privilégiez `.get()` chaque fois que vous n'êtes pas certain que la clé existe : vous obtenez une valeur par défaut au lieu d'un crash.
+</Callout>
+
+## Parcourir un dictionnaire
+
+Trois méthodes permettent de parcourir un dictionnaire avec une boucle `for` :
+
+- `.keys()` renvoie les clés,
+- `.values()` renvoie les valeurs,
+- `.items()` renvoie les paires clé-valeur ensemble.
+
+<CodePlayground language="python" starterCode={`notes = {"Maths": 15, "Histoire": 12, "Anglais": 18}
+
+# Parcourir les clés (comportement par défaut)
+for matiere in notes.keys():
+    print(matiere)
+
+# Parcourir les valeurs
+for note in notes.values():
+    print(note)
+
+# Parcourir clés ET valeurs ensemble
+for matiere, note in notes.items():
+    print(f"{matiere} : {note}/20")`} />
+
+La forme avec `.items()` est de loin la plus utilisée : elle donne accès à la clé et à la valeur en même temps, ce qui couvre la majorité des besoins réels.
+
+## Les ensembles (set)
+
+Un **ensemble** est une collection de valeurs **uniques** et **non ordonnées**. On l'écrit avec des accolades, mais sans deux-points : par exemple `{1, 2, 3}`. Si vous insérez un doublon, il est automatiquement ignoré.
+
+Les ensembles supportent les opérations mathématiques classiques : l'**union** (`|`, tous les éléments des deux ensembles) et l'**intersection** (`&`, les éléments communs).
+
+<CodePlayground language="python" starterCode={`# Création d'un ensemble
+fruits = {"pomme", "banane", "pomme", "cerise"}
+print(fruits)  # la deuxième "pomme" disparaît
+
+# Union et intersection
+a = {1, 2, 3, 4}
+b = {3, 4, 5, 6}
+
+print(a | b)  # union : 1, 2, 3, 4, 5, 6
+print(a & b)  # intersection : 3, 4`} />
+
+<Callout type="info">
+Pour supprimer les doublons d'une liste, convertissez-la en ensemble puis, si besoin, reconvertissez-la en liste : `list(set(ma_liste))`. C'est l'astuce la plus rapide et la plus lisible pour dédoublonner des données en Python.
+</Callout>
+
+Notez qu'un ensemble vide se crée avec `set()` et non avec des accolades vides, car ces dernières créent un dictionnaire vide.
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Quelle méthode renvoie une valeur par défaut au lieu de lever une KeyError si la clé est absente ?" options={[".keys()", ".get()", ".values()", ".items()"]} correct={1} />
+
+<Quiz id="q-2" question="Que vaut len({1, 2, 2, 3, 3, 3}) en Python ?" options={["6", "1", "3", "9"]} correct={2} />
+
+<PythonChallenge id="py-1" title="Compteur de caractères" description="Écrivez une fonction solution(texte) qui retourne un dictionnaire comptant le nombre d'occurrences de chaque caractère du texte. Par exemple, solution('aab') doit retourner {'a': 2, 'b': 1}. Une chaîne vide doit retourner un dictionnaire vide." starterCode="def solution(texte):
+    pass" tests={[{ input: "solution('aab')", expected: "{'a': 2, 'b': 1}" }, { input: "solution('abc')", expected: "{'a': 1, 'b': 1, 'c': 1}" }, { input: "solution('')", expected: "{}", label: "Chaîne vide" }]} />
+
+## Récapitulatif
+
+- Un **dictionnaire** associe des **clés** uniques à des **valeurs**, écrit avec des accolades et des deux-points.
+- On accède à une valeur par sa clé entre crochets ; `.get()` évite la `KeyError` en renvoyant une valeur par défaut.
+- On ajoute ou modifie une entrée par simple assignation sur une clé.
+- `.keys()`, `.values()` et `.items()` permettent de parcourir un dictionnaire avec `for` ; `.items()` donne clé et valeur ensemble.
+- Un **ensemble** (`set`) ne contient que des valeurs **uniques** et supporte l'union (`|`) et l'intersection (`&`).
+- `list(set(ma_liste))` est l'idiome standard pour supprimer les doublons d'une liste.

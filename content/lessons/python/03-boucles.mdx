@@ -1,0 +1,101 @@
+---
+refCode: CL-LSN-003-V01
+slug: python-boucles
+title: "Les boucles en Python : for et while"
+description: "Apprenez à répéter des actions avec les boucles for et while, à parcourir des séquences avec range(), et à contrôler le flux avec break et continue."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 150
+prerequisites: ["CL-LSN-002-V01"]
+---
+
+Imaginez que vous deviez afficher les nombres de 1 à 100, ou saluer chaque personne d'une liste de participants. Sans outil adapté, vous écririez la même instruction des dizaines de fois. C'est fastidieux, illisible, et impossible à maintenir. Les **boucles** existent justement pour cela : répéter une action plusieurs fois sans copier-coller. Python propose deux boucles principales, `for` et `while`, que nous allons explorer pas à pas.
+
+Une boucle, c'est un bloc de code que l'ordinateur exécute en répétition. Plutôt que d'écrire vingt lignes identiques, vous écrivez l'instruction une seule fois et vous demandez à Python de la répéter. Cela rend votre code plus court, plus clair, et beaucoup plus facile à modifier.
+
+## La boucle for et range()
+
+La boucle `for` sert à répéter une action un nombre déterminé de fois. La fonction `range()` génère une suite de nombres sur laquelle on itère. Avec `range(n)`, Python produit les entiers de `0` jusqu'à `n - 1` inclus. La variable de boucle (souvent nommée `i`) prend successivement chacune de ces valeurs.
+
+On peut aussi préciser un début, une fin et un pas avec `range(start, stop, step)`. Par exemple, `range(2, 10, 2)` produit `2, 4, 6, 8`. Le `stop` n'est jamais inclus : c'est une borne d'arrêt, pas une valeur atteinte.
+
+<CodePlayground language="python" starterCode={`for i in range(5):
+    print("Itération numéro", i)
+
+print("---")
+
+for n in range(2, 11, 2):
+    print("Nombre pair :", n)`} />
+
+<Callout type="info">
+`range(5)` génère `0, 1, 2, 3, 4` - soit cinq valeurs, mais le `5` n'est pas inclus. La borne supérieure est toujours exclue. Si vous voulez aller jusqu'à 5 inclus, écrivez `range(1, 6)`.
+</Callout>
+
+## Parcourir une liste
+
+La boucle `for` ne se limite pas aux nombres. Elle peut parcourir directement n'importe quelle séquence : une liste, une chaîne de caractères, un ensemble. À chaque tour, la variable de boucle reçoit l'élément suivant de la séquence. C'est la façon la plus naturelle et la plus lisible de traiter chaque élément d'une collection en Python.
+
+<CodePlayground language="python" starterCode={`participants = ["Alice", "Bob", "Chloe"]
+
+for nom in participants:
+    print("Bienvenue", nom, "!")
+
+# On peut aussi parcourir les caractères d'une chaine
+for lettre in "Python":
+    print(lettre)`} />
+
+## La boucle while
+
+La boucle `while` répète un bloc **tant qu'une condition reste vraie**. Contrairement au `for`, on ne sait pas forcément à l'avance combien de tours seront effectués : la boucle continue jusqu'à ce que la condition devienne fausse.
+
+Point crucial : à l'intérieur de la boucle, vous devez faire **évoluer** la condition vers sa sortie. Si la condition reste éternellement vraie, la boucle ne s'arrête jamais. Dans l'exemple ci-dessous, on décrémente `compteur` à chaque tour : la condition `compteur > 0` finit par devenir fausse, et la boucle se termine.
+
+<CodePlayground language="python" starterCode={`compteur = 5
+
+while compteur > 0:
+    print("Compte a rebours :", compteur)
+    compteur = compteur - 1
+
+print("Decollage !")`} />
+
+## break et continue
+
+Deux mots-clés permettent d'affiner le comportement d'une boucle :
+
+- `break` interrompt **immédiatement** la boucle et passe à la suite du programme, même si la séquence n'est pas terminée.
+- `continue` saute le reste du tour courant et passe directement à l'itération suivante, sans interrompre toute la boucle.
+
+<CodePlayground language="python" starterCode={`for i in range(1, 11):
+    if i == 7:
+        print("On arrete a 7")
+        break
+    if i % 2 == 0:
+        continue  # on ignore les nombres pairs
+    print("Nombre impair :", i)`} />
+
+Ici, `continue` ignore les nombres pairs, et `break` arrête tout dès que `i` atteint `7`.
+
+<Callout type="warning">
+Attention à la boucle `while` infinie ! Si vous oubliez de faire évoluer la condition, par exemple `while compteur > 0:` sans jamais diminuer `compteur`, le programme tourne sans fin et se bloque. Vérifiez toujours qu'une instruction à l'intérieur de la boucle rapproche la condition de sa sortie.
+</Callout>
+
+## À vous de jouer
+
+Testez votre compréhension avec les deux quiz suivants, puis relevez le défi de code.
+
+<Quiz id="q-1" question="Que produit range(3) ?" options={["1, 2, 3", "0, 1, 2", "0, 1, 2, 3", "3, 2, 1"]} correct={1} />
+
+<Quiz id="q-2" question="Quel mot-clé permet de sauter le reste du tour courant et passer à l'itération suivante ?" options={["break", "stop", "continue", "skip"]} correct={2} />
+
+<PythonChallenge id="py-1" title="Somme des entiers" description="Écris une fonction solution(n) qui retourne la somme de tous les entiers de 1 à n à l'aide d'une boucle. Si n vaut 0, la somme est 0." starterCode="def solution(n):
+    pass" tests={[{ input: "solution(5)", expected: "15" }, { input: "solution(1)", expected: "1" }, { input: "solution(0)", expected: "0", label: "Cas limite" }]} />
+
+## Récapitulatif
+
+- La boucle `for` répète une action un nombre déterminé de fois ou parcourt une séquence (liste, chaîne...).
+- `range(n)` génère les entiers de `0` à `n - 1` ; la borne supérieure est toujours **exclue**.
+- `range(start, stop, step)` permet de choisir le début, la fin et le pas.
+- La boucle `while` répète tant qu'une condition est vraie ; pensez à faire **évoluer** la condition pour éviter une boucle infinie.
+- `break` interrompt la boucle, `continue` saute à l'itération suivante.
+- Les boucles évitent le copier-coller et rendent le code plus court, lisible et maintenable.

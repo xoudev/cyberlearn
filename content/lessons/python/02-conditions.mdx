@@ -1,0 +1,118 @@
+---
+refCode: CL-LSN-002-V01
+slug: python-conditions
+title: "Conditions et logique booléenne en Python"
+description: "Maîtrisez les structures conditionnelles if, elif, else, les opérateurs de comparaison et les opérateurs logiques and, or, not pour faire des choix dans votre code."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 140
+prerequisites: ["CL-LSN-001-V01"]
+---
+
+Jusqu'ici, vos programmes exécutaient toutes les instructions, l'une après l'autre, sans jamais dévier de leur chemin. Mais un logiciel utile doit prendre des décisions : afficher un message d'erreur si un mot de passe est trop court, accorder l'accès si l'utilisateur est authentifié, proposer une réduction si le panier dépasse un certain montant. C'est exactement le rôle des **conditions**. Elles permettent à votre code de répondre à une question simple - vrai ou faux ? - et d'agir en conséquence. Dans cette leçon, vous allez découvrir les booléens, les opérateurs de comparaison, la structure `if` / `elif` / `else` et les opérateurs logiques. À la fin, votre programme saura enfin choisir.
+
+## Les booléens et les comparaisons
+
+En Python, une valeur booléenne ne peut prendre que deux états : `True` (vrai) ou `False` (faux). Attention à la majuscule initiale, elle est obligatoire. Ces deux valeurs sont le résultat naturel d'une **comparaison**.
+
+Pour comparer deux valeurs, on utilise les opérateurs suivants :
+
+- `==` : égal à (deux signes égal, c'est important)
+- `!=` : différent de
+- `<` : strictement inférieur à
+- `>` : strictement supérieur à
+- `<=` : inférieur ou égal à
+- `>=` : supérieur ou égal à
+
+Chaque comparaison produit un booléen. Testez par vous-même :
+
+<CodePlayground language="python" starterCode={`age = 18
+print(age == 18)      # True
+print(age != 20)      # True
+print(age < 18)       # False
+print(age >= 18)      # True
+
+note = 12
+print(note > 10)      # True`} />
+
+Remarquez que `==` (comparaison) est très différent de `=` (affectation). Le premier pose une question, le second range une valeur dans une variable. Nous reviendrons sur ce piège classique plus bas.
+
+## La structure if / elif / else
+
+L'instruction `if` exécute un bloc de code **uniquement si** une condition est vraie. On peut enchaîner plusieurs cas avec `elif` (contraction de « else if ») et fournir un cas par défaut avec `else`.
+
+La syntaxe repose sur deux éléments essentiels : les deux-points `:` à la fin de la ligne de condition, et l'**indentation**. En Python, l'indentation n'est pas décorative : ce sont les espaces en début de ligne qui définissent ce qui appartient au bloc. La convention est de **4 espaces** par niveau. Une mauvaise indentation provoque une erreur ou, pire, un comportement inattendu.
+
+Voici un exemple concret qui attribue une mention à une note sur 20 :
+
+<CodePlayground language="python" starterCode={`note = 14
+
+if note >= 16:
+    mention = "Très bien"
+elif note >= 14:
+    mention = "Bien"
+elif note >= 12:
+    mention = "Assez bien"
+elif note >= 10:
+    mention = "Passable"
+else:
+    mention = "Insuffisant"
+
+print("Mention :", mention)`} />
+
+Python évalue les conditions **de haut en bas** et s'arrête au premier `elif` vrai. Avec `note = 14`, la première condition (`>= 16`) est fausse, la deuxième (`>= 14`) est vraie : le programme affiche « Bien » et ignore tout le reste. L'ordre des conditions est donc crucial.
+
+## Les opérateurs logiques
+
+Souvent, une décision dépend de **plusieurs conditions** à la fois. Les opérateurs logiques `and`, `or` et `not` permettent de les combiner.
+
+- `and` : vrai seulement si les **deux** conditions sont vraies.
+- `or` : vrai si **au moins une** des conditions est vraie.
+- `not` : inverse la valeur (`not True` vaut `False`).
+
+Les tables de vérité se résument simplement. Pour `and`, il faut que tout soit vrai : `True and True` donne `True`, mais dès qu'un membre est faux, le résultat est `False`. Pour `or`, il suffit d'un seul vrai : `False or True` donne `True`, et seul `False or False` donne `False`. Pour `not`, on retourne simplement l'état contraire.
+
+<CodePlayground language="python" starterCode={`age = 20
+a_un_billet = True
+
+# and : les deux doivent être vrais
+print(age >= 18 and a_un_billet)   # True
+
+# or : au moins un suffit
+print(age < 12 or a_un_billet)     # True
+
+# not : on inverse
+print(not a_un_billet)             # False
+
+# Combinaison
+acces = age >= 18 and a_un_billet
+print("Accès autorisé :", acces)`} />
+
+Combiner ces opérateurs permet d'exprimer des règles métier complètes en une seule ligne lisible.
+
+<Callout type="warning">
+Le piège le plus fréquent chez les débutants : confondre `=` et `==`. Le simple `=` **affecte** une valeur à une variable (`x = 5` range 5 dans `x`). Le double `==` **compare** deux valeurs et renvoie un booléen (`x == 5` demande « est-ce que x vaut 5 ? »). Écrire `if x = 5:` provoque une erreur de syntaxe en Python. Dès qu'une condition se comporte étrangement, vérifiez d'abord que vous avez bien deux signes égal.
+</Callout>
+
+## À vous de jouer
+
+Vérifiez votre compréhension avec les exercices suivants.
+
+<Quiz id="q-1" question="Quel opérateur teste si deux valeurs sont égales ?" options={["=", "==", "!=", "=>"]} correct={1} />
+
+<Quiz id="q-2" question="Que renvoie l'expression : True and False ?" options={["True", "False", "None", "Une erreur"]} correct={1} />
+
+<Quiz id="q-3" question="Avec note = 11, quelle mention donne l'exemple if/elif/else de la leçon ?" options={["Bien", "Assez bien", "Passable", "Insuffisant"]} correct={2} />
+
+<PythonChallenge id="py-1" title="Pair ou impair" description="Écrivez la fonction solution(n) qui retourne True si n est pair, et False sinon. Indice : un nombre est pair quand le reste de sa division par 2 vaut 0 (opérateur modulo %)." starterCode="def solution(n):
+    pass" tests={[{ input: "solution(4)", expected: "True", label: "Cas pair" }, { input: "solution(7)", expected: "False", label: "Cas impair" }, { input: "solution(0)", expected: "True", label: "Cas zéro" }]} />
+
+## Récapitulatif
+
+- Un **booléen** vaut `True` ou `False` (majuscule obligatoire).
+- Les **comparaisons** (`==`, `!=`, `<`, `>`, `<=`, `>=`) produisent un booléen.
+- `if` / `elif` / `else` exécutent un bloc selon des conditions évaluées **de haut en bas**.
+- L'**indentation** (4 espaces) et les deux-points `:` sont obligatoires.
+- Les **opérateurs logiques** `and`, `or` et `not` combinent ou inversent des conditions.
+- Ne confondez jamais `=` (affectation) avec `==` (comparaison).

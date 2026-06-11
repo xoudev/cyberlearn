@@ -1,0 +1,105 @@
+---
+refCode: CL-LSN-008-V01
+slug: python-comprehensions
+title: "Compréhensions de listes et de dictionnaires"
+description: "Écrivez du code Python concis et élégant avec les compréhensions de listes et de dictionnaires pour filtrer, transformer et générer des collections en une ligne."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 350
+prerequisites: ["CL-LSN-006-V01"]
+---
+
+Vous savez déjà parcourir une liste avec une boucle `for`, créer une liste vide puis y ajouter des éléments avec `append`. Ce schéma revient sans cesse : on part d'une collection, on transforme ou on filtre ses éléments, et on construit une nouvelle collection. Python propose une syntaxe taillée pour ce besoin précis : la **compréhension**. En une seule ligne lisible, elle remplace trois ou quatre lignes de boucle. Dans cette leçon, vous allez apprendre à transformer une boucle en compréhension, à filtrer avec une condition, à appliquer une opération à chaque élément, puis à étendre l'idée aux dictionnaires.
+
+L'objectif n'est pas d'écrire le code le plus court possible, mais le plus **clair**. Une compréhension bien choisie se lit presque comme une phrase : « la liste des carrés des nombres de cette liste ». C'est cette lisibilité qui fait toute leur valeur.
+
+## De la boucle à la compréhension
+
+Commençons par le cas le plus fréquent : construire une nouvelle liste à partir d'une autre. Voici d'abord la version classique avec une boucle et un `append`.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5]
+carres = []
+for n in nombres:
+    carres.append(n * n)
+print(carres)`} />
+
+Cette boucle fait trois choses : elle crée une liste vide, elle parcourt `nombres`, et elle ajoute chaque carré. La compréhension exprime exactement la même intention, mais d'un seul tenant. On lit l'expression `n * n`, puis la source `for n in nombres`.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5]
+carres = [n * n for n in nombres]
+print(carres)`} />
+
+Le résultat est identique. La structure générale est `[expression for element in iterable]`. L'expression placée à gauche est évaluée pour chaque élément, et le résultat constitue la nouvelle liste.
+
+## Filtrer avec une condition
+
+Une compréhension peut aussi **sélectionner** seulement certains éléments grâce à un `if` placé après la boucle. La syntaxe devient `[expression for element in iterable if condition]`. Seuls les éléments qui satisfont la condition sont conservés.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5, 6, 7, 8]
+pairs = [n for n in nombres if n % 2 == 0]
+print(pairs)
+
+mots = ["chat", "ordinateur", "if", "python", "ok"]
+longs = [m for m in mots if len(m) > 3]
+print(longs)`} />
+
+Ici l'expression `n` ne transforme rien : elle renvoie l'élément tel quel. C'est le `if n % 2 == 0` qui fait le travail en ne gardant que les nombres pairs. La même logique filtre les mots de plus de trois lettres.
+
+## Transformer des données
+
+Filtrer et transformer se combinent naturellement. L'expression de gauche applique une opération, et le `if` restreint la source. On peut aussi appeler des méthodes ou des fonctions dans l'expression.
+
+<CodePlayground language="python" starterCode={`prenoms = ["alice", "bob", "chloé"]
+en_majuscules = [p.upper() for p in prenoms]
+print(en_majuscules)
+
+prix_ht = [100, 250, 40]
+prix_ttc = [round(p * 1.20, 2) for p in prix_ht]
+print(prix_ttc)`} />
+
+Dans le premier cas, `p.upper()` met chaque prénom en majuscules. Dans le second, on calcule le prix TTC en appliquant la TVA puis en arrondissant. L'expression de gauche peut être aussi riche que nécessaire, tant qu'elle reste lisible.
+
+## Compréhensions de dictionnaires
+
+L'idée s'étend aux dictionnaires. La syntaxe générale, à mémoriser, est la suivante :
+
+```python
+nouveau_dico = {cle: valeur for element in iterable}
+```
+
+On précise une **clé** et une **valeur** séparées par deux-points, puis la boucle. Un usage courant : associer chaque mot à sa longueur, ou inverser un dictionnaire existant.
+
+<CodePlayground language="python" starterCode={`mots = ["python", "code", "go"]
+longueurs = {m: len(m) for m in mots}
+print(longueurs)
+
+scores = {"alice": 90, "bob": 75, "chloé": 60}
+reussite = {nom: note for nom, note in scores.items() if note >= 75}
+print(reussite)`} />
+
+La méthode `items()` fournit les paires clé/valeur, que l'on déballe en `nom, note`. Le `if` filtre comme pour une liste : seuls les scores supérieurs ou égaux à 75 sont conservés.
+
+<Callout type="warning">
+Une compréhension reste un outil de lisibilité. Si elle contient plusieurs conditions imbriquées, des boucles multiples et des appels complexes, elle devient illisible. Dans ce cas, revenez à une bonne vieille boucle `for` explicite : un code clair sur cinq lignes vaut mieux qu'une ligne indéchiffrable.
+</Callout>
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Que produit la compréhension `[n * 2 for n in [1, 2, 3]]` ?" options={["[1, 2, 3]", "[2, 4, 6]", "[1, 4, 9]", "[2, 2, 2]"]} correct={1} />
+
+<Quiz id="q-2" question="Comment ne garder que les nombres impairs d'une liste `nombres` ?" options={["[n for n in nombres]", "[n for n in nombres if n / 2]", "[n for n in nombres if n % 2 == 1]", "[n % 2 for n in nombres]"]} correct={2} />
+
+<PythonChallenge id="py-1" title="Carrés des nombres pairs" description="Écrivez une fonction qui retourne la liste des carrés des nombres PAIRS d'une liste, en utilisant une compréhension avec filtre." starterCode="def solution(nombres):
+    pass" tests={[{ input: "solution([1, 2, 3, 4])", expected: "[4, 16]" }, { input: "solution([])", expected: "[]", label: "Liste vide" }]} />
+
+## Récapitulatif
+
+- Une **compréhension de liste** s'écrit `[expression for element in iterable]` et remplace une boucle avec `append`.
+- Ajoutez `if condition` à la fin pour **filtrer** les éléments conservés.
+- L'expression de gauche peut **transformer** chaque élément (calcul, appel de méthode, fonction).
+- Une **compréhension de dictionnaire** utilise `{cle: valeur for element in iterable}` et accepte aussi un filtre `if`.
+- La méthode `items()` permet de parcourir les paires clé/valeur d'un dictionnaire existant.
+- Privilégiez toujours la **lisibilité** : une compréhension trop complexe doit redevenir une boucle explicite.
+
+OK 08-comprehensions.mdx écrit

@@ -1,0 +1,115 @@
+---
+refCode: CL-LSN-010-V01
+slug: python-modules
+title: "Modules et bibliothèque standard Python"
+description: "Réutilisez du code existant en important des modules : la syntaxe import, les modules essentiels de la bibliothèque standard (math, random, datetime, json) et comment les explorer."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 350
+prerequisites: ["CL-LSN-004-V01"]
+---
+
+Jusqu'ici, vous avez écrit toutes vos fonctions vous-même. C'est formateur, mais en pratique, un développeur ne réinvente pas la roue à chaque projet. Calculer une racine carrée, générer un nombre aléatoire, manipuler une date, convertir des données vers un format d'échange : tout cela existe déjà, écrit et testé par des milliers de personnes. Ces blocs de code prêts à l'emploi s'appellent des **modules**, et Python en livre une énorme collection appelée la **bibliothèque standard** (« batteries included »).
+
+Un module est simplement un fichier Python contenant des fonctions, des variables et des classes que vous pouvez réutiliser. Pour y accéder, on l'**importe**. Apprendre à importer et explorer les modules, c'est passer du statut de débutant qui écrit tout à la main à celui de développeur qui assemble des briques existantes.
+
+## La syntaxe import
+
+Il existe trois façons principales d'importer du code. Chacune a son usage.
+
+- `import module` : importe le module entier. On accède ensuite à son contenu via `module.fonction()`. C'est la forme la plus lisible car on voit toujours d'où vient une fonction.
+- `from module import fonction` : importe uniquement un élément précis. On l'appelle alors directement par son nom, sans préfixe.
+- `import module as alias` : importe le module sous un nom raccourci, très pratique pour les noms longs (par convention, `numpy` devient `np`, par exemple).
+
+Le module `math` regroupe les fonctions mathématiques courantes : racine carrée, puissances, constantes comme `pi`.
+
+<CodePlayground language="python" starterCode={`import math
+from math import floor, ceil
+
+print(math.sqrt(144))
+print(math.pi)
+print(floor(3.7), ceil(3.2))
+
+import math as m
+print(m.pow(2, 10))`} />
+
+<Callout type="info">
+Préférez `import module` à `from module import *`. L'étoile importe tout et pollue votre espace de noms : vous ne savez plus quel nom vient d'où, et des collisions silencieuses peuvent survenir.
+</Callout>
+
+## Le module random
+
+Le module `random` génère des valeurs aléatoires : indispensable pour les jeux, les tirages, les simulations ou les tests. Les fonctions essentielles sont `random()` (un flottant entre 0 et 1), `randint(a, b)` (un entier entre `a` et `b` inclus), `choice(liste)` (un élément au hasard) et `shuffle(liste)` (mélange une liste en place).
+
+Pour rendre un tirage **reproductible** (utile en test), on fixe la graine avec `random.seed()` : la même graine produit toujours la même séquence.
+
+<CodePlayground language="python" starterCode={`import random
+
+random.seed(42)
+print(random.random())
+print(random.randint(1, 6))
+
+couleurs = ["rouge", "vert", "bleu"]
+print(random.choice(couleurs))
+
+cartes = [1, 2, 3, 4, 5]
+random.shuffle(cartes)
+print(cartes)`} />
+
+## Le module datetime
+
+Le module `datetime` manipule dates et heures. `datetime.now()` donne l'instant présent, `date()` construit une date précise, et la soustraction de deux dates produit un objet `timedelta` représentant une durée.
+
+<CodePlayground language="python" starterCode={`from datetime import datetime, date, timedelta
+
+maintenant = datetime.now()
+print(maintenant.year, maintenant.month, maintenant.day)
+
+noel = date(2026, 12, 25)
+aujourdhui = date(2026, 6, 11)
+ecart = noel - aujourdhui
+print("Jours avant Noel:", ecart.days)
+
+demain = aujourdhui + timedelta(days=1)
+print(demain)`} />
+
+## Le module json
+
+Le format **JSON** est le langage d'échange universel du web. Le module `json` traduit entre objets Python et texte JSON : `dumps()` sérialise un objet Python en chaîne de caractères (« dump string »), et `loads()` désérialise une chaîne JSON en objet Python (« load string »).
+
+<CodePlayground language="python" starterCode={`import json
+
+profil = {"nom": "Ada", "niveau": 7, "actif": True}
+
+texte = json.dumps(profil)
+print(texte)
+print(type(texte))
+
+reconstruit = json.loads(texte)
+print(reconstruit["nom"])
+print(type(reconstruit))`} />
+
+<Callout type="info">
+Le JSON est partout : réponses d'API, fichiers de configuration, échanges entre services. Maîtriser `dumps` et `loads` est une compétence quotidienne pour tout développeur back-end ou full-stack.
+</Callout>
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Quelle instruction importe uniquement la fonction sqrt du module math ?" options={["import math.sqrt", "from math import sqrt", "import sqrt from math", "math.import(sqrt)"]} correct={1} />
+
+<Quiz id="q-2" question="Que fait json.loads(texte) ?" options={["Il convertit un objet Python en chaîne JSON", "Il télécharge un fichier JSON", "Il convertit une chaîne JSON en objet Python", "Il supprime les données JSON"]} correct={2} />
+
+<PythonChallenge id="py-1" title="Racine carrée" description="Écris une fonction solution(n) qui retourne la racine carrée de n en utilisant math.sqrt. La valeur retournée est un flottant." starterCode="import math
+
+def solution(n):
+    pass" tests={[{ input: "solution(16)", expected: "4.0" }, { input: "solution(0)", expected: "0.0", label: "Cas limite" }]} />
+
+## Récapitulatif
+
+- Un **module** est un fichier de code réutilisable ; la **bibliothèque standard** en fournit des centaines, prêts à l'emploi.
+- Trois imports : `import module`, `from module import fonction`, `import module as alias`. Évitez l'étoile `*`.
+- `math` : fonctions et constantes mathématiques (`sqrt`, `pi`, `pow`).
+- `random` : valeurs aléatoires (`random`, `randint`, `choice`, `shuffle`) ; `seed()` rend les tirages reproductibles.
+- `datetime` : dates, heures et durées (`now`, `date`, `timedelta`).
+- `json` : `dumps` sérialise vers JSON, `loads` désérialise depuis JSON ; format clé pour les API et la configuration.

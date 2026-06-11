@@ -1,0 +1,176 @@
+---
+refCode: CL-LSN-012-V01
+slug: python-projet-cli
+title: "Projet : un gestionnaire de tâches en ligne de commande"
+description: "Mettez en pratique tout le parcours en construisant un gestionnaire de tâches : ajouter, lister, compléter et supprimer des tâches en combinant fonctions, listes, dictionnaires et gestion d'erreurs."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 600
+prerequisites: ["CL-LSN-009-V01", "CL-LSN-011-V01"]
+---
+
+Bravo, vous voilà arrivé à la dernière étape du parcours Python. Jusqu'ici, vous avez appris séparément les variables, les conditions, les boucles, les fonctions, les listes, les dictionnaires et la gestion d'erreurs. C'est bien, mais un développeur ne manipule presque jamais ces notions isolément : il les **assemble** pour résoudre un vrai problème.
+
+Dans cette leçon-projet, vous allez construire une petite application complète : un **gestionnaire de tâches** (un « todo ») qui fonctionne en ligne de commande. L'utilisateur pourra ajouter une tâche, lister ses tâches, en marquer une comme terminée et en supprimer. Rien de magique : juste des fonctions bien découpées qui manipulent une liste de dictionnaires. C'est exactement le genre de projet qu'on construit pour consolider ses bases, et celui que vous pourrez fièrement montrer sur votre GitHub.
+
+<Callout type="info">
+Sur la plateforme, l'interaction clavier (`input()`) n'est pas disponible dans les exemples exécutables. Nous appellerons donc nos fonctions directement avec des valeurs prédéfinies. À la fin, vous reconstruirez la version interactive sur votre propre machine.
+</Callout>
+
+## L'architecture du projet
+
+Avant d'écrire du code, posons le **modèle de données**. Une tâche n'est pas juste un texte : elle a un titre **et** un état (faite ou pas). Le bon outil pour regrouper plusieurs informations liées, c'est le dictionnaire. Une tâche ressemblera donc à ceci :
+
+```python
+tache = {"titre": "Réviser Python", "fait": False}
+```
+
+Et l'ensemble des tâches sera simplement une **liste** de ces dictionnaires :
+
+```python
+taches = [
+    {"titre": "Réviser Python", "fait": False},
+    {"titre": "Faire les courses", "fait": True},
+]
+```
+
+Ce choix est puissant : la liste gère la collection (ajouter, parcourir, supprimer par index) et le dictionnaire gère la structure d'une tâche (un titre, un statut). Chaque fonctionnalité de l'application deviendra une **fonction** qui reçoit cette liste et la modifie.
+
+<Diagram caption="Le cycle de vie d'une tâche dans le gestionnaire">
+graph TD
+    A[Démarrage : liste vide] --> B[Ajouter une tâche]
+    B --> C[Lister les tâches]
+    C --> D[Choisir une action]
+    D -->|Compléter| E[Changer le statut]
+    D -->|Supprimer| F[Retirer de la liste]
+    E --> C
+    F --> C
+</Diagram>
+
+## Étape 1 : ajouter une tâche
+
+Commençons par la brique de base : une fonction `ajouter_tache(taches, titre)` qui crée un dictionnaire et l'ajoute à la liste. On renvoie la liste pour pouvoir enchaîner les opérations.
+
+<CodePlayground language="python" starterCode={`def ajouter_tache(taches, titre):
+    nouvelle = {"titre": titre, "fait": False}
+    taches.append(nouvelle)
+    return taches
+
+# On part d'une liste vide
+taches = []
+ajouter_tache(taches, "Réviser Python")
+ajouter_tache(taches, "Faire les courses")
+ajouter_tache(taches, "Pousser le projet sur GitHub")
+
+print("Nombre de tâches :", len(taches))
+print(taches)`} />
+
+Remarquez que toute nouvelle tâche démarre avec `"fait": False`. Une tâche fraîchement créée n'est jamais terminée, c'est logique.
+
+## Étape 2 : lister les tâches
+
+Une liste de dictionnaires brute n'est pas très lisible pour un humain. Écrivons `afficher_taches(taches)` qui parcourt la liste et affiche chaque tâche avec un **symbole** clair : `[x]` pour une tâche faite, `[ ]` pour une tâche à faire. On affiche aussi le numéro (l'index) pour pouvoir agir dessus ensuite.
+
+<CodePlayground language="python" starterCode={`def afficher_taches(taches):
+    if not taches:
+        print("Aucune tâche pour le moment.")
+        return
+    for index, tache in enumerate(taches):
+        symbole = "[x]" if tache["fait"] else "[ ]"
+        print(f"{index}. {symbole} {tache['titre']}")
+
+taches = [
+    {"titre": "Réviser Python", "fait": False},
+    {"titre": "Faire les courses", "fait": True},
+    {"titre": "Pousser le projet sur GitHub", "fait": False},
+]
+
+afficher_taches(taches)`} />
+
+La fonction `enumerate()` nous donne en même temps l'index et l'élément : parfait pour numéroter l'affichage. Le test `if not taches` gère élégamment le cas de la liste vide.
+
+## Étape 3 : compléter une tâche
+
+Maintenant, marquons une tâche comme terminée. La fonction `completer_tache(taches, index)` reçoit le numéro de la tâche et bascule son champ `"fait"` à `True`. Mais que se passe-t-il si l'utilisateur donne un index qui n'existe pas (par exemple `99` sur une liste de 3 tâches) ? Python lèverait une `IndexError` et le programme planterait. On protège donc l'accès avec un `try` / `except`.
+
+<CodePlayground language="python" starterCode={`def completer_tache(taches, index):
+    try:
+        taches[index]["fait"] = True
+        print(f"Tâche {index} marquée comme faite.")
+    except IndexError:
+        print(f"Erreur : aucune tâche à l'index {index}.")
+    return taches
+
+taches = [
+    {"titre": "Réviser Python", "fait": False},
+    {"titre": "Faire les courses", "fait": False},
+]
+
+completer_tache(taches, 0)   # valide
+completer_tache(taches, 99)  # index invalide : géré proprement
+
+for tache in taches:
+    print(tache)`} />
+
+Grâce au `try` / `except IndexError`, l'application ne plante plus : elle informe l'utilisateur et continue. C'est exactement ce qu'on attend d'un programme robuste.
+
+## À vous de jouer
+
+Testez votre compréhension avant de passer au projet personnel.
+
+<Quiz id="q-modele" question="Comment représente-t-on une seule tâche dans notre application ?" options={["Par une simple chaîne de caractères", "Par un dictionnaire avec un titre et un statut", "Par une liste de deux éléments", "Par un nombre entier"]} correct={1} />
+
+<Quiz id="q-erreur" question="Pourquoi entoure-t-on l'accès `taches[index]` d'un bloc try / except ?" options={["Pour rendre le code plus rapide", "Pour éviter un plantage si l'index n'existe pas (IndexError)", "Parce que les dictionnaires l'exigent", "Pour convertir l'index en chaîne"]} correct={1} />
+
+<Quiz id="q-enumerate" question="Que renvoie `enumerate(taches)` à chaque tour de boucle ?" options={["Seulement la tâche", "Seulement l'index", "Un couple (index, tâche)", "La longueur de la liste"]} correct={2} />
+
+À présent, codez vous-même une brique du projet. Écrivez `solution(taches)` qui retourne le **nombre de tâches non terminées** (celles dont le statut `"fait"` n'est pas `True`).
+
+<PythonChallenge
+  id="py-non-terminees"
+  title="Compter les tâches non terminées"
+  description="Complétez la fonction solution(taches) pour qu'elle retourne le nombre de tâches dont le champ 'fait' vaut False. Une liste vide doit renvoyer 0."
+  starterCode="def solution(taches):
+    # Comptez les tâches dont 'fait' est False
+    compteur = 0
+    # votre code ici
+    return compteur"
+  tests={[
+    { input: [[{"titre": "A", "fait": False}, {"titre": "B", "fait": True}, {"titre": "C", "fait": False}]], expected: "2" },
+    { input: [[{"titre": "A", "fait": True}, {"titre": "B", "fait": True}]], expected: "0" },
+    { input: [[]], expected: "0" }
+  ]}
+/>
+
+## Votre projet personnel
+
+<Callout type="success">
+Vous avez maintenant toutes les briques d'un vrai gestionnaire de tâches. Il est temps de le transformer en application complète, sur votre propre machine, et d'en faire votre premier projet de portfolio.
+</Callout>
+
+Sur la plateforme, nous avons évité `input()`. Chez vous, rien ne vous en empêche ! Reconstruisez le programme avec une **boucle de menu** qui demande à l'utilisateur quelle action effectuer, puis appelez la bonne fonction. Voici une feuille de route, du plus simple au plus avancé. Relevez-les dans l'ordre :
+
+1. **Le menu interactif.** Une boucle `while True` qui affiche les options (ajouter, lister, compléter, supprimer, quitter) et lit le choix avec `input()`. Ajoutez aussi une fonction `supprimer_tache(taches, index)` (pensez au `try` / `except`).
+2. **La sauvegarde JSON.** Au démarrage, chargez les tâches depuis un fichier `taches.json` ; à chaque modification, réécrivez le fichier. Utilisez le module `json` (`json.dump` et `json.load`). Ainsi, vos tâches survivent à la fermeture du programme.
+3. **Les priorités.** Ajoutez un champ `"priorite"` à chaque tâche (`"basse"`, `"moyenne"`, `"haute"`) et permettez d'afficher les tâches triées par priorité avec `sorted()`.
+4. **Les dates d'échéance.** Ajoutez un champ `"echeance"` (avec le module `datetime`) et signalez en rouge les tâches en retard.
+5. **L'export d'un rapport.** Générez un fichier texte récapitulatif : nombre de tâches faites, restantes, en retard. Un vrai petit tableau de bord.
+
+Quand votre version vous plaît, créez un dépôt sur **GitHub**, ajoutez un `README.md` qui explique comment lancer le programme, et poussez votre code. C'est votre première vraie réalisation : montrez-la.
+
+## Récapitulatif
+
+En construisant ce projet, vous avez mobilisé l'ensemble du parcours Python :
+
+- **Les fonctions** pour découper le programme en briques réutilisables et testables.
+- **Les listes** pour gérer une collection de tâches qui grandit et rétrécit.
+- **Les dictionnaires** pour structurer chaque tâche (titre, statut, et bientôt priorité et échéance).
+- **Les boucles** (`for`, `enumerate`, `while`) pour parcourir et piloter le menu.
+- **Les conditions** pour choisir le bon symbole et la bonne action.
+- **La gestion d'erreurs** (`try` / `except IndexError`) pour un programme qui ne plante pas.
+- **L'organisation du code** en fonctions claires, première étape vers de vrais projets.
+
+Vous savez désormais transformer des notions isolées en une application qui fonctionne. C'est précisément ce que fait un développeur au quotidien. Félicitations pour avoir terminé le parcours, et bon code sur votre projet personnel.
+
+OK 12-projet-cli.mdx écrit

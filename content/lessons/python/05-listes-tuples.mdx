@@ -1,0 +1,141 @@
+---
+refCode: CL-LSN-005-V01
+slug: python-listes-tuples
+title: "Listes et tuples en Python"
+description: "Stockez et manipulez des collections de données avec les listes (modifiables) et les tuples (figés) : indexation, slicing, méthodes utiles et parcours."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 180
+prerequisites: ["CL-LSN-004-V01"]
+---
+
+Jusqu'à présent, chaque variable que tu as créée contenait **une seule valeur** : un nombre, un texte, un booléen. Mais dans la vraie vie, on manipule souvent des **collections** de données : une liste de courses, les notes d'une classe, les adresses IP d'un réseau. Plutôt que de créer `note1`, `note2`, `note3`... à l'infini, Python te permet de tout ranger dans **une seule variable**.
+
+Dans cette leçon, tu découvres les deux collections les plus utilisées : les **listes** (modifiables) et les **tuples** (figés).
+
+## Créer et lire une liste
+
+Une liste se déclare avec des **crochets**, et on sépare les éléments par des virgules :
+
+```python
+fruits = ["pomme", "banane", "cerise"]
+```
+
+Pour accéder à un élément, on utilise son **index** (sa position) entre crochets. Attention, point crucial : **l'index commence à 0**, pas à 1. Le premier élément est donc `fruits[0]`, le deuxième `fruits[1]`, et ainsi de suite.
+
+Python accepte aussi les **index négatifs** pour partir de la fin : `fruits[-1]` est le dernier élément, `fruits[-2]` l'avant-dernier. Très pratique quand on ne connaît pas la taille exacte de la liste.
+
+<CodePlayground language="python" starterCode={`fruits = ["pomme", "banane", "cerise"]
+
+print(fruits[0])   # premier element
+print(fruits[1])   # deuxieme element
+print(fruits[-1])  # dernier element
+print(len(fruits)) # nombre d'elements`} />
+
+<Callout type="warning">
+Si tu demandes un index qui n'existe pas (par exemple `fruits[10]` sur une liste de 3 éléments), Python lève une erreur `IndexError`. Vérifie toujours la taille avec `len()` en cas de doute.
+</Callout>
+
+## Modifier une liste
+
+Les listes sont **modifiables** (on dit *mutables*) : on peut ajouter, retirer ou changer des éléments après leur création. Voici les méthodes les plus utiles :
+
+- `append(x)` - ajoute `x` à la **fin** de la liste.
+- `insert(i, x)` - insère `x` à la **position** `i`.
+- `remove(x)` - supprime la **première occurrence** de la valeur `x`.
+- `pop()` - retire et **renvoie** le dernier élément (ou celui d'un index donné).
+
+<CodePlayground language="python" starterCode={`courses = ["pain", "lait"]
+
+courses.append("oeufs")      # ajoute a la fin
+courses.insert(0, "beurre")  # insere au debut
+print(courses)
+
+courses.remove("lait")       # supprime "lait"
+dernier = courses.pop()      # retire et renvoie le dernier
+print(courses)
+print("Retire :", dernier)`} />
+
+On peut aussi remplacer un élément directement par son index : `courses[0] = "farine"`.
+
+## Le slicing
+
+Le **slicing** (découpage) permet d'extraire une **tranche** de la liste avec la syntaxe `liste[debut:fin]`. Règle importante : l'élément à l'index `debut` est **inclus**, mais celui à l'index `fin` est **exclu**.
+
+Si tu omets `debut`, Python part du début ; si tu omets `fin`, il va jusqu'au bout.
+
+<CodePlayground language="python" starterCode={`nombres = [10, 20, 30, 40, 50]
+
+print(nombres[1:3])  # de l'index 1 a 2 -> [20, 30]
+print(nombres[:2])   # du debut a l'index 1 -> [10, 20]
+print(nombres[2:])   # de l'index 2 a la fin -> [30, 40, 50]
+print(nombres[-2:])  # les deux derniers -> [40, 50]`} />
+
+Le slicing ne modifie **jamais** la liste d'origine : il crée une nouvelle liste.
+
+## Les tuples
+
+Un **tuple** ressemble à une liste, mais se déclare avec des **parenthèses** et il est **immuable** : une fois créé, on ne peut **plus** le modifier.
+
+```python
+point = (3, 5)
+```
+
+Pourquoi s'en servir ? Quand des valeurs vont ensemble et **ne doivent pas changer** : des coordonnées `(x, y)`, une date `(jour, mois, annee)`, une couleur RVB `(255, 0, 0)`. L'immuabilité protège tes données contre les modifications accidentelles.
+
+La lecture (indexation, slicing) fonctionne exactement comme pour une liste. Seule la **modification** est interdite.
+
+<CodePlayground language="python" starterCode={`point = (3, 5)
+
+print(point[0])  # 3
+print(point[1])  # 5
+
+# point[0] = 9  -> leverait une TypeError : un tuple est fige
+x, y = point     # "deballage" : x=3, y=5
+print("x =", x, "/ y =", y)`} />
+
+<Callout type="info">
+Retiens la différence clé : une **liste** est **modifiable** (crochets `[]`, on peut ajouter/retirer), tandis qu'un **tuple** est **figé** (parenthèses `()`, lecture seule). Choisis le tuple quand tes données ne doivent pas bouger.
+</Callout>
+
+## Parcourir une liste
+
+Pour traiter chaque élément, on utilise la boucle `for` vue précédemment :
+
+```python
+for fruit in fruits:
+    print(fruit)
+```
+
+Et si tu as besoin de **l'index en même temps que la valeur**, la fonction `enumerate()` te donne les deux d'un coup :
+
+<CodePlayground language="python" starterCode={`fruits = ["pomme", "banane", "cerise"]
+
+# Parcours simple
+for fruit in fruits:
+    print(fruit)
+
+print("---")
+
+# Parcours avec index grace a enumerate
+for index, fruit in enumerate(fruits):
+    print(index, ":", fruit)`} />
+
+## À vous de jouer
+
+<Quiz id="q-1" question="Quel est l'index du PREMIER élément d'une liste en Python ?" options={["1", "0", "-1", "Le premier n'a pas d'index"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle structure est IMMUABLE (impossible à modifier après création) ?" options={["La liste", "Le tuple", "Les deux", "Aucune des deux"]} correct={1} />
+
+<PythonChallenge id="py-1" title="Le plus grand sans max()" description="Écris solution(nombres) qui retourne le plus grand nombre de la liste, SANS utiliser max(). Parcours la liste avec une boucle. Si la liste est vide, retourne 0." starterCode="def solution(nombres):
+    pass" tests={[{ input: "solution([3, 1, 2])", expected: "3" }, { input: "solution([10, 42, 7, 5])", expected: "42" }, { input: "solution([-4, -1, -9])", expected: "-1" }, { input: "solution([])", expected: "0", label: "Liste vide" }]} />
+
+## Récapitulatif
+
+- Une **liste** stocke plusieurs valeurs dans une seule variable, avec des **crochets** `[]`.
+- L'**indexation commence à 0** ; les **index négatifs** partent de la fin (`-1` = dernier).
+- Les listes sont **modifiables** : `append`, `insert`, `remove`, `pop` ajoutent ou retirent des éléments.
+- Le **slicing** `liste[debut:fin]` extrait une tranche (`fin` exclu) sans toucher l'originale.
+- Un **tuple** utilise des **parenthèses** `()` et est **immuable** : idéal pour des données figées.
+- On parcourt une collection avec `for`, et avec `enumerate()` quand on veut aussi l'index.
