@@ -189,9 +189,11 @@ const LEARN_ITEMS = [
 ] as const;
 
 const ACTIVITY_ITEMS = [
-  { href: "/classement", label: "Classement", Icon: IconTrophy, count: null },
-  { href: "/challenges", label: "Défis", Icon: IconFlash, count: null },
-  { href: "/profile", label: "Profil", Icon: IconUser, count: null },
+  { href: "/classement", label: "Classement", Icon: IconTrophy, count: null, tag: undefined },
+  // WIP tag: the challenges catalog is being rebuilt (content reboot). Drop
+  // the tag when the first active challenges ship again.
+  { href: "/challenges", label: "Défis", Icon: IconFlash, count: null, tag: "WIP" },
+  { href: "/profile", label: "Profil", Icon: IconUser, count: null, tag: undefined },
 ] as const;
 
 // ── Section label ─────────────────────────────────────────────────────────────
@@ -250,11 +252,13 @@ export function SidebarNav({
     label,
     Icon,
     count,
+    tag,
   }: {
     href: string;
     label: string;
     Icon: React.ComponentType;
     count?: number | null | undefined;
+    tag?: string | undefined;
   }) {
     const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
@@ -283,6 +287,25 @@ export function SidebarNav({
 
         {count != null && count > 0 && (
           <span className="sidebar-label sidebar-nav-badge">{count}</span>
+        )}
+
+        {tag !== undefined && (
+          <span
+            className="sidebar-label"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 8.5,
+              letterSpacing: "0.12em",
+              padding: "2px 6px",
+              color: "#FFB020",
+              border: "1px solid rgba(255,176,32,0.35)",
+              background: "rgba(255,176,32,0.06)",
+              flexShrink: 0,
+            }}
+          >
+            {tag}
+          </span>
         )}
       </Link>
     );
@@ -369,8 +392,8 @@ export function SidebarNav({
         }}
         aria-label="Navigation Activité"
       >
-        {ACTIVITY_ITEMS.map(({ href, label, Icon, count }) => (
-          <NavItem key={href} href={href} label={label} Icon={Icon} count={count} />
+        {ACTIVITY_ITEMS.map(({ href, label, Icon, count, tag }) => (
+          <NavItem key={href} href={href} label={label} Icon={Icon} count={count} tag={tag} />
         ))}
       </nav>
 
