@@ -1,0 +1,108 @@
+---
+refCode: CL-LSN-065-V01
+slug: git-collaboration
+title: "Collaborer : pull requests et revue de code"
+description: "Travaillez à plusieurs sur un projet : le flux par branches et pull requests, la revue de code, la résolution de conflits, et les bonnes pratiques pour ne pas se marcher dessus."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 480
+prerequisites: ["CL-LSN-063-V01", "CL-LSN-064-V01"]
+---
+
+Jusqu'ici tu as travaillé seul sur ton dépôt. Tu commites, tu pousses sur `main`, et tout va bien. Le jour où vous êtes deux, trois ou dix sur le même projet, cette habitude devient un problème. Si chacun pousse ce qu'il veut directement sur `main`, vous écrasez le travail des autres, vous cassez la branche que tout le monde utilise, et personne ne relit rien avant que ça parte.
+
+Les équipes ont réglé ça avec un flux simple : personne ne touche `main` directement. Chacun travaille sur sa propre branche, propose ses changements via une pull request, un collègue les relit, et seulement ensuite on fusionne. C'est le sujet de cette leçon.
+
+## le flux feature branch
+
+L'idée tient en une phrase : `main` reste toujours propre et fonctionnelle, et tout le travail en cours vit sur des branches séparées.
+
+Quand tu commences une nouvelle fonctionnalité ou une correction, tu pars de `main` à jour et tu crées une branche dédiée. Tu y fais tes commits tranquillement. Pendant ce temps, tes collègues font pareil de leur côté, sur leurs propres branches. Vous ne vous gênez pas, parce que vos changements sont isolés.
+
+Une fois ton travail prêt, tu pousses ta branche sur le serveur (GitHub, GitLab...) et tu ouvres une pull request. Là commence la phase collective : relecture, discussion, tests automatiques. Si tout est bon, on fusionne ta branche dans `main`, et elle disparaît. Tu repars de `main` à jour pour la fonctionnalité suivante.
+
+<Diagram caption="Le cycle d'une fonctionnalité, de la branche au merge">
+[main a jour] --> [git checkout -b feature/login] --> [commits sur ma branche] --> [git push] --> [ouvrir la pull request] --> [revue par un collegue] --> [tests automatiques] --> [merge dans main] --> [supprimer la branche]
+</Diagram>
+
+Le nom de la branche aide tout le monde à comprendre de quoi il s'agit. Des conventions répandues : `feature/...` pour une nouvelle fonctionnalité, `fix/...` pour une correction, `chore/...` pour de la maintenance. Ce n'est pas imposé par Git, c'est juste un accord d'équipe pour s'y retrouver.
+
+## la pull request
+
+Une pull request (souvent abrégée PR, ou merge request sur GitLab) est une demande de fusion. Tu dis à l'équipe : voici les commits de ma branche, j'aimerais les intégrer dans `main`. Ce n'est pas une commande Git, c'est une fonctionnalité de la plateforme qui héberge ton dépôt.
+
+Ouvrir une PR ne fusionne rien tout de suite. C'est exactement le but. La PR crée un espace où on peut regarder ton code, en discuter, et lancer les tests avant que quoi que ce soit ne touche `main`. C'est ce sas de contrôle qui rend la collaboration sûre.
+
+En pratique, tu pousses ta branche et la plateforme te propose directement d'ouvrir la PR.
+
+<SimulatedTerminal shell="bash" commands={{ "git checkout -b feature/login": "Switched to a new branch 'feature/login'", "git push -u origin feature/login": "remote: Create a pull request for 'feature/login' on GitHub:\nremote:   https://github.com/equipe/projet/pull/new/feature/login\nBranch 'feature/login' set up to track 'origin/feature/login'." }} />
+
+Tu cliques sur le lien, tu donnes un titre clair et une courte description (ce que fait le changement, et pourquoi), et la PR est ouverte. Elle reste vivante tant qu'elle n'est ni fusionnée ni fermée : tu peux y pousser de nouveaux commits, ils apparaissent automatiquement dans la PR.
+
+<Callout type="info">
+Une pull request ne fusionne pas ton code. Elle ouvre une discussion autour de tes commits et déclenche les vérifications. La fusion arrive plus tard, après validation. C'est ce délai qui protège la branche principale.
+</Callout>
+
+## la revue de code
+
+La revue, c'est le moment où un collègue lit tes changements avant la fusion. Pas pour te juger : pour attraper ensemble ce qu'on ne voit pas seul. Quand on écrit du code, on a la tête dedans et on rate des choses évidentes. Un deuxième regard les repère.
+
+Que regarde un relecteur ? Surtout : est-ce que le code fait bien ce que la PR annonce ? Est-ce lisible pour quelqu'un d'autre que toi ? Y a-t-il un cas oublié, une faute qui traîne, un nom de variable trompeur ? Il vérifie aussi que les tests passent et que tu n'as pas laissé de code mort ou un secret en clair.
+
+Côté retours, deux postures simples. Quand tu reçois un commentaire, lis-le comme une question sur le code, pas sur toi. Si tu n'es pas d'accord, réponds avec ton raisonnement plutôt que d'appliquer en silence. Quand tu en donnes un, sois précis et propose une piste : « ici on risque un null si la liste est vide, on pourrait vérifier avant » vaut mieux que « ça va planter ». Une PR se relit bien quand elle est petite. Si elle touche quarante fichiers, personne ne la lit vraiment, et la revue devient un tampon vide.
+
+## rester à jour et résoudre les conflits
+
+Pendant que tu travailles sur ta branche, `main` continue d'avancer : tes collègues fusionnent leurs propres PR. Si tu attends une semaine sans regarder, ta branche dérive loin de `main`, et au moment de fusionner tu te retrouves avec un gros tas de conflits.
+
+Le réflexe qui évite ça : récupérer `main` régulièrement dans ta branche. Tu intègres les changements des autres par petites doses, au fil de l'eau, plutôt que tout d'un coup à la fin.
+
+<SimulatedTerminal shell="bash" commands={{ "git checkout feature/login": "Switched to branch 'feature/login'", "git pull origin main": "Already up to date.", "git status": "On branch feature/login\nnothing to commit, working tree clean" }} />
+
+Un conflit arrive quand deux personnes ont modifié les mêmes lignes du même fichier. Git ne sait pas laquelle garder, alors il s'arrête et te laisse trancher. Pas de panique : ce n'est pas une erreur, c'est une question qu'il te pose. Il marque la zone en désaccord dans le fichier, avec les deux versions côte à côte. Tu ouvres le fichier, tu choisis ce qui doit rester (parfois un mélange des deux), tu retires les marqueurs, puis tu commites le résultat.
+
+```bash
+# Git signale les zones en conflit comme ceci dans le fichier :
+<<<<<<< HEAD
+const timeout = 30
+=======
+const timeout = 60
+>>>>>>> main
+# A toi de garder la bonne valeur, d'effacer les <<<, === et >>>,
+# puis : git add le-fichier && git commit
+```
+
+<Callout type="warning">
+Un conflit n'est pas un bug. C'est Git qui refuse de deviner à ta place. Le danger réel, c'est de résoudre vite et mal en gardant les marqueurs `<<<` dans le code. Relis toujours le fichier après résolution, et vérifie que ça compile avant de commiter.
+</Callout>
+
+## bonnes pratiques d'équipe
+
+Quelques habitudes rendent la collaboration fluide. Garde tes PR petites et ciblées : une PR égale une intention. C'est plus rapide à relire, plus facile à corriger, et moins risqué à fusionner.
+
+Soigne tes messages. Un titre de PR qui dit ce que ça change, une description qui dit pourquoi, des commits dont le message a du sens dans six mois. La personne qui te relit (et le toi du futur) te remerciera.
+
+Côté serveur, l'équipe protège la branche `main`. Sur GitHub, une règle de protection peut interdire les pushs directs et exiger qu'une PR soit relue et que les tests passent avant la fusion. Ainsi, même si quelqu'un oublie la règle, la plateforme l'empêche d'écraser `main` par accident. C'est le filet de sécurité qui transforme la convention en garantie.
+
+## à toi de jouer
+
+Reprends le flux complet : créer une branche, la pousser, voir la proposition de PR.
+
+<SimulatedTerminal shell="bash" commands={{ "git checkout -b fix/typo": "Switched to a new branch 'fix/typo'", "git push -u origin fix/typo": "remote: Create a pull request for 'fix/typo' on GitHub:\nremote:   https://github.com/equipe/projet/pull/new/fix/typo\nBranch 'fix/typo' set up to track 'origin/fix/typo'.", "git pull origin main": "Already up to date." }} />
+
+<Quiz id="q-1" question="A quoi sert une pull request ?" options={["A demander la fusion de sa branche, en ouvrant une relecture et les tests avant que main soit touchee", "A supprimer une branche distante", "A telecharger le depot pour la premiere fois"]} correct={0} />
+
+<Quiz id="q-2" question="Que faire quand un conflit de fusion apparait ?" options={["Forcer le push pour ecraser les changements des autres", "Ouvrir le fichier, choisir ce qui reste, retirer les marqueurs, puis commiter", "Supprimer le depot et recommencer"]} correct={1} />
+
+<Quiz id="q-3" question="Sur un projet en equipe, pourquoi eviter de pousser directement sur main ?" options={["Parce que Git interdit techniquement de pousser sur main", "Pour ne pas ecraser le travail des autres ni casser la branche commune sans relecture", "Parce que main est plus lente que les autres branches"]} correct={1} />
+
+## à retenir
+
+- En équipe, personne ne pousse directement sur `main`. Chacun travaille sur sa branche.
+- Le flux est : brancher, commiter, pousser, ouvrir une pull request, faire relire, fusionner.
+- Une pull request est une demande de fusion : elle ouvre la relecture et lance les tests, elle ne fusionne pas toute seule.
+- La revue sert à attraper à deux ce qu'on rate seul. Des PR petites se relisent vraiment.
+- Récupérer `main` régulièrement dans sa branche limite les conflits.
+- Un conflit n'est pas une erreur : tu choisis la bonne version, tu retires les marqueurs, tu commites.
+- Protéger `main` côté serveur transforme la convention d'équipe en garantie.

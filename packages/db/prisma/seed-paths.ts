@@ -148,6 +148,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-060-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-006-V01",
+    slug: "git-docker-cicd",
+    title: "Git, Docker et CI/CD",
+    description:
+      "Les outils du développeur moderne : versionner avec Git et collaborer par pull requests, conteneuriser une application avec Docker et Compose, et automatiser tests et livraison avec un pipeline CI/CD. Conclu par un projet de déploiement complet.",
+    category: "DEV",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 8,
+    lessons: [
+      "CL-LSN-061-V01",
+      "CL-LSN-062-V01",
+      "CL-LSN-063-V01",
+      "CL-LSN-064-V01",
+      "CL-LSN-065-V01",
+      "CL-LSN-066-V01",
+      "CL-LSN-067-V01",
+      "CL-LSN-068-V01",
+      "CL-LSN-069-V01",
+      "CL-LSN-070-V01",
+      "CL-LSN-071-V01",
+      "CL-LSN-072-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

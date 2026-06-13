@@ -1,0 +1,151 @@
+---
+refCode: CL-LSN-068-V01
+slug: docker-dockerfile
+title: "Écrire un Dockerfile"
+description: "Fabriquez votre propre image Docker avec un Dockerfile : choisir une image de base, copier le code, installer les dépendances, exposer un port et définir la commande de démarrage."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-067-V01"]
+---
+
+Jusqu'ici, tu as lancé des conteneurs à partir d'images que d'autres ont préparées : `nginx`, `postgres`, `node`. Tu fais `docker run`, et ça marche. Mais ces images contiennent le serveur web ou la base de données de quelqu'un d'autre, pas ton application à toi.
+
+Le jour où tu veux mettre TON code dans un conteneur, personne n'a fabriqué cette image pour toi. Il faut la construire. Et l'outil pour ça, c'est le Dockerfile.
+
+Un Dockerfile, c'est un fichier texte qui décrit comment fabriquer une image, étape par étape. Pense à une recette de cuisine : prends telle base, ajoute tels ingrédients, fais cuire de telle façon, sers comme ça. Docker lit ce fichier de haut en bas, exécute chaque instruction dans l'ordre, et le résultat final est une image prête à lancer. Le gros avantage : c'est reproductible. La même recette donne la même image, sur ta machine comme sur le serveur de prod, aujourd'hui comme dans six mois.
+
+On va conteneuriser une petite application Node, une API minuscule qui écoute sur le port 3000. Rien de compliqué, juste de quoi voir chaque instruction à l'œuvre.
+
+## les instructions de base
+
+Voici un Dockerfile complet pour notre petite app Node. Il tient en six lignes.
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY . .
+RUN npm install
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+Reprenons ligne par ligne.
+
+`FROM node:20-alpine` choisit l'image de base. On ne part jamais de rien : on part d'une image existante et on construit par-dessus. Ici on prend une image qui contient déjà Node 20 installé. Le suffixe `alpine` désigne une variante basée sur une distribution Linux très légère, donc une image finale petite. Cette ligne est presque toujours la première du fichier.
+
+`WORKDIR /app` définit le dossier de travail à l'intérieur de l'image. Toutes les instructions qui suivent s'exécutent depuis ce dossier, comme si tu avais fait `cd /app`. S'il n'existe pas, Docker le crée.
+
+`COPY . .` copie des fichiers depuis ta machine vers l'image. Le premier point, c'est la source (le dossier courant de ton projet). Le second point, c'est la destination dans l'image (le `/app` qu'on vient de définir). Donc ici : copie tout mon projet dans `/app`.
+
+`RUN npm install` exécute une commande pendant la construction de l'image. `RUN` sert à tout ce qui doit se passer au moment de fabriquer l'image : installer des dépendances, compiler, créer des dossiers. Ici on installe les paquets npm. Le résultat est figé dans l'image.
+
+`EXPOSE 3000` documente le port sur lequel l'application écoute. Attention, c'est surtout une indication. Ça ne publie pas le port tout seul, on verra ça avec `docker run`. C'est une façon de dire « cette image parle sur le 3000 ».
+
+`CMD ["node", "server.js"]` définit la commande lancée quand le conteneur démarre. Différence importante avec `RUN` : `RUN` s'exécute pendant la construction, `CMD` s'exécute au démarrage du conteneur. Il n'y a qu'un seul `CMD` actif par image, c'est le point d'entrée par défaut.
+
+<Callout type="info">
+Retiens la distinction entre les deux temps. `FROM`, `COPY`, `RUN` arrivent à la construction de l'image (`docker build`). `CMD` n'arrive qu'au lancement (`docker run`). Un débutant met parfois `RUN node server.js` en pensant démarrer l'app, mais ça lance le serveur pendant la construction, ce qui bloque le build.
+</Callout>
+
+## construire l'image : docker build
+
+Une fois le Dockerfile écrit, on fabrique l'image avec `docker build`.
+
+```bash
+docker build -t mon-app .
+```
+
+Le `-t mon-app` donne un nom (un tag) à l'image, pour pouvoir la retrouver ensuite. Sans ça, l'image n'aurait qu'un identifiant illisible.
+
+Le point à la fin est important. Il indique le contexte de build : le dossier que Docker envoie au moteur pour construire. En pratique, c'est le dossier où se trouve ton Dockerfile. Quand tu écris `COPY . .`, ce premier point fait référence à ce contexte. Si tu lances la commande depuis le mauvais dossier, Docker ne trouvera pas tes fichiers.
+
+<SimulatedTerminal shell="bash" commands={{ "docker build -t mon-app .": "Sending build context to Docker daemon\nStep 1/6 : FROM node:20-alpine\nStep 2/6 : WORKDIR /app\nStep 3/6 : COPY . .\nStep 4/6 : RUN npm install\nStep 5/6 : EXPOSE 3000\nStep 6/6 : CMD [node, server.js]\nSuccessfully built a1b2c3d4\nSuccessfully tagged mon-app:latest", "docker images": "REPOSITORY   TAG       IMAGE ID       SIZE\nmon-app      latest    a1b2c3d4       142MB" }} />
+
+Tu vois Docker dérouler les six étapes, une par instruction du Dockerfile. À la fin, l'image est construite et taguée `mon-app:latest`.
+
+## lancer le conteneur
+
+L'image existe, mais une image ne fait rien toute seule. Il faut en lancer un conteneur.
+
+```bash
+docker run -p 3000:3000 mon-app
+```
+
+Le point à comprendre ici, c'est `-p 3000:3000`. Un conteneur est isolé : par défaut, le port 3000 sur lequel ton app écoute reste enfermé dedans, invisible depuis ta machine. Le `-p` crée un pont entre les deux.
+
+La syntaxe se lit `hôte:conteneur`. À gauche, le port sur ta machine. À droite, le port à l'intérieur du conteneur. Donc `3000:3000` veut dire : le port 3000 de ma machine pointe vers le port 3000 du conteneur. Quand tu ouvres `http://localhost:3000`, tu tapes sur le 3000 de l'hôte, qui te redirige vers l'app.
+
+<Callout type="info">
+Les deux nombres n'ont pas besoin d'être identiques. `-p 8080:3000` envoie le port 8080 de ta machine vers le 3000 du conteneur. Pratique quand ton 3000 local est déjà pris, ou pour faire tourner deux conteneurs de la même image sur des ports différents. Côté gauche tu choisis, côté droit tu suis ce que l'application écoute réellement.
+</Callout>
+
+```bash
+docker run -p 3000:3000 mon-app
+```
+
+## l'ordre des instructions et le cache
+
+Voilà le point qui distingue un Dockerfile écrit à la va-vite d'un bon Dockerfile.
+
+Docker garde en cache le résultat de chaque instruction. Au build suivant, tant qu'une instruction et ses entrées n'ont pas changé, Docker réutilise le résultat au lieu de tout refaire. Mais dès qu'une instruction change, cette étape et toutes les suivantes sont reconstruites.
+
+Reprends notre premier Dockerfile. On y a écrit `COPY . .` juste avant `RUN npm install`. Problème : `COPY . .` copie tout, y compris ton code source. Donc à chaque fois que tu modifies une seule ligne de `server.js`, l'étape `COPY` change, le cache est invalidé, et `npm install` se relance entièrement. Réinstaller toutes les dépendances pour une virgule changée dans le code, c'est long et inutile.
+
+La bonne pratique : copier d'abord uniquement les fichiers de dépendances, installer, et seulement ensuite copier le reste du code.
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+Maintenant, `npm install` ne dépend que de `package.json` et `package-lock.json`. Tant que tu ne touches pas à tes dépendances, ces deux fichiers ne changent pas, l'étape `npm install` reste en cache, et seul le `COPY . .` final se refait quand tu modifies ton code. Tes builds passent de plusieurs dizaines de secondes à presque instantanés.
+
+<Callout type="warning">
+Le mauvais ordre, c'est `COPY . .` avant `RUN npm install`. Ça marche, l'image est correcte, mais chaque modification de code force une réinstallation complète des dépendances. Place toujours les instructions qui changent rarement (dépendances) avant celles qui changent souvent (ton code). Le cache te remerciera.
+</Callout>
+
+## .dockerignore
+
+Il reste un piège dans `COPY . .` : ça copie vraiment tout le dossier, y compris des choses qui n'ont rien à faire dans l'image. Le coupable habituel, c'est `node_modules`. Si tu as fait `npm install` sur ta machine, ce dossier pèse lourd et contient des binaires compilés pour TON système, qui peuvent ne pas marcher dans le conteneur Linux. Le `.git` aussi n'a aucune raison d'être dans l'image.
+
+La solution est un fichier `.dockerignore`, à côté du Dockerfile. Il fonctionne comme un `.gitignore` : il liste ce que Docker doit ignorer au moment de construire le contexte.
+
+```text
+node_modules
+.git
+.env
+npm-debug.log
+```
+
+Avec ça, `COPY . .` saute ces entrées. L'image est plus petite, le build plus rapide (moins de fichiers à envoyer au moteur), et tu évites de copier un `node_modules` local incompatible par-dessus celui que `npm install` a généré proprement dans le conteneur. C'est aussi une protection : sans cette ligne, un `.env` rempli de secrets pourrait finir copié dans ton image.
+
+## à toi de jouer
+
+Construis l'image, vérifie qu'elle apparaît, puis lance le conteneur.
+
+<SimulatedTerminal shell="bash" commands={{ "docker build -t mon-app .": "Sending build context to Docker daemon\nStep 1/6 : FROM node:20-alpine\nStep 6/6 : CMD [node, server.js]\nSuccessfully built a1b2c3d4\nSuccessfully tagged mon-app:latest", "docker run -p 3000:3000 mon-app": "Server listening on port 3000", "docker ps": "CONTAINER ID   IMAGE     PORTS                    NAMES\nf9e8d7c6b5a4   mon-app   0.0.0.0:3000->3000/tcp   keen_turing" }} />
+
+<Quiz id="q-1" question="Dans l'instruction CMD ['node', 'server.js'], à quel moment cette commande s'exécute-t-elle ?" options={["Pendant docker build, quand on construit l'image", "Au démarrage du conteneur, avec docker run", "À chaque modification du code source", "Jamais, c'est seulement de la documentation"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi copier package.json et lancer npm install AVANT de copier tout le code source ?" options={["Pour rendre l'image plus sécurisée", "Pour que npm install reste en cache tant que les dépendances ne changent pas", "Parce que COPY ne fonctionne pas après RUN", "Pour réduire le nombre de lignes du Dockerfile"]} correct={1} />
+
+<Quiz id="q-3" question="Dans docker run -p 8080:3000 mon-app, que signifie ce mapping de port ?" options={["L'app écoute sur 8080 et redirige vers 3000", "Le port 8080 de la machine hôte pointe vers le port 3000 du conteneur", "Le conteneur utilise 8080 en interne et 3000 en externe", "Les deux ports doivent toujours être identiques"]} correct={1} />
+
+## à retenir
+
+- Un Dockerfile est une recette lue de haut en bas qui fabrique une image reproductible pour ta propre application.
+- `FROM` choisit l'image de base, `WORKDIR` fixe le dossier de travail, `COPY` copie des fichiers, `RUN` exécute une commande pendant le build, `EXPOSE` documente le port, `CMD` définit la commande de démarrage.
+- `RUN` s'exécute à la construction (`docker build`), `CMD` s'exécute au lancement (`docker run`).
+- `docker build -t nom .` construit l'image ; le point final est le contexte de build.
+- `docker run -p hôte:conteneur nom` publie un port ; le côté gauche est ta machine, le côté droit le conteneur.
+- Copie `package.json` et installe les dépendances avant de copier le code, pour garder `npm install` en cache.
+- Un `.dockerignore` évite de copier `node_modules`, `.git` et `.env` dans l'image.
+
+OK 08-dockerfile.mdx écrit
