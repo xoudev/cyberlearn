@@ -1,0 +1,94 @@
+---
+refCode: CL-LSN-099-V01
+slug: crypto-asymetrique
+title: "Chiffrement asymétrique : la paire de clés"
+description: "Comprenez comment deux clés liées, une publique et une privée, résolvent le partage de clé, comment RSA et les courbes elliptiques reposent sur un problème difficile, et les deux usages miroir : chiffrer et signer."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-098-V01"]
+---
+
+Dans la leçon précédente, le chiffrement symétrique laissait un problème ouvert. Pour parler en secret avec quelqu'un, il faut d'abord partager une clé. Mais comment partager cette clé sans qu'un curieux l'intercepte en chemin ? Si je vous envoie la clé par le même canal que mes messages, celui qui écoute récupère la clé et lit tout. C'est un cercle vicieux : pour communiquer en sécurité, il faut déjà un secret commun, et pour établir ce secret, il faudrait déjà communiquer en sécurité.
+
+Et si on n'avait justement pas besoin de partager un secret au préalable ? Si je pouvais recevoir des messages chiffrés de parfaits inconnus, sans jamais leur avoir donné quoi que ce soit de confidentiel ? C'est exactement ce que l'asymétrique rend possible. L'idée a l'air paradoxale la première fois qu'on la rencontre, et pourtant elle tient la route. Voyons comment.
+
+## deux clés liées
+
+Le chiffrement symétrique utilise une seule clé : la même sert à fermer et à ouvrir. L'asymétrique casse cette symétrie. Au lieu d'une clé, on en génère deux, mathématiquement liées, qu'on appelle une paire. Ces deux clés ont une propriété très particulière : ce que l'une chiffre, seule l'autre peut le déchiffrer. Pas elle-même, l'autre.
+
+On donne un rôle à chacune. L'une devient la clé publique : vous la diffusez largement, vous la mettez sur votre site, vous la collez dans votre signature mail, peu importe. L'autre devient la clé privée : elle ne quitte jamais votre machine, vous ne la donnez à personne, jamais.
+
+Le point qui surprend, c'est qu'on peut rendre une clé publique sans affaiblir le système. Connaître la clé publique ne permet pas de retrouver la clé privée. Les deux sont liées par un calcul facile à faire dans un sens et infaisable à inverser, et on verra pourquoi juste après. Tant que la privée reste secrète, tout tient.
+
+<Callout type="info">
+Retenez la règle de base : la clé publique se diffuse à tout le monde, la clé privée ne sort jamais de chez vous. Tout le reste découle de là. Si un jour votre clé privée fuite, l'attaquant peut se faire passer pour vous et lire ce qui vous était destiné. C'est le seul secret à garder.
+</Callout>
+
+## l'analogie du cadenas
+
+Voici un modèle mental qui marche bien. Imaginez que vous fabriquez des cadenas, tous identiques, qui se ferment d'un simple clic. Vous en distribuez des centaines, vous les laissez sur le comptoir, vous en envoyez à qui en veut. Ces cadenas ouverts, c'est votre clé publique. N'importe qui peut en prendre un.
+
+La petite clé qui ouvre ces cadenas, vous n'en avez qu'un seul exemplaire et il reste dans votre poche. C'est votre clé privée.
+
+Maintenant, quelqu'un veut vous envoyer un colis secret. Il prend un de vos cadenas, met son message dans une boîte, ferme le cadenas d'un clic, et vous expédie le tout. À partir de ce moment, plus personne ne peut ouvrir la boîte, pas même l'expéditeur qui vient de la fermer. Le cadenas claqué ne se rouvre qu'avec votre clé, celle qui n'a jamais quitté votre poche. Le colis voyage sur des routes pleines de curieux, et aucun ne peut l'ouvrir.
+
+Remarquez ce qui se passe : fermer est public, ouvrir est privé. Distribuer des cadenas ouverts ne donne aucun pouvoir à un attaquant, parce qu'un cadenas fermé ne se rouvre pas avec un autre cadenas.
+
+<Diagram caption="Chiffrer avec la clé publique, déchiffrer avec la privée">
+flowchart LR
+  A[Expéditeur écrit le message] --> B[Récupère le cadenas ouvert clé publique]
+  B --> C[Ferme la boîte message chiffré]
+  C --> D[Transit sur réseau non sûr]
+  D --> E[Destinataire ouvre avec sa clé privée]
+  E --> F[Message lisible en clair]
+</Diagram>
+
+## pourquoi c'est sûr
+
+Tout repose sur une catégorie d'opérations faciles dans un sens et infaisables dans l'autre. On les appelle des fonctions à sens unique. Un exemple parlant, hors crypto : mélanger deux pots de peinture de couleurs différentes prend une seconde, mais séparer le mélange pour retrouver les deux teintes d'origine est pratiquement impossible. Calcul facile à faire, quasi impossible à défaire.
+
+RSA s'appuie sur la factorisation. Multiplier deux grands nombres premiers entre eux est immédiat pour un ordinateur. Mais partir du résultat, un nombre de plusieurs centaines de chiffres, et retrouver les deux facteurs de départ, ça demande un temps qui dépasse l'âge de l'univers avec les méthodes connues. La clé publique contient le produit, la clé privée connaît les facteurs. Qui connaît les facteurs déchiffre, les autres restent dehors.
+
+ECC, le chiffrement sur courbes elliptiques, repose sur un autre problème difficile, le logarithme discret. L'idée générale est la même : une opération qu'on enchaîne facilement dans un sens et qu'on ne sait pas remonter dans l'autre. Vous n'avez pas besoin de la mécanique exacte pour saisir le principe : il existe un raccourci connu du seul détenteur de la clé privée, et sans ce raccourci on est coincé.
+
+Un détail pratique sépare les deux familles. ECC atteint le même niveau de sécurité que RSA avec des clés beaucoup plus courtes. Une clé RSA de 3072 bits offre à peu près la robustesse d'une clé ECC de 256 bits. Clés plus petites, calculs plus rapides, moins de données à transmettre : c'est pour ça qu'ECC s'est imposé sur les appareils mobiles et un peu partout dans les protocoles récents.
+
+## les deux usages miroir
+
+C'est ici que beaucoup de gens se perdent, alors prenons le temps. La paire de clés sert à deux choses opposées, et le sens d'utilisation change tout.
+
+Premier usage, la confidentialité. Vous voulez écrire à Alice de façon que seule elle puisse lire. Vous chiffrez avec la clé publique d'Alice. Comme seule Alice possède la clé privée correspondante, elle seule peut déchiffrer. C'est exactement le cadenas : tout le monde peut fermer pour Alice, Alice seule ouvre.
+
+Second usage, l'authenticité, et il marche dans l'autre sens. Vous voulez prouver qu'un message vient bien de vous et n'a pas été modifié. Vous le signez avec votre propre clé privée. N'importe qui peut alors vérifier la signature avec votre clé publique. Si la vérification passe, deux choses sont prouvées d'un coup : le message vient bien de vous, puisque vous seul détenez la clé privée qui produit cette signature, et il n'a pas été altéré en route.
+
+Mettez les deux côte à côte. Pour le secret, on chiffre avec la clé publique du destinataire, on ouvre avec sa clé privée. Pour la preuve d'origine, on signe avec sa propre clé privée, on vérifie avec sa clé publique. Le secret protège vers un destinataire précis. La signature prouve une origine à tout le monde.
+
+<Callout type="warning">
+La confusion classique : croire qu'on chiffre toujours avec la clé privée. Non. Pour garder un message secret, on chiffre avec la clé PUBLIQUE du destinataire, jamais avec sa propre privée (la privée est connue d'une seule personne, elle ne sert pas à protéger un secret destiné à autrui). La clé privée sert à déchiffrer ce qui vous est adressé et à signer ce que vous émettez. Inversez ces deux sens et tout votre raisonnement de sécurité s'effondre.
+</Callout>
+
+## le coût
+
+L'asymétrique résout le partage de clé, mais il a un défaut concret : il est lent. Très lent comparé au symétrique, souvent de plusieurs ordres de grandeur. Chiffrer un gros fichier ou un flux vidéo entièrement en RSA serait impraticable, ça ramerait sans raison.
+
+En pratique on ne fait donc presque jamais ça. On combine les deux mondes dans ce qu'on appelle le chiffrement hybride. Le schéma est simple à retenir. On tire d'abord une clé symétrique aléatoire, fraîche, pour cette session précise. On chiffre cette petite clé avec la clé publique du destinataire, l'asymétrique servant juste à transporter le secret en sécurité. Ensuite, tout le gros du trafic, le contenu réel, est chiffré en symétrique avec cette clé, parce que le symétrique est rapide.
+
+L'asymétrique fait donc le travail délicat, mettre tout le monde d'accord sur un secret commun sans l'avoir partagé à l'avance, puis il s'efface. Le symétrique prend le relais pour le débit. C'est précisément ce que fait TLS, le protocole derrière le cadenas de votre navigateur, et on y reviendra dans une leçon dédiée.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Vous voulez envoyer un message que seul le destinataire pourra lire. Avec quelle clé chiffrez-vous ?" options={["Votre propre clé privée", "La clé publique du destinataire", "Votre propre clé publique", "La clé privée du destinataire"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi peut-on diffuser sa clé publique sans danger ?" options={["Parce qu'elle est chiffrée avant diffusion", "Parce qu'on en change toutes les heures", "Parce que retrouver la clé privée à partir de la publique est un calcul infaisable", "Parce qu'elle ne sert qu'à signer, jamais à chiffrer"]} correct={2} />
+
+<Quiz id="q-3" question="Dans le chiffrement hybride, à quoi sert l'asymétrique ?" options={["À chiffrer tout le contenu du message", "À remplacer complètement le symétrique", "À transporter une clé symétrique de session, qui chiffre ensuite le gros du trafic", "À compresser les données avant envoi"]} correct={2} />
+
+## à retenir
+
+- Une paire de clés liées : ce que l'une chiffre, seule l'autre le déchiffre. La publique se diffuse, la privée ne sort jamais de chez vous.
+- Le modèle du cadenas : tout le monde peut fermer un cadenas (clé publique), seul le détenteur de la petite clé (clé privée) l'ouvre. Ça résout le partage de clé sans secret préalable.
+- La sécurité vient d'une fonction à sens unique : facile dans un sens, infaisable dans l'autre. RSA repose sur la factorisation de grands nombres, ECC sur le logarithme discret. ECC atteint le même niveau avec des clés bien plus courtes.
+- Deux usages miroir. Confidentialité : on chiffre avec la clé PUBLIQUE du destinataire, il ouvre avec sa privée. Authenticité : on signe avec sa propre clé PRIVÉE, tous vérifient avec la publique.
+- L'asymétrique est lent. En pratique, chiffrement hybride : l'asymétrique transporte une clé symétrique de session, le symétrique chiffre le reste. C'est le principe de TLS.

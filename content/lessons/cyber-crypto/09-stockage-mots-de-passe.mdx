@@ -1,0 +1,115 @@
+---
+refCode: CL-LSN-105-V01
+slug: crypto-stockage-mots-de-passe
+title: "Stocker les mots de passe : lent par conception"
+description: "Comprenez pourquoi un hachage rapide comme SHA-256 ne suffit pas pour les mots de passe, ce que sont les fonctions de dérivation lentes comme bcrypt et argon2, et le rôle du sel et du facteur de coût."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-100-V01"]
+---
+
+Dans une leçon précédente, on a posé un principe simple : un site sérieux ne range jamais ton mot de passe en clair. Il stocke une empreinte, le résultat d'un hachage. Quand tu te reconnectes, il recalcule l'empreinte de ce que tu tapes et la compare à celle qu'il a gardée. Si ça correspond, c'est toi. La base de données ne contient donc jamais le secret lui-même.
+
+C'est vrai, et c'est un bon début. Mais il y a un piège qu'on n'avait pas encore ouvert : toutes les empreintes ne se valent pas pour cet usage. Choisir la mauvaise fonction de hachage, c'est croire qu'on protège ses utilisateurs alors qu'on leur offre une fausse sécurité. On va voir pourquoi, et surtout ce qu'il faut utiliser à la place.
+
+## le piège du hachage rapide
+
+SHA-256 est une excellente fonction de hachage. Elle est rapide, déterministe, et il est impossible en pratique de remonter de l'empreinte vers l'entrée. Pour vérifier l'intégrité d'un fichier de plusieurs gigaoctets, cette rapidité est exactement ce qu'on veut.
+
+Pour un mot de passe, c'est précisément le problème.
+
+Imagine qu'un attaquant vole ta base de données. Il a maintenant des millions d'empreintes SHA-256. Il ne peut pas les inverser, d'accord. Mais rien ne l'empêche de deviner. Il prend une liste de mots de passe probables (`123456`, `motdepasse`, des fuites précédentes, des mots du dictionnaire avec variantes) et il calcule leur SHA-256 un par un, en comparant chaque résultat à ce qu'il a volé. Dès qu'une empreinte correspond, il a trouvé le mot de passe en clair.
+
+La seule question qui compte alors : combien de candidats peut-il tester par seconde ? Et là, la rapidité de SHA-256 se retourne contre toi. Sur une carte graphique grand public, un attaquant calcule plusieurs milliards de SHA-256 par seconde. Sur du matériel dédié, encore plus. Un mot de passe humain moyen, court et prévisible, tombe en quelques minutes, parfois en quelques secondes.
+
+<Callout type="warning">
+La vitesse est une qualité quand on hache des fichiers. C'est un défaut quand on hache des mots de passe. Plus la fonction est rapide, plus un attaquant teste de candidats par seconde. Pour les mots de passe, on veut une fonction volontairement lente.
+</Callout>
+
+## rappel : le sel
+
+Avant d'aller plus loin, un rappel rapide d'une notion déjà vue (CL-LSN-079). Le sel est une valeur aléatoire, unique par utilisateur, qu'on ajoute au mot de passe avant de le hacher. On stocke ce sel à côté de l'empreinte.
+
+Le sel sert à deux choses. D'abord, il casse les rainbow tables : ces tables de hachages précalculés deviennent inutiles, puisque l'attaquant aurait besoin d'une table par valeur de sel possible. Ensuite, il fait que deux utilisateurs avec le même mot de passe obtiennent des empreintes différentes. Impossible de repérer d'un coup d'oeil qui partage `123456`.
+
+Mais attention : le sel ne ralentit rien. Il oblige juste l'attaquant à attaquer chaque compte séparément au lieu de tout d'un coup. Le sel et la lenteur sont deux protections distinctes. On a besoin des deux. C'est la lenteur qui nous occupe maintenant.
+
+## les fonctions lentes par conception
+
+La réponse au problème du hachage rapide tient en trois noms : bcrypt, scrypt, argon2. Ce ne sont pas des fonctions de hachage ordinaires, mais des fonctions de dérivation de clé (KDF, key derivation functions). Leur particularité : elles sont conçues pour être coûteuses à calculer, et ce coût est réglable.
+
+Concrètement, chacune intègre un facteur de coût (aussi appelé facteur de travail). Tu le règles toi-même. Augmente-le, et chaque calcul d'empreinte prend plus de temps et de ressources. C'est délibéré. Tu choisis à quel point tu veux ralentir l'opération.
+
+Ces fonctions gèrent aussi le sel pour toi. Tu n'as pas à générer ni stocker le sel séparément : il est produit automatiquement et inséré dans la chaîne finale. Voici à quoi ressemble une empreinte bcrypt stockée en base :
+
+```text
+$2b$12$Nf8s3kP9qLZ0xY2wRtUuQeHrJ5mVbCdEfGhIjKlMnOpQrStUvWxY
+ |  |  |                      |
+ |  |  |                      empreinte proprement dite
+ |  |  sel (encodé)
+ |  facteur de coût (12)
+ algorithme (bcrypt, version 2b)
+```
+
+Et une empreinte argon2, dans le même esprit, avec ses paramètres explicites :
+
+```text
+$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$RdescudvJ...
+ |        |    |                |            |
+ |        |    |                sel encodé    empreinte
+ |        |    paramètres : mémoire, itérations, parallélisme
+ |        version
+ variante (argon2id)
+```
+
+Tout est dans la même chaîne : l'algorithme, ses paramètres, le sel, l'empreinte. Au moment de vérifier un mot de passe, la bibliothèque relit ces paramètres depuis la chaîne et refait le calcul à l'identique. Tu n'as rien à stocker en plus.
+
+<Callout type="info">
+argon2 (et en particulier la variante argon2id) ajoute une défense que bcrypt n'a pas vraiment : un coût mémoire réglable. Une carte graphique tire sa puissance du calcul massivement parallèle, mais chaque coeur dispose de peu de mémoire. En forçant chaque calcul à consommer beaucoup de mémoire (par exemple 64 Mo), argon2 rend l'attaque parallèle bien plus difficile et coûteuse. C'est le choix recommandé aujourd'hui pour un nouveau projet.
+</Callout>
+
+## le facteur de travail évolutif
+
+Comment choisir le facteur de coût ? Le modèle mental est simple. La vérification doit rester rapide pour un utilisateur légitime, qui se connecte une fois et attend que sa réponse soit traitée. Mais elle doit être lente en masse, pour qu'un attaquant qui teste des millions de candidats se retrouve étranglé.
+
+La règle de pouce courante : règle le coût pour que la vérification d'un mot de passe prenne autour de 200 à 500 millisecondes sur ton serveur. Un demi-seconde, un utilisateur ne le remarque même pas au login. Mais multiplié par des milliards de tentatives, ce demi-seconde transforme une attaque de quelques minutes en quelque chose qui prendrait des années.
+
+Reste un détail qui compte sur le long terme. Le matériel s'améliore. Ce qui prend 300 millisecondes aujourd'hui en prendra 100 dans quelques années, parce que les processeurs et les cartes graphiques deviennent plus rapides. Si tu laisses ton facteur de coût figé, ta protection s'érode toute seule, sans que rien ne change dans ton code.
+
+C'est pour ça qu'on augmente le facteur de coût avec le temps. En pratique, on le rehausse au moment où un utilisateur se connecte : on vérifie son mot de passe avec l'ancien paramètre stocké, et si c'est bon, on recalcule l'empreinte avec le nouveau coût plus élevé et on la remplace en base. Petit à petit, sans déconnecter personne, la base se met à jour. Comme chaque empreinte porte ses propres paramètres, l'ancien et le nouveau coût peuvent cohabiter sans casser quoi que ce soit.
+
+## les erreurs à éviter
+
+Le sujet a quelques pièges classiques, et ce sont toujours les mêmes qui reviennent dans les fuites.
+
+<Callout type="danger">
+À ne jamais faire :
+
+- Utiliser SHA-256, SHA-1 ou MD5 nus pour des mots de passe. Trop rapides, donc trop faciles à brute-forcer. MD5 et SHA-1 sont en plus cassés par ailleurs.
+- Ne pas saler. Sans sel, une seule rainbow table casse toute la base, et les mots de passe identiques sont visibles.
+- Régler un facteur de coût trop bas pour gagner en performance. Tu annules tout l'intérêt de la fonction lente.
+- Réinventer ta propre fonction de hachage maison. Ces algorithmes ont été analysés pendant des années par des cryptographes. Le tien ne l'a pas été.
+</Callout>
+
+Un mot sur le poivre, qu'on rencontre parfois. Le poivre est un secret unique pour toute l'application (pas par utilisateur, contrairement au sel), qu'on ajoute au mot de passe avant le hachage. La différence clé : il n'est pas stocké dans la base de données, mais ailleurs, par exemple dans une variable d'environnement ou un coffre à secrets. L'idée : si seule la base fuit, l'attaquant n'a toujours pas le poivre, et ses empreintes volées restent inattaquables. C'est une couche en plus, jamais un remplacement du sel ni de la fonction lente.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi SHA-256 est-il un mauvais choix pour stocker des mots de passe ?" options={["Parce qu'il est réversible et révèle le mot de passe", "Parce qu'il est trop rapide, ce qui permet de tester des milliards de candidats par seconde", "Parce qu'il ne produit pas toujours la même empreinte", "Parce qu'il ne gère pas l'UTF-8"]} correct={1} />
+
+<Quiz id="q-2" question="À quoi sert le facteur de coût d'une fonction comme bcrypt ou argon2 ?" options={["À chiffrer le mot de passe avant de le hacher", "À rendre chaque calcul d'empreinte volontairement coûteux, et donc lent à attaquer en masse", "À générer un sel plus long", "À compresser l'empreinte stockée"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi augmente-t-on le facteur de coût au fil des années ?" options={["Parce que les mots de passe des utilisateurs deviennent plus longs", "Parce que la loi l'impose chaque année", "Parce que le matériel devient plus rapide, ce qui érode la protection si le coût reste figé", "Parce que le sel finit par expirer"]} correct={2} />
+
+## à retenir
+
+- SHA-256, SHA-1 et MD5 sont rapides : très bien pour l'intégrité, à proscrire pour les mots de passe, car la rapidité aide l'attaquant.
+- Pour les mots de passe, on utilise des fonctions de dérivation lentes et paramétrables : bcrypt, scrypt, argon2.
+- Le sel (rappel de CL-LSN-079) casse les rainbow tables et masque les mots de passe identiques. Il ne ralentit rien : c'est une protection distincte de la lenteur.
+- Le facteur de coût rend chaque calcul volontairement cher. On le règle pour une vérification autour de 200 à 500 ms côté serveur.
+- argon2id ajoute un coût mémoire, qui freine les attaques par carte graphique. C'est le choix recommandé pour un nouveau projet.
+- On augmente le facteur de coût avec le temps, parce que le matériel s'améliore. Comme chaque empreinte porte ses paramètres, l'ancien et le nouveau coût cohabitent.
+- Le poivre est un secret applicatif stocké hors base, en couche supplémentaire. Il ne remplace ni le sel ni la fonction lente.
+- On ne réinvente jamais sa propre fonction : on s'appuie sur des algorithmes éprouvés et leurs bibliothèques.

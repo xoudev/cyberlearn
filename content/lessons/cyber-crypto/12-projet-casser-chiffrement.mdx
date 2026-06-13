@@ -1,0 +1,131 @@
+---
+refCode: CL-LSN-108-V01
+slug: crypto-projet
+title: "Projet : chiffrer, puis casser un chiffrement"
+description: "Mettez le parcours en pratique : implémentez le chiffre de César puis de Vigenère en Python, cassez-les par analyse de fréquences, et comprenez pourquoi ces chiffrements classiques ne tiennent pas face à la crypto moderne."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 60
+xpReward: 700
+prerequisites: ["CL-LSN-106-V01"]
+---
+
+Pour comprendre pourquoi la crypto moderne est faite comme elle est, rien ne vaut le fait de casser soi-même un vieux chiffrement. On va donc en construire deux à la main, puis les démonter sans connaître la clé. À la fin, vous aurez une intuition très concrète de ce qui sépare un jouet d'un vrai outil de sécurité.
+
+Prévoyez un Python standard, sans aucune bibliothèque tierce. Tout tient dans la bibliothèque de base. Allez-y étape par étape, lancez chaque bloc, modifiez les valeurs, observez.
+
+## étape 1 : le chiffre de César
+
+Le principe est simple. On décale chaque lettre d'un nombre fixe de positions dans l'alphabet. Avec un décalage de 3, A devient D, B devient E, et Z revient à C par bouclage. C'est tout. La clé, c'est ce nombre.
+
+<CodePlayground language="python" starterCode={`def cesar(texte, decalage):
+    out = []
+    for c in texte:
+        if c.isalpha():
+            base = ord('A') if c.isupper() else ord('a')
+            out.append(chr((ord(c) - base + decalage) % 26 + base))
+        else:
+            out.append(c)
+    return "".join(out)
+
+clair = "BONJOUR LE MONDE"
+chiffre = cesar(clair, 3)
+print("chiffre  :", chiffre)
+print("dechiffre:", cesar(chiffre, -3))`} />
+
+La faiblesse saute aux yeux dès qu'on compte. Il n'y a que 25 décalages utiles (le décalage 0 ne change rien). Un humain peut tous les essayer à la main en quelques minutes, un ordinateur en un clignement d'oeil. Une clé qui ne prend que 25 valeurs n'est pas une clé, c'est une porte avec un cadenas à deux chiffres.
+
+## étape 2 : le casser sans la clé
+
+Première approche, la force brute. On affiche les 25 déchiffrements possibles et on lit celui qui ressemble à du français. Mais on peut faire mieux et automatiser la lecture. En français, la lettre E est de très loin la plus fréquente. Si on compte les lettres du message chiffré, la plus courante correspond presque toujours à un E décalé. On en déduit la clé sans rien essayer.
+
+<CodePlayground language="python" starterCode={`from collections import Counter
+
+def cesar(texte, decalage):
+    out = []
+    for c in texte:
+        if c.isalpha():
+            base = ord('A') if c.isupper() else ord('a')
+            out.append(chr((ord(c) - base + decalage) % 26 + base))
+        else:
+            out.append(c)
+    return "".join(out)
+
+def casser_cesar(chiffre):
+    lettres = [c.lower() for c in chiffre if c.isalpha()]
+    compte = Counter(lettres)
+    lettre_frequente = compte.most_common(1)[0][0]
+    # on suppose que la lettre la plus frequente est un 'e' chiffre
+    decalage = (ord(lettre_frequente) - ord('e')) % 26
+    return decalage, cesar(chiffre, -decalage)
+
+message = cesar("le secret le mieux garde reste cache dans les lettres", 11)
+print("intercepte :", message)
+
+decalage, clair = casser_cesar(message)
+print("decalage trouve :", decalage)
+print("message clair   :", clair)`} />
+
+Le compte des lettres a suffi à retrouver la clé, sans jamais la demander. Sur un texte court ou bizarre, la lettre la plus fréquente n'est pas toujours un E, mais il suffit alors d'essayer les deux ou trois candidats les plus courants.
+
+<Callout type="info">
+L'analyse de fréquences marche d'autant mieux que le texte est long. Sur une phrase de dix lettres, le hasard peut tromper le compteur. Sur un paragraphe, la statistique du français reprend le dessus et la bonne clé ressort presque à coup sûr.
+</Callout>
+
+## étape 3 : Vigenère
+
+Vigenère a longtemps passé pour incassable. L'idée : au lieu d'un seul décalage, on utilise un mot-clé répété tout le long du message. Chaque lettre de la clé donne le décalage de la lettre correspondante du texte. Le même E du message peut donc devenir une lettre différente selon sa position.
+
+<CodePlayground language="python" starterCode={`def vigenere(texte, cle, sens=1):
+    out = []
+    i = 0
+    cle = cle.lower()
+    for c in texte:
+        if c.isalpha():
+            base = ord('A') if c.isupper() else ord('a')
+            d = (ord(cle[i % len(cle)]) - ord('a')) * sens
+            out.append(chr((ord(c) - base + d) % 26 + base))
+            i += 1
+        else:
+            out.append(c)
+    return "".join(out)
+
+clair = "ATTAQUE A LAUBE"
+chiffre = vigenere(clair, "CLE", 1)
+print("chiffre  :", chiffre)
+print("dechiffre:", vigenere(chiffre, "CLE", -1))`} />
+
+Parce qu'un même E peut se chiffrer de plusieurs façons, le simple comptage de l'étape 2 ne fonctionne plus. C'est ce qui a donné à Vigenère sa réputation. Mais il tombe lui aussi. Le défaut tient à la répétition de la clé. Si on retrouve la longueur de la clé (par l'examen des motifs qui se répètent dans le texte chiffré), le message se découpe en plusieurs sous-textes, chacun chiffré par un simple César. On casse alors chaque morceau par analyse de fréquences, comme à l'étape 2. La protection n'a fait que repousser le problème, pas le supprimer.
+
+## la leçon
+
+Ces deux chiffrements partagent le même défaut de fond. César repose sur un espace de clés minuscule. Vigenère repose en partie sur le fait de cacher la longueur de la clé, donc sur le secret d'une partie de la méthode. Dès que l'attaquant connaît l'algorithme, ce qui est toujours le cas en pratique, il ne reste presque rien à deviner.
+
+La crypto moderne renverse l'hypothèse. Elle suppose que l'algorithme est public, connu de tous, y compris de l'attaquant. Toute la sécurité repose alors sur une clé immense (pensez à 2 puissance 128 valeurs possibles plutôt qu'à 25) et sur un problème mathématique réellement difficile à inverser. C'est exactement le principe de Kerckhoffs : un système doit rester sûr même si tout, sauf la clé, est connu de l'ennemi.
+
+<Callout type="success">
+Un bon chiffrement ne se cache pas. AES est publié, audité, attaqué depuis des années, et tient toujours. Sa force ne vient pas du mystère mais du nombre de clés possibles et de la solidité des maths derrière. Si la sécurité d'un système dépend du secret de son fonctionnement, ce n'est pas de la cryptographie, c'est de l'espoir.
+</Callout>
+
+## pour aller plus loin
+
+Tentez d'écrire le cassage complet de Vigenère (retrouver la longueur de clé, puis casser chaque sous-texte au César), ou chiffrez un message avec une clé convenue et faites-le déchiffrer par un camarade.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi le chiffre de César est-il facile à casser, même sans connaître la clé ?" options={["Parce que son algorithme est secret", "Parce qu'il n'existe que 25 décalages possibles, tous testables en un instant", "Parce qu'il chiffre aussi les espaces", "Parce qu'il faut une clé de 128 bits"]} correct={1} />
+
+<Quiz id="q-2" question="Que dit le principe de Kerckhoffs ?" options={["L'algorithme doit rester secret pour être sûr", "La clé doit changer à chaque message", "Le système doit rester sûr même si tout, sauf la clé, est connu de l'attaquant", "Le chiffrement doit être plus rapide que le déchiffrement"]} correct={2} />
+
+<Quiz id="q-3" question="Pourquoi l'analyse de fréquences simple échoue-t-elle d'abord sur Vigenère ?" options={["Parce que Vigenère ne touche pas aux voyelles", "Parce qu'une même lettre claire peut se chiffrer différemment selon sa position", "Parce que Vigenère utilise des chiffres et non des lettres", "Parce qu'il n'a pas de clé du tout"]} correct={1} />
+
+## à retenir
+
+- César décale chaque lettre d'un nombre fixe ; avec seulement 25 clés possibles, il cède à la force brute ou à un simple comptage de lettres.
+- En français, la lettre E domine les fréquences ; repérer la lettre la plus courante du texte chiffré donne souvent le décalage directement.
+- Vigenère répète une clé pour varier les décalages et résiste à l'analyse simple, mais retrouver la longueur de clé le ramène à plusieurs César cassables.
+- Ces chiffrements classiques misent sur un petit espace de clés ou sur le secret de la méthode, deux paris perdus face à un attaquant qui connaît l'algorithme.
+- La crypto moderne suppose l'algorithme public (principe de Kerckhoffs) et fait reposer la sécurité sur une clé immense et un problème difficile à inverser.
+- Le parcours a couvert : ce qu'est un chiffrement, le hachage et le salage, le symétrique et l'asymétrique, l'échange de clés, et enfin pourquoi tout cela tient debout là où les classiques tombent.
+
+OK 12 écrit

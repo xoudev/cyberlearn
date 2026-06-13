@@ -1,0 +1,109 @@
+---
+refCode: CL-LSN-107-V01
+slug: crypto-en-pratique
+title: "La cryptographie au quotidien"
+description: "Comment la crypto s'utilise vraiment : chiffrement de bout en bout, données au repos et en transit, gestion des clés comme vrai point faible, et les outils en ligne de commande pour chiffrer et vérifier."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-104-V01"]
+---
+
+Tu as vu les algorithmes, les modes, les fonctions de hachage. Maintenant la question qui compte vraiment : où est-ce que tout ça apparaît dans ta journée, et comment t'en servir sans te tromper ?
+
+La crypto n'est pas un sujet de cours rangé dans un tiroir. Elle tourne en permanence autour de toi. Quand tu envoies un message, quand tu te connectes à un site, quand ton téléphone est verrouillé dans ta poche. Le plus souvent tu ne la vois pas, et c'est le but. Mais le jour où tu dois faire un choix (quelle messagerie, comment sauvegarder un secret, comment vérifier un téléchargement) il faut comprendre ce qui se passe en dessous.
+
+On va regarder quatre choses concrètes : le chiffrement de bout en bout, la différence entre données au repos et en transit, le problème des clés (le vrai), et quelques outils en ligne de commande que tu peux lancer toi-même.
+
+## de bout en bout
+
+Prends une messagerie. Tu écris un message, il part de ton téléphone, passe par un serveur quelque part, arrive sur le téléphone de ton correspondant. La question est simple : qui peut lire ce message en route ?
+
+Sans chiffrement de bout en bout, le serveur peut le lire. Il reçoit ton texte en clair, le stocke, le renvoie. L'entreprise qui gère le serveur a techniquement accès au contenu. Si on la pirate, ou si on l'oblige légalement, le message sort.
+
+Avec le chiffrement de bout en bout, c'est différent. Le message est chiffré sur ton appareil, avec une clé que seul ton correspondant peut utiliser pour le déchiffrer. Le serveur ne voit qu'un bloc illisible. Il le transporte sans pouvoir l'ouvrir. Les deux bouts (toi et ton correspondant) sont les seuls à détenir de quoi lire. D'où le nom.
+
+Ce que ça change en pratique : même l'opérateur du service ne peut pas livrer le contenu de tes messages, parce qu'il ne l'a pas. Signal, WhatsApp, iMessage fonctionnent comme ça pour le corps des messages. Attention quand même, le chiffrement de bout en bout protège le contenu, pas forcément les métadonnées (qui parle à qui, quand, à quelle fréquence). Ces informations restent souvent visibles côté serveur.
+
+<Callout type="info">
+Un détail qui surprend : avec du bout en bout bien fait, si le service perd tes données ou refuse de coopérer, ce n'est pas par mauvaise volonté, c'est qu'il n'a réellement pas la clé. La protection est structurelle, pas une promesse. C'est exactement ce qu'on veut.
+</Callout>
+
+## au repos et en transit
+
+Deux moments où une donnée a besoin d'être protégée, et on les confond souvent.
+
+En transit, c'est quand la donnée se déplace sur le réseau. De ton navigateur au serveur, d'un serveur à un autre. Là, le chiffrement classique s'appelle TLS, c'est ce qui se cache derrière le cadenas et le https. TLS établit un tunnel chiffré entre les deux machines pour que personne sur le chemin (un wifi public, un routeur intermédiaire, ton fournisseur d'accès) ne lise ou ne modifie le trafic.
+
+Au repos, c'est quand la donnée est stockée et ne bouge pas. Sur un disque dur, dans une base de données, dans une sauvegarde. Le chiffrement au repos protège contre quelqu'un qui mettrait la main sur le support physique ou sur le fichier de la base. Ton téléphone chiffré, le disque chiffré de ton ordinateur portable, une colonne de mots de passe chiffrée en base : tout ça, c'est du repos.
+
+Les deux sont nécessaires, et l'un ne remplace pas l'autre. Une base chiffrée au repos mais envoyée en clair sur le réseau fuite en transit. Une connexion TLS parfaite vers un serveur qui stocke ensuite tout en clair fuite au repos. C'est précisément le genre de trou qu'on voit dans la leçon sur les défaillances cryptographiques : la crypto est là, mais à un seul endroit, et la donnée se balade en clair juste avant ou juste après.
+
+<Quiz id="q-1" question="Une application utilise TLS pour toutes ses communications, mais stocke les données des utilisateurs en clair dans sa base. Que manque-t-il ?" options={["Le chiffrement en transit", "Le chiffrement au repos", "Une fonction de hachage", "Rien, TLS suffit"]} correct={1} />
+
+## le vrai problème : les clés
+
+Voici le modèle mental à garder. L'algorithme de chiffrement n'est presque jamais le maillon faible. AES n'a pas été cassé. Les attaquants ne s'amusent pas à casser AES par la force, ce serait absurde. Ils visent les clés, parce que c'est là que ça craque dans la vraie vie.
+
+La gestion des clés, c'est un cycle de vie complet, et chaque étape peut foirer.
+
+Générer. Une clé doit venir d'un vrai générateur d'aléa, celui du système d'exploitation prévu pour la cryptographie. Si tu fabriques ta clé avec un aléa faible ou prévisible, un attaquant peut la deviner sans jamais toucher à l'algorithme. La clé la plus solide du monde ne sert à rien si on peut la reconstituer.
+
+Stocker. Une fois la clé créée, où la mets-tu ? Pas dans le code source, pas dans un fichier de configuration versionné, pas dans un message. On utilise un coffre à secrets (vault) ou un module matériel dédié (HSM) qui garde la clé à l'abri et ne la rend jamais en clair. Une clé qui traîne en clair quelque part est une clé déjà à moitié compromise.
+
+Faire tourner. Une clé ne devrait pas servir éternellement. Plus elle est utilisée longtemps, plus elle a d'occasions de fuiter, et plus une fuite éventuelle expose de données. La rotation consiste à remplacer régulièrement une clé par une nouvelle, en gardant l'ancienne le temps de déchiffrer ce qui doit l'être.
+
+Révoquer. Si tu sais ou soupçonnes qu'une clé a fuité, il faut pouvoir la déclarer invalide vite, et basculer sur une autre. Sans plan de révocation, une clé compromise reste utilisable indéfiniment par l'attaquant.
+
+<Callout type="warning">
+La grande majorité des incidents crypto ne viennent pas d'un algorithme cassé. Ils viennent d'une clé dans un dépôt Git public, d'une clé jamais changée depuis cinq ans, d'une clé générée avec un aléa pourri, ou d'une clé partagée par messagerie. Quand tu audites un système, regarde les clés avant de regarder l'algorithme.
+</Callout>
+
+## des outils en ligne de commande
+
+Tu peux manipuler de la crypto toi-même, sans bibliothèque ni code. Deux outils suffisent pour commencer.
+
+openssl est la boîte à outils universelle. Il génère de l'aléa, chiffre et déchiffre des fichiers, calcule des empreintes, gère des certificats. Pour chiffrer un fichier avec un mot de passe, il dérive une clé depuis ce mot de passe et applique AES. Le sel ajouté évite que deux fichiers chiffrés avec le même mot de passe se ressemblent.
+
+Vérifier l'empreinte d'un téléchargement est un usage quotidien sous-estimé. Quand tu télécharges une image système ou un binaire, le site publie souvent un hash SHA-256. Tu calcules le hash de ton fichier et tu compares. Si ça correspond, le fichier n'a pas été altéré en route. Si ça diffère, tu ne l'installes pas.
+
+gpg sert plutôt à signer et à chiffrer pour quelqu'un en particulier, avec de la cryptographie à clé publique. Tu peux signer un fichier pour prouver qu'il vient bien de toi, ou chiffrer un message pour un destinataire dont tu as la clé publique. C'est l'outil derrière la signature des paquets logiciels et des commits.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Chiffrer un fichier avec openssl" commands={{"openssl rand -hex 16": "9f86d081884c7d659a2feaa0c55ad015", "openssl enc -aes-256-cbc -salt -in secret.txt -out secret.enc": "enter aes-256-cbc encryption password:", "openssl enc -d -aes-256-cbc -in secret.enc -out clair.txt": "enter aes-256-cbc decryption password:", "sha256sum fichier.iso": "e3b0c44298fc1c149afbf4c8996fb924... fichier.iso"}} />
+
+La première commande tire seize octets d'aléa, utile pour un sel ou une clé brute. La deuxième chiffre, la troisième déchiffre, la quatrième calcule l'empreinte d'un fichier à comparer avec celle annoncée par l'éditeur.
+
+## ne pas se piéger soi-même
+
+Une fois que tu chiffres pour de vrai, une vérité s'impose. Un bon chiffrement n'a pas de porte dérobée. Si tu perds le mot de passe ou la clé qui ouvre tes données chiffrées, personne ne pourra les récupérer. Pas le support, pas un expert, pas une astuce. La donnée est mathématiquement inaccessible.
+
+C'est une force et un piège. La force : c'est exactement pourquoi ça protège, il n'y a pas de raccourci pour l'attaquant non plus. Le piège : c'est aussi sans pitié pour toi. Chaque année des gens perdent l'accès à des sauvegardes chiffrées, à des portefeuilles, à des archives, parce que le secret est parti avec un mot de passe oublié.
+
+<Callout type="danger">
+Avant de chiffrer quoi que ce soit d'important, demande-toi : où est la clé, et que se passe-t-il si je la perds ? Garde une copie de récupération du secret dans un endroit sûr et séparé. Un chiffrement sans plan de récupération de la clé, ce n'est pas de la sécurité, c'est une perte de données programmée.
+</Callout>
+
+## à toi de jouer
+
+Relance le scénario du terminal et observe l'ordre des opérations : on génère de l'aléa, on chiffre, on déchiffre, on vérifie une empreinte. Quatre gestes de base que tu réutiliseras sans cesse.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Vérifier puis chiffrer" commands={{"openssl rand -hex 16": "9f86d081884c7d659a2feaa0c55ad015", "openssl enc -aes-256-cbc -salt -in secret.txt -out secret.enc": "enter aes-256-cbc encryption password:", "openssl enc -d -aes-256-cbc -in secret.enc -out clair.txt": "enter aes-256-cbc decryption password:", "sha256sum fichier.iso": "e3b0c44298fc1c149afbf4c8996fb924... fichier.iso"}} />
+
+<QuizGroup>
+<Quiz id="q-2" question="Dans une messagerie chiffrée de bout en bout, qui peut lire le contenu d'un message ?" options={["Le serveur de la messagerie et les deux correspondants", "Uniquement les deux correspondants", "N importe qui sur le wifi public", "L hébergeur du serveur, en cas de demande légale"]} correct={1} />
+
+<Quiz id="q-3" question="D ou vient la majorité des incidents cryptographiques en pratique ?" options={["De la mauvaise gestion des clés", "Du cassage de l algorithme AES par la force", "D un mode de chiffrement trop récent", "De fonctions de hachage trop lentes"]} correct={0} />
+
+<Quiz id="q-4" question="Tu chiffres une archive importante puis tu perds le mot de passe. Que se passe-t-il ?" options={["Le support peut le réinitialiser", "Un expert peut le retrouver en quelques heures", "Les données sont définitivement inaccessibles", "Une porte derobee permet de recuperer la cle"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- Le chiffrement de bout en bout fait que seuls les correspondants lisent le contenu ; le serveur transporte sans pouvoir ouvrir. Les métadonnées, elles, restent souvent visibles.
+- Au repos protège les données stockées (disque, base, sauvegarde) ; en transit protège les données qui circulent (TLS, https). Les deux sont nécessaires, l'un ne couvre pas l'autre.
+- Le maillon faible est la clé, pas l'algorithme. Générer avec du vrai aléa, stocker dans un coffre ou un module matériel, faire tourner, révoquer : chaque étape peut casser tout le reste.
+- openssl chiffre, déchiffre, génère de l'aléa et calcule des empreintes ; gpg signe et chiffre pour un destinataire. Vérifier un hash SHA-256 confirme qu'un téléchargement n'a pas été altéré.
+- Un bon chiffrement n'a pas de porte dérobée. Mot de passe perdu égale données perdues. Prévois toujours une récupération sûre de la clé avant de chiffrer ce qui compte.
+
+OK 11 écrit

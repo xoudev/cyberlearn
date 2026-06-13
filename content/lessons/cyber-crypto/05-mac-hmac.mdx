@@ -1,0 +1,102 @@
+---
+refCode: CL-LSN-101-V01
+slug: crypto-mac-hmac
+title: "MAC et HMAC : prouver l'intégrité et l'origine"
+description: "Comprenez pourquoi un hachage seul ne prouve pas l'origine d'un message, comment un code d'authentification de message ajoute une clé secrète, et pourquoi HMAC est la construction standard."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-100-V01"]
+---
+
+Un hachage répond à une seule question : est-ce que ces octets ont changé ? Vous calculez l'empreinte d'un fichier, vous la recalculez plus tard, et si les deux correspondent, le contenu est intact. Pratique. Mais il y a une question à laquelle un hachage ne répond pas du tout : est-ce que ce message vient bien de la personne que je crois ?
+
+Ces deux questions ne sont pas la même chose. La première, c'est l'intégrité. La seconde, c'est l'authenticité. Un hachage couvre l'une et laisse l'autre grande ouverte. Le MAC vient combler ce manque, et HMAC est la façon propre de le construire. Voyons pourquoi, sans détour.
+
+## la faiblesse du hachage seul
+
+Imaginez un virement transmis sous la forme `montant=100&vers=alice`, accompagné de son empreinte SHA-256. À la réception, on recalcule l'empreinte et on compare. Si ça correspond, on se dit que le message n'a pas bougé.
+
+Le problème saute aux yeux dès qu'on se met à la place d'un attaquant placé entre les deux. Il intercepte le message, le change en `montant=10000&vers=mallory`, puis recalcule lui-même le SHA-256 du nouveau message. La fonction de hachage est publique : tout le monde peut l'exécuter, sans secret, sans permission. L'attaquant joint sa nouvelle empreinte, et à l'arrivée tout concorde parfaitement. Le destinataire n'a aucun moyen de voir la substitution.
+
+C'est là tout le souci. Une empreinte prouve qu'un message correspond à son empreinte. Elle ne prouve pas qui l'a produite. Si n'importe qui peut calculer le hachage, alors le hachage ne dit rien sur l'origine.
+
+<Callout type="warning">
+Un hachage seul détecte une corruption accidentelle (un bit retourné sur le réseau, un fichier tronqué). Il ne détecte pas une modification volontaire, parce que l'attaquant recalcule l'empreinte aussi facilement que vous.
+</Callout>
+
+## le MAC : ajouter une clé
+
+L'idée du code d'authentification de message, le MAC, tient en un mot : un secret. Au lieu de produire une empreinte que tout le monde peut recalculer, on produit une empreinte qui dépend à la fois du message et d'une clé secrète partagée entre l'expéditeur et le destinataire, et d'eux seuls.
+
+L'expéditeur calcule le MAC du message avec la clé, et l'envoie à côté. Le destinataire, qui connaît la même clé, recalcule le MAC de son côté et compare. S'ils correspondent, deux choses sont vraies en même temps. Le message n'a pas été modifié, sinon le MAC ne tomberait pas juste. Et il vient bien de quelqu'un qui possède la clé, c'est-à-dire l'autre partie légitime.
+
+Reprenons l'attaquant du milieu. Il peut toujours changer `montant=100` en `montant=10000`. Mais pour faire passer son message, il lui faut un MAC valide pour ce nouveau contenu. Et ça, il ne peut pas : il n'a pas la clé. Recalculer un MAC sans la clé, c'est exactement ce qu'un bon MAC rend impraticable. Sa modification se fait repérer immédiatement.
+
+<Callout type="info">
+Un hachage prouve l'intégrité. Un MAC prouve l'intégrité ET l'authenticité, parce que produire un MAC valide exige de connaître la clé. C'est le « plus » qu'apporte le secret : sans lui, pas de MAC correct, donc pas de message accepté.
+</Callout>
+
+## HMAC, la bonne construction
+
+On pourrait être tenté de bricoler son propre MAC, par exemple en collant la clé devant le message et en hachant le tout : `SHA256(cle + message)`. C'est tentant, et c'est une mauvaise idée. Avec certaines fonctions de hachage construites par blocs successifs, cette approche naïve laisse la porte à une attaque dite par allongement de longueur : sans connaître la clé, un attaquant peut partir d'un MAC valide et fabriquer un MAC valide pour le message suivi de données supplémentaires. Le secret fuit en pratique sans jamais être deviné.
+
+HMAC est la construction qui ferme cette porte. Sans entrer dans les maths, retenez l'idée : HMAC applique la fonction de hachage deux fois, en mélangeant la clé de deux manières différentes, ce qui supprime l'attaque par allongement de longueur et donne un MAC sur lequel on peut s'appuyer. C'est une recette éprouvée, normalisée, et disponible dans toutes les bibliothèques standard. On l'écrit HMAC-SHA256 quand le hachage sous-jacent est SHA-256.
+
+Voici à quoi ça ressemble en pratique. On calcule un HMAC, puis on le vérifie en recalculant et en comparant.
+
+<CodePlayground language="python" starterCode={`import hmac, hashlib
+
+cle = b"cle-secrete"
+message = b"montant=100"
+signature = hmac.new(cle, message, hashlib.sha256).hexdigest()
+print("HMAC:", signature)
+
+# verification : recalculer avec la meme cle et comparer en temps constant
+attendu = hmac.new(cle, message, hashlib.sha256).hexdigest()
+print("valide:", hmac.compare_digest(signature, attendu))`} />
+
+Changez un seul caractère du message et relancez : la signature change du tout au tout. C'est ce qui rend la falsification détectable.
+
+## où on s'en sert
+
+HMAC est partout, souvent sans qu'on le voie. Trois cas concrets.
+
+Le cookie de session signé. Quand un site veut stocker un identifiant côté navigateur sans qu'on puisse le bidouiller, il joint au cookie un HMAC de son contenu. À chaque requête, le serveur recalcule le HMAC avec sa clé et vérifie qu'il correspond. Si un utilisateur modifie son cookie pour se faire passer pour l'administrateur, le HMAC ne tombe plus juste et le cookie est rejeté.
+
+Les webhooks d'API. Quand un service comme un fournisseur de paiement vous notifie d'un événement, il signe le corps de la requête avec un secret partagé et place le HMAC dans un en-tête. De votre côté, vous recalculez le HMAC sur le corps reçu et vous comparez à l'en-tête. Si ça concorde, vous savez que la notification vient bien du fournisseur et qu'elle n'a pas été trafiquée en route. Sinon, vous la jetez.
+
+Les jetons. Un jeton de type JWT signé en HMAC porte des informations (qui vous êtes, jusqu'à quand le jeton est valable) accompagnées d'un HMAC de ces informations. Le serveur vérifie le HMAC avant de faire confiance au contenu.
+
+Le point commun : on ne chiffre rien ici, le contenu reste lisible. On garantit seulement qu'il n'a pas été modifié et qu'il vient d'un détenteur de la clé.
+
+## la comparaison en temps constant
+
+Reste un détail qui a l'air anodin et qui ne l'est pas : comment compare-t-on le MAC reçu au MAC recalculé.
+
+La comparaison naïve parcourt les deux suites d'octets et s'arrête à la première différence. Plus les premiers octets correspondent, plus la comparaison dure longtemps. Cette durée est mesurable. Un attaquant qui peut essayer beaucoup de MAC et chronométrer les réponses devine alors les octets corrects un par un, en repérant ceux qui font durer la comparaison un poil plus longtemps. C'est une attaque par mesure du temps, dite par canal temporel.
+
+La parade est simple : comparer les deux MAC en temps constant, c'est-à-dire en regardant toujours tous les octets, quelle que soit l'endroit de la première différence. La durée ne dépend plus du contenu, et la fuite disparaît. En Python c'est `hmac.compare_digest`. Ne comparez jamais un MAC avec un simple `==`.
+
+<Callout type="danger">
+Comparer un MAC avec `==` ou un test qui s'arrête à la première différence peut laisser un attaquant deviner le bon MAC octet par octet en mesurant le temps de réponse. Utilisez toujours une comparaison en temps constant (`hmac.compare_digest` en Python).
+</Callout>
+
+## à toi de jouer
+
+Relancez le code plus haut, puis modifiez le message ou la clé et observez comment la signature change entièrement. Essayez aussi de comparer une signature à une valeur fausse avec `hmac.compare_digest` pour voir le résultat passer à `False`.
+
+<Quiz id="q-1" question="Qu'apporte un MAC qu'un hachage seul n'apporte pas ?" options={["Un message plus court", "La preuve de l'origine grace a une cle secrete", "Le chiffrement du message", "Une compression du contenu"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi un hachage seul ne protege-t-il pas contre une modification volontaire ?" options={["Il est trop lent a calculer", "Il change a chaque execution", "Tout le monde peut recalculer l'empreinte du message modifie", "Il ne fonctionne que sur des fichiers"]} correct={2} />
+
+<Quiz id="q-3" question="Pourquoi compare-t-on deux MAC en temps constant ?" options={["Pour aller plus vite", "Pour eviter de fuir de l'information par la duree de la comparaison", "Pour economiser de la memoire", "Parce que le MAC est trop long"]} correct={1} />
+
+## à retenir
+
+- Un hachage prouve l'intégrité (le message n'a pas changé) mais pas l'origine, car n'importe qui peut recalculer une empreinte.
+- Un MAC ajoute une clé secrète partagée : il prouve à la fois l'intégrité et l'authenticité, parce qu'il faut la clé pour produire un MAC valide.
+- HMAC est la construction standard. Elle évite l'attaque par allongement de longueur que présentent les bricolages naïfs du type hachage de la clé suivie du message.
+- On utilise HMAC pour signer des cookies de session, authentifier des webhooks d'API et vérifier des jetons. Le contenu reste lisible ; seule l'origine et l'intégrité sont garanties.
+- Vérifiez toujours un MAC avec une comparaison en temps constant (`hmac.compare_digest`), jamais avec `==`, pour ne pas fuir d'information par le temps de réponse.

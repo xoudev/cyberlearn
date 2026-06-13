@@ -1,0 +1,95 @@
+---
+refCode: CL-LSN-098-V01
+slug: crypto-symetrique
+title: "Chiffrement symétrique : une clé pour deux"
+description: "Comprenez le chiffrement à clé partagée, pourquoi AES est le standard, le rôle des modes et du vecteur d'initialisation, et le problème difficile qui en découle : partager la clé sans la dévoiler."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 480
+prerequisites: ["CL-LSN-097-V01"]
+---
+
+Imagine une serrure un peu particulière. La même clé sert à fermer la porte et à l'ouvrir. Si tu donnes un double de cette clé à un ami, vous pouvez tous les deux ranger des affaires dans le coffre et les récupérer. Mais quiconque met la main sur ce bout de métal peut faire exactement pareil.
+
+C'est, mot pour mot, l'idée du chiffrement symétrique. Une seule clé, partagée entre deux personnes, sert à la fois à brouiller un message et à le remettre en clair. Tout repose sur ce secret commun.
+
+## le principe
+
+Le mot symétrique vient de là : les deux opérations utilisent la même clé. D'un côté tu prends ton texte lisible (on l'appelle le clair), tu le passes dans un algorithme avec la clé, et tu obtiens un charabia inexploitable (le chiffré). De l'autre côté, celui qui possède la même clé fait l'opération inverse et retrouve le texte d'origine.
+
+L'intérêt principal, c'est la vitesse. Les algorithmes symétriques sont rapides et peu gourmands. On peut chiffrer des gigaoctets sans que la machine sue. C'est pour ça qu'ils gèrent presque tout ce qui transite en volume : le contenu d'une page HTTPS, un fichier sur ton disque, une sauvegarde, un flux vidéo.
+
+<Callout type="info">
+Symétrique veut dire une seule clé pour les deux sens. Retiens cette image : une serrure dont la clé ferme et ouvre. Rapide, efficace, parfait pour les gros volumes de données.
+</Callout>
+
+## un exemple jouet : le XOR
+
+Pour rendre l'idée concrète, prenons l'opération la plus simple qui soit : le XOR (ou exclusif). Bit à bit, XOR renvoie 1 quand les deux bits diffèrent, 0 quand ils sont identiques. Sa propriété magique : si tu appliques deux fois la même valeur, tu reviens au point de départ. Donc chiffrer et déchiffrer, c'est la même opération avec la même clé.
+
+Regarde tourner ce petit code. On chiffre chaque octet du message avec la clé 42, puis on réapplique 42 pour retrouver le texte.
+
+<CodePlayground language="python" starterCode={`# chiffrement XOR pédagogique (PAS pour un usage réel)
+def chiffre_xor(texte, cle):
+    return bytes(o ^ cle for o in texte.encode())
+
+clair = "BONJOUR"
+secret = chiffre_xor(clair, 42)
+print("chiffre:", secret.hex())
+# dechiffrer = re-appliquer la meme cle
+print("dechiffre:", bytes(o ^ 42 for o in secret).decode())`} />
+
+Tu vois bien la symétrie : une seule clé, deux sens. Mais ne te fie pas à cette simplicité.
+
+<Callout type="warning">
+Ce XOR à un octet est une illustration, rien de plus. Avec une clé aussi courte et toujours la même, on casse ce chiffrement en quelques secondes par analyse de fréquence. Ne l'utilise jamais pour protéger quoi que ce soit de réel.
+</Callout>
+
+## AES, le vrai standard
+
+Le chiffrement symétrique sérieux, aujourd'hui, s'appelle AES (Advanced Encryption Standard). Il a été choisi en 2001 par l'institut américain NIST à l'issue d'un concours public, et depuis il s'est imposé partout : navigateurs, VPN, disques chiffrés, messageries.
+
+AES travaille par blocs de 128 bits, c'est à dire qu'il découpe le message en morceaux de 16 octets et chiffre chaque morceau. La clé fait 128, 192 ou 256 bits. En pratique on voit surtout AES-128 et AES-256. La différence tient à la marge de sécurité : 256 bits, c'est un espace de clés tellement grand qu'aucune attaque par force brute n'a de sens, même en imaginant des décennies de calcul.
+
+Pourquoi lui fait-on confiance plutôt qu'à un algorithme maison ? Parce qu'il est public et analysé sans relâche depuis plus de vingt ans par des cryptographes du monde entier, sans qu'on ait trouvé de faille pratique. En cryptographie, un algorithme qu'on n'a pas réussi à casser malgré des années d'efforts vaut bien mieux qu'un secret bricolé dans son coin.
+
+## les modes et l'IV
+
+Voilà un point que beaucoup ratent. AES chiffre un bloc de 16 octets. Mais tes messages font rarement pile 16 octets. Comment enchaîner les blocs ? C'est le rôle du mode de chiffrement.
+
+Le mode le plus naïf s'appelle ECB. Il chiffre chaque bloc indépendamment, sans lien avec les autres. Le piège : deux blocs de clair identiques donnent deux blocs de chiffré identiques. Les motifs du message survivent au chiffrement.
+
+L'exemple devenu célèbre, c'est l'image du pingouin Tux. Quand on chiffre un bitmap en ECB, les grandes zones de même couleur produisent les mêmes blocs, et la silhouette du pingouin reste parfaitement visible dans le résultat. On a chiffré, mais on voit encore le dessin. C'est raté.
+
+<Callout type="danger">
+N'utilise jamais ECB. Il laisse transparaître la structure des données : motifs, répétitions, contours d'une image. Un chiffrement qui révèle encore la forme de ce qu'il protège ne protège rien.
+</Callout>
+
+La parade, ce sont les bons modes (CBC, CTR, et surtout GCM aujourd'hui) couplés à un vecteur d'initialisation, qu'on note IV ou nonce. L'IV est une valeur aléatoire, différente à chaque chiffrement, qu'on injecte au départ pour que le résultat dépende de ce hasard. Conséquence directe : si tu chiffres deux fois le même message avec la même clé mais deux IV différents, tu obtiens deux chiffrés différents. Un attaquant ne peut plus deviner que tu as renvoyé le même contenu. L'IV n'a pas besoin d'être secret, on le transmet souvent en clair à côté du chiffré, mais il ne doit jamais se répéter avec la même clé.
+
+## le problème de la clé partagée
+
+Tout ce qu'on vient de voir suppose une chose qu'on a passée sous silence : les deux personnes possèdent déjà la même clé. Et c'est là que le bât blesse.
+
+Reprends la serrure du début. Pour que ton ami range des affaires dans le coffre, il lui faut un double de la clé. Mais comment lui faire parvenir ce double ? Si tu l'envoies par la poste ou par message, n'importe qui sur le trajet peut le copier. Et une fois la clé interceptée, tout le chiffrement s'effondre.
+
+C'est le problème de la distribution des clés. Le chiffrement symétrique protège très bien le contenu, à condition que les deux parties partagent déjà un secret. Mais établir ce secret à distance, sur un réseau qu'on suppose écouté, sans jamais l'exposer, le symétrique seul ne sait pas le faire.
+
+C'est exactement ce que résout le chiffrement asymétrique, avec ses deux clés différentes. On le voit à la prochaine leçon.
+
+## à retenir
+
+- Le chiffrement symétrique utilise une seule clé partagée pour chiffrer et déchiffrer. Rapide, adapté aux gros volumes.
+- AES est le standard : blocs de 128 bits, clés de 128 ou 256 bits, public et analysé depuis plus de vingt ans sans faille pratique.
+- Le mode décide comment enchaîner les blocs. ECB est à proscrire : il laisse voir les motifs (le pingouin Tux reste visible).
+- Un IV (ou nonce) aléatoire et unique fait qu'un même message chiffré deux fois donne deux chiffrés différents. Il peut être public mais ne doit jamais se répéter avec la même clé.
+- Le point faible n'est pas l'algorithme mais le partage de la clé : comment transmettre le secret commun sans l'exposer ? Réponse à la leçon suivante, avec l'asymétrique.
+
+<Quiz id="q-1" question="Qu'est-ce qui caractérise le chiffrement symétrique ?" options={["Une clé publique et une clé privée distinctes", "La même clé pour chiffrer et déchiffrer", "Aucune clé, juste un mot de passe", "Une clé qui change à chaque octet automatiquement"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi le mode ECB est-il déconseillé ?" options={["Il est trop lent pour les gros fichiers", "Il exige une clé de 4096 bits", "Des blocs de clair identiques donnent des chiffrés identiques, laissant voir les motifs", "Il ne fonctionne que sur du texte ASCII"]} correct={2} />
+
+<Quiz id="q-3" question="À quoi sert un vecteur d'initialisation (IV) ?" options={["À garder la clé secrète sur le réseau", "À compresser le message avant chiffrement", "À faire que deux messages identiques donnent des chiffrés différents", "À remplacer AES quand il est trop lent"]} correct={2} />
+
+OK 02 écrit

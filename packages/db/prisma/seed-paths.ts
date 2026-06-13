@@ -220,6 +220,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-096-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-009-V01",
+    slug: "cryptographie",
+    title: "Cryptographie : de la théorie à la pratique",
+    description:
+      "Comprenez la cryptographie sans vous noyer dans les maths : les quatre objectifs, chiffrement symétrique et asymétrique, fonctions de hachage, MAC et HMAC, signatures, échange de clés, certificats et TLS, stockage des mots de passe, et les erreurs de mise en oeuvre qui cassent une bonne crypto. Conclu par un projet où vous cassez vous-même un chiffrement.",
+    category: "CYBERSEC",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 8,
+    lessons: [
+      "CL-LSN-097-V01",
+      "CL-LSN-098-V01",
+      "CL-LSN-099-V01",
+      "CL-LSN-100-V01",
+      "CL-LSN-101-V01",
+      "CL-LSN-102-V01",
+      "CL-LSN-103-V01",
+      "CL-LSN-104-V01",
+      "CL-LSN-105-V01",
+      "CL-LSN-106-V01",
+      "CL-LSN-107-V01",
+      "CL-LSN-108-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {
