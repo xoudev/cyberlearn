@@ -10,13 +10,13 @@ xpReward: 420
 prerequisites: ["CL-LSN-033-V01"]
 ---
 
-Jusqu'ici, vous avez manipulé des variables isolées et des tableaux qui ne contiennent qu'un seul type de donnée. Mais dans la vraie vie, les informations vont souvent par paquets. Un point sur un écran possède une coordonnée horizontale et une coordonnée verticale. Un étudiant possède un nom, un âge et une moyenne. Un produit possède une référence, un prix et une quantité en stock. Ces données sont liées entre elles, et il serait pénible de devoir les trimballer dans des variables séparées sans aucun lien logique.
+Une variable tient une seule valeur. Un tableau en tient plusieurs, mais toutes du même type. Le problème, c'est que les choses du monde réel ne sont presque jamais d'un seul type. Un point sur un écran a une abscisse et une ordonnée, deux entiers liés. Un produit a une référence, un prix, une quantité en stock. Un étudiant a un nom, un âge, une moyenne. Ces champs n'ont pas le même type et pourtant ils décrivent une seule et même chose.
 
-C'est exactement le problème que résolvent les **structures**. Une structure permet de regrouper plusieurs données de types différents sous un seul nom, comme une fiche qui rassemble tous les renseignements d'une même entité. On parle de données **hétérogènes** parce que, contrairement à un tableau, une structure peut mélanger des entiers, des flottants, des chaînes de caractères, et même d'autres structures. Dans cette leçon, vous allez apprendre à définir une structure, à accéder à ses champs, à construire des tableaux de structures, et à passer une structure à une fonction.
+Trimballer ces données dans des variables séparées marche au début, puis ça devient ingérable. Trois étudiants, c'est neuf variables sans lien entre elles. La structure répond à ça. Elle regroupe plusieurs champs de types différents sous un seul nom, comme une fiche cartonnée où chaque ligne est un renseignement. Une variable de ce type contient toute la fiche d'un coup.
 
-## Définir une structure
+## déclarer une structure
 
-On définit une structure avec le mot-clé `struct`, suivi d'un nom et d'une liste de **champs** entre accolades. Chaque champ est une variable classique avec son type. Une fois la structure définie, on peut créer des **instances**, c'est-à-dire des variables de ce nouveau type. Pour lire ou modifier un champ, on utilise l'**opérateur point** placé entre le nom de l'instance et le nom du champ.
+On définit une structure avec le mot-clé `struct`, un nom, puis la liste des champs entre accolades. Chaque champ ressemble à une déclaration de variable ordinaire : un type, un nom. Cette définition ne crée aucune donnée, elle décrit juste la forme. Ensuite on déclare une variable de ce type et on la remplit.
 
 <CodePlayground language="c" starterCode={`{\`#include <stdio.h>
 
@@ -30,16 +30,57 @@ int main(void) {
     p.x = 3;
     p.y = 7;
     printf("Point: (%d, %d)\\\\n", p.x, p.y);
-    p.x = p.x + 10;
-    printf("Apres deplacement: (%d, %d)\\\\n", p.x, p.y);
     return 0;
 }\`}`} />
 
-Remarquez que pour déclarer la variable, on écrit `struct Point p`. Le mot `struct` fait partie du type. C'est un peu verbeux, et c'est précisément ce que la section suivante va corriger.
+Notez le `struct Point p` pour déclarer la variable. Le mot `struct` fait partie du type, on ne peut pas l'omettre ici. On peut aussi initialiser une structure dès sa déclaration, dans l'ordre des champs.
 
-## typedef - simplifier l'usage
+<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
 
-Répéter `struct` à chaque déclaration devient vite fastidieux. Le mot-clé `typedef` crée un **alias** de type, ce qui permet d'écrire simplement le nom de la structure sans le préfixe `struct`. C'est la forme que vous rencontrerez le plus souvent dans le code C professionnel.
+struct Point {
+    int x;
+    int y;
+};
+
+int main(void) {
+    struct Point depart = {0, 0};
+    struct Point arrivee = {10, 5};
+    printf("Depart en (%d, %d)\\\\n", depart.x, depart.y);
+    printf("Arrivee en (%d, %d)\\\\n", arrivee.x, arrivee.y);
+    return 0;
+}\`}`} />
+
+## accéder aux champs
+
+L'opérateur point relie le nom de la variable à un champ. À gauche du point, la fiche ; à droite, la ligne qu'on veut. Ça marche dans les deux sens : en lecture pour récupérer la valeur, en écriture pour la changer. Chaque champ se comporte alors comme une variable normale de son type.
+
+<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+
+struct Produit {
+    int reference;
+    float prix;
+    int stock;
+};
+
+int main(void) {
+    struct Produit clavier;
+    clavier.reference = 1042;
+    clavier.prix = 29.90f;
+    clavier.stock = 8;
+
+    printf("Ref %d : %.2f euros, %d en stock\\\\n",
+           clavier.reference, clavier.prix, clavier.stock);
+
+    clavier.stock = clavier.stock - 1;
+    printf("Apres une vente : %d en stock\\\\n", clavier.stock);
+    return 0;
+}\`}`} />
+
+Chaque champ garde son propre type. `reference` est un entier, `prix` un flottant, et on les manipule comme tels. La structure ne fait que les ranger ensemble.
+
+## typedef pour alléger
+
+Écrire `struct Point` à chaque déclaration finit par peser. Le mot-clé `typedef` crée un alias : on donne un nom court au type, et on l'utilise ensuite sans répéter `struct`. C'est la forme la plus courante dans le code C que vous croiserez.
 
 <CodePlayground language="c" starterCode={`{\`#include <stdio.h>
 
@@ -49,52 +90,22 @@ typedef struct {
 } Point;
 
 int main(void) {
-    Point a;
-    a.x = 1;
-    a.y = 2;
-
-    Point b;
-    b.x = 4;
-    b.y = 6;
-
+    Point a = {1, 2};
+    Point b = {4, 6};
     printf("a = (%d, %d)\\\\n", a.x, a.y);
     printf("b = (%d, %d)\\\\n", b.x, b.y);
     return 0;
 }\`}`} />
 
-<Callout type="info">
-Avec `typedef struct { ... } Point;`, on peut désormais déclarer une variable avec `Point a;` au lieu de `struct Point a;`. L'alias rend le code plus lisible et plus proche d'un vrai type natif. Le nom placé juste après l'accolade fermante (ici `Point`) est le nom de l'alias.
-</Callout>
+Le nom placé juste après l'accolade fermante, ici `Point`, devient le nom du type. On déclare alors `Point a;` au lieu de `struct Point a;`. Le reste ne change pas : on accède toujours aux champs avec le point.
 
-## Tableaux de structures
+## struct et fonctions
 
-Puisqu'une structure est un type comme un autre, on peut en faire des tableaux. C'est idéal pour représenter une collection d'entités semblables : un carnet de contacts, une liste d'étudiants, un inventaire. On accède à un élément du tableau par son indice, puis à un champ avec le point.
+Passer une structure à une fonction se fait de deux façons, et la différence compte.
 
-<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+Par valeur, la fonction reçoit une copie complète de la structure. Elle peut lire et modifier cette copie autant qu'elle veut, l'original chez l'appelant ne bouge pas. Pratique pour afficher ou calculer, mais si la structure est grosse, la copie coûte de la mémoire et du temps.
 
-typedef struct {
-    char nom[20];
-    int age;
-} Contact;
-
-int main(void) {
-    Contact carnet[3];
-
-    carnet[0] = (Contact){"Alice", 30};
-    carnet[1] = (Contact){"Bob", 25};
-    carnet[2] = (Contact){"Chloe", 42};
-
-    for (int i = 0; i < 3; i++) {
-        printf("Contact %d: %s, %d ans\\\\n", i, carnet[i].nom, carnet[i].age);
-    }
-    return 0;
-}\`}`} />
-
-Ici `carnet[i].nom` se lit de gauche à droite : on prend l'élément d'indice `i` du tableau, puis on accède à son champ `nom`. L'initialisation `(Contact){"Alice", 30}` remplit les champs dans l'ordre de leur déclaration.
-
-## Structures et fonctions
-
-On peut passer une structure à une fonction de deux manières. **Par valeur**, la fonction reçoit une **copie** : modifier la copie n'affecte pas l'original. **Par pointeur**, la fonction reçoit l'adresse de la structure et peut donc la modifier réellement. Quand on dispose d'un pointeur vers une structure, on accède à un champ avec l'**opérateur flèche** au lieu du point.
+Par pointeur, on passe l'adresse de la structure avec `&`. La fonction ne copie rien, elle travaille directement sur l'original et peut donc le modifier pour de bon. Avec un pointeur, on n'accède plus aux champs avec le point mais avec la flèche `->`.
 
 <CodePlayground language="c" starterCode={`{\`#include <stdio.h>
 
@@ -113,79 +124,64 @@ void deplacer(Point *p, int dx, int dy) {
 }
 
 int main(void) {
-    Point origine;
-    origine.x = 0;
-    origine.y = 0;
+    Point origine = {0, 0};
 
-    printf("Avant: ");
+    printf("Avant : ");
     afficher(origine);
 
     deplacer(&origine, 5, 3);
 
-    printf("Apres: ");
+    printf("Apres : ");
     afficher(origine);
     return 0;
 }\`}`} />
 
-La fonction `afficher` reçoit une copie et se contente de lire. La fonction `deplacer` reçoit un pointeur `Point *p` et modifie l'original parce qu'on lui passe l'adresse avec `&origine`.
+`afficher` reçoit une copie et se contente de lire, donc le point suffit. `deplacer` reçoit un pointeur `Point *p` et modifie l'original parce qu'on lui a donné l'adresse avec `&origine`. À l'intérieur, `p->x` lit le champ `x` de la structure pointée.
 
 <Callout type="info">
-Quand on a un pointeur vers une structure, l'opérateur flèche `->` permet d'accéder directement à un champ. Ainsi `p->x` est un raccourci équivalent à `(*p).x` : on déréférence le pointeur, puis on lit le champ. Retenez la règle simple : point avec une instance, flèche avec un pointeur.
+La flèche `->` est un raccourci. `p->x` veut dire exactement `(*p).x` : on déréférence le pointeur pour atteindre la structure, puis on lit son champ. La règle tient en une ligne : point sur une instance, flèche sur un pointeur. Si vous écrivez `p.x` sur un pointeur, ou `p->x` sur une instance directe, le compilateur refuse. C'est l'erreur la plus fréquente avec les structures au début.
 </Callout>
 
-## À vous de jouer
+## à quoi ça sert
 
-Vérifiez votre compréhension avec ces questions, puis passez à l'exercice de code.
+Une structure sert d'abord à modéliser une entité du monde réel sans éparpiller ses données. Un personnage de jeu avec ses points de vie et sa position, une transaction avec son montant et sa date, une connexion réseau avec son adresse et son port : tout ce qui forme un ensemble cohérent devient une seule variable qu'on passe, qu'on stocke, qu'on range dans un tableau.
+
+C'est aussi la brique de base des structures de données plus sérieuses. Une liste chaînée, un arbre, une file : tous reposent sur des structures qui contiennent leurs propres champs et des pointeurs vers d'autres structures du même type. Sans `struct`, rien de tout ça ne tient debout. Maîtriser le couple structure plus pointeur, c'est ouvrir la porte de la suite.
+
+## à toi de jouer
 
 <QuizGroup>
 <Quiz
+  id="c-struct-acces"
   question="Quel opérateur utilise-t-on pour accéder au champ d'une instance de structure (pas un pointeur) ?"
-  options={["L'operateur point .", "L'operateur fleche ->", "L'operateur crochet []", "L'operateur deux-points ::"]}
-  correct={0}
-  explanation="Avec une instance directe comme p, on accede a un champ avec le point : p.x. La fleche -> est reservee aux pointeurs."
+  options={["L operateur fleche ->", "L operateur point .", "L operateur crochet []", "L operateur deux-points ::"]}
+  correct={1}
+  explanation="Sur une instance directe comme p, on accede a un champ avec le point : p.x. La fleche est reservee aux pointeurs."
 />
 <Quiz
-  question="Que se passe-t-il quand on passe une structure par valeur a une fonction ?"
-  options={["La fonction recoit une copie et ne modifie pas l original", "La fonction modifie toujours l original", "Le programme refuse de compiler", "La structure est transformee en tableau"]}
+  id="c-struct-valeur"
+  question="Que se passe-t-il quand on passe une structure par valeur à une fonction ?"
+  options={["La fonction recoit une copie et ne touche pas a l original", "La fonction modifie toujours l original", "Le programme refuse de compiler", "La structure devient un tableau"]}
   correct={0}
-  explanation="Par valeur, la fonction travaille sur une copie. Pour modifier l original, il faut passer un pointeur avec & et utiliser ->."
+  explanation="Par valeur, la fonction travaille sur une copie. Pour modifier l original, on passe un pointeur avec & et on utilise ->."
 />
 <Quiz
-  question="A quoi sert principalement typedef avec une structure ?"
-  options={["A creer un alias pour ecrire le type sans le mot struct", "A rendre les champs prives", "A transformer la struct en fonction", "A allouer la struct sur le tas automatiquement"]}
-  correct={0}
-  explanation="typedef cree un alias de type. On peut alors ecrire Point a; au lieu de struct Point a;."
+  id="c-struct-fleche"
+  question="Avec un pointeur p vers une structure, à quoi équivaut p->x ?"
+  options={["A &p.x", "A p.x", "A (*p).x", "A p[x]"]}
+  correct={2}
+  explanation="La fleche est un raccourci : p->x signifie (*p).x, on dereference le pointeur puis on lit le champ."
 />
 </QuizGroup>
 
-Écrivez maintenant un petit programme. Définissez une structure `Etudiant` avec un nom et une note, créez un petit tableau de deux étudiants, puis affichez chacun avec sa note.
+## à retenir
 
-<CodePlayground language="c" starterCode={`{\`#include <stdio.h>
+- Une structure regroupe plusieurs champs de types différents sous un seul nom, contrairement au tableau qui n'a qu'un seul type.
+- On déclare une variable de structure avec `struct Nom variable;`, et on peut l'initialiser dans l'ordre des champs avec des accolades.
+- L'opérateur point accède à un champ d'une instance : `p.x`, en lecture comme en écriture.
+- `typedef` crée un alias pour écrire le nom du type sans répéter `struct`.
+- Passée par valeur, une structure est copiée et l'original ne change pas. Passée par pointeur avec `&`, elle est modifiable.
+- Sur un pointeur, on accède à un champ avec la flèche : `p->x`, qui est exactement `(*p).x`.
+- Le piège classique : confondre le point et la flèche. Point sur une instance, flèche sur un pointeur.
 
-typedef struct {
-    char nom[20];
-    float note;
-} Etudiant;
-
-int main(void) {
-    Etudiant classe[2];
-
-    classe[0] = (Etudiant){"Lina", 15.5f};
-    classe[1] = (Etudiant){"Theo", 12.0f};
-
-    for (int i = 0; i < 2; i++) {
-        printf("%s a obtenu %.1f/20\\\\n", classe[i].nom, classe[i].note);
-    }
-    return 0;
-}\`}`} />
-
-## Récapitulatif
-
-- Une **structure** (`struct`) regroupe plusieurs champs de types différents sous un seul nom : données **hétérogènes**.
-- On accède à un champ d'une instance avec l'**opérateur point** : `p.x`.
-- `typedef` crée un **alias** qui évite de répéter le mot `struct` à chaque déclaration.
-- On peut construire des **tableaux de structures** pour gérer des collections d'entités, par exemple `carnet[i].nom`.
-- Passée **par valeur**, une structure est **copiée** ; passée **par pointeur** (avec `&`), elle peut être modifiée.
-- Avec un pointeur vers une structure, on accède à un champ avec l'**opérateur flèche** : `p->x`, équivalent à `(*p).x`.
-
-OK 11-structures.mdx écrit
+OK 11 réécrit

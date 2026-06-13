@@ -10,15 +10,17 @@ xpReward: 450
 prerequisites: ["CL-LSN-030-V01"]
 ---
 
-Les pointeurs ont la réputation d'être le concept le plus intimidant du langage C. Pourtant, l'idée de départ est simple : **chaque variable de votre programme vit quelque part dans la mémoire de l'ordinateur, à une adresse précise**. Un pointeur n'est rien d'autre qu'une variable un peu particulière : au lieu de contenir un nombre ou un caractère, elle contient une **adresse mémoire**.
+Quand vous écrivez `int age = 30;`, le programme ne range pas ce 30 dans le vide. Il réserve une petite case dans la mémoire de l'ordinateur, il y inscrit le nombre, et il retient à quel endroit cette case se trouve. Cet endroit porte un numéro : une adresse. Tout ce qui suit dans cette leçon tient dans cette phrase. Une variable a une valeur, et elle a une adresse. Deux choses différentes.
 
-Pour bien le visualiser, imaginez une rue. Une maison contient des habitants, des meubles, une certaine valeur : c'est votre variable ordinaire. L'adresse de cette maison (par exemple « 12 rue des Lilas ») est inscrite sur une enveloppe : c'est votre pointeur. L'enveloppe ne **contient pas** la maison, elle indique seulement **où la trouver**. Avec l'adresse, le facteur peut retrouver la maison et y déposer un colis. De la même façon, avec un pointeur, votre programme peut retrouver une variable et lire ou modifier son contenu.
+Un pointeur, c'est juste une variable qui retient une adresse au lieu de retenir un nombre ordinaire. Rien de plus. Le mot fait peur, le mécanisme non.
 
-Prenez votre temps avec cette leçon : relisez chaque section, exécutez les exemples, et surtout ne passez pas à la suite tant qu'une idée n'est pas claire. Tout le reste du C repose sur ces fondations.
+Prenez l'image d'une adresse postale. La maison du 12 rue des Lilas contient des gens, des meubles, une vie. Sur une enveloppe, vous écrivez « 12 rue des Lilas ». L'enveloppe ne contient pas la maison. Elle dit seulement où la trouver. Avec cette indication, le facteur retrouve la maison et y dépose un colis. Un pointeur fait exactement ça : il ne contient pas la variable, il dit où elle est rangée, et avec cette indication le programme peut aller lire ou changer son contenu.
 
-## L'adresse d'une variable
+Gardez cette analogie sous la main. À chaque fois qu'une notion vous échappera, revenez à l'enveloppe et à la maison.
 
-En C, on récupère l'adresse d'une variable avec l'**opérateur d'adresse**, l'esperluette `&`. Si vous écrivez `&age`, vous obtenez « l'adresse à laquelle la variable `age` est rangée en mémoire ». Cette adresse est un nombre (souvent affiché en hexadécimal), et pour l'imprimer avec `printf` on utilise le format `%p`.
+## l'adresse d'une variable
+
+Pour demander « à quelle adresse cette variable est-elle rangée ? », on place l'opérateur `&` devant son nom. `&age` se lit « adresse de age ». Le résultat est un nombre, généralement affiché en hexadécimal, et pour l'imprimer avec `printf` on utilise le format `%p`.
 
 <CodePlayground language="c" starterCode={`#include <stdio.h>
 
@@ -26,47 +28,43 @@ int main(void) {
     int age = 30;
     char lettre = 'A';
 
-    printf("Valeur de age   : %d\\n", age);
-    printf("Adresse de age  : %p\\n", (void *)&age);
+    printf("Valeur de age     : %d\\n", age);
+    printf("Adresse de age    : %p\\n", (void *)&age);
     printf("Adresse de lettre : %p\\n", (void *)&lettre);
 
     return 0;
 }`} />
 
-Les adresses affichées varient à chaque exécution : c'est normal, le système place vos variables où il le souhaite. Ce qui compte, c'est de retenir que `&age` répond à la question « **où** est `age` ? », pas « **quelle est sa valeur** ? ».
+Lancez ce programme plusieurs fois. Les adresses changent à chaque exécution, et c'est parfaitement normal : le système installe vos variables là où il y a de la place ce jour-là. Ne cherchez pas à retenir une adresse précise. Retenez la distinction. `age` répond à « quelle valeur ? », `&age` répond à « quel emplacement ? ».
 
-## Déclarer un pointeur
+## déclarer un pointeur
 
-Un pointeur se déclare avec le type de la valeur pointée, suivi d'une étoile et du nom : `int *p;` se lit « `p` est un pointeur vers un `int` ». On y range ensuite une adresse, typiquement celle obtenue avec `&`.
+Pour ranger une adresse, il faut une variable taillée pour ça. On la déclare en mettant une étoile entre le type et le nom. `int *p;` se lit « p est un pointeur vers un int ». Autrement dit, p est prévu pour contenir l'adresse d'une case qui abrite un int.
+
+Tant qu'on n'y a rien mis, p ne pointe vers rien d'utile. On lui donne une adresse, le plus souvent celle qu'on récupère avec `&`.
 
 <CodePlayground language="c" starterCode={`#include <stdio.h>
 
 int main(void) {
     int age = 30;
-    int *p;          /* p est un pointeur vers un int */
+    int *p;          /* p peut contenir l'adresse d'un int */
 
     p = &age;        /* p contient maintenant l'adresse de age */
 
-    printf("Valeur de age      : %d\\n", age);
-    printf("Adresse de age     : %p\\n", (void *)&age);
-    printf("Contenu de p       : %p\\n", (void *)p);
+    printf("Valeur de age  : %d\\n", age);
+    printf("Adresse de age : %p\\n", (void *)&age);
+    printf("Contenu de p   : %p\\n", (void *)p);
 
     return 0;
 }`} />
 
-Remarquez que `p` et `&age` affichent la **même** adresse : `p` « pointe vers » `age`. Le schéma ci-dessous résume la chaîne complète.
+Regardez les deux dernières lignes. `&age` et `p` affichent la même adresse. C'est exactement ce qu'on voulait : p « pointe vers » age, comme l'enveloppe portait l'adresse de la maison. p ne contient pas le 30, il contient le chemin vers le 30.
 
-<Diagram>
-```mermaid
-flowchart LR
-    A[Pointeur p] -->|contient l adresse| B[Adresse 0x7ffe...]
-    B -->|localise| C[Variable age = 30]
-```
-</Diagram>
+## déréférencer avec l'étoile
 
-## Le déréférencement
+Avoir l'adresse, c'est avoir l'enveloppe. Maintenant on veut entrer dans la maison. Cette opération s'appelle le déréférencement, et elle se note avec une étoile placée devant le pointeur au moment où on s'en sert. `p` désigne l'adresse, `*p` désigne la valeur rangée à cette adresse.
 
-Avoir une adresse, c'est bien ; accéder à la valeur qui s'y trouve, c'est mieux. C'est le rôle du **déréférencement**, noté avec l'étoile `*` placée devant le pointeur. Tandis que `p` désigne l'adresse, `*p` désigne **la valeur rangée à cette adresse**. Et puisque `*p` est un autre nom pour `age`, on peut aussi **modifier** `age` en écrivant dans `*p`.
+Et puisque `*p` est un autre nom pour age, on peut aussi écrire dedans pour changer age.
 
 <CodePlayground language="c" starterCode={`#include <stdio.h>
 
@@ -74,51 +72,78 @@ int main(void) {
     int age = 30;
     int *p = &age;
 
-    printf("Lecture via *p   : %d\\n", *p);   /* affiche 30 */
+    printf("Lecture via *p    : %d\\n", *p);   /* affiche 30 */
 
-    *p = 42;                                  /* on ecrit a travers le pointeur */
+    *p = 42;                                   /* on ecrit a travers le pointeur */
 
-    printf("age apres *p = 42 : %d\\n", age);  /* age vaut maintenant 42 */
+    printf("age apres *p = 42 : %d\\n", age);   /* age vaut maintenant 42 */
 
     return 0;
 }`} />
 
-C'est le point clé de toute la leçon : modifier `*p`, c'est modifier `age` elle-même, car les deux désignent la même case mémoire.
+Modifier `*p`, c'est modifier age, parce que les deux pointent sur la même case mémoire. Vous n'avez pas touché à age directement, et pourtant sa valeur a changé. C'est toute la puissance, et tout le danger, des pointeurs.
+
+Il reste un point qui embrouille tout le monde au début. L'étoile apparaît à deux moments qui n'ont rien à voir.
 
 <Callout type="info">
-Ne confondez jamais `p` et `*p`. `p` est **l'adresse** (où se trouve la variable) ; `*p` est **la valeur** (ce qu'il y a à cette adresse). L'étoile au moment de l'utilisation « suit la flèche » jusqu'à la valeur. C'est exactement la différence entre l'enveloppe portant l'adresse et la maison elle-même.
+Dans `int *p;` l'étoile fait partie de la déclaration : elle annonce « p est un pointeur ». Dans `*p = 42;` l'étoile est l'opération de déréférencement : elle dit « va à l'adresse contenue dans p et agis sur la valeur qui s'y trouve ». Même symbole, deux rôles. Au moment de l'utilisation, retenez aussi que p est l'adresse (l'enveloppe) et `*p` est la valeur (la maison). Ne les confondez jamais.
 </Callout>
 
-## Pourquoi les pointeurs
+## pourquoi les pointeurs
 
-Si ce n'était qu'une façon compliquée d'écrire `age = 42`, les pointeurs ne mériteraient pas leur réputation. Leur vraie utilité apparaît dès qu'on veut **modifier une variable depuis une fonction**. En C, les arguments sont passés **par valeur** : la fonction reçoit une copie. Pour qu'elle agisse sur la variable originale, on lui passe son **adresse** (passage par adresse), et la fonction déréférence ce pointeur.
+Si tout ça ne servait qu'à écrire `*p = 42` au lieu de `age = 42`, personne n'en parlerait. L'intérêt apparaît dès qu'une fonction doit modifier une variable qui ne lui appartient pas.
+
+En C, les arguments sont passés par valeur. La fonction reçoit une copie de ce que vous lui donnez. Elle peut tripoter cette copie autant qu'elle veut, l'original ne bouge pas. Pour qu'une fonction agisse vraiment sur votre variable, vous ne lui passez pas la variable, vous lui passez son adresse. La fonction déréférence alors ce pointeur pour atteindre l'original.
 
 <CodePlayground language="c" starterCode={`#include <stdio.h>
 
 void doubler(int *n) {
-    *n = *n * 2;       /* modifie la variable d origine */
+    *n = *n * 2;       /* modifie la variable d'origine */
 }
 
 int main(void) {
     int score = 21;
 
     printf("Avant : %d\\n", score);
-    doubler(&score);   /* on passe l adresse de score */
+    doubler(&score);   /* on passe l'adresse de score */
     printf("Apres : %d\\n", score);  /* 42 */
 
     return 0;
 }`} />
 
-Sans le pointeur, `doubler` travaillerait sur une copie et `score` resterait à 21. Les pointeurs servent aussi à parcourir des tableaux, à gérer des chaînes de caractères et à manipuler la mémoire allouée dynamiquement avec `malloc`.
+Sans le `&`, la fonction `doubler` travaillerait sur une copie et `score` resterait à 21. C'est ce qu'on appelle le passage par adresse, et c'est la raison numéro un d'utiliser des pointeurs au quotidien.
+
+Ce n'est pas la seule. Un pointeur permet aussi de parcourir un tableau case par case en avançant l'adresse, de manipuler des chaînes de caractères, et de bâtir des structures de données comme les listes chaînées, où chaque élément retient l'adresse du suivant. La mémoire réservée à la main avec `malloc` ne s'atteint d'ailleurs que par un pointeur. Difficile d'aller loin en C sans eux.
+
+## le pointeur nul et les dangers
+
+Un pointeur déclaré sans valeur ne pointe pas « vers rien ». Il pointe vers une adresse au hasard, celle qui traînait dans cette case mémoire. On appelle ça un pointeur sauvage. Le déréférencer revient à entrer par effraction dans une maison dont vous ignorez tout : le résultat est imprévisible, souvent un crash brutal, parfois une corruption silencieuse bien pire.
+
+Pour dire proprement « ce pointeur ne pointe vers rien pour l'instant », le C fournit la valeur spéciale `NULL`. Vous initialisez vos pointeurs avec `NULL`, puis vous testez avant de déréférencer.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int *p = NULL;     /* honnete : p ne pointe vers rien */
+
+    if (p != NULL) {
+        printf("%d\\n", *p);   /* on n'entre ici que si p est valide */
+    } else {
+        printf("p ne pointe vers rien, on ne dereference pas\\n");
+    }
+
+    return 0;
+}`} />
 
 <Callout type="warning">
-Un pointeur **non initialisé** contient une adresse aléatoire (« pointeur sauvage »). Le déréférencer (`*p`) provoque un comportement indéfini, souvent un crash. Initialisez toujours vos pointeurs, soit avec une adresse valide (`&variable`), soit avec `NULL` pour signaler « ne pointe vers rien », et vérifiez avant de déréférencer.
+Ne déréférencez jamais un pointeur non initialisé ni un pointeur valant `NULL`. Déréférencer `NULL` plante le programme à coup sûr, et déréférencer un pointeur sauvage est encore plus traître car le bug peut passer inaperçu un long moment. Deux réflexes à prendre tout de suite : initialiser chaque pointeur (avec `&variable` ou avec `NULL`), et vérifier qu'il n'est pas `NULL` avant tout `*p`.
 </Callout>
 
-## À vous de jouer
+## à toi de jouer
 
 <QuizGroup>
 <Quiz
+  id="c-ptr-deref"
   question="Que vaut l'expression *p après les lignes : int x = 5; int *p = &x; ?"
   options={[
     "L'adresse de x",
@@ -127,42 +152,44 @@ Un pointeur **non initialisé** contient une adresse aléatoire (« pointeur sau
     "La valeur NULL"
   ]}
   correct={1}
-  explanation="*p déréférence le pointeur : il donne la valeur rangée à l'adresse contenue dans p, c'est-à-dire 5. C'est p (sans étoile) qui contiendrait l'adresse de x."
+  explanation="*p déréférence le pointeur : il donne la valeur rangée à l'adresse contenue dans p, c'est-à-dire 5. C'est p seul, sans étoile, qui contient l'adresse de x."
 />
 
 <Quiz
+  id="c-ptr-address-op"
   question="Quel opérateur récupère l'adresse d'une variable nommée v ?"
   options={[
-    "*v",
     "&v",
+    "*v",
     "%v",
     "#v"
   ]}
-  correct={1}
-  explanation="L'opérateur d'adresse est l'esperluette : &v donne l'adresse mémoire de v. L'étoile, elle, sert au déréférencement."
+  correct={0}
+  explanation="L'opérateur d'adresse est l'esperluette : &v donne l'adresse mémoire de v. L'étoile, elle, sert au déréférencement, pas à récupérer une adresse."
 />
 
 <Quiz
-  question="Pourquoi passe-t-on &score à une fonction qui doit modifier score ?"
+  id="c-ptr-by-address"
+  question="Pourquoi passe-t-on &score à une fonction censée modifier score ?"
   options={[
-    "Pour gagner en performance uniquement",
-    "Parce que C interdit les fonctions void",
-    "Parce que les arguments sont copiés ; il faut l'adresse pour agir sur l'original",
-    "Parce que &score est plus court à écrire"
+    "Pour gagner en performance, et rien d'autre",
+    "Parce que les arguments sont copiés : il faut l'adresse pour agir sur l'original",
+    "Parce que le C interdit les fonctions void",
+    "Parce que &score est plus court à taper"
   ]}
-  correct={2}
-  explanation="En C, le passage se fait par valeur : la fonction reçoit une copie. En transmettant l'adresse, la fonction peut déréférencer ce pointeur et modifier la variable d'origine."
+  correct={1}
+  explanation="En C, le passage se fait par valeur : la fonction reçoit une copie. En lui donnant l'adresse, la fonction peut déréférencer ce pointeur et atteindre la variable d'origine."
 />
 </QuizGroup>
 
-Dernier défi : complétez la fonction `echange` pour qu'elle intervertisse les valeurs de deux variables via leurs adresses.
+Un dernier exercice pour ancrer le tout. La fonction `echange` ci-dessous intervertit les valeurs de deux variables en passant par leurs adresses. Lisez-la ligne à ligne et vérifiez que la sortie correspond bien à ce que vous attendez.
 
 <CodePlayground language="c" starterCode={`#include <stdio.h>
 
 void echange(int *a, int *b) {
     int temp = *a;   /* on sauve la valeur pointee par a */
     *a = *b;         /* a recoit la valeur pointee par b */
-    *b = temp;       /* b recoit l ancienne valeur de a */
+    *b = temp;       /* b recoit l'ancienne valeur de a */
 }
 
 int main(void) {
@@ -176,14 +203,15 @@ int main(void) {
     return 0;
 }`} />
 
-## Récapitulatif
+## à retenir
 
-- Chaque variable occupe une **adresse** en mémoire ; un **pointeur** est une variable qui stocke une adresse.
-- L'opérateur d'adresse `&` donne l'adresse d'une variable ; on l'affiche avec `%p`.
-- On déclare un pointeur avec `type *nom;` (ex : `int *p;`).
-- Le **déréférencement** `*p` accède à la valeur pointée : on peut la **lire** et la **modifier**.
-- `p` est l'adresse, `*p` est la valeur : ne jamais les confondre.
-- Le passage par adresse permet à une fonction de **modifier** la variable d'origine.
-- Un pointeur **non initialisé** est dangereux : initialisez toujours avec `&variable` ou `NULL`.
+- Chaque variable occupe une case mémoire qui a une adresse ; un pointeur est une variable qui retient une adresse.
+- `&v` donne l'adresse de v ; on l'affiche avec `%p`.
+- On déclare un pointeur avec `type *nom;`, par exemple `int *p;`.
+- `*p` déréférence : il accède à la valeur rangée à l'adresse contenue dans p, en lecture comme en écriture.
+- L'étoile a deux rôles distincts : déclarer un pointeur dans `int *p;`, déréférencer dans `*p = 42;`.
+- p est l'adresse, `*p` est la valeur. Ne jamais les mélanger.
+- Le passage par adresse laisse une fonction modifier la variable d'origine au lieu d'une copie.
+- Un pointeur non initialisé ou valant `NULL` ne se déréférence pas : initialisez toujours, testez avant `*p`.
 
-OK 09-pointeurs.mdx écrit
+OK 09 réécrit
