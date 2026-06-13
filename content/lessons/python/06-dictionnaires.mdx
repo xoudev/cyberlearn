@@ -10,124 +10,128 @@ xpReward: 320
 prerequisites: ["CL-LSN-005-V01"]
 ---
 
-Jusqu'ici, vous avez manipulé des listes et des tuples, où chaque élément est repéré par sa **position** (un index numérique). Mais comment retrouver une information à partir d'un nom plutôt que d'un numéro ? C'est exactement le rôle du **dictionnaire**.
+Avec une liste, tu retrouves une valeur par sa position. Le troisième élément, le premier nom, le dernier score. C'est pratique tant que la position a un sens. Mais bien souvent, ce n'est pas la position qui t'intéresse. Tu veux le prix d'un produit précis, l'âge d'une personne donnée, le score associé à un pseudo. Là, compter des positions devient absurde : qui se souvient que le lait est rangé à l'indice 7 ?
 
-Imaginez un annuaire téléphonique : vous ne cherchez pas la 47e ligne, vous cherchez le nom « Dupont » pour obtenir son numéro. Le dictionnaire fonctionne pareil : il associe une **clé** (le nom) à une **valeur** (le numéro). Cette structure, omniprésente en Python, est l'une des plus puissantes du langage.
+Ce qu'il te faut, c'est retrouver une valeur par un nom. Donner « lait » et obtenir son prix. C'est exactement le rôle du dictionnaire.
 
-Nous verrons aussi les **ensembles** (`set`), des collections de valeurs **uniques**, parfaites pour éliminer les doublons ou comparer des groupes de données.
+## le dictionnaire
 
-## Créer un dictionnaire
+Un dictionnaire associe des clés à des valeurs. La clé, c'est le nom par lequel tu cherches. La valeur, c'est ce que tu récupères. On l'écrit avec des accolades, et chaque paire prend la forme clé deux-points valeur.
 
-Un dictionnaire stocke des paires **clé-valeur**. On l'écrit avec des accolades, chaque paire reliant une clé à une valeur par un deux-points. Par exemple, un dictionnaire littéral s'écrit `{'nom': 'Dupont', 'age': 30}`.
+<CodePlayground language="python" starterCode={`prix = {"lait": 1.20, "pain": 0.95, "oeufs": 2.50}
 
-Les clés sont généralement des chaînes de caractères ou des nombres, et doivent être **uniques**. Les valeurs, elles, peuvent être de n'importe quel type : texte, nombre, liste, voire un autre dictionnaire.
+print(prix["pain"])        # acces par cle : 0.95
 
-<CodePlayground language="python" starterCode={`# Un dictionnaire vide
-contacts = {}
+prix["beurre"] = 2.10      # ajouter une nouvelle paire
+prix["lait"] = 1.30        # modifier une valeur existante
 
-# Un dictionnaire rempli dès la création
-utilisateur = {
-    "nom": "Alice",
-    "age": 28,
-    "ville": "Lyon",
-}
+print(prix)
+print(len(prix))           # nombre de paires : 4`} />
 
-print(utilisateur)
-print(type(utilisateur))`} />
+Remarque le mécanisme. Tu n'écris jamais `prix[0]`. Tu écris `prix["pain"]`, et Python te rend la valeur rangée sous cette clé. Ajouter et modifier utilisent la même syntaxe : si la clé existe déjà, tu écrases sa valeur ; sinon, tu crées la paire. C'est volontaire, et c'est commode.
 
-On peut aussi créer un dictionnaire avec la fonction `dict()`, mais la notation avec accolades reste la plus courante et la plus lisible.
+Une précision qui évite des malentendus. Depuis Python 3.7, un dictionnaire conserve l'ordre dans lequel tu as inséré les clés. Mais cet ordre est celui de l'insertion, pas un tri par valeur. Si tu veux les prix du plus petit au plus grand, il faut trier explicitement. Un dictionnaire range par clé d'accès, il ne classe rien tout seul.
 
-## Accéder et modifier
+## les méthodes
 
-Pour lire une valeur, on indique sa clé entre crochets, comme `utilisateur["nom"]`. Pour ajouter ou modifier une entrée, on assigne simplement une valeur à une clé.
+Le danger numéro un avec un dictionnaire, c'est de demander une clé qui n'existe pas. Python ne te rend pas une valeur vide : il lève une erreur, `KeyError`, et ton programme s'arrête.
 
-<CodePlayground language="python" starterCode={`utilisateur = {"nom": "Alice", "age": 28}
+<CodePlayground language="python" starterCode={`stock = {"clavier": 12, "souris": 30}
 
-# Lire une valeur par sa clé
-print(utilisateur["nom"])  # Alice
+# print(stock["ecran"])   # leverait KeyError, le programme planterait
 
-# Modifier une valeur existante
-utilisateur["age"] = 29
+# get renvoie None si la cle manque, sans planter
+print(stock.get("ecran"))        # None
+print(stock.get("ecran", 0))     # 0 : valeur par defaut au choix
+print(stock.get("clavier", 0))   # 12
 
-# Ajouter une nouvelle clé
-utilisateur["ville"] = "Lyon"
+# tester l'existence avant d'acceder
+if "souris" in stock:
+    print("en stock :", stock["souris"])`} />
 
-print(utilisateur)`} />
+La différence est nette. `stock["ecran"]` exige que la clé soit là. `stock.get("ecran")` accepte qu'elle manque et te rend `None`, ou la valeur par défaut que tu fournis en deuxième argument. Quand tu n'es pas sûr qu'une clé existe, `get` t'évite des plantages bêtes.
 
-Attention : si vous demandez une clé qui n'existe pas avec les crochets, Python lève une erreur `KeyError` et le programme s'arrête. La méthode `.get()` est plus sûre : elle renvoie `None` (ou une valeur par défaut que vous précisez) au lieu de planter.
+Pour parcourir un dictionnaire, trois méthodes te donnent ce que tu veux. `keys()` pour les clés, `values()` pour les valeurs, `items()` pour les paires complètes.
 
-<CodePlayground language="python" starterCode={`utilisateur = {"nom": "Alice", "age": 28}
+<CodePlayground language="python" starterCode={`notes = {"Sarah": 15, "Karim": 12, "Lea": 18}
 
-# .get() ne plante pas si la clé manque
-print(utilisateur.get("ville"))            # None
-print(utilisateur.get("ville", "Inconnue"))  # Inconnue
-print(utilisateur.get("nom", "Inconnue"))    # Alice`} />
+for nom in notes:                  # par defaut, on parcourt les cles
+    print(nom)
 
-<Callout type="warning">
-Accéder à une clé absente avec les crochets (`mon_dico["clef_absente"]`) déclenche une `KeyError` qui interrompt le programme. Privilégiez `.get()` chaque fois que vous n'êtes pas certain que la clé existe : vous obtenez une valeur par défaut au lieu d'un crash.
-</Callout>
-
-## Parcourir un dictionnaire
-
-Trois méthodes permettent de parcourir un dictionnaire avec une boucle `for` :
-
-- `.keys()` renvoie les clés,
-- `.values()` renvoie les valeurs,
-- `.items()` renvoie les paires clé-valeur ensemble.
-
-<CodePlayground language="python" starterCode={`notes = {"Maths": 15, "Histoire": 12, "Anglais": 18}
-
-# Parcourir les clés (comportement par défaut)
-for matiere in notes.keys():
-    print(matiere)
-
-# Parcourir les valeurs
 for note in notes.values():
     print(note)
 
-# Parcourir clés ET valeurs ensemble
-for matiere, note in notes.items():
-    print(f"{matiere} : {note}/20")`} />
+for nom, note in notes.items():    # la cle ET la valeur d'un coup
+    print(nom, "a eu", note)
 
-La forme avec `.items()` est de loin la plus utilisée : elle donne accès à la clé et à la valeur en même temps, ce qui couvre la majorité des besoins réels.
+total = sum(notes.values())
+print("moyenne :", total / len(notes))`} />
 
-## Les ensembles (set)
+Le `for nom, note in notes.items()` est le plus utile au quotidien. Chaque tour de boucle te donne la paire entière, déballée dans deux variables. Pas besoin de redemander la valeur avec la clé, tu as les deux sous la main.
 
-Un **ensemble** est une collection de valeurs **uniques** et **non ordonnées**. On l'écrit avec des accolades, mais sans deux-points : par exemple `{1, 2, 3}`. Si vous insérez un doublon, il est automatiquement ignoré.
+## quand l'utiliser
 
-Les ensembles supportent les opérations mathématiques classiques : l'**union** (`|`, tous les éléments des deux ensembles) et l'**intersection** (`&`, les éléments communs).
+Deux usages reviennent sans arrêt. Le premier, compter des occurrences. Tu as une suite d'éléments et tu veux savoir combien de fois chacun apparaît.
 
-<CodePlayground language="python" starterCode={`# Création d'un ensemble
-fruits = {"pomme", "banane", "pomme", "cerise"}
-print(fruits)  # la deuxième "pomme" disparaît
+<CodePlayground language="python" starterCode={`votes = ["bleu", "rouge", "bleu", "vert", "rouge", "bleu"]
 
-# Union et intersection
-a = {1, 2, 3, 4}
-b = {3, 4, 5, 6}
+comptage = {}
+for couleur in votes:
+    # get avec defaut 0 : si la couleur est nouvelle, on part de 0
+    comptage[couleur] = comptage.get(couleur, 0) + 1
 
-print(a | b)  # union : 1, 2, 3, 4, 5, 6
-print(a & b)  # intersection : 3, 4`} />
+print(comptage)        # bleu 3, rouge 2, vert 1`} />
 
-<Callout type="info">
-Pour supprimer les doublons d'une liste, convertissez-la en ensemble puis, si besoin, reconvertissez-la en liste : `list(set(ma_liste))`. C'est l'astuce la plus rapide et la plus lisible pour dédoublonner des données en Python.
-</Callout>
+C'est l'idiome classique. `comptage.get(couleur, 0)` rend le compte actuel, ou zéro si on voit la couleur pour la première fois, et on ajoute un. Sans `get`, il faudrait tester l'existence à chaque tour. Là, une ligne suffit.
 
-Notez qu'un ensemble vide se crée avec `set()` et non avec des accolades vides, car ces dernières créent un dictionnaire vide.
+Le second usage, indexer par identifiant. Quand chaque chose a un numéro ou un nom unique, le dictionnaire te la retrouve instantanément, sans parcourir toute une liste.
 
-## À vous de jouer
+<CodePlayground language="python" starterCode={`utilisateurs = {
+    101: "Sarah",
+    102: "Karim",
+    103: "Lea",
+}
 
-<Quiz id="q-1" question="Quelle méthode renvoie une valeur par défaut au lieu de lever une KeyError si la clé est absente ?" options={[".keys()", ".get()", ".values()", ".items()"]} correct={1} />
+print(utilisateurs[102])           # Karim, direct
 
-<Quiz id="q-2" question="Que vaut len({1, 2, 2, 3, 3, 3}) en Python ?" options={["6", "1", "3", "9"]} correct={2} />
+# ajouter, retirer
+utilisateurs[104] = "Tom"
+del utilisateurs[101]
+print(utilisateurs)`} />
 
-<PythonChallenge id="py-1" title="Compteur de caractères" description="Écrivez une fonction solution(texte) qui retourne un dictionnaire comptant le nombre d'occurrences de chaque caractère du texte. Par exemple, solution('aab') doit retourner {'a': 2, 'b': 1}. Une chaîne vide doit retourner un dictionnaire vide." starterCode="def solution(texte):
-    pass" tests={[{ input: "solution('aab')", expected: "{'a': 2, 'b': 1}" }, { input: "solution('abc')", expected: "{'a': 1, 'b': 1, 'c': 1}" }, { input: "solution('')", expected: "{}", label: "Chaîne vide" }]} />
+## les ensembles
 
-## Récapitulatif
+Le set est le cousin du dictionnaire : des accolades aussi, mais que des valeurs, sans clés. Sa particularité tient en un mot : pas de doublon. Un ensemble ne garde qu'un seul exemplaire de chaque valeur. Si tu ajoutes une valeur déjà présente, rien ne change.
 
-- Un **dictionnaire** associe des **clés** uniques à des **valeurs**, écrit avec des accolades et des deux-points.
-- On accède à une valeur par sa clé entre crochets ; `.get()` évite la `KeyError` en renvoyant une valeur par défaut.
-- On ajoute ou modifie une entrée par simple assignation sur une clé.
-- `.keys()`, `.values()` et `.items()` permettent de parcourir un dictionnaire avec `for` ; `.items()` donne clé et valeur ensemble.
-- Un **ensemble** (`set`) ne contient que des valeurs **uniques** et supporte l'union (`|`) et l'intersection (`&`).
-- `list(set(ma_liste))` est l'idiome standard pour supprimer les doublons d'une liste.
+Ce comportement règle un problème courant : dédupliquer une liste. Tu la transformes en set, les doublons disparaissent, et tu reviens à une liste si besoin.
+
+<CodePlayground language="python" starterCode={`emails = ["a@x.fr", "b@x.fr", "a@x.fr", "c@x.fr", "b@x.fr"]
+
+uniques = set(emails)
+print(uniques)             # chaque email une seule fois
+print(len(uniques))        # 3
+
+sans_doublon = list(uniques)
+print(sans_doublon)
+
+# l'autre force du set : tester l'appartenance, et c'est rapide
+autorises = {"sarah", "karim", "lea"}
+print("karim" in autorises)    # True
+print("tom" in autorises)      # False`} />
+
+Le test `in` sur un set est nettement plus rapide que sur une liste quand il y a beaucoup d'éléments, parce qu'un set est organisé pour répondre vite à la question « est-ce que cette valeur est là ? ». Quand tu n'as besoin que de savoir si quelque chose appartient à un groupe, et que les doublons ne t'intéressent pas, le set est le bon choix.
+
+## à toi de jouer
+
+<PythonChallenge id="py-1" title="Somme des valeurs" description="Renvoie la somme de toutes les valeurs du dictionnaire d." starterCode="def solution(d):
+    pass" tests={[{ input: "solution({'a': 1, 'b': 2})", expected: "3" }, { input: "solution({'x': 10, 'y': 5, 'z': 5})", expected: "20" }]} />
+
+<Quiz id="q-1" question="On a stock = {'clavier': 12}. Que renvoie stock.get('ecran', 0) ?" options={["Une KeyError", "0", "None", "False"]} correct={1} explanation="get renvoie le deuxieme argument, 0, quand la cle est absente, au lieu de lever une KeyError." />
+
+<Quiz id="q-2" question="Que vaut len(set([1, 2, 2, 3, 3, 3])) ?" options={["6", "3", "2", "1"]} correct={1} explanation="Le set supprime les doublons : il ne reste que 1, 2 et 3, donc une longueur de 3." />
+
+## à retenir
+
+Un dictionnaire associe des clés à des valeurs ; tu accèdes par clé, pas par position. Ajouter ou modifier passe par la même syntaxe `d[cle] = valeur`. Demander une clé absente avec les crochets lève une `KeyError` ; `get(cle, defaut)` rend une valeur par défaut à la place et ne plante pas. `keys()`, `values()` et `items()` servent à parcourir, et `items()` te donne clé et valeur ensemble. Un dictionnaire garde l'ordre d'insertion, mais ne trie pas par valeur. Le set ne contient que des valeurs uniques : il déduplique une liste en une ligne et répond vite à un test d'appartenance avec `in`.
+
+OK 06 réécrit

@@ -10,117 +10,116 @@ xpReward: 450
 prerequisites: ["CL-LSN-005-V01"]
 ---
 
-Jusqu'ici, tu as manipulé des variables, des listes et des fonctions de façon plutôt dispersée : les données vivaient d'un côté, et les fonctions qui agissaient dessus de l'autre. La **programmation orientée objet** (POO) propose une autre manière d'organiser ton code : regrouper dans une même entité, appelée **objet**, à la fois des **données** (l'état) et des **comportements** (les actions possibles).
+Jusqu'ici, tu as travaillé avec des données d'un côté et des fonctions de l'autre. Une liste de soldes ici, une fonction `deposer` là. Ça marche, mais quand un programme grossit, ces deux mondes finissent par dériver. Tu te retrouves à passer les mêmes variables à dix fonctions différentes, et à prier pour ne pas oublier d'en mettre à jour une.
 
-Une analogie classique : imagine un **plan d'architecte** ou un **moule à gâteaux**. Le plan décrit comment construire une maison, mais le plan n'est pas une maison. À partir d'un seul plan, tu peux construire des dizaines de maisons concrètes. En POO, ce plan s'appelle une **classe**, et chaque maison réellement construite à partir de ce plan s'appelle un **objet** (ou une **instance**). La classe est le modèle abstrait ; l'objet est l'exemplaire concret que tu peux réellement utiliser.
+La programmation orientée objet propose autre chose : regrouper les données et les fonctions qui s'en occupent dans un même paquet. Ce paquet, c'est l'objet. Il a un état (ses données) et des comportements (ses actions). Un compte bancaire connaît son solde et sait déposer de l'argent. Un joueur connaît ses points de vie et sait subir des dégâts. Les données et le code qui les manipule voyagent ensemble.
 
-Cette approche rend ton code plus lisible, plus réutilisable et plus proche du monde réel : au lieu de jongler avec dix variables séparées pour décrire un compte bancaire (le solde, le titulaire, le numéro...), tu crées un objet `compte` qui porte toutes ces informations et qui sait lui-même comment se créditer ou se débiter.
+On fait ça pour des raisons très concrètes. Modéliser : le code ressemble au domaine qu'il décrit, un compte est un compte. Regrouper : l'état et les actions tiennent dans un seul endroit, plus de variables qui se baladent. Réutiliser : une fois le moule écrit, tu fabriques autant d'objets que tu veux sans réécrire la logique.
 
-## Définir une classe
+## classe et objet
 
-On déclare une classe avec le mot-clé `class`, suivi d'un nom (par convention en **PascalCase** : `Chien`, `CompteBancaire`). Le cœur d'une classe est souvent son **constructeur**, une méthode spéciale nommée `__init__`. Elle est appelée automatiquement à chaque création d'objet et sert à initialiser les **attributs** (les données de l'objet).
+Une classe est un moule. Elle décrit à quoi ressemble un type d'objet : quelles données il porte, quelles actions il sait faire. Mais la classe elle-même ne contient pas de données concrètes, c'est juste le plan.
 
-Le premier paramètre de `__init__` est toujours `self` : il représente l'objet en cours de construction. On y attache les attributs avec la syntaxe `self.nom_attribut = valeur`.
+L'objet, lui, est une instance : un exemplaire fabriqué à partir du moule. Le moule `Joueur` décrit l'idée d'un joueur. À partir de ce moule, tu fabriques `joueur1`, `joueur2`, chacun avec ses propres valeurs. Même plan, exemplaires distincts.
 
-<CodePlayground language="python" starterCode={`class Chien:
-    def __init__(self, nom, age):
+<CodePlayground language="python" starterCode={`class Joueur:
+    def afficher(self):
+        print("Je suis un joueur")
+
+# On fabrique deux instances à partir du même moule
+joueur1 = Joueur()
+joueur2 = Joueur()
+
+joueur1.afficher()
+joueur2.afficher()
+
+# Ce sont bien deux objets différents
+print(joueur1 is joueur2)`} />
+
+`Joueur` est le moule. `joueur1` et `joueur2` sont deux objets bien réels, indépendants. Le `is` renvoie `False` parce que ce sont deux exemplaires séparés, même s'ils sortent du même moule. Pour l'instant ce moule est vide de données, on va y remédier.
+
+## __init__ et self
+
+Un objet sans données ne sert pas à grand-chose. On veut que chaque joueur ait un nom, des points de vie, ses propres valeurs dès sa création. C'est le rôle de `__init__`.
+
+`__init__` est le constructeur. Python l'appelle automatiquement au moment où tu fabriques un objet, c'est-à-dire quand tu écris `Joueur("Alice", 100)`. Son travail est d'initialiser l'objet : poser ses valeurs de départ.
+
+Et là arrive `self`, le point qui déroute tout le monde. `self`, ce n'est pas magique. C'est simplement l'objet en train d'être manipulé, que Python passe automatiquement en premier argument à chaque méthode. Quand tu écris `joueur1.subir_degats(10)`, Python traduit en `subir_degats(joueur1, 10)`. Le `joueur1` arrive dans le paramètre `self`. Voilà pourquoi tu le vois partout : c'est le fil qui relie une méthode à l'objet précis sur lequel elle agit.
+
+<CodePlayground language="python" starterCode={`class Joueur:
+    def __init__(self, nom, pv):
+        # self est CE joueur-ci. On range ses valeurs dedans.
         self.nom = nom
-        self.age = age
+        self.pv = pv
 
-# On crée un objet Chien
-rex = Chien("Rex", 3)
-print(rex.nom)
-print(rex.age)`} />
+# Appeler Joueur(...) déclenche __init__ automatiquement
+alice = Joueur("Alice", 100)
+bob = Joueur("Bob", 80)
 
-Ici, `Chien` est le plan. `rex` est un objet concret avec ses propres valeurs : `nom` vaut `"Rex"` et `age` vaut `3`.
+print(alice.nom, alice.pv)
+print(bob.nom, bob.pv)`} />
 
-## Les méthodes
+`self.nom = nom` veut dire : range la valeur reçue dans l'attribut `nom` de cet objet précis. Pour `alice`, `self` est `alice`. Pour `bob`, `self` est `bob`. Chaque objet garde ses propres données, c'est pour ça qu'`alice.pv` et `bob.pv` ne se mélangent pas. Tu n'écris jamais `self` à la main lors de l'appel, Python s'en charge.
 
-Une **méthode** est simplement une fonction définie *à l'intérieur* d'une classe. Elle décrit un comportement que l'objet sait exécuter. Comme `__init__`, toute méthode reçoit `self` en premier paramètre, ce qui lui donne accès aux attributs de l'objet.
+## attributs et méthodes
 
-<CodePlayground language="python" starterCode={`class Chien:
-    def __init__(self, nom, age):
+Un objet contient deux sortes de choses. Les attributs sont ses données : `self.nom`, `self.pv`. Les méthodes sont ses actions : des fonctions définies dans la classe, qui agissent sur l'objet.
+
+La différence avec une fonction ordinaire, c'est qu'une méthode travaille sur son propre état via `self`. `subir_degats` n'a pas besoin qu'on lui passe les points de vie : ils sont déjà dans `self.pv`. La méthode lit et modifie l'état de l'objet sur lequel on l'appelle.
+
+<CodePlayground language="python" starterCode={`class Joueur:
+    def __init__(self, nom, pv):
         self.nom = nom
-        self.age = age
+        self.pv = pv
 
-    def aboyer(self):
-        return f"{self.nom} fait Wouf !"
+    def subir_degats(self, montant):
+        # La méthode agit sur l'état de CET objet
+        self.pv = self.pv - montant
+        if self.pv < 0:
+            self.pv = 0
 
-    def anniversaire(self):
-        self.age = self.age + 1
+    def est_vivant(self):
+        return self.pv > 0
 
-rex = Chien("Rex", 3)
-print(rex.aboyer())
-rex.anniversaire()
-print(rex.age)`} />
+alice = Joueur("Alice", 100)
+alice.subir_degats(30)
+print(alice.nom, "a", alice.pv, "pv")
+print("Vivante ?", alice.est_vivant())
 
-La méthode `aboyer` lit l'attribut `self.nom`, et `anniversaire` modifie l'attribut `self.age`. L'objet agit sur ses propres données.
+alice.subir_degats(200)
+print(alice.nom, "a", alice.pv, "pv")
+print("Vivante ?", alice.est_vivant())`} />
 
-<Callout type="info">
-`self` n'est pas un mot-clé magique : c'est simplement le nom (par convention) du premier paramètre de chaque méthode. Python y place automatiquement la référence vers **l'objet courant** quand tu écris `rex.aboyer()`. Grâce à `self`, une méthode sait toujours sur quel objet précis elle travaille - même si dix chiens différents existent en mémoire.
-</Callout>
+Remarque qu'`alice.subir_degats(30)` ne reçoit qu'un seul argument visible, `30`. Le `self` est `alice`, ajouté par Python. La méthode lit `self.pv`, le modifie, et le résultat reste collé à `alice`. Aucune variable externe à gérer, l'état vit dans l'objet.
 
-## Créer des objets (instances)
+## l'encapsulation
 
-Créer un objet à partir d'une classe s'appelle **instancier**. On écrit le nom de la classe suivi de parenthèses, en passant les arguments attendus par `__init__`. On accède ensuite aux attributs et méthodes avec le point (`.`). Chaque instance est **indépendante** : modifier l'une n'affecte pas les autres.
+Tout ce qu'on vient de faire porte un nom : l'encapsulation. L'idée est simple. Plutôt que d'éparpiller le solde d'un côté et les fonctions qui le modifient de l'autre, on les enferme ensemble dans le même objet. L'état et les comportements forment une unité.
 
-<CodePlayground language="python" starterCode={`class Voiture:
-    def __init__(self, marque, vitesse):
-        self.marque = marque
-        self.vitesse = vitesse
+Le bénéfice est double. Le code est plus clair : pour savoir ce qu'un joueur peut faire, tu lis sa classe, tout est là. Et l'état est mieux gardé : on modifie les points de vie en passant par `subir_degats`, qui empêche de descendre sous zéro. La règle vit au même endroit que la donnée qu'elle protège.
 
-    def accelerer(self, delta):
-        self.vitesse = self.vitesse + delta
-
-# Deux instances distinctes
-v1 = Voiture("Renault", 50)
-v2 = Voiture("Peugeot", 0)
-
-v1.accelerer(30)
-
-print(v1.marque, v1.vitesse)
-print(v2.marque, v2.vitesse)`} />
-
-`v1` et `v2` partagent le même plan, mais portent des états différents. Accélérer `v1` ne touche pas `v2`.
-
-## Encapsulation (notion)
-
-L'**encapsulation** consiste à regrouper l'état (les attributs) et les comportements (les méthodes) dans un même objet, et à contrôler la manière dont on accède aux données. En Python, il n'existe pas de mot-clé `private` strict. La **convention** est de préfixer un attribut « interne » par un underscore (`_solde`) pour signaler aux autres développeurs : « ne touche pas directement à ceci, passe par une méthode ».
+Reste un piège, le plus classique en début de POO : oublier `self`. Si tu écris une méthode sans `self` en premier paramètre, ou si tu accèdes à un attribut sans le préfixer par `self.`, Python ne te suit plus.
 
 <CodePlayground language="python" starterCode={`class Compteur:
     def __init__(self):
-        self._valeur = 0  # interne : ne pas modifier directement
+        self.valeur = 0
 
-    def incrementer(self):
-        self._valeur = self._valeur + 1
-
-    def lire(self):
-        return self._valeur
+    # FAUX : pas de self dans la signature
+    def incrementer_casse():
+        valeur = valeur + 1
 
 c = Compteur()
-c.incrementer()
-c.incrementer()
-print(c.lire())`} />
+# Cet appel lève une erreur : la méthode est définie sans paramètre
+# alors que Python passe automatiquement l'objet en premier.
+c.incrementer_casse()`} />
 
-On passe par `incrementer()` et `lire()` plutôt que de bricoler `c._valeur` à la main : l'objet garde le contrôle de son propre état.
+L'erreur dit en gros que la méthode prend zéro argument mais en reçoit un. Ce un, c'est le `self` que Python ajoute toujours. La correction est d'écrire `def incrementer(self):` puis `self.valeur = self.valeur + 1`. Dès qu'une erreur parle d'un argument en trop sur une méthode, pense au `self` manquant.
 
-<Diagram caption="Une classe Compteur encapsulant son état">
-classDiagram
-    class Compteur
-    Compteur : -int _valeur
-    Compteur : +incrementer()
-    Compteur : +lire() int
-</Diagram>
+## à toi de jouer
 
-## À vous de jouer
+Complète la méthode `deposer` pour qu'elle ajoute `montant` au solde du compte.
 
-<QuizGroup>
-<Quiz id="q-1" question="Quel est le rôle de la méthode __init__ dans une classe ?" options={["Détruire l'objet quand il n'est plus utilisé", "Initialiser les attributs de l'objet au moment de sa création", "Afficher l'objet à l'écran", "Importer la classe dans un autre fichier"]} correct={1} />
-
-<Quiz id="q-2" question="Que représente le paramètre self dans une méthode ?" options={["La classe elle-même, jamais un objet", "Une variable globale partagée par tous les objets", "L'objet courant sur lequel la méthode est appelée", "Le nom obligatoire d'un mot-clé Python"]} correct={2} />
-</QuizGroup>
-
-<PythonChallenge id="py-1" title="Un compte bancaire" description="Complète la méthode deposer pour qu'elle augmente le solde du montant déposé." starterCode="class CompteBancaire:
+<PythonChallenge id="py-1" title="Compléter une méthode" description="Implémente deposer pour qu'elle ajoute le montant au solde de l'instance via self." starterCode="class Compte:
     def __init__(self, solde):
         self.solde = solde
 
@@ -128,16 +127,20 @@ classDiagram
         pass
 
 def solution(depot):
-    c = CompteBancaire(100)
+    c = Compte(100)
     c.deposer(depot)
-    return c.solde" tests={[{ input: "solution(50)", expected: "150" }, { input: "solution(0)", expected: "100", label: "Dépôt nul" }]} />
+    return c.solde" tests={[{ input: "solution(50)", expected: "150" }]} />
 
-## Récapitulatif
+<Quiz id="q-1" question="Dans une méthode, à quoi correspond self ?" options={["À un mot-clé magique propre à Python, sans signification concrète", "À l'instance courante, passée automatiquement en premier argument", "À la classe elle-même, c'est-à-dire au moule"]} correct={1} />
 
-- Une **classe** est un plan ; un **objet** (ou **instance**) est un exemplaire concret créé à partir de ce plan.
-- Le constructeur **`__init__`** initialise les **attributs** de l'objet à sa création.
-- **`self`** désigne l'objet courant et donne aux méthodes l'accès à ses attributs.
-- Une **méthode** est une fonction définie dans une classe ; elle décrit un comportement de l'objet.
-- On **instancie** avec `NomClasse(...)` et on accède aux membres avec le point (`.`).
-- Chaque instance possède son **état propre**, indépendant des autres.
-- L'**encapsulation** regroupe état et comportements ; le préfixe **`_`** signale par convention un attribut « privé ».
+<Quiz id="q-2" question="Quel est le rôle de __init__ ?" options={["Détruire un objet quand on n'en a plus besoin", "Initialiser un nouvel objet en posant ses valeurs de départ", "Afficher le contenu d'un objet à l'écran"]} correct={1} />
+
+## à retenir
+
+Une classe est un moule, un objet est une instance fabriquée à partir de ce moule. Plusieurs objets issus de la même classe gardent chacun leurs propres données.
+
+`__init__` est le constructeur : Python l'appelle automatiquement à la création d'un objet pour l'initialiser. `self` désigne l'instance courante et arrive en premier argument de chaque méthode, ajouté par Python ; tu ne le passes jamais à la main.
+
+Les attributs sont les données de l'objet (`self.solde`), les méthodes ses actions. Une méthode agit sur son propre état via `self`. Regrouper état et comportements dans un objet, c'est l'encapsulation : code plus clair, état mieux gardé. Le piège récurrent : oublier `self` dans la signature d'une méthode ou devant un attribut.
+
+OK 11 réécrit

@@ -10,85 +10,131 @@ xpReward: 180
 prerequisites: ["CL-LSN-003-V01"]
 ---
 
-Jusqu'ici, vous avez appris à répéter des instructions avec les boucles. Mais que faire lorsqu'un même bloc de logique doit être réutilisé à plusieurs endroits différents de votre programme ? Copier-coller le même code partout est une très mauvaise idée : si vous trouvez un bug, vous devez le corriger dans chaque copie, et vous en oublierez forcément une.
+Tu as sûrement déjà écrit le même calcul deux fois. Tu copies trois lignes, tu changes une valeur, tu recopies plus bas. Au bout d'un moment, ton fichier ressemble à un photocopieur en panne, et le jour où tu dois corriger une faute, tu dois la corriger partout.
 
-C'est là qu'interviennent les **fonctions**. Une fonction est un bloc de code nommé que l'on peut appeler autant de fois que nécessaire. Elle suit le principe **DRY** : *Don't Repeat Yourself* (« ne vous répétez pas »). On écrit la logique **une seule fois**, on lui donne un nom, et on l'utilise ensuite partout. Le code devient plus court, plus lisible et bien plus facile à maintenir.
+Une fonction, c'est la réponse à ce problème. Tu prends un bout de code qui fait quelque chose de précis, tu lui donnes un nom, et ensuite tu l'appelles par ce nom autant de fois que tu veux. Le code n'existe qu'à un seul endroit. Tu le corriges une fois, et tout le programme en profite.
 
-<Callout type="info">
-Vous utilisez déjà des fonctions sans le savoir : `print()`, `range()` et `len()` sont des fonctions fournies par Python. Dans cette leçon, vous allez apprendre à créer les vôtres.
-</Callout>
+Mais ce n'est pas qu'une histoire de gagner des lignes. Une fonction nomme une intention. Quand tu lis `calculer_tva(prix)`, tu sais ce que ça fait sans lire le détail. Le nom raconte l'histoire, le corps fait le travail. C'est ça qui rend un programme lisible.
 
-## Définir une fonction
+## définir avec def
 
-Pour créer une fonction, on utilise le mot-clé `def`, suivi du nom de la fonction, de parenthèses contenant les éventuels **paramètres**, puis d'un deux-points. Le corps de la fonction est **indenté** (comme pour les boucles).
+On crée une fonction avec le mot-clé `def`, suivi du nom, de parenthèses, et de deux points. Le corps de la fonction, c'est tout ce qui est indenté en dessous.
 
-<CodePlayground language="python" starterCode={`def saluer(nom):
-    message = "Bonjour " + nom + " !"
-    print(message)
+<CodePlayground language="python" starterCode={`def dire_bonjour():
+    print("Bonjour !")
+    print("Content de te voir.")
 
-# Appel de la fonction (rien ne se passe sans l'appel)
-saluer("Alice")
-saluer("Bob")`} />
+# Ici, rien ne s'est encore affiché.
+# La fonction est definie, mais pas appelee.
 
-Ici, `nom` est un **paramètre** : une variable qui reçoit la valeur fournie au moment de l'appel. Définir la fonction ne l'exécute pas ; il faut l'**appeler** en écrivant son nom suivi de parenthèses, comme `saluer("Alice")`.
+dire_bonjour()  # maintenant on l'appelle
+dire_bonjour()  # et on peut la rappeler`} />
 
-## Retourner une valeur
+Remarque bien la différence entre définir et appeler. Écrire `def dire_bonjour():` ne lance rien du tout, ça enseigne juste à Python ce que veut dire dire bonjour. C'est la ligne `dire_bonjour()`, avec les parenthèses, qui exécute le corps. Tant que tu n'appelles pas, ton code dort.
 
-Une fonction peut **renvoyer** un résultat grâce au mot-clé `return`. C'est différent de `print()`, qui se contente d'**afficher** un texte à l'écran. `return` **rend une valeur** au code appelant, valeur que l'on peut stocker, réutiliser ou combiner.
+Les parenthèses sont importantes. `dire_bonjour` tout seul désigne la fonction comme un objet, sans la lancer. `dire_bonjour()` la lance. Oublier les parenthèses est une erreur classique du début : ton programme ne plante pas, il ne fait simplement rien.
 
-<CodePlayground language="python" starterCode={`def carre(x):
-    return x * x
+## return contre print
 
-resultat = carre(5)
-print(resultat)        # 25
-print(carre(3) + carre(4))   # 9 + 16 = 25`} />
+Voici le point que presque tout le monde confond au départ. `print` et `return` ne servent pas à la même chose, et les mélanger crée des bugs qui rendent fou.
 
-Comme `carre` renvoie une valeur, on peut écrire `carre(3) + carre(4)`. Cela serait impossible avec une fonction qui se contente d'afficher.
+`print` affiche un texte à l'écran. C'est tout. Une fois affiché, le texte est parti dans le terminal, et ton programme n'a aucun moyen de le récupérer.
 
-<Callout type="warning">
-Ne confondez pas `print` et `return` ! `print` **affiche** quelque chose mais ne donne rien d'exploitable : une fonction sans `return` renvoie en réalité `None`. `return` **renvoie** une valeur que le reste du programme peut utiliser. Si vous faites `total = afficher(...)` alors que la fonction ne fait qu'un `print`, `total` vaudra `None`.
-</Callout>
+`return` renvoie une valeur à celui qui a appelé la fonction. Cette valeur, tu peux la stocker, la calculer, la réutiliser. C'est un résultat, pas un affichage.
 
-## Paramètres et arguments
+<CodePlayground language="python" starterCode={`def addition_qui_print(a, b):
+    print(a + b)        # affiche, mais ne renvoie rien
 
-Une fonction peut accepter **plusieurs paramètres**, séparés par des virgules. On peut aussi donner une **valeur par défaut** à un paramètre : il devient alors optionnel. Enfin, on peut passer des **arguments nommés** pour gagner en clarté.
+def addition_qui_return(a, b):
+    return a + b        # renvoie le resultat
 
-<CodePlayground language="python" starterCode={`def presenter(prenom, ville="Paris"):
-    return prenom + " habite à " + ville
+# La version print : on voit 7 a l'ecran...
+addition_qui_print(3, 4)
 
-print(presenter("Alice"))                 # ville par défaut
-print(presenter("Bob", "Lyon"))           # argument positionnel
-print(presenter("Chloé", ville="Nice"))   # argument nommé`} />
+# ... mais essayons de recuperer le resultat :
+x = addition_qui_print(3, 4)
+print("x vaut :", x)   # x vaut : None  (surprise !)
 
-Le paramètre `ville` a une valeur par défaut `"Paris"`. Si on ne le précise pas, c'est cette valeur qui est utilisée. Les **arguments nommés** (`ville="Nice"`) rendent l'appel plus lisible quand il y a beaucoup de paramètres.
+# La version return : le resultat est utilisable
+y = addition_qui_return(3, 4)
+print("y vaut :", y)         # y vaut : 7
+print("le double :", y * 2)  # 14, parce que y est un vrai nombre`} />
 
-## Portée des variables (locale vs globale)
+Regarde la ligne où `x` vaut `None`. La fonction a bien affiché `7`, mais elle n'a rien renvoyé. Quand une fonction ne fait pas de `return`, Python renvoie automatiquement `None`, c'est-à-dire rien. Donc `x` contient `None`, pas `7`. Le `7` que tu as vu était juste de l'encre sur l'écran, jamais une valeur dans une variable.
 
-Une variable créée **à l'intérieur** d'une fonction est **locale** : elle n'existe que pendant l'exécution de la fonction et disparaît ensuite. Elle n'est pas visible depuis l'extérieur.
+C'est l'idée reçue à corriger : une fonction qui `print` n'a pas donné de valeur. Elle a affiché quelque chose, ce qui est différent. Si tu veux réutiliser un résultat, il te faut `return`. Si tu veux juste montrer quelque chose à l'utilisateur, `print` suffit.
+
+Le piège qui en découle : tu écris une fonction, tu oublies le `return`, et plus tard tu récupères `None` sans comprendre. Quand un calcul te renvoie `None` alors que tu attendais un nombre, le premier réflexe est d'aller vérifier si ta fonction se termine bien par un `return`.
+
+## paramètres et valeurs par défaut
+
+Un paramètre, c'est une variable que la fonction attend pour faire son travail. Tu le déclares entre les parenthèses au moment du `def`. Quand tu appelles la fonction, tu fournis un argument, c'est-à-dire la valeur concrète qui remplace le paramètre.
+
+<CodePlayground language="python" starterCode={`def saluer(prenom):
+    return "Salut " + prenom + " !"
+
+print(saluer("Lea"))     # Salut Lea !
+print(saluer("Karim"))   # Salut Karim !`} />
+
+Ici `prenom` est le paramètre, et `"Lea"` est l'argument. La même fonction sert pour n'importe quel prénom, c'est tout l'intérêt.
+
+Tu peux aussi donner une valeur par défaut à un paramètre. Si l'appelant ne fournit rien, c'est cette valeur qui est utilisée.
+
+<CodePlayground language="python" starterCode={`def saluer(prenom, salutation="Salut"):
+    return salutation + " " + prenom + " !"
+
+print(saluer("Lea"))               # Salut Lea !
+print(saluer("Lea", "Bonsoir"))    # Bonsoir Lea !
+print(saluer("Karim", "Coucou"))   # Coucou Karim !`} />
+
+Le paramètre `salutation` a une valeur par défaut : `"Salut"`. Si tu ne le précises pas, la fonction l'utilise. Si tu le précises, ta valeur prend le dessus. Petite règle à retenir : les paramètres avec valeur par défaut doivent venir après ceux qui n'en ont pas. `def f(a, b=2)` est correct, `def f(a=2, b)` provoque une erreur.
+
+## la portée
+
+Une variable créée à l'intérieur d'une fonction est locale. Elle naît quand la fonction démarre et disparaît quand la fonction se termine. Le reste du programme ne la voit pas.
 
 <CodePlayground language="python" starterCode={`def calculer():
-    interne = 10   # variable locale
-    return interne
+    resultat = 42        # variable locale
+    return resultat
 
-print(calculer())   # 10
-# print(interne)    # erreur : 'interne' n'existe pas ici`} />
+valeur = calculer()
+print(valeur)            # 42, pas de souci
 
-À l'inverse, une variable définie **en dehors** de toute fonction est **globale** et reste accessible. Garder les variables locales le plus possible évite les effets de bord et rend le code plus sûr.
+# Mais ceci planterait :
+# print(resultat)        # NameError : resultat n'existe pas ici`} />
 
-## À vous de jouer
+La variable `resultat` n'existe que dans `calculer`. Dès que la fonction rend la main, elle est effacée. C'est une bonne chose : chaque fonction a son petit espace privé, et tu peux réutiliser le nom `resultat` ailleurs sans collision.
 
-<Quiz id="q-1" question="Quel mot-clé permet de définir une fonction en Python ?" options={["function", "def", "func", "define"]} correct={1} />
+À l'inverse, une variable définie en dehors de toute fonction est globale, et les fonctions peuvent la lire.
 
-<Quiz id="q-2" question="Quelle est la différence essentielle entre print et return ?" options={["Aucune, ils sont identiques", "print affiche une valeur à l'écran, return renvoie une valeur au code appelant", "return affiche à l'écran, print renvoie une valeur", "print est plus rapide que return"]} correct={1} />
+<CodePlayground language="python" starterCode={`taux = 0.20              # variable globale
 
-<PythonChallenge id="py-1" title="Longueur d'un mot sans len()" description="Écrivez une fonction solution(mot) qui renvoie le nombre de caractères du mot, SANS utiliser len(). Parcourez le mot avec une boucle et comptez." starterCode="def solution(mot):
-    pass" tests={[{ input: "solution('abc')", expected: "3" }, { input: "solution('python')", expected: "6" }, { input: "solution('')", expected: "0", label: "Chaîne vide" }]} />
+def appliquer_tva(prix):
+    return prix * (1 + taux)   # la fonction lit taux sans souci
 
-## Récapitulatif
+print(appliquer_tva(100))      # 120.0`} />
 
-- Une **fonction** est un bloc de code nommé et réutilisable, défini avec `def`.
-- Elle respecte le principe **DRY** : on écrit la logique une seule fois.
-- Les **paramètres** reçoivent les valeurs passées lors de l'**appel** (les arguments).
-- `return` **renvoie** une valeur exploitable ; `print` se contente d'**afficher** et renvoie `None`.
-- Les paramètres peuvent avoir des **valeurs par défaut** et être passés en **arguments nommés**.
-- Une variable **locale** n'existe que dans la fonction ; une variable **globale** est accessible partout.
+Lire une globale depuis une fonction marche. La modifier directement demande des précautions qu'on verra plus tard. Pour l'instant, retiens la règle simple : ce qui naît dans une fonction reste dans la fonction. Si tu veux qu'un résultat sorte, tu le fais sortir avec `return`.
+
+## à toi de jouer
+
+Écris une fonction `solution` qui prend deux nombres et renvoie leur somme. Attention au verbe : on demande de renvoyer, pas d'afficher. Donc `return`, pas `print`.
+
+<PythonChallenge id="py-1" title="La somme de deux nombres" description="Complete la fonction pour qu'elle renvoie la somme de a et b." starterCode="def solution(a, b):
+    pass" tests={[{ input: "solution(2, 3)", expected: "5" }, { input: "solution(10, 15)", expected: "25" }, { input: "solution(-4, 4)", expected: "0" }]} />
+
+<Quiz id="q-1" question="Une fonction se termine sans aucune instruction return. Que renvoie-t-elle quand on l'appelle ?" options={["La derniere valeur affichee par print", "None", "Une erreur de type NameError", "La chaine de caracteres vide"]} correct={1} explanation="Sans return, Python renvoie automatiquement None. C'est pour ca qu'une fonction qui se contente de print donne None quand on essaie de stocker son resultat." />
+
+<Quiz id="q-2" question="Avec def saluer(prenom, salutation='Salut'), que se passe-t-il si on appelle saluer('Lea') sans deuxieme argument ?" options={["Une erreur, car il manque un argument", "salutation prend la valeur 'Salut' par defaut", "salutation vaut None", "prenom et salutation valent tous les deux 'Lea'"]} correct={1} explanation="salutation a une valeur par defaut. Si l'appelant ne fournit rien, c'est cette valeur qui est utilisee. Aucun argument n'est obligatoire des qu'il a une valeur par defaut." />
+
+## à retenir
+
+On définit une fonction avec `def nom(parametres):` et un corps indenté. La définition n'exécute rien ; il faut appeler la fonction avec ses parenthèses pour qu'elle tourne.
+
+`return` renvoie une valeur réutilisable à l'appelant. `print` ne fait qu'afficher. Une fonction qui `print` mais ne `return` rien renvoie `None`, et c'est la source numéro un des résultats qui valent mystérieusement `None`.
+
+Les paramètres reçoivent les arguments passés à l'appel. Un paramètre peut avoir une valeur par défaut, utilisée quand l'appelant ne fournit rien ; ces paramètres-là se placent toujours en dernier.
+
+Une variable créée dans une fonction est locale et disparaît à la fin de l'appel. Pour faire sortir un résultat, tu le renvoies avec `return`.
+
+OK 04 réécrit

@@ -10,113 +10,175 @@ xpReward: 350
 prerequisites: ["CL-LSN-004-V01"]
 ---
 
-Un programme bien écrit ne se contente pas de fonctionner quand tout se passe bien. Il doit aussi survivre à l'imprévu : un fichier qui n'existe pas, une saisie utilisateur incohérente, une division par zéro, une connexion réseau qui tombe. Sans gestion des erreurs, la moindre situation inattendue fait planter votre programme avec une trace d'erreur incompréhensible pour l'utilisateur final.
+Un programme qui tourne dans le monde réel finit toujours par croiser quelque chose qu'il n'avait pas prévu. Un utilisateur tape `douze` au lieu de `12`. Un fichier qu'on cherche à ouvrir a été déplacé. Une connexion réseau tombe au mauvais moment. Si rien n'est prévu pour ces cas, Python s'arrête net, affiche une trace rouge sur plusieurs lignes, et tout ce qui venait après ne s'exécute pas. Le travail en cours est perdu.
 
-Dans cette leçon, vous allez apprendre à anticiper ces situations grâce aux **exceptions** et aux blocs `try` / `except`. Vous découvrirez comment intercepter une erreur, comment cibler des erreurs précises, et comment utiliser `else` et `finally` pour structurer proprement votre code. L'objectif : écrire du code **robuste** qui dégrade gracieusement au lieu de s'effondrer.
+On peut faire bien mieux. Plutôt que de laisser le programme s'effondrer au premier imprévu, on prévoit un plan B. C'est tout l'objet de ce qui suit : apprendre à attraper une erreur, à réagir intelligemment, et à reprendre le cours normal.
 
-## Qu'est-ce qu'une exception
+## erreur de syntaxe contre exception
 
-Une **exception** est un événement qui interrompt le déroulement normal d'un programme lorsqu'une opération échoue. Python lève (en anglais « raise ») une exception, et si personne ne la rattrape, le programme s'arrête.
+Avant de gérer les erreurs, il faut distinguer deux familles qu'on confond souvent.
 
-Voici les exceptions les plus fréquentes que vous rencontrerez :
+Une erreur de syntaxe, c'est du code que Python ne comprend même pas. Un deux-points oublié, une parenthèse jamais refermée, un mot-clé mal écrit. Python lit votre fichier avant de l'exécuter, et s'il bute sur une faute de grammaire, il refuse de démarrer. Aucune ligne ne tourne. Le message est `SyntaxError`.
 
-- `ZeroDivisionError` : division par zéro, par exemple `10 / 0`.
-- `ValueError` : une valeur est du bon type mais invalide, par exemple `int("bonjour")`.
-- `KeyError` : on accède à une clé absente d'un dictionnaire.
-- `IndexError` : on accède à un indice hors des limites d'une liste.
-- `TypeError` : on combine des types incompatibles, par exemple `"3" + 5`.
+<CodePlayground language="python" starterCode={`# Ceci ne démarre même pas : il manque les deux-points
+if 5 > 3
+    print("cinq est plus grand")`} />
 
-Le code ci-dessous **provoque volontairement** une erreur pour observer ce qui se passe :
+Une exception, c'est différent. Le code est grammaticalement correct, Python le lance, et c'est pendant l'exécution que les choses tournent mal. La division par zéro est l'exemple type : la ligne est parfaitement écrite, mais au moment où Python tente le calcul, l'opération n'a pas de sens.
 
-<CodePlayground language="python" starterCode={`nombres = [10, 20, 30]
-# La liste a 3 éléments (indices 0, 1, 2).
-# L'indice 5 n'existe pas : Python lève IndexError.
-print(nombres[5])`} />
+<CodePlayground language="python" starterCode={`nombre = 10
+diviseur = 0
+print("On va calculer...")
+resultat = nombre / diviseur  # ZeroDivisionError ici
+print("Cette ligne ne sera jamais atteinte")`} />
 
-Quand vous exécutez ce code, l'exécution s'arrête net sur la dernière ligne. C'est exactement ce comportement que nous allons maîtriser.
+Remarquez que `On va calculer...` s'affiche bien. Le programme a démarré, il a tourné, puis il a planté en pleine course. Une erreur de syntaxe se corrige une bonne fois en relisant le code. Une exception, elle, dépend des données du moment, et c'est justement ce qu'on apprend à gérer ici.
 
-## Le bloc try / except
+## try et except
 
-Le bloc `try` / `except` permet d'**essayer** une opération risquée et de **réagir** si elle échoue, au lieu de laisser le programme planter.
+L'idée est simple. On place le code qui pourrait échouer dans un bloc `try`. Si une exception survient, Python abandonne le `try` et saute directement dans le bloc `except`, où on décide quoi faire.
 
-Le principe est simple : le code placé dans `try` est exécuté normalement. Si une exception survient, Python saute immédiatement dans le bloc `except` correspondant.
+<CodePlayground language="python" starterCode={`try:
+    age = int("quarante-deux")
+except ValueError:
+    print("Ce n'est pas un nombre valide")
+    age = 0
 
-<CodePlayground language="python" starterCode={`def division_securisee(a, b):
+print("Le programme continue, age =", age)`} />
+
+`int("quarante-deux")` lève une `ValueError` parce que ce texte ne représente pas un entier. Au lieu de planter, le programme affiche un message, fixe une valeur de repli, et poursuit.
+
+Notez le `ValueError` après le `except`. On ne dit pas seulement d'attraper une erreur, on précise quel type d'erreur on attend. Chaque problème a son nom : `ValueError` pour une conversion impossible, `ZeroDivisionError` pour une division par zéro, `KeyError` pour une clé absente d'un dictionnaire, `FileNotFoundError` pour un fichier introuvable. En ciblant le bon type, on attrape exactement ce qu'on sait gérer, et rien d'autre.
+
+<CodePlayground language="python" starterCode={`def lire_quotient(texte_a, texte_b):
     try:
-        resultat = a / b
-        return resultat
-    except ZeroDivisionError:
-        print("Erreur : division par zéro impossible.")
-        return None
-
-print(division_securisee(10, 2))
-print(division_securisee(10, 0))`} />
-
-Ici, `division_securisee(10, 0)` ne plante plus : l'exception est interceptée et la fonction renvoie `None` avec un message clair.
-
-## Attraper des exceptions précises
-
-Il est tentant d'écrire un `except` sans préciser quelle erreur attraper. C'est une **mauvaise pratique** : un `except` nu (sans type) capture *toutes* les exceptions, y compris celles que vous n'aviez pas prévues. Résultat : un vrai bug se cache derrière un message rassurant, et vous perdez des heures à le débusquer.
-
-La bonne approche consiste à cibler chaque exception attendue, éventuellement avec plusieurs blocs `except` :
-
-<CodePlayground language="python" starterCode={`def lire_age(saisie):
-    try:
-        age = int(saisie)
-        return age
+        a = int(texte_a)
+        b = int(texte_b)
+        return a / b
     except ValueError:
-        print("Ce n'est pas un nombre valide.")
-        return None
+        return "Saisie non numerique"
+    except ZeroDivisionError:
+        return "Division par zero impossible"
 
-print(lire_age("42"))
-print(lire_age("vingt"))`} />
+print(lire_quotient("20", "4"))    # 5.0
+print(lire_quotient("20", "0"))    # Division par zero impossible
+print(lire_quotient("vingt", "4")) # Saisie non numerique`} />
+
+On peut empiler plusieurs `except`, chacun pour un type précis. Python prend le premier qui correspond à l'erreur réelle. C'est lisible : en parcourant le code, on voit d'un coup d'oeil tous les cas anticipés.
+
+## pourquoi pas un except nu
+
+Il existe une forme tentante et dangereuse : `except` tout seul, sans préciser de type. Ou sa cousine à peine moins large, `except Exception`. Les deux attrapent absolument tout.
 
 <Callout type="warning">
-Évitez le `except:` ou `except Exception:` trop large. Il masque les vraies erreurs (fautes de frappe, mauvaises variables, bugs de logique) et rend le débogage très difficile. Attrapez seulement les exceptions que vous savez gérer.
+Un `except` nu avale la moindre erreur, y compris celles que vous n'aviez pas prévues : une faute de frappe dans un nom de variable, un appel de fonction inexistante, une logique cassée. Le programme ne plante plus, mais il ne marche plus non plus, et vous n'avez aucun indice sur ce qui cloche.
 </Callout>
+
+Regardez ce piège classique.
+
+<CodePlayground language="python" starterCode={`def total_panier(prix):
+    try:
+        somme = 0
+        for p in prix:
+            somme += pirx  # faute de frappe : pirx au lieu de p
+        return somme
+    except:
+        return 0
+
+# La faute de frappe provoque une NameError, avalee en silence
+print(total_panier([10, 20, 30]))  # affiche 0, sans aucune alerte`} />
+
+Le résultat est `0`, comme si le panier était vide. Mais le panier ne l'était pas. La vraie cause est une `NameError` (`pirx` n'existe pas), et le `except` nu l'a engloutie avec tout le reste. On passe parfois des heures à chercher un bug que le `except` avait poliment caché.
+
+La règle tient en une phrase : attrapez seulement les erreurs que vous savez traiter. Si vous gérez une conversion, attrapez `ValueError`. Une `NameError` n'a rien à faire là, elle doit remonter bruyamment pour que vous la corrigiez.
+
+<CodePlayground language="python" starterCode={`def total_panier(prix):
+    try:
+        return sum(prix)
+    except TypeError:
+        # On gere le cas attendu : un element non numerique dans la liste
+        return "Le panier contient une valeur invalide"
+
+print(total_panier([10, 20, 30]))    # 60
+print(total_panier([10, "vingt"]))   # Le panier contient une valeur invalide`} />
+
+Ici on ne cible que `TypeError`, le seul problème qu'on a vraiment décidé de gérer. Toute autre erreur passera au travers et se signalera elle-même. C'est exactement ce qu'on veut.
 
 ## else et finally
 
-Deux blocs optionnels complètent la structure :
+Deux blocs viennent compléter le duo. Ils sont optionnels, mais bien pratiques.
 
-- `else` s'exécute **uniquement si aucune exception** n'a été levée dans le `try`. On y place le code qui dépend de la réussite.
-- `finally` s'exécute **toujours**, qu'il y ait eu une erreur ou non. Idéal pour libérer une ressource (fermer un fichier, une connexion).
+Le bloc `else` s'exécute uniquement si le `try` s'est déroulé sans la moindre exception. Il sert à séparer le code qui peut échouer (dans le `try`) du code qui ne tourne que si tout s'est bien passé (dans le `else`). On évite ainsi de mélanger les deux.
 
-<CodePlayground language="python" starterCode={`def convertir(valeur):
+Le bloc `finally`, lui, s'exécute toujours. Qu'il y ait eu une erreur ou non, qu'on soit passé par `except` ou par `else`. C'est l'endroit pour le nettoyage : fermer un fichier, libérer une connexion, remettre quelque chose en ordre.
+
+<CodePlayground language="python" starterCode={`def diviser(a, b):
     try:
-        nombre = int(valeur)
-    except ValueError:
-        print("Conversion impossible.")
+        resultat = a / b
+    except ZeroDivisionError:
+        print("Erreur : division par zero")
+        return None
     else:
-        print("Conversion réussie :", nombre)
+        print("Calcul reussi")
+        return resultat
     finally:
-        print("Tentative de conversion terminée.")
+        print("Operation terminee, on nettoie")
 
-convertir("100")
+print("->", diviser(10, 2))
 print("---")
-convertir("abc")`} />
+print("->", diviser(10, 0))`} />
 
-Observez l'ordre : `else` n'apparaît que pour `"100"`, mais `finally` s'affiche dans les deux cas.
+Lancez ce code et suivez l'ordre des messages. Dans le premier appel, on passe par `else` puis `finally`. Dans le second, par `except` puis `finally`. Le `finally` s'affiche dans les deux cas, sans exception.
 
-<Callout type="info">
-Mémo : `try` essaie, `except` rattrape, `else` confirme le succès, `finally` nettoie toujours.
-</Callout>
+Dernier outil : `raise`. Jusqu'ici on attrapait les erreurs des autres. Mais vous pouvez aussi en lever vous-même, pour signaler qu'une situation est invalide selon vos propres règles.
 
-## À vous de jouer
+<CodePlayground language="python" starterCode={`def regler_age(age):
+    if age < 0:
+        raise ValueError("L'age ne peut pas etre negatif")
+    return age
 
-Testez votre compréhension avec ces deux questions, puis relevez le défi.
+try:
+    regler_age(-5)
+except ValueError as erreur:
+    print("Refuse :", erreur)`} />
 
-<Quiz id="q-1" question="Quelle exception est levée par l'expression int('bonjour') ?" options={["TypeError", "ValueError", "KeyError", "ZeroDivisionError"]} correct={1} />
+Le `as erreur` récupère l'objet exception pour en lire le message. Lever une erreur explicite vaut mieux que laisser passer une donnée absurde qui causera un bug bien plus loin, là où on ne comprendra plus d'où elle vient.
 
-<Quiz id="q-2" question="Quel bloc s'exécute TOUJOURS, qu'une exception soit levée ou non ?" options={["else", "try", "finally", "except"]} correct={2} />
+## à toi de jouer
 
-<PythonChallenge id="py-1" title="Division robuste" description="Écris une fonction solution(a, b) qui retourne a / b. Si b vaut 0, attrape la ZeroDivisionError et retourne None au lieu de planter." starterCode="def solution(a, b):
-    pass" tests={[{ input: "solution(10, 2)", expected: "5.0" }, { input: "solution(10, 0)", expected: "None", label: "Division par zéro" }]} />
+<PythonChallenge id="py-1" title="Division sûre" description="Écris une fonction qui renvoie le quotient de a par b. Si b vaut zéro, attrape l'erreur et renvoie la chaîne 'erreur' au lieu de planter." starterCode="def solution(a, b):
+    pass" tests={[{ input: "solution(10, 2)", expected: "5.0" }, { input: "solution(10, 0)", expected: "erreur" }]} />
 
-## Récapitulatif
+<Quiz id="q-1"
+  question="Quelle est la différence entre une erreur de syntaxe et une exception ?"
+  options={[
+    "Une erreur de syntaxe empêche le programme de démarrer, une exception survient pendant l'exécution",
+    "Il n'y a aucune différence, ce sont deux mots pour la même chose",
+    "Une exception empêche le programme de démarrer, une erreur de syntaxe survient à l'exécution"
+  ]}
+  correct={0}
+/>
 
-- Une **exception** interrompt le programme quand une opération échoue (`ZeroDivisionError`, `ValueError`, `KeyError`, `IndexError`, `TypeError`).
-- Le bloc `try` / `except` permet d'intercepter une erreur et d'y réagir sans planter.
-- Ciblez **toujours** des exceptions précises ; évitez le `except` nu qui masque les vrais bugs.
-- `else` s'exécute si aucune erreur n'est survenue ; `finally` s'exécute systématiquement, parfait pour nettoyer une ressource.
-- Un code robuste anticipe l'imprévu et dégrade gracieusement plutôt que de s'effondrer.
+<Quiz id="q-2"
+  question="Pourquoi éviter un except nu (sans type précisé) ?"
+  options={[
+    "Parce que Python interdit cette syntaxe et refuse de l'exécuter",
+    "Parce qu'il est plus lent qu'un except ciblé",
+    "Parce qu'il avale toutes les erreurs, y compris des bugs imprévus, et les cache au lieu de les signaler"
+  ]}
+  correct={2}
+/>
+
+## à retenir
+
+Une erreur de syntaxe empêche le programme de démarrer. Une exception survient en cours d'exécution, sur du code pourtant correct.
+
+Le bloc `try` contient le code risqué, `except` rattrape l'erreur. On précise toujours le type attendu (`ValueError`, `ZeroDivisionError`, `FileNotFoundError`, etc.).
+
+Un `except` nu ou un `except Exception` attrape tout, y compris les bugs qu'on n'a pas vus venir. C'est une fausse sécurité : il faut cibler le type qu'on sait traiter et laisser le reste remonter.
+
+`else` ne tourne que si le `try` a réussi. `finally` tourne toujours, ce qui en fait le bon endroit pour le nettoyage.
+
+`raise` permet de lever soi-même une exception quand une donnée viole vos règles, plutôt que de la laisser causer un dégât plus loin.
+
+OK 09 réécrit

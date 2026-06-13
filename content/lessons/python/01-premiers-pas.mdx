@@ -10,124 +10,111 @@ xpReward: 120
 prerequisites: []
 ---
 
-Bienvenue dans votre toute première leçon de Python ! Python est un langage de programmation réputé pour sa lisibilité : son code ressemble presque à de l'anglais courant, ce qui en fait un excellent point de départ pour apprendre à programmer. On le retrouve partout : sites web, intelligence artificielle, automatisation, cybersécurité et analyse de données.
+Programmer, au fond, c'est écrire une suite d'instructions qu'une machine va exécuter, une par une, dans l'ordre. L'ordinateur ne devine rien. Il fait exactement ce qu'on lui dit, ni plus ni moins. Python a une qualité rare pour un langage de programmation : son code se lit presque comme de l'anglais courant, ce qui te laisse penser au raisonnement plutôt qu'à la ponctuation.
 
-Dans cette leçon, vous allez écrire vos premières lignes de code, manipuler des variables et découvrir les types de base. La toute première instruction que tout débutant écrit est l'affichage d'un message à l'écran avec la fonction `print()` :
+Voici une première instruction. Lance-la et regarde ce qui se passe.
 
-```python
-print("Bonjour, le monde !")
-```
+<CodePlayground language="python" starterCode={`print("Mon premier programme tourne.")`} />
 
-## Afficher du texte avec print()
+Une ligne, un résultat. C'est déjà un programme complet.
 
-La fonction `print()` envoie du texte vers la console. Le texte placé entre guillemets s'appelle une **chaîne de caractères** (en anglais, *string*). Vous pouvez appeler `print()` plusieurs fois pour afficher plusieurs lignes, et utiliser des **f-strings** (chaînes commençant par `f`) pour insérer des valeurs directement dans le texte.
+## afficher avec print
 
-<CodePlayground language="python" starterCode={`print("Première ligne")
-print("Deuxième ligne")
+`print` est une fonction. Tu lui donnes quelque chose entre parenthèses, et elle l'affiche dans la console. Ce « quelque chose », ici, c'est du texte. En programmation, un morceau de texte s'appelle une chaîne de caractères, et on le délimite par des guillemets. Les guillemets ne sont pas affichés : ils servent à dire à Python « tout ce qui est entre ces deux marques, c'est du texte brut, ne cherche pas à l'interpréter ».
 
-prenom = "Alice"
+Tu peux enchaîner plusieurs `print`. Chacun écrit sur sa propre ligne.
+
+<CodePlayground language="python" starterCode={`print("Ligne une")
+print("Ligne deux")
+print("Ligne trois")`} />
+
+Si tu oublies les guillemets autour d'un texte, Python croit que tu lui parles d'autre chose, un nom ou une commande, et il s'arrête sur une erreur. Le guillemet, c'est la frontière entre « du texte » et « des instructions ».
+
+## les variables
+
+Afficher du texte fixe, ça va deux minutes. Le vrai intérêt vient quand on garde une valeur quelque part pour la réutiliser plus loin. C'est le rôle d'une variable.
+
+<CodePlayground language="python" starterCode={`prenom = "Alice"
 age = 25
-print(f"Je m'appelle {prenom} et j'ai {age} ans.")`} />
+print(prenom)
+print(age)`} />
 
-Remarquez la f-string : le préfixe `f` autorise l'usage d'accolades pour y glisser le contenu d'une variable. C'est la manière la plus claire et la plus moderne de composer du texte en Python.
+On lit ça de droite à gauche : la valeur `"Alice"` existe, et on lui colle le nom `prenom`. Ensuite, chaque fois que j'écris `prenom`, Python va chercher la valeur derrière ce nom.
 
-## Les variables
+Le signe `=` mérite qu'on s'arrête dessus. En mathématiques, `=` annonce une égalité : `x = 3` veut dire « x vaut 3, c'est un fait ». En Python, `=` est une affectation : « prends la valeur de droite et attache-lui le nom de gauche ». Ce n'est pas une affirmation, c'est une action. La preuve, cette ligne serait absurde en maths mais elle est parfaitement valide ici :
 
-Une **variable** est une étiquette qui pointe vers une valeur. On la crée avec le signe `=`, appelé opérateur d'**affectation** : à gauche le nom, à droite la valeur. Contrairement à d'autres langages, vous n'avez pas besoin de déclarer le type : Python le devine tout seul.
+<CodePlayground language="python" starterCode={`compteur = 0
+compteur = compteur + 1
+print(compteur)`} />
 
-```python
-score = 100
-nom = "Bob"
-```
+« compteur égale compteur plus un » n'a aucun sens comme égalité. Comme affectation, c'est limpide : prends la valeur actuelle de `compteur`, qui vaut 0, ajoute 1, et réattache le nom `compteur` au résultat, qui vaut 1.
 
-Quelques règles de **nommage** : un nom de variable peut contenir des lettres, des chiffres et des underscores `_`, mais ne peut pas commencer par un chiffre ni contenir d'espace. Par convention, on écrit les noms en minuscules avec des underscores (`nombre_de_points`). Choisissez des noms parlants : `prix_total` est bien plus clair que `x`.
+Un mot sur une image qu'on entend souvent : la variable serait une « boîte » dans laquelle on range une valeur. C'est trompeur. Une variable en Python est plutôt une étiquette posée sur une valeur. Le nom ne contient pas la valeur, il pointe vers elle. Garde l'idée de l'étiquette : un nom d'un côté, et au bout du fil, une donnée.
 
-<CodePlayground language="python" starterCode={`ville = "Paris"
-population = 2100000
-ouvert = True
+Côté noms, quelques règles. Pas d'espace, pas d'accent, et ça ne commence jamais par un chiffre. On utilise des minuscules et le underscore pour séparer les mots, comme `nom_utilisateur`. Un nom qui dit ce qu'il contient vaut mieux qu'un `x` mystérieux que tu ne comprendras plus dans une heure.
 
-print(ville)
-print(population)
+## les types de base
 
-# Une variable peut être réaffectée
-population = population + 1000
-print(population)`} />
+Chaque valeur a un type, c'est-à-dire une nature. Python en propose quatre que tu croiseras partout au début.
 
-## Les types de base
+Un entier, ou `int`, est un nombre sans virgule : `0`, `42`, `-7`. Un flottant, ou `float`, est un nombre à virgule, qu'on note avec un point et non une virgule à la française : `3.14`, `-0.5`, `2.0`. Une chaîne, ou `str`, est du texte entre guillemets : `"bonjour"`, `"42"`. Un booléen, ou `bool`, ne peut valoir que deux choses, `True` ou `False` avec une majuscule, et sert à représenter le vrai et le faux.
 
-Chaque valeur en Python possède un **type**. Les quatre types fondamentaux à connaître sont :
+<CodePlayground language="python" starterCode={`temperature = 19.5
+nom = "console"
+nombre_de_vies = 3
+partie_gagnee = False
+print(temperature)
+print(nom)
+print(nombre_de_vies)
+print(partie_gagnee)`} />
 
-- `int` : un nombre **entier**, comme `42` ou `-7`.
-- `float` : un nombre à virgule **flottante**, comme `3.14` ou `2.0`.
-- `str` : une **chaîne de caractères**, comme `"Bonjour"`.
-- `bool` : un **booléen**, qui vaut `True` ou `False`.
+Pourquoi se soucier du type ? Parce que la même opération ne veut pas dire la même chose selon la nature des valeurs. Regarde de près.
 
-La fonction `type()` vous indique le type d'une valeur. Vous pouvez aussi **convertir** une valeur d'un type à un autre avec `int()`, `float()` et `str()`. C'est très utile, par exemple, pour transformer le texte `"50"` en nombre `50` afin de pouvoir calculer avec.
+<CodePlayground language="python" starterCode={`print(5 + 5)
+print("5" + "5")`} />
 
-<CodePlayground language="python" starterCode={`print(type(42))
+La première ligne affiche `10` : deux entiers, le `+` fait une addition. La seconde affiche `55` : deux chaînes, le `+` colle les textes bout à bout. C'est la même touche du clavier, mais deux comportements complètement différents.
+
+C'est le piège classique du débutant. Le nombre `5` et la chaîne `"5"` se ressemblent à l'écran, et pourtant ce ne sont pas les mêmes objets. L'un est une quantité avec laquelle on peut calculer. L'autre est un caractère de texte, le dessin du chiffre cinq, avec lequel on ne calcule pas. Mélanger les deux donne soit un résultat surprenant, soit une erreur franche.
+
+<CodePlayground language="python" starterCode={`print("5" + 5)`} />
+
+Python refuse, parce qu'il ne sait pas si tu veux coller du texte ou additionner des nombres. Il ne choisit pas à ta place, et c'est une bonne chose : l'erreur arrive tout de suite, au bon endroit, au lieu de produire un résultat faux en silence.
+
+## le typage dynamique
+
+Tu as peut-être remarqué qu'on n'a jamais annoncé le type d'une variable. On a écrit `age = 25` sans préciser « ceci est un entier ». Python le déduit tout seul à partir de la valeur. On appelle ça le typage dynamique : le type suit la valeur, pas le nom.
+
+Pour vérifier, la fonction `type()` te dit la nature d'une valeur.
+
+<CodePlayground language="python" starterCode={`print(type(25))
 print(type(3.14))
-print(type("Bonjour"))
-print(type(True))
+print(type("texte"))
+print(type(True))`} />
 
-# Conversions
-texte = "50"
-nombre = int(texte)
-print(nombre + 10)
+Tu obtiens `int`, `float`, `str`, `bool`. Pratique quand un résultat te surprend : demande son type, tu comprendras souvent d'où vient le malentendu.
 
-prix = 19.99
-print("Le prix est " + str(prix) + " euros")`} />
+## à toi de jouer
 
-Notez que `int(texte) + 10` fonctionne, alors que `texte + 10` provoquerait une erreur : on ne peut pas additionner une chaîne et un entier sans conversion.
+Un petit exercice. Écris une fonction qui prend deux nombres et renvoie leur somme.
 
-## Opérations de base
+<PythonChallenge id="py-1" title="Additionner deux nombres" description="Complète la fonction pour qu'elle renvoie la somme de a et b." starterCode="def solution(a, b):
+    pass" tests={[{ input: "solution(2, 3)", expected: "5" }, { input: "solution(10, 7)", expected: "17" }]} />
 
-Python sait faire de l'arithmétique avec les opérateurs habituels :
+<Quiz id="q-1" question="Que vaut '3' + '4' en Python, avec les guillemets autour des deux ?" options={["7", "'34'", "Une erreur", "12"]} correct={1} />
 
-- `+` addition, `-` soustraction, `*` multiplication
-- `/` division (qui renvoie toujours un `float`)
-- `//` division entière (le quotient, sans le reste)
-- `%` modulo (le reste de la division)
-- `**` puissance (par exemple `2 ** 3` vaut `8`)
+<Quiz id="q-2" question="En Python, à quoi sert le signe = dans la ligne age = 30 ?" options={["Il teste si age est égal à 30", "Il affiche age à l'écran", "Il attache la valeur 30 au nom age", "Il compare deux nombres"]} correct={2} />
 
-Pour les chaînes, `+` réalise une **concaténation** (mise bout à bout), et les f-strings restent la solution la plus lisible pour mélanger texte et nombres.
+## à retenir
 
-<CodePlayground language="python" starterCode={`print(7 + 3)
-print(7 / 2)
-print(7 // 2)
-print(7 % 2)
-print(2 ** 10)
+`print()` affiche ce qu'on lui donne entre parenthèses. Un texte se met entre guillemets et forme une chaîne de caractères.
 
-debut = "Cyber"
-fin = "Learn"
-print(debut + fin)
+Une variable est un nom attaché à une valeur, pas une boîte qui la contient. Le `=` est une affectation, une action, pas l'égalité des mathématiques.
 
-heures = 5
-print(f"Il reste {heures * 60} minutes")`} />
+Les quatre types de base sont l'entier `int`, le flottant `float` avec un point décimal et non une virgule, la chaîne `str` et le booléen `bool` qui vaut `True` ou `False`.
 
-<Callout type="info">
-Piège classique du débutant : l'opérateur `/` renvoie **toujours** un flottant. Ainsi `10 / 2` donne `5.0` (un `float`) et non `5` (un `int`). Si vous voulez le quotient entier, utilisez `//` : `10 // 2` donne bien `5`.
-</Callout>
+Le type change le sens d'une opération : `5 + 5` donne `10`, `"5" + "5"` donne `"55"`. Le nombre `5` et la chaîne `"5"` sont deux objets distincts, et les confondre est la source d'erreur la plus fréquente au début.
 
-## À vous de jouer
+Python devine le type tout seul à partir de la valeur, c'est le typage dynamique. `type()` te le confirme quand tu as un doute.
 
-Testez votre compréhension avec ces quelques exercices.
-
-<Quiz id="q-premiers-pas-print" question="Quelle fonction permet d'afficher du texte à l'écran ?" options={["show()", "print()", "echo()", "display()"]} correct={1} />
-
-<Quiz id="q-premiers-pas-division" question="Que renvoie l'expression 9 / 2 en Python ?" options={["4.5", "4", "5", "1"]} correct={0} />
-
-<Quiz id="q-premiers-pas-type" question="Quel est le type de la valeur True ?" options={["str", "int", "bool", "float"]} correct={2} />
-
-À présent, écrivez votre propre fonction. L'objectif : compléter `solution(a, b)` pour qu'elle renvoie la somme des deux nombres reçus.
-
-<PythonChallenge id="py-premiers-pas-somme" title="Additionner deux nombres" description="Complétez la fonction solution(a, b) pour qu'elle retourne la somme de a et b." starterCode="def solution(a, b):
-    pass" tests={[{ input: "solution(2, 3)", expected: "5" }, { input: "solution(10, 20)", expected: "30" }, { input: "solution(0, 0)", expected: "0", label: "Cas limite" }, { input: "solution(-5, 5)", expected: "0", label: "Nombres négatifs" }]} />
-
-## Récapitulatif
-
-- **`print()`** affiche du texte ; les **f-strings** (`f"... {variable} ..."`) insèrent des valeurs dans le texte.
-- Une **variable** se crée avec `=` ; choisissez des noms clairs, en minuscules avec des underscores.
-- Les **types de base** sont `int`, `float`, `str` et `bool` ; `type()` révèle le type d'une valeur.
-- On **convertit** entre types avec `int()`, `float()` et `str()`.
-- L'**arithmétique** utilise `+ - * / // % **` ; attention, `/` renvoie toujours un `float`, `//` donne le quotient entier.
-- La **concaténation** de chaînes se fait avec `+`, mais les f-strings sont souvent plus lisibles.
+OK 01 réécrit

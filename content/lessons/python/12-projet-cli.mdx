@@ -10,167 +10,160 @@ xpReward: 600
 prerequisites: ["CL-LSN-009-V01", "CL-LSN-011-V01"]
 ---
 
-Bravo, vous voilà arrivé à la dernière étape du parcours Python. Jusqu'ici, vous avez appris séparément les variables, les conditions, les boucles, les fonctions, les listes, les dictionnaires et la gestion d'erreurs. C'est bien, mais un développeur ne manipule presque jamais ces notions isolément : il les **assemble** pour résoudre un vrai problème.
+Jusqu'ici, chaque notion est venue séparément : les variables, les listes, les dictionnaires, les fonctions, les boucles, la gestion d'erreurs. C'est le moment de les faire travailler ensemble sur un objet utile. On va écrire un gestionnaire de tâches qui tourne dans le terminal. Vous tapez un titre, il l'enregistre. Vous demandez la liste, il l'affiche avec un statut. Vous cochez une tâche, vous en supprimez une.
 
-Dans cette leçon-projet, vous allez construire une petite application complète : un **gestionnaire de tâches** (un « todo ») qui fonctionne en ligne de commande. L'utilisateur pourra ajouter une tâche, lister ses tâches, en marquer une comme terminée et en supprimer. Rien de magique : juste des fonctions bien découpées qui manipulent une liste de dictionnaires. C'est exactement le genre de projet qu'on construit pour consolider ses bases, et celui que vous pourrez fièrement montrer sur votre GitHub.
+Rien de magique là-dedans. Juste les briques du parcours, posées dans le bon ordre. On avance étape par étape, et chaque bloc de code tourne tel quel. Vous pouvez le lancer, casser une ligne, voir ce qui change, recommencer. C'est comme ça qu'on apprend à programmer : en faisant tourner du code et en regardant ce qu'il répond.
 
-<Callout type="info">
-Sur la plateforme, l'interaction clavier (`input()`) n'est pas disponible dans les exemples exécutables. Nous appellerons donc nos fonctions directement avec des valeurs prédéfinies. À la fin, vous reconstruirez la version interactive sur votre propre machine.
-</Callout>
+## le modèle de données
 
-## L'architecture du projet
+Avant d'écrire la moindre fonction, il faut décider comment une tâche existe en mémoire. Une tâche, c'est au minimum deux informations : son titre, et le fait qu'elle soit faite ou non. Un dictionnaire colle parfaitement à ça, parce qu'il associe des noms à des valeurs. On écrit `{"titre": "Acheter du pain", "fait": False}` et tout est dit : le champ `titre` porte le texte, le champ `fait` porte un booléen.
 
-Avant d'écrire du code, posons le **modèle de données**. Une tâche n'est pas juste un texte : elle a un titre **et** un état (faite ou pas). Le bon outil pour regrouper plusieurs informations liées, c'est le dictionnaire. Une tâche ressemblera donc à ceci :
+Pourquoi un dictionnaire plutôt qu'une simple chaîne de caractères ? Parce qu'une tâche n'est pas qu'un texte. Elle a un état. Si on stockait juste le titre, il faudrait une astuce bancale pour mémoriser ce qui est coché. Avec un dictionnaire, chaque tâche transporte ses propres champs, et on peut en rajouter plus tard, une date ou une priorité, sans tout réécrire.
 
-```python
-tache = {"titre": "Réviser Python", "fait": False}
-```
+Et toutes les tâches ensemble ? Une liste. La liste garde l'ordre, accepte les doublons, et se parcourt facilement avec une boucle. Une liste de dictionnaires, c'est donc le squelette du projet.
 
-Et l'ensemble des tâches sera simplement une **liste** de ces dictionnaires :
-
-```python
-taches = [
-    {"titre": "Réviser Python", "fait": False},
-    {"titre": "Faire les courses", "fait": True},
+<CodePlayground language="python" starterCode={`taches = [
+    {"titre": "Acheter du pain", "fait": False},
+    {"titre": "Appeler le dentiste", "fait": True},
 ]
-```
 
-Ce choix est puissant : la liste gère la collection (ajouter, parcourir, supprimer par index) et le dictionnaire gère la structure d'une tâche (un titre, un statut). Chaque fonctionnalité de l'application deviendra une **fonction** qui reçoit cette liste et la modifie.
+# une liste, deux dictionnaires
+print(type(taches))
+print(type(taches[0]))
 
-<Diagram caption="Le cycle de vie d'une tâche dans le gestionnaire">
-graph TD
-    A[Démarrage : liste vide] --> B[Ajouter une tâche]
-    B --> C[Lister les tâches]
-    C --> D[Choisir une action]
-    D -->|Compléter| E[Changer le statut]
-    D -->|Supprimer| F[Retirer de la liste]
-    E --> C
-    F --> C
-</Diagram>
+# on lit un champ par son nom
+print(taches[0]["titre"])
+print(taches[1]["fait"])`} />
 
-## Étape 1 : ajouter une tâche
+Remarquez l'accès en deux temps : `taches[0]` donne le premier dictionnaire, puis `["titre"]` va chercher le champ dans ce dictionnaire. C'est ce double crochet qui revient partout dans la suite.
 
-Commençons par la brique de base : une fonction `ajouter_tache(taches, titre)` qui crée un dictionnaire et l'ajoute à la liste. On renvoie la liste pour pouvoir enchaîner les opérations.
+## ajouter une tâche
 
-<CodePlayground language="python" starterCode={`def ajouter_tache(taches, titre):
+On veut une fonction qui prend la liste et un titre, et qui range une nouvelle tâche dedans. La fonction ne renvoie rien d'intéressant : son travail est de modifier la liste qu'on lui passe. Comme une liste est mutable, l'ajout vu à l'intérieur de la fonction reste visible à l'extérieur. C'est exactement ce qu'on veut ici.
+
+<CodePlayground language="python" starterCode={`def ajouter(taches, titre):
     nouvelle = {"titre": titre, "fait": False}
     taches.append(nouvelle)
-    return taches
 
-# On part d'une liste vide
 taches = []
-ajouter_tache(taches, "Réviser Python")
-ajouter_tache(taches, "Faire les courses")
-ajouter_tache(taches, "Pousser le projet sur GitHub")
+ajouter(taches, "Acheter du pain")
+ajouter(taches, "Réviser les boucles")
 
-print("Nombre de tâches :", len(taches))
+print(len(taches))
 print(taches)`} />
 
-Remarquez que toute nouvelle tâche démarre avec `"fait": False`. Une tâche fraîchement créée n'est jamais terminée, c'est logique.
+Une tâche fraîchement créée n'est jamais faite, donc `fait` part toujours à `False`. On a centralisé cette règle dans la fonction : le reste du programme n'a pas à se souvenir d'initialiser le champ correctement. C'est tout l'intérêt de découper en fonctions. Chaque comportement vit à un seul endroit, et le jour où la règle change, on la change une fois.
 
-## Étape 2 : lister les tâches
+## lister et marquer comme faite
 
-Une liste de dictionnaires brute n'est pas très lisible pour un humain. Écrivons `afficher_taches(taches)` qui parcourt la liste et affiche chaque tâche avec un **symbole** clair : `[x]` pour une tâche faite, `[ ]` pour une tâche à faire. On affiche aussi le numéro (l'index) pour pouvoir agir dessus ensuite.
+Afficher la liste, c'est parcourir les tâches et montrer chacune avec son statut. On utilise `enumerate` pour avoir un numéro en face de chaque ligne, parce que l'utilisateur aura besoin de ce numéro pour désigner une tâche plus tard. Un petit symbole, crochet vide ou crochet coché, rend le statut lisible d'un coup d'oeil.
 
-<CodePlayground language="python" starterCode={`def afficher_taches(taches):
+<CodePlayground language="python" starterCode={`def lister(taches):
     if not taches:
-        print("Aucune tâche pour le moment.")
+        print("Aucune tâche.")
         return
-    for index, tache in enumerate(taches):
-        symbole = "[x]" if tache["fait"] else "[ ]"
-        print(f"{index}. {symbole} {tache['titre']}")
+    for indice, tache in enumerate(taches):
+        statut = "[x]" if tache["fait"] else "[ ]"
+        print(indice, statut, tache["titre"])
+
+def marquer_faite(taches, indice):
+    taches[indice]["fait"] = True
 
 taches = [
-    {"titre": "Réviser Python", "fait": False},
-    {"titre": "Faire les courses", "fait": True},
-    {"titre": "Pousser le projet sur GitHub", "fait": False},
+    {"titre": "Acheter du pain", "fait": False},
+    {"titre": "Réviser les boucles", "fait": False},
 ]
+marquer_faite(taches, 0)
+lister(taches)`} />
 
-afficher_taches(taches)`} />
+`marquer_faite` ne fait qu'une chose : aller dans le bon dictionnaire et basculer son champ `fait` à `True`. On retrouve le double crochet, `taches[indice]` puis `["fait"]`. Le `if not taches` au début de `lister` gère le cas de la liste vide, sinon on afficherait un silence inquiétant sans savoir si le programme a planté.
 
-La fonction `enumerate()` nous donne en même temps l'index et l'élément : parfait pour numéroter l'affichage. Le test `if not taches` gère élégamment le cas de la liste vide.
+## supprimer et gérer les erreurs
 
-## Étape 3 : compléter une tâche
+Supprimer, c'est retirer un élément à un indice donné avec `del`. Le piège est connu : si l'utilisateur tape un numéro qui n'existe pas, Python lève une `IndexError` et le programme s'arrête net. On ne veut pas qu'une faute de frappe tue l'outil. On entoure donc l'opération d'un `try` / `except` qui rattrape l'erreur et affiche un message clair au lieu de planter.
 
-Maintenant, marquons une tâche comme terminée. La fonction `completer_tache(taches, index)` reçoit le numéro de la tâche et bascule son champ `"fait"` à `True`. Mais que se passe-t-il si l'utilisateur donne un index qui n'existe pas (par exemple `99` sur une liste de 3 tâches) ? Python lèverait une `IndexError` et le programme planterait. On protège donc l'accès avec un `try` / `except`.
-
-<CodePlayground language="python" starterCode={`def completer_tache(taches, index):
+<CodePlayground language="python" starterCode={`def supprimer(taches, indice):
     try:
-        taches[index]["fait"] = True
-        print(f"Tâche {index} marquée comme faite.")
+        del taches[indice]
     except IndexError:
-        print(f"Erreur : aucune tâche à l'index {index}.")
-    return taches
+        print("Indice invalide, aucune tâche supprimée.")
 
 taches = [
-    {"titre": "Réviser Python", "fait": False},
-    {"titre": "Faire les courses", "fait": False},
+    {"titre": "Acheter du pain", "fait": False},
+    {"titre": "Réviser les boucles", "fait": False},
 ]
 
-completer_tache(taches, 0)   # valide
-completer_tache(taches, 99)  # index invalide : géré proprement
+supprimer(taches, 0)      # retire la première
+print(len(taches))        # il en reste une
 
-for tache in taches:
-    print(tache)`} />
+supprimer(taches, 99)     # indice qui n'existe pas
+print(len(taches))        # toujours une, le programme tient`} />
 
-Grâce au `try` / `except IndexError`, l'application ne plante plus : elle informe l'utilisateur et continue. C'est exactement ce qu'on attend d'un programme robuste.
+On rattrape `IndexError` précisément, pas n'importe quelle erreur. Un `except` trop large masquerait des bugs qu'on aurait préféré voir. La règle de bon sens : on attrape l'erreur qu'on sait gérer, et on laisse remonter le reste.
 
-## À vous de jouer
+## assembler une boucle de menu
 
-Testez votre compréhension avant de passer au projet personnel.
+Toutes les fonctions sont prêtes. Il manque le chef d'orchestre : une boucle qui tourne tant que l'utilisateur n'a pas demandé à quitter, lit son choix, et appelle la bonne fonction. C'est le motif classique d'un programme interactif. Une boucle `while True`, un `input` pour lire la commande, une série de `if` / `elif` pour aiguiller, et une sortie quand on veut quitter.
 
-<Quiz id="q-modele" question="Comment représente-t-on une seule tâche dans notre application ?" options={["Par une simple chaîne de caractères", "Par un dictionnaire avec un titre et un statut", "Par une liste de deux éléments", "Par un nombre entier"]} correct={1} />
+Dans un vrai terminal, `input` met le programme en pause et attend que vous tapiez quelque chose. Ici on montre l'ossature et on simule un scénario fixe à la place, pour que le bloc tourne seul sans bloquer.
 
-<Quiz id="q-erreur" question="Pourquoi entoure-t-on l'accès `taches[index]` d'un bloc try / except ?" options={["Pour rendre le code plus rapide", "Pour éviter un plantage si l'index n'existe pas (IndexError)", "Parce que les dictionnaires l'exigent", "Pour convertir l'index en chaîne"]} correct={1} />
+<CodePlayground language="python" starterCode={`def ajouter(taches, titre):
+    taches.append({"titre": titre, "fait": False})
 
-<Quiz id="q-enumerate" question="Que renvoie `enumerate(taches)` à chaque tour de boucle ?" options={["Seulement la tâche", "Seulement l'index", "Un couple (index, tâche)", "La longueur de la liste"]} correct={2} />
+def lister(taches):
+    for indice, tache in enumerate(taches):
+        statut = "[x]" if tache["fait"] else "[ ]"
+        print(indice, statut, tache["titre"])
 
-À présent, codez vous-même une brique du projet. Écrivez `solution(taches)` qui retourne le **nombre de tâches non terminées** (celles dont le statut `"fait"` n'est pas `True`).
+def menu(taches, choix, argument):
+    if choix == "ajouter":
+        ajouter(taches, argument)
+    elif choix == "lister":
+        lister(taches)
+    elif choix == "quitter":
+        return False
+    else:
+        print("Commande inconnue :", choix)
+    return True
 
-<PythonChallenge
-  id="py-non-terminees"
-  title="Compter les tâches non terminées"
-  description="Complétez la fonction solution(taches) pour qu'elle retourne le nombre de tâches dont le champ 'fait' vaut False. Une liste vide doit renvoyer 0."
-  starterCode="def solution(taches):
-    # Comptez les tâches dont 'fait' est False
-    compteur = 0
-    # votre code ici
-    return compteur"
-  tests={[
-    { input: [[{"titre": "A", "fait": False}, {"titre": "B", "fait": True}, {"titre": "C", "fait": False}]], expected: "2" },
-    { input: [[{"titre": "A", "fait": True}, {"titre": "B", "fait": True}]], expected: "0" },
-    { input: [[]], expected: "0" }
-  ]}
-/>
+taches = []
+# scénario simulé : la vraie boucle utiliserait input()
+scenario = [("ajouter", "Acheter du pain"),
+            ("ajouter", "Réviser"),
+            ("lister", None),
+            ("quitter", None)]
 
-## Votre projet personnel
+for choix, argument in scenario:
+    if not menu(taches, choix, argument):
+        print("Au revoir.")
+        break`} />
 
-<Callout type="success">
-Vous avez maintenant toutes les briques d'un vrai gestionnaire de tâches. Il est temps de le transformer en application complète, sur votre propre machine, et d'en faire votre premier projet de portfolio.
-</Callout>
+La vraie version remplacerait la liste `scenario` par une boucle `while True` avec `choix = input("> ")`. Le coeur logique, lui, ne change pas : `menu` reçoit un choix, le route, et renvoie `False` quand il faut s'arrêter. Garder la décision de continuer ou non dans la valeur de retour évite d'éparpiller des sorties partout.
 
-Sur la plateforme, nous avons évité `input()`. Chez vous, rien ne vous en empêche ! Reconstruisez le programme avec une **boucle de menu** qui demande à l'utilisateur quelle action effectuer, puis appelez la bonne fonction. Voici une feuille de route, du plus simple au plus avancé. Relevez-les dans l'ordre :
+## pour aller plus loin
 
-1. **Le menu interactif.** Une boucle `while True` qui affiche les options (ajouter, lister, compléter, supprimer, quitter) et lit le choix avec `input()`. Ajoutez aussi une fonction `supprimer_tache(taches, index)` (pensez au `try` / `except`).
-2. **La sauvegarde JSON.** Au démarrage, chargez les tâches depuis un fichier `taches.json` ; à chaque modification, réécrivez le fichier. Utilisez le module `json` (`json.dump` et `json.load`). Ainsi, vos tâches survivent à la fermeture du programme.
-3. **Les priorités.** Ajoutez un champ `"priorite"` à chaque tâche (`"basse"`, `"moyenne"`, `"haute"`) et permettez d'afficher les tâches triées par priorité avec `sorted()`.
-4. **Les dates d'échéance.** Ajoutez un champ `"echeance"` (avec le module `datetime`) et signalez en rouge les tâches en retard.
-5. **L'export d'un rapport.** Générez un fichier texte récapitulatif : nombre de tâches faites, restantes, en retard. Un vrai petit tableau de bord.
+Pour l'instant, tout vit en mémoire : dès que le programme s'arrête, les tâches disparaissent. L'étape suivante consiste à les écrire dans un fichier au format JSON, qui correspond presque mot pour mot à une liste de dictionnaires Python. On lit le fichier au démarrage, on le réécrit après chaque modification, et les tâches survivent d'une session à l'autre. De là, transformer le tout en script lançable depuis le terminal avec des arguments en ligne de commande n'est plus qu'une question de finition.
 
-Quand votre version vous plaît, créez un dépôt sur **GitHub**, ajoutez un `README.md` qui explique comment lancer le programme, et poussez votre code. C'est votre première vraie réalisation : montrez-la.
+## à toi de jouer
 
-## Récapitulatif
+Écrivez la fonction `ajouter` qui range un dictionnaire de tâche dans la liste. Après un appel, la liste doit contenir une tâche, donc `len` vaut 1.
 
-En construisant ce projet, vous avez mobilisé l'ensemble du parcours Python :
+<PythonChallenge id="py-1" title="Ajouter une tâche" description="Complétez ajouter pour qu'elle ajoute un dictionnaire à la liste taches. Après un appel, len(taches) doit valoir 1." starterCode="def ajouter(taches, titre):
+    pass
 
-- **Les fonctions** pour découper le programme en briques réutilisables et testables.
-- **Les listes** pour gérer une collection de tâches qui grandit et rétrécit.
-- **Les dictionnaires** pour structurer chaque tâche (titre, statut, et bientôt priorité et échéance).
-- **Les boucles** (`for`, `enumerate`, `while`) pour parcourir et piloter le menu.
-- **Les conditions** pour choisir le bon symbole et la bonne action.
-- **La gestion d'erreurs** (`try` / `except IndexError`) pour un programme qui ne plante pas.
-- **L'organisation du code** en fonctions claires, première étape vers de vrais projets.
+def solution(titre):
+    taches = []
+    ajouter(taches, titre)
+    return len(taches)" tests={[{ input: "solution('Acheter du pain')", expected: "1" }]} />
 
-Vous savez désormais transformer des notions isolées en une application qui fonctionne. C'est précisément ce que fait un développeur au quotidien. Félicitations pour avoir terminé le parcours, et bon code sur votre projet personnel.
+<Quiz id="q-1" question="Pourquoi représenter une tâche par un dictionnaire plutôt que par une simple chaîne de caractères ?" options={["Parce qu'un dictionnaire occupe moins de mémoire qu'une chaîne", "Parce qu'un dictionnaire associe plusieurs champs nommés (titre, fait) à une même tâche", "Parce qu'on ne peut pas mettre une chaîne dans une liste"]} correct={1} />
 
-OK 12-projet-cli.mdx écrit
+<Quiz id="q-2" question="Dans la fonction supprimer, à quoi sert le bloc try / except IndexError ?" options={["À supprimer plusieurs tâches d'un coup", "À éviter que le programme s'arrête si l'indice fourni n'existe pas dans la liste", "À convertir l'indice en nombre entier"]} correct={1} />
+
+## à retenir
+
+Ce projet a rassemblé tout le parcours. Une tâche est un dictionnaire avec un titre et un drapeau `fait` ; l'ensemble des tâches est une liste de ces dictionnaires, ce qui garde l'ordre et se parcourt à la boucle. Chaque action vit dans sa propre fonction : `ajouter`, `lister`, `marquer_faite`, `supprimer`. Découper ainsi met chaque règle à un seul endroit et rend le code lisible.
+
+La gestion d'erreurs avec `try` / `except IndexError` protège l'outil des entrées invalides sans masquer les vrais bugs. Une boucle de menu joue le chef d'orchestre : elle lit un choix et appelle la bonne fonction tant qu'on ne quitte pas. Et pour passer du jouet à l'outil, il reste à sauvegarder les tâches dans un fichier JSON. Vous avez maintenant les briques pour le faire seul.
+
+OK 12 réécrit
