@@ -1,0 +1,111 @@
+---
+refCode: CL-LSN-192-V01
+slug: systeme-projet-serveur-securise
+title: "Projet : mettre en service un serveur web sécurisé"
+description: "Mettez tout le parcours en pratique : déployez un serveur web de bout en bout, créez un utilisateur de service, configurez le pare-feu, durcissez l'accès SSH, planifiez une sauvegarde et vérifiez les journaux."
+category: DEV
+difficulty: ADVANCED
+estimatedMinutes: 75
+xpReward: 800
+prerequisites: ["CL-LSN-191-V01"]
+---
+
+Voilà le dernier exercice du parcours. On ne va pas apprendre une nouvelle commande : on va relier ce que tu connais déjà. Le scénario est simple et réaliste. On te confie une machine fraîche, un serveur Linux nu, et on te demande d'y faire tourner un site web. Pas seulement de le faire tourner : de le rendre présentable pour la vraie vie, c'est-à-dire filtré, durci, sauvegardé, et lisible quand quelque chose cloche.
+
+C'est exactement le travail d'un admin système. Mettre en service, ce n'est pas taper une commande magique. C'est une suite de petites décisions, chacune renvoyant à une brique du parcours. On les prend dans l'ordre, parce que l'ordre compte.
+
+<Diagram caption="Les étapes de mise en service">
+flowchart
+[Système nu] --> [Préparer : maj + utilisateur de service]
+[Préparer : maj + utilisateur de service] --> [Installer le serveur web]
+[Installer le serveur web] --> [Pare-feu : tout fermer sauf SSH et web]
+[Pare-feu : tout fermer sauf SSH et web] --> [Durcir SSH]
+[Durcir SSH] --> [Planifier une sauvegarde]
+[Planifier une sauvegarde] --> [Vérifier les journaux]
+[Vérifier les journaux] --> [Serveur en service]
+</Diagram>
+
+## étape 1 : préparer le terrain
+
+Avant d'installer quoi que ce soit, on met le système à jour. Un serveur qu'on déploie avec des paquets périmés démarre déjà avec des trous connus. Donc `apt update` puis `apt upgrade`, et on repart sur une base saine.
+
+Ensuite, on crée un utilisateur dédié au service. Tu te souviens de la leçon sur les utilisateurs et celle sur les paquets : la règle, c'est de ne pas tout faire en root. Le service web tournera sous son propre compte, sans shell de connexion, sans droit d'administration. Si un jour le site est compromis, l'attaquant hérite des droits de ce compte limité, pas des clés de la machine.
+
+<Callout type="info">
+Un utilisateur de service n'a pas besoin de se connecter ni de naviguer dans le système. On lui retire le shell (`/usr/sbin/nologin`) et on ne lui donne accès qu'à ce qu'il doit lire ou écrire. Le moins de droits possible, c'est le moins de dégâts possible.
+</Callout>
+
+## étape 2 : installer le service web
+
+On passe au serveur web. Ici, ce sera nginx, installé via le gestionnaire de paquets comme tu l'as vu plus tôt. Installer ne suffit pas : il faut l'activer au démarrage pour qu'il revienne tout seul après un redémarrage, et vérifier qu'il répond vraiment.
+
+C'est le moment de rappeler systemd. `enable --now` fait deux choses d'un coup : il active le service pour les prochains boots et il le démarre maintenant. Ensuite `is-active` confirme l'état, et un `curl` local te donne la preuve concrète que le serveur sert bien une page.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Installer et activer le serveur web" commands={{"sudo apt update": "All packages are up to date.", "sudo apt install -y nginx": "Setting up nginx ... done.", "sudo systemctl enable --now nginx": "", "systemctl is-active nginx": "active", "curl -I localhost": "HTTP/1.1 200 OK"}} />
+
+Un `200 OK` en local, c'est le premier jalon. Le service tourne. Mais pour l'instant, il est ouvert à tous les vents.
+
+## étape 3 : le pare-feu
+
+Un serveur fraîchement installé a souvent plus de ports ouverts qu'il n'en faut. La bonne posture, c'est l'inverse de la permissivité : on ferme tout en entrée, puis on rouvre uniquement ce dont on a besoin. Ici, deux choses : SSH pour s'administrer, et le port web pour servir le site.
+
+On reprend `ufw` de la leçon réseau. La politique par défaut passe en `deny incoming`, puis on autorise explicitement le 22 (SSH) et le 80 (HTTP). Une fois les règles posées, on active le pare-feu.
+
+<Callout type="warning">
+Ouvre la règle SSH AVANT d'activer le pare-feu. Si tu actives `ufw` sans autoriser le 22 alors que tu es connecté à distance, tu coupes ta propre session et tu te retrouves verrouillé dehors. Sur une machine distante, c'est l'erreur classique qui force un accès console de secours.
+</Callout>
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Sécuriser et planifier" commands={{"sudo ufw default deny incoming": "Default incoming policy changed", "sudo ufw allow 22/tcp": "Rule added", "sudo ufw allow 80/tcp": "Rule added", "sudo ufw enable": "Firewall is active", "sudo grep PermitRootLogin /etc/ssh/sshd_config": "PermitRootLogin no", "crontab -l": "0 2 * * * tar -czf /sauvegardes/www.tar.gz /var/www"}} />
+
+## étape 4 : durcir l'accès
+
+Le pare-feu laisse passer SSH, mais SSH lui-même peut être plus strict. Comme vu dans la leçon sur le durcissement, on coupe la connexion directe en root. Personne ne se logue en root par le réseau : on se connecte avec un compte normal, puis on monte en droits avec sudo si besoin. Ça enlève la cible la plus évidente des attaques par force brute.
+
+Dans le terminal ci-dessus, le `grep PermitRootLogin` confirme que la directive est bien sur `no`. Tant qu'à faire, on préfère les clés SSH aux mots de passe : une clé ne se devine pas, là où un mot de passe finit toujours par tomber sous assez d'essais. Après chaque modification de `sshd_config`, on recharge le service pour appliquer.
+
+## étape 5 : planifier une sauvegarde
+
+Un serveur sans sauvegarde, c'est une panne qui n'attend que son heure. On automatise. La leçon sur cron et celle sur les sauvegardes se combinent ici : une tâche planifiée qui archive le contenu du site chaque nuit.
+
+La ligne de crontab `0 2 * * *` se lit « à 2h00, toutes les nuits ». Elle lance un `tar` qui compresse `/var/www` dans une archive datée. On choisit une heure creuse pour ne pas peser sur le trafic. Plus tard, tu voudras envoyer cette archive ailleurs que sur la même machine : une sauvegarde au même endroit que les données disparaît avec elles.
+
+## étape 6 : vérifier les journaux
+
+Reste à confirmer que tout tient debout, et à savoir où regarder le jour où ça casse. On revient aux journaux. `systemctl status nginx` montre l'état du service et ses dernières lignes de log. `journalctl -u nginx` déroule l'historique complet du service.
+
+Pour le web, deux fichiers comptent : `/var/log/nginx/access.log` pour voir qui visite, et `/var/log/nginx/error.log` pour comprendre pourquoi une page renvoie une erreur. Quand un site « ne marche pas », c'est presque toujours là que se trouve la réponse, avant même de toucher à la configuration.
+
+## le serveur en service
+
+Fais le compte de ce qu'on a obtenu. Le service web tourne et répond en local. Il revient tout seul après un redémarrage. Le pare-feu ne laisse entrer que SSH et le web. La connexion root par SSH est coupée. Une sauvegarde nocturne tourne en cron. Et on sait lire les journaux pour diagnostiquer.
+
+<Callout type="success">
+Cinq propriétés cochées : fonctionnel, filtré, durci, sauvegardé, observable. C'est la différence entre « un serveur qui marche sur ma machine » et « un serveur qu'on peut laisser tourner en production ».
+</Callout>
+
+## pour aller plus loin
+
+Les prochaines briques naturelles : ajouter HTTPS avec un certificat (Let's Encrypt), brancher une supervision qui t'alerte si le service tombe, et décrire toute cette installation en infrastructure as code pour la reproduire à l'identique sans la refaire à la main.
+
+## à toi de jouer
+
+Rejoue les deux terminaux ci-dessus dans l'ordre, puis vérifie ta compréhension.
+
+<Quiz id="q-1" question="Dans quel ordre faut-il configurer le pare-feu pour ne pas se verrouiller dehors sur une machine distante ?" options={["Activer ufw, puis autoriser le port 22", "Autoriser le port 22, puis activer ufw", "Activer ufw seul, le 22 est ouvert par défaut", "Fermer le 22, puis activer ufw"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi désactiver PermitRootLogin sur un serveur exposé ?" options={["Pour accélérer les connexions SSH", "Pour supprimer le compte root de la machine", "Pour retirer la cible la plus évidente des attaques par force brute", "Parce que ufw l'exige avant de s'activer"]} correct={2} />
+
+<Quiz id="q-3" question="Que fait 'systemctl enable --now nginx' ?" options={["Active le service au démarrage ET le lance immédiatement", "Lance le service une seule fois sans le réactiver au boot", "Installe le paquet nginx puis le supprime", "Recharge la configuration sans démarrer le service"]} correct={0} />
+
+## à retenir
+
+- On met en service dans un ordre précis : préparer, installer, filtrer, durcir, sauvegarder, observer.
+- Un utilisateur de service dédié limite les dégâts en cas de compromission ; on ne fait pas tout en root.
+- `enable --now` active un service au boot et le démarre dans la foulée.
+- Avec ufw, on ferme tout en entrée puis on rouvre SSH et le web ; on autorise le 22 AVANT d'activer le pare-feu.
+- Couper PermitRootLogin et préférer les clés SSH durcit l'accès distant.
+- Une tâche cron archive le site chaque nuit ; à terme, on copie l'archive hors de la machine.
+- Les journaux (`journalctl`, `error.log`) sont le premier endroit où regarder quand ça casse.
+- Ce projet a mobilisé tout le parcours : utilisateurs, paquets, systemd, réseau, durcissement, cron, sauvegardes et journaux.
+
+OK 12 écrit

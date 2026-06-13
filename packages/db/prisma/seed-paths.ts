@@ -388,6 +388,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-180-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-016-V01",
+    slug: "admin-systeme-linux",
+    title: "Administration système Linux",
+    description:
+      "Administrer un vrai serveur Linux : utilisateurs et permissions avancées, services avec systemd, gestion des paquets, système de fichiers et stockage, configuration réseau et pare-feu, journaux, automatisation par cron, durcissement, sauvegardes et dépannage. Conclu par la mise en service d'un serveur web sécurisé.",
+    category: "DEV",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 9,
+    lessons: [
+      "CL-LSN-181-V01",
+      "CL-LSN-182-V01",
+      "CL-LSN-183-V01",
+      "CL-LSN-184-V01",
+      "CL-LSN-185-V01",
+      "CL-LSN-186-V01",
+      "CL-LSN-187-V01",
+      "CL-LSN-188-V01",
+      "CL-LSN-189-V01",
+      "CL-LSN-190-V01",
+      "CL-LSN-191-V01",
+      "CL-LSN-192-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

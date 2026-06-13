@@ -1,0 +1,102 @@
+---
+refCode: CL-LSN-182-V01
+slug: systeme-utilisateurs-permissions
+title: "Utilisateurs, groupes et permissions avancées"
+description: "Au-delà de chmod : les fichiers de comptes, la gestion des utilisateurs et des groupes, la configuration de sudo, et les permissions spéciales SUID, SGID et sticky bit qui changent le comportement par défaut."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 540
+prerequisites: ["CL-LSN-181-V01"]
+---
+
+Sur ta machine perso, tu es seul, tu fais ce que tu veux. Sur un serveur partagé, c'est une autre histoire. Plusieurs personnes s'y connectent, des services tournent sous des comptes dédiés, et la question revient sans arrêt : qui a le droit de faire quoi. Tu connais déjà `chmod`, `chown` et le trio rwx sur un fichier. Maintenant on regarde les rouages en dessous : où Linux range la liste des comptes, comment on en crée et en supprime, comment on accorde des droits d'administration sans donner le mot de passe root à tout le monde, et trois bits spéciaux qui changent la donne quand un programme s'exécute.
+
+L'idée de fond, c'est le moindre privilège. Chaque compte, chaque service ne devrait avoir que les droits dont il a besoin, ni plus. Quand un attaquant compromet un compte limité, il reste limité. Et quand tout passe par des comptes nommés plutôt que par un root anonyme, tu sais qui a fait quoi. Traçabilité et moindre privilège, ce sont les deux fils rouges de cette leçon.
+
+## les fichiers de référence
+
+Linux ne stocke pas les comptes dans une base de données mystérieuse. Tout est dans des fichiers texte, et savoir les lire t'évite bien des suppositions.
+
+`/etc/passwd` liste les comptes, un par ligne, sept champs séparés par des deux-points : nom de connexion, un `x` (le mot de passe est ailleurs), l'UID, le GID du groupe principal, un champ commentaire (souvent le nom réel), le répertoire personnel, et le shell de connexion. Un UID à 0, c'est root. Les UID en dessous de 1000 sont en général réservés aux comptes système (services, démons), et les vrais utilisateurs commencent vers 1000. Ce fichier est lisible par tout le monde, ce qui est normal : des programmes ont besoin d'associer un UID à un nom.
+
+`/etc/group` fait pareil pour les groupes : nom du groupe, un `x`, le GID, et la liste des membres secondaires.
+
+`/etc/shadow` est le fichier sensible. C'est là que vivent les empreintes des mots de passe, et lui n'est lisible que par root. Une empreinte n'est pas le mot de passe en clair : c'est le résultat d'une fonction de hachage (souvent yescrypt ou SHA-512 sur les systèmes récents), avec un sel, de sorte que deux personnes ayant le même mot de passe n'ont pas la même empreinte. Le champ contient aussi des infos de gestion : date du dernier changement, durée de vie du mot de passe, avertissement avant expiration. Si tu vois un `!` ou un `*` à la place de l'empreinte, le compte ne peut pas se connecter par mot de passe.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Lire les fichiers de comptes" commands={{"grep root /etc/passwd": "root:x:0:0:root:/root:/bin/bash", "grep '^www-data' /etc/passwd": "www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin", "getent group sudo": "sudo:x:27:alice", "sudo head -1 /etc/shadow": "root:$y$j9T$abc...:19700:0:99999:7:::"}} />
+
+<Callout type="info">
+Le shell `nologin` (ou `/bin/false`) sur le compte `www-data` n'est pas un détail. Un service web n'a aucune raison de pouvoir ouvrir une session interactive. Lui couper le shell, c'est du moindre privilège appliqué à un compte système.
+</Callout>
+
+## gérer les comptes
+
+Tu n'édites jamais ces fichiers à la main pour créer un compte. Des outils s'en chargent et gardent tout cohérent.
+
+`useradd` crée un compte. L'option `-m` crée le répertoire personnel, `-s` fixe le shell. `passwd alice` définit ou change son mot de passe (et met à jour `/etc/shadow`). `usermod` modifie un compte existant : changer le shell, le nom, ou ajouter à un groupe. `userdel` supprime ; avec `-r`, il efface aussi le répertoire personnel.
+
+Un point qui pique souvent : pour ajouter quelqu'un à un groupe sans effacer ses groupes actuels, c'est `usermod -aG groupe utilisateur`. Le `-a` veut dire append. Si tu oublies le `-a`, tu remplaces toute la liste des groupes secondaires par un seul, et tu peux retirer sans le vouloir un utilisateur du groupe `sudo`. Cette erreur a déjà coûté des accès à beaucoup de monde.
+
+## les groupes
+
+Pourquoi des groupes, alors qu'on pourrait donner les droits compte par compte. Parce que ça ne tient pas à l'échelle. Imagine un dossier de projet partagé par cinq personnes. Sans groupe, tu devrais ajuster les permissions du dossier à chaque arrivée ou départ. Avec un groupe `projet-x`, tu donnes les droits au groupe une fois, et tu gères ensuite les membres, pas les permissions des fichiers.
+
+Concrètement : tu crées un groupe, tu mets le dossier en propriété de ce groupe, tu donnes les droits de groupe qu'il faut, et chaque membre du groupe en hérite. Ajouter une sixième personne, c'est une ligne, pas une revue de toutes les permissions. C'est plus maintenable et c'est plus clair à auditer : la question devient « qui est dans ce groupe », pas « quels fichiers ai-je oublié ».
+
+## sudo et sudoers
+
+Donner le mot de passe root à toute l'équipe est une mauvaise idée pour deux raisons. D'abord parce que tout le monde peut alors tout faire. Ensuite parce que les actions sont anonymes : root, c'est root, on ne sait pas qui était au clavier.
+
+`sudo` règle les deux. Il permet d'accorder des droits d'administration ciblés : telle personne peut redémarrer tel service, telle autre a les pleins pouvoirs. Et chaque appel à `sudo` est journalisé avec le nom de l'utilisateur réel. Si quelqu'un redémarre la base de prod à 3 h du matin, le journal le dit. C'est ça, la traçabilité.
+
+La configuration vit dans `/etc/sudoers` (et les fichiers de `/etc/sudoers.d/`). Une règle typique ressemble à `alice ALL=(ALL) ALL` (alice peut tout faire) ou, plus fin, `bob ALL=(ALL) /usr/bin/systemctl restart nginx` (bob ne peut que redémarrer nginx). Le moindre privilège, encore : on accorde l'action précise, pas tout.
+
+<Callout type="warning">
+Édite ce fichier avec `visudo`, jamais avec un éditeur classique. `visudo` vérifie la syntaxe avant d'enregistrer. Une faute de frappe dans `/etc/sudoers` peut casser `sudo` entièrement, et tu te retrouves sans aucun moyen de passer admin pour réparer. `visudo` t'arrête avant le drame.
+</Callout>
+
+## les permissions spéciales
+
+Au-dessus des bits rwx, il existe trois bits qui changent le comportement par défaut. Ils expliquent des choses qui paraissent bizarres au premier abord, comme le fait qu'un simple utilisateur puisse changer son mot de passe alors que `/etc/shadow` n'est lisible que par root.
+
+Le SUID, sur un exécutable, fait tourner le programme avec les droits du propriétaire du fichier, pas de celui qui le lance. `passwd` appartient à root et porte le SUID : quand tu le lances, il s'exécute en tant que root le temps d'écrire dans `/etc/shadow`, puis rend la main. Dans un `ls -l`, le bit d'exécution du propriétaire devient un `s`.
+
+Le SGID fait pareil avec le groupe. Sur un répertoire, il a un autre effet pratique : les fichiers créés à l'intérieur héritent du groupe du dossier, ce qui colle bien avec un dossier de projet partagé.
+
+Le sticky bit, sur un répertoire, dit : chacun ne peut supprimer que ses propres fichiers, même si le dossier est ouvert à tous en écriture. C'est exactement ce qui protège `/tmp`, où tout le monde écrit mais où personne ne doit effacer les fichiers des autres.
+
+| bit | où | effet | repère dans ls |
+|-----|----|-------|----------------|
+| SUID | exécutable | tourne avec les droits du propriétaire | `s` à la place du `x` propriétaire |
+| SGID | exécutable / dossier | droits du groupe / héritage du groupe | `s` à la place du `x` groupe |
+| sticky | dossier | seul le propriétaire d'un fichier peut le supprimer | `t` à la place du `x` autres |
+
+<Callout type="danger">
+Le SUID est un classique de l'élévation de privilèges en pentest. Un binaire SUID root mal écrit, ou un script SUID qui appelle une commande externe, peut donner un shell root à un utilisateur normal. Un des premiers réflexes après une intrusion, c'est de lister les binaires SUID du système (`find / -perm -4000`). Ne mets le SUID que là où c'est indispensable, et surveille tout SUID qui apparaît sans que tu l'aies posé.
+</Callout>
+
+## les ACL en bref
+
+Quand le modèle propriétaire / groupe / autres ne suffit pas, par exemple si tu veux donner l'accès à un fichier à deux utilisateurs précis sans créer de groupe, les ACL (avec `setfacl` et `getfacl`) ajoutent des droits par utilisateur ou par groupe en plus des permissions classiques.
+
+## à toi de jouer
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Gérer comptes et permissions spéciales" commands={{"sudo useradd -m -s /bin/bash alice": "", "id alice": "uid=1001(alice) gid=1001(alice) groups=1001(alice)", "sudo usermod -aG sudo alice": "", "grep alice /etc/passwd": "alice:x:1001:1001::/home/alice:/bin/bash", "find /usr/bin -perm -4000 -type f": "/usr/bin/passwd\n/usr/bin/sudo", "ls -l /usr/bin/passwd": "-rwsr-xr-x 1 root root 59976 /usr/bin/passwd"}} />
+
+<Quiz id="q-1" question="Dans quel fichier sont stockées les empreintes des mots de passe, lisible par root seul ?" options={["/etc/passwd", "/etc/group", "/etc/shadow", "/etc/sudoers"]} correct={2} />
+
+<Quiz id="q-2" question="Pourquoi éditer /etc/sudoers avec visudo plutôt qu'un éditeur classique ?" options={["visudo est plus rapide", "visudo vérifie la syntaxe avant d'enregistrer et évite de casser sudo", "visudo chiffre le fichier", "c'est obligatoire, sudoers refuse les autres éditeurs"]} correct={1} />
+
+<Quiz id="q-3" question="Un binaire avec le bit SUID appartenant à root s'exécute avec quels droits ?" options={["les droits de celui qui le lance", "aucun droit particulier", "les droits du propriétaire, donc root", "les droits du groupe sticky"]} correct={2} />
+
+## à retenir
+
+- `/etc/passwd` liste les comptes (lisible par tous), `/etc/group` les groupes, `/etc/shadow` les empreintes de mots de passe (root seul).
+- Crée et modifie les comptes avec `useradd -m`, `usermod`, `passwd`, `userdel -r` ; jamais en éditant les fichiers à la main.
+- `usermod -aG groupe user` ajoute à un groupe sans effacer les autres ; oublier le `-a` remplace toute la liste.
+- Les groupes rendent le partage de droits maintenable : tu gères les membres, pas les permissions fichier par fichier.
+- `sudo` accorde des droits d'admin ciblés et journalise qui fait quoi ; on configure dans `/etc/sudoers` avec `visudo`.
+- SUID = droits du propriétaire à l'exécution, SGID = droits ou héritage de groupe, sticky bit = on ne supprime que ses fichiers (le cas de /tmp).
+- Un SUID mal placé est un vecteur d'élévation de privilèges ; liste-les avec `find / -perm -4000`.
+- Les ACL ajoutent des droits par utilisateur quand rwx ne suffit plus.

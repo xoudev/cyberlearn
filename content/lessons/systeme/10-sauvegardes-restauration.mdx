@@ -1,0 +1,114 @@
+---
+refCode: CL-LSN-190-V01
+slug: systeme-sauvegardes
+title: "Sauvegardes et restauration"
+description: "Se préparer au pire : pourquoi et comment sauvegarder, la règle des copies, les types de sauvegarde, les outils tar et rsync, et la vérité que tout le monde oublie, une sauvegarde non testée ne vaut rien."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-185-V01"]
+---
+
+Pose-toi la bonne question. Ce n'est pas de savoir si un disque va lâcher un jour, ni si quelqu'un effacera un fichier qu'il ne fallait pas toucher. Ces deux choses arrivent. La vraie question, celle qui décide si ta soirée sera longue ou catastrophique, c'est : quand ça arrivera, est-ce que tu pourras récupérer tes données ?
+
+Toute cette leçon tient dans cette question. Sauvegarder, c'est facile à dire. Récupérer pour de vrai, c'est là que les gens découvrent que leur plan avait des trous.
+
+## pourquoi sauvegarder
+
+Il existe trois façons de tout perdre, et une seule parade.
+
+La première, c'est la panne matérielle. Un disque dur tombe en panne sans prévenir. Un SSD a une durée de vie limitée. Une coupure de courant corrompt un système de fichiers en plein milieu d'une écriture. Le matériel finit toujours par mourir, la seule inconnue c'est la date.
+
+La deuxième, c'est l'erreur humaine. Un `rm -rf` lancé dans le mauvais dossier. Une mauvaise manip pendant une migration. Un `DROP TABLE` sur la production au lieu de la base de test. Ça n'arrive pas qu'aux débutants, et personne n'est à l'abri d'une distraction à 23 h.
+
+La troisième, c'est le rançongiciel. Un programme malveillant chiffre tous tes fichiers et te demande une rançon pour la clé. Là, tes données sont toujours là, sur le disque, mais illisibles. Sans copie saine, tu paies ou tu perds tout.
+
+Trois causes différentes, une seule réponse commune : avoir une copie ailleurs, propre, récupérable.
+
+<Callout type="info">
+Une sauvegarde, ce n'est pas une copie qui vit à côté de l'original. Un fichier copié dans un autre dossier du même disque ne te protège ni d'une panne de ce disque, ni d'un rançongiciel qui chiffre tout le disque. La distance compte autant que la copie elle-même.
+</Callout>
+
+## la règle 3-2-1
+
+Tu l'as déjà croisée en continuité d'activité, alors juste un rappel rapide. La règle 3-2-1 tient en trois chiffres :
+
+- trois copies de tes données, l'original plus deux sauvegardes,
+- sur deux types de supports différents, par exemple un disque interne et un disque externe ou du stockage réseau,
+- dont une copie hors site, ailleurs que dans le même bâtiment.
+
+Pourquoi deux supports ? Parce qu'un même modèle de disque acheté le même jour peut tomber en panne au même moment. Pourquoi une copie hors site ? Parce qu'un incendie, un dégât des eaux ou un vol n'a aucune raison d'épargner la sauvegarde posée juste à côté du serveur.
+
+Et il y a un détail qui devient vital face au rançongiciel : au moins une copie doit être hors ligne ou en écriture seule. Un rançongiciel chiffre tout ce qu'il peut atteindre, y compris les partages réseau montés en permanence. Une sauvegarde débranchée, ou sur un support qu'on ne peut pas réécrire, est hors de sa portée. C'est souvent la seule copie qui survit à une attaque.
+
+## complète, incrémentale, différentielle
+
+Tu ne sauvegardes pas tout, tout le temps. Recopier des centaines de gigaoctets chaque nuit, c'est lent et ça gaspille de la place. D'où trois stratégies, et un compromis à chaque fois entre place occupée, temps de sauvegarde et simplicité de restauration.
+
+| Type | Ce qu'il copie | Compromis |
+| --- | --- | --- |
+| Complète | Toutes les données, à chaque fois | Simple à restaurer, mais lente et gourmande en place |
+| Incrémentale | Ce qui a changé depuis la dernière sauvegarde, quelle qu'elle soit | Rapide et légère, mais restauration en chaîne |
+| Différentielle | Ce qui a changé depuis la dernière complète | Entre les deux : restauration en deux temps |
+
+Le piège est dans la restauration. Avec l'incrémentale, pour revenir à l'état d'aujourd'hui, tu dois rejouer la dernière complète puis chaque incrément dans l'ordre. Si un seul maillon manque ou est abîmé, la chaîne casse. La différentielle est plus lourde mais plus sûre à restaurer : une complète plus une seule différentielle suffisent. En pratique, on combine souvent une complète hebdomadaire et des incréments quotidiens.
+
+## les outils
+
+Sous Linux, deux outils en ligne de commande couvrent l'essentiel, et une troisième idée complète le tableau.
+
+`tar` archive et compresse. Il rassemble une arborescence entière dans un seul fichier `.tar.gz` que tu peux ranger, copier ou envoyer ailleurs. C'est parfait pour figer un état à un instant donné, daté dans le nom du fichier.
+
+`rsync` synchronise. Sa force, c'est qu'il ne copie que les différences entre la source et la destination. Au premier passage il copie tout, mais aux suivants il ne transfère que ce qui a changé. Sur de gros volumes qui bougent peu, c'est énormément plus rapide. L'option `--delete` fait en sorte que la destination soit un miroir exact, en supprimant côté copie ce qui a disparu côté source. Pratique et dangereux : un miroir reproduit aussi tes suppressions accidentelles.
+
+Les snapshots, eux, figent un état du système de fichiers à un instant T sans tout recopier. Des systèmes comme Btrfs, ZFS ou LVM gardent les versions antérieures des blocs modifiés, ce qui permet de revenir en arrière presque instantanément. Attention : un snapshot sur le même disque que les données n'est pas une sauvegarde au sens 3-2-1, puisqu'il meurt avec le disque. C'est un complément, pas un remplacement.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Sauvegarder et restaurer" commands={{"tar -czf /sauvegardes/www-2026-01-12.tar.gz /var/www": "", "rsync -a --delete /var/www/ /sauvegardes/www-miroir/": "sent 1,204,338 bytes", "ls -lh /sauvegardes": "www-2026-01-12.tar.gz  42M", "tar -tzf /sauvegardes/www-2026-01-12.tar.gz | head -3": "var/www/index.html\nvar/www/style.css", "tar -xzf /sauvegardes/www-2026-01-12.tar.gz -C /tmp/test-restauration": ""}} />
+
+Regarde la quatrième commande : `tar -tzf` liste le contenu de l'archive sans rien extraire. C'est déjà un premier contrôle, tu vérifies que les fichiers attendus sont bien dedans. Mais lister n'est pas restaurer, et c'est tout le sujet de la suite.
+
+## tester la restauration
+
+Voici le point que presque tout le monde rate, et le plus important de la leçon.
+
+Une sauvegarde qui n'a jamais été restaurée n'est pas une sauvegarde. C'est une hypothèse. Tu supposes que le fichier est complet, qu'il n'est pas corrompu, que l'archive est lisible, que le script de cette nuit a bien tourné jusqu'au bout. Tant que tu n'as pas restauré pour de vrai, tu n'en sais rien.
+
+Et les façons dont une sauvegarde peut te trahir sont nombreuses. L'archive s'est arrêtée en plein milieu parce que le disque était plein. Le job tournait sur un dossier vide depuis trois semaines suite à un chemin mal écrit. Le fichier de chiffrement est intact mais tu as perdu la clé pour le déchiffrer. La base de données a été copiée pendant qu'elle écrivait, donc l'export est incohérent. Aucun de ces problèmes ne se voit tant que tu ne tentes pas la récupération.
+
+Le pire, c'est le moment où on le découvre. On apprend qu'une sauvegarde est inutilisable précisément le jour où on en a besoin, c'est-à-dire après avoir déjà tout perdu. Il n'y a pas de seconde chance à cet instant.
+
+<Callout type="danger">
+La restauration compte plus que la sauvegarde. Sauvegarder protège ta tranquillité ; restaurer protège tes données. Programme une restauration de test régulière, vers un dossier ou un serveur jetable, et vérifie que les fichiers récupérés sont complets et exploitables. Une sauvegarde que tu n'as jamais restaurée est une promesse que personne n'a tenue.
+</Callout>
+
+Le bon réflexe : restaurer pour de faux, à intervalle régulier. Extraire l'archive vers `/tmp/test-restauration`, lancer la base restaurée sur un environnement isolé, ouvrir quelques fichiers au hasard et confirmer qu'ils sont intacts. Tu ne testes pas le jour de la panne, tu testes pendant que tout va bien, justement pour que le jour de la panne soit un non-événement.
+
+## documenter
+
+Un plan de sauvegarde qui n'existe que dans ta tête disparaît avec toi, ou avec ta mémoire un mardi soir stressant. Écris-le.
+
+Un bon document de sauvegarde répond à quatre questions simples. Quoi : quels dossiers et quelles bases sont sauvegardés, et lesquels ne le sont pas volontairement. Où : sur quels supports et à quels emplacements, y compris la copie hors site. À quelle fréquence : quotidienne, hebdomadaire, et combien de temps on garde les anciennes versions. Comment restaurer : la procédure pas à pas, les commandes exactes, l'emplacement des clés de déchiffrement.
+
+Ce dernier point sauve des situations. Le jour de l'incident, tu seras peut-être fatigué, sous pression, ou ce sera un collègue qui n'a jamais touché à ce serveur. Une procédure claire, déjà testée, transforme une crise en simple suite d'étapes à suivre.
+
+## à toi de jouer
+
+Reprends le terminal plus haut et relis chaque commande en te demandant à quoi elle sert : archiver avec `tar -czf`, synchroniser avec `rsync -a`, lister le contenu avec `tar -tzf`, puis extraire ailleurs avec `tar -xzf`. Ce dernier geste, l'extraction vers un dossier de test, c'est ta restauration d'entraînement.
+
+<Quiz id="q-1" question="Pourquoi au moins une copie de sauvegarde doit-elle être hors ligne ou non réinscriptible ?" options={["Pour gagner de la place sur le disque principal", "Parce qu un rançongiciel ne peut pas chiffrer ce qu il ne peut pas atteindre", "Parce que les disques hors ligne sont plus rapides", "Pour respecter une obligation légale"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle affirmation décrit le mieux une sauvegarde qui n a jamais été restaurée pour test ?" options={["Elle est forcément corrompue", "C est une hypothèse : on ignore si elle est vraiment exploitable", "Elle est plus fiable car jamais touchée", "Elle ne consomme pas d espace disque"]} correct={1} />
+
+<Quiz id="q-3" question="Avec une stratégie incrémentale, que faut-il pour restaurer l état le plus récent ?" options={["La dernière sauvegarde incrémentale seule suffit", "La dernière complète plus chaque incrément, dans l ordre", "N importe quelle sauvegarde au hasard", "Uniquement la première sauvegarde complète"]} correct={1} />
+
+## à retenir
+
+- Trois menaces mènent à la perte de données : panne matérielle, erreur humaine, rançongiciel. La parade commune est une copie saine, ailleurs.
+- Règle 3-2-1 : trois copies, deux types de supports, une hors site. Au moins une copie hors ligne protège du rançongiciel.
+- Complète : tout, simple à restaurer, lourde. Incrémentale : seulement les changements, légère mais restauration en chaîne. Différentielle : changements depuis la dernière complète, compromis intermédiaire.
+- `tar` archive et compresse une arborescence dans un fichier daté. `rsync` ne copie que les différences. Les snapshots figent un état mais ne remplacent pas une copie hors disque.
+- Une sauvegarde non testée ne vaut rien. La restauration compte plus que la sauvegarde : teste-la régulièrement, pendant que tout va bien.
+- Documente quoi, où, à quelle fréquence, et comment restaurer. La procédure écrite sauve la crise.
+
+OK 10 écrit

@@ -1,0 +1,91 @@
+---
+refCode: CL-LSN-186-V01
+slug: systeme-configuration-reseau
+title: "Configurer le réseau d'un serveur"
+description: "Mettre un serveur sur le réseau et le protéger : consulter et fixer la configuration, la résolution DNS côté client, et surtout le pare-feu local pour n'ouvrir que les ports nécessaires."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-181-V01"]
+---
+
+Un serveur qui rend service doit être joignable. Une page web, une base de données, un accès SSH pour l'administrer : tout ça suppose qu'on puisse l'atteindre par le réseau. Mais joignable ne veut pas dire grand ouvert. Vous voulez qu'il réponde aux bonnes personnes, sur les bonnes portes, et qu'il reste muet pour tout le reste.
+
+Cette leçon couvre les deux faces du travail. D'abord configurer : donner au serveur une adresse, une passerelle, des serveurs DNS, et rendre ça permanent. Ensuite filtrer : décider quels ports acceptent une connexion et fermer le reste. Vous connaissez déjà IP, DNS, routage et ports en théorie. Ici on les manipule sur une machine concrète.
+
+## consulter la config
+
+Avant de changer quoi que ce soit, on regarde l'état actuel. Deux commandes suffisent pour l'essentiel. `ip addr` montre les interfaces réseau et leurs adresses. `ip route` montre la table de routage, donc surtout la passerelle par défaut, celle qui sert à sortir vers tout ce qui n'est pas sur le réseau local.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Configurer le réseau et le pare-feu" commands={{"ip addr show eth0": "inet 203.0.113.10/24 scope global eth0", "ip route": "default via 203.0.113.1 dev eth0", "cat /etc/resolv.conf": "nameserver 1.1.1.1", "sudo ufw default deny incoming": "Default incoming policy changed to deny", "sudo ufw allow 22/tcp": "Rule added", "sudo ufw allow 443/tcp": "Rule added", "sudo ufw enable": "Firewall is active and enabled on system startup", "sudo ufw status": "22/tcp ALLOW Anywhere\n443/tcp ALLOW Anywhere"}} />
+
+Ici l'interface `eth0` porte l'adresse 203.0.113.10 avec un masque /24, et la passerelle est 203.0.113.1. En lisant ces deux sorties vous savez où est la machine et par où elle parle au reste du monde. C'est le premier réflexe de diagnostic quand un serveur ne répond plus : a-t-il encore une adresse, a-t-il encore une route.
+
+<Callout type="info">
+L'ancien outil `ifconfig` faisait à peu près le même travail mais il est déprécié sur la plupart des distributions récentes. La famille `ip` (le paquet iproute2) le remplace et offre plus de détails. Si vous tombez sur de vieux tutoriels qui parlent d'ifconfig, traduisez mentalement vers `ip addr` et `ip route`.
+</Callout>
+
+## la config persistante
+
+Une commande `ip` qui ajoute une adresse fonctionne tout de suite, mais elle ne survit pas à un redémarrage. Le noyau oublie tout au reboot et reconstruit sa configuration à partir de fichiers sur le disque. Donc pour une adresse fixe de serveur, on ne tape pas des commandes à la main, on écrit la config quelque part de durable.
+
+Où exactement, ça dépend de la distribution. Beaucoup de systèmes Ubuntu récents utilisent netplan, qui lit des fichiers de description dans `/etc/netplan/`. D'autres passent par NetworkManager, souvent piloté en ligne de commande avec `nmcli`. Des serveurs plus minimalistes utilisent encore d'autres mécanismes. Je ne vous donne pas la syntaxe précise de chacun ici, parce qu'elle change d'un système à l'autre et qu'elle vieillit vite.
+
+Ce qui compte, c'est le modèle mental. Il y a un service réseau au démarrage qui lit un ou plusieurs fichiers de configuration et applique ce qu'ils décrivent : telle interface, telle adresse, telle passerelle, tels serveurs DNS. Pour rendre un changement permanent, vous modifiez ce fichier puis vous demandez au service de relire sa config. Quand vous arrivez sur un serveur inconnu, la question à vous poser est donc : quel outil gère le réseau ici, et où vit sa config.
+
+## la résolution DNS côté client
+
+Le serveur a besoin de traduire des noms en adresses, exactement comme un poste de travail. Deux fichiers comptent pour ça côté client.
+
+`/etc/resolv.conf` liste les serveurs DNS que la machine interroge, sous forme de lignes `nameserver`. Quand un programme veut joindre `api.exemple.com`, c'est vers ces serveurs que part la question. Sur les systèmes modernes ce fichier est souvent généré automatiquement par netplan, NetworkManager ou systemd-resolved, donc on l'édite rarement à la main directement : on configure plutôt l'outil qui le produit.
+
+`/etc/hosts` permet de définir des correspondances locales nom vers adresse, sans passer par le DNS. La machine consulte ce fichier en premier. C'est pratique dans deux cas : forcer un nom vers une adresse précise pendant un test ou un dépannage, ou faire fonctionner des noms internes qui n'existent dans aucun DNS public. Une ligne `10.0.0.5 db-interne` et le nom `db-interne` résout localement sans serveur DNS.
+
+<Callout type="warning">
+`/etc/hosts` court-circuite le DNS. Une entrée oubliée là peut pointer un nom vers une mauvaise adresse pendant des mois sans que personne comprenne pourquoi le DNS officiel semble ignoré. Quand un nom résout vers une adresse inattendue, ce fichier est le premier endroit à vérifier.
+</Callout>
+
+## le pare-feu local
+
+Voilà le coeur du travail. Par défaut, un service qui écoute sur un port accepte des connexions de partout. Si vous lancez une base de données et qu'elle écoute sur toutes les interfaces, n'importe qui capable d'atteindre l'adresse du serveur peut tenter de s'y connecter. Le pare-feu local sert à dire : non, sur cette machine, seuls ces ports-là sont ouverts en entrée, le reste est refusé.
+
+Le principe tient en une phrase. On ferme tout en entrée par défaut, puis on rouvre uniquement ce qui est utile. Pour un serveur web classique, ça veut dire ouvrir le port 22 pour SSH afin de pouvoir l'administrer, et le port 443 pour le HTTPS. Tout le reste reste fermé.
+
+Sous le capot, le filtrage est assuré par nftables (ou iptables sur les systèmes plus anciens), directement dans le noyau Linux. Leur syntaxe est puissante mais verbeuse, facile à se tromper. C'est pourquoi `ufw`, pour Uncomplicated Firewall, existe : c'est une surcouche qui traduit des ordres simples en règles nftables. Vous écrivez une intention claire, ufw génère la mécanique en dessous.
+
+La séquence typique se lit dans le terminal plus haut. On pose d'abord la politique par défaut : `ufw default deny incoming` refuse toute entrée. On rouvre ensuite explicitement le strict nécessaire : `ufw allow 22/tcp` pour SSH, `ufw allow 443/tcp` pour le web. On active avec `ufw enable`, et `ufw status` confirme la liste des ports autorisés. À partir de là, une tentative de connexion sur un port non listé est rejetée avant même d'atteindre le service.
+
+<Callout type="danger">
+Ordre des opérations. Si vous administrez le serveur à distance par SSH et que vous activez un `deny incoming` sans avoir d'abord autorisé le port 22, vous coupez votre propre connexion et vous vous retrouvez verrouillé dehors. Autorisez toujours SSH avant d'activer le pare-feu. Sur une machine distante sans accès console de secours, cette erreur peut coûter un déplacement physique ou la recréation de l'instance.
+</Callout>
+
+## pourquoi filtrer
+
+On pourrait se dire qu'il suffit de ne pas lancer de services inutiles, et qu'un port sans service derrière ne risque rien. C'est en partie vrai, mais le filtrage apporte une deuxième barrière qui ne dépend pas de la propreté du reste.
+
+Chaque port ouvert est une porte d'entrée possible. Un service mal configuré, une faille pas encore corrigée, un démon lancé par erreur lors d'une installation : autant d'occasions pour quelqu'un de l'extérieur. En fermant tout sauf l'utile, vous réduisez la surface d'attaque. Même si un service indésirable se met à écouter par accident, le pare-feu l'empêche d'être atteint depuis le réseau. La protection ne repose plus sur le fait que tout soit parfait à l'intérieur.
+
+C'est la logique du moindre privilège appliquée au réseau. On n'accorde l'accès qu'à ce qui en a besoin, et rien de plus. Cette idée fait partie du durcissement d'un serveur, au même titre que désactiver les comptes inutiles ou tenir les paquets à jour. Le pare-feu local n'est pas le seul rempart, il vient souvent en complément d'un filtrage au niveau du réseau (groupes de sécurité chez un hébergeur, pare-feu d'infrastructure), mais il a l'avantage de voyager avec la machine et de rester actif même si le filtrage amont saute.
+
+## à toi de jouer
+
+Reprenez le terminal de cette leçon. Lisez l'adresse et la passerelle, vérifiez le serveur DNS, puis construisez la politique de pare-feu pas à pas : refus par défaut en entrée, autorisation de SSH, autorisation du HTTPS, activation, et vérification du status. Observez bien l'ordre : les autorisations viennent avant l'activation.
+
+<Quiz id="q-1" question="Une adresse posée avec la commande 'ip addr add' disparaît au redémarrage. Pourquoi ?" options={["Parce que la commande ip est dépréciée", "Parce que le noyau reconstruit sa config réseau au démarrage à partir de fichiers sur le disque, pas des commandes tapées en session", "Parce que l'adresse était invalide", "Parce que le pare-feu l'a bloquée"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle politique de pare-feu par défaut en entrée correspond au principe du moindre privilège réseau ?" options={["Tout autoriser puis bloquer les ports dangereux", "Refuser tout en entrée, puis rouvrir explicitement le strict nécessaire", "Laisser le noyau décider port par port", "Autoriser uniquement les ports en dessous de 1024"]} correct={1} />
+
+<Quiz id="q-3" question="Vous administrez un serveur distant par SSH. Quel ordre évite de vous verrouiller dehors ?" options={["Activer ufw, puis autoriser le port 22", "Autoriser le port 22, puis poser le deny par défaut et activer ufw", "Activer le deny par défaut en premier, autoriser SSH ensuite", "Couper SSH avant toute configuration de pare-feu"]} correct={1} />
+
+## à retenir
+
+`ip addr` montre les interfaces et leurs adresses, `ip route` montre la passerelle par défaut. Ce sont les deux premières lectures d'un diagnostic réseau.
+
+Une commande `ip` ne survit pas au redémarrage. La config durable vit dans des fichiers lus par un service au démarrage (netplan, NetworkManager ou autre selon la distribution). Pour rendre un changement permanent, on modifie le fichier et on fait relire la config.
+
+Côté résolution, `/etc/resolv.conf` liste les serveurs DNS interrogés, souvent généré par l'outil réseau plutôt qu'édité à la main. `/etc/hosts` définit des correspondances locales qui court-circuitent le DNS, utile en test et pour des noms internes, mais à surveiller quand un nom résout bizarrement.
+
+Le pare-feu local ferme tout en entrée par défaut et ne rouvre que l'utile : SSH et le port du service. `ufw` est une surcouche simple au-dessus de nftables ou iptables. On autorise SSH avant d'activer, sinon on se verrouille dehors. Filtrer réduit la surface d'attaque et applique le moindre privilège au réseau, en complément des autres mesures de durcissement.
+
+OK 06 écrit

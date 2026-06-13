@@ -1,0 +1,94 @@
+---
+refCode: CL-LSN-189-V01
+slug: systeme-durcissement-serveur
+title: "Durcir un serveur Linux"
+description: "Réduire la prise pour un attaquant : sécuriser l'accès SSH par clés, bloquer la force brute avec fail2ban, automatiser les mises à jour de sécurité, fermer les services inutiles et appliquer le moindre privilège."
+category: DEV
+difficulty: ADVANCED
+estimatedMinutes: 45
+xpReward: 560
+prerequisites: ["CL-LSN-186-V01"]
+---
+
+Mets une machine Linux nue sur Internet avec une IP publique, et regarde ses logs une heure plus tard. Tu y verras déjà des dizaines, parfois des centaines, de tentatives de connexion SSH venues de partout. Personne ne te connaît, personne ne sait ce que tu héberges. C'est juste du balayage automatique : des robots qui parcourent des plages d'adresses entières, frappent à chaque porte et notent ce qui répond. Un serveur exposé n'est pas une cible parce qu'il est intéressant, il est une cible parce qu'il existe.
+
+Durcir un serveur, c'est réduire ce qu'un attaquant peut tenter. On ne rend pas une machine invincible, on enlève des prises. Chaque service en moins, chaque mot de passe remplacé par une clé, chaque port fermé est une chose de moins à attaquer. Le modèle mental est simple : un pentesteur, ou un robot, cherche le chemin le plus facile. Un port ouvert sur un vieux service, un compte avec un mot de passe faible, root accessible directement. Le durcissement consiste à supprimer ces chemins faciles un par un, pour que l'effort nécessaire dépasse l'intérêt. Côté blue team, c'est exactement ce travail : prévoir où l'attaquant va frapper, et fermer ces portes avant lui.
+
+## sécuriser SSH
+
+SSH est presque toujours le premier point de contact, et donc la première cible. Trois réglages changent tout, et ils vivent dans `/etc/ssh/sshd_config`.
+
+D'abord, couper la connexion root directe. Si root peut se connecter en SSH, un attaquant n'a plus qu'une chose à deviner : le mot de passe. Le nom du compte, lui, est connu d'avance. En passant `PermitRootLogin no`, tu forces à se connecter d'abord avec un compte normal, puis à passer en root via sudo. Deux étapes au lieu d'une.
+
+Ensuite, préférer les clés aux mots de passe. Un mot de passe peut être deviné, lettre après lettre, par un robot patient. Une clé SSH, non : c'est une paire cryptographique où la partie privée ne quitte jamais ta machine. Avec `PasswordAuthentication no`, le serveur refuse purement et simplement les tentatives par mot de passe. La force brute sur SSH devient impossible, parce qu'il n'y a plus rien à brutaliser. C'est sans doute le réglage qui a le plus d'effet pour le moins d'effort.
+
+Enfin, limiter qui a le droit d'entrer. Avec une directive `AllowUsers alice bob`, seuls ces comptes peuvent ouvrir une session SSH. Tous les autres, y compris les comptes système qui n'ont rien à faire là, sont refusés avant même de tenter quoi que ce soit.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Durcir l'accès SSH et bloquer la force brute" commands={{"sudo grep -E 'PermitRootLogin|PasswordAuthentication' /etc/ssh/sshd_config": "PermitRootLogin no\nPasswordAuthentication no", "sudo systemctl restart ssh": "", "sudo fail2ban-client status sshd": "Currently banned: 3\nBanned IP list: 203.0.113.9 198.51.100.7 192.0.2.5", "sudo apt install -y unattended-upgrades": "Setting up unattended-upgrades ... done."}} />
+
+<Callout type="warning">
+Avant de couper l'authentification par mot de passe ou de redémarrer sshd, ouvre une deuxième session et vérifie que ta clé fonctionne. Si tu te trompes dans la config et que tu fermes ta seule porte, tu te verrouilles dehors de ta propre machine. Garde toujours une session active pendant que tu testes la nouvelle.
+</Callout>
+
+Beaucoup d'admins changent aussi le port SSH, de 22 vers autre chose, ou le filtrent au pare-feu pour ne l'ouvrir qu'à certaines IP. Déplacer le port ne sécurise rien en soi, un scan le retrouve vite, mais ça réduit énormément le bruit dans les logs. Le filtrer par IP, en revanche, est une vraie barrière : si SSH n'est joignable que depuis ton réseau, le reste d'Internet ne peut même pas frapper.
+
+## bloquer la force brute
+
+Même avec les clés en place, les robots continueront de cogner. Ils ne savent pas que c'est inutile, ils essaient quand même. C'est là qu'intervient fail2ban.
+
+L'idée tient en une phrase : fail2ban lit les logs en continu, et quand une même IP accumule trop d'échecs de connexion en peu de temps, il l'ajoute au pare-feu pour la bannir un moment. Cinq mauvaises tentatives en dix minutes, et l'adresse est bloquée pour, disons, une heure. Le robot se cogne au mur, passe à autre chose.
+
+L'effet sur le bruit est spectaculaire. Sans fail2ban, une IP peut tenter des milliers de connexions par jour. Avec, elle est éjectée après une poignée d'essais. Ça n'empêche pas une attaque ciblée et lente, mais ça élimine la grande masse du balayage automatique. La commande `fail2ban-client status sshd` te montre qui est banni en ce moment, ce qui donne une idée concrète du trafic hostile permanent. C'est le pendant défensif des attaques par mot de passe : là où un attaquant veut multiplier les essais, fail2ban plafonne leur nombre.
+
+## tenir à jour
+
+La plupart des intrusions n'utilisent aucune technique nouvelle. Elles exploitent une faille connue, publiée, corrigée depuis des semaines, sur une machine que personne n'a mise à jour. Un attaquant scanne, repère une version vulnérable, et applique un exploit déjà tout fait. C'est le rapport direct avec le risque des composants vulnérables : la faille existe, le correctif existe, il manque juste l'installation.
+
+La parade est d'automatiser les mises à jour de sécurité. Sur Debian et Ubuntu, le paquet `unattended-upgrades` installe tout seul les correctifs de sécurité, sans attendre qu'un humain s'en souvienne. Le délai entre la publication d'un correctif et son application sur ta machine tombe de plusieurs semaines à un jour ou deux.
+
+<Callout type="info">
+Limite les mises à jour automatiques au canal de sécurité plutôt qu'à tous les paquets. Tu veux fermer les failles sans risquer qu'une mise à jour de fonctionnalité casse ton service en pleine nuit. Pour un serveur sérieux, surveille aussi les redémarrages : certains correctifs de noyau n'ont d'effet qu'après reboot.
+</Callout>
+
+## réduire la surface
+
+Chaque programme qui écoute sur le réseau est une porte. Une base de données, un serveur de mail, un vieux service de transfert oublié lors d'une installation : autant de cibles potentielles, et autant de failles futures qui te concerneront. Le principe est de n'avoir que ce dont tu te sers.
+
+Concrètement, deux gestes. D'abord, désactiver les services inutiles. Si la machine ne sert que des pages web, le serveur de base de données n'a pas à écouter sur l'extérieur, et un service d'impression n'a aucune raison de tourner. `systemctl disable --now` arrête le service et l'empêche de redémarrer au prochain boot. Ensuite, fermer les ports. C'est le rôle du pare-feu : par défaut, on bloque tout en entrée, et on n'ouvre explicitement que les ports nécessaires. SSH, le web, et rien d'autre. Tout ce qui reste fermé ne peut tout simplement pas être attaqué de l'extérieur.
+
+Moins de services, moins de ports, moins de surface. Un service qui n'existe pas ne peut pas avoir de faille exploitable. C'est la défense la moins coûteuse qui soit : il suffit d'enlever.
+
+## le moindre privilège partout
+
+Un principe revient à chaque étape, et il mérite d'être nommé : chaque chose ne reçoit que les droits dont elle a besoin pour fonctionner, ni plus.
+
+Ça veut dire des comptes au strict nécessaire. Pas de compte partagé que tout le monde utilise, pas de droits administrateur distribués par confort. Ça veut dire un sudo ciblé : un utilisateur qui doit redémarrer un service obtient le droit de faire exactement ça, pas un accès root complet. Et ça veut dire ne pas travailler en root au quotidien. On se connecte avec son compte normal, et on n'élève ses droits que pour la commande précise qui le demande.
+
+L'intérêt apparaît le jour où quelque chose tourne mal. Si un compte web est compromis et qu'il n'a aucun privilège, l'attaquant reste coincé dans un coin sans intérêt. Si ce même compte avait été root, c'est toute la machine qui tombe. Le moindre privilège ne bloque pas l'intrusion, il limite ce qu'elle peut faire ensuite. C'est ce qui transforme un incident grave en un incident gérable.
+
+<Callout type="success">
+Une bonne question de contrôle avant d'accorder un droit : « si ce compte est piraté demain, qu'est-ce que l'attaquant gagne ? ». Si la réponse est « pas grand-chose », le périmètre est bien découpé. Si c'est « tout », il faut resserrer.
+</Callout>
+
+## à toi de jouer
+
+Reprends les commandes de durcissement et observe ce qu'elles racontent : la config SSH verrouillée, les IP déjà bannies par fail2ban, les mises à jour automatiques en place.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Durcir l'accès SSH et bloquer la force brute" commands={{"sudo grep -E 'PermitRootLogin|PasswordAuthentication' /etc/ssh/sshd_config": "PermitRootLogin no\nPasswordAuthentication no", "sudo systemctl restart ssh": "", "sudo fail2ban-client status sshd": "Currently banned: 3\nBanned IP list: 203.0.113.9 198.51.100.7 192.0.2.5", "sudo apt install -y unattended-upgrades": "Setting up unattended-upgrades ... done."}} />
+
+<Quiz id="q-1" question="Pourquoi passer aux clés SSH (PasswordAuthentication no) coupe-t-il la force brute ?" options={["Parce que le serveur change de port automatiquement", "Parce qu'il n'y a plus de mot de passe à deviner : la clé privée ne quitte jamais le client", "Parce que fail2ban est activé en même temps", "Parce que root est désactivé"]} correct={1} />
+
+<Quiz id="q-2" question="Que fait fail2ban concrètement ?" options={["Il chiffre les connexions SSH", "Il installe les correctifs de sécurité automatiquement", "Il lit les logs et bannit au pare-feu les IP qui accumulent trop d'échecs", "Il ferme tous les ports non utilisés"]} correct={2} />
+
+<Quiz id="q-3" question="Quel est l'intérêt principal du moindre privilège quand un compte est compromis ?" options={["Il limite ce que l'attaquant peut faire une fois entré", "Il empêche toute intrusion d'avoir lieu", "Il accélère les mises à jour", "Il masque le serveur des scans"]} correct={0} />
+
+## à retenir
+
+- Un serveur exposé est sondé en permanence par des robots, dès la première heure. Durcir, c'est enlever des prises, pas viser l'invincibilité.
+- SSH d'abord : `PermitRootLogin no`, `PasswordAuthentication no` (clés à la place), et `AllowUsers` pour restreindre les comptes. Teste toujours un nouvel accès avant de couper l'ancien.
+- fail2ban lit les logs et bannit les IP après trop d'échecs ; il élimine la grande masse du balayage automatique.
+- Les mises à jour de sécurité automatiques (`unattended-upgrades`) ferment les failles connues sans attendre un humain.
+- Réduire la surface : désactiver les services inutiles, ne laisser ouverts au pare-feu que les ports nécessaires. Ce qui n'existe pas n'a pas de faille.
+- Moindre privilège partout : sudo ciblé, pas de root au quotidien. Ça ne bloque pas l'intrusion mais limite ses dégâts.
+
+OK 09 écrit

@@ -1,0 +1,101 @@
+---
+refCode: CL-LSN-183-V01
+slug: systeme-processus-systemd
+title: "Les services et systemd"
+description: "Gérer les services d'un serveur avec systemd : ce qu'est le gestionnaire de services, les commandes systemctl, la différence entre démarrer et activer au démarrage, et lire l'état et les logs d'un service."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 540
+prerequisites: ["CL-LSN-181-V01"]
+---
+
+Un serveur ne sert à rien tout seul. Ce qui le rend utile, ce sont les programmes qu'il fait tourner en permanence : un serveur web qui répond aux visiteurs, une base de données qui stocke les comptes, un démon SSH qui vous laisse vous connecter à distance. On appelle ces programmes des services. Et un service a des besoins particuliers : il doit démarrer au bon moment, s'arrêter proprement quand on le lui demande, redémarrer après une mise à jour de config, et surtout revenir tout seul après un redémarrage de la machine. Personne ne va se connecter à 3h du matin pour relancer le serveur web à la main.
+
+Vous savez déjà observer des processus avec `ps`, `top`, et en tuer un avec `kill`. Ça, c'est le niveau du processus isolé. Ici on monte d'un cran : on ne va plus regarder un processus, on va piloter un service, c'est-à-dire dire au système « assure-toi que ce programme tourne, et débrouille-toi ». L'outil qui orchestre tout ça sur la quasi-totalité des distributions Linux modernes, c'est systemd.
+
+## ce qu'est systemd
+
+systemd est le gestionnaire de services du système. C'est aussi le tout premier programme lancé par le noyau au démarrage, celui qui porte le PID 1. Souvenez-vous : chaque processus a un parent. En remontant la chaîne des parents, on tombe toujours sur le PID 1. C'est lui la racine de l'arbre. Tout le reste, le serveur web, la base, votre session, descend de systemd, directement ou indirectement.
+
+Son rôle est double. D'abord lancer tout ce qui doit tourner au démarrage, dans le bon ordre. Ensuite surveiller ces programmes pendant qu'ils tournent : savoir lesquels sont vivants, lesquels ont planté, et relancer ceux qui le doivent.
+
+<Callout type="info">
+PID 1 est un poste à responsabilité. Si ce processus s'arrête, le système entier tombe. C'est pour ça qu'on ne lance jamais un `kill` dessus, et que systemd est conçu pour rester en vie quoi qu'il arrive aux services qu'il gère.
+</Callout>
+
+Avant systemd, le démarrage reposait sur une collection de scripts shell, le système dit SysV init. Chaque service avait son script de lancement, et ces scripts s'exécutaient les uns après les autres, dans un ordre fixé à la main par des numéros. Ça marchait, mais ça posait trois problèmes. Les dépendances étaient gérées à la main : si la base devait démarrer avant le serveur web, c'était à l'admin de bien numéroter les scripts. Tout était séquentiel, donc lent : chaque service attendait que le précédent ait fini, même quand rien ne les reliait. Et les logs partaient un peu partout, chaque service écrivant dans son coin.
+
+systemd règle les trois d'un coup. On déclare les dépendances une bonne fois pour toutes, et systemd démarre en parallèle tout ce qui peut l'être, ce qui accélère beaucoup le boot. Et les logs de tous les services arrivent dans un journal unifié, qu'on interroge avec un seul outil.
+
+## les units
+
+systemd raisonne en units. Une unit, c'est une chose qu'il sait gérer, décrite par un petit fichier texte. Il existe plusieurs types d'units (des points de montage, des minuteries, des sockets), mais celui qui vous concerne au quotidien, c'est le service.
+
+Un fichier de service porte l'extension `.service`. Il décrit comment lancer un programme : quelle commande exécuter, sous quel utilisateur, quoi faire s'il plante, de quels autres services il dépend. Quand vous installez nginx ou PostgreSQL, le paquet dépose son fichier `.service` au bon endroit, et à partir de là systemd sait s'en occuper. Vous n'avez presque jamais à écrire ces fichiers vous-même au début ; vous allez surtout vous en servir via une seule commande.
+
+## piloter un service
+
+Cette commande, c'est `systemctl`. Elle parle à systemd et accepte un verbe suivi du nom du service. Les quatre que vous taperez le plus souvent : `start` pour lancer, `stop` pour arrêter, `restart` pour relancer, et `status` pour voir où en est un service.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Gérer un service avec systemctl" commands={{"systemctl status nginx": "active (running) since Mon 10:02; 2h ago", "sudo systemctl restart nginx": "", "sudo systemctl enable nginx": "Created symlink /etc/systemd/system/.../nginx.service", "systemctl is-enabled nginx": "enabled", "journalctl -u nginx --no-pager | tail -2": "nginx: ready to handle connections"}} />
+
+Le `status` est votre premier réflexe quand quelque chose cloche. Il vous dit en une ligne l'état du service. `active (running)` signifie qu'il tourne. Vous pouvez aussi tomber sur `inactive (dead)` quand il est arrêté, ou `failed` quand il a essayé de démarrer et n'y est pas arrivé. Le `since Mon 10:02` indique depuis quand il est dans cet état : très pratique pour savoir si un service vient de redémarrer tout seul, ce qui trahit souvent un plantage récent. Notez que `start`, `stop`, `restart` et `enable` demandent les droits administrateur, d'où le `sudo`. Consulter un statut, lui, ne demande rien.
+
+## démarrer maintenant contre activer au démarrage
+
+Voici le point que tout le monde confond au début, alors prenez le temps. `start` et `enable` ne font pas la même chose, et ce ne sont pas des synonymes.
+
+`start` lance le service tout de suite, dans l'instant. Mais ça s'arrête là : si la machine redémarre, ce service ne reviendra pas. `enable` ne lance rien tout de suite ; il inscrit le service dans la liste de ce que systemd doit démarrer à chaque boot. À l'inverse, `disable` le retire de cette liste sans pour autant l'arrêter maintenant.
+
+<Callout type="warning">
+Le piège classique : vous installez un service, vous faites `start`, tout marche, vous êtes content. Trois semaines plus tard la machine redémarre pour une mise à jour, et le service ne revient pas, parce que vous aviez oublié le `enable`. Sur un vrai serveur, on fait presque toujours les deux : `start` pour maintenant, `enable` pour la suite. Le raccourci `systemctl enable --now nginx` fait les deux en une commande.
+</Callout>
+
+| Commande | Effet immédiat | Effet au prochain démarrage |
+|---|---|---|
+| `start` | lance le service maintenant | aucun |
+| `stop` | arrête le service maintenant | aucun |
+| `enable` | aucun | le service démarrera au boot |
+| `disable` | aucun | le service ne démarrera plus au boot |
+| `enable --now` | lance le service maintenant | le service démarrera au boot |
+
+Pour vérifier ce qui est prévu au démarrage sans toucher à l'état courant, `systemctl is-enabled nginx` répond `enabled` ou `disabled`. Deux questions différentes, donc deux commandes : `is-active` dit s'il tourne là maintenant, `is-enabled` dit s'il reviendra au boot.
+
+## lire les logs d'un service
+
+Quand un service refuse de démarrer ou se comporte mal, le `status` vous donne le verdict mais pas les détails. Les détails sont dans les logs. systemd centralise les logs de tous les services dans son journal, et on l'interroge avec `journalctl`.
+
+L'option qui change tout, c'est `-u` suivi du nom du service : `journalctl -u nginx` ne montre que les messages de nginx, sans le bruit de tout le reste du système. Avant systemd, il aurait fallu savoir dans quel fichier nginx écrivait, deviner son format, et le lire à part. Là, le même outil sert pour n'importe quel service. C'est ça, le bénéfice des logs unifiés : une seule porte d'entrée pour diagnostiquer, quel que soit le programme.
+
+Quelques réflexes utiles : `journalctl -u nginx -n 50` affiche les 50 dernières lignes, `journalctl -u nginx -f` suit les nouveaux messages en direct pendant que vous reproduisez le problème, et `--since "10 min ago"` limite à une fenêtre récente. On reviendra plus en détail sur la lecture des journaux système dans une leçon dédiée ; pour l'instant, retenez le réflexe `status` puis `journalctl -u`.
+
+## les cibles
+
+Une dernière notion pour relier les morceaux. systemd regroupe des ensembles d'units sous des cibles, les targets. Une cible décrit un état du système, un mode de fonctionnement.
+
+Les deux qu'on croise le plus : `multi-user.target`, c'est un système complet en ligne de commande, services et réseau actifs, le mode normal d'un serveur ; et `graphical.target`, qui ajoute par-dessus l'environnement de bureau, pour un poste avec écran. Ces cibles remplacent les anciens niveaux d'exécution numérotés du temps de SysV init, les fameux runlevels 3 et 5. Le principe est plus lisible : au lieu d'un chiffre, un nom qui dit ce qu'il vise. Sur un serveur, vous n'aurez quasiment jamais à y toucher, mais quand vous lirez `multi-user.target` dans un fichier de service ou une doc, vous saurez que ça veut dire « système prêt à servir, sans interface graphique ».
+
+## à toi de jouer
+
+Mets en pratique l'enchaînement classique : vérifier l'état, relancer après un changement, et s'assurer que le service reviendra au démarrage.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Vérifier, relancer, activer" commands={{"systemctl status nginx": "active (running) since Mon 10:02; 2h ago", "sudo systemctl restart nginx": "", "systemctl is-active nginx": "active", "sudo systemctl enable nginx": "Created symlink /etc/systemd/system/.../nginx.service", "systemctl is-enabled nginx": "enabled"}} />
+
+<Quiz id="q-1" question="Quel processus porte le PID 1 sur un système Linux moderne et lance tous les autres services ?" options={["Le serveur web nginx", "Le noyau Linux directement", "systemd", "Le démon SSH"]} correct={2} />
+
+<Quiz id="q-2" question="Vous venez de taper 'sudo systemctl start nginx' sur un serveur. La machine redémarre cette nuit. Que se passe-t-il pour nginx ?" options={["Il redémarre automatiquement, start suffit", "Il ne redémarre pas, car start ne touche pas au démarrage automatique ; il fallait aussi enable", "Il redémarre une fois puis s'arrête", "systemd refuse de redémarrer la machine tant que nginx tourne"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle commande affiche uniquement les messages de log du service nginx ?" options={["journalctl -u nginx", "systemctl logs nginx", "cat /var/log/nginx", "ps aux | grep nginx"]} correct={0} />
+
+## à retenir
+
+- systemd est le gestionnaire de services et le premier processus du système, avec le PID 1 ; tout le reste descend de lui.
+- Il a remplacé les scripts d'init pour trois raisons : gestion des dépendances, démarrage en parallèle plus rapide, et logs unifiés.
+- systemd gère des units ; celles que vous manipulez sont surtout des services, décrits par un fichier `.service`.
+- `systemctl start | stop | restart | status` pilote un service ; `status` donne l'état (active, inactive, failed) et depuis quand.
+- `start` agit maintenant, `enable` agit au démarrage : deux choses distinctes. Sur un serveur on fait souvent les deux, ou `enable --now`.
+- `journalctl -u nom` montre les logs d'un service précis, grâce au journal unifié de systemd.
+- Les cibles comme `multi-user.target` et `graphical.target` décrivent un mode de fonctionnement et remplacent les anciens niveaux d'exécution.
+
+OK 03 écrit
