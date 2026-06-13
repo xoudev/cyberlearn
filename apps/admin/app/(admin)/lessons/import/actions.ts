@@ -41,9 +41,10 @@ export type BatchImportResult =
   | { status: "invalid_input"; message: string };
 
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-// Per-lesson budget per hour: sized so a full path (10-20 lessons) imports in
-// one batch while still capping runaway automation on an admin-only surface.
-const RATE_MAX = 30;
+// Per-lesson budget per hour: raised to 250 for the initial bulk content load
+// (16 paths / ~192 lessons). Lower back toward 30 once the catalog is seeded to
+// keep capping runaway automation on an admin-only surface.
+const RATE_MAX = 250;
 const BATCH_MAX_FILES = 30;
 // Aggregate cap, mirrored client-side: stays under the server-action body
 // size limit configured in next.config.ts so oversized batches fail with a

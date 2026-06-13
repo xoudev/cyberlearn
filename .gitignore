@@ -69,3 +69,6 @@ test-results/
 # file under docs/ (runbooks, design sources) while the already-tracked ones
 # stayed tracked (a trap). Nothing under docs/ is generated output; if a
 # generator ever lands, ignore its exact output subdirectory only.
+# Lesson content (MDX) is authored locally and imported via the admin UI;
+# it is not tracked in the repo.
+content/
