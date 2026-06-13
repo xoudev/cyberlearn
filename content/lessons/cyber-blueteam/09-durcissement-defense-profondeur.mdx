@@ -1,0 +1,114 @@
+---
+refCode: CL-LSN-141-V01
+slug: blueteam-durcissement
+title: "Durcissement et défense en profondeur"
+description: "Rendre la vie difficile à l'attaquant à chaque étape : réduire la surface d'attaque, appliquer le moindre privilège, segmenter le réseau, tenir à jour, et empiler des couches pour qu'une faille ne suffise jamais."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 480
+prerequisites: ["CL-LSN-133-V01"]
+---
+
+Aucune machine n'est imprenable. Si quelqu'un dispose d'assez de temps, de moyens et de motivation, il finira par trouver une brèche. Partir de ce constat change la façon de travailler : on ne cherche pas à tout empêcher, on cherche à rendre chaque étape coûteuse. Coûteuse en temps, en compétences, en bruit. Un attaquant qui doit franchir cinq obstacles au lieu d'un laisse cinq fois plus de traces, met cinq fois plus de temps, et abandonne souvent en route parce que la cible suivante est plus facile.
+
+Le durcissement, c'est l'ensemble des gestes qui ferment des portes avant même qu'on les attaque. La défense en profondeur, c'est l'idée d'empiler ces protections pour qu'une seule faille ne suffise jamais à tout perdre. Les deux vont ensemble. On va voir comment, concrètement.
+
+## réduire la surface d'attaque
+
+La surface d'attaque, c'est tout ce par quoi un attaquant peut entrer ou agir : les services qui tournent, les ports ouverts, les comptes existants, les logiciels installés. Chaque élément de cette liste est une porte potentielle. Et une porte qu'on a oubliée d'examiner reste ouverte.
+
+Le réflexe de base est simple : ce qui ne sert pas, on l'enlève. Un serveur web n'a pas besoin d'un service de partage de fichiers actif. Un poste de travail n'a pas besoin d'un serveur de base de données qui écoute sur le réseau. Pourtant, par défaut, beaucoup de systèmes démarrent une foule de services « au cas où ». Chacun est du code qui tourne, donc du code qui peut contenir une faille.
+
+La même logique vaut pour les comptes. Un compte de stagiaire parti depuis six mois, un compte de service créé pour un projet abandonné, un mot de passe par défaut jamais changé : autant d'entrées discrètes qui ne déclenchent aucune alerte parce que personne ne les surveille. Faire le ménage régulièrement n'est pas un détail administratif, c'est de la sécurité.
+
+<Callout type="info">
+Moins il y a de portes, moins il y a de cibles. Désactiver un service inutile ne se contente pas de fermer une porte : ça supprime aussi toutes les failles futures de ce service, celles qui ne sont pas encore découvertes. C'est la protection la plus rentable qui soit.
+</Callout>
+
+## le moindre privilège
+
+Le principe du moindre privilège tient en une phrase : chaque compte, chaque programme, chaque service ne reçoit que les droits dont il a strictement besoin pour faire son travail, et rien de plus.
+
+Pourquoi ça compte ? Parce qu'un attaquant qui prend le contrôle d'un compte hérite exactement des droits de ce compte. S'il tombe sur un compte administrateur, il a les clés de tout. S'il tombe sur un compte limité qui ne peut lire que trois dossiers, il est coincé dans ces trois dossiers.
+
+Prenons un cas concret. Une application web a besoin de lire et d'écrire dans sa propre base de données. On lui donne souvent, par facilité, un compte qui peut tout faire sur le serveur de base : créer des tables, en supprimer, lire les autres bases. Le jour où cette application est compromise par une injection, l'attaquant peut effacer ou exfiltrer bien plus que les données de l'appli. Si on avait limité ce compte à la lecture et l'écriture de ses seules tables, les dégâts s'arrêtaient là.
+
+Le moindre privilège ne supprime pas la compromission. Il en réduit le rayon. Un compte compromis fait alors moins de dégâts, et c'est exactement le but.
+
+## segmenter le réseau
+
+Quand un attaquant entre quelque part, son premier réflexe est de se déplacer. Il a pris un poste de bureautique sans grand intérêt, mais depuis ce poste il scanne le réseau, cherche le serveur de fichiers, la base RH, le contrôleur de domaine. Ce déplacement de proche en proche s'appelle le mouvement latéral, et c'est ce qui transforme une petite intrusion en désastre.
+
+Segmenter, c'est cloisonner le réseau en zones séparées, avec des règles strictes sur ce qui peut parler à quoi. Les postes de bureautique dans une zone, les serveurs dans une autre, les systèmes industriels ou sensibles dans une troisième, et entre les zones, un filtrage qui n'autorise que les flux légitimes. Le poste de l'accueil n'a aucune raison de se connecter directement au serveur de paie.
+
+L'effet est direct : une machine prise dans un coin ne donne pas accès à tout le reste. L'attaquant se heurte à une cloison, doit trouver un nouveau moyen de la franchir, et chaque tentative est une occasion supplémentaire de le repérer.
+
+<Callout type="warning">
+Un réseau plat, où toutes les machines se voient et se parlent librement, est un cadeau pour l'attaquant : une seule compromission lui ouvre l'ensemble. La segmentation ne coûte presque rien à mettre en place sur une architecture neuve, et beaucoup plus à rajouter après coup. C'est une décision à prendre tôt.
+</Callout>
+
+## tenir à jour
+
+La plupart des intrusions n'exploitent pas une faille inconnue et géniale. Elles exploitent une faille déjà connue, déjà corrigée par l'éditeur, mais pas encore appliquée sur la machine visée. Le correctif existait. Il n'avait simplement pas été installé.
+
+La gestion des correctifs consiste à suivre les mises à jour de sécurité et à les déployer dans un délai raisonnable. C'est un travail ingrat, répétitif, et c'est pour ça qu'il prend du retard. On repousse parce qu'une mise à jour peut casser quelque chose, parce qu'il faut redémarrer, parce qu'on n'a pas le temps. Pendant ce temps, la faille reste ouverte.
+
+Or le délai joue contre le défenseur. Dès qu'un correctif est publié, son contenu révèle indirectement la faille qu'il corrige. Des attaquants analysent ces correctifs et construisent des outils d'exploitation en quelques jours, parfois quelques heures. La fenêtre entre la publication du correctif et son installation est exactement la période où l'on est le plus exposé. Réduire cette fenêtre, c'est réduire le risque, point.
+
+## durcir les configurations
+
+Un logiciel fraîchement installé est rarement configuré pour la sécurité. Il est configuré pour marcher tout de suite, sans friction, avec un maximum de fonctions activées. Les réglages par défaut sont pensés pour la facilité de prise en main, pas pour résister à une attaque.
+
+Durcir une configuration, c'est reprendre ces réglages un par un et les resserrer : désactiver les protocoles anciens et vulnérables, exiger du chiffrement, couper les fonctions de débogage, imposer des mots de passe solides, limiter les comptes administrateurs. Personne ne fait ça de mémoire. Il existe pour cela des guides de durcissement, publiés par des organismes spécialisés, qui détaillent réglage par réglage la configuration recommandée pour un système d'exploitation, un serveur web, une base de données.
+
+<Callout type="success">
+S'appuyer sur un guide de durcissement reconnu évite de réinventer la roue et de laisser passer un réglage important. On part de la configuration recommandée, on l'adapte à son contexte, et on documente les écarts. C'est plus rapide et plus fiable que de tout décider seul.
+</Callout>
+
+## la défense en profondeur
+
+Toutes les mesures vues jusqu'ici ont un point commun : aucune n'est suffisante à elle seule. C'est l'idée centrale de la défense en profondeur. On n'empile pas les protections par excès de zèle, on les empile parce qu'on sait qu'une couche finira par céder, et qu'il faut alors qu'une autre prenne le relais.
+
+L'image qui aide à comprendre, c'est le château fort. Un château ne se contente pas d'un mur. Il a des douves, puis un premier rempart, puis une cour, puis un donjon. Un assaillant qui franchit les douves se retrouve face au rempart. S'il passe le rempart, il est à découvert dans la cour, sous le feu des défenseurs. Chaque obstacle franchi le laisse plus fatigué, plus exposé, plus repérable. Aucun rempart n'est parfait, mais leur succession l'est presque.
+
+En sécurité informatique, ces remparts sont des couches : le réseau (filtrage, segmentation), l'hôte (durcissement, correctifs, moindre privilège), l'application (validation des entrées, authentification), et les données (chiffrement, sauvegardes). Une attaque qui passe le pare-feu se heurte au durcissement de la machine. Si elle passe ça, elle se heurte aux droits limités du compte. Si elle passe encore, les données sensibles sont chiffrées.
+
+<Diagram caption="Les couches de la défense en profondeur">
+flowchart TD
+    A[Attaquant] --> B[Couche reseau: pare-feu et segmentation]
+    B --> C[Couche hote: durcissement, correctifs, moindre privilege]
+    C --> D[Couche application: validation, authentification]
+    D --> E[Couche donnees: chiffrement, sauvegardes]
+    E --> F[Donnees sensibles]
+</Diagram>
+
+C'est ici que tombe une idée reçue tenace : « un bon antivirus suffit ». L'antivirus est une couche, utile, mais une seule. Il détecte ce qu'il connaît déjà. Il ne ferme pas les ports inutiles, ne segmente pas le réseau, n'applique pas les correctifs, ne limite pas les privilèges. Compter sur lui seul, c'est construire un château avec un seul mur et espérer que personne ne le contourne.
+
+<Callout type="danger">
+« L'antivirus s'en chargera » est la phrase qui précède beaucoup d'intrusions réussies. Un antivirus est une couche parmi d'autres, jamais la défense entière. Les attaques modernes savent l'esquiver ou le désactiver. Sans les autres couches derrière lui, il n'y a plus rien.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Une application web se fait compromettre. Son compte de base de données ne peut lire et écrire que ses propres tables, rien d'autre. Quel principe a limité les dégâts ?" options={["La gestion des correctifs", "Le moindre privilège", "L'antivirus", "Le chiffrement des données"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi le retard dans l'application des correctifs est-il dangereux ?" options={["Les correctifs ralentissent les machines une fois installés", "Un correctif publié révèle indirectement la faille, et des outils d'exploitation apparaissent vite", "Les correctifs ne servent qu'aux failles inconnues", "Installer un correctif ouvre toujours une nouvelle faille"]} correct={1} />
+
+<Quiz id="q-3" question="Que vise la segmentation du réseau face à un attaquant déjà entré ?" options={["Empêcher complètement toute intrusion initiale", "Supprimer le besoin de mises à jour", "Limiter le mouvement latéral pour qu'une machine prise ne donne pas accès à tout", "Remplacer le pare-feu par un antivirus"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- On ne peut pas tout empêcher. L'objectif réaliste est de rendre chaque étape coûteuse en temps, en compétences et en bruit pour l'attaquant.
+- Réduire la surface d'attaque : désactiver les services inutiles, fermer les ports non nécessaires, retirer les comptes et logiciels qui ne servent plus.
+- Moindre privilège : chaque compte et service n'a que les droits strictement nécessaires, ce qui réduit le rayon d'une compromission.
+- Segmenter le réseau cloisonne les zones et freine le mouvement latéral ; une machine prise ne donne pas accès à tout.
+- Tenir à jour ferme les failles connues ; le retard d'application est l'une des causes majeures d'intrusion.
+- Durcir les configurations corrige les réglages par défaut, pensés pour la facilité et non la sécurité ; s'appuyer sur des guides de durcissement.
+- Défense en profondeur : plusieurs couches (réseau, hôte, application, données) pour qu'une faille ne suffise jamais. Un antivirus est une couche, pas la défense entière.
+
+OK 09 écrit

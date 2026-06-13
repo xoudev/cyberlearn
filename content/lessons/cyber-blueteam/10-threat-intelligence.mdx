@@ -1,0 +1,121 @@
+---
+refCode: CL-LSN-142-V01
+slug: blueteam-threat-intelligence
+title: "Le renseignement sur les menaces"
+description: "Transformer de la donnée brute sur les menaces en information utile pour décider : les niveaux stratégique, opérationnel et technique, la pyramide de la douleur, et pourquoi un renseignement sans contexte est inutile."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 35
+xpReward: 500
+prerequisites: ["CL-LSN-138-V01"]
+---
+
+Un défenseur qui ne connaît pas ses adversaires se bat les yeux bandés. Il colmate des trous au hasard, sans savoir lesquels comptent. Connaître les attaquants, leurs habitudes, leurs outils, leurs cibles, ça change la donne : on sait alors où regarder en priorité et pourquoi.
+
+Mais connaître ne suffit pas. Une liste d'adresses IP suspectes téléchargée ce matin ne vaut rien si personne ne sait d'où elle vient, ce qu'elle vise, ni si elle est encore d'actualité. Le renseignement sur les menaces, ce n'est pas accumuler des données. C'est les transformer en quelque chose sur quoi on peut agir.
+
+## donnée, information, renseignement
+
+Ces trois mots ne sont pas synonymes, et la différence porte tout le sujet.
+
+Une **donnée**, c'est un fait isolé. L'adresse `185.220.101.47`. Un hash de fichier. Un nom de domaine. Pris seul, ça ne dit rien. Cette IP est-elle dangereuse ? Pour qui ? Depuis quand ? On l'ignore.
+
+Une **information**, c'est la donnée mise en relation. Cette IP a contacté trois de nos serveurs hier soir, toujours sur le port 443, toujours à 2h du matin. On commence à voir un motif.
+
+Un **renseignement**, c'est l'information replacée dans un contexte qui permet de décider. Cette IP appartient à l'infrastructure de commande d'un groupe qui cible les hôpitaux du secteur, la connexion correspond à une phase d'exfiltration connue, et nos sauvegardes sont sur le même réseau. Là, un responsable sait quoi faire : isoler, alerter, vérifier les sauvegardes.
+
+<Callout type="info">
+La règle pour distinguer les trois : une donnée répond à 'quoi', une information répond à 'comment c'est relié', un renseignement répond à 'et alors, qu'est-ce que je fais'. Si un flux que vous recevez ne vous aide pas à répondre à cette dernière question, ce n'est pas encore du renseignement.
+</Callout>
+
+## les trois niveaux
+
+Le renseignement ne s'adresse pas qu'aux analystes techniques. Il se décline selon le public et l'horizon de décision.
+
+Le niveau **stratégique** parle aux décideurs : direction, RSSI, parfois conseil d'administration. Il ne contient pas d'adresses IP. Il parle de tendances, de motivations des attaquants, de secteurs visés, de risques pour l'activité. C'est ce qui répond à la question « faut-il investir dans tel domaine de défense cette année ».
+
+Le niveau **opérationnel** concerne les campagnes et les acteurs. Quel groupe est actif, quelles techniques il emploie en ce moment, contre qui. Il guide les équipes de défense dans leurs priorités sur les semaines à venir.
+
+Le niveau **technique** descend dans le détail : les indicateurs de compromission (IOC), c'est-à-dire les IP, hashes, domaines, signatures qu'on injecte directement dans les outils de détection. Sa durée de vie est courte, son volume élevé.
+
+| Niveau | Public | Exemple |
+|---|---|---|
+| Stratégique | Direction, RSSI | Les rançongiciels ciblent de plus en plus la santé, prévoir un budget de résilience |
+| Opérationnel | Équipes SOC, chasse | Le groupe X exploite actuellement une faille de VPN et déploie tel outil |
+| Technique | Outils (SIEM, EDR, pare-feu) | Bloquer cette IP, cette signature, ce domaine de commande |
+
+Une erreur fréquente : servir du technique à un décideur, ou du stratégique à un analyste. Chacun reçoit ce qu'il peut exploiter.
+
+## la pyramide de la douleur
+
+C'est l'idée la plus utile du domaine, proposée par David Bianco. Tous les indicateurs ne se valent pas. La question n'est pas seulement « est-ce que je peux détecter ça », mais « à quel point ça embête l'attaquant quand je le bloque ».
+
+En bas, les indicateurs faciles à changer pour lui. Un hash de fichier ? Il recompile son malware, le hash change, vous voilà aveugle. Une IP ? Il en loue une autre en cinq minutes. Bloquer ces choses-là le ralentit à peine.
+
+Plus on monte, plus c'est coûteux pour lui. Ses outils, il a mis du temps à les développer ; les abandonner fait mal. Et tout en haut, ses **TTP** (tactiques, techniques et procédures), c'est sa façon de travailler. La changer veut dire réapprendre son métier. Si vous détectez et bloquez ses techniques, vous le forcez à se réinventer, et ça, il déteste.
+
+<Diagram caption="La pyramide de la douleur de Bianco">
+flowchart TD
+  TTP[TTP, tactiques et techniques, TRES DUR a changer] --> Tools[Outils, dur a changer]
+  Tools --> Arte[Artefacts reseau et hote, agacant]
+  Arte --> Dom[Noms de domaine, simple]
+  Dom --> IP[Adresses IP, facile]
+  IP --> Hash[Hashes de fichiers, trivial a changer]
+</Diagram>
+
+La leçon pratique : ne pas se contenter de bloquer des hashes et des IP en pensant avoir fait le travail. Ce sont des gains jetables. Investir aussi dans la détection comportementale, celle qui repère les techniques, parce que c'est elle qui inflige une vraie douleur à l'attaquant.
+
+## les sources
+
+Le renseignement vient de plusieurs endroits, de qualité inégale.
+
+Les **flux d'indicateurs** sont des listes mises à jour automatiquement (IP, domaines, hashes), souvent gratuites ou commerciales. Volumineux, faciles à brancher, mais bruts.
+
+Le **partage entre pairs** circule dans des cercles de confiance : groupements sectoriels, CERT, communautés d'analystes. Souvent le plus pertinent, parce que ciblé sur votre secteur, mais il repose sur la réciprocité.
+
+Les **rapports d'éditeurs** décrivent en profondeur une campagne ou un groupe. Lents à produire, mais riches en contexte et en TTP, donc précieux pour les niveaux haut de pyramide.
+
+<Callout type="success">
+Avant d'intégrer une source, posez-vous : qui la produit, comment elle est vérifiée, à quelle fréquence elle est mise à jour, et quel taux de faux positifs elle génère. Une source non fiable injecte du bruit dans vos outils et finit par vous faire bloquer des choses légitimes.
+</Callout>
+
+## le piège du flux sans contexte
+
+Voici l'erreur classique des équipes débutantes en CTI : s'abonner à tout. Dix, vingt flux, des millions d'indicateurs déversés dans le SIEM. Sur le papier, ça donne l'impression d'être bien renseigné. En pratique, c'est un désastre.
+
+Sans tri, ces indicateurs se périment, se contredisent, déclenchent des alertes pour des choses qui ne vous concernent pas. Les analystes passent leurs journées à fermer des alertes inutiles. Le signal se noie dans le bruit, et le jour où une vraie menace arrive, elle ressemble à toutes les autres fausses alertes qu'on a appris à ignorer.
+
+<Callout type="warning">
+Un flux brut n'est pas du renseignement, c'est de la matière première. Le renseignement utile est trié, daté, attribué à une menace, et filtré pour ce qui touche votre organisation. Mieux vaut cent indicateurs pertinents et contextualisés qu'un million sans tri. La quantité n'est pas une vertu ici.
+</Callout>
+
+## à quoi ça sert
+
+Concrètement, un bon renseignement nourrit quatre usages.
+
+Il **oriente la détection** : on règle ses outils pour chercher ce que font réellement les attaquants actifs, pas tout et n'importe quoi.
+
+Il **enrichit une alerte** : quand le SOC reçoit une alerte, le renseignement lui dit immédiatement si l'IP en cause est liée à un groupe connu, ce qui accélère le tri et la décision.
+
+Il **guide la chasse** : les chasseurs de menaces partent des TTP d'un acteur pour aller chercher proactivement des traces dans le réseau, avant même qu'une alerte ne se déclenche.
+
+Il **informe les décisions** : au niveau stratégique, il dit où mettre l'argent et l'effort. Se défendre contre tout est impossible ; le renseignement aide à choisir contre quoi se défendre en premier.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Qu'est-ce qui distingue une simple donnée d'un renseignement actionnable ?" options={["Le renseignement est toujours payant alors que la donnee est gratuite", "Le renseignement est une donnee replacee dans un contexte qui permet de decider", "La donnee concerne le reseau et le renseignement concerne les utilisateurs", "Il n y a pas de difference, ce sont deux mots pour la meme chose"]} correct={1} />
+
+<Quiz id="q-2" question="Dans la pyramide de la douleur, quel type d'indicateur est le plus penible a changer pour l'attaquant ?" options={["Le hash d un fichier", "Une adresse IP", "Un nom de domaine", "Ses TTP, c est-a-dire ses techniques et sa facon de travailler"]} correct={3} />
+
+<Quiz id="q-3" question="Pourquoi s'abonner a un maximum de flux d'indicateurs est-il une mauvaise idee ?" options={["Cela coute trop cher en bande passante reseau", "Sans tri ni contexte, le volume noie les analystes sous le bruit et masque les vraies menaces", "Les flux gratuits sont illegaux dans la plupart des pays", "Cela ralentit la connexion internet de l entreprise"]} correct={1} />
+</QuizGroup>
+
+## à retenir
+
+- Donnée, information, renseignement ne sont pas synonymes : seul le renseignement, contextualisé, permet de décider.
+- Le CTI se décline en trois niveaux : stratégique (décideurs, tendances), opérationnel (campagnes, acteurs), technique (IOC pour les outils).
+- La pyramide de la douleur classe les indicateurs du plus facile au plus dur à changer pour l'attaquant : hash, IP, domaine, artefacts, outils, TTP. Plus on bloque haut, plus on lui complique la vie.
+- Bloquer des hashes et des IP donne des gains jetables ; détecter les TTP inflige une vraie douleur.
+- Les sources (flux, partage entre pairs, rapports) sont de fiabilité inégale ; chaque source doit être vérifiée avant intégration.
+- Un flux brut sans tri n'est pas du renseignement, c'est du bruit. Cent indicateurs pertinents valent mieux qu'un million sans contexte.

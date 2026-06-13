@@ -292,6 +292,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-132-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-012-V01",
+    slug: "blue-team-soc",
+    title: "Blue team et SOC : défendre et détecter",
+    description:
+      "Le métier de la défense au quotidien : posture blue team et SOC, journaux et SIEM, détection par signatures et anomalies, MITRE ATT and CK, chasse aux menaces, réponse à incident, analyse de logs, durcissement, renseignement sur les menaces et investigation numérique. Conclu par l'analyse guidée d'un incident de bout en bout.",
+    category: "CYBERSEC",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 8,
+    lessons: [
+      "CL-LSN-133-V01",
+      "CL-LSN-134-V01",
+      "CL-LSN-135-V01",
+      "CL-LSN-136-V01",
+      "CL-LSN-137-V01",
+      "CL-LSN-138-V01",
+      "CL-LSN-139-V01",
+      "CL-LSN-140-V01",
+      "CL-LSN-141-V01",
+      "CL-LSN-142-V01",
+      "CL-LSN-143-V01",
+      "CL-LSN-144-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

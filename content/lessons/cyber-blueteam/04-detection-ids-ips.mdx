@@ -1,0 +1,97 @@
+---
+refCode: CL-LSN-136-V01
+slug: blueteam-detection
+title: "Détecter : signatures contre anomalies"
+description: "Comprenez les deux grandes approches de détection et leurs limites, la différence entre un système qui alerte et un qui bloque, et le rôle des IDS, IPS et EDR dans la surveillance réseau et des postes."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 480
+prerequisites: ["CL-LSN-135-V01"]
+---
+
+Quand on cherche une attaque dans le bruit d'un réseau, on a deux façons de la repérer. Soit on reconnaît quelque chose qu'on connaît déjà, comme un agent de sécurité qui a la photo du suspect dans sa poche. Soit on remarque qu'un comportement sort de l'ordinaire, sans savoir d'avance à quoi il ressemble, juste parce qu'il détonne. Ces deux voies portent des noms : détection par signatures et détection par anomalies. Elles ne se valent pas, elles ne couvrent pas les mêmes angles morts, et dans la vraie vie on les fait tourner ensemble. Le reste de cette leçon part de là, puis enchaîne sur les outils qui appliquent ces idées et sur la question qui revient toujours : est-ce qu'on se contente d'alerter, ou est-ce qu'on bloque.
+
+## par signatures
+
+Une signature, c'est une description précise d'un motif d'attaque déjà connu. On a vu l'attaque une fois, on l'a disséquée, on a extrait ce qui la rend reconnaissable, et on range cette empreinte dans une base. Le système compare ensuite tout ce qui passe à cette base. Si ça correspond, il déclenche. C'est exactement la logique d'un antivirus classique : il ne comprend pas ce que fait un fichier, il vérifie si son empreinte figure dans la liste des méchants connus.
+
+Voici à quoi peut ressembler une règle de détection réseau, dans l'esprit de ce qu'écrit un outil comme Snort ou Suricata :
+
+```text
+alert tcp any any -> 10.0.0.0/24 80 (
+  msg:"Tentative d injection SQL basique";
+  content:"UNION SELECT";
+  nocase;
+  sid:1000042;
+)
+```
+
+La règle dit en clair : si un paquet TCP va vers le réseau interne sur le port 80 et contient la chaîne `UNION SELECT`, lève une alerte. C'est lisible, c'est déterministe, et quand ça déclenche on sait précisément pourquoi.
+
+La force de cette approche, c'est la précision. Une bonne signature génère peu de faux positifs : elle ne se déclenche que sur ce qu'elle décrit. Quand une alerte tombe, l'analyste sait ce qu'il regarde et peut agir vite. Le défaut est l'autre face de la même pièce. Une signature ne voit que ce qui a déjà été catalogué. Une attaque nouvelle, une variante qui change deux octets, un exploit zero-day que personne n'a encore documenté : tout cela passe sous le radar. La base est aussi à jour que la dernière mise à jour, pas plus. C'est une course permanente entre les attaquants qui inventent et les éditeurs qui écrivent les règles.
+
+<Callout type="info">
+Une signature reconnaît le connu avec une grande fiabilité. C'est sa qualité et sa limite en même temps : elle est aveugle à tout ce qui n'a pas encore été décrit.
+</Callout>
+
+## par anomalies
+
+L'autre approche renverse le raisonnement. Au lieu de chercher des motifs d'attaque, on apprend d'abord à quoi ressemble le comportement normal. Combien de connexions par minute, vers quels ports, à quelles heures, quels volumes de données, quels utilisateurs touchent quelles machines. Une fois ce profil établi, on signale tout ce qui s'écarte de la norme.
+
+L'intérêt saute aux yeux : cette méthode peut attraper du jamais vu. Un poste qui se met soudain à envoyer des giga-octets vers une adresse à l'étranger à trois heures du matin, un compte qui se connecte depuis deux continents en dix minutes, un serveur tranquille qui ouvre cent connexions sortantes d'un coup. Aucune signature n'a besoin d'exister pour ça. L'écart suffit à attirer l'attention, et c'est souvent comme ça qu'on repère une attaque inédite ou un comportement interne qui dérape.
+
+Le revers, c'est le bruit. Un comportement inhabituel n'est pas forcément malveillant. Une mise à jour logicielle qui télécharge beaucoup de données, un employé qui voyage et se connecte depuis un nouveau pays, un pic d'activité un jour de clôture comptable : tout ça sort de l'ordinaire sans rien avoir de méchant. La détection par anomalies produit donc beaucoup de faux positifs, surtout au début, et chaque alerte demande un humain pour trancher. Mal calibrée, elle noie l'équipe sous des alertes sans intérêt, et le vrai signal finit par se perdre dans la masse. On parle de fatigue d'alerte, et c'est un risque réel.
+
+## les deux ensemble
+
+Dans la pratique, on ne choisit pas l'une contre l'autre. On les combine, parce qu'elles couvrent des trous différents. Les signatures attrapent vite et proprement tout ce qui est déjà connu, ce qui représente l'écrasante majorité des attaques quotidiennes. Les anomalies servent de filet pour ce que les signatures ne peuvent pas voir, le nouveau et l'inhabituel.
+
+Un système de détection sérieux fait tourner les deux moteurs en parallèle. Les signatures abattent le volume avec peu de bruit, les anomalies gardent un œil sur l'inconnu en acceptant d'être moins précises. Aucune des deux ne suffit seule : une détection par signatures uniquement laisse passer tout ce qui est neuf, une détection par anomalies uniquement épuise l'équipe et finit ignorée. Le bon réglage est un équilibre, pas un camp.
+
+## IDS contre IPS
+
+Jusqu'ici on a parlé de comment on détecte. Reste à savoir ce qu'on fait de la détection. C'est là que se joue la différence entre un IDS et un IPS.
+
+Un IDS, système de détection d'intrusion, observe et alerte. Il est branché en dérivation, souvent sur une copie du trafic (un port miroir, un TAP réseau). Il regarde tout passer, et quand il voit quelque chose de suspect il prévient. Il ne touche pas au trafic : il est spectateur. L'attaque continue son chemin, mais l'équipe est avertie et peut réagir.
+
+Un IPS, système de prévention d'intrusion, va plus loin. Il est placé directement sur le chemin du trafic, en coupure. Quand il détecte une attaque, il peut la bloquer : jeter le paquet, couper la connexion, mettre l'adresse source en liste noire. Il ne se contente pas de prévenir, il agit en temps réel.
+
+Le piège est dans ce pouvoir. Comme l'IPS est sur le chemin et qu'il bloque, un faux positif ne génère pas juste une alerte de trop : il coupe du trafic légitime. Une règle trop large, une signature mal écrite, un seuil d'anomalie trop sensible, et c'est un service entier qui devient inaccessible parce que l'IPS a pris des requêtes normales pour une attaque. C'est tout le compromis de la détection face au blocage. Plus on bloque automatiquement, plus une erreur de détection coûte cher.
+
+<Callout type="warning">
+Un IPS mal réglé est une menace pour votre propre disponibilité. En mode blocage, chaque faux positif coupe du trafic réel. Beaucoup d'équipes démarrent un IPS en mode détection seule, observent ce qu'il aurait bloqué, ajustent les règles, puis seulement après activent le blocage.
+</Callout>
+
+## réseau et hôte
+
+Détecter, c'est aussi choisir où l'on regarde. On distingue les outils qui surveillent le réseau et ceux qui surveillent une machine.
+
+Un NIDS, IDS réseau, est posté à un point de passage du trafic et inspecte les paquets qui circulent entre les machines. Il voit les échanges, mais pas ce qui se passe à l'intérieur d'un poste, et il devient aveugle dès que le trafic est chiffré sans qu'il puisse le déchiffrer.
+
+Un HIDS, IDS hôte, vit sur une machine précise. Il surveille les fichiers système, les journaux, les processus, les connexions de cette machine en particulier. Il voit ce que le NIDS ne voit pas, l'intérieur de l'hôte, mais seulement pour cette machine-là.
+
+L'EDR, pour endpoint detection and response, est l'évolution moderne de cette idée sur les postes de travail et les serveurs. Il ne se contente pas de surveiller : il combine signatures et anomalies au niveau du système, enregistre l'activité en continu, et surtout permet de répondre. Isoler la machine du réseau, tuer un processus, revenir en arrière sur un changement. C'est l'outil central des équipes de défense aujourd'hui, parce qu'il rapproche la détection et la réaction sur la machine elle-même.
+
+| Outil | Où il observe | Ce qu'il fait |
+| --- | --- | --- |
+| NIDS | Le réseau, à un point de passage | Inspecte les paquets, alerte sur le trafic suspect |
+| HIDS | Une machine précise | Surveille fichiers, journaux et processus de l'hôte |
+| IPS | Sur le chemin du trafic | Détecte et bloque en temps réel |
+| EDR | Les postes et serveurs | Détecte, enregistre et permet de répondre |
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelle est la principale limite de la détection par signatures ?" options={["Elle génère énormément de faux positifs", "Elle est aveugle aux attaques qui n ont pas encore été cataloguées", "Elle ne fonctionne que sur le trafic chiffré", "Elle ralentit fortement le réseau"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle différence essentielle sépare un IDS d un IPS ?" options={["L IDS bloque le trafic, l IPS se contente d alerter", "L IDS surveille le réseau, l IPS surveille les fichiers", "L IDS observe et alerte, l IPS est sur le chemin du trafic et peut bloquer", "L IDS est logiciel, l IPS est forcément matériel"]} correct={2} />
+
+<Quiz id="q-3" question="Pourquoi la détection par anomalies est-elle souvent bruyante ?" options={["Parce qu un comportement inhabituel n est pas toujours malveillant", "Parce qu elle ne détecte que des attaques déjà connues", "Parce qu elle bloque tout trafic chiffré", "Parce qu elle ne fonctionne que sur les serveurs"]} correct={0} />
+
+## à retenir
+
+- La détection par signatures reconnaît des motifs d'attaque connus : précise, peu de faux positifs, mais aveugle à tout ce qui n'est pas encore catalogué.
+- La détection par anomalies apprend le comportement normal et signale les écarts : elle attrape du nouveau, mais produit beaucoup de bruit car l'inhabituel n'est pas toujours malveillant.
+- En pratique on combine les deux : les signatures pour le volume connu, les anomalies comme filet pour l'inconnu.
+- Un IDS observe et alerte sans toucher au trafic. Un IPS est sur le chemin du trafic et peut bloquer, au risque de couper du trafic légitime sur un faux positif.
+- NIDS surveille le réseau, HIDS surveille une machine, EDR surveille les postes et permet en plus de répondre (isoler, tuer un processus, revenir en arrière).
