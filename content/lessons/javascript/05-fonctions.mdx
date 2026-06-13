@@ -10,13 +10,13 @@ xpReward: 180
 prerequisites: ["CL-LSN-016-V01"]
 ---
 
-Quand on débute, on a souvent le réflexe de copier-coller le même bout de code à plusieurs endroits. Le problème, c'est que le jour où il faut corriger une erreur, il faut la corriger partout. C'est fatigant et c'est une source de bugs. Les développeurs résument ce principe par une formule célèbre : **DRY**, pour « Don't Repeat Yourself » (« ne te répète pas »).
+Tu écris un calcul, il marche, et trois écrans plus loin tu en as encore besoin. Tu pourrais recopier les mêmes lignes. Mauvaise idée : le jour où tu corriges une erreur, tu dois la corriger à chaque endroit, et tu en oublies toujours un. La solution, c'est de donner un nom à ce bloc de code et de l'appeler quand tu veux. Ce bloc nommé, c'est une fonction.
 
-Les fonctions sont l'outil principal pour appliquer ce principe. Une fonction, c'est un bloc de code que l'on écrit une seule fois, auquel on donne un nom, et que l'on peut ensuite réutiliser autant de fois que nécessaire. On dit qu'on **factorise** le code. Dans cette leçon, vous allez apprendre à déclarer une fonction, à lui renvoyer un résultat, à découvrir la syntaxe moderne des fonctions fléchées, et à gérer les paramètres avec des valeurs par défaut.
+JavaScript propose plusieurs façons d'écrire une fonction. On va voir la déclaration classique, l'expression de fonction, et la fonction fléchée. Elles se ressemblent beaucoup, et pourtant il y a une différence de fond entre elles qui surprend presque tout le monde au début. On y arrive à la fin.
 
-## Déclarer une fonction
+## déclarer une fonction
 
-La forme la plus classique utilise le mot-clé `function`, suivi d'un nom, d'une liste de paramètres entre parenthèses, puis d'un bloc d'instructions entre accolades. Le mot-clé `return` permet de renvoyer une valeur à celui qui appelle la fonction.
+La forme la plus directe utilise le mot-clé `function`, un nom, une liste de paramètres entre parenthèses, et un bloc entre accolades. À l'intérieur, `return` renvoie une valeur à celui qui a appelé la fonction.
 
 <CodePlayground language="javascript" starterCode={`function direBonjour(prenom) {
   return "Bonjour " + prenom + " !";
@@ -26,40 +26,36 @@ const message = direBonjour("Lucie");
 console.log(message); // Bonjour Lucie !
 console.log(direBonjour("Karim")); // Bonjour Karim !`} />
 
-On écrit la logique une seule fois, et on l'appelle autant de fois qu'on veut, avec des valeurs différentes. C'est exactement l'idée du DRY.
+Le paramètre `prenom` est une variable qui n'existe qu'à l'intérieur de la fonction. Au moment de l'appel, tu lui passes une valeur (on appelle ça un argument), et la fonction travaille avec.
 
-## return vs console.log
+Attention à `return`. Il ne sert pas à afficher. `console.log` affiche dans la console et ne rend rien au programme ; `return` renvoie une valeur que le reste du code peut récupérer. Une fonction qui n'a pas de `return` renvoie `undefined`.
 
-C'est l'un des points qui troublent le plus les débutants. `console.log` **affiche** une information dans la console, mais ne donne rien en retour à votre programme. `return` **renvoie** une valeur que le reste du code peut récupérer et réutiliser.
-
-<CodePlayground language="javascript" starterCode={`function doubleAvecLog(n) {
-  console.log(n * 2); // affiche seulement
+<CodePlayground language="javascript" starterCode={`function double(n) {
+  return n * 2;
 }
 
-function doubleAvecReturn(n) {
-  return n * 2; // renvoie une valeur exploitable
+const r = double(5);
+console.log(r + 1); // 11 : on réutilise la valeur renvoyée
+
+function afficheDouble(n) {
+  console.log(n * 2); // affiche, mais ne renvoie rien
 }
 
-const resultat = doubleAvecReturn(5);
-console.log(resultat + 1); // 11 : on peut réutiliser le résultat
+const vide = afficheDouble(5); // affiche 10
+console.log(vide); // undefined`} />
 
-const rien = doubleAvecLog(5); // affiche 10
-console.log(rien); // undefined : rien n'a été renvoyé`} />
+Autre point : dès que `return` s'exécute, la fonction s'arrête. Les lignes qui suivent le `return` ne tournent jamais.
 
-<Callout type="warning">
-Une fonction sans `return` renvoie automatiquement `undefined`. Si vous essayez de réutiliser le résultat d'une fonction qui se contente d'un `console.log`, vous obtiendrez `undefined`. Pour calculer une valeur destinée à être réutilisée, utilisez toujours `return`.
-</Callout>
+## la fonction fléchée
 
-## Les fonctions fléchées
+Il existe une écriture plus courte. On enlève `function`, on garde les paramètres entre parenthèses, et on met une flèche `=>` avant le corps. Voici la même fonction des deux manières.
 
-JavaScript propose une syntaxe plus courte pour écrire des fonctions : les **fonctions fléchées** (arrow functions). On remplace le mot-clé `function` par une flèche placée après les paramètres. Voici la même fonction écrite des deux façons.
-
-<CodePlayground language="javascript" starterCode={`// Version classique
+<CodePlayground language="javascript" starterCode={`// avec function, stockée dans une variable (expression de fonction)
 const triple = function (n) {
   return n * 3;
 };
 
-// Version fléchée équivalente
+// version fléchée équivalente
 const tripleFleche = (n) => {
   return n * 3;
 };
@@ -67,22 +63,19 @@ const tripleFleche = (n) => {
 console.log(triple(4)); // 12
 console.log(tripleFleche(4)); // 12`} />
 
-Lorsque le corps de la fonction se résume à une seule expression à renvoyer, on peut adopter la **forme courte** : on supprime les accolades et le mot-clé `return`. La valeur est alors renvoyée automatiquement (on parle de return implicite).
+Quand le corps tient en une seule expression à renvoyer, tu peux retirer les accolades et le mot `return`. La valeur de l'expression est alors renvoyée toute seule. On appelle ça le return implicite.
 
-<CodePlayground language="javascript" starterCode={`// Forme courte : return implicite, pas d'accolades
-const carre = (n) => n * n;
+<CodePlayground language="javascript" starterCode={`const carre = (n) => n * n;
 const addition = (a, b) => a + b;
 
 console.log(carre(6)); // 36
 console.log(addition(3, 7)); // 10`} />
 
-<Callout type="info">
-Les fonctions fléchées sont surtout appréciées pour leur concision. Elles brillent dans les petits calculs et avec des méthodes comme `map` ou `filter`. Pour des fonctions courtes et lisibles, la forme courte avec return implicite est très agréable à lire.
-</Callout>
+La fléchée brille là où on a besoin d'une petite fonction jetable, sur une seule ligne, surtout quand on la passe à une autre fonction. C'est le cas qu'on voit juste après. Pour une grosse fonction nommée avec plusieurs instructions, la forme `function` reste souvent plus lisible. Choisis selon le contexte, pas par réflexe.
 
-## Paramètres et valeurs par défaut
+## paramètres et valeurs par défaut
 
-Une fonction peut recevoir plusieurs paramètres, séparés par des virgules. On peut aussi donner une **valeur par défaut** à un paramètre : elle sera utilisée si l'appelant ne fournit pas cet argument.
+Une fonction peut prendre plusieurs paramètres, séparés par des virgules. Tu peux aussi donner une valeur par défaut à un paramètre : elle s'applique si l'appelant ne fournit rien pour cet argument.
 
 <CodePlayground language="javascript" starterCode={`function saluer(prenom, salutation = "Bonjour") {
   return salutation + " " + prenom + " !";
@@ -95,35 +88,71 @@ const prix = (montant, tva = 0.2) => montant * (1 + tva);
 console.log(prix(100)); // 120
 console.log(prix(100, 0.05)); // 105`} />
 
-Les valeurs par défaut rendent vos fonctions plus souples : l'appelant ne renseigne que ce qui est utile, et le reste prend des valeurs raisonnables automatiquement.
+La valeur par défaut ne se déclenche que si l'argument est absent (ou vaut `undefined`). Si tu passes `0` ou une chaîne vide, ces valeurs sont prises telles quelles, parce que ce sont de vraies valeurs.
 
-## À vous de jouer
+## les fonctions sont des valeurs
 
-<Quiz id="q-1" question="Quelle est la différence essentielle entre return et console.log dans une fonction ?" options={["Ils font exactement la même chose", "console.log affiche une valeur, return la renvoie pour qu'on la réutilise", "return affiche dans la console, console.log renvoie une valeur", "Aucun des deux ne sert dans une fonction"]} correct={1} />
+Voici l'idée qui ouvre tout le reste. En JavaScript, une fonction est une valeur, comme un nombre ou une chaîne. Tu peux la ranger dans une variable (on l'a déjà fait avec `triple`), mais surtout tu peux la passer en argument à une autre fonction.
 
-<Quiz id="q-2" question="Que renvoie la fonction fléchée courte : const carre = (n) => n * n; appelée avec carre(5) ?" options={["undefined", "10", "25", "Une erreur de syntaxe"]} correct={2} />
+<CodePlayground language="javascript" starterCode={`function appliquerDeux(fonction, valeur) {
+  // on appelle la fonction reçue, deux fois
+  return fonction(fonction(valeur));
+}
 
-<Quiz id="q-3" question="Avec function saluer(prenom, salutation = 'Salut'), que renvoie saluer('Ana') ?" options={["Salut Ana !", "undefined Ana !", "Ana Salut !", "Une erreur car salutation manque"]} correct={0} />
+const ajouterUn = (n) => n + 1;
 
-Maintenant, écrivez vous-même une fonction. L'objectif : une fonction `moyenne` qui prend deux nombres et renvoie leur moyenne. Essayez d'abord en version classique, puis en version fléchée courte.
+console.log(appliquerDeux(ajouterUn, 5)); // 7
+console.log(appliquerDeux((n) => n * 10, 3)); // 300`} />
 
-<CodePlayground language="javascript" starterCode={`// Version classique
-function moyenne(a, b) {
+Remarque que `ajouterUn` est passé sans parenthèses : on donne la fonction elle-même, pas son résultat. C'est `appliquerDeux` qui décide quand et combien de fois l'appeler.
+
+Ce mécanisme est la base de méthodes que tu croiseras très vite sur les tableaux, comme `map` et `filter`. Tu leur donnes une petite fonction, et elles l'appliquent à chaque élément. Voici un avant-goût.
+
+<CodePlayground language="javascript" starterCode={`const nombres = [1, 2, 3, 4];
+
+// map applique la fonction à chaque élément
+const doubles = nombres.map((n) => n * 2);
+console.log(doubles); // [2, 4, 6, 8]
+
+const pairs = nombres.filter((n) => n % 2 === 0);
+console.log(pairs); // [2, 4]`} />
+
+Tu vois pourquoi la fléchée courte est si pratique ici : la fonction passée tient sur une ligne.
+
+## un mot sur this
+
+Il reste une différence entre `function` et la fléchée, et ce n'est pas qu'une histoire de longueur. Beaucoup pensent que la fléchée est juste un `function` plus court. C'est faux, et ça crée des bugs.
+
+Le point concerne `this`. Tu n'as pas encore besoin de maîtriser `this` à fond ; retiens seulement la règle. Une fonction écrite avec `function` crée son propre `this`, qui dépend de la façon dont elle est appelée. Une fonction fléchée, elle, ne crée pas son propre `this` : elle garde celui du code autour d'elle.
+
+En pratique, ça veut dire que les deux écritures ne sont pas toujours interchangeables. À l'intérieur d'un objet ou d'une classe, remplacer une `function` par une fléchée (ou l'inverse) peut changer ce que vaut `this`, et donc casser le code sans message d'erreur évident. Quand tu apprendras les objets et les classes, garde ce piège en tête : ce n'est pas un détail de style, c'est un comportement différent.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Que renvoie une fonction qui n'a aucun return ?" options={["null", "0", "undefined", "une chaîne vide"]} correct={2} />
+
+<Quiz id="q-2" question="Quelle affirmation sur les fonctions fléchées est correcte ?" options={["Elles ne sont qu'une syntaxe plus courte, le comportement est identique à function", "Elles ne créent pas leur propre this, contrairement à function", "Elles ne peuvent pas prendre de paramètres", "Elles affichent toujours leur résultat dans la console"]} correct={1} />
+
+<Quiz id="q-3" question="Avec const f = (n) => n + 1, que vaut appel : [10, 20].map(f) ?" options={["[10, 20]", "[11, 21]", "[10, 20, 1]", "une erreur de syntaxe"]} correct={1} />
+
+Maintenant écris une fonction `moyenne` qui prend deux nombres et renvoie leur moyenne, d'abord en classique puis en fléchée courte.
+
+<CodePlayground language="javascript" starterCode={`function moyenne(a, b) {
   return (a + b) / 2;
 }
 
-// Version fléchée courte (return implicite)
 const moyenneFleche = (a, b) => (a + b) / 2;
 
 console.log(moyenne(10, 20)); // 15
 console.log(moyenneFleche(8, 12)); // 10`} />
 
-## Récapitulatif
+## à retenir
 
-- Les fonctions permettent de **factoriser** le code et d'appliquer le principe **DRY**.
-- On déclare une fonction classique avec `function nom(params)` et on renvoie un résultat avec `return`.
-- `return` renvoie une valeur réutilisable ; `console.log` se contente d'afficher. Sans `return`, une fonction renvoie `undefined`.
-- Les **fonctions fléchées** offrent une syntaxe plus courte ; en forme courte (une seule expression), le `return` est implicite.
-- Les **paramètres** se séparent par des virgules, et une **valeur par défaut** s'applique quand l'argument n'est pas fourni.
+- Une fonction nomme un bloc de code pour le réutiliser ; `function nom(params) { ... }` avec `return` pour renvoyer une valeur.
+- `return` renvoie une valeur exploitable et arrête la fonction ; `console.log` se contente d'afficher. Sans `return`, le résultat est `undefined`.
+- Une valeur par défaut s'écrit `param = valeur` et ne s'applique que si l'argument est absent.
+- La fonction fléchée `=>` est une écriture courte ; en une seule expression, le `return` est implicite.
+- Une fonction est une valeur : on peut la ranger dans une variable et la passer en argument. C'est ce que font `map` et `filter`.
+- La fléchée ne crée pas son propre `this`, contrairement à `function`. Ce n'est pas qu'une question de syntaxe, et ça compte dès qu'on touche aux objets et aux classes.
 
 OK 05-fonctions.mdx écrit

@@ -10,57 +10,50 @@ xpReward: 400
 prerequisites: ["CL-LSN-018-V01"]
 ---
 
-En JavaScript, les fonctions ne sont pas de simples blocs de code que l'on exécute : ce sont des valeurs de première classe. Cela signifie qu'une fonction peut être stockée dans une variable, rangée dans un tableau, transmise en argument à une autre fonction ou encore renvoyée comme résultat. Cette flexibilité est la fondation de deux concepts essentiels que nous allons explorer ici : les fonctions de rappel (les fameux callbacks) et les closures.
+En JavaScript, une fonction est une valeur comme une autre. On peut la ranger dans une variable, la mettre dans un tableau, la donner en argument à une autre fonction, et même la renvoyer depuis une fonction. Ces deux dernières possibilités, passer une fonction et en renvoyer une, ouvrent la porte à un mécanisme qui surprend beaucoup de gens la première fois : la closure. On y arrive doucement, parce qu'il vaut mieux voir le comportement avant d'apprendre le mot.
 
-Maîtriser ces deux notions change radicalement la façon dont on écrit du code. Elles sont partout dans l'écosystème JavaScript : dans les méthodes de tableaux, dans la gestion des événements du navigateur, dans le code asynchrone et dans la plupart des bibliothèques modernes. Prenons le temps de bien les comprendre, étape par étape.
+## les fonctions de rappel
 
-## Les fonctions comme valeurs
+Quand on passe une fonction en argument à une autre fonction pour qu'elle l'appelle, on parle de fonction de rappel, ou callback en anglais. Le nom vient de l'idée de rappel : on confie un bout de code à quelqu'un et on lui dit, appelle ça au bon moment.
 
-L'idée centrale est simple : une fonction est une valeur comme une autre. On peut donc l'assigner à une variable, exactement comme on assignerait un nombre ou une chaîne de caractères. Une fois rangée dans une variable, cette fonction peut être déplacée, copiée et passée ailleurs dans le programme.
+Vous en avez déjà croisé une avec `map`. Quand vous écrivez `tableau.map(...)`, le morceau que vous mettez entre les parenthèses est une fonction, et `map` l'appelle une fois sur chaque élément. Ce n'est pas obligé d'être une fonction écrite sur place. On peut très bien lui donner une fonction nommée.
 
-<CodePlayground language="javascript" starterCode={`const saluer = function (nom) {
-  return 'Bonjour ' + nom;
-};
+<CodePlayground language="javascript" starterCode={`function carre(n) {
+  return n * n;
+}
 
-const direBonjour = saluer;
+const nombres = [1, 2, 3, 4];
 
-console.log(direBonjour('Alice'));
-console.log(typeof saluer);`} />
+// on passe la fonction carre comme callback, sans l'appeler nous-memes
+const resultats = nombres.map(carre);
 
-Remarquez que `saluer` et `direBonjour` pointent vers la même fonction. Le `typeof` confirme que la valeur stockée est bien de type `function`. Puisqu'une fonction est une valeur, rien ne nous empêche de la donner en argument à une autre fonction.
+console.log(resultats);`} />
 
-## Les callbacks
+Faites bien attention : on écrit `map(carre)` et non `map(carre())`. On donne la fonction elle-même, pas le résultat de son exécution. C'est `map` qui se charge de l'appeler, autant de fois qu'il y a d'éléments, en lui passant chaque valeur. Notre code à nous ne fait que dire quoi faire, pas quand le faire.
 
-Un callback est tout simplement une fonction passée en argument à une autre fonction, afin que cette dernière puisse l'appeler au bon moment. Le mot signifie littéralement rappel : on confie une fonction à quelqu'un en lui disant rappelle-moi quand ce sera prêt.
-
-L'exemple le plus parlant est `setTimeout`, qui exécute le callback fourni après un certain délai. On peut aussi écrire nos propres fonctions qui acceptent un callback et l'appliquent.
+On peut écrire nos propres fonctions qui acceptent un callback. L'intérêt, c'est de fabriquer une fonction générique qui ne sait pas à l'avance quel travail elle effectuera.
 
 <CodePlayground language="javascript" starterCode={`function appliquerDeuxFois(valeur, transformer) {
   return transformer(transformer(valeur));
 }
 
 const doubler = (n) => n * 2;
+const ajouterUn = (n) => n + 1;
 
 console.log(appliquerDeuxFois(5, doubler));
+console.log(appliquerDeuxFois(5, ajouterUn));`} />
 
-setTimeout(() => {
-  console.log('Ce message arrive plus tard');
-}, 0);`} />
+`appliquerDeuxFois` ne contient aucune logique de calcul. Elle se contente d'appeler la fonction qu'on lui confie, deux fois de suite. Selon le callback qu'on lui passe, elle double ou elle ajoute. La même fonction sert à plusieurs usages, parce que le comportement vient de l'extérieur.
 
-Ici, `appliquerDeuxFois` ne sait pas à l'avance ce que fait `transformer` : elle se contente de l'appeler. C'est toute la puissance des callbacks, ils rendent une fonction générique et réutilisable.
+## une fonction qui se souvient
 
-<Callout type="info">
-Les callbacks sont absolument omniprésents en JavaScript. Quand vous écrivez `tableau.map(...)`, `tableau.filter(...)` ou `element.addEventListener('click', ...)`, vous passez à chaque fois une fonction de rappel. Apprendre à les lire et à les écrire est donc indispensable.
-</Callout>
+Maintenant, mettons une fonction à l'intérieur d'une autre. La fonction du dessus déclare une variable, et la fonction du dessous s'en sert. Jusque-là rien d'étrange. Ce qui devient intéressant, c'est ce qui se passe quand la fonction externe a fini son travail mais que la fonction interne, elle, continue de vivre.
 
-## Les closures
-
-Une closure (ou fermeture en français) est une fonction qui se souvient des variables de la portée dans laquelle elle a été créée, même après que cette portée a fini de s'exécuter. Autrement dit, la fonction emporte avec elle une partie de son environnement.
-
-L'exemple classique est celui d'un compteur. Une fonction externe déclare une variable locale, puis renvoie une fonction interne qui modifie et lit cette variable. La variable reste accessible uniquement par la fonction interne.
+Prenons un compteur. Une fonction `creerCompteur` déclare une variable `total` à zéro, puis renvoie une petite fonction qui ajoute un à `total` et le retourne.
 
 <CodePlayground language="javascript" starterCode={`function creerCompteur() {
   let total = 0;
+
   return function () {
     total = total + 1;
     return total;
@@ -73,17 +66,61 @@ console.log(compteur());
 console.log(compteur());
 console.log(compteur());`} />
 
-Chaque appel à `compteur()` incrémente la même variable `total`. Cette variable n'existe nulle part ailleurs : elle est capturée par la closure. On obtient ainsi un comportement qui se souvient de son passé entre deux appels.
+Regardez la sortie : 1, puis 2, puis 3. À ce stade, posez-vous la question qui dérange. La fonction `creerCompteur` s'est terminée dès la première ligne, au moment où on a écrit `const compteur = creerCompteur()`. Sa variable `total` aurait dû disparaître avec elle. Et pourtant, chaque appel à `compteur()` retrouve la même variable, là où le précédent appel l'avait laissée. Elle n'est pas remise à zéro, elle n'a pas été oubliée. La fonction interne a gardé un fil tendu vers `total`.
+
+C'est exactement ce comportement qui mérite un nom.
+
+## le terme : closure
+
+Une closure, c'est une fonction qui a capturé l'environnement dans lequel elle a été définie, et qui garde accès à cet environnement même après que la fonction englobante a terminé. La fonction interne du compteur est une closure : elle a emporté `total` avec elle.
+
+Le point qui trompe le plus de monde mérite qu'on s'y arrête. La variable capturée n'est pas une copie figée prise au moment de la création. C'est un lien vivant vers la vraie variable. La closure lit et écrit la même `total` à chaque appel, et c'est pour ça que le compteur progresse au lieu de toujours renvoyer le même chiffre.
 
 <Callout type="info">
-L'intérêt majeur des closures est de créer un état privé. La variable `total` est inaccessible depuis l'extérieur : impossible de la modifier directement ou de la corrompre par accident. C'est une forme d'encapsulation, très utile pour protéger des données sensibles dans votre code.
+Retenez la nuance : une closure ne photographie pas la valeur, elle garde un lien vers la variable. Si la variable change, la closure voit la nouvelle valeur. C'est un détail, mais il explique presque tous les comportements de closures qui paraissent bizarres au premier abord.
 </Callout>
 
-## Cas pratique
+On peut le montrer franchement. La closure et le code extérieur regardent bien la même variable tant qu'ils sont dans la même portée.
 
-Les closures permettent de fabriquer des fonctions à la demande. On parle de fabrique de fonctions : une fonction qui renvoie d'autres fonctions, chacune préconfigurée avec ses propres valeurs capturées.
+<CodePlayground language="javascript" starterCode={`let message = 'avant';
 
-Construisons une fabrique de multiplicateurs. On lui donne un facteur, elle nous renvoie une fonction qui multiplie n'importe quel nombre par ce facteur.
+const lire = () => message;
+
+console.log(lire());
+
+message = 'apres';
+
+console.log(lire());`} />
+
+La fonction `lire` ne refait pas une copie de `message` quand on la définit. Elle pointe vers `message`, et quand on change cette variable, l'appel suivant reflète le changement. Voilà la preuve concrète que le lien est vivant, pas gelé.
+
+## à quoi ça sert
+
+Le premier usage, c'est l'état privé. Dans le compteur, la variable `total` n'existe nulle part en dehors de la closure. Aucun autre code ne peut la lire ni la modifier directement. La seule manière de toucher à `total` passe par les fonctions qu'on a choisi d'exposer. C'est une façon simple de protéger une donnée, sans bibliothèque ni mot-clé spécial.
+
+<CodePlayground language="javascript" starterCode={`function creerCompte(soldeInitial) {
+  let solde = soldeInitial;
+
+  return {
+    deposer: (montant) => {
+      solde = solde + montant;
+      return solde;
+    },
+    lireSolde: () => solde,
+  };
+}
+
+const compte = creerCompte(100);
+
+console.log(compte.deposer(50));
+console.log(compte.lireSolde());
+
+// impossible d'atteindre solde directement
+console.log(compte.solde);`} />
+
+`solde` est enfermé dans la closure. On y accède uniquement par `deposer` et `lireSolde`. Quand on tente `compte.solde` de l'extérieur, on obtient `undefined`, parce que cette variable n'est pas une propriété de l'objet : elle vit dans la portée de la fonction. Personne ne peut la mettre en négatif par accident depuis l'extérieur.
+
+Le second usage, c'est la fabrique de fonctions. Une fonction qui en renvoie d'autres, chacune préconfigurée avec ses propres valeurs capturées.
 
 <CodePlayground language="javascript" starterCode={`function creerMultiplicateur(facteur) {
   return (nombre) => nombre * facteur;
@@ -93,21 +130,22 @@ const tripler = creerMultiplicateur(3);
 const parDix = creerMultiplicateur(10);
 
 console.log(tripler(7));
-console.log(parDix(7));`} />
+console.log(parDix(7));
+console.log(tripler(2));`} />
 
-Chaque fonction produite garde en mémoire son propre `facteur`. `tripler` se souvient de `3` et `parDix` se souvient de `10`, sans interférence entre les deux. C'est une closure en action, appliquée à un cas concret et réutilisable.
+Chaque appel à `creerMultiplicateur` crée une nouvelle closure avec son propre `facteur`. `tripler` se souvient de 3, `parDix` se souvient de 10, et les deux ne se gênent pas. On fabrique des fonctions sur mesure à partir d'un seul moule, et le paramètre reste accroché à chacune.
 
-## À vous de jouer
+## à toi de jouer
 
-Testez votre compréhension avec les questions suivantes, puis expérimentez dans l'éditeur.
+Réponds aux questions, puis essaie le code juste après.
 
-<Quiz id="q-1" question="Qu'est-ce qu'un callback en JavaScript ?" options={["Une fonction passée en argument à une autre fonction", "Une variable qui contient un nombre", "Une boucle qui se répète", "Un type de commentaire"]} correct={0} />
+<Quiz id="q-1" question="Qu'est-ce qu'une fonction de rappel (callback) ?" options={["Une fonction passée en argument à une autre fonction, qui l'appellera plus tard", "Une variable qui contient un nombre", "Une boucle qui se répète", "Un type de commentaire"]} correct={0} />
 
-<Quiz id="q-2" question="Que retourne le troisième appel consecutif a une fonction compteur creee avec une closure qui part de zero ?" options={["0", "1", "3", "undefined"]} correct={2} />
+<Quiz id="q-2" question="La variable capturée par une closure est..." options={["une copie figée prise au moment de la définition", "un lien vivant vers la vraie variable, qui voit ses changements", "toujours remise à zéro à chaque appel", "supprimée dès que la fonction externe se termine"]} correct={1} />
 
-<Quiz id="q-3" question="Pourquoi dit-on qu'une closure offre un etat prive ?" options={["Parce qu'elle ralentit le code", "Parce que la variable capturee est inaccessible depuis l'exterieur", "Parce qu'elle supprime les variables", "Parce qu'elle interdit les callbacks"]} correct={1} />
+<Quiz id="q-3" question="Pourquoi une closure permet-elle un état privé ?" options={["Parce qu'elle ralentit volontairement le code", "Parce qu'elle interdit les callbacks", "Parce que la variable capturée n'est accessible que par les fonctions exposées, pas depuis l'extérieur", "Parce qu'elle copie la variable dans un fichier"]} correct={2} />
 
-Maintenant, écrivez une fabrique de fonctions qui ajoute un nombre fixe.
+À ton tour : écris une fabrique qui ajoute un nombre fixe, puis vérifie que chaque fonction garde bien sa propre valeur.
 
 <CodePlayground language="javascript" starterCode={`function creerAdditionneur(ajout) {
   return (nombre) => nombre + ajout;
@@ -117,15 +155,16 @@ const plusCinq = creerAdditionneur(5);
 const plusCent = creerAdditionneur(100);
 
 console.log(plusCinq(10));
-console.log(plusCent(10));`} />
+console.log(plusCent(10));
+console.log(plusCinq(0));`} />
 
-## Récapitulatif
+## à retenir
 
-- En JavaScript, les fonctions sont des valeurs de première classe : on peut les stocker, les passer en argument et les renvoyer.
-- Un callback est une fonction passée à une autre fonction, qui l'appellera au moment voulu.
-- Les callbacks sont partout : `map`, `filter`, `addEventListener`, `setTimeout`.
-- Une closure est une fonction qui se souvient des variables de sa portée englobante.
-- Les closures permettent de créer un état privé, encapsulé et protégé.
-- Une fabrique de fonctions exploite les closures pour produire des fonctions préconfigurées.
+- Une fonction est une valeur : on peut la passer en argument et la renvoyer.
+- Un callback est une fonction confiée à une autre fonction, qui l'appelle au bon moment. `map` en est un usage direct.
+- Une closure est une fonction qui garde accès aux variables de la portée où elle a été définie, même après la fin de la fonction englobante.
+- La variable capturée n'est pas une copie figée : c'est un lien vivant, qui voit les changements.
+- Les closures servent à garder un état privé, inaccessible de l'extérieur sauf par les fonctions qu'on expose.
+- Une fabrique de fonctions s'appuie sur les closures pour produire des fonctions préconfigurées, chacune avec ses propres valeurs.
 
 OK 09-closures.mdx écrit

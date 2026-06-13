@@ -10,138 +10,182 @@ xpReward: 120
 prerequisites: []
 ---
 
-JavaScript est le langage du web. À l'origine conçu pour rendre les pages
-interactives dans le navigateur, il s'exécute aujourd'hui absolument partout :
-côté client dans Chrome ou Firefox, côté serveur avec Node.js, dans les
-applications mobiles, et même sur des objets connectés. Apprendre JavaScript,
-c'est donc se donner un outil universel pour construire des sites, des API et
-des programmes complets.
+Une variable, c'est un nom qu'on colle sur une valeur pour pouvoir s'en
+resservir. Au lieu de réécrire `"Alice"` ou `25` à chaque ligne, on les range
+sous une étiquette et on appelle l'étiquette. Tout le reste de cette leçon
+tourne autour de cette idée : comment nommer une valeur, ce qu'on a le droit
+d'y mettre, et les quelques pièges que le langage tend aux débutants.
 
-Dans cette première leçon, nous allons poser les fondations : afficher des
-messages, stocker des données dans des variables, reconnaître les types de
-valeurs, et combiner tout cela avec quelques opérations simples. Aucune
-installation n'est nécessaire : chaque exemple ci-dessous s'exécute directement
-dans votre navigateur.
+Commençons par afficher quelque chose. En JavaScript on utilise `console.log`
+pour écrire dans la console. Tu peux modifier le code ci-dessous et le relancer.
 
-## Afficher avec console.log()
+<CodePlayground language="javascript">
+```javascript
+const prenom = "Alice";
+let age = 25;
+console.log(`${prenom} a ${age} ans`);
+```
+</CodePlayground>
 
-Le tout premier réflexe du développeur JavaScript est d'afficher une valeur
-pour vérifier ce que fait son code. On utilise pour cela la fonction
-`console.log()`. Tout ce que vous placez entre les parenthèses est affiché dans
-la console.
+Les backticks autour du texte permettent d'insérer une variable avec
+`${...}`. C'est plus lisible que de coller des morceaux de texte les uns aux
+autres, et on s'en servira tout du long.
 
-<CodePlayground language="javascript" starterCode={`console.log("Bonjour CyberLearn !");
-console.log("JavaScript est partout.");
-console.log(42);`} />
+## let et const
 
-Vous pouvez passer plusieurs arguments séparés par des virgules : ils seront
-affichés côte à côte, séparés par un espace.
+Il y a deux façons de déclarer une variable aujourd'hui : `const` et `let`. La
+différence tient en une phrase. Avec `const`, une fois la valeur posée, tu ne
+peux plus la remplacer. Avec `let`, tu peux réassigner autant de fois que tu
+veux.
 
-## Déclarer des variables : let et const
+<CodePlayground language="javascript">
+```javascript
+let score = 0;
+score = 10;
+score = score + 5;
+console.log("score :", score); // 15
 
-Une variable est une boîte étiquetée dans laquelle on range une valeur pour la
-réutiliser plus tard. En JavaScript moderne, on déclare une variable avec deux
-mots-clés : `let` et `const`.
+const seuil = 100;
+console.log("seuil :", seuil);
+// seuil = 200; // décommente cette ligne : tu obtiens une erreur
+```
+</CodePlayground>
 
-- `let` crée une variable que l'on pourra **réassigner** plus tard.
-- `const` crée une **constante** : une fois sa valeur fixée, on ne peut plus la
-  réassigner.
+Le réflexe à prendre : écris `const` par défaut, et passe à `let` seulement
+quand tu sais que la valeur va changer. Ce n'est pas une coquetterie. Une
+constante annonce une intention. Quelqu'un qui relit ton code voit `const seuil`
+et comprend tout de suite que ce nombre ne bougera pas. Et si par accident une
+ligne tente de le réécrire, le programme s'arrête net au lieu de continuer avec
+une valeur fausse. Tu transformes un bug silencieux en erreur visible, ce qui
+est toujours une bonne affaire.
 
-<CodePlayground language="javascript" starterCode={`let score = 10;
-score = 25; // réassignation autorisée avec let
-console.log("Score :", score);
+Une précision sur `const` qui surprend souvent. Interdire la réassignation ne
+veut pas dire interdire toute modification. Si la constante contient un tableau
+ou un objet, tu peux toujours changer son contenu, tu ne peux simplement pas
+remplacer la boîte entière. On reviendra là-dessus dans une leçon sur les
+objets ; pour des nombres et du texte, retiens juste : `const` = pas de
+réassignation.
 
-const pseudo = "Ada";
-console.log("Pseudo :", pseudo);
-// Décommentez la ligne suivante pour voir l'erreur :
-// pseudo = "Linus"; // interdit avec const`} />
+Reste un troisième mot-clé que tu croiseras dans du vieux code : `var`. C'est
+l'ancêtre, et on ne s'en sert plus pour écrire du neuf. Ses règles de portée
+sont surprenantes : une variable `var` déclarée à l'intérieur d'un bloc reste
+visible en dehors, ce qui produit des bugs difficiles à traquer. `let` et
+`const` se comportent de façon prévisible, limités au bloc où on les déclare.
+Quand tu vois `var`, c'est du code ancien ; quand tu en écris, prends `const` ou
+`let`.
+
+## les types primitifs
+
+Chaque valeur a un type. Pas besoin de le déclarer, JavaScript le déduit de ce
+que tu écris, mais il faut savoir reconnaître les principaux. Cinq types
+primitifs reviennent en permanence.
+
+Le `number` couvre tous les nombres, entiers comme décimaux : `42`, `-7`,
+`3.14`. JavaScript ne fait pas de distinction entre entier et flottant, tout est
+`number`. Le `string` désigne du texte, entre guillemets simples, doubles ou
+backticks : `"bonjour"`, `'ok'`. Le `boolean` ne prend que deux valeurs, `true`
+ou `false`, et sert à représenter une condition vraie ou fausse.
+
+Restent deux types qui expriment une absence, et qu'on confond souvent.
+`undefined` est la valeur par défaut : une variable déclarée à laquelle on n'a
+rien donné vaut `undefined`. C'est le langage qui dit « rien ici, je n'ai pas
+encore reçu de valeur ». `null`, lui, c'est une absence que toi tu décides. Tu
+écris `null` pour signaler « ce champ est vide, volontairement ».
+
+<CodePlayground language="javascript">
+```javascript
+let resultat;            // déclarée mais pas affectée
+console.log(resultat);   // undefined
+
+let utilisateur = null;  // vide, et c'est voulu
+console.log(utilisateur); // null
+```
+</CodePlayground>
+
+L'idée reçue à corriger : `null` et `undefined` ne sont pas la même chose. Les
+deux signifient « pas de vraie valeur », mais l'origine diffère. `undefined`
+vient du langage, c'est l'état d'une variable qu'on n'a pas remplie. `null` vient
+de toi, c'est un vide assumé. Dans la pratique, quand tu vois `undefined` tu te
+demandes « ai-je oublié d'affecter quelque chose ? » ; quand tu vois `null` tu
+sais que quelqu'un a explicitement posé un vide.
+
+## le typage dynamique
+
+JavaScript est à typage dynamique : le type appartient à la valeur, pas à la
+variable. Une même variable peut contenir un nombre, puis recevoir du texte, et
+JavaScript suit le changement sans broncher. L'opérateur `typeof` te donne le
+type courant d'une valeur.
+
+<CodePlayground language="javascript">
+```javascript
+let donnee = 42;
+console.log(typeof donnee); // "number"
+
+donnee = "quarante-deux";
+console.log(typeof donnee); // "string"
+
+console.log(typeof true);   // "boolean"
+console.log(typeof null);   // "object" (une vieille bizarrerie)
+```
+</CodePlayground>
+
+Souplesse appréciable, mais aussi source d'erreurs : rien ne t'empêche de mettre
+du texte là où ton code attendait un nombre. `typeof` est l'outil pour vérifier
+quand un doute s'installe. Note au passage `typeof null` qui répond `"object"` :
+c'est un bug de la toute première version de JavaScript, conservé depuis pour ne
+pas casser le code existant. Ça reste faux, `null` n'est pas un objet, mais tu
+peux le rencontrer alors autant le savoir.
+
+## == contre ===
+
+Voici le piège qui attrape tout le monde une fois. JavaScript propose deux
+opérateurs d'égalité. Le triple égal `===` compare la valeur et le type, sans
+rien transformer. Le double égal `==` compare aussi, mais s'autorise à convertir
+un type vers l'autre avant de trancher. Cette conversion automatique s'appelle la
+coercition de type, et elle produit des résultats qu'on ne voit pas venir.
+
+<CodePlayground language="javascript">
+```javascript
+console.log("5" == 5);   // true  : == convertit "5" en 5 avant de comparer
+console.log("5" === 5);  // false : types différents (string vs number)
+
+console.log(0 == false);  // true  : false devient 0
+console.log("" == false); // true  : les deux deviennent 0
+console.log(null == undefined); // true
+```
+</CodePlayground>
+
+Regarde la première paire. `"5" == 5` renvoie `true` parce que `==` transforme la
+chaîne `"5"` en nombre `5`, puis compare. `"5" === 5` renvoie `false` parce que
+`===` voit un texte d'un côté, un nombre de l'autre, et refuse de les mélanger.
+Le double égal te ment poliment : il te dit « égaux » alors que les valeurs
+n'ont même pas le même type. Quand ces conversions se cumulent, on obtient des
+égalités absurdes que personne ne devine de tête.
 
 <Callout type="warning">
-Privilégiez toujours `const` par défaut. N'utilisez `let` que lorsque vous
-savez que la valeur va réellement changer. Cette habitude rend votre code plus
-sûr : une constante ne peut pas être modifiée par accident. Évitez l'ancien
-mot-clé `var`, qui a des règles de portée surprenantes et est aujourd'hui
-considéré comme dépassé.
+Utilise `===` (et `!==`) par défaut, toujours. Le double égal `==` déclenche des
+conversions silencieuses qui produisent des comparaisons fausses comme
+`"5" == 5` valant `true`. Garde `===` : il compare valeur et type, sans surprise.
 </Callout>
 
-## Les types de base
+## à toi de jouer
 
-Chaque valeur en JavaScript possède un **type**. Voici les types primitifs
-fondamentaux que vous rencontrerez dès le départ :
+<Quiz id="q-1" question="Pourquoi privilégie-t-on const par défaut ?" options={["Parce que const est plus rapide à l'exécution", "Parce qu'une constante signale une valeur qui ne change pas et bloque les réassignations accidentelles", "Parce que let est obsolète", "Parce que const accepte tous les types et pas let"]} correct={1} />
 
-- `number` : les nombres, entiers ou décimaux, comme `7` ou `3.14`.
-- `string` : du texte, entre guillemets, comme `"Bonjour"`.
-- `boolean` : une valeur vraie ou fausse, `true` ou `false`.
-- `null` : une absence de valeur, voulue et explicite.
-- `undefined` : une variable déclarée mais à laquelle on n'a rien affecté.
+<Quiz id="q-2" question="Que vaut '5' === 5 en JavaScript ?" options={["true, les valeurs sont égales", "false, les types diffèrent (string et number)", "Une erreur de syntaxe", "undefined"]} correct={1} />
 
-L'opérateur `typeof` permet de connaître le type d'une valeur. Observez les
-résultats :
+<Quiz id="q-3" question="Quelle phrase décrit correctement null et undefined ?" options={["Ce sont deux mots pour la même chose", "undefined est la valeur par défaut d'une variable non affectée, null est un vide qu'on pose volontairement", "null est automatique, undefined est volontaire", "Les deux renvoient 'number' avec typeof"]} correct={1} />
 
-<CodePlayground language="javascript" starterCode={`console.log(typeof 42);          // "number"
-console.log(typeof "texte");     // "string"
-console.log(typeof true);        // "boolean"
-console.log(typeof undefined);   // "undefined"
-console.log(typeof null);        // "object" (une bizarrerie historique !)`} />
+## à retenir
 
-<Callout type="info">
-Le résultat `typeof null` qui renvoie `"object"` est un bug historique de
-JavaScript conservé pour compatibilité. Retenez simplement que `null`
-représente une absence volontaire de valeur.
-</Callout>
-
-## Opérations et concaténation
-
-Sur les nombres, on dispose des opérateurs arithmétiques classiques : `+`, `-`,
-`*`, `/` et `%` (le reste de la division). Sur les chaînes de caractères,
-l'opérateur `+` sert à **concaténer**, c'est-à-dire à coller deux textes bout à
-bout.
-
-<CodePlayground language="javascript" starterCode={`const a = 8;
-const b = 3;
-console.log("Somme :", a + b);     // 11
-console.log("Reste :", a % b);     // 2
-
-const prenom = "Grace";
-const nom = "Hopper";
-console.log(prenom + " " + nom);   // "Grace Hopper"`} />
-
-Pour insérer des variables dans du texte de façon lisible, on préfère les
-**template literals** : une chaîne entourée de backticks dans laquelle on place
-les variables avec la syntaxe dollar-accolades.
-
-<CodePlayground language="javascript" starterCode={`const ville = "Paris";
-const temperature = 21;
-console.log(\`Il fait \${temperature} °C à \${ville}.\`);`} />
-
-## À vous de jouer
-
-Vérifiez vos acquis avec ces quiz, puis terminez par un petit exercice de code.
-
-<Quiz id="q-const" question="Quelle affirmation est correcte à propos de const et let ?" options={["const peut être réassigné, pas let", "let peut être réassigné, pas const", "Les deux peuvent toujours être réassignés", "Aucun des deux ne peut être réassigné"]} correct={1} />
-
-<Quiz id="q-typeof" question="Que renvoie typeof 'CyberLearn' ?" options={["'text'", "'char'", "'string'", "'object'"]} correct={2} />
-
-<Quiz id="q-template" question="Quel symbole entoure une template literal ?" options={["Des backticks ` `", "Des guillemets doubles", "Des apostrophes simples", "Des barres obliques"]} correct={0} />
-
-Maintenant, écrivez un programme qui calcule la moyenne de trois notes et
-l'affiche avec une template literal.
-
-<CodePlayground language="javascript" starterCode={`const note1 = 12;
-const note2 = 15;
-const note3 = 18;
-
-const moyenne = (note1 + note2 + note3) / 3;
-console.log(\`La moyenne est de \${moyenne}.\`);`} />
-
-## Récapitulatif
-
-- JavaScript s'exécute partout : navigateur, serveur, mobile.
-- `console.log()` affiche des valeurs pour observer son code.
-- `const` est non réassignable ; `let` l'est. On préfère `const` par défaut et
-  on évite `var`.
-- Les types de base sont : `number`, `string`, `boolean`, `null` et
-  `undefined`.
-- `typeof` révèle le type d'une valeur.
-- `+` additionne les nombres et concatène les chaînes ; les template literals
-  (backticks) facilitent l'insertion de variables dans du texte.
+- Une variable nomme une valeur pour la réutiliser. `console.log` l'affiche.
+- `const` interdit la réassignation, `let` l'autorise. On écrit `const` par
+  défaut et `let` seulement quand la valeur doit changer.
+- `var` est l'ancien mot-clé, à éviter : portée surprenante, remplacé par `let`
+  et `const`.
+- Cinq types primitifs courants : `number`, `string`, `boolean`, `undefined`,
+  `null`. `undefined` est l'absence par défaut du langage, `null` est un vide
+  volontaire.
+- Le typage est dynamique : le type suit la valeur, `typeof` le révèle.
+- `===` compare valeur et type sans conversion ; `==` convertit avant de
+  comparer, ce qui rend `"5" == 5` vrai mais `"5" === 5` faux. Préfère `===`.

@@ -2,7 +2,7 @@
 refCode: CL-LSN-014-V01
 slug: js-operateurs
 title: "Opérateurs et expressions en JavaScript"
-description: "Maîtrisez les opérateurs arithmétiques, de comparaison et logiques en JavaScript, et comprenez la différence cruciale entre == et ===."
+description: "Maîtrisez les opérateurs arithmétiques, de comparaison et logiques en JavaScript, et comprenez la différence importante entre == et ===."
 category: DEV
 difficulty: BEGINNER
 estimatedMinutes: 20
@@ -10,137 +10,169 @@ xpReward: 130
 prerequisites: ["CL-LSN-013-V01"]
 ---
 
-Maintenant que vous savez stocker des valeurs dans des variables, il est temps
-d'apprendre à les **combiner** pour produire de nouveaux résultats. C'est
-exactement le rôle des opérateurs : additionner deux nombres, comparer deux
-valeurs, ou enchaîner plusieurs conditions. Une **expression** est tout morceau
-de code qui produit une valeur, et les opérateurs sont les outils qui assemblent
-ces valeurs entre elles.
+Une fois qu'on sait ranger des valeurs dans des variables, la question
+suivante arrive vite : qu'est-ce qu'on en fait. La plupart du temps, on les
+combine et on les compare. Additionner un prix et une taxe, vérifier qu'un âge
+dépasse 18, coller un prénom et un nom. Tout ça, ce sont des opérateurs au
+travail.
 
-Dans cette leçon, vous découvrirez les grandes familles d'opérateurs, puis nous
-nous attarderons sur l'un des pièges les plus célèbres de JavaScript : la
-différence entre l'égalité faible et l'égalité stricte.
+Un mot de vocabulaire avant de commencer. Une expression, c'est n'importe quel
+bout de code qui produit une valeur. `3 + 4` est une expression, son résultat
+est `7`. `age >= 18` en est une autre, son résultat est `true` ou `false`. Les
+opérateurs sont les petits symboles qui assemblent ces valeurs.
 
-## Opérateurs arithmétiques
+## arithmétique
 
-Les opérateurs arithmétiques effectuent des calculs sur des nombres. Vous
-connaissez déjà l'addition, la soustraction, la multiplication et la division.
-JavaScript ajoute deux opérateurs très utiles : le **modulo** (le reste d'une
-division) et la **puissance**.
+Les quatre opérations de base, vous les connaissez depuis l'école primaire.
+JavaScript ajoute deux symboles qu'on oublie souvent et qui rendent pourtant
+bien des services.
 
-- `+` addition
-- `-` soustraction
-- `*` multiplication
-- `/` division
-- `%` modulo (reste de la division)
-- `**` exponentiation (puissance)
+Le modulo `%` donne le reste d'une division entière. `17 % 5` vaut `2`, parce
+que 5 rentre trois fois dans 17 et qu'il reste 2. On s'en sert tout le temps
+pour tester la parité d'un nombre, ou pour faire « tourner » un compteur en
+boucle.
 
-Il existe aussi les opérateurs d'**incrémentation** `++` et de **décrémentation**
-`--`, qui augmentent ou diminuent une variable de 1.
+La puissance `**` élève un nombre à un exposant. `2 ** 10` vaut `1024`. Avant
+ce symbole, il fallait passer par `Math.pow`, qui était plus lourd à écrire.
 
-<CodePlayground language="javascript" starterCode={`console.log(7 + 3);
-console.log(7 % 3);
-console.log(2 ** 8);
+<CodePlayground language="javascript" starterCode={`console.log(17 % 5);
+console.log(2 ** 10);
+console.log(8 % 2);
+console.log(7 % 2);
 
-let compteur = 5;
+let compteur = 0;
+compteur++;
 compteur++;
 console.log(compteur);`} />
 
-Le modulo est particulièrement pratique pour savoir si un nombre est pair :
-`nombre % 2` vaut `0` pour un nombre pair et `1` pour un nombre impair.
+Le `++` augmente une variable de 1, le `--` la diminue de 1. Et quand on veut
+modifier une variable à partir de sa propre valeur, les raccourcis font gagner
+du temps : `total += 5` est la version courte de `total = total + 5`. Ça marche
+aussi avec `-=`, `*=`, `/=` et `%=`.
 
-## Comparaison et égalité
+## le + ambigu
 
-Les opérateurs de comparaison renvoient toujours un booléen : `true` ou `false`.
-Les comparaisons d'ordre sont intuitives : `<`, `>`, `<=` et `>=`.
+Voici le point qui piège tout le monde au début. Le symbole `+` a deux métiers
+en JavaScript, et c'est le type des valeurs qui décide lequel il exerce.
 
-Le sujet sensible, c'est l'**égalité**. JavaScript propose deux opérateurs :
+Entre deux nombres, `+` additionne. Logique. Mais dès qu'une chaîne de
+caractères apparaît d'un côté, `+` change de casquette : il colle les deux
+morceaux bout à bout. On appelle ça la concaténation. Et comme une chaîne
+« gagne » sur un nombre, le nombre est transformé en texte au passage.
 
-- `==` (égalité faible) : compare les valeurs en effectuant une **coercition de
-  type**. Si les deux opérandes n'ont pas le même type, JavaScript tente de les
-  convertir avant de comparer.
-- `===` (égalité stricte) : compare la valeur **et** le type, sans aucune
-  conversion. Si les types diffèrent, le résultat est directement `false`.
+C'est pour ça que l'idée reçue selon laquelle `1 + '1'` donnerait `2` est
+fausse. Le `'1'` est une chaîne. JavaScript ne fait pas l'addition, il fait la
+concaténation, et le résultat est la chaîne `'11'`.
 
-<CodePlayground language="javascript" starterCode={`console.log(0 == "0");
-console.log(0 === "0");
+<CodePlayground language="javascript" starterCode={`console.log(1 + 1);
+console.log(1 + '1');
+console.log('Total : ' + 42);
+console.log(2 + 3 + '4');
+console.log('2' + 3 + 4);`} />
+
+Regardez bien les deux dernières lignes, elles révèlent un détail important.
+`+` se lit de gauche à droite. Dans `2 + 3 + '4'`, JavaScript calcule d'abord
+`2 + 3` qui vaut `5` (deux nombres, donc addition), puis `5 + '4'` qui donne
+`'54'` (une chaîne apparaît, donc concaténation). Dans `'2' + 3 + 4`, la chaîne
+est là dès le départ : tout devient `'234'`.
+
+Le piège classique en vrai code, c'est la concaténation involontaire. Une
+valeur que vous croyiez numérique arrive en fait sous forme de texte, souvent
+parce qu'elle vient d'un champ de formulaire ou d'une réponse réseau. Vous
+faites `prix + frais` en pensant additionner, et vous obtenez deux nombres
+recollés.
+
+<CodePlayground language="javascript" starterCode={`const prix = '20';
+const frais = 5;
+console.log(prix + frais);
+console.log(Number(prix) + frais);`} />
+
+Tout ce qui sort d'un formulaire est une chaîne, même si l'utilisateur a tapé
+des chiffres. Le réflexe, c'est de convertir avec `Number()` avant de calculer.
+Et les autres opérateurs arithmétiques, eux, ne sont pas ambigus : `-`, `*`,
+`/` n'ont aucun sens avec du texte, donc ils forcent toujours la conversion en
+nombre. C'est pour ça que `'20' - 5` vaut bien `15`. Seul `+` joue double jeu.
+
+## comparer
+
+Les opérateurs de comparaison répondent à une question par oui ou par non, donc
+ils renvoient toujours un booléen. Les comparaisons d'ordre `<`, `>`, `<=` et
+`>=` se comportent comme on s'y attend.
+
+Pour l'égalité, JavaScript propose deux formes, et c'est là qu'il faut faire
+attention. `==` compare en convertissant les types au besoin, ce qui produit
+des résultats surprenants comme `0 == '0'` qui vaut `true`. `===` compare la
+valeur et le type, sans aucune conversion. Si les types diffèrent, c'est `false`
+direct.
+
+<CodePlayground language="javascript" starterCode={`console.log(0 == '0');
+console.log(0 === '0');
 console.log(5 >= 5);
-console.log("a" < "b");`} />
+console.log(3 !== '3');`} />
 
-L'expression `0 == "0"` renvoie `true` parce que la chaîne `"0"` est convertie
-en nombre avant la comparaison. Avec `===`, un nombre et une chaîne ne sont
-jamais égaux : le résultat est `false`.
+La règle est simple à retenir : utilisez `===` et `!==` partout. L'égalité
+stricte est prévisible, l'égalité faible cache des conversions qui finissent en
+bugs difficiles à traquer.
 
 <Callout type="warning">
-Utilisez **toujours** `===` (et `!==`) dans votre code. L'égalité faible `==`
-provoque des conversions implicites surprenantes et reste une source classique
-de bugs. L'égalité stricte est prévisible : elle compare la valeur et le type.
+Prenez l'habitude du triple égal `===` dès maintenant. Le double égal `==`
+fonctionne par moments, ce qui le rend traître : il marche jusqu'au jour où une
+coercition implicite vous donne un résultat inattendu en production.
 </Callout>
 
-## Opérateurs logiques
+## logique et court-circuit
 
-Les opérateurs logiques combinent des conditions booléennes :
+Les opérateurs logiques enchaînent des conditions. `&&` est le ET : vrai
+seulement si les deux côtés sont vrais. `||` est le OU : vrai si au moins un
+côté est vrai. `!` est le NON : il inverse un booléen.
 
-- `&&` (ET) : vrai seulement si les deux côtés sont vrais.
-- `||` (OU) : vrai si au moins un côté est vrai.
-- `!` (NON) : inverse un booléen.
+Il y a un détail qui vaut le détour, le court-circuit. JavaScript arrête
+d'évaluer dès qu'il connaît le résultat. Avec `&&`, si le côté gauche est faux,
+le total sera forcément faux, donc le côté droit n'est même pas lu. Avec `||`,
+si le côté gauche est vrai, c'est gagné, le côté droit est ignoré.
 
-JavaScript évalue ces opérateurs en **court-circuit** : avec `&&`, si le premier
-opérande est faux, le second n'est jamais évalué (le résultat est déjà connu).
-Avec `||`, si le premier opérande est vrai, le second est ignoré.
+Ce comportement n'est pas qu'une optimisation, on s'en sert pour écrire des
+valeurs par défaut. `||` renvoie le premier opérande qui « tient la route ».
+Si la valeur de gauche est vide, nulle ou absente, on bascule sur celle de
+droite.
 
 <CodePlayground language="javascript" starterCode={`const age = 20;
 console.log(age >= 18 && age < 65);
 console.log(age < 13 || age > 99);
-console.log(!(age === 20));`} />
 
-## Conversion de types
+const saisie = '';
+const nom = saisie || 'Anonyme';
+console.log(nom);`} />
 
-JavaScript convertit parfois les types automatiquement (**coercition
-implicite**), ce qui peut surprendre. Le cas le plus connu concerne l'opérateur
-`+`, qui sert à la fois à additionner et à **concaténer** des chaînes.
+Ici `saisie` est une chaîne vide, que JavaScript considère comme « fausse ».
+Le `||` passe donc à droite et `nom` reçoit `'Anonyme'`. Si l'utilisateur avait
+tapé quelque chose, c'est sa valeur qui aurait été retenue, et la droite
+n'aurait jamais été évaluée.
 
-Quand `+` rencontre une chaîne, il concatène. Mais `-`, `*` et `/` n'ont pas de
-sens textuel : ils forcent donc la conversion vers des nombres.
+## à toi de jouer
 
-<CodePlayground language="javascript" starterCode={`console.log("5" + 3);
-console.log("5" - 3);
-console.log(Number("42") + 1);
-console.log(String(99) + "9");`} />
+<Quiz id="q-plus" question="Que vaut 1 + '1' en JavaScript ?" options={["2", "'11'", "une erreur"]} correct={1} />
 
-Ainsi `"5" + 3` donne `"53"` (concaténation), alors que `"5" - 3` donne `2`
-(soustraction numérique). Pour éviter ces pièges, convertissez explicitement vos
-valeurs avec `Number()` ou `String()`.
+<Quiz id="q-egal" question="Quel opérateur compare la valeur ET le type sans conversion ?" options={["==", "===", "="]} correct={1} />
 
-<Callout type="info">
-Pour transformer une saisie utilisateur (toujours une chaîne) en nombre,
-utilisez `Number(valeur)`. Vérifiez ensuite le résultat avec `Number.isNaN()`,
-car une conversion ratée produit la valeur spéciale `NaN`.
-</Callout>
+<Quiz id="q-modulo" question="Que vaut 7 % 2 ?" options={["3", "1", "3.5"]} correct={1} />
 
-## À vous de jouer
-
-<Quiz id="q-1" question="Que renvoie l'expression 0 == '0' ?" options={["true", "false", "une erreur"]} correct={0} />
-
-<Quiz id="q-2" question="Quel opérateur compare la valeur ET le type sans conversion ?" options={["==", "=", "==="]} correct={2} />
-
-<Quiz id="q-3" question="Que vaut '5' + 3 en JavaScript ?" options={["8", "'53'", "53"]} correct={1} />
-
-Entraînez-vous maintenant à combiner plusieurs opérateurs dans une même
-expression.
+Avant de fermer, combinez plusieurs opérateurs dans une même expression pour
+voir comment ils s'enchaînent.
 
 <CodePlayground language="javascript" starterCode={`const note = 14;
 const reussi = note >= 10 && note <= 20;
 console.log(reussi);
-console.log("Note : " + note);
+console.log('Note : ' + note);
 console.log(note % 2 === 0);`} />
 
-## Récapitulatif
+## à retenir
 
-- Une **expression** produit une valeur ; les **opérateurs** combinent les valeurs.
-- Les opérateurs arithmétiques incluent `+ - * / % **`, plus `++` et `--`.
-- Les comparaisons renvoient un booléen : `< > <= >=`.
-- Préférez **toujours** l'égalité stricte `===` plutôt que l'égalité faible `==`.
-- Les opérateurs logiques `&& || !` s'évaluent en **court-circuit**.
-- La coercition implicite peut surprendre : `"5" + 3` vaut `"53"`, mais `"5" - 3` vaut `2`.
-- Convertissez explicitement avec `Number()` et `String()` pour éviter les pièges.
+- Une expression produit une valeur, les opérateurs assemblent les valeurs.
+- L'arithmétique couvre `+ - * / % **`, plus `++`, `--` et les raccourcis comme `+=`.
+- Le `%` donne un reste, le `**` une puissance ; deux outils souvent oubliés.
+- Le `+` additionne entre nombres mais concatène dès qu'une chaîne apparaît.
+- `1 + '1'` vaut `'11'`, pas `2` : c'est de la concaténation, pas une addition.
+- Convertissez les saisies avec `Number()` avant de calculer, sinon vous collez du texte.
+- Préférez `===` et `!==` à `==` et `!=`, l'égalité stricte ne ment pas.
+- `&&` et `||` s'évaluent en court-circuit, ce qui sert à poser une valeur par défaut.

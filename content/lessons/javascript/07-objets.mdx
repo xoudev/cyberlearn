@@ -10,149 +10,168 @@ xpReward: 350
 prerequisites: ["CL-LSN-017-V01"]
 ---
 
-Jusqu'ici, vous avez manipulé des valeurs isolées : un nombre, une chaîne, un booléen. Mais dans un vrai programme, les données vont souvent par groupes. Un utilisateur n'est pas qu'un prénom : c'est un prénom, un âge, un e-mail, un rôle. Un produit, c'est un nom, un prix, une quantité en stock. Pour regrouper toutes ces informations liées dans une seule structure cohérente, JavaScript propose les **objets**.
+Une variable ne retient qu'une chose à la fois : un nombre, un texte, un booléen. Mais les données du monde réel arrivent rarement seules. Un utilisateur, c'est un nom, un âge, un courriel, un rôle. Une commande, c'est un produit, une quantité, un prix, une adresse. Garder tout ça dans des variables séparées (nomUtilisateur, ageUtilisateur, courrielUtilisateur) devient vite ingérable : rien ne dit que ces trois variables parlent de la même personne, et on les trimballe une par une dans chaque fonction.
 
-Un objet est une collection de paires **clé-valeur**. Chaque clé (aussi appelée propriété) porte un nom, et chaque nom pointe vers une valeur. C'est exactement comme une fiche d'identité : le champ « prénom » contient « Alice », le champ « âge » contient « 30 ». Dans cette leçon, vous allez apprendre à créer des objets, à lire et modifier leurs propriétés, à leur donner des comportements grâce aux méthodes, puis à extraire élégamment leurs valeurs avec la destructuration moderne.
+L'objet règle ce problème. Il rassemble des données qui vont ensemble dans une seule structure, où chaque valeur porte un nom parlant. Au lieu de trois variables flottantes, on a un utilisateur avec un nom, un âge et un courriel rangés dedans. On passe l'objet entier d'une fonction à l'autre, et le lien entre les valeurs ne se perd jamais.
 
-## Créer un objet
+## créer et accéder
 
-On crée un objet avec des accolades. À l'intérieur, on écrit des paires `clé: valeur` séparées par des virgules. Par exemple, un objet utilisateur ressemble à `{ prenom: 'Alice', age: 30, actif: true }`. Les clés sont des chaînes (les guillemets sont souvent optionnels), et les valeurs peuvent être de n'importe quel type : nombre, chaîne, booléen, voire un autre objet.
+Un objet est une suite de paires clé-valeur. La clé, c'est le nom de la propriété ; la valeur, c'est ce qu'elle contient. On lit une propriété de deux façons. La notation par point est la plus courante et la plus lisible. La notation par crochets sert quand le nom de la propriété vit dans une variable, ou contient un caractère que le point n'accepte pas (un espace, un tiret).
 
-Pour lire une propriété, deux notations existent. La **notation par point** est la plus courante : `utilisateur.prenom`. La **notation par crochets** sert quand le nom de la propriété est dans une variable ou contient des caractères spéciaux : `utilisateur['prenom']`.
+Ajouter ou modifier une propriété se fait avec une simple affectation. Si la clé existe déjà, sa valeur est remplacée ; sinon, la propriété naît à ce moment-là. Le mot-clé delete retire une propriété.
 
 <CodePlayground language="javascript" starterCode={`const utilisateur = {
-  prenom: 'Alice',
+  nom: 'Alice',
   age: 30,
-  actif: true,
+  courriel: 'alice@exemple.fr',
 };
 
-console.log(utilisateur.prenom); // Alice
-console.log(utilisateur['age']); // 30
+// Accès par point
+console.log(utilisateur.nom); // Alice
 
-const cle = 'actif';
-console.log(utilisateur[cle]); // true`} />
-
-<Callout type="tip">
-Utilisez la notation par point dès que possible : elle est plus lisible. Réservez les crochets aux cas où le nom de la propriété est dynamique (stocké dans une variable).
-</Callout>
-
-## Modifier et ajouter des propriétés
-
-Les objets sont **mutables** : on peut changer la valeur d'une propriété existante, mais aussi en ajouter de nouvelles après la création. Il suffit d'affecter une valeur avec `=`. Si la clé existe déjà, elle est écrasée ; sinon, elle est créée. On peut aussi supprimer une propriété avec le mot-clé `delete`.
-
-<CodePlayground language="javascript" starterCode={`const produit = {
-  nom: 'Clavier',
-  prix: 49,
-};
+// Accès par crochets, utile quand la clé est dans une variable
+const champ = 'age';
+console.log(utilisateur[champ]); // 30
 
 // Modifier une propriété existante
-produit.prix = 39;
+utilisateur.age = 31;
 
-// Ajouter une nouvelle propriété
-produit.stock = 12;
+// Ajouter une nouvelle propriété au passage
+utilisateur.actif = true;
 
-// Supprimer une propriété
-delete produit.stock;
+// Retirer une propriété
+delete utilisateur.courriel;
 
-console.log(produit.nom);  // Clavier
-console.log(produit.prix); // 39`} />
+console.log(utilisateur);
+// { nom: 'Alice', age: 31, actif: true }`} />
 
-## Méthodes
+La notation par point devrait être votre réflexe. Gardez les crochets pour les cas où le nom de propriété n'est connu qu'à l'exécution, par exemple une clé lue depuis un formulaire ou une boucle.
 
-Une propriété peut contenir une fonction. On parle alors de **méthode** : c'est un comportement attaché à l'objet. À l'intérieur d'une méthode, le mot-clé `this` désigne l'objet lui-même, ce qui permet d'accéder à ses autres propriétés. Par exemple, une méthode `sePresenter` peut lire `this.prenom` pour construire un message personnalisé.
+## les méthodes
 
-<CodePlayground language="javascript" starterCode={`const personne = {
-  prenom: 'Karim',
-  age: 28,
-  sePresenter() {
-    return 'Je m\\'appelle ' + this.prenom + ' et j\\'ai ' + this.age + ' ans.';
+Une valeur dans un objet peut très bien être une fonction. On parle alors de méthode : un comportement rangé à côté des données qu'il manipule. Dans une méthode, le mot-clé this renvoie à l'objet sur lequel on a appelé la méthode. C'est ce qui permet à la fonction de lire les autres propriétés du même objet sans qu'on lui passe quoi que ce soit.
+
+La règle à retenir pour l'instant est simple : quand vous écrivez objet.methode(), à l'intérieur de cette méthode this désigne objet, c'est-à-dire ce qui se trouve à gauche du point.
+
+<CodePlayground language="javascript" starterCode={`const compte = {
+  titulaire: 'Karim',
+  solde: 100,
+
+  deposer(montant) {
+    this.solde = this.solde + montant;
+    return this.solde;
+  },
+
+  resume() {
+    return this.titulaire + ' a ' + this.solde + ' euros.';
   },
 };
 
-console.log(personne.sePresenter());
-// Je m'appelle Karim et j'ai 28 ans.`} />
+console.log(compte.resume());   // Karim a 100 euros.
+compte.deposer(50);
+console.log(compte.resume());   // Karim a 150 euros.`} />
 
-<Callout type="warning">
-Le mot-clé `this` dépend de la façon dont la méthode est appelée. Pour l'instant, retenez la règle simple : dans `objet.methode()`, `this` est l'objet à gauche du point.
-</Callout>
+Remarquez que deposer modifie this.solde, et que resume relit cette même valeur. Les deux méthodes travaillent sur le même objet parce que this pointe vers lui à chaque appel.
 
-## Destructuration
+## la destructuration
 
-Lire plusieurs propriétés une à une est répétitif. La **destructuration** permet d'extraire des propriétés directement dans des variables, en une seule ligne. On écrit le nom des propriétés voulues entre accolades à gauche du `=`. Les noms des variables correspondent aux noms des clés. On peut aussi renommer une variable au passage ou donner une valeur par défaut.
+Lire les propriétés une par une devient répétitif dès qu'il y en a plusieurs. La destructuration extrait des propriétés dans des variables en une seule ligne. On écrit, à gauche du signe égal, les noms des propriétés voulues entre accolades. Chaque variable récupère la valeur de la propriété du même nom. On peut renommer une variable au passage, et fournir une valeur par défaut quand la propriété est absente.
+
+Là où la destructuration devient vraiment agréable, c'est dans les paramètres d'une fonction. Plutôt que de recevoir un objet entier et d'écrire commande.client, commande.total partout, on extrait directement les champs utiles dans la signature.
 
 <CodePlayground language="javascript" starterCode={`const config = {
   hote: 'localhost',
   port: 5432,
-  ssl: false,
 };
 
+// Extraire deux propriétés d'un coup
 const { hote, port } = config;
 console.log(hote, port); // localhost 5432
 
-// Renommer et valeur par défaut
-const { ssl: secure = true, timeout = 30 } = config;
-console.log(secure);  // false
-console.log(timeout); // 30 (absent de config, défaut utilisé)`} />
+// Renommer (ssl -> securise) et donner un défaut (delai)
+const { ssl: securise = false, delai = 30 } = config;
+console.log(securise); // false (valeur par défaut, ssl absent)
+console.log(delai);    // 30
 
-<Callout type="info">
-La destructuration rend le code plus court et plus lisible, surtout dans les paramètres de fonction. Au lieu de recevoir un objet entier et d'écrire `config.hote`, `config.port` partout, vous extrayez d'emblée les valeurs utiles. C'est un réflexe central en JavaScript moderne, notamment avec React.
+// Destructuration directement dans un paramètre
+function afficher({ nom, role = 'invite' }) {
+  return nom + ' (' + role + ')';
+}
+
+console.log(afficher({ nom: 'Lea' }));            // Lea (invite)
+console.log(afficher({ nom: 'Sam', role: 'admin' })); // Sam (admin)`} />
+
+## le spread et le rest
+
+Les trois points (...) ont deux usages opposés selon le contexte. En spread, ils étalent les propriétés d'un objet existant à l'intérieur d'un autre. C'est la façon la plus courante de copier un objet en changeant quelques champs, ou de fusionner deux objets. Les propriétés écrites après celles qui sont étalées l'emportent en cas de conflit de clé.
+
+En rest, les trois points font l'inverse : ils rassemblent ce qui reste. Dans une destructuration, le rest collecte toutes les propriétés non nommées dans un nouvel objet.
+
+<CodePlayground language="javascript" starterCode={`const base = { nom: 'Alice', age: 30, ville: 'Lyon' };
+
+// Spread : copier puis remplacer un champ
+const misAJour = { ...base, age: 31 };
+console.log(misAJour); // { nom: 'Alice', age: 31, ville: 'Lyon' }
+
+// Spread : fusionner deux objets (le dernier gagne en cas de conflit)
+const defauts = { theme: 'clair', langue: 'fr' };
+const choix   = { theme: 'sombre' };
+const reglages = { ...defauts, ...choix };
+console.log(reglages); // { theme: 'sombre', langue: 'fr' }
+
+// Rest : isoler une propriété, regrouper le reste
+const { nom, ...autres } = base;
+console.log(nom);    // Alice
+console.log(autres); // { age: 30, ville: 'Lyon' }`} />
+
+## passés par référence
+
+Voici le point qui surprend tout le monde au moins une fois. Quand on affecte un objet à une nouvelle variable avec le signe égal, on ne crée pas une copie. Les deux variables désignent le même objet en mémoire. Modifier une propriété via l'une se voit immédiatement via l'autre, parce qu'il n'y a qu'un seul objet, partagé.
+
+C'est différent des valeurs simples comme les nombres ou les chaînes. Avec un nombre, copier la variable copie la valeur, et les deux mènent leur vie séparément. Avec un objet, copier la variable copie seulement la référence, l'adresse de l'objet, pas son contenu.
+
+<Callout type="warning">
+Le piège classique : on écrit const copie = original en croyant travailler sur un double, on modifie copie, et original change aussi. Les deux noms pointaient vers le même objet depuis le début. Pour obtenir une vraie copie indépendante, il faut la demander explicitement.
 </Callout>
 
-## Objets et tableaux combinés
+Pour copier réellement, deux outils. Le spread (...) crée un nouvel objet avec les mêmes propriétés de premier niveau ; c'est suffisant pour un objet plat. Pour un objet imbriqué (un objet qui contient d'autres objets), structuredClone fait une copie complète en profondeur.
 
-Dans la vraie vie, on manipule rarement un objet seul : on a plutôt une **liste d'objets**, par exemple un catalogue de produits ou une liste d'utilisateurs. On range alors ces objets dans un tableau, et on les parcourt avec `map`, `filter` ou `forEach`. La destructuration combinée à `map` rend le parcours très expressif.
+<CodePlayground language="javascript" starterCode={`const original = { nom: 'Alice', age: 30 };
 
-<CodePlayground language="javascript" starterCode={`const etudiants = [
-  { nom: 'Alice', note: 16 },
-  { nom: 'Bob', note: 11 },
-  { nom: 'Chloe', note: 19 },
-];
+// FAUX : pas une copie, juste un second nom pour le même objet
+const alias = original;
+alias.age = 99;
+console.log(original.age); // 99  <- l'original a bougé !
 
-// Extraire seulement les noms
-const noms = etudiants.map(({ nom }) => nom);
-console.log(noms); // ['Alice', 'Bob', 'Chloe']
+// VRAI : le spread crée un nouvel objet plat
+const copie = { ...original };
+copie.age = 18;
+console.log(original.age); // 99  <- l'original ne bouge plus
+console.log(copie.age);    // 18
 
-// Garder les reçus (note >= 12)
-const recus = etudiants.filter((e) => e.note >= 12);
-console.log(recus.length); // 2`} />
+// Pour un objet imbriqué, structuredClone copie en profondeur
+const compte = { titulaire: 'Sam', adresse: { ville: 'Lyon' } };
+const vraieCopie = structuredClone(compte);
+vraieCopie.adresse.ville = 'Paris';
+console.log(compte.adresse.ville); // Lyon  <- intact`} />
 
-## À vous de jouer
+Notez bien la limite du spread sur le dernier exemple : un spread de compte copierait l'objet du dessus, mais adresse resterait partagé entre les deux. C'est pour ça que structuredClone existe quand il y a des niveaux imbriqués.
 
-Testez votre compréhension avant de passer à l'exercice de code.
+## à toi de jouer
 
-<Quiz id="q-1" question="Comment lire la propriété 'titre' d'un objet appele livre avec la notation par point ?" options={["livre->titre", "livre.titre", "livre['titre'] uniquement", "titre.livre"]} correct={1} />
+<Quiz id="q-1" question="Quelle notation faut-il employer pour lire une propriété dont le nom est stocké dans une variable cle ?" options={["objet.cle", "objet[cle]", "objet->cle", "objet(cle)"]} correct={1} />
 
-<Quiz id="q-2" question="Dans une methode, a quoi fait reference le mot-cle this lors d'un appel objet.methode() ?" options={["A la fonction globale", "Au dernier objet cree", "A l'objet situe a gauche du point", "A une copie de l'objet"]} correct={2} />
+<Quiz id="q-2" question="Que vaut a.valeur a la fin de : const a = { valeur: 1 }; const b = a; b.valeur = 5; ?" options={["1, car b est une copie de a", "5, car a et b designent le meme objet", "undefined", "Une erreur est levee"]} correct={1} />
 
-<Quiz id="q-3" question="Que fait la destructuration const { x } = obj ?" options={["Elle supprime x de obj", "Elle cree une variable x avec la valeur de obj.x", "Elle transforme obj en tableau", "Elle renomme obj en x"]} correct={1} />
+<Quiz id="q-3" question="Dans une methode appelee via objet.methode(), a quoi renvoie this ?" options={["A la fonction globale", "A une copie de l'objet", "A l'objet a gauche du point", "Au dernier objet cree dans le fichier"]} correct={2} />
 
-À votre tour d'écrire du code. Complétez l'exercice ci-dessous : créez un objet, ajoutez-lui une méthode, puis extrayez ses valeurs par destructuration.
+## à retenir
 
-<CodePlayground language="javascript" starterCode={`// 1. Creez un objet voiture avec marque, modele et annee
-const voiture = {
-  marque: 'Renault',
-  modele: 'Clio',
-  annee: 2021,
-  resume() {
-    return this.marque + ' ' + this.modele + ' (' + this.annee + ')';
-  },
-};
+- Un objet range des données liées en paires clé-valeur ; on lit par point (obj.cle) ou par crochets (obj[cle]) quand la clé est dynamique.
+- Les objets sont mutables : on ajoute, modifie ou supprime (delete) une propriété quand on veut.
+- Une méthode est une fonction stockée dans un objet ; this y désigne l'objet à gauche du point lors de l'appel.
+- La destructuration extrait des propriétés en variables d'un coup, avec renommage et valeurs par défaut, très pratique dans les paramètres.
+- Le spread (...) copie ou fusionne des objets de premier niveau ; le rest rassemble les propriétés restantes.
+- Affecter un objet avec le signe égal partage la référence, pas le contenu : modifier l'un modifie l'autre. Pour vraiment copier, utilisez le spread (objet plat) ou structuredClone (objet imbriqué).
 
-// 2. Appelez la methode
-console.log(voiture.resume()); // Renault Clio (2021)
-
-// 3. Extrayez marque et annee par destructuration
-const { marque, annee } = voiture;
-console.log(marque); // Renault
-console.log(annee);  // 2021`} />
-
-## Récapitulatif
-
-- Un **objet** regroupe des données liées sous forme de paires clé-valeur, écrites entre accolades.
-- On accède aux propriétés par **point** (`obj.cle`) ou par **crochets** (`obj['cle']`), utiles pour les clés dynamiques.
-- Les objets sont **mutables** : on modifie, ajoute (`obj.nouvelle = ...`) ou supprime (`delete obj.cle`) des propriétés à tout moment.
-- Une **méthode** est une fonction stockée dans une propriété ; `this` y désigne l'objet appelant.
-- La **destructuration** extrait des propriétés en variables en une ligne, avec renommage et valeurs par défaut possibles.
-- Un **tableau d'objets** se parcourt avec `map`, `filter` ou `forEach`, souvent combinés à la destructuration.
-
-OK 07-objets.mdx écrit
+OK 07 réécrit

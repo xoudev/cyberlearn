@@ -10,90 +10,137 @@ xpReward: 150
 prerequisites: ["CL-LSN-015-V01"]
 ---
 
-Imaginez que vous deviez afficher les nombres de 1 à 100. Vous pourriez écrire cent lignes de `console.log`... ou utiliser une boucle. Une boucle permet de répéter un bloc d'instructions automatiquement, sans copier-coller. C'est l'un des outils les plus puissants de la programmation : il transforme une tâche répétitive et fastidieuse en quelques lignes élégantes.
+Afficher les nombres de 1 à 100, traiter chaque ligne d'un fichier, parcourir une liste de clients : à chaque fois, c'est la même action répétée un certain nombre de fois. Personne n'écrit cent appels à `console.log` à la main. On décrit l'action une seule fois et on demande à la machine de la rejouer. C'est exactement le rôle d'une boucle.
 
-Dans cette leçon, vous allez découvrir les trois boucles les plus utilisées en JavaScript, puis apprendre à contrôler finement leur déroulement.
+JavaScript en propose plusieurs, et elles ne servent pas toutes la même situation. Une boucle quand on compte, une boucle quand on ne sait pas à l'avance combien de tours, une boucle quand on veut juste parcourir les valeurs d'un tableau. On va les voir une par une, avec les pièges qui vont avec.
 
-## La boucle for
+## la boucle for
 
-La boucle `for` est idéale quand vous savez combien de fois répéter une action. Elle se compose de trois parties, séparées par des points-virgules : l'initialisation, la condition, et l'incrément.
+La boucle `for` est celle qu'on sort quand on sait combien de fois répéter, ou qu'on a besoin d'un compteur. Sa structure tient en une ligne, découpée en trois morceaux séparés par des points-virgules.
 
-<CodePlayground language="javascript" starterCode={`for (let i = 1; i <= 5; i++) {
+<CodePlayground language="javascript">
+```javascript
+for (let i = 1; i <= 5; i++) {
   console.log("Tour numéro " + i);
-}`} />
+}
+```
+</CodePlayground>
 
-Ici, `i` démarre à 1, la boucle continue tant que `i` est inférieur ou égal à 5, et `i` augmente de 1 à chaque tour grâce à `i++`.
+Les trois morceaux, dans l'ordre. D'abord `let i = 1`, l'initialisation : elle s'exécute une seule fois, au tout début. Ensuite `i <= 5`, la condition : JavaScript la vérifie avant chaque tour, et tant qu'elle est vraie, le bloc tourne. Enfin `i++`, l'incrément : il s'exécute à la fin de chaque tour, ici il ajoute 1 à `i`.
 
-<Callout type="info">
-Les trois parties du `for` se lisent ainsi : **initialisation** (`let i = 1`) exécutée une seule fois au départ ; **condition** (`i <= 5`) vérifiée avant chaque tour ; **incrément** (`i++`) exécuté à la fin de chaque tour.
-</Callout>
+Concrètement le moteur fait ceci : il pose `i` à 1, vérifie que 1 est inférieur ou égal à 5 (oui), exécute le bloc, passe `i` à 2, revérifie, et ainsi de suite. Quand `i` vaut 6, la condition `6 <= 5` est fausse, et la boucle s'arrête sans exécuter le bloc une fois de plus. Le compteur `i` est disponible dans le bloc, ce qui est pratique quand on a besoin de la position courante.
 
-## La boucle while
+## while
 
-La boucle `while` répète un bloc tant qu'une condition reste vraie. On l'utilise quand on ne connaît pas à l'avance le nombre de répétitions. Attention : vous devez faire évoluer la condition à l'intérieur de la boucle, sinon elle ne s'arrêtera jamais.
+La boucle `while` répète son bloc tant qu'une condition reste vraie. La différence avec `for` est dans l'usage : on la choisit quand on ne connaît pas le nombre de tours à l'avance. On répète jusqu'à ce qu'une situation change, pas un nombre de fois décidé d'avance.
 
-<CodePlayground language="javascript" starterCode={`let compteur = 3;
+<CodePlayground language="javascript">
+```javascript
+let compteur = 3;
 while (compteur > 0) {
   console.log("Décollage dans " + compteur);
   compteur = compteur - 1;
 }
-console.log("Décollage !");`} />
+console.log("Décollage !");
+```
+</CodePlayground>
 
-À chaque tour, on décrémente `compteur`. Quand il atteint 0, la condition `compteur > 0` devient fausse et la boucle s'arrête.
+À chaque tour on retire 1 à `compteur`. Au départ il vaut 3, la condition `3 > 0` est vraie, on affiche, on descend à 2, et ainsi de suite. Quand `compteur` arrive à 0, la condition `0 > 0` devient fausse et on sort de la boucle.
+
+Le point sensible est là. Avec un `for`, l'incrément est écrit dans l'en-tête, difficile de l'oublier. Avec un `while`, c'est à vous de faire bouger la condition à l'intérieur du bloc. Si vous oubliez la ligne `compteur = compteur - 1`, `compteur` reste à 3 pour toujours, la condition reste vraie pour toujours, et le programme tourne sans fin.
 
 <Callout type="warning">
-Si vous oubliez de faire évoluer la condition (par exemple en retirant `compteur = compteur - 1`), vous créez une **boucle infinie** : le programme tourne sans fin et se bloque. Vérifiez toujours que votre condition finira par devenir fausse.
+Une boucle dont la condition ne devient jamais fausse est une boucle infinie. Le programme se bloque, l'onglet du navigateur fige. Avant d'exécuter un `while`, posez-vous la question : qu'est-ce qui, dans ce bloc, va finir par rendre ma condition fausse ? Si vous ne savez pas répondre, vous avez probablement un bug.
 </Callout>
 
 ## for...of
 
-Un **tableau** est une liste ordonnée de valeurs, par exemple une liste de prénoms. La boucle `for...of` permet de parcourir un tableau élément par élément, sans se soucier des indices.
+Un tableau est une liste ordonnée de valeurs, par exemple des prénoms ou des prix. Quand on veut juste passer sur chaque valeur, `for...of` est la boucle la plus directe : elle vous donne les valeurs une à une, sans passer par les indices.
 
-<CodePlayground language="javascript" starterCode={`const fruits = ["pomme", "banane", "cerise"];
+<CodePlayground language="javascript">
+```javascript
+const fruits = ["pomme", "banane", "cerise"];
 for (const fruit of fruits) {
   console.log("J'aime la " + fruit);
-}`} />
+}
+```
+</CodePlayground>
 
-À chaque tour, la variable `fruit` prend la valeur suivante du tableau. C'est plus lisible qu'une boucle `for` classique quand on veut simplement traiter chaque élément.
+À chaque tour, `fruit` contient directement l'élément suivant : d'abord la chaîne `"pomme"`, puis `"banane"`, puis `"cerise"`. Pas de compteur, pas de `fruits[i]`, pas de condition d'arrêt à gérer. Comparez avec la version classique : un `for` avec `let i = 0`, la condition `i < fruits.length`, puis `fruits[i]` à l'intérieur. Ça marche, mais il y a trois endroits où se tromper d'une unité. Avec `for...of`, l'intention est lisible d'un coup d'oeil : pour chaque fruit de la liste, fais ceci. C'est pour ça qu'on le préfère dès qu'on n'a pas besoin de l'indice.
+
+## for...of contre for...in
+
+Il existe une boucle au nom presque identique, `for...in`, et c'est une source de confusion classique. Les deux se ressemblent à l'écrit mais ne donnent pas la même chose. `for...of` donne les valeurs. `for...in` donne les clés, et sur un tableau les clés sont les indices, fournis sous forme de chaînes de caractères.
+
+<CodePlayground language="javascript">
+```javascript
+const fruits = ["pomme", "banane", "cerise"];
+
+console.log("Avec for...of (les valeurs) :");
+for (const valeur of fruits) {
+  console.log(valeur);
+}
+
+console.log("Avec for...in (les indices) :");
+for (const cle of fruits) {
+  // attention, ceci ne fait PAS ce qu'on croit
+}
+for (const indice in fruits) {
+  console.log(indice + " (type : " + typeof indice + ")");
+}
+```
+</CodePlayground>
+
+Le premier bloc affiche `pomme`, `banane`, `cerise`. Le dernier affiche `0`, `1`, `2`, et leur type est `string`, pas `number`. Sur un tableau, `for...in` ne vous rend donc pas vos éléments mais leurs positions, et en plus sous une forme inattendue.
+
+L'idée reçue à corriger est simple : `for...in` n'est pas fait pour les tableaux. Il a été conçu pour parcourir les clés d'un objet, là où l'ordre n'a pas vraiment de sens et où on s'intéresse aux noms de propriétés. Le piège, c'est qu'il fonctionne quand même sur un tableau, sans erreur visible, mais en vous donnant des indices au lieu des valeurs. Pire, il peut remonter des propriétés ajoutées au tableau au-delà des éléments, ce qui surprend toujours. La règle à retenir tient en une phrase : pour parcourir les valeurs d'un tableau, c'est `for...of` ; gardez `for...in` pour les objets.
 
 ## break et continue
 
-Deux mots-clés permettent de contrôler le déroulement d'une boucle. `break` interrompt complètement la boucle, tandis que `continue` saute le reste du tour courant et passe directement au suivant.
+Deux mots-clés pilotent le déroulement à l'intérieur d'une boucle. `break` sort immédiatement de la boucle, on arrête tout. `continue` abandonne seulement le tour en cours et saute au suivant.
 
-<CodePlayground language="javascript" starterCode={`for (let i = 1; i <= 10; i++) {
+<CodePlayground language="javascript">
+```javascript
+for (let i = 1; i <= 10; i++) {
   if (i === 6) {
-    break; // on arrête tout dès que i vaut 6
+    break;
   }
   if (i % 2 === 0) {
-    continue; // on saute les nombres pairs
+    continue;
   }
   console.log("Nombre impair : " + i);
-}`} />
+}
+```
+</CodePlayground>
 
-Ici, la boucle affiche les nombres impairs (`continue` ignore les pairs) et s'arrête net dès que `i` atteint 6 grâce à `break`.
+Ici `continue` ignore les nombres pairs en sautant l'appel à `console.log`, et `break` coupe net dès que `i` atteint 6. Résultat affiché : 1, 3, 5. Ces deux mots-clés évitent des conditions imbriquées compliquées quand on veut sortir tôt ou ignorer certains cas.
 
-## À vous de jouer
+## à toi de jouer
 
-<Quiz id="q-1" question="Dans une boucle for classique, quelle partie est exécutée une seule fois, au tout début ?" options={["La condition", "L'initialisation", "L'incrément"]} correct={1} />
+<Quiz id="q-1" question="Dans une boucle for classique, quelle partie ne s'exécute qu'une seule fois, au démarrage ?" options={["La condition", "L'initialisation", "L'incrément"]} correct={1} />
 
-<Quiz id="q-2" question="Que provoque l'oubli de faire évoluer la condition d'une boucle while ?" options={["Une boucle infinie", "Une erreur de syntaxe", "L'arrêt immédiat de la boucle"]} correct={0} />
+<Quiz id="q-2" question="Vous voulez parcourir les valeurs d'un tableau de prénoms. Quelle boucle est la plus adaptée ?" options={["for...in", "for...of", "while sans condition"]} correct={1} />
 
-<Quiz id="q-3" question="Quel mot-clé saute l'itération courante et passe directement à la suivante ?" options={["break", "return", "continue"]} correct={2} />
+<Quiz id="q-3" question="Que renvoie une boucle for...in appliquée à un tableau ?" options={["Les valeurs du tableau", "Les indices (sous forme de chaînes)", "Une erreur de syntaxe"]} correct={1} />
 
-Maintenant, à votre tour : calculez la somme de tous les nombres de 1 à 100 à l'aide d'une boucle.
+Un dernier exercice : calculez la somme de tous les entiers de 1 à 100 avec une boucle.
 
-<CodePlayground language="javascript" starterCode={`let somme = 0;
+<CodePlayground language="javascript">
+```javascript
+let somme = 0;
 for (let i = 1; i <= 100; i++) {
   somme = somme + i;
 }
-console.log("La somme de 1 à 100 vaut : " + somme);`} />
+console.log("La somme de 1 à 100 vaut : " + somme);
+```
+</CodePlayground>
 
-## Récapitulatif
+## à retenir
 
-- La boucle **`for`** répète un bloc un nombre connu de fois : initialisation, condition, incrément.
-- La boucle **`while`** répète tant qu'une condition est vraie ; il faut faire évoluer cette condition.
-- Une **boucle infinie** survient quand la condition ne devient jamais fausse : à éviter absolument.
-- **`for...of`** parcourt un tableau élément par élément, de façon lisible.
-- **`break`** interrompt la boucle, **`continue`** saute le reste du tour courant.
+- `for` répète un nombre connu de fois et donne accès à un compteur : initialisation une fois, condition avant chaque tour, incrément après chaque tour.
+- `while` répète tant qu'une condition tient ; c'est à vous de la faire évoluer dans le bloc, sinon vous obtenez une boucle infinie qui fige le programme.
+- `for...of` parcourt les valeurs d'un tableau directement, sans indice : c'est le choix lisible par défaut.
+- `for...in` donne les clés, donc les indices sous forme de chaînes sur un tableau. Il est fait pour les objets, pas pour les tableaux.
+- `break` sort de la boucle, `continue` saute au tour suivant.
 
-OK 04-boucles.mdx écrit
+OK 04 réécrit

@@ -10,90 +10,106 @@ xpReward: 350
 prerequisites: ["CL-LSN-018-V01"]
 ---
 
-Dès qu'une application web doit échanger des informations avec un serveur, lire un fichier de configuration ou sauvegarder des préférences, elle s'appuie presque toujours sur le même format : JSON. C'est le langage commun des API, des bases de données modernes et des outils de développement. Maîtriser JSON, c'est pouvoir faire communiquer votre code JavaScript avec le reste du monde.
+Quand un navigateur demande des données à un serveur, les deux machines ne partagent pas de mémoire. Elles s'envoient simplement du texte sur le réseau. Pour que ce texte ait un sens des deux côtés, il faut un format commun, une façon convenue d'écrire des données structurées. Sur le web, ce format s'appelle JSON. Vous le retrouvez aussi dès qu'il faut sauvegarder des préférences ou écrire un fichier de configuration. C'est le sujet de cette leçon.
 
-Dans cette leçon, vous allez découvrir ce qu'est JSON, comment transformer une chaîne JSON en objet exploitable, comment produire du JSON à partir de vos données, et comment manipuler le tout sans vous tromper.
+## objet JS contre chaîne JSON
 
-## Qu'est-ce que JSON
+JSON veut dire JavaScript Object Notation. Le nom prête à confusion, alors mettons les choses au clair tout de suite : JSON n'est pas du JavaScript. C'est un format de texte. Sa syntaxe a été inspirée par la façon d'écrire les objets en JavaScript, mais aujourd'hui Python, Java, Go, PHP et à peu près tous les langages savent lire et produire du JSON. Il est indépendant du langage.
 
-JSON signifie *JavaScript Object Notation*. C'est un format texte, lisible par un humain comme par une machine, qui sert à représenter des données structurées. Sa syntaxe ressemble beaucoup à celle des objets JavaScript : on retrouve des paires clé-valeur, des tableaux, des nombres, des booléens et la valeur `null`.
+La distinction qui compte le plus est celle entre un objet et une chaîne. Un objet JavaScript vit en mémoire pendant que votre programme tourne. Vous accédez à ses propriétés, vous appelez des méthodes dessus, vous le modifiez. Une chaîne JSON, elle, est juste une suite de caractères. Elle représente les mêmes données, mais sous une forme inerte, transportable et stockable.
 
-Voici un exemple de document JSON décrivant un utilisateur :
+<CodePlayground language="javascript" starterCode={`const user = { name: 'Amélie', level: 7 };
+const text = '{ "name": "Amélie", "level": 7 }';
 
-```json
-{
-  "name": "Amélie",
-  "level": 7,
-  "isActive": true,
-  "skills": ["html", "css", "javascript"],
-  "address": null
-}
-```
-
-La grande différence avec un objet JavaScript classique : en JSON, **toutes les clés sont obligatoirement entre guillemets doubles**, et les chaînes de caractères aussi. On ne peut pas y mettre de fonctions, ni de commentaires, ni de virgule finale après le dernier élément. JSON ne connaît que six types : chaîne, nombre, booléen, `null`, tableau et objet.
-
-## JSON.parse
-
-Quand un serveur vous renvoie des données, il vous les transmet sous forme de **chaîne de caractères**. Pour pouvoir les utiliser dans votre code, vous devez les convertir en véritable objet JavaScript. C'est le rôle de `JSON.parse`.
-
-<CodePlayground language="javascript" starterCode={`const text = '{ "name": "Amélie", "level": 7, "skills": ["html", "css"] }';
-const user = JSON.parse(text);
-
-console.log(user.name);
+// L'objet : on accède à ses propriétés
 console.log(user.level + 1);
-console.log(user.skills[0]);`} />
 
-Une fois la chaîne analysée, `user` est un objet JavaScript ordinaire : vous accédez à ses propriétés avec la notation point, vous parcourez ses tableaux, vous faites des calculs avec ses nombres.
+// La chaîne : c'est du texte, on en mesure la longueur
+console.log(text.length);
+console.log(typeof user);
+console.log(typeof text);`} />
 
-## JSON.stringify
+L'objet répond à `user.level`. La chaîne, elle, ne connaît que des opérations de texte comme `.length`. Si vous tentez `text.level`, vous obtenez `undefined`, parce qu'une chaîne n'a pas de propriété `level`. Garder cette frontière en tête évite la moitié des bugs liés à JSON.
 
-L'opération inverse consiste à transformer un objet JavaScript en chaîne JSON, afin de l'envoyer sur le réseau ou de la stocker. C'est `JSON.stringify` qui s'en charge. Son deuxième argument vaut généralement `null`, et son troisième argument indique le nombre d'espaces d'indentation pour une sortie lisible.
+## stringify et parse
 
-<CodePlayground language="javascript" starterCode={`const product = {
-  title: 'Clavier',
-  price: 49.9,
-  tags: ['azerty', 'usb'],
-};
+Pour passer d'un côté à l'autre de cette frontière, JavaScript fournit deux fonctions. `JSON.stringify` prend un objet en mémoire et le transforme en chaîne de texte, prête à être envoyée sur le réseau ou écrite dans un fichier. `JSON.parse` fait l'inverse : il prend une chaîne reçue et la reconstruit en objet exploitable.
 
-const compact = JSON.stringify(product);
-const pretty = JSON.stringify(product, null, 2);
+<CodePlayground language="javascript" starterCode={`const product = { title: 'Clavier', price: 49.9, tags: ['azerty', 'usb'] };
+
+// Objet vers texte
+const text = JSON.stringify(product);
+console.log(text);
+console.log(typeof text);
+
+// Texte vers objet
+const back = JSON.parse(text);
+console.log(back.price);
+console.log(typeof back);`} />
+
+Le troisième argument de `JSON.stringify` mérite un mot. Si vous lui passez un nombre, il indente la sortie avec ce nombre d'espaces, ce qui rend le texte lisible pour un humain. Le deuxième argument sert à filtrer les champs et vaut le plus souvent `null`.
+
+<CodePlayground language="javascript" starterCode={`const config = { theme: 'sombre', sons: false, niveau: 3 };
+
+const compact = JSON.stringify(config);
+const lisible = JSON.stringify(config, null, 2);
 
 console.log(compact);
-console.log(pretty);`} />
+console.log(lisible);`} />
 
-<Callout type="info">
-On utilise JSON.stringify partout : pour envoyer un corps de requête à une API, pour sauvegarder un objet dans le localStorage du navigateur, ou pour écrire un fichier de configuration. La version indentée est pratique pour le débogage et la lecture humaine.
-</Callout>
+La version compacte sert à transporter les données, la version indentée sert à les lire pendant le débogage.
 
-## Manipuler des données
+## les règles de JSON
 
-Le scénario le plus courant combine les deux opérations : on parse une chaîne reçue, on modifie l'objet obtenu, puis on le re-stringifie pour le renvoyer. Voici une liste d'utilisateurs que l'on filtre pour ne garder que les membres actifs.
+JSON ressemble à un objet JavaScript, mais ses règles sont plus strictes, et c'est volontaire. Toutes les clés sont entre guillemets doubles, jamais simples, jamais nues. Les chaînes de caractères aussi sont entre guillemets doubles. Pas de virgule après le dernier élément. Pas de fonctions ni de méthodes, puisque JSON ne transporte que des données. Pas de commentaires non plus, ce qui surprend souvent quand on édite un fichier de configuration à la main.
 
-<CodePlayground language="javascript" starterCode={`const raw = '[{"name":"Léa","active":true},{"name":"Tom","active":false},{"name":"Sara","active":true}]';
+JSON ne connaît que six types de valeurs : une chaîne, un nombre, un booléen, la valeur `null`, un tableau et un objet. Une date, une fonction, une variable `undefined` n'ont pas de place directe dedans.
 
-const users = JSON.parse(raw);
-const activeUsers = users.filter((u) => u.active);
+<CodePlayground language="javascript" starterCode={`// Valide en JSON
+const ok = '{ "name": "Léa", "active": true, "tags": ["js"] }';
+console.log(JSON.parse(ok).name);
 
-console.log(activeUsers.length);
+// Invalide : guillemets simples et clé sans guillemets
+const ko = "{ name: 'Léa' }";
+try {
+  JSON.parse(ko);
+} catch (e) {
+  console.log('Erreur de parsing : JSON invalide');
+}`} />
 
-const result = JSON.stringify(activeUsers, null, 2);
-console.log(result);`} />
+Pourquoi tant de sévérité ? Parce qu'un langage commun ne fonctionne que si tout le monde respecte exactement la même grammaire. Si JavaScript autorisait les commentaires et les virgules finales mais pas Python, le texte ne serait plus universel. Les restrictions de JSON sont le prix de son interopérabilité. C'est aussi pour cela que `JSON.parse` est intransigeant : il lève une erreur dès qu'un caractère ne respecte pas la grammaire, plutôt que de deviner ce que vous vouliez dire.
 
-Entre le parse et le stringify, vous disposez d'un tableau d'objets JavaScript classique : vous pouvez le filtrer, le trier, ajouter ou supprimer des propriétés, exactement comme avec n'importe quelle structure de données.
+## où on le rencontre
 
-<Callout type="warning">
-Attention : JSON.parse lève une erreur si la chaîne fournie n'est pas un JSON valide (une virgule en trop, une clé sans guillemets, une chaîne tronquée). Enveloppez toujours l'appel dans un bloc try/catch quand la donnée vient d'une source externe, sinon votre programme plantera.
-</Callout>
+Trois endroits reviennent sans cesse. Les réponses d'API : quand votre code interroge un service distant, la réponse arrive en JSON, et vous la passez à `JSON.parse`. Les fichiers de configuration : le `package.json` d'un projet Node, par exemple, est un document JSON. Et le stockage du navigateur : `localStorage` ne sait conserver que des chaînes, donc on y range un objet en le stringifiant, et on le relit en le parsant.
 
-## À vous de jouer
+Voici le cycle complet d'un usage de stockage. On part d'un objet, on le sérialise pour le ranger, puis on le relit plus tard.
 
-<Quiz id="q-1" question="En JSON strict, comment doivent être écrites les clés d'un objet ?" options={["Sans guillemets, comme en JavaScript", "Entre guillemets doubles obligatoirement", "Entre guillemets simples"]} correct={1} />
+<CodePlayground language="javascript" starterCode={`// On simule un stockage qui ne garde que du texte
+let storage = '';
 
-<Quiz id="q-2" question="Que fait JSON.stringify ?" options={["Il transforme une chaîne JSON en objet JavaScript", "Il valide un fichier JSON", "Il transforme un objet JavaScript en chaîne JSON"]} correct={2} />
+const settings = { langue: 'fr', notifications: true };
 
-<Quiz id="q-3" question="Que se passe-t-il si on passe une chaîne JSON invalide à JSON.parse ?" options={["Une erreur est levée", "La fonction renvoie null", "La fonction renvoie une chaîne vide"]} correct={0} />
+// Sauvegarde : objet vers texte
+storage = JSON.stringify(settings);
+console.log('Stocké :', storage);
 
-Entraînez-vous : parsez la chaîne, ajoutez un point au score, puis renvoyez le résultat en JSON indenté.
+// Relecture : texte vers objet
+const loaded = JSON.parse(storage);
+loaded.notifications = false;
+console.log('Notifications :', loaded.notifications);`} />
+
+Le piège classique guette ici. Si vous oubliez `JSON.parse` et que vous traitez le texte relu comme un objet, `loaded.notifications` vaut `undefined`, parce que vous interrogez une chaîne. Le piège symétrique existe aussi : envoyer un objet brut là où un texte est attendu, sans `JSON.stringify`. À chaque passage de frontière, demandez-vous si vous tenez un objet ou du texte, et appliquez la bonne fonction.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="JSON est avant tout :" options={["Un sous-ensemble du langage JavaScript", "Un format de texte indépendant du langage", "Une fonction intégrée à JavaScript"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle fonction transforme une chaîne JSON reçue en objet JavaScript ?" options={["JSON.parse", "JSON.stringify", "JSON.read"]} correct={0} />
+
+<Quiz id="q-3" question="En JSON strict, les clés d'un objet doivent être :" options={["Sans guillemets, comme souvent en JavaScript", "Entre guillemets simples", "Entre guillemets doubles"]} correct={2} />
+
+Entraîne-toi : parse la chaîne, ajoute un point au score, puis renvoie le résultat en JSON indenté.
 
 <CodePlayground language="javascript" starterCode={`const data = '{ "player": "Max", "score": 41 }';
 
@@ -102,13 +118,13 @@ game.score = game.score + 1;
 
 console.log(JSON.stringify(game, null, 2));`} />
 
-## Récapitulatif
+## à retenir
 
-- JSON est un format texte d'échange de données, utilisé par les API, le stockage et la configuration.
-- Sa syntaxe ressemble aux objets JavaScript, mais les clés et les chaînes sont toujours entre guillemets doubles.
-- `JSON.parse` transforme une chaîne JSON en objet JavaScript exploitable.
-- `JSON.stringify` transforme un objet en chaîne JSON ; son troisième argument contrôle l'indentation.
-- On enchaîne souvent parse, modification puis stringify pour traiter des données.
-- `JSON.parse` lève une erreur sur une chaîne invalide : protégez-le avec try/catch.
+- JSON est un format de texte servant à échanger et stocker des données, lu et produit par presque tous les langages.
+- Un objet JavaScript vit en mémoire et répond à `.propriete` ; une chaîne JSON est du texte inerte qui le représente.
+- `JSON.stringify` transforme un objet en chaîne ; son troisième argument numérique contrôle l'indentation.
+- `JSON.parse` transforme une chaîne en objet, et lève une erreur si le texte n'est pas un JSON valide.
+- Les clés et les chaînes sont entre guillemets doubles ; pas de fonctions, pas de commentaires, pas de virgule finale.
+- Le piège récurrent est de confondre objet et texte : à chaque frontière, applique parse ou stringify selon le sens.
 
-OK 11-json.mdx écrit
+OK 11 réécrit

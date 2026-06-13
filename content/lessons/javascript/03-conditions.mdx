@@ -10,107 +10,195 @@ xpReward: 150
 prerequisites: ["CL-LSN-014-V01"]
 ---
 
-Jusqu'ici, vos programmes exécutaient les instructions les unes après les autres, sans jamais dévier. Mais un vrai programme doit **réagir aux situations** : afficher un message différent selon l'heure, accorder ou refuser un accès, calculer une réduction selon le panier. Pour cela, JavaScript propose les **structures de décision**. Elles permettent à votre code de poser une question, puis de choisir un chemin selon la réponse. Dans cette leçon, vous découvrirez `if`, `else if`, `else`, l'opérateur ternaire, le `switch`, et la notion essentielle de valeurs *truthy* et *falsy*.
+Un programme qui suit toujours la même ligne droite n'est pas très utile. Tout l'intérêt arrive quand le code regarde une donnée et décide quoi faire en fonction. Est-ce que cet utilisateur a le droit d'entrer ? Le panier dépasse-t-il 50 euros ? Le mot de passe est-il correct ? À chaque fois, le programme pose une question et bifurque selon la réponse. Les conditions sont l'outil qui rend ça possible. Sans elles, ton code ferait exactement la même chose à chaque exécution, peu importe les données.
 
-## if / else if / else
+## if, else if, else
 
-L'instruction `if` exécute un bloc de code **uniquement si** une condition est vraie. La condition est placée entre parenthèses, et le bloc à exécuter entre accolades. On peut enchaîner plusieurs cas avec `else if`, et prévoir un cas par défaut avec `else`.
+La forme de base, c'est `if`. Tu mets une condition entre parenthèses ; si elle est vraie, le bloc entre accolades s'exécute. Sinon, il est ignoré. Tu peux ajouter `else if` pour tester d'autres cas, et `else` pour ramasser tout ce qui n'a rien déclenché.
 
-<CodePlayground language="javascript" starterCode={`const note = 14;
+<CodePlayground language="javascript">
+
+```javascript
+const note = 14;
 
 if (note >= 16) {
-  console.log("Très bien");
+  console.log('Très bien');
 } else if (note >= 12) {
-  console.log("Bien");
+  console.log('Bien');
 } else if (note >= 10) {
-  console.log("Passable");
+  console.log('Passable');
 } else {
-  console.log("Insuffisant");
-}`} />
+  console.log('Insuffisant');
+}
+```
 
-JavaScript évalue les conditions de haut en bas et s'arrête **dès qu'une** est vraie. Ici, `note >= 16` est faux, mais `note >= 12` est vrai : on affiche « Bien » et on ignore le reste.
+</CodePlayground>
 
-## Valeurs truthy et falsy
+JavaScript lit les conditions de haut en bas et s'arrête à la première qui est vraie. Ici `note >= 16` est fausse, mais `note >= 12` est vraie, donc il affiche Bien et ne regarde même pas les conditions suivantes. C'est pour ça que l'ordre compte : si tu mets `note >= 10` en premier, une note de 18 tomberait dans Passable et n'arriverait jamais jusqu'à Très bien. Range tes conditions de la plus stricte à la plus large.
 
-Une condition n'a pas besoin d'être un vrai booléen `true` ou `false`. JavaScript convertit automatiquement n'importe quelle valeur en booléen. Une valeur considérée comme fausse est dite *falsy* ; toutes les autres sont *truthy*.
+Le `else` n'est pas obligatoire. Un `if` tout seul est parfaitement valide quand tu veux juste agir dans un cas précis et ne rien faire le reste du temps.
 
-<CodePlayground language="javascript" starterCode={`const prenom = "";
+## truthy et falsy
+
+Voilà un point qui surprend souvent au début. La condition d'un `if` n'a pas besoin d'être un vrai booléen `true` ou `false`. Tu peux mettre n'importe quelle valeur, et JavaScript la convertit en booléen au moment de tester. C'est plus large qu'on ne le croit : ce n'est pas réservé à `true` et `false`, chaque valeur du langage a une « teinte » de vrai ou de faux.
+
+Les valeurs qui comptent comme fausses s'appellent les valeurs falsy. Il y en a exactement six : `false`, `0`, la chaîne vide `''`, `null`, `undefined`, et `NaN`. Tout le reste est truthy.
+
+<CodePlayground language="javascript">
+
+```javascript
+const prenom = '';
 
 if (prenom) {
-  console.log("Bonjour " + prenom);
+  console.log('Bonjour ' + prenom);
 } else {
-  console.log("Aucun prénom fourni");
+  console.log('Aucun prénom fourni');
 }
-// La chaîne vide est falsy : on affiche le second message`} />
 
-<Callout type="info">
-Il n'existe que **six** valeurs falsy en JavaScript : `false`, `0`, `""` (chaîne vide), `null`, `undefined` et `NaN`. Absolument tout le reste est truthy, y compris `"0"`, `"false"`, `[]` (tableau vide) et `{}` (objet vide).
-</Callout>
+// La chaîne vide est falsy, donc on tombe dans le else.
+// Test rapide d'autres valeurs :
+console.log(Boolean(0));        // false
+console.log(Boolean('0'));      // true  -> une chaîne non vide est truthy
+console.log(Boolean([]));       // true  -> un tableau vide reste truthy
+console.log(Boolean(undefined)); // false
+```
 
-## L'opérateur ternaire
+</CodePlayground>
 
-Quand un `if/else` ne fait que choisir entre **deux valeurs**, on peut l'écrire plus court avec l'opérateur ternaire. Sa syntaxe est : `condition ? valeurSiVrai : valeurSiFaux`. C'est la seule structure de JavaScript qui prend trois opérandes.
+C'est pratique parce que ça raccourcit le code. Plutôt que d'écrire `if (prenom !== '' && prenom !== undefined)`, tu écris juste `if (prenom)`. Mais c'est aussi un piège classique. Le plus courant : tester un nombre. Si tu écris `if (quantite)` pour vérifier qu'une quantité existe, le cas `quantite === 0` passera dans le `else` alors que zéro est peut-être une valeur tout à fait légitime. Pareil avec la chaîne vide qui est parfois une saisie valable. Quand tu veux vraiment savoir si une variable est définie, sois explicite : `if (quantite !== undefined)` dit exactement ce que tu veux, sans surprise.
 
-<CodePlayground language="javascript" starterCode={`const age = 20;
-const statut = age >= 18 ? "majeur" : "mineur";
-console.log(statut); // "majeur"
+Cette conversion automatique alimente aussi une astuce qu'on appelle le court-circuit. L'opérateur `||` renvoie sa première valeur truthy, ce qui permet de poser une valeur par défaut.
 
-const heure = 9;
-const message = heure < 12 ? "Bonjour" : "Bonsoir";
-console.log(message); // "Bonjour"`} />
+<CodePlayground language="javascript">
 
-Le ternaire **retourne une valeur**, ce qui est pratique pour l'affecter directement à une variable. Réservez-le aux cas simples : trop imbriqué, il devient illisible.
+```javascript
+function saluer(nom) {
+  const affichage = nom || 'invité';
+  return 'Bonjour ' + affichage;
+}
+
+console.log(saluer('Léa'));  // Bonjour Léa
+console.log(saluer(''));     // Bonjour invité  (chaîne vide = falsy)
+console.log(saluer());       // Bonjour invité  (undefined = falsy)
+```
+
+</CodePlayground>
+
+Attention au même piège ici : `0 || 10` donne `10`, parce que `0` est falsy. Si zéro est une valeur que tu veux garder, l'opérateur `??` (nullish) est plus sûr, car il ne se déclenche que pour `null` et `undefined`.
 
 ## switch
 
-Lorsqu'on compare **une même valeur** à plusieurs possibilités, une longue série de `else if` devient lourde. Le `switch` est alors plus clair. Chaque `case` teste une égalité stricte, et `break` arrête le parcours. `default` gère les cas non prévus.
+Quand tu compares une seule et même variable à toute une liste de valeurs précises, enchaîner les `else if` devient pénible à lire. Le `switch` est fait pour ça. Il évalue une valeur, puis cherche le `case` qui correspond avec une égalité stricte. Le `default` joue le rôle du `else`.
 
-<CodePlayground language="javascript" starterCode={`const jour = "mardi";
+<CodePlayground language="javascript">
+
+```javascript
+const jour = 'mardi';
 
 switch (jour) {
-  case "samedi":
-  case "dimanche":
-    console.log("C'est le week-end !");
+  case 'samedi':
+  case 'dimanche':
+    console.log("C'est le week-end");
     break;
-  case "mardi":
-    console.log("Bon courage, c'est mardi");
+  case 'mardi':
+    console.log('Bon courage, on est mardi');
     break;
   default:
-    console.log("Jour de semaine ordinaire");
-}`} />
+    console.log('Jour de semaine ordinaire');
+}
+```
+
+</CodePlayground>
+
+Tu remarques que `samedi` et `dimanche` partagent le même bloc. C'est volontaire : un `case` sans corps enchaîne sur le suivant, ce qui sert à regrouper plusieurs valeurs sur un même traitement. Mais cette mécanique a un revers, et c'est le vrai piège du `switch`.
 
 <Callout type="warning">
-N'oubliez jamais le `break` ! Sans lui, JavaScript continue d'exécuter les `case` suivants même s'ils ne correspondent pas : c'est l'effet « cascade » (*fall-through*), source de bugs très difficiles à repérer.
+Si tu oublies un `break`, l'exécution ne s'arrête pas à la fin du case trouvé : elle déborde et continue dans le case suivant, puis le suivant, jusqu'à rencontrer un `break` ou la fin du switch. On appelle ça le fall-through. Le code fait alors plus que ce que tu crois, et le bug est sournois parce que tout a l'air correct à la lecture.
 </Callout>
 
-## À vous de jouer
+<CodePlayground language="javascript">
 
-<Quiz id="q-1" question="Parmi ces valeurs, laquelle est truthy ?" options={["0", "\"\"", "\"0\"", "null"]} correct={2} />
+```javascript
+const role = 'editeur';
 
-<Quiz id="q-2" question="Que manque-t-il le plus souvent dans un case de switch et provoque l'effet cascade ?" options={["return", "break", "default", "case"]} correct={1} />
+switch (role) {
+  case 'admin':
+    console.log('Peut supprimer');
+  // break oublié ici : on déborde sur le case suivant
+  case 'editeur':
+    console.log('Peut modifier');
+    break;
+  case 'lecteur':
+    console.log('Peut lire');
+    break;
+}
 
-<Quiz id="q-3" question="Quelle est la syntaxe correcte de l'opérateur ternaire ?" options={["condition : siVrai ? siFaux", "if condition ? siVrai : siFaux", "condition ? siVrai : siFaux", "condition ?? siVrai : siFaux"]} correct={2} />
+// Avec 'admin', tu verrais 'Peut supprimer' PUIS 'Peut modifier',
+// parce que le premier case n'a pas de break. Teste en mettant role = 'admin'.
+```
 
-Entraînez-vous : catégorisez une température en complétant la logique ci-dessous.
+</CodePlayground>
 
-<CodePlayground language="javascript" starterCode={`const temperature = 28;
+La règle pratique : mets un `break` à la fin de chaque `case`, et ne supprime ce `break` que quand tu veux délibérément regrouper des cas. Le dernier `case` ou le `default` peut s'en passer puisqu'il n'y a rien après, mais beaucoup le laissent quand même par habitude.
+
+## le ternaire
+
+Il arrive souvent qu'un `if/else` ne serve qu'à choisir entre deux valeurs pour les ranger dans une variable. Dans ce cas précis, l'opérateur ternaire fait la même chose en une ligne. Sa forme est `condition ? valeurSiVrai : valeurSiFaux`. Le point d'interrogation sépare la condition du premier choix, les deux-points séparent les deux choix.
+
+<CodePlayground language="javascript">
+
+```javascript
+const age = 20;
+const statut = age >= 18 ? 'majeur' : 'mineur';
+console.log(statut); // majeur
+
+const heure = 9;
+const message = heure < 12 ? 'Bonjour' : 'Bonsoir';
+console.log(message); // Bonjour
+```
+
+</CodePlayground>
+
+L'avantage du ternaire, c'est qu'il produit une valeur, donc tu peux l'affecter directement. Un `if/else` classique, lui, ne renvoie rien : il faudrait déclarer la variable au-dessus puis l'assigner dans chaque branche. Le ternaire condense tout ça.
+
+Mais garde-le pour les choix courts. Dès que tu commences à imbriquer des ternaires les uns dans les autres, ou que la condition s'allonge, la ligne devient illisible et un `if/else` redevient le bon choix. Le ternaire gagne sur les cas simples, pas sur la logique compliquée.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Parmi ces valeurs, laquelle est truthy en JavaScript ?" options={["0", "''", "'0'", "null"]} correct={2} />
+
+<Quiz id="q-2" question="Dans un switch, qu'est-ce qui provoque le fall-through (l'exécution qui déborde sur le case suivant) ?" options={["un break oublié", "un default manquant", "une égalité non stricte", "trop de case"]} correct={0} />
+
+<Quiz id="q-3" question="Quand le ternaire condition ? a : b est-il le bon choix ?" options={["pour remplacer une boucle", "pour un choix court entre deux valeurs à affecter", "pour comparer une valeur à dix cas", "pour exécuter plusieurs instructions par branche"]} correct={1} />
+
+Pour t'entraîner, complète cette logique qui conseille une tenue selon la température.
+
+<CodePlayground language="javascript">
+
+```javascript
+const temperature = 28;
 let tenue;
 
 if (temperature >= 30) {
-  tenue = "T-shirt et short";
+  tenue = 'T-shirt et short';
 } else if (temperature >= 15) {
-  tenue = "Pull léger";
+  tenue = 'Pull léger';
 } else {
-  tenue = "Manteau";
+  tenue = 'Manteau';
 }
 
-console.log("Tenue conseillée : " + tenue);`} />
+console.log('Tenue conseillée : ' + tenue);
+```
 
-## Récapitulatif
+</CodePlayground>
 
-- `if`, `else if` et `else` permettent de choisir un chemin parmi plusieurs ; JavaScript s'arrête à la première condition vraie.
-- Une condition est convertie en booléen : les valeurs **falsy** sont `false`, `0`, `""`, `null`, `undefined` et `NaN` ; tout le reste est **truthy**.
-- L'opérateur ternaire `condition ? a : b` retourne une valeur et remplace un `if/else` simple.
-- Le `switch` compare une valeur à plusieurs `case` ; pensez toujours au `break` pour éviter l'effet cascade.
+## à retenir
 
-OK 03-conditions.mdx écrit
+- `if`, `else if` et `else` testent les conditions de haut en bas et s'arrêtent à la première vraie ; range-les de la plus stricte à la plus large.
+- Une condition convertit sa valeur en booléen. Les six valeurs falsy sont `false`, `0`, `''`, `null`, `undefined` et `NaN`. Tout le reste, y compris `'0'`, `[]` et `{}`, est truthy.
+- Tester directement un nombre ou une chaîne avec `if (x)` peut piéger sur `0` ou `''` ; quand tu veux savoir si une variable existe, écris `if (x !== undefined)`.
+- Le court-circuit `||` donne une valeur par défaut, mais traite `0` et `''` comme absents ; utilise `??` quand tu veux conserver ces valeurs.
+- Le `switch` compare une valeur à plusieurs `case` en égalité stricte ; un `break` oublié provoque le fall-through et l'exécution déborde sur les cas suivants.
+- Le ternaire `condition ? a : b` renvoie une valeur et remplace un `if/else` simple ; évite-le dès que la logique s'imbrique.
+
+OK 03 réécrit
