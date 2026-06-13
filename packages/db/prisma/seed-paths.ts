@@ -244,6 +244,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-108-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-010-V01",
+    slug: "pentest",
+    title: "Test d'intrusion : la démarche offensive",
+    description:
+      "Apprenez le métier de testeur d'intrusion dans un cadre légal : méthodologie et règles d'engagement, reconnaissance passive et active, scan nmap, énumération, recherche de vulnérabilités, exploitation, attaques de mots de passe, exploitation web, post-exploitation et élévation de privilèges, mouvement latéral, et rédaction du rapport. Conclu par la compromission guidée d'une machine d'entraînement.",
+    category: "CYBERSEC",
+    difficulty: "ADVANCED",
+    estimatedHours: 9,
+    lessons: [
+      "CL-LSN-109-V01",
+      "CL-LSN-110-V01",
+      "CL-LSN-111-V01",
+      "CL-LSN-112-V01",
+      "CL-LSN-113-V01",
+      "CL-LSN-114-V01",
+      "CL-LSN-115-V01",
+      "CL-LSN-116-V01",
+      "CL-LSN-117-V01",
+      "CL-LSN-118-V01",
+      "CL-LSN-119-V01",
+      "CL-LSN-120-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {
