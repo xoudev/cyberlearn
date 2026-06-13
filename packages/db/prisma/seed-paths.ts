@@ -268,6 +268,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-120-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-011-V01",
+    slug: "grc",
+    title: "Gouvernance, risque et conformité",
+    description:
+      "Le versant organisationnel de la sécurité : gouvernance et pilotage du risque, politiques et standards, cadres ISO 27001, NIST et CIS, conformité par secteur et RGPD, classification des actifs, continuité d'activité, risque des tiers, facteur humain et audit. Conclu par une analyse de risque guidée pour une PME.",
+    category: "CYBERSEC",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 7,
+    lessons: [
+      "CL-LSN-121-V01",
+      "CL-LSN-122-V01",
+      "CL-LSN-123-V01",
+      "CL-LSN-124-V01",
+      "CL-LSN-125-V01",
+      "CL-LSN-126-V01",
+      "CL-LSN-127-V01",
+      "CL-LSN-128-V01",
+      "CL-LSN-129-V01",
+      "CL-LSN-130-V01",
+      "CL-LSN-131-V01",
+      "CL-LSN-132-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

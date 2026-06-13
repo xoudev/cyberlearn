@@ -1,0 +1,115 @@
+---
+refCode: CL-LSN-126-V01
+slug: grc-rgpd
+title: "Le RGPD en pratique"
+description: "Comprenez le règlement européen sur les données personnelles : ce qu'est une donnée personnelle, les rôles et bases légales, les principes, les droits des personnes, l'analyse d'impact et la notification de violation."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 50
+xpReward: 560
+prerequisites: ["CL-LSN-125-V01"]
+---
+
+Quand on parle du RGPD, on entend souvent une plainte : "à cause de lui on ne peut plus rien faire". C'est faux, et c'est même l'inverse de son intention. Le Règlement général sur la protection des données, entré en application en mai 2018 dans toute l'Union européenne, ne dit pas qu'il est interdit de traiter des données personnelles. Il dit qu'on a le droit de le faire, à condition de respecter des règles claires et de pouvoir en rendre compte.
+
+L'idée de départ est un rééquilibrage. Une entreprise qui collecte vos données a un avantage : elle sait ce qu'elle en fait, vous non. Le RGPD redonne à la personne du pouvoir sur ses propres informations. Elle peut savoir, corriger, refuser, partir. Le texte transforme une asymétrie en relation encadrée. Voyons comment, point par point, parce que derrière le vocabulaire juridique il y a une logique assez simple à suivre.
+
+## donnée personnelle, donnée sensible
+
+Une donnée personnelle, c'est toute information qui se rapporte à une personne physique identifiée ou identifiable. Le mot important est "identifiable". Un nom, c'est évident. Mais une adresse IP, un identifiant client, un numéro de plaque, la combinaison "femme, 34 ans, code postal 67000, abonnée depuis 2019" peuvent aussi mener à quelqu'un. On n'a pas besoin du nom écrit en toutes lettres pour qu'une donnée soit personnelle. Dès qu'un recoupement raisonnable permet de remonter à un individu, on est dedans.
+
+Parmi ces données, certaines sont dites sensibles, et le règlement les protège plus fort. Il s'agit de l'origine ethnique supposée, des opinions politiques, des convictions religieuses, de l'appartenance syndicale, des données de santé, de la vie ou de l'orientation sexuelle, des données génétiques et biométriques quand elles servent à identifier quelqu'un. Le principe par défaut : on ne traite pas ces catégories, sauf cas précis prévus par la loi (consentement explicite, médecine du travail, intérêt public en santé, etc.).
+
+<Callout type="info">
+Une donnée anonymisée pour de bon sort du champ du RGPD, parce qu'on ne peut plus remonter à personne. Mais attention : pseudonymiser (remplacer le nom par un code, avec une table de correspondance gardée à part) n'est pas anonymiser. La donnée pseudonymisée reste personnelle, car le lien existe toujours quelque part.
+</Callout>
+
+## les rôles
+
+Le règlement répartit les responsabilités entre trois rôles, et savoir qui est qui évite bien des malentendus.
+
+Le responsable de traitement est celui qui décide. Il fixe la finalité (pourquoi on collecte) et les moyens (comment). Une boutique en ligne qui choisit de garder l'historique d'achats de ses clients est responsable de ce traitement. C'est sur lui que pèse la charge principale.
+
+Le sous-traitant exécute pour le compte du responsable. L'hébergeur, l'outil d'emailing, le prestataire de paie traitent des données, mais sur instruction, sans décider des finalités. Le RGPD impose un contrat écrit entre les deux, qui encadre ce que le sous-traitant a le droit de faire.
+
+Le délégué à la protection des données, ou DPO, conseille, surveille la conformité et fait le lien avec l'autorité de contrôle. Il n'est pas le responsable juridique des traitements, il est leur garde-fou interne. Sa nomination est obligatoire pour les organismes publics et pour les structures dont l'activité implique un suivi à grande échelle ou des données sensibles. Il doit pouvoir travailler sans recevoir d'instructions sur la façon de faire son métier.
+
+## les bases légales
+
+Voici un point que beaucoup ratent. Tout traitement doit reposer sur une base légale, et le consentement n'est qu'une de ces bases. Croire qu'il faut toujours une case à cocher est une erreur fréquente, qui mène à demander un accord là où il n'a aucun sens.
+
+| Base légale | Quand elle s'applique |
+| --- | --- |
+| Consentement | La personne a dit oui librement, par exemple une newsletter marketing |
+| Contrat | Le traitement est nécessaire pour exécuter un contrat, comme livrer une commande |
+| Obligation légale | Une loi impose le traitement, par exemple conserver les factures |
+| Intérêt légitime | Un intérêt raisonnable du responsable, équilibré avec les droits des personnes, comme la prévention de la fraude |
+| Mission d'intérêt public | Une autorité exerce une mission qui lui est confiée |
+| Intérêt vital | La vie d'une personne est en jeu, par exemple une urgence médicale |
+
+On choisit une base avant de collecter, pas après. Et on ne peut pas changer de base en cours de route pour rattraper un traitement mal cadré. Si vous traitez une donnée pour exécuter un contrat, vous n'avez pas à demander le consentement : il serait même trompeur de le faire, car la personne ne pourrait pas vraiment dire non sans perdre le service.
+
+## les principes
+
+Au-delà de la base légale, le règlement pose une poignée de principes qui guident tout traitement.
+
+La minimisation : on ne collecte que ce qui sert la finalité. Un formulaire d'inscription à une newsletter n'a aucun besoin de votre date de naissance ni de votre adresse postale. Chaque champ doit se justifier.
+
+La limitation des finalités : on collecte pour un objectif annoncé, et on ne réutilise pas les données pour autre chose sans nouvelle base. Des coordonnées récoltées pour une livraison ne basculent pas d'office dans une campagne publicitaire.
+
+La limitation de conservation : une donnée ne se garde pas indéfiniment. On fixe une durée liée à la finalité, puis on supprime ou on archive. "On garde au cas où" n'est pas une durée.
+
+L'exactitude : les données doivent être justes et tenues à jour, ce qui rejoint le droit de rectification plus bas.
+
+La sécurité et l'intégrité : des mesures techniques et organisationnelles proportionnées protègent les données contre la perte, l'accès non autorisé ou la fuite. Chiffrement, contrôle des accès, journalisation en font partie.
+
+Un dernier principe enveloppe les autres, la responsabilité, ou accountability : il ne suffit pas de respecter les règles, il faut pouvoir le prouver. D'où les registres de traitement, les politiques écrites, les traces de consentement.
+
+## les droits des personnes
+
+C'est ici que le rééquilibrage devient concret. La personne dispose de droits qu'elle peut exercer auprès du responsable de traitement.
+
+| Droit | Ce qu'il permet |
+| --- | --- |
+| Accès | Savoir si on traite ses données et en obtenir une copie |
+| Rectification | Faire corriger une donnée inexacte ou incomplète |
+| Effacement | Demander la suppression, dans les cas prévus (droit à l'oubli) |
+| Portabilité | Récupérer ses données dans un format réutilisable pour les transférer ailleurs |
+| Opposition | Refuser un traitement, notamment la prospection commerciale |
+| Limitation | Geler un traitement le temps de vérifier une contestation |
+
+Le responsable doit répondre sans frais et en principe dans un délai d'un mois à compter de la demande. Ce délai peut être prolongé de deux mois si la demande est complexe ou nombreuse, à condition d'en informer la personne. L'effacement n'est pas absolu : si une obligation légale impose de garder la donnée, par exemple une facture pour le fisc, la suppression attend la fin de cette obligation.
+
+## AIPD et violations
+
+Pour les traitements qui présentent un risque élevé pour les droits et libertés des personnes, le RGPD demande une analyse d'impact relative à la protection des données, l'AIPD (ou DPIA en anglais). On la mène avant de lancer le traitement. Elle décrit ce qu'on fait, évalue la nécessité et la proportionnalité, identifie les risques pour les personnes et les mesures pour les réduire. La vidéosurveillance à grande échelle, le profilage, le traitement de données sensibles en volume sont des cas typiques qui l'exigent.
+
+Quand une violation survient malgré tout, perte, vol, accès illégitime, divulgation de données, le compte à rebours démarre. Le responsable de traitement doit notifier l'autorité de contrôle dans les 72 heures après en avoir pris connaissance, sauf si la violation est peu susceptible d'engendrer un risque pour les personnes. Si le risque est élevé, il faut en plus informer les personnes concernées, et sans délai injustifié.
+
+<Callout type="warning">
+Les 72 heures courent à partir du moment où vous prenez connaissance de la violation, pas du moment où elle s'est produite. D'où l'importance de savoir détecter un incident vite. Ne pas réussir à boucler l'analyse en 72 heures n'autorise pas le silence : on notifie ce qu'on sait, puis on complète. Le retard non justifié, lui, est sanctionnable.
+</Callout>
+
+Tenir un registre des violations, même celles qu'on ne notifie pas, fait partie de la logique de responsabilité.
+
+<ExternalLink href="https://www.cnil.fr/" description="L'autorité française de protection des données, avec des guides pratiques, des modèles de registre et un outil d'aide à l'AIPD">CNIL</ExternalLink>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Une boutique en ligne traite l'adresse d'un client pour lui livrer sa commande. Quelle base légale convient le mieux ?" options={["Le consentement, il faut toujours demander l'accord", "Le contrat, le traitement est nécessaire pour exécuter la vente", "L'intérêt vital, la livraison est urgente", "Aucune base n'est nécessaire pour une livraison"]} correct={1} />
+
+<Quiz id="q-2" question="Sous quel délai un responsable de traitement doit-il notifier une violation à l'autorité de contrôle ?" options={["Immédiatement, dans l'heure", "Dans les 72 heures après en avoir pris connaissance", "Dans un délai d'un mois", "Seulement à la fin de l'enquête interne"]} correct={1} />
+
+<Quiz id="q-3" question="Que permet le droit à la portabilité ?" options={["Faire corriger une donnée inexacte", "Geler un traitement contesté", "Récupérer ses données dans un format réutilisable pour les transférer ailleurs", "Obtenir la suppression définitive de ses données"]} correct={2} />
+
+## à retenir
+
+- Le RGPD n'interdit pas de traiter des données, il encadre le traitement et impose de pouvoir en rendre compte.
+- Une donnée personnelle est toute information permettant d'identifier une personne, directement ou par recoupement. Les données sensibles (santé, opinions, biométrie) sont plus protégées.
+- Trois rôles : le responsable de traitement décide, le sous-traitant exécute, le DPO conseille et contrôle.
+- Tout traitement repose sur une base légale. Le consentement n'en est qu'une parmi six, aux côtés du contrat, de l'obligation légale, de l'intérêt légitime, de la mission publique et de l'intérêt vital.
+- Principes clés : minimisation, limitation des finalités, durée de conservation limitée, exactitude, sécurité, et responsabilité.
+- Droits des personnes : accès, rectification, effacement, portabilité, opposition, limitation. Réponse en principe sous un mois.
+- AIPD avant un traitement à risque élevé ; notification d'une violation à l'autorité sous 72 heures à compter de sa découverte.
+
+OK 06 écrit

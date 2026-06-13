@@ -1,0 +1,103 @@
+---
+refCode: CL-LSN-124-V01
+slug: grc-cadres-normes
+title: "Cadres et normes : ISO 27001, NIST, CIS"
+description: "Comprenez à quoi servent les cadres de sécurité et comment les distinguer : ISO 27001 et son système de management, les cinq fonctions du NIST CSF, les contrôles priorisés du CIS, et lequel choisir."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-122-V01"]
+---
+
+Quand une entreprise décide de prendre sa sécurité au sérieux, la pire idée serait de partir d'une page blanche. Imaginer de zéro la liste des risques, des mesures, des contrôles à mettre en place, c'est se condamner à oublier la moitié des sujets et à passer trois mois sur ce que d'autres ont déjà résolu. Personne ne fait ça. À la place, on s'appuie sur des cadres et des normes que des milliers d'organisations ont éprouvés avant nous.
+
+C'est exactement leur fonction. Un cadre de sécurité, ce n'est pas une contrainte tombée du ciel, c'est un raccourci. Il sert à quatre choses très concrètes. D'abord, ne pas réinventer la roue : on récupère une checklist mûre plutôt que de la construire seul. Ensuite, structurer la démarche : il donne un ordre, un vocabulaire, des étapes. Puis, se faire certifier quand le marché l'exige. Enfin, rassurer les clients et les partenaires, qui veulent une preuve que vous gérez le sujet et pas juste une promesse.
+
+Dans cette leçon, on regarde les trois références que vous croiserez partout : ISO 27001, le NIST CSF et les CIS Controls. Et surtout, comment les distinguer et choisir.
+
+## cadre, norme, certification
+
+Ces trois mots sont souvent mélangés, alors posons-les proprement.
+
+Un **cadre** structure la démarche. Il dit dans quel ordre penser, quelles grandes familles de sujets couvrir, comment parler de votre niveau de maturité. Il vous oriente sans forcément vous imposer un seuil à atteindre. Le NIST CSF est un cadre typique.
+
+Une **norme** pose des exigences. Elle décrit ce qu'une organisation doit avoir en place pour être considérée comme conforme. Elle est plus prescriptive : telle chose doit exister, être documentée, être revue. ISO 27001 est une norme.
+
+Une **certification** atteste que vous respectez ces exigences, vérifié par un tiers indépendant, à un instant donné. Un auditeur vient, regarde vos preuves, et délivre (ou non) un certificat. Le mot clé est « à un instant donné », on y revient plus loin.
+
+<Callout type="info">
+Une image simple : le cadre est le plan de la maison, la norme est le cahier des charges du constructeur, la certification est le procès-verbal de réception signé par un expert le jour de la livraison. Trois objets différents, qui se complètent.
+</Callout>
+
+## ISO 27001
+
+ISO 27001 est une norme internationale. Sa particularité : elle ne se contente pas de lister des mesures de sécurité, elle demande de mettre en place un **système de management de la sécurité de l'information** (souvent abrégé SMSI, ou ISMS en anglais).
+
+Un système de management, c'est une mécanique qui tourne en continu : on identifie les risques, on décide des mesures, on les applique, on mesure si elles marchent, on corrige. La boucle est connue sous le nom de « plan, do, check, act ». L'idée derrière ISO 27001 n'est donc pas « avoir un pare-feu », mais « avoir un processus qui garantit que les bons pare-feux existent, sont suivis et s'améliorent ».
+
+C'est orienté processus et gouvernance, plus que technique pure. Et c'est certifiable : un organisme accrédité peut auditer votre SMSI et délivrer un certificat reconnu mondialement. C'est ce qui en fait la référence quand un client ou un appel d'offres demande une preuve formelle.
+
+## NIST CSF
+
+Le NIST Cybersecurity Framework vient d'une agence américaine, le NIST. C'est un cadre, pas une norme, et il n'y a pas de certification associée. Sa force est de donner un langage commun pour parler de sécurité, organisé autour de cinq fonctions faciles à retenir :
+
+- **Identifier** : connaître ses actifs, ses données, ses risques. On ne protège bien que ce qu'on a recensé.
+- **Protéger** : mettre en place les défenses (accès, chiffrement, formation, sauvegardes).
+- **Détecter** : repérer qu'un incident est en cours (journaux, alertes, supervision).
+- **Répondre** : réagir une fois l'incident détecté (contenir, communiquer, analyser).
+- **Récupérer** : revenir à la normale et tirer les leçons (restauration, retours d'expérience).
+
+Ces cinq fonctions couvrent tout le cycle de vie d'un incident, de l'avant à l'après. Elles servent autant à organiser une feuille de route qu'à dire « où en sommes-nous ? » fonction par fonction. C'est pour ça que beaucoup d'équipes l'utilisent comme grille de discussion avec la direction, même sans viser de certificat.
+
+<ExternalLink href="https://www.nist.gov/cyberframework" description="Le cadre de cybersécurité du NIST, organisé en cinq fonctions">NIST Cybersecurity Framework</ExternalLink>
+
+## CIS Controls
+
+Les CIS Controls sont publiés par le Center for Internet Security. Là où ISO et NIST parlent surtout de méthode, les CIS donnent une **liste priorisée de mesures concrètes** : inventaire des équipements, gestion des comptes, configuration sécurisée, sauvegardes, journalisation, et ainsi de suite.
+
+Leur intérêt tient dans le mot « priorisée ». Les contrôles sont rangés du plus rentable au plus avancé, et regroupés en niveaux d'implémentation selon la taille et le risque de l'organisation. Quand une équipe se demande « par quoi on commence ? », les premiers contrôles CIS donnent une réponse directe et actionnable. C'est le cadre le plus opérationnel des trois, celui qui se traduit le plus vite en tâches concrètes pour une équipe technique.
+
+## lequel choisir
+
+Il n'y a pas de meilleur cadre dans l'absolu. Le bon choix dépend de votre objectif du moment.
+
+| Cadre | Nature | Certifiable | Bon pour | Orientation |
+|-------|--------|-------------|----------|-------------|
+| ISO 27001 | Norme | Oui | Prouver sa conformité, gagner des marchés | Processus, gouvernance |
+| NIST CSF | Cadre | Non | Structurer le discours, mesurer la maturité | Vue d'ensemble, langage commun |
+| CIS Controls | Liste de contrôles | Non | Démarrer vite, agir concrètement | Mesures techniques priorisées |
+
+En résumé : si l'objectif est de vous faire certifier et de rassurer un client par un document officiel, vous regardez ISO 27001. Si vous voulez structurer votre discours et dialoguer avec la direction sur votre niveau de maturité, le NIST CSF est taillé pour ça. Si vous partez de presque rien et voulez agir vite, les CIS Controls vous disent par où commencer.
+
+Et ils ne s'excluent pas. Une organisation peut très bien démarrer avec les CIS pour avancer concrètement, parler au comité de direction avec les cinq fonctions du NIST, puis viser une certification ISO 27001 quand le marché l'exige. Les trois se combinent sans se contredire.
+
+## l'idée reçue
+
+Voici le piège le plus courant : croire qu'« être certifié, c'est être sécurisé ». Ce n'est pas vrai, et le confondre coûte cher.
+
+Une certification est une photo prise un jour donné. L'auditeur vérifie qu'au moment de l'audit, vos processus et vos preuves tiennent la route. Mais la sécurité, elle, vit tous les jours : un mot de passe partagé après l'audit, un serveur oublié, une configuration changée à la va-vite, et le niveau réel baisse sans que le certificat ne change. Le papier reste valide, la réalité non.
+
+<Callout type="warning">
+Un certificat atteste d'un instant et d'un périmètre précis, pas d'une protection permanente sur tout votre système. C'est une preuve utile, jamais une garantie. La vraie sécurité est dans la régularité des pratiques entre deux audits, pas dans le document accroché au mur.
+</Callout>
+
+Autrement dit, la certification est un point de contrôle dans une démarche continue, pas la ligne d'arrivée. Une entreprise certifiée qui relâche ses efforts est vite moins sûre qu'une entreprise non certifiée mais rigoureuse au quotidien.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelle est la différence correcte entre une norme et une certification ?" options={["Une norme atteste qu'on respecte une certification", "Une norme pose des exigences, une certification atteste qu'on les respecte à un instant donné", "Les deux mots désignent exactement la même chose", "Une certification pose des exigences, une norme les vérifie"]} correct={1} />
+
+<Quiz id="q-2" question="Quelles sont les cinq fonctions du NIST Cybersecurity Framework ?" options={["Planifier, exécuter, vérifier, agir, certifier", "Identifier, protéger, détecter, répondre, récupérer", "Inventorier, chiffrer, sauvegarder, auditer, signaler", "Prévenir, bloquer, alerter, isoler, reconstruire"]} correct={1} />
+
+<Quiz id="q-3" question="Une entreprise vient d'obtenir sa certification ISO 27001. Que peut-on en conclure ?" options={["Elle est désormais protégée en permanence contre toute attaque", "Sa sécurité a été validée à un instant donné, sur un périmètre défini, et doit être entretenue", "Elle n'a plus besoin de faire d'efforts de sécurité", "Le certificat garantit qu'aucun incident ne surviendra"]} correct={1} />
+
+## à retenir
+
+- Un cadre de sécurité sert à ne pas repartir de zéro : structurer la démarche, se faire certifier si besoin, rassurer les clients.
+- Trois objets distincts : un cadre structure (NIST CSF), une norme pose des exigences (ISO 27001), une certification atteste qu'on les respecte à un instant donné.
+- ISO 27001 demande un système de management de la sécurité (organiser, mesurer, améliorer en boucle) et se certifie auprès d'un organisme accrédité.
+- Le NIST CSF s'articule autour de cinq fonctions : identifier, protéger, détecter, répondre, récupérer. Pas de certification, mais un langage commun pour parler de maturité.
+- Les CIS Controls sont une liste priorisée de mesures concrètes, idéale pour répondre à « par quoi on commence ? ».
+- Le choix dépend de l'objectif : se certifier oriente vers ISO, structurer le discours vers NIST, agir vite vers CIS. Les trois se combinent.
+- Être certifié n'est pas être sécurisé : un certificat est une photo à un instant, pas une garantie permanente. La sécurité réelle se joue dans la régularité entre deux audits.
