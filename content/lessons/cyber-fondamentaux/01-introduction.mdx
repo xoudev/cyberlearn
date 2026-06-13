@@ -1,0 +1,99 @@
+---
+refCode: CL-LSN-073-V01
+slug: cyber-introduction
+title: "La cybersécurité : de quoi on parle vraiment"
+description: "Dépassez les clichés : ce qu'est réellement la cybersécurité, qui elle concerne, la différence entre une menace, une vulnérabilité et un risque, et le rôle des attaquants et des défenseurs."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 200
+prerequisites: []
+---
+
+Quand on dit « cybersécurité », beaucoup de gens voient la même image : un type encapuchonné dans une pièce sombre, des lignes de code vertes qui défilent, et une grande banque qui se fait braquer en quelques secondes. C'est une image de film. Elle est fausse sur presque tous les points, et surtout elle vous fait croire que ça ne vous concerne pas.
+
+La réalité est plus banale et plus proche de vous. La cybersécurité, c'est ce qui protège votre boîte mail quand quelqu'un essaie de deviner votre mot de passe. C'est ce qui empêche un inconnu de lire vos messages quand vous êtes sur le wifi d'un café. C'est aussi ce qui fait qu'un petit garage de quartier, avec son ordinateur de caisse et son logiciel de gestion, ne se retrouve pas un matin avec tous ses fichiers chiffrés et une demande de rançon. Les banques ont des équipes entières pour ça. Le garage, lui, n'a souvent personne. Devinez qui se fait attaquer le plus facilement.
+
+Pendant ce parcours, on va construire une compréhension solide, sans jargon inutile et sans dramatisation. Cette première leçon pose les bases : le vocabulaire, les rôles, et la bonne manière de penser le sujet.
+
+## ce que la sécurité cherche à protéger
+
+Avant de parler d'attaques, il faut savoir ce qu'on défend. La cybersécurité protège deux choses : des données (vos informations) et des systèmes (les machines et logiciels qui les traitent). Et elle les protège contre trois types d'événements : qu'on y accède sans autorisation, qu'on les modifie sans autorisation, ou qu'on les détruise ou les rende indisponibles.
+
+Un modèle mental utile, que vous reverrez partout, résume ça en trois mots :
+
+- la confidentialité : seules les bonnes personnes peuvent lire l'information. Votre médecin voit votre dossier, votre voisin non.
+- l'intégrité : l'information n'est pas modifiée dans votre dos. Le montant d'un virement ne change pas entre le moment où vous le validez et celui où il arrive.
+- la disponibilité : le système répond quand vous en avez besoin. Un site de billetterie qui tombe en panne le jour de l'ouverture des ventes, c'est un problème de disponibilité.
+
+Retenez ces trois mots. Presque chaque incident que vous croiserez touche au moins l'un d'eux. Quand un attaquant vole une base de clients, il casse la confidentialité. Quand il trafique des relevés, il casse l'intégrité. Quand il bloque un site sous une avalanche de requêtes, il casse la disponibilité.
+
+## menace, vulnérabilité, risque
+
+Ces trois mots sont employés comme synonymes dans la presse, et c'est une source de confusion. Ils décrivent des choses différentes. Prenons une analogie volontairement simple : votre logement.
+
+Une vulnérabilité, c'est une faiblesse. Une serrure bas de gamme qui s'ouvre avec une carte bancaire. Une fenêtre du rez-de-chaussée qui ne ferme pas bien. La faiblesse existe que quelqu'un en profite ou non.
+
+Une menace, c'est ce qui pourrait exploiter cette faiblesse. Le cambrioleur qui passe dans la rue et repère la fenêtre. La menace est extérieure, elle a une intention ou une cause.
+
+Le risque, c'est la combinaison des deux, pondérée par ce que vous avez à perdre. Une serrure faible sur une cabane à outils vide, le risque est faible. La même serrure sur un coffre rempli de bijoux dans un quartier ciblé par les cambriolages, le risque est élevé.
+
+En informatique, c'est exactement pareil. Un logiciel pas mis à jour est une vulnérabilité. Un groupe qui scanne Internet à la recherche de ce logiciel précis est une menace. Le risque dépend de ce que ce logiciel protège et de la probabilité réelle qu'on s'en prenne à vous.
+
+<Callout type="info">
+Formule à garder en tête : le risque grandit quand la vulnérabilité et la menace augmentent, et quand la valeur de ce qui est exposé augmente. Supprimez l'un de ces trois facteurs et le risque chute. C'est pour ça qu'on ne peut pas tout sécuriser à fond : on traite d'abord les risques qui combinent une vraie faiblesse, un attaquant motivé, et quelque chose qui compte.
+</Callout>
+
+## attaquants et défenseurs
+
+Il y a deux grands rôles dans ce domaine, et le métier les a baptisés par couleur. La red team, ce sont ceux qui attaquent, souvent pour le compte d'une entreprise qui veut tester ses propres défenses. La blue team, ce sont ceux qui défendent : ils surveillent, détectent, réparent. Un bon défenseur pense comme un attaquant, et un bon attaquant comprend comment fonctionne la défense. Les deux ont besoin l'un de l'autre.
+
+Quant aux vrais attaquants, ceux qui ne sont pas dans une équipe de test, leurs motivations sont rarement spectaculaires. Inutile de les romantiser. Dans la grande majorité des cas, c'est l'argent : rançongiciels, fraude bancaire, revente de données. Vient ensuite l'espionnage, qu'il soit industriel ou étatique, pour voler des secrets ou surveiller. Il y a aussi l'idéologie, des groupes qui attaquent pour faire passer un message. Et parfois, plus simplement, la curiosité ou le défi technique, surtout chez les débutants. Comprendre la motivation aide à anticiper la cible : un voleur d'argent vise large et automatise, un espion vise précis et reste discret.
+
+<Diagram caption="Le rapport de force entre l'attaquant et le défenseur autour d'un système">
+flowchart LR
+  [Attaquant: cherche une faille] --> [Système exposé]
+  [Système exposé] --> [Defenseur: surveille et corrige]
+  [Defenseur: surveille et corrige] --> [Faille corrigee]
+  [Faille corrigee] --> [Attaquant: cherche une faille]
+</Diagram>
+
+Ce schéma boucle volontairement. La sécurité n'est pas un état qu'on atteint une fois pour toutes, c'est un travail qui ne s'arrête jamais. On corrige une faille, l'attaquant en cherche une autre, on surveille à nouveau.
+
+## les grands domaines
+
+La cybersécurité n'est pas un bloc unique, et personne ne maîtrise tout. Le domaine se découpe en spécialités, qui sont surtout là pour situer la suite de votre apprentissage.
+
+La sécurité réseau s'intéresse à la circulation des données entre les machines : qui parle à qui, sur quels canaux, et comment empêcher une écoute ou une interception. La sécurité web se concentre sur les sites et applications, là où se trouvent aujourd'hui une bonne partie des attaques, parce que c'est ce qui est exposé au public. La sécurité des systèmes regarde les machines elles-mêmes, leurs systèmes d'exploitation, leurs configurations, leurs droits d'accès.
+
+Et puis il y a la dimension humaine, l'ingénierie sociale. Manipuler une personne pour qu'elle ouvre la porte, c'est souvent plus simple que de casser une serrure technique. Un faux mail du « service informatique » qui réclame un mot de passe fonctionne encore très bien. On y reviendra longuement, parce que c'est le terrain où les débutants comme les experts se font avoir.
+
+## pourquoi c'est l'affaire de tous
+
+Voici l'idée la plus importante de cette leçon. On imagine que les attaques réussissent grâce à une technique de génie. Dans les faits, une grande partie des incidents vient de quelque chose de bien plus ordinaire : une erreur humaine ou une mauvaise configuration.
+
+Un mot de passe réutilisé sur dix sites. Une pièce jointe ouverte trop vite. Un serveur laissé accessible sur Internet avec les réglages par défaut. Une sauvegarde qu'on croyait active et qui ne l'était plus depuis des mois. Aucune de ces situations ne demande un attaquant brillant. Elle demande juste un attaquant patient, et une organisation qui a baissé la garde sur un détail.
+
+<Callout type="warning">
+L'erreur humaine et les mauvaises configurations sont la cause de la majorité des incidents réels, loin devant les attaques techniques sophistiquées. La bonne nouvelle, c'est que ce sont aussi les plus faciles à corriger : des mots de passe uniques, des mises à jour appliquées, une pincée de méfiance face aux mails inattendus. Vous n'avez pas besoin d'être un expert pour fermer la plupart des portes.
+</Callout>
+
+C'est précisément pour ça que la sécurité concerne tout le monde, et pas seulement les spécialistes. Le développeur qui code proprement, l'employé qui repère un mail douteux, l'administrateur qui désactive un compte inutilisé : chacun ferme une porte. La technique pointue viendra plus tard dans ce parcours. Les réflexes de base, eux, comptent dès aujourd'hui.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Une serrure de mauvaise qualité sur votre porte, comment l'appelle-t-on dans le vocabulaire de la sécurité ?" options={["Une menace", "Une vulnérabilité", "Un risque", "Une attaque"]} correct={1} />
+
+<Quiz id="q-2" question="Parmi ces trois objectifs, lequel est touché quand un attaquant rend un site web inaccessible en le saturant de requêtes ?" options={["La confidentialité", "L'integrite", "La disponibilite", "L'authentification"]} correct={2} />
+
+<Quiz id="q-3" question="D'apres cette lecon, quelle est la cause la plus frequente des incidents de securite reels ?" options={["Des techniques d'attaque tres avancees", "Les erreurs humaines et les mauvaises configurations", "Le manque d'antivirus payant", "La puissance des ordinateurs des attaquants"]} correct={1} />
+
+## à retenir
+
+- La cybersécurité protège des données et des systèmes contre l'accès, la modification et la destruction non autorisés. Trois objectifs reviennent partout : confidentialité, intégrité, disponibilité.
+- Une vulnérabilité est une faiblesse, une menace est ce qui pourrait l'exploiter, le risque combine les deux avec la valeur de ce qui est exposé. Ce ne sont pas des synonymes.
+- Les attaquants agissent surtout pour l'argent, parfois pour l'espionnage, l'idéologie ou la curiosité. La défense (blue team) et l'attaque de test (red team) se complètent.
+- Le domaine se découpe en spécialités : réseau, web, systèmes, et facteur humain (ingénierie sociale).
+- La majorité des incidents viennent d'erreurs humaines et de mauvaises configurations, pas de prouesses techniques. La sécurité concerne donc tout le monde, à tous les niveaux.
+
+OK 01-introduction.mdx écrit

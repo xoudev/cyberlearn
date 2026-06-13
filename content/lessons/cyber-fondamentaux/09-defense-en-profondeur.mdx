@@ -1,0 +1,96 @@
+---
+refCode: CL-LSN-081-V01
+slug: cyber-defense-en-profondeur
+title: "Défense en profondeur et moindre privilège"
+description: "Découvrez deux principes qui structurent la défense : empiler plusieurs couches de protection qui se rattrapent l'une l'autre, et n'accorder à chacun que les droits strictement nécessaires."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 400
+prerequisites: ["CL-LSN-074-V01"]
+---
+
+Une question revient sans arrêt quand on débute en sécurité : quelle est la meilleure protection ? Le meilleur pare-feu, le meilleur antivirus, le meilleur mot de passe ? La réponse va te décevoir un peu. Il n'y en a pas. Aucune protection ne tient toute seule. Les attaquants finissent toujours par trouver une faille quelque part, un bug oublié, un mot de passe réutilisé, un employé qui clique sur le mauvais lien un mardi matin.
+
+L'idée derrière les deux principes de cette leçon n'est donc pas de construire un mur infranchissable. Ce mur n'existe pas. L'idée est d'organiser plusieurs protections de manière à ce que la chute de l'une ne donne pas tout à l'attaquant. Tu vas voir deux façons complémentaires d'y arriver : empiler les couches, et limiter ce que chacun peut faire.
+
+## la défense en profondeur
+
+Pense à un château fort. Il n'y a jamais un seul obstacle. D'abord les douves, large fossé qu'on ne traverse pas à la nage avec une armure. Puis la muraille extérieure. Puis des gardes qui patrouillent. Puis le donjon, et tout au fond, le coffre verrouillé. Un assaillant qui franchit les douves se heurte au mur. S'il passe le mur, les gardes le repèrent. Chaque couche n'a pas besoin d'être parfaite. Elle doit juste ralentir et compliquer la tâche assez longtemps pour que la couche suivante prenne le relais.
+
+En informatique, c'est exactement le même raisonnement. On ne mise pas tout sur une seule barrière. On en met plusieurs, de natures différentes, à des endroits différents.
+
+<Diagram caption="Les couches de défense qu'un attaquant doit franchir une par une">
+flowchart TD
+  A[Attaquant sur Internet] --> B[Pare-feu : filtre le trafic réseau]
+  B --> C[Authentification : qui es-tu]
+  C --> D[Mot de passe + 2FA : deux preuves]
+  D --> E[Permissions : as-tu le droit]
+  E --> F[Chiffrement : données illisibles si volées]
+  F --> G[Surveillance : journaux et alertes]
+  G --> H[Donnée protégée]
+</Diagram>
+
+Ce qui compte ici, c'est que les couches soient de natures variées. Un pare-feu filtre le réseau. L'authentification vérifie l'identité. Le chiffrement protège les données même si quelqu'un met la main dessus. La surveillance détecte ce qui passe quand même. Si tu empiles dix pare-feu identiques, tu n'as pas dix couches, tu en as une seule, dupliquée. La même faille les traverse tous d'un coup.
+
+<Callout type="info">
+Une bonne défense en profondeur mélange des protections de types différents : prévention (empêcher), détection (repérer) et réaction (limiter les dégâts). Trois protections du même genre laissent le même angle mort.
+</Callout>
+
+## pourquoi une seule couche ne suffit pas
+
+Prenons un cas très ordinaire. Tu protèges l'accès à un compte avec un mot de passe. C'est une couche. Le problème, c'est que les mots de passe fuient tout le temps : bases de données piratées, hameçonnage, réutilisation du même mot de passe sur dix sites. Le jour où celui-ci fuite, ta couche unique est tombée, et l'attaquant entre comme chez lui.
+
+Maintenant ajoute une deuxième couche : le 2FA, l'authentification à deux facteurs. Même avec le bon mot de passe, l'attaquant doit aussi fournir un code généré sur ton téléphone. Le mot de passe a fuité ? Le 2FA rattrape. La couche tombée n'a pas suffi parce qu'une autre tenait derrière.
+
+C'est ça, l'effet recherché. On ne suppose jamais qu'une couche va résister. On suppose le contraire : un jour, chacune tombera. La question devient alors « et quand celle-là tombe, qu'est-ce qui arrête l'attaquant ? ». Si la réponse est « rien », il manque une couche.
+
+Un exemple plus large. Un attaquant entre sur un serveur web par un bug du logiciel. Première couche tombée. Mais le compte qui faisait tourner ce serveur n'a presque aucun droit. L'attaquant est coincé, il ne peut rien lire d'intéressant. Deuxième couche, et on arrive justement au second principe.
+
+## le moindre privilège
+
+Le moindre privilège dit une chose simple : chaque utilisateur, chaque service, chaque programme reçoit uniquement les droits dont il a besoin pour son travail, et rien de plus. Pas « par sécurité on lui donne tout, comme ça il ne sera jamais bloqué ». L'inverse exactement.
+
+Reprends le serveur web de tout à l'heure. À quoi sert un serveur web ? À lire des pages et à les envoyer aux visiteurs. Il n'a aucune raison de pouvoir supprimer des comptes, modifier le système ou lire les fichiers des autres services. Pourtant, par facilité, beaucoup de gens font tourner ces services en administrateur, avec tous les droits. Le jour où le service est compromis, l'attaquant hérite de tous ces droits d'un coup. S'il tournait avec un compte limité, le même bug ne lui aurait donné presque rien.
+
+<Callout type="info">
+Le moindre privilège réduit la surface de dégâts. Une faille reste une faille, mais si le compte touché ne peut presque rien faire, l'attaquant non plus. On limite ce qu'une intrusion réussie permet d'atteindre.
+</Callout>
+
+Tu as déjà croisé ce principe sans le nommer, avec les permissions Linux. Les droits lecture, écriture et exécution attribués à un propriétaire, un groupe et les autres, c'est exactement du moindre privilège appliqué aux fichiers. On ne met pas tout en accès libre. On donne à chaque fichier les droits justes, pour les bonnes personnes. Le principe est le même, juste à plus grande échelle.
+
+## des exemples de moindre privilège
+
+Le plus courant : utiliser un compte normal au quotidien, et un compte administrateur seulement quand on en a vraiment besoin. Tu navigues, tu lis tes mails, tu travailles avec un compte limité. Si un malware s'exécute pendant ta session, il n'a pas les droits pour s'installer en profondeur. Tu ne passes en administrateur que le temps d'installer un logiciel, puis tu reviens.
+
+Sur les serveurs, chaque service tourne sous son propre compte dédié, sans rapport avec les autres. Le service de base de données a son compte, le serveur web a le sien. Si l'un est compromis, l'attaquant est enfermé dans ce périmètre et ne peut pas sauter sur le voisin.
+
+Côté clés et accès, on donne des autorisations à portée limitée. Une clé d'API qui sert juste à lire des données ne reçoit pas le droit d'en effacer. Un accès temporaire qui expire vaut mieux qu'un accès permanent qu'on oublie d'enlever. À chaque fois, la logique est la même : le strict nécessaire, pas un cran de plus.
+
+## la sécurité est un processus, pas un produit
+
+Voici l'idée reçue qu'il faut corriger. Beaucoup de gens croient qu'on « achète » la sécurité. On installe un antivirus, on branche un pare-feu, et voilà, on est protégé, dossier classé. C'est faux, et c'est une croyance qui coûte cher.
+
+Un antivirus ne connaît que les menaces qu'on lui a apprises. Un pare-feu n'applique que les règles qu'on lui a données, et il ne voit rien de ce qui passe par un canal autorisé. Ces outils sont utiles, ce sont des couches valables, mais ce ne sont que des couches. Aucun ne pense à ta place.
+
+La sécurité tient dans ce qu'on fait dans la durée : appliquer les mises à jour quand un bug est corrigé, retirer les accès des gens qui partent, vérifier les journaux, changer les mots de passe quand une fuite est annoncée, réfléchir à deux fois avant de cliquer. Aucune de ces choses ne s'achète. Ce sont des habitudes, et elles ne s'arrêtent jamais. Une configuration parfaite aujourd'hui sera dépassée dans six mois si personne ne la maintient.
+
+<Callout type="warning">
+Méfie-toi du discours « ce produit règle votre sécurité ». Aucun outil ne couvre tout, et un outil mal configuré ou jamais mis à jour donne une fausse impression de protection, ce qui est parfois pire que pas de protection du tout. L'outil aide, les pratiques décident.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quel est le but principal de la défense en profondeur ?" options={["Construire une seule protection parfaite et infranchissable", "Empiler plusieurs couches pour que la chute de l'une soit rattrapée par les autres", "Acheter le pare-feu le plus cher du marché", "Cacher complètement le serveur d'Internet"]} correct={1} />
+
+<Quiz id="q-2" question="Un service web est compromis par un bug. Sous quel compte limite-t-il le mieux les dégâts ?" options={["Un compte administrateur avec tous les droits", "Le compte d'un autre service du serveur", "Un compte dédié avec uniquement les droits nécessaires à son travail", "Le compte personnel d'un employé"]} correct={2} />
+
+<Quiz id="q-3" question="Pourquoi dit-on que la sécurité est un processus et non un produit ?" options={["Parce qu'elle repose sur des pratiques continues que nul outil ne remplace", "Parce que les produits de sécurité sont toujours inutiles", "Parce qu'un seul antivisus suffit à tout couvrir", "Parce que le chiffrement rend toute autre mesure inutile"]} correct={0} />
+
+## à retenir
+
+- Aucune protection ne tient seule. La défense en profondeur empile des couches de natures différentes pour que la chute de l'une soit rattrapée par une autre.
+- Pour être utiles, les couches doivent varier : prévention, détection, réaction. Dix protections identiques partagent la même faille.
+- Le moindre privilège donne à chaque utilisateur, service ou programme uniquement les droits nécessaires, rien de plus. Une intrusion réussie fait alors moins de dégâts.
+- Les permissions Linux sont du moindre privilège appliqué aux fichiers. Comptes limités au quotidien, un compte par service, clés à portée restreinte : même logique partout.
+- La sécurité ne s'achète pas. Les outils sont des couches utiles, mais ce sont les pratiques continues, mises à jour, vérifications, retrait des accès, qui font la protection réelle.

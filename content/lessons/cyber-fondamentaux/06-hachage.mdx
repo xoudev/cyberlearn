@@ -1,0 +1,151 @@
+---
+refCode: CL-LSN-078-V01
+slug: cyber-hachage
+title: "Hachage et stockage des mots de passe"
+description: "Comprenez ce qu'est une fonction de hachage à sens unique, pourquoi un site ne stocke jamais votre mot de passe en clair, la différence entre hachage et chiffrement, et le rôle du sel."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 450
+prerequisites: ["CL-LSN-077-V01"]
+---
+
+Quand tu te connectes à un site, tu tapes ton mot de passe et le site répond « ok, c'est bien toi ». Mais voici la question gênante : pour vérifier que ton mot de passe est correct, est-ce que le site doit le connaître ? On a tendance à penser que oui. Et pourtant, un site bien fait ne stocke jamais ton mot de passe en clair. Il ne l'a même pas dans sa base de données. Comment fait-il alors pour te reconnaître ?
+
+La réponse tient en un mot : le hachage. C'est une des idées les plus utiles de la sécurité, et une fois que tu l'as comprise, beaucoup de choses deviennent limpides.
+
+## une fonction de hachage
+
+Une fonction de hachage prend une entrée de n'importe quelle taille (un mot, une phrase, un fichier entier) et produit en sortie une empreinte de taille fixe. Pour SHA-256, cette empreinte fait toujours 256 bits, soit 64 caractères hexadécimaux, que tu lui donnes trois lettres ou un roman complet.
+
+Trois propriétés comptent. La même entrée produit toujours la même empreinte. Une petite modification de l'entrée change complètement l'empreinte. Et surtout, à partir de l'empreinte seule, on ne peut pas remonter à l'entrée. C'est ce qu'on appelle le sens unique.
+
+Essaie par toi-même. Lance ce code, puis change une seule lettre dans le mot et relance.
+
+<CodePlayground language="python" starterCode={`import hashlib
+
+mot = "motdepasse"
+empreinte = hashlib.sha256(mot.encode()).hexdigest()
+print(empreinte)
+print("longueur :", len(empreinte))
+
+# Change une lettre et observe : tout change
+print(hashlib.sha256("motdepassf".encode()).hexdigest())`} />
+
+Tu remarques deux choses. L'empreinte fait toujours 64 caractères. Et changer une seule lettre donne une empreinte qui n'a rien à voir avec la première. Il n'y a pas de « presque pareil » en hachage.
+
+<Callout type="info">
+Le sens unique n'est pas une question de difficulté technique qu'on finira par contourner. C'est mathématique : l'empreinte fait toujours la même taille, alors que les entrées possibles sont infinies. Une infinité d'entrées différentes mènent forcément à la même empreinte. Reconstruire l'entrée d'origine à partir de l'empreinte n'a donc pas de réponse unique. C'est l'inverse du chiffrement.
+</Callout>
+
+## hachage n'est pas chiffrement
+
+C'est la confusion la plus fréquente, et elle vaut la peine d'être corrigée nettement.
+
+Le chiffrement est réversible. Tu chiffres un message avec une clé, et quiconque possède la bonne clé peut le déchiffrer pour retrouver le message d'origine. C'est tout l'intérêt : tu veux pouvoir récupérer le contenu plus tard. Un message chiffré, c'est une boîte fermée à clé, et la clé existe.
+
+Le hachage n'est pas réversible, et c'est volontaire. Il n'y a pas de clé, pas de fonction inverse, rien qui permette de « déhacher ». L'empreinte n'est pas une version cachée du mot de passe qu'on pourrait rouvrir. C'est une trace, comme une empreinte digitale : elle t'identifie sans contenir ton doigt.
+
+<Callout type="warning">
+Si quelqu'un te dit « le site a déchiffré mon mot de passe » ou « on peut décoder un hachage », méfie-toi du vocabulaire. On ne déchiffre pas une empreinte. Au mieux, on devine l'entrée en testant des candidats jusqu'à tomber sur la même empreinte. Ce n'est pas de la réversion, c'est de la force brute. La nuance change tout pour comprendre les attaques.
+</Callout>
+
+## comment un site vérifie un mot de passe
+
+Voici le mécanisme complet, sans magie. À l'inscription, le site hache ton mot de passe et range uniquement l'empreinte dans sa base. Le mot de passe lui-même est jeté, il ne reste nulle part. À la connexion, le site hache ce que tu viens de taper et compare cette nouvelle empreinte à celle qu'il avait stockée. Si les deux correspondent, c'est que tu as tapé le bon mot de passe.
+
+<Diagram>
+[Inscription] --> [Tu choisis un mot de passe]
+[Tu choisis un mot de passe] --> [Le site calcule l'empreinte]
+[Le site calcule l'empreinte] --> [Stockage de l'empreinte seule]
+[Stockage de l'empreinte seule] --> [Le mot de passe en clair est jete]
+
+[Connexion] --> [Tu retapes ton mot de passe]
+[Tu retapes ton mot de passe] --> [Le site recalcule l'empreinte]
+[Le site recalcule l'empreinte] --> [Comparaison avec l'empreinte stockee]
+[Comparaison avec l'empreinte stockee] --> [Identiques : acces autorise]
+[Comparaison avec l'empreinte stockee] --> [Differentes : acces refuse]
+</Diagram>
+
+La conséquence est intéressante. Si la base de données du site fuite, l'attaquant récupère des empreintes, pas des mots de passe. Et comme le hachage est à sens unique, il ne peut pas les rouvrir directement. C'est exactement pour cette raison qu'on hache. Mais attention, « pas directement » ne veut pas dire « jamais », et c'est là que la suite devient importante.
+
+## le problème des hachages nus
+
+Hacher tel quel pose deux problèmes concrets.
+
+Premier problème : deux personnes qui choisissent le même mot de passe obtiennent exactement la même empreinte. Si l'attaquant voit deux comptes avec la même empreinte, il sait qu'ils partagent le même mot de passe. Et s'il devine l'un, il a les deux.
+
+Deuxième problème, plus sérieux : les tables précalculées. Rien n'empêche un attaquant de hacher à l'avance des millions de mots de passe courants (`123456`, `password`, `azerty`, et toutes leurs variantes) et de stocker ces correspondances dans une énorme table. On appelle ces tables des rainbow tables. Quand il récupère une base d'empreintes, il n'a plus qu'à chercher chaque empreinte dans sa table. Pas de calcul à faire, juste une recherche. Les empreintes nues de mots de passe faibles tombent en quelques secondes.
+
+<CodePlayground language="python" starterCode={`import hashlib
+
+# Deux utilisateurs, meme mot de passe -> meme empreinte
+alice = hashlib.sha256("azerty123".encode()).hexdigest()
+bob   = hashlib.sha256("azerty123".encode()).hexdigest()
+
+print(alice)
+print(bob)
+print("Empreintes identiques ?", alice == bob)`} />
+
+Il manque donc quelque chose pour casser cette régularité. Ce quelque chose, c'est le sel.
+
+## le sel
+
+Le sel est une valeur aléatoire, différente pour chaque utilisateur, qu'on ajoute au mot de passe avant de le hacher. Au lieu de hacher `motdepasse`, on hache `motdepasse` collé à un sel unique. Le sel n'est pas secret : on le range à côté de l'empreinte dans la base. Son but n'est pas d'être caché, mais d'être unique.
+
+Que change cette valeur ? Deux choses, qui répondent pile aux deux problèmes du dessus. Deux personnes avec le même mot de passe ont désormais des empreintes différentes, parce que leurs sels diffèrent. Et les rainbow tables deviennent inutiles : l'attaquant aurait dû précalculer ses millions de mots de passe pour chaque sel possible, ce qui revient à tout recommencer pour chaque utilisateur.
+
+<CodePlayground language="python" starterCode={`import hashlib
+
+mot = "azerty123"
+
+# Meme mot, deux sels differents -> deux empreintes differentes
+empreinte_alice = hashlib.sha256(("sel_alice_x9f2" + mot).encode()).hexdigest()
+empreinte_bob   = hashlib.sha256(("sel_bob_k71q" + mot).encode()).hexdigest()
+
+print(empreinte_alice)
+print(empreinte_bob)
+print("Toujours identiques ?", empreinte_alice == empreinte_bob)`} />
+
+<Callout type="info">
+En vrai, le sel se génère avec un vrai générateur aléatoire (le module `secrets` en Python, pas `random`). Ici on a écrit des sels en dur juste pour montrer l'effet. L'idée à retenir : un sel par utilisateur, stocké en clair à côté de l'empreinte, jamais réutilisé.
+</Callout>
+
+## les bonnes fonctions pour les mots de passe
+
+Le sel règle la question des tables précalculées, mais il reste un détail qui dérange. SHA-256 est rapide, très rapide. C'est une qualité quand on hache un fichier de plusieurs gigaoctets, c'est un défaut quand on protège un mot de passe. Un attaquant qui a volé la base peut tester des milliards de candidats par seconde sur du bon matériel. Le sel l'oblige à attaquer chaque compte séparément, mais s'il vise un compte précis, la vitesse de SHA-256 joue contre toi.
+
+La parade est de ralentir volontairement. On n'utilise pas SHA-256 seul pour les mots de passe. On utilise des fonctions conçues pour être lentes et coûteuses en mémoire : bcrypt, scrypt, et aujourd'hui argon2, qui est le choix recommandé pour les nouveaux projets. Elles intègrent déjà le sel et un facteur de coût réglable. Tu peux décider qu'un hachage prendra, disons, un dixième de seconde. Imperceptible pour ton utilisateur qui se connecte une fois. Ruineux pour l'attaquant qui voulait en tester des milliards.
+
+Retiens la règle pratique : SHA-256 pour vérifier l'intégrité d'un fichier, oui. SHA-256 pour stocker un mot de passe, non, on prend argon2 ou bcrypt.
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Pourquoi un hachage est-il dit à sens unique ?" options={["Parce qu'on peut le déchiffrer avec la bonne clé", "Parce qu'on ne peut pas reconstruire l'entrée d'origine à partir de l'empreinte", "Parce qu'il ne fonctionne que dans un seul navigateur", "Parce qu'il change à chaque fois pour la même entrée"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle est la différence clé entre hachage et chiffrement ?" options={["Le hachage est plus rapide mais sinon ils sont identiques", "Le chiffrement est réversible avec une clé, le hachage ne l'est pas", "Le hachage utilise une clé secrète, pas le chiffrement", "Il n'y a aucune différence, ce sont deux mots pour la même chose"]} correct={1} />
+
+<Quiz id="q-3" question="À quoi sert le sel ajouté avant de hacher un mot de passe ?" options={["À rendre l'empreinte plus courte", "À chiffrer le mot de passe une seconde fois", "À rendre chaque empreinte unique et à casser les tables précalculées", "À cacher le mot de passe dans un endroit secret de la base"]} correct={2} />
+
+</QuizGroup>
+
+<PythonChallenge id="py-1" title="Hacher un mot de passe" description="Écris une fonction qui renvoie l'empreinte SHA-256 d'un mot, sous forme hexadécimale. Indice : encode() puis hexdigest()." starterCode="import hashlib
+
+def solution(mot):
+    pass" tests={[{ input: "solution('abc')", expected: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" }, { input: "solution('hello')", expected: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824" }]} />
+
+## à retenir
+
+Une fonction de hachage transforme une entrée de taille quelconque en une empreinte de taille fixe, et elle est à sens unique : on ne remonte pas de l'empreinte à l'entrée.
+
+Hachage n'est pas chiffrement. Le chiffrement se déchiffre avec une clé, le hachage ne se « déhache » pas.
+
+Un site ne stocke pas ton mot de passe en clair. Il stocke son empreinte, et à la connexion il compare l'empreinte de ce que tu tapes à celle qu'il a gardée.
+
+Les empreintes nues sont vulnérables : mêmes mots de passe donnent mêmes empreintes, et les rainbow tables cassent les mots de passe faibles. Le sel, une valeur aléatoire unique par utilisateur, supprime ces deux faiblesses.
+
+Pour les mots de passe, on n'utilise pas SHA-256 seul. On prend des fonctions lentes et salées par conception comme argon2 ou bcrypt, qui rendent les attaques par force brute trop coûteuses.
+
+OK 06-hachage.mdx écrit

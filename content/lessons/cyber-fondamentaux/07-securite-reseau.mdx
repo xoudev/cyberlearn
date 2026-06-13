@@ -1,0 +1,98 @@
+---
+refCode: CL-LSN-079-V01
+slug: cyber-securite-reseau
+title: "Sécurité réseau : ports, pare-feu et chiffrement en transit"
+description: "Comprenez comment les machines communiquent par ports, le rôle d'un pare-feu, la différence entre HTTP et HTTPS, et pourquoi le chiffrement en transit protège vos données sur le réseau."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 400
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Quand deux machines se parlent sur un réseau, elles ne se contentent pas de connaître l'adresse l'une de l'autre. Une adresse IP dit où se trouve la machine. Mais une même machine peut héberger un serveur web, un serveur de mail et un service de base de données en même temps. Comment savoir à qui s'adresse un message qui arrive ? La réponse tient dans un seul nombre : le port.
+
+Imaginez un immeuble. L'adresse IP, c'est le numéro de l'immeuble dans la rue. Les ports, ce sont les portes numérotées des appartements. Le facteur arrive à la bonne adresse, puis frappe à la bonne porte. Chaque service écoute derrière sa porte et ne répond qu'aux messages qui lui sont destinés. Comprendre cette idée, c'est déjà comprendre une chose centrale en sécurité : ce que vous exposez sur un réseau, ce sont des portes ouvertes, et chaque porte ouverte est une entrée possible.
+
+## les ports
+
+Un port est un numéro compris entre 0 et 65535. Par convention, certains services utilisent toujours le même. Quelques-uns à connaître par coeur :
+
+- 80 : HTTP (web en clair)
+- 443 : HTTPS (web chiffré)
+- 22 : SSH (administration à distance)
+- 53 : DNS (résolution de noms)
+- 25 : SMTP (envoi de mail)
+
+Quand un service est lancé, on dit qu'il écoute sur un port. Un serveur web écoute sur le 443, attend des connexions, et répond. Tant que personne n'écoute sur un port, ce port est fermé : un message qui arrive dessus tombe dans le vide.
+
+La première question d'un attaquant face à une machine est donc simple : quelles portes sont ouvertes ? La première question d'un défenseur est la même, posée à l'envers : quelles portes ai-je laissées ouvertes sans le vouloir ? Sur votre propre machine, vous pouvez lister les ports en écoute.
+
+<SimulatedTerminal shell="bash" scenario="network-recon" title="Voir les ports en écoute sur sa machine" />
+
+<Callout type="info">
+Un port ouvert n'est pas un problème en soi. Le port 443 de votre serveur web doit être ouvert, c'est son métier. Le problème, c'est le port ouvert que vous aviez oublié : une base de données accessible depuis Internet, un service de test laissé en route, une vieille console d'administration. La sécurité réseau commence par savoir exactement ce qui écoute.
+</Callout>
+
+## le pare-feu
+
+Un pare-feu est un filtre placé entre un réseau et le reste du monde. Il regarde chaque paquet qui veut entrer ou sortir et décide, selon des règles, de le laisser passer ou de le jeter. La règle la plus saine est celle du tout fermé par défaut : on bloque tout, puis on ouvre uniquement ce qui est nécessaire.
+
+Concrètement, un pare-feu raisonne souvent en termes de port et de provenance. Une règle typique dit : autoriser les connexions entrantes vers le port 443 depuis n'importe où, autoriser le port 22 seulement depuis l'adresse IP du bureau, refuser tout le reste. Résultat : même si votre base de données écoute sur son port, personne depuis Internet ne peut l'atteindre, parce que le pare-feu jette ces paquets avant qu'ils n'arrivent.
+
+C'est une protection solide, mais elle a une limite qu'on oublie souvent.
+
+<Callout type="warning">
+Un pare-feu ne suffit pas. Il filtre selon des règles sur les ports et les adresses, mais il laisse passer ce qui est autorisé sans regarder dans le détail. Si votre serveur web écoute sur le 443 et que le pare-feu laisse passer le 443, alors une attaque qui arrive par le 443 traverse le pare-feu sans difficulté. Le pare-feu protège la porte d'entrée, pas ce qui se passe une fois la porte franchie. Une application mal codée derrière un pare-feu parfait reste vulnérable.
+</Callout>
+
+## HTTP vs HTTPS
+
+Une fois la connexion établie, reste la question de ce qui circule. En HTTP, tout passe en clair. Les pages, les formulaires, les mots de passe, les cookies de session : tout voyage en texte lisible. N'importe qui placé sur le chemin entre vous et le serveur peut lire ce contenu.
+
+Le mot important est sur le chemin. Quand vous vous connectez à un wifi public, votre trafic passe par le point d'accès avant d'aller plus loin. Une personne sur ce même réseau peut, avec les bons outils, observer ce qui transite. Si vous vous connectez à un site en HTTP, elle voit votre identifiant et votre mot de passe en clair, comme une carte postale qu'on lit sans ouvrir d'enveloppe.
+
+HTTPS, c'est HTTP plus une couche de chiffrement appelée TLS. Avant le moindre échange, votre navigateur et le serveur négocient une clé secrète et chiffrent toute la communication. La même personne sur le wifi public ne voit plus qu'une suite illisible. Elle sait que vous parlez à tel serveur, mais pas ce que vous dites.
+
+<Callout type="danger">
+Ne saisissez jamais d'identifiant, de mot de passe ou de données personnelles sur un site en HTTP, surtout depuis un wifi public ou partagé. En HTTP, vos données voyagent en clair et toute personne sur le réseau peut les lire. Vérifiez que l'adresse commence bien par https avant de taper quoi que ce soit de sensible.
+</Callout>
+
+## le chiffrement en transit
+
+TLS protège la communication. C'est ce qu'on appelle le chiffrement en transit : les données sont protégées pendant le trajet, entre votre machine et le serveur. Personne sur le chemin ne peut les lire ni les modifier sans que ça se remarque.
+
+Mais il faut être précis sur ce que ça protège, parce qu'une idée reçue traîne partout. Beaucoup pensent que le petit cadenas dans la barre d'adresse veut dire site sûr. C'est faux. Le cadenas dit une seule chose : la communication entre vous et ce serveur est chiffrée. Il ne dit rien sur l'honnêteté du serveur en face.
+
+Un site de phishing peut très bien avoir un cadenas. Obtenir un certificat HTTPS est gratuit et automatique aujourd'hui, y compris pour un escroc. Le cadenas garantit que personne n'écoute entre vous et le faux site, ce qui ne vous avance à rien si le site lui-même est piégé. De la même façon, TLS ne protège pas les données une fois arrivées sur le serveur : si ce serveur est compromis, le chiffrement en transit n'y change rien, car les données y sont déchiffrées pour être traitées.
+
+<Callout type="info">
+Le chiffrement en transit protège le trajet. Il ne protège ni la destination ni l'expéditeur. HTTPS répond à la question est-ce que quelqu'un peut espionner ma connexion, pas à la question est-ce que ce site est digne de confiance. Ce sont deux problèmes différents.
+</Callout>
+
+## segmentation et exposition
+
+Tout revient à une discipline simple : n'exposez que le nécessaire. Chaque service joignable depuis Internet est une porte de plus, donc une cible de plus. Une base de données n'a presque jamais besoin d'être accessible depuis l'extérieur : seul le serveur applicatif a besoin de lui parler, et tous deux peuvent vivre sur un réseau interne fermé.
+
+C'est l'idée de la segmentation. Plutôt qu'un grand réseau plat où tout le monde peut parler à tout le monde, on découpe en zones. Le serveur web est dans une zone exposée, la base de données dans une zone interne, et seul un chemin précis relie les deux. Si le serveur web est compromis, l'attaquant se retrouve coincé dans sa zone au lieu d'avoir accès à toute l'infrastructure. La segmentation ne bloque pas l'intrusion, elle en limite la portée.
+
+## à toi de jouer
+
+Avant de tester vos réponses, regardez ce qu'on apprend en observant un réseau depuis une machine : les ports en écoute, la route vers une destination, l'état des interfaces.
+
+<SimulatedTerminal shell="bash" scenario="network-recon" title="Reconnaissance réseau de base" />
+
+<Quiz id="q-1" question="Quel port utilise par convention un service web chiffré (HTTPS) ?" options={["80", "22", "443", "53"]} correct={2} />
+
+<Quiz id="q-2" question="Vous êtes sur un wifi public et vous vous connectez à un site en HTTP. Quel est le vrai risque ?" options={["Le site sera plus lent", "Une personne sur le réseau peut lire vos identifiants en clair", "Votre pare-feu sera désactivé", "Le DNS cessera de fonctionner"]} correct={1} />
+
+<Quiz id="q-3" question="Que garantit exactement le cadenas HTTPS dans la barre d'adresse ?" options={["Que le site est honnête et sans danger", "Que la communication avec ce serveur est chiffrée", "Que le serveur ne sera jamais piraté", "Que vos données sont sauvegardées"]} correct={1} />
+
+## à retenir
+
+- Un port est un numéro qui identifie un service sur une machine : 80 (HTTP), 443 (HTTPS), 22 (SSH), 53 (DNS).
+- Un port ouvert est une porte d'entrée possible ; la première étape de sécurité est de savoir ce qui écoute.
+- Un pare-feu filtre selon des règles de port et de provenance, mais il laisse passer ce qui est autorisé sans inspecter le contenu : il ne suffit pas seul.
+- En HTTP, tout circule en clair et reste lisible par qui écoute le réseau ; HTTPS chiffre la communication grâce à TLS.
+- Le chiffrement en transit protège le trajet des données, pas la destination : le cadenas signifie connexion chiffrée, pas site digne de confiance.
+- N'exposez que le strict nécessaire et segmentez les réseaux pour limiter la portée d'une intrusion.

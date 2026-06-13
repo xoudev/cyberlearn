@@ -172,6 +172,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-072-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-007-V01",
+    slug: "cyber-fondamentaux",
+    title: "Cybersécurité : les fondamentaux",
+    description:
+      "Les bases solides de la sécurité : la triade CIA, les menaces et l'ingénierie sociale, vulnérabilités et surface d'attaque, authentification et hachage des mots de passe, sécurité réseau et web, défense en profondeur, réponse à incident et éthique. Conclu par un audit méthodique.",
+    category: "CYBERSEC",
+    difficulty: "BEGINNER",
+    estimatedHours: 7,
+    lessons: [
+      "CL-LSN-073-V01",
+      "CL-LSN-074-V01",
+      "CL-LSN-075-V01",
+      "CL-LSN-076-V01",
+      "CL-LSN-077-V01",
+      "CL-LSN-078-V01",
+      "CL-LSN-079-V01",
+      "CL-LSN-080-V01",
+      "CL-LSN-081-V01",
+      "CL-LSN-082-V01",
+      "CL-LSN-083-V01",
+      "CL-LSN-084-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {
