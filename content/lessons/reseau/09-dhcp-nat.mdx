@@ -1,0 +1,106 @@
+---
+refCode: CL-LSN-165-V01
+slug: reseau-dhcp-nat
+title: "DHCP et NAT"
+description: "Deux mécanismes qui font tourner les réseaux du quotidien : le DHCP qui attribue automatiquement les adresses IP, et le NAT qui laisse plusieurs machines privées partager une seule adresse publique."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-160-V01"]
+---
+
+Branche ton téléphone sur le Wi-Fi de la maison. En une seconde il a une adresse IP, un masque, une passerelle et de quoi résoudre les noms de domaine. Personne n'a rien tapé. Et pourtant, au même moment, le téléphone, deux ordinateurs, la télé et la console accèdent tous à Internet par une seule et même adresse publique, celle que ton fournisseur t'a donnée.
+
+Deux questions se posent. La première : qui a configuré l'adresse de ton téléphone, et comment, sans que tu fasses quoi que ce soit ? La seconde : si tout le monde sort par la même adresse publique, comment les réponses retrouvent le bon appareil ? Le DHCP répond à la première, le NAT à la seconde. Ce sont deux mécanismes distincts, mais ils cohabitent dans la même petite box au coin du salon.
+
+## le DHCP
+
+DHCP veut dire Dynamic Host Configuration Protocol. Son travail tient en une phrase : quand une machine rejoint le réseau, le serveur DHCP lui prête une configuration IP complète. Pas seulement une adresse. Il lui donne quatre choses au minimum : l'adresse IP elle-même, le masque de sous-réseau (pour savoir qui est dans le même réseau local), l'adresse de la passerelle (le routeur par lequel sortir vers Internet) et un ou deux serveurs DNS (pour traduire les noms en adresses).
+
+Avant le DHCP, chaque machine se configurait à la main. Sur un réseau de trois postes, ça va. Sur un réseau de deux cents postes, c'est un cauchemar : il faut tenir un tableau des adresses déjà prises, éviter les doublons, refaire le tour à chaque nouvel arrivant. Le DHCP automatise tout ça depuis un seul point. Chez toi, le serveur DHCP, c'est ta box. En entreprise, c'est souvent un serveur dédié ou un équipement réseau.
+
+<Callout type="info">
+Le DHCP ne distribue pas que des adresses. Il pousse toute la configuration réseau de base : masque, passerelle, DNS, parfois le serveur de temps ou le domaine de recherche. Une machine qui sort du carton et reçoit tout ça par DHCP est opérationnelle sans la moindre saisie manuelle.
+</Callout>
+
+## le déroulé DHCP
+
+L'échange se fait en quatre temps. On le retient souvent par l'acronyme DORA, pour les quatre messages anglais, mais l'idée compte plus que les mots.
+
+Premier temps, la découverte. La machine qui arrive ne connaît rien du réseau, pas même qui est le serveur DHCP. Elle envoie donc un message en diffusion, à tout le segment local : « y a-t-il un serveur DHCP qui m'écoute ? »
+
+Deuxième temps, l'offre. Un serveur DHCP entend la demande et répond : « voici une adresse que je te propose, avec ce masque, cette passerelle, ce DNS. » C'est une proposition, pas encore un accord.
+
+Troisième temps, la requête. La machine accepte l'offre et le dit, là encore en diffusion. Pourquoi en diffusion alors qu'elle connaît maintenant le serveur ? Parce que s'il y a plusieurs serveurs DHCP, les autres comprennent que leur offre n'a pas été retenue et libèrent l'adresse qu'ils gardaient de côté.
+
+Quatrième temps, l'accusé de réception. Le serveur confirme : « c'est à toi, voici les détails définitifs. » À cet instant la machine s'attribue l'adresse et peut communiquer.
+
+Cette adresse n'est pas donnée pour toujours. Elle est prêtée pour une durée, c'est le bail. Au bout d'un certain temps, par exemple 24 heures, la machine doit renouveler son bail si elle veut garder l'adresse. En pratique elle le fait bien avant l'expiration, à la moitié du bail en général, et ça passe inaperçu. Si une machine quitte le réseau sans rendre son bail, l'adresse sera libérée à l'échéance et pourra resservir.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Bail DHCP et IP publique vue de l'extérieur" commands={{"ip addr show eth0 | grep inet": "inet 192.168.1.42/24 dynamic eth0", "cat /var/lib/dhcp/dhclient.leases": "lease 192.168.1.42 ; lease-time 86400 ; binding state active ; routers 192.168.1.1", "curl -s ifconfig.me": "203.0.113.55"}} />
+
+Regarde bien la dernière commande. La machine a une adresse en 192.168.1.42, mais un service extérieur la voit arriver depuis 203.0.113.55. Deux adresses différentes pour la même machine. C'est exactement le NAT qui produit cet écart.
+
+## le NAT
+
+NAT veut dire Network Address Translation. Le problème qu'il résout : chez toi, tu as une dizaine d'appareils, chacun avec une adresse privée (du type 192.168.x.x ou 10.x.x.x). Ces adresses privées ne circulent pas sur Internet, elles n'ont de sens que dans ton réseau local. Mais ton fournisseur ne t'a donné qu'une seule adresse publique. Comment faire sortir dix machines privées à travers une seule adresse publique ?
+
+La box fait de la traduction. Quand ton téléphone (192.168.1.42) demande une page web, le paquet part vers la box. La box réécrit l'adresse source du paquet : elle remplace 192.168.1.42 par sa propre adresse publique 203.0.113.55, puis envoie le paquet sur Internet. Le serveur web ne voit donc jamais l'adresse privée, il voit l'adresse publique de la box. C'est pour ça que le site affiche une IP qui n'est pas celle de ta machine.
+
+Reste le retour. Quand la réponse revient, elle est adressée à 203.0.113.55. Mais derrière cette adresse il y a dix appareils. Lequel attendait cette réponse ? Pour le savoir, la box tient une table de correspondance. Au moment où elle traduit un paquet sortant, elle note qui a demandé quoi, en s'appuyant notamment sur les numéros de port. Quand la réponse arrive, elle consulte sa table, retrouve la ligne correspondante et réécrit l'adresse de destination pour la renvoyer au bon appareil interne.
+
+<Diagram caption="Le NAT partage une seule IP publique entre plusieurs machines privées">
+flowchart LR
+  A[Telephone 192.168.1.42] --> R[Box NAT 203.0.113.55]
+  B[PC 192.168.1.43] --> R
+  C[TV 192.168.1.44] --> R
+  R --> T[Table de correspondance]
+  R --> I[Internet voit 203.0.113.55]
+  I --> R
+  R --> A
+</Diagram>
+
+Le modèle mental utile : pense à la box comme à un standard téléphonique d'entreprise. De l'extérieur, l'entreprise a un seul numéro. Quand un appel sort, le standard note quel poste a appelé. Quand la réponse revient sur le numéro unique, le standard sait vers quel poste interne la rediriger. Le NAT fait pareil avec les paquets IP.
+
+## pourquoi le NAT existe
+
+La vraie raison historique, c'est la pénurie d'adresses IPv4. Les adresses IPv4 sont codées sur 32 bits, ce qui plafonne à environ 4 milliards d'adresses. Ça paraît énorme, mais avec le nombre d'appareils connectés dans le monde, c'est largement insuffisant pour donner une adresse publique unique à chacun. Le NAT a permis de tenir : des millions de réseaux locaux réutilisent les mêmes plages privées en interne et ne consomment qu'une poignée d'adresses publiques côté Internet.
+
+Il y a un effet de bord. Comme les machines internes ne sont pas joignables directement depuis l'extérieur (elles n'ont pas d'adresse publique à elles), le NAT masque un peu le réseau interne. De dehors, on ne voit que la box. Cet effet est réel, mais il faut bien le cadrer.
+
+<Callout type="warning">
+Le NAT n'est pas un pare-feu. Il masque les adresses internes, mais il ne décide pas ce qui est autorisé ou bloqué selon des règles de sécurité. Une connexion que la box a appris à router à travers sa table passera. Compter sur le NAT comme seule protection est une erreur classique. Un pare-feu, lui, applique des règles explicites sur ce qui entre et ce qui sort.
+</Callout>
+
+Le lien avec l'adressage privé et public devient clair ici. Les plages privées (192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12) existent précisément pour être réutilisées librement derrière un NAT. Le public, lui, est unique et routable sur Internet. Le NAT est la charnière entre les deux mondes.
+
+## quand ça coince
+
+Quelques pannes typiques valent d'être reconnues du premier coup d'oeil.
+
+Bail expiré ou non renouvelé. Si le serveur DHCP est injoignable au moment du renouvellement, la machine peut perdre son adresse et se rabattre sur une adresse d'auto-configuration (du type 169.254.x.x). Symptôme : la machine est connectée au réseau local mais n'a plus accès à Internet, et son adresse a une allure inhabituelle.
+
+Conflit d'adresses. Deux machines avec la même IP sur le réseau, par exemple parce que quelqu'un a posé une adresse fixe dans la plage que le DHCP distribue. Symptôme : connexion intermittente, l'une des deux décroche par moments. La règle : réserver une plage pour le DHCP et garder les adresses fixes en dehors.
+
+NAT et connexions entrantes. Le NAT gère très bien le trafic que tu inities de l'intérieur. Mais quand quelqu'un de l'extérieur veut joindre une machine de ton réseau (héberger un serveur de jeu, par exemple), la box ne sait pas vers quel poste interne diriger ce paquet entrant non sollicité. Il n'y a pas de ligne dans la table. Il faut alors une règle manuelle, la redirection de port, pour dire « tout ce qui arrive sur tel port, envoie-le vers telle machine interne ».
+
+## à toi de jouer
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Vérifier sa config locale et l'IP vue de dehors" commands={{"ip addr show eth0 | grep inet": "inet 192.168.1.42/24 dynamic eth0", "ip route | grep default": "default via 192.168.1.1 dev eth0", "curl -s ifconfig.me": "203.0.113.55"}} />
+
+<Quiz id="q-1" question="Quel est le rôle principal du DHCP ?" options={["Traduire les adresses privees en adresse publique", "Attribuer automatiquement une IP, un masque, une passerelle et un DNS aux machines qui rejoignent le reseau", "Chiffrer le trafic entre la machine et Internet", "Bloquer les connexions entrantes non sollicitees"]} correct={1} />
+
+<Quiz id="q-2" question="Ta machine a l adresse 192.168.1.42 mais un site web la voit arriver depuis 203.0.113.55. Qu est-ce qui explique cet ecart ?" options={["Le NAT, qui remplace l adresse privee par l adresse publique de la box et garde une table pour router les reponses", "Le DHCP, qui a donne deux adresses a la machine", "Le DNS, qui a resolu un mauvais nom", "Un conflit d adresses sur le reseau local"]} correct={0} />
+
+<Quiz id="q-3" question="Parmi ces affirmations sur le NAT, laquelle est correcte ?" options={["Le NAT remplace un pare-feu et applique des regles de securite", "Le NAT a ete cree surtout pour pallier la penurie d adresses IPv4", "Le NAT distribue les baux aux machines du reseau", "Le NAT empeche toute machine interne d acceder a Internet"]} correct={1} />
+
+## à retenir
+
+Le DHCP prête à chaque machine une configuration IP complète quand elle rejoint le réseau : adresse, masque, passerelle, DNS. L'échange se fait en quatre temps, découverte, offre, requête, accusé, et l'adresse est prêtée pour une durée, le bail, qui se renouvelle automatiquement. Il évite toute configuration manuelle.
+
+Le NAT laisse plusieurs machines en adresse privée partager une seule adresse publique. La box réécrit l'adresse source des paquets sortants et tient une table de correspondance pour renvoyer chaque réponse au bon poste. C'est pourquoi ta machine voit une IP en 192.168 alors que les sites voient l'adresse publique de la box.
+
+Le NAT existe d'abord pour pallier la pénurie d'IPv4. Il masque le réseau interne comme effet de bord, mais ce n'est pas un pare-feu. Les pannes courantes : bail expiré qui coupe l'accès Internet, conflit d'adresses fixe contre plage DHCP, et connexions entrantes qui demandent une redirection de port.
+
+OK 09 écrit

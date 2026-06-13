@@ -340,6 +340,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-156-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-014-V01",
+    slug: "reseaux-tcp-ip",
+    title: "Réseaux : de la trame au web",
+    description:
+      "Comprenez comment circulent les données : modèles OSI et TCP/IP, couche liaison et Ethernet, adressage IP et sous-réseautage, routage, TCP et UDP, DNS, DHCP et NAT, HTTP et HTTPS, et les outils de diagnostic. Conclu par un projet de dépannage réseau couche par couche.",
+    category: "NETWORK",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 8,
+    lessons: [
+      "CL-LSN-157-V01",
+      "CL-LSN-158-V01",
+      "CL-LSN-159-V01",
+      "CL-LSN-160-V01",
+      "CL-LSN-161-V01",
+      "CL-LSN-162-V01",
+      "CL-LSN-163-V01",
+      "CL-LSN-164-V01",
+      "CL-LSN-165-V01",
+      "CL-LSN-166-V01",
+      "CL-LSN-167-V01",
+      "CL-LSN-168-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

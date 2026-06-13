@@ -1,0 +1,119 @@
+---
+refCode: CL-LSN-163-V01
+slug: reseau-tcp-udp
+title: "La couche transport : TCP et UDP"
+description: "Comprenez le rôle des ports, la différence entre TCP fiable et orienté connexion et UDP rapide et sans garantie, la poignée de main en trois temps, et quand choisir l'un ou l'autre."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-160-V01"]
+---
+
+L'IP fait un travail précis et limité : amener un paquet jusqu'à la bonne machine, à la bonne adresse, quelque part dans le monde. Une fois le paquet arrivé, son travail s'arrête. Mais une machine moderne fait tourner des dizaines de programmes en même temps : un navigateur, un client mail, un jeu, un serveur web peut-être. Le paquet est arrivé sur la machine, d'accord, mais pour qui ? Et autre question : a-t-on besoin que ce paquet arrive vraiment, dans le bon ordre, sans erreur ? Ou bien la vitesse compte-t-elle plus que la perfection ?
+
+Ces deux questions, à qui livrer sur la machine et faut-il garantir la livraison, c'est le rôle de la couche transport. Elle s'appuie sur l'IP en dessous, et elle ajoute deux choses : les ports, pour désigner l'application destinataire, et le choix entre deux protocoles, TCP et UDP, qui répondent différemment au compromis entre fiabilité et vitesse. On regarde tout ça ici.
+
+## les ports
+
+L'adresse IP désigne la machine. Le port désigne l'application sur cette machine. C'est un simple numéro, de 0 à 65535, qui agit comme un numéro de porte dans un immeuble. L'IP t'amène devant le bon immeuble ; le port te dit à quelle porte frapper.
+
+Certains numéros sont conventionnels, connus de tout le monde. Le 22 pour SSH, le 80 pour le web non chiffré, le 443 pour le web sécurisé, le 53 pour le DNS. Quand ton navigateur veut joindre un site en HTTPS, il vise l'IP du serveur sur le port 443, parce que par convention c'est là que le serveur web écoute. Si le serveur écoutait ailleurs, le navigateur ne le trouverait pas.
+
+Une communication est donc identifiée par un couple : l'adresse IP plus le port. On appelle ça parfois un socket. `93.184.216.34:443`, c'est le serveur web sécurisé de cette machine. Et de ton côté, ta connexion sort aussi depuis un port, choisi au hasard dans les numéros hauts. C'est ce qui permet à ta machine de distinguer dix onglets ouverts vers dix sites : chacun a son port source.
+
+| port | service |
+|------|---------|
+| 22   | SSH     |
+| 53   | DNS     |
+| 80   | HTTP (web) |
+| 443  | HTTPS (web sécurisé) |
+| 25   | SMTP (envoi de mail) |
+
+Tu peux voir les ports qui écoutent et les connexions actives sur une machine.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Voir les ports et connexions" commands={{"ss -tlnp": "LISTEN 0 128 0.0.0.0:22\nLISTEN 0 511 0.0.0.0:80", "ss -tn state established": "ESTAB 0 0 192.168.1.42:50324 93.184.216.34:443", "cat /etc/services | grep -E '^(ssh|http|https|dns) '": "ssh 22/tcp\nhttp 80/tcp\nhttps 443/tcp"}} />
+
+La première commande montre ce que la machine attend : un service sur le port 22 et un sur le port 80, en LISTEN, prêts à recevoir. La deuxième montre une connexion établie, avec les deux couples IP plus port, le local et le distant. La troisième rappelle que ces numéros conventionnels sont écrits noir sur blanc dans un fichier du système.
+
+<Callout type="info">
+Les ports de 0 à 1023 sont dits réservés ou bien connus : ils correspondent aux services standards et, sur la plupart des systèmes, seul un compte privilégié peut écouter dessus. Les ports plus hauts sont libres. C'est pour ça que les connexions sortantes de ta machine partent depuis un port à cinq chiffres : il a été pioché dans la plage haute, juste pour la durée de l'échange.
+</Callout>
+
+## TCP, fiable et ordonné
+
+TCP est orienté connexion. Avant d'échanger la moindre donnée utile, les deux machines se mettent d'accord, ouvrent une connexion, et la maintiennent le temps de l'échange. Pendant toute la conversation, TCP garantit trois choses.
+
+La livraison d'abord. Chaque morceau de données envoyé doit être confirmé par l'autre côté. Si la confirmation n'arrive pas dans un certain délai, TCP considère que le morceau s'est perdu en route et le renvoie. Tu n'as rien à faire, c'est automatique.
+
+L'ordre ensuite. Sur Internet, les morceaux d'un même message peuvent emprunter des chemins différents et arriver dans le désordre. TCP numérote chaque morceau, et le côté qui reçoit les remet dans l'ordre avant de les donner à l'application. Le navigateur reçoit la page dans le bon sens, peu importe l'ordre d'arrivée réel.
+
+Le contrôle de flux enfin. Si l'émetteur envoie plus vite que le récepteur ne peut absorber, le récepteur le dit, et TCP ralentit. Personne ne se fait noyer.
+
+Le modèle mental, c'est l'appel téléphonique. Tu composes le numéro, l'autre décroche, tu attends son « allô » avant de parler. La ligne reste ouverte. Quand l'autre ne comprend pas, il dit « pardon, répète », et tu répètes. À la fin, vous raccrochez tous les deux. C'est exactement l'esprit de TCP : on établit, on confirme, on corrige, on clôt.
+
+## la poignée de main
+
+Cet établissement de connexion a un nom et une mécanique précise : la poignée de main en trois temps (three-way handshake). Avant le moindre octet de données utile, les deux machines échangent trois messages.
+
+D'abord le client envoie un SYN. C'est une demande d'ouverture : « je veux établir une connexion, voici mon numéro de départ ». Ensuite le serveur répond par un SYN-ACK. Deux choses en un message : il accuse réception du SYN du client (le ACK), et il envoie sa propre demande à lui (le SYN), avec son propre numéro de départ. Enfin le client renvoie un ACK : « bien reçu ta réponse, on est synchronisés ». À ce moment, et seulement à ce moment, la connexion est ouverte et les données peuvent circuler.
+
+Pourquoi trois messages et pas un seul ? Parce qu'il faut que chacun des deux côtés soit sûr que l'autre l'entend et est prêt. Un seul message ne prouverait rien dans les deux sens. Les trois temps confirment que le canal fonctionne dans les deux directions et que les deux machines partent du même point. C'est le « allô » du téléphone, en plus rigoureux.
+
+<Diagram caption="La poignée de main TCP en trois temps">
+flowchart LR
+  [Client : SYN] --> [Serveur reçoit]
+  [Serveur reçoit] --> [Serveur : SYN-ACK]
+  [Serveur : SYN-ACK] --> [Client reçoit]
+  [Client reçoit] --> [Client : ACK]
+  [Client : ACK] --> [Connexion ouverte]
+</Diagram>
+
+## UDP, rapide et sans garantie
+
+UDP prend le parti inverse. Pas de connexion, pas de poignée de main, pas de confirmation. La machine met les données dans un paquet, l'envoie à une IP et un port, et passe à la suite. Elle ne sait pas si le paquet est arrivé, et elle ne cherche pas à le savoir.
+
+Le modèle mental, c'est la carte postale. Tu écris, tu mets l'adresse, tu glisses la carte dans la boîte. Tu ne sais pas si elle arrivera. Si elle se perd, personne ne te prévient et tu ne la renvoies pas automatiquement. Si tu en postes trois et qu'elles arrivent dans le désordre, tant pis. En échange de ces absences de garantie, c'est rapide et léger : aucun aller-retour préalable, aucun suivi à maintenir, presque pas de surcharge.
+
+Ça paraît fragile, dit comme ça. Mais c'est exactement ce qu'on veut dans certains cas. Quand une donnée n'a de valeur que tout de suite, retransmettre une version périmée ne sert à rien. Et certaines applications préfèrent gérer elles-mêmes ce dont elles ont besoin, plutôt que de subir les garanties de TCP qu'elles ne veulent pas.
+
+<Callout type="warning">
+UDP « sans garantie » ne veut pas dire « peu fiable en pratique ». Sur un réseau local sain, la quasi-totalité des paquets UDP arrivent. Ça veut dire que le protocole ne promet rien : il ne détecte pas les pertes, ne réordonne pas, ne ralentit pas tout seul. Si une application a besoin de ces garanties par-dessus UDP, c'est à elle de les ajouter.
+</Callout>
+
+## quand choisir quoi
+
+La règle se résume à une question : qu'est-ce qui prime, l'exactitude ou la vitesse ?
+
+TCP gagne quand chaque octet compte. Une page web doit arriver entière ; un caractère manquant casse le HTML. Un fichier téléchargé doit être identique à l'original, sinon il est corrompu. Un mail ne tolère pas qu'il manque un bout. Web, transfert de fichiers, courriel : ici l'exactitude prime, on accepte un peu de lenteur pour ne rien perdre.
+
+UDP gagne quand le retard coûte plus cher que la perte. Dans un appel vocal, si un échantillon de son se perd, le retransmettre n'a aucun sens : le moment est passé, le mot suivant arrive déjà. Mieux vaut un micro-trou inaudible qu'un blanc qui attend une retransmission. Dans un jeu en ligne, la position d'il y a une demi-seconde n'intéresse personne, c'est la position de maintenant qui compte. Le DNS, lui, fait une question et une réponse tenant dans un seul petit paquet : ouvrir une connexion TCP complète pour ça serait du gâchis, alors il part en UDP et redemande si rien ne revient.
+
+Le compromis est là, tout entier. TCP achète la fiabilité au prix d'aller-retours, de confirmations, de retransmissions, donc de latence. UDP achète la vitesse en renonçant aux garanties. Ni l'un ni l'autre n'est meilleur dans l'absolu. On choisit selon ce que l'application ne peut pas se permettre de perdre.
+
+<Callout type="success">
+Un repère simple à retenir. Si la perte d'une donnée rend le résultat faux ou inutilisable (un fichier, une page, un mail), choisis TCP. Si la perte d'une donnée est tolérable mais que le retard gâche tout (la voix, le jeu, une requête DNS minuscule), choisis UDP.
+</Callout>
+
+## à toi de jouer
+
+Regarde une dernière fois ce qu'une machine te montre de sa couche transport, puis vérifie ta compréhension.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter TCP et UDP" commands={{"ss -tlnp": "LISTEN 0 128 0.0.0.0:22\nLISTEN 0 511 0.0.0.0:443", "ss -ulnp": "UNCONN 0 0 0.0.0.0:53\nUNCONN 0 0 0.0.0.0:123", "ss -tn state established": "ESTAB 0 0 192.168.1.42:50324 93.184.216.34:443"}} />
+
+La première commande liste les ports TCP en écoute (SSH sur 22, HTTPS sur 443). La deuxième liste les ports UDP, avec l'état UNCONN, sans connexion, parce qu'UDP n'établit rien : on y voit le DNS sur 53. La troisième montre une connexion TCP établie, avec ses deux extrémités.
+
+<Quiz id="q-1" question="Sur une machine, à quoi sert le numéro de port en plus de l'adresse IP ?" options={["À chiffrer les données échangées", "À désigner l'application destinataire sur la machine", "À indiquer la vitesse de la connexion", "À remplacer l'adresse IP quand elle est inconnue"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle est la séquence correcte de la poignée de main TCP en trois temps ?" options={["ACK, SYN, SYN-ACK", "SYN, ACK, SYN-ACK", "SYN, SYN-ACK, ACK", "SYN-ACK, SYN, ACK"]} correct={2} />
+
+<Quiz id="q-3" question="Pour un appel vocal en direct, pourquoi UDP est-il souvent préféré à TCP ?" options={["Parce qu'UDP chiffre la voix automatiquement", "Parce que retransmettre un son perdu n'a pas de sens en direct : la vitesse prime sur l'exactitude", "Parce qu'UDP garantit que rien ne se perd", "Parce que TCP ne sait pas transporter du son"]} correct={1} />
+
+## à retenir
+
+- L'IP livre à la bonne machine ; le port (un numéro de 0 à 65535) désigne l'application sur cette machine. Une communication s'identifie par le couple IP plus port.
+- Ports conventionnels à connaître : 22 SSH, 53 DNS, 80 HTTP, 443 HTTPS, 25 SMTP. Les ports 0 à 1023 sont réservés aux services standards.
+- TCP est orienté connexion : il garantit la livraison (retransmission), l'ordre (numérotation) et le contrôle de flux. Modèle mental : l'appel téléphonique.
+- La connexion TCP s'ouvre par une poignée de main en trois temps : SYN, SYN-ACK, ACK. Les trois messages confirment que le canal marche dans les deux sens.
+- UDP est sans connexion : pas de poignée de main, pas de confirmation, pas de retransmission ni d'ordre garanti. Léger et rapide. Modèle mental : la carte postale.
+- Le choix dépend du compromis fiabilité contre vitesse. TCP pour le web, les fichiers, le mail (l'exactitude prime). UDP pour la voix, le jeu, le DNS (la vitesse prime, une perte est tolérable).

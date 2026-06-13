@@ -1,0 +1,125 @@
+---
+refCode: CL-LSN-161-V01
+slug: reseau-sous-reseautage
+title: "Le sous-réseautage et le CIDR"
+description: "Découper un réseau en sous-réseaux sans paniquer : le masque et la notation CIDR, le calcul de l'adresse de réseau, de diffusion et du nombre d'hôtes, et pourquoi on segmente."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 50
+xpReward: 560
+prerequisites: ["CL-LSN-160-V01"]
+---
+
+Le sous-réseautage a une mauvaise réputation. Dès qu'on prononce le mot, les gens imaginent des colonnes de zéros et de uns à aligner à la main, et un examen blanc qui se termine mal. Je vais te le dire tout de suite : ce n'est pas ça. Le sous-réseautage, c'est de la découpe d'adresses avec trois ou quatre règles qui reviennent toujours. Une fois que tu tiens les règles, tu poses le calcul comme tu poserais une division, et ça tombe juste.
+
+On va prendre le temps. Tu n'as pas besoin d'être rapide aujourd'hui, tu as besoin de comprendre où va chaque chiffre. La vitesse vient après, toute seule, avec la répétition.
+
+## le masque de sous-réseau
+
+Une adresse IPv4, c'est 32 bits, qu'on écrit en quatre nombres séparés par des points, par exemple 192.168.1.10. Le problème, c'est qu'une adresse seule ne dit pas où s'arrête le réseau et où commence la machine. Il faut une deuxième information : le masque.
+
+Le masque de sous-réseau a la même forme qu'une adresse, 32 bits eux aussi. Sa règle est simple : les bits à 1 marquent la partie réseau, les bits à 0 marquent la partie hôte. Le masque ne mélange jamais : d'abord tous les 1, ensuite tous les 0, dans cet ordre.
+
+La notation CIDR est juste une façon courte d'écrire le masque. Au lieu de donner les quatre nombres du masque, on compte combien de bits sont à 1 et on l'écrit derrière l'adresse avec une barre. Quand tu lis /24, ça veut dire 24 bits de réseau, donc 8 bits d'hôte (puisque 24 plus 8 font 32).
+
+Voici 192.168.1.10 avec un masque /24, les deux alignés en binaire.
+
+```text
+Adresse : 11000000.10101000.00000001.00001010   192.168.1.10
+Masque  : 11111111.11111111.11111111.00000000   255.255.255.0  (/24)
+            <----- reseau (24 bits) ----->|<hote>
+```
+
+Les 24 premiers bits (192.168.1) sont la partie réseau. Les 8 derniers (le .10) sont la partie hôte. Deux machines qui ont les mêmes bits de réseau sont sur le même sous-réseau, et peuvent se parler directement sans passer par un routeur.
+
+<Callout type="info">
+Retiens le repère : /8 vaut 255.0.0.0, /16 vaut 255.255.0.0, /24 vaut 255.255.255.0. Chaque tranche de 8 bits remplit un octet du masque. Le /24 est si fréquent qu'on le reconnaît à l'oeil, c'est un bon point de départ.
+</Callout>
+
+## calculer un sous-réseau
+
+Passons à un cas qui n'est plus rond : 192.168.1.0/26. Le /26 veut dire 26 bits de réseau. On garde la démarche, étape par étape.
+
+D'abord, combien de bits d'hôte ? 32 moins 26 font 6. Il reste donc 6 bits pour numéroter les machines.
+
+Ensuite, combien d'adresses au total dans ce bloc ? On élève 2 à la puissance du nombre de bits d'hôte. Deux puissance 6 fait 64. Le sous-réseau contient 64 adresses.
+
+Maintenant les bornes. Le /26 coupe le dernier octet, pas à une frontière ronde. Le pas entre deux sous-réseaux est de 64 (le nombre d'adresses). Les blocs successifs commencent donc à .0, puis .64, puis .128, puis .192. Notre adresse .0 tombe dans le premier bloc, celui qui va de .0 à .63.
+
+```text
+Donnees     : 192.168.1.0/26
+Bits hote   : 32 - 26 = 6
+Adresses    : 2^6 = 64
+Reseau      : 192.168.1.0      (premiere adresse du bloc)
+Diffusion   : 192.168.1.63     (derniere adresse du bloc)
+Plage utile : 192.168.1.1  ->  192.168.1.62
+Hotes utiles: 64 - 2 = 62
+```
+
+Deux adresses du bloc sont réservées et ne peuvent pas être posées sur une carte réseau. La première, .0, est l'adresse du réseau lui-même, c'est son nom. La dernière, .63, est l'adresse de diffusion (broadcast) : un paquet envoyé là vise toutes les machines du sous-réseau d'un coup. C'est pour ça qu'on enlève toujours deux du total quand on compte les hôtes utilisables. Un /26 héberge donc 62 machines, pas 64.
+
+Si tu refais l'exercice avec un /24 : 8 bits d'hôte, 2 puissance 8 font 256 adresses, moins deux égale 254 hôtes utiles, réseau en .0 et diffusion en .255. La logique ne change pas, seuls les nombres bougent.
+
+Mon modèle mental : un /26 découpe le dernier octet en quatre tiroirs de 64 (0, 64, 128, 192). Plus le préfixe est grand, plus les tiroirs sont petits et nombreux. /24 c'est un grand tiroir de 256, /26 c'est quatre tiroirs de 64, /27 c'est huit tiroirs de 32. Le préfixe monte, le tiroir rétrécit.
+
+## vérifier avec du code
+
+Tu n'es pas obligé de me croire sur parole. Python sait calculer tout ça avec le module standard ipaddress. Lance ce code, puis change le préfixe (essaie /24, puis /27, puis /30) et regarde comment le réseau, la diffusion et le nombre d'hôtes bougent.
+
+<CodePlayground language="python" starterCode={`import ipaddress
+
+reseau = ipaddress.ip_network("192.168.1.0/26", strict=False)
+print("Reseau      :", reseau.network_address)
+print("Diffusion   :", reseau.broadcast_address)
+print("Masque      :", reseau.netmask)
+print("Hotes utiles:", reseau.num_addresses - 2)
+print("Premier hote:", list(reseau.hosts())[0])
+print("Dernier hote:", list(reseau.hosts())[-1])`} />
+
+Quand tu testes un /30, tu verras 4 adresses au total, donc 2 hôtes utiles seulement. C'est exactement la taille d'une liaison point à point entre deux routeurs : deux machines, rien de plus. Le code confirme la règle du moins deux sans que tu aies à compter quoi que ce soit.
+
+## pourquoi découper
+
+On pourrait laisser tout le monde dans un seul grand réseau plat. Pourquoi se donner la peine de segmenter ? Trois raisons reviennent.
+
+Organiser, d'abord. Un sous-réseau par service rend le plan d'adressage lisible. Les serveurs dans un bloc, les postes de bureau dans un autre, les imprimantes dans un troisième, le wifi invité encore ailleurs. En regardant une adresse, tu sais à quoi tu as affaire.
+
+Segmenter pour la sécurité, ensuite. Si tout est sur le même réseau plat, une machine compromise voit toutes les autres. En découpant, tu places des frontières où un pare-feu peut filtrer ce qui passe d'un bloc à l'autre. Le wifi invité n'a aucune raison d'atteindre les serveurs de paie. Une caméra piratée reste enfermée dans son segment au lieu de servir de tremplin vers le reste. C'est la même idée que la segmentation réseau côté défense : limiter la portée d'une compromission.
+
+Réduire la diffusion, enfin. Le trafic de broadcast touche toutes les machines d'un sous-réseau. Plus le sous-réseau est gros, plus ce bruit pèse sur chacun. Des blocs plus petits gardent la diffusion contenue et le réseau plus calme.
+
+## les pièges
+
+Trois erreurs reviennent tout le temps, et elles sont faciles à éviter une fois nommées.
+
+Confondre l'adresse de réseau et le premier hôte. L'adresse de réseau (la .0 du bloc) n'est pas attribuable à une machine, c'est le nom du sous-réseau. Le premier hôte vient juste après. Dans le /26 plus haut, le réseau est .0 et le premier hôte est .1.
+
+Oublier le moins deux. Le nombre d'adresses n'est pas le nombre d'hôtes utilisables. Il faut toujours retrancher l'adresse de réseau et l'adresse de diffusion. 64 adresses donnent 62 hôtes, pas 64.
+
+Mal compter les bits. Le nombre d'hôtes dépend des bits d'hôte (32 moins le préfixe), jamais des bits de réseau. Si tu pars du préfixe pour la puissance de 2, tu obtiens un chiffre énorme et faux. Reprends : bits d'hôte égale 32 moins le préfixe, et c'est cette valeur qui part en exposant.
+
+<Callout type="warning">
+Le réflexe qui sauve : avant de répondre, calcule d'abord les bits d'hôte (32 moins le préfixe), puis 2 puissance ce nombre pour le total, puis moins deux pour les hôtes. Trois gestes dans cet ordre, à chaque fois. Tu n'auras presque jamais faux.
+</Callout>
+
+## à toi de jouer
+
+Reprends le CodePlayground et fais varier le préfixe entre /24 et /30 pour sentir l'effet sur les bornes et le nombre d'hôtes. Ensuite, vérifie ta compréhension.
+
+<Quiz id="q-1" question="Dans la notation CIDR, que désigne le nombre après la barre, comme dans /26 ?" options={["Le nombre d hotes utilisables", "Le nombre de bits a 1 dans le masque, c est a dire la partie reseau", "Le numero du sous-reseau", "Le nombre d octets de l adresse"]} correct={1} />
+
+<Quiz id="q-2" question="Combien d hotes utilisables contient un sous-reseau en /26 ?" options={["64", "62", "30", "126"]} correct={1} />
+
+<Quiz id="q-3" question="Pour le sous-reseau 192.168.1.0/26, quelle est l adresse de diffusion ?" options={["192.168.1.0", "192.168.1.62", "192.168.1.63", "192.168.1.255"]} correct={2} />
+
+## à retenir
+
+- Une adresse IPv4 fait 32 bits ; le masque dit lesquels sont le réseau (bits à 1) et lesquels sont l'hôte (bits à 0).
+- La notation CIDR /n donne le nombre de bits de réseau ; les bits d'hôte valent 32 moins n.
+- Total d'adresses d'un bloc : 2 puissance (bits d'hôte). Hôtes utilisables : ce total moins deux.
+- L'adresse de réseau est la première du bloc, la diffusion est la dernière ; aucune des deux ne se pose sur une machine.
+- 192.168.1.0/26 : 64 adresses, réseau .0, diffusion .63, hôtes utiles .1 à .62, soit 62.
+- On découpe pour organiser le plan, segmenter et limiter la portée d'une compromission, et réduire le bruit de diffusion.
+- Le bon ordre de calcul : bits d'hôte, puis 2 puissance ce nombre, puis moins deux.
+
+OK 05 écrit
