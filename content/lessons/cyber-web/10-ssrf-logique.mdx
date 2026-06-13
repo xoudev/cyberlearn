@@ -1,0 +1,145 @@
+---
+refCode: CL-LSN-094-V01
+slug: owasp-ssrf-logique
+title: "SSRF et failles de logique métier"
+description: "Découvrez la SSRF, où un attaquant force le serveur à interroger des cibles internes, et les failles de logique métier, où l'application respecte son code mais pas l'intention de la règle, deux risques que les scanners voient mal."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-089-V01"]
+---
+
+La plupart des failles dont on parle dans les premiers cours laissent une trace nette. Une injection SQL renvoie une erreur de base, un XSS exécute un alert visible, un scanner finit par tomber dessus en testant des milliers de charges. Les deux familles de ce cours sont différentes. Elles ne cassent rien. L'application répond 200, les logs ont l'air normaux, et pourtant quelque chose ne va pas. C'est exactement pour ça que les outils automatiques les ratent souvent : ils ne comprennent pas le contexte. Un scanner sait reconnaître une chaîne d'erreur. Il ne sait pas que ton serveur n'avait aucune raison d'aller interroger une adresse interne, ni qu'une remise appliquée deux fois n'a pas de sens commercial.
+
+On va voir ces deux familles l'une après l'autre, parce qu'elles partagent ce point commun : il faut un humain qui réfléchit pour les trouver et pour les corriger.
+
+## la SSRF expliquée
+
+SSRF veut dire Server-Side Request Forgery, falsification de requête côté serveur. L'idée tient en une phrase : tu donnes une URL à l'application, et c'est le serveur qui va la chercher pour toi.
+
+Beaucoup de fonctionnalités banales fonctionnent comme ça. Un aperçu de lien dans un chat : tu colles une URL, le serveur va lire la page pour afficher le titre et l'image. Un import depuis une adresse : "importer mon avatar depuis une URL". Un webhook que tu configures toi-même. Un générateur de PDF qui charge des images distantes. Dans tous ces cas, le serveur prend une adresse fournie par l'utilisateur et envoie une requête réseau.
+
+Le modèle mental est simple : le serveur devient ton proxy. Quand tu navigues sur le web, tes requêtes partent de ta machine, depuis l'extérieur du réseau de l'entreprise. Mais quand c'est le serveur qui fait la requête, elle part de l'intérieur. Et l'intérieur a accès à des choses que toi, depuis dehors, tu ne peux pas joindre.
+
+Au lieu de donner une URL publique normale, l'attaquant donne une adresse qui pointe vers le réseau interne :
+
+```text
+https://site.com/import?url=http://192.168.0.12:8080/admin
+https://site.com/import?url=http://localhost:6379/
+https://site.com/preview?target=http://169.254.169.254/latest/meta-data/
+```
+
+Le serveur, qui ne réfléchit pas, va consciencieusement contacter ces adresses et te renvoyer ce qu'il trouve. Une interface d'administration interne qui n'était jamais censée être exposée, une base Redis sans mot de passe parce qu'elle est "protégée par le réseau", ou pire, l'endpoint de métadonnées cloud dont on parle juste après.
+
+<Diagram caption="Une requête SSRF vers un service interne">
+flowchart LR
+  A[Attaquant] -->|url=http://10.0.0.5/admin| B[Serveur web public]
+  B -->|le serveur fait la requete depuis l-interieur| C[Service interne 10.0.0.5]
+  C -->|reponse| B
+  B -->|renvoie le contenu| A
+</Diagram>
+
+<Callout type="danger">
+La SSRF ne traverse pas le pare-feu en force. Elle le contourne en demandant poliment à une machine déjà à l'intérieur de faire le travail. Le pare-feu voit une requête sortante légitime du serveur, pas une intrusion.
+</Callout>
+
+## pourquoi c'est grave en cloud
+
+Sur une infra cloud classique, chez AWS, GCP ou Azure, chaque machine peut interroger une adresse spéciale pour récupérer des informations sur elle-même. Cet endpoint de métadonnées vit historiquement à l'adresse `169.254.169.254`. Il sert à la machine pour connaître sa configuration, sa région, et surtout ses identifiants temporaires.
+
+Ces identifiants sont le vrai problème. Beaucoup de services internes fonctionnent sur un principe de confiance réseau : "si la requête vient de l'intérieur, c'est qu'elle est légitime". L'endpoint de métadonnées suit longtemps cette logique. Il ne demande pas de mot de passe parce qu'il part du principe que seul le code tournant sur la machine peut le joindre. Une SSRF casse ce postulat. L'attaquant fait viser cette adresse au serveur, et récupère des clés d'accès qui lui permettent d'agir au nom de la machine : lire des buckets de stockage, lancer d'autres ressources, parfois remonter jusqu'à un contrôle large du compte.
+
+```text
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+```
+
+C'est le scénario derrière plusieurs fuites de données massives. Une simple fonction d'aperçu de lien, mal protégée, et l'attaquant repart avec des identifiants d'infrastructure.
+
+<Callout type="warning">
+Tout ce qui touche aux métadonnées et aux identifiants ne se teste que sur tes propres systèmes ou dans un environnement explicitement autorisé. Pointer une SSRF vers l'infra de quelqu'un d'autre, c'est un accès non autorisé, point. La compréhension sert à défendre.
+</Callout>
+
+## se défendre de la SSRF
+
+La règle de fond : ne fais jamais confiance à une URL fournie par l'utilisateur, et traite chaque requête sortante comme un risque.
+
+Plusieurs couches se combinent. D'abord, préfère une liste d'autorisation à une liste de blocage. Plutôt que d'essayer d'interdire toutes les adresses internes (et d'en oublier la moitié, parce que `0.0.0.0`, `127.0.0.1`, l'IPv6, les notations décimales et les noms DNS qui résolvent vers de l'interne donnent des dizaines de variantes), définis la courte liste des destinations légitimes. Si ton appli ne doit aller chercher que des images sur deux ou trois domaines connus, n'autorise que ceux-là.
+
+Ensuite, refuse explicitement les plages internes : `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.0/8`, le lien-local `169.254.0.0/16`, et leurs équivalents IPv6. Fais cette vérification après avoir résolu le DNS, sinon un nom qui résout vers une IP interne passe à travers.
+
+Troisième point souvent oublié : ne suis pas les redirections aveuglément. Une URL de départ peut être parfaitement publique, puis renvoyer un `302` vers `169.254.169.254`. Si ton client HTTP suit les redirections tout seul, ta validation d'entrée ne sert à rien. Désactive le suivi automatique, ou revalide chaque saut.
+
+Enfin, côté infra : passe à la version durcie de l'endpoint de métadonnées (IMDSv2 chez AWS, qui exige un jeton de session), et limite ce que le serveur a le droit de joindre sur le réseau au strict nécessaire.
+
+<Callout type="success">
+La meilleure défense combine deux niveaux : l'application valide les destinations sur liste d'autorisation et ne suit pas les redirections, et le réseau empêche le serveur de joindre quoi que ce soit qui ne soit pas indispensable. Si une couche cède, l'autre tient encore.
+</Callout>
+
+## les failles de logique métier
+
+Changement de famille. Ici, il n'y a aucune injection, aucune URL piégée. L'application fait exactement ce que son code dit de faire. Le problème, c'est que le code ne traduit pas correctement la règle métier. L'intention humaine derrière la fonctionnalité est contournée, alors que techniquement tout est "valide".
+
+Quelques cas classiques :
+
+```text
+Prix negatif :
+  ajouter une quantite de -3 articles a 20 euros
+  total = -60 euros, credite sur le compte
+
+Double remise :
+  appliquer le code PROMO20 une premiere fois
+  rejouer la requete avec le meme code
+  la remise s-empile, le panier tombe a presque rien
+
+Sauter une etape :
+  passer directement de l-URL panier a l-URL confirmation
+  la verification du paiement etait a l-etape sautee
+  commande validee sans avoir paye
+
+Course (race condition) :
+  un coupon a usage unique
+  envoyer 50 requetes en parallele en une fraction de seconde
+  les 50 passent avant que le compteur ne se mette a jour
+```
+
+Aucune de ces requêtes n'est malformée. Le serveur reçoit des entrées qu'il sait parser, dans des champs qu'il attend. Un quantité de `-3` est un entier valide. Renvoyer deux fois le même code promo, c'est deux requêtes HTTP correctes. Atteindre l'URL de confirmation, c'est une navigation normale.
+
+C'est précisément pour ça qu'un scanner automatique ne les voit pas. Un scanner cherche des motifs : une erreur de base de données, un script réfléchi, un en-tête manquant. Il n'a aucune idée de ce que ton application est censée vouloir dire. Il ne sait pas qu'un panier ne devrait jamais être négatif, qu'un coupon est "à usage unique", ou que le paiement doit précéder la confirmation. Ces règles vivent dans la tête des gens qui ont conçu le produit, pas dans une signature de détection.
+
+## tester la logique
+
+Trouver ces failles, c'est un travail de raisonnement, pas de force brute. La bonne question à se poser en boucle : "et si je fais ça autrement que prévu ?"
+
+Deux réflexes portent loin. Le premier : envoyer des valeurs absurdes là où le code attend du raisonnable. Quantité négative, quantité énorme, prix à zéro, date dans le passé, identifiant d'un autre utilisateur. Le développeur a testé le chemin normal ; il a rarement testé le chemin idiot.
+
+Le second : faire les étapes dans le désordre, ou en double, ou en parallèle. Sauter une étape d'un tunnel d'achat. Rejouer une requête qui devait être unique. Lancer la même action cinquante fois en même temps pour exploiter le décalage avant que le compteur ne se mette à jour.
+
+<SimulatedTerminal scenario="ctf-web" />
+
+<Callout type="info">
+Avant de coder une fonctionnalité sensible, écris la règle métier en français clair : "le total ne peut pas etre negatif", "un coupon ne sert qu-une fois", "le paiement precede la confirmation". Chaque phrase devient une verification serveur. La logique se défend dans le code du serveur, jamais dans le navigateur que l'utilisateur contrôle.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Dans une attaque SSRF en environnement cloud, pourquoi l'adresse 169.254.169.254 est-elle une cible de choix ?" options={["Parce qu'elle héberge le site public de la victime", "Parce que l'endpoint de métadonnées peut livrer des identifiants temporaires de la machine", "Parce qu'elle bloque le pare-feu", "Parce qu'elle chiffre le trafic sortant"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi un scanner automatique rate-t-il souvent les failles de logique métier ?" options={["Parce que les requêtes sont chiffrées", "Parce que ces failles génèrent toujours une erreur 500", "Parce que les requêtes sont techniquement valides et que le scanner ne connaît pas l'intention de la règle métier", "Parce qu'elles n'existent que sur mobile"]} correct={2} />
+
+<Quiz id="q-3" question="Quelle défense SSRF est la plus solide contre les contournements ?" options={["Une liste de blocage des adresses internes connues", "Une liste d'autorisation des destinations, vérifiée après résolution DNS, sans suivi aveugle des redirections", "Augmenter le timeout des requêtes", "Cacher l'URL dans le code source"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- SSRF veut dire que le serveur va chercher une URL que tu lui fournis : il devient ton proxy et part de l'intérieur du réseau, là où le pare-feu ne te laisse pas entrer.
+- En cloud, la cible la plus dangereuse est l'endpoint de métadonnées (`169.254.169.254`), qui peut livrer des identifiants d'infrastructure.
+- Se défendre : liste d'autorisation des destinations, refus des plages internes après résolution DNS, pas de suivi aveugle des redirections, endpoint de métadonnées durci.
+- Les failles de logique métier ne cassent rien : l'application fait ce que le code dit, mais la règle métier est contournée (prix négatif, double remise, étape de paiement sautée, race condition).
+- Les scanners ratent les deux familles parce qu'elles demandent de comprendre le contexte ; il faut un humain qui se demande "et si je fais ça autrement que prévu".
+- La logique métier se valide côté serveur, jamais dans le navigateur de l'utilisateur.
+
+OK 10-ssrf-logique.mdx écrit

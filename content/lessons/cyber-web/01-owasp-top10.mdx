@@ -1,0 +1,94 @@
+---
+refCode: CL-LSN-085-V01
+slug: owasp-top10
+title: "Le Top 10 OWASP : la carte des risques web"
+description: "Découvrez le référentiel qui structure la sécurité des applications web : ce qu'est l'OWASP, à quoi sert son Top 10, et un aperçu des grandes familles de failles que ce parcours va détailler."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 380
+prerequisites: ["CL-LSN-080-V01"]
+---
+
+Quand on débute en sécurité web, la tentation est de tester un peu au hasard : on tape une apostrophe dans un champ pour voir, on bidouille une URL, on espère tomber sur quelque chose. Ça marche parfois. Mais ce n'est pas une méthode, c'est de la chance. Un pentester qui sait ce qu'il fait ne part jamais à l'aveugle. Il a une carte des endroits où les choses cassent le plus souvent, et il la suit.
+
+Cette carte existe, elle est publique, et tout le monde dans le métier la connaît. Elle s'appelle le Top 10 OWASP. C'est le point de départ de ce parcours, parce que chaque leçon qui suit va creuser un morceau de cette carte.
+
+## ce qu'est l'OWASP
+
+OWASP veut dire Open Worldwide Application Security Project. C'est une fondation à but non lucratif qui produit des ressources libres sur la sécurité des applications. Pas une entreprise qui vend un produit, pas un organisme officiel qui certifie : un collectif de praticiens, de chercheurs et de développeurs qui mettent en commun ce qu'ils observent sur le terrain.
+
+Leur publication la plus connue est le Top 10. C'est une liste des dix catégories de risques les plus répandues dans les applications web. Le mot répandues compte. Beaucoup de gens croient que le Top 10 classe les failles de la plus grave à la moins grave. C'est faux, et c'est une confusion qui mène à de mauvaises décisions.
+
+<Callout type="info">
+Le Top 10 n'est pas un palmarès de gravité absolue. Il combine la fréquence (à quel point une catégorie revient souvent dans les applications testées) et l'impact (les dégâts quand ça casse). Une faille rare mais dévastatrice peut très bien ne pas y figurer, tandis qu'un problème banal et fréquent y trône en haut.
+</Callout>
+
+Le classement s'appuie sur des données réelles : des centaines de milliers d'applications analysées, des remontées de bug bounty, des enquêtes auprès des professionnels. Ce n'est pas l'opinion de trois experts dans une salle, c'est une photographie de ce qui casse vraiment dans la vraie vie.
+
+<ExternalLink href="https://owasp.org/www-project-top-ten/" description="Le classement de référence des risques de sécurité web">OWASP Top 10</ExternalLink>
+
+## comment lire le Top 10
+
+Voici le piège dans lequel tombent les débutants. Ils lisent une entrée comme broken access control et cherchent LA faille correspondante, comme si c'était un bug précis avec une recette précise. Ça ne marche pas comme ça.
+
+Chaque entrée du Top 10 est une catégorie, pas une faille. Un sac qui contient des dizaines de cas différents. Broken access control, par exemple, regroupe aussi bien un utilisateur qui change son rôle en modifiant un paramètre, qu'une page admin accessible sans vérification, qu'un identifiant d'objet qu'on incrémente dans l'URL pour lire les données du voisin. Ce sont des bugs très différents techniquement, mais ils ont la même racine : l'application laisse quelqu'un faire ce qu'il ne devrait pas avoir le droit de faire.
+
+Le bon modèle mental, c'est de voir le Top 10 comme un système de classement, à la manière des rayons d'une bibliothèque. Quand tu trouves un problème pendant un test, tu te demandes : dans quelle catégorie OWASP ça tombe. Ça t'aide à raisonner, à communiquer avec une équipe (tout le monde comprend la même chose), et à ne pas oublier des angles d'attaque entiers.
+
+## un survol des grandes familles
+
+Sans tout détailler maintenant, voici les familles que tu vas rencontrer le plus, et celles que ce parcours va creuser ensuite.
+
+Le contrôle d'accès défaillant arrive en tête du classement actuel. C'est tout ce qui concerne les droits : qui peut voir quoi, qui peut faire quoi. Le parcours y consacre plusieurs leçons, parce que c'est le terrain de chasse numéro un en pentest.
+
+L'injection regroupe les cas où une donnée envoyée par l'utilisateur se retrouve interprétée comme du code par le serveur. L'injection SQL en est l'exemple le plus connu, et on la travaillera en détail avec ses cousines.
+
+Les défaillances cryptographiques couvrent les données sensibles mal protégées : mots de passe stockés en clair, connexions sans chiffrement, secrets exposés. On en parlera quand on abordera la gestion des sessions et des mots de passe.
+
+La mauvaise configuration de sécurité, c'est l'application livrée avec des réglages par défaut dangereux, des messages d'erreur trop bavards, des services laissés ouverts. Cette famille monte fort, on verra pourquoi plus bas.
+
+Les composants vulnérables désignent les bibliothèques et dépendances obsolètes que ton application embarque sans le savoir. Une faille dans un paquet tiers devient ta faille.
+
+Les défaillances d'authentification touchent la manière dont l'application vérifie qui tu es : mots de passe faibles acceptés, sessions mal gérées, absence de limite sur les tentatives de connexion.
+
+<Diagram caption="Le Top 10 comme système de classement : un problème observé se range dans une catégorie">
+flowchart TD
+  A[Problème observé pendant un test] --> B[Dans quelle catégorie OWASP ?]
+  B --> C[Contrôle d accès défaillant]
+  B --> D[Injection]
+  B --> E[Défaillances cryptographiques]
+  B --> F[Mauvaise configuration]
+  B --> G[Composants vulnérables]
+  B --> H[Défaillances d authentification]
+</Diagram>
+
+## pourquoi ça évolue
+
+Le Top 10 n'est pas figé. Il est révisé environ tous les trois à quatre ans, et le classement bouge entre les versions. Une catégorie peut monter, descendre, fusionner avec une autre, ou apparaître.
+
+Cette évolution raconte une histoire. Au fil des versions, les défauts de configuration et les dépendances vulnérables ont gagné des places. Pas parce que les développeurs deviennent moins bons, mais parce que les applications modernes empilent des dizaines de briques externes et tournent sur des infrastructures complexes. Plus il y a de pièces à assembler, plus il y a de mauvais réglages possibles. Retiens le principe : la carte suit le terrain, et le terrain change.
+
+## le cadre éthique
+
+Avant la première manipulation, une règle non négociable.
+
+<Callout type="danger">
+Tout ce que ce parcours t'apprend ne s'applique qu'à des cibles que tu es explicitement autorisé à tester, ou à des environnements d'entraînement prévus pour ça (labs, machines volontairement vulnérables, plateformes dédiées). Tester un site sans autorisation écrite est un délit, même si tu ne causes aucun dégât et que ton intention est bonne. Pas d'exception, pas de zone grise.
+</Callout>
+
+La compétence technique ne vaut rien sans ce réflexe. Un pentester professionnel travaille toujours dans un périmètre défini par contrat. Garde cette frontière en tête à chaque leçon.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Sur quels critères principaux le Top 10 OWASP classe-t-il les risques ?" options={["La gravité absolue, de la pire faille à la moins grave", "La fréquence d apparition et l impact constatés sur des applications réelles", "L ordre alphabétique des noms de catégories", "La difficulté technique à exploiter chaque faille"]} correct={1} />
+
+<Quiz id="q-2" question="Que représente une entrée comme broken access control dans le Top 10 ?" options={["Une catégorie de risque qui regroupe de nombreux cas différents", "Un bug précis avec une seule méthode d exploitation", "Un outil de scan automatique fourni par l OWASP", "Une norme légale que les sites doivent respecter"]} correct={0} />
+
+<Quiz id="q-3" question="Dans quel cadre est-il acceptable d appliquer les techniques de ce parcours ?" options={["Sur n importe quel site tant qu on ne cause pas de dégât", "Uniquement sur des cibles autorisées ou des environnements d entraînement dédiés", "Sur les sites des concurrents de son employeur", "Sur tout site dont le code source est public"]} correct={1} />
+
+## à retenir
+
+L'OWASP est une fondation à but non lucratif qui publie des ressources libres sur la sécurité applicative. Son Top 10 est une liste de dix catégories de risques, classées par fréquence et impact, pas par gravité absolue. Chaque entrée est une famille de cas, pas une faille unique, et sert de système de classement pour raisonner pendant un test. Le classement est révisé tous les trois à quatre ans et bouge : les défauts de configuration et les dépendances vulnérables ont gagné du terrain. Enfin, rien de tout ça ne se pratique hors d'une cible autorisée ou d'un lab d'entraînement.
+
+OK 01-owasp-top10.mdx écrit

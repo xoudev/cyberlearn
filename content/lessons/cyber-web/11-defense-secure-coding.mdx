@@ -1,0 +1,97 @@
+---
+refCode: CL-LSN-095-V01
+slug: owasp-defense
+title: "Coder défensivement : les principes qui tiennent"
+description: "Synthèse des réflexes qui reviennent derrière toutes les failles web : valider l'entrée, échapper la sortie selon le contexte, appliquer le moindre privilège, empiler les défenses et penser la sécurité dès la conception."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-090-V01"]
+---
+
+On a passé en revue une bonne série de failles : injection SQL, XSS, contrôle d'accès cassé, IDOR, falsification de requêtes, mauvaise gestion des sessions. Vu une par une, ça ressemble à une liste à rallonge où chaque vulnérabilité a son nom, son exploit et son correctif particulier. Mais si tu prends du recul, tu remarques qu'elles tournent toujours autour des mêmes erreurs de raisonnement. Le but de cette leçon n'est pas d'ajouter une faille de plus. C'est de te donner le fil rouge : quatre ou cinq principes qui, appliqués sérieusement, ferment d'un coup la plupart des portes.
+
+Garde une idée en tête pendant toute la lecture. Une faille, ce n'est presque jamais un bug isolé. C'est une hypothèse fausse que le code fait sur le monde. « Cette valeur sera toujours un nombre. » « Cet utilisateur ne regardera jamais l'URL d'à côté. » « Personne ne modifiera ce champ caché. » Coder défensivement, c'est arrêter de faire ces paris.
+
+## valider l'entrée, échapper la sortie
+
+C'est le couple le plus souvent confondu, et c'est dommage parce que ce sont deux gestes différents qui se passent à deux moments différents.
+
+Valider l'entrée, c'est vérifier qu'une donnée a la forme attendue au moment où elle arrive. Un âge est un entier positif raisonnable. Un email ressemble à un email. Un identifiant de produit existe dans ta base. Tu rejettes tôt ce qui ne colle pas, avant même de traiter la demande. La validation répond à la question : est-ce que cette donnée a le droit d'entrer.
+
+Échapper la sortie, c'est neutraliser une donnée au moment où tu l'envoies vers un autre système, pour qu'elle ne soit pas interprétée comme du code. Et le point qui change tout : l'échappement dépend du contexte de destination. Une chaîne qui part dans du HTML s'échappe différemment d'une chaîne qui part dans une requête SQL, qui s'échappe encore différemment d'une chaîne passée à un shell. Le même texte, trois destinations, trois traitements.
+
+Pourquoi a-t-on besoin des deux ? Parce qu'ils protègent contre des choses distinctes. La validation arrête les données absurdes ou malveillantes au seuil. Mais une donnée parfaitement valide peut quand même casser une sortie : le nom de famille `O'Brien` est un nom légitime, et pourtant cette apostrophe peut briser une requête SQL mal construite. Valider n'aurait rien arrêté ici, c'est l'échappement à la sortie (ou mieux, une requête paramétrée) qui sauve. Inversement, échapper proprement ne te dispense pas de refuser un montant de paiement négatif.
+
+<Callout type="info">
+Règle simple à retenir : on valide à l'entrée parce qu'on connaît la forme attendue, on échappe à la sortie parce qu'on connaît la destination. Pour SQL et les commandes système, l'échappement manuel est fragile : préfère toujours les requêtes paramétrées et les API qui séparent le code des données.
+</Callout>
+
+## ne jamais faire confiance au client
+
+Tout ce qui arrive depuis un navigateur a transité par une machine que tu ne contrôles pas. Les champs de formulaire, les paramètres d'URL, les en-têtes, les cookies, le corps JSON d'une requête, même un champ `hidden` ou un menu déroulant dont tu as limité les options à l'écran : tout cela peut être réécrit avec un outil de proxy, la console du navigateur ou un simple `curl`. Le JavaScript que tu envoies n'est pas une barrière, c'est une suggestion d'interface.
+
+La conséquence est radicale : aucune décision de sécurité ne se prend côté client. La validation côté navigateur sert le confort de l'utilisateur, pas la sécurité. Le serveur revérifie tout, systématiquement.
+
+C'est exactement ce qui relie le contrôle d'accès cassé et l'IDOR. Si ton serveur affiche la facture `/factures/4012` et se contente de vérifier que tu es connecté, rien n'empêche un utilisateur de taper `/factures/4013` et de lire celle du voisin. L'application a fait confiance à l'identifiant fourni par le client comme si le client avait déjà le droit de le demander. Le bon réflexe : à chaque accès à une ressource, le serveur vérifie non seulement qui tu es, mais que cette ressource précise t'appartient ou que ton rôle t'y autorise.
+
+## moindre privilège
+
+Le principe tient en une phrase : chaque composant ne reçoit que les droits dont il a strictement besoin pour faire son travail, rien de plus. Un compte, un service, un jeton, une clé d'API, tous restent au minimum vital.
+
+L'intérêt ne se voit pas quand tout va bien. Il se voit le jour où une autre défense lâche. Prends une injection SQL qui passe malgré tes requêtes paramétrées, à cause d'un coin du code oublié. Si l'application se connecte à la base avec un compte qui peut tout faire (lire, écrire, supprimer des tables, créer des comptes), l'attaquant hérite de tout ça. Si au contraire le compte applicatif est en lecture seule sur les seules tables utiles, la même injection devient beaucoup moins grave : on peut lire ce que l'application lisait déjà, mais pas effacer la base ni s'octroyer un accès administrateur.
+
+Concrètement, ça veut dire des comptes de base de données séparés selon les usages, des jetons d'accès limités aux opérations nécessaires, des conteneurs qui ne tournent pas en root, des permissions de fichiers serrées. Le moindre privilège ne empêche pas la faille. Il réduit le rayon de l'explosion.
+
+## défense en profondeur
+
+Aucune protection n'est parfaite. Un filtre a un trou, une bibliothèque a un bug, un développeur oublie un cas. Partant de là, l'idée est simple : ne jamais dépendre d'une seule barrière. On empile plusieurs couches indépendantes pour qu'une défaillance isolée ne suffise pas à ouvrir la maison.
+
+<Diagram caption="Les couches de défense d'une application">
+flowchart TD
+  A[Requete entrante] --> B[Pare-feu applicatif WAF, filtrage en surface]
+  B --> C[Validation d'entree cote serveur]
+  C --> D[Authentification, qui es-tu]
+  D --> E[Autorisation, as-tu le droit sur cette ressource]
+  E --> F[Requetes parametrees vers la base]
+  F --> G[Compte base en moindre privilege]
+  G --> H[Journalisation et surveillance]
+</Diagram>
+
+Regarde le schéma comme une suite de tamis. Si un attaquant passe le premier, il bute sur le deuxième, puis le troisième. Chaque couche fait un travail que les autres ne font pas. Et la dernière, la journalisation, ne bloque rien mais te permet de voir qu'une attaque a eu lieu et jusqu'où elle est allée.
+
+C'est là qu'il faut tuer une idée reçue tenace.
+
+<Callout type="warning">
+« On a un WAF, donc on est protégés. » Un pare-feu applicatif filtre le trafic en cherchant des motifs d'attaque connus à l'entrée. C'est une couche utile, mais c'est un filet, pas un correctif. Il ne lit pas ton code, ne comprend pas ta logique métier, et un attaquant un peu motivé contourne ses signatures en variant son payload. Le WAF achète du temps et arrête le bruit de fond ; il ne répare pas une injection SQL ni un IDOR dans ton code. La vraie protection reste dans l'application.
+</Callout>
+
+## la sécurité dès la conception
+
+Le piège classique, c'est de traiter la sécurité comme une étape de fin : on code la fonctionnalité, ça marche, et on ajoute la sécurité après, en rustine. Ça coûte cher et ça laisse des trous, parce qu'à ce stade les mauvaises hypothèses sont déjà gravées dans l'architecture.
+
+Penser la sécurité dès la conception, c'est se poser la question des abus pendant qu'on dessine la fonctionnalité, pas après. Quand tu conçois un transfert d'argent, tu te demandes tout de suite : et si quelqu'un change le numéro de compte destinataire dans la requête ? Et s'il rejoue deux fois la même opération ? Et s'il met un montant négatif ? Cette démarche a un nom, la modélisation des menaces : lister les acteurs, les ressources sensibles, et les façons dont ça peut mal tourner, avant d'écrire la ligne de code.
+
+Ensuite, on rend la chose systématique pour ne pas dépendre de la vigilance d'un seul. Les revues de code regardent explicitement les points sensibles. Des tests de sécurité tournent dans la chaîne d'intégration continue : analyse statique du code, détection de secrets, vérification des dépendances vulnérables. Comme ça, une régression de sécurité bloque la livraison au même titre qu'un test cassé.
+
+<Callout type="success">
+La sécurité la moins chère est celle qu'on conçoit dès le départ. Une menace anticipée pendant la modélisation coûte une discussion ; la même découverte en production coûte un incident, une rustine en urgence et parfois une notification de fuite de données.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Une donnée parfaitement valide (un nom contenant une apostrophe) casse pourtant une requête SQL. Quel geste aurait évité le problème ?" options={["Mieux valider l'entrée, l'apostrophe aurait été rejetee", "Échapper la sortie selon le contexte, ici via une requête paramétrée", "Faire la validation côté navigateur avant l'envoi", "Ajouter un WAF devant l'application"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi le moindre privilège réduit-il les dégâts d'une injection SQL qui passe malgré tout ?" options={["Il empêche complètement l'injection de s'exécuter", "Il chiffre les données de la base", "Le compte applicatif n'a que des droits limités, donc l'attaquant ne peut pas tout faire", "Il bloque la requête avant qu'elle n'atteigne la base"]} correct={2} />
+
+<Quiz id="q-3" question="Un développeur affirme : 'On a un WAF, le code n'a plus besoin de gérer la sécurité.' Que répondre ?" options={["C'est correct, le WAF couvre toutes les attaques applicatives", "Le WAF filtre en surface et se contourne ; il ne corrige pas le code, la défense reste dans l'application", "Il faut juste ajouter un second WAF pour être tranquille", "Le WAF remplace la validation d'entrée côté serveur"]} correct={1} />
+
+## à retenir
+
+- Une faille est presque toujours une hypothèse fausse du code sur le monde ; coder défensivement, c'est arrêter ces paris.
+- Valider l'entrée (forme attendue, au seuil) et échapper la sortie (selon la destination : HTML, SQL, shell) sont deux gestes distincts et complémentaires.
+- Tout ce qui vient du client est falsifiable ; les décisions de sécurité se prennent côté serveur, ce qui ferme l'IDOR et le contrôle d'accès cassé.
+- Le moindre privilège ne bloque pas la faille mais limite son rayon : un compte de base en lecture seule transforme une catastrophe en simple lecture.
+- La défense en profondeur empile des couches indépendantes ; un WAF est un filet, pas un correctif.
+- La sécurité dès la conception (modélisation des menaces, revues, tests dans la CI) coûte bien moins cher qu'une rustine en production.

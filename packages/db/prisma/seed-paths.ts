@@ -196,6 +196,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-084-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-008-V01",
+    slug: "cyber-web-owasp",
+    title: "Sécurité web : le Top 10 OWASP en pratique",
+    description:
+      "Apprenez à reconnaître et à corriger les failles web les plus répandues : injection SQL, XSS, contrôle d'accès défaillant et IDOR, défaillances d'authentification, mauvaises configurations, CSRF, dépendances vulnérables, défaillances cryptographiques, SSRF et logique métier. Conclu par l'audit guidé d'une application volontairement vulnérable.",
+    category: "CYBERSEC",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 8,
+    lessons: [
+      "CL-LSN-085-V01",
+      "CL-LSN-086-V01",
+      "CL-LSN-087-V01",
+      "CL-LSN-088-V01",
+      "CL-LSN-089-V01",
+      "CL-LSN-090-V01",
+      "CL-LSN-091-V01",
+      "CL-LSN-092-V01",
+      "CL-LSN-093-V01",
+      "CL-LSN-094-V01",
+      "CL-LSN-095-V01",
+      "CL-LSN-096-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

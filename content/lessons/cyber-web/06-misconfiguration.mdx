@@ -1,0 +1,112 @@
+---
+refCode: CL-LSN-090-V01
+slug: owasp-misconfiguration
+title: "Mauvaises configurations de sécurité"
+description: "Découvrez pourquoi tant d'intrusions exploitent une simple erreur de configuration : identifiants par défaut, services inutiles exposés, messages d'erreur trop bavards, et droits trop larges."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-085-V01"]
+---
+
+Quand on pense à une intrusion, on imagine souvent un attaquant qui écrit un exploit maison, qui trouve une faille jamais documentée, qui passe des nuits à contourner des protections sophistiquées. C'est l'image qu'en donne le cinéma. La réalité est beaucoup plus banale, et beaucoup plus gênante.
+
+Une grande partie des compromissions ne reposent sur aucune prouesse technique. Elles passent par une porte que personne n'a pensé à fermer. Un panneau d'administration laissé accessible depuis Internet. Un compte `admin` dont le mot de passe est resté `admin`. Un message d'erreur qui affiche la version exacte du serveur. Un espace de stockage en ligne ouvert au public par accident. Rien d'exotique. Juste une configuration laissée par défaut, ou rendue trop permissive pour aller plus vite.
+
+Le modèle mental à garder en tête est simple. Un logiciel est livré dans un état pensé pour être facile à installer, pas pour être sûr. Les options sont ouvertes, les comptes de test sont actifs, les messages sont verbeux pour aider au débogage. Sécuriser, c'est refermer tout ça. Tant que personne ne le fait, le système reste dans son état le plus exposé. Un attaquant n'a alors pas besoin de forcer quoi que ce soit. Il lui suffit de regarder.
+
+## les identifiants par défaut
+
+Beaucoup d'équipements et de logiciels arrivent avec un compte préconfiguré. Un routeur avec `admin` / `admin`. Une base de données avec un utilisateur `root` sans mot de passe. Un outil d'administration avec un compte de démonstration `demo` / `demo`. C'est pratique le premier jour, parce que ça permet de se connecter tout de suite. Le problème, c'est que ces couples identifiant / mot de passe sont publics. Ils sont écrits dans la documentation du produit, et compilés dans des listes que n'importe qui peut télécharger.
+
+Pourquoi est-ce si fréquent ? Parce que changer ces identifiants demande une action volontaire, et que rien ne bloque tant qu'on ne l'a pas faite. Le système fonctionne, la démo passe, on passe à autre chose. Le compte de test reste actif des mois. Personne ne le voit, jusqu'au jour où un scanner automatisé le trouve en quelques secondes.
+
+<Callout type="danger">
+Les identifiants par défaut sont la première chose qu'un attaquant essaie, parce que c'est gratuit et que ça marche encore trop souvent. Avant de mettre quoi que ce soit en ligne, changez tous les mots de passe par défaut et supprimez les comptes de démonstration. Pas plus tard, maintenant.
+</Callout>
+
+## les services et pages exposés
+
+Un système en production expose souvent plus de choses que prévu. Un panneau d'administration accessible depuis Internet alors qu'il devrait être réservé au réseau interne. Des fichiers de sauvegarde oubliés à la racine du site, comme `backup.zip` ou `database.sql`. Des endpoints de debug laissés actifs. Une console de monitoring sans authentification.
+
+Un attaquant commence toujours par une phase de reconnaissance. Il ne devine pas, il liste. Il regarde le fichier `robots.txt`, qui indique parfois des répertoires que le propriétaire voulait cacher des moteurs de recherche, et qui devient une carte des zones sensibles. Il teste des noms de pages courants avec un outil qui parcourt une liste de mots. Ce qui répond, il le note.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="reconnaissance d'une cible web" />
+
+<Callout type="warning">
+Ces techniques de reconnaissance ne sont à pratiquer que sur des cibles dont vous avez l'autorisation explicite : vos propres serveurs, ou des plateformes d'entraînement prévues pour ça. Scanner un site tiers sans accord est illégal, même si vous ne touchez à rien.
+</Callout>
+
+## les erreurs trop bavardes
+
+Quand quelque chose casse, une application doit répondre. La question est : combien en dit-elle ? En développement, on veut un maximum de détails pour corriger vite. Une trace complète, le nom du fichier, le numéro de ligne, la requête SQL qui a échoué. C'est très utile pour le développeur. C'est aussi très utile pour l'attaquant, si ce niveau de détail reste actif en production.
+
+Voici le genre de message qui ne devrait jamais apparaître sur un site public :
+
+```text
+Fatal error: Uncaught PDOException: SQLSTATE[42S22]:
+Column not found: 1054 Unknown column 'pwd' in 'where clause'
+in /var/www/app/src/Auth/LoginController.php:88
+Stack trace:
+#0 /var/www/app/vendor/framework/Database.php(214)
+#1 /var/www/app/src/Auth/LoginController.php(88)
+Server: nginx/1.18.0  PHP/7.4.3  MySQL 5.7.33
+```
+
+Lisez ce que ça offre. Le type de base de données et sa version. Le framework utilisé. Le chemin absolu sur le serveur. Le nom d'une colonne de la table de connexion. Les versions de nginx, PHP et MySQL. À partir de là, l'attaquant sait quelles failles connues chercher pour ces versions précises, et il a déjà une idée de la structure de votre base. Une seule page d'erreur vient de lui faire gagner des heures de travail.
+
+## les en-têtes de sécurité manquants
+
+Un navigateur applique les règles de sécurité que le serveur lui demande d'appliquer, via des en-têtes HTTP. Si le serveur n'en envoie pas, le navigateur reste en mode permissif. Deux exemples parlants.
+
+`Strict-Transport-Security` (HSTS) force le navigateur à n'utiliser que HTTPS pour votre site, ce qui empêche un attaquant de rabattre la connexion sur du HTTP non chiffré. `Content-Security-Policy` (CSP) limite les sources de scripts que la page a le droit de charger, ce qui réduit fortement l'impact d'une injection de code. Ces en-têtes ne coûtent rien à ajouter, et leur absence est une porte laissée entrouverte.
+
+## les droits trop larges
+
+Une configuration trop permissive donne souvent plus d'accès que nécessaire. Un fichier de configuration lisible par tous les comptes du serveur alors qu'il contient des mots de passe. Un répertoire en écriture pour tout le monde. Et le grand classique du moment : un espace de stockage cloud, un bucket, configuré en accès public au lieu de privé.
+
+Le scénario revient sans cesse. Une équipe stocke des sauvegardes, des exports clients ou des documents internes dans un bucket. Pour aller vite pendant les tests, quelqu'un coche « accès public ». Le projet avance, personne ne revient sur ce réglage. Des mois plus tard, des millions de fichiers sont indexés et téléchargeables par n'importe qui connaissant l'adresse. Aucune intrusion n'a eu lieu. La donnée était simplement posée dehors.
+
+Le principe à appliquer est celui du moindre privilège : chaque compte, chaque fichier, chaque service ne reçoit que les droits dont il a strictement besoin, et rien de plus. Public par défaut est une erreur. Privé par défaut, on ouvre ensuite au cas par cas.
+
+## la défense
+
+La bonne nouvelle, c'est que cette catégorie de failles se corrige avec de la rigueur, pas avec de la magie. Quelques réflexes couvrent l'essentiel.
+
+Durcir par défaut. Partez d'une configuration fermée et n'ouvrez que ce qui sert. Retirer ce qui ne sert pas : comptes de démonstration, modules inutilisés, pages de debug, endpoints de test. Moins il y a de surface, moins il y a à protéger.
+
+Côté erreurs, séparez nettement les deux mondes. En développement, des messages détaillés. En production, un message générique du type « une erreur est survenue », et les détails partent dans des logs côté serveur que seul l'administrateur consulte. Le visiteur n'a jamais à voir une trace.
+
+Enfin, ne considérez pas une configuration comme acquise. Les serveurs changent, les versions évoluent, des réglages dérivent. Revoyez régulièrement les droits, les en-têtes, les ports ouverts, les buckets.
+
+<Callout type="success">
+Une règle simple qui couvre beaucoup de cas : tout ce qui est ouvert sans raison explicite doit être fermé. Si vous ne pouvez pas expliquer pourquoi un accès, un compte ou un service est actif, c'est probablement qu'il ne devrait pas l'être.
+</Callout>
+
+## à toi de jouer
+
+Reprenez la reconnaissance, cette fois en cherchant un fichier de sauvegarde oublié et en lisant ce que le serveur révèle dans ses en-têtes.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="inspecter les en-têtes et les fichiers oubliés" />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Pourquoi les identifiants par défaut comme admin/admin restent-ils un risque majeur ?" options={["Parce qu'ils sont chiffrés trop faiblement", "Parce qu'ils sont publics et qu'un scanner les teste en quelques secondes", "Parce qu'ils expirent automatiquement après un mois", "Parce qu'ils empêchent le HTTPS de fonctionner"]} correct={1} />
+
+<Quiz id="q-2" question="Qu'est-ce qu'un message d'erreur trop verbeux offre à un attaquant ?" options={["Un accès administrateur direct au serveur", "Une augmentation des droits sur les fichiers", "Des détails comme la version du serveur, le framework et les chemins internes", "Un contournement du chiffrement HTTPS"]} correct={2} />
+
+<Quiz id="q-3" question="Quel principe évite qu'un bucket de stockage finisse ouvert au public par accident ?" options={["Le moindre privilège : privé par défaut, on ouvre au cas par cas", "Le chiffrement de bout en bout des messages d'erreur", "L'usage exclusif d'identifiants par défaut documentés", "La désactivation complète des logs serveur"]} correct={0} />
+
+</QuizGroup>
+
+## à retenir
+
+- La plupart des intrusions exploitent une config oubliée ou trop permissive, pas une faille exotique.
+- Les identifiants par défaut sont publics : il faut les changer et supprimer les comptes de démonstration avant toute mise en ligne.
+- Panneaux d'admin, fichiers de sauvegarde et endpoints de debug exposés se trouvent par simple reconnaissance (robots.txt, listing de pages).
+- Un message d'erreur verbeux livre versions, framework et chemins internes : en production, message générique, détails dans les logs serveur.
+- Des en-têtes comme HSTS et CSP renforcent la sécurité côté navigateur et ne coûtent rien à poser.
+- Droits trop larges et stockage public par défaut violent le moindre privilège : fermez tout ce qui est ouvert sans raison.
+
+OK 06-misconfiguration.mdx écrit
