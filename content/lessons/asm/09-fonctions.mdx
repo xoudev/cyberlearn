@@ -10,19 +10,23 @@ xpReward: 480
 prerequisites: ["CL-LSN-041-V01"]
 ---
 
-Jusqu'ici, votre code assembleur s'écrivait d'un seul bloc, du début à la fin. Mais dès qu'un programme grossit, vous répétez les mêmes suites d'instructions encore et encore : calculer un carré, additionner deux nombres, formater une valeur. Recopier ces blocs partout est fastidieux et source d'erreurs. La solution est universelle en programmation : factoriser le code en **sous-routines** réutilisables, que l'on appelle aussi des **fonctions**.
+Jusqu'ici, votre code s'écrivait d'une traite, du premier label au dernier `ret`. Ça marche tant que le programme reste petit. Dès qu'il grossit, vous retombez toujours sur les mêmes suites d'instructions : calculer un carré ici, additionner deux nombres là, refaire le même formatage trois écrans plus bas. Recopier ces blocs vous coûte du temps et multiplie les occasions de vous tromper. Quand vous corrigez un bug dans l'un, vous oubliez les quatre copies. La réponse est la même dans tous les langages : on isole le bout de code réutilisable dans une sous-routine, qu'on appelle aussi une fonction, et on la déclenche autant de fois qu'on en a besoin.
 
-Une fonction, en assembleur, n'est rien d'autre qu'un bloc d'instructions repéré par un **label**, que l'on peut déclencher depuis n'importe quel endroit du programme. On lui transmet des valeurs d'entrée, elle effectue son travail, puis elle rend la main à l'endroit exact d'où on l'a appelée. Deux instructions orchestrent toute cette mécanique : `call` pour partir vers la fonction, et `ret` pour en revenir. Dans cette leçon, nous allons décortiquer ce duo, voir comment passer des arguments par les registres, réutiliser une même fonction plusieurs fois, et préserver des valeurs autour d'un appel grâce à la pile.
+En assembleur, une fonction n'a rien de magique. C'est un bloc d'instructions repéré par un label, qu'on peut atteindre depuis n'importe où. On lui donne des valeurs d'entrée, elle fait son travail, elle rend la main pile à l'endroit d'où on l'a appelée. Deux instructions tiennent toute la mécanique : `call` pour aller vers la fonction, `ret` pour en revenir. Le reste de la leçon va regarder de près ce qui se passe entre ces deux instructions, comment la pile mémorise le chemin du retour, comment passer des arguments par les registres, et quel piège vous guette si vous laissez la pile se déséquilibrer.
 
 ## call et ret
 
-L'instruction `call label` fait deux choses en un seul geste. D'abord, elle **empile l'adresse de retour** : l'adresse de l'instruction qui suit immédiatement le `call`. Ensuite, elle **saute** au label indiqué, exactement comme un `jmp`. Le processeur exécute alors le corps de la fonction.
+L'instruction `call label` fait deux choses dans le même mouvement. D'abord elle empile l'adresse de retour, c'est-à-dire l'adresse de l'instruction qui suit immédiatement le `call`. Ensuite elle saute au label indiqué, comme le ferait un `jmp`. Le processeur se met alors à exécuter le corps de la fonction. Cette adresse empilée, c'est la note que `call` se laisse à lui-même : voici où je devrai reprendre quand la fonction aura fini.
 
-Quand la fonction rencontre `ret`, l'opération inverse se produit : `ret` **dépile l'adresse de retour** mémorisée par `call`, et y saute. Le programme reprend donc juste après le `call` d'origine, comme si rien n'avait interrompu le fil principal. C'est ce mécanisme qui permet d'appeler une fonction depuis dix endroits différents et de toujours revenir au bon endroit.
+Quand l'exécution atteint `ret`, l'inverse se produit. `ret` dépile l'adresse de retour qu'avait posée `call`, et y saute. Le programme reprend donc juste après le `call` d'origine, comme si le détour par la fonction n'avait jamais coupé le fil principal. Vous n'avez rien à indiquer à `ret` : il ne sait pas, et n'a pas besoin de savoir, vers quel `main` ou quel appelant il revient. Il prend simplement l'adresse qui est en haut de la pile et il y va. C'est ce détail qui change tout : vous pouvez appeler la même fonction depuis dix endroits différents, et chaque fois `ret` vous ramène au bon, parce que chaque `call` a déposé sa propre adresse.
+
+C'est le bon moment pour tuer une idée reçue. On imagine parfois que le processeur garde quelque part une trace fixe de la fonction appelante, une sorte de registre spécial qui mémorise le retour. Il n'en est rien. L'unique mémoire du retour, c'est la pile, et rien d'autre. `call` et `ret` ne sont qu'une manière déguisée de manipuler cette pile : empiler l'adresse de retour, c'est exactement un `push` automatique ; `ret`, c'est un `pop` suivi d'un saut vers la valeur dépilée. Tenez cette image et la suite devient limpide.
 
 <Callout type="info">
-`call` s'appuie sur la pile que vous avez vue précédemment. Empiler l'adresse de retour, c'est exactement un `push` automatique ; `ret`, c'est un `pop` suivi d'un saut. Le couple call/ret est donc un usage déguisé de push/pop, géré pour vous par le processeur.
+`call` s'appuie sur la pile que vous avez vue précédemment. Empiler l'adresse de retour, c'est un `push` que le processeur fait pour vous ; `ret`, c'est un `pop` suivi d'un saut. Le couple call/ret est donc du push/pop déguisé, géré automatiquement.
 </Callout>
+
+Voilà pourquoi la pile rend les appels imbriqués possibles sans aucun effort de votre part. Si `main` appelle `carre`, et que `carre` appelle à son tour une autre fonction, les adresses de retour s'empilent les unes sur les autres. La dernière posée est la première reprise. Quand la fonction la plus profonde fait `ret`, elle dépile son adresse et revient dans sa fonction appelante ; celle-ci fait `ret` à son tour et dépile la sienne ; et ainsi de suite jusqu'à `main`. La pile gère cet emboîtement toute seule, comme une pile d'assiettes où l'on retire toujours celle du dessus.
 
 Voici la structure minimale d'une fonction appelée depuis `main` :
 
@@ -41,13 +45,13 @@ main:
     println rax         ; 42
     ret`} />
 
-Remarquez l'ordre : `addition` est écrite avant `main`, mais le programme démarre toujours par `main`. Tant que vous appelez la fonction avec `call`, sa position dans le fichier n'a aucune importance.
+Notez l'ordre dans le fichier : `addition` est écrite avant `main`, mais le programme démarre toujours par `main`. La position d'une fonction dans le source ne change rien, tant que vous l'atteignez par un `call`. Le label sert d'adresse, pas d'ordre d'exécution.
 
-## Passer des arguments
+## passer des arguments
 
-Une fonction sans entrée a peu d'intérêt. Pour lui transmettre des données, on utilise une **convention d'appel** : les arguments passent par des registres prédéfinis, dans l'ordre `rdi`, `rsi`, `rdx`, `rcx`, etc. Le **résultat** est toujours renvoyé dans `rax`. C'est un contrat : l'appelant place ses valeurs dans les bons registres, la fonction sait où aller les chercher.
+Une fonction qui ne reçoit rien ne sert pas à grand-chose. Pour lui transmettre des données, on suit une convention d'appel : un accord, fixé d'avance, sur les registres où passent les arguments. Le premier va dans `rdi`, le deuxième dans `rsi`, puis viennent `rdx`, `rcx`, et ainsi de suite. Le résultat, lui, revient dans `rax`. Cette convention n'est pas une loi du processeur, c'est un contrat que l'appelant et la fonction promettent tous deux de respecter : l'appelant range ses valeurs dans les bons registres avant le `call`, la fonction sait exactement où aller les chercher. Tant que les deux côtés tiennent l'accord, ils n'ont pas besoin de se parler autrement.
 
-Construisons une fonction `carre` qui calcule le carré de son argument. Elle reçoit un nombre dans `rdi` et doit produire `rdi * rdi` dans `rax` :
+Écrivons une fonction `carre` qui calcule le carré de son argument. Elle reçoit un nombre dans `rdi` et doit produire `rdi * rdi` dans `rax` :
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -63,11 +67,11 @@ main:
     println rax         ; 49
     ret`} />
 
-La fonction copie d'abord `rdi` dans `rax`, puis multiplie `rax` par `rdi` avec `imul`. Le résultat se retrouve dans `rax`, prêt à être affiché par l'appelant. La fonction ignore totalement d'où vient l'appel : elle se contente de respecter le contrat.
+La fonction copie d'abord `rdi` dans `rax`, puis multiplie `rax` par `rdi` avec `imul`. Le résultat se retrouve dans `rax`, prêt pour l'appelant. Regardez ce que la fonction ne fait pas : elle ne se demande jamais d'où vient l'appel, ni ce qu'on fera du résultat. Elle lit son entrée à l'endroit convenu, elle écrit sa sortie à l'endroit convenu. Cette indifférence est précisément ce qui la rend réutilisable.
 
-## Appeler plusieurs fois
+## appeler plusieurs fois
 
-Tout l'intérêt d'une fonction est de la **réutiliser**. Une fois `carre` écrite, vous pouvez l'appeler autant de fois que vous le voulez, avec des arguments différents, sans recopier la moindre instruction.
+Tout l'intérêt d'une fonction tient dans ce mot : réutiliser. Une fois `carre` écrite, vous l'appelez autant de fois que vous voulez, avec des arguments différents, sans recopier une seule instruction.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -91,11 +95,11 @@ main:
     println rax         ; 81
     ret`} />
 
-Trois appels, un seul corps de fonction. Avant chaque `call`, on prépare l'argument dans `rdi` ; après chaque `call`, on lit le résultat dans `rax`. C'est exactement ce qu'on attend d'une sous-routine bien conçue : écrite une fois, employée partout.
+Trois appels, un seul corps de fonction. Le schéma est toujours le même : on prépare l'argument dans `rdi`, on fait `call`, on lit le résultat dans `rax`. À chaque appel, `call` dépose sa propre adresse de retour sur la pile et `ret` la reprend, si bien que l'exécution revient à chaque fois exactement après le `call` concerné. C'est exactement ce qu'on attend d'une sous-routine : écrite une fois, employée partout.
 
-## Sauvegarder des registres
+## sauvegarder des registres
 
-Voici un piège fréquent. Une fonction écrit son résultat dans `rax` et peut modifier d'autres registres au passage. Si vous teniez une valeur importante dans un registre que la fonction écrase, elle est perdue après l'appel. La parade consiste à **sauvegarder ce registre sur la pile** avec `push` avant le `call`, puis à le **restaurer** avec `pop` après.
+Voici le piège classique. Une fonction écrit forcément dans `rax`, et elle peut toucher d'autres registres en chemin. Si vous teniez une valeur utile dans un registre que la fonction écrase, cette valeur est perdue dès le retour, sans avertissement. La parade : mettre le registre à l'abri sur la pile avec `push` avant le `call`, puis le récupérer avec `pop` après.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -117,17 +121,20 @@ main:
     println rbx         ; 100
     ret`} />
 
-Le `push rbx` met la valeur 100 en lieu sûr sur la pile ; le `pop rbx` la remet en place après l'appel. Entre les deux, peu importe ce que la fonction trafique.
+Le `push rbx` met 100 en lieu sûr sur la pile, le `pop rbx` le remet en place après l'appel. Entre les deux, ce que la fonction trafique vous est égal.
+
+Mais cette même pile que vous utilisez pour protéger un registre, c'est celle où vit l'adresse de retour. D'où le vrai danger. Imaginez un `push` sans son `pop` à l'intérieur d'une fonction. Au moment du `ret`, le haut de la pile n'est plus l'adresse de retour : c'est la valeur que vous avez oublié de dépiler. `ret` la prend pour une adresse et saute dessus. Vous repartez alors n'importe où, vers une instruction au hasard, et le programme part en vrille de façon souvent incompréhensible. Le symptôme est loin de la cause, ce qui rend ce bug pénible à traquer. La règle est donc simple et sans exception : chaque `push` doit avoir son `pop`. Quand la pile est équilibrée, `ret` retrouve toujours la bonne adresse.
 
 <Callout type="warning">
-N'oubliez jamais qu'une fonction peut écraser des registres. Si une valeur doit survivre à un `call`, protégez-la explicitement par `push` avant et `pop` après. Et veillez à équilibrer : un `push` doit toujours avoir son `pop` correspondant, sinon la pile se déséquilibre et `ret` dépilera la mauvaise adresse.
+N'oubliez jamais qu'une fonction peut écraser des registres. Si une valeur doit survivre à un `call`, protégez-la par `push` avant et `pop` après. Et équilibrez : un `push` doit toujours avoir son `pop`, sinon la pile se décale et `ret` dépile la mauvaise adresse.
 </Callout>
 
-## À vous de jouer
+## à vous de jouer
 
 <QuizGroup>
 
 <Quiz
+  id="q-1"
   question="Que fait l'instruction call quand elle est exécutée ?"
   options={[
     "Elle empile l'adresse de retour, puis saute au label de la fonction",
@@ -135,11 +142,11 @@ N'oubliez jamais qu'une fonction peut écraser des registres. Si une valeur doit
     "Elle copie rdi dans rax automatiquement",
     "Elle termine le programme"
   ]}
-  correctIndex={0}
-  explanation="call empile l'adresse de l'instruction suivante (pour pouvoir y revenir), puis saute au label indique. C'est ce qui permet a ret de retrouver le chemin du retour."
+  correct={0}
 />
 
 <Quiz
+  id="q-2"
   question="Que fait l'instruction ret ?"
   options={[
     "Elle remet rax a zero",
@@ -147,11 +154,11 @@ N'oubliez jamais qu'une fonction peut écraser des registres. Si une valeur doit
     "Elle depile l'adresse de retour mise en place par call, et y saute",
     "Elle empile la valeur de rax"
   ]}
-  correctIndex={2}
-  explanation="ret depile l'adresse de retour memorisee par call et y saute. L'execution reprend donc juste apres le call d'origine."
+  correct={2}
 />
 
 <Quiz
+  id="q-3"
   question="Par convention, où se trouve le résultat renvoyé par une fonction, et où passe le premier argument ?"
   options={[
     "Résultat dans rdi, premier argument dans rax",
@@ -159,8 +166,7 @@ N'oubliez jamais qu'une fonction peut écraser des registres. Si une valeur doit
     "Résultat et argument dans rbx",
     "Résultat dans rsi, premier argument dans rdx"
   ]}
-  correctIndex={1}
-  explanation="La convention place le premier argument dans rdi (puis rsi, rdx...) et le resultat dans rax. C'est le contrat que l'appelant et la fonction respectent."
+  correct={1}
 />
 
 </QuizGroup>
@@ -181,13 +187,14 @@ main:
     println rax         ; 42
     ret`} />
 
-## Récapitulatif
+## récapitulatif
 
-- Une **fonction** est un bloc d'instructions repéré par un **label**, terminé par `ret`.
-- `call label` **empile l'adresse de retour** puis **saute** vers la fonction.
-- `ret` **dépile cette adresse** et y revient : l'exécution reprend juste après le `call`.
-- Les **arguments** passent par les registres dans l'ordre `rdi`, `rsi`, `rdx`... ; le **résultat** revient dans `rax`.
-- Une même fonction se **réutilise** autant de fois qu'on veut, avec des arguments différents.
-- Une fonction peut **écraser des registres** : protégez les valeurs sensibles avec `push` avant le `call` et `pop` après, en équilibrant toujours push et pop.
+- Une fonction est un bloc d'instructions repéré par un label, terminé par `ret`.
+- `call label` empile l'adresse de retour puis saute vers la fonction.
+- `ret` dépile cette adresse et y revient : l'exécution reprend juste après le `call`.
+- La seule mémoire du retour, c'est la pile ; c'est elle qui rend les appels imbriqués possibles, dernière adresse posée, première reprise.
+- Les arguments passent par les registres dans l'ordre `rdi`, `rsi`, `rdx`... ; le résultat revient dans `rax`.
+- Une même fonction se réutilise autant de fois qu'on veut, avec des arguments différents.
+- Une fonction peut écraser des registres : protégez les valeurs sensibles par `push` avant le `call` et `pop` après, et équilibrez toujours push et pop, sinon `ret` dépile la mauvaise adresse.
 
 OK 09-fonctions.mdx écrit

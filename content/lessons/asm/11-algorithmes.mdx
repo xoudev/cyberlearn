@@ -10,13 +10,13 @@ xpReward: 850
 prerequisites: ["CL-LSN-044-V01", "CL-LSN-045-V01"]
 ---
 
-Jusqu'ici, vous avez appris les briques fondamentales de l'assembleur : les registres, l'arithmetique, les sauts conditionnels et les boucles. Il est temps d'assembler toutes ces connaissances pour ecrire de vrais algorithmes, ceux que vous croisez quotidiennement dans les langages de haut niveau. La difference, c'est qu'ici il n'y a pas de fonction toute faite : vous orchestrez vous-meme chaque registre, chaque comparaison, chaque iteration.
+Vous avez vu les registres, l'arithmetique, les comparaisons, les sauts conditionnels et les boucles, chaque morceau dans son coin. Cette lecon les met bout a bout. On va ecrire des algorithmes que vous connaissez deja depuis les langages de haut niveau, sauf qu'ici personne ne vous prete de fonction toute prete. Pas de `Math.pow`, pas de boucle `for` avec une variable nommee qui s'incremente toute seule. Vous tenez chaque registre a la main, et vous suivez sa valeur d'une instruction a l'autre.
 
-Ecrire un algorithme en assembleur, c'est penser comme le processeur. On ne dispose que de quelques registres, d'une poignee d'instructions, et d'aucune variable nommee au sens classique. Chaque valeur intermediaire vit dans un registre que vous choisissez et que vous suivez du regard. Cette contrainte est formatrice : elle vous oblige a comprendre exactement ce qui se passe, etape par etape. Dans cette lecon, nous allons construire quatre algorithmes incontournables : la factorielle, la suite de Fibonacci, la recherche du maximum, et le calcul d'une puissance.
+C'est exactement ce qui rend l'exercice utile. En assembleur, une variable n'existe pas en tant que telle : il y a un registre que vous avez decide d'utiliser pour un role, et vous devez vous rappeler de ce role jusqu'au bout. Le processeur, lui, ne sait rien de vos intentions. Il execute mov, imul, cmp, jg, l'un apres l'autre. Si vous comprenez comment une factorielle se replie sur une poignee de registres et deux ou trois sauts, vous comprenez ce qu'un compilateur produit quand vous ecrivez une boucle en C ou en Python. Les quatre exemples qui suivent (factorielle, Fibonacci, maximum, puissance) reprennent chacun des reflexes vus avant, et les assemblent.
 
-## La factorielle
+## la factorielle
 
-La factorielle de n, notee n!, est le produit de tous les entiers de 1 a n. Par exemple, 5! vaut 5 x 4 x 3 x 2 x 1 = 120. L'idee est simple : on part d'un resultat egal a 1, puis on le multiplie successivement par n, n-1, n-2, jusqu'a atteindre 1. Une boucle qui decremente un compteur fait exactement cela.
+La factorielle de n, ecrite n!, c'est le produit de tous les entiers de 1 a n. 5! donne 5 x 4 x 3 x 2 x 1, soit 120. La methode tient en une phrase : on demarre avec un resultat egal a 1, et on le multiplie par n, puis n-1, puis n-2, jusqu'a descendre a 1. Une boucle qui decremente un compteur fait pile cela.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -31,15 +31,15 @@ boucle:
     println rax         ; affiche 120
     ret`} />
 
-Suivez le deroulement : au premier tour rax devient 1 x 5 = 5, puis 5 x 4 = 20, puis 20 x 3 = 60, puis 60 x 2 = 120, et enfin 120 x 1 = 120. Lorsque rcx atteint 0, le saut conditionnel jg ne se declenche plus et on sort de la boucle.
+Deux registres, deux roles. rax porte le resultat, rcx porte le compteur. Regardez tourner la boucle : rax passe a 1 x 5 = 5, puis 5 x 4 = 20, puis 20 x 3 = 60, puis 60 x 2 = 120, et enfin 120 x 1 = 120. Pendant ce temps rcx descend 5, 4, 3, 2, 1, puis 0. Quand cmp constate que rcx vaut 0, jg ne saute plus, et l'execution tombe sur println. La condition d'arret, ce n'est pas une promesse abstraite : c'est ce moment precis ou le drapeau teste par jg cesse d'etre vrai.
 
 <Callout type="info">
-L'instruction imul realise une multiplication signee et ecrit le resultat directement dans le registre de destination. Dans une boucle, elle devient un accumulateur multiplicatif parfait : a chaque iteration, le registre garde le produit cumule des tours precedents. C'est le pendant multiplicatif de add, que vous utiliseriez pour une somme.
+L'instruction imul fait une multiplication signee et range le resultat dans le registre de destination. Dans une boucle, ce registre devient un accumulateur : a chaque tour il garde le produit de tous les tours d'avant. C'est le frere multiplicatif de add, que vous prendriez pour une somme. Retenez ce mot, accumulateur, il revient dans trois des quatre algorithmes de la lecon.
 </Callout>
 
-## La suite de Fibonacci
+## la suite de Fibonacci
 
-Dans la suite de Fibonacci, chaque terme est la somme des deux precedents : 0, 1, 1, 2, 3, 5, 8, 13, et ainsi de suite. Pour calculer le Neme terme, on a besoin de deux registres qui memorisent les deux derniers termes, et a chaque iteration on les fait avancer. La subtilite est l'echange : le nouveau terme devient l'ancien, ce qui demande de manipuler un registre temporaire ou la pile.
+Dans Fibonacci, chaque terme vaut la somme des deux qui le precedent : 0, 1, 1, 2, 3, 5, 8, 13, et ainsi de suite. Pour calculer un terme il faut donc se souvenir des deux derniers en meme temps. D'ou deux registres au lieu d'un. A chaque iteration on les fait glisser d'un cran vers la droite de la suite, et c'est ce glissement qui demande un peu d'attention.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -57,11 +57,11 @@ boucle:
     println rax         ; affiche 34 (le terme atteint apres 9 avancees)
     ret`} />
 
-Ici rdx joue le role de variable temporaire indispensable pour ne pas ecraser une valeur avant de l'avoir reutilisee. Sans lui, l'ecriture dans rax detruirait l'information dont add a besoin. C'est un piege classique du calcul Fibonacci : l'ordre des trois mouvements est crucial.
+Le point delicat est la mise a jour simultanee. On voudrait dire en meme temps rax devient rbx et rbx devient rax plus rbx. Mais le processeur ne fait qu'une instruction a la fois. Si on ecrivait directement dans rax, on perdrait son ancienne valeur avant que add ne s'en serve. C'est pour cela que rdx entre en scene : il met l'ancien terme courant de cote une fraction de seconde, le temps que rax soit remplace. Ensuite add rbx, rdx peut tranquillement ajouter cette valeur sauvegardee. L'ordre des trois mouvements n'est pas decoratif, il est la seule sequence qui ne detruit aucune information. Inversez deux lignes et la suite est fausse. rcx, lui, joue exactement le meme role compteur que dans la factorielle : il decompte les iterations et fixe le moment de la sortie.
 
-## Le maximum de plusieurs valeurs
+## le maximum de plusieurs valeurs
 
-Trouver le plus grand d'un ensemble de valeurs repose sur une idee tres naturelle : on garde un champion dans un registre, et on le compare a chaque nouveau candidat. Si le candidat est plus grand, il devient le nouveau champion. On parcourt ainsi toutes les valeurs en ne conservant que la meilleure.
+Trouver la plus grande valeur d'un lot repose sur une idee qu'on applique sans y penser dans la vie courante : on garde un champion en tete, on le confronte a chaque nouveau venu, et on ne remplace le champion que si le candidat fait mieux. En assembleur, le champion vit dans un registre, et chaque comparaison est un cmp suivi d'un saut.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -85,11 +85,11 @@ fin:
     println rax         ; affiche 42, la plus grande valeur
     ret`} />
 
-Le motif se repete : comparer, sauter si le candidat n'est pas meilleur, sinon mettre a jour. L'instruction jle (jump if less or equal) saute lorsque le candidat est inferieur ou egal, ce qui laisse le maximum inchange dans ce cas.
+Ici pas de boucle, mais le meme bloc repete a la main pour chaque candidat : charger la valeur dans rbx, comparer avec rax, sauter par-dessus la mise a jour si rbx ne gagne pas, sinon copier rbx dans rax. L'instruction jle (jump if less or equal) saute quand le candidat est inferieur ou egal au champion, ce qui laisse rax intact dans ces cas. On voit bien le mecanisme : rax part a 17, 42 le detrone, 8 ne change rien, 23 ne change rien non plus, et 42 reste roi. Si vous aviez un tableau au lieu de quatre valeurs ecrites en dur, vous remplaceriez ces blocs repetes par une vraie boucle qui lit chaque element, mais la logique champion contre candidat ne bougerait pas d'un poil.
 
-## La puissance
+## la puissance
 
-Calculer base elevee a l'exposant revient a multiplier la base par elle-meme un certain nombre de fois. On reprend l'idee de l'accumulateur multiplicatif vu pour la factorielle, mais cette fois le facteur reste constant et c'est l'exposant qui sert de compteur.
+Elever une base a un exposant, c'est multiplier la base par elle-meme un certain nombre de fois. On retrouve l'accumulateur multiplicatif de la factorielle, a une nuance pres : le facteur ne change plus a chaque tour, il reste egal a la base, et c'est l'exposant qui sert de compteur.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -105,11 +105,12 @@ boucle:
     println rax         ; affiche 81 (soit 3 puissance 4)
     ret`} />
 
-On multiplie 1 par 3 quatre fois de suite : 3, 9, 27, 81. L'initialisation a 1 est essentielle, car c'est l'element neutre de la multiplication : commencer a 0 donnerait toujours 0.
+On multiplie 1 par 3, quatre fois : 3, 9, 27, 81. Comparez avec la factorielle : meme ossature, meme jg qui clot la boucle, sauf que imul prend ici rbx fixe au lieu de rcx qui variait. Et l'initialisation a 1 garde tout son sens. 1 est l'element neutre de la multiplication, donc le premier imul ne fait que poser la base. Partir de 0 donnerait 0 a tous les tours, parce que zero absorbe n'importe quelle multiplication.
 
-## A vous de jouer
+## a vous de jouer
 
 <Quiz
+  id="q-1"
   question="Dans la boucle de la factorielle, pourquoi initialise-t-on rax a 1 plutot qu'a 0 ?"
   options={[
     "Parce que 0 est interdit dans rax",
@@ -117,10 +118,11 @@ On multiplie 1 par 3 quatre fois de suite : 3, 9, 27, 81. L'initialisation a 1 e
     "Parce que rax doit toujours commencer a 1 en assembleur",
     "Parce que dec rcx exige une valeur de depart impaire"
   ]}
-  correctIndex={1}
+  correct={1}
 />
 
 <Quiz
+  id="q-2"
   question="Dans le calcul de Fibonacci, a quoi sert le registre temporaire rdx ?"
   options={[
     "A stocker le resultat final avant l'affichage",
@@ -128,10 +130,11 @@ On multiplie 1 par 3 quatre fois de suite : 3, 9, 27, 81. L'initialisation a 1 e
     "A conserver l'ancienne valeur du terme courant avant qu'elle ne soit ecrasee",
     "A doubler la vitesse de la boucle"
   ]}
-  correctIndex={2}
+  correct={2}
 />
 
 <Quiz
+  id="q-3"
   question="Dans la recherche du maximum, que fait l'instruction jle apres un cmp entre le candidat et le maximum courant ?"
   options={[
     "Elle saute la mise a jour lorsque le candidat n'est pas strictement plus grand",
@@ -139,10 +142,10 @@ On multiplie 1 par 3 quatre fois de suite : 3, 9, 27, 81. L'initialisation a 1 e
     "Elle additionne les deux valeurs",
     "Elle termine immediatement le programme"
   ]}
-  correctIndex={0}
+  correct={0}
 />
 
-Maintenant, ecrivez un programme qui calcule la somme des carres des entiers de 1 a 4, c'est-a-dire 1 + 4 + 9 + 16 = 30. Indice : utilisez un registre accumulateur pour la somme, un compteur, et imul pour obtenir le carre de chaque entier avant de l'ajouter.
+Maintenant, ecrivez un programme qui calcule la somme des carres des entiers de 1 a 4, c'est-a-dire 1 + 4 + 9 + 16 = 30. L'idee : un registre accumulateur pour la somme, un compteur, et imul pour obtenir le carre de chaque entier avant de l'ajouter. Notez qu'on melange ici deux accumulateurs, un additif avec add et un multiplicatif avec imul, dans la meme boucle.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -159,13 +162,13 @@ boucle:
     println rax         ; affiche 30
     ret`} />
 
-## Recapitulatif
+## recapitulatif
 
-- La factorielle s'obtient avec un accumulateur multiplicatif (imul) et un compteur qui decremente jusqu'a zero.
-- La suite de Fibonacci necessite deux registres pour les termes consecutifs et un registre temporaire pour realiser l'echange sans perte d'information.
-- La recherche du maximum applique un motif repete : comparer, sauter si le candidat n'est pas meilleur, sinon mettre a jour le champion.
-- La puissance reutilise l'accumulateur multiplicatif, mais avec un facteur constant (la base) et l'exposant comme compteur.
-- Toutes ces boucles partagent la meme ossature : initialisation, corps de calcul, decrement, comparaison, saut conditionnel de retour.
-- Penser en assembleur, c'est suivre du regard chaque registre et garantir que toute boucle se termine bien.
+- La factorielle s'obtient avec un accumulateur multiplicatif (imul) et un compteur qui descend jusqu'a zero.
+- Fibonacci demande deux registres pour les termes consecutifs et un registre temporaire pour realiser le glissement sans perdre de valeur.
+- La recherche du maximum repete le meme bloc : comparer, sauter si le candidat ne fait pas mieux, sinon mettre a jour le champion.
+- La puissance reprend l'accumulateur multiplicatif, mais avec un facteur fixe (la base) et l'exposant comme compteur.
+- Toutes ces boucles ont la meme charpente : initialisation, corps de calcul, decrement, comparaison, saut conditionnel de retour.
+- Penser en assembleur, c'est suivre du regard chaque registre et s'assurer que la condition d'arret finit toujours par tomber.
 
-OK 11-algorithmes.mdx écrit
+OK 11 réécrit

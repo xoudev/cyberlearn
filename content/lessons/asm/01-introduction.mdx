@@ -10,29 +10,37 @@ xpReward: 200
 prerequisites: []
 ---
 
-Quand tu écris du Python ou du JavaScript, tu parles un langage de haut niveau, confortable et lisible. Mais le processeur, lui, ne comprend rien à tout cela. Il n'exécute qu'une chose : des instructions extrêmement simples, gravées dans le silicium. L'assembleur est le langage qui traduit ces instructions sous une forme lisible par un humain. C'est le langage le plus proche de la machine.
+Quand tu écris du Python ou du JavaScript, tu travailles avec des mots, des fonctions, des objets, des abstractions confortables construites pour ton cerveau. Le processeur, lui, ignore tout cela. Il ne sait faire qu'un nombre limité de gestes minuscules : copier un nombre d'un endroit à un autre, additionner deux valeurs, comparer, sauter à une adresse. Chacun de ces gestes correspond à une instruction machine, une suite de bits gravée pour être exécutée directement par le silicium. L'assembleur, c'est l'écriture lisible de ces instructions. Une ligne d'assembleur égale, à peu de chose près, une opération que le processeur réalise pour de vrai.
 
-Pourquoi apprendre l'assembleur en 2026, alors que personne n'écrit d'applications entières dans ce langage ? Pour trois raisons. D'abord, pour **comprendre la machine** : tu vois enfin ce qui se passe vraiment quand ton code tourne. Ensuite, pour la **sécurité** : la plupart des failles bas niveau (débordements de tampon, corruption de mémoire) se raisonnent au niveau de l'assembleur. Enfin, pour le **reverse engineering** : analyser un binaire dont on n'a pas le code source, c'est lire de l'assembleur.
+C'est ce qui rend ce langage si particulier. Il n'y a presque rien entre toi et la puce. Là où une seule ligne de Python peut déclencher des centaines d'opérations cachées, en assembleur tu écris ces opérations une par une. C'est plus lent à produire, mais d'une honnêteté totale : ce que tu lis est exactement ce qui s'exécute.
 
-Dans cette leçon, tu vas découvrir les registres, l'instruction `mov`, et comment afficher des valeurs. À la fin, tu auras écrit ton tout premier programme.
+## pourquoi descendre aussi bas
 
-## Les registres
+On entend parfois que l'assembleur appartient au passé, qu'aucun développeur sérieux n'écrit plus d'applications entières dans ce langage. La première partie est fausse, la seconde est vraie, et la nuance compte. Personne ne code un site web en assembleur, c'est exact. Mais le langage n'a rien d'obsolète, parce que son intérêt n'a jamais été de remplacer les langages de haut niveau. Son intérêt, c'est d'éclairer tout ce qui se trouve en dessous d'eux.
 
-Le processeur a besoin d'un endroit où poser les valeurs sur lesquelles il travaille. Plutôt que d'aller chercher chaque nombre dans la mémoire principale (lente), il dispose de petites mémoires internes ultra-rapides appelées **registres**. Pense à eux comme aux cases de travail posées juste sous les doigts du processeur.
+Apprendre l'assembleur change ta façon de lire le reste. Une boucle Python qui rame, un tableau qui déborde, une variable qui occupe huit octets plutôt que quatre : ces choses cessent d'être de la magie le jour où tu sais ce qu'une instruction fait à la mémoire. Tu comprends pourquoi certaines structures de données sont rapides et d'autres lentes, ce qu'est réellement un pointeur, où vivent tes variables pendant que ton programme tourne.
 
-En x86-64, les registres généraux les plus courants s'appellent `rax`, `rbx`, `rcx`, `rdx`, et il en existe d'autres comme `rsi`, `rdi`, ou `r8` à `r15`. Le `r` signifie « registre » et indique la version 64 bits. Chacun peut contenir un entier.
+Il y a aussi la sécurité. La plupart des failles bas niveau, débordements de tampon, corruption de pile, écrasement d'adresse de retour, ne se comprennent qu'au niveau où l'assembleur travaille. Un attaquant qui exploite une de ces failles raisonne en termes de registres et d'adresses, pas en termes de classes et de méthodes. Pour défendre, il faut savoir lire ce qu'il lit. Le reverse engineering, l'analyse d'un binaire dont on n'a pas le code source, suit la même logique : ce que tu désassembles, c'est de l'assembleur, et il n'y a pas de raccourci pour le déchiffrer.
+
+Tu n'as pas besoin de devenir un virtuose du langage. Quelques heures suffisent pour démystifier ce qui paraissait jusque-là un bloc opaque. C'est cet objectif que vise la leçon : voir, concrètement, comment une valeur entre dans le processeur, y est manipulée, puis ressort à l'écran.
+
+## les registres
+
+Le processeur travaille vite, mais il ne peut pas garder sous la main toute la mémoire de la machine. Aller chercher un nombre dans la mémoire principale coûte du temps, beaucoup de temps à l'échelle du CPU. Pour éviter cet aller-retour à chaque opération, le processeur dispose de quelques cases internes minuscules et extrêmement rapides : les registres. Ce sont ses tiroirs de travail, posés juste sous ses doigts. Quand il calcule, c'est presque toujours avec des valeurs déjà placées dans des registres.
+
+En x86-64, les registres généraux que tu croiseras le plus s'appellent `rax`, `rbx`, `rcx` et `rdx`. Il en existe d'autres, comme `rsi`, `rdi`, ou la série `r8` à `r15`. Le `r` au début signale qu'on manipule la version 64 bits du registre, celle qui peut contenir un entier sur huit octets. Chacun est une boîte indépendante dans laquelle on range un nombre.
 
 <Callout type="info">
 Le préfixe change la taille manipulée : `rax` est le registre 64 bits complet, `eax` désigne ses 32 bits de poids faible, `ax` ses 16 bits, et `al` ses 8 bits de poids faible. Dans cette leçon débutante, nous resterons sur les registres 64 bits comme `rax`.
 </Callout>
 
-## L'instruction mov
+## l'instruction mov
 
-L'instruction la plus fondamentale est `mov`. Elle copie une valeur dans un registre. Sa syntaxe est toujours la même : `mov destination, source`. La valeur de la source est copiée dans la destination, et la source n'est pas modifiée.
+Si une seule instruction mérite d'être comprise en premier, c'est `mov`. Elle copie une valeur dans un registre, et c'est l'opération la plus banale du processeur : déplacer des données. Sa syntaxe ne varie jamais, `mov destination, source`. La valeur de la source est recopiée dans la destination. La source, elle, reste intacte ; on parle de copie, pas de déplacement, malgré le nom.
 
-Par exemple, `mov rax, 7` place le nombre 7 dans le registre `rax`. On peut aussi copier le contenu d'un registre vers un autre : `mov rbx, rax` recopie la valeur de `rax` dans `rbx`. Attention à l'ordre : la destination vient toujours en premier, la source en second.
+Concrètement, `mov rax, 7` range le nombre 7 dans `rax`. On peut aussi recopier le contenu d'un registre vers un autre : `mov rbx, rax` prend ce qui se trouve dans `rax` et le dépose dans `rbx`. Le point qui piège tous les débutants, c'est l'ordre. La destination est toujours à gauche, la source à droite. Lis-le mentalement comme une flèche qui pointe de droite vers la gauche : la source va dans la destination.
 
-Voyons cela en action. Le programme ci-dessous place une valeur dans `rax` puis l'affiche.
+Le programme ci-dessous place une valeur dans `rax` puis l'affiche.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -41,16 +49,16 @@ main:
     println rax         ; affiche 7 puis saute une ligne
     ret`} />
 
-## Afficher des valeurs
+## afficher des valeurs
 
-Pour voir le résultat de notre travail, le simulateur fournit des pseudo-instructions d'affichage :
+Un vrai programme assembleur n'affiche rien tout seul ; il faudrait appeler le système d'exploitation, préparer des registres précis, déclencher un appel système. C'est lourd pour un premier contact. Le simulateur de cette plateforme te simplifie la vie avec quelques pseudo-instructions d'affichage, qui n'existent pas dans le vrai jeu d'instructions x86-64 mais te permettent de voir tout de suite le résultat de ton travail.
 
 - `println` affiche un entier suivi d'un saut de ligne.
 - `print` affiche un entier sans saut de ligne.
 - `printlns "texte"` affiche une chaîne de caractères suivie d'un saut de ligne.
 - `prints "texte"` affiche une chaîne sans saut de ligne.
 
-On peut combiner un texte et un nombre pour produire une sortie lisible. Ici, on affiche d'abord un libellé, puis la valeur calculée.
+Comme `print` ne saute pas de ligne, tu peux enchaîner un libellé puis une valeur sur la même ligne. C'est pratique pour produire une sortie lisible plutôt qu'un nombre nu. Ici, on affiche d'abord un texte, puis la valeur calculée juste derrière.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -62,11 +70,11 @@ main:
     println rax          ; affiche 42 puis saute une ligne
     ret`} />
 
-## Structure d'un programme
+## structure d'un programme
 
-Tout programme du simulateur suit la même ossature. Il faut déclarer le point d'entrée avec `global main`, ouvrir la section qui contient les instructions avec `section .text`, poser le label `main:` où commence l'exécution, et terminer par `ret` pour rendre la main.
+Tu as peut-être remarqué que les exemples partagent toujours la même charpente. Ce n'est pas un hasard : le processeur a besoin de savoir où ton programme commence et comment il se termine. Quatre éléments reviennent à chaque fois. `global main` déclare le point d'entrée, l'endroit par lequel l'exécution débutera. `section .text` ouvre la zone qui contient les instructions, par opposition aux zones de données. Le label `main:` marque la première ligne exécutée. Et `ret` rend la main à la fin, signalant que le programme a terminé son travail.
 
-Voici un programme complet et commenté qui calcule une petite expression et affiche le résultat.
+Tant que cette ossature est en place, tu peux glisser entre `main:` et `ret` autant d'instructions que tu veux. Le programme complet ci-dessous calcule une petite expression, met au carré le résultat intermédiaire, puis l'affiche.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -79,47 +87,17 @@ main:
     println rax         ; affiche 100
     ret`} />
 
-## À vous de jouer
+## à vous de jouer
 
-Teste ce que tu as compris avec ces quelques questions.
+Vérifie ce que tu retiens avec ces quelques questions.
 
-<Quiz
-  question="À quoi sert l'instruction mov ?"
-  options={[
-    'À additionner deux registres',
-    'À copier une valeur dans une destination',
-    'À afficher un entier à l écran',
-    'À terminer le programme'
-  ]}
-  correctIndex={1}
-  explanation="mov copie la source dans la destination ; elle ne calcule rien et n affiche rien."
-/>
+<Quiz id="q-1" question="À quoi sert l'instruction mov ?" options={['À additionner deux registres', 'À copier une valeur dans une destination', 'À afficher un entier à l écran', 'À terminer le programme']} correct={1} />
 
-<Quiz
-  question="Dans 'mov rax, rbx', que se passe-t-il ?"
-  options={[
-    'La valeur de rax est copiée dans rbx',
-    'rax et rbx sont échangés',
-    'La valeur de rbx est copiée dans rax',
-    'rax est mis à zéro'
-  ]}
-  correctIndex={2}
-  explanation="La destination vient en premier : rbx (source) est copié dans rax (destination)."
-/>
+<Quiz id="q-2" question="Dans 'mov rax, rbx', que se passe-t-il ?" options={['La valeur de rax est copiée dans rbx', 'rax et rbx sont échangés', 'La valeur de rbx est copiée dans rax', 'rax est mis à zéro']} correct={2} />
 
-<Quiz
-  question="Quelle pseudo-instruction affiche un entier suivi d'un saut de ligne ?"
-  options={[
-    'print',
-    'prints',
-    'println',
-    'printlns'
-  ]}
-  correctIndex={2}
-  explanation="println affiche un entier et passe à la ligne ; printlns fait pareil mais pour une chaîne."
-/>
+<Quiz id="q-3" question="Quelle pseudo-instruction affiche un entier suivi d'un saut de ligne ?" options={['print', 'prints', 'println', 'printlns']} correct={2} />
 
-À ton tour d'écrire un peu de code. Place deux valeurs dans deux registres différents, puis affiche l'une des deux avec `println`.
+Passe maintenant au clavier. Place deux valeurs dans deux registres différents, puis affiche l'une des deux avec `println`. Change les nombres, observe la sortie, et assure-toi de bien voir laquelle des deux valeurs s'affiche selon le registre que tu passes à `println`.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -129,10 +107,11 @@ main:
     println rax         ; affiche le contenu de rax
     ret`} />
 
-## Récapitulatif
+## récapitulatif
 
-- L'**assembleur** est le langage le plus proche du processeur ; il sert à comprendre la machine, à raisonner sur la sécurité et à faire du reverse engineering.
-- Les **registres** (`rax`, `rbx`, `rcx`, `rdx`...) sont de petites mémoires ultra-rapides internes au CPU.
-- L'instruction `mov destination, source` copie une valeur ; la destination vient toujours en premier.
-- Les pseudo-instructions `println`, `print`, `printlns` et `prints` permettent d'afficher entiers et textes.
-- Un programme suit toujours la structure `global main` / `section .text` / `main:` / `ret`.
+- L'assembleur est le langage le plus proche du processeur : une ligne correspond à une opération machine réelle, sans abstraction cachée.
+- On l'apprend pour comprendre ce qui se passe sous les langages de haut niveau, pour raisonner sur les failles de sécurité bas niveau, et pour analyser des binaires en reverse engineering.
+- Les registres (`rax`, `rbx`, `rcx`, `rdx`...) sont de petites mémoires internes ultra-rapides où le processeur garde ses valeurs de travail.
+- `mov destination, source` copie une valeur ; la destination est toujours à gauche, la source à droite.
+- Les pseudo-instructions `println`, `print`, `printlns` et `prints` du simulateur servent à afficher entiers et textes.
+- Tout programme suit la structure `global main` / `section .text` / `main:` / `ret`.

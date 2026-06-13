@@ -10,17 +10,17 @@ xpReward: 400
 prerequisites: ["CL-LSN-039-V01"]
 ---
 
-Jusqu'ici, vous avez manipulé des valeurs directement dans les registres. Mais les registres sont peu nombreux et précieux. Que faire lorsqu'il faut mettre une valeur de côté quelques instants, puis la récupérer plus tard ? C'est là qu'intervient la pile, une zone mémoire d'une simplicité redoutable et d'une importance capitale en assembleur.
+Jusqu'à présent, vous avez travaillé avec des valeurs posées directement dans les registres. Le problème, c'est qu'il n'y en a pas beaucoup. Une poignée de registres généraux, et c'est tout. Dès qu'un calcul demande de garder trois ou quatre valeurs sous la main, vous êtes vite à court. Il faut donc un endroit où mettre une valeur de côté un instant, la laisser tranquille, et venir la rechercher plus tard sans l'avoir perdue. Cet endroit, c'est la pile.
 
-La pile, ou stack en anglais, fonctionne selon un principe appelé LIFO : Last In, First Out, soit dernier entré, premier sorti. L'analogie classique est une pile d'assiettes. Quand vous ajoutez une assiette, vous la posez sur le dessus. Quand vous en prenez une, vous prenez aussi celle du dessus. Impossible d'attraper une assiette du milieu sans déranger les autres. La dernière posée est donc toujours la première reprise.
+La pile est une zone de mémoire. Rien de plus exotique que ça : des octets, à des adresses, comme le reste. Ce qui la rend particulière, c'est la façon dont on s'en sert. On n'y accède pas n'importe comment, on suit une règle fixe : dernier entré, premier sorti. En anglais on dit LIFO, pour Last In, First Out. C'est la même règle qu'une pile d'assiettes dans un placard. Vous posez les assiettes les unes sur les autres. Quand vous voulez en prendre une, vous attrapez celle du dessus, celle que vous venez de poser. Personne ne va tirer une assiette du milieu du tas sans tout faire tomber. La dernière posée est donc toujours la première reprise.
 
-Cette discipline stricte peut sembler limitante, mais elle est exactement ce qu'il faut pour sauvegarder temporairement des données et organiser les appels de fonctions. Tout programme en mémoire dispose de sa propre pile, et le processeur sait précisément où se trouve son sommet à chaque instant.
+Cette contrainte a l'air sévère. On pourrait croire qu'une zone mémoire où l'on ne peut accéder qu'au sommet serait peu pratique. C'est l'inverse. Justement parce que l'ordre est imposé et prévisible, la pile devient un outil fiable pour ranger des choses temporairement. Vous savez à l'avance dans quel ordre les valeurs vont ressortir, donc vous pouvez compter dessus. Chaque programme qui tourne dispose de sa propre pile, et le processeur garde en permanence la trace de l'endroit où se situe son sommet.
 
 ## push et pop
 
-Deux instructions suffisent pour utiliser la pile. L'instruction push empile une valeur : elle la pose au sommet. L'instruction pop dépile : elle retire la valeur du sommet et la place dans un registre.
+Deux instructions suffisent pour s'en servir au quotidien. `push` empile une valeur, c'est-à-dire qu'elle la dépose au sommet de la pile. `pop` fait l'inverse : elle retire la valeur qui se trouve au sommet et la range dans un registre.
 
-Le point essentiel à retenir est l'ordre. Comme la pile est LIFO, si vous empilez trois valeurs l'une après l'autre, la première à ressortir sera la dernière entrée. Observez l'exemple ci-dessous : on empile 10, puis 20, puis 30. Le premier pop récupère donc 30, le deuxième 20, et le dernier 10.
+Ce qu'il faut bien avoir en tête, c'est l'ordre de sortie. Comme la pile est LIFO, si vous empilez trois valeurs à la suite, la première qui ressortira est celle que vous avez empilée en dernier. Dans l'exemple ci-dessous, on empile 10, puis 20, puis 30. Quand on commence à dépiler, le premier `pop` ramène 30, le deuxième ramène 20, et le troisième ramène 10. L'ordre est rigoureusement inversé.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -36,7 +36,7 @@ main:
     println rcx
     ret`} />
 
-L'affichage produit 30, puis 20, puis 10. L'ordre est inversé par rapport à l'empilement, et c'est exactement le comportement attendu d'une structure LIFO.
+Le programme affiche 30, puis 20, puis 10. Si vous vous attendiez à voir 10, 20, 30 dans l'ordre où vous les avez écrits, c'est le moment de réajuster votre intuition. La pile ne lit pas dans le sens de l'écriture. Elle ressort par le dessus, et le dessus, c'est le dernier arrivé.
 
 <Callout type="info">
 LIFO signifie Last In, First Out : la dernière valeur empilée est la première dépilée. Pensez toujours à une pile d'assiettes pour anticiper l'ordre de sortie.
@@ -44,9 +44,9 @@ LIFO signifie Last In, First Out : la dernière valeur empilée est la première
 
 ## Le registre rsp
 
-Comment le processeur sait-il où se trouve le sommet de la pile ? Grâce à un registre dédié : rsp, pour Stack Pointer, le pointeur de pile. Ce registre contient en permanence l'adresse mémoire du sommet de la pile.
+Reste une question : comment le processeur sait-il où est le sommet de la pile à un instant donné ? Il le sait grâce à un registre réservé à cet usage, qui s'appelle rsp. Le nom vient de Stack Pointer, le pointeur de pile. Ce registre ne contient pas une valeur de calcul comme les autres, il contient une adresse mémoire : celle du sommet de la pile, à jour en permanence.
 
-Chaque push fait avancer rsp vers le sommet et y écrit la valeur. Chaque pop lit la valeur au sommet et fait reculer rsp. Vous n'avez généralement pas besoin de modifier rsp à la main : les instructions push et pop s'en chargent automatiquement et le maintiennent cohérent. Il est toutefois utile de savoir qu'il existe, car c'est lui qui garantit que chaque valeur empilée retrouve sa place exacte au dépilement.
+Chaque fois que vous faites un `push`, deux choses se passent en coulisse. rsp se déplace pour réserver de la place au sommet, et la valeur y est écrite. Chaque fois que vous faites un `pop`, la valeur du sommet est lue, puis rsp recule d'autant. Vous n'avez pas à gérer ça vous-même. C'est tout l'intérêt de `push` et `pop` : ils tiennent rsp à jour pour vous, sans que vous ayez à toucher le registre directement. Mais il vaut la peine de savoir qu'il est là et ce qu'il fait, parce que c'est lui qui assure que chaque valeur empilée retrouve exactement sa place quand vient le moment de la dépiler.
 
 <Callout type="info">
 rsp pointe toujours vers le sommet de la pile. push et pop l'ajustent pour vous : évitez d'y toucher manuellement tant que vous débutez, sous peine de corrompre la pile.
@@ -54,9 +54,9 @@ rsp pointe toujours vers le sommet de la pile. push et pop l'ajustent pour vous 
 
 ## Sauvegarder et restaurer un registre
 
-Voici l'un des usages les plus fréquents de la pile. Imaginez que rax contienne une valeur importante, mais que vous deviez utiliser rax pour un calcul intermédiaire qui va l'écraser. La solution : empiler rax avant le calcul, faire votre travail, puis dépiler pour restaurer la valeur d'origine.
+Voici l'usage le plus courant de la pile, celui que vous rencontrerez sans arrêt. Supposons que rax contienne une valeur à laquelle vous tenez, mais que vous ayez besoin de rax tout de suite pour un autre calcul. Le calcul va forcément écraser ce qui s'y trouve. Vous avez un conflit : un seul registre, deux usages qui se chevauchent.
 
-Le motif est simple : push rax pour mettre la valeur en sécurité, puis pop rax pour la récupérer intacte une fois le travail terminé.
+La pile règle ça proprement. Avant le calcul, vous empilez rax pour mettre sa valeur à l'abri. Vous faites votre travail, rax sert à ce qu'il doit servir. Puis, une fois terminé, vous dépilez pour récupérer la valeur d'origine, intacte. Le motif tient en deux lignes : un `push rax` au début, un `pop rax` à la fin.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -69,13 +69,13 @@ main:
     println rax
     ret`} />
 
-Le premier affichage montre 999, la valeur temporaire. Le second affichage montre de nouveau 42 : la pile a fidèlement conservé la valeur d'origine pendant que rax servait à autre chose. Ce schéma sauvegarder puis restaurer est partout en assembleur, notamment au début et à la fin des fonctions.
+Le premier affichage donne 999, qui est la valeur temporaire dont on avait besoin. Le second affichage redonne 42. Pendant que rax servait à autre chose, la pile a gardé 42 au chaud sans rien lui faire. Vous retrouverez ce schéma de sauvegarde puis de restauration au début et à la fin de presque toutes les fonctions, le jour où vous écrirez vos propres routines.
 
 ## Échanger deux valeurs via la pile
 
-La pile offre aussi une façon élégante d'échanger le contenu de deux registres sans registre temporaire supplémentaire. On empile les deux valeurs dans un ordre, puis on les dépile dans l'autre.
+La pile permet aussi d'échanger le contenu de deux registres sans passer par un troisième registre de travail. L'astuce repose entièrement sur l'ordre LIFO.
 
-Empilez rax puis rbx. Au dépilement, le premier pop sort rbx (dernier entré), le second sort rax. En dépilant rbx d'abord dans rax, et rax ensuite dans rbx, les deux valeurs se retrouvent croisées.
+On empile rax, puis rbx. À ce stade, rbx est au sommet, juste au-dessus de rax. On dépile ensuite. Le premier `pop` ramène donc rbx, et on le range dans rax. Le second `pop` ramène rax, et on le range dans rbx. En croisant les destinations de cette manière, les deux valeurs finissent échangées. Le mécanisme s'occupe de tout, il suffit de respecter l'ordre.
 
 <CodePlayground language="asm" starterCode={`global main
 section .text
@@ -90,32 +90,29 @@ main:
     println rbx
     ret`} />
 
-Après exécution, rax vaut 88 et rbx vaut 7. Les valeurs ont bien été échangées, uniquement grâce au jeu d'empilement et de dépilement.
+Après exécution, rax vaut 88 et rbx vaut 7. L'échange a eu lieu, uniquement avec deux push et deux pop, sans aucune variable temporaire en plus.
+
+Un mot d'avertissement avant de continuer. Tout ce qui marche si bien ici repose sur un équilibre : autant de `pop` que de `push`. Si vous empilez trois valeurs et que vous n'en dépilez que deux, il en reste une de trop sur la pile et rsp ne revient pas là où il était. Inversement, dépiler plus que ce que vous avez empilé fait lire des octets qui ne vous appartiennent pas. Dans les deux cas la pile se retrouve déséquilibrée, et plus tard, quand le programme essaie de revenir d'une fonction ou de lire une valeur sauvegardée, il tombe sur n'importe quoi. C'est l'une des sources d'erreurs les plus classiques en assembleur. Comptez vos push, comptez vos pop, vérifiez qu'ils s'équilibrent.
 
 ## À vous de jouer
 
 Vérifiez votre compréhension du modèle LIFO et du couple push / pop.
 
-<QuizGroup>
-<Quiz
+<Quiz id="q-1"
   question="Après push 1, push 2, push 3, quelle valeur sort au premier pop ?"
   options={['1', '2', '3', 'La pile est vide']}
-  correctIndex={2}
-  explanation="La pile est LIFO : le dernier empilé (3) sort en premier."
+  correct={2}
 />
-<Quiz
+<Quiz id="q-2"
   question="Que signifie l'acronyme LIFO ?"
   options={['Last In, First Out', 'Least Important, First Out', 'Linear In, Fixed Order', 'Last Index, First Operand']}
-  correctIndex={0}
-  explanation="LIFO veut dire Last In, First Out : dernier entré, premier sorti."
+  correct={0}
 />
-<Quiz
+<Quiz id="q-3"
   question="Quel registre pointe vers le sommet de la pile ?"
   options={['rax', 'rip', 'rsp', 'rbx']}
-  correctIndex={2}
-  explanation="rsp (Stack Pointer) contient l'adresse du sommet de la pile."
+  correct={2}
 />
-</QuizGroup>
 
 Dernier exercice : empilez les valeurs 5, 15 et 25, puis dépilez-les et affichez-les. Anticipez l'ordre avant d'exécuter.
 
@@ -141,5 +138,6 @@ main:
 - Le registre rsp pointe en permanence vers le sommet de la pile et est ajusté automatiquement par push et pop.
 - Le motif push / pop permet de sauvegarder un registre avant de l'écraser, puis de le restaurer intact.
 - La pile permet aussi d'échanger deux valeurs sans registre temporaire dédié.
+- Gardez vos push et vos pop équilibrés : un déséquilibre corrompt la pile et fait dérailler le programme plus loin.
 
 OK 05-pile.mdx écrit
