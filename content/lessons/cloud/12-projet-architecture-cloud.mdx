@@ -1,0 +1,132 @@
+---
+refCode: CL-LSN-180-V01
+slug: cloud-projet-architecture
+title: "Projet : concevoir une architecture cloud"
+description: "Mettez tout le parcours en pratique sur le papier : concevez l'architecture d'une application web qui doit tenir la charge et rester disponible, du réseau à la sécurité en passant par le calcul et le coût."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 700
+prerequisites: ["CL-LSN-179-V01"]
+---
+
+Voici le dernier exercice du parcours. Pas de nouvelle notion à apprendre : on rassemble tout ce que tu as vu et on s'en sert pour concevoir une architecture complète, sur le papier.
+
+Le cas est simple à décrire. Une petite entreprise lance un site web avec un compte utilisateur, un catalogue, et une base de données derrière. Le trafic n'est pas constant : creux la nuit, pics quand une newsletter part ou quand un article passe bien sur les réseaux. Le site doit encaisser ces pics sans tomber, rester accessible même si un serveur ou une partie de l'infra lâche, et ne pas coûter une fortune le reste du temps.
+
+On ne déploie rien ici. On dessine. À la fin, tu auras un schéma que tu pourrais montrer à une équipe et défendre choix par choix. C'est exactement ce qu'on attend d'un premier travail de conception cloud.
+
+## les exigences
+
+Avant de placer la moindre brique, on écrit ce qu'on veut. Quatre besoins, et chacun va orienter une décision plus loin.
+
+- Disponible : si une instance ou une zone tombe, le site répond toujours.
+- Capable de monter en charge : pendant un pic, on ajoute de la capacité, et on la retire quand c'est fini.
+- Sécurisé : la base n'est jamais joignable depuis Internet, les accès sont limités au strict nécessaire, les données sont chiffrées.
+- À coût maîtrisé : on paie surtout pour la charge réelle, pas pour une capacité maximale qui dort 90 % du temps.
+
+<Callout type="info">
+Note ces quatre exigences quelque part. À chaque choix d'architecture, demande-toi laquelle il sert. Une décision qui ne sert aucune exigence est probablement de la complexité gratuite.
+</Callout>
+
+## le réseau
+
+On commence par le réseau, parce qu'il fixe le cadre dans lequel tout le reste va vivre. On crée un VPC, ce réseau privé isolé qu'on a vu dans la leçon réseau cloud, et on le découpe en deux étages.
+
+Le sous-réseau public accueille ce qui doit parler à Internet : l'équilibreur de charge et, derrière lui, les serveurs web. Il a une route vers la passerelle Internet.
+
+Le sous-réseau privé accueille la base de données. Pas de route directe vers Internet, pas d'adresse publique. On ne peut l'atteindre que depuis l'intérieur du VPC. C'est le point le plus important de tout le schéma : une base de données ne se place jamais dans le sous-réseau public.
+
+## le calcul et l'élasticité
+
+Pour la partie web, on choisit des instances (ou des conteneurs, le raisonnement est le même) placées dans un groupe à mise à l'échelle automatique, derrière l'équilibreur. Le groupe surveille la charge : quand le CPU moyen grimpe, il démarre des instances supplémentaires ; quand ça redescend, il en arrête. C'est l'élasticité vue plus tôt dans le parcours, appliquée concrètement.
+
+Pour que ça fonctionne, les serveurs web doivent être sans état. Aucune donnée de session stockée en local sur une instance, sinon un utilisateur perd son panier dès que l'équilibreur l'envoie vers une autre machine, ou dès qu'une instance est retirée. Les sessions vont dans un magasin partagé (un cache ou la base), et tout ce qui est durable va dans la base ou le stockage objet. Une instance doit pouvoir naître et mourir sans que personne ne le remarque.
+
+## le stockage et la base
+
+On sépare selon la nature des données.
+
+Les médias (images du catalogue, fichiers téléchargés) vont dans du stockage objet. C'est pensé pour ça : peu cher, énorme capacité, servi directement aux navigateurs sans passer par les serveurs web.
+
+Les données structurées (comptes, commandes, catalogue) vont dans une base de données managée. Le fournisseur gère les mises à jour, les correctifs et les sauvegardes automatiques. On active une rétention de sauvegarde raisonnable, sept jours par exemple, pour pouvoir revenir en arrière après une erreur.
+
+## la disponibilité
+
+Une seule machine, ou même plusieurs au même endroit, ne tient pas la promesse de disponibilité. On répartit donc sur plusieurs zones de disponibilité, ces salles séparées d'une même région.
+
+Concrètement : le groupe à mise à l'échelle place ses instances web dans au moins deux zones, et l'équilibreur répartit le trafic entre elles. La base managée tourne en mode répliqué, avec une instance principale dans une zone et une réplique de secours dans une autre. Si la zone principale tombe, le fournisseur bascule automatiquement vers la réplique. Le site continue de répondre, le temps de bascule en moins.
+
+<Callout type="warning">
+Tout placer dans une seule zone pour économiser quelques euros, c'est annuler l'exigence de disponibilité. Le jour où cette zone a un incident, le site entier est par terre. La répartition multi-zone est le prix d'entrée de la haute disponibilité.
+</Callout>
+
+## l'identité et la sécurité
+
+La sécurité ne se rajoute pas à la fin, elle est dans chaque couche.
+
+- Identité : chaque service reçoit un rôle IAM au moindre privilège. Le serveur web a juste le droit de lire le bucket média et de parler à la base, rien d'autre. Pas de clés en dur dans le code.
+- Réseau : les groupes de sécurité sont serrés. L'équilibreur accepte le 443 depuis Internet. Les serveurs web n'acceptent du trafic que depuis l'équilibreur. La base n'accepte le port de base de données que depuis les serveurs web. Chaque flux est explicite.
+- Données : chiffrement au repos sur la base et le stockage objet, chiffrement en transit avec TLS partout.
+- Secrets : mots de passe de base et clés d'API dans un coffre à secrets, jamais dans une variable d'environnement en clair ni dans le dépôt.
+- Traces : la journalisation est active sur l'équilibreur, les instances et les accès, pour pouvoir enquêter après coup.
+
+## le schéma
+
+Voici tout assemblé. Le trafic entre par la gauche, traverse le sous-réseau public, et seul le strict nécessaire atteint le sous-réseau privé.
+
+<Diagram caption="L'architecture cible : web scalable et disponible">
+flowchart LR
+  U[Utilisateurs Internet] --> LB[Equilibreur de charge]
+  LB --> W1[Instance web zone A]
+  LB --> W2[Instance web zone B]
+  W1 --> DBP[Base principale zone A]
+  W2 --> DBP
+  DBP -. replication .-> DBR[Replique de secours zone B]
+  W1 --> OBJ[Stockage objet medias]
+  W2 --> OBJ
+  subgraph Public [Sous-reseau public]
+    LB
+    W1
+    W2
+  end
+  subgraph Prive [Sous-reseau prive]
+    DBP
+    DBR
+  end
+</Diagram>
+
+L'équilibreur et les instances web sont publics et répartis sur deux zones. La base, principale et réplique, reste dans le sous-réseau privé. Le stockage objet est un service à part, accessible via les rôles IAM.
+
+## le coût
+
+On ne va pas au centime, on raisonne en ordre de grandeur. Les serveurs web suivent la charge, donc on paie peu la nuit et plus aux pics : c'est l'élasticité qui travaille pour le budget. La base managée répliquée coûte plus qu'une base simple, mais c'est le prix de la disponibilité, assumé. Le stockage objet est marginal pour ce volume.
+
+Deux réflexes pour garder la main. D'abord étiqueter chaque ressource (projet, environnement, équipe) pour savoir où part l'argent quand la facture arrive. Ensuite prévoir l'optimisation une fois le trafic réel connu : engagement sur la capacité de base stable, ajustement des seuils de mise à l'échelle, nettoyage de ce qui ne sert plus.
+
+<Callout type="success">
+Une bonne architecture cloud n'est pas la moins chère possible, c'est celle qui dépense au bon endroit. On paie pour la disponibilité et l'élasticité parce que ce sont des exigences. On ne paie pas pour de la capacité qui dort.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Dans quel sous-reseau place-t-on la base de donnees ?" options={["Le sous-reseau public, pour qu'elle reponde vite", "Le sous-reseau prive, sans route vers Internet", "Directement derriere l'equilibreur de charge", "Dans le stockage objet"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi les serveurs web doivent-ils etre sans etat ?" options={["Pour chiffrer les donnees au repos", "Pour reduire la facture de stockage objet", "Pour qu'on puisse ajouter ou retirer des instances sans casser les sessions des utilisateurs", "Pour eviter d'avoir une base de donnees"]} correct={2} />
+
+<Quiz id="q-3" question="Qu'apporte la repartition sur plusieurs zones de disponibilite ?" options={["Le site reste accessible meme si une zone a un incident", "Le code s'execute plus vite", "On n'a plus besoin de groupes de securite", "Les sauvegardes deviennent inutiles"]} correct={0} />
+</QuizGroup>
+
+## à retenir
+
+- Le réseau pose le cadre : un VPC avec un sous-réseau public pour l'équilibreur et les serveurs web, un sous-réseau privé pour la base, jamais exposée à Internet.
+- Le web tourne en groupe à mise à l'échelle automatique derrière l'équilibreur, en instances sans état, pour suivre la charge et la lâcher.
+- Médias dans le stockage objet, données dans une base managée avec sauvegardes ; chaque type de donnée à sa place.
+- La disponibilité vient de la répartition multi-zone et d'une base répliquée avec bascule automatique.
+- La sécurité est dans chaque couche : rôles IAM au moindre privilège, groupes de sécurité serrés, chiffrement au repos et en transit, secrets dans un coffre, journalisation active.
+- Le coût se pilote par l'élasticité, les étiquettes et une optimisation faite une fois le trafic réel connu.
+
+Ce projet relie tout le parcours : réseau, calcul, élasticité, stockage, haute disponibilité, identité, sécurité et coût. Si tu peux dessiner ce schéma et justifier chaque brique, tu as les bases de la conception cloud.
+
+OK 12 écrit

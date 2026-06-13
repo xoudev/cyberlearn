@@ -364,6 +364,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-168-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-015-V01",
+    slug: "cloud",
+    title: "Le cloud : concevoir et sécuriser",
+    description:
+      "Comprendre et concevoir une infrastructure cloud : modèles de service, responsabilité partagée, calcul et stockage, réseau virtuel, identité et accès, élasticité, haute disponibilité, infrastructure as code, maîtrise des coûts et sécurité. Conclu par la conception d'une architecture web scalable et disponible.",
+    category: "NETWORK",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 8,
+    lessons: [
+      "CL-LSN-169-V01",
+      "CL-LSN-170-V01",
+      "CL-LSN-171-V01",
+      "CL-LSN-172-V01",
+      "CL-LSN-173-V01",
+      "CL-LSN-174-V01",
+      "CL-LSN-175-V01",
+      "CL-LSN-176-V01",
+      "CL-LSN-177-V01",
+      "CL-LSN-178-V01",
+      "CL-LSN-179-V01",
+      "CL-LSN-180-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

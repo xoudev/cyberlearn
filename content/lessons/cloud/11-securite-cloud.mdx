@@ -1,0 +1,104 @@
+---
+refCode: CL-LSN-179-V01
+slug: cloud-securite
+title: "La sécurité du cloud en pratique"
+description: "Le cloud n'est pas sécurisé par défaut du côté client : les erreurs de configuration, la gestion des secrets, le moindre privilège, le chiffrement et la surveillance, pour ne pas devenir la prochaine fuite."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 520
+prerequisites: ["CL-LSN-174-V01"]
+---
+
+Quand on lit le récit d'une grosse fuite de données dans le cloud, on imagine souvent un attaquant génial qui a cassé un chiffrement militaire. La réalité est moins romanesque. Dans la grande majorité des cas, personne n'a rien cassé du tout. Quelqu'un a laissé un espace de stockage ouvert à tout internet, ou a poussé une clé d'accès dans un dépôt Git, ou a ouvert un port d'administration à la terre entière. La donnée était posée là, accessible, et un scanner automatisé l'a trouvée avant l'équipe de sécurité.
+
+C'est le point de départ de cette leçon. Le cloud te donne des serveurs, du stockage, des bases de données, en quelques clics. Mais il ne décide pas à ta place de qui a le droit d'y accéder. Cette part-là, la configuration et l'accès aux ressources que tu déploies, c'est ta responsabilité, pas celle du fournisseur. On parle de responsabilité partagée : le fournisseur sécurise le plancher, les murs et l'électricité du bâtiment ; toi, tu fermes la porte de ton appartement. Beaucoup d'incidents arrivent parce que le client croyait que la porte se fermait toute seule.
+
+## les erreurs de configuration
+
+La première cause d'incident dans le cloud n'est pas une faille logicielle, c'est une case mal cochée. Trois grands classiques reviennent sans cesse.
+
+Le premier, c'est le stockage rendu public. Tu crées un bucket pour héberger des fichiers, et par accident (ou par facilité) tu le rends accessible à tout le monde, sans authentification. Des sauvegardes de bases, des documents internes, des photos de clients se sont retrouvés en accès libre comme ça.
+
+Le deuxième, c'est le groupe de sécurité trop ouvert. Un groupe de sécurité, c'est le pare-feu de ta machine virtuelle. Si tu autorises les connexions entrantes depuis `0.0.0.0/0`, tu autorises le monde entier. Pratique pour tester, dramatique en production.
+
+Le troisième, c'est le port d'administration exposé. SSH (port 22), RDP (3389), la console d'une base de données : ces accès devraient être réservés à quelques adresses connues. Ouverts à tous, ils deviennent une cible que les robots testent en continu avec des mots de passe volés.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Repérer une mauvaise configuration (exemple)" commands={{"aws s3api get-public-access-block --bucket mon-bucket": "PublicAccessBlockConfiguration: BlockPublicAcls: false", "aws ec2 describe-security-groups --query 'SecurityGroups[].IpPermissions'": "FromPort: 22  CidrIp: 0.0.0.0/0", "git grep -nE 'AKIA[0-9A-Z]{16}'": "config.js: const key = 'AKIAEXAMPLE0123'"}} />
+
+Chaque ligne de cette sortie est un signal. Le blocage des accès publics est désactivé sur le bucket. Le port 22 est ouvert au monde entier. Et une clé d'accès traîne dans le code. Aucun de ces trois problèmes n'est une attaque ; ce sont des réglages laissés dans un mauvais état.
+
+<Callout type="danger">
+La mauvaise configuration figure parmi les risques majeurs du Top 10 de l'OWASP (Security Misconfiguration). Ce n'est pas un détail d'opérateur distrait : c'est la cause la plus courante des fuites cloud, justement parce qu'elle ne déclenche aucune alarme. Tout fonctionne, le service répond, et personne ne remarque que la porte est grande ouverte.
+</Callout>
+
+## les secrets et les clés
+
+Un secret, c'est tout ce qui sert à prouver une identité ou à déverrouiller un accès : une clé d'API, un mot de passe de base de données, un jeton, un certificat. Le réflexe à perdre, c'est de les écrire directement dans le code.
+
+Une clé codée en dur finit toujours par fuiter. Elle part dans Git, et même si tu la supprimes plus tard, elle reste dans l'historique des commits. Les attaquants scannent les dépôts publics en permanence ; une clé poussée par erreur peut être exploitée en quelques minutes. Et comme la même clé est souvent réutilisée à plusieurs endroits, une seule fuite ouvre plusieurs portes.
+
+La bonne pratique tient en trois points. D'abord, sortir les secrets du code : on les passe par des variables d'environnement ou, mieux, un coffre à secrets dédié (un vault) qui les stocke chiffrés et contrôle qui peut les lire. Ensuite, ne jamais les versionner : un fichier `.gitignore` correct et un scanner de secrets dans la chaîne d'intégration évitent de pousser une clé par accident. Enfin, faire tourner les secrets régulièrement, c'est-à-dire les remplacer périodiquement, pour qu'une clé volée et non détectée finisse par expirer d'elle-même.
+
+<Callout type="info">
+Un secret mal géré rejoint la catégorie des défaillances cryptographiques de l'OWASP. Le chiffrement le plus solide ne sert à rien si la clé qui l'ouvre est posée en clair dans un fichier de configuration. La sécurité d'un système se joue souvent sur la protection de ses secrets, pas sur la force de ses algorithmes.
+</Callout>
+
+## le moindre privilège
+
+Le moindre privilège est un principe simple : chaque identité (un utilisateur, un service, une fonction) ne reçoit que les permissions dont elle a strictement besoin, et rien de plus. Dans le cloud, ce principe se gère via l'IAM, le système de gestion des identités et des accès.
+
+La tentation inverse est partout. On accorde un accès large « pour que ça marche tout de suite », on prévoit de restreindre plus tard, et plus tard n'arrive jamais. Résultat : un service qui devait seulement lire un fichier peut en réalité supprimer toute la base.
+
+L'intérêt du moindre privilège se révèle le jour où une identité est compromise. Si la clé volée n'a le droit de lire qu'un seul dossier, le dégât s'arrête là. Si elle a les pleins pouvoirs, l'attaquant hérite de tout. Le moindre privilège ne empêche pas la compromission, il en réduit le rayon d'explosion. C'est une assurance, pas un cadenas.
+
+## le chiffrement
+
+Le chiffrement protège la donnée dans deux états distincts.
+
+Au repos, la donnée est chiffrée là où elle est stockée : sur les disques, dans la base, dans les sauvegardes. Si quelqu'un récupère le support physique ou copie un fichier de sauvegarde, il n'obtient que du bruit. Chez la plupart des fournisseurs cloud, c'est souvent une simple option à activer à la création de la ressource, parfois même active par défaut.
+
+En transit, la donnée est chiffrée pendant qu'elle voyage sur le réseau, typiquement avec TLS (le « s » de HTTPS). Sans cela, n'importe quel intermédiaire sur le chemin peut lire ou modifier ce qui passe : identifiants, jetons de session, contenus privés.
+
+<Callout type="info">
+Le chiffrement au repos et en transit relève rarement d'un grand chantier technique. C'est presque toujours une case à cocher ou une ligne de configuration. La difficulté n'est pas de le faire, c'est de penser à le vérifier sur chaque ressource, y compris les bases internes et les sauvegardes qu'on oublie facilement.
+</Callout>
+
+## journaliser et surveiller
+
+Sans journaux, il n'y a pas d'enquête possible. Quand un incident survient, la première question est toujours la même : qui a fait quoi, et quand ? Si rien n'est enregistré, personne ne peut répondre, et on découvre la fuite par la presse plutôt que par ses propres outils.
+
+Journaliser, c'est garder une trace des actions importantes : les connexions, les créations et suppressions de comptes, les changements de permissions, les accès aux ressources sensibles. Surveiller, c'est aller plus loin et chercher l'anormal dans ces traces. Un compte créé à trois heures du matin depuis un pays inhabituel, un volume de téléchargement soudain énorme, une permission élargie sans demande associée : ce sont des signaux faibles qui, repérés tôt, transforment une catastrophe en alerte gérée.
+
+C'est exactement le travail d'un SOC, le centre d'opérations de sécurité, qui centralise les journaux et déclenche des alertes quand un comportement sort de l'ordinaire. Même sans SOC formel, activer la journalisation des accès et mettre en place quelques alertes simples change déjà tout. Une trace que personne ne lit ne vaut pas grand-chose ; une trace surveillée vaut une équipe d'enquêteurs.
+
+## la part du client
+
+Revenons au point de départ, parce que c'est lui qui explique tous les autres. Le fournisseur cloud livre les outils de sécurité : le blocage des accès publics, les groupes de sécurité, le chiffrement, l'IAM, la journalisation. Il les livre, il ne les active pas à ta place et ne les configure pas pour ton usage. Cette part-là est à toi.
+
+C'est pour cette raison que le cloud n'est pas sécurisé « par défaut » du côté client. Le défaut est souvent permissif, pensé pour que tout fonctionne sans friction au premier essai. Sécuriser, c'est resserrer ce défaut : fermer ce qui doit l'être, restreindre les accès, activer ce qui protège.
+
+<Callout type="warning">
+La frontière de la responsabilité partagée est précise. Le fournisseur sécurise l'infrastructure : ses serveurs, son réseau physique, ses centres de données. Tu sécurises ce que tu y déposes : tes configurations, tes accès, tes données, tes secrets. Confondre les deux, croire que « le cloud s'en occupe », c'est l'erreur de départ de presque toutes les fuites.
+</Callout>
+
+## à toi de jouer
+
+Reprends la sortie du terminal et identifie ce qui ne va pas avant de répondre aux questions.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Repérer une mauvaise configuration (exemple)" commands={{"aws s3api get-public-access-block --bucket mon-bucket": "PublicAccessBlockConfiguration: BlockPublicAcls: false", "aws ec2 describe-security-groups --query 'SecurityGroups[].IpPermissions'": "FromPort: 22  CidrIp: 0.0.0.0/0", "git grep -nE 'AKIA[0-9A-Z]{16}'": "config.js: const key = 'AKIAEXAMPLE0123'"}} />
+
+<Quiz id="q-1" question="Dans la majorité des fuites de données cloud, quelle est la cause la plus fréquente ?" options={["Un chiffrement cassé par force brute", "Une erreur de configuration qui laisse une ressource accessible", "Une faille zero-day dans l hyperviseur du fournisseur", "Une panne matérielle du centre de données"]} correct={1} />
+
+<Quiz id="q-2" question="Une clé d API a été poussée par erreur dans un dépôt Git puis supprimée au commit suivant. Que faut-il faire ?" options={["Rien, la suppression suffit puisque le fichier a disparu", "La considérer comme compromise et la faire tourner immédiatement", "Attendre de voir si elle est utilisée avant d agir", "Rendre simplement le dépôt privé"]} correct={1} />
+
+<Quiz id="q-3" question="À quoi sert d appliquer le moindre privilège en IAM ?" options={["À chiffrer automatiquement toutes les données au repos", "À empêcher toute compromission de clé", "À limiter les dégâts si une identité est compromise", "À supprimer le besoin de journalisation"]} correct={2} />
+
+## à retenir
+
+- La première cause des fuites cloud n'est pas le piratage sophistiqué, c'est la mauvaise configuration : stockage public, groupe de sécurité ouvert à `0.0.0.0/0`, port d'administration exposé.
+- Les secrets ne se codent jamais en dur et ne se poussent jamais dans Git ; on les stocke dans un coffre et on les fait tourner régulièrement. Une clé fuitée reste dans l'historique.
+- Le moindre privilège (IAM) limite le rayon d'explosion d'un accès compromis : on n'accorde que le strict nécessaire.
+- Le chiffrement au repos et en transit est le plus souvent une simple option à activer ; la difficulté est de le vérifier partout, sauvegardes incluses.
+- Sans journaux surveillés, pas d'enquête ni de détection. Tracer qui fait quoi et alerter sur l'anormal, c'est le rôle du SOC.
+- Responsabilité partagée : le fournisseur sécurise l'infrastructure, le client sécurise ses configurations, ses accès et ses données. Le défaut est permissif, à toi de le resserrer.

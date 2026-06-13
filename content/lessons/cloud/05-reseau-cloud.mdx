@@ -1,0 +1,113 @@
+---
+refCode: CL-LSN-173-V01
+slug: cloud-reseau
+title: "Le réseau dans le cloud"
+description: "Construire un réseau isolé dans le cloud : le réseau privé virtuel et ses sous-réseaux publics et privés, les groupes de sécurité comme pare-feu par ressource, et l'équilibrage de charge."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-162-V01"]
+---
+
+Quand tu loues une machine chez un hébergeur cloud, tu ne reçois pas qu'un serveur. Tu reçois aussi un réseau, et c'est à toi de le construire. Le fournisseur te donne un espace vide, une sorte de centre de données virtuel, et tu décides comment l'adresser, comment le découper, qui peut parler à qui, et par où passe le trafic vers l'extérieur.
+
+Tout ce que le parcours réseau t'a montré sert ici. Les plages d'adresses privées, le sous-réseautage, le NAT, le pare-feu : ce ne sont plus des notions abstraites, ce sont les boutons que tu vas régler. La différence, c'est qu'au lieu de câbler des switches et des routeurs physiques, tu décris ton réseau en quelques lignes et le fournisseur le matérialise. Le vocabulaire change un peu selon le fournisseur (AWS, Google Cloud, Azure), mais les briques sont les mêmes partout. On va prendre le vocabulaire AWS comme fil rouge, parce qu'il est le plus répandu.
+
+## le réseau privé virtuel
+
+Le point de départ s'appelle le réseau privé virtuel, ou VPC (Virtual Private Cloud). C'est ton espace réseau à toi, isolé de celui des autres clients du fournisseur. Personne d'autre ne s'y trouve. Tu lui donnes une plage d'adresses privées, par exemple `10.0.0.0/16`, ce qui te réserve un peu plus de 65 000 adresses pour tes machines.
+
+Cette plage, tu la choisis dans les blocs privés que tu connais déjà (10.x, 172.16.x, 192.168.x). Ce sont des adresses non routables sur Internet, donc rien de ce qui vit dans ton VPC n'est joignable de l'extérieur tant que tu n'as pas explicitement ouvert une porte. C'est le comportement par défaut, et c'est voulu : un VPC neuf est fermé.
+
+Ensuite tu découpes ce grand bloc en sous-réseaux plus petits, exactement comme dans le parcours réseau. Chaque sous-réseau prend une portion de la plage, par exemple `10.0.1.0/24` (256 adresses), et vit dans une zone physique précise du fournisseur.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter un réseau cloud (exemple)" commands={{"aws ec2 describe-vpcs --query 'Vpcs[].CidrBlock'": "10.0.0.0/16", "aws ec2 describe-subnets --query 'Subnets[].CidrBlock'": "10.0.1.0/24 (public)\n10.0.2.0/24 (prive)", "aws ec2 describe-security-groups --query 'SecurityGroups[].GroupName'": "web-sg\ndb-sg"}} />
+
+<Callout type="info">
+Le VPC est virtuel mais la logique d'adressage est bien réelle. Si tu prévois de relier plusieurs VPC entre eux un jour, ou un VPC à ton réseau d'entreprise, évite de leur donner des plages qui se chevauchent. Deux réseaux en `10.0.0.0/16` ne pourront jamais se parler proprement, le routage devient ambigu. Choisis tes blocs comme si tu planifiais un vrai plan d'adressage.
+</Callout>
+
+## public et privé
+
+Tous les sous-réseaux ne se valent pas. La distinction qui compte, c'est public ou privé, et elle tient à une seule chose : la route vers Internet.
+
+Un sous-réseau public a une route qui sort vers Internet. On y place ce qui doit être joignable depuis l'extérieur : un serveur web, un répartiteur de charge, une passerelle d'API. Un sous-réseau privé n'a pas cette route. On y place ce qu'on veut protéger : la base de données, les serveurs d'application, les files de traitement. Ces machines peuvent parler entre elles à l'intérieur du VPC, mais personne ne les atteint depuis Internet.
+
+<Diagram caption="Un VPC avec sous-réseaux public et privé">
+flowchart LR
+  Internet[Internet] --> IGW[Passerelle Internet]
+  IGW --> Pub[Sous-reseau public 10.0.1.0/24]
+  Pub --> Web[Serveur web]
+  Web --> Priv[Sous-reseau prive 10.0.2.0/24]
+  Priv --> DB[(Base de donnees)]
+  Priv --> NAT[Passerelle NAT] --> IGW
+</Diagram>
+
+La leçon est la même que dans le sous-réseautage classique : tu segmentes pour ranger les machines par niveau d'exposition. Le serveur web a besoin d'être vu, la base de données non. En les mettant dans des sous-réseaux différents, tu peux appliquer des règles différentes à chacun. Une base de données qui n'a aucune route vers Internet ne peut tout simplement pas être scannée ni attaquée directement depuis l'extérieur, même si quelqu'un connaît son adresse. Le réseau lui-même devient une barrière.
+
+## les groupes de sécurité
+
+Découper en sous-réseaux, c'est le premier filtre. Le second, plus fin, c'est le groupe de sécurité. C'est un pare-feu virtuel, mais attaché à la ressource elle-même, pas au sous-réseau. Chaque instance porte son ou ses groupes de sécurité, comme un videur personnel qui vérifie chaque connexion.
+
+Un groupe de sécurité est une liste de règles, entrantes et sortantes. Une règle entrante dit qui a le droit de te contacter et sur quel port. Une règle sortante dit où ta machine a le droit d'aller. Tout ce qui n'est pas explicitement autorisé est refusé.
+
+Voilà à quoi pourrait ressembler le groupe d'un serveur web et celui d'une base de données.
+
+| Groupe | Sens | Port | Source autorisée |
+|--------|------|------|------------------|
+| web-sg | entrant | 443 | n'importe où (0.0.0.0/0) |
+| web-sg | entrant | 22 | mon IP perso seulement |
+| db-sg | entrant | 5432 | web-sg uniquement |
+
+Regarde la dernière ligne. La base n'accepte du trafic sur son port (5432, PostgreSQL) que s'il vient de machines portant le groupe `web-sg`. Pas une plage d'adresses, le groupe lui-même. Ça veut dire que seuls les serveurs web peuvent toucher la base, et personne d'autre, même à l'intérieur du VPC.
+
+<Callout type="warning">
+La tentation, quand quelque chose ne marche pas, c'est d'ouvrir en grand : autoriser tous les ports depuis 0.0.0.0/0 pour débloquer la situation. C'est exactement ce qu'il ne faut pas faire. Tu n'ouvres que le port précis, depuis la source précise, et rien de plus. Le port 22 (SSH) ouvert au monde entier est l'une des erreurs les plus fréquentes et les plus exploitées.
+</Callout>
+
+C'est l'application directe du moindre privilège, version réseau. Une ressource ne doit pouvoir parler qu'à ce dont elle a besoin pour fonctionner, ni plus. Si la base n'a jamais besoin d'aller sur Internet, son groupe sortant le lui interdit. Moins une machine a de chemins ouverts, moins elle offre de surface à attaquer.
+
+## entrer et sortir
+
+Reste la question du trafic qui traverse la frontière du VPC. Deux pièces s'en chargent, et il faut bien les distinguer.
+
+La passerelle Internet est la porte du sous-réseau public. C'est elle qui permet au trafic d'entrer depuis Internet et de sortir vers Internet. Une instance dans le sous-réseau public, avec une adresse publique et une route vers cette passerelle, est joignable des deux sens.
+
+La passerelle NAT règle un autre problème. Tes machines privées, la base par exemple, ont parfois besoin de sortir : télécharger une mise à jour, appeler une API externe. Mais tu ne veux surtout pas qu'elles soient joignables depuis l'extérieur. La passerelle NAT fait exactement ça. Elle laisse le trafic privé sortir en traduisant son adresse, et comme c'est le même NAT que dans le parcours réseau, la connexion ne fonctionne que dans un sens. La machine privée peut initier une sortie, mais personne sur Internet ne peut initier une connexion vers elle. Elle sort sans être joignable.
+
+C'est la même asymétrie que ta box à la maison : tes appareils accèdent au web, mais on ne peut pas les contacter directement depuis dehors. Le cloud reprend ce mécanisme et le place là où tu en as besoin.
+
+## l'équilibrage de charge
+
+Un seul serveur, c'est un point unique de défaillance. S'il tombe, le service tombe. S'il sature, tout ralentit. L'équilibreur de charge (load balancer) répond aux deux soucis d'un coup.
+
+Tu le places dans le sous-réseau public, c'est lui qui reçoit le trafic des visiteurs. Derrière lui, plusieurs instances identiques de ton application, souvent dans le sous-réseau privé. L'équilibreur répartit les requêtes entrantes entre elles, selon une règle simple (à tour de rôle, ou vers la moins chargée).
+
+Deux bénéfices. D'abord la tolérance aux pannes : l'équilibreur vérifie en continu que chaque instance répond, et il cesse d'envoyer du trafic à celle qui ne répond plus. Une machine meurt, les autres encaissent, l'utilisateur ne voit rien. Ensuite la montée en charge : quand le trafic grimpe, tu ajoutes des instances derrière l'équilibreur, et il les met aussitôt à contribution.
+
+<Callout type="success">
+Ce schéma, équilibreur en façade et instances interchangeables derrière, ouvre la porte à l'élasticité : ajouter ou retirer des serveurs automatiquement selon la charge réelle. C'est le sujet de la prochaine leçon. Pour l'instant, retiens que séparer le point d'entrée des machines qui travaillent est ce qui rend tout le reste possible.
+</Callout>
+
+## à toi de jouer
+
+Reprends l'exemple de réseau et observe les pièces ensemble : la plage du VPC, les deux sous-réseaux, les groupes de sécurité.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter un réseau cloud (exemple)" commands={{"aws ec2 describe-vpcs --query 'Vpcs[].CidrBlock'": "10.0.0.0/16", "aws ec2 describe-subnets --query 'Subnets[].CidrBlock'": "10.0.1.0/24 (public)\n10.0.2.0/24 (prive)", "aws ec2 describe-security-groups --query 'SecurityGroups[].GroupName'": "web-sg\ndb-sg"}} />
+
+<Quiz id="q-1" question="Qu'est-ce qui distingue un sous-reseau public d'un sous-reseau prive dans un VPC ?" options={["Le public utilise des adresses IPv6, le prive des adresses IPv4", "Le public a une route vers Internet, le prive n'en a pas", "Le public est plus grand, le prive plus petit", "Le public est chiffre, le prive ne l'est pas"]} correct={1} />
+
+<Quiz id="q-2" question="Une base de donnees dans un sous-reseau prive doit pouvoir telecharger une mise a jour depuis Internet, sans jamais etre joignable depuis l'exterieur. Quelle piece utilises-tu ?" options={["La passerelle NAT", "La passerelle Internet", "Un second VPC", "Un groupe de securite ouvert en grand"]} correct={0} />
+
+<Quiz id="q-3" question="Dans un groupe de securite, le trafic qui n'est explicitement autorise par aucune regle est :" options={["Autorise par defaut", "Mis en file d'attente", "Refuse", "Redirige vers l'equilibreur de charge"]} correct={2} />
+
+## à retenir
+
+- Le VPC est ton réseau isolé dans le cloud. Tu lui donnes une plage d'adresses privées et tu la découpes en sous-réseaux. Par défaut, rien n'est joignable de l'extérieur.
+- Un sous-réseau public a une route vers Internet (serveurs exposés), un sous-réseau privé n'en a pas (bases de données, ce qu'on protège).
+- Le groupe de sécurité est un pare-feu virtuel attaché à chaque ressource, avec des règles entrantes et sortantes. Tout ce qui n'est pas autorisé est refusé. On n'ouvre que le strict nécessaire : moindre privilège réseau.
+- La passerelle Internet laisse entrer et sortir le trafic public. La passerelle NAT laisse le privé sortir sans être joignable de l'extérieur, comme le NAT de ta box.
+- L'équilibreur de charge répartit le trafic sur plusieurs instances : tolérance aux pannes (il évite les machines en panne) et montée en charge (tu ajoutes des instances derrière lui).
+
+OK 05 écrit

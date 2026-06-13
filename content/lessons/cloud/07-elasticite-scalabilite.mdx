@@ -1,0 +1,102 @@
+---
+refCode: CL-LSN-175-V01
+slug: cloud-elasticite
+title: "Élasticité et mise à l'échelle"
+description: "Encaisser les pics sans surpayer le reste du temps : la différence entre montée en charge verticale et horizontale, la mise à l'échelle automatique, et pourquoi une application sans état rend tout cela possible."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-173-V01"]
+---
+
+Une boutique en ligne tourne tranquillement le mardi après-midi. Trois cents visiteurs, deux serveurs largement suffisants. Puis arrive le vendredi soir des soldes : cinquante mille personnes en même temps. Si l'infrastructure n'a pas bougé, le site s'écroule. Le cloud promet de suivre cette courbe : plus de ressources quand le trafic afflue, moins quand il se calme, et une facture qui colle à la réalité. Voilà comment ce mécanisme fonctionne, et pourquoi il a changé la façon de concevoir les applications.
+
+## vertical contre horizontal
+
+Quand une machine sature, il existe deux réflexes opposés.
+
+Le premier, c'est la montée en charge verticale : on remplace la machine par une plus puissante. Plus de processeurs, plus de mémoire. C'est simple à comprendre, et souvent simple à faire dans une interface cloud, un clic et la machine grossit. Mais cette voie a deux limites. D'abord un plafond : il existe une taille maximale d'instance, et aucune machine ne peut absorber une charge infinie. Ensuite, redimensionner demande presque toujours un redémarrage, donc une interruption de service, même brève.
+
+Le second réflexe, c'est la montée en charge horizontale : on garde les machines telles quelles et on en ajoute d'autres en parallèle. Dix instances modestes plutôt qu'une énorme. Le plafond pratique disparaît, on peut continuer à empiler des instances. Et comme le travail est réparti sur plusieurs machines, la panne de l'une ne coupe pas tout le service, les autres continuent.
+
+| | montée verticale | montée horizontale |
+|---|---|---|
+| principe | une machine plus grosse | plus de machines |
+| plafond | la plus grosse instance disponible | quasi illimité en pratique |
+| interruption | redémarrage souvent nécessaire | aucune, on ajoute à chaud |
+| tolérance aux pannes | faible, point unique | bonne, la charge est répartie |
+| complexité | faible | demande un équilibreur et une app adaptée |
+
+<Callout type="info">
+Les deux approches se combinent. On choisit souvent une taille d'instance raisonnable (un peu de vertical) puis on multiplie ces instances selon la charge (l'horizontal). L'horizontal est ce qui rend l'élasticité du cloud possible à grande échelle.
+</Callout>
+
+## l'équilibreur de charge
+
+Si on lance dix instances identiques, une question se pose tout de suite : vers laquelle envoyer un visiteur ? La réponse est un composant placé devant le groupe, l'équilibreur de charge. C'est lui qui reçoit chaque requête entrante et la dirige vers l'une des instances disponibles, en répartissant le trafic pour qu'aucune ne soit écrasée pendant que les autres dorment.
+
+Il fait aussi un travail moins visible mais déterminant. Il surveille la santé de chaque instance, en général avec un appel régulier sur une URL de contrôle. Si une instance ne répond plus, l'équilibreur cesse de lui envoyer du trafic et le redirige vers les autres. Le visiteur ne voit rien. C'est le même principe que celui vu côté réseau cloud : un point d'entrée unique et stable cache derrière lui un parc d'instances qui change tout le temps.
+
+<Diagram caption="Mise à l'échelle horizontale derrière un équilibreur">
+flowchart TD
+  A[Visiteurs] --> B[Equilibreur de charge]
+  B --> C[Instance 1]
+  B --> D[Instance 2]
+  B --> E[Instance 3]
+  C --> F[Base de donnees partagee]
+  D --> F
+  E --> F
+</Diagram>
+
+Une conséquence pratique : les clients ne connaissent que l'adresse de l'équilibreur. Les instances derrière peuvent apparaître, disparaître, être remplacées, sans que personne à l'extérieur ait à changer quoi que ce soit.
+
+## la mise à l'échelle automatique
+
+Ajouter des instances à la main quand le trafic monte, c'est jouable pour un pic prévu, mais épuisant pour des variations quotidiennes. D'où la mise à l'échelle automatique : on définit des règles, et le cloud ajoute ou retire des instances tout seul.
+
+Le principe repose sur des seuils. On observe une métrique, par exemple l'usage moyen du processeur sur le groupe. Au-dessus de soixante-dix pour cent pendant quelques minutes, on lance une instance de plus. En dessous de trente pour cent, on en retire une, jusqu'à un minimum défini. On fixe aussi un plancher et un plafond, par exemple jamais moins de deux instances, jamais plus de vingt, pour éviter de tomber à zéro ou de dépenser sans limite.
+
+L'intérêt financier est direct. La nuit, le groupe redescend à deux instances et on ne paie que celles-là. Au pic du vendredi soir, il monte à quinze, le temps que ça dure, puis redescend. On paie au plus juste, instance par instance, heure par heure, au lieu de provisionner pour le pire toute l'année.
+
+## l'application sans état
+
+Tout ce qui précède repose sur une condition discrète mais déterminante : on doit pouvoir ajouter et retirer une instance à n'importe quel moment, sans rien casser. Ça n'est vrai que si les instances ne gardent pas d'état local. C'est l'idée à retenir de cette leçon.
+
+Prenons un contre-exemple. Un visiteur se connecte, et son instance enregistre sa session en mémoire locale, ou écrit son panier dans un fichier sur son disque. Tant que ce visiteur retombe sur la même instance, tout va bien. Mais l'équilibreur peut très bien l'envoyer ailleurs à la requête suivante, ou cette instance peut être retirée par la mise à l'échelle automatique. Sa session disparaît, son panier aussi. Pire : on n'ose plus retirer aucune instance de peur de jeter les données de quelqu'un, et la mise à l'échelle vers le bas devient impossible.
+
+La solution est de rendre l'application sans état. Chaque instance traite une requête puis oublie tout. Ce qui doit survivre, la session, le panier, les fichiers téléversés, est stocké à l'extérieur : une base de données partagée, un cache partagé, un stockage d'objets. Toutes les instances lisent et écrivent au même endroit, donc n'importe laquelle peut traiter n'importe quelle requête. C'est ce qui rend les instances interchangeables, et c'est cette interchangeabilité qui permet d'en ajouter ou d'en retirer librement.
+
+<Callout type="warning">
+Garder l'état sur l'instance casse la mise à l'échelle horizontale. Une session en mémoire locale, un fichier écrit sur le disque de la machine, un compteur stocké dans la variable d'un seul processus : à la première instance retirée ou remplacée, ces données sont perdues. Tout ce qui doit durer va dans un stockage partagé, hors des instances.
+</Callout>
+
+## l'intérêt
+
+Pourquoi l'élasticité est-elle l'argument phare du cloud ? Parce qu'elle découple la capacité du pire scénario. Avant, dimensionner un service voulait dire acheter assez de matériel pour tenir le jour le plus chargé de l'année, puis le laisser tourner à vide les trois cent soixante-quatre autres jours. On payait le pic en permanence.
+
+Avec une infrastructure élastique, on suit la courbe réelle. Le groupe grossit pour le pic puis maigrit aussitôt, et la facture suit. On paie ce qu'on consomme, au lieu de payer ce qu'on pourrait consommer un jour. Pour un site qui double son trafic un soir par mois, ou pour une jeune entreprise qui ne sait pas si elle aura cent ou cent mille utilisateurs, c'est un changement de modèle économique autant que technique.
+
+<Callout type="success">
+L'élasticité transforme un gros coût fixe en coût variable. On absorbe un pic sans porter l'infrastructure du pic toute l'année, et on ne paie les ressources supplémentaires que pendant les minutes où elles servent vraiment.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelle différence sépare la montée en charge verticale de la montée en charge horizontale ?" options={["La verticale ajoute des machines, l horizontale en retire", "La verticale remplace une machine par une plus puissante, l horizontale ajoute des machines en parallele", "La verticale concerne le stockage, l horizontale le reseau", "Il n y a aucune difference pratique"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi une application qui garde la session de l utilisateur en memoire locale pose-t-elle un probleme pour la mise a l echelle horizontale ?" options={["Elle consomme trop de processeur", "Si l instance est retiree ou si l equilibreur redirige ailleurs, la session est perdue", "Elle empeche l equilibreur de demarrer", "Elle double le cout de chaque instance"]} correct={1} />
+
+<Quiz id="q-3" question="Quel role joue l equilibreur de charge devant un groupe d instances ?" options={["Il stocke les sessions des utilisateurs", "Il compile le code de l application", "Il repartit le trafic entre les instances et evite celles qui ne repondent plus", "Il facture les ressources consommees"]} correct={2} />
+
+## à retenir
+
+- Montée verticale : une machine plus grosse. Simple, mais plafonnée et avec interruption au redimensionnement.
+- Montée horizontale : plus de machines en parallèle. Pas de plafond pratique, et tolérante aux pannes.
+- L'équilibreur de charge se place devant le groupe, répartit le trafic et évite les instances qui ne répondent plus.
+- La mise à l'échelle automatique ajoute ou retire des instances selon des seuils, entre un plancher et un plafond, pour payer au plus juste.
+- Une application sans état ne garde aucune donnée locale ; l'état va dans un stockage ou une base partagée. C'est ce qui rend les instances interchangeables.
+- L'état local casse la mise à l'échelle horizontale : à la première instance retirée, les données sont perdues.
+- L'élasticité transforme un coût fixe en coût variable : on encaisse les pics sans payer la grosse infrastructure toute l'année.
+
+OK 07 écrit

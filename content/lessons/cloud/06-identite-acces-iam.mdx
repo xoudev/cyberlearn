@@ -1,0 +1,119 @@
+---
+refCode: CL-LSN-174-V01
+slug: cloud-identite-acces
+title: "Identité et accès : l'IAM"
+description: "La première ligne de défense du cloud : les identités utilisateurs, groupes et rôles, les politiques qui accordent des permissions, le moindre privilège appliqué, et pourquoi protéger ses clés et son compte racine."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-170-V01"]
+---
+
+Dans un datacenter classique, la sécurité commence souvent par une porte, un badge, un câble qu'il faut brancher physiquement. Dans le cloud, tout ça disparaît. Il ne reste qu'une question, posée des millions de fois par seconde : cette requête a-t-elle le droit de faire ce qu'elle demande ? La réponse vient de l'IAM, pour Identity and Access Management. C'est le système qui décide qui peut faire quoi, sur quelle ressource.
+
+Et c'est là que tout se joue. Un serveur mal patché, c'est embêtant. Une politique IAM trop large ou une clé d'accès qui traîne dans un dépôt public, c'est souvent la fin de la partie : l'attaquant entre avec des identifiants valides, et de son point de vue il n'y a rien d'anormal à signaler. L'IAM est la première chose qu'un attaquant cherche à exploiter, et donc la première chose que tu dois verrouiller.
+
+## les identités
+
+Une identité, c'est tout ce qui peut faire une requête et à qui on peut accorder des droits. On en distingue quelques types.
+
+Un **utilisateur** représente un humain (toi, un collègue) ou parfois une petite application. Il a des identifiants permanents : un mot de passe pour se connecter à la console, et souvent une paire de clés d'accès pour parler à l'API en ligne de commande.
+
+Un **groupe** est un simple regroupement d'utilisateurs. On ne lui assigne pas de personne au cas par cas : on crée un groupe `developpeurs`, on lui attache des permissions, et chaque nouveau membre hérite des droits du groupe. Ça évite de répéter la même config sur chaque compte.
+
+Un **rôle** est une identité sans identifiants permanents. Personne ne possède un rôle ; on l'assume pour un temps, et pendant cette durée on emprunte ses permissions. Un service comme un serveur web peut assumer un rôle pour lire un bucket, et une personne peut assumer un rôle pour passer en mode administrateur le temps d'une opération.
+
+Un **compte de service** (la terminologie varie selon le fournisseur) est une identité non humaine : c'est une machine, une fonction serverless, un pipeline d'intégration qui agit pour son propre compte.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter les identités et accès (exemple)" commands={{"aws iam list-users --query 'Users[].UserName'": "alice\nbob\ndeploy-ci", "aws iam list-roles --query 'Roles[].RoleName'": "web-server-role\nbackup-role", "aws sts get-caller-identity": "Account: 123456789  Arn: arn:aws:iam::123456789:user/alice"}} />
+
+<Callout type="info">
+La dernière commande, `get-caller-identity`, est ton réflexe de base : elle répond à la question « avec quelle identité suis-je en train d'agir, là, maintenant ? ». Avant toute opération sensible, vérifie que tu n'es pas connecté avec un compte plus puissant que nécessaire.
+</Callout>
+
+## les politiques
+
+Avoir une identité ne donne aucun droit en soi. Les permissions viennent des **politiques**, des documents qui disent : telle identité peut effectuer telle action sur telle ressource. Trois briques reviennent toujours : un effet (autoriser ou refuser), une ou plusieurs actions (lire un objet, démarrer une machine), et une ou plusieurs ressources désignées de façon précise.
+
+Voici une politique minimale qui autorise uniquement la lecture des objets d'un bucket de stockage, et rien d'autre.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::factures-clients/*"
+    }
+  ]
+}
+```
+
+Lis-la comme une phrase : autoriser l'action « récupérer un objet » sur tout ce qui se trouve dans le bucket `factures-clients`. Cette identité ne peut ni supprimer, ni écrire, ni lister un autre bucket. Tout ce qui n'est pas explicitement autorisé reste interdit par défaut. Et un refus explicite, lui, l'emporte toujours sur une autorisation : c'est pratique pour poser des garde-fous qu'aucune autre politique ne pourra contourner.
+
+## utilisateur ou rôle
+
+C'est la distinction qui revient le plus souvent, et celle qui fait le plus de dégâts quand on la rate.
+
+Un **utilisateur** porte des identifiants permanents. Ses clés d'accès restent valides jusqu'à ce que quelqu'un les révoque. C'est pratique, mais ça veut dire qu'une clé copiée quelque part est une porte ouverte, potentiellement pour des mois.
+
+Un **rôle** ne distribue rien de durable. Quand un service assume un rôle, il reçoit des identifiants temporaires qui expirent au bout de quelques minutes ou quelques heures. Une fois expirés, ils ne valent plus rien, même si quelqu'un les a interceptés.
+
+D'où la règle simple : pour un service (serveur, fonction, pipeline), préfère toujours un rôle plutôt que de lui coller une clé permanente. Le serveur web n'a pas besoin de stocker un secret ; il assume son rôle au démarrage et obtient des identifiants frais qui tournent tout seuls. Tu ne distribues plus de clés durables, tu ne les fais plus fuiter, et tu n'as plus à les faire tourner à la main.
+
+<Callout type="warning">
+La question à te poser pour chaque service : pourrait-il fonctionner avec un rôle au lieu d'une clé permanente ? La réponse est presque toujours oui. Une clé d'accès permanente attachée à un service est rarement justifiée, et chaque clé que tu n'as pas créée est une clé qui ne peut pas fuiter.
+</Callout>
+
+## le moindre privilège
+
+Le principe de moindre privilège, tu l'as déjà croisé en sécurité : on n'accorde à une identité que ce dont elle a strictement besoin pour faire son travail, ni plus.
+
+Dans le cloud, ça change l'ordre dans lequel on construit les permissions. La tentation est d'ouvrir large « pour que ça marche », puis de restreindre plus tard. Mais « plus tard » n'arrive jamais, et on se retrouve avec des comptes qui peuvent tout faire. La bonne méthode est l'inverse : partir de zéro permission, et ajouter une action à la fois, au moment où le besoin se manifeste vraiment.
+
+Concrètement : ton pipeline doit déposer un fichier dans un bucket ? Tu lui donnes l'écriture sur ce bucket précis, pas l'accès à tout le stockage du compte. Si demain il a besoin de lire ailleurs, tu ajoutes cette action-là. Les permissions grandissent avec les besoins réels, jamais à l'avance.
+
+<Callout type="success">
+Une politique bien faite est souvent ennuyeuse à lire : quelques actions précises, une ressource nommée, et c'est tout. Quand tu vois un `*` dans une action ou une ressource (« tout autoriser »), traite-le comme une alarme. Parfois c'est légitime, mais ça mérite toujours qu'on s'arrête une seconde pour vérifier.
+</Callout>
+
+## les erreurs qui coûtent cher
+
+La plupart des compromissions cloud ne viennent pas d'une faille exotique. Elles viennent de trois erreurs banales, répétées partout.
+
+La première : utiliser le **compte racine** au quotidien. Le compte racine (le tout premier, créé avec l'abonnement) peut absolument tout, y compris fermer le compte ou modifier la facturation. Il ne devrait servir qu'à quelques opérations rares de configuration initiale, puis être mis de côté avec une authentification à plusieurs facteurs solide. Pour le travail de tous les jours, on crée des identités dédiées avec des droits limités.
+
+La deuxième : des **clés en clair dans le code**. Une paire de clés d'accès copiée dans un fichier source, poussée sur un dépôt, et c'est terminé : des robots scannent les dépôts publics en permanence et trouvent ces clés en quelques minutes. C'est exactement le problème des secrets en clair que tu as vu ailleurs : une clé d'API est un secret, elle vit dans un coffre ou dans une variable d'environnement, jamais dans le code versionné. Et quand un service peut utiliser un rôle, il n'y a même pas de clé à protéger.
+
+La troisième : des **permissions trop larges**. Un compte de service avec les droits d'administrateur « parce que c'était plus simple », et le jour où il est compromis, l'attaquant hérite de tout. Le moindre privilège n'est pas une coquetterie : c'est ce qui transforme une fuite en incident contenu plutôt qu'en catastrophe.
+
+<Callout type="danger">
+Si tu ne devais retenir qu'une seule habitude de cette leçon : n'utilise jamais le compte racine pour travailler, et ne laisse jamais une clé d'accès dans du code. Ces deux réflexes à eux seuls écartent la grande majorité des scénarios de compromission cloud.
+</Callout>
+
+## à toi de jouer
+
+Quelques vérifications de routine sur un compte, puis trois questions.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter les identités et accès (exemple)" commands={{"aws iam list-users --query 'Users[].UserName'": "alice\nbob\ndeploy-ci", "aws iam list-roles --query 'Roles[].RoleName'": "web-server-role\nbackup-role", "aws sts get-caller-identity": "Account: 123456789  Arn: arn:aws:iam::123456789:user/alice"}} />
+
+<QuizGroup>
+<Quiz id="q-1" question="Quelle est la principale différence entre un utilisateur et un rôle ?" options={["Un rôle ne peut servir qu aux humains", "Un utilisateur a des identifiants permanents, un rôle s assume pour un temps avec des identifiants temporaires", "Un utilisateur coûte plus cher qu un rôle", "Il n y a aucune différence, ce sont deux mots pour la même chose"]} correct={1} />
+
+<Quiz id="q-2" question="Comment appliquer correctement le moindre privilège dans le cloud ?" options={["Tout autoriser au départ, puis retirer ce qui pose problème", "Partir de zéro permission et ajouter chaque action seulement quand le besoin est réel", "Donner les droits d administrateur à tous les services pour simplifier", "Copier les permissions d un compte existant sans les relire"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi ne faut-il pas utiliser le compte racine au quotidien ?" options={["Il est plus lent que les autres comptes", "Il ne peut pas créer de buckets", "Il peut absolument tout faire, donc sa compromission donne un contrôle total ; on le réserve aux rares opérations initiales", "Il ne fonctionne que le premier jour"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- L'IAM décide qui peut faire quoi sur quelle ressource ; c'est la première ligne de défense du cloud, car la plupart des compromissions passent par des accès valides mais trop larges.
+- Les identités : utilisateurs (humains, identifiants permanents), groupes (regroupements d'utilisateurs), rôles (assumés temporairement, identifiants éphémères), comptes de service (machines).
+- Une politique accorde un effet (autoriser ou refuser) sur des actions et des ressources nommées. Tout ce qui n'est pas autorisé est interdit ; un refus explicite l'emporte.
+- Pour les services, préfère les rôles aux clés permanentes : pas de secret durable à distribuer, donc rien à faire fuiter.
+- Moindre privilège : partir de rien et ajouter au besoin, jamais l'inverse. Un `*` dans une politique est un signal d'alarme.
+- Les trois erreurs qui coûtent cher : travailler avec le compte racine, des clés en clair dans le code, des permissions trop larges. Évite-les et tu écartes l'essentiel du risque.
+
+OK 06 écrit

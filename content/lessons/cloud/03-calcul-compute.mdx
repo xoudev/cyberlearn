@@ -1,0 +1,101 @@
+---
+refCode: CL-LSN-171-V01
+slug: cloud-calcul-compute
+title: "Le calcul : machines virtuelles, conteneurs, sans-serveur"
+description: "Les trois grandes façons d'exécuter du code dans le cloud : la machine virtuelle pour le contrôle total, le conteneur pour la légèreté et la portabilité, et le sans-serveur pour ne penser qu'à sa fonction."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-169-V01"]
+---
+
+Quand tu veux exécuter du code dans le cloud, tu n'as pas une seule façon de faire, tu en as plusieurs, et elles se rangent sur un éventail. À une extrémité, tu loues un serveur entier que tu pilotes de A à Z : tu installes le système, tu choisis les versions, tu surveilles, tu répares. À l'autre, tu déposes une simple fonction chez le fournisseur et tu l'oublies : il s'occupe de tout, tu paies seulement quand elle tourne.
+
+Entre les deux, il y a un troisième palier très utilisé. Comprendre cet éventail, c'est comprendre un compromis qui revient sans arrêt : plus tu veux de contrôle, plus tu as de travail ; plus tu veux de simplicité, plus tu lâches de leviers. Aucun choix n'est meilleur dans l'absolu. Tout dépend de ce que tu fais tourner.
+
+Voici les trois paliers, du plus lourd au plus léger.
+
+## la machine virtuelle
+
+Une machine virtuelle, ou VM, c'est un serveur complet que tu loues. Pas une machine physique posée quelque part, mais une part isolée d'un gros serveur du fournisseur, qui se comporte comme un ordinateur à part entière. Tu reçois une adresse, tu te connectes en SSH, et tu te retrouves devant un système d'exploitation vide ou presque, comme si tu venais d'allumer un PC neuf.
+
+À partir de là, tout est à toi. Tu choisis la distribution Linux ou Windows, tu installes les paquets, tu configures le pare-feu, tu décides des mises à jour, tu gères les comptes. Le fournisseur te garantit que la machine tourne et reste accessible. Le reste du contenu, c'est ton affaire.
+
+C'est le palier qui donne le plus de liberté. Tu peux y faire tourner à peu près n'importe quoi : une vieille application qui exige une version précise du système, un logiciel qui veut un accès bas niveau, une base de données que tu veux régler au millimètre. En échange, tu portes la charge d'administration. Si le système n'est pas patché, c'est ta faille. Si la machine est mal dimensionnée, c'est ta facture qui dérape ou ton service qui rame.
+
+<Callout type="info">
+Une VM, tu la paies tant qu'elle est allumée, qu'elle travaille ou non. Une machine oubliée qui tourne tout un mois sans rien faire, c'est l'une des sources de gaspillage les plus courantes sur une facture cloud. Pense à éteindre ce qui ne sert pas.
+</Callout>
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Lancer une ressource de calcul (exemple)" commands={{"aws ec2 run-instances --image-id ami-123 --instance-type t3.micro": "InstanceId: i-0a1b2c3d  State: pending", "docker run -d -p 80:80 nginx": "9f8e7d6c5b4a", "aws lambda invoke --function-name traiter out.json": "StatusCode: 200"}} />
+
+## le conteneur
+
+Le conteneur descend d'un cran. Au lieu de louer un système entier, tu empaquettes ton application avec exactement ce dont elle a besoin pour tourner : le code, les bibliothèques, les fichiers de configuration, la bonne version de chaque dépendance. Ce paquet, c'est l'image. Tu la lances, et tu obtiens un conteneur qui s'exécute de la même manière sur ton portable, sur le serveur de test et chez le fournisseur cloud.
+
+Tu as déjà rencontré ce mécanisme dans le parcours DevOps avec Docker. Le principe est le même ici : un conteneur partage le système de la machine hôte au lieu d'embarquer son propre système comme le ferait une VM. Résultat, il est beaucoup plus léger, il démarre en quelques secondes au lieu de quelques minutes, et tu peux en faire tenir bien plus sur la même machine.
+
+Ce qui change, c'est ce que tu n'as plus à gérer. Tu ne configures plus un système complet à la main : tu décris ton application une fois dans une image, et tu la fais tourner partout pareil. Le fameux "ça marche chez moi mais pas en production" s'efface, parce que l'environnement voyage avec l'application. En contrepartie, tu ne contrôles plus le système sous-jacent aussi finement qu'avec une VM, et tu dois apprendre à orchestrer plusieurs conteneurs quand ton application grossit.
+
+<Callout type="success">
+Le conteneur est le bon niveau pour la plupart des applications modernes : un site, une API, un service que tu déploies souvent. Tu gagnes en portabilité et en rapidité de déploiement sans renoncer à maîtriser le contenu de ton application.
+</Callout>
+
+## le sans-serveur
+
+Le sans-serveur, ou serverless, pousse l'idée jusqu'au bout. Tu ne loues plus de machine, tu ne décris plus d'image système : tu fournis une fonction, c'est-à-dire un bout de code qui fait une chose précise. Le fournisseur s'occupe du reste. Il décide où l'exécuter, démarre ce qu'il faut quand un événement arrive, met à l'échelle tout seul si les appels affluent, et range tout dès que c'est fini.
+
+Le nom est un peu trompeur, parce qu'il y a bien des serveurs derrière. Simplement, tu ne les vois jamais et tu n'y penses jamais. Tu n'allumes rien, tu n'éteins rien, tu ne patches rien.
+
+Le modèle de facturation suit cette logique : tu paies au temps d'exécution réel de ta fonction, souvent à la fraction de seconde, et tu ne paies rien quand elle ne tourne pas. Une fonction appelée dix fois dans le mois ne coûte presque rien. C'est ce qui rend le sans-serveur attirant pour des tâches courtes et déclenchées par un événement : redimensionner une image dès qu'un fichier est déposé, envoyer un message quand un formulaire est soumis, traiter une ligne qui arrive dans une file.
+
+En échange de ce confort, tu acceptes des limites. Une fonction a une durée maximale d'exécution, elle ne garde rien en mémoire entre deux appels, et le premier appel après une période d'inactivité peut être un peu lent, le temps que le fournisseur réveille tout. Pour un calcul long ou un service qui doit rester chaud en permanence, ce n'est pas le bon outil.
+
+## le compromis
+
+Les trois paliers racontent la même histoire vue sous trois angles. À mesure que tu descends de la VM vers la fonction, tu cèdes du contrôle et tu récupères de la simplicité. L'effort d'administration et une part de la facture se déplacent de tes épaules vers celles du fournisseur.
+
+| Option | Contrôle | Effort pour toi | Bon usage |
+| --- | --- | --- | --- |
+| Machine virtuelle | Total, jusqu'à l'OS | Élevé : tu gères tout | Besoin spécifique, logiciel hérité, réglage fin |
+| Conteneur | L'application et son environnement | Moyen : tu décris, tu orchestres | Applications modernes, portables, déployées souvent |
+| Sans-serveur | Ta seule fonction | Faible : le fournisseur gère le reste | Tâches courtes, événementielles, charge irrégulière |
+
+Aucune ligne n'est la bonne réponse universelle. La VM coûte cher en attention mais ne t'enferme dans rien. Le sans-serveur te libère de l'administration mais t'impose ses contraintes. Le conteneur tient l'équilibre au milieu, ce qui explique sa popularité.
+
+## choisir
+
+Une façon simple de trancher : pars de ton besoin et descends l'éventail jusqu'au palier qui suffit.
+
+Prends une VM quand tu as un besoin précis que les autres paliers ne couvrent pas : un logiciel ancien qui exige un système particulier, un accès bas niveau, un contrôle fin que tu ne veux pas abandonner.
+
+Prends un conteneur pour une application moderne que tu veux déployer souvent et faire tourner à l'identique partout. C'est le choix par défaut raisonnable pour un site ou une API d'aujourd'hui.
+
+Prends le sans-serveur pour des tâches courtes, déclenchées par un événement, avec une charge irrégulière où payer une machine allumée en permanence n'aurait pas de sens.
+
+<Callout type="warning">
+Beaucoup de systèmes mélangent les trois. Une même architecture peut avoir une base de données sur une VM, l'application principale en conteneurs, et quelques fonctions sans-serveur pour les tâches ponctuelles. Le but n'est pas de choisir un camp, mais le bon outil pour chaque morceau.
+</Callout>
+
+## à toi de jouer
+
+Les commandes ci-dessous illustrent les trois paliers : démarrer une VM, lancer un conteneur, appeler une fonction. Observe comme la commande sans-serveur ne parle ni de machine ni d'image, seulement d'une fonction à invoquer.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Lancer une ressource de calcul (exemple)" commands={{"aws ec2 run-instances --image-id ami-123 --instance-type t3.micro": "InstanceId: i-0a1b2c3d  State: pending", "docker run -d -p 80:80 nginx": "9f8e7d6c5b4a", "aws lambda invoke --function-name traiter out.json": "StatusCode: 200"}} />
+
+<Quiz id="q-1" question="Sur quel palier de calcul gères-tu toi-même le système d'exploitation, les mises à jour et le pare-feu ?" options={["La machine virtuelle", "Le conteneur", "Le sans-serveur", "Aucun, le fournisseur gère toujours l'OS"]} correct={0} />
+
+<Quiz id="q-2" question="Quelle est la différence principale entre un conteneur et une machine virtuelle ?" options={["Le conteneur embarque son propre système d'exploitation complet", "Le conteneur partage le système de l'hôte, donc il est plus léger et démarre plus vite", "Le conteneur ne peut pas faire tourner d'application web", "Le conteneur se facture uniquement au temps d'exécution"]} correct={1} />
+
+<Quiz id="q-3" question="Pour une tâche courte déclenchée par un événement, qu'on appelle quelques fois par jour, quel palier convient le mieux ?" options={["Une machine virtuelle allumée en permanence", "Un conteneur orchestré en continu", "Le sans-serveur, facturé seulement quand la fonction tourne", "Aucun, il faut un serveur physique"]} correct={2} />
+
+## à retenir
+
+- Exécuter du code dans le cloud va du serveur complet qu'on pilote à la fonction qu'on dépose et oublie.
+- La VM est un serveur entier loué : contrôle total, tu gères l'OS et tout le reste, tu paies tant qu'elle tourne.
+- Le conteneur empaquette l'application et ses dépendances : plus léger qu'une VM, portable, démarre vite, même principe que Docker.
+- Le sans-serveur, c'est une fonction que le fournisseur exécute à la demande, met à l'échelle et facture au temps d'exécution.
+- En descendant de la VM vers la fonction, tu perds du contrôle et tu gagnes de la simplicité ; l'effort se déplace vers le fournisseur.
+- VM pour un besoin spécifique ou hérité, conteneur pour une application moderne portable, sans-serveur pour de l'événementiel léger.
+- Une architecture réelle mélange souvent les trois selon le morceau à faire tourner.
