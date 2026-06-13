@@ -1,0 +1,116 @@
+---
+refCode: CL-LSN-150-V01
+slug: osint-reseaux-sociaux
+title: "Réseaux sociaux et empreinte personnelle"
+description: "Ce que nos publications révèlent sans qu'on y pense : routines, lieux, relations et indices de géolocalisation involontaires. Comprendre le recoupement social pour mieux protéger sa propre empreinte."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 460
+prerequisites: ["CL-LSN-148-V01"]
+---
+
+Tu publies une photo de ton café du matin. Anodin. Puis un message un dimanche soir qui dit ta fatigue de la semaine à venir. Puis une story depuis la salle de sport, toujours à la même heure. Puis le badge de ton entreprise visible sur une table en arrière-plan d'un selfie. Chaque élément, pris seul, ne dit presque rien. Mis bout à bout, ils dessinent une semaine type : où tu vis, où tu travailles, quand tu es chez toi, qui sont tes proches.
+
+C'est ça, le SOCMINT, le renseignement à partir des réseaux sociaux. Pas du piratage : juste la lecture attentive de ce que les gens publient volontairement. Cette leçon prend l'angle qui compte vraiment pour toi : non pas apprendre à surveiller les autres, mais comprendre comment ces pièces s'assemblent, pour mieux contrôler ta propre empreinte.
+
+<Callout type="danger">
+On parle ici de comprendre les mécanismes pour se protéger soi. Suivre, ficher ou profiler un individu sans base légale, c'est de la surveillance, c'est interdit par le RGPD et ça peut tomber sous le coup de la loi. La règle est simple : on s'applique ces techniques à soi-même, ou à un périmètre que l'on a le droit d'auditer. Jamais à une personne ciblée.
+</Callout>
+
+## ce qu'on donne sans y penser
+
+La plupart des gens ont l'impression de poster peu d'informations sensibles. En réalité, un compte actif laisse échapper une quantité de signaux qui n'ont l'air de rien :
+
+- Les **lieux fréquentés** : un restaurant tagué, un parc récurrent, le quartier d'une photo, une story géolocalisée.
+- Les **horaires** : l'heure à laquelle tu publies, les moments où tu réponds, les pauses du week-end.
+- L'**employeur** : un poste mentionné, un logo, un événement professionnel, des collègues identifiés.
+- Les **proches** : qui tu commentes, qui te commente, les visages qui reviennent, les liens familiaux affichés.
+- Les **opinions et habitudes** : sport, croyances, santé, vie politique, déplacements, achats.
+
+Aucun de ces détails n'est dangereux en lui-même. Le problème naît du volume et de la répétition. Un seul lieu ne dit rien. Le même lieu posté trente fois finit par dire « j'habite ici ».
+
+<Callout type="info">
+Un bon réflexe : regarde ton propre profil comme si tu ne te connaissais pas. Remonte trois mois en arrière. Qu'est-ce qu'un inconnu apprendrait sur ta vie en une demi-heure ? La réponse surprend souvent.
+</Callout>
+
+## le recoupement social
+
+Le vrai travail d'un analyste ne consiste pas à trouver une information secrète. Il consiste à relier des informations publiques. C'est le recoupement, et c'est là que la masse de petites données devient un portrait.
+
+Trois ressorts reviennent toujours :
+
+1. **Relier les comptes d'une même personne.** Le même pseudo réutilisé d'un réseau à l'autre, la même photo de profil, la même bio recopiée. Un compte verrouillé devient lisible si son jumeau public, ailleurs, ne l'est pas.
+2. **Cartographier les relations.** Les amis communs, les personnes systématiquement identifiées, les comptes qui réagissent à chaque post. Le cercle proche se dessine sans qu'aucun lien n'ait été déclaré explicitement.
+3. **Repérer les lieux récurrents.** Pas un lieu unique, mais un motif. Le même fond de salon, la même rue, la même boulangerie le matin.
+
+Prends un exemple concret. Quelqu'un poste plusieurs fois par semaine depuis « la maison » : même canapé, même luminosité, parfois une fenêtre avec une vue reconnaissable. À côté, une story du midi montre toujours la même cantine d'entreprise. En quelques semaines, sans jamais avoir donné son adresse, cette personne a laissé deviner où elle dort et où elle travaille. Le domicile et le lieu de travail, reconstitués à partir de fragments banals.
+
+## les indices involontaires
+
+Le contenu volontaire d'une publication n'est qu'une partie de ce qu'elle transmet. L'autre partie, c'est tout ce qui se glisse dans l'image sans intention.
+
+- L'**arrière-plan d'une photo** : une plaque d'immatriculation, une enseigne de commerce, un numéro de rue, un panneau, un nom d'école sur un cartable.
+- Les **reflets** : une vitre, un miroir, une paire de lunettes peuvent révéler un décor ou une personne hors champ.
+- Les **détails de contexte** : un uniforme, un ticket de caisse, un écran allumé, un badge d'accès.
+
+À cela s'ajoute un signal souvent oublié : l'**horaire de publication**. Quelqu'un qui poste régulièrement à 3 h du matin heure locale ne vit probablement pas dans ce fuseau. Les pics d'activité trahissent un rythme de vie, des horaires de travail, des moments d'absence du domicile.
+
+Il y a enfin les **métadonnées** des fichiers eux-mêmes : coordonnées GPS, modèle d'appareil, date exacte. Les grandes plateformes les nettoient souvent au moment de l'envoi, mais pas toujours, et pas partout. Une photo partagée en pièce jointe brute, hors plateforme, peut très bien contenir sa position d'origine. On traite ce point en détail dans la leçon dédiée aux métadonnées ; retiens ici qu'une image n'est jamais seulement ce qu'on y voit.
+
+## le risque concret
+
+Pourquoi cela compte ? Parce que ces informations ne restent pas abstraites : elles alimentent directement l'ingénierie sociale et l'hameçonnage ciblé.
+
+Un attaquant qui connaît ton employeur, le prénom de ton manager et le nom du projet en cours peut t'écrire un message parfaitement crédible. Un faux mail « du service RH » au bon moment du mois. Un appel qui mentionne un collègue réel. Une arnaque qui reprend ta routine pour gagner ta confiance. Plus l'attaquant en sait, plus il paraît légitime, et plus tu baisses la garde.
+
+C'est le lien direct avec le facteur humain : la technique de l'attaquant n'a pas besoin d'être sophistiquée si le contexte est juste. Le contexte, c'est précisément ce que les réseaux sociaux offrent gratuitement.
+
+<Callout type="warning">
+La cible d'une attaque ciblée n'est pas toujours toi. Tes publications peuvent exposer ton entreprise, un proche, un mineur de ta famille. Réfléchir avant de publier, c'est aussi protéger les autres, pas seulement soi.
+</Callout>
+
+## réduire son empreinte
+
+Bonne nouvelle : comprendre le mécanisme, c'est déjà savoir comment le casser. L'idée n'est pas de disparaître, mais de réduire la surface lisible et de couper les recoupements faciles.
+
+Quelques principes qui changent beaucoup :
+
+- **Régler la confidentialité** : restreindre l'audience, fermer les anciens comptes, vérifier qui peut voir les anciennes publications.
+- **Réfléchir avant de publier** : se demander ce que ce post ajoute au puzzle déjà visible, plutôt que ce qu'il montre isolément.
+- **Désynchroniser le temps réel** : publier après coup, pas pendant. Annoncer des vacances au retour, jamais au départ.
+- **Limiter la géolocalisation** : désactiver le tag de lieu, vérifier l'arrière-plan d'une photo avant l'envoi.
+- **Séparer pro et perso** : éviter que les deux mondes se recoupent via les mêmes pseudos, les mêmes photos, les mêmes contacts.
+
+<Callout type="success">
+Tu n'as pas besoin de tout verrouiller d'un coup. Commence par les recoupements les plus parlants : le lieu de domicile, l'employeur, les enfants. Réduire ces trois-là casse déjà l'essentiel du portrait qu'un inconnu pourrait dresser.
+</Callout>
+
+Voici un tableau simple pour relier chaque fuite à un geste concret :
+
+| Ce qui fuit | Comment ça se recoupe | Comment limiter |
+|---|---|---|
+| Lieu de domicile | Fonds récurrents, stories répétées | Varier les angles, désactiver le tag de lieu |
+| Lieu de travail | Logo, badge, cantine, collègues | Pas de badge visible, audience restreinte |
+| Routine et horaires | Heure des publications, posts en direct | Publier en différé, espacer |
+| Proches et famille | Identifications, commentaires réguliers | Limiter les tags, demander le consentement |
+| Absences du domicile | Annonce de vacances en temps réel | Poster au retour seulement |
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi le recoupement rend-il dangereuses des informations pourtant anodines ?" options={["Parce que chaque information est secrète en soi", "Parce que la répétition et l'assemblage de détails banals reconstituent une vie", "Parce que les plateformes les rendent toutes privées", "Parce qu'elles sont toujours fausses"]} correct={1} />
+
+<Quiz id="q-2" question="Parmi ces éléments, lequel est un indice involontaire dans une photo ?" options={["Un commentaire écrit sous le post", "Le nombre de likes affiché", "Une enseigne de commerce visible en arrière-plan", "Le titre de la publication"]} correct={2} />
+
+<Quiz id="q-3" question="Quel réflexe réduit le plus efficacement son empreinte sur les déplacements ?" options={["Publier ses vacances en direct depuis le lieu", "Annoncer son départ à l'avance", "Attendre le retour pour publier ses vacances", "Géolocaliser chaque photo précisément"]} correct={2} />
+
+## à retenir
+
+- Le SOCMINT n'exploite pas des secrets, mais l'assemblage d'informations publiées volontairement.
+- Un détail isolé ne dit rien ; la répétition et le recoupement dessinent domicile, travail, routine et proches.
+- Les indices involontaires (arrière-plans, reflets, horaires de publication, métadonnées) en disent souvent plus que le message lui-même.
+- Ces informations nourrissent l'ingénierie sociale et l'hameçonnage ciblé : un attaquant bien informé paraît crédible.
+- Réduire son empreinte tient à des gestes simples : confidentialité, publication différée, géolocalisation coupée, séparation pro et perso.
+- Cadre éthique : on s'applique ces techniques à soi-même ou à un périmètre autorisé, jamais pour surveiller un individu. Le RGPD encadre tout traitement de données personnelles.
+
+OK 06 écrit

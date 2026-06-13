@@ -1,0 +1,99 @@
+---
+refCode: CL-LSN-152-V01
+slug: osint-metadonnees
+title: "Les métadonnées : la fuite invisible"
+description: "Vos fichiers en disent plus que leur contenu : appareil et coordonnées GPS d'une photo, auteur et logiciel d'un document. Comprenez ces métadonnées et comment les nettoyer avant de publier."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-151-V01"]
+---
+
+Quand tu envoies une photo ou un document, tu penses transmettre ce que tu vois : une image, du texte, une mise en page. Mais le fichier transporte aussi une couche d'informations que tu ne vois jamais à l'écran. Cette couche décrit le fichier lui-même : avec quel appareil il a été créé, à quel moment, par quel logiciel, parfois à quel endroit et sous quel nom d'utilisateur.
+
+Le modèle mental est simple. Pense à un colis. Le contenu, c'est ce qu'il y a dans la boîte. Les métadonnées, c'est l'étiquette collée dessus : expéditeur, date d'envoi, parcours. Tu peux lire l'étiquette sans ouvrir la boîte. Et la plupart du temps, personne ne pense à la décoller avant de poster. Les métadonnées, ce sont des données sur les données.
+
+## ce que sont les métadonnées
+
+Une métadonnée est une information attachée à un fichier qui décrit sa création ou son histoire, pas son contenu. Le texte d'un document, c'est le contenu. Le nom de la personne qui l'a tapé, c'est une métadonnée.
+
+Elles sont produites automatiquement. L'appareil photo, le traitement de texte, le logiciel de retouche : tous écrivent ces informations sans te demander ton avis. Elles vivent à l'intérieur du fichier, dans des sections réservées que les visionneuses n'affichent pas. Tu ouvres une photo, tu vois l'image. La date de prise et le modèle de l'appareil sont là aussi, mais rangés ailleurs dans le même fichier.
+
+<Callout type="info">
+Les métadonnées ne sont pas un défaut ni un bug. Elles existent pour des raisons utiles : retrouver ses photos par date, savoir quel logiciel a généré un PDF, trier ses fichiers. Le problème n'est pas qu'elles existent, c'est qu'on les oublie au moment de partager le fichier avec le reste du monde.
+</Callout>
+
+## les EXIF d'une photo
+
+Pour les photos, ces métadonnées portent un nom : EXIF, pour Exchangeable Image File Format. Chaque fois qu'un appareil prend une image, il glisse dedans une fiche technique. On y trouve le modèle de l'appareil ou du téléphone, la date et l'heure exactes de la prise, les réglages optiques, parfois l'orientation.
+
+Et puis il y a le champ qui change tout : les coordonnées GPS. Quand la géolocalisation est active sur un smartphone, la latitude et la longitude du lieu de prise sont inscrites dans la photo. Pas une zone vague. Un point précis, à quelques mètres.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Lire et nettoyer les métadonnées" commands={{"exiftool photo.jpg": "Camera Model Name: iPhone 13\nDate/Time Original: 2026:01:08 14:32:10\nGPS Position: 48.8584 N, 2.2945 E", "exiftool document.pdf": "Author: jdupont\nCreator: Microsoft Word\nCreate Date: 2026:01:05", "exiftool -all= photo.jpg": "1 image files updated", "exiftool photo.jpg": "Camera Model Name: -\nGPS Position: -"}} />
+
+Regarde la première commande. En une ligne, on apprend le modèle du téléphone, l'instant de la prise, et un point GPS. Ces coordonnées tombent sur un lieu connu, mais imagine la même photo prise depuis un salon. Quelqu'un poste une image anodine de son chat sur un forum. Les EXIF pointent vers son domicile. Il ne l'a jamais écrit nulle part, et pourtant l'adresse est partie avec le fichier.
+
+<Callout type="danger">
+Le GPS dans une photo est la fuite la plus dangereuse en OSINT, parce qu'elle est involontaire et géographiquement précise. Une seule image partagée publiquement peut révéler où quelqu'un habite, travaille, ou se trouvait à un instant donné. C'est arrivé à des particuliers comme à des militaires en opération.
+</Callout>
+
+## les métadonnées des documents
+
+Les fichiers bureautiques et les PDF en transportent aussi, parfois plus parlantes encore. On y trouve l'auteur, c'est-à-dire le nom du compte qui a créé ou modifié le document. Le logiciel utilisé et sa version. Les dates de création et de dernière modification, qui peuvent contredire une date affichée dans le texte.
+
+Plus discret, et plus instructif pour un enquêteur : les chemins internes. Une image insérée dans un document garde parfois la trace de son emplacement d'origine sur le disque, du genre un chemin contenant un nom d'utilisateur Windows. Un PDF exporté peut conserver le nom du modèle de départ, ou des fragments de commentaires supprimés.
+
+Regarde la deuxième commande du terminal. Un PDF rendu public révèle l'auteur `jdupont` et le logiciel. Multiplié sur les documents d'une organisation, ce détail dessine une cartographie : conventions de nommage des comptes, qui produit quoi, quels outils sont en place. Un cabinet qui publie un rapport censé être anonyme, et dont les métadonnées portent le nom du rédacteur, a une fuite. Le contenu est propre, l'étiquette parle.
+
+## pourquoi c'est si fréquent
+
+Si cette fuite revient sans cesse, ce n'est pas par négligence isolée. Trois mécanismes se combinent.
+
+D'abord, c'est invisible. Rien à l'écran ne signale la présence de ces informations. Tu regardes ta photo, elle est parfaite, tu ne vois pas le GPS caché dedans.
+
+Ensuite, c'est conservé par défaut. Aucun logiciel ne te demande si tu veux retirer les métadonnées avant d'enregistrer ou d'exporter. Elles restent, sauf action explicite de ta part.
+
+Enfin, c'est oublié au moment de publier. On relit le texte, on recadre l'image, on soigne le contenu visible. La couche cachée, personne n'y pense, parce que justement on ne la voit pas.
+
+<Callout type="warning">
+Une fuite invisible ne déclenche aucun signal d'alarme. Tu ne sauras jamais qu'une de tes photos a révélé ton adresse, à moins que quelqu'un te le dise ou en abuse. C'est ce silence qui rend les métadonnées si efficaces comme source en OSINT, et si risquées pour celui qui publie.
+</Callout>
+
+## nettoyer avant de publier
+
+Le réflexe défensif tient en une phrase : retirer les métadonnées avant que le fichier quitte ton contrôle. L'outil de référence en ligne de commande s'appelle exiftool, et il fait les deux sens. Il lit, comme on l'a vu. Il efface aussi.
+
+La troisième commande du terminal montre l'effacement. `exiftool -all= photo.jpg` retire toutes les métadonnées du fichier d'un coup. La quatrième commande vérifie le résultat : on relance la lecture, et les champs sensibles sont vides. Cette vérification après coup compte autant que l'effacement. Ne suppose pas que c'est propre, regarde.
+
+Attention à une croyance fausse. Certaines plateformes nettoient automatiquement les métadonnées des images quand tu les envoies, d'autres pas du tout. Tu ne peux pas savoir laquelle fait quoi, et leur comportement change avec le temps. Ne compte jamais sur la plateforme. Nettoie le fichier toi-même, avant l'envoi, puis vérifie. Un message privé envoyé en pièce jointe brute n'est presque jamais nettoyé, lui.
+
+<Callout type="success">
+La bonne habitude : pour toute photo ou document destiné à être public, lis d'abord les métadonnées pour voir ce qui s'y trouve, efface ensuite, puis relis pour confirmer. Trois gestes, trente secondes, et la fuite invisible disparaît.
+</Callout>
+
+## à toi de jouer
+
+Reprends le terminal plus haut et suis l'enchaînement complet : lecture de la photo, lecture du document, effacement, vérification. Observe ce que chaque commande révèle ou efface avant de répondre.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter puis nettoyer" commands={{"exiftool photo.jpg": "Camera Model Name: iPhone 13\nDate/Time Original: 2026:01:08 14:32:10\nGPS Position: 48.8584 N, 2.2945 E", "exiftool document.pdf": "Author: jdupont\nCreator: Microsoft Word\nCreate Date: 2026:01:05", "exiftool -all= photo.jpg": "1 image files updated", "exiftool photo.jpg": "Camera Model Name: -\nGPS Position: -"}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Une photo prise au smartphone et postée sur un forum public. Quelle métadonnée représente le risque le plus direct pour la vie privée ?" options={["Le modèle de l'appareil", "Les coordonnées GPS du lieu de prise", "Les réglages optiques", "L'orientation de l'image"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi la fuite par métadonnées passe-t-elle si souvent inaperçue ?" options={["Elle nécessite un logiciel rare pour être créée", "Elle est invisible à l'écran, conservée par défaut et oubliée au moment de publier", "Elle n'apparaît que sur les fichiers très anciens", "Elle est chiffrée et donc indétectable"]} correct={1} />
+
+<Quiz id="q-3" question="Avant de publier une photo, quelle suite d'actions est correcte avec exiftool ?" options={["Effacer sans vérifier, la plateforme s'en chargera", "Lire les métadonnées, les effacer avec -all=, puis relire pour confirmer", "Recadrer l'image, ce qui supprime les EXIF", "Renommer le fichier pour masquer l'auteur"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- Une métadonnée décrit le fichier (création, auteur, logiciel, lieu), pas son contenu. C'est une donnée sur la donnée, rangée dans une partie du fichier que les visionneuses n'affichent pas.
+- Les EXIF d'une photo contiennent le modèle de l'appareil, la date et l'heure, et parfois les coordonnées GPS précises du lieu de prise. Une image partagée peut donc révéler un domicile sans qu'aucun texte ne l'indique.
+- Les documents et PDF exposent l'auteur, le logiciel, les dates, parfois des chemins internes et des noms d'utilisateurs. Sur plusieurs fichiers, cela cartographie une organisation interne.
+- La fuite est fréquente parce qu'invisible à l'écran, conservée par défaut, et oubliée au moment de publier. Aucun signal n'avertit qu'elle a eu lieu.
+- Côté défense : lis les métadonnées avec exiftool, efface-les avec `exiftool -all=`, puis relis pour vérifier. Ne compte jamais sur la plateforme pour le faire à ta place.
+
+OK 08 écrit

@@ -316,6 +316,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-144-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-013-V01",
+    slug: "osint",
+    title: "OSINT : renseignement en sources ouvertes",
+    description:
+      "Enquêter à partir d'informations publiques, de façon responsable et défensive : méthode et hygiène de l'enquêteur, recherche avancée et dorks, OSINT sur les personnes, les domaines et les organisations, réseaux sociaux, géolocalisation d'images, métadonnées, fuites de données et réduction de sa propre empreinte. Conclu par une enquête guidée et éthique.",
+    category: "CYBERSEC",
+    difficulty: "INTERMEDIATE",
+    estimatedHours: 7,
+    lessons: [
+      "CL-LSN-145-V01",
+      "CL-LSN-146-V01",
+      "CL-LSN-147-V01",
+      "CL-LSN-148-V01",
+      "CL-LSN-149-V01",
+      "CL-LSN-150-V01",
+      "CL-LSN-151-V01",
+      "CL-LSN-152-V01",
+      "CL-LSN-153-V01",
+      "CL-LSN-154-V01",
+      "CL-LSN-155-V01",
+      "CL-LSN-156-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {

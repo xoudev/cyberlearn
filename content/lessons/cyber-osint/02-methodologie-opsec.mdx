@@ -1,0 +1,112 @@
+---
+refCode: CL-LSN-146-V01
+slug: osint-methodologie-opsec
+title: "Méthode et hygiène de l'enquêteur"
+description: "Une enquête OSINT efficace tient à la méthode et à la discrétion : fixer un objectif, documenter ses sources, ne pas alerter la cible ni s'exposer, et juger la fiabilité de ce qu'on trouve."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 460
+prerequisites: ["CL-LSN-145-V01"]
+---
+
+Il y a deux façons de rater une enquête OSINT. La première, c'est de chercher sans savoir ce qu'on cherche : on ouvre vingt onglets, on accumule des captures, et au bout de trois heures on a beaucoup de bruit et aucune réponse. La seconde, c'est de se faire repérer : on clique sur le mauvais profil, la cible reçoit une notification, et l'enquête est compromise avant d'avoir commencé.
+
+Ces deux risques n'ont rien à voir entre eux, mais ils ont la même cause. On a confondu activité et travail. Bouger beaucoup n'est pas avancer, et être présent partout n'est pas être discret. Cette leçon pose les deux disciplines qui tiennent une enquête : une méthode pour ne pas se noyer, une hygiène opérationnelle pour ne pas se griller.
+
+## partir d'une question
+
+Avant d'ouvrir le moindre outil, écris la question à laquelle tu veux répondre. Pas un thème, une question. "Le compte Twitter @machin et le profil LinkedIn de Jean Machin appartiennent-ils à la même personne" est une bonne question. "En savoir plus sur Jean Machin" n'en est pas une, c'est une invitation à errer.
+
+La raison est simple. Une question délimite ce qui compte et ce qui ne compte pas. Sans elle, toute information semble pertinente, donc tu collectes tout, donc tu ne conclus rien. Une question précise te dit quand tu as fini, et te dit aussi quand une piste est hors sujet, même si elle est tentante.
+
+Une enquête avance par cycles courts. Tu pars d'un objectif, tu collectes des éléments ciblés, tu les analyses, tu en tires une conclusion partielle, et cette conclusion fait souvent naître la question suivante. C'est une boucle, pas une ligne droite.
+
+<Diagram caption="Le cycle d'une enquête OSINT">
+flowchart TD
+  A[Objectif et question] --> B[Collecte ciblée]
+  B --> C[Analyse et recoupement]
+  C --> D[Conclusion partielle]
+  D --> E[Nouvelle question]
+  E --> A
+</Diagram>
+
+<Callout type="info">
+Note ta question en haut de ton fichier de travail. Quand tu te surprends à lire quelque chose qui n'y répond pas, tu sauras que tu es en train de dériver. La dérive n'est pas interdite, mais elle doit être un choix, pas un accident.
+</Callout>
+
+## documenter au fil de l'eau
+
+Documenter n'est pas une corvée qu'on fait à la fin. C'est un geste qu'on répète à chaque trouvaille, sinon il ne se fait jamais. Pour chaque élément retenu, note trois choses : la source exacte (l'URL complète, pas "vu sur Twitter"), une capture de ce que tu as vu, et la date et l'heure du relevé.
+
+Pourquoi cette rigueur. D'abord parce qu'une page web n'est pas stable. Un profil peut être supprimé, un tweet effacé, une bio modifiée dans l'heure. Si tu n'as pas capturé au moment où tu as vu, ta trouvaille n'existe plus et tu ne peux plus la prouver. L'horodatage compte parce qu'une information vraie hier peut être fausse aujourd'hui, et inversement.
+
+Ensuite parce qu'une enquête doit être reproductible. Quelqu'un d'autre, ou toi dans deux semaines, doit pouvoir refaire le chemin et arriver à la même conclusion. Une conclusion qu'on ne peut pas tracer jusqu'à ses sources n'est pas un résultat, c'est une opinion. La traçabilité, c'est la différence entre "je crois que" et "voici ce qui le montre".
+
+Garde aussi une trace de tes impasses. Une piste qui n'a rien donné est une information utile : elle évite de la reparcourir, et elle dit à un relecteur que tu as vérifié.
+
+## ne pas se griller
+
+L'OSINT repose sur des sources ouvertes, donc sur de l'observation. Le piège, c'est de glisser de l'observation vers l'interaction. Consulter un profil public est passif. Demander une connexion, suivre un compte, liker, envoyer un message, c'est une action, et une action laisse une trace que la cible peut voir.
+
+Beaucoup de plateformes notifient leurs membres. LinkedIn dit aux gens qui a regardé leur profil. Un suivi sur un réseau social apparaît dans une liste. Une demande de contact arrive directement dans une boîte. Si la cible est attentive, ou simplement parce qu'elle reçoit peu de sollicitations, ces signaux la mettent en alerte. Elle peut alors verrouiller ses comptes, effacer du contenu, ou comprendre qu'on s'intéresse à elle. L'enquête devient plus difficile, parfois impossible.
+
+La règle de base : on regarde, on ne touche pas. Tant qu'une interaction n'est pas indispensable et réfléchie, on s'en abstient. Et quand on doit interagir, on ne le fait jamais avec un compte qui mène à soi.
+
+## séparer son identité
+
+Un enquêteur ne consulte pas avec son vrai profil. Il utilise des comptes dédiés à l'enquête, parfois appelés sock puppets, séparés de son identité réelle. L'idée n'est pas de tromper qui que ce soit, c'est de ne pas exposer la personne qui enquête.
+
+Le raisonnement est de protection. Si tu consultes une cible avec ton compte personnel et que la plateforme la notifie, tu lui livres ton nom, ta photo, ton employeur peut-être. Selon le sujet, cela t'expose à des représailles, et cela compromet l'enquête puisque la cible sait désormais d'où vient l'attention. Un compte d'enquête met une cloison entre ce que tu fais et qui tu es.
+
+Cette séparation va plus loin que créer un faux nom. Un compte d'enquête sérieux ne partage rien avec ta vie réelle : pas la même adresse mail, pas le même numéro, pas le même navigateur connecté à tes sessions personnelles, idéalement pas le même réseau. Une seule fuite suffit à relier les deux. La discipline ici est binaire : soit la cloison tient partout, soit elle ne tient nulle part.
+
+<Callout type="warning">
+Un compte dédié sert à te protéger et à ne pas alerter une cible, pas à manipuler une personne. Créer une fausse identité pour gagner la confiance d'une victime, l'amener à se confier ou à donner des accès, ce n'est plus de l'OSINT, c'est de l'ingénierie sociale offensive. La frontière éthique est là : se cacher pour observer est légitime, se faire passer pour un proche afin d'obtenir quelque chose de quelqu'un ne l'est pas.
+</Callout>
+
+## juger les sources
+
+Trouver une information ne suffit pas. Il faut décider ce qu'elle vaut. Une donnée n'est jamais vraie parce qu'elle est écrite quelque part ; elle est crédible quand elle résiste à l'examen. Trois questions reviennent toujours : d'où vient-elle, de quand date-t-elle, et qui d'autre la confirme.
+
+Le recoupement est le réflexe central. Une seule source ne fait pas une conclusion. Deux sources indépendantes qui concordent valent bien plus qu'une source répétée dix fois, car la répétition n'ajoute rien si tout le monde copie la même origine. Méfie-toi aussi de tes propres biais : on a tendance à retenir ce qui confirme ce qu'on pensait déjà, et à écarter ce qui dérange. Une fausse piste prend souvent racine dans une coïncidence qu'on a eu envie de croire.
+
+| Critère | Question à se poser |
+| --- | --- |
+| Origine | Qui a produit cette information, et a-t-il un intérêt à mentir |
+| Fraîcheur | De quand date-t-elle, est-elle encore valable aujourd'hui |
+| Recoupement | Une autre source indépendante la confirme-t-elle |
+| Indépendance | Mes sources se citent-elles entre elles ou s'ignorent-elles |
+| Biais | Est-ce que je la crois parce qu'elle est solide ou parce qu'elle m'arrange |
+
+Quand une information ne passe pas ce filtre, elle ne disparaît pas pour autant. Elle devient une hypothèse à vérifier, pas un fait à utiliser. Garde la distinction nette dans tes notes entre ce qui est établi et ce qui reste à confirmer.
+
+## savoir s'arrêter
+
+Une enquête a une fin, et cette fin n'est pas l'épuisement des sources. C'est le moment où tu peux répondre à la question de départ avec des éléments tracés et recoupés. À ce stade, continuer à collecter n'ajoute pas de valeur, ça ajoute du bruit et du temps.
+
+L'accumulation sans but n'est pas du renseignement. Empiler des données ne produit pas de compréhension, et un dossier de cent captures sans conclusion claire est moins utile qu'une page qui répond précisément à la question posée. Si une nouvelle piste apparaît et qu'elle est importante, ce n'est pas une raison de prolonger : c'est une nouvelle question, donc une nouvelle boucle, avec son propre objectif. Refermer proprement la première avant d'ouvrir la suivante t'évite de tout mélanger.
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Pourquoi écrire une question précise avant de commencer une enquête OSINT ?" options={["Pour respecter une obligation légale", "Parce qu'elle délimite ce qui compte et dit quand on a fini", "Parce que les outils l'exigent en entrée", "Pour pouvoir facturer le travail"]} correct={1} />
+
+<Quiz id="q-2" question="Une information apparaît dix fois sur le web, toujours reprise du même article d'origine. Qu'en conclure ?" options={["Elle est confirmée, dix sources valent mieux qu'une", "Elle est forcément fausse puisque tout le monde la copie", "La répétition n'ajoute rien : il n'y a toujours qu'une seule source à recouper", "Il faut la publier telle quelle"]} correct={2} />
+
+<Quiz id="q-3" question="À quoi sert un compte d'enquête dédié (sock puppet) dans un cadre éthique ?" options={["À se faire passer pour un proche d'une victime pour la faire parler", "À protéger l'enquêteur et à ne pas alerter la cible pendant l'observation", "À pirater les comptes de la cible", "À publier des informations sous un faux nom"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- Une enquête part d'une question précise, pas d'un thème ; la question dit ce qui compte et quand s'arrêter.
+- Le travail avance par boucles : objectif, collecte, analyse, conclusion, nouvelle question.
+- On documente au fil de l'eau : source exacte, capture, date et heure, parce qu'une page peut disparaître et qu'une conclusion doit être traçable.
+- On observe sans interagir : un like, un suivi ou une demande de contact peut notifier la cible et compromettre l'enquête.
+- On sépare son identité réelle de l'enquête avec des comptes dédiés, pour se protéger, pas pour tromper une victime.
+- Une seule source ne fait pas une conclusion : on juge l'origine, la fraîcheur, le recoupement, et on surveille ses propres biais.
+- On s'arrête quand la question est résolue ; accumuler sans but n'est pas du renseignement.
+
+OK 02 écrit
