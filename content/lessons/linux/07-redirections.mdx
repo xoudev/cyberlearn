@@ -1,0 +1,158 @@
+---
+refCode: CL-LSN-055-V01
+slug: linux-redirections
+title: "Redirections, tubes et filtres"
+description: "Connectez les commandes entre elles : redirigez la sortie vers un fichier avec et, enchaînez des outils avec le tube, et filtrez du texte avec grep, sort, wc et cut."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 450
+prerequisites: ["CL-LSN-052-V01"]
+---
+
+Une commande Linux fait souvent une seule chose. `ls` liste, `grep` cherche, `sort` trie, `wc` compte. Prises une par une, elles paraissent limitées. La vraie force du shell apparaît quand on les branche les unes aux autres : la sortie de l'une devient l'entrée de la suivante. On obtient des chaînes qui résolvent des problèmes concrets en une ligne, là où un autre langage demanderait un script entier.
+
+Pour brancher des outils, il faut d'abord comprendre par où le texte entre et par où il sort. Chaque programme dispose de trois canaux. C'est le modèle mental à garder en tête pour tout le reste de la leçon.
+
+## les trois flux standards
+
+Quand un programme tourne, le système lui ouvre trois flux par défaut :
+
+- L'entrée standard (stdin) : par où le programme lit ce qu'on lui donne. Par défaut, c'est le clavier.
+- La sortie standard (stdout) : par où il écrit son résultat normal. Par défaut, c'est l'écran.
+- La sortie d'erreur (stderr) : par où il écrit ses messages d'erreur et ses avertissements. Par défaut, c'est aussi l'écran.
+
+Pourquoi séparer stdout et stderr alors que les deux finissent sur l'écran ? Parce que ça permet de traiter le résultat sans être pollué par les erreurs, et inversement. Vous pouvez sauver le résultat dans un fichier tout en laissant les erreurs s'afficher, ou jeter les erreurs tout en gardant le résultat. Cette séparation est ce qui rend les chaînes propres.
+
+Chaque flux porte un numéro : 0 pour stdin, 1 pour stdout, 2 pour stderr. Ces numéros servent dès qu'on veut rediriger précisément l'un ou l'autre.
+
+<Diagram caption="Les trois flux d'une commande">
+flowchart LR
+  [clavier] --> [stdin 0]
+  [stdin 0] --> [commande]
+  [commande] --> [stdout 1]
+  [commande] --> [stderr 2]
+  [stdout 1] --> [ecran resultat]
+  [stderr 2] --> [ecran erreurs]
+</Diagram>
+
+Rediriger, c'est simplement débrancher un de ces flux de sa destination par défaut pour l'envoyer ailleurs : vers un fichier, vers le néant, ou vers une autre commande.
+
+## rediriger la sortie vers un fichier
+
+L'opérateur `>` prend la sortie standard d'une commande et l'écrit dans un fichier au lieu de l'écran.
+
+```bash
+# Écrit la liste des fichiers dans liste.txt
+ls -l > liste.txt
+
+# Rien ne s'affiche : tout est parti dans le fichier
+cat liste.txt   # on relit le contenu pour vérifier
+```
+
+Le piège est dans le comportement de `>` : il écrase. Si `liste.txt` existait déjà avec du contenu, ce contenu est perdu, sans question ni confirmation. Le fichier est vidé puis rempli avec la nouvelle sortie.
+
+Pour ajouter à la fin d'un fichier sans toucher à l'existant, on utilise `>>` :
+
+```bash
+echo "premiere ligne" > journal.txt    # crée (ou écrase) le fichier
+echo "deuxieme ligne" >> journal.txt    # ajoute à la suite
+echo "troisieme ligne" >> journal.txt   # ajoute encore
+cat journal.txt                         # les trois lignes sont là
+```
+
+<Callout type="warning">
+`>` écrase silencieusement le fichier de destination. Si vous tapez `cat resultats.txt > resultats.txt` ou si vous visez le mauvais fichier, son contenu disparaît sans avertissement. Avant un `>` sur un fichier qui compte, vérifiez le nom. Dans le doute, utilisez `>>` qui ajoute, ou activez `set -o noclobber` dans votre shell : `>` refusera alors d'écraser un fichier existant.
+</Callout>
+
+## rediriger les erreurs
+
+Par défaut, `>` ne capture que stdout. Les erreurs continuent de s'afficher à l'écran. Pour rediriger stderr, on précise le numéro de flux, `2` :
+
+```bash
+# Les erreurs partent dans erreurs.log, le résultat reste à l'écran
+find /etc -name "*.conf" 2> erreurs.log
+
+# Le résultat dans un fichier, les erreurs dans un autre
+find /etc -name "*.conf" > trouve.txt 2> erreurs.log
+```
+
+Souvent, les erreurs ne vous intéressent pas du tout. Par exemple, `find` qui se plaint de dossiers interdits alors que vous cherchez juste un fichier. On les jette dans `/dev/null`, le trou noir du système : tout ce qu'on y écrit disparaît.
+
+```bash
+# On garde les résultats, on ignore les messages "Permission denied"
+find / -name "rapport.pdf" 2> /dev/null
+```
+
+Pour envoyer stdout et stderr au même endroit, on écrit `> fichier 2>&1`. Le `2>&1` signifie « envoie le flux 2 là où va déjà le flux 1 ».
+
+## le tube
+
+Tout ce qui précède envoie une sortie vers un fichier. Le tube, écrit `|`, fait autre chose : il envoie la sortie standard d'une commande directement dans l'entrée standard de la commande suivante, sans passer par un fichier intermédiaire.
+
+```bash
+# ls produit une liste, grep ne garde que les lignes contenant ".txt"
+ls -l | grep ".txt"
+```
+
+Lisez-le de gauche à droite : `ls -l` génère la liste détaillée, le tube la transmet à `grep`, qui filtre et n'affiche que les lignes intéressantes. Aucune des deux commandes ne sait qu'elle est branchée à l'autre. `ls` croit écrire à l'écran, `grep` croit lire au clavier. Le shell les a juste connectées.
+
+On peut enchaîner autant d'étages qu'on veut, chaque tube reliant une sortie à l'entrée suivante :
+
+```bash
+# Liste les processus, garde ceux liés à "chrome", compte les lignes
+ps aux | grep chrome | wc -l
+```
+
+<SimulatedTerminal shell="bash" />
+
+## les filtres : grep, sort, uniq, wc, cut
+
+Un filtre est une commande qui lit du texte sur son entrée, le transforme, et écrit le résultat sur sa sortie. Branchés derrière un tube, les filtres se combinent à l'infini. Les plus courants :
+
+- `grep motif` : ne garde que les lignes contenant le motif. `grep -i` ignore la casse, `grep -v` inverse (garde celles qui ne contiennent PAS le motif).
+- `sort` : trie les lignes par ordre alphabétique. `sort -n` trie numériquement, `sort -r` inverse l'ordre.
+- `uniq` : supprime les doublons consécutifs. Il faut trier avant, car `uniq` ne voit que les répétitions qui se suivent. `uniq -c` compte les occurrences.
+- `wc` : compte. `wc -l` donne le nombre de lignes, `wc -w` les mots, `wc -c` les octets.
+- `cut` : découpe chaque ligne en colonnes. `cut -d':' -f1` prend le premier champ en coupant sur le caractère deux-points.
+
+Un exemple réaliste : trouver les comptes utilisateurs du système et les trier. Le fichier `/etc/passwd` contient une ligne par compte, les champs séparés par des deux-points, le nom en premier.
+
+```bash
+cut -d':' -f1 /etc/passwd | sort
+```
+
+Étape par étape : `cut -d':' -f1` lit le fichier et ne garde que le premier champ de chaque ligne (le nom du compte). Le tube envoie cette liste de noms à `sort`, qui les classe par ordre alphabétique.
+
+Un cas classique d'analyse de logs : compter combien de fois chaque adresse IP apparaît dans un journal d'accès, et afficher les plus fréquentes.
+
+```bash
+cut -d' ' -f1 access.log | sort | uniq -c | sort -rn | head
+```
+
+Décortiqué : `cut -d' ' -f1` extrait le premier champ de chaque ligne (l'IP). `sort` regroupe les lignes identiques côte à côte. `uniq -c` remplace chaque groupe par une seule ligne précédée de son compte. `sort -rn` retrie le tout par nombre décroissant. `head` ne garde que les dix premières. Une ligne, et vous avez le classement des visiteurs les plus actifs.
+
+## à toi de jouer
+
+Entraînez-vous dans le terminal. Créez un fichier, ajoutez-y des lignes, puis comptez-les avec un tube.
+
+<SimulatedTerminal
+  scenario="bash-admin"
+  expectedCommands={["echo 'alpha' > notes.txt", "echo 'beta' >> notes.txt", "cat notes.txt | wc -l"]}
+  hints={["Utilisez un seul chevron pour créer le fichier, deux pour ajouter sans écraser", "wc -l compte les lignes ; envoyez-lui le contenu avec un tube"]}
+/>
+
+<Quiz id="q-1" question="Quelle est la différence entre > et >> ?" options={["> ajoute à la fin, >> écrase le fichier", "> écrase le fichier, >> ajoute à la fin", "Les deux écrasent, >> est juste plus rapide"]} correct={1} />
+
+<Quiz id="q-2" question="Que fait la commande : ps aux | grep ssh | wc -l ?" options={["Compte les lignes des processus contenant ssh", "Affiche tous les processus puis le fichier ssh", "Trie les processus ssh par ordre alphabétique"]} correct={0} />
+
+<Quiz id="q-3" question="Comment jeter les messages d'erreur d'une commande ?" options={["commande > /dev/null", "commande 2> /dev/null", "commande | /dev/null"]} correct={1} />
+
+## à retenir
+
+- Chaque commande a trois flux : entrée standard (stdin, 0), sortie standard (stdout, 1), sortie d'erreur (stderr, 2).
+- `>` redirige stdout vers un fichier et l'écrase. `>>` ajoute à la fin sans détruire l'existant.
+- `2>` redirige les erreurs. `2> /dev/null` les jette. `> f 2>&1` envoie sortie et erreurs dans le même fichier.
+- Le tube `|` branche la sortie d'une commande sur l'entrée de la suivante, sans fichier intermédiaire.
+- Les filtres se combinent : `grep` sélectionne, `sort` trie, `uniq -c` compte les doublons (après tri), `wc -l` compte les lignes, `cut -f` extrait des colonnes.
+- Le piège le plus courant : `>` écrase sans prévenir. Vérifiez le nom du fichier, ou activez `noclobber`.

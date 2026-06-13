@@ -1,0 +1,180 @@
+---
+refCode: CL-LSN-059-V01
+slug: linux-bash-conditions-boucles
+title: "Scripts Bash : conditions et boucles"
+description: "Donnez de la logique à vos scripts Bash : tester des conditions avec if et les crochets, comparer nombres et chaînes, vérifier l'existence de fichiers, et répéter avec for et while."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-058-V01"]
+---
+
+Un script qui déroule toujours exactement la même suite de commandes, c'est pratique, mais ça reste une macro. Le jour où tu veux qu'il réagisse, là tu changes de catégorie. Sauvegarder un dossier seulement s'il existe. Afficher un message différent selon qu'un test réussit ou échoue. Traiter les quarante fichiers `.log` d'un répertoire sans les taper un par un. Tout ça demande deux outils : les conditions, qui font choisir le script, et les boucles, qui le font répéter.
+
+Le modèle mental tient en une phrase. Un script sans logique avance en ligne droite. Avec une condition, tu lui donnes un embranchement : « si ceci, fais cela, sinon fais autre chose ». Avec une boucle, tu lui donnes un cycle : « pour chaque élément de cette liste, refais ce bloc ». Une fois ces deux briques en main, tu peux écrire à peu près n'importe quel petit automate d'administration.
+
+## le test : if, then, fi
+
+La structure de base ressemble à ça :
+
+```bash
+#!/usr/bin/env bash
+
+if [ -f /etc/hosts ]; then
+  echo "Le fichier existe"
+fi
+```
+
+Trois mots-clés cadrent le bloc. `if` ouvre, `then` annonce ce qui s'exécute quand la condition est vraie, `fi` ferme (c'est `if` écrit à l'envers, oui). Entre les deux, l'instruction `echo` ne tourne que si le test entre crochets est vrai.
+
+Les crochets `[ ]` méritent une explication, parce qu'ils trompent tout le monde au début. `[` n'est pas de la décoration syntaxique : c'est une commande, un synonyme de la commande `test`. Quand tu écris `[ -f /etc/hosts ]`, Bash lance le programme `[` avec comme arguments `-f`, `/etc/hosts` et `]`. Cette commande regarde si le fichier existe, et renvoie un code de sortie : 0 si vrai, autre chose si faux. Le `if` ne fait que lire ce code de sortie pour décider.
+
+Et puisque `[` est une commande qui reçoit des arguments, il lui faut un espace après et un espace avant le `]`. C'est la cause numéro un de scripts cassés chez les débutants.
+
+<Callout type="warning">
+Les espaces dans `[ ]` ne sont pas optionnels. `[-f fichier]` ou `[ -f fichier]` échoue avec un message du genre `[: missing ]` ou `command not found`, parce que Bash ne reconnaît plus la commande `[`. Il faut un espace après le crochet ouvrant et un espace avant le crochet fermant : `[ -f fichier ]`. Pareil autour des opérateurs : on écrit `[ "$x" = "y" ]`, jamais `[ "$x"="y" ]`.
+</Callout>
+
+L'autre oubli classique, c'est de zapper le `then` ou le `fi`. Sans `then`, Bash répond `syntax error near unexpected token`. Sans `fi`, il attend la suite du bloc jusqu'à la fin du fichier et se plaint d'un `unexpected end of file`. Le point-virgule avant `then` est juste là pour séparer la condition de l'instruction sur la même ligne ; si tu mets `then` sur la ligne suivante, le point-virgule devient inutile.
+
+## comparer
+
+Bash distingue deux familles d'opérateurs, et c'est volontaire. Pour les nombres, on utilise des opérateurs à lettres :
+
+```bash
+age=20
+
+if [ "$age" -ge 18 ]; then
+  echo "Majeur"
+fi
+```
+
+`-eq` (égal), `-ne` (différent), `-lt` (inférieur), `-le` (inférieur ou égal), `-gt` (supérieur), `-ge` (supérieur ou égal). Ils comparent des entiers en tant que nombres : `[ 10 -gt 9 ]` est vrai.
+
+Pour les chaînes de caractères, on utilise les symboles habituels :
+
+```bash
+nom="alice"
+
+if [ "$nom" = "alice" ]; then
+  echo "Bonjour Alice"
+fi
+```
+
+`=` (égal), `!=` (différent), `-z` (chaîne vide), `-n` (chaîne non vide). Pourquoi deux jeux ? Parce que `10` et `9` ne se comparent pas pareil selon qu'on les voit comme des nombres ou comme du texte. En tant que nombres, 10 est plus grand que 9. En tant que chaînes, `"10"` vient avant `"9"` dans l'ordre des caractères, exactement comme dans un dictionnaire. Les opérateurs séparés évitent l'ambiguïté : tu déclares ce que tu compares, et Bash applique la bonne règle.
+
+Remarque les guillemets autour de `"$age"` et `"$nom"`. Si la variable est vide ou contient un espace, sans guillemets le test part en vrille parce que l'argument disparaît ou se scinde. Prends l'habitude de toujours guillemeter tes variables dans un test.
+
+## tester des fichiers
+
+C'est là que les scripts d'administration deviennent utiles. Plutôt que de comparer des valeurs, tu interroges le système de fichiers :
+
+```bash
+source="/home/jordan/projets"
+dest="/mnt/backup"
+
+if [ -d "$source" ]; then
+  cp -r "$source" "$dest"
+  echo "Sauvegarde de $source effectuee"
+else
+  echo "Le dossier $source n'existe pas, rien a sauvegarder"
+fi
+```
+
+`-f` teste qu'un fichier ordinaire existe. `-d` teste qu'un dossier existe. `-e` teste l'existence sans se soucier du type (fichier, dossier, lien...). Il y en a d'autres utiles au quotidien : `-r` (lisible), `-w` (modifiable), `-x` (exécutable), `-s` (existe et non vide).
+
+Le réflexe à prendre : vérifier avant d'agir. Lancer un `cp` ou un `rm` sur un chemin qui n'existe pas, c'est au mieux un message d'erreur, au pire une bêtise si une autre commande dépendait du résultat. Le `if [ -d ... ]` transforme un script fragile en script qui sait dire « il n'y a rien à faire ici ».
+
+## if / elif / else
+
+Quand il y a plus de deux cas, on enchaîne avec `elif` :
+
+```bash
+#!/usr/bin/env bash
+
+note=$1   # premier argument passe au script
+
+if [ "$note" -ge 16 ]; then
+  echo "Tres bien"
+elif [ "$note" -ge 12 ]; then
+  echo "Bien"
+elif [ "$note" -ge 10 ]; then
+  echo "Passable"
+else
+  echo "Insuffisant"
+fi
+```
+
+Bash évalue les conditions de haut en bas et s'arrête à la première qui est vraie. Une note de 14 : la première (`-ge 16`) est fausse, la deuxième (`-ge 12`) est vraie, donc « Bien » s'affiche et le reste est ignoré. L'ordre compte. Si tu mettais `-ge 10` en premier, une note de 18 tomberait dans « Passable » et n'atteindrait jamais « Très bien ». Le `else` ramasse tout ce qui n'a satisfait aucune condition précédente.
+
+## la boucle for
+
+`for` parcourt une liste d'éléments, un par un :
+
+```bash
+for couleur in rouge vert bleu; do
+  echo "Couleur : $couleur"
+done
+```
+
+`do` ouvre le corps de la boucle, `done` le ferme. À chaque tour, la variable `couleur` prend la valeur suivante de la liste. Trois valeurs, trois tours.
+
+Le cas vraiment utile arrive quand la liste vient du système de fichiers. Bash remplace `*.txt` par les noms de fichiers qui correspondent dans le dossier courant :
+
+```bash
+for fichier in *.txt; do
+  echo "Traitement de $fichier"
+  wc -l "$fichier"
+done
+```
+
+Là tu tiens le traitement par lot. Tu déposes vingt fichiers dans un dossier, tu lances le script, chaque fichier passe dans le même bloc. Compter les lignes, renommer, convertir, compresser : un seul code couvre n'importe quel nombre de fichiers. Garde les guillemets autour de `"$fichier"`, sinon un nom contenant un espace casse la commande.
+
+## la boucle while
+
+`while` répète tant qu'une condition reste vraie. Elle re-teste avant chaque tour :
+
+```bash
+compteur=1
+
+while [ "$compteur" -le 5 ]; do
+  echo "Tour numero $compteur"
+  compteur=$((compteur + 1))
+done
+```
+
+Tant que `compteur` est inférieur ou égal à 5, le bloc tourne. La ligne `compteur=$((compteur + 1))` fait avancer le compteur ; sans elle, la condition resterait vraie pour toujours et tu obtiendrais une boucle infinie (un `Ctrl-C` pour en sortir).
+
+`while` brille pour lire un fichier ligne par ligne, sans tout charger d'un coup en mémoire :
+
+```bash
+while read -r ligne; do
+  echo "Ligne lue : $ligne"
+done < liste.txt
+```
+
+Le `< liste.txt` branche le contenu du fichier sur l'entrée de la boucle, et `read` en prélève une ligne à chaque passage jusqu'à épuisement. Pratique pour parcourir une liste d'utilisateurs, d'URL ou de serveurs.
+
+## à toi de jouer
+
+Écris un petit script, affiche-le avec `cat script.sh`, puis lance-le. Si quelque chose cloche, `bash -x script.sh` montre chaque ligne exécutée avec ses variables remplacées, et tu vois précisément où ça dérape. Après une commande, `echo $?` te donne son code de sortie (0 si succès), exactement le signal que `if` lit.
+
+<SimulatedTerminal shell="bash" scenario="bash-scripting" />
+
+<Quiz id="q-1" question="Pourquoi [-f fichier] (sans espaces) echoue-t-il ?" options={["Parce que -f n'existe pas en Bash", "Parce que [ est une commande qui a besoin d'espaces autour de ses arguments", "Parce qu'il faut des guillemets a la place des crochets", "Parce que le test doit etre apres then"]} correct={1} />
+
+<Quiz id="q-2" question="Quel operateur compare deux nombres pour savoir si le premier est plus grand ?" options={["-gt", "=", ">", "-is-greater"]} correct={0} />
+
+<Quiz id="q-3" question="Que teste l'option -d dans [ -d chemin ] ?" options={["Que le chemin est un fichier ordinaire", "Que le chemin est un dossier qui existe", "Que le fichier est modifiable", "Que la chaine est vide"]} correct={1} />
+
+## à retenir
+
+- `if ... then ... fi` exécute un bloc si une condition est vraie ; `elif` et `else` ajoutent des branches.
+- `[ ]` est la commande `test` : il faut un espace après `[` et avant `]`, et autour des opérateurs.
+- Nombres : `-eq -ne -lt -le -gt -ge`. Chaînes : `= != -z -n`. Deux jeux pour deux façons de comparer.
+- Fichiers : `-f` (fichier), `-d` (dossier), `-e` (existe). Vérifie l'existence avant d'agir.
+- `for x in liste; do ... done` parcourt une liste ; `for f in *.txt` traite tous les fichiers correspondants.
+- `while [ condition ]; do ... done` répète tant que la condition tient ; pense à faire évoluer la condition pour éviter la boucle infinie.
+- Guillemete toujours tes variables dans un test : `[ "$x" = "y" ]`.
+- Débogue avec `bash -x script.sh` et lis le code de sortie avec `echo $?`.

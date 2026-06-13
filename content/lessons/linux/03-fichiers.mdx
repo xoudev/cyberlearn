@@ -1,0 +1,126 @@
+---
+refCode: CL-LSN-051-V01
+slug: linux-fichiers
+title: "Créer, copier, déplacer et supprimer des fichiers"
+description: "Manipulez fichiers et dossiers en ligne de commande : créer avec touch et mkdir, copier avec cp, déplacer et renommer avec mv, supprimer avec rm en évitant les pièges."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 220
+prerequisites: ["CL-LSN-050-V01"]
+---
+
+Sur une machine de bureau, tu ranges tes fichiers à la souris : double-clic, glisser-déposer, clic droit pour supprimer. Sur un serveur Linux, il n'y a pas de souris. Tu te connectes par SSH, tu obtiens une ligne noire, et tout passe par des commandes. C'est moins joli, mais c'est plus rapide une fois la main prise, et surtout ça se scripte. Une opération que tu fais à la main aujourd'hui, tu pourras la répéter mille fois demain dans un fichier.
+
+Dans cette leçon tu vas apprendre les cinq gestes de base qui reviennent tout le temps : créer un fichier, créer un dossier, copier, déplacer ou renommer, et supprimer. Ce sont les mêmes quatre ou cinq commandes que tape un administrateur système chaque jour. Le modèle mental à garder en tête : un dossier n'est qu'un fichier un peu spécial qui contient des noms d'autres fichiers, et chaque commande agit sur des chemins. Tout le reste découle de là.
+
+## créer : touch et mkdir
+
+Pour fabriquer un fichier vide, on utilise `touch`. Le nom vient de son usage d'origine, qui était de mettre à jour la date de modification d'un fichier sans en changer le contenu. Si le fichier n'existe pas encore, `touch` le crée. S'il existe déjà, il met juste sa date à jour, sans rien effacer. C'est donc une commande sans danger.
+
+```bash
+touch notes.txt          # crée un fichier vide nommé notes.txt
+touch a.log b.log c.log  # on peut en créer plusieurs d'un coup
+ls -l notes.txt          # vérifie qu'il existe, taille 0
+```
+
+Pour un dossier, c'est `mkdir`, abréviation de make directory.
+
+```bash
+mkdir projet             # crée un dossier projet dans le répertoire courant
+mkdir images musique     # deux dossiers d'un coup
+```
+
+Le piège classique arrive quand tu veux créer un dossier dans un autre dossier qui n'existe pas encore. `mkdir projet/src/utils` échoue si `projet` et `src` ne sont pas déjà là, parce que `mkdir` refuse de créer les parents manquants par défaut. La solution est l'option `-p` (pour parents) : elle crée toute l'arborescence d'un coup et ne se plaint pas si un dossier existait déjà.
+
+```bash
+mkdir -p projet/src/utils    # crée projet, puis src dedans, puis utils dedans
+```
+
+<Callout type="info">
+Retiens `mkdir -p` : c'est l'option que tu utiliseras le plus souvent. Elle est aussi pratique dans les scripts, parce qu'elle ne fait pas planter le script quand le dossier existe déjà.
+</Callout>
+
+## copier : cp
+
+`cp` copie. La forme de base est `cp source destination` : tu donnes d'abord le fichier à copier, ensuite l'endroit où poser la copie. L'original reste intact.
+
+```bash
+cp notes.txt notes-backup.txt   # copie notes.txt vers une nouvelle copie
+cp config.ini /tmp/             # copie le fichier dans le dossier /tmp
+```
+
+Deux choses à comprendre tout de suite. D'abord, si la destination est un dossier existant, la copie y est déposée en gardant son nom. Si la destination est un nom de fichier, la copie prend ce nom. Ensuite, et c'est important : si un fichier porte déjà le nom de la destination, `cp` l'écrase sans rien demander. Il n'y a pas de fenêtre « voulez-vous remplacer ? ». L'option `-i` (interactif) force la question avant d'écraser, ce qui peut sauver un fichier.
+
+```bash
+cp -i notes.txt notes-backup.txt   # demande confirmation si notes-backup.txt existe
+```
+
+Pour copier un dossier entier avec tout ce qu'il contient, il faut `-r` (récursif). Sans `-r`, `cp` refuse de copier un dossier et affiche une erreur.
+
+```bash
+cp -r projet projet-v2   # copie le dossier projet et tout son contenu vers projet-v2
+```
+
+## déplacer et renommer : mv
+
+Voici le point qui surprend les débutants : sous Linux, déplacer un fichier et le renommer sont la même opération. Les deux se font avec `mv` (move). Pourquoi ? Parce que le nom d'un fichier et son emplacement sont une seule et même information : un chemin. Changer `rapport.txt` en `archive/rapport.txt`, c'est le déplacer. Changer `rapport.txt` en `rapport-final.txt`, c'est le renommer. Du point de vue du système, dans les deux cas tu as juste donné un nouveau chemin au fichier. Il n'existe pas de commande `rename` séparée à connaître pour démarrer.
+
+```bash
+mv rapport.txt rapport-final.txt   # renommer : même dossier, nom différent
+mv rapport-final.txt archive/      # déplacer : même nom, dossier différent
+mv brouillon.txt docs/final.txt    # déplacer ET renommer en une fois
+```
+
+Contrairement à `cp`, `mv` n'a pas besoin de `-r` pour un dossier, parce qu'il ne copie rien : il change juste l'étiquette. C'est pour ça que déplacer un gros dossier sur le même disque est quasi instantané, alors qu'une copie de la même taille prend du temps. Attention quand même, `mv` écrase la destination sans prévenir, exactement comme `cp`. L'option `-i` demande confirmation ici aussi.
+
+<Quiz id="q-1" question="Tu veux renommer le fichier ancien.txt en nouveau.txt dans le même dossier. Quelle commande ?" options={["rename ancien.txt nouveau.txt", "mv ancien.txt nouveau.txt", "cp ancien.txt nouveau.txt", "touch nouveau.txt"]} correct={1} />
+
+## supprimer : rm et le danger
+
+`rm` (remove) supprime un fichier. Et là, il faut être très clair : sur la ligne de commande, il n'y a pas de corbeille. Quand tu fais `rm`, le fichier disparaît immédiatement et définitivement. Pas de « restaurer depuis la corbeille », pas de Ctrl+Z. Pour un dossier, comme pour `cp`, il faut `-r` afin de descendre dans le contenu.
+
+```bash
+rm notes.txt        # supprime le fichier, sans confirmation, sans retour
+rm -r vieux-projet  # supprime le dossier et tout ce qu'il contient
+rm -i notes.txt     # avec -i, demande confirmation avant de supprimer
+```
+
+La combinaison vraiment dangereuse est `rm -rf`. Le `-f` (force) supprime sans poser de question et sans broncher même si les fichiers sont protégés. Associé à `-r`, il efface une arborescence complète en silence. C'est utile et c'est aussi la commande qui a effacé des serveurs entiers à cause d'une faute de frappe ou d'un mauvais dossier courant.
+
+<Callout type="danger">
+`rm -rf` ne demande jamais confirmation et ne garde aucune copie. Si tu te trompes de dossier, le contenu est perdu pour de bon. Méfie-toi tout particulièrement des espaces : `rm -rf / home/user/cache` (espace après le slash) ne vise pas `/home/user/cache` mais la racine `/` puis le reste. Un espace mal placé change tout.
+</Callout>
+
+Comment se protéger sans devenir paranoïaque ? Trois réflexes simples. Avant un `rm -r`, tape `pwd` pour vérifier où tu es, et `ls` pour voir ce que tu t'apprêtes à supprimer. Utilise `-i` quand tu as le moindre doute, le temps perdu à confirmer est négligeable. Et tape les chemins lentement, en relisant, surtout quand il y a un `-f`. Sur un serveur de production, ces trois secondes valent de l'or.
+
+<Callout type="warning">
+Évite d'effacer en aveugle avec des motifs comme `rm *`. Le `*` veut dire « tout ce qui est dans le dossier ». Fais d'abord `ls *` pour voir exactement ce que le motif va toucher, puis remplace `ls` par `rm` seulement si la liste te convient.
+</Callout>
+
+## à toi de jouer
+
+Mets en pratique l'enchaînement le plus courant : créer un dossier, entrer dedans, y créer un fichier. Tape les commandes une par une.
+
+<SimulatedTerminal
+  shell="bash"
+  expectedCommands={["mkdir atelier", "cd atelier", "touch journal.txt"]}
+  hints={["Crée le dossier avec mkdir suivi du nom atelier", "Entre dans le dossier avec cd atelier", "Crée un fichier vide avec touch journal.txt"]}
+/>
+
+<QuizGroup>
+<Quiz id="q-2" question="Quelle commande crée d'un seul coup le dossier a, puis b dedans, puis c dedans ?" options={["mkdir a b c", "mkdir -p a/b/c", "touch a/b/c", "cp -r a/b/c"]} correct={1} />
+<Quiz id="q-3" question="Tu tapes rm fichier-important.txt par erreur. Que se passe-t-il ?" options={["Le fichier part dans la corbeille, tu peux le restaurer", "Une confirmation est demandée par défaut", "Le fichier est supprimé immédiatement et définitivement", "Rien, rm refuse de supprimer un fichier important"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- `touch fichier` crée un fichier vide (ou met sa date à jour). Sans danger.
+- `mkdir dossier` crée un dossier ; `mkdir -p a/b/c` crée toute l'arborescence d'un coup.
+- `cp source dest` copie un fichier ; `cp -r` pour un dossier. La destination est écrasée sans avertissement.
+- `mv source dest` déplace ET renomme : c'est la même opération, parce qu'un nom de fichier est un chemin.
+- `rm` supprime sans corbeille, immédiatement. `rm -r` pour un dossier.
+- `rm -rf` n'avertit jamais et ne garde rien. Vérifie `pwd` et `ls` avant, utilise `-i` au moindre doute.
+- `cp -i`, `mv -i`, `rm -i` demandent confirmation avant d'écraser ou de supprimer.
+
+OK 03-fichiers.mdx écrit

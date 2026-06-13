@@ -1,0 +1,194 @@
+---
+refCode: CL-LSN-060-V01
+slug: linux-projet
+title: "Projet : un script de sauvegarde automatique"
+description: "Réunissez tout le parcours en écrivant un script Bash de sauvegarde : vérifier les dossiers, archiver avec tar, horodater l'archive, journaliser le résultat et planifier l'exécution avec cron."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 650
+prerequisites: ["CL-LSN-059-V01", "CL-LSN-053-V01"]
+---
+
+On termine le parcours avec un vrai projet. Pas un exercice jouet, mais le genre de script qu'un administrateur écrit un lundi matin parce qu'il en a marre de sauvegarder un dossier à la main. L'idée est simple : prendre un répertoire, en faire une archive datée, la ranger quelque part, et noter dans un fichier ce qui s'est passé. Ensuite on demande à la machine de le faire toute seule chaque nuit.
+
+Tu connais déjà toutes les briques : les variables, `tar`, les redirections, les tests sur les fichiers, `cron`. Ce projet sert à les assembler. On part d'une version qui marche en trois lignes, puis on ajoute des garde-fous l'un après l'autre, comme on le ferait pour de bon. À la fin tu auras un script utilisable, et une liste d'idées pour le faire grandir sur ta propre machine.
+
+## le cahier des charges
+
+Avant d'écrire la moindre ligne, on pose ce que le script doit faire. C'est le réflexe à prendre : un script flou donne du code flou.
+
+- Il prend un dossier source en dur dans le script (on le sortira en argument plus tard, si tu veux).
+- Il vérifie que ce dossier existe vraiment avant d'agir.
+- Il crée une archive compressée dont le nom contient la date et l'heure.
+- Il range cette archive dans un dossier de sauvegarde dédié.
+- Il écrit une ligne dans un fichier de log pour dire si ça a réussi.
+
+<Diagram caption="Le déroulé du script de sauvegarde">
+flowchart TD
+  A[Démarrage du script] --> B[Le dossier source existe ?]
+  B -->|Non| C[Message d erreur + exit 1]
+  B -->|Oui| D[Construire le nom horodaté]
+  D --> E[Créer l archive avec tar]
+  E --> F[Écrire une ligne dans le log]
+  F --> G[Fin]
+</Diagram>
+
+Ce schéma tient en une page et c'est exactement ce qu'on va coder. Garde-le en tête.
+
+## étape 1 : la base
+
+On commence par le squelette. Un script Bash commence toujours par un shebang, la ligne qui dit au système quel interpréteur utiliser. Ensuite on déclare deux variables pour ne pas répéter les chemins partout.
+
+```bash
+#!/usr/bin/env bash
+
+# Dossier qu'on veut sauvegarder
+SOURCE="/home/user/documents"
+
+# Dossier où ranger les archives
+BACKUP_DIR="/home/user/backups"
+
+echo "Sauvegarde de $SOURCE vers $BACKUP_DIR"
+```
+
+Le `#!/usr/bin/env bash` cherche `bash` dans le PATH, ce qui est plus portable que d'écrire `/bin/bash` en dur. Les variables sont en majuscules par convention pour les repérer d'un coup d'oeil. On les appelle avec `$SOURCE`. Pour l'instant le script ne fait qu'afficher un message, mais il tourne déjà. Sauve-le sous `backup.sh`, rends-le exécutable avec `chmod +x backup.sh`, et lance-le avec `./backup.sh`.
+
+## étape 2 : vérifier avant d'agir
+
+Un script qui archive un dossier inexistant va produire une archive vide ou une erreur silencieuse. On ajoute un contrôle. Le test `-d` répond à la question « est-ce que ce chemin est bien un dossier qui existe ? ».
+
+```bash
+#!/usr/bin/env bash
+
+SOURCE="/home/user/documents"
+BACKUP_DIR="/home/user/backups"
+
+if [ ! -d "$SOURCE" ]; then
+  echo "Erreur : le dossier source $SOURCE n'existe pas." >&2
+  exit 1
+fi
+
+echo "Source trouvée, on continue."
+```
+
+Le `!` inverse le test, donc on entre dans le `if` quand le dossier n'existe PAS. Le `>&2` envoie le message vers la sortie d'erreur, ce qui est la bonne destination pour un message d'échec. Et `exit 1` arrête le script tout de suite.
+
+<Callout type="info">
+Chaque script renvoie un code de sortie quand il se termine. Par convention, `exit 0` veut dire « tout s'est bien passé » et n'importe quel autre nombre signale un problème. C'est ce code que `cron` ou un autre script peut tester pour savoir si la sauvegarde a réussi. Toujours sortir avec `exit 1` (ou plus) quand quelque chose cloche.
+</Callout>
+
+Pense aussi à créer le dossier de destination s'il manque, pour éviter une erreur plus loin :
+
+```bash
+mkdir -p "$BACKUP_DIR"
+```
+
+Le `-p` ne se plaint pas si le dossier existe déjà et crée les parents au besoin.
+
+## étape 3 : archiver avec tar et horodater
+
+Le coeur du script. On veut un nom de fichier unique à chaque exécution, sinon chaque sauvegarde écrase la précédente. La commande `date` donne le moment présent dans le format qu'on demande.
+
+```bash
+# Date au format AAAA-MM-JJ_HHhMM, par exemple 2026-06-13_22h30
+TIMESTAMP=$(date +%Y-%m-%d_%Hh%M)
+
+ARCHIVE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
+
+# Créer l'archive compressée
+tar -czf "$ARCHIVE" -C "$SOURCE" .
+```
+
+Le `$(...)` capture la sortie de `date` dans la variable `TIMESTAMP`. Les codes `%Y %m %d %H %M` sont l'année, le mois, le jour, l'heure et les minutes. Comme l'heure fait partie du nom, deux sauvegardes ne se marchent jamais dessus.
+
+Côté `tar`, les options comptent :
+
+- `-c` crée une nouvelle archive.
+- `-z` la compresse avec gzip, d'où l'extension `.tar.gz`.
+- `-f` indique le nom du fichier de sortie (ici `$ARCHIVE`).
+- `-C "$SOURCE"` dit à `tar` de se placer dans le dossier source avant d'archiver, et le `.` final veut dire « tout ce qu'il y a ici ». Sans le `-C`, l'archive contiendrait toute l'arborescence `/home/user/documents/...`, ce qui est lourd à restaurer.
+
+## étape 4 : journaliser
+
+Quand la sauvegarde tourne seule à 3 h du matin, personne ne regarde l'écran. Le log est ta seule trace. On ajoute une ligne datée dans un fichier après l'archivage.
+
+```bash
+LOG="$BACKUP_DIR/backup.log"
+
+echo "$(date '+%Y-%m-%d %H:%M:%S') - Archive créée : $ARCHIVE" >> "$LOG"
+
+echo "Sauvegarde terminée : $ARCHIVE"
+```
+
+Le détail à ne pas rater : `>>` ajoute à la fin du fichier, alors que `>` l'écraserait à chaque fois. Avec `>>`, le log s'accumule et tu gardes l'historique des sauvegardes. Si tu veux aller plus loin, tu peux tester le code de retour de `tar` et écrire « succès » ou « échec » selon le cas, mais on garde ça pour la section projet.
+
+## étape 5 : planifier avec cron
+
+Le script marche, mais le lancer à la main chaque jour n'a aucun intérêt. `cron` est le planificateur de tâches d'Unix. Tu édites ta table de planification avec :
+
+```bash
+crontab -e
+```
+
+Puis tu ajoutes une ligne. Chaque ligne `cron` a cinq champs de temps suivis de la commande à lancer.
+
+```text
+30 2 * * * /home/user/backup.sh
+```
+
+Champ par champ, de gauche à droite :
+
+- `30` : la minute (30).
+- `2` : l'heure (2 h du matin).
+- `*` : le jour du mois (tous).
+- `*` : le mois (tous).
+- `*` : le jour de la semaine (tous).
+
+Cette ligne veut donc dire « tous les jours à 2 h 30, lance `/home/user/backup.sh` ». Un astérisque signifie « toutes les valeurs ». Si tu voulais le faire seulement le lundi, tu mettrais `1` dans le dernier champ.
+
+<Callout type="info">
+`cron` exécute tes tâches dans un environnement minimal : peu de variables d'environnement, et le PATH n'est pas celui de ton terminal. C'est pourquoi on met le chemin complet du script (`/home/user/backup.sh`) et pas juste `backup.sh`. Pour la même raison, utilise des chemins absolus partout dans le script. En cas de doute, regarde le fichier de log : si la tâche ne produit rien, c'est souvent un chemin relatif qui pose problème.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi inclure la date dans le nom de l'archive avec la commande date ?" options={["Pour compresser plus vite", "Pour que chaque sauvegarde ait un nom unique et n'écrase pas la précédente", "Parce que tar l'exige", "Pour que cron fonctionne"]} correct={1} />
+
+<Quiz id="q-2" question="Dans la ligne cron '30 2 * * * /home/user/backup.sh', que représente le 2 ?" options={["Le jour du mois", "Le nombre de copies", "L'heure d'exécution", "La minute"]} correct={2} />
+
+<Quiz id="q-3" question="Quelle redirection ajoute une ligne à la fin d'un fichier de log sans effacer son contenu ?" options={[">", ">>", "<", "2>&1"]} correct={1} />
+
+Teste maintenant les briques du script dans un terminal. Crée une archive, regarde son nom, vérifie que la date change quand tu relances.
+
+<SimulatedTerminal shell="bash" scenario="bash-scripting" />
+
+## ton projet personnel
+
+<Callout type="success">
+Tu viens d'écrire un outil que tu peux réellement utiliser. Copie ce script sur une vraie machine Linux (ou une VM), adapte les chemins à tes dossiers, et fais-le tourner pour de bon. C'est en le cassant et en le réparant que tu apprends le plus.
+</Callout>
+
+Voici cinq extensions, de la plus simple à la plus ambitieuse. Code-les sur ta machine, une par une.
+
+1. **Rotation des sauvegardes.** Au fil des nuits, le dossier se remplit. Garde seulement les 7 dernières archives et supprime les plus vieilles. Indice : `ls -t` trie par date, et tu peux combiner avec `tail` et `xargs rm`.
+2. **Compresser plus fort.** Remplace gzip par un algorithme plus efficace en passant par `tar` avec `-J` (xz) au lieu de `-z`. Compare la taille des archives et le temps de calcul.
+3. **Notifier en cas d'échec.** Teste le code de retour de `tar` avec `$?`. Si la sauvegarde échoue, écris « ECHEC » dans le log et envoie-toi un mail ou une notification de bureau.
+4. **Plusieurs dossiers.** Mets tes sources dans un tableau Bash et fais une boucle `for` qui archive chacune avec son propre nom.
+5. **Sauvegarde distante.** Une copie sur le même disque ne protège pas d'une panne de disque. Envoie l'archive vers un autre serveur avec `scp` ou, mieux, synchronise un dossier avec `rsync` qui ne transfère que ce qui a changé.
+
+Quand ton script te plaît, mets-le sur GitHub. Un dépôt avec un `README` qui explique ce que fait le script, comment l'installer et la ligne `cron` à copier, c'est un bon premier projet à montrer. Et tu auras un historique de tes modifications, ce qui est commode quand une version casse.
+
+## à retenir
+
+Ce projet a réuni l'essentiel du parcours Linux en un seul fichier exécutable :
+
+- **Variables et shebang** pour structurer un script lisible et portable.
+- **Tests sur les fichiers** (`-d`, `!`) et **codes de sortie** (`exit 1`) pour vérifier avant d'agir au lieu de planter.
+- **`tar` avec ses options** (`-c`, `-z`, `-f`, `-C`) pour produire une archive compressée propre.
+- **`date` et l'horodatage** pour des noms uniques, plus les **redirections** (`>>`) pour journaliser.
+- **`cron`** et son format à cinq champs pour automatiser, avec le réflexe des chemins absolus.
+
+Tu sais maintenant lire un script de sauvegarde, le modifier, et le faire tourner seul. Les extensions plus haut te mèneront vers les outils qu'utilisent les vrais administrateurs : rotation, transfert distant, alertes. À toi de continuer sur ta machine.
+
+OK 12-projet.mdx écrit

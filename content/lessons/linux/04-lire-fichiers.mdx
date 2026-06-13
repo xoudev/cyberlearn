@@ -1,0 +1,118 @@
+---
+refCode: CL-LSN-052-V01
+slug: linux-lire-fichiers
+title: "Lire et explorer le contenu des fichiers"
+description: "Affichez et parcourez le contenu des fichiers texte avec cat, less, head et tail, et apprenez à suivre un fichier de log en temps réel avec tail -f."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 220
+prerequisites: ["CL-LSN-051-V01"]
+---
+
+Une fois que tu sais te déplacer dans l'arborescence, la question suivante arrive vite : qu'est-ce qu'il y a dans ce fichier ? Sur un serveur, une grosse partie du travail d'administration se résume à ça. Tu ne déplaces pas des fichiers toute la journée. Tu lis. Tu lis des fichiers de configuration pour comprendre comment un service est réglé. Tu lis des fichiers de log pour comprendre pourquoi il s'est arrêté à 3 heures du matin.
+
+Le piège, c'est de croire qu'un seul outil suffit. En réalité, le bon outil dépend de la taille du fichier et de ce que tu cherches. Un fichier de config tient en cinquante lignes. Un fichier de log d'un serveur web peut faire deux gigaoctets. On ne lit pas les deux de la même façon. Voici les quatre commandes qui couvrent à peu près tous les cas.
+
+## cat : tout afficher d'un coup
+
+`cat` prend le contenu d'un fichier et le déverse dans ton terminal, en entier, d'un seul coup. Le nom vient de « concatenate », parce qu'à l'origine il sert aussi à coller plusieurs fichiers bout à bout. Mais 90 % du temps, on l'utilise juste pour jeter un fichier à l'écran.
+
+```bash
+cat /etc/hostname
+# affiche le nom de la machine, une ligne, terminé
+```
+
+Pour un petit fichier, c'est parfait. Tu vois tout, immédiatement, sans cérémonie. Le problème apparaît avec les gros fichiers. Si tu fais `cat` sur un log de deux gigaoctets, le terminal va essayer de tout afficher d'un coup. Les lignes défilent à une vitesse impossible à lire, ton terminal rame, et tu te retrouves tout en bas du fichier sans avoir rien pu voir d'utile au passage.
+
+<Callout type="warning">
+Ne fais jamais cat sur un fichier dont tu ne connais pas la taille. Sur un serveur, un cat sur un gros log peut saturer ta session SSH pendant plusieurs secondes et noyer ton historique de terminal. Vérifie d'abord la taille avec ls -lh, ou utilise directement less.
+</Callout>
+
+Retiens le réflexe : `cat` pour les petits fichiers que tu veux voir d'un coup, jamais pour de l'inconnu.
+
+<SimulatedTerminal shell="bash" scenario="file-recon" title="Afficher un petit fichier avec cat" />
+
+## less : lire confortablement
+
+`less` ouvre le fichier dans une vue qui ne défile pas toute seule. Tu navigues à ton rythme, page par page, comme si tu lisais un document. Quand tu as fini, tu quittes et tu reviens au terminal. Rien ne s'affiche en bloc, donc la taille du fichier n'a aucune importance : `less` charge ce qu'il a besoin d'afficher, pas plus.
+
+```bash
+less /var/log/syslog
+# ouvre le log dans une vue paginée, sans tout charger en mémoire
+```
+
+Une fois dedans, quelques touches suffisent :
+
+```text
+Flèches / molette  → défiler ligne par ligne
+Espace             → page suivante
+b                  → page précédente
+/erreur            → chercher le mot "erreur" vers le bas
+n                  → résultat suivant de la recherche
+G                  → aller à la toute fin du fichier
+g                  → revenir au tout début
+q                  → quitter et retourner au terminal
+```
+
+C'est cette recherche avec `/` qui rend `less` indispensable au quotidien. Tu ouvres un log de cent mille lignes, tu tapes `/timeout`, et tu sautes directement aux endroits qui t'intéressent. C'est pour ça que c'est l'outil par défaut de tout administrateur : il est rapide, il ne plante pas sur les gros fichiers, et il cherche.
+
+<Callout type="info">
+Si tu te retrouves coincé dans less sans savoir comment sortir, c'est la touche q. Beaucoup de débutants ferment carrément leur terminal parce qu'ils ignorent ça. Un seul q et tu es de retour.
+</Callout>
+
+## head et tail : le début et la fin
+
+Parfois tu ne veux pas tout lire, juste jeter un oeil. `head` affiche les premières lignes d'un fichier, `tail` les dernières. Par défaut, dix lignes chacune. Tu peux ajuster avec `-n`.
+
+```bash
+head -n 20 config.yml
+# les 20 premières lignes, utile pour voir l'en-tête d'un fichier de config
+
+tail -n 50 /var/log/nginx/access.log
+# les 50 dernières lignes, donc les requêtes les plus récentes
+```
+
+`head` sert quand tu veux vérifier le format d'un fichier ou son en-tête sans le charger en entier. `tail` est le plus utile des deux pour les logs, parce que les événements récents sont toujours à la fin du fichier. Quand un service vient de planter, ce qui t'intéresse, ce sont les dernières lignes, pas ce qui s'est passé il y a trois jours.
+
+## tail -f : suivre un log en direct
+
+Voici le réflexe qui change tout quand tu débogues. L'option `-f` (pour « follow ») garde le fichier ouvert et affiche les nouvelles lignes au fur et à mesure qu'elles s'écrivent. Tu ne lis plus un fichier figé, tu regardes un service vivre en temps réel.
+
+```bash
+tail -f /var/log/nginx/access.log
+# chaque requête qui arrive sur le serveur s'affiche en direct
+# Ctrl + C pour arrêter de suivre
+```
+
+Le cas concret : tu modifies la config d'un service, tu le redémarres, et tu laisses un `tail -f` tourner sur son log dans un coin de l'écran. Tu envoies une requête de test depuis ton navigateur, et tu vois la ligne apparaître instantanément. Si une erreur sort, elle s'affiche sous tes yeux au moment précis où elle se produit. C'est mille fois plus efficace que de relancer `cat` toutes les dix secondes.
+
+<Callout type="info">
+tail -f tourne tant que tu ne l'arrêtes pas. Pour sortir, c'est Ctrl + C. Une variante pratique : tail -n 100 -f log affiche d'abord les 100 dernières lignes, puis continue à suivre. Tu as le contexte récent et la suite en direct.
+</Callout>
+
+## à toi de jouer
+
+Tu es dans un répertoire qu'un collègue t'a laissé. Commence par voir ce qu'il contient, y compris les fichiers cachés, avec `ls -la`. Repère le fichier `notes.txt`, puis affiche-le avec `cat notes.txt`. Si tu vois un dossier qui commence par un point, son contenu se lit en donnant le chemin complet, par exemple `cat .hidden/flag.txt`.
+
+<SimulatedTerminal shell="bash" scenario="file-recon" title="Inspecter un répertoire et lire ses fichiers" expectedCommands={["ls -la", "cat notes.txt"]} hints={["Liste d'abord tout, fichiers cachés compris, avec ls -la", "Puis affiche le contenu avec cat suivi du nom du fichier", "Un dossier qui commence par un point se lit avec son chemin complet"]} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Tu dois consulter un fichier de log de 1,5 Go pour y trouver une erreur précise. Quel outil choisis-tu ?" options={["cat, pour tout voir d'un coup", "less, pour défiler et chercher avec /", "head, pour les premières lignes"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle commande affiche les 50 dernières lignes d'un fichier ?" options={["head -n 50 fichier", "less -50 fichier", "tail -n 50 fichier"]} correct={2} />
+
+<Quiz id="q-3" question="À quoi sert l'option -f de tail (tail -f) ?" options={["Afficher les nouvelles lignes au fur et à mesure qu'elles s'écrivent", "Forcer l'affichage d'un fichier binaire", "Afficher le fichier plus vite"]} correct={0} />
+
+</QuizGroup>
+
+## à retenir
+
+- `cat fichier` affiche tout d'un coup. Bien pour les petits fichiers, à éviter sur l'inconnu et les gros logs.
+- `less fichier` ouvre une vue paginée qui ne charge pas tout en mémoire. On défile, on cherche avec `/mot`, on quitte avec `q`. C'est l'outil par défaut des admins.
+- `head -n N` montre les N premières lignes, `tail -n N` les N dernières. Pour un log récent, c'est `tail`.
+- `tail -f fichier` suit un fichier en direct et affiche les nouvelles lignes en temps réel. On arrête avec Ctrl + C. Réflexe de débogage par excellence.
+- Avant un `cat`, un coup de `ls -lh` pour connaître la taille évite les mauvaises surprises.
+
+OK 04-lire-fichiers.mdx écrit

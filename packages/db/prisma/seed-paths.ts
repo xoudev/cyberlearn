@@ -124,6 +124,30 @@ const PATHS: PathManifest[] = [
       "CL-LSN-048-V01",
     ],
   },
+  {
+    refCode: "CL-PATH-005-V01",
+    slug: "linux-terminal",
+    title: "Linux et la ligne de commande",
+    description:
+      "Prenez le contrôle d'un système Linux au clavier : le shell, la navigation, les fichiers, les permissions, les processus, les redirections, la recherche et les premiers scripts Bash. Chaque leçon se pratique dans un terminal interactif.",
+    category: "DEV",
+    difficulty: "BEGINNER",
+    estimatedHours: 7,
+    lessons: [
+      "CL-LSN-049-V01",
+      "CL-LSN-050-V01",
+      "CL-LSN-051-V01",
+      "CL-LSN-052-V01",
+      "CL-LSN-053-V01",
+      "CL-LSN-054-V01",
+      "CL-LSN-055-V01",
+      "CL-LSN-056-V01",
+      "CL-LSN-057-V01",
+      "CL-LSN-058-V01",
+      "CL-LSN-059-V01",
+      "CL-LSN-060-V01",
+    ],
+  },
 ];
 
 async function main(): Promise<void> {
