@@ -10,8 +10,9 @@
  *     prerequisites, skip waivers)
  *   - contact tickets and audit logs (fresh-start bookkeeping)
  *
- * Keeps: accounts (wipe them with `pnpm reset:users`, which cascades all
- * per-user data), the badge catalog, and the placement questions.
+ * Keeps: accounts (wipe them with `db:reset-users`, which cascades all
+ * per-user data and deletes the Supabase Auth accounts), the badge catalog,
+ * and the placement questions.
  *
  * DRY-RUN by default. Run with:
  *   pnpm --filter @cyberlearn/db db:reset-content           (report only)
@@ -42,7 +43,9 @@ async function main(): Promise<void> {
   console.log(apply ? "== APPLY MODE ==" : "== DRY RUN (pass --apply to delete) ==");
   console.log("Will delete (dependents cascade):", toDelete);
   console.log("Untouched:", untouched);
-  console.log("Accounts are NOT touched by this script: run `pnpm reset:users` for those.");
+  console.log(
+    "Accounts are NOT touched by this script: run `pnpm --filter @cyberlearn/db db:reset-users` for those.",
+  );
 
   if (!apply) return;
 

@@ -7,7 +7,9 @@ export default tseslint.config(
     ignores: [
       "prisma/seed.ts",
       "prisma/reset-user.ts",
+      "prisma/reset-users.ts",
       "prisma/reset-content.ts",
+      "prisma/seed-paths.ts",
       "prisma/backfill-badge-xp.ts",
     ],
   },
