@@ -174,7 +174,7 @@ function Actions({ revoked }) {
 function MetadataGrid() {
   const cells = [
     { lbl: 'Plateforme', val: 'Cyber Learn' },
-    { lbl: 'Émetteur', val: 'cyberlearn.app' },
+    { lbl: 'Émetteur', val: 'cyberlearn.fr' },
     { lbl: 'Algorithme', val: 'SHA-256' },
     { lbl: 'Expiration', val: 'Aucune' },
   ];

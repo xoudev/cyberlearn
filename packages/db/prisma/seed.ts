@@ -29,7 +29,7 @@ async function main() {
     where: { id: ADMIN_ID },
     create: {
       id: ADMIN_ID,
-      email: "admin@cyberlearn.app",
+      email: "admin@cyberlearn.fr",
       username: "admin",
       displayName: "Admin CyberLearn",
       role: "ADMIN",
@@ -1823,7 +1823,7 @@ Ce lab est validé sur présentation d'un rapport de reconnaissance. Clique sur 
   console.log(
     "\nDev accounts (you need to create these in Supabase Auth manually or via magic link):",
   );
-  console.log("  Admin:     admin@cyberlearn.app");
+  console.log("  Admin:     admin@cyberlearn.fr");
   console.log("  Student 1: alice@example.com");
   console.log("  Student 2: bob@example.com");
 }

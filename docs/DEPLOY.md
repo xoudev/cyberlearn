@@ -58,14 +58,14 @@ SUPABASE_SERVICE_ROLE_KEY        # Supabase → Settings → API → service_rol
 
 ### URLs de l'app
 ```
-NEXT_PUBLIC_SITE_URL    # ex: https://cyberlearn.app (ou https://xxx.vercel.app)
-NEXT_PUBLIC_ADMIN_URL   # ex: https://admin.cyberlearn.app
+NEXT_PUBLIC_SITE_URL    # ex: https://cyberlearn.fr (ou https://xxx.vercel.app)
+NEXT_PUBLIC_ADMIN_URL   # ex: https://admin.cyberlearn.fr
 ```
 
 ### Email (Resend)
 ```
 RESEND_API_KEY       # resend.com/api-keys
-RESEND_FROM_EMAIL    # ex: noreply@cyberlearn.app (domaine vérifié dans Resend)
+RESEND_FROM_EMAIL    # ex: noreply@cyberlearn.fr (domaine vérifié dans Resend)
 ```
 
 ### Jira

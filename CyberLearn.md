@@ -15,7 +15,7 @@
 3. **Certifications imprimables** : PDF générés serveur-side après complétion d'un parcours, signés par hash SHA-256, avec QR code renvoyant vers une **page publique de vérification** (`/verify/{cert_public_id}`).
 4. **Système de notifications** : in-app (realtime Supabase) + email transactionnel (Resend), avec **rappels de révision basés sur SM-2 simplifié** (algorithme spaced repetition type Anki).
 5. **Formulaire de contact → Jira** : création automatique de tickets dans Jira via l'API REST, avec catégorisation par thème (Bug, Question, Feature, Sécurité, Autre).
-6. **Dashboard admin séparé** : application Next.js distincte sur `admin.cyberlearn.app`, CRUD complet sur leçons, badges, parcours, utilisateurs, et consultation de l'audit log.
+6. **Dashboard admin séparé** : application Next.js distincte sur `admin.cyberlearn.fr`, CRUD complet sur leçons, badges, parcours, utilisateurs, et consultation de l'audit log.
 7. **Tout doit être dynamique** : aucune leçon, badge, parcours, ou règle d'XP ne doit être codée en dur. Tout est en base, modifiable depuis l'admin.
 
 ### Public cible
@@ -91,7 +91,7 @@ prisma: ^6.0.0
 ```
 cyberlearn/
 ├── apps/
-│   ├── web/                      # Site public - cyberlearn.app
+│   ├── web/                      # Site public - cyberlearn.fr
 │   │   ├── app/
 │   │   │   ├── (marketing)/      # Landing, pricing, about
 │   │   │   ├── (auth)/           # Login, signup, callback
@@ -110,7 +110,7 @@ cyberlearn/
 │   │   ├── messages/             # next-intl (fr.json, en.json)
 │   │   └── middleware.ts         # Auth + headers + rate limit
 │   │
-│   └── admin/                    # Dashboard admin - admin.cyberlearn.app
+│   └── admin/                    # Dashboard admin - admin.cyberlearn.fr
 │       ├── app/
 │       │   ├── (auth)/
 │       │   ├── (admin)/
@@ -1216,7 +1216,7 @@ export function xpProgressInLevel(totalXp: number) {
 ```
 JIRA_BASE_URL=https://votre-domaine.atlassian.net
 JIRA_PROJECT_KEY=CYBL
-JIRA_API_EMAIL=admin@cyberlearn.app
+JIRA_API_EMAIL=admin@cyberlearn.fr
 JIRA_API_TOKEN=xxx (depuis https://id.atlassian.com/manage-profile/security/api-tokens)
 ```
 
@@ -1525,7 +1525,7 @@ L'objectif est qu'un administrateur puisse **écrire et prévisualiser une leço
 - Wrapper de mutation qui log automatiquement dans `audit_logs`
 
 **Critères d'acceptation** :
-- [ ] Un user STUDENT qui tente d'accéder à admin.cyberlearn.app → 404
+- [ ] Un user STUDENT qui tente d'accéder à admin.cyberlearn.fr → 404
 - [ ] Toute mutation admin → entry dans audit_logs
 - [ ] Suppression d'une leçon publiée → confirmation modale
 - [ ] CSP différenciée appliquée
@@ -1641,11 +1641,11 @@ NEXT_PUBLIC_ADMIN_URL="http://localhost:3001"
 
 # ===== Email (Resend) =====
 RESEND_API_KEY="re_xxx"
-RESEND_FROM_EMAIL="noreply@cyberlearn.app"
+RESEND_FROM_EMAIL="noreply@cyberlearn.fr"
 
 # ===== Jira =====
 JIRA_BASE_URL="https://xxx.atlassian.net"
-JIRA_API_EMAIL="admin@cyberlearn.app"
+JIRA_API_EMAIL="admin@cyberlearn.fr"
 JIRA_API_TOKEN=""
 JIRA_PROJECT_KEY="CYBL"
 
