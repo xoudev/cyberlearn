@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
+import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 
 const RANK_META = [
   { label: "01", color: "#FFB547", glow: "rgba(255,181,71,0.35)", title: "1er finisher" },
@@ -21,13 +22,21 @@ export async function FirstBlood({
   const finishers = await lessonRepository.findFirstBlood(lessonId);
   if (finishers.length === 0) return null;
 
+  // Resolve uploaded-avatar markers to short-lived signed URLs in one batch at
+  // this server boundary, before the values reach the render JSX. The helper
+  // passes nulls, built-ins and `__glyph:` markers through unchanged, so the
+  // public/glyph handling below keeps working.
+  const resolvedAvatars = await resolveAvatarSrcMany(
+    finishers.map((f) => f.user.avatarUrl ?? null),
+  );
+
   // ── Shared: resolve user display info per entry ──────────────────────────────
   const entries = finishers.map((entry, i) => {
     const meta = RANK_META[i];
     const isPublic = entry.user.preferences?.publicProfile !== false;
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const name = isPublic ? entry.user.displayName || entry.user.username || "Inconnu" : "Anonyme";
-    const rawAvatar = isPublic ? (entry.user.avatarUrl ?? null) : null;
+    const rawAvatar = isPublic ? (resolvedAvatars[i] ?? null) : null;
     const avatar = rawAvatar && !rawAvatar.startsWith("__glyph:") ? rawAvatar : null;
     const profileUrl = isPublic && entry.user.username ? `/u/${entry.user.username}` : null;
     const completedAt = entry.completedAt;

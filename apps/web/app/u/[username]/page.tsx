@@ -7,6 +7,7 @@ import { userRepository } from "@cyberlearn/db";
 import { computeLevel } from "@cyberlearn/lib";
 import { BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
 import type { Category } from "@cyberlearn/db";
+import { resolveAvatarSrc } from "@/lib/avatar/storage";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -125,6 +126,10 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
   const user = await userRepository.findPublicProfile(username);
   if (!user) notFound();
 
+  // Resolve "__upload:" markers to short-lived signed URLs before rendering;
+  // built-in paths, "__glyph:" markers and null pass through unchanged.
+  const avatarSrc = await resolveAvatarSrc(user.avatarUrl);
+
   const { level, current, needed } = computeLevel(user.xpTotal);
   const xpPercent = needed > 0 ? Math.min((current / needed) * 100, 100) : 0;
   const joinedStr = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
@@ -242,9 +247,9 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   placeItems: "center",
                 }}
               >
-                {user.avatarUrl && !user.avatarUrl.startsWith("__glyph:") ? (
+                {avatarSrc && !avatarSrc.startsWith("__glyph:") ? (
                   <Image
-                    src={user.avatarUrl}
+                    src={avatarSrc}
                     alt={user.displayName}
                     fill
                     style={{ objectFit: "cover" }}

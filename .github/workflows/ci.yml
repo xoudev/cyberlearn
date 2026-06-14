@@ -263,13 +263,14 @@ jobs:
       - name: Provision schema (Prisma migrations)
         run: pnpm --filter @cyberlearn/db exec prisma migrate deploy
 
-      - name: Provision certificates bucket
+      - name: Provision storage buckets
         # RLS is no longer applied here: the 20260610200000_rls_baseline migration
         # folded post_prisma_rls.sql into the chain, so `migrate deploy` above
         # already applied it. The step below PROVES it did.
         run: |
-          # Private bucket (public=false), mirroring prod so storage RLS asserts the right scenario.
+          # Private buckets (public=false), mirroring prod so storage RLS asserts the right scenario.
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('certificates', 'certificates', false) on conflict (id) do nothing;"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('avatars', 'avatars', false) on conflict (id) do nothing;"
 
       - name: Assert RLS coverage (applied by migrate deploy alone)
         # Gate 1: no public table without RLS. Allowlist: _prisma_migrations is
