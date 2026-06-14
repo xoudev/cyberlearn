@@ -23,9 +23,13 @@ Add a private `avatars` bucket, mirroring the existing `certificates` setup:
 
 - **Bucket**: `avatars`, `public = false`.
 - **Storage RLS** (`supabase/migrations/*_storage_avatars_rls.sql`): `anon` and
-  `authenticated` are blocked from SELECT/INSERT/UPDATE/DELETE on the bucket
-  (same `bucket_id <> 'avatars'` pattern as certificates). Every operation goes
-  through `service_role` server-side. The browser never touches Storage.
+  `authenticated` are blocked from SELECT/INSERT/UPDATE/DELETE on the bucket.
+  The policies are **RESTRICTIVE** (`AS RESTRICTIVE ... USING (bucket_id <>
+  'avatars')`): permissive policies are OR-combined, so a permissive
+  `<> 'avatars'` policy would union with the certificates `<> 'certificates'`
+  policy and re-open the certificates bucket. Restrictive policies are
+  AND-combined and only remove access. Every operation goes through
+  `service_role` server-side; the browser never touches Storage.
 - **Storage value**: `User.avatarUrl` keeps holding a single string. An upload
   is stored as the marker `__upload:<userId>/<uuid>.<ext>`, alongside the
   existing `/avatars/*.svg` built-ins and `__glyph:*` markers.
