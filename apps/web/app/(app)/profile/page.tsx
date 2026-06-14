@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { computeLevel } from "@cyberlearn/lib";
 import { userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { ProfileContent } from "./_components/profile-content";
 import type {
   SerializedBadge,
@@ -222,6 +223,11 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 
   if (!user) notFound();
 
+  // Resolve a stored "__upload:" marker to a short-lived signed URL before it
+  // reaches the avatar component. Built-in paths, "__glyph:" markers and null
+  // pass through unchanged.
+  const resolvedAvatarUrl = await resolveAvatarSrc(user.avatarUrl ?? null);
+
   const { level, current: xpCurrent, needed: xpNeeded } = computeLevel(user.xpTotal);
   const xpPct = xpNeeded > 0 ? Math.min((xpCurrent / xpNeeded) * 100, 100) : 100;
   const xpRemaining = xpNeeded - xpCurrent;
@@ -333,7 +339,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         {/* Left: avatar + identity */}
         <div style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
           <HexAvatar
-            avatarUrl={user.avatarUrl ?? null}
+            avatarUrl={resolvedAvatarUrl}
             displayName={user.displayName}
             rarity={avatarRarity}
           />

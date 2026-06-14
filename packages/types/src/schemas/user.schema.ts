@@ -93,6 +93,39 @@ export const settingsProfileSchema = z.object({
 
 export type SettingsProfileInput = z.infer<typeof settingsProfileSchema>;
 
+// ─── Custom avatar upload ─────────────────────────────────────────────────────
+
+// Uploaded avatars are stored in a PRIVATE Supabase Storage bucket and never
+// exposed by a public URL. The User.avatarUrl column holds a marker of the form
+// `__upload:<userId>/<uuid>.<ext>`; display sites resolve it to a short-lived
+// signed URL server-side. This mirrors the existing `__glyph:` marker scheme so
+// the value type stays a single string. See docs/adr/ADR-003.
+export const UPLOADED_AVATAR_PREFIX = "__upload:";
+
+// Raster formats only. SVG is intentionally excluded: an SVG can carry inline
+// scripts and would be an XSS vector when served from our origin.
+export const AVATAR_UPLOAD_ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
+export type AvatarUploadMime = (typeof AVATAR_UPLOAD_ALLOWED_MIME)[number];
+
+export const AVATAR_UPLOAD_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+
+// Maps an allowed MIME type to the file extension used in the storage key.
+export const AVATAR_MIME_EXTENSION: Record<AvatarUploadMime, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+/** True when an avatar value points to a privately-stored uploaded image. */
+export function isUploadedAvatar(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.startsWith(UPLOADED_AVATAR_PREFIX);
+}
+
+/** Extracts the storage object key from an uploaded-avatar marker, or null. */
+export function uploadedAvatarKey(value: string | null | undefined): string | null {
+  return isUploadedAvatar(value) ? value.slice(UPLOADED_AVATAR_PREFIX.length) : null;
+}
+
 // ─── Theme ─────────────────────────────────────────────────────────────────
 
 export const themeSchema = z.enum(["dark", "light", "system"]);
