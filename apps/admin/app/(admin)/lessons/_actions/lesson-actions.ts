@@ -140,6 +140,54 @@ export async function updateLessonStatusAction(
   return {};
 }
 
+// ── Bulk status update ────────────────────────────────────────────────────────
+
+const bulkStatusSchema = z.object({
+  lessonIds: z.array(z.string().uuid()).min(1).max(500),
+  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
+});
+
+export interface BulkStatusState {
+  error?: string;
+  count?: number;
+}
+
+/**
+ * Applies a single status to many lessons at once (bulk publish/draft/archive
+ * from the lessons list). Mirrors updateLessonStatusAction but for a selection.
+ */
+export async function bulkUpdateLessonStatusAction(
+  lessonIds: string[],
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
+): Promise<BulkStatusState> {
+  const parsed = bulkStatusSchema.safeParse({ lessonIds, status });
+  if (!parsed.success) return { error: "Sélection ou statut invalide." };
+
+  const admin = await requireAdminAction();
+
+  const updateData: { status: ContentStatus; publishedAt?: Date } = { status: parsed.data.status };
+  if (parsed.data.status === "PUBLISHED") updateData.publishedAt = new Date();
+
+  const [result] = await prisma.$transaction([
+    prisma.lesson.updateMany({
+      where: { id: { in: parsed.data.lessonIds } },
+      data: updateData,
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId: admin.id,
+        action: "lesson.status.bulk",
+        targetType: "Lesson",
+        targetId: parsed.data.lessonIds[0] ?? null,
+        metadata: { to: parsed.data.status, count: parsed.data.lessonIds.length },
+      },
+    }),
+  ]);
+
+  revalidatePath("/lessons");
+  return { count: result.count };
+}
+
 // ── Delete ──────────────────────────────────────────────────────────────────────
 
 const deleteLessonSchema = z.object({
