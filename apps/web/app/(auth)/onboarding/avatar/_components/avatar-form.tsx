@@ -7,6 +7,8 @@ import { saveAvatar } from "../_actions/save-avatar";
 import type { SaveAvatarState } from "../_actions/save-avatar";
 import { uploadAvatarAction } from "@/lib/avatar/actions";
 import { AVATAR_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
+import { AvatarCropper } from "@/components/avatar-cropper";
+import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 import Link from "next/link";
 
 const AVATARS = [
@@ -36,20 +38,27 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, startUpload] = useTransition();
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-selecting the same file
     if (!file) return;
     setUploadError(null);
+    setCropFile(file); // open the cropper before uploading
+  }
+
+  function handleCropped(blob: Blob) {
     const fd = new FormData();
-    fd.set("avatar", file);
+    fd.set("avatar", croppedBlobToFile(blob));
     startUpload(async () => {
       const res = await uploadAvatarAction({}, fd);
       if (res.ok) {
+        setCropFile(null);
         // Avatar saved; continue the onboarding flow like save-avatar does.
         router.push("/onboarding/placement-test");
       } else {
+        setCropFile(null);
         setUploadError(res.error ?? "Échec de l'envoi.");
       }
     });
@@ -66,6 +75,17 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
         border: "1px solid #2A2560",
       }}
     >
+      {cropFile && (
+        <AvatarCropper
+          file={cropFile}
+          busy={uploading}
+          onCancel={() => {
+            setCropFile(null);
+          }}
+          onConfirm={handleCropped}
+        />
+      )}
+
       {/* Edge glow */}
       <div
         aria-hidden="true"

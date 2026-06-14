@@ -9,6 +9,8 @@ import { SaveBar } from "../../_components/SettingsControls";
 import { EASE, MONO, S } from "../../_components/tokens";
 import { updateProfileAction } from "../_actions/update-profile";
 import { uploadAvatarAction } from "@/lib/avatar/actions";
+import { AvatarCropper } from "@/components/avatar-cropper";
+import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 
 const AVATARS = [
   { path: "/avatars/av-1.svg", label: "CYBER" },
@@ -79,16 +81,22 @@ export function ProfileForm({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, startUpload] = useTransition();
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const hasCustomAvatar = avatar.startsWith("__upload:") && initialAvatarPreview !== null;
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>): void {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    setCropFile(file); // crop before uploading
+  }
+
+  function handleCropped(blob: Blob): void {
     const fd = new FormData();
-    fd.set("avatar", file);
+    fd.set("avatar", croppedBlobToFile(blob));
     startUpload(async () => {
       const res = await uploadAvatarAction({}, fd);
+      setCropFile(null);
       if (res.ok) {
         toast.success("Photo importée");
         router.refresh();
@@ -136,6 +144,17 @@ export function ProfileForm({
 
   return (
     <form onSubmit={handleSubmit}>
+      {cropFile && (
+        <AvatarCropper
+          file={cropFile}
+          busy={uploading}
+          onCancel={() => {
+            setCropFile(null);
+          }}
+          onConfirm={handleCropped}
+        />
+      )}
+
       {/* Avatar picker */}
       <div style={{ marginBottom: 24 }}>
         <span style={labelStyle()}>
