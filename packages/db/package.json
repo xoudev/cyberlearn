@@ -25,6 +25,7 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset-user": "tsx prisma/reset-user.ts",
+    "db:reset-users": "tsx prisma/reset-users.ts",
     "db:reset-content": "tsx prisma/reset-content.ts",
     "db:backfill-badge-xp": "tsx prisma/backfill-badge-xp.ts",
     "db:studio": "prisma studio",
