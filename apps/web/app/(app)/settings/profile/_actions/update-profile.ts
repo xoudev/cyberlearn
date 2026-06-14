@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { AVATAR_PATHS } from "@cyberlearn/types";
+import { AVATAR_PATHS, UPLOADED_AVATAR_PREFIX } from "@cyberlearn/types";
 import { requireRequestUser } from "@/lib/auth";
 
 export interface UpdateProfileState {
@@ -25,11 +25,11 @@ const profileFieldsSchema = z.object({
  * avatar. Auth-first, then Zod safeParse.
  *
  * Avatar handling: this action only ever SETS a built-in SVG avatar (validated
- * against the allowlist). Custom uploaded avatars are managed exclusively by
- * uploadAvatarAction, so a non-built-in avatarUrl (e.g. an `__upload:` marker)
- * is ignored here rather than written - this preserves an existing custom
- * avatar when the user edits name/bio, and prevents a client from injecting an
- * arbitrary storage marker. Username is not editable here.
+ * against the allowlist). A recognized marker (`__upload:` custom upload or
+ * `__glyph:`) is left untouched - those are managed by their own flows, so the
+ * user can edit name/bio without disturbing a custom avatar. Any other value is
+ * rejected, so a client cannot inject an arbitrary path or storage marker.
+ * Username is not editable here.
  */
 export async function updateProfileAction(
   _prev: UpdateProfileState,
@@ -46,16 +46,27 @@ export async function updateProfileAction(
   }
 
   const { displayName, bio } = parsed.data;
+
+  // Decide whether to write a new avatar. undefined => leave it unchanged.
+  let avatarToSet: string | undefined;
   const rawAvatar = formData.get("avatarUrl");
-  const avatarIsBuiltin =
-    typeof rawAvatar === "string" && (AVATAR_PATHS as readonly string[]).includes(rawAvatar);
+  if (typeof rawAvatar === "string" && rawAvatar.length > 0) {
+    if ((AVATAR_PATHS as readonly string[]).includes(rawAvatar)) {
+      avatarToSet = rawAvatar;
+    } else if (rawAvatar.startsWith(UPLOADED_AVATAR_PREFIX) || rawAvatar.startsWith("__glyph:")) {
+      // Managed by the upload / glyph flows: keep the stored value as-is.
+      avatarToSet = undefined;
+    } else {
+      return { error: "Avatar invalide." };
+    }
+  }
 
   await prisma.user.update({
     where: { id: authUser.id },
     data: {
       displayName,
       bio: bio && bio.length > 0 ? bio : null,
-      ...(avatarIsBuiltin ? { avatarUrl: rawAvatar } : {}),
+      ...(avatarToSet !== undefined ? { avatarUrl: avatarToSet } : {}),
     },
   });
 
