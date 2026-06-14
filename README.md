@@ -57,8 +57,8 @@ parcours certifiants - pensé pour la communauté francophone.
 ```
 cyberlearn/
 ├── apps/
-│   ├── web/            # App publique - cyberlearn.app (port 3000)
-│   └── admin/          # Dashboard admin - admin.cyberlearn.app (port 3001)
+│   ├── web/            # App publique - cyberlearn.fr (port 3000)
+│   └── admin/          # Dashboard admin - admin.cyberlearn.fr (port 3001)
 ├── packages/
 │   ├── db/             # Schéma Prisma, migrations (RLS incluse), repositories, clients Supabase
 │   ├── lib/            # Logique métier partagée (XP, SM-2, évaluateur de badges, scoring, guards)

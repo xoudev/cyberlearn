@@ -167,7 +167,7 @@ function AdminPathEdit() {
                 <span className="le-prefix__sym">/</span>
                 <input id="slug" className="le-input" defaultValue="reconnaissance-reseau" />
               </div>
-              <span className="le-help">cyberlearn.app/parcours/<b>reconnaissance-reseau</b></span>
+              <span className="le-help">cyberlearn.fr/parcours/<b>reconnaissance-reseau</b></span>
             </div>
           </div>
 
@@ -256,7 +256,7 @@ function AdminPathEdit() {
               <input
                 id="cover"
                 className="le-input"
-                defaultValue="https://cdn.cyberlearn.app/parcours/reconnaissance-reseau.webp"
+                defaultValue="https://cdn.cyberlearn.fr/parcours/reconnaissance-reseau.webp"
               />
             </div>
           </div>

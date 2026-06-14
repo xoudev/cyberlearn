@@ -323,7 +323,7 @@ export default function NewLessonPage(): React.ReactElement {
                 />
               </div>
               <Help>
-                cyberlearn.app/leçons/<b style={{ color: TURQ }}>votre-slug</b>
+                cyberlearn.fr/leçons/<b style={{ color: TURQ }}>votre-slug</b>
               </Help>
               <FieldErr msg={state.fieldErrors?.slug} />
             </div>

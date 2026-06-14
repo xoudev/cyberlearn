@@ -19,8 +19,8 @@
 ## Architecture
 
 ```
-apps/web      → cyberlearn.app (public + authenticated)
-apps/admin    → admin.cyberlearn.app (ADMIN role only)
+apps/web      → cyberlearn.fr (public + authenticated)
+apps/admin    → admin.cyberlearn.fr (ADMIN role only)
 packages/db   → Prisma schema, migrations, repositories
 packages/ui   → Design tokens CSS + brand components (XPBar, LevelBadge, etc.)
 packages/types → Zod schemas, shared TS types

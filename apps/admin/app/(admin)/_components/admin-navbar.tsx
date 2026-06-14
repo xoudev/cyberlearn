@@ -100,7 +100,7 @@ export function AdminNavbar({ initials, handle }: AdminNavbarProps): React.React
               display: "inline-block",
             }}
           />
-          admin.cyberlearn.app
+          admin.cyberlearn.fr
         </div>
       </div>
 
