@@ -23,7 +23,9 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
         : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval' https://cdn.jsdelivr.net`,
       // unsafe-inline required for Tailwind v4 JIT; cdn.jsdelivr.net for Monaco CSS
       "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      "img-src 'self' data: https://*.supabase.co https://avatars.githubusercontent.com",
+      // blob: for the in-browser avatar cropper preview (URL.createObjectURL of
+      // the selected file before it is uploaded).
+      "img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com",
       "font-src 'self' data:",
       // blob: for Monaco worker creation; cdn.jsdelivr.net for Pyodide + Monaco loader
       isDev
