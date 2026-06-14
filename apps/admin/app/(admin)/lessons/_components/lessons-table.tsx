@@ -4,10 +4,7 @@ import React, { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "../../_components/status-badge";
-import {
-  updateLessonStatusAction,
-  bulkUpdateLessonStatusAction,
-} from "../_actions/lesson-actions";
+import { updateLessonStatusAction, bulkUpdateLessonStatusAction } from "../_actions/lesson-actions";
 import { DeleteLessonButton } from "./delete-lesson-button";
 
 type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -185,7 +182,8 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
     });
   }
 
-  const filtersActive = query !== "" || category !== "ALL" || difficulty !== "ALL" || status !== "ALL";
+  const filtersActive =
+    query !== "" || category !== "ALL" || difficulty !== "ALL" || status !== "ALL";
 
   return (
     <div>

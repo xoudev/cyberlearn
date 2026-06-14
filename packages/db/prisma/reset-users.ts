@@ -39,9 +39,7 @@ async function main(): Promise<void> {
   const targets = await prisma.user.findMany({ where, select: { id: true, role: true } });
   const ids = targets.map((u) => u.id);
   const totalUsers = await prisma.user.count();
-  const preservedAdmins = includeAdmins
-    ? 0
-    : await prisma.user.count({ where: { role: "ADMIN" } });
+  const preservedAdmins = includeAdmins ? 0 : await prisma.user.count({ where: { role: "ADMIN" } });
 
   console.log(apply ? "== APPLY MODE ==" : "== DRY RUN (pass --apply to delete) ==");
   console.log(`Accounts in DB: ${String(totalUsers)}`);
