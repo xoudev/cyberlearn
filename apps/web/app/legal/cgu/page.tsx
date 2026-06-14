@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 
 const EFFECTIVE_DATE = "1er janvier 2025";
 const COMPANY = "Cyber Learn";
-const EMAIL = "legal@cyberlearn.app";
+const EMAIL = "legal@cyberlearn.fr";
 
 export default function CguPage(): React.JSX.Element {
   return (
@@ -36,7 +36,7 @@ export default function CguPage(): React.JSX.Element {
         <p>
           Les présentes Conditions Générales d’Utilisation (ci-après « CGU ») régissent l’accès et
           l’utilisation de la plateforme {COMPANY}, accessible à l’adresse{" "}
-          <strong style={{ color: "#B8B5D1" }}>cyberlearn.app</strong>, éditée par {COMPANY}{" "}
+          <strong style={{ color: "#B8B5D1" }}>cyberlearn.fr</strong>, éditée par {COMPANY}{" "}
           (ci-après « nous », « notre » ou « la Plateforme »).
         </p>
         <p style={{ marginTop: "12px" }}>

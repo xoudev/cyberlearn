@@ -15,7 +15,7 @@ describe("scrubEvent - URL scrubbing", () => {
   it("redacts ?token= query parameter from request.url", () => {
     const event = makeEvent({
       request: {
-        url: "https://cyberlearn.app/api/me/delete/confirm?token=abc123def456ghi789jkl012mno345p",
+        url: "https://cyberlearn.fr/api/me/delete/confirm?token=abc123def456ghi789jkl012mno345p",
       },
     });
     const result = scrubEvent(event);
@@ -26,7 +26,7 @@ describe("scrubEvent - URL scrubbing", () => {
   it("redacts ?code= and ?email= query parameters", () => {
     const event = makeEvent({
       request: {
-        url: "https://cyberlearn.app/auth/callback?code=shortcode&email=user@example.com",
+        url: "https://cyberlearn.fr/auth/callback?code=shortcode&email=user@example.com",
       },
     });
     const result = scrubEvent(event);

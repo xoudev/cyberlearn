@@ -13,7 +13,7 @@ function AdminNavbar() {
         <div className="admin-navbar__tag">// ADMIN PANEL</div>
         <div className="navbar__status admin-navbar__status">
           <span className="navbar__status-dot" />
-          admin.cyberlearn.app
+          admin.cyberlearn.fr
         </div>
       </a>
 
@@ -97,7 +97,7 @@ function AdminSidebar() {
           <div className="admin-foot__avatar">XD</div>
           <div className="admin-foot__meta">
             <div className="admin-foot__name">@xoudark</div>
-            <div className="admin-foot__email">xavier@cyberlearn.app</div>
+            <div className="admin-foot__email">xavier@cyberlearn.fr</div>
           </div>
           <span className="admin-foot__role">ADMIN</span>
         </div>

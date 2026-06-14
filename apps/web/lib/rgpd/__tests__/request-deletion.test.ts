@@ -28,9 +28,9 @@ vi.mock("@cyberlearn/email", () => ({
 }));
 vi.mock("@/lib/env", () => ({
   env: {
-    NEXT_PUBLIC_SITE_URL: "https://cyberlearn.app",
+    NEXT_PUBLIC_SITE_URL: "https://cyberlearn.fr",
     RESEND_API_KEY: "re_test",
-    RESEND_FROM_EMAIL: "noreply@cyberlearn.app",
+    RESEND_FROM_EMAIL: "noreply@cyberlearn.fr",
   },
 }));
 
@@ -94,7 +94,7 @@ describe("requestDeletion - happy path", () => {
   it("confirmUrl points to /api/me/delete/confirm (not /account/delete/confirm)", async () => {
     await requestDeletion(USER, META);
     const call = mockSendDeletionConfirmEmail.mock.calls[0] as [{ confirmUrl: string }];
-    expect(call[0].confirmUrl).toContain("https://cyberlearn.app/api/me/delete/confirm?token=");
+    expect(call[0].confirmUrl).toContain("https://cyberlearn.fr/api/me/delete/confirm?token=");
   });
 
   it("plain token in confirmUrl is base64url (43 chars of [A-Za-z0-9_-])", async () => {

@@ -96,7 +96,7 @@ function AdminLessonEdit() {
                   defaultValue="introduction-scan-ports-nmap"
                 />
               </div>
-              <span className="le-help">cyberlearn.app/lecons/<b>introduction-scan-ports-nmap</b></span>
+              <span className="le-help">cyberlearn.fr/lecons/<b>introduction-scan-ports-nmap</b></span>
             </div>
           </div>
 
@@ -194,7 +194,7 @@ function AdminLessonEdit() {
               <input
                 id="cover"
                 className="le-input"
-                defaultValue="https://cdn.cyberlearn.app/covers/nmap-intro.webp"
+                defaultValue="https://cdn.cyberlearn.fr/covers/nmap-intro.webp"
                 placeholder="https://..."
               />
             </div>

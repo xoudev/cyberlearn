@@ -170,13 +170,13 @@ jobs:
           DIRECT_URL=postgresql://postgres:postgres@localhost:5432/cyberlearn
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key-for-ci-build
           RESEND_API_KEY=re_placeholder_key_for_ci_build
-          RESEND_FROM_EMAIL=noreply@cyberlearn.app
+          RESEND_FROM_EMAIL=noreply@cyberlearn.fr
           IP_SALT=placeholder-ip-salt-for-ci-build-32chars
           SUPABASE_HOOK_SECRET=placeholder-hook-secret-ci
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key-for-ci
-          NEXT_PUBLIC_SITE_URL=https://cyberlearn.app
-          NEXT_PUBLIC_ADMIN_URL=https://admin.cyberlearn.app
+          NEXT_PUBLIC_SITE_URL=https://cyberlearn.fr
+          NEXT_PUBLIC_ADMIN_URL=https://admin.cyberlearn.fr
           ENVEOF
 
       - name: Build
