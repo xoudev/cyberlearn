@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdminAction } from "@/lib/auth";
-import { uploadLessonCover } from "@/lib/lesson-cover/storage";
+import { importLessonCoverFromUrl, uploadLessonCover } from "@/lib/lesson-cover/storage";
 
 export interface UploadCoverState {
   ok?: boolean;
@@ -30,6 +30,35 @@ export async function uploadLessonCoverAction(
   const result = await uploadLessonCover(file, typeof previous === "string" ? previous : null);
   if (result.error || !result.marker) {
     return { error: result.error ?? "Échec de l'envoi." };
+  }
+
+  return {
+    ok: true,
+    marker: result.marker,
+    ...(result.previewUrl ? { previewUrl: result.previewUrl } : {}),
+  };
+}
+
+/**
+ * Imports a lesson cover from a public image URL by re-hosting it in the private
+ * bucket. Same validated output as a direct upload (marker + signed preview).
+ */
+export async function importLessonCoverFromUrlAction(
+  _prev: UploadCoverState,
+  formData: FormData,
+): Promise<UploadCoverState> {
+  await requireAdminAction();
+
+  const url = formData.get("url");
+  if (typeof url !== "string" || url.trim() === "") return { error: "Aucun lien fourni." };
+
+  const previous = formData.get("previous");
+  const result = await importLessonCoverFromUrl(
+    url.trim(),
+    typeof previous === "string" ? previous : null,
+  );
+  if (result.error || !result.marker) {
+    return { error: result.error ?? "Échec de l'import." };
   }
 
   return {
