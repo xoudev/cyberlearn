@@ -128,6 +128,59 @@ const CAT_ICONS = {
   NETWORK: IconNetwork,
 } satisfies Record<LessonCategory, () => React.ReactElement>;
 
+// ── Deterministic cover decoration ───────────────────────────────────────────
+// Each catalog card gets a unique backdrop derived from a stable key (refCode or
+// title) so lessons of the same category no longer look identical. Fully
+// deterministic (seeded PRNG, no Math.random) → server and client render the
+// same markup, no hydration mismatch.
+
+function hashSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+interface CoverDecor {
+  glowX: number;
+  glowY: number;
+  gridSize: number;
+  nodes: { x: number; y: number; r: number }[];
+  lines: { x1: number; y1: number; x2: number; y2: number }[];
+}
+
+function seededCover(key: string): CoverDecor {
+  const rand = mulberry32(hashSeed(key));
+  const glowX = Math.round(26 + rand() * 48);
+  const glowY = Math.round(28 + rand() * 44);
+  const gridSize = 14 + Math.floor(rand() * 8);
+  const nodeCount = 5 + Math.floor(rand() * 3); // 5..7
+  const nodes = Array.from({ length: nodeCount }, () => ({
+    x: Math.round(rand() * 100),
+    y: Math.round(rand() * 100),
+    r: Math.round((1.4 + rand() * 1.8) * 10) / 10,
+  }));
+  const lines: CoverDecor["lines"] = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const a = nodes[i];
+    const b = nodes[i + 1];
+    if (a && b && rand() > 0.35) lines.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+  }
+  return { glowX, glowY, gridSize, nodes, lines };
+}
+
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function DiffBars({ filled, color }: { filled: number; color: string }): React.ReactElement {
@@ -277,6 +330,9 @@ function CatalogCard({
   const isCompleted = status === "COMPLETED";
   const isInProgress = status === "IN_PROGRESS";
   const statusMeta = STATUS_META[status];
+
+  // Per-card backdrop, stable from refCode (falls back to title).
+  const decor = seededCover(refCode ?? title);
 
   const pct =
     totalSections !== undefined && totalSections > 0 && currentSection !== undefined
@@ -449,7 +505,7 @@ function CatalogCard({
           placeItems: "center",
         }}
       >
-        {/* Grid line pattern with radial mask */}
+        {/* Grid line pattern with radial mask - density varies per card */}
         <span
           aria-hidden="true"
           style={{
@@ -457,21 +513,51 @@ function CatalogCard({
             inset: 0,
             backgroundImage:
               "linear-gradient(to right, rgba(42,37,96,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.6) 1px, transparent 1px)",
-            backgroundSize: "16px 16px",
+            backgroundSize: `${String(decor.gridSize)}px ${String(decor.gridSize)}px`,
             maskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
             WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
           }}
         />
-        {/* Radial glow - per category */}
+        {/* Radial glow - per category, positioned per card */}
         <span
           aria-hidden="true"
           style={{
             position: "absolute",
             inset: 0,
-            background: `radial-gradient(ellipse 70% 60% at 50% 50%, ${catMeta.glow}, transparent 70%)`,
+            background: `radial-gradient(ellipse 70% 60% at ${String(decor.glowX)}% ${String(decor.glowY)}%, ${catMeta.glow}, transparent 70%)`,
             pointerEvents: "none",
           }}
         />
+        {/* Seeded constellation - unique per card, tinted by category */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0 }}
+        >
+          {decor.lines.map((l, i) => (
+            <line
+              key={`l-${String(i)}`}
+              x1={l.x1}
+              y1={l.y1}
+              x2={l.x2}
+              y2={l.y2}
+              stroke={catMeta.accent}
+              strokeWidth={0.4}
+              opacity={0.3}
+            />
+          ))}
+          {decor.nodes.map((n, i) => (
+            <circle
+              key={`n-${String(i)}`}
+              cx={n.x}
+              cy={n.y}
+              r={n.r}
+              fill={catMeta.accent}
+              opacity={0.5}
+            />
+          ))}
+        </svg>
 
         {/* Coordinate label top-left */}
         <span
