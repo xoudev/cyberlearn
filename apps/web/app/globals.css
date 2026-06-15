@@ -984,7 +984,10 @@ article.lesson-content blockquote p code {
 }
 @media (min-width: 1280px) {
   .page-container {
-    padding: 40px 0 120px;
+    /* Keep a horizontal gutter even on desktop: the content area (viewport
+       minus the sidebar) is often narrower than max-width, so a 0 gutter made
+       the content touch both edges. max-width still caps it on ultra-wide. */
+    padding: 40px 24px 120px;
   }
 }
 
@@ -1895,7 +1898,8 @@ article.lesson-content blockquote p code {
 }
 @media (min-width: 1280px) {
   .chx {
-    padding: 40px 0 120px;
+    /* Keep a horizontal gutter on desktop too (see .page-container note). */
+    padding: 40px 24px 120px;
   }
 }
 
