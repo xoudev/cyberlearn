@@ -3,6 +3,7 @@
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { MdxEditorPanel } from "../../../new/_components/MdxEditorPanel";
+import { CoverUploadField } from "../../../_components/cover-upload-field";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -102,7 +103,13 @@ export interface LessonData {
 
 const initialState: UpdateLessonState = {};
 
-export function EditLessonClient({ lesson }: { lesson: LessonData }): React.ReactElement {
+export function EditLessonClient({
+  lesson,
+  coverPreview,
+}: {
+  lesson: LessonData;
+  coverPreview: string | null;
+}): React.ReactElement {
   const boundAction = updateLessonAction.bind(null, lesson.id);
   const [state, action, isPending] = useActionState(boundAction, initialState);
   const [mdx, setMdx] = useState(lesson.contentMdx);
@@ -521,41 +528,8 @@ export function EditLessonClient({ lesson }: { lesson: LessonData }): React.Reac
 
           {/* Cover image */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// 1280×720 recommandé">URL image de couverture</Label>
-            <div
-              className="le-prefix"
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-                background: "#0A0826",
-                border: `1px solid ${BORDER}`,
-                transition: "all 150ms ease",
-              }}
-            >
-              <span
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-                  width: 36,
-                  fontFamily: MONO,
-                  fontSize: 13,
-                  color: "#6B6890",
-                  borderRight: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
-                }}
-              >
-                ↗
-              </span>
-              <input
-                name="coverImageUrl"
-                type="url"
-                defaultValue={lesson.coverImageUrl ?? ""}
-                placeholder="https://…"
-                className="le-input"
-                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
-              />
-            </div>
+            <Label hint="// bucket privé · URL signée">Image de couverture</Label>
+            <CoverUploadField initialMarker={lesson.coverImageUrl} initialPreview={coverPreview} />
           </div>
 
           {/* MDX Editor */}

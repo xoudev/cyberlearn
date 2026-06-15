@@ -170,13 +170,13 @@ jobs:
           DIRECT_URL=postgresql://postgres:postgres@localhost:5432/cyberlearn
           SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key-for-ci-build
           RESEND_API_KEY=re_placeholder_key_for_ci_build
-          RESEND_FROM_EMAIL=noreply@cyberlearn.fr
+          RESEND_FROM_EMAIL=noreply@cyberlearn.app
           IP_SALT=placeholder-ip-salt-for-ci-build-32chars
           SUPABASE_HOOK_SECRET=placeholder-hook-secret-ci
           NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key-for-ci
-          NEXT_PUBLIC_SITE_URL=https://cyberlearn.fr
-          NEXT_PUBLIC_ADMIN_URL=https://admin.cyberlearn.fr
+          NEXT_PUBLIC_SITE_URL=https://cyberlearn.app
+          NEXT_PUBLIC_ADMIN_URL=https://admin.cyberlearn.app
           ENVEOF
 
       - name: Build
@@ -271,6 +271,7 @@ jobs:
           # Private buckets (public=false), mirroring prod so storage RLS asserts the right scenario.
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('certificates', 'certificates', false) on conflict (id) do nothing;"
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('avatars', 'avatars', false) on conflict (id) do nothing;"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "insert into storage.buckets (id, name, public) values ('lesson-covers', 'lesson-covers', false) on conflict (id) do nothing;"
 
       - name: Assert RLS coverage (applied by migrate deploy alone)
         # Gate 1: no public table without RLS. Allowlist: _prisma_migrations is

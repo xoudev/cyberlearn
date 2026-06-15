@@ -8,6 +8,7 @@ import {
   type CreateLessonState,
 } from "../_actions/lesson-actions";
 import { MdxEditorPanel } from "./_components/MdxEditorPanel";
+import { CoverUploadField } from "../_components/cover-upload-field";
 
 export const dynamic = "force-dynamic";
 
@@ -323,7 +324,7 @@ export default function NewLessonPage(): React.ReactElement {
                 />
               </div>
               <Help>
-                cyberlearn.fr/leçons/<b style={{ color: TURQ }}>votre-slug</b>
+                cyberlearn.app/leçons/<b style={{ color: TURQ }}>votre-slug</b>
               </Help>
               <FieldErr msg={state.fieldErrors?.slug} />
             </div>
@@ -556,40 +557,8 @@ export default function NewLessonPage(): React.ReactElement {
 
           {/* Cover image */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Label hint="// 1280×720 recommandé">URL image de couverture</Label>
-            <div
-              className="le-prefix"
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-                background: "#0A0826",
-                border: `1px solid ${BORDER}`,
-                transition: "all 150ms ease",
-              }}
-            >
-              <span
-                style={{
-                  display: "grid",
-                  placeItems: "center",
-                  width: 36,
-                  fontFamily: MONO,
-                  fontSize: 13,
-                  color: "#6B6890",
-                  borderRight: `1px solid ${BORDER}`,
-                  background: "rgba(0,0,0,0.25)",
-                }}
-              >
-                ↗
-              </span>
-              <input
-                name="coverImageUrl"
-                type="url"
-                placeholder="https://…"
-                className="le-input"
-                style={{ ...BASE_INPUT, border: 0, background: "transparent", flex: 1 }}
-              />
-            </div>
+            <Label hint="// bucket privé · URL signée">Image de couverture</Label>
+            <CoverUploadField initialMarker={null} initialPreview={null} />
           </div>
 
           {/* MDX Editor - Monaco + toolbar + split preview */}
