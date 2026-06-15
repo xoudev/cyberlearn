@@ -3,6 +3,7 @@
 import { redirect, notFound } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
+import { UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 
 const updateLessonSchema = z.object({
@@ -19,7 +20,10 @@ const updateLessonSchema = z.object({
   estimatedMinutes: z.coerce.number().int().positive().max(600),
   xpReward: z.coerce.number().int().nonnegative().max(10000),
   contentMdx: z.string().trim().min(10),
-  coverImageUrl: z.string().url().optional().or(z.literal("")),
+  coverImageUrl: z
+    .union([z.string().url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
+    .optional()
+    .or(z.literal("")),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
 });
 

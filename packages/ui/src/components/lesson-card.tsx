@@ -325,6 +325,8 @@ interface LessonCardProps {
   status?: LessonStatus | undefined;
   description?: string | undefined;
   refCode?: string | undefined;
+  /** Resolved cover image src (signed URL). When set, replaces the seeded circuit backdrop. */
+  coverSrc?: string | null | undefined;
   currentSection?: number | undefined;
   totalSections?: number | undefined;
   /** "catalog" = full card with cover; "compact" = minimal list card */
@@ -343,6 +345,7 @@ export function LessonCard({
   xpReward,
   status = "NOT_STARTED",
   refCode,
+  coverSrc,
   currentSection,
   totalSections,
   variant = "compact",
@@ -367,6 +370,7 @@ export function LessonCard({
         {...(description !== undefined ? { description } : {})}
         {...(durationMinutes !== undefined ? { durationMinutes } : {})}
         {...(refCode !== undefined ? { refCode } : {})}
+        coverSrc={coverSrc ?? null}
         {...(currentSection !== undefined ? { currentSection } : {})}
         {...(totalSections !== undefined ? { totalSections } : {})}
       />
@@ -398,6 +402,7 @@ function CatalogCard({
   durationMinutes,
   xpReward,
   refCode,
+  coverSrc,
   currentSection,
   totalSections,
 }: {
@@ -411,6 +416,7 @@ function CatalogCard({
   durationMinutes?: number | undefined;
   xpReward: number;
   refCode?: string | undefined;
+  coverSrc?: string | null | undefined;
   currentSection?: number | undefined;
   totalSections?: number | undefined;
 }): React.ReactElement {
@@ -592,88 +598,122 @@ function CatalogCard({
           placeItems: "center",
         }}
       >
-        {/* Grid line pattern with radial mask - density varies per card */}
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "linear-gradient(to right, rgba(42,37,96,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.6) 1px, transparent 1px)",
-            backgroundSize: `${String(decor.gridSize)}px ${String(decor.gridSize)}px`,
-            maskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
-            WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
-          }}
-        />
-        {/* Radial glow - per category, positioned per card */}
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: `radial-gradient(ellipse 70% 60% at ${String(decor.glowX)}% ${String(decor.glowY)}%, ${catMeta.glow}, transparent 70%)`,
-            pointerEvents: "none",
-          }}
-        />
-        {/* Seeded circuit traces - unique per card, tinted by category */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 320 180"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0 }}
-        >
-          <g
-            transform={
-              decor.mirror
-                ? `translate(320 ${String(decor.shiftY)}) scale(-1 1)`
-                : `translate(0 ${String(decor.shiftY)})`
-            }
-          >
-            {/* Faint traces - the base texture */}
-            <g
-              fill="none"
-              stroke={catMeta.accent}
-              strokeOpacity={0.18}
-              strokeWidth={1}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {coverSrc ? (
+          <>
+            {/* Custom uploaded cover (signed URL from the private bucket). Plain
+                <img>, not next/image: signed URLs rotate and would churn the
+                optimizer cache. */}
+            <img
+              src={coverSrc}
+              alt=""
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                zIndex: 0,
+              }}
+            />
+            {/* Legibility veil so the corner labels stay readable over the image */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 1,
+                pointerEvents: "none",
+                background:
+                  "linear-gradient(180deg, rgba(3,2,25,0.55) 0%, transparent 30%, transparent 68%, rgba(3,2,25,0.45) 100%)",
+              }}
+            />
+          </>
+        ) : (
+          <>
+            {/* Grid line pattern with radial mask - density varies per card */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage:
+                  "linear-gradient(to right, rgba(42,37,96,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.6) 1px, transparent 1px)",
+                backgroundSize: `${String(decor.gridSize)}px ${String(decor.gridSize)}px`,
+                maskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
+                WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
+              }}
+            />
+            {/* Radial glow - per category, positioned per card */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: `radial-gradient(ellipse 70% 60% at ${String(decor.glowX)}% ${String(decor.glowY)}%, ${catMeta.glow}, transparent 70%)`,
+                pointerEvents: "none",
+              }}
+            />
+            {/* Seeded circuit traces - unique per card, tinted by category */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 320 180"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0 }}
             >
-              {decor.faintTraces.map((d, i) => (
-                <path key={`f-${String(i)}`} d={d} />
-              ))}
-            </g>
-            {/* Highlighted traces */}
-            <g
-              fill="none"
-              stroke={catMeta.accent}
-              strokeWidth={1}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity={decor.accentOpacity}
-            >
-              {decor.accentTraces.map((d, i) => (
-                <path key={`a-${String(i)}`} d={d} />
-              ))}
-            </g>
-            {/* Solder pads */}
-            <g fill={catMeta.accent} opacity={0.3}>
-              {decor.pads.map((p, i) => (
-                <rect key={`p-${String(i)}`} x={p.x} y={p.y} width={6} height={6} rx={0.5} />
-              ))}
-            </g>
-            {/* Vias */}
-            <g fill="#05041A" stroke={catMeta.accent} strokeWidth={0.8} opacity={0.36}>
-              {decor.vias.map((v, i) => (
-                <circle key={`v-${String(i)}`} cx={v.x} cy={v.y} r={v.r} />
-              ))}
-            </g>
-            {/* Trace dots */}
-            <g fill={catMeta.accent} opacity={0.22}>
-              {decor.dots.map((dt, i) => (
-                <circle key={`d-${String(i)}`} cx={dt.x} cy={dt.y} r={1.3} />
-              ))}
-            </g>
-          </g>
-        </svg>
+              <g
+                transform={
+                  decor.mirror
+                    ? `translate(320 ${String(decor.shiftY)}) scale(-1 1)`
+                    : `translate(0 ${String(decor.shiftY)})`
+                }
+              >
+                {/* Faint traces - the base texture */}
+                <g
+                  fill="none"
+                  stroke={catMeta.accent}
+                  strokeOpacity={0.18}
+                  strokeWidth={1}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {decor.faintTraces.map((d, i) => (
+                    <path key={`f-${String(i)}`} d={d} />
+                  ))}
+                </g>
+                {/* Highlighted traces */}
+                <g
+                  fill="none"
+                  stroke={catMeta.accent}
+                  strokeWidth={1}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={decor.accentOpacity}
+                >
+                  {decor.accentTraces.map((d, i) => (
+                    <path key={`a-${String(i)}`} d={d} />
+                  ))}
+                </g>
+                {/* Solder pads */}
+                <g fill={catMeta.accent} opacity={0.3}>
+                  {decor.pads.map((p, i) => (
+                    <rect key={`p-${String(i)}`} x={p.x} y={p.y} width={6} height={6} rx={0.5} />
+                  ))}
+                </g>
+                {/* Vias */}
+                <g fill="#05041A" stroke={catMeta.accent} strokeWidth={0.8} opacity={0.36}>
+                  {decor.vias.map((v, i) => (
+                    <circle key={`v-${String(i)}`} cx={v.x} cy={v.y} r={v.r} />
+                  ))}
+                </g>
+                {/* Trace dots */}
+                <g fill={catMeta.accent} opacity={0.22}>
+                  {decor.dots.map((dt, i) => (
+                    <circle key={`d-${String(i)}`} cx={dt.x} cy={dt.y} r={1.3} />
+                  ))}
+                </g>
+              </g>
+            </svg>
+          </>
+        )}
 
         {/* Coordinate label top-left */}
         <span
@@ -712,18 +752,20 @@ function CatalogCard({
           </span>
         )}
 
-        {/* Category icon */}
-        <span
-          style={{
-            position: "relative",
-            zIndex: 1,
-            color: catMeta.accent,
-            filter: `drop-shadow(0 0 12px ${catMeta.accent})`,
-          }}
-          aria-hidden="true"
-        >
-          <CatIcon />
-        </span>
+        {/* Category icon - hidden when a custom cover image is shown */}
+        {!coverSrc && (
+          <span
+            style={{
+              position: "relative",
+              zIndex: 1,
+              color: catMeta.accent,
+              filter: `drop-shadow(0 0 12px ${catMeta.accent})`,
+            }}
+            aria-hidden="true"
+          >
+            <CatIcon />
+          </span>
+        )}
       </div>
 
       {/* ── Body: title + description ──────────────────────────────── */}
