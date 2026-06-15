@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
 import { EditLessonClient } from "./_components/edit-lesson-client";
+import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 
 export const metadata: Metadata = { title: "Éditer la leçon" };
 
@@ -33,5 +34,7 @@ export default async function EditLessonPage({
 
   if (!lesson) notFound();
 
-  return <EditLessonClient lesson={lesson} />;
+  const coverPreview = await resolveLessonCoverSrc(lesson.coverImageUrl);
+
+  return <EditLessonClient lesson={lesson} coverPreview={coverPreview} />;
 }

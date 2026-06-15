@@ -6,6 +6,7 @@ import type { Category, Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
 import { requireRequestUser } from "@/lib/auth";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
+import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,10 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
     }),
     lessonRepository.countByCategory(),
   ]);
+
+  // Resolve any uploaded cover markers to short-lived signed URLs (one batch
+  // round-trip). Lessons without a cover keep the seeded circuit backdrop.
+  const coverSrcs = await resolveLessonCoverSrcMany(lessons.map((l) => l.coverImageUrl));
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const startIdx = (page - 1) * PAGE_SIZE + 1;
@@ -283,7 +288,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
         <EmptyState />
       ) : (
         <div className="lessons-catalog-grid">
-          {lessons.map((lesson) => (
+          {lessons.map((lesson, i) => (
             <Link
               key={lesson.id}
               href={`/lessons/${lesson.slug}`}
@@ -306,6 +311,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
                     | "COMPLETED"
                 }
                 refCode={lesson.refCode}
+                coverSrc={coverSrcs[i] ?? null}
                 variant="catalog"
               />
             </Link>

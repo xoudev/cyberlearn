@@ -1,8 +1,9 @@
 /**
  * Storage RLS Integration Tests - PR 1.2
  *
- * Verifies that the private certificates and avatars buckets are unreachable by
- * anon/authenticated clients and remain accessible to the service_role backend.
+ * Verifies that the private certificates, avatars and lesson-covers buckets are
+ * unreachable by anon/authenticated clients and remain accessible to the
+ * service_role backend.
  *
  * Requires: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
  *           SUPABASE_SERVICE_ROLE_KEY (skips silently if absent).
@@ -21,6 +22,7 @@ const TEST_PASSWORD = "TestPassword123!";
 // Random suffix prevents collisions across parallel runs.
 const SENTINEL_KEY = `__sentinel/${randomUUID()}.pdf`;
 const AVATAR_SENTINEL_KEY = `__sentinel/${randomUUID()}.png`;
+const COVER_SENTINEL_KEY = `__sentinel/${randomUUID()}.png`;
 
 describe("Storage RLS - certificates bucket (integration)", () => {
   let supabaseUrl: string;
@@ -90,6 +92,17 @@ describe("Storage RLS - certificates bucket (integration)", () => {
     if (avatarUploadError)
       throw new Error(`Avatar sentinel upload failed: ${avatarUploadError.message}`);
 
+    // Lesson-covers sentinel: a minimal PNG uploaded via service_role.
+    const coverBlob = new Blob(
+      [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], // PNG signature
+      { type: "image/png" },
+    );
+    const { error: coverUploadError } = await adminClient.storage
+      .from("lesson-covers")
+      .upload(COVER_SENTINEL_KEY, coverBlob, { contentType: "image/png" });
+    if (coverUploadError)
+      throw new Error(`Lesson cover sentinel upload failed: ${coverUploadError.message}`);
+
     configured = true;
   });
 
@@ -97,6 +110,7 @@ describe("Storage RLS - certificates bucket (integration)", () => {
     if (!configured) return;
     await adminClient.storage.from("certificates").remove([SENTINEL_KEY]);
     await adminClient.storage.from("avatars").remove([AVATAR_SENTINEL_KEY]);
+    await adminClient.storage.from("lesson-covers").remove([COVER_SENTINEL_KEY]);
     await adminClient.from("users").delete().eq("id", testUserId);
     await adminClient.auth.admin.deleteUser(testUserId);
   });
@@ -180,6 +194,44 @@ describe("Storage RLS - certificates bucket (integration)", () => {
   it("service_role bypasses RLS and can list the avatars bucket", async () => {
     if (!configured) return;
     const { data, error } = await adminClient.storage.from("avatars").list("__sentinel");
+    expect(error).toBeNull();
+    expect(data?.find((f) => f.name.endsWith(".png"))).toBeDefined();
+  });
+
+  // ── lesson-covers bucket (private, RESTRICTIVE policies) ────────────────────
+  // Same RESTRICTIVE approach as avatars: blocks anon/authenticated without
+  // regressing the certificates or avatars lockdown.
+
+  it("anon client cannot download from lesson-covers bucket", async () => {
+    if (!configured) return;
+    const { data, error } = await anonClient.storage
+      .from("lesson-covers")
+      .download(COVER_SENTINEL_KEY);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it("authenticated client cannot list the lesson-covers bucket", async () => {
+    if (!configured) return;
+    const authClient = await signInAsTestUser();
+    const { data } = await authClient.storage.from("lesson-covers").list("__sentinel");
+    const files = data ?? [];
+    expect(files.find((f) => f.name.endsWith(".png"))).toBeUndefined();
+  });
+
+  it("authenticated client cannot download from lesson-covers bucket", async () => {
+    if (!configured) return;
+    const authClient = await signInAsTestUser();
+    const { data, error } = await authClient.storage
+      .from("lesson-covers")
+      .download(COVER_SENTINEL_KEY);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it("service_role bypasses RLS and can list the lesson-covers bucket", async () => {
+    if (!configured) return;
+    const { data, error } = await adminClient.storage.from("lesson-covers").list("__sentinel");
     expect(error).toBeNull();
     expect(data?.find((f) => f.name.endsWith(".png"))).toBeDefined();
   });
