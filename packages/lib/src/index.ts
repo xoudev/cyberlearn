@@ -9,6 +9,8 @@ export * from "./mdx/toc.js";
 export * from "./mdx/split-sections.js";
 export * from "./gamification/badge-evaluator.js";
 export * from "./gamification/streak.js";
+export * from "./gamification/day.js";
+export * from "./gamification/streak-state.js";
 export * from "./sm2.js";
 export * from "./terminal/scenarios.js";
 export * from "./quiz/quiz.js";
