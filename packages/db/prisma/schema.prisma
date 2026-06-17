@@ -38,9 +38,11 @@ model User {
   role         UserRole @default(STUDENT)
   xpTotal      Int      @default(0)
   level        Int      @default(1)
-  streakDays   Int      @default(0)
-  lastActiveAt DateTime @default(now())
-  createdAt    DateTime @default(now())
+  streakDays    Int      @default(0)
+  longestStreak Int      @default(0) // Record streak (all-time best)
+  streakFreezes Int      @default(1) // Freeze tokens in reserve (auto-cover one missed day)
+  lastActiveAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   preferences       UserPreferences?
@@ -61,6 +63,7 @@ model User {
   hintReveals       ChallengeHintReveal[]
   deletionTokens    AccountDeletionToken[]
   quizAttempts      QuizAttempt[]
+  activityDays      UserActivityDay[]
 
   @@index([username])
   @@index([role])
@@ -488,6 +491,21 @@ model UserLessonProgress {
   @@unique([userId, lessonId])
   @@index([userId, status])
   @@map("user_lesson_progress")
+}
+
+// One row per calendar day (Europe/Paris) a user performed a qualifying
+// activity. Source of truth for the activity heatmap; written server-side only.
+model UserActivityDay {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  day       DateTime @db.Date
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day])
+  @@map("user_activity_days")
 }
 
 model UserPathProgress {

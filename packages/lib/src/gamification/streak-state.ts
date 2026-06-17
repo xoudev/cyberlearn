@@ -55,7 +55,10 @@ export function registerActivity(
 ): RegisterActivityResult {
   const today = dayKey(now, tz);
 
-  if (state.lastActiveDay === null) {
+  // No active streak yet - a brand-new user, or one whose streak the daily cron
+  // has already broken. Any activity starts a fresh streak at 1 (even on the
+  // signup day, where lastActiveDay would otherwise equal today).
+  if (state.lastActiveDay === null || state.currentStreak <= 0) {
     const next: StreakState = {
       currentStreak: 1,
       longestStreak: Math.max(state.longestStreak, 1),

@@ -5,8 +5,9 @@ import { z } from "zod";
 import {
   buildBadgeCriterionStats,
   computeLevel,
-  computeNewStreak,
+  dayKey,
   evaluateBadges,
+  registerActivity,
 } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
@@ -54,8 +55,16 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
   const newXpTotal = isFirstCompletion ? user.xpTotal + lesson.xpReward : user.xpTotal;
   const { level: newLevel } = computeLevel(newXpTotal);
 
-  // ── Streak ─────────────────────────────────────────────────────────────────
-  const { streakDays, lastActiveAt } = computeNewStreak(user.streakDays, user.lastActiveAt, now);
+  // ── Streak (only a brand-new lesson completion is a qualifying activity) ─────
+  const streak = registerActivity(
+    {
+      currentStreak: user.streakDays,
+      longestStreak: user.longestStreak,
+      lastActiveDay: dayKey(user.lastActiveAt),
+      freezes: user.streakFreezes,
+    },
+    now,
+  ).state;
 
   // ── Badge evaluation (only on first completion) ────────────────────────────
   let newBadgeIds: string[] = [];
@@ -72,7 +81,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
     newBadgeIds = evaluateBadges(
       allBadges,
       earnedIds,
-      buildBadgeCriterionStats(facts, { xpTotal: newXpTotal, streakDays }),
+      buildBadgeCriterionStats(facts, { xpTotal: newXpTotal, streakDays: streak.currentStreak }),
     );
   }
 
@@ -98,8 +107,27 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
 
     await tx.user.update({
       where: { id: authUser.id },
-      data: { xpTotal: newXpTotal, level: newLevel, streakDays, lastActiveAt },
+      data: isFirstCompletion
+        ? {
+            xpTotal: newXpTotal,
+            level: newLevel,
+            streakDays: streak.currentStreak,
+            longestStreak: streak.longestStreak,
+            streakFreezes: streak.freezes,
+            lastActiveAt: now,
+          }
+        : { xpTotal: newXpTotal, level: newLevel },
     });
+
+    // Record today's activity day (Europe/Paris) - source of the heatmap.
+    if (isFirstCompletion) {
+      const today = new Date(dayKey(now));
+      await tx.userActivityDay.upsert({
+        where: { userId_day: { userId: authUser.id, day: today } },
+        create: { userId: authUser.id, day: today, count: 1 },
+        update: { count: { increment: 1 } },
+      });
+    }
 
     // Insert userBadge rows, credit their xpReward on top of the lesson XP,
     // and notify - only for rows actually inserted (idempotent re-awards).
