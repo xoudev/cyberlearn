@@ -23,6 +23,19 @@ describe("registerActivity", () => {
     expect(r.state.lastActiveDay).toBe("2026-04-28");
   });
 
+  it("starts fresh at 1 when the streak is zero, even with a stale lastActiveDay today", () => {
+    // New user: lastActiveAt defaults to the signup day while streak is still 0.
+    const s = state({
+      currentStreak: 0,
+      longestStreak: 0,
+      lastActiveDay: "2026-04-28",
+      freezes: 1,
+    });
+    const r = registerActivity(s, NOW);
+    expect(r.event).toBe("first");
+    expect(r.state.currentStreak).toBe(1);
+  });
+
   it("is a no-op when already active today", () => {
     const s = state({
       currentStreak: 7,
