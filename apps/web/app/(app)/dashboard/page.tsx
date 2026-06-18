@@ -11,6 +11,7 @@ import {
 import { prisma, leaderboardRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { StreakPanel } from "@/components/streak-panel";
+import { QuestsPanel } from "@/components/quests-panel";
 
 // ── Rank helpers ──────────────────────────────────────────────────────────────
 
@@ -426,16 +427,22 @@ async function DashboardContent(): Promise<React.ReactElement> {
         />
       </section>
 
+      {/* ── Quêtes hebdomadaires ─────────────────────────────────────────── */}
+      <section>
+        <SectionLabel eyebrow="05 · quêtes" title="Tes quêtes de la semaine." />
+        <QuestsPanel userId={authUser.id} />
+      </section>
+
       {/* ── Série quotidienne ────────────────────────────────────────────── */}
       <section>
-        <SectionLabel eyebrow="05 · série" title="Ta série quotidienne." />
+        <SectionLabel eyebrow="06 · série" title="Ta série quotidienne." />
         <StreakPanel userId={authUser.id} />
       </section>
 
       {/* ── Parcours recommandés ─────────────────────────────────────────── */}
       <section>
         <SectionLabel
-          eyebrow="06 · parcours"
+          eyebrow="07 · parcours"
           title="Tes prochaines missions."
           ctaLabel="Tous les parcours →"
           ctaHref="/paths"
