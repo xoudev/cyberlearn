@@ -18,6 +18,7 @@ import {
 } from "@cyberlearn/lib";
 import { evaluateAndAwardBadges } from "@/lib/badges/award";
 import { issueCertificate } from "@/lib/certificates/issue";
+import { recordQuestProgress } from "@/lib/quests/progress";
 import { requireRequestUser } from "@/lib/auth";
 import { checkQuizStart, checkQuizSubmit } from "@/lib/rate-limit";
 
@@ -190,6 +191,8 @@ export async function submitQuizAttempt(
   // miss a perfect score on a retake. Idempotent across retakes by construction.
   if (score === 100) {
     await evaluateAndAwardBadges(user.id, ["PERFECT_QUIZ"], { quizId: attempt.quizId });
+    // Weekly quest: a perfect quiz this week.
+    await recordQuestProgress(user.id, "PERFECT_QUIZ", new Date(), { amount: 1 });
   }
 
   // Gate: a passing attempt issues the certificate (with the score). issueCertificate
