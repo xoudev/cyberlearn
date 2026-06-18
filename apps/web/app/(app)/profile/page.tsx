@@ -7,6 +7,7 @@ import { computeLevel } from "@cyberlearn/lib";
 import { userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { StreakPanel } from "@/components/streak-panel";
 import { ProfileContent } from "./_components/profile-content";
 import type {
   SerializedBadge,
@@ -1023,6 +1024,23 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             <b style={{ color: "#0AFFD4" }}>vérifié{certsCount > 1 ? "s" : ""}</b>
           </sub>
         </StatCell>
+      </div>
+
+      {/* ── Série quotidienne ───────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 56 }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "#6F6B99",
+            margin: "0 0 16px",
+          }}
+        >
+          Série quotidienne
+        </h2>
+        <StreakPanel userId={authUser.id} />
       </div>
 
       {/* ── Interactive tabs + content ──────────────────────────────────────── */}
