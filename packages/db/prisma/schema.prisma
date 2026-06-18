@@ -64,6 +64,7 @@ model User {
   deletionTokens    AccountDeletionToken[]
   quizAttempts      QuizAttempt[]
   activityDays      UserActivityDay[]
+  questProgress     UserQuestProgress[]
 
   @@index([username])
   @@index([role])
@@ -491,6 +492,60 @@ model UserLessonProgress {
   @@unique([userId, lessonId])
   @@index([userId, status])
   @@map("user_lesson_progress")
+}
+
+// ============================================================
+// WEEKLY QUESTS
+// ============================================================
+
+enum QuestType {
+  LESSON_COMPLETED
+  PERFECT_QUIZ
+  STREAK_DAYS
+  FORUM_POST
+  WEEKLY_BONUS
+}
+
+// Catalog of weekly quests (fixed set; admin-managed seed data).
+model Quest {
+  id           String    @id @default(uuid()) @db.Uuid
+  code         String    @unique
+  title        String
+  description  String    @db.Text
+  type         QuestType
+  target       Int
+  xpReward     Int
+  freezeReward Int       @default(0)
+  orderIndex   Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  progress UserQuestProgress[]
+
+  @@map("quests")
+}
+
+// Per-user weekly progress, scoped to an ISO week key ("YYYY-Www", Europe/Paris).
+// A new week is simply a new key (lazy reset, no cron). Written server-side only.
+model UserQuestProgress {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  questId     String    @db.Uuid
+  weekKey     String    @db.VarChar(10)
+  progress    Int       @default(0)
+  completed   Boolean   @default(false)
+  claimed     Boolean   @default(false)
+  completedAt DateTime?
+  claimedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId, weekKey])
+  @@index([userId, weekKey])
+  @@map("user_quest_progress")
 }
 
 // One row per calendar day (Europe/Paris) a user performed a qualifying

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma, challengeRepository } from "@cyberlearn/db";
 import { computeLevel, dayKey, registerActivity } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
+import { recordQuestProgress } from "@/lib/quests/progress";
 import { checkHintReveal } from "@/lib/rate-limit";
 
 // ── Start ──────────────────────────────────────────────────────────────────────
@@ -248,4 +249,7 @@ async function awardChallengeXp(
         ]
       : []),
   ]);
+
+  // Weekly quests: a challenge completion keeps the streak quest moving too.
+  await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
 }
