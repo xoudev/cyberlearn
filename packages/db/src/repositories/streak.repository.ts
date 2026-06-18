@@ -20,7 +20,8 @@ export const streakRepository = {
     if (!user) return null;
 
     const now = new Date();
-    const since = new Date(now.getTime() - 130 * 86_400_000);
+    // ~53 weeks back for the GitHub-style year heatmap.
+    const since = new Date(now.getTime() - 380 * 86_400_000);
     const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
 
     const [rows, daysThisYear] = await Promise.all([
