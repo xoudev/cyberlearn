@@ -11,6 +11,7 @@ export * from "./gamification/badge-evaluator.js";
 export * from "./gamification/day.js";
 export * from "./gamification/streak-state.js";
 export * from "./gamification/week.js";
+export * from "./gamification/quest.js";
 export * from "./sm2.js";
 export * from "./terminal/scenarios.js";
 export * from "./quiz/quiz.js";

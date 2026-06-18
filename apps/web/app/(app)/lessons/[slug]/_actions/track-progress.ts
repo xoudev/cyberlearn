@@ -13,6 +13,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
 import { awardBadges } from "@/lib/badges/award";
 import { checkAndIssueCertificates } from "@/app/(app)/paths/[slug]/_actions/generate-certificate";
+import { recordQuestProgress } from "@/lib/quests/progress";
 
 export interface CompleteLessonResult {
   alreadyCompleted: boolean;
@@ -178,6 +179,10 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
   if (isFirstCompletion) {
     await checkAndIssueCertificates(authUser.id, lessonId);
     revalidatePath("/paths");
+
+    // Weekly quests: a fresh completion advances the "lessons" and "streak" quests.
+    await recordQuestProgress(authUser.id, "LESSON_COMPLETED", now, { amount: 1 });
+    await recordQuestProgress(authUser.id, "STREAK_DAYS", now, { setTo: streak.currentStreak });
   }
 
   return {

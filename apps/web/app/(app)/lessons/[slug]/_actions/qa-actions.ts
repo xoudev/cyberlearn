@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireRequestUser } from "@/lib/auth";
 import { qaRepository } from "@cyberlearn/db";
 import { checkQaSubmission } from "@/lib/rate-limit";
+import { recordQuestProgress } from "@/lib/quests/progress";
 
 const questionSchema = z.object({
   lessonId: z.string().uuid(),
@@ -66,6 +67,8 @@ export async function postAnswerAction(
   }
 
   await qaRepository.createAnswer({ questionId, userId: user.id, content });
+  // Weekly quest: posting a write-up (Q&A answer) this week.
+  await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
   revalidatePath(`/lessons/${lessonSlug}`);
 
   return { success: true };
