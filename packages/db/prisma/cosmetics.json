@@ -1,0 +1,235 @@
+[
+  {
+    "code": "theme-midnight-ops",
+    "type": "TERMINAL_THEME",
+    "label": "Midnight Ops",
+    "description": "Le thème par défaut, bleu nuit.",
+    "rarity": "COMMON",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 1 },
+    "orderIndex": 1
+  },
+  {
+    "code": "theme-acid",
+    "type": "TERMINAL_THEME",
+    "label": "Acid Terminal",
+    "description": "Vert acide sur fond sombre.",
+    "rarity": "RARE",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 5 },
+    "orderIndex": 2
+  },
+  {
+    "code": "theme-amber-mono",
+    "type": "TERMINAL_THEME",
+    "label": "Amber Mono",
+    "description": "Monochrome ambre, façon vieux terminal.",
+    "rarity": "RARE",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 8 },
+    "orderIndex": 3
+  },
+  {
+    "code": "theme-synthwave",
+    "type": "TERMINAL_THEME",
+    "label": "Synthwave",
+    "description": "Dégradé magenta et violet.",
+    "rarity": "EPIC",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 15 },
+    "orderIndex": 4
+  },
+  {
+    "code": "theme-ghost",
+    "type": "TERMINAL_THEME",
+    "label": "Ghost",
+    "description": "Gris fantôme, ultra discret.",
+    "rarity": "EPIC",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 20 },
+    "orderIndex": 5
+  },
+  {
+    "code": "theme-red-team",
+    "type": "TERMINAL_THEME",
+    "label": "Red Team",
+    "description": "Rouge offensif. Débloqué via le badge Légende.",
+    "rarity": "LEGENDARY",
+    "criterionType": "BADGE_EARNED",
+    "criterionData": { "badgeRefCode": "CL-BDG-009" },
+    "orderIndex": 6
+  },
+
+  {
+    "code": "hex-solid",
+    "type": "HEXAGON_STYLE",
+    "label": "Hex Solide",
+    "description": "L'hexagone plein par défaut.",
+    "rarity": "COMMON",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 1 },
+    "orderIndex": 1
+  },
+  {
+    "code": "hex-outline",
+    "type": "HEXAGON_STYLE",
+    "label": "Hex Contour",
+    "description": "Contour seul, fond transparent.",
+    "rarity": "COMMON",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 3 },
+    "orderIndex": 2
+  },
+  {
+    "code": "hex-neon",
+    "type": "HEXAGON_STYLE",
+    "label": "Hex Néon",
+    "description": "Halo lumineux autour de l'hexagone.",
+    "rarity": "RARE",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 7 },
+    "orderIndex": 3
+  },
+  {
+    "code": "hex-circuit",
+    "type": "HEXAGON_STYLE",
+    "label": "Hex Circuit",
+    "description": "Texture de circuit imprimé.",
+    "rarity": "EPIC",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 12 },
+    "orderIndex": 4
+  },
+  {
+    "code": "hex-glitch",
+    "type": "HEXAGON_STYLE",
+    "label": "Hex Glitch",
+    "description": "Décalage chromatique glitché.",
+    "rarity": "EPIC",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 18 },
+    "orderIndex": 5
+  },
+  {
+    "code": "hex-prisme",
+    "type": "HEXAGON_STYLE",
+    "label": "Hex Prisme",
+    "description": "Reflets prismatiques. Réservé à l'Élite.",
+    "rarity": "LEGENDARY",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 30 },
+    "orderIndex": 6
+  },
+
+  {
+    "code": "frame-standard",
+    "type": "PROFILE_FRAME",
+    "label": "Standard",
+    "description": "Le cadre par défaut.",
+    "rarity": "COMMON",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 1 },
+    "orderIndex": 1
+  },
+  {
+    "code": "frame-carbon",
+    "type": "PROFILE_FRAME",
+    "label": "Carbone",
+    "description": "Bordure carbone mate.",
+    "rarity": "RARE",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 6 },
+    "orderIndex": 2
+  },
+  {
+    "code": "frame-gilded",
+    "type": "PROFILE_FRAME",
+    "label": "Doré",
+    "description": "Bordure dorée et lueur chaude.",
+    "rarity": "EPIC",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 14 },
+    "orderIndex": 3
+  },
+  {
+    "code": "frame-hologram",
+    "type": "PROFILE_FRAME",
+    "label": "Hologramme",
+    "description": "Cadre holographique animé.",
+    "rarity": "EPIC",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 22 },
+    "orderIndex": 4
+  },
+  {
+    "code": "frame-elite",
+    "type": "PROFILE_FRAME",
+    "label": "Élite",
+    "description": "Le cadre des joueurs Élite.",
+    "rarity": "LEGENDARY",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 30 },
+    "orderIndex": 5
+  },
+
+  {
+    "code": "accent-turquoise",
+    "type": "ACCENT_COLOR",
+    "label": "Turquoise",
+    "description": "L'accent turquoise de la marque.",
+    "rarity": "COMMON",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 1 },
+    "orderIndex": 1
+  },
+  {
+    "code": "accent-blue",
+    "type": "ACCENT_COLOR",
+    "label": "Bleu",
+    "description": "Bleu électrique.",
+    "rarity": "COMMON",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 2 },
+    "orderIndex": 2
+  },
+  {
+    "code": "accent-amber",
+    "type": "ACCENT_COLOR",
+    "label": "Ambre",
+    "description": "Ambre chaud.",
+    "rarity": "RARE",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 9 },
+    "orderIndex": 3
+  },
+  {
+    "code": "accent-magenta",
+    "type": "ACCENT_COLOR",
+    "label": "Magenta",
+    "description": "Magenta vif.",
+    "rarity": "RARE",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 13 },
+    "orderIndex": 4
+  },
+  {
+    "code": "accent-violet",
+    "type": "ACCENT_COLOR",
+    "label": "Violet",
+    "description": "Violet profond.",
+    "rarity": "EPIC",
+    "criterionType": "LEVEL",
+    "criterionData": { "level": 17 },
+    "orderIndex": 5
+  },
+  {
+    "code": "accent-acid",
+    "type": "ACCENT_COLOR",
+    "label": "Acide",
+    "description": "Vert acide. Débloqué via le badge Hacktiviste.",
+    "rarity": "EPIC",
+    "criterionType": "BADGE_EARNED",
+    "criterionData": { "badgeRefCode": "CL-BDG-005" },
+    "orderIndex": 6
+  }
+]

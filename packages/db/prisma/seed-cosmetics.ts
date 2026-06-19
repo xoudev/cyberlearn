@@ -1,5 +1,5 @@
 /**
- * Seeds the cosmetic catalog from content/cosmetics.json.
+ * Seeds the cosmetic catalog from packages/db/prisma/cosmetics.json.
  *
  *   pnpm --filter @cyberlearn/db db:seed-cosmetics          (DRY RUN: validate only)
  *   pnpm --filter @cyberlearn/db db:seed-cosmetics --apply  (write to the database)
@@ -11,7 +11,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import {
   type BadgeCriterionType,
   type BadgeRarity,
@@ -49,13 +49,15 @@ interface CosmeticEntry {
 }
 
 function findCosmeticsFile(): string {
-  let dir = process.cwd();
-  for (let i = 0; i < 6; i++) {
-    const candidate = join(dir, "content", "cosmetics.json");
+  // Works whether launched from the package dir (pnpm --filter) or the repo root.
+  const candidates = [
+    join(process.cwd(), "prisma", "cosmetics.json"),
+    join(process.cwd(), "packages", "db", "prisma", "cosmetics.json"),
+  ];
+  for (const candidate of candidates) {
     if (existsSync(candidate)) return candidate;
-    dir = dirname(dir);
   }
-  throw new Error("content/cosmetics.json introuvable (lancez depuis le repo).");
+  throw new Error("packages/db/prisma/cosmetics.json introuvable.");
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {
