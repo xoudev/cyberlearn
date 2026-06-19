@@ -32,6 +32,8 @@ export { questRepository } from "./repositories/quest.repository.js";
 export type { QuestWithProgress } from "./repositories/quest.repository.js";
 export { streakRepository } from "./repositories/streak.repository.js";
 export type { StreakOverview } from "./repositories/streak.repository.js";
+export { cosmeticRepository } from "./repositories/cosmetic.repository.js";
+export type { CosmeticWithState, EquippedCodes } from "./repositories/cosmetic.repository.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
 export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
@@ -70,6 +72,9 @@ export type {
   QuizAttempt,
   Quest,
   UserQuestProgress,
+  Cosmetic,
+  UserCosmetic,
+  UserCosmeticLoadout,
 } from "@prisma/client";
 
 export {
@@ -86,4 +91,5 @@ export {
   TicketStatus,
   ChallengeType,
   QuestType,
+  CosmeticType,
 } from "@prisma/client";
