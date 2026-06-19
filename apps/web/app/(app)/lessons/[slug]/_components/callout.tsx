@@ -44,13 +44,19 @@ const VARIANTS: Record<
 };
 
 interface CalloutProps {
-  type?: CalloutType;
+  // MDX authors pass an arbitrary string; unknown/casing variants fall back to "info".
+  type?: string;
   title?: string;
   children?: React.ReactNode;
 }
 
+function resolveVariant(type: string): CalloutType {
+  const t = type.toLowerCase();
+  return t === "tip" || t === "warning" || t === "danger" || t === "note" ? t : "info";
+}
+
 export function Callout({ type = "info", title, children }: CalloutProps): React.JSX.Element {
-  const v = VARIANTS[type];
+  const v = VARIANTS[resolveVariant(type)];
 
   return (
     <div

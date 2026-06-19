@@ -17,6 +17,7 @@ const m = vi.hoisted(() => ({
     userBadge: { createManyAndReturn: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
     reviewSchedule: { upsert: vi.fn() },
+    userActivityDay: { upsert: vi.fn() },
   },
 }));
 
@@ -61,7 +62,9 @@ beforeEach(() => {
     xpTotal: 90,
     level: computeLevel(90).level,
     streakDays: 0,
-    lastActiveAt: null,
+    longestStreak: 0,
+    streakFreezes: 1,
+    lastActiveAt: new Date("2026-01-01T12:00:00Z"),
   });
   m.findProgress.mockResolvedValue(null); // first completion
   m.findAllActive.mockResolvedValue([XP_BADGE]);

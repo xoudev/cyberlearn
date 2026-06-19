@@ -2,7 +2,7 @@
   "name": "@cyberlearn/web",
   "version": "0.0.1",
   "private": true,
-  "description": "CyberLearn public application - cyberlearn.app",
+  "description": "CyberLearn public application - cyberlearn.fr",
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",

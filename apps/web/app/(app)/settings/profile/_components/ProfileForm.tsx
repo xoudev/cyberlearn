@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useId, useState, useTransition } from "react";
+import React, { useId, useRef, useState, useTransition } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AVATAR_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
 import { SaveBar } from "../../_components/SettingsControls";
 import { EASE, MONO, S } from "../../_components/tokens";
 import { updateProfileAction } from "../_actions/update-profile";
+import { uploadAvatarAction } from "@/lib/avatar/actions";
+import { AvatarCropper } from "@/components/avatar-cropper";
+import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 
 const AVATARS = [
   { path: "/avatars/av-1.svg", label: "CYBER" },
@@ -25,6 +30,8 @@ interface ProfileFormProps {
   initialDisplayName: string;
   initialBio: string;
   initialAvatarUrl: string;
+  /** Signed URL preview when the current avatar is a custom upload, else null. */
+  initialAvatarPreview: string | null;
 }
 
 function labelStyle(): React.CSSProperties {
@@ -64,11 +71,40 @@ export function ProfileForm({
   initialDisplayName,
   initialBio,
   initialAvatarUrl,
+  initialAvatarPreview,
 }: ProfileFormProps): React.JSX.Element {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [bio, setBio] = useState(initialBio);
   const [avatar, setAvatar] = useState(initialAvatarUrl);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, startUpload] = useTransition();
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const hasCustomAvatar = avatar.startsWith("__upload:") && initialAvatarPreview !== null;
+
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>): void {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setCropFile(file); // crop before uploading
+  }
+
+  function handleCropped(blob: Blob): void {
+    const fd = new FormData();
+    fd.set("avatar", croppedBlobToFile(blob));
+    startUpload(async () => {
+      const res = await uploadAvatarAction({}, fd);
+      setCropFile(null);
+      if (res.ok) {
+        toast.success("Photo importée");
+        router.refresh();
+      } else {
+        toast.error(res.error ?? "Échec de l'envoi");
+      }
+    });
+  }
   const [saved, setSaved] = useState({
     displayName: initialDisplayName,
     bio: initialBio,
@@ -108,6 +144,17 @@ export function ProfileForm({
 
   return (
     <form onSubmit={handleSubmit}>
+      {cropFile && (
+        <AvatarCropper
+          file={cropFile}
+          busy={uploading}
+          onCancel={() => {
+            setCropFile(null);
+          }}
+          onConfirm={handleCropped}
+        />
+      )}
+
       {/* Avatar picker */}
       <div style={{ marginBottom: 24 }}>
         <span style={labelStyle()}>
@@ -170,6 +217,62 @@ export function ProfileForm({
               </button>
             );
           })}
+        </div>
+
+        {/* Custom upload */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
+          {hasCustomAvatar && initialAvatarPreview && (
+            <span
+              style={{
+                width: 44,
+                height: 44,
+                flexShrink: 0,
+                border: `1px solid ${S.turq}`,
+                overflow: "hidden",
+                display: "inline-block",
+              }}
+              title="Photo importée"
+            >
+              {/* Signed URL (private bucket): plain img, not next/image. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={initialAvatarPreview}
+                alt="Avatar importé"
+                width={44}
+                height={44}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </span>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={AVATAR_UPLOAD_ALLOWED_MIME.join(",")}
+            onChange={handleUpload}
+            style={{ display: "none" }}
+          />
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            title="JPEG, PNG ou WebP, 2 Mo maximum"
+            style={{
+              height: 40,
+              padding: "0 16px",
+              background: "transparent",
+              border: `1px dashed ${S.muted}`,
+              color: uploading ? S.muted : S.fg,
+              fontFamily: MONO,
+              fontWeight: 600,
+              fontSize: 10.5,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              cursor: uploading ? "not-allowed" : "pointer",
+              transition: `all 200ms ${EASE}`,
+            }}
+          >
+            {uploading ? "Envoi…" : hasCustomAvatar ? "Remplacer la photo" : "Importer une photo"}
+          </button>
         </div>
       </div>
 

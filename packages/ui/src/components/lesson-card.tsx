@@ -128,6 +128,146 @@ const CAT_ICONS = {
   NETWORK: IconNetwork,
 } satisfies Record<LessonCategory, () => React.ReactElement>;
 
+// ── Deterministic cover decoration ───────────────────────────────────────────
+// Each catalog card gets a unique backdrop derived from a stable key (refCode or
+// title) so lessons of the same category no longer look identical. Fully
+// deterministic (seeded PRNG, no Math.random) → server and client render the
+// same markup, no hydration mismatch.
+
+function hashSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Curated, center-safe circuit-board geometry in a 320x180 (true 16:9) space.
+// The central band (x 112-208, y 54-126) and the label corners are kept clear so
+// the category glyph and ref code stay legible. Per card we reseed which traces
+// render, which ones are highlighted, the pad/via/dot subset, a horizontal mirror
+// and a small vertical shift - so two lessons never share the same board.
+const CIRCUIT_TRACES = [
+  "M0 30 L40 30 L52 42 L88 42 L100 30 L150 30",
+  "M0 52 L24 52 L36 64 L36 96",
+  "M30 150 L70 150 L82 138 L82 96 L94 84 L120 84",
+  "M320 44 L274 44 L262 56 L210 56",
+  "M320 70 L296 70 L284 82 L284 120 L272 132 L230 132 L218 144 L150 144",
+  "M320 104 L300 104 L288 116 L250 116",
+  "M20 120 L60 120 L72 132 L108 132",
+  "M168 36 L200 36 L212 24",
+  "M150 156 L120 156 L108 168",
+  "M0 88 L28 88 L40 76 L40 40 L52 28 L96 28",
+  "M320 150 L286 150 L274 138 L274 100 L262 88 L226 88",
+  "M44 168 L44 144 L56 132 L92 132",
+  "M276 24 L276 50 L264 62 L232 62",
+] as const;
+
+const CIRCUIT_PADS = [
+  { x: 148, y: 27 },
+  { x: 206, y: 53 },
+  { x: 93, y: 25 },
+  { x: 147, y: 141 },
+  { x: 223, y: 85 },
+  { x: 105, y: 129 },
+] as const;
+
+const CIRCUIT_VIAS = [
+  { x: 36, y: 96, r: 3 },
+  { x: 284, y: 120, r: 3 },
+  { x: 40, y: 40, r: 2.5 },
+  { x: 274, y: 100, r: 2.5 },
+  { x: 82, y: 96, r: 2.5 },
+  { x: 250, y: 116, r: 2.5 },
+  { x: 72, y: 132, r: 2.5 },
+  { x: 212, y: 24, r: 2.5 },
+  { x: 108, y: 168, r: 2.5 },
+] as const;
+
+const CIRCUIT_DOTS = [
+  { x: 40, y: 76 },
+  { x: 262, y: 56 },
+  { x: 56, y: 132 },
+  { x: 264, y: 62 },
+  { x: 288, y: 116 },
+  { x: 52, y: 42 },
+] as const;
+
+// Deterministic Fisher-Yates - same seed in, same order out (SSR-safe).
+function shuffle<T>(input: readonly T[], rand: () => number): T[] {
+  const a = [...input];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const ai = a[i];
+    const aj = a[j];
+    if (ai !== undefined && aj !== undefined) {
+      a[i] = aj;
+      a[j] = ai;
+    }
+  }
+  return a;
+}
+
+interface CoverDecor {
+  glowX: number;
+  glowY: number;
+  gridSize: number;
+  mirror: boolean;
+  shiftY: number;
+  accentOpacity: number;
+  faintTraces: string[];
+  accentTraces: string[];
+  pads: { x: number; y: number }[];
+  vias: { x: number; y: number; r: number }[];
+  dots: { x: number; y: number }[];
+}
+
+function seededCover(key: string): CoverDecor {
+  const rand = mulberry32(hashSeed(key));
+  const glowX = Math.round(26 + rand() * 48);
+  const glowY = Math.round(28 + rand() * 44);
+  const gridSize = 14 + Math.floor(rand() * 8);
+  const mirror = rand() < 0.5;
+  const shiftY = Math.round(rand() * 6 - 3); // -3..3
+  const accentOpacity = Math.round((0.28 + rand() * 0.1) * 100) / 100; // 0.28..0.38
+
+  const keepCount = 10 + Math.floor(rand() * 3); // 10..12 traces
+  const kept = shuffle(CIRCUIT_TRACES, rand).slice(0, keepCount);
+  const accentCount = 3 + Math.floor(rand() * 2); // 3..4 highlighted
+  const accentTraces = shuffle(kept, rand).slice(0, accentCount);
+  const accentSet = new Set(accentTraces);
+  const faintTraces = kept.filter((d) => !accentSet.has(d));
+
+  const pads = shuffle(CIRCUIT_PADS, rand).slice(0, 3 + Math.floor(rand() * 3)); // 3..5
+  const vias = shuffle(CIRCUIT_VIAS, rand).slice(0, 5 + Math.floor(rand() * 3)); // 5..7
+  const dots = shuffle(CIRCUIT_DOTS, rand).slice(0, 3 + Math.floor(rand() * 3)); // 3..5
+
+  return {
+    glowX,
+    glowY,
+    gridSize,
+    mirror,
+    shiftY,
+    accentOpacity,
+    faintTraces,
+    accentTraces,
+    pads: [...pads],
+    vias: [...vias],
+    dots: [...dots],
+  };
+}
+
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function DiffBars({ filled, color }: { filled: number; color: string }): React.ReactElement {
@@ -185,6 +325,8 @@ interface LessonCardProps {
   status?: LessonStatus | undefined;
   description?: string | undefined;
   refCode?: string | undefined;
+  /** Resolved cover image src (signed URL). When set, replaces the seeded circuit backdrop. */
+  coverSrc?: string | null | undefined;
   currentSection?: number | undefined;
   totalSections?: number | undefined;
   /** "catalog" = full card with cover; "compact" = minimal list card */
@@ -203,6 +345,7 @@ export function LessonCard({
   xpReward,
   status = "NOT_STARTED",
   refCode,
+  coverSrc,
   currentSection,
   totalSections,
   variant = "compact",
@@ -227,6 +370,7 @@ export function LessonCard({
         {...(description !== undefined ? { description } : {})}
         {...(durationMinutes !== undefined ? { durationMinutes } : {})}
         {...(refCode !== undefined ? { refCode } : {})}
+        coverSrc={coverSrc ?? null}
         {...(currentSection !== undefined ? { currentSection } : {})}
         {...(totalSections !== undefined ? { totalSections } : {})}
       />
@@ -258,6 +402,7 @@ function CatalogCard({
   durationMinutes,
   xpReward,
   refCode,
+  coverSrc,
   currentSection,
   totalSections,
 }: {
@@ -271,12 +416,16 @@ function CatalogCard({
   durationMinutes?: number | undefined;
   xpReward: number;
   refCode?: string | undefined;
+  coverSrc?: string | null | undefined;
   currentSection?: number | undefined;
   totalSections?: number | undefined;
 }): React.ReactElement {
   const isCompleted = status === "COMPLETED";
   const isInProgress = status === "IN_PROGRESS";
   const statusMeta = STATUS_META[status];
+
+  // Per-card backdrop, stable from refCode (falls back to title).
+  const decor = seededCover(refCode ?? title);
 
   const pct =
     totalSections !== undefined && totalSections > 0 && currentSection !== undefined
@@ -449,29 +598,122 @@ function CatalogCard({
           placeItems: "center",
         }}
       >
-        {/* Grid line pattern with radial mask */}
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "linear-gradient(to right, rgba(42,37,96,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.6) 1px, transparent 1px)",
-            backgroundSize: "16px 16px",
-            maskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
-            WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
-          }}
-        />
-        {/* Radial glow - per category */}
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: `radial-gradient(ellipse 70% 60% at 50% 50%, ${catMeta.glow}, transparent 70%)`,
-            pointerEvents: "none",
-          }}
-        />
+        {coverSrc ? (
+          <>
+            {/* Custom uploaded cover (signed URL from the private bucket). Plain
+                <img>, not next/image: signed URLs rotate and would churn the
+                optimizer cache. */}
+            <img
+              src={coverSrc}
+              alt=""
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                zIndex: 0,
+              }}
+            />
+            {/* Legibility veil so the corner labels stay readable over the image */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 1,
+                pointerEvents: "none",
+                background:
+                  "linear-gradient(180deg, rgba(3,2,25,0.55) 0%, transparent 30%, transparent 68%, rgba(3,2,25,0.45) 100%)",
+              }}
+            />
+          </>
+        ) : (
+          <>
+            {/* Grid line pattern with radial mask - density varies per card */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage:
+                  "linear-gradient(to right, rgba(42,37,96,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,37,96,0.6) 1px, transparent 1px)",
+                backgroundSize: `${String(decor.gridSize)}px ${String(decor.gridSize)}px`,
+                maskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
+                WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 85%)",
+              }}
+            />
+            {/* Radial glow - per category, positioned per card */}
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: `radial-gradient(ellipse 70% 60% at ${String(decor.glowX)}% ${String(decor.glowY)}%, ${catMeta.glow}, transparent 70%)`,
+                pointerEvents: "none",
+              }}
+            />
+            {/* Seeded circuit traces - unique per card, tinted by category */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 320 180"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0 }}
+            >
+              <g
+                transform={
+                  decor.mirror
+                    ? `translate(320 ${String(decor.shiftY)}) scale(-1 1)`
+                    : `translate(0 ${String(decor.shiftY)})`
+                }
+              >
+                {/* Faint traces - the base texture */}
+                <g
+                  fill="none"
+                  stroke={catMeta.accent}
+                  strokeOpacity={0.18}
+                  strokeWidth={1}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {decor.faintTraces.map((d, i) => (
+                    <path key={`f-${String(i)}`} d={d} />
+                  ))}
+                </g>
+                {/* Highlighted traces */}
+                <g
+                  fill="none"
+                  stroke={catMeta.accent}
+                  strokeWidth={1}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={decor.accentOpacity}
+                >
+                  {decor.accentTraces.map((d, i) => (
+                    <path key={`a-${String(i)}`} d={d} />
+                  ))}
+                </g>
+                {/* Solder pads */}
+                <g fill={catMeta.accent} opacity={0.3}>
+                  {decor.pads.map((p, i) => (
+                    <rect key={`p-${String(i)}`} x={p.x} y={p.y} width={6} height={6} rx={0.5} />
+                  ))}
+                </g>
+                {/* Vias */}
+                <g fill="#05041A" stroke={catMeta.accent} strokeWidth={0.8} opacity={0.36}>
+                  {decor.vias.map((v, i) => (
+                    <circle key={`v-${String(i)}`} cx={v.x} cy={v.y} r={v.r} />
+                  ))}
+                </g>
+                {/* Trace dots */}
+                <g fill={catMeta.accent} opacity={0.22}>
+                  {decor.dots.map((dt, i) => (
+                    <circle key={`d-${String(i)}`} cx={dt.x} cy={dt.y} r={1.3} />
+                  ))}
+                </g>
+              </g>
+            </svg>
+          </>
+        )}
 
         {/* Coordinate label top-left */}
         <span
@@ -510,18 +752,20 @@ function CatalogCard({
           </span>
         )}
 
-        {/* Category icon */}
-        <span
-          style={{
-            position: "relative",
-            zIndex: 1,
-            color: catMeta.accent,
-            filter: `drop-shadow(0 0 12px ${catMeta.accent})`,
-          }}
-          aria-hidden="true"
-        >
-          <CatIcon />
-        </span>
+        {/* Category icon - hidden when a custom cover image is shown */}
+        {!coverSrc && (
+          <span
+            style={{
+              position: "relative",
+              zIndex: 1,
+              color: catMeta.accent,
+              filter: `drop-shadow(0 0 12px ${catMeta.accent})`,
+            }}
+            aria-hidden="true"
+          >
+            <CatIcon />
+          </span>
+        )}
       </div>
 
       {/* ── Body: title + description ──────────────────────────────── */}

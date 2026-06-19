@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { computeLevel } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
+import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { notificationRepository } from "@cyberlearn/db";
 import { NotificationPanel } from "./notification-panel";
 
@@ -57,7 +58,10 @@ export async function Navbar(): Promise<React.ReactElement> {
 
     userId = authUser?.id ?? "";
     level = computeLevel(dbUser?.xpTotal ?? 0).level;
-    avatarUrl = dbUser?.avatarUrl ?? null;
+    // Resolve "__upload:" markers to short-lived signed URLs before the value
+    // reaches the render branch. Built-ins, "__glyph:" markers and null pass
+    // through unchanged, so the rendering logic below is untouched.
+    avatarUrl = await resolveAvatarSrc(dbUser?.avatarUrl ?? null);
 
     const name = dbUser?.displayName ?? "";
     const parts = name.trim().split(/\s+/).filter(Boolean);

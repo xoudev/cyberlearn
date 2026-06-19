@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useState, useActionState } from "react";
+import React, { useState, useActionState, useRef, useTransition } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { saveAvatar } from "../_actions/save-avatar";
 import type { SaveAvatarState } from "../_actions/save-avatar";
+import { uploadAvatarAction } from "@/lib/avatar/actions";
+import { AVATAR_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
+import { AvatarCropper } from "@/components/avatar-cropper";
+import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 import Link from "next/link";
 
 const AVATARS = [
@@ -29,6 +34,36 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
     AVATARS.find((a) => a.path === currentAvatarUrl)?.path ?? "/avatars/av-8.svg";
   const [selected, setSelected] = useState<string>(defaultAvatar);
 
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, startUpload] = useTransition();
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setUploadError(null);
+    setCropFile(file); // open the cropper before uploading
+  }
+
+  function handleCropped(blob: Blob) {
+    const fd = new FormData();
+    fd.set("avatar", croppedBlobToFile(blob));
+    startUpload(async () => {
+      const res = await uploadAvatarAction({}, fd);
+      if (res.ok) {
+        setCropFile(null);
+        // Avatar saved; continue the onboarding flow like save-avatar does.
+        router.push("/onboarding/placement-test");
+      } else {
+        setCropFile(null);
+        setUploadError(res.error ?? "Échec de l'envoi.");
+      }
+    });
+  }
+
   return (
     <div
       style={{
@@ -40,6 +75,17 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
         border: "1px solid #2A2560",
       }}
     >
+      {cropFile && (
+        <AvatarCropper
+          file={cropFile}
+          busy={uploading}
+          onCancel={() => {
+            setCropFile(null);
+          }}
+          onConfirm={handleCropped}
+        />
+      )}
+
       {/* Edge glow */}
       <div
         aria-hidden="true"
@@ -243,11 +289,35 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
             })}
           </div>
 
-          {/* Import button (placeholder) */}
+          {/* Import a custom photo (uploads then advances) */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={AVATAR_UPLOAD_ALLOWED_MIME.join(",")}
+            onChange={handleFile}
+            style={{ display: "none" }}
+          />
+          {uploadError && (
+            <div
+              role="alert"
+              style={{
+                marginBottom: 12,
+                padding: "10px 14px",
+                background: "rgba(255,71,87,0.08)",
+                border: "1px solid rgba(255,71,87,0.4)",
+                color: "#FF4757",
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+              }}
+            >
+              {uploadError}
+            </div>
+          )}
           <button
             type="button"
-            disabled
-            title="Disponible prochainement"
+            disabled={uploading || isPending}
+            onClick={() => fileInputRef.current?.click()}
+            title="JPEG, PNG ou WebP, 2 Mo maximum"
             style={{
               display: "flex",
               alignItems: "center",
@@ -256,15 +326,16 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
               width: "100%",
               height: 52,
               background: "transparent",
-              border: "1px dashed #44406B",
-              color: "#44406B",
+              border: "1px dashed #6F6B99",
+              color: uploading ? "#6F6B99" : "#B8B5D1",
               fontFamily: "var(--font-mono)",
               fontWeight: 600,
               fontSize: 11.5,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              cursor: "not-allowed",
+              cursor: uploading || isPending ? "not-allowed" : "pointer",
               marginBottom: 22,
+              transition: "border-color 120ms ease, color 120ms ease",
             }}
           >
             <svg
@@ -281,7 +352,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
               <path d="M8 2 L8 10" />
               <path d="M5 5 L8 2 L11 5" />
             </svg>
-            Importer une photo
+            {uploading ? "Envoi en cours…" : "Importer une photo"}
           </button>
 
           {/* Actions */}

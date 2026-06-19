@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma, challengeRepository } from "@cyberlearn/db";
-import { computeLevel, computeNewStreak } from "@cyberlearn/lib";
+import { computeLevel, dayKey, registerActivity } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
+import { recordQuestProgress } from "@/lib/quests/progress";
 import { checkHintReveal } from "@/lib/rate-limit";
 
 // ── Start ──────────────────────────────────────────────────────────────────────
@@ -177,7 +178,14 @@ async function awardChallengeXp(
   const [user] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { xpTotal: true, level: true, streakDays: true, lastActiveAt: true },
+      select: {
+        xpTotal: true,
+        level: true,
+        streakDays: true,
+        longestStreak: true,
+        streakFreezes: true,
+        lastActiveAt: true,
+      },
     }),
     challengeRepository.completeChallenge(userId, challengeId),
   ]);
@@ -188,12 +196,33 @@ async function awardChallengeXp(
   const newXpTotal = user.xpTotal + xpReward;
   const { level: newLevel } = computeLevel(newXpTotal);
   const leveledUp = newLevel > user.level;
-  const { streakDays, lastActiveAt } = computeNewStreak(user.streakDays, user.lastActiveAt, now);
+  const streak = registerActivity(
+    {
+      currentStreak: user.streakDays,
+      longestStreak: user.longestStreak,
+      lastActiveDay: dayKey(user.lastActiveAt),
+      freezes: user.streakFreezes,
+    },
+    now,
+  ).state;
+  const today = new Date(dayKey(now));
 
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
-      data: { xpTotal: newXpTotal, level: newLevel, streakDays, lastActiveAt },
+      data: {
+        xpTotal: newXpTotal,
+        level: newLevel,
+        streakDays: streak.currentStreak,
+        longestStreak: streak.longestStreak,
+        streakFreezes: streak.freezes,
+        lastActiveAt: now,
+      },
+    }),
+    prisma.userActivityDay.upsert({
+      where: { userId_day: { userId, day: today } },
+      create: { userId, day: today, count: 1 },
+      update: { count: { increment: 1 } },
     }),
     prisma.notification.create({
       data: {
@@ -220,4 +249,7 @@ async function awardChallengeXp(
         ]
       : []),
   ]);
+
+  // Weekly quests: a challenge completion keeps the streak quest moving too.
+  await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
 }

@@ -57,8 +57,8 @@ function ActivityRow({ a }) {
 }
 
 const USERS = [
-  { user: '@xoudark',   email: 'xavier@cyberlearn.app',  role: 'admin',   roleLabel: 'ADMIN',   lvl: 22, since: '02 avr 2024', av: 'admin', avInit: 'XD' },
-  { user: '@mlachance', email: 'marie@cyberlearn.app',   role: 'mentor',  roleLabel: 'MENTOR',  lvl: 18, since: '14 jun 2024', av: 'gold',  avInit: 'ML' },
+  { user: '@xoudark',   email: 'xavier@cyberlearn.fr',  role: 'admin',   roleLabel: 'ADMIN',   lvl: 22, since: '02 avr 2024', av: 'admin', avInit: 'XD' },
+  { user: '@mlachance', email: 'marie@cyberlearn.fr',   role: 'mentor',  roleLabel: 'MENTOR',  lvl: 18, since: '14 jun 2024', av: 'gold',  avInit: 'ML' },
   { user: '@nbouchard', email: 'noemie.b@gmail.com',     role: 'student', roleLabel: 'STUDENT', lvl: 14, since: '21 sep 2024', av: 'blue',  avInit: 'NB' },
   { user: '@pdupont',   email: 'p.dupont@outlook.fr',    role: 'student', roleLabel: 'STUDENT', lvl: 11, since: '03 nov 2024', av: 'turq',  avInit: 'PD' },
   { user: '@kazima',    email: 'kazima@protonmail.com',  role: 'student', roleLabel: 'STUDENT', lvl:  8, since: '18 fév 2026', av: 'blue',  avInit: 'KA' },

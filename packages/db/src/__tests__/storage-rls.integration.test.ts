@@ -1,8 +1,9 @@
 /**
  * Storage RLS Integration Tests - PR 1.2
  *
- * Verifies that the certificates bucket is unreachable by anon/authenticated
- * clients and remains accessible to the service_role backend.
+ * Verifies that the private certificates, avatars and lesson-covers buckets are
+ * unreachable by anon/authenticated clients and remain accessible to the
+ * service_role backend.
  *
  * Requires: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
  *           SUPABASE_SERVICE_ROLE_KEY (skips silently if absent).
@@ -17,9 +18,11 @@ import { randomUUID } from "node:crypto";
 const TEST_USER_EMAIL = "storage-rls-test@test.cyberlearn.internal";
 const TEST_PASSWORD = "TestPassword123!";
 
-// Sentinel file uploaded by service_role; all non-service_role reads must fail.
+// Sentinel files uploaded by service_role; all non-service_role reads must fail.
 // Random suffix prevents collisions across parallel runs.
 const SENTINEL_KEY = `__sentinel/${randomUUID()}.pdf`;
+const AVATAR_SENTINEL_KEY = `__sentinel/${randomUUID()}.png`;
+const COVER_SENTINEL_KEY = `__sentinel/${randomUUID()}.png`;
 
 describe("Storage RLS - certificates bucket (integration)", () => {
   let supabaseUrl: string;
@@ -78,12 +81,36 @@ describe("Storage RLS - certificates bucket (integration)", () => {
       .upload(SENTINEL_KEY, blob, { contentType: "application/pdf" });
     if (uploadError) throw new Error(`Sentinel upload failed: ${uploadError.message}`);
 
+    // Avatars sentinel: a minimal PNG (8-byte signature) uploaded via service_role.
+    const pngBlob = new Blob(
+      [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], // PNG signature
+      { type: "image/png" },
+    );
+    const { error: avatarUploadError } = await adminClient.storage
+      .from("avatars")
+      .upload(AVATAR_SENTINEL_KEY, pngBlob, { contentType: "image/png" });
+    if (avatarUploadError)
+      throw new Error(`Avatar sentinel upload failed: ${avatarUploadError.message}`);
+
+    // Lesson-covers sentinel: a minimal PNG uploaded via service_role.
+    const coverBlob = new Blob(
+      [new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], // PNG signature
+      { type: "image/png" },
+    );
+    const { error: coverUploadError } = await adminClient.storage
+      .from("lesson-covers")
+      .upload(COVER_SENTINEL_KEY, coverBlob, { contentType: "image/png" });
+    if (coverUploadError)
+      throw new Error(`Lesson cover sentinel upload failed: ${coverUploadError.message}`);
+
     configured = true;
   });
 
   afterAll(async () => {
     if (!configured) return;
     await adminClient.storage.from("certificates").remove([SENTINEL_KEY]);
+    await adminClient.storage.from("avatars").remove([AVATAR_SENTINEL_KEY]);
+    await adminClient.storage.from("lesson-covers").remove([COVER_SENTINEL_KEY]);
     await adminClient.from("users").delete().eq("id", testUserId);
     await adminClient.auth.admin.deleteUser(testUserId);
   });
@@ -134,5 +161,78 @@ describe("Storage RLS - certificates bucket (integration)", () => {
     expect(error).toBeNull();
     // The sentinel file must be visible to service_role
     expect(data?.find((f) => f.name.endsWith(".pdf"))).toBeDefined();
+  });
+
+  // ── avatars bucket (private, RESTRICTIVE policies) ──────────────────────────
+  // Proves the new avatars policies block clients AND do not regress the
+  // certificates lockdown (a permissive avatars policy would have unioned in and
+  // re-opened certificates - see the avatars storage RLS migration).
+
+  it("anon client cannot download from avatars bucket", async () => {
+    if (!configured) return;
+    const { data, error } = await anonClient.storage.from("avatars").download(AVATAR_SENTINEL_KEY);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it("authenticated client cannot list the avatars bucket", async () => {
+    if (!configured) return;
+    const authClient = await signInAsTestUser();
+    const { data } = await authClient.storage.from("avatars").list("__sentinel");
+    const files = data ?? [];
+    expect(files.find((f) => f.name.endsWith(".png"))).toBeUndefined();
+  });
+
+  it("authenticated client cannot download from avatars bucket", async () => {
+    if (!configured) return;
+    const authClient = await signInAsTestUser();
+    const { data, error } = await authClient.storage.from("avatars").download(AVATAR_SENTINEL_KEY);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it("service_role bypasses RLS and can list the avatars bucket", async () => {
+    if (!configured) return;
+    const { data, error } = await adminClient.storage.from("avatars").list("__sentinel");
+    expect(error).toBeNull();
+    expect(data?.find((f) => f.name.endsWith(".png"))).toBeDefined();
+  });
+
+  // ── lesson-covers bucket (private, RESTRICTIVE policies) ────────────────────
+  // Same RESTRICTIVE approach as avatars: blocks anon/authenticated without
+  // regressing the certificates or avatars lockdown.
+
+  it("anon client cannot download from lesson-covers bucket", async () => {
+    if (!configured) return;
+    const { data, error } = await anonClient.storage
+      .from("lesson-covers")
+      .download(COVER_SENTINEL_KEY);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it("authenticated client cannot list the lesson-covers bucket", async () => {
+    if (!configured) return;
+    const authClient = await signInAsTestUser();
+    const { data } = await authClient.storage.from("lesson-covers").list("__sentinel");
+    const files = data ?? [];
+    expect(files.find((f) => f.name.endsWith(".png"))).toBeUndefined();
+  });
+
+  it("authenticated client cannot download from lesson-covers bucket", async () => {
+    if (!configured) return;
+    const authClient = await signInAsTestUser();
+    const { data, error } = await authClient.storage
+      .from("lesson-covers")
+      .download(COVER_SENTINEL_KEY);
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it("service_role bypasses RLS and can list the lesson-covers bucket", async () => {
+    if (!configured) return;
+    const { data, error } = await adminClient.storage.from("lesson-covers").list("__sentinel");
+    expect(error).toBeNull();
+    expect(data?.find((f) => f.name.endsWith(".png"))).toBeDefined();
   });
 });

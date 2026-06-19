@@ -9,6 +9,8 @@ export const userRepository = {
         xpTotal: true,
         level: true,
         streakDays: true,
+        longestStreak: true,
+        streakFreezes: true,
         lastActiveAt: true,
       },
     });

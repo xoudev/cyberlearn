@@ -28,6 +28,10 @@ export type {
   DrawableQuestion,
   ScorableQuestion,
 } from "./repositories/quiz.repository.js";
+export { questRepository } from "./repositories/quest.repository.js";
+export type { QuestWithProgress } from "./repositories/quest.repository.js";
+export { streakRepository } from "./repositories/streak.repository.js";
+export type { StreakOverview } from "./repositories/streak.repository.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
 export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
@@ -64,6 +68,8 @@ export type {
   Quiz,
   QuizQuestion,
   QuizAttempt,
+  Quest,
+  UserQuestProgress,
 } from "@prisma/client";
 
 export {
@@ -79,4 +85,5 @@ export {
   TicketTheme,
   TicketStatus,
   ChallengeType,
+  QuestType,
 } from "@prisma/client";

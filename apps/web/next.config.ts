@@ -38,6 +38,13 @@ const nextConfig: NextConfig = {
         pathname: "/storage/v1/object/public/**",
       },
       {
+        // Signed URLs for private buckets (e.g. uploaded avatars). Time-limited
+        // tokens; access is still gated by service_role-issued signatures.
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/sign/**",
+      },
+      {
         protocol: "https",
         hostname: "avatars.githubusercontent.com",
       },

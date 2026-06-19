@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import { computeLevel } from "@cyberlearn/lib";
 import { userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { StreakPanel } from "@/components/streak-panel";
 import { ProfileContent } from "./_components/profile-content";
 import type {
   SerializedBadge,
@@ -222,6 +224,11 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
 
   if (!user) notFound();
 
+  // Resolve a stored "__upload:" marker to a short-lived signed URL before it
+  // reaches the avatar component. Built-in paths, "__glyph:" markers and null
+  // pass through unchanged.
+  const resolvedAvatarUrl = await resolveAvatarSrc(user.avatarUrl ?? null);
+
   const { level, current: xpCurrent, needed: xpNeeded } = computeLevel(user.xpTotal);
   const xpPct = xpNeeded > 0 ? Math.min((xpCurrent / xpNeeded) * 100, 100) : 100;
   const xpRemaining = xpNeeded - xpCurrent;
@@ -333,7 +340,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         {/* Left: avatar + identity */}
         <div style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
           <HexAvatar
-            avatarUrl={user.avatarUrl ?? null}
+            avatarUrl={resolvedAvatarUrl}
             displayName={user.displayName}
             rarity={avatarRarity}
           />
@@ -1017,6 +1024,23 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             <b style={{ color: "#0AFFD4" }}>vérifié{certsCount > 1 ? "s" : ""}</b>
           </sub>
         </StatCell>
+      </div>
+
+      {/* ── Série quotidienne ───────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 56 }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "#6F6B99",
+            margin: "0 0 16px",
+          }}
+        >
+          Série quotidienne
+        </h2>
+        <StreakPanel userId={authUser.id} />
       </div>
 
       {/* ── Interactive tabs + content ──────────────────────────────────────── */}
