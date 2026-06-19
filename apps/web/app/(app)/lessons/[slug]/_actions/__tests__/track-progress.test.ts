@@ -44,6 +44,10 @@ vi.mock("@cyberlearn/db", () => ({
 
 import { completeLesson } from "../track-progress";
 
+// Mutable XP the tx mock reads/writes so creditXp's read-modify-write sees the
+// evolving total (lesson credit 90→110, then badge credit 110→160).
+let xpState = 90;
+
 const XP_BADGE = {
   id: "b1",
   name: "Hacktiviste",
@@ -78,8 +82,16 @@ beforeEach(() => {
   });
   m.transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(m.tx));
   m.tx.userBadge.createManyAndReturn.mockResolvedValue([{ badgeId: "b1" }]);
-  // Read inside the tx happens AFTER the lesson-XP update (90 + 20 = 110).
-  m.tx.user.findUniqueOrThrow.mockResolvedValue({ xpTotal: 110 });
+  // creditXp reads/writes the user's XP inside the tx; track it statefully so the
+  // lesson credit (90→110) and the badge credit (110→160) chain correctly.
+  xpState = 90;
+  m.tx.user.findUniqueOrThrow.mockImplementation(() =>
+    Promise.resolve({ xpTotal: xpState, level: computeLevel(xpState).level }),
+  );
+  m.tx.user.update.mockImplementation((args: { data: { xpTotal?: number } }) => {
+    if (typeof args.data.xpTotal === "number") xpState = args.data.xpTotal;
+    return Promise.resolve({});
+  });
 });
 
 describe("completeLesson - badge xpReward crediting (interactive transaction)", () => {
@@ -90,11 +102,12 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
     expect(result.xpGained).toBe(70);
     expect(result.newBadges).toEqual([{ name: "Hacktiviste", rarity: "EPIC", xpReward: 50 }]);
 
-    // First user.update: lesson XP (absolute set). Second: badge credit.
-    const updates = m.tx.user.update.mock.calls.map(
-      (c) => (c[0] as { data: { xpTotal: number } }).data.xpTotal,
-    );
-    expect(updates).toEqual([110, 160]);
+    // creditXp writes lesson XP (110) then badge XP (160); the streak-only
+    // update carries no xpTotal and is filtered out.
+    const xpUpdates = m.tx.user.update.mock.calls
+      .map((c) => (c[0] as { data: { xpTotal?: number } }).data.xpTotal)
+      .filter((x): x is number => typeof x === "number");
+    expect(xpUpdates).toEqual([110, 160]);
 
     // Final level derives from the credited total.
     expect(result.newLevel).toBe(computeLevel(160).level);
@@ -129,8 +142,11 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
 
     expect(result.xpGained).toBe(20); // lesson XP only
     expect(result.newBadges).toHaveLength(0);
-    // Single user.update: the lesson one. No badge credit.
-    expect(m.tx.user.update).toHaveBeenCalledTimes(1);
+    // Only the lesson XP is credited; no badge credit when the row lost the race.
+    const xpUpdates = m.tx.user.update.mock.calls
+      .map((c) => (c[0] as { data: { xpTotal?: number } }).data.xpTotal)
+      .filter((x): x is number => typeof x === "number");
+    expect(xpUpdates).toEqual([110]);
   });
 
   it("does not re-credit anything on an already-completed lesson", async () => {
