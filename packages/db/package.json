@@ -29,6 +29,7 @@
     "db:reset-content": "tsx prisma/reset-content.ts",
     "db:seed-paths": "tsx prisma/seed-paths.ts",
     "db:seed-quizzes": "tsx prisma/seed-quizzes.ts",
+    "db:seed-cosmetics": "tsx prisma/seed-cosmetics.ts",
     "db:backfill-badge-xp": "tsx prisma/backfill-badge-xp.ts",
     "db:backfill-daily-streaks": "tsx prisma/backfill-daily-streaks.ts",
     "db:studio": "prisma studio",
