@@ -15,14 +15,14 @@ Voilà le dernier exercice du parcours. On ne va pas apprendre une nouvelle comm
 C'est exactement le travail d'un admin système. Mettre en service, ce n'est pas taper une commande magique. C'est une suite de petites décisions, chacune renvoyant à une brique du parcours. On les prend dans l'ordre, parce que l'ordre compte.
 
 <Diagram caption="Les étapes de mise en service">
-flowchart
-[Système nu] --> [Préparer : maj + utilisateur de service]
-[Préparer : maj + utilisateur de service] --> [Installer le serveur web]
-[Installer le serveur web] --> [Pare-feu : tout fermer sauf SSH et web]
-[Pare-feu : tout fermer sauf SSH et web] --> [Durcir SSH]
-[Durcir SSH] --> [Planifier une sauvegarde]
-[Planifier une sauvegarde] --> [Vérifier les journaux]
-[Vérifier les journaux] --> [Serveur en service]
+  flowchart TD
+    A["Système nu"] --> B["Préparer : maj + utilisateur de service"]
+    B --> C["Installer le serveur web"]
+    C --> D["Pare-feu : tout fermer sauf SSH et web"]
+    D --> E["Durcir SSH"]
+    E --> F["Planifier une sauvegarde"]
+    F --> G["Vérifier les journaux"]
+    G --> H["Serveur en service"]
 </Diagram>
 
 ## étape 1 : préparer le terrain

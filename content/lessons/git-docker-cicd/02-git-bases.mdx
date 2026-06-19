@@ -17,7 +17,9 @@ Ce cycle a trois zones à garder en tête. Il y a ton répertoire de travail, l�
 Voici le schéma à se mettre en tête une bonne fois.
 
 <Diagram>
-répertoire de travail  --git add-->  zone de préparation  --git commit-->  dépôt (historique)
+  flowchart LR
+    A["répertoire de travail"] -->|"git add"| B["zone de préparation"]
+    B -->|"git commit"| C["dépôt (historique)"]
 </Diagram>
 
 On va dérouler chaque étape avec les commandes que tu taperas vraiment.

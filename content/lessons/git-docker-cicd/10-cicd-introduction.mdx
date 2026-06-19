@@ -63,13 +63,13 @@ Tout ça s'organise dans ce qu'on appelle un pipeline : une suite d'étapes (on 
 Chaque étape attend que la précédente réussisse. Si les tests échouent, on n'enchaîne pas sur le build ni le déploiement. Le pipeline s'arrête et te signale où ça a cassé. C'est exactement le comportement qu'on veut : du code qui rate ses tests ne doit jamais arriver en production.
 
 <Diagram caption="Un pipeline CI/CD typique, déclenché par un push">
-flowchart
-[Push ou pull request] --> [Installer les dépendances]
-[Installer les dépendances] --> [Lint et vérification des types]
-[Lint et vérification des types] --> [Lancer les tests]
-[Lancer les tests] --> [Construire le projet]
-[Construire le projet] --> [Déployer si tout est vert]
-[Lancer les tests] --> [Stop et alerte si un test échoue]
+  flowchart TD
+    A["Push ou pull request"] --> B["Installer les dépendances"]
+    B --> C["Lint et vérification des types"]
+    C --> D["Lancer les tests"]
+    D --> E["Construire le projet"]
+    E --> F["Déployer si tout est vert"]
+    D --> G["Stop et alerte si un test échoue"]
 </Diagram>
 
 Ce qui rend le pipeline fiable, c'est qu'il est décrit dans un fichier versionné, dans le dépôt, à côté du code. La recette n'est pas dans la tête de la personne qui déploie d'habitude. Elle est écrite, partagée, et tourne pareil pour tout le monde. Si quelqu'un quitte l'équipe, le pipeline continue de tourner sans lui.

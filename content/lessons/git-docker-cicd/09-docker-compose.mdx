@@ -66,10 +66,10 @@ Remarque dans `ps` que `db` n'expose aucun port vers l'extérieur (`5432/tcp` sa
 Quand tu lances `up`, Compose crée automatiquement un réseau privé et y branche tous tes services. Sur ce réseau, chaque conteneur est joignable par le **nom de son service**. Le service `web` atteint la base en se connectant à l'hôte `db`. Compose fait la résolution de nom pour toi.
 
 <Diagram caption="web et db sur le réseau privé créé par Compose ; web atteint la base par le nom de service db">
-flowchart LR
-  [Navigateur] --> [web :3000]
-  [web :3000] -->|db:5432| [db Postgres]
-  [reseau app_default englobe web et db]
+  flowchart LR
+    nav["Navigateur"] --> web["web :3000"]
+    web -->|"db:5432"| db["db Postgres"]
+    net["reseau app_default englobe web et db"]
 </Diagram>
 
 Voici l'erreur classique. Beaucoup de gens écrivent l'URL de la base avec `localhost`, par réflexe : `postgres://app:secret@localhost:5432/appdb`. Ça échoue. À l'intérieur d'un conteneur, `localhost` désigne **le conteneur lui-même**, pas la machine ni les autres conteneurs. Le service `web` cherche alors une base de données dans son propre conteneur, n'en trouve pas, et plante avec une erreur de connexion refusée.

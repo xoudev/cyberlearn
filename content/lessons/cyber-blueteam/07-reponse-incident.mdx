@@ -20,12 +20,12 @@ La réponse à incident s'organise en six temps qui s'enchaînent, mais qui ne s
 
 <Diagram caption="Le cycle de réponse à incident">
 flowchart LR
-  [Préparation] --> [Identification]
-  [Identification] --> [Confinement]
-  [Confinement] --> [Éradication]
-  [Éradication] --> [Récupération]
-  [Récupération] --> [Lecons apprises]
-  [Lecons apprises] --> [Préparation]
+  A["Préparation"] --> B["Identification"]
+  B --> C["Confinement"]
+  C --> D["Éradication"]
+  D --> E["Récupération"]
+  E --> F["Lecons apprises"]
+  F --> A
 </Diagram>
 
 <Callout type="info">

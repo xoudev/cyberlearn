@@ -61,12 +61,12 @@ D'abord le client envoie un SYN. C'est une demande d'ouverture : « je veux éta
 Pourquoi trois messages et pas un seul ? Parce qu'il faut que chacun des deux côtés soit sûr que l'autre l'entend et est prêt. Un seul message ne prouverait rien dans les deux sens. Les trois temps confirment que le canal fonctionne dans les deux directions et que les deux machines partent du même point. C'est le « allô » du téléphone, en plus rigoureux.
 
 <Diagram caption="La poignée de main TCP en trois temps">
-flowchart LR
-  [Client : SYN] --> [Serveur reçoit]
-  [Serveur reçoit] --> [Serveur : SYN-ACK]
-  [Serveur : SYN-ACK] --> [Client reçoit]
-  [Client reçoit] --> [Client : ACK]
-  [Client : ACK] --> [Connexion ouverte]
+  flowchart LR
+    A["Client : SYN"] --> B["Serveur reçoit"]
+    B --> C["Serveur : SYN-ACK"]
+    C --> D["Client reçoit"]
+    D --> E["Client : ACK"]
+    E --> F["Connexion ouverte"]
 </Diagram>
 
 ## UDP, rapide et sans garantie

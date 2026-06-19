@@ -55,16 +55,17 @@ Si quelqu'un te dit « le site a déchiffré mon mot de passe » ou « on peut d
 Voici le mécanisme complet, sans magie. À l'inscription, le site hache ton mot de passe et range uniquement l'empreinte dans sa base. Le mot de passe lui-même est jeté, il ne reste nulle part. À la connexion, le site hache ce que tu viens de taper et compare cette nouvelle empreinte à celle qu'il avait stockée. Si les deux correspondent, c'est que tu as tapé le bon mot de passe.
 
 <Diagram>
-[Inscription] --> [Tu choisis un mot de passe]
-[Tu choisis un mot de passe] --> [Le site calcule l'empreinte]
-[Le site calcule l'empreinte] --> [Stockage de l'empreinte seule]
-[Stockage de l'empreinte seule] --> [Le mot de passe en clair est jete]
+  flowchart TD
+    A["Inscription"] --> B["Tu choisis un mot de passe"]
+    B --> C["Le site calcule l'empreinte"]
+    C --> D["Stockage de l'empreinte seule"]
+    D --> E["Le mot de passe en clair est jete"]
 
-[Connexion] --> [Tu retapes ton mot de passe]
-[Tu retapes ton mot de passe] --> [Le site recalcule l'empreinte]
-[Le site recalcule l'empreinte] --> [Comparaison avec l'empreinte stockee]
-[Comparaison avec l'empreinte stockee] --> [Identiques : acces autorise]
-[Comparaison avec l'empreinte stockee] --> [Differentes : acces refuse]
+    F["Connexion"] --> G["Tu retapes ton mot de passe"]
+    G --> H["Le site recalcule l'empreinte"]
+    H --> I["Comparaison avec l'empreinte stockee"]
+    I --> J["Identiques : acces autorise"]
+    I --> K["Differentes : acces refuse"]
 </Diagram>
 
 La conséquence est intéressante. Si la base de données du site fuite, l'attaquant récupère des empreintes, pas des mots de passe. Et comme le hachage est à sens unique, il ne peut pas les rouvrir directement. C'est exactement pour cette raison qu'on hache. Mais attention, « pas directement » ne veut pas dire « jamais », et c'est là que la suite devient importante.

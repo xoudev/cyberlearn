@@ -21,11 +21,11 @@ Une image est construite par une série d'instructions. Chaque instruction qui m
 Chaque couche ne contient que la différence par rapport à la couche du dessous. Si une instruction ajoute un fichier de 5 Mo, la couche pèse environ 5 Mo. Si une autre ne fait que créer un dossier vide, sa couche est minuscule. L'image finale, c'est la somme de toutes ces différences.
 
 <Diagram caption="Empilement des couches d'une image, de la base vers le sommet">
-flowchart BT
-  [Couche base: Linux minimal 80 Mo] --> [Couche apt: paquets installes 40 Mo]
-  [Couche apt: paquets installes 40 Mo] --> [Couche copie: code applicatif 5 Mo]
-  [Couche copie: code applicatif 5 Mo] --> [Couche config: variables et port]
-  [Couche config: variables et port] --> [Image finale en lecture seule]
+  flowchart BT
+    A["Couche base: Linux minimal 80 Mo"] --> B["Couche apt: paquets installes 40 Mo"]
+    B --> C["Couche copie: code applicatif 5 Mo"]
+    C --> D["Couche config: variables et port"]
+    D --> E["Image finale en lecture seule"]
 </Diagram>
 
 Le point qui change tout : les couches sont partagées entre images. Si tu as dix images basées sur la même image de départ, la couche de base n'est stockée qu'une seule fois sur ton disque. Les dix images y pointent. Docker ne duplique rien.

@@ -83,7 +83,11 @@ Pourquoi est-ce que ça fonctionne sur tout le monde, même sur des gens prudent
 Une attaque sérieuse ne se joue pas en un clic. Elle se déroule par étapes, parfois sur des semaines. Voir cette suite aide à comprendre où on peut l'arrêter.
 
 <Diagram>
-Reconnaissance -> Accès initial -> Escalade de privilèges -> Persistance -> Exfiltration
+  flowchart LR
+    A["Reconnaissance"] --> B["Accès initial"]
+    B --> C["Escalade de privilèges"]
+    C --> D["Persistance"]
+    D --> E["Exfiltration"]
 </Diagram>
 
 La reconnaissance, c'est la collecte d'informations avant de frapper. L'attaquant regarde le site de l'entreprise, les profils des employés sur les réseaux, les adresses mail, l'organigramme. Il prépare un message crédible et choisit sa cible.

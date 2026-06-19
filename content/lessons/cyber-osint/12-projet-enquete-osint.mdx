@@ -59,16 +59,14 @@ Notez chaque résultat dans votre journal de collecte, même les recherches qui 
 
 La collecte produit des fragments épars. Le recoupement les transforme en constats. On relie les éléments entre eux, on confirme chaque point par au moins une deuxième source, et on jette ce qui ne tient pas.
 
-<Diagram type="flowchart">
-{`
-flowchart TD
-  A[Pseudo trouve sur un forum] --> D[Recoupement]
-  B[Meme pseudo sur un reseau social] --> D
-  C[Photo de profil identique] --> D
-  D --> E{Deux sources concordent ?}
-  E -->|Oui| F[Constat retenu, confiance haute]
-  E -->|Non| G[Fausse piste ecartee]
-`}
+<Diagram caption="Recouper les sources avant de conclure">
+  flowchart TD
+    A["Pseudo trouve sur un forum"] --> D["Recoupement"]
+    B["Meme pseudo sur un reseau social"] --> D
+    C["Photo de profil identique"] --> D
+    D --> E["Deux sources concordent ?"]
+    E -->|"Oui"| F["Constat retenu, confiance haute"]
+    E -->|"Non"| G["Fausse piste ecartee"]
 </Diagram>
 
 Un homonyme, un pseudo réutilisé par quelqu'un d'autre, une photo reprise ailleurs : ces faux positifs guettent. La parade est toujours la même, croiser avant de conclure.

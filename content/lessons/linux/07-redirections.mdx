@@ -27,13 +27,13 @@ Pourquoi séparer stdout et stderr alors que les deux finissent sur l'écran ? P
 Chaque flux porte un numéro : 0 pour stdin, 1 pour stdout, 2 pour stderr. Ces numéros servent dès qu'on veut rediriger précisément l'un ou l'autre.
 
 <Diagram caption="Les trois flux d'une commande">
-flowchart LR
-  [clavier] --> [stdin 0]
-  [stdin 0] --> [commande]
-  [commande] --> [stdout 1]
-  [commande] --> [stderr 2]
-  [stdout 1] --> [ecran resultat]
-  [stderr 2] --> [ecran erreurs]
+  flowchart LR
+    clavier["clavier"] --> stdin["stdin 0"]
+    stdin --> commande["commande"]
+    commande --> stdout["stdout 1"]
+    commande --> stderr["stderr 2"]
+    stdout --> ecranResultat["ecran resultat"]
+    stderr --> ecranErreurs["ecran erreurs"]
 </Diagram>
 
 Rediriger, c'est simplement débrancher un de ces flux de sa destination par défaut pour l'envoyer ailleurs : vers un fichier, vers le néant, ou vers une autre commande.

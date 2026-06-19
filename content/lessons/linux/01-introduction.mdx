@@ -27,9 +27,11 @@ La **ligne de commande**, enfin, c'est la méthode : taper du texte pour piloter
 Une image qui aide : le terminal est le combiné téléphonique, le shell est la personne au bout du fil qui écoute et agit, la ligne de commande est le fait de parler plutôt que d'envoyer des signaux de fumée.
 
 <Diagram title="terminal, shell, commande">
-Vous tapez du texte dans le TERMINAL (la fenetre).
-Le SHELL (bash) lit ce texte, le comprend, lance le bon programme.
-Le programme s'execute et renvoie son resultat affiche dans le terminal.
+  flowchart TD
+    A["Vous tapez du texte dans le TERMINAL (la fenetre)"] --> B["Le SHELL (bash) lit ce texte et le comprend"]
+    B --> C["Le SHELL lance le bon programme"]
+    C --> D["Le programme s'execute et renvoie son resultat"]
+    D --> E["Resultat affiche dans le terminal"]
 </Diagram>
 
 ## pourquoi apprendre la ligne de commande

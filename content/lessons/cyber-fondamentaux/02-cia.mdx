@@ -15,10 +15,11 @@ Quand on débute en sécurité, on a vite l'impression que le domaine part dans 
 Ces trois choses portent un nom. En anglais on parle de Confidentiality, Integrity, Availability, ce qui donne l'acronyme CIA. En français : confidentialité, intégrité, disponibilité. C'est ce qu'on appelle la triade CIA, et c'est le premier modèle mental à installer solidement. Pas parce que c'est joli sur une diapo, mais parce que ça te donne une grille : devant n'importe quelle situation, tu peux te demander lequel de ces trois piliers est menacé. La réponse oriente déjà la défense.
 
 <Diagram caption="La triade CIA : trois propriétés à protéger pour toute information.">
-flowchart
-[Information à protéger] --> [Confidentialité : seuls les autorisés lisent]
-[Information à protéger] --> [Intégrité : la donnée reste exacte et vérifiable]
-[Information à protéger] --> [Disponibilité : accessible quand on en a besoin]
+  flowchart TD
+  info["Information à protéger"]
+  info --> C["Confidentialité : seuls les autorisés lisent"]
+  info --> I["Intégrité : la donnée reste exacte et vérifiable"]
+  info --> A["Disponibilité : accessible quand on en a besoin"]
 </Diagram>
 
 ## confidentialité

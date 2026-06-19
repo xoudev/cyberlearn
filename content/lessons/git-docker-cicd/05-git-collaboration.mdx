@@ -23,7 +23,15 @@ Quand tu commences une nouvelle fonctionnalité ou une correction, tu pars de `m
 Une fois ton travail prêt, tu pousses ta branche sur le serveur (GitHub, GitLab...) et tu ouvres une pull request. Là commence la phase collective : relecture, discussion, tests automatiques. Si tout est bon, on fusionne ta branche dans `main`, et elle disparaît. Tu repars de `main` à jour pour la fonctionnalité suivante.
 
 <Diagram caption="Le cycle d'une fonctionnalité, de la branche au merge">
-[main a jour] --> [git checkout -b feature/login] --> [commits sur ma branche] --> [git push] --> [ouvrir la pull request] --> [revue par un collegue] --> [tests automatiques] --> [merge dans main] --> [supprimer la branche]
+  flowchart LR
+  A["main a jour"] --> B["git checkout -b feature/login"]
+  B --> C["commits sur ma branche"]
+  C --> D["git push"]
+  D --> E["ouvrir la pull request"]
+  E --> F["revue par un collegue"]
+  F --> G["tests automatiques"]
+  G --> H["merge dans main"]
+  H --> I["supprimer la branche"]
 </Diagram>
 
 Le nom de la branche aide tout le monde à comprendre de quoi il s'agit. Des conventions répandues : `feature/...` pour une nouvelle fonctionnalité, `fix/...` pour une correction, `chore/...` pour de la maintenance. Ce n'est pas imposé par Git, c'est juste un accord d'équipe pour s'y retrouver.

@@ -21,13 +21,13 @@ Tout commence à la racine, notée par un simple slash : `/`. Ce n'est pas un do
 Sous la racine, tu trouves un jeu de dossiers standard. Ils portent presque toujours les mêmes noms d'une distribution à l'autre, ce qui veut dire qu'une fois que tu les connais, tu te repères sur n'importe quelle machine Linux.
 
 <Diagram caption="Les principaux dossiers sous la racine">
-flowchart TD
-  Root[/ la racine] --> Home[/home les dossiers des utilisateurs]
-  Root --> Etc[/etc la configuration du système]
-  Root --> Var[/var les données qui changent: logs, mails]
-  Root --> Tmp[/tmp les fichiers temporaires]
-  Root --> Usr[/usr les programmes installés]
-  Home --> User[/home/alice ton dossier perso]
+  flowchart TD
+    Root["/ la racine"] --> Home["/home les dossiers des utilisateurs"]
+    Root --> Etc["/etc la configuration du système"]
+    Root --> Var["/var les données qui changent: logs, mails"]
+    Root --> Tmp["/tmp les fichiers temporaires"]
+    Root --> Usr["/usr les programmes installés"]
+    Home --> User["/home/alice ton dossier perso"]
 </Diagram>
 
 Voici à quoi ils servent vraiment, pas juste leur nom :

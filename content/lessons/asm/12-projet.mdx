@@ -20,10 +20,14 @@ La calculatrice tient sur trois sous-routines : `addition`, `soustraction`, `mul
 
 Le bloc `main` orchestre. Il charge les opérandes avec `mov`, déclenche l'appel avec `call`, et au retour il sait que `rax` contient le résultat sans avoir à le chercher ailleurs. Les libellés, eux, vivent dans la section `.data` : des chaînes déclarées une fois, terminées par un octet nul, qu'on affiche autant de fois qu'on veut.
 
-<Diagram>
-[main prepare les operandes] --> [call addition] --> [resultat dans rax]
-[resultat dans rax] --> [prints libelle] --> [println valeur]
-[println valeur] --> [operation suivante] --> [fin du programme]
+<Diagram caption="Flux principal de la calculatrice : main prépare les opérandes, appelle une sous-routine, puis affiche le résultat avant de passer à l'opération suivante.">
+  flowchart TD
+    A["main prépare les opérandes"] --> B["call addition"]
+    B --> C["résultat dans rax"]
+    C --> D["prints libellé"]
+    D --> E["println valeur"]
+    E --> F["opération suivante"]
+    F --> G["fin du programme"]
 </Diagram>
 
 Cette découpe n'a rien de spécifique à l'assembleur. Des blocs courts, une responsabilité chacun, un flux principal qui les enchaîne : c'est ce qui rend un code lisible dans n'importe quel langage. L'assembleur vous oblige seulement à le faire à la main, sans filet.

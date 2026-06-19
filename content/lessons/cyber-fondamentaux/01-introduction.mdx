@@ -51,11 +51,11 @@ Il y a deux grands rôles dans ce domaine, et le métier les a baptisés par cou
 Quant aux vrais attaquants, ceux qui ne sont pas dans une équipe de test, leurs motivations sont rarement spectaculaires. Inutile de les romantiser. Dans la grande majorité des cas, c'est l'argent : rançongiciels, fraude bancaire, revente de données. Vient ensuite l'espionnage, qu'il soit industriel ou étatique, pour voler des secrets ou surveiller. Il y a aussi l'idéologie, des groupes qui attaquent pour faire passer un message. Et parfois, plus simplement, la curiosité ou le défi technique, surtout chez les débutants. Comprendre la motivation aide à anticiper la cible : un voleur d'argent vise large et automatise, un espion vise précis et reste discret.
 
 <Diagram caption="Le rapport de force entre l'attaquant et le défenseur autour d'un système">
-flowchart LR
-  [Attaquant: cherche une faille] --> [Système exposé]
-  [Système exposé] --> [Defenseur: surveille et corrige]
-  [Defenseur: surveille et corrige] --> [Faille corrigee]
-  [Faille corrigee] --> [Attaquant: cherche une faille]
+  flowchart LR
+  A["Attaquant: cherche une faille"] --> B["Système exposé"]
+  B --> C["Defenseur: surveille et corrige"]
+  C --> D["Faille corrigee"]
+  D --> A
 </Diagram>
 
 Ce schéma boucle volontairement. La sécurité n'est pas un état qu'on atteint une fois pour toutes, c'est un travail qui ne s'arrête jamais. On corrige une faille, l'attaquant en cherche une autre, on surveille à nouveau.

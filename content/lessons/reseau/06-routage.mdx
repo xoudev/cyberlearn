@@ -54,10 +54,10 @@ Personne n'a la carte entière. Chacun connaît seulement la direction du pas su
 
 <Diagram caption="Un paquet routé de relais en relais">
 flowchart LR
-  [Ta machine] --> [Passerelle 192.168.1.1]
-  [Passerelle 192.168.1.1] --> [Routeur opérateur 10.0.0.1]
-  [Routeur opérateur 10.0.0.1] --> [Routeur dorsale 203.0.113.1]
-  [Routeur dorsale 203.0.113.1] --> [Serveur 93.184.216.34]
+  A["Ta machine"] --> B["Passerelle 192.168.1.1"]
+  B --> C["Routeur opérateur 10.0.0.1"]
+  C --> D["Routeur dorsale 203.0.113.1"]
+  D --> E["Serveur 93.184.216.34"]
 </Diagram>
 
 C'est exactement la lettre pour Tokyo. Le facteur de ton quartier ne connaît pas Tokyo. Il sait juste apporter ta lettre au centre de tri régional. Le centre régional la met sur un avion. À l'arrivée, un autre centre prend le relais. Chaque maillon ne voit que le maillon suivant, et pourtant la lettre arrive. Ce découpage est ce qui rend Internet possible : on ne pourrait jamais stocker, dans chaque routeur, l'itinéraire complet vers chacune des milliards de destinations. On stocke juste des directions.

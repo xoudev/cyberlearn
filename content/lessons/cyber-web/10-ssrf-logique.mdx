@@ -33,11 +33,11 @@ https://site.com/preview?target=http://169.254.169.254/latest/meta-data/
 Le serveur, qui ne réfléchit pas, va consciencieusement contacter ces adresses et te renvoyer ce qu'il trouve. Une interface d'administration interne qui n'était jamais censée être exposée, une base Redis sans mot de passe parce qu'elle est "protégée par le réseau", ou pire, l'endpoint de métadonnées cloud dont on parle juste après.
 
 <Diagram caption="Une requête SSRF vers un service interne">
-flowchart LR
-  A[Attaquant] -->|url=http://10.0.0.5/admin| B[Serveur web public]
-  B -->|le serveur fait la requete depuis l-interieur| C[Service interne 10.0.0.5]
-  C -->|reponse| B
-  B -->|renvoie le contenu| A
+  flowchart LR
+    A["Attaquant"] -->|"url=hxxp://10.0.0.5/admin"| B["Serveur web public"]
+    B -->|"le serveur fait la requete depuis l-interieur"| C["Service interne 10.0.0.5"]
+    C -->|"reponse"| B
+    B -->|"renvoie le contenu"| A
 </Diagram>
 
 <Callout type="danger">

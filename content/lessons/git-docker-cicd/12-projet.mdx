@@ -26,16 +26,17 @@ Voici ce qu'on va produire, dans l'ordre :
 Le tout forme une chaîne. Quand elle est en place, ton travail quotidien se résume à coder et à pousser. Le reste se déclenche tout seul.
 
 <Diagram caption="Le pipeline complet, du push au déploiement">
-[Tu codes en local] --> [git push origin main]
-[git push origin main] --> [GitHub recoit le commit]
-[GitHub recoit le commit] --> [GitHub Actions demarre le workflow]
-[GitHub Actions demarre le workflow] --> [Step install: npm ci]
-[Step install: npm ci] --> [Step test: npm test]
-[Step test: npm test] --> [Tests OK ?]
-[Tests OK ?] --> [Non: workflow rouge, build annule]
-[Tests OK ?] --> [Oui: Step build de l image Docker]
-[Oui: Step build de l image Docker] --> [Image prete a etre deployee]
-[Image prete a etre deployee] --> [Deploiement vers un hebergeur]
+  flowchart TD
+    A["Tu codes en local"] --> B["git push origin main"]
+    B --> C["GitHub recoit le commit"]
+    C --> D["GitHub Actions demarre le workflow"]
+    D --> E["Step install: npm ci"]
+    E --> F["Step test: npm test"]
+    F --> G["Tests OK ?"]
+    G -->|"Non"| H["Workflow rouge, build annule"]
+    G -->|"Oui"| I["Step build de l image Docker"]
+    I --> J["Image prete a etre deployee"]
+    J --> K["Deploiement vers un hebergeur"]
 </Diagram>
 
 ## étape 1 : versionner

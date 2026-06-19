@@ -34,25 +34,20 @@ Prenons un exemple complet. Hypothèse : si un attaquant avait établi une persi
 
 Un point qui surprend les débutants : une hypothèse qui ne trouve rien n'est pas un échec. Elle a couvert une zone et confirmé qu'elle est probablement saine. Le but n'est pas de toujours trouver un intrus, c'est de réduire méthodiquement les endroits où il pourrait se cacher.
 
-<Diagram
-  type="flowchart"
-  title="Le cycle d'une hypothèse de chasse"
-  nodes={[
-    { id: "h", label: "Hypothese : si attaquant fait X" },
-    { id: "t", label: "Trace attendue : Y dans les donnees" },
-    { id: "s", label: "Recherche : requete sur les logs" },
-    { id: "r", label: "Resultat" },
-    { id: "neg", label: "Rien : zone reduite, on note" },
-    { id: "pos", label: "Trace : investigation + nouvelle regle" }
-  ]}
-  edges={[
-    { from: "h", to: "t" },
-    { from: "t", to: "s" },
-    { from: "s", to: "r" },
-    { from: "r", to: "neg" },
-    { from: "r", to: "pos" }
-  ]}
-/>
+<Diagram caption="Le cycle d'une hypothèse de chasse">
+  flowchart TD
+    h["Hypothese : si attaquant fait X"]
+    t["Trace attendue : Y dans les donnees"]
+    s["Recherche : requete sur les logs"]
+    r["Resultat"]
+    neg["Rien : zone reduite, on note"]
+    pos["Trace : investigation + nouvelle regle"]
+    h --> t
+    t --> s
+    s --> r
+    r --> neg
+    r --> pos
+</Diagram>
 
 ## les IOC et leurs limites
 
