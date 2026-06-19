@@ -1,4 +1,5 @@
 import { getMasteredCategories } from "../placement/scoring.js";
+import { computeLevel } from "../xp.js";
 
 // Minimal structural type - callers pass Prisma Badge objects which satisfy this shape.
 // Avoids a circular dep: @cyberlearn/lib must not import @cyberlearn/db.
@@ -36,6 +37,8 @@ export interface BadgeProgress {
  */
 export interface BadgeCriterionStats {
   xpTotal: number;
+  /** Level derived from xpTotal (drives LEVEL). */
+  level: number;
   streakDays: number;
   totalLessonsCompleted: number;
   /** Completed lessons count per category key (e.g. "DEV", "CYBERSEC", "NETWORK"). */
@@ -52,6 +55,8 @@ export interface BadgeCriterionStats {
   perfectQuizCount: number;
   /** Categories mastered on the placement test - 0 when not taken (drives CUSTOM). */
   placementMasteredCount: number;
+  /** refCodes of every badge the user has earned (drives BADGE_EARNED). */
+  earnedBadgeRefCodes: ReadonlySet<string>;
 }
 
 /** Raw per-user facts, as returned by `badgeRepository.findCriterionFacts`. */
@@ -60,6 +65,8 @@ export interface BadgeCriterionFacts {
   completedPathIds: string[];
   totalCertificates: number;
   perfectQuizCount: number;
+  /** refCodes of badges already earned (drives BADGE_EARNED unlocks). */
+  earnedBadgeRefCodes: string[];
   placementScores: { devScore: number; cybersecScore: number; networkScore: number } | null;
 }
 
@@ -77,6 +84,7 @@ export function buildBadgeCriterionStats(
     : 0;
   return {
     xpTotal: user.xpTotal,
+    level: computeLevel(user.xpTotal).level,
     streakDays: user.streakDays,
     totalLessonsCompleted: facts.completedLessons.length,
     categoryLessonCounts,
@@ -86,6 +94,7 @@ export function buildBadgeCriterionStats(
     totalCertificates: facts.totalCertificates,
     perfectQuizCount: facts.perfectQuizCount,
     placementMasteredCount,
+    earnedBadgeRefCodes: new Set(facts.earnedBadgeRefCodes),
   };
 }
 
@@ -219,6 +228,18 @@ export function computeBadgeProgress(
       const event = strOrNull(criterionData, "event");
       if (event !== PLACEMENT_TEST_PASSED_EVENT) return null;
       return { done: stats.placementMasteredCount > 0 ? 1 : 0, total: 1 };
+    }
+
+    case "LEVEL": {
+      const level = numOrNull(criterionData, "level");
+      if (level === null || level <= 0) return null;
+      return { done: Math.min(stats.level, level), total: level };
+    }
+
+    case "BADGE_EARNED": {
+      const refCode = strOrNull(criterionData, "badgeRefCode");
+      if (!refCode) return null;
+      return { done: stats.earnedBadgeRefCodes.has(refCode) ? 1 : 0, total: 1 };
     }
 
     default:
