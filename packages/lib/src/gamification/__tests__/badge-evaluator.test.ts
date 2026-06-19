@@ -26,6 +26,7 @@ function makeBadge(
 
 const BASE_STATS: BadgeCriterionStats = {
   xpTotal: 0,
+  level: 1,
   streakDays: 0,
   totalLessonsCompleted: 0,
   categoryLessonCounts: {},
@@ -35,6 +36,7 @@ const BASE_STATS: BadgeCriterionStats = {
   totalCertificates: 0,
   perfectQuizCount: 0,
   placementMasteredCount: 0,
+  earnedBadgeRefCodes: new Set(),
 };
 
 // ── buildBadgeCriterionStats ──────────────────────────────────────────────────
@@ -51,6 +53,7 @@ describe("buildBadgeCriterionStats", () => {
         completedPathIds: ["p1", "p2"],
         totalCertificates: 1,
         perfectQuizCount: 2,
+        earnedBadgeRefCodes: ["CL-BDG-001"],
         placementScores: null,
       },
       { xpTotal: 250, streakDays: 4 },
@@ -66,6 +69,8 @@ describe("buildBadgeCriterionStats", () => {
     expect(stats.totalCertificates).toBe(1);
     expect(stats.perfectQuizCount).toBe(2);
     expect(stats.placementMasteredCount).toBe(0);
+    expect(stats.level).toBe(2); // 250 XP → level 2
+    expect(stats.earnedBadgeRefCodes.has("CL-BDG-001")).toBe(true);
   });
 
   it("derives placementMasteredCount from scores using the mastery threshold (70)", () => {
@@ -75,6 +80,7 @@ describe("buildBadgeCriterionStats", () => {
         completedPathIds: [],
         totalCertificates: 0,
         perfectQuizCount: 0,
+        earnedBadgeRefCodes: [],
         placementScores: { devScore: 80, cybersecScore: 60, networkScore: 70 },
       },
       { xpTotal: 0, streakDays: 0 },
@@ -464,6 +470,43 @@ describe("CUSTOM criterion", () => {
     expect(computeBadgeProgress("CUSTOM", { event: "some_future_event" }, stats)).toBeNull();
     expect(computeBadgeProgress("CUSTOM", {}, stats)).toBeNull();
     expect(computeBadgeProgress("CUSTOM", null, stats)).toBeNull();
+  });
+});
+
+// ── LEVEL ─────────────────────────────────────────────────────────────────────
+
+describe("LEVEL criterion", () => {
+  it("tracks progress toward a target level", () => {
+    expect(computeBadgeProgress("LEVEL", { level: 20 }, { ...BASE_STATS, level: 12 })).toEqual({
+      done: 12,
+      total: 20,
+    });
+  });
+  it("unlocks at or above the target level", () => {
+    const badge = makeBadge("lv", "LEVEL", { level: 20 });
+    expect(evaluateBadges([badge], new Set(), { ...BASE_STATS, level: 20 })).toEqual(["lv"]);
+    expect(evaluateBadges([badge], new Set(), { ...BASE_STATS, level: 19 })).toHaveLength(0);
+  });
+  it("is misconfigured when level is missing or <= 0", () => {
+    expect(computeBadgeProgress("LEVEL", {}, BASE_STATS)).toBeNull();
+    expect(computeBadgeProgress("LEVEL", { level: 0 }, BASE_STATS)).toBeNull();
+  });
+});
+
+// ── BADGE_EARNED ───────────────────────────────────────────────────────────────
+
+describe("BADGE_EARNED criterion", () => {
+  it("unlocks when the referenced badge is earned", () => {
+    const stats = { ...BASE_STATS, earnedBadgeRefCodes: new Set(["CL-BDG-007"]) };
+    const badge = makeBadge("be", "BADGE_EARNED", { badgeRefCode: "CL-BDG-007" });
+    expect(evaluateBadges([badge], new Set(), stats)).toEqual(["be"]);
+  });
+  it("stays locked without the badge", () => {
+    const badge = makeBadge("be", "BADGE_EARNED", { badgeRefCode: "CL-BDG-007" });
+    expect(evaluateBadges([badge], new Set(), BASE_STATS)).toHaveLength(0);
+  });
+  it("is misconfigured without a badgeRefCode", () => {
+    expect(computeBadgeProgress("BADGE_EARNED", {}, BASE_STATS)).toBeNull();
   });
 });
 

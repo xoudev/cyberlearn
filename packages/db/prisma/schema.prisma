@@ -29,21 +29,21 @@ enum LeaderboardVisibility {
 }
 
 model User {
-  id           String   @id @db.Uuid // Direct link with Supabase auth.users
-  email        String   @unique
-  username     String?  @unique @db.VarChar(32) // Null until onboarding is complete
-  displayName  String   @db.VarChar(64)
-  avatarUrl    String?
-  bio          String?  @db.VarChar(280)
-  role         UserRole @default(STUDENT)
-  xpTotal      Int      @default(0)
-  level        Int      @default(1)
+  id            String   @id @db.Uuid // Direct link with Supabase auth.users
+  email         String   @unique
+  username      String?  @unique @db.VarChar(32) // Null until onboarding is complete
+  displayName   String   @db.VarChar(64)
+  avatarUrl     String?
+  bio           String?  @db.VarChar(280)
+  role          UserRole @default(STUDENT)
+  xpTotal       Int      @default(0)
+  level         Int      @default(1)
   streakDays    Int      @default(0)
   longestStreak Int      @default(0) // Record streak (all-time best)
   streakFreezes Int      @default(1) // Freeze tokens in reserve (auto-cover one missed day)
   lastActiveAt  DateTime @default(now())
   createdAt     DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt     DateTime @updatedAt
 
   preferences       UserPreferences?
   lessonProgress    UserLessonProgress[]
@@ -65,6 +65,8 @@ model User {
   quizAttempts      QuizAttempt[]
   activityDays      UserActivityDay[]
   questProgress     UserQuestProgress[]
+  cosmetics         UserCosmetic[]
+  cosmeticLoadout   UserCosmeticLoadout?
 
   @@index([username])
   @@index([role])
@@ -365,6 +367,8 @@ enum BadgeCriterionType {
   PERFECT_QUIZ
   CUSTOM
   LESSON_SPECIFIC
+  LEVEL
+  BADGE_EARNED
 }
 
 model Badge {
@@ -398,6 +402,64 @@ model UserBadge {
   @@unique([userId, badgeId])
   @@index([userId])
   @@map("user_badges")
+}
+
+// ============================================================
+// COSMETICS (unlockable, equip-per-slot, merit-only)
+// ============================================================
+
+enum CosmeticType {
+  TERMINAL_THEME
+  HEXAGON_STYLE
+  PROFILE_FRAME
+  ACCENT_COLOR
+}
+
+model Cosmetic {
+  id            String             @id @default(uuid()) @db.Uuid
+  code          String             @unique @db.VarChar(40) // stable key; drives the CSS in the design system
+  type          CosmeticType
+  label         String             @db.VarChar(80)
+  description   String?            @db.VarChar(280)
+  rarity        BadgeRarity        @default(COMMON)
+  criterionType BadgeCriterionType
+  criterionData Json
+  orderIndex    Int                @default(0)
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+
+  unlocks UserCosmetic[]
+
+  @@index([type, isActive])
+  @@map("cosmetics")
+}
+
+model UserCosmetic {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  cosmeticId String   @db.Uuid
+  unlockedAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cosmetic Cosmetic @relation(fields: [cosmeticId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cosmeticId])
+  @@index([userId])
+  @@map("user_cosmetics")
+}
+
+// One row per user: the equipped Cosmetic.code per slot (null = platform default).
+model UserCosmeticLoadout {
+  userId        String   @id @db.Uuid
+  terminalTheme String?  @db.VarChar(40)
+  hexagonStyle  String?  @db.VarChar(40)
+  profileFrame  String?  @db.VarChar(40)
+  accentColor   String?  @db.VarChar(40)
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_cosmetic_loadouts")
 }
 
 // ============================================================
@@ -633,14 +695,14 @@ model Quiz {
 }
 
 model QuizQuestion {
-  id              String   @id @default(uuid()) @db.Uuid
-  quizId          String   @db.Uuid
-  question        String   @db.Text
+  id              String  @id @default(uuid()) @db.Uuid
+  quizId          String  @db.Uuid
+  question        String  @db.Text
   options         Json // Array: [{ id: "a", text: "..." }, ...] - safe to expose to client
-  correctOptionId String   @db.VarChar(10) // SERVER-ONLY - never sent to client; the whole table is RLS-denied
-  explanation     String?  @db.Text // Shown after submission
+  correctOptionId String  @db.VarChar(10) // SERVER-ONLY - never sent to client; the whole table is RLS-denied
+  explanation     String? @db.Text // Shown after submission
   orderIndex      Int
-  isActive        Boolean  @default(true)
+  isActive        Boolean @default(true)
 
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
