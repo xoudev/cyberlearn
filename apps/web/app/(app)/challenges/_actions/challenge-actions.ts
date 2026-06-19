@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma, challengeRepository } from "@cyberlearn/db";
-import { computeLevel, dayKey, registerActivity } from "@cyberlearn/lib";
+import { dayKey, registerActivity } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
 import { recordQuestProgress } from "@/lib/quests/progress";
 import { checkHintReveal } from "@/lib/rate-limit";
+import { creditXp } from "@/lib/xp/credit";
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 
@@ -193,9 +194,6 @@ async function awardChallengeXp(
   if (!user) return;
 
   const now = new Date();
-  const newXpTotal = user.xpTotal + xpReward;
-  const { level: newLevel } = computeLevel(newXpTotal);
-  const leveledUp = newLevel > user.level;
   const streak = registerActivity(
     {
       currentStreak: user.streakDays,
@@ -207,24 +205,22 @@ async function awardChallengeXp(
   ).state;
   const today = new Date(dayKey(now));
 
-  await prisma.$transaction([
-    prisma.user.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
       where: { id: userId },
       data: {
-        xpTotal: newXpTotal,
-        level: newLevel,
         streakDays: streak.currentStreak,
         longestStreak: streak.longestStreak,
         streakFreezes: streak.freezes,
         lastActiveAt: now,
       },
-    }),
-    prisma.userActivityDay.upsert({
+    });
+    await tx.userActivityDay.upsert({
       where: { userId_day: { userId, day: today } },
       create: { userId, day: today, count: 1 },
       update: { count: { increment: 1 } },
-    }),
-    prisma.notification.create({
+    });
+    await tx.notification.create({
       data: {
         userId,
         type: "BADGE_EARNED",
@@ -233,22 +229,10 @@ async function awardChallengeXp(
         actionUrl: "/challenges",
         metadata: { xpReward, challengeId },
       },
-    }),
-    ...(leveledUp
-      ? [
-          prisma.notification.create({
-            data: {
-              userId,
-              type: "LEVEL_UP",
-              title: `Niveau ${String(newLevel)} atteint !`,
-              body: `+${String(xpReward)} XP, tu passes au niveau ${String(newLevel)}.`,
-              actionUrl: "/profile",
-              metadata: { newLevel, xpTotal: newXpTotal },
-            },
-          }),
-        ]
-      : []),
-  ]);
+    });
+    // Single XP source of truth - emits the LEVEL_UP notification when crossed.
+    await creditXp(tx, userId, xpReward, { notifyXp: xpReward, metadata: { challengeId } });
+  });
 
   // Weekly quests: a challenge completion keeps the streak quest moving too.
   await recordQuestProgress(userId, "STREAK_DAYS", now, { setTo: streak.currentStreak });
