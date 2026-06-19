@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Deux machines sont reliées par un câble qui fonctionne parfaitement, mais elles n'arrivent toujours pas à communiquer. Au-delà du support physique, qu'est-ce qu'il leur manque ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un protocole, c'est-à-dire un accord partagé sur la façon d'interpréter les signaux"
+        },
+        {
+          "id": "b",
+          "text": "Un câble plus long, car les données ne passent pas sur une courte distance"
+        },
+        {
+          "id": "c",
+          "text": "Des machines de la même marque, condition pour qu'elles se comprennent"
+        },
+        {
+          "id": "d",
+          "text": "Une connexion sans fil, seule capable de transporter des données"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un réseau combine un support pour transporter les signaux et un protocole, un accord sur la façon de les interpréter. Sans protocole commun, les machines reçoivent du bruit même avec un câble parfait, et cela marche même entre marques différentes."
+    },
+    {
+      "question": "Pendant l'encapsulation, lorsqu'une couche reçoit les données de la couche située au-dessus, que fait-elle de ces données ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle remplace le contenu reçu par son propre contenu"
+        },
+        {
+          "id": "b",
+          "text": "Elle ajoute son propre en-tête autour des données, sans modifier le contenu"
+        },
+        {
+          "id": "c",
+          "text": "Elle supprime l'en-tête posé par la couche précédente"
+        },
+        {
+          "id": "d",
+          "text": "Elle chiffre systématiquement l'intégralité des données"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Chaque couche emballe ce qu'elle reçoit en ajoutant son propre en-tête autour, comme des enveloppes emboîtées, sans toucher au contenu. La désencapsulation fait l'inverse à l'arrivée, couche par couche."
+    },
+    {
+      "question": "Dans le modèle TCP/IP à quatre couches, à quelles couches du modèle OSI correspond la couche Application ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Uniquement la couche application d'OSI"
+        },
+        {
+          "id": "b",
+          "text": "Les couches transport et réseau"
+        },
+        {
+          "id": "c",
+          "text": "Les couches liaison et physique"
+        },
+        {
+          "id": "d",
+          "text": "Les couches application, présentation et session"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "TCP/IP regroupe en une seule couche Application les couches 7 (application), 6 (présentation) et 5 (session) d'OSI. Au milieu, transport et couche Internet coïncident directement avec OSI."
+    },
+    {
+      "question": "Quelle est la différence de comportement entre un commutateur (switch) et un ancien concentrateur (hub) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le commutateur diffuse toujours chaque trame à toutes les machines connectées"
+        },
+        {
+          "id": "b",
+          "text": "Le concentrateur est plus rapide car il filtre intelligemment le trafic"
+        },
+        {
+          "id": "c",
+          "text": "Le commutateur apprend quelle MAC est derrière quel port et n'envoie la trame qu'au bon port"
+        },
+        {
+          "id": "d",
+          "text": "Il n'y a aucune différence de comportement entre les deux"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le hub recopiait chaque trame sur tous les ports. Le commutateur apprend quelle MAC se trouve derrière quel port et n'envoie alors la trame qu'au bon port, ce qui réduit le gaspillage et l'écoute du trafic voisin."
+    },
+    {
+      "question": "Quel risque de sécurité découle directement du fait qu'ARP ne dispose d'aucun mécanisme d'authentification ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'usurpation ARP, où une machine malveillante répond en se faisant passer pour la passerelle pour intercepter le trafic"
+        },
+        {
+          "id": "b",
+          "text": "Le vol de l'adresse IP publique par un site web distant"
+        },
+        {
+          "id": "c",
+          "text": "Le déchiffrement automatique de tout le trafic HTTPS du réseau"
+        },
+        {
+          "id": "d",
+          "text": "La saturation permanente de la table de routage des routeurs d'Internet"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Comme ARP n'authentifie rien, une machine peut répondre à une requête ARP en usurpant l'identité de la passerelle. C'est l'usurpation ARP (ARP spoofing), une technique classique d'interception du trafic local."
+    },
+    {
+      "question": "Parmi ces adresses IPv4, laquelle est une adresse privée (RFC 1918) non routable sur Internet ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "8.8.8.8"
+        },
+        {
+          "id": "b",
+          "text": "203.0.113.55"
+        },
+        {
+          "id": "c",
+          "text": "1.1.1.1"
+        },
+        {
+          "id": "d",
+          "text": "192.168.1.42"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les plages privées sont 10.x, 172.16 à 172.31.x et 192.168.x. 192.168.1.42 en fait partie : elle n'est valable qu'à l'intérieur d'un réseau local et aucun routeur public ne la transporte."
+    },
+    {
+      "question": "À quoi correspond l'adresse 127.0.0.1 quand une machine s'envoie un paquet vers elle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À l'adresse publique attribuée par la box côté Internet"
+        },
+        {
+          "id": "b",
+          "text": "À la boucle locale, c'est-à-dire la machine elle-même"
+        },
+        {
+          "id": "c",
+          "text": "À l'adresse de diffusion (broadcast) du réseau local"
+        },
+        {
+          "id": "d",
+          "text": "À une adresse IPv6 écrite sous forme raccourcie"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "127.0.0.1 est la boucle locale (loopback) : elle désigne la machine elle-même et le paquet fait demi-tour à l'intérieur du système sans toucher la carte réseau, ce qui sert à tester un service en local."
+    },
+    {
+      "question": "Combien d'hôtes utilisables contient un sous-réseau en /26 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "62"
+        },
+        {
+          "id": "b",
+          "text": "64"
+        },
+        {
+          "id": "c",
+          "text": "30"
+        },
+        {
+          "id": "d",
+          "text": "126"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un /26 laisse 6 bits d'hôte (32 moins 26), soit 2 puissance 6 égale 64 adresses. On retranche l'adresse de réseau et l'adresse de diffusion, ce qui donne 64 moins 2 égale 62 hôtes utilisables."
+    },
+    {
+      "question": "Dans le routage saut par saut, que connaît réellement un routeur donné sur le chemin d'un paquet ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le chemin complet du paquet, de la source jusqu'à la destination finale"
+        },
+        {
+          "id": "b",
+          "text": "La liste exhaustive de toutes les machines connectées à Internet"
+        },
+        {
+          "id": "c",
+          "text": "Uniquement le prochain saut vers lequel transmettre le paquet"
+        },
+        {
+          "id": "d",
+          "text": "Rien du tout, il transmet les paquets dans une direction au hasard"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Aucun routeur ne connaît l'itinéraire entier. Chacun consulte sa propre table de routage et sait seulement à quel routeur passer le relais ensuite ; c'est ce qui rend le routage mondial possible sans tout stocker."
+    },
+    {
+      "question": "À quoi sert le TTL (Time To Live) porté par chaque paquet IP ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À mesurer la vitesse de la connexion en mégabits par seconde"
+        },
+        {
+          "id": "b",
+          "text": "À chiffrer le contenu du paquet pendant le transport"
+        },
+        {
+          "id": "c",
+          "text": "À choisir automatiquement la passerelle par défaut"
+        },
+        {
+          "id": "d",
+          "text": "À éviter qu'un paquet tourne en boucle : il décroît à chaque saut et le paquet est jeté à zéro"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le TTL est un compteur de sauts, pas de secondes : il baisse de un à chaque routeur traversé et, à zéro, le paquet est jeté. Cela empêche un paquet de tourner indéfiniment en cas de boucle de routage."
+    },
+    {
+      "question": "Quelle est la séquence correcte des messages de la poignée de main TCP en trois temps ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "ACK, puis SYN, puis SYN-ACK"
+        },
+        {
+          "id": "b",
+          "text": "SYN, puis SYN-ACK, puis ACK"
+        },
+        {
+          "id": "c",
+          "text": "SYN, puis ACK, puis SYN-ACK"
+        },
+        {
+          "id": "d",
+          "text": "SYN-ACK, puis SYN, puis ACK"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le client envoie un SYN, le serveur répond par un SYN-ACK (accusé de réception plus sa propre demande), puis le client renvoie un ACK. Les trois temps confirment que le canal fonctionne dans les deux sens."
+    },
+    {
+      "question": "Pour un appel vocal en direct, pourquoi UDP est-il souvent préféré à TCP ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'UDP chiffre automatiquement la voix échangée"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'UDP garantit qu'absolument rien ne se perd en chemin"
+        },
+        {
+          "id": "c",
+          "text": "Parce que retransmettre un son perdu n'a pas de sens en direct : la vitesse prime sur l'exactitude"
+        },
+        {
+          "id": "d",
+          "text": "Parce que TCP est techniquement incapable de transporter du son"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Dans un appel en direct, un échantillon de son perdu est déjà périmé : le retransmettre n'a aucun intérêt. UDP privilégie la vitesse en renonçant aux garanties, ce qui convient quand le retard coûte plus cher que la perte."
+    },
+    {
+      "question": "Lors d'une résolution DNS, quel serveur détient la réponse officielle associée à un nom de domaine donné ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le serveur racine"
+        },
+        {
+          "id": "b",
+          "text": "Le serveur du TLD (domaine de premier niveau)"
+        },
+        {
+          "id": "c",
+          "text": "Le navigateur de l'utilisateur"
+        },
+        {
+          "id": "d",
+          "text": "Le serveur faisant autorité sur la zone"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La racine indique qui gère le TLD, le TLD indique qui fait autorité sur le domaine, et c'est le serveur faisant autorité qui détient et fournit la réponse officielle pour le nom demandé."
+    },
+    {
+      "question": "Quel type d'enregistrement DNS indique aux autres serveurs où livrer le courrier électronique d'un domaine ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A"
+        },
+        {
+          "id": "b",
+          "text": "MX"
+        },
+        {
+          "id": "c",
+          "text": "CNAME"
+        },
+        {
+          "id": "d",
+          "text": "NS"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "L'enregistrement MX (Mail eXchange) désigne le serveur de courrier qui reçoit les mails du domaine. Le A donne une adresse IPv4, le CNAME crée un alias et le NS désigne les serveurs faisant autorité."
+    },
+    {
+      "question": "Quelle affirmation au sujet du NAT est correcte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le NAT a été créé surtout pour pallier la pénurie d'adresses IPv4, et il n'est pas un pare-feu"
+        },
+        {
+          "id": "b",
+          "text": "Le NAT remplace un pare-feu et applique des règles de sécurité explicites"
+        },
+        {
+          "id": "c",
+          "text": "Le NAT distribue les baux d'adresses aux machines du réseau local"
+        },
+        {
+          "id": "d",
+          "text": "Le NAT empêche toute machine interne d'accéder à Internet"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le NAT existe d'abord pour faire face à la pénurie d'IPv4, en laissant plusieurs machines privées partager une seule adresse publique. Il masque le réseau interne comme effet de bord, mais ce n'est pas un pare-feu : il n'applique pas de règles de sécurité."
+    },
+    {
+      "question": "Tu demandes une page qui n'existe pas sur un serveur qui fonctionne pourtant très bien. Quel code de statut HTTP reçois-tu ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "200 OK"
+        },
+        {
+          "id": "b",
+          "text": "301 Moved Permanently"
+        },
+        {
+          "id": "c",
+          "text": "404 Not Found"
+        },
+        {
+          "id": "d",
+          "text": "500 Internal Server Error"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un 404 signifie que le serveur va bien mais que la ressource demandée n'existe pas chez lui : le problème vient de la requête. Le 5xx serait une erreur du serveur lui-même, le 2xx un succès, le 3xx une redirection."
+    },
+    {
+      "question": "Qu'est-ce que HTTPS apporte par rapport à HTTP simple ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un protocole applicatif entièrement différent de HTTP"
+        },
+        {
+          "id": "b",
+          "text": "Une compression automatique des pages transmises"
+        },
+        {
+          "id": "c",
+          "text": "La garantie que les paquets arrivent dans l'ordre, sans perte"
+        },
+        {
+          "id": "d",
+          "text": "Le protocole HTTP transporté dans un tunnel TLS chiffré, avec vérification de l'identité du serveur par certificat"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "HTTPS glisse une couche TLS entre TCP et HTTP : le même HTTP circule dans un tunnel chiffré, et le serveur prouve son identité par un certificat. L'ordre et la fiabilité des paquets relèvent de TCP, pas du chiffrement."
+    },
+    {
+      "question": "Tu peux pinguer 8.8.8.8 par son adresse, mais ouvrir example.com par son nom échoue. Quel outil cible directement le problème ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "ping vers la passerelle par défaut"
+        },
+        {
+          "id": "b",
+          "text": "dig, pour tester la résolution DNS du nom"
+        },
+        {
+          "id": "c",
+          "text": "ip addr, pour vérifier l'adresse de la carte réseau"
+        },
+        {
+          "id": "d",
+          "text": "traceroute vers la passerelle"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Si le ping par IP passe mais pas par nom, la sortie réseau fonctionne et c'est la résolution de noms qui coince. dig (ou nslookup) interroge le DNS et isole précisément ce problème."
+    },
+    {
+      "question": "Pour diagnostiquer une panne réseau sans perdre de temps, dans quel ordre faut-il tester ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "De l'adresse IP locale vers le service distant, de bas en haut dans les couches"
+        },
+        {
+          "id": "b",
+          "text": "Du service distant vers l'adresse IP locale, de haut en bas"
+        },
+        {
+          "id": "c",
+          "text": "On teste le DNS en premier, car c'est la panne la plus fréquente"
+        },
+        {
+          "id": "d",
+          "text": "On pingue un nom de domaine et on s'arrête là"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "On remonte les couches de bas en haut : adresse IP, puis passerelle, puis sortie Internet, puis DNS, puis service. Chaque test réussi élimine définitivement les causes situées en dessous, ce qui réduit le champ à chaque étape."
+    },
+    {
+      "question": "Que signifie le fait que le protocole HTTP soit sans état ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une seule requête est autorisée par connexion ouverte"
+        },
+        {
+          "id": "b",
+          "text": "HTTP ne peut transporter que du texte, jamais d'images"
+        },
+        {
+          "id": "c",
+          "text": "Le serveur ne garde aucune mémoire d'une requête à la suivante : chaque requête est traitée indépendamment"
+        },
+        {
+          "id": "d",
+          "text": "Les requêtes HTTP ne peuvent jamais contenir de corps"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "HTTP est sans état : le serveur traite une requête, répond, puis oublie tout. Ce sont les cookies et les sessions qui recréent une continuité par-dessus le protocole pour reconnaître l'utilisateur d'une page à l'autre."
+    }
+  ]
+}

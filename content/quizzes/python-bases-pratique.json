@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "En Python, que produit l'expression \"5\" + \"5\" (avec des guillemets autour des deux 5) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le nombre 10"
+        },
+        {
+          "id": "b",
+          "text": "La chaîne \"55\""
+        },
+        {
+          "id": "c",
+          "text": "Une erreur de type"
+        },
+        {
+          "id": "d",
+          "text": "Le nombre 55"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Avec deux chaînes, l'opérateur + colle les textes bout à bout (concaténation), ce qui donne \"55\". Sur deux entiers, 5 + 5 donnerait 10."
+    },
+    {
+      "question": "Quelle affirmation décrit correctement le signe = dans la ligne age = 30 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il attache la valeur 30 au nom age (affectation)"
+        },
+        {
+          "id": "b",
+          "text": "Il teste si age est égal à 30"
+        },
+        {
+          "id": "c",
+          "text": "Il affiche la valeur de age à l'écran"
+        },
+        {
+          "id": "d",
+          "text": "Il déclare que age est obligatoirement un entier"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le simple = est une affectation : il prend la valeur de droite et lui attache le nom de gauche. Ce n'est pas une comparaison, qui utiliserait =="
+    },
+    {
+      "question": "Dans le gestionnaire de tâches du projet final, comment l'ensemble des tâches est-il stocké en mémoire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une seule chaîne de caractères où les titres sont séparés par des virgules"
+        },
+        {
+          "id": "b",
+          "text": "Un tuple figé contenant les titres, qu'on ne peut plus modifier"
+        },
+        {
+          "id": "c",
+          "text": "Un dictionnaire dont les clés sont les titres et les valeurs des booléens"
+        },
+        {
+          "id": "d",
+          "text": "Une liste de dictionnaires, chaque tâche étant un dictionnaire avec les champs titre et fait"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une tâche est un dictionnaire (titre et booléen fait), et toutes les tâches tiennent dans une liste : la liste garde l'ordre et se parcourt à la boucle, tandis que chaque dictionnaire transporte ses propres champs nommés."
+    },
+    {
+      "question": "Avec note = 13, qu'affiche cette structure : if note >= 16: print(\"très bien\") elif note >= 12: print(\"assez bien\") else: print(\"rien\") ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "très bien"
+        },
+        {
+          "id": "b",
+          "text": "rien"
+        },
+        {
+          "id": "c",
+          "text": "assez bien"
+        },
+        {
+          "id": "d",
+          "text": "très bien puis assez bien"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Python teste les conditions de haut en bas et s'arrête à la première vraie. note >= 16 est faux, note >= 12 est vrai, donc on affiche \"assez bien\" et le reste est ignoré."
+    },
+    {
+      "question": "Parmi ces valeurs, laquelle est considérée comme fausse lorsqu'elle est placée dans un if ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le nombre 42"
+        },
+        {
+          "id": "b",
+          "text": "La chaîne \"faux\""
+        },
+        {
+          "id": "c",
+          "text": "La liste [0]"
+        },
+        {
+          "id": "d",
+          "text": "La chaîne vide \"\""
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Comptent comme faux : 0, la chaîne vide \"\", la liste vide [] et None. Une chaîne non vide ou une liste contenant un élément comptent comme vrais."
+    },
+    {
+      "question": "Combien de tours effectue la boucle for i in range(5), et quelle est la dernière valeur prise par i ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "5 tours, dernière valeur 4"
+        },
+        {
+          "id": "b",
+          "text": "5 tours, dernière valeur 5"
+        },
+        {
+          "id": "c",
+          "text": "6 tours, dernière valeur 5"
+        },
+        {
+          "id": "d",
+          "text": "4 tours, dernière valeur 4"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "range(5) produit cinq nombres en partant de zéro (0, 1, 2, 3, 4) : la borne de droite est exclue. Il y a donc 5 tours et la dernière valeur est 4."
+    },
+    {
+      "question": "Quel est le risque principal d'une boucle while ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle ne peut parcourir qu'une seule liste à la fois"
+        },
+        {
+          "id": "b",
+          "text": "Si la condition ne devient jamais fausse, elle tourne à l'infini"
+        },
+        {
+          "id": "c",
+          "text": "Elle s'arrête automatiquement après dix tours"
+        },
+        {
+          "id": "d",
+          "text": "Elle ne fonctionne qu'avec des nombres entiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une boucle while répète tant que sa condition est vraie. Si rien dans le bloc ne fait évoluer cette condition vers le faux, la boucle ne s'arrête jamais : c'est la boucle infinie."
+    },
+    {
+      "question": "Une fonction se termine sans aucune instruction return. Que renvoie-t-elle quand on l'appelle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La dernière valeur affichée par print"
+        },
+        {
+          "id": "b",
+          "text": "Une erreur de type NameError"
+        },
+        {
+          "id": "c",
+          "text": "None"
+        },
+        {
+          "id": "d",
+          "text": "La chaîne vide \"\""
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Sans return, Python renvoie automatiquement None. C'est pourquoi une fonction qui se contente de print donne None quand on essaie de stocker son résultat dans une variable."
+    },
+    {
+      "question": "Soit def saluer(prenom, salutation=\"Salut\"). Que se passe-t-il quand on appelle saluer(\"Lea\") sans deuxième argument ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une erreur, car il manque un argument obligatoire"
+        },
+        {
+          "id": "b",
+          "text": "prenom et salutation valent tous les deux \"Lea\""
+        },
+        {
+          "id": "c",
+          "text": "salutation vaut None"
+        },
+        {
+          "id": "d",
+          "text": "salutation prend la valeur \"Salut\" par défaut"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le paramètre salutation a une valeur par défaut. Si l'appelant ne fournit rien, c'est cette valeur (\"Salut\") qui est utilisée ; l'argument devient facultatif."
+    },
+    {
+      "question": "Dans la liste notes = [12, 15, 8, 17, 10], que renvoie notes[-1] ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "12, le premier élément"
+        },
+        {
+          "id": "b",
+          "text": "Une IndexError, car -1 n'existe pas"
+        },
+        {
+          "id": "c",
+          "text": "10, le dernier élément"
+        },
+        {
+          "id": "d",
+          "text": "17, l'avant-dernier élément"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les indices négatifs comptent depuis la fin : -1 désigne le dernier élément, soit 10 ici, et -2 désigne l'avant-dernier."
+    },
+    {
+      "question": "Pourquoi choisit-on un tuple plutôt qu'une liste pour stocker des coordonnées GPS qui ne doivent jamais changer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'un tuple étant figé, ses valeurs ne peuvent pas être modifiées par accident"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'un tuple peut contenir davantage d'éléments qu'une liste"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'un tuple s'affiche plus rapidement à l'écran"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'un tuple s'écrit avec des crochets"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le tuple est immuable : une fois créé, on ne peut plus le modifier. Cette garantie protège une donnée qui ne doit jamais changer, et un tuple s'écrit d'ailleurs avec des parenthèses, pas des crochets."
+    },
+    {
+      "question": "On a stock = {\"clavier\": 12}. Que renvoie stock.get(\"ecran\", 0) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une KeyError"
+        },
+        {
+          "id": "b",
+          "text": "None"
+        },
+        {
+          "id": "c",
+          "text": "0"
+        },
+        {
+          "id": "d",
+          "text": "False"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La méthode get renvoie son deuxième argument (ici 0) quand la clé est absente, au lieu de lever une KeyError comme le ferait l'accès par crochets stock[\"ecran\"]."
+    },
+    {
+      "question": "Que vaut len(set([1, 2, 2, 3, 3, 3])) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "6"
+        },
+        {
+          "id": "b",
+          "text": "3"
+        },
+        {
+          "id": "c",
+          "text": "2"
+        },
+        {
+          "id": "d",
+          "text": "1"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un set ne garde qu'un seul exemplaire de chaque valeur. Il ne reste donc que 1, 2 et 3, soit une longueur de 3."
+    },
+    {
+      "question": "Après prenom = \"bob\", on écrit prenom.upper() seule sur sa ligne, puis print(prenom). Qu'affiche le print ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "BOB"
+        },
+        {
+          "id": "b",
+          "text": "bob"
+        },
+        {
+          "id": "c",
+          "text": "Une erreur est levée"
+        },
+        {
+          "id": "d",
+          "text": "None"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une chaîne est immuable : upper() ne modifie pas prenom, elle renvoie une nouvelle chaîne. Comme ce résultat n'est pas réaffecté, prenom vaut toujours \"bob\"."
+    },
+    {
+      "question": "Quelle expression recolle la liste [\"a\", \"b\", \"c\"] en la chaîne \"a-b-c\" ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[\"a\", \"b\", \"c\"].join(\"-\")"
+        },
+        {
+          "id": "b",
+          "text": "join(\"-\", [\"a\", \"b\", \"c\"])"
+        },
+        {
+          "id": "c",
+          "text": "\"-\".join([\"a\", \"b\", \"c\"])"
+        },
+        {
+          "id": "d",
+          "text": "[\"a\", \"b\", \"c\"].split(\"-\")"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La syntaxe de join est separateur.join(liste) : le séparateur est devant le point et la liste est l'argument. On obtient donc \"-\".join([\"a\", \"b\", \"c\"])."
+    },
+    {
+      "question": "Que produit la compréhension [n * n for n in [1, 2, 3, 4] if n % 2 == 0] ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "[1, 4, 9, 16]"
+        },
+        {
+          "id": "b",
+          "text": "[1, 9]"
+        },
+        {
+          "id": "c",
+          "text": "[2, 4]"
+        },
+        {
+          "id": "d",
+          "text": "[4, 16]"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le if final filtre : on ne garde que les nombres pairs (2 et 4), puis l'expression n * n élève chacun au carré, ce qui donne [4, 16]."
+    },
+    {
+      "question": "Quelle est la différence entre une erreur de syntaxe et une exception ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une erreur de syntaxe empêche le programme de démarrer, une exception survient pendant l'exécution"
+        },
+        {
+          "id": "b",
+          "text": "Une exception empêche le programme de démarrer, une erreur de syntaxe survient pendant l'exécution"
+        },
+        {
+          "id": "c",
+          "text": "Il n'y a aucune différence, ce sont deux mots pour la même chose"
+        },
+        {
+          "id": "d",
+          "text": "Une erreur de syntaxe ne concerne que les nombres, une exception que le texte"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Une erreur de syntaxe est du code que Python ne comprend pas : il refuse de démarrer. Une exception survient sur du code correct, mais pendant l'exécution, par exemple une division par zéro."
+    },
+    {
+      "question": "Pourquoi faut-il éviter un except nu (sans préciser de type d'erreur) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que Python interdit cette syntaxe et refuse de l'exécuter"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il est plus lent à l'exécution qu'un except ciblé"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il ne fonctionne qu'avec les ValueError"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il avale toutes les erreurs, y compris des bugs imprévus, et les cache au lieu de les signaler"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Un except nu attrape absolument tout, y compris une faute de frappe ou une logique cassée. Le programme ne plante plus mais ne marche plus non plus, et le vrai bug reste caché. Il faut cibler le type qu'on sait traiter."
+    },
+    {
+      "question": "Vous nommez votre propre fichier random.py et écrivez import random dedans. Que se passe-t-il ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Python charge votre propre fichier au lieu du vrai module random, ce qui casse l'accès aux fonctions attendues"
+        },
+        {
+          "id": "b",
+          "text": "Python refuse de lancer le script car le nom est réservé"
+        },
+        {
+          "id": "c",
+          "text": "Tout fonctionne, Python distingue toujours les deux"
+        },
+        {
+          "id": "d",
+          "text": "Le vrai module random remplace automatiquement votre fichier"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Python cherche d'abord un fichier du même nom dans le dossier courant avant la bibliothèque standard. Votre random.py est donc chargé à la place du vrai module, et ses fonctions deviennent introuvables. Ne nommez jamais un fichier comme un module standard."
+    },
+    {
+      "question": "Dans une méthode définie dans une classe, à quoi correspond le paramètre self ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À la classe elle-même, c'est-à-dire au moule"
+        },
+        {
+          "id": "b",
+          "text": "À l'instance courante, passée automatiquement en premier argument"
+        },
+        {
+          "id": "c",
+          "text": "À un mot-clé magique sans signification concrète"
+        },
+        {
+          "id": "d",
+          "text": "À la valeur de retour de la méthode"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "self désigne l'objet sur lequel la méthode est appelée. Python le passe automatiquement en premier argument : alice.subir_degats(30) revient à subir_degats(alice, 30)."
+    }
+  ]
+}

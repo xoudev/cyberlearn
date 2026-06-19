@@ -25,9 +25,12 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset-user": "tsx prisma/reset-user.ts",
+    "db:reset-users": "tsx prisma/reset-users.ts",
     "db:reset-content": "tsx prisma/reset-content.ts",
     "db:seed-paths": "tsx prisma/seed-paths.ts",
+    "db:seed-quizzes": "tsx prisma/seed-quizzes.ts",
     "db:backfill-badge-xp": "tsx prisma/backfill-badge-xp.ts",
+    "db:backfill-daily-streaks": "tsx prisma/backfill-daily-streaks.ts",
     "db:studio": "prisma studio",
     "clean": "rm -rf dist"
   },

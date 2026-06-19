@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Quelle affirmation décrit le mieux l'asymétrie entre l'attaquant et le défenseur dans un SOC ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le défenseur choisit le moment et le lieu de l'affrontement, ce qui lui donne l'avantage"
+        },
+        {
+          "id": "b",
+          "text": "L'attaquant n'a besoin de réussir qu'une seule fois, alors que le défenseur doit tenir partout et en permanence"
+        },
+        {
+          "id": "c",
+          "text": "L'attaquant et le défenseur disposent exactement des mêmes contraintes de temps et de moyens"
+        },
+        {
+          "id": "d",
+          "text": "Le défenseur dispose toujours de plus de moyens financiers que l'attaquant"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "L'attaquant gagne s'il trouve un seul point faible, tandis que le défenseur doit protéger chaque machine, chaque compte et chaque application sans interruption. On compense par la visibilité, la détection rapide et la vitesse de réponse."
+    },
+    {
+      "question": "Que recouvre le principe « supposer l'intrusion » (assume breach) dans la posture défensive ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Partir du principe qu'un attaquant finira par entrer, donc miser aussi sur le fait de le détecter vite une fois dedans"
+        },
+        {
+          "id": "b",
+          "text": "Renoncer à la prévention puisque les murs finissent toujours par céder"
+        },
+        {
+          "id": "c",
+          "text": "Attendre une preuve formelle d'attaque avant d'engager le moindre moyen de défense"
+        },
+        {
+          "id": "d",
+          "text": "Accuser systématiquement un employé d'être à l'origine de toute faille constatée"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Comme une intrusion finira tôt ou tard par réussir, la détection devient aussi importante que la prévention. On travaille comme si l'adversaire était déjà à l'intérieur, en ajoutant une couche de surveillance interne."
+    },
+    {
+      "question": "Pourquoi recopie-t-on en continu les journaux vers un serveur central séparé que les machines surveillées ne peuvent pas modifier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que la loi interdit de conserver des journaux en local sur les serveurs de production"
+        },
+        {
+          "id": "b",
+          "text": "Pour accélérer le démarrage des services sur les machines surveillées"
+        },
+        {
+          "id": "c",
+          "text": "Pour qu'un attaquant qui prend le contrôle d'une machine ne puisse pas effacer les traces conservées ailleurs"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'un serveur central chiffre automatiquement tous les journaux qu'il reçoit"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un attaquant administrateur efface les logs de la machine compromise pour faire disparaître ses traces. La copie centrale, hors de son contrôle, reste intacte, comme une caméra qui envoie son flux vers un local fermé."
+    },
+    {
+      "question": "Deux sources de journaux ont une minute d'écart sur leurs horloges. Quelle est la conséquence pour une enquête, et comment l'éviter ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune conséquence : une minute d'écart est toujours négligeable dans une corrélation"
+        },
+        {
+          "id": "b",
+          "text": "On ne peut plus relier de façon fiable deux événements qui sont en réalité le même ; on synchronise les horloges via NTP"
+        },
+        {
+          "id": "c",
+          "text": "Le pare-feu cesse de fonctionner ; on le redémarre pour rétablir l'heure"
+        },
+        {
+          "id": "d",
+          "text": "Les journaux deviennent totalement illisibles ; on les réindexe dans le SIEM"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "L'horodatage est le seul lien pour prouver que deux lignes sont le même événement. Une minute d'écart casse la corrélation, d'où la nécessité de synchroniser tout le parc avec NTP sur une référence commune."
+    },
+    {
+      "question": "Qu'est-ce qui distingue fondamentalement un SIEM d'une simple collecte de logs centralisée ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le SIEM conserve les logs plus longtemps que la collecte"
+        },
+        {
+          "id": "b",
+          "text": "Le SIEM chiffre les logs au repos alors que la collecte les laisse en clair"
+        },
+        {
+          "id": "c",
+          "text": "Le SIEM remplace le pare-feu en bloquant directement le trafic suspect"
+        },
+        {
+          "id": "d",
+          "text": "Le SIEM normalise les logs, corrèle les événements et lève des alertes automatiques"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La simple collecte stocke et permet de chercher après coup, mais ne prévient de rien. Le SIEM ajoute la normalisation vers un format commun, la corrélation en scénarios et l'alerte, transformant un tas de logs passif en surveillance active."
+    },
+    {
+      "question": "Cent échecs de connexion sur un même compte depuis une même adresse en deux minutes, suivis d'un succès depuis cette adresse. Pourquoi un SIEM lève-t-il une alerte alors qu'aucun de ces événements n'est suspect isolément ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'une règle de corrélation relie ces événements en un scénario de force brute réussie"
+        },
+        {
+          "id": "b",
+          "text": "Parce que tout succès de connexion après un échec est interdit par défaut"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'un échec de connexion est toujours, à lui seul, le signe d'une attaque"
+        },
+        {
+          "id": "d",
+          "text": "Parce que le SIEM bloque par principe toutes les connexions SSH la nuit"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Pris isolément, échec et succès de connexion sont banals. C'est la combinaison, dans le bon ordre et la bonne fenêtre temporelle, qu'une règle de corrélation reconnaît comme une force brute qui a fini par aboutir."
+    },
+    {
+      "question": "En quoi un excès de faux positifs est-il dangereux pour un SOC ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il chiffre les alertes par erreur et les rend illisibles"
+        },
+        {
+          "id": "b",
+          "text": "Il augmente uniquement la facture de stockage du SIEM, sans autre effet"
+        },
+        {
+          "id": "c",
+          "text": "Il provoque une fatigue d'alerte : les analystes ferment les alertes en pilote automatique et finissent par rater l'incident réel"
+        },
+        {
+          "id": "d",
+          "text": "Il ralentit physiquement l'indexation des logs sur le serveur central"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Quand l'écrasante majorité des alertes ne mènent à rien, les analystes les traitent machinalement. La vraie attaque ressemble alors à une alerte de routine et passe inaperçue : c'est la fatigue d'alerte."
+    },
+    {
+      "question": "Quelle est la principale limite de la détection par signatures ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle génère énormément de faux positifs sur le trafic légitime"
+        },
+        {
+          "id": "b",
+          "text": "Elle est aveugle aux attaques qui n'ont pas encore été cataloguées, comme un zero-day ou une variante nouvelle"
+        },
+        {
+          "id": "c",
+          "text": "Elle ne fonctionne que sur du trafic préalablement déchiffré"
+        },
+        {
+          "id": "d",
+          "text": "Elle ralentit fortement l'ensemble du réseau dès qu'elle est activée"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une signature ne reconnaît que des motifs déjà décrits dans sa base. Elle est très précise et peu bruyante, mais une attaque inédite ou une variante qui change deux octets passe sous le radar jusqu'à la prochaine mise à jour."
+    },
+    {
+      "question": "Quelle différence essentielle sépare un IDS d'un IPS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'IDS bloque le trafic en coupure, tandis que l'IPS se contente d'alerter"
+        },
+        {
+          "id": "b",
+          "text": "L'IDS surveille les fichiers d'un hôte, tandis que l'IPS surveille uniquement le réseau"
+        },
+        {
+          "id": "c",
+          "text": "L'IDS observe et alerte sans toucher au trafic, tandis que l'IPS est placé sur le chemin du trafic et peut bloquer"
+        },
+        {
+          "id": "d",
+          "text": "L'IDS est forcément logiciel, tandis que l'IPS est forcément matériel"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'IDS est branché en dérivation : il regarde passer le trafic et prévient. L'IPS est en coupure et peut jeter un paquet ou couper une connexion, au risque de bloquer du trafic légitime sur un faux positif."
+    },
+    {
+      "question": "Quel outil surveille une machine précise (fichiers, journaux, processus) et permet en plus de répondre, par exemple isoler l'hôte du réseau ou tuer un processus ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'EDR (endpoint detection and response)"
+        },
+        {
+          "id": "b",
+          "text": "Le NIDS, placé à un point de passage du réseau"
+        },
+        {
+          "id": "c",
+          "text": "Le pare-feu de périmètre"
+        },
+        {
+          "id": "d",
+          "text": "Le SIEM, qui corrèle les logs de toutes les sources"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'EDR combine signatures et anomalies au niveau de l'hôte, enregistre l'activité en continu et permet de répondre directement : isoler la machine, tuer un processus, revenir en arrière sur un changement. Le NIDS et le SIEM ne touchent pas à la machine elle-même."
+    },
+    {
+      "question": "Dans MITRE ATT&CK, quelle est la différence entre une tactique et une technique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La tactique est le but visé par l'attaquant (le pourquoi), la technique est la manière concrète d'y parvenir (le comment)"
+        },
+        {
+          "id": "b",
+          "text": "La tactique est manuelle, la technique est toujours automatisée"
+        },
+        {
+          "id": "c",
+          "text": "La tactique vise les serveurs, la technique vise les postes de travail"
+        },
+        {
+          "id": "d",
+          "text": "Il n'y a aucune différence, ce sont deux mots pour la même notion"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La tactique répond au pourquoi (accès initial, persistance, exfiltration), la technique au comment, avec un identifiant stable comme T1059. Une technique décrit un comportement, pas un outil précis, ce qui rend la matrice durable."
+    },
+    {
+      "question": "À quoi sert de colorier la matrice MITRE ATT&CK en carte de chaleur (vert, orange, rouge) du point de vue de la défense ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À classer les groupes d'attaquants par ordre de dangerosité"
+        },
+        {
+          "id": "b",
+          "text": "À choisir la palette de couleurs du tableau de bord du SOC"
+        },
+        {
+          "id": "c",
+          "text": "À visualiser quelles techniques on détecte de façon fiable et lesquelles nous échappent, afin de prioriser les investissements"
+        },
+        {
+          "id": "d",
+          "text": "À chiffrer les fichiers sensibles selon leur niveau de criticité"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le coloriage révèle d'un coup d'œil les points forts et surtout les trous de détection. Une colonne entièrement rouge signale une zone où un attaquant agirait sans alerte, ce qui aide à décider où investir en priorité."
+    },
+    {
+      "question": "Qu'est-ce qui distingue la chasse aux menaces (threat hunting) de la détection automatique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La chasse ne regarde que les alertes déjà levées par le SIEM"
+        },
+        {
+          "id": "b",
+          "text": "La chasse démarre sans alerte, de manière proactive, à partir d'une hypothèse formulée par l'analyste"
+        },
+        {
+          "id": "c",
+          "text": "La chasse remplace entièrement le SIEM et la détection automatique"
+        },
+        {
+          "id": "d",
+          "text": "La chasse ne sert qu'à produire des rapports pour la direction"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La détection automatique réagit à des règles écrites à l'avance. La chasse est proactive : l'analyste regarde parce qu'il se pose une question (« si un attaquant faisait X, quelle trace verrais-je ? »), pour explorer les angles morts."
+    },
+    {
+      "question": "Pendant le confinement d'un incident, pourquoi peut-il être risqué de bloquer bruyamment, d'un seul coup, tout ce que l'attaquant utilise ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que l'attaquant comprend qu'il est repéré et peut accélérer, déclencher sa charge tout de suite ou basculer sur des accès non encore découverts"
+        },
+        {
+          "id": "b",
+          "text": "Parce que cela consomme trop de bande passante réseau"
+        },
+        {
+          "id": "c",
+          "text": "Parce que les sauvegardes deviennent automatiquement illisibles"
+        },
+        {
+          "id": "d",
+          "text": "Parce que la direction n'a pas encore validé le plan de réponse"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un blocage brutal et visible alerte l'attaquant, qui peut alors déclencher son ransomware immédiatement ou activer des portes dérobées inconnues. Parfois la bonne décision est de contenir discrètement le temps de cartographier toute sa présence."
+    },
+    {
+      "question": "Pourquoi dit-on que la phase de préparation conditionne toutes les autres phases de la réponse à incident ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elle remplace l'étape d'identification le jour de la crise"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle est la phase la plus longue du cycle"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'elle est imposée par la loi dans toutes les organisations"
+        },
+        {
+          "id": "d",
+          "text": "Parce que les rôles, les contacts à jour, les outils hors-bande et les sauvegardes testées ne se mettent pas en place pendant la crise"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Tout se décide à froid : qui pilote, qui creuse la technique, quels contacts, quel canal hors-bande, et des sauvegardes dont la restauration a été testée. Une fois la crise déclenchée, on découvre les manques mais on ne les rattrape plus."
+    },
+    {
+      "question": "Dans un journal SSH, quel enchaînement signale une force brute réussie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une longue rafale d'échecs d'authentification suivie d'un succès, le tout depuis la même adresse IP"
+        },
+        {
+          "id": "b",
+          "text": "Plusieurs connexions réussies consécutives depuis des adresses IP variées"
+        },
+        {
+          "id": "c",
+          "text": "Un seul échec suivi d'un succès depuis une adresse IP différente"
+        },
+        {
+          "id": "d",
+          "text": "Une absence totale d'échecs précédant un unique succès"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Les échecs seuls sont du bruit de fond permanent sur Internet. C'est l'enchaînement d'une rafale massive d'échecs puis d'un succès depuis la même IP qui trahit qu'un outil automatisé a fini par deviner le bon mot de passe."
+    },
+    {
+      "question": "Une application web est compromise par une injection. Son compte de base de données ne peut lire et écrire que ses propres tables, rien d'autre. Quel principe a limité l'ampleur des dégâts ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La gestion des correctifs"
+        },
+        {
+          "id": "b",
+          "text": "Le chiffrement des données au repos"
+        },
+        {
+          "id": "c",
+          "text": "Le moindre privilège"
+        },
+        {
+          "id": "d",
+          "text": "L'antivirus installé sur le serveur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le moindre privilège n'évite pas la compromission, il en réduit le rayon : un attaquant hérite des droits du compte qu'il prend. Un compte limité à ses propres tables empêche d'effacer ou d'exfiltrer le reste de la base."
+    },
+    {
+      "question": "Pourquoi le retard dans l'application des correctifs de sécurité est-il particulièrement dangereux ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'un correctif publié révèle indirectement la faille qu'il corrige, et des outils d'exploitation apparaissent en quelques jours, parfois quelques heures"
+        },
+        {
+          "id": "b",
+          "text": "Parce que les correctifs ralentissent durablement les machines une fois installés"
+        },
+        {
+          "id": "c",
+          "text": "Parce que les correctifs ne servent qu'aux failles encore inconnues du public"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'installer un correctif ouvre toujours, par construction, une nouvelle faille"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Dès qu'un correctif est publié, son contenu indique la faille. La fenêtre entre la publication et l'installation est exactement la période la plus exposée, et la plupart des intrusions exploitent une faille déjà corrigée mais non appliquée."
+    },
+    {
+      "question": "Dans la pyramide de la douleur de Bianco, quel type d'indicateur est le plus pénible à changer pour l'attaquant lorsqu'on parvient à le détecter et le bloquer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le hash d'un fichier"
+        },
+        {
+          "id": "b",
+          "text": "Une adresse IP"
+        },
+        {
+          "id": "c",
+          "text": "Un nom de domaine"
+        },
+        {
+          "id": "d",
+          "text": "Ses TTP, c'est-à-dire ses tactiques, techniques et sa façon de travailler"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Un hash ou une IP se changent en quelques minutes (gains jetables pour le défenseur). Les TTP, au sommet de la pyramide, représentent la manière de travailler de l'attaquant : les modifier revient à réapprendre son métier, d'où une vraie douleur."
+    },
+    {
+      "question": "Sur une machine compromise encore allumée, dans quel ordre faut-il collecter les traces lors d'une investigation numérique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le disque dur en premier, car il contient le plus de données, puis la mémoire vive"
+        },
+        {
+          "id": "b",
+          "text": "Les sauvegardes distantes d'abord, car elles sont les plus fiables"
+        },
+        {
+          "id": "c",
+          "text": "L'ordre est indifférent tant qu'on calcule une empreinte à la fin"
+        },
+        {
+          "id": "d",
+          "text": "Le plus volatil d'abord : mémoire vive, processus et connexions actives, avant de toucher au disque"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "On respecte l'ordre de volatilité : la mémoire vive (processus en cours, connexions, parfois clés ou mots de passe) disparaît dès l'extinction, alors que le disque survit à un redémarrage. On capture donc le plus fragile en premier, sur une copie fidèle scellée par une empreinte."
+    }
+  ]
+}

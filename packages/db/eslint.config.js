@@ -7,9 +7,12 @@ export default tseslint.config(
     ignores: [
       "prisma/seed.ts",
       "prisma/reset-user.ts",
+      "prisma/reset-users.ts",
       "prisma/reset-content.ts",
       "prisma/seed-paths.ts",
+      "prisma/seed-quizzes.ts",
       "prisma/backfill-badge-xp.ts",
+      "prisma/backfill-daily-streaks.ts",
     ],
   },
   ...baseConfig,

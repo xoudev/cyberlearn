@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Un attaquant intercepte un virement chiffré qu'il ne parvient pas à lire, mais réussit à modifier discrètement le montant en route sans que le serveur s'en aperçoive. Quel objectif de sécurité a fait défaut ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La confidentialité"
+        },
+        {
+          "id": "b",
+          "text": "L'intégrité"
+        },
+        {
+          "id": "c",
+          "text": "La non-répudiation"
+        },
+        {
+          "id": "d",
+          "text": "L'anonymat"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "L'intégrité garantit que le message reçu est exactement celui qui a été envoyé. Ici le contenu reste secret (confidentialité préservée), mais la modification non détectée signe un échec de l'intégrité."
+    },
+    {
+      "question": "Selon le principe de Kerckhoffs, qu'est-ce qui doit rester secret dans un bon système cryptographique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La clé"
+        },
+        {
+          "id": "b",
+          "text": "La taille du message échangé"
+        },
+        {
+          "id": "c",
+          "text": "L'algorithme de chiffrement utilisé"
+        },
+        {
+          "id": "d",
+          "text": "Le texte clair d'origine"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le principe de Kerckhoffs énonce qu'un système doit rester sûr même si l'attaquant connaît tout de l'algorithme. La seule chose qui doit rester secrète, c'est la clé."
+    },
+    {
+      "question": "Pourquoi le mode de chiffrement ECB est-il déconseillé pour AES ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il exige une clé de 4096 bits minimum"
+        },
+        {
+          "id": "b",
+          "text": "Des blocs de clair identiques produisent des blocs de chiffré identiques, laissant transparaître les motifs"
+        },
+        {
+          "id": "c",
+          "text": "Il ne fonctionne que sur du texte ASCII"
+        },
+        {
+          "id": "d",
+          "text": "Il est beaucoup trop lent sur les gros fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "ECB chiffre chaque bloc indépendamment, donc deux blocs de clair identiques donnent deux chiffrés identiques. Les motifs survivent au chiffrement, comme le montre l'image du pingouin Tux dont la silhouette reste visible."
+    },
+    {
+      "question": "À quoi sert un vecteur d'initialisation (IV ou nonce) dans un chiffrement symétrique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À garder la clé secrète pendant qu'elle circule sur le réseau"
+        },
+        {
+          "id": "b",
+          "text": "À compresser le message avant de le chiffrer"
+        },
+        {
+          "id": "c",
+          "text": "À faire que deux chiffrements du même message avec la même clé donnent des résultats différents"
+        },
+        {
+          "id": "d",
+          "text": "À remplacer AES quand celui-ci devient trop lent"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'IV est une valeur aléatoire et unique injectée au départ : elle fait que le même message chiffré deux fois avec la même clé produit deux chiffrés différents. Il peut être public mais ne doit jamais se répéter avec une même clé."
+    },
+    {
+      "question": "Vous voulez envoyer un message que seul le destinataire pourra lire, en chiffrement asymétrique. Avec quelle clé chiffrez-vous ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La clé publique du destinataire"
+        },
+        {
+          "id": "b",
+          "text": "Votre propre clé privée"
+        },
+        {
+          "id": "c",
+          "text": "Votre propre clé publique"
+        },
+        {
+          "id": "d",
+          "text": "La clé privée du destinataire"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "On chiffre avec la clé publique du destinataire, car seul lui possède la clé privée correspondante qui permet de déchiffrer. C'est le modèle du cadenas : tout le monde peut fermer, seul le destinataire ouvre."
+    },
+    {
+      "question": "Dans le chiffrement hybride utilisé par exemple par TLS, quel est le rôle de l'asymétrique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Chiffrer la totalité du contenu de la session"
+        },
+        {
+          "id": "b",
+          "text": "Remplacer entièrement le chiffrement symétrique"
+        },
+        {
+          "id": "c",
+          "text": "Transporter en sécurité une clé symétrique de session, qui chiffre ensuite le gros du trafic"
+        },
+        {
+          "id": "d",
+          "text": "Compresser les données avant leur envoi"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'asymétrique est lent, on ne l'utilise donc que pour transporter une clé symétrique de session fraîche. Le symétrique, rapide, chiffre ensuite tout le contenu réel."
+    },
+    {
+      "question": "Pour atteindre un niveau de sécurité équivalent, comment se comparent une clé RSA et une clé sur courbes elliptiques (ECC) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "RSA et ECC exigent toujours la même taille de clé"
+        },
+        {
+          "id": "b",
+          "text": "ECC atteint le même niveau de sécurité avec des clés bien plus courtes que RSA"
+        },
+        {
+          "id": "c",
+          "text": "RSA atteint le même niveau avec des clés bien plus courtes qu'ECC"
+        },
+        {
+          "id": "d",
+          "text": "ECC nécessite des clés environ dix fois plus longues que RSA"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "ECC offre la même robustesse que RSA avec des clés beaucoup plus courtes : une clé ECC de 256 bits équivaut à peu près à une clé RSA de 3072 bits. C'est pourquoi ECC s'est imposé sur les appareils mobiles."
+    },
+    {
+      "question": "Que garantit la résistance aux collisions d'une fonction de hachage cryptographique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que l'empreinte fait toujours exactement 256 bits"
+        },
+        {
+          "id": "b",
+          "text": "Que l'empreinte peut être déchiffrée avec la bonne clé"
+        },
+        {
+          "id": "c",
+          "text": "Qu'on ne peut pas retrouver l'entrée à partir de l'empreinte"
+        },
+        {
+          "id": "d",
+          "text": "Qu'on ne peut pas fabriquer deux entrées différentes ayant la même empreinte"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La résistance aux collisions interdit de construire volontairement deux entrées distinctes produisant la même empreinte. C'est cette propriété précise qui a cédé sur MD5 et SHA-1, alors qu'ils restent à sens unique pour la préimage."
+    },
+    {
+      "question": "Pourquoi MD5 et SHA-1 ne doivent-ils plus servir pour une signature ou un certificat aujourd'hui ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ils produisent des empreintes trop longues à transmettre"
+        },
+        {
+          "id": "b",
+          "text": "On sait fabriquer volontairement des collisions sur ces algorithmes"
+        },
+        {
+          "id": "c",
+          "text": "Ils sont réversibles dès qu'on possède la bonne clé"
+        },
+        {
+          "id": "d",
+          "text": "Ils ne sont pas déterministes d'une machine à l'autre"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "MD5 (cassé dès le milieu des années 2000) et SHA-1 (attaque SHAttered en 2017) permettent de produire deux fichiers distincts avec la même empreinte. Un attaquant peut alors faire passer un fichier malveillant pour un fichier légitime."
+    },
+    {
+      "question": "Pourquoi un hachage seul ne protège-t-il pas un message contre une modification volontaire par un attaquant placé sur le réseau ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le hachage est trop lent à recalculer en pratique"
+        },
+        {
+          "id": "b",
+          "text": "L'empreinte change à chaque exécution de la fonction"
+        },
+        {
+          "id": "c",
+          "text": "La fonction de hachage est publique, donc l'attaquant recalcule l'empreinte du message modifié aussi facilement que vous"
+        },
+        {
+          "id": "d",
+          "text": "Le hachage ne fonctionne que sur des fichiers, pas sur des messages réseau"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La fonction de hachage est publique et sans secret : l'attaquant modifie le message puis recalcule lui-même l'empreinte. Le destinataire voit tout concorder. Une empreinte prouve la correspondance, pas l'origine."
+    },
+    {
+      "question": "Pourquoi déconseille-t-on de bricoler un MAC en calculant simplement SHA256(clé + message) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que cette construction est vulnérable à une attaque par allongement de longueur"
+        },
+        {
+          "id": "b",
+          "text": "Parce que SHA-256 est trop lent pour authentifier un message"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il faut chiffrer le message avant de le hacher"
+        },
+        {
+          "id": "d",
+          "text": "Parce que la clé devient publique dès qu'on la concatène"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Avec certaines fonctions construites par blocs, coller la clé devant le message ouvre une attaque par allongement de longueur : un attaquant fabrique un MAC valide pour des données supplémentaires sans connaître la clé. HMAC ferme cette porte."
+    },
+    {
+      "question": "Pourquoi compare-t-on un MAC reçu et un MAC recalculé en temps constant plutôt qu'avec un simple == ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour économiser de la mémoire sur le serveur"
+        },
+        {
+          "id": "b",
+          "text": "Pour accélérer la vérification quand les MAC sont longs"
+        },
+        {
+          "id": "c",
+          "text": "Pour ne pas fuir d'information via la durée de la comparaison, exploitable par canal temporel"
+        },
+        {
+          "id": "d",
+          "text": "Parce que == ne fonctionne pas sur des suites d'octets"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Une comparaison qui s'arrête à la première différence dure plus longtemps quand davantage d'octets correspondent. Un attaquant chronomètre les réponses et devine le MAC octet par octet. La comparaison en temps constant (hmac.compare_digest) supprime cette fuite."
+    },
+    {
+      "question": "Avec quelle clé produit-on une signature numérique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La clé publique du destinataire"
+        },
+        {
+          "id": "b",
+          "text": "Une clé secrète partagée entre les deux parties"
+        },
+        {
+          "id": "c",
+          "text": "La clé publique du signataire"
+        },
+        {
+          "id": "d",
+          "text": "La clé privée du signataire"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "On signe avec sa propre clé privée, que personne d'autre ne possède, et tout le monde vérifie avec la clé publique correspondante. C'est l'inverse du chiffrement, où l'on chiffre avec la clé publique du destinataire."
+    },
+    {
+      "question": "Pourquoi un MAC ne fournit-il pas la non-répudiation, contrairement à une signature numérique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le MAC ne vérifie pas l'intégrité du message"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la clé du MAC est partagée, donc les deux parties peuvent le produire et l'auteur peut nier"
+        },
+        {
+          "id": "c",
+          "text": "Parce que le MAC chiffre le message au lieu de le signer"
+        },
+        {
+          "id": "d",
+          "text": "Parce que le MAC repose sur une paire de clés trop faible"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Avec un MAC, les deux parties connaissent la même clé secrète, donc chacune peut fabriquer un MAC valide : l'auteur peut nier. Une signature repose sur une clé privée détenue par une seule personne, ce qui empêche le déni."
+    },
+    {
+      "question": "Qu'obtient un espion qui enregistre la totalité du canal pendant un échange de clés Diffie-Hellman ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La clé secrète commune directement en clair"
+        },
+        {
+          "id": "b",
+          "text": "Les clés secrètes privées des deux participants"
+        },
+        {
+          "id": "c",
+          "text": "Seulement les valeurs publiques échangées, insuffisantes pour reconstituer le secret"
+        },
+        {
+          "id": "d",
+          "text": "Rien du tout, car le canal lui est totalement invisible"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le secret commun n'est jamais transmis : chacun le calcule de son côté. L'espion ne voit que les valeurs publiques intermédiaires, et inverser l'opération (logarithme discret) sur de grands nombres est infaisable."
+    },
+    {
+      "question": "Pourquoi les clés éphémères (DHE, ECDHE) apportent-elles la confidentialité persistante (forward secrecy) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elles rendent le chiffrement symétrique nettement plus rapide"
+        },
+        {
+          "id": "b",
+          "text": "Une fuite future de la clé privée long terme ne permet pas de déchiffrer les sessions passées"
+        },
+        {
+          "id": "c",
+          "text": "Elles permettent de se passer totalement d'authentification"
+        },
+        {
+          "id": "d",
+          "text": "Elles empêchent à elles seules toute attaque de l'homme du milieu"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Chaque session a sa propre clé jetable, jetée à la fin. Même si un attaquant a enregistré le trafic et vole plus tard la clé long terme du serveur, il ne peut pas reconstruire les clés de session passées."
+    },
+    {
+      "question": "Un site d'hameçonnage imitant parfaitement votre banque affiche un cadenas avec un certificat valide. Qu'est-ce que cela prouve réellement ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que le site est sûr et appartient bien à votre banque"
+        },
+        {
+          "id": "b",
+          "text": "Que la connexion est chiffrée et que le domaine affiché est authentifié, rien de plus"
+        },
+        {
+          "id": "c",
+          "text": "Que le certificat a forcément été volé à votre banque"
+        },
+        {
+          "id": "d",
+          "text": "Que votre navigateur s'est trompé dans sa vérification"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le cadenas garantit que le transport est chiffré et que vous parlez bien au domaine affiché, mais pas que ce domaine soit honnête. Obtenir un certificat valide est aujourd'hui gratuit et automatique, y compris pour un site frauduleux."
+    },
+    {
+      "question": "Dans une poignée de main TLS, comment se répartissent les rôles du chiffrement asymétrique et du chiffrement symétrique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le symétrique authentifie le serveur, l'asymétrique transporte ensuite les données"
+        },
+        {
+          "id": "b",
+          "text": "Toute la session, de bout en bout, se fait uniquement en asymétrique"
+        },
+        {
+          "id": "c",
+          "text": "L'asymétrique authentifie le serveur et établit une clé de session, puis le symétrique chiffre tout le trafic"
+        },
+        {
+          "id": "d",
+          "text": "Aucun chiffrement n'est utilisé tant que le mot de passe n'est pas envoyé"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Pendant le handshake, l'asymétrique authentifie le serveur via son certificat et met en place une clé de session. Ensuite, le symétrique, bien plus rapide, chiffre tout le volume de trafic réel."
+    },
+    {
+      "question": "Pourquoi SHA-256 nu est-il un mauvais choix pour stocker des mots de passe en base de données ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'il est réversible et révèle directement le mot de passe"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il ne produit pas toujours la même empreinte pour une même entrée"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il est trop rapide, ce qui permet de tester des milliards de candidats par seconde"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il ne gère pas correctement les caractères UTF-8"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La rapidité de SHA-256, idéale pour l'intégrité, se retourne contre vous pour les mots de passe : un attaquant teste des milliards de candidats par seconde. Il faut une fonction lente et salée comme bcrypt, scrypt ou argon2."
+    },
+    {
+      "question": "Une application chiffre tout son trafic en TLS, mais stocke les données de ses utilisateurs en clair dans sa base. Quelle protection manque-t-il ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le chiffrement en transit"
+        },
+        {
+          "id": "b",
+          "text": "Le chiffrement au repos"
+        },
+        {
+          "id": "c",
+          "text": "Une fonction de hachage pour les fichiers"
+        },
+        {
+          "id": "d",
+          "text": "Rien, TLS suffit à tout protéger"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "TLS protège les données en transit, pendant qu'elles circulent. Mais une donnée stockée en clair reste exposée si quelqu'un accède au disque ou au fichier de la base : c'est le chiffrement au repos qui manque, et les deux sont nécessaires."
+    }
+  ]
+}

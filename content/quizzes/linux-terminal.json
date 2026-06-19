@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Dans un prompt comme jordan@serveur-web:~$, le caractere final $ se change parfois en #. Que signale le symbole # a cet endroit ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que la commande precedente a echoue"
+        },
+        {
+          "id": "b",
+          "text": "Que le shell utilise est zsh et non bash"
+        },
+        {
+          "id": "c",
+          "text": "Que vous etes connecte a distance via SSH"
+        },
+        {
+          "id": "d",
+          "text": "Que vous etes connecte en tant que root, l'administrateur"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le $ indique un utilisateur normal, tandis que le # signale que vous etes root : a cet instant une faute de frappe peut casser le systeme, donc prudence."
+    },
+    {
+      "question": "Dans la commande ls -la /home, comment qualifie-t-on respectivement -la et /home ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "-la est l'argument et /home est l'option"
+        },
+        {
+          "id": "b",
+          "text": "Les deux sont des options de la commande ls"
+        },
+        {
+          "id": "c",
+          "text": "-la sont les options (flags) et /home est l'argument sur lequel ls agit"
+        },
+        {
+          "id": "d",
+          "text": "-la est le nom du shell et /home une variable d'environnement"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "-l et -a sont des options qui modifient le comportement (format long, fichiers caches), et /home est l'argument, c'est-a-dire le dossier sur lequel ls agit."
+    },
+    {
+      "question": "Vous etes dans /home/alice et vous voyez un dossier nomme etc liste par ls. Vous tapez cd /etc. Ou arrivez-vous ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Dans le /etc du systeme, a la racine, a cause du slash de tete"
+        },
+        {
+          "id": "b",
+          "text": "Dans /home/alice/etc, le dossier que vous veniez de voir"
+        },
+        {
+          "id": "c",
+          "text": "La commande echoue car etc n'est pas un chemin valide"
+        },
+        {
+          "id": "d",
+          "text": "Dans votre dossier personnel /home/alice"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le slash de tete rend le chemin absolu : cd /etc part de la racine, alors que cd etc (sans slash) serait relatif et viserait /home/alice/etc."
+    },
+    {
+      "question": "Quelle commande cree d'un seul coup l'arborescence projet, puis src dedans, puis utils dedans, meme si projet et src n'existent pas encore ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "mkdir projet src utils"
+        },
+        {
+          "id": "b",
+          "text": "touch projet/src/utils"
+        },
+        {
+          "id": "c",
+          "text": "cp -r projet/src/utils"
+        },
+        {
+          "id": "d",
+          "text": "mkdir -p projet/src/utils"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "L'option -p (parents) de mkdir cree toute l'arborescence d'un coup et ne se plaint pas si un dossier existait deja ; sans -p, mkdir refuse de creer les parents manquants."
+    },
+    {
+      "question": "Dans un script lance par ./salut.sh Marc Lea, que contient la variable $1 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Marc, le premier argument passe au script"
+        },
+        {
+          "id": "b",
+          "text": "Lea, le deuxieme argument"
+        },
+        {
+          "id": "c",
+          "text": "./salut.sh, le nom du script lui-meme"
+        },
+        {
+          "id": "d",
+          "text": "Marc Lea, les deux arguments colles ensemble"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Bash range les arguments dans $1, $2, etc. ; $1 vaut le premier (Marc), $2 le deuxieme (Lea). $0 contient le nom du script et $@ regroupe tous les arguments."
+    },
+    {
+      "question": "Vous tapez par erreur rm fichier-important.txt en ligne de commande. Que se passe-t-il ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le fichier part dans la corbeille et reste restaurable"
+        },
+        {
+          "id": "b",
+          "text": "rm refuse de supprimer un fichier marque important"
+        },
+        {
+          "id": "c",
+          "text": "Une confirmation est demandee par defaut avant suppression"
+        },
+        {
+          "id": "d",
+          "text": "Le fichier est supprime immediatement et definitivement, sans corbeille"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "En ligne de commande il n'y a pas de corbeille : rm supprime sur-le-champ et sans retour possible. L'option -i permet de demander confirmation."
+    },
+    {
+      "question": "Vous devez parcourir un fichier de log de 1,5 Go pour y trouver une erreur precise. Quel outil est le plus adapte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "cat, pour tout afficher d'un coup a l'ecran"
+        },
+        {
+          "id": "b",
+          "text": "less, qui pagine sans tout charger en memoire et permet de chercher avec /motif"
+        },
+        {
+          "id": "c",
+          "text": "head, pour voir les premieres lignes du fichier"
+        },
+        {
+          "id": "d",
+          "text": "touch, pour ouvrir le fichier en lecture"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "less ouvre une vue paginee qui ne charge pas tout en memoire et permet la recherche avec /motif ; cat sur un gros log saturerait la session, et head ne montre que le debut."
+    },
+    {
+      "question": "A quoi sert l'option -f de la commande tail (par exemple tail -f /var/log/nginx/access.log) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A forcer l'affichage d'un fichier binaire"
+        },
+        {
+          "id": "b",
+          "text": "A afficher seulement les premieres lignes du fichier"
+        },
+        {
+          "id": "c",
+          "text": "A trier les lignes du fichier par ordre alphabetique"
+        },
+        {
+          "id": "d",
+          "text": "A afficher les nouvelles lignes au fur et a mesure qu'elles s'ecrivent dans le fichier"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "tail -f (follow) garde le fichier ouvert et affiche les nouvelles lignes en temps reel : c'est le reflexe de debogage pour suivre un log en direct. On l'arrete avec Ctrl + C."
+    },
+    {
+      "question": "Un dossier porte les permissions r-- pour votre categorie. Vous voyez la liste des noms de fichiers, mais cd echoue. Pourquoi ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il manque le bit w sur le dossier"
+        },
+        {
+          "id": "b",
+          "text": "Il manque le bit x, necessaire pour entrer dans un dossier"
+        },
+        {
+          "id": "c",
+          "text": "Les fichiers a l'interieur sont tous en 000"
+        },
+        {
+          "id": "d",
+          "text": "Un dossier ne peut jamais avoir uniquement le bit r"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Sur un dossier, r permet de lister les noms mais x est obligatoire pour le traverser (faire cd ou atteindre son contenu). Sans x, impossible d'entrer."
+    },
+    {
+      "question": "Pourquoi mettre un fichier en chmod 777 est-il une mauvaise pratique de securite sur un serveur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que 777 empeche le proprietaire de modifier le fichier"
+        },
+        {
+          "id": "b",
+          "text": "Parce que 777 rend le fichier illisible par le serveur web"
+        },
+        {
+          "id": "c",
+          "text": "Parce que 777 autorise n'importe quel processus, y compris le code d'un attaquant, a reecrire le fichier"
+        },
+        {
+          "id": "d",
+          "text": "Parce que 777 supprime automatiquement le bit d'execution"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "777 = rwxrwxrwx donne lecture, ecriture et execution a tout le monde. Sur un script, un attaquant ayant pris un compte peut remplacer le code, qui tournera ensuite avec vos droits. On donne le minimum de droits, pas le maximum."
+    },
+    {
+      "question": "Vous voulez arreter proprement un processus bloque. Que fait kill PID par defaut, et pourquoi le preferer a kill -9 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il envoie SIGKILL, qui tue immediatement le processus sans aucun nettoyage"
+        },
+        {
+          "id": "b",
+          "text": "Il envoie SIGTERM, qui demande au processus de s'arreter proprement en fermant ses fichiers"
+        },
+        {
+          "id": "c",
+          "text": "Il met le processus en pause definitive sans le terminer"
+        },
+        {
+          "id": "d",
+          "text": "Il recharge la configuration du processus sans l'arreter"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "kill PID envoie SIGTERM (15), une demande d'arret propre : le processus ferme ses fichiers et termine ses ecritures. kill -9 (SIGKILL) tue sans nettoyage et risque de corrompre des donnees, donc on le garde en dernier recours."
+    },
+    {
+      "question": "Un client signale que les envois de fichiers echouent. free -h montre de la memoire disponible, mais df -h affiche /var a 100 %. Quelle est la cause la plus probable ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le CPU est sature a 100 %"
+        },
+        {
+          "id": "b",
+          "text": "La RAM est entierement consommee par le cache"
+        },
+        {
+          "id": "c",
+          "text": "Le disque est plein, donc les services ne peuvent plus rien y ecrire et plantent"
+        },
+        {
+          "id": "d",
+          "text": "Le reseau de la machine est deconnecte"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un disque a 100 % (vu dans df -h) empeche toute ecriture : un service qui stocke des uploads sous /var ne peut plus ecrire et echoue. La memoire etant disponible, le coupable est bien le disque plein."
+    },
+    {
+      "question": "Quelle est la difference entre les operateurs de redirection > et >> ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "> ajoute a la fin du fichier, >> ecrase tout le contenu"
+        },
+        {
+          "id": "b",
+          "text": "> ecrase le fichier de destination, >> ajoute a la fin sans detruire l'existant"
+        },
+        {
+          "id": "c",
+          "text": "Les deux ecrasent, >> est simplement plus rapide"
+        },
+        {
+          "id": "d",
+          "text": "> redirige les erreurs, >> redirige la sortie standard"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "> redirige stdout vers un fichier et l'ecrase silencieusement, tandis que >> ajoute a la fin sans toucher au contenu deja present. C'est >> qu'on utilise pour accumuler un journal."
+    },
+    {
+      "question": "Comment ignorer purement et simplement les messages d'erreur d'une commande, par exemple les Permission denied de find ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "find / -name 'rapport.pdf' > /dev/null"
+        },
+        {
+          "id": "b",
+          "text": "find / -name 'rapport.pdf' | /dev/null"
+        },
+        {
+          "id": "c",
+          "text": "find / -name 'rapport.pdf' 2> /dev/null"
+        },
+        {
+          "id": "d",
+          "text": "find / -name 'rapport.pdf' 1> /dev/null"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "stderr porte le numero 2, donc 2> /dev/null envoie uniquement les erreurs vers le trou noir du systeme tout en gardant le resultat (stdout) a l'ecran. > seul (ou 1>) ne capturerait que stdout."
+    },
+    {
+      "question": "Vous voulez savoir quel fichier d'un dossier contient le mot password. Quel outil utilisez-vous, et pourquoi ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "find, parce qu'il cherche par nom de fichier"
+        },
+        {
+          "id": "b",
+          "text": "ls, parce qu'il liste le contenu des dossiers"
+        },
+        {
+          "id": "c",
+          "text": "grep, parce qu'il cherche du texte a l'interieur des fichiers"
+        },
+        {
+          "id": "d",
+          "text": "cat, parce qu'il affiche le contenu des fichiers"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "find repond a la question 'ou est ce fichier ?' (par nom), alors que grep repond a 'quel fichier contient ce texte ?' en cherchant dans le contenu. Ici on cherche un contenu, donc grep (par exemple grep -r 'password')."
+    },
+    {
+      "question": "Pourquoi entoure-t-on le motif d'apostrophes dans une commande comme find /etc -name '*.conf' ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour que le shell ne remplace pas le * avant que find ne recoive le motif"
+        },
+        {
+          "id": "b",
+          "text": "Pour afficher les resultats en couleur"
+        },
+        {
+          "id": "c",
+          "text": "Parce que find refuse tout motif ecrit sans apostrophes"
+        },
+        {
+          "id": "d",
+          "text": "Par pure convention, cela ne change rien au resultat"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Sans apostrophes, le shell developpe le * (en fonction du dossier courant) avant de lancer find, qui recevrait une liste deja transformee. Les apostrophes protegent le motif pour que ce soit find, et lui seul, qui l'interprete."
+    },
+    {
+      "question": "Sur Debian ou Ubuntu, que fait exactement la commande apt update ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle installe les nouvelles versions de tous les logiciels deja presents"
+        },
+        {
+          "id": "b",
+          "text": "Elle rafraichit la liste des paquets disponibles dans les depots, sans rien installer"
+        },
+        {
+          "id": "c",
+          "text": "Elle installe un nouveau paquet et ses dependances"
+        },
+        {
+          "id": "d",
+          "text": "Elle supprime les paquets devenus inutiles"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "apt update ne met a jour aucun logiciel : il rafraichit seulement le catalogue local des paquets disponibles. C'est apt upgrade qui installe ensuite les nouvelles versions, d'ou la sequence update puis upgrade."
+    },
+    {
+      "question": "A quoi sert la premiere ligne #!/bin/bash (le shebang) au tout debut d'un script ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A rendre le script automatiquement executable"
+        },
+        {
+          "id": "b",
+          "text": "A indiquer au systeme quel programme doit interpreter le fichier"
+        },
+        {
+          "id": "c",
+          "text": "A afficher du texte a l'ecran au lancement"
+        },
+        {
+          "id": "d",
+          "text": "A definir une variable d'environnement"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le shebang designe l'interpreteur a utiliser (ici /bin/bash). Il doit etre tout en haut ; sans lui, le script peut quand meme se lancer avec bash script.sh mais pas en ./script.sh."
+    },
+    {
+      "question": "Dans une condition Bash comme if [ -f fichier ]; then, pourquoi [-f fichier] sans espaces echoue-t-il ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que l'option -f n'existe pas en Bash"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il faut des guillemets a la place des crochets"
+        },
+        {
+          "id": "c",
+          "text": "Parce que le test doit etre place apres le then"
+        },
+        {
+          "id": "d",
+          "text": "Parce que [ est en realite une commande qui a besoin d'espaces autour de ses arguments"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "[ est un synonyme de la commande test : Bash le lance avec -f, fichier et ] comme arguments. Sans espace apres [ et avant ], il ne reconnait plus la commande et echoue (par exemple command not found ou missing ])."
+    },
+    {
+      "question": "Dans la ligne cron 30 2 * * * /home/user/backup.sh, que represente le chiffre 2 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le jour du mois"
+        },
+        {
+          "id": "b",
+          "text": "La minute d'execution"
+        },
+        {
+          "id": "c",
+          "text": "L'heure d'execution (2 h du matin)"
+        },
+        {
+          "id": "d",
+          "text": "Le nombre de copies a conserver"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les cinq champs cron sont, dans l'ordre : minute, heure, jour du mois, mois, jour de la semaine. Ici 30 est la minute et 2 l'heure, donc la tache s'execute tous les jours a 2 h 30."
+    }
+  ]
+}

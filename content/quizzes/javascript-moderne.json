@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "En JavaScript moderne, quel mot-cle declare-t-on par defaut, et pourquoi ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "var, parce que sa portee est la plus large et la plus pratique"
+        },
+        {
+          "id": "b",
+          "text": "const, parce qu'il signale une valeur qui ne change pas et bloque les reassignations accidentelles"
+        },
+        {
+          "id": "c",
+          "text": "let, parce qu'il est plus rapide a l'execution que const"
+        },
+        {
+          "id": "d",
+          "text": "var, parce que let et const sont desormais obsoletes"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "On ecrit const par defaut et on passe a let seulement quand la valeur doit changer : une constante annonce une intention et transforme une reassignation accidentelle en erreur visible."
+    },
+    {
+      "question": "Quelle affirmation decrit correctement la difference entre null et undefined ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "undefined est la valeur par defaut d'une variable non affectee, alors que null est un vide pose volontairement"
+        },
+        {
+          "id": "b",
+          "text": "null est automatique pour les variables non affectees, undefined est volontaire"
+        },
+        {
+          "id": "c",
+          "text": "Ce sont deux mots strictement equivalents pour designer la meme valeur"
+        },
+        {
+          "id": "d",
+          "text": "undefined sert aux nombres, null sert uniquement aux chaines"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "undefined vient du langage : c'est l'etat d'une variable declaree mais pas remplie. null vient du developpeur : c'est un vide assume et explicite."
+    },
+    {
+      "question": "Que vaut l'expression 1 + '1' en JavaScript ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une erreur, car on ne peut pas additionner un nombre et une chaine"
+        },
+        {
+          "id": "b",
+          "text": "2, car JavaScript convertit la chaine en nombre"
+        },
+        {
+          "id": "c",
+          "text": "'11', car la presence d'une chaine declenche une concatenation"
+        },
+        {
+          "id": "d",
+          "text": "NaN, car les types sont incompatibles"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Des qu'une chaine apparait, l'operateur + concatene au lieu d'additionner : le nombre est transforme en texte et colle a la chaine, ce qui donne '11'."
+    },
+    {
+      "question": "Quel operateur compare a la fois la valeur ET le type, sans aucune conversion ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "=="
+        },
+        {
+          "id": "b",
+          "text": "="
+        },
+        {
+          "id": "c",
+          "text": "%"
+        },
+        {
+          "id": "d",
+          "text": "==="
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le triple egal === compare valeur et type sans coercition : c'est pourquoi '5' === 5 vaut false, alors que '5' == 5 vaut true a cause de la conversion implicite du double egal."
+    },
+    {
+      "question": "Parmi ces valeurs, laquelle est consideree comme truthy par une condition if en JavaScript ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "''"
+        },
+        {
+          "id": "b",
+          "text": "'0'"
+        },
+        {
+          "id": "c",
+          "text": "0"
+        },
+        {
+          "id": "d",
+          "text": "null"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les valeurs falsy sont exactement false, 0, '', null, undefined et NaN. La chaine '0' n'est pas vide, donc elle est truthy, tout comme un tableau ou un objet."
+    },
+    {
+      "question": "Dans une instruction switch, qu'est-ce qui provoque le fall-through, c'est-a-dire l'execution qui deborde sur le case suivant ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un break oublie a la fin d'un case"
+        },
+        {
+          "id": "b",
+          "text": "L'absence d'un bloc default"
+        },
+        {
+          "id": "c",
+          "text": "L'utilisation d'une egalite non stricte"
+        },
+        {
+          "id": "d",
+          "text": "Un nombre de case trop eleve"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Sans break, l'execution ne s'arrete pas a la fin du case trouve : elle continue dans les case suivants jusqu'a rencontrer un break ou la fin du switch."
+    },
+    {
+      "question": "Vous voulez parcourir directement les valeurs d'un tableau de prenoms, sans gerer d'indice. Quelle boucle est la plus adaptee ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "for...in, qui donne les valeurs du tableau"
+        },
+        {
+          "id": "b",
+          "text": "Un while sans condition d'arret"
+        },
+        {
+          "id": "c",
+          "text": "for...of, qui fournit chaque valeur l'une apres l'autre"
+        },
+        {
+          "id": "d",
+          "text": "Une boucle do...while obligatoire pour les tableaux"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "for...of donne directement les valeurs du tableau, sans compteur ni acces par indice. for...in, lui, renvoie les cles (les indices) sous forme de chaines et n'est pas fait pour parcourir les valeurs d'un tableau."
+    },
+    {
+      "question": "A l'interieur d'une boucle, quelle est la difference entre break et continue ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "break saute au tour suivant, continue sort de la boucle"
+        },
+        {
+          "id": "b",
+          "text": "break sort immediatement de la boucle, continue abandonne seulement le tour en cours et passe au suivant"
+        },
+        {
+          "id": "c",
+          "text": "Les deux arretent definitivement la boucle, sans difference"
+        },
+        {
+          "id": "d",
+          "text": "break met la boucle en pause, continue la redemarre depuis le debut"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "break arrete completement la boucle, tandis que continue abandonne uniquement l'iteration courante et reprend a la suivante."
+    },
+    {
+      "question": "Que renvoie une fonction qui ne contient aucune instruction return ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "undefined"
+        },
+        {
+          "id": "b",
+          "text": "null"
+        },
+        {
+          "id": "c",
+          "text": "0"
+        },
+        {
+          "id": "d",
+          "text": "Une chaine vide"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Une fonction sans return renvoie undefined. console.log affiche dans la console mais ne rend rien au programme ; seul return renvoie une valeur exploitable."
+    },
+    {
+      "question": "Quelle affirmation sur les fonctions flechees est correcte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elles ne peuvent pas recevoir de parametres"
+        },
+        {
+          "id": "b",
+          "text": "Elles affichent toujours leur resultat dans la console"
+        },
+        {
+          "id": "c",
+          "text": "Ce ne sont qu'une syntaxe plus courte, avec un comportement strictement identique a function"
+        },
+        {
+          "id": "d",
+          "text": "Elles ne creent pas leur propre this, contrairement a une fonction declaree avec function"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une fonction flechee ne cree pas son propre this : elle garde celui du code environnant. Ce n'est pas qu'une question de longueur, et cela peut changer le comportement dans un objet ou une classe."
+    },
+    {
+      "question": "Quelle affirmation sur la methode reduce d'un tableau est correcte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'accumulateur de reduce peut etre un objet ou un tableau, pas seulement un nombre"
+        },
+        {
+          "id": "b",
+          "text": "reduce sert uniquement a calculer des sommes"
+        },
+        {
+          "id": "c",
+          "text": "reduce modifie le tableau d'origine sur place"
+        },
+        {
+          "id": "d",
+          "text": "reduce renvoie toujours un nouveau tableau"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "reduce ramene un tableau a une seule valeur via un accumulateur qui peut etre de n'importe quel type : nombre, chaine, objet ou tableau. Elle ne se limite donc pas aux sommes."
+    },
+    {
+      "question": "Pourquoi un callback de map ecrit avec des accolades mais sans return renvoie-t-il un tableau rempli de undefined ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que map mute le tableau d'origine"
+        },
+        {
+          "id": "b",
+          "text": "Parce que map ignore les fonctions ecrites avec des accolades"
+        },
+        {
+          "id": "c",
+          "text": "Parce que sans return explicite, la fonction ne renvoie aucune valeur transformee"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il faut obligatoirement utiliser filter a la place"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Avec un corps entre accolades, le return est obligatoire. Sans lui, chaque appel renvoie undefined, donc map produit un tableau plein de undefined. Sans accolades, le return est implicite."
+    },
+    {
+      "question": "Que vaut a.valeur a la fin de ce code : const a = { valeur: 1 }; const b = a; b.valeur = 5; ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "undefined, car b ecrase a"
+        },
+        {
+          "id": "b",
+          "text": "1, car b est une copie independante de a"
+        },
+        {
+          "id": "c",
+          "text": "Une erreur est levee a l'affectation"
+        },
+        {
+          "id": "d",
+          "text": "5, car a et b designent le meme objet en memoire"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Affecter un objet avec = partage la reference, pas le contenu : a et b pointent vers le meme objet, donc modifier b.valeur change aussi a.valeur. Pour une vraie copie, il faut le spread ou structuredClone."
+    },
+    {
+      "question": "Dans une methode appelee via objet.methode(), a quoi renvoie le mot-cle this ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A l'objet a gauche du point, c'est-a-dire objet"
+        },
+        {
+          "id": "b",
+          "text": "A une copie de l'objet creee pour l'appel"
+        },
+        {
+          "id": "c",
+          "text": "A la fonction globale"
+        },
+        {
+          "id": "d",
+          "text": "Au dernier objet declare dans le fichier"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Quand on ecrit objet.methode(), this designe l'objet a gauche du point, ce qui permet a la methode de lire les autres proprietes du meme objet."
+    },
+    {
+      "question": "Apres avoir execute 'cyberlearn'.toUpperCase() sans reaffecter le resultat, que vaut la variable d'origine ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle devient undefined"
+        },
+        {
+          "id": "b",
+          "text": "Elle reste inchangee, car les chaines sont immuables"
+        },
+        {
+          "id": "c",
+          "text": "Elle passe en majuscules sur place"
+        },
+        {
+          "id": "d",
+          "text": "Elle devient un tableau de caracteres"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les chaines sont immuables : toUpperCase ne modifie pas l'original, elle renvoie une nouvelle chaine. Si on ne reaffecte pas ce retour, la variable garde son ancienne valeur."
+    },
+    {
+      "question": "Avec un template literal, comment insere-t-on la variable nom dans le texte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avec %nom% entre apostrophes"
+        },
+        {
+          "id": "b",
+          "text": "Avec {nom} entre guillemets doubles"
+        },
+        {
+          "id": "c",
+          "text": "Avec la syntaxe dollar-accolade, ${nom}, entre backticks"
+        },
+        {
+          "id": "d",
+          "text": "Avec [nom] entre crochets"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les template literals s'ecrivent entre backticks et interpolent une expression avec ${...}. Ils gerent aussi le multi-lignes sans caractere special."
+    },
+    {
+      "question": "Dans le contexte des closures, comment se comporte la variable capturee par la fonction interne ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "C'est une copie figee prise au moment de la definition"
+        },
+        {
+          "id": "b",
+          "text": "Elle est remise a zero a chaque appel de la fonction"
+        },
+        {
+          "id": "c",
+          "text": "Elle est supprimee des que la fonction englobante se termine"
+        },
+        {
+          "id": "d",
+          "text": "C'est un lien vivant vers la vraie variable, qui voit ses changements"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une closure ne photographie pas la valeur : elle garde un lien vivant vers la variable. C'est pourquoi un compteur base sur une closure progresse au lieu de renvoyer toujours le meme chiffre."
+    },
+    {
+      "question": "Que contient la variable x apres const x = chargerDonnees(), si chargerDonnees renvoie une promesse et qu'on a oublie le await ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La valeur finale de l'operation"
+        },
+        {
+          "id": "b",
+          "text": "Un objet Promise encore en attente"
+        },
+        {
+          "id": "c",
+          "text": "Une erreur de syntaxe"
+        },
+        {
+          "id": "d",
+          "text": "La chaine vide"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Sans await, on recupere l'objet Promise lui-meme, pas la valeur qu'il finira par contenir. C'est l'un des bugs les plus frequents en code asynchrone."
+    },
+    {
+      "question": "Vous ecrivez un console.log, puis un setTimeout(..., 0), puis un autre console.log. Dans quel ordre les messages s'affichent-ils ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le setTimeout en premier, puis les deux console.log"
+        },
+        {
+          "id": "b",
+          "text": "Les trois en meme temps"
+        },
+        {
+          "id": "c",
+          "text": "Les deux console.log d'abord, puis le message du setTimeout"
+        },
+        {
+          "id": "d",
+          "text": "L'ordre est totalement imprevisible"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Asynchrone ne veut pas dire en parallele : meme avec un delai de zero, la fonction de setTimeout est mise en file et n'est appelee qu'apres tout le code synchrone en cours."
+    },
+    {
+      "question": "Dans un moteur de quiz, pourquoi vaut-il mieux stocker l'index de la bonne reponse (un nombre) plutot que son texte, et que renvoie une fonction verifier(question, indexChoisi) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "On stocke le texte, car comparer deux chaines est plus fiable que comparer deux nombres"
+        },
+        {
+          "id": "b",
+          "text": "On stocke l'index parce que JavaScript interdit les chaines dans un objet"
+        },
+        {
+          "id": "c",
+          "text": "On stocke l'index car comparer deux nombres avec === est plus simple et plus sur, et verifier renvoie un booleen true ou false"
+        },
+        {
+          "id": "d",
+          "text": "On stocke l'index pour que verifier puisse renvoyer directement le score total du quiz"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Comparer deux nombres avec une egalite stricte === est plus simple et moins risque que comparer deux chaines. La fonction verifier se contente de comparer l'index choisi a la bonne reponse et renvoie un booleen, sans calculer de score."
+    }
+  ]
+}

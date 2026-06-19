@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Pourquoi un fichier source .c ne peut-il pas s'exécuter directement comme un script Python ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'il manque toujours la fonction printf dans le fichier"
+        },
+        {
+          "id": "b",
+          "text": "Parce que le C doit d'abord être compilé en un exécutable autonome avant de tourner"
+        },
+        {
+          "id": "c",
+          "text": "Parce que le C ne sert qu'à écrire des bibliothèques, jamais des programmes"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'un fichier .c doit obligatoirement être interprété ligne par ligne"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le C est un langage compilé : un compilateur traduit le code source en instructions machine, et c'est cet exécutable que l'on lance, pas le fichier .c lui-même."
+    },
+    {
+      "question": "Dans un programme C, quelle ligne ne se termine PAS par un point-virgule ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La directive #include en tête du fichier"
+        },
+        {
+          "id": "b",
+          "text": "Un appel à printf"
+        },
+        {
+          "id": "c",
+          "text": "L'instruction return 0"
+        },
+        {
+          "id": "d",
+          "text": "Une affectation comme score = 100"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La directive #include est une directive de préprocesseur traitée avant la compilation : elle suit ses propres règles et ne prend pas de point-virgule, contrairement aux instructions."
+    },
+    {
+      "question": "Que stocke réellement en mémoire une variable de type char qui vaut 'A' ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le code numérique 65 (sa valeur ASCII)"
+        },
+        {
+          "id": "b",
+          "text": "Une chaîne de texte contenant la lettre A"
+        },
+        {
+          "id": "c",
+          "text": "Un pointeur vers l'emplacement de la lettre"
+        },
+        {
+          "id": "d",
+          "text": "Les deux caractères apostrophe et A"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un char est un petit entier tenant sur un octet : 'A' range en réalité le nombre 65, que l'on peut afficher en %c (le caractère) ou en %d (le code)."
+    },
+    {
+      "question": "Quel spécificateur de format printf affiche correctement une variable de type double ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "%d"
+        },
+        {
+          "id": "b",
+          "text": "%c"
+        },
+        {
+          "id": "c",
+          "text": "%s"
+        },
+        {
+          "id": "d",
+          "text": "%f"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "%f affiche les float et les double. Utiliser %d sur un double fait lire les octets de travers et produit un affichage faux, souvent un grand nombre absurde."
+    },
+    {
+      "question": "En C, quel est le reste de la division 17 % 5 (opérateur modulo) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "2"
+        },
+        {
+          "id": "b",
+          "text": "3"
+        },
+        {
+          "id": "c",
+          "text": "3.4"
+        },
+        {
+          "id": "d",
+          "text": "0"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le modulo donne le reste de la division entière : 17 contient trois fois 5 (15), et il reste 2. Tester n % 2 == 0 est d'ailleurs la façon standard de savoir si un nombre est pair."
+    },
+    {
+      "question": "En C, quelle valeur est considérée comme fausse dans une condition de if ou de while ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Seulement la valeur 1"
+        },
+        {
+          "id": "b",
+          "text": "Toute valeur négative"
+        },
+        {
+          "id": "c",
+          "text": "La valeur 0 uniquement, tout le reste valant vrai"
+        },
+        {
+          "id": "d",
+          "text": "Rien, il faut obligatoirement le mot-clé false"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "En C historique il n'existe pas de booléen séparé : seul 0 vaut faux, et toute autre valeur (1, 42, -1...) vaut vrai. C'est pourquoi if (x = 5) s'exécute toujours, car 5 est non nul."
+    },
+    {
+      "question": "Dans une instruction switch, qu'arrive-t-il si on oublie le break à la fin d'un case ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le programme s'arrête immédiatement sur une erreur"
+        },
+        {
+          "id": "b",
+          "text": "Seul le case courant s'exécute, puis le switch se referme"
+        },
+        {
+          "id": "c",
+          "text": "Le bloc default est exécuté automatiquement à la place"
+        },
+        {
+          "id": "d",
+          "text": "L'exécution déborde dans le case suivant : c'est le fall-through"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Sans break, l'exécution continue ligne après ligne et entre dans le case suivant sans tenir compte de son étiquette. C'est le fall-through, à éviter sauf intention explicite."
+    },
+    {
+      "question": "À quoi sert l'opérateur ternaire de la forme condition ? a : b en C ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il produit la valeur a si la condition est vraie, sinon la valeur b"
+        },
+        {
+          "id": "b",
+          "text": "Il exécute trois instructions à la suite"
+        },
+        {
+          "id": "c",
+          "text": "Il remplace obligatoirement toute instruction switch"
+        },
+        {
+          "id": "d",
+          "text": "Il déclare une variable à trois états"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le ternaire produit la valeur a si la condition est vraie, sinon b. Contrairement au if, il renvoie une valeur que l'on peut affecter ou passer directement à printf, et convient aux choix courts."
+    },
+    {
+      "question": "Pourquoi le corps d'une boucle do-while s'exécute-t-il toujours au moins une fois ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le compilateur ajoute un tour automatique au départ"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la condition est testée après le corps, et non avant"
+        },
+        {
+          "id": "c",
+          "text": "Parce que do-while ignore complètement sa condition"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'une boucle do-while ne peut pas contenir de break"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le do-while place sa condition à la fin : le corps s'exécute d'abord, puis le test décide d'un nouveau tour. Donc un passage est garanti même si la condition est fausse dès l'entrée."
+    },
+    {
+      "question": "Dans une boucle for, qu'est-ce qui provoque le plus souvent une boucle infinie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Initialiser la variable de boucle à zéro"
+        },
+        {
+          "id": "b",
+          "text": "Utiliser un break au milieu de la boucle"
+        },
+        {
+          "id": "c",
+          "text": "Écrire une condition d'arrêt trop longue"
+        },
+        {
+          "id": "d",
+          "text": "Oublier de faire avancer le compteur, si bien que la condition reste toujours vraie"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Si l'incrément manque ou ne touche jamais la variable testée, la condition ne devient jamais fausse : la boucle tourne indéfiniment et le programme se fige."
+    },
+    {
+      "question": "Une fonction reçoit un paramètre entier par valeur et le modifie dans son corps. Que devient la variable d'origine chez l'appelant ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle est modifiée de la même manière"
+        },
+        {
+          "id": "b",
+          "text": "Elle reste inchangée car la fonction travaille sur une copie"
+        },
+        {
+          "id": "c",
+          "text": "Le programme plante au retour de la fonction"
+        },
+        {
+          "id": "d",
+          "text": "Elle devient automatiquement une variable globale"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le passage par valeur transmet une copie jetable du paramètre. La variable d'origine n'est jamais touchée, à moins de lui passer son adresse via un pointeur."
+    },
+    {
+      "question": "Pourquoi place-t-on un prototype de fonction avant main ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour que le compilateur connaisse la signature de la fonction avant l'appel, même si elle est définie plus bas"
+        },
+        {
+          "id": "b",
+          "text": "Pour rendre la fonction plus rapide à l'exécution"
+        },
+        {
+          "id": "c",
+          "text": "Parce que le C interdit de définir une fonction après main"
+        },
+        {
+          "id": "d",
+          "text": "Pour transformer automatiquement la fonction en void"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le compilateur lit le fichier de haut en bas. Le prototype (signature suivie d'un point-virgule) lui annonce la fonction avant son appel, ce qui permet de placer la définition complète plus loin."
+    },
+    {
+      "question": "Dans un tableau déclaré int t[5], quels accès débordent des limites valides ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "t[5] et t[-1]"
+        },
+        {
+          "id": "b",
+          "text": "t[1] et t[2]"
+        },
+        {
+          "id": "c",
+          "text": "t[0] et t[4]"
+        },
+        {
+          "id": "d",
+          "text": "t[2] et t[3]"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un tableau de 5 cases a des indices valides de 0 à 4. t[5] et t[-1] sortent de cette plage : le C ne vérifie pas les bornes, et un tel accès est un comportement indéfini."
+    },
+    {
+      "question": "Là où le tableau int notes[5] est déclaré, que vaut l'expression sizeof(notes) / sizeof(notes[0]) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La somme des éléments du tableau"
+        },
+        {
+          "id": "b",
+          "text": "Le nombre de cases du tableau, soit 5"
+        },
+        {
+          "id": "c",
+          "text": "La valeur stockée dans la première case"
+        },
+        {
+          "id": "d",
+          "text": "La taille en bits d'un entier"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "sizeof(notes) donne le poids total du bloc et sizeof(notes[0]) le poids d'une case ; leur quotient donne le nombre de cases. Cette astuce ne marche que là où le tableau est déclaré, pas dans une fonction qui le reçoit."
+    },
+    {
+      "question": "Combien de cases mémoire occupe la chaîne \"chat\" en C ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "4, une par lettre"
+        },
+        {
+          "id": "b",
+          "text": "3, car la première lettre sert d'indicateur"
+        },
+        {
+          "id": "c",
+          "text": "5, les quatre lettres plus le caractère nul de fin"
+        },
+        {
+          "id": "d",
+          "text": "8, le C arrondit à une puissance de deux"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Une chaîne C est un tableau de char terminé par le caractère nul '\\0', qui occupe une case sans s'afficher. \"chat\" prend donc 5 cases même si strlen renvoie 4."
+    },
+    {
+      "question": "Comment compare-t-on correctement le contenu de deux chaînes de caractères en C ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avec strcmp, qui renvoie 0 quand les chaînes sont identiques"
+        },
+        {
+          "id": "b",
+          "text": "Avec l'opérateur == comme dans a == b"
+        },
+        {
+          "id": "c",
+          "text": "Avec strlen appliqué à chacune des deux chaînes"
+        },
+        {
+          "id": "d",
+          "text": "Avec l'opérateur != suivi de strcat"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'opérateur == compare des adresses mémoire, pas le texte. strcmp parcourt les chaînes lettre par lettre et renvoie 0 lorsqu'elles ont exactement le même contenu."
+    },
+    {
+      "question": "Pourquoi strcpy peut-il provoquer une faille de sécurité (débordement de tampon) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elle oublie systématiquement d'écrire le caractère nul"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle copie sans vérifier la taille de la destination et peut écrire au-delà des cases prévues"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'elle ne fonctionne qu'avec l'en-tête ctype.h"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'elle est trop lente sur les chaînes longues"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "strcpy copie tout jusqu'au '\\0' sans regarder la place disponible. Si la source dépasse la destination, elle écrase la mémoire voisine : c'est le débordement de tampon, à éviter avec strncpy ou snprintf."
+    },
+    {
+      "question": "Après les lignes int x = 5; int *p = &x; que vaut l'expression *p ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'adresse de x"
+        },
+        {
+          "id": "b",
+          "text": "La valeur 5"
+        },
+        {
+          "id": "c",
+          "text": "L'adresse de p"
+        },
+        {
+          "id": "d",
+          "text": "La valeur NULL"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le déréférencement *p donne la valeur rangée à l'adresse contenue dans p, soit 5. C'est p seul, sans étoile, qui contient l'adresse de x ; l'opérateur & sert à récupérer cette adresse."
+    },
+    {
+      "question": "Pourquoi une fonction qui reçoit un tableau a-t-elle besoin qu'on lui passe aussi sa taille en paramètre séparé ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le C interdit les tableaux dont la taille n'est pas répétée"
+        },
+        {
+          "id": "b",
+          "text": "Pour rendre la fonction plus rapide"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'elle ne reçoit qu'un pointeur vers le premier élément, qui ne mémorise pas le nombre d'éléments"
+        },
+        {
+          "id": "d",
+          "text": "Ce n'est en réalité jamais nécessaire"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le nom d'un tableau vaut l'adresse de son premier élément : la fonction ne reçoit qu'un pointeur, sans l'information de longueur. Sans la taille transmise à part, elle ne sait pas où s'arrêter et risque de déborder."
+    },
+    {
+      "question": "Dans un gestionnaire d'inventaire codé avec un tableau de structures de taille fixe, à quoi sert la variable compteur (nombre) tenue à côté du tableau ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À connaître la taille maximale réservée par le tableau"
+        },
+        {
+          "id": "b",
+          "text": "À savoir combien de cases sont réellement remplies"
+        },
+        {
+          "id": "c",
+          "text": "À trier automatiquement les produits par prix"
+        },
+        {
+          "id": "d",
+          "text": "À stocker la valeur totale du stock"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le tableau a une capacité fixe décidée à la compilation, mais on n'en remplit pas forcément toutes les cases. Le compteur suit le remplissage réel et indique où s'arrêtent les produits, ce qui borne chaque parcours."
+    }
+  ]
+}

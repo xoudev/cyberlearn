@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Lors d'une mise en route de Git sur une nouvelle machine, quelle est la relation correcte entre Git et GitHub ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Git et GitHub sont deux noms commerciaux du meme logiciel edite par Microsoft"
+        },
+        {
+          "id": "b",
+          "text": "Git est l'outil de versionnement qui vit sur ta machine et fonctionne hors ligne ; GitHub est un service en ligne qui heberge des depots Git"
+        },
+        {
+          "id": "c",
+          "text": "Git sert a versionner le code, GitHub sert a versionner les images et fichiers binaires"
+        },
+        {
+          "id": "d",
+          "text": "GitHub fonctionne sans connexion internet, alors que Git exige un serveur distant"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Git est le moteur de versionnement local, utilisable sans aucun compte en ligne. GitHub (comme GitLab ou Bitbucket) est un service qui heberge une copie de tes depots Git et ajoute des outils par-dessus."
+    },
+    {
+      "question": "Tu viens de taper `git add fichier.txt`. Quel est l'effet exact de cette commande ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle cree un nouveau commit contenant le fichier dans l'historique"
+        },
+        {
+          "id": "b",
+          "text": "Elle affiche la liste des fichiers modifies du depot"
+        },
+        {
+          "id": "c",
+          "text": "Elle place le fichier dans la zone de preparation, sans rien enregistrer dans l'historique"
+        },
+        {
+          "id": "d",
+          "text": "Elle envoie le fichier vers le depot distant origin"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "`git add` ne fait que deposer le changement dans la zone de preparation (le staging). Tant qu'on n'a pas execute `git commit`, aucune photo n'est prise et rien n'entre dans l'historique."
+    },
+    {
+      "question": "Quelle commande donne une vue compacte de l'historique, une seule ligne par commit ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "git log --oneline"
+        },
+        {
+          "id": "b",
+          "text": "git status --short"
+        },
+        {
+          "id": "c",
+          "text": "git commit --list"
+        },
+        {
+          "id": "d",
+          "text": "git diff --summary"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "`git log` affiche l'historique du plus recent au plus ancien, et l'option `--oneline` reduit chaque commit a une seule ligne (hash court plus message), pratique pour balayer l'historique d'un coup d'oeil."
+    },
+    {
+      "question": "Quand tu crees une nouvelle branche avec Git, que se passe-t-il reellement sur le disque ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Git duplique tous les fichiers du projet dans un nouveau dossier"
+        },
+        {
+          "id": "b",
+          "text": "Git cree un serveur distant separe pour cette branche"
+        },
+        {
+          "id": "c",
+          "text": "Git compresse l'historique courant dans une archive de sauvegarde"
+        },
+        {
+          "id": "d",
+          "text": "Git ecrit un petit pointeur, un fichier de quelques octets contenant l'identifiant d'un commit"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une branche n'est pas une copie du projet : c'est juste une etiquette (un pointeur) vers un commit. C'est pour cela que creer une branche est instantane, meme sur un gros projet."
+    },
+    {
+      "question": "Tu as fini la fonctionnalite sur la branche `feature/login` et tu veux ramener ce travail dans `main`. Quelle est la marche a suivre correcte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rester sur feature/login et faire `git merge main`"
+        },
+        {
+          "id": "b",
+          "text": "Te placer sur main avec `git switch main`, puis faire `git merge feature/login`"
+        },
+        {
+          "id": "c",
+          "text": "Copier les fichiers de feature/login a la main vers main"
+        },
+        {
+          "id": "d",
+          "text": "Supprimer main avec `git branch -d main`, puis renommer feature/login en main"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La fusion se fait toujours depuis la branche receptrice. On se place donc sur `main`, puis `git merge feature/login` y integre le travail de la branche de fonctionnalite."
+    },
+    {
+      "question": "Que fait exactement la commande `git clone https://github.com/user/projet.git` ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle telecharge le depot distant, cree le dossier local et configure automatiquement le lien vers le serveur"
+        },
+        {
+          "id": "b",
+          "text": "Elle envoie tes commits locaux vers le depot distant"
+        },
+        {
+          "id": "c",
+          "text": "Elle cree une nouvelle branche locale a partir de main"
+        },
+        {
+          "id": "d",
+          "text": "Elle supprime le depot distant apres en avoir fait une copie"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "`git clone` recupere tout l'historique et toutes les branches du depot distant dans un nouveau dossier local, et configure le remote `origin` automatiquement : pas besoin de `git init` derriere."
+    },
+    {
+      "question": "Ton `git push` est rejete avec un message `non-fast-forward`. Quelle est la bonne reaction ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Forcer le push avec --force pour passer outre le refus"
+        },
+        {
+          "id": "b",
+          "text": "Supprimer le depot distant et le recloner depuis zero"
+        },
+        {
+          "id": "c",
+          "text": "Faire `git pull` pour recuperer et fusionner les commits du serveur, regler les conflits eventuels, puis relancer `git push`"
+        },
+        {
+          "id": "d",
+          "text": "Attendre que le serveur se synchronise tout seul avec ta version locale"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le rejet signifie qu'un collegue a pousse pendant que tu codais : ta version locale est en retard. On fait `git pull`, on regle les conflits, puis on repousse. Jamais de `--force`, qui ecraserait le travail des autres."
+    },
+    {
+      "question": "A quoi sert une pull request dans un flux de travail en equipe ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "C'est une commande Git qui fusionne immediatement ta branche dans main"
+        },
+        {
+          "id": "b",
+          "text": "C'est une demande de fusion qui ouvre la relecture et lance les tests avant que main ne soit touchee"
+        },
+        {
+          "id": "c",
+          "text": "C'est la commande qui telecharge le depot pour la premiere fois"
+        },
+        {
+          "id": "d",
+          "text": "C'est un moyen de supprimer une branche distante devenue inutile"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une pull request n'est pas une commande Git mais une fonctionnalite de plateforme. Elle propose tes commits a la fusion et cree un sas de controle (relecture, tests) avant que quoi que ce soit n'atteigne `main`."
+    },
+    {
+      "question": "Pourquoi les equipes protegent-elles la branche `main` cote serveur (interdiction de push direct, PR relue et tests verts exiges) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que la branche main est techniquement plus lente que les autres branches"
+        },
+        {
+          "id": "b",
+          "text": "Parce que Git refuse par defaut tout commit sur une branche nommee main"
+        },
+        {
+          "id": "c",
+          "text": "Pour empecher la creation de nouvelles branches dans le depot"
+        },
+        {
+          "id": "d",
+          "text": "Pour transformer la convention d'equipe en garantie et empecher d'ecraser main par accident sans relecture"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une regle de protection sur `main` empeche les pushs directs et exige qu'une PR soit relue et que les tests passent. Meme si quelqu'un oublie la convention, la plateforme bloque l'erreur : c'est le filet de securite qui rend la collaboration sure."
+    },
+    {
+      "question": "Quelle est la difference fondamentale entre une image Docker et un conteneur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'image est un modele fige stocke sur le disque ; le conteneur est une instance qui tourne, creee a partir de cette image"
+        },
+        {
+          "id": "b",
+          "text": "Ce sont deux mots pour exactement la meme chose"
+        },
+        {
+          "id": "c",
+          "text": "L'image tourne en memoire, le conteneur n'est que le fichier de configuration"
+        },
+        {
+          "id": "d",
+          "text": "L'image contient les donnees, le conteneur contient le code source"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'image est un patron immuable sur le disque (comme une recette ou une classe) ; le conteneur est un processus vivant cree a partir d'elle (comme un plat ou un objet). D'une seule image on peut lancer autant de conteneurs qu'on veut."
+    },
+    {
+      "question": "Pourquoi un conteneur Docker est-il generalement bien plus leger qu'une machine virtuelle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'il compresse automatiquement le code de l'application au demarrage"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il tourne uniquement en memoire vive, sans rien ecrire sur le disque"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il supprime tout seul les librairies jugees inutiles"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il partage le noyau de la machine hote au lieu d'embarquer un systeme d'exploitation complet"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une VM embarque un OS complet avec son propre noyau (plusieurs Go, demarrage lent). Un conteneur partage le noyau de l'hote et n'embarque que l'appli et ses dependances, donc il pese souvent quelques dizaines de Mo et demarre en une fraction de seconde."
+    },
+    {
+      "question": "Pourquoi dix images basees sur la meme couche de depart occupent-elles moins d'espace que la somme des tailles affichees ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Docker compresse automatiquement les images les plus anciennes pour gagner de la place"
+        },
+        {
+          "id": "b",
+          "text": "Les couches communes ne sont stockees qu'une seule fois sur le disque et partagees entre toutes les images qui les utilisent"
+        },
+        {
+          "id": "c",
+          "text": "Seule la premiere image est reellement stockee, les autres sont de simples raccourcis"
+        },
+        {
+          "id": "d",
+          "text": "Docker recalcule la taille en divisant par le nombre d'images presentes"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une image est un empilement de couches en lecture seule, et les couches sont mutualisees entre images. Une couche de base partagee par dix images n'est stockee qu'une fois, ce qui economise du disque et accelere les telechargements suivants."
+    },
+    {
+      "question": "Que faut-il penser de l'utilisation du tag `latest` pour un deploiement en production ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "C'est le meilleur choix car latest pointe toujours vers la derniere version stable disponible"
+        },
+        {
+          "id": "b",
+          "text": "C'est interdit par Docker, qui renvoie une erreur si on tire une image en latest"
+        },
+        {
+          "id": "c",
+          "text": "C'est sans importance, le tag n'a aucun effet sur l'image recuperee"
+        },
+        {
+          "id": "d",
+          "text": "C'est un piege : deux pull de latest a des moments differents peuvent donner des images distinctes, mieux vaut epingler une version explicite"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "`latest` est un simple tag qui pointe vers l'image au moment ou tu l'as recuperee, et ne se met pas a jour tout seul. En production, on epingle une version precise (par exemple monapp:1.4.2) pour savoir exactement ce qui tourne et reproduire un incident a l'identique."
+    },
+    {
+      "question": "Dans un Dockerfile, a quel moment s'execute l'instruction `CMD [\"node\", \"server.js\"]` ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Au demarrage du conteneur, avec docker run"
+        },
+        {
+          "id": "b",
+          "text": "Pendant docker build, quand on construit l'image"
+        },
+        {
+          "id": "c",
+          "text": "A chaque modification du code source du projet"
+        },
+        {
+          "id": "d",
+          "text": "Jamais : CMD est purement de la documentation sans effet"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "`CMD` definit la commande lancee au demarrage du conteneur (docker run), contrairement a `RUN` qui s'execute pendant la construction (docker build). Mettre `RUN node server.js` lancerait le serveur pendant le build et le bloquerait."
+    },
+    {
+      "question": "Dans la commande `docker run -p 8080:3000 mon-app`, que signifie le mapping de port `8080:3000` ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'application ecoute sur 8080 a l'interieur et redirige vers 3000 a l'exterieur"
+        },
+        {
+          "id": "b",
+          "text": "Les deux ports doivent obligatoirement etre identiques pour fonctionner"
+        },
+        {
+          "id": "c",
+          "text": "Le port 8080 de la machine hote est relie au port 3000 a l'interieur du conteneur"
+        },
+        {
+          "id": "d",
+          "text": "Le conteneur utilise 8080 en interne et expose 3000 au reseau"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La syntaxe se lit hote:conteneur. A gauche le port de ta machine (8080), a droite le port reel ecoute par l'application dans le conteneur (3000). Ouvrir http://localhost:8080 tape donc sur l'app qui ecoute sur 3000."
+    },
+    {
+      "question": "Dans un fichier Compose, le service `web` doit joindre une base de donnees definie comme le service `db`. Quelle adresse mettre dans son URL de connexion ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "localhost"
+        },
+        {
+          "id": "b",
+          "text": "127.0.0.1"
+        },
+        {
+          "id": "c",
+          "text": "l'adresse IP publique de la machine hote"
+        },
+        {
+          "id": "d",
+          "text": "le nom du service, c'est-a-dire db"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Compose cree un reseau prive ou chaque conteneur est joignable par le nom de son service. On ecrit donc l'hote `db`. Utiliser `localhost` echouerait : dans un conteneur, `localhost` designe le conteneur lui-meme, pas les autres services."
+    },
+    {
+      "question": "Dans un fichier Compose pour une base de donnees, a quoi sert la declaration d'un volume nomme monte sur le dossier de donnees ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A accelerer le demarrage du conteneur de base de donnees"
+        },
+        {
+          "id": "b",
+          "text": "A chiffrer automatiquement les donnees stockees au repos"
+        },
+        {
+          "id": "c",
+          "text": "A conserver les donnees en dehors du conteneur pour qu'elles survivent a un down suivi d'un up"
+        },
+        {
+          "id": "d",
+          "text": "A exposer un port supplementaire de la base vers la machine hote"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un conteneur est jetable : sans volume, les donnees ecrites dedans disparaissent a sa recreation. Un volume nomme stocke les fichiers a l'exterieur du conteneur, donc ils survivent aux redemarrages et recreations (sauf `docker compose down -v`)."
+    },
+    {
+      "question": "Quelle est la difference principale entre l'integration continue (CI) et le deploiement continu (CD) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La CI lance les verifications (install, lint, types, tests, build) a chaque changement ; le CD livre le code valide vers son environnement"
+        },
+        {
+          "id": "b",
+          "text": "La CI concerne le frontend, le CD concerne le backend"
+        },
+        {
+          "id": "c",
+          "text": "La CI est gratuite, le CD est toujours payant"
+        },
+        {
+          "id": "d",
+          "text": "Il n'y a aucune difference, ce sont deux noms pour la meme etape"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La CI repond a la question 'le code fusionne fonctionne-t-il encore ?' en lancant les memes verifications a chaque push, sur une machine propre. Le CD prend le relais : une fois la CI verte, il livre automatiquement le code vers son environnement."
+    },
+    {
+      "question": "Un run GitHub Actions echoue avec l'erreur `package.json introuvable` alors que la commande lancee est `npm test`. Quelle est la cause la plus probable ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Node n'a pas ete installe sur la machine"
+        },
+        {
+          "id": "b",
+          "text": "La branche main n'existe pas dans le depot"
+        },
+        {
+          "id": "c",
+          "text": "Le step actions/checkout a ete oublie, donc le code du depot n'a jamais ete telecharge sur la machine"
+        },
+        {
+          "id": "d",
+          "text": "Le fichier YAML est range dans le mauvais dossier"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Chaque job demarre sur une machine vide qui ne contient pas ton code. Sans le step `actions/checkout`, les commandes `run:` s'executent dans un dossier desert : c'est l'oubli le plus frequent chez les debutants."
+    },
+    {
+      "question": "Dans un workflow GitHub Actions enchainant install, tests puis build de l'image Docker, que se passe-t-il pour le step de build si le step `npm test` echoue ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le build se lance quand meme, mais sans tag sur l'image"
+        },
+        {
+          "id": "b",
+          "text": "Le build est annule, car un step en erreur stoppe les steps suivants du job"
+        },
+        {
+          "id": "c",
+          "text": "Le build se lance avec un simple avertissement, le test n'etant pas bloquant"
+        },
+        {
+          "id": "d",
+          "text": "GitHub relance automatiquement les tests trois fois avant de continuer"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les steps d'un job s'executent en serie et le job s'arrete au premier echec. Si `npm test` rate, les steps suivants sont annules, donc on ne construit jamais une image Docker a partir de code casse."
+    }
+  ]
+}
