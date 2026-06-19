@@ -646,28 +646,35 @@ Schémas vectoriels rendus côté client via [Mermaid.js](https://mermaid.js.org
 | `children` | string | - | Syntaxe Mermaid du diagramme (obligatoire) |
 | `caption` | string | - | Légende affichée sous le diagramme |
 
+> ⚠️ **Contraintes du pipeline MDX (à lire avant d'écrire un diagramme).** Le contenu d'un `<Diagram>` passe par le compilateur MDX avant d'atteindre Mermaid. Trois pièges cassent le rendu (ou toute la leçon) :
+> 1. **Aucune accolade `{ }` dans le diagramme.** MDX interprète `{...}` comme une expression JavaScript : un nœud losange `B{Décision ?}` fait **planter la compilation de la leçon entière**, et `classDiagram` (qui repose sur `{ }`) aussi. Les losanges quotés `B{"..."}` sont eux **silencieusement supprimés**. → Pas de nœud losange, pas de `classDiagram`, pas de `stateDiagram` à états composites. Pour une décision, utilise un nœud rectangle et des libellés d'arêtes `Oui`/`Non` (voir l'exemple ci-dessous).
+> 2. **Aucune URL nue `http://` ou `https://` dans un libellé.** `remark-gfm` la transforme en lien, ce qui coupe la ligne et casse le parsing. Défang-la (`hxxp://`) ou retire le schéma.
+> 3. **Chaque nœud doit avoir un identifiant + un libellé entre guillemets doubles**, ex. `A["Texte"]`, et tout `flowchart` doit avoir une direction (`TD`/`LR`/`BT`/`RL`). Utilise `-->` (jamais `->`).
+
 #### Flowchart - Flux et architectures
 
 ```mdx
 <Diagram caption="Architecture d'une application web 3-tiers">
 flowchart LR
-  A([Client]) -->|HTTPS| B[Serveur Web]
-  B --> C[(Base de données)]
-  B --> D[Cache Redis]
+  A(["Client"]) -->|"HTTPS"| B["Serveur Web"]
+  B --> C[("Base de données")]
+  B --> D["Cache Redis"]
 </Diagram>
 ```
 
 #### Flowchart avec décisions
 
+Pas de nœud losange `{ }` (voir les contraintes ci-dessus) : on modélise la décision avec un rectangle et des libellés d'arêtes `Oui`/`Non`.
+
 ```mdx
 <Diagram caption="Cycle de vie d'une requête HTTP">
 flowchart TD
-  A([Requête client]) --> B{Cache CDN ?}
-  B -->|Oui| C[Réponse en cache]
-  B -->|Non| D[Serveur d'origine]
-  D --> E[Base de données]
+  A(["Requête client"]) --> B["Cache CDN ?"]
+  B -->|"Oui"| C["Réponse en cache"]
+  B -->|"Non"| D["Serveur d'origine"]
+  D --> E["Base de données"]
   E --> D
-  D --> F([Réponse client])
+  D --> F(["Réponse client"])
 </Diagram>
 ```
 
@@ -685,25 +692,16 @@ sequenceDiagram
 </Diagram>
 ```
 
-#### Class diagram - Modèles objet
+#### Class diagram - NON supporté
+
+`classDiagram` repose sur des accolades `{ }` pour le corps des classes, ce que le pipeline MDX ne tolère pas (cela fait planter la compilation de la leçon, voir les contraintes plus haut). Pour représenter un modèle de données, utilise un `flowchart` avec un nœud par entité (les attributs listés dans le libellé), ou une `<LessonImage>` si le schéma est complexe. N'utilise pas `<br/>` dans un libellé : la balise est avalée par MDX et casse le rendu.
 
 ```mdx
-<Diagram>
-classDiagram
-  class Paquet {
-    +String src_ip
-    +String dst_ip
-    +int port
-    +bytes payload
-    +checksum() bool
-  }
-  class PaquetTCP {
-    +int seq_num
-    +int ack_num
-    +bool syn
-    +bool ack
-  }
-  Paquet <|-- PaquetTCP
+<Diagram caption="Relation entre un paquet et un paquet TCP">
+flowchart TD
+  P["Paquet : src_ip, dst_ip, port, payload"]
+  T["PaquetTCP : seq_num, ack_num, syn, ack"]
+  T -->|"hérite de"| P
 </Diagram>
 ```
 
@@ -725,9 +723,17 @@ gitGraph
 
 **Règles d'usage :**
 - Utiliser pour les architectures, flux réseau, protocoles, modèles de données
-- Ne pas dépasser 15–20 nœuds - au-delà, préférer une `<LessonImage>`
+- Ne pas dépasser 15-20 nœuds : au-delà, préférer une `<LessonImage>`
 - Toujours ajouter une `caption` pour les schémas pédagogiques
+- Types sûrs : `flowchart`, `graph`, `sequenceDiagram`, `gitGraph`. À éviter (cassent la compilation à cause des accolades) : `classDiagram`, `stateDiagram` à états composites, et tout nœud losange `{ }`.
 - Référence complète des syntaxes : [mermaid.js.org/syntax](https://mermaid.js.org/syntax/flowchart.html)
+
+**Checklist avant de committer un diagramme :**
+- [ ] Chaque nœud a un identifiant et un libellé entre guillemets doubles : `A["..."]`
+- [ ] Le `flowchart` a une direction (`TD`, `LR`, `BT` ou `RL`)
+- [ ] Aucune accolade `{ }` (pas de losange, pas de `classDiagram`)
+- [ ] Aucune URL nue `http(s)://` dans un libellé (défang en `hxxp://`)
+- [ ] Flèches en `-->`, libellés d'arêtes entre guillemets : `-->|"texte"|`
 
 ---
 
