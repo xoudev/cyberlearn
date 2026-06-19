@@ -3,11 +3,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { computeLevel } from "@cyberlearn/lib";
+import { computeLevel, computeTier } from "@cyberlearn/lib";
 import { userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { StreakPanel } from "@/components/streak-panel";
+import { TierBadge } from "@/components/tier-badge";
 import { ProfileContent } from "./_components/profile-content";
 import type {
   SerializedBadge,
@@ -230,6 +231,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   const resolvedAvatarUrl = await resolveAvatarSrc(user.avatarUrl ?? null);
 
   const { level, current: xpCurrent, needed: xpNeeded } = computeLevel(user.xpTotal);
+  const tier = computeTier(level);
   const xpPct = xpNeeded > 0 ? Math.min((xpCurrent / xpNeeded) * 100, 100) : 100;
   const xpRemaining = xpNeeded - xpCurrent;
 
@@ -371,6 +373,29 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               )}
               {user.username ?? user.displayName}
             </h1>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
+                margin: "0 0 16px",
+              }}
+            >
+              <TierBadge tier={tier.tier} />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#6F6B99",
+                }}
+              >
+                Niveau {level}
+              </span>
+            </div>
 
             <p
               style={{

@@ -7,7 +7,9 @@ const m = vi.hoisted(() => ({
   scheduleFindUnique: vi.fn(),
   scheduleUpdate: vi.fn(),
   lessonFindUnique: vi.fn(),
+  userFindUniqueOrThrow: vi.fn(),
   userUpdate: vi.fn(),
+  notificationCreate: vi.fn(),
   transaction: vi.fn(),
 }));
 
@@ -39,10 +41,16 @@ beforeEach(() => {
   m.scheduleFindUnique.mockResolvedValue(SCHEDULE);
   m.scheduleUpdate.mockResolvedValue({});
   m.lessonFindUnique.mockResolvedValue({ xpReward: 50 });
+  // creditXp runs inside the tx: it reads the user, then writes xpTotal + level.
   m.transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
-    cb({ user: { update: m.userUpdate } }),
+    cb({
+      user: { findUniqueOrThrow: m.userFindUniqueOrThrow, update: m.userUpdate },
+      notification: { create: m.notificationCreate },
+    }),
   );
-  m.userUpdate.mockResolvedValue({ xpTotal: 105 });
+  m.userFindUniqueOrThrow.mockResolvedValue({ xpTotal: 100, level: computeLevel(100).level });
+  m.userUpdate.mockResolvedValue({});
+  m.notificationCreate.mockResolvedValue({});
 });
 
 describe("submitReviewAction", () => {
@@ -86,15 +94,11 @@ describe("submitReviewAction", () => {
     expect(arg.data.repetitions).toBe(expected.repetitions);
     expect(arg.data.nextReviewAt).toBeInstanceOf(Date);
     expect(arg.data.lastReviewedAt).toBeInstanceOf(Date);
-    // First tx call increments xpTotal, second sets the recomputed level.
-    expect(m.userUpdate).toHaveBeenNthCalledWith(1, {
+    // creditXp credits the XP and recomputes the level in a single update.
+    expect(m.userUpdate).toHaveBeenCalledTimes(1);
+    expect(m.userUpdate).toHaveBeenCalledWith({
       where: { id: "u1" },
-      data: { xpTotal: { increment: 5 } },
-      select: { xpTotal: true },
-    });
-    expect(m.userUpdate).toHaveBeenNthCalledWith(2, {
-      where: { id: "u1" },
-      data: { level: computeLevel(105).level },
+      data: { xpTotal: 105, level: computeLevel(105).level },
     });
     expect(m.revalidatePath).toHaveBeenCalledWith("/revisions");
     expect(m.revalidatePath).toHaveBeenCalledWith("/dashboard");
