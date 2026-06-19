@@ -1,0 +1,144 @@
+---
+refCode: CL-LSN-054-V01
+slug: linux-processus
+title: "Processus et état du système"
+description: "Comprenez ce qu'est un processus et son PID, listez-les avec ps et top, surveillez la mémoire et le disque avec free et df, et arrêtez un processus avec kill."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 380
+prerequisites: ["CL-LSN-049-V01"]
+---
+
+Un matin, un client t'écrit : son site est en ligne mais il met dix secondes à charger une page qui d'habitude répond instantanément. Tu te connectes en SSH au serveur. La première chose à faire, ce n'est pas de redémarrer la machine au hasard. C'est de regarder ce qui tourne dessus. Et tout ce qui tourne sur une machine Linux, sans exception, est un processus.
+
+Une commande que tu lances, un service web, le serveur SSH par lequel tu es connecté, même le shell dans lequel tu tapes : ce sont tous des processus. Apprendre à les lister, à voir lequel mange le CPU, et à en arrêter un proprement, c'est la base du dépannage. Cette leçon te donne les quelques commandes qui répondent à la question « pourquoi cette machine rame ? ».
+
+## qu'est-ce qu'un processus
+
+Un processus, c'est un programme en train de s'exécuter. La distinction compte : `nginx` sur le disque, c'est un fichier, un programme inerte. Quand tu le lances, le noyau en crée un processus, lui donne de la mémoire, du temps de calcul, et un numéro d'identité. Ce numéro s'appelle le PID, pour Process IDentifier. Il est unique à un instant donné.
+
+Le modèle mental tient en une phrase : chaque processus a un PID, un parent qui l'a démarré, et un état. Quand tu tapes une commande dans ton shell, c'est ton shell (un processus) qui en crée un nouveau, son enfant. Cette filiation forme un arbre dont la racine est le tout premier processus lancé au démarrage (PID 1, souvent `systemd`).
+
+L'état décrit ce que fait le processus à l'instant T. Les deux que tu verras le plus souvent :
+
+- **running** (R) : il s'exécute ou attend son tour sur le CPU.
+- **sleeping** (S) : il attend quelque chose, une réponse réseau, une lecture disque, une touche au clavier. C'est l'état le plus courant. Un processus endormi ne consomme pas de CPU, il ne fait rien de mal.
+
+Beaucoup de débutants paniquent en voyant cinquante processus « sleeping » et croient à une fuite. Non. Un serveur sain passe son temps à dormir en attendant du travail.
+
+<Callout type="info">
+Un PID est réutilisé après la mort d'un processus. Si tu notes le PID 4821 aujourd'hui et que ce processus se termine, demain le 4821 sera peut-être un tout autre programme. Vérifie toujours sur quoi tu agis avant de le toucher.
+</Callout>
+
+## lister : ps et top
+
+Deux outils, deux usages. `ps aux` te donne une photo instantanée : tous les processus à la seconde où tu tapes la commande. `top` te donne un film : un tableau qui se rafraîchit chaque seconde, trié par consommation, que tu lis en direct.
+
+Commence par `ps aux` quand tu veux chercher un processus précis ou filtrer la sortie. Passe à `top` quand tu veux voir, en temps réel, qui mange le CPU pendant que la machine rame.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Photo puis temps réel" />
+
+Voici une ligne de `ps aux` décortiquée. La sortie a une colonne par information :
+
+```text
+USER   PID  %CPU %MEM    VSZ   RSS TTY  STAT START   TIME COMMAND
+www-data 1843 94.7  2.1 728132 87412 ?   R    09:14  3:21 php-fpm: pool www
+```
+
+Ce qu'il faut lire en priorité :
+
+- **PID 1843** : l'identifiant pour agir dessus.
+- **%CPU 94.7** : ce processus prend presque tout un cœur. Sur une machine qui rame, c'est ton suspect numéro un.
+- **%MEM 2.1** : 2,1 % de la RAM. Ici raisonnable.
+- **STAT R** : il est en train de tourner, pas endormi. Cohérent avec le CPU élevé.
+- **COMMAND** : `php-fpm`, le moteur PHP. On comprend que c'est l'exécution d'une page qui coince.
+
+Les colonnes VSZ et RSS, c'est la mémoire (virtuelle et réelle) en kilo-octets. Tu peux les ignorer au début et te concentrer sur %CPU, %MEM et COMMAND.
+
+Dans `top`, tu retrouves les mêmes colonnes mais vivantes. Le tableau est trié par %CPU décroissant par défaut, donc le gros mangeur est tout en haut. Pour quitter `top`, tu tapes la touche `q`. Pour trier par mémoire, tu tapes `M` (majuscule). C'est interactif, pas une commande qui rend la main.
+
+<Quiz id="q-1" question="Dans une sortie ps aux, quelle colonne identifie le processus pour pouvoir agir dessus ?" options={["COMMAND", "PID", "%CPU", "STAT"]} correct={1} />
+
+## l'état du système : free et df
+
+Un CPU à fond n'est pas le seul coupable possible. Souvent, une machine rame parce qu'elle manque de mémoire, ou parce que son disque est plein. Deux commandes répondent à ça.
+
+`free -h` montre la mémoire. Le `-h` veut dire « human readable », des Go et Mo lisibles au lieu d'octets bruts. Regarde la ligne `Mem` : la colonne `available` te dit combien de mémoire reste réellement disponible pour de nouveaux programmes. Ne te fie pas à `free` (libre au sens strict) : Linux utilise la RAM inoccupée comme cache disque, ce qui est normal et bénéfique. C'est `available` qui compte.
+
+`df -h` montre le disque, partition par partition. La colonne `Use%` est celle qui te saute aux yeux. Un disque à 100 % est un piège classique : une base de données qui ne peut plus écrire, un service qui plante au démarrage, des logs qui ont gonflé jusqu'à tout remplir. Le symptôme déroute parce que le programme « marchait hier ».
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Mémoire, disque et charge" />
+
+Le cas concret : un client signale que les envois de fichiers échouent. `free -h` montre de la mémoire disponible, rien d'anormal. `df -h` montre `/var` à 100 %. Le service stocke les uploads sous `/var`, le disque est plein, plus rien ne s'écrit. Tu n'aurais jamais trouvé ça en regardant seulement le CPU.
+
+`uptime` complète le tableau d'un coup d'oeil. Au bout de la ligne, `load average` donne trois chiffres : la charge moyenne sur 1, 5 et 15 minutes. En gros, sur une machine à 4 cœurs, une charge durablement au-dessus de 4 signale une saturation. Les trois chiffres montrent la tendance : si le premier est bien plus haut que le dernier, le pic est récent.
+
+<Callout type="info">
+Le réflexe de dépannage tient en quatre commandes : top pour le CPU, free -h pour la mémoire, df -h pour le disque, uptime pour la charge. Avant de toucher à quoi que ce soit, tu sais déjà où ça coince.
+</Callout>
+
+## arrêter un processus : kill
+
+Tu as trouvé le coupable, un processus bloqué qui tourne en boucle. Pour l'arrêter, tu utilises `kill` suivi du PID. Le nom fait peur mais l'outil est plus subtil qu'il en a l'air : `kill` envoie un signal au processus, et selon le signal, le processus a son mot à dire.
+
+Par défaut, `kill 1843` envoie le signal **SIGTERM** (numéro 15). C'est une demande polie : « termine-toi quand tu peux ». Le processus reçoit le signal, ferme ses fichiers, vide ce qu'il a en cours d'écriture, prévient ses connexions, puis s'arrête proprement. C'est ce que tu veux dans la quasi-totalité des cas.
+
+`kill -9 1843` envoie **SIGKILL** (numéro 9). Celui-là, le processus ne le reçoit même pas : le noyau le supprime sur-le-champ, sans préavis. Pas de nettoyage, pas de fermeture propre. C'est la solution de dernier recours, pas le réflexe.
+
+L'erreur très répandue, c'est de taper `kill -9` d'entrée à chaque fois. Ça marche, donc on prend l'habitude. Le problème apparaît plus tard : une base de données tuée au `-9` peut laisser ses données dans un état incohérent, un fichier à moitié écrit, un verrou jamais relâché. Tu gagnes deux secondes maintenant et tu passes une heure à réparer ensuite.
+
+La bonne approche, dans l'ordre :
+
+```bash
+# 1. On demande poliment (SIGTERM)
+kill 1843
+
+# 2. On attend quelques secondes, on revérifie
+ps aux | grep 1843
+
+# 3. Seulement s'il refuse de partir, on force (SIGKILL)
+kill -9 1843
+```
+
+<Callout type="warning">
+kill -9 ne laisse au processus aucune chance de nettoyer derrière lui. Fichiers à moitié écrits, verrous bloqués, données corrompues : garde-le pour les processus vraiment figés qui ignorent SIGTERM. Essaie kill PID d'abord, toujours.
+</Callout>
+
+<Quiz id="q-2" question="Quel signal kill envoie par defaut, et que permet-il au processus de faire ?" options={["SIGKILL, qui le tue immediatement sans nettoyage", "SIGTERM, qui lui demande de s arreter proprement", "SIGSTOP, qui le met en pause definitivement", "SIGHUP, qui recharge sa configuration"]} correct={1} />
+
+## les services : systemctl et journalctl
+
+Sur un serveur moderne, tu ne lances pas `nginx` à la main. C'est `systemd`, le gestionnaire de services, qui le démarre, le surveille et le relance s'il tombe. Pour ces processus-là, tu as des outils dédiés plus parlants que `kill`.
+
+`systemctl status nginx` te dit si le service est actif, depuis quand, son PID principal, et les dernières lignes de log. C'est le premier endroit où regarder quand un service est censé tourner mais ne répond pas. Un `active (running)` en vert rassure, un `failed` en rouge t'envoie directement vers les logs.
+
+`journalctl` lit le journal centralisé de systemd. `journalctl -n 20` affiche les vingt dernières lignes, tous services confondus. Pour cibler un service, `journalctl -u nginx` ne montre que ses messages. C'est là que tu trouves le message d'erreur précis qui explique pourquoi le service refuse de démarrer.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="État d'un service et ses logs" />
+
+Pour agir, tu passes par systemctl plutôt que par kill : `systemctl restart nginx`, `systemctl stop nginx`, `systemctl start nginx`. Ça arrête le service proprement et, surtout, ça empêche systemd de le relancer aussitôt comme il le ferait si tu le tuais à la main.
+
+## à toi de jouer
+
+Un serveur web répond lentement. Fais le diagnostic de base dans l'ordre : liste les processus, puis vérifie la mémoire. Repère le processus qui consomme, puis confirme l'état mémoire de la machine.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Diagnostic d'un serveur lent" expectedCommands={["ps aux", "free -h"]} hints={["ps aux donne la photo instantanée de tous les processus", "free -h affiche la mémoire en Go et Mo lisibles", "Regarde la colonne %CPU pour le coupable, puis available dans free"]} />
+
+<QuizGroup>
+<Quiz id="q-3" question="Un disque a Use% a 100% dans df -h. Quelle panne cela provoque-t-il typiquement ?" options={["Le CPU monte a 100%", "Les services ne peuvent plus ecrire et plantent", "La memoire se vide instantanement", "Le reseau se deconnecte"]} correct={1} />
+<Quiz id="q-4" question="Pour voir les vingt dernieres lignes du journal systeme, quelle commande utilises-tu ?" options={["systemctl status -n 20", "df -h --tail 20", "journalctl -n 20", "top -n 20"]} correct={2} />
+<Quiz id="q-5" question="Dans free -h, quelle colonne reflete le mieux la memoire reellement utilisable par un nouveau programme ?" options={["available", "free", "used", "total"]} correct={0} />
+</QuizGroup>
+
+## à retenir
+
+- Tout ce qui s'exécute sur Linux est un processus, identifié par un PID unique, avec un parent et un état (running, sleeping).
+- `ps aux` donne une photo instantanée, `top` un suivi temps réel trié par CPU. On y lit PID, %CPU, %MEM et COMMAND.
+- `free -h` pour la mémoire (colonne `available`), `df -h` pour le disque (colonne `Use%`), `uptime` pour la charge moyenne.
+- Un disque plein fait planter des services qui marchaient la veille. Pense à `df -h` avant de chercher ailleurs.
+- `kill PID` envoie SIGTERM, une demande d'arrêt propre. C'est le bon réflexe.
+- `kill -9 PID` envoie SIGKILL, une suppression immédiate sans nettoyage. Dernier recours uniquement.
+- Pour un service géré par systemd, utilise `systemctl status` et `journalctl` pour diagnostiquer, et `systemctl restart` pour agir.
+
+OK 06-processus.mdx écrit

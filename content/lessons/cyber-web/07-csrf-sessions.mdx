@@ -1,0 +1,112 @@
+---
+refCode: CL-LSN-091-V01
+slug: owasp-csrf
+title: "CSRF : forger des requêtes au nom de la victime"
+description: "Comprenez comment un site malveillant peut déclencher une action sur un autre site où la victime est connectée, pourquoi les cookies rendent cela possible, et comment les jetons anti-CSRF et l'attribut SameSite bloquent l'attaque."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-088-V01"]
+---
+
+Imaginez la scène. Vous êtes connecté à votre banque en ligne dans un onglet. La session est active, le cookie est posé, tout va bien. Dans un autre onglet, vous ouvrez un lien reçu par message, une page qui promet une vidéo rigolote. La vidéo se charge. Pendant ce temps, sans que rien ne bouge à l'écran, un virement de 500 euros vient de partir de votre compte vers celui d'un inconnu. Vous n'avez rien cliqué de spécial. Vous n'avez pas tapé votre mot de passe. Et pourtant la banque a exécuté l'ordre, parce que pour elle la requête venait bien de vous.
+
+Ça, c'est le CSRF. Cross-Site Request Forgery, ou falsification de requête entre sites. L'idée tient en une phrase : un site que vous visitez en déclenche un autre, à votre insu, en profitant du fait que vous y êtes déjà authentifié.
+
+## pourquoi c'est possible
+
+Pour comprendre l'attaque, il faut comprendre une règle que le navigateur applique sans état d'âme : quand il envoie une requête vers un domaine, il joint automatiquement les cookies qui appartiennent à ce domaine. Toujours. Peu importe qui a déclenché la requête.
+
+Décomposons. Quand vous vous connectez à `banque.fr`, le serveur vous renvoie un cookie de session, par exemple `session=a1b2c3`. Le navigateur le range et, à partir de là, chaque requête partant vers `banque.fr` transporte ce cookie. C'est exactement ce qui vous évite de retaper votre mot de passe à chaque page. Pratique.
+
+Le problème, c'est que le navigateur ne se demande jamais d'où part la requête. Si une page hébergée sur `site-piege.com` demande au navigateur d'aller poster quelque chose sur `banque.fr`, le navigateur obéit, et il joint le cookie de session de `banque.fr` comme d'habitude. Du point de vue du serveur de la banque, la requête arrive avec un cookie valide. Elle ressemble trait pour trait à une requête légitime. Le serveur ne voit aucune différence, donc il l'exécute.
+
+Le modèle mental à garder : le cookie prouve **qui** vous êtes, pas **ce que vous vouliez faire** ni **depuis où vous l'avez demandé**. L'authentification par cookie répond à la question « est-ce bien cet utilisateur ? » et s'arrête là. Le CSRF s'engouffre dans ce silence.
+
+<Callout type="info">
+Un point qui surprend souvent : l'attaquant n'a jamais besoin de voler ou de lire votre cookie. Il ne le voit pas, il ne peut pas le copier. Il se contente de faire en sorte que votre propre navigateur l'envoie pour lui. Le cookie reste secret, l'attaque marche quand même.
+</Callout>
+
+## une requête forgée
+
+Voyons à quoi ressemble le piège concrètement. La page malveillante contient un formulaire caché qui pointe vers une action sensible de la banque, et un petit bout de code qui l'envoie tout seul dès le chargement. Voici le genre de contenu inerte que l'attaquant place sur sa page :
+
+```html
+<!-- Page hébergée sur site-piege.com -->
+<form id="x" action="https://banque.fr/virement" method="POST">
+  <input type="hidden" name="beneficiaire" value="attaquant">
+  <input type="hidden" name="montant" value="500">
+</form>
+<script>document.getElementById('x').submit()</script>
+```
+
+Quand votre navigateur affiche cette page, le formulaire part vers `banque.fr/virement` en méthode POST. Et comme la destination est `banque.fr`, le cookie de session y est joint automatiquement. La banque reçoit un POST authentifié demandant un virement de 500 euros. Si elle n'a aucune protection en place, elle l'exécute.
+
+Notez que l'attaquant n'a pas besoin que vous voyiez quoi que ce soit. Le formulaire peut être invisible, l'envoi peut se faire en arrière-plan. Une simple balise image dont l'adresse pointe vers une action en GET suffit parfois, si le serveur accepte de modifier des données sur un GET (ce qu'il ne devrait jamais faire, justement).
+
+<Diagram caption="Le déroulé d'une attaque CSRF">
+flowchart TD
+  A[La victime se connecte a banque.fr] --> B[Cookie de session pose dans le navigateur]
+  B --> C[La victime ouvre site-piege.com dans un autre onglet]
+  C --> D[La page forge un POST vers banque.fr/virement]
+  D --> E[Le navigateur joint le cookie de banque.fr automatiquement]
+  E --> F[La banque voit une requete authentifiee valide]
+  F --> G[Le virement part au nom de la victime]
+</Diagram>
+
+## ce qui distingue CSRF et XSS
+
+On confond souvent les deux, alors mettons-les côte à côte une bonne fois.
+
+Dans une attaque XSS, l'attaquant arrive à faire exécuter son propre code à l'intérieur du site cible. Il a pris pied sur la page, il peut lire le contenu, voler des données, agir au sein de la session.
+
+Le CSRF ne fait rien de tout ça. Il n'exécute aucun code sur le site cible et ne lit jamais sa réponse. Il se contente de déclencher une requête depuis l'extérieur et d'abuser de la session existante. L'attaquant tire la sonnette, il ne rentre pas dans la maison. C'est plus limité (il agit en aveugle, sans voir le résultat), mais ça suffit largement pour un virement, un changement d'adresse e-mail ou une suppression de compte.
+
+## les défenses
+
+La faiblesse exploitée est toujours la même : le serveur fait confiance à une requête simplement parce qu'elle porte le bon cookie. La parade consiste donc à exiger une preuve qu'un site tiers ne peut pas fournir.
+
+Première défense, le jeton anti-CSRF. Quand le serveur affiche un formulaire légitime, il y glisse une valeur secrète, imprévisible, liée à la session de l'utilisateur. Le navigateur la renvoie avec le formulaire, et le serveur vérifie qu'elle correspond avant d'agir.
+
+```html
+<form action="https://banque.fr/virement" method="POST">
+  <input type="hidden" name="csrf_token" value="9fK2pZ7xQ1mB4wL8">
+  <input type="text" name="montant">
+  <button>Valider</button>
+</form>
+```
+
+Pourquoi ça bloque l'attaque ? Parce que le site piégé ne connaît pas ce jeton. Il est généré par la banque, propre à votre session, et il n'est jamais exposé à un autre domaine. L'attaquant peut bien forger un POST, il ne peut pas deviner la bonne valeur de `csrf_token`. Le serveur reçoit une requête sans jeton ou avec un jeton faux, et il la rejette. Le cookie ne suffit plus, il faut en plus quelque chose que seul le vrai formulaire contenait.
+
+Deuxième défense, et la plus simple à activer, l'attribut `SameSite` sur le cookie de session. Il dit au navigateur de ne pas joindre le cookie quand la requête provient d'un autre site. C'est exactement le comportement dangereux que l'on coupe à la racine.
+
+```http
+Set-Cookie: session=a1b2c3; HttpOnly; Secure; SameSite=Lax
+```
+
+Avec `SameSite=Lax`, le cookie n'est plus envoyé sur les requêtes inter-sites de type POST, ce qui neutralise le formulaire forgé de tout à l'heure. `SameSite=Strict` est encore plus restrictif. Aujourd'hui la plupart des navigateurs appliquent `Lax` par défaut, mais s'appuyer sur le défaut sans le déclarer reste une mauvaise idée : posez-le explicitement.
+
+Troisième appui, vérifier l'origine de la requête côté serveur, via les en-têtes `Origin` ou `Referer`. Si une requête sensible prétend agir mais vient d'un domaine étranger, on la refuse. C'est une ceinture en plus de la bretelle.
+
+<Callout type="success">
+La bonne pratique combine les couches : un jeton anti-CSRF sur les actions sensibles, `SameSite` sur le cookie de session, et la vérification de l'origine. Aucune de ces mesures n'est lourde à mettre en place, et ensemble elles ferment la porte proprement. La plupart des frameworks web modernes intègrent déjà une protection CSRF qu'il suffit d'activer.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi une page malveillante peut-elle déclencher une action authentifiée sur un autre site ?" options={["Parce qu'elle vole le mot de passe de la victime", "Parce que le navigateur joint automatiquement les cookies du site cible a toute requete vers ce site", "Parce qu'elle lit le cookie de session et le recopie", "Parce que le serveur cible n'utilise pas HTTPS"]} correct={1} />
+
+<Quiz id="q-2" question="A quoi sert le jeton anti-CSRF ?" options={["A chiffrer le cookie de session", "A remplacer le mot de passe", "A fournir une valeur secrete liee a la session que le site tiers ne peut pas deviner", "A masquer l'adresse du formulaire"]} correct={2} />
+
+<Quiz id="q-3" question="Que fait l'attribut SameSite=Lax sur un cookie ?" options={["Il chiffre la valeur du cookie", "Il empeche le navigateur de joindre le cookie sur les requetes POST venant d'un autre site", "Il rend le cookie accessible au JavaScript", "Il allonge la duree de vie de la session"]} correct={1} />
+
+## à retenir
+
+- Le CSRF déclenche une action authentifiée sur un site cible depuis une page tierce, sans le consentement de la victime.
+- Il fonctionne parce que le navigateur joint automatiquement les cookies du domaine cible à toute requête vers ce domaine, sans regarder l'origine.
+- L'attaquant ne lit ni ne vole le cookie : il fait simplement envoyer la requête par le navigateur de la victime.
+- À ne pas confondre avec le XSS : le CSRF n'exécute pas de code sur le site cible, il abuse de la session existante en aveugle.
+- Les défenses : un jeton anti-CSRF imprévisible lié à la session et vérifié côté serveur, l'attribut `SameSite` sur le cookie, et la vérification de l'`Origin`. On les combine.
+
+OK 07-csrf-sessions.mdx écrit

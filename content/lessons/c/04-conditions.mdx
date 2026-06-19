@@ -1,0 +1,240 @@
+---
+refCode: CL-LSN-028-V01
+slug: c-conditions
+title: "Conditions en C : if, else et switch"
+description: "Faites prendre des décisions à vos programmes C avec if, else if, else, l'opérateur ternaire et l'instruction switch, en travaillant sur des valeurs codées en dur."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 150
+prerequisites: ["CL-LSN-027-V01"]
+---
+
+Tous les programmes que vous avez écrits jusqu'ici déroulaient leurs instructions de haut en bas, sans jamais changer de route. C'est suffisant pour un calcul fixe, mais un logiciel qui sert à quelque chose réagit à ses données. Une note donne une mention, un âge donne un tarif, un code juste ou faux ouvre ou ferme une porte. Pour décider, le C fournit `if`, `else if`, `else`, l'instruction `switch` et l'opérateur ternaire. Comme vous ne savez pas encore lire une saisie au clavier, on travaille sur des valeurs écrites directement dans le code : changez le chiffre, relancez, observez le nouveau chemin.
+
+## if, else if, else
+
+Un `if` exécute le bloc qui le suit quand sa condition est vraie. En C, la règle de vérité est simple et un peu surprenante au début : zéro vaut faux, tout le reste vaut vrai. Une comparaison comme `note >= 16` produit la valeur 1 quand elle tient et 0 sinon, et c'est cette valeur que le `if` regarde.
+
+Le bloc à exécuter est délimité par des accolades. Ce qui est entre les accolades appartient au `if` ; ce qui est après leur appartient plus. On enchaîne plusieurs tests avec `else if`, et on ferme avec un `else` qui ramasse tous les cas restants. L'ordre compte : le premier test vrai gagne, les suivants sont ignorés.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    int note = 14;
+
+    if (note >= 16) {
+        printf("Mention tres bien\n");
+    } else if (note >= 14) {
+        printf("Mention bien\n");
+    } else if (note >= 10) {
+        printf("Admis\n");
+    } else {
+        printf("Recale\n");
+    }
+
+    return 0;
+}
+```
+</CodePlayground>
+
+Avec `note` à 14, le premier test échoue, le deuxième passe, et le reste n'est même pas évalué. Mettez 17 et vous obtenez la mention très bien ; mettez 8 et vous tombez dans le `else`. Un détail qui coûte cher : ne confondez pas `=` et `==`. Le simple `=` affecte une valeur, le double `==` compare. Écrire `if (note = 16)` ne teste rien du tout : ça range 16 dans `note`, et comme 16 n'est pas zéro, le bloc s'exécute toujours. Le compilateur laisse souvent passer cette ligne, c'est pour ça qu'elle fait perdre du temps.
+
+## le piège des accolades
+
+On entend parfois que les accolades sont facultatives autour d'un `if`. C'est vrai, mais cette phrase cache un piège. Sans accolades, le `if` ne gouverne qu'une seule instruction, celle qui le suit immédiatement. Tout ce qui vient après n'a plus aucun lien avec la condition, même si l'indentation laisse croire le contraire.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    int solde = 50;
+
+    if (solde >= 100)
+        printf("Acces premium\n");
+        printf("Bienvenue dans le service\n");
+
+    return 0;
+}
+```
+</CodePlayground>
+
+Le code est aligné comme si les deux `printf` dépendaient du test. Ils ne le font pas. Seul le premier `printf` appartient au `if`. Le second s'exécute dans tous les cas, donc ici, avec un solde de 50, vous ne voyez pas la ligne premium mais vous voyez quand même le message de bienvenue. L'indentation ment, le compilateur suit la règle.
+
+<Callout type="warning">
+Mettez toujours les accolades, même pour une seule ligne. Ça évite le faux alignement, et le jour où vous ajoutez une deuxième instruction dans le bloc, elle est déjà au bon endroit. La version corrigée se contente d'envelopper les deux printf dans un bloc.
+</Callout>
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    int solde = 50;
+
+    if (solde >= 100) {
+        printf("Acces premium\n");
+        printf("Bienvenue dans le service\n");
+    }
+
+    return 0;
+}
+```
+</CodePlayground>
+
+Maintenant les deux lignes vont ensemble. Avec un solde de 50, rien ne s'affiche ; passez `solde` à 150 et les deux messages apparaissent.
+
+## switch et le fall-through
+
+Quand vous comparez une même variable entière, ou un `char`, à une série de valeurs précises, une longue suite de `else if` devient pénible à lire. Le `switch` exprime la même idée plus clairement. Il évalue une fois l'expression entre parenthèses, puis saute au `case` qui correspond. Le `break` referme le `switch` une fois le bon cas traité, et `default` couvre les valeurs que vous n'avez pas listées.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    int jour = 3;
+
+    switch (jour) {
+        case 1:
+            printf("Lundi\n");
+            break;
+        case 2:
+            printf("Mardi\n");
+            break;
+        case 3:
+            printf("Mercredi\n");
+            break;
+        default:
+            printf("Autre jour\n");
+            break;
+    }
+
+    return 0;
+}
+```
+</CodePlayground>
+
+Le piège du `switch` porte un nom : le fall-through. Un `case` n'est pas une boîte fermée. Une fois que l'exécution entre dans un `case`, elle continue ligne après ligne jusqu'à rencontrer un `break`, et si ce `break` manque, elle déborde dans le `case` suivant sans tenir compte de son étiquette. Le code ci-dessous montre le débordement : avec `jour` à 1 et aucun `break`, vous voyez Lundi, puis Mardi, puis Mercredi s'enchaîner.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    int jour = 1;
+
+    switch (jour) {
+        case 1:
+            printf("Lundi\n");
+        case 2:
+            printf("Mardi\n");
+        case 3:
+            printf("Mercredi\n");
+        default:
+            printf("Autre jour\n");
+    }
+
+    return 0;
+}
+```
+</CodePlayground>
+
+Ce comportement n'est pas un bug du langage, c'est une règle qu'on utilise parfois exprès pour regrouper des cas. Mais tant que vous ne le faites pas volontairement, l'oubli d'un `break` est une source d'erreurs silencieuses. Placez un `break` à la fin de chaque `case`, y compris le dernier, pour ne pas avoir à y penser.
+
+## le ternaire
+
+Quand la décision se réduit à choisir entre deux valeurs, l'opérateur ternaire fait tenir tout ça sur une ligne. Sa forme est `condition ? valeur_si_vrai : valeur_si_faux`. Contrairement au `if`, il ne se contente pas d'exécuter du code : il produit une valeur, que vous pouvez affecter à une variable ou passer directement à `printf`.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    int age = 20;
+
+    const char *statut = (age >= 18) ? "majeur" : "mineur";
+    printf("Cette personne est %s\n", statut);
+
+    int nombre = 7;
+    printf("%d est %s\n", nombre, (nombre % 2 == 0) ? "pair" : "impair");
+
+    return 0;
+}
+```
+</CodePlayground>
+
+Le ternaire reste lisible pour un choix court comme celui-ci. Dès que la logique se ramifie, repassez au `if` / `else` classique. Empiler des ternaires les uns dans les autres rend le code compact mais difficile à relire, et un programme se relit bien plus souvent qu'il ne s'écrit.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1"
+  question="En C, quelle valeur est consideree comme fausse dans une condition ?"
+  options={["0", "1", "Toute valeur negative", "Aucune, il faut le mot-cle false"]}
+  correct={0}
+  explanation="En C, zero vaut faux et toute autre valeur vaut vrai. Une comparaison vraie produit d'ailleurs la valeur 1."
+/>
+<Quiz id="q-2"
+  question="Dans un switch, qu'arrive-t-il si on oublie le break a la fin d'un case ?"
+  options={[
+    "Le programme s'arrete avec une erreur",
+    "Seul le case courant s'execute, puis le switch s'arrete",
+    "L'execution continue dans le case suivant (fall-through)",
+    "Le default est execute automatiquement"
+  ]}
+  correct={2}
+  explanation="Sans break, l'execution deborde dans le case suivant : c'est le fall-through. Placez un break sauf intention contraire."
+/>
+<Quiz id="q-3"
+  question="Que fait if (x = 5) au lieu de if (x == 5) ?"
+  options={[
+    "Une erreur de compilation systematique",
+    "Il range 5 dans x, et comme 5 n'est pas zero, le bloc s'execute toujours",
+    "Il compare x a 5 correctement",
+    "Il met x a zero"
+  ]}
+  correct={1}
+  explanation="Le simple = affecte. if (x = 5) met 5 dans x ; la condition vaut 5, donc non nulle, donc vraie a chaque fois. Pour comparer, il faut ==."
+/>
+</QuizGroup>
+
+Pour mettre tout ça ensemble, ce programme classe une température codée en dur, puis suggère une tenue avec un ternaire. Changez `temperature` et relancez pour voir le message changer.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    int temperature = 22;
+
+    if (temperature < 0) {
+        printf("Il gele\n");
+    } else if (temperature < 15) {
+        printf("Il fait frais\n");
+    } else if (temperature < 26) {
+        printf("Temperature agreable\n");
+    } else {
+        printf("Il fait chaud\n");
+    }
+
+    const char *tenue = (temperature < 15) ? "Prends une veste" : "Tee-shirt suffit";
+    printf("%s\n", tenue);
+
+    return 0;
+}
+```
+</CodePlayground>
+
+## à retenir
+
+- En C, zéro vaut faux et tout le reste vaut vrai ; une comparaison vraie produit 1.
+- `=` affecte, `==` compare. Confondre les deux dans un `if` donne une condition toujours vraie sans erreur visible.
+- Les accolades délimitent le bloc du `if`. Sans elles, seule l'instruction qui suit est gouvernée par la condition, peu importe l'indentation. Mettez-les toujours.
+- `switch` compare une valeur entière ou `char` à des `case`. Sans `break`, l'exécution déborde dans le `case` suivant : c'est le fall-through.
+- L'opérateur ternaire `condition ? a : b` produit une valeur et convient aux choix courts ; au-delà, revenez au `if` / `else`.
+
+OK 04 réécrit

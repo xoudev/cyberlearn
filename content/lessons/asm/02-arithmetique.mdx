@@ -1,0 +1,214 @@
+---
+refCode: CL-LSN-038-V01
+slug: asm-arithmetique
+title: "Arithmétique en assembleur"
+description: "Effectuez des calculs au niveau du processeur : addition, soustraction, multiplication, incrémentation et négation avec add, sub, imul, inc, dec et neg."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 220
+prerequisites: ["CL-LSN-037-V01"]
+---
+
+Vous savez déjà déplacer des valeurs d'un registre à l'autre avec mov. C'est utile,
+mais un programme qui ne fait que recopier des nombres ne calcule rien. Pour produire
+un résultat, il faut demander au processeur d'agir sur ces valeurs : les additionner,
+les retrancher, les multiplier, leur changer de signe. C'est exactement ce que font
+les instructions arithmétiques, et elles sont plus directes que ce que vous imaginez.
+
+Quand vous écrivez une addition dans un langage de haut niveau, vous ne voyez jamais
+ce qui se passe en dessous. Le compilateur traduit votre ligne en une poignée
+d'instructions machine, et ce sont précisément celles que nous allons écrire ici à la
+main. L'unité de calcul du processeur, l'ALU, sait additionner et soustraire deux
+nombres binaires en un seul cycle. Une instruction comme add ne fait que la brancher
+sur deux registres. Comprendre ça, c'est voir l'arithmétique telle que la machine la
+vit réellement, sans la couche de confort que le langage ajoute par-dessus.
+
+## add et sub : addition et soustraction
+
+L'instruction add additionne deux valeurs. Sa forme est toujours la même :
+add destination, source. Le point qui surprend au début, c'est que le résultat ne va
+pas dans un troisième endroit. Il remplace la destination. Autrement dit, add rax, rbx
+ne signifie pas « somme de rax et rbx quelque part », mais « rax devient rax plus rbx ».
+Le registre de gauche est lu, puis réécrit avec le total. La source de droite, elle, ne
+bouge pas.
+
+Si vous connaissez l'opérateur plus égal de certains langages, c'est exactement ça :
+add rax, rbx se lit rax plus égal rbx. sub suit la même logique en soustrayant :
+sub rax, rbx calcule rax moins rbx et range le résultat dans rax. Dans les deux cas,
+c'est toujours l'opérande de gauche qui encaisse le résultat.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 40
+    mov rbx, 2
+    add rax, rbx
+    println rax
+    sub rax, 10
+    println rax
+    ret`} />
+
+Le premier println donne 42 : 40 plus 2. Le second donne 32 : 42 moins 10. Notez au
+passage que la source peut être un registre, comme rbx dans le add, ou une valeur
+écrite directement, comme le 10 dans le sub. Le processeur accepte les deux sans
+distinction.
+
+## imul : multiplication
+
+La multiplication se fait avec imul. Dans sa forme à deux opérandes, elle se manie
+comme add : imul rax, rbx calcule rax fois rbx et place le produit dans rax. La
+destination est écrasée, exactement comme pour une addition.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 6
+    mov rbx, 7
+    imul rax, rbx
+    println rax
+    ret`} />
+
+Le résultat affiché est 42, soit 6 fois 7. Rien de plus à retenir tant que vous restez
+sur cette forme à deux registres.
+
+<Callout type="info">
+Le i de imul veut dire integer, entier signé. Cette variante traite correctement les
+nombres négatifs. Il existe une instruction mul pour les entiers non signés, mais elle
+fonctionne autrement et impose des registres précis pour le résultat. Tant que vous
+débutez, restez sur imul : il se comporte comme la multiplication ordinaire à laquelle
+vous êtes habitué.
+</Callout>
+
+La division mérite un mot, même si on ne l'utilise pas dans cette leçon. Elle se fait
+avec idiv, et c'est l'instruction arithmétique la plus capricieuse de la famille.
+Contrairement à add ou imul, vous ne pouvez pas écrire idiv rax, rbx. La division
+attend son dividende dans une paire de registres fixes, divise par l'opérande que vous
+donnez, puis répartit elle-même le résultat : le quotient atterrit dans rax et le reste
+dans rdx, sans que vous choisissiez. C'est un bon exemple du fait que toutes les
+instructions ne se ressemblent pas, et que la machine impose parfois ses propres règles.
+
+## inc, dec, neg : ajuster une valeur
+
+Trois opérations reviennent si souvent qu'elles ont leur instruction dédiée, plus courte,
+qui ne prend qu'un seul opérande.
+
+inc ajoute 1 à un registre. inc rax fait la même chose que add rax, 1, en plus bref.
+dec retire 1 : dec rax équivaut à sub rax, 1. Ces deux raccourcis servent partout où
+l'on compte, en particulier pour faire avancer ou reculer un compteur de boucle.
+
+neg, lui, retourne le signe. neg rax change un nombre positif en son opposé négatif, et
+un négatif en positif. C'est l'équivalent d'une multiplication par moins un, mais en une
+instruction et sans avoir à charger la valeur moins un quelque part.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 9
+    inc rax
+    println rax
+    dec rax
+    dec rax
+    println rax
+    neg rax
+    println rax
+    ret`} />
+
+Le premier println affiche 10, car 9 plus 1 font 10. Les deux dec ramènent rax à 8.
+Puis neg le bascule en moins 8, qui est le dernier affichage.
+
+## enchaîner des opérations
+
+Voici le point qui dérange le plus quand on arrive d'un langage de haut niveau. Là-bas,
+vous écrivez une expression entière sur une ligne, par exemple a égale b plus c fois d,
+et tout se calcule d'un coup. En assembleur, ce n'est pas possible. Une instruction fait
+une opération, et une seule. Il n'y a pas de parenthèses, pas de priorité des opérateurs,
+pas d'expression imbriquée. Vous décomposez le calcul en étapes et vous les écrivez dans
+l'ordre où le processeur doit les exécuter.
+
+Prenons l'expression 5 plus 3, le tout multiplié par 2. Pour l'obtenir, on additionne
+d'abord, puis on multiplie le résultat. On suit le contenu de rax à chaque ligne.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 5
+    add rax, 3
+    imul rax, 2
+    println rax
+    ret`} />
+
+Déroulons. Après mov rax, 5, rax vaut 5. Après add rax, 3, rax vaut 8. Après
+imul rax, 2, rax vaut 16. Le programme affiche 16, qui est bien le résultat de 5 plus 3
+multiplié par 2. C'est vous qui avez fixé l'ordre des opérations en choisissant la
+séquence des instructions. La machine se contente de suivre, ligne après ligne.
+
+<Callout type="warning">
+Chaque instruction arithmétique réécrit sa destination avec le résultat. L'ancienne
+valeur de rax est perdue pour de bon dès l'instruction suivante. Si une valeur
+intermédiaire doit resservir plus loin, copiez-la dans un autre registre avec mov avant
+de la modifier. Sinon, elle disparaît.
+</Callout>
+
+## à vous de jouer
+
+Vérifiez votre compréhension avec les questions suivantes.
+
+<Quiz
+  id="q-1"
+  question="Que fait l'instruction add rax, rbx ?"
+  options={[
+    "Elle range rbx dans rax sans calcul",
+    "Elle calcule rax plus rbx et range le résultat dans rax",
+    "Elle calcule rax plus rbx et range le résultat dans rbx",
+    "Elle additionne 1 à rax"
+  ]}
+  correct={1}
+/>
+
+<Quiz
+  id="q-2"
+  question="Quelle instruction retire 1 à un registre en un seul opérande ?"
+  options={[
+    "neg",
+    "sub",
+    "dec",
+    "inc"
+  ]}
+  correct={2}
+/>
+
+<Quiz
+  id="q-3"
+  question="Après mov rax, 4 puis imul rax, 3, que vaut rax ?"
+  options={[
+    "7",
+    "12",
+    "3",
+    "1"
+  ]}
+  correct={1}
+/>
+
+Maintenant, à votre clavier. Calculez l'expression 10 multiplié par 4, moins 5, puis
+affichez le résultat. Vous devez obtenir 35.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 10
+    imul rax, 4
+    sub rax, 5
+    println rax
+    ret`} />
+
+## récapitulatif
+
+- add destination, source ajoute la source à la destination, qui est réécrite.
+- sub destination, source retranche la source de la destination.
+- imul destination, source multiplie ; le i indique des entiers signés.
+- idiv divise mais impose ses registres : quotient dans rax, reste dans rdx.
+- inc ajoute 1, dec retire 1, chacune avec un seul opérande.
+- neg retourne le signe d'une valeur, comme multiplier par moins un.
+- Toute opération écrase sa destination ; sauvegardez avec mov si la valeur doit resservir.
+- Pas d'expression complexe en une ligne : on décompose le calcul en étapes ordonnées.

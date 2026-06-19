@@ -1,0 +1,104 @@
+---
+refCode: CL-LSN-003-V01
+slug: python-boucles
+title: "Les boucles en Python : for et while"
+description: "Apprenez à répéter des actions avec les boucles for et while, à parcourir des séquences avec range(), et à contrôler le flux avec break et continue."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 150
+prerequisites: ["CL-LSN-002-V01"]
+---
+
+Imaginez que vous deviez afficher les nombres de 1 à 100. Vous pourriez écrire cent lignes `print`, une par nombre. Personne ne fait ça. Dès qu'une action doit se répéter, on confie le travail à une boucle : on décrit le motif une seule fois, et l'ordinateur le rejoue autant de fois qu'il faut.
+
+C'est l'une des choses pour lesquelles une machine est meilleure que nous. Elle ne se fatigue pas, ne se trompe pas de numéro, ne saute pas de ligne. Votre rôle, c'est de bien décrire le motif. Python propose deux boucles pour ça : `for` et `while`. Elles ne servent pas tout à fait à la même chose, et la moitié du métier consiste à savoir laquelle choisir.
+
+## la boucle for
+
+La boucle `for` parcourt une séquence, élément par élément. À chaque tour, une variable prend la valeur de l'élément courant, et le bloc indenté s'exécute avec cette valeur.
+
+<CodePlayground language="python" starterCode={`fruits = ["pomme", "banane", "kiwi"]
+
+for fruit in fruits:
+    print("J'aime la", fruit)
+
+print("Fini de manger.")`} />
+
+À chaque passage, `fruit` vaut un élément de la liste, dans l'ordre. La ligne après la boucle, celle qui n'est pas indentée, ne s'exécute qu'une fois, à la fin. L'indentation décide de ce qui est dans la boucle et de ce qui est dehors.
+
+Souvent, on ne veut pas parcourir une liste existante mais simplement répéter quelque chose un certain nombre de fois. C'est le rôle de `range()`. Elle produit une suite de nombres.
+
+<CodePlayground language="python" starterCode={`for i in range(5):
+    print("Tour numero", i)`} />
+
+Exécutez ce code et regardez bien la sortie : elle affiche 0, 1, 2, 3, 4. Pas 5. C'est le point qui surprend tout le monde au début. `range(5)` ne signifie pas « les nombres jusqu'à 5 inclus », mais « cinq nombres en partant de zéro ». La borne de droite est exclue.
+
+On compte donc bien cinq tours, mais la dernière valeur est 4. Si vous voulez les nombres de 1 à 5, vous donnez deux bornes : `range(1, 6)`. Là encore, 6 est exclu, et vous obtenez 1, 2, 3, 4, 5.
+
+<CodePlayground language="python" starterCode={`for n in range(1, 6):
+    print(n)`} />
+
+Retenez la règle : `range(a, b)` va de `a` jusqu'à `b` exclu. Une grande partie des bugs de débutant vient d'un tour de trop ou d'un tour de moins à cause de cette borne.
+
+## la boucle while
+
+La boucle `while` ne compte pas des éléments. Elle répète un bloc tant qu'une condition reste vraie. Avant chaque tour, Python évalue la condition. Si elle est vraie, il exécute le bloc, puis revient vérifier. Si elle est fausse, il sort.
+
+<CodePlayground language="python" starterCode={`compteur = 0
+
+while compteur < 3:
+    print("compteur vaut", compteur)
+    compteur = compteur + 1
+
+print("Sorti de la boucle, compteur vaut", compteur)`} />
+
+Suivez le déroulé. Au départ `compteur` vaut 0, donc `0 < 3` est vrai : on affiche, puis on incrémente, `compteur` passe à 1. On revient : `1 < 3` vrai, on recommence. Quand `compteur` atteint 3, la condition `3 < 3` est fausse, et la boucle s'arrête.
+
+La ligne `compteur = compteur + 1` est le point central de toute boucle `while`. C'est elle qui fait évoluer la condition vers la sortie. Si vous l'oubliez, `compteur` reste à 0 pour toujours, `0 < 3` reste éternellement vrai, et la boucle ne s'arrête jamais. On appelle ça une boucle infinie, et c'est l'erreur la plus courante avec `while`. Avant d'écrire une boucle `while`, posez-vous toujours la question : qu'est-ce qui va rendre la condition fausse un jour ?
+
+## for ou while
+
+Le choix se résume à une question simple : est-ce que vous savez d'avance combien de tours vous allez faire ?
+
+Si oui, prenez `for`. Parcourir une liste de fruits, répéter une action dix fois, traiter chaque caractère d'un mot : le nombre de tours est connu, ou borné par la longueur de la séquence. `for` est fait pour ça et il gère le comptage tout seul.
+
+Si non, prenez `while`. Lire des commandes jusqu'à ce que l'utilisateur tape « quit », rejouer une partie tant que le joueur veut continuer, attendre qu'un solde tombe à zéro : vous ne savez pas combien de tours il faudra, ça dépend d'une condition. C'est exactement le terrain de `while`.
+
+En pratique on écrit beaucoup plus de `for` que de `while`, parce que la plupart du temps on parcourt quelque chose. Mais quand le nombre de tours dépend de ce qui se passe pendant la boucle, `while` est le bon outil.
+
+## break et continue
+
+Deux mots-clés permettent de modifier le déroulement normal d'une boucle.
+
+`break` quitte la boucle immédiatement, même s'il restait des tours à faire. C'est utile quand vous cherchez quelque chose et que, une fois trouvé, continuer n'a plus de sens.
+
+`continue` saute le reste du tour courant et passe directement au tour suivant. Le bloc ne va pas jusqu'au bout cette fois-ci, mais la boucle, elle, continue.
+
+<CodePlayground language="python" starterCode={`for n in range(1, 11):
+    if n % 2 == 0:
+        continue  # on saute les nombres pairs
+    if n > 7:
+        break     # on s'arrete des qu'on depasse 7
+    print(n)`} />
+
+Suivez la sortie : 1, 3, 5, 7. Les nombres pairs sont sautés par `continue`, donc 2, 4, 6 n'apparaissent pas. Et quand `n` vaut 9, le `break` coupe tout avant le `print`. La boucle s'arrête là, sans aller jusqu'à 10.
+
+<Callout type="warning">
+Une boucle `while` dont la condition ne change jamais tourne sans fin et bloque votre programme. Pour l'éviter : vérifiez qu'une variable de la condition est modifiée à chaque tour, et qu'elle se rapproche vraiment de la valeur qui rendra la condition fausse. En dernier recours, un `break` à l'intérieur du bloc offre une porte de sortie. Si jamais votre code semble figé à l'exécution, c'est souvent une boucle infinie qu'il faut chercher.
+</Callout>
+
+## à toi de jouer
+
+<PythonChallenge id="py-1" title="Somme de 1 à n" description="Ecris une fonction qui additionne tous les entiers de 1 jusqu'a n inclus avec une boucle, et renvoie le total. Par exemple solution(5) vaut 1 + 2 + 3 + 4 + 5." starterCode="def solution(n):
+    pass" tests={[{ input: "solution(5)", expected: "15" }, { input: "solution(1)", expected: "1" }, { input: "solution(10)", expected: "55" }]} />
+
+<Quiz id="q-1" question="Que produit range(5) quand on le parcourt dans une boucle for ?" options={["Les nombres 1, 2, 3, 4, 5", "Les nombres 0, 1, 2, 3, 4", "Les nombres 0, 1, 2, 3, 4, 5", "Le seul nombre 5"]} correct={1} />
+
+<Quiz id="q-2" question="Quel est le risque principal d'une boucle while ?" options={["Elle ne peut parcourir qu'une seule liste", "Elle s'arrete toujours apres dix tours", "Si la condition ne change jamais, elle tourne a l'infini", "Elle ne fonctionne qu'avec des nombres pairs"]} correct={2} />
+
+## à retenir
+
+`for` parcourt une séquence et convient quand le nombre de tours est connu d'avance. `range(a, b)` génère les nombres de `a` jusqu'à `b` exclu, et `range(5)` donne 0, 1, 2, 3, 4. `while` répète tant qu'une condition est vraie, et cette condition doit évoluer à chaque tour sous peine de boucle infinie. `break` quitte la boucle d'un coup, `continue` saute au tour suivant. Devant un problème de répétition, posez-vous une question : connaissez-vous le nombre de tours ? Oui, `for`. Non, `while`.
+
+OK 03 réécrit

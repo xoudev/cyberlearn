@@ -1,0 +1,142 @@
+---
+refCode: CL-LSN-102-V01
+slug: crypto-signatures
+title: "Signatures numériques"
+description: "Comprenez comment signer avec une clé privée et vérifier avec la publique prouve l'origine et l'intégrité d'un message, pourquoi on signe l'empreinte plutôt que le message, et ce qui distingue une signature d'un MAC."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-099-V01"]
+---
+
+Imagine que tu envoies un message à quelqu'un que tu n'as jamais rencontré. Vous n'avez échangé aucun mot de passe, aucun secret commun, rien. Comment cette personne peut-elle être sûre que le message vient bien de toi, et qu'il n'a pas été modifié en route ? À première vue, c'est un problème impossible. Sans secret partagé, n'importe qui pourrait se faire passer pour toi.
+
+La signature numérique résout exactement ça. Elle te permet de coller une preuve sur un message, une preuve que toi seul pouvais produire, mais que n'importe qui peut vérifier. C'est une des idées les plus utiles de la cryptographie moderne, et elle tourne en permanence sous le capot : quand ton navigateur ouvre un site en HTTPS, quand ton téléphone installe une mise à jour, quand un développeur signe un commit.
+
+## le principe inversé de l'asymétrique
+
+Tu connais déjà la paire de clés : une clé privée que tu gardes pour toi, une clé publique que tu distribues à tout le monde. Pour le chiffrement, on chiffre avec la clé publique du destinataire et lui seul déchiffre avec sa privée.
+
+La signature fait l'inverse. Tu signes avec ta clé PRIVÉE, et tout le monde vérifie avec ta clé PUBLIQUE. C'est le même couple de clés, mais utilisé dans l'autre sens.
+
+Pourquoi ça marche ? Parce que la signature ne peut être produite que par le détenteur de la clé privée. Personne d'autre ne la possède. En revanche, la vérification ne demande que la clé publique, qui est connue de tous. On obtient donc une preuve asymétrique : difficile à fabriquer, facile à contrôler.
+
+<Diagram caption="Signer avec la clé privée, vérifier avec la publique">
+flowchart TD
+  A[Message] --> B[Empreinte du message]
+  B --> C[Signature avec la cle privee]
+  C --> D[Message + signature envoyes]
+  D --> E[Le verificateur recoit les deux]
+  E --> F[Verification avec la cle publique]
+  F --> G[Valide ou rejete]
+</Diagram>
+
+<Callout type="info">
+Retiens cette symétrie. Chiffrer : clé publique pour cacher, clé privée pour révéler. Signer : clé privée pour prouver, clé publique pour vérifier. La privée fait toujours le travail que toi seul peux faire.
+</Callout>
+
+## ce qu'elle prouve
+
+Une signature valide t'apporte trois garanties d'un coup.
+
+L'authenticité, d'abord : elle dit de qui vient le message. Si la vérification passe avec la clé publique de Alice, c'est que la signature a été produite avec la clé privée de Alice. Donc le message vient d'Alice.
+
+L'intégrité, ensuite : elle dit que le message n'a pas bougé. Si un seul octet change après la signature, la vérification échoue. Tu sais alors que quelque chose a été altéré, sans savoir quoi exactement, mais tu sais que tu ne peux pas faire confiance au contenu.
+
+La non-répudiation, enfin : l'auteur ne peut pas nier après coup. Comme lui seul détient la clé privée, il ne peut pas prétendre qu'un autre a signé à sa place. C'est une propriété forte, et on verra plus loin pourquoi le MAC ne l'offre pas.
+
+Maintenant, le piège classique.
+
+<Callout type="warning">
+Une signature ne chiffre PAS le message. Le contenu reste lisible en clair pour tout le monde. La signature est une preuve qu'on ajoute à côté du message, pas un cadenas qui le cache. Si tu veux à la fois prouver l'origine ET garder le contenu secret, il faut combiner signature et chiffrement, ce sont deux opérations distinctes.
+</Callout>
+
+Beaucoup de gens confondent les deux parce que les deux utilisent une paire de clés. Mais leurs buts sont opposés : le chiffrement protège la confidentialité, la signature protège l'authenticité et l'intégrité.
+
+## on signe l'empreinte, pas tout
+
+Voici un détail qui surprend souvent. On ne signe presque jamais le message complet. On le hache d'abord, et on signe l'empreinte.
+
+Souviens-toi de la leçon sur le hachage : une fonction comme SHA-256 transforme n'importe quelle entrée, longue ou courte, en une empreinte de taille fixe. Un fichier de 4 Go et un SMS de trois mots donnent tous les deux une empreinte de 256 bits.
+
+Deux raisons à ça.
+
+La vitesse et la taille, d'abord. Les opérations de signature asymétriques sont lentes et travaillent sur des blocs de taille limitée. Signer directement un gros fichier serait impraticable. On hache, on obtient une empreinte courte et de longueur constante, et on signe juste ça. C'est rapide, quelle que soit la taille du fichier original.
+
+La cohérence avec l'intégrité, ensuite. Le hachage est sensible au moindre changement : un octet modifié dans le message produit une empreinte complètement différente. Donc signer l'empreinte revient à signer le message tout entier du point de vue de la détection des modifications. Si quelqu'un change le contenu, l'empreinte recalculée à la vérification ne correspondra plus à celle qui a été signée.
+
+```text
+Coté signataire
+  empreinte = SHA-256(message)
+  signature = signer(empreinte, cle_privee)
+  envoyer(message, signature)
+
+Coté vérificateur
+  empreinte_recue   = SHA-256(message)
+  empreinte_signee  = verifier(signature, cle_publique)
+  si empreinte_recue == empreinte_signee  -> valide
+  sinon                                    -> rejete
+```
+
+Le vérificateur refait le hachage de son côté et compare. Pas besoin du secret de l'autre, juste la clé publique et la même fonction de hachage.
+
+## MAC ou signature ?
+
+Il existe un autre outil qui prouve l'intégrité et une forme d'authenticité : le MAC, pour Message Authentication Code. À première vue il ressemble à une signature, mais la différence est importante.
+
+Le MAC repose sur une clé SECRÈTE PARTAGÉE. Alice et Bob connaissent la même clé. Alice calcule un MAC sur le message avec cette clé, Bob le recalcule de son côté avec la même clé et compare. Si ça correspond, Bob sait que le message vient de quelqu'un qui connaît la clé, et qu'il n'a pas été modifié.
+
+La signature, elle, repose sur une PAIRE de clés. Alice signe avec sa privée, que personne d'autre ne possède. Bob vérifie avec la publique d'Alice.
+
+Cette différence change tout sur un point précis : la non-répudiation.
+
+Avec un MAC, Alice et Bob partagent la même clé. Donc les deux peuvent produire un MAC valide. Si Bob montre un message avec un MAC correct, rien ne prouve qu'Alice l'a écrit : Bob aurait pu le fabriquer lui-même, puisqu'il a la clé. Alice peut donc nier. Pas de non-répudiation.
+
+Avec une signature, seule Alice détient la clé privée. Une signature valide ne peut venir que d'elle. Elle ne peut pas nier l'avoir produite. Non-répudiation possible.
+
+<Callout type="success">
+La règle simple : si les deux parties se font confiance et veulent juste de la vitesse et de l'intégrité entre elles, le MAC suffit et il est plus rapide. Si tu as besoin de prouver l'origine à un tiers, ou que l'auteur ne puisse pas se dédire, il faut une signature.
+</Callout>
+
+Un autre angle : le MAC convient bien à deux machines d'un même système qui partagent déjà une clé (par exemple à l'intérieur d'un protocole TLS établi). La signature convient quand il faut convaincre le monde entier, sans secret préalable.
+
+## en vrai
+
+Tu croises des signatures partout, souvent sans les voir.
+
+Les logiciels et les mises à jour signés : ton système d'exploitation vérifie la signature d'un paquet avant de l'installer. Si elle ne correspond pas à la clé de l'éditeur, l'installation est refusée. C'est ce qui empêche un attaquant de te glisser une fausse mise à jour.
+
+Les certificats : un certificat TLS contient une signature de l'autorité de certification. Ton navigateur vérifie cette signature pour s'assurer que le certificat est authentique. C'est la base de la chaîne de confiance du HTTPS.
+
+Les commits signés : un développeur peut signer ses commits Git pour prouver qu'ils viennent bien de lui.
+
+```bash
+# Signer un commit avec sa clé
+git commit -S -m "fix: corrige la validation du formulaire"
+
+# Vérifier la signature d'un commit
+git verify-commit HEAD
+
+# Voir le statut de signature dans le log
+git log --show-signature -1
+```
+
+Dans chaque cas, le schéma est identique : on hache, on signe l'empreinte avec une clé privée, et le destinataire vérifie avec la clé publique correspondante.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Avec quelle clé produit-on une signature numérique ?" options={["La clé publique du destinataire", "Une clé secrète partagée entre les deux parties", "La clé privée du signataire", "La clé publique du signataire"]} correct={2} />
+<Quiz id="q-2" question="Pourquoi signe-t-on l'empreinte du message plutôt que le message entier ?" options={["Pour chiffrer le contenu en même temps", "Parce que l'empreinte est de taille fixe et courte, ce qui rend la signature rapide quelle que soit la taille du message", "Pour rendre le message illisible", "Parce que sinon la signature serait impossible à vérifier"]} correct={1} />
+<Quiz id="q-3" question="Pourquoi un MAC ne fournit-il pas la non-répudiation, contrairement à une signature ?" options={["Parce que le MAC ne vérifie pas l'intégrité", "Parce que la clé du MAC est partagée, donc les deux parties peuvent le produire et l'auteur peut nier", "Parce que le MAC chiffre le message", "Parce que le MAC utilise une paire de clés trop faible"]} correct={1} />
+</QuizGroup>
+
+## à retenir
+
+- On signe avec la clé PRIVÉE, on vérifie avec la clé PUBLIQUE. C'est l'inverse du chiffrement.
+- Une signature prouve trois choses : l'authenticité (de qui), l'intégrité (non modifié), la non-répudiation (l'auteur ne peut nier).
+- Une signature ne chiffre PAS le message. Le contenu reste en clair. Confidentialité et signature sont deux opérations séparées.
+- On hache le message d'abord, puis on signe l'empreinte : rapide, taille fixe, et toujours sensible au moindre changement.
+- Le MAC utilise une clé partagée (les deux parties peuvent le produire, donc pas de non-répudiation). La signature utilise une paire de clés (seul le détenteur de la privée signe).
+- En pratique : mises à jour logicielles, certificats TLS, commits Git signés reposent tous sur ce mécanisme.

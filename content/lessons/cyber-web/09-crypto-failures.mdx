@@ -1,0 +1,109 @@
+---
+refCode: CL-LSN-093-V01
+slug: owasp-crypto-failures
+title: "Défaillances cryptographiques"
+description: "Comprenez pourquoi la cryptographie échoue presque toujours par sa mise en oeuvre et non par les mathématiques : données sensibles stockées en clair, algorithmes obsolètes, et mauvaise gestion des secrets."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-079-V01"]
+---
+
+Quand on parle de crypto qui casse, on imagine un attaquant avec une grosse machine qui casse une clé par force brute. Dans la vraie vie, ça n'arrive presque jamais. AES-256 ne se casse pas en cassant l'algorithme. Ce qui casse, c'est tout ce qu'il y a autour : une donnée sensible enregistrée en clair, un algorithme abandonné depuis dix ans qu'on traîne encore, une clé secrète laissée dans un fichier poussé sur un dépôt Git. Les maths tiennent. C'est la mise en oeuvre qui lâche.
+
+C'est exactement ce que décrit la catégorie OWASP « Cryptographic Failures ». Avant, elle s'appelait « Sensitive Data Exposure », et ce nom disait bien le problème réel : ce ne sont pas les algorithmes qui sont en cause, ce sont les données qu'on aurait dû protéger et qu'on a laissées exposées. Garde cette idée en tête pour toute la suite.
+
+## chiffrement, hachage, transport
+
+Trois mots qu'on mélange souvent, et qui ne font pas la même chose.
+
+Le **chiffrement** transforme une donnée en quelque chose d'illisible, mais réversible : avec la bonne clé, tu retrouves la donnée d'origine. C'est ce que tu veux pour un numéro de carte, un token, un message privé. Tu chiffres, tu stockes, et plus tard tu déchiffres pour réutiliser.
+
+Le **hachage** transforme une donnée en empreinte de taille fixe, et c'est à sens unique : tu ne peux pas remonter à la donnée d'origine. C'est ce que tu veux pour un mot de passe. Tu n'as jamais besoin de le « relire », tu as juste besoin de vérifier qu'il correspond. La leçon CL-LSN-079 a déjà traité le hachage des mots de passe avec sel et fonctions lentes, donc je ne le réexplique pas ici, je m'appuie dessus.
+
+Le **transport** protège la donnée pendant qu'elle voyage sur le réseau, entre le navigateur et le serveur. C'est le rôle de TLS, la couche derrière HTTPS. Ça empêche quelqu'un sur le même réseau de lire ce qui passe.
+
+<Callout type="info">
+Modèle mental : le chiffrement protège une donnée que tu pourras relire plus tard. Le hachage vérifie sans jamais relire. Le transport protège le trajet, pas le contenu une fois arrivé. Ces trois protections sont indépendantes : avoir l'une ne te donne pas les deux autres.
+</Callout>
+
+## l'idée reçue du HTTPS
+
+Voilà la confusion la plus répandue, et elle coûte cher : « on a HTTPS donc tout est chiffré ».
+
+HTTPS chiffre le **transport**. Pendant que la donnée traverse Internet, personne ne peut la lire en clair. C'est réel et c'est nécessaire. Mais ça s'arrête à la porte du serveur. Une fois la requête arrivée, TLS est terminé. La donnée est déchiffrée, traitée, et écrite en base. Si à ce moment-là personne ne l'a chiffrée au repos, elle dort en clair dans la base.
+
+Donc une application peut afficher fièrement son cadenas dans la barre d'adresse et stocker quand même les numéros de carte de ses clients en texte brut dans une table. Le jour où la base fuite, par une injection SQL ou une sauvegarde mal protégée, HTTPS ne sert plus à rien. Il protégeait le trajet, pas le coffre.
+
+<Callout type="warning">
+HTTPS protège la donnée entre le navigateur et le serveur. Il ne dit rien sur ce qui se passe ensuite : ni sur le stockage, ni sur les logs, ni sur les sauvegardes. Une donnée peut être chiffrée en transit et complètement en clair au repos.
+</Callout>
+
+## les défaillances courantes
+
+En pratique, les mêmes erreurs reviennent.
+
+**Données sensibles stockées sans protection.** Numéros de carte, pièces d'identité, données de santé, tokens d'API enregistrés en clair dans la base. Parfois par oubli, parfois parce que « on chiffrera plus tard ». La donnée sensible doit être identifiée avant d'être stockée, pas après la fuite.
+
+**Algorithmes obsolètes.** MD5 et SHA-1 servent encore dans du code qui traîne. Or ils sont cassés pour les usages sensibles : on sait fabriquer des collisions, et leur rapidité même les rend faciles à attaquer par dictionnaire. Les utiliser pour signer, pour vérifier une intégrité critique, ou pour protéger un mot de passe, c'est une faille connue. De même, du chiffrement en mode ECB qui laisse transparaître la structure des données, ou DES avec sa clé trop courte.
+
+**Secrets codés en dur.** Une clé d'API, un mot de passe de base, une clé de chiffrement écrits directement dans le code source ou dans un fichier de configuration versionné. C'est sans doute l'erreur la plus fréquente, et la plus discrète, parce que « ça marche » en développement.
+
+```text
+# config/database.yml   <-- ne fais jamais ça
+
+production:
+  host: db.exemple.com
+  user: app_prod
+  password: S3cr3t-Pr0d-2024     # secret en clair, dans le dépôt
+  api_key: sk_live_9f3a8b2c7d1e0f4a6b5c
+```
+
+Ce fichier, une fois committé, partage le mot de passe de prod avec toute personne qui a accès au dépôt, et avec tout l'historique Git.
+
+## la gestion des secrets
+
+Un secret, ça ne vit pas dans le code. Ça vit à côté.
+
+La base, c'est de sortir les secrets vers des **variables d'environnement**, lues au démarrage de l'application et jamais écrites dans le dépôt. Le fichier qui les contient en local reste ignoré par Git. Pour des besoins plus sérieux, on passe à un **coffre à secrets** dédié, qui stocke, chiffre et distribue les secrets aux applications, avec un journal de qui a accédé à quoi.
+
+Vient ensuite la **rotation** : changer régulièrement les clés et les mots de passe, pour qu'un secret volé ait une durée de vie limitée. Et la rotation devient obligatoire dès qu'un secret a fuité.
+
+Sur ce dernier point, une chose à bien comprendre. Si tu pousses un secret dans Git puis que tu le supprimes au commit suivant, le secret reste dans l'historique. N'importe qui ayant cloné le dépôt l'a déjà. Pire, sur un dépôt public, des robots scannent les nouveaux commits en continu et récupèrent les clés en quelques secondes. Supprimer la ligne ne « répare » rien.
+
+<Callout type="danger">
+Un secret qui est passé une seule fois dans Git est compromis, point. La seule réponse correcte est de le révoquer et d'en générer un nouveau. Nettoyer l'historique est utile pour limiter la diffusion, mais ça ne rend pas le secret réutilisable : considère-le comme brûlé.
+</Callout>
+
+## les bonnes pratiques
+
+Rien d'exotique ici, surtout de la discipline.
+
+**Chiffre les données sensibles au repos.** Identifie ce qui est sensible avant de le stocker, et chiffre-le en base. Et garde en tête le minimum : la donnée que tu ne stockes pas ne peut pas fuiter.
+
+**Utilise des algorithmes actuels et des bibliothèques éprouvées.** AES en mode authentifié pour le chiffrement, des fonctions lentes dédiées pour les mots de passe (voir CL-LSN-079), TLS récent pour le transport. Et la règle qui sauve le plus de monde : ne réinvente pas la crypto. Les primitives maison se cassent, toujours. Sers-toi des bibliothèques maintenues et auditées de ton langage.
+
+**Garde les secrets hors du code.** Variables d'environnement ou coffre à secrets, jamais en dur, jamais dans un fichier versionné. Un scanner de secrets dans la CI attrape les fuites avant qu'elles partent sur le remote.
+
+<Callout type="success">
+La bonne hygiène crypto tient en trois réflexes : chiffrer au repos ce qui est sensible, choisir des algorithmes actuels via des bibliothèques éprouvées, et sortir tous les secrets du code. Aucun des trois ne demande d'être cryptographe. Ils demandent juste d'être appliqués à chaque fois.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Une application utilise HTTPS sur toutes ses pages. Que peut-on en conclure sur les numéros de carte stockés dans sa base ?" options={["Ils sont forcément chiffrés en base", "Rien : HTTPS protège le transport, pas le stockage au repos", "Ils sont hachés automatiquement", "Ils sont protégés contre une injection SQL"]} correct={1} />
+
+<Quiz id="q-2" question="Tu as committé une clé API par erreur, tu la supprimes au commit suivant. Quelle est la bonne réaction ?" options={["Rien de plus, la ligne est supprimee", "Révoquer la clé et en générer une nouvelle, car elle reste dans l historique", "Rendre le dépôt privé suffit", "Attendre de voir si elle est utilisée"]} correct={1} />
+
+<Quiz id="q-3" question="Parmi ces choix, lequel est une défaillance cryptographique typique ?" options={["Utiliser AES en mode authentifié", "Lire les secrets depuis des variables d environnement", "Hacher les mots de passe avec MD5", "Servir le site en TLS récent"]} correct={2} />
+
+## à retenir
+
+- La crypto échoue rarement par les maths : elle échoue par la mise en oeuvre, données en clair, mauvais algo, secrets mal gérés.
+- Chiffrement (réversible, pour relire), hachage (à sens unique, pour vérifier) et transport (protège le trajet) sont trois choses distinctes.
+- HTTPS chiffre le transport, pas le stockage. Une donnée peut être chiffrée en transit et en clair au repos.
+- MD5 et SHA-1 sont cassés pour les usages sensibles. Ne les utilise pas pour signer, vérifier une intégrité critique ou protéger un mot de passe.
+- Un secret dans le code ou dans un fichier versionné est une faille. Variables d'environnement ou coffre à secrets, jamais en dur.
+- Un secret passé une fois dans Git est compromis : révoque-le et régénère-le, le supprimer ne suffit pas.
+- Ne réinvente pas la crypto : algorithmes actuels, bibliothèques éprouvées, secrets hors du code.

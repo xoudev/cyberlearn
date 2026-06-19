@@ -1,0 +1,116 @@
+---
+refCode: CL-LSN-139-V01
+slug: blueteam-reponse-incident
+title: "La réponse à incident sur le terrain"
+description: "Le déroulé opérationnel d'une réponse à incident dans un SOC : préparation, identification, confinement, éradication, récupération et leçons apprises, avec les erreurs classiques de chaque phase."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-081-V01"]
+---
+
+Un incident grave, ce n'est pas le moment d'inventer la marche à suivre. À 3 h du matin, quand un poste se met à chiffrer des partages réseau, personne n'a la tête à réfléchir posément à qui appeler, où sont les sauvegardes, ni si on a le droit de débrancher un serveur de production. Tout ça se décide à froid, avant. Ce qui distingue une équipe qui s'en sort d'une équipe qui aggrave la situation, c'est rarement le talent du moment. C'est le travail fait en amont et le fait de suivre un processus au lieu d'improviser.
+
+Tu connais déjà le découpage classique en grandes phases. Ici on reste côté terrain : ce qu'un analyste SOC fait vraiment à chaque étape, et l'endroit précis où ça dérape le plus souvent.
+
+## le cycle d'ensemble
+
+La réponse à incident s'organise en six temps qui s'enchaînent, mais qui ne sont pas une ligne droite. On revient souvent en arrière. Tu confines, tu trouves une deuxième machine touchée pendant l'éradication, et te voilà reparti dans l'identification. Le modèle du NIST décrit ce mouvement comme une boucle, pas comme une checklist qu'on coche une fois.
+
+<Diagram caption="Le cycle de réponse à incident">
+flowchart LR
+  A["Préparation"] --> B["Identification"]
+  B --> C["Confinement"]
+  C --> D["Éradication"]
+  D --> E["Récupération"]
+  E --> F["Lecons apprises"]
+  F --> A
+</Diagram>
+
+<Callout type="info">
+La flèche qui ramène des leçons apprises vers la préparation n'est pas décorative. Chaque incident doit rendre le suivant moins douloureux. Une équipe qui ne ferme jamais cette boucle revit les mêmes incidents en boucle, justement.
+</Callout>
+
+## la préparation
+
+C'est l'étape qui décide de toutes les autres, et c'est celle qu'on néglige le plus parce qu'elle ne produit rien de visible tant qu'il ne se passe rien.
+
+Concrètement, se préparer veut dire écrire qui fait quoi. Un incident a besoin d'un responsable qui pilote (l'incident commander), de quelqu'un qui creuse la technique, de quelqu'un qui gère la communication, et d'un point de contact côté direction qui peut autoriser une coupure de service. Sans ces rôles distribués à l'avance, tout le monde regarde le même écran et personne ne décide.
+
+La préparation, c'est aussi avoir les contacts sous la main : l'hébergeur, le fournisseur d'accès, l'assurance cyber, parfois les autorités, et les astreintes internes avec des numéros qui marchent vraiment. C'est avoir les outils prêts et accessibles même si le réseau interne tombe : un canal de communication hors-bande, un accès aux logs centralisés, des comptes d'urgence. Et surtout, des sauvegardes dont on a testé la restauration. Une sauvegarde jamais restaurée n'est pas une sauvegarde, c'est une hypothèse.
+
+L'erreur classique tient en une phrase : ne s'occuper de tout ça qu'une fois la crise déclenchée. On découvre alors que le seul administrateur qui connaît le serveur de fichiers est en vacances, que la sauvegarde tournait en échec depuis trois semaines sans que personne ne lise l'alerte, et que le plan de réponse est un document de 2019 que plus personne n'a ouvert. La préparation ne se rattrape pas pendant l'incident.
+
+## identifier et qualifier
+
+Une alerte n'est pas un incident. Le travail d'identification consiste d'abord à confirmer qu'il se passe vraiment quelque chose d'anormal, puis à en mesurer la portée. Quels comptes, quelles machines, depuis quand, par où c'est entré.
+
+Sur le terrain ça veut dire corréler. Une connexion réussie depuis un pays inhabituel, seule, ne dit pas grand-chose. La même connexion suivie d'une création de compte administrateur et d'un transfert de données, ça raconte une histoire. L'analyste reconstruit cette histoire à partir des journaux, du SIEM, de l'EDR, et il pose une qualification : faux positif, incident mineur, incident majeur.
+
+Deux erreurs symétriques guettent. La première, sur-réagir à un faux positif : déclencher la cellule de crise, couper des services, mobiliser dix personnes pour un scanner de vulnérabilités autorisé que personne n'avait signalé. On brûle de la crédibilité, et la prochaine vraie alerte sera prise moins au sérieux. La seconde, plus grave, sous-estimer : voir un poste infecté, le nettoyer, et passer à autre chose sans se demander où l'attaquant est allé ensuite. La portée réelle d'un incident est presque toujours plus large que le premier symptôme visible.
+
+## le confinement, le moment délicat
+
+C'est là que les décisions deviennent difficiles, parce que plusieurs objectifs entrent en conflit.
+
+Le but est d'empêcher la propagation : isoler la zone touchée pour que l'attaquant ne s'étende pas et que les dégâts s'arrêtent. Mais isoler trop brutalement casse la production. Débrancher un serveur central peut faire plus de mal immédiat que l'attaque elle-même. Il faut donc viser : isoler le segment réseau touché plutôt que tout couper, désactiver les comptes compromis, bloquer les adresses de commande et contrôle, sans débrancher au hasard.
+
+Deuxième tension : alerter l'attaquant trop tôt. Si tu bloques bruyamment tout ce qu'il utilise, il comprend qu'il est repéré et peut accélérer, déclencher son ransomware tout de suite, ou changer de portes dérobées pour celles que tu n'as pas encore trouvées. Parfois la bonne décision est de contenir discrètement le temps de cartographier toute sa présence, puis de tout couper d'un coup.
+
+Troisième tension, la plus citée : preuve contre remise en service. Éteindre une machine efface la mémoire vive, où se trouvent souvent les indices les plus parlants. Mais garder la machine allumée laisse l'attaquant agir. Le métier consiste à acquérir d'abord ce qui est volatil (capture mémoire, connexions actives) quand l'enjeu le justifie, avant de toucher au reste.
+
+<Callout type="warning">
+Le confinement n'est pas un bouton « tout débrancher ». Avant de couper une machine, demande-toi trois choses : est-ce que je préserve les preuves dont j'aurai besoin, est-ce que je vois toute l'étendue de la compromission, et est-ce que ma coupure casse quelque chose de plus important que ce que je protège. Si tu ne sais pas, c'est souvent que l'identification n'est pas finie.
+</Callout>
+
+## éradiquer et récupérer
+
+Éradiquer, c'est retirer la présence de l'attaquant, pas seulement le symptôme qui t'a alerté. Supprimer le fichier malveillant repéré ne sert à rien si le compte volé, la tâche planifiée discrète, la porte dérobée et le webshell restent en place. L'éradication s'appuie sur ce qu'a donné l'identification : tu nettoies tout ce que tu as cartographié, tu changes les secrets exposés, tu corriges la faille d'entrée. Si tu ne sais pas par où il est entré, tu n'as pas fini d'identifier.
+
+Récupérer, c'est remettre en service à partir d'un état sain. On restaure depuis des sauvegardes dont on est sûr qu'elles sont antérieures à la compromission, on reconstruit plutôt qu'on rafistole les machines les plus touchées, et on remonte progressivement en surveillant. Cette surveillance renforcée pendant les jours qui suivent sert à vérifier une chose : que l'attaquant ne revient pas.
+
+L'erreur classique ici est la pression de remise en service. La direction veut que ça remarche, vite, et on rebranche avant d'avoir vraiment nettoyé. Résultat fréquent : l'attaquant, qui avait gardé un accès qu'on n'a pas trouvé, revient quelques jours plus tard, parfois en chiffrant cette fois. Remettre en service un environnement encore compromis, ce n'est pas récupérer, c'est rejouer l'incident.
+
+## les leçons apprises
+
+C'est l'étape la plus systématiquement bâclée, parce qu'une fois le service rétabli tout le monde veut passer à autre chose. C'est aussi celle qui rapporte le plus.
+
+Quelques jours après la clôture, à froid, l'équipe reconstruit la chronologie : comment c'est entré, ce qu'on a vu et quand, ce qui a bien marché, ce qui nous a fait perdre du temps. Le but n'est pas de désigner un coupable, c'est de corriger des causes. Une faille qui a servi de porte d'entrée doit être patchée partout, pas seulement sur la machine touchée. Une détection qui a manqué doit devenir une nouvelle règle dans le SIEM. Un rôle mal tenu pendant la crise doit être clarifié dans le plan.
+
+<Callout type="success">
+Un post-mortem utile produit une liste d'actions concrètes avec un responsable et une date pour chacune. « On fera plus attention » n'est pas une action. « Activer le MFA sur l'accès VPN avant fin du mois, responsable X » en est une. C'est ce qui transforme un incident subi en défense renforcée.
+</Callout>
+
+## communiquer pendant la crise
+
+Pendant l'incident, l'information mal gérée fait autant de dégâts que la technique. Deux travers se répondent. Le silence : la direction ne sait rien, les équipes métier découvrent la panne sans explication, la rumeur remplit le vide. Et la panique : tout le monde écrit dans tous les sens, des décisions contradictoires se prennent, des informations sensibles fuitent sur des canaux peu sûrs.
+
+La règle est simple à énoncer : un point de contact unique qui communique, des messages calibrés selon le public, et un canal de communication qui ne dépend pas du système compromis. On ne discute pas de l'attaque en cours sur la messagerie interne si on n'est pas sûr qu'elle est saine.
+
+| Phase | Action clé de communication |
+|---|---|
+| Préparation | Définir qui informe qui, et par quel canal hors-bande |
+| Identification | Alerter le responsable d'incident, rester factuel et bref |
+| Confinement | Prévenir les métiers d'un impact possible, sans détails techniques sensibles |
+| Éradication | Tenir la direction au courant de l'avancée, sans promettre de date ferme |
+| Récupération | Annoncer le retour de service phase par phase, pas en bloc |
+| Leçons apprises | Partager le bilan et les actions, en interne et si besoin aux autorités |
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pendant le confinement, pourquoi peut-il être risqué de bloquer bruyamment d'un coup tout ce que l'attaquant utilise ?" options={["Parce que ca consomme trop de bande passante", "Parce que l'attaquant comprend qu'il est repéré et peut accélérer ou déclencher sa charge tout de suite", "Parce que les sauvegardes deviennent illisibles", "Parce que la direction n'a pas encore validé"]} correct={1} />
+
+<Quiz id="q-2" question="Quel est le défaut le plus courant de l'étape des leçons apprises ?" options={["Elle prend trop de temps aux analystes", "Elle est souvent bâclée ou sautée une fois le service rétabli", "Elle exige du matériel spécialisé", "Elle doit obligatoirement être publique"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi la préparation conditionne-t-elle toutes les autres phases ?" options={["Parce que c'est la phase la plus longue", "Parce que les rôles, contacts, outils et sauvegardes testées ne se mettent pas en place pendant la crise", "Parce qu'elle remplace l'identification", "Parce qu'elle est imposée par la loi"]} correct={1} />
+
+## à retenir
+
+- Le cycle compte six temps qui bouclent : préparation, identification, confinement, éradication, récupération, leçons apprises. On revient souvent en arrière.
+- La préparation se fait à froid : rôles définis, contacts à jour, outils hors-bande, sauvegardes dont la restauration a été testée. Elle ne se rattrape pas pendant l'incident.
+- Identifier, c'est confirmer et mesurer la portée. Les deux pièges sont la sur-réaction au faux positif et la sous-estimation.
+- Le confinement arbitre entre trois tensions : isoler sans casser la production, ne pas alerter l'attaquant trop tôt, préserver les preuves volatiles avant de tout remettre en service.
+- Éradiquer veut dire retirer toute la présence de l'attaquant, pas le seul symptôme. Récupérer depuis un état sûr, puis surveiller pour vérifier qu'il ne revient pas.
+- Les leçons apprises produisent des actions concrètes avec responsable et date. C'est ce qui rend l'incident suivant moins coûteux.
+- La communication passe par un point de contact unique, des messages calibrés, et un canal qui ne dépend pas du système compromis. Le silence comme la panique nuisent.

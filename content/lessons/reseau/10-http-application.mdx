@@ -1,0 +1,131 @@
+---
+refCode: CL-LSN-166-V01
+slug: reseau-http-application
+title: "La couche application : HTTP et HTTPS"
+description: "Comprenez le protocole du web : le modèle requête-réponse, l'anatomie d'une requête et d'une réponse HTTP, les codes de statut, la différence avec HTTPS, et pourquoi HTTP est sans état."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-163-V01"]
+---
+
+Jusqu'ici on a parlé de plomberie : IP qui achemine les paquets, TCP qui garantit qu'ils arrivent tous et dans l'ordre. Mais TCP ne sait rien de ce que tu veux faire. Il transporte des octets, point. Au-dessus de cette plomberie, il faut un langage que les applications parlent entre elles, un protocole qui dit "voici ce que je veux, voici ce que je te réponds". C'est la couche application.
+
+Beaucoup de protocoles vivent à ce niveau : SMTP pour les mails, DNS pour les noms, SSH pour les connexions distantes. Le plus visible, celui que ton navigateur utilise des centaines de fois par jour, c'est HTTP, le protocole du web. On va le prendre comme exemple parce qu'il est lisible, presque du texte, et que tout ce que tu y comprends se transpose aux autres.
+
+Une chose à garder en tête tout du long : HTTP s'appuie sur la pile en dessous. Quand ton navigateur parle HTTP, il ouvre d'abord une connexion TCP vers le serveur, et TCP lui-même circule dans des paquets IP. HTTP ne se préoccupe ni de l'adressage ni de la fiabilité, ces problèmes sont déjà réglés plus bas. Il se contente de la conversation.
+
+## requête et réponse
+
+Le modèle de HTTP tient en une phrase : le client demande, le serveur répond. Un échange, une réponse. Tu veux une page, tu envoies une requête, tu reçois une réponse. Tu veux une image dans cette page, c'est une autre requête, une autre réponse. Une page un peu fournie déclenche facilement quarante ou cinquante allers-retours, un par ressource : le HTML, les feuilles de style, les scripts, chaque image, chaque police.
+
+Le client mène toujours la danse. Le serveur ne parle jamais en premier, il attend qu'on lui demande quelque chose. Cette asymétrie est simple à raisonner : à chaque instant, soit tu envoies une requête, soit tu lis une réponse.
+
+<Callout type="info">
+Le client est presque toujours ton navigateur, mais pas seulement. Une appli mobile, un script, un objet connecté, un autre serveur : tout ce qui sait ouvrir une connexion et formuler une requête est un client HTTP. Le serveur, lui, c'est le programme qui écoute et répond, typiquement sur le port 80 pour HTTP et 443 pour HTTPS.
+</Callout>
+
+## l'anatomie d'une requête
+
+Une requête HTTP commence par une ligne qui dit trois choses : la méthode, le chemin, la version du protocole.
+
+La méthode, c'est le verbe, ce que tu veux faire. GET pour lire une ressource sans rien modifier. POST pour envoyer des données au serveur, par exemple le contenu d'un formulaire. Il en existe d'autres (PUT pour remplacer, DELETE pour supprimer, HEAD pour ne récupérer que les en-têtes), mais GET et POST couvrent l'essentiel de ce que tu vois au quotidien.
+
+Le chemin, c'est la ressource visée sur ce serveur : la partie après le nom de domaine. Pour `https://example.com/articles/42`, le chemin est `/articles/42`.
+
+Viennent ensuite les en-têtes, une liste de paires nom-valeur, une par ligne, qui donnent du contexte. Quel hôte je vise, quel format je sais lire, quel navigateur je suis. Une ligne vide marque la fin des en-têtes, et après cette ligne vient le corps, s'il y en a un. Un GET n'a en général pas de corps, un POST si.
+
+```http
+GET /articles/42 HTTP/1.1
+Host: example.com
+User-Agent: Mozilla/5.0
+Accept: text/html
+Accept-Language: fr-FR
+```
+
+L'en-tête `Host` mérite un mot : un même serveur héberge souvent plusieurs sites. C'est `Host` qui lui dit lequel tu veux, puisque l'adresse IP, elle, est partagée.
+
+## l'anatomie d'une réponse
+
+La réponse a la même forme inversée. Elle ouvre par une ligne de statut : la version, un code numérique, et un court texte qui le résume. Puis ses propres en-têtes, une ligne vide, et le corps, c'est-à-dire le contenu demandé (le HTML, l'image, les données).
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: 1270
+Server: nginx
+
+<!DOCTYPE html>
+<html>...</html>
+```
+
+`Content-Type` dit au client comment interpréter le corps : du HTML, une image PNG, du JSON. Sans cette indication, le navigateur ne saurait pas s'il doit afficher une page ou télécharger un fichier. `Content-Length` annonce la taille du corps en octets, ce qui permet de savoir quand la réponse est complète.
+
+Tu peux voir tout ça à la main, sans navigateur, avec `curl`. C'est un bon réflexe pour comprendre ce qui circule vraiment.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Faire une requête HTTP à la main" commands={{"curl -I https://example.com": "HTTP/2 200\ncontent-type: text/html\nserver: ECS", "curl -s -o /dev/null -w '%{http_code}' https://example.com/inexistant": "404", "curl -v https://example.com 2>&1 | head -5": "* Connected to example.com port 443\n> GET / HTTP/2\n> Host: example.com"}} />
+
+L'option `-I` ne demande que les en-têtes (méthode HEAD), `-v` montre les lignes envoyées (`>`) et reçues (`<`). Tu retrouves exactement la structure des fences ci-dessus.
+
+## les codes de statut
+
+Le code de statut de la réponse résume en trois chiffres comment la requête s'est passée. Le premier chiffre donne la famille, et connaître les familles suffit pour se repérer.
+
+| Famille | Sens général | Exemples |
+| --- | --- | --- |
+| 2xx | Succès, la demande a abouti | 200 OK, 201 Created, 204 No Content |
+| 3xx | Redirection, va chercher ailleurs | 301 Moved Permanently, 302 Found, 304 Not Modified |
+| 4xx | Erreur côté client, ta requête est en cause | 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found |
+| 5xx | Erreur côté serveur, le serveur a planté | 500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable |
+
+La distinction 4xx contre 5xx vaut le coup d'être bien comprise. Un 404 veut dire que le serveur va bien mais que la ressource que tu demandes n'existe pas chez lui : le problème vient de ta requête. Un 500 veut dire que le serveur a rencontré un bug en traitant une requête pourtant valide : le problème vient de lui. Quand un site tombe en panne, c'est du 5xx ; quand tu te trompes d'adresse, c'est du 4xx.
+
+Les 3xx sont des renvois. Le serveur répond "ce que tu cherches est maintenant là", avec un en-tête `Location` qui donne la nouvelle adresse, et le navigateur suit automatiquement. C'est ce qui se passe quand tu tapes une vieille URL et que tu atterris sur la nouvelle sans rien faire.
+
+## HTTP et HTTPS
+
+HTTP, tel qu'on vient de le décrire, circule en clair. Les en-têtes, le chemin, le corps, tout passe en texte lisible. N'importe qui sur le trajet (un autre appareil du réseau wifi, un opérateur, un intermédiaire) peut lire ce que tu envoies et reçois, voire le modifier au passage.
+
+HTTPS résout ça sans changer HTTP lui-même. L'astuce : on glisse une couche de chiffrement, TLS, entre TCP et HTTP. Avant d'échanger la moindre requête, client et serveur négocient un tunnel TLS chiffré, puis HTTP circule à l'intérieur. Le protocole applicatif est identique, mais il voyage dans un tube opaque. Le `s` de HTTPS, c'est ce tunnel.
+
+TLS apporte deux choses. Le chiffrement, pour que personne ne lise le contenu. Et l'identité du serveur : pendant la négociation, le serveur présente son certificat, qui prouve qu'il est bien celui qu'il prétend être. C'est exactement le mécanisme vu dans la leçon sur les certificats. Sans cette vérification, le chiffrement ne servirait à rien, tu pourrais discuter en secret avec un imposteur.
+
+<Callout type="warning">
+Sur du HTTP simple, un mot de passe saisi dans un formulaire part en clair sur le réseau. Quiconque écoute le trafic le lit tel quel. C'est pour ça que les navigateurs marquent les pages HTTP comme non sécurisées et que tout site qui demande des informations sensibles doit être en HTTPS. La règle pratique aujourd'hui : HTTPS partout, sans exception.
+</Callout>
+
+## sans état
+
+Un point qui surprend souvent : HTTP est sans état. Chaque requête est indépendante des autres. Le serveur traite ta requête, répond, et oublie tout. La requête suivante, même venant de toi, même une seconde plus tard, arrive comme si c'était la première fois. Le protocole, en lui-même, ne garde aucune mémoire d'un échange à l'autre.
+
+Ça soulève une question évidente : comment un site sait-il que tu es connecté d'une page à l'autre, si chaque requête repart de zéro ? La réponse, c'est que l'application reconstruit ce fil par-dessus le protocole. À la connexion, le serveur t'attribue un identifiant et te le renvoie dans un cookie. Ton navigateur stocke ce cookie et le rejoint à chaque requête suivante, dans un en-tête. Le serveur lit l'identifiant, retrouve dans sa propre mémoire la session qui lui correspond, et sait ainsi qui tu es.
+
+Le protocole reste sans état ; ce sont les cookies et les sessions qui recréent une continuité. Cette séparation est un choix de conception : un serveur qui n'a rien à retenir entre deux requêtes est beaucoup plus simple à répartir sur plusieurs machines et à faire monter en charge.
+
+## à toi de jouer
+
+Refais les requêtes à la main et observe les codes et les en-têtes. Compare une réponse 200 et une réponse 404, regarde ce que renvoie un site en HTTPS au moment de la connexion.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Observer codes et en-têtes" commands={{"curl -I https://example.com": "HTTP/2 200\ncontent-type: text/html\nserver: ECS", "curl -s -o /dev/null -w '%{http_code}' https://example.com/inexistant": "404", "curl -v https://example.com 2>&1 | head -5": "* Connected to example.com port 443\n> GET / HTTP/2\n> Host: example.com"}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Tu demandes une page qui n'existe pas sur un serveur qui fonctionne très bien. Quel code de statut reçois-tu ?" options={["200 OK", "301 Moved Permanently", "404 Not Found", "500 Internal Server Error"]} correct={2} />
+
+<Quiz id="q-2" question="Que signifie le fait que HTTP soit sans état ?" options={["Le serveur ne garde aucune mémoire d'une requête à la suivante, chaque requête est indépendante", "Les requêtes ne peuvent pas contenir de corps", "HTTP ne peut transporter que du texte, jamais d'images", "Une seule requête est autorisée par connexion"]} correct={0} />
+
+<Quiz id="q-3" question="Qu'est-ce que HTTPS ajoute par rapport à HTTP ?" options={["Un protocole applicatif entièrement différent", "Une compression automatique des pages", "Le protocole HTTP transporté dans un tunnel TLS chiffré, avec vérification de l'identité du serveur par certificat", "La garantie que les paquets arrivent dans l'ordre"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- HTTP est un protocole de la couche application ; il s'appuie sur TCP, qui s'appuie sur IP. Il gère la conversation, pas l'acheminement.
+- Le modèle est requête-réponse : le client demande, le serveur répond, une fois par ressource. Le client parle toujours en premier.
+- Une requête porte une méthode (GET pour lire, POST pour envoyer), un chemin et des en-têtes. Une réponse porte un code de statut, des en-têtes et un corps.
+- Les codes se lisent par famille : 2xx succès, 3xx redirection, 4xx erreur du client (404 introuvable), 5xx erreur du serveur (500 plantage).
+- HTTPS, c'est HTTP dans un tunnel TLS : chiffrement du contenu et vérification de l'identité du serveur par certificat. Sans HTTPS, tout circule en clair.
+- HTTP est sans état : le serveur n'a pas de mémoire d'une requête à l'autre. Les cookies et les sessions recréent la continuité par-dessus.
+
+OK 10 écrit

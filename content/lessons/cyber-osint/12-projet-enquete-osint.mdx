@@ -1,0 +1,145 @@
+---
+refCode: CL-LSN-156-V01
+slug: osint-projet-enquete
+title: "Projet : mener une enquête OSINT responsable"
+description: "Mettez tout le parcours en pratique sur une cible éthique, en priorité vous-même : fixez un objectif, collectez sur plusieurs sources, recoupez, et produisez un rapport d'enquête clair et documenté."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 60
+xpReward: 720
+prerequisites: ["CL-LSN-155-V01"]
+---
+
+Tout le parcours menait ici. Vous savez chercher, croiser des sources, lire des métadonnées, suivre un domaine, repérer une fuite. Reste à enchaîner ces gestes sur une enquête complète, du premier objectif jusqu'au rapport final. C'est l'exercice qui transforme une collection de techniques en une vraie méthode.
+
+Une enquête OSINT, ce n'est pas une accumulation de captures d'écran. C'est une question de départ, une démarche traçable, et des constats qu'on peut défendre. On va monter ce projet ensemble, étape par étape.
+
+## le cadre, d'abord
+
+Avant la moindre recherche, on fixe les règles. L'OSINT touche à des personnes réelles, et la frontière entre curiosité et intrusion se franchit vite.
+
+<Callout type="danger">
+On n'enquête que sur une cible éthique. Deux options seulement pour ce projet. Option (a), recommandée : vous-même, pour mesurer votre propre exposition publique. Option (b) : une cible d'entraînement consentante ou fictive, par exemple un personnage public inventé, une organisation fictive, ou un défi OSINT encadré. Jamais un particulier réel sans son consentement ou une base légale claire. Enquêter sur un voisin, un ex, un collègue ou un inconnu n'est pas un exercice : c'est du harcèlement, et c'est puni.
+</Callout>
+
+Si vous voulez vous entraîner sur des cas réalistes sans cibler quelqu'un, passez par une plateforme qui encadre l'exercice.
+
+<ExternalLink href="https://www.tracelabs.org/" description="Des défis OSINT encadrés et éthiques pour s'entraîner légalement">Trace Labs</ExternalLink>
+
+Pour la suite, je prends l'auto-évaluation comme fil rouge. Si vous choisissez une cible d'entraînement, la démarche est identique, seul le sujet change.
+
+## étape 1 : fixer l'objectif
+
+Une enquête sans question dérive. On commence donc par formuler une question précise et un périmètre.
+
+Pour une auto-évaluation, la question type : quelle est mon exposition publique, et qu'est-ce qu'un inconnu pourrait reconstituer sur moi en une heure ? Le périmètre découle de la question. On se limite aux sources ouvertes, on se fixe une durée, et on note ce qu'on s'interdit de regarder.
+
+Reprenez la leçon de méthode du parcours pour cadrer ça. Un objectif net guide chaque recherche et vous évite de partir dans tous les sens. Écrivez la question en haut d'un document, vous y reviendrez à chaque doute.
+
+## étape 2 : collecte multi-sources
+
+Maintenant on ramasse, source par source, en documentant tout. Pour chaque trouvaille : où, quand, et le lien exact.
+
+Les terrains à couvrir :
+
+- Recherche avancée et dorks. Cherchez votre nom, vos pseudos, vos adresses mail entre guillemets, avec des opérateurs comme `site:` ou `filetype:` pour viser des documents publics.
+- Réseaux sociaux. Profils actifs et anciens, photos, listes d'amis publiques, lieux taggés.
+- Domaines et infrastructure. Si vous avez un site ou un blog, regardez ce que révèle l'enregistrement.
+- Images. Recherche d'image inversée sur vos photos de profil pour voir où elles réapparaissent.
+- Métadonnées. Les fichiers que vous avez publiés peuvent porter des dates, un matériel, parfois une position.
+- Fuites. Vérifiez si vos adresses mail apparaissent dans des bases compromises connues.
+
+Pour la partie technique, l'idée est de voir ce qu'une simple requête expose.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Collecte technique sur un domaine d'entraînement" commands={{"whois exemple-fictif.test": "Registrar: Demo Registrar\nCreation Date: 2024-02-01\nRegistrant: REDACTED FOR PRIVACY", "dig +short exemple-fictif.test": "203.0.113.50", "exiftool echantillon.jpg": "File Name: echantillon.jpg\nDate/Time Original: 2026:01:08 14:32:10\nCamera Model Name: Pixel 7\nGPS Position: (absent)"}} />
+
+Notez chaque résultat dans votre journal de collecte, même les recherches qui ne donnent rien. Un terrain vide est une information : il dit que cette piste est fermée.
+
+## étape 3 : recouper
+
+La collecte produit des fragments épars. Le recoupement les transforme en constats. On relie les éléments entre eux, on confirme chaque point par au moins une deuxième source, et on jette ce qui ne tient pas.
+
+<Diagram caption="Recouper les sources avant de conclure">
+  flowchart TD
+    A["Pseudo trouve sur un forum"] --> D["Recoupement"]
+    B["Meme pseudo sur un reseau social"] --> D
+    C["Photo de profil identique"] --> D
+    D --> E["Deux sources concordent ?"]
+    E -->|"Oui"| F["Constat retenu, confiance haute"]
+    E -->|"Non"| G["Fausse piste ecartee"]
+</Diagram>
+
+Un homonyme, un pseudo réutilisé par quelqu'un d'autre, une photo reprise ailleurs : ces faux positifs guettent. La parade est toujours la même, croiser avant de conclure.
+
+<Callout type="info">
+Une seule source ne suffit jamais. Un profil au même nom n'est pas une preuve que c'est vous. Il faut un second point d'ancrage, une photo identique, un détail biographique qui colle, un lien partagé, avant de lier deux éléments avec confiance.
+</Callout>
+
+## étape 4 : le rapport
+
+Une enquête sans rapport ne sert à rien. Le rapport structure vos constats et permet à un tiers de comprendre comment vous y êtes arrivé. Pour une auto-évaluation, il se termine par des recommandations concrètes pour réduire votre exposition.
+
+Chaque constat porte un niveau de confiance : haute si plusieurs sources concordent, moyenne si une seule source solide, basse si c'est une hypothèse. Cette nuance évite de présenter une supposition comme un fait.
+
+```text
+Rapport d'enquete OSINT
+=======================
+Objectif    : question de depart et perimetre
+Date        : periode de la collecte
+Methode     : sources et outils utilises, dans l'ordre
+
+Sources
+  S1 : description, lien, date de consultation
+  S2 : description, lien, date de consultation
+  ...
+
+Constats
+  C1 : fait observe        | confiance : haute  | sources : S1, S3
+  C2 : fait observe        | confiance : moyenne| sources : S2
+  ...
+
+Recommandations (si auto-evaluation)
+  R1 : action de reduction d'exposition
+  R2 : action de reduction d'exposition
+  ...
+```
+
+<Callout type="success">
+Un bon rapport se relit seul. Six mois plus tard, ou par quelqu'un d'autre, on doit pouvoir refaire chaque pas et tomber sur les mêmes constats. C'est ça, une enquête traçable.
+</Callout>
+
+## la responsabilité jusqu'au bout
+
+Le rapport fini, la question devient : qu'est-ce qu'on en fait ? Pour une auto-évaluation, la réponse est simple, on agit. On retire les vieilles photos, on resserre les paramètres de confidentialité, on change les mots de passe touchés par une fuite, on demande la suppression des données qui traînent.
+
+<Callout type="warning">
+On ne divulgue jamais l'exposition d'autrui. Si un exercice encadré vous fait croiser des informations sur de vraies personnes, elles restent dans le périmètre du défi et nulle part ailleurs. Un rapport OSINT est confidentiel : il liste des points faibles, donc il se protège comme une donnée sensible. Pas de partage public, pas de capture qui traîne.
+</Callout>
+
+## pour continuer
+
+Entraînez-vous sur des CTF OSINT éthiques et tenez un carnet de méthode où vous notez chaque technique qui marche, pour la retrouver vite à la prochaine enquête.
+
+## à toi de jouer
+
+Lancez votre propre collecte sur un domaine ou un fichier d'entraînement, puis vérifiez les réflexes du parcours.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Vos premiers gestes de collecte" commands={{"whois exemple-fictif.test": "Registrar: Demo Registrar\nCreation Date: 2024-02-01\nRegistrant: REDACTED FOR PRIVACY", "dig +short exemple-fictif.test": "203.0.113.50", "exiftool echantillon.jpg": "Date/Time Original: 2026:01:08 14:32:10\nGPS Position: (absent)"}} />
+
+<QuizGroup>
+<Quiz id="q-1" question="Pour ce projet, quelle cible est acceptable ?" options={["Un collègue, pour tester ses paramètres de confidentialité", "Vous-même, en auto-évaluation de votre exposition", "Un inconnu croisé en ligne, par simple curiosité", "Un voisin, tant qu'on ne publie rien"]} correct={1} />
+
+<Quiz id="q-2" question="Vous trouvez un profil au même nom que votre cible. Que faites-vous avant de l'inclure comme constat ?" options={["Vous le retenez direct, le nom suffit", "Vous le confirmez avec au moins une seconde source concordante", "Vous l'écartez toujours, un nom ne prouve rien d'utilisable", "Vous attendez d'en trouver dix identiques"]} correct={1} />
+
+<Quiz id="q-3" question="Dans le rapport, à quoi sert le niveau de confiance attaché à un constat ?" options={["À classer les constats par ordre alphabétique", "À distinguer un fait recoupé d'une simple hypothèse", "À masquer les sources les plus fragiles", "À rallonger le rapport"]} correct={1} />
+</QuizGroup>
+
+## à retenir
+
+- Le projet enchaîne tout le parcours : objectif, collecte multi-sources, recoupement, rapport.
+- Cible éthique uniquement, en priorité vous-même. Jamais un particulier réel sans consentement ni base légale.
+- Chaque source se documente, chaque constat se croise, une seule source ne prouve rien.
+- Le rapport porte des niveaux de confiance et, pour une auto-évaluation, des recommandations de réduction d'exposition.
+- Un rapport OSINT est confidentiel et l'exposition d'autrui ne se divulgue pas.
+
+OK 12 écrit

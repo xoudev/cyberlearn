@@ -1,0 +1,152 @@
+---
+refCode: CL-LSN-050-V01
+slug: linux-navigation
+title: "Naviguer dans le système de fichiers"
+description: "Comprenez l'arborescence Linux, déplacez-vous avec cd, repérez-vous avec pwd et ls, et maîtrisez la différence entre chemins absolus et relatifs."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 200
+prerequisites: ["CL-LSN-049-V01"]
+---
+
+Sous Linux, tout ce que tu vois dans un explorateur de fichiers graphique existe aussi sous une autre forme : une arborescence. Imagine un arbre posé tête en bas. Tout en haut, il y a un seul point de départ, la racine. De là partent des branches, qui se divisent en branches plus petites, jusqu'aux feuilles que sont tes fichiers. Quand tu travailles dans un terminal, tu n'as plus de souris pour cliquer sur des dossiers. Tu te déplaces dans cet arbre au clavier, en disant à la machine où tu veux aller.
+
+Ça paraît austère au début, mais c'est en fait plus précis qu'une fenêtre. Tu sais toujours exactement où tu te trouves, et tu peux atteindre n'importe quel endroit de la machine en une seule ligne. Le but de cette leçon, c'est que tu te sentes chez toi dans cette arborescence.
+
+## l'arborescence depuis la racine
+
+Tout commence à la racine, notée par un simple slash : `/`. Ce n'est pas un dossier comme les autres, c'est le sommet. Sous Windows tu as plusieurs racines (C:, D:...). Sous Linux, il n'y en a qu'une. Tout, absolument tout, descend de `/`, y compris tes disques externes et tes clés USB qui viennent se greffer quelque part dans l'arbre.
+
+Sous la racine, tu trouves un jeu de dossiers standard. Ils portent presque toujours les mêmes noms d'une distribution à l'autre, ce qui veut dire qu'une fois que tu les connais, tu te repères sur n'importe quelle machine Linux.
+
+<Diagram caption="Les principaux dossiers sous la racine">
+  flowchart TD
+    Root["/ la racine"] --> Home["/home les dossiers des utilisateurs"]
+    Root --> Etc["/etc la configuration du système"]
+    Root --> Var["/var les données qui changent: logs, mails"]
+    Root --> Tmp["/tmp les fichiers temporaires"]
+    Root --> Usr["/usr les programmes installés"]
+    Home --> User["/home/alice ton dossier perso"]
+</Diagram>
+
+Voici à quoi ils servent vraiment, pas juste leur nom :
+
+- `/home` contient un sous-dossier par utilisateur. Le tien, par exemple `/home/alice`, c'est ton espace personnel, le seul endroit où tu écris librement sans permission spéciale.
+- `/etc` garde les fichiers de configuration du système. Quand un service se comporte d'une certaine façon, la réponse est souvent ici.
+- `/var` stocke ce qui grossit avec le temps : les logs sont dans `/var/log`, par exemple.
+- `/tmp` sert de brouillon. Ce qui y traîne peut disparaître au redémarrage, donc on n'y range rien d'important.
+- `/usr` héberge la majorité des programmes installés et leurs ressources.
+
+Tu n'as pas besoin de tout mémoriser aujourd'hui. Retiens surtout que ton dossier perso est sous `/home`, et que ces noms reviennent partout.
+
+## pwd et ls
+
+Avant de bouger, deux réflexes : savoir où on est, et voir ce qu'il y a autour.
+
+`pwd` veut dire print working directory. Il affiche le chemin complet du dossier dans lequel tu te trouves en ce moment. C'est ta boussole. Dès que tu as un doute, tu tapes `pwd`.
+
+`ls` liste le contenu du dossier courant. Seul, il donne juste les noms. Avec des options, il en dit beaucoup plus.
+
+```bash
+pwd
+# affiche par exemple : /home/alice
+# c'est le dossier où tu es maintenant
+
+ls
+# liste les noms des fichiers et dossiers visibles ici
+# par exemple : Documents  Images  notes.txt
+
+ls -l
+# le "l" (long) ajoute des détails sur chaque ligne :
+# permissions, propriétaire, taille en octets, date de modification
+
+ls -a
+# le "a" (all) montre aussi les fichiers cachés
+# sous Linux, un nom qui commence par un point (.bashrc) est caché par défaut
+
+ls -la
+# on combine : format long ET fichiers cachés
+# c'est la commande qu'on tape le plus souvent dans la vraie vie
+```
+
+Le point devant un nom, comme `.bashrc`, n'a rien de magique. C'est juste une convention : Linux décide de ne pas afficher ces fichiers par défaut pour ne pas encombrer la vue. Beaucoup de fichiers de configuration personnels sont cachés ainsi dans ton `/home`.
+
+## cd et les chemins
+
+`cd` veut dire change directory. C'est la commande pour te déplacer d'un dossier à un autre. La vraie question, c'est : comment décrire à `cd` l'endroit où tu veux aller ? Il y a deux façons, et c'est le coeur de la navigation.
+
+Un chemin absolu décrit la route complète depuis la racine. Il commence toujours par `/`. Par exemple `/home/alice/Documents` se lit comme une adresse postale : pars de la racine, entre dans home, puis alice, puis Documents. Il marche depuis n'importe où, parce qu'il ne dépend pas de ta position actuelle.
+
+Un chemin relatif décrit la route depuis l'endroit où tu te trouves maintenant. Il ne commence pas par `/`. Si tu es déjà dans `/home/alice` et que tu tapes `cd Documents`, tu entres dans `/home/alice/Documents`. Le même `cd Documents` depuis un autre dossier t'emmènerait ailleurs, ou échouerait.
+
+Quelques raccourcis rendent les chemins relatifs vraiment pratiques :
+
+- `.` désigne le dossier courant, celui où tu es.
+- `..` désigne le dossier parent, juste au-dessus.
+- `~` désigne ton dossier personnel, `/home/alice`, où que tu sois.
+- `cd` tout seul, sans argument, te ramène aussi à ton dossier personnel.
+
+```bash
+cd /etc          # chemin absolu : va dans /etc depuis n'importe où
+cd ..            # remonte d'un cran vers le parent
+cd Documents     # chemin relatif : entre dans Documents depuis ici
+cd ~             # retourne dans ton /home
+cd               # pareil, retourne dans ton /home
+```
+
+<Callout type="warning">
+L'erreur la plus fréquente du débutant : confondre absolu et relatif. Tu es dans `/home/alice`, tu vois un dossier `etc` listé par `ls`, et tu tapes `cd /etc` en pensant y entrer. Mais le slash de tête envoie vers le `/etc` du système, pas vers `/home/alice/etc`. Résultat, tu te retrouves ailleurs sans comprendre. La correction est simple : sans slash de tête, `cd etc` reste relatif à ta position. Avec slash de tête, `cd /etc` part de la racine. En cas de doute, tape `pwd` juste après pour vérifier où tu as atterri.
+</Callout>
+
+## un exemple concret de déplacement
+
+Suis le trajet. On part de chez soi, on va voir la configuration du système, puis on rentre. À chaque étape, un `pwd` confirme la position.
+
+<SimulatedTerminal shell="bash" />
+
+```bash
+pwd
+# /home/alice  → on démarre chez soi
+
+cd /etc
+pwd
+# /etc  → on a sauté directement avec un chemin absolu
+
+cd ..
+pwd
+# /  → un cran au-dessus de /etc, c'est la racine
+
+cd ~
+pwd
+# /home/alice  → de retour à la maison en un raccourci
+```
+
+Remarque comme `pwd` sert de filet de sécurité. Tu ne devines pas où tu es, tu le lis. Avec le temps, le réflexe `cd` puis `pwd` puis `ls` devient automatique : je me déplace, je vérifie, je regarde le contenu.
+
+## à toi de jouer
+
+À ton tour. Affiche d'abord ta position, puis liste le contenu du dossier avec le format détaillé incluant les fichiers cachés.
+
+<SimulatedTerminal
+  shell="bash"
+  expectedCommands={["pwd", "ls -la"]}
+  hints={["Commence par la commande qui affiche le chemin du dossier courant", "Pour le format long avec les fichiers cachés, combine les options l et a"]}
+/>
+
+<QuizGroup>
+<Quiz id="q-1" question="Quelle commande affiche le chemin complet du dossier où tu te trouves ?" options={["ls", "cd", "pwd"]} correct={2} />
+<Quiz id="q-2" question="Tu es dans /home/alice. Tu tapes 'cd /etc'. Où arrives-tu ?" options={["Dans /home/alice/etc", "Dans le /etc du système, à la racine", "La commande échoue car etc n est pas relatif"]} correct={1} />
+<Quiz id="q-3" question="Que désigne '..' dans un chemin ?" options={["Le dossier parent, juste au-dessus", "Le dossier courant", "Ton dossier personnel"]} correct={0} />
+</QuizGroup>
+
+## à retenir
+
+- Le système de fichiers Linux est une arborescence avec une seule racine, notée `/`. Tout en descend.
+- Les dossiers standards sous `/` : `/home` (espaces des utilisateurs), `/etc` (configuration), `/var` (logs et données mouvantes), `/tmp` (temporaire), `/usr` (programmes).
+- `pwd` affiche ta position. `ls` liste le contenu ; `ls -l` détaille, `ls -a` montre les cachés (noms commençant par un point), `ls -la` combine les deux.
+- `cd` déplace. Un chemin absolu commence par `/` et part de la racine. Un chemin relatif part de ta position actuelle.
+- Raccourcis : `.` le dossier courant, `..` le parent, `~` ton dossier personnel, `cd` seul ramène aussi au dossier personnel.
+- Erreur classique : un slash de tête rend le chemin absolu. `cd etc` et `cd /etc` n'envoient pas au même endroit. Tape `pwd` pour vérifier.
+
+OK 02-navigation.mdx écrit

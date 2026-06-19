@@ -1,0 +1,150 @@
+---
+refCode: CL-LSN-071-V01
+slug: github-actions
+title: "GitHub Actions en pratique"
+description: "Écrivez votre premier pipeline avec GitHub Actions : la structure d'un workflow YAML, les déclencheurs, les jobs et les steps, et un exemple qui installe les dépendances et lance les tests."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 550
+prerequisites: ["CL-LSN-070-V01"]
+---
+
+Tu pousses du code, tu ouvres une pull request, et quelqu'un doit penser à lancer les tests avant de valider. Sauf que personne n'y pense jamais. Un jour le test casse, le bug part en production, et là tout le monde se souvient qu'il aurait fallu vérifier.
+
+GitHub Actions résout exactement ce problème. C'est un service intégré à GitHub qui exécute du code automatiquement quand il se passe quelque chose dans ton dépôt. Tu pousses un commit, GitHub installe ton projet sur une machine neuve et lance tes tests. Tu ouvres une PR, il refait pareil et affiche une coche verte ou une croix rouge. Tu n'as rien à brancher, rien à héberger. Tout vit dans ton dépôt.
+
+Le modèle mental tient en une phrase : un workflow est un fichier YAML, déclenché par un évènement, qui contient des jobs, chacun composé de steps. Garde cette poupée russe en tête (workflow, puis jobs, puis steps) et le reste se met en place tout seul.
+
+## anatomie d'un workflow
+
+Un workflow est un simple fichier texte rangé dans le dossier `.github/workflows/` de ton dépôt. Le nom du fichier importe peu, mais l'extension doit être `.yml` ou `.yaml`. Dès qu'il est poussé sur GitHub, il devient actif.
+
+Voici un workflow complet et minimal qui installe Node, installe les dépendances du projet et lance les tests.
+
+```yaml
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Lancer les tests
+        run: npm test
+```
+
+Reprenons bloc par bloc.
+
+`name: CI` est juste l'étiquette affichée dans l'onglet Actions de GitHub. Purement cosmétique, mais pratique quand tu as plusieurs workflows.
+
+`on: [push]` est le déclencheur. Il dit : exécute ce workflow à chaque push. On y revient en détail plus bas.
+
+`jobs:` ouvre la liste des jobs. Ici il y en a un seul, que j'ai nommé `test`. Ce nom est libre, c'est moi qui le choisis.
+
+`runs-on: ubuntu-latest` indique sur quelle machine le job tourne. GitHub démarre une machine virtuelle Linux fraîche, rien que pour ce job. Elle est vide : pas de ton code, pas de tes dépendances, rien.
+
+`steps:` est la liste ordonnée des étapes. Elles s'exécutent de haut en bas, l'une après l'autre. Un step fait l'une de deux choses : soit il utilise une action toute prête avec `uses:`, soit il lance une commande shell avec `run:`.
+
+Le premier step, `actions/checkout@v4`, télécharge ton code sur la machine. Le deuxième installe Node 20. Les deux derniers lancent de vraies commandes : `npm ci` pour installer les paquets, puis `npm test`. Si `npm test` renvoie un code d'erreur, le step échoue, le job échoue, et la coche devient rouge.
+
+<Callout type="info">
+Le `@v4` après le nom d'une action, c'est sa version. Épingler une version précise (plutôt que de prendre la dernière au hasard) évite qu'une mise à jour surprise de l'action casse ton pipeline du jour au lendemain.
+</Callout>
+
+## les déclencheurs (on)
+
+Le champ `on` répond à la question : quand ce workflow doit-il s'exécuter ? La forme `on: [push]` est la plus courte, mais on a vite besoin de plus de précision. La syntaxe développée permet de filtrer par évènement et par branche.
+
+```yaml
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+```
+
+Ici, le workflow se déclenche dans deux cas. D'abord à chaque push sur la branche `main`. Ensuite à chaque pull request qui vise `main`, c'est à dire à chaque fois que quelqu'un propose de fusionner du code dans `main`.
+
+Cette combinaison est le réglage le plus courant. Le déclencheur `pull_request` est celui qui rend service au quotidien : avant même de fusionner, GitHub lance les tests sur le code proposé et affiche le résultat directement dans la PR. Si c'est rouge, on sait qu'il ne faut pas fusionner. Plus besoin de demander à un humain de penser à lancer les tests.
+
+Il existe d'autres évènements (`schedule` pour un déclenchement à heure fixe, `workflow_dispatch` pour un bouton manuel), mais `push` et `pull_request` couvrent l'écrasante majorité des besoins au début.
+
+## jobs et steps
+
+Reprenons la hiérarchie. Un workflow contient un ou plusieurs jobs. Par défaut, les jobs tournent en parallèle, chacun sur sa propre machine. Un job contient des steps, qui eux s'exécutent en série, dans l'ordre, sur la même machine.
+
+Cette distinction a une conséquence importante : les steps d'un même job partagent le même disque. Le fichier qu'un step crée, le step suivant le retrouve. C'est pour ça que `npm ci` (qui remplit le dossier `node_modules`) doit s'exécuter avant `npm test` dans le même job. Deux jobs séparés, eux, ne partagent rien : chacun repart d'une machine vide.
+
+Et c'est là qu'arrive l'erreur la plus courante chez les débutants. La machine démarre vide. Elle ne contient pas ton code. Si tu oublies le step `actions/checkout`, tes commandes `run:` s'exécutent dans un dossier désert, et tu obtiens une erreur du genre « package.json introuvable ». Le code n'a tout simplement jamais été téléchargé.
+
+<Callout type="warning">
+Le step `actions/checkout` n'est pas automatique. Sans lui, la machine ne contient pas une seule ligne de ton dépôt. Mets-le presque toujours en premier step de chaque job qui touche au code. C'est l'oubli numéro un, et l'erreur ne dit pas toujours clairement que le code manque.
+</Callout>
+
+Pourquoi GitHub ne fait pas le checkout tout seul ? Parce que certains jobs n'ont pas besoin du code (envoyer une notification, par exemple). En te laissant le décider, le système reste explicite : ce qui se passe sur la machine, c'est toi qui l'écris.
+
+## l'indentation YAML
+
+YAML utilise l'indentation pour exprimer la structure. Pas d'accolades, pas de balises : juste des espaces alignés. Ce qui en fait le piège numéro un. Une indentation décalée et le fichier change de sens, ou refuse carrément de se charger.
+
+Deux règles à graver. D'abord, on indente avec des espaces, jamais avec des tabulations. Une tabulation invisible dans un fichier YAML et tu passes une heure à comprendre pourquoi rien ne marche. Ensuite, on reste cohérent : deux espaces par niveau, partout, du début à la fin.
+
+Regarde comment chaque niveau s'enfonce de deux espaces de plus que son parent.
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lancer les tests
+        run: npm test
+```
+
+`jobs:` est tout à gauche. `test:` est en retrait de deux espaces sous `jobs`. `runs-on` et `steps` sont en retrait de deux espaces de plus, parce qu'ils appartiennent à `test`. Le tiret du step ajoute encore un niveau, et `run:` s'aligne sur `name:` puisqu'ils décrivent le même step.
+
+<Callout type="warning">
+Configure ton éditeur pour afficher les espaces et convertir la touche Tab en espaces. La plupart des éditeurs le font automatiquement pour les fichiers `.yml`. Cette seule habitude t'épargne la majorité des erreurs YAML.
+</Callout>
+
+## lire un run qui échoue
+
+Tôt ou tard, ta coche sera rouge. Pas de panique, GitHub te dit précisément où ça coince. Va dans l'onglet Actions de ton dépôt, clique sur le run en échec, puis sur le job concerné. Tu vois alors la liste des steps, chacun avec une petite icône d'état.
+
+Le step qui a planté porte une croix rouge ; tous ceux d'après sont gris, car le job s'arrête au premier échec. Clique sur le step rouge : ses logs se déplient, et la vraie cause se trouve presque toujours dans les dernières lignes. Un test cassé, un paquet manquant, une commande mal écrite. Lis le message d'erreur jusqu'au bout avant de toucher au YAML, car neuf fois sur dix le problème vient de ton code ou de ta commande, pas du workflow lui même.
+
+Petit réflexe utile : la plupart des erreurs que tu vois dans un run, tu peux les reproduire sur ta machine en lançant exactement la même commande (`npm ci` puis `npm test`). Si ça casse chez toi aussi, le souci n'a rien à voir avec GitHub Actions.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="À quoi sert le champ 'on' dans un workflow ?" options={["À nommer le workflow", "À définir l'évènement qui déclenche le workflow", "À choisir le système d'exploitation de la machine", "À lister les dépendances à installer"]} correct={1} />
+
+<Quiz id="q-2" question="Tu lances 'npm test' mais le run échoue avec 'package.json introuvable'. Quelle est la cause la plus probable ?" options={["Node n'est pas installé", "Le step actions/checkout a été oublié, donc le code n'est pas sur la machine", "La branche main n'existe pas", "Le fichier YAML est dans le mauvais dossier"]} correct={1} />
+
+<Quiz id="q-3" question="Comment indente-t-on correctement un fichier YAML ?" options={["Avec des tabulations", "Avec quatre espaces obligatoirement", "Avec des espaces, de façon cohérente, jamais de tabulations", "L'indentation n'a aucune importance"]} correct={2} />
+
+## à retenir
+
+Un workflow est un fichier YAML rangé dans `.github/workflows/`, déclenché par un évènement et composé de jobs, eux mêmes faits de steps.
+
+Le champ `on` décide quand le workflow tourne. `push` et `pull_request` sur `main` couvrent presque tous les besoins de départ, et `pull_request` permet de lancer les tests avant chaque fusion.
+
+Chaque job tourne sur une machine neuve et vide, définie par `runs-on`. Les steps d'un même job s'exécutent en série et partagent le disque ; un step utilise soit une action (`uses:`), soit une commande (`run:`).
+
+`actions/checkout` télécharge ton code sur la machine. Sans lui, la machine est vide. C'est l'oubli le plus fréquent.
+
+YAML s'indente avec des espaces, jamais des tabulations, et de façon cohérente. Quand un run échoue, ouvre le step rouge, lis les dernières lignes des logs, et reproduis la commande en local pour isoler la cause.
+
+OK 11-github-actions.mdx écrit

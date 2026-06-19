@@ -1,0 +1,98 @@
+---
+refCode: CL-LSN-178-V01
+slug: cloud-cout-finops
+title: "Le coût du cloud et sa maîtrise"
+description: "Le paiement à l'usage est une force et un piège : comprenez ce qui fait déraper une facture cloud, les leviers pour l'optimiser, et la culture FinOps qui fait de la maîtrise des coûts l'affaire de tous."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 480
+prerequisites: ["CL-LSN-169-V01"]
+---
+
+Quand on achète un serveur, on connaît le prix d'avance. On signe un bon de commande, la machine arrive, et qu'elle tourne à 5 % ou à 90 % de sa capacité, elle a coûté la même chose. Le cloud ne marche pas comme ça. On ne paie pas la machine, on paie son usage. Tant que vous consommez peu, c'est une aubaine : démarrer un projet ne demande aucun investissement, et la facture suit votre activité réelle. Mais cette même logique a un revers. Une ressource qu'on a allumée et oubliée continue de tourner, et continue de facturer, sans qu'aucun voyant rouge ne s'allume. La facture arrive à la fin du mois, et la surprise est rarement bonne.
+
+Cette leçon explique pourquoi le cloud peut coûter plus cher que prévu, ce qui fait déraper une facture, et comment garder la main.
+
+## le paiement à l'usage
+
+Le principe est simple à énoncer. Vous ne payez pas du matériel, vous payez des unités de consommation. Une machine virtuelle est facturée à la seconde ou à la minute pendant qu'elle est allumée. Le stockage est facturé au gigaoctet, par mois, pour chaque Go que vous occupez. Une base de données managée facture le temps de calcul, le stockage, et souvent les requêtes. Le réseau facture les données qui sortent. Chaque service a son compteur, et le compteur tourne tant que la ressource existe.
+
+Le détail qui change tout : ce n'est pas l'utilisation qui déclenche la facture, c'est l'existence. Une machine allumée que personne n'utilise coûte exactement le même prix qu'une machine allumée en pleine charge. Un disque rempli de fichiers que plus personne ne lit coûte le même prix qu'un disque actif. Le fournisseur facture la réservation de la ressource, pas le travail utile qu'elle produit.
+
+<Callout type="info">
+Le cloud transforme une dépense d'investissement (acheter du matériel une fois) en dépense d'exploitation (payer chaque mois selon l'usage). C'est plus souple, mais ça veut dire qu'une erreur ne se paie pas une fois : elle se paie chaque mois, jusqu'à ce que quelqu'un la remarque.
+</Callout>
+
+## ce qui fait déraper
+
+Les mauvaises surprises viennent rarement d'un seul gros poste. Ce sont des petites fuites qui s'accumulent. Voici les classiques.
+
+Une instance allumée et oubliée. On démarre une machine pour un test, une démo, une formation. Le test se termine, on passe à autre chose, et la machine reste allumée. Elle ne fait rien, mais elle facture, jour et nuit, tous les week-ends inclus.
+
+Le stockage qui s'empile. Chaque sauvegarde, chaque snapshot, chaque vieux fichier de log s'ajoute au précédent. Rien n'efface automatiquement quoi que ce soit. Au bout de deux ans, vous payez pour des téraoctets de données que plus personne ne consultera jamais.
+
+Le trafic sortant. Faire entrer des données dans le cloud est souvent gratuit. Les faire sortir, presque jamais. Une application qui sert beaucoup de fichiers à des utilisateurs, ou qui copie des données entre deux régions, peut générer une facture réseau qui surprend, parce que ce poste est invisible tant qu'on ne regarde pas le détail.
+
+Le surdimensionnement. On choisit une machine deux fois plus grosse que nécessaire, par prudence, au cas où. Cette marge ne sert jamais, mais elle se paie chaque seconde.
+
+| Piège | Cause |
+|---|---|
+| Instance de test toujours allumée | Personne ne l'a éteinte après usage |
+| Stockage qui gonfle mois après mois | Sauvegardes et logs jamais purgés |
+| Facture réseau inattendue | Trafic sortant facturé, souvent ignoré |
+| Machine surdimensionnée | Marge « au cas où » jamais consommée |
+| Service managé surprovisionné | Capacité réservée bien au-dessus du besoin réel |
+
+<Callout type="warning">
+La plupart des dérapages ne viennent pas d'un piratage ni d'un bug. Ils viennent de l'oubli. Une ressource qu'on crée et qu'on ne supprime jamais est la première cause de gaspillage cloud. Si vous allumez quelque chose pour un test, notez tout de suite qui l'éteindra.
+</Callout>
+
+## les leviers
+
+Reprendre la main n'a rien de sorcier. Les leviers sont peu nombreux et se rangent dans quatre familles.
+
+Éteindre ou supprimer l'inutile. C'est le geste qui rapporte le plus, et le plus simple. Une machine de développement n'a pas besoin de tourner la nuit ni le week-end. L'éteindre 12 heures par jour divise sa facture par deux. Les ressources qui ne servent plus du tout, on les supprime, point.
+
+Dimensionner au juste besoin. Plutôt que de prendre large par prudence, on observe l'usage réel sur quelques semaines, puis on ajuste à la baisse. Une machine qui plafonne à 15 % de processeur peut descendre d'un cran sans gêne. On appelle ça le redimensionnement, et c'est rarement risqué quand on s'appuie sur des mesures.
+
+S'engager sur les charges stables. Pour ce qui tourne en permanence et de façon prévisible, comme un serveur de production, les fournisseurs offrent une remise importante en échange d'un engagement sur un ou trois ans. On paie un peu moins cher en promettant de consommer un certain volume. Réservé aux charges dont on est sûr qu'elles resteront, pas aux expérimentations.
+
+Choisir la bonne classe de stockage. Tout le stockage ne se vaut pas. Les données consultées souvent justifient un stockage rapide et plus cher. Les archives qu'on garde par obligation, mais qu'on ne lira presque jamais, vont dans une classe froide, bien moins chère au Go. Trier ses données par fréquence d'accès fait fondre la facture de stockage.
+
+## mesurer et attribuer
+
+On ne peut pas réduire une dépense qu'on ne voit pas. Le premier travail FinOps n'est pas de couper, c'est de mesurer. Et pour mesurer utilement, il faut savoir à qui appartient quoi.
+
+L'outil de base, ce sont les étiquettes, ou tags. On marque chaque ressource avec des informations : à quel projet elle appartient, quelle équipe l'a créée, quel environnement elle sert (production, test, développement). Une fois ce marquage en place, la facture cesse d'être un bloc opaque. On peut la ventiler par projet et dire : cette équipe dépense tant, ce service coûte tant. Sans étiquettes, une facture de cloud n'est qu'une longue liste de ressources anonymes, impossible à attribuer et donc impossible à discuter.
+
+Cette visibilité change la conversation. Au lieu de constater une facture globale en hausse sans savoir d'où elle vient, on identifie le poste qui dérape et l'équipe qui peut agir.
+
+## la culture FinOps
+
+FinOps n'est pas un logiciel qu'on installe. C'est une façon de travailler où la maîtrise des coûts devient l'affaire de tout le monde, pas seulement du service financier.
+
+Le modèle ancien, c'était la finance qui découvrait la facture après coup et demandait des comptes une fois par an. Ça ne marche pas dans le cloud, parce que les décisions qui coûtent sont prises chaque jour par les équipes techniques. C'est le développeur qui choisit la taille d'une machine, l'administrateur qui décide d'une politique de sauvegarde. Si ces personnes ignorent le coût de leurs choix, personne ne peut le maîtriser à leur place.
+
+L'idée du FinOps, c'est de donner aux équipes techniques la visibilité sur ce qu'elles dépensent, et de faire dialoguer trois métiers : la technique qui construit, la finance qui suit le budget, et le métier qui décide des priorités. Pas un contrôle annuel descendant, mais un échange continu. Le coût devient une donnée d'ingénierie comme la performance ou la sécurité, quelque chose qu'on regarde au moment de concevoir, pas une fois la facture tombée.
+
+<Callout type="success">
+Le bon réflexe FinOps n'est pas « dépenser le moins possible ». C'est « dépenser à bon escient » : payer sans hésiter ce qui crée de la valeur, et traquer ce qui ne sert à rien. Une équipe qui connaît ses coûts prend de meilleures décisions, sans qu'on ait besoin de lui imposer des restrictions.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Une machine virtuelle est allumée mais personne ne l'utilise. Que se passe-t-il côté facture ?" options={["Elle ne coûte rien tant qu'elle est inactive", "Elle coûte le même prix qu'une machine en pleine charge", "Elle coûte la moitié du tarif normal", "Le fournisseur l'éteint automatiquement"]} correct={1} />
+
+<Quiz id="q-2" question="Quel levier rapporte le plus pour un coût d'effort minimal sur une machine de développement ?" options={["La passer dans une classe de stockage froide", "L'éteindre la nuit et le week-end", "Signer un engagement sur trois ans", "Augmenter sa taille par prudence"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi étiqueter (tagger) les ressources par projet ou équipe est-il utile ?" options={["Cela réduit directement le prix au gigaoctet", "Cela accélère les machines virtuelles", "Cela permet d'attribuer la dépense et de savoir qui dépense quoi", "Cela chiffre les données stockées"]} correct={2} />
+
+## à retenir
+
+- Dans le cloud, on paie l'usage : à la seconde de calcul, au Go stocké, à la requête. Ce qui est facturé, c'est l'existence d'une ressource active, pas le travail utile qu'elle produit.
+- Une ressource allumée et oubliée facture jour et nuit, sans alerte. L'oubli est la première cause de gaspillage, devant les bugs et les attaques.
+- Les pièges courants : instances oubliées allumées, stockage qui s'accumule, trafic sortant facturé, machines surdimensionnées « au cas où ».
+- Les leviers : éteindre ou supprimer l'inutile, dimensionner au juste besoin d'après des mesures, s'engager sur les charges stables pour une remise, choisir la classe de stockage selon la fréquence d'accès.
+- On n'optimise que ce qu'on mesure. Étiqueter les ressources par projet et équipe rend la facture lisible et attribuable.
+- Le FinOps fait de la maîtrise des coûts l'affaire de tous, par un dialogue continu entre technique, finance et métier, pas par un contrôle annuel descendant.

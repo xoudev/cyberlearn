@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Sur quel principe le Top 10 OWASP repose-t-il pour classer les risques de sécurité web ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sur la fréquence d'apparition combinée à l'impact, mesurés sur des applications réelles"
+        },
+        {
+          "id": "b",
+          "text": "Sur la gravité absolue, de la pire faille à la moins grave"
+        },
+        {
+          "id": "c",
+          "text": "Sur l'ordre alphabétique des catégories de risques"
+        },
+        {
+          "id": "d",
+          "text": "Sur la difficulté technique requise pour exploiter chaque faille"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le Top 10 n'est pas un palmarès de gravité : il combine la fréquence (à quel point une catégorie revient) et l'impact constatés sur des centaines de milliers d'applications analysées."
+    },
+    {
+      "question": "Dans un champ login vulnérable, pourquoi la saisie alice' OR 1=1 -- permet-elle de se connecter sans le bon mot de passe ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le mot de passe est trouvé par une attaque par force brute déguisée"
+        },
+        {
+          "id": "b",
+          "text": "Parce que OR 1=1 rend la condition WHERE toujours vraie et que -- met en commentaire la vérification du mot de passe"
+        },
+        {
+          "id": "c",
+          "text": "Parce que la base de données est configurée en lecture seule"
+        },
+        {
+          "id": "d",
+          "text": "Parce que l'apostrophe chiffre automatiquement l'entrée saisie"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "L'apostrophe ferme la valeur, OR 1=1 ajoute une condition toujours vraie pour chaque ligne, et -- commente le reste de la requête, donc le test du mot de passe disparaît."
+    },
+    {
+      "question": "Quelle est la défense de fond contre les injections SQL ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Masquer les messages d'erreur renvoyés par la base de données"
+        },
+        {
+          "id": "b",
+          "text": "Filtrer uniquement le mot-clé OR dans les entrées utilisateur"
+        },
+        {
+          "id": "c",
+          "text": "Renommer la table users pour la rendre introuvable"
+        },
+        {
+          "id": "d",
+          "text": "Utiliser des requêtes paramétrées qui figent la structure SQL avant l'arrivée des valeurs"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les requêtes paramétrées séparent la structure de la requête des données : la base compile le gabarit d'abord, puis traite les valeurs comme de simples données, jamais comme du SQL."
+    },
+    {
+      "question": "Quelle est la cause directe d'une faille de type cross-site scripting (XSS) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un port laissé ouvert sur le pare-feu du serveur"
+        },
+        {
+          "id": "b",
+          "text": "Une entrée utilisateur réaffichée sans échappement, que le navigateur interprète comme du code"
+        },
+        {
+          "id": "c",
+          "text": "Un certificat TLS expiré sur le domaine"
+        },
+        {
+          "id": "d",
+          "text": "Un mot de passe administrateur trop court côté serveur"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le XSS naît d'une confusion entre données et code : une entrée réaffichée telle quelle, sans échappement, est interprétée par le navigateur comme du balisage exécutable."
+    },
+    {
+      "question": "Pourquoi le XSS stocké est-il considéré comme le plus dangereux des trois types de XSS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'il exige toujours de connaître le mot de passe de la victime"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il ne fonctionne que sur la machine de l'attaquant"
+        },
+        {
+          "id": "c",
+          "text": "Parce que la charge est enregistrée puis servie automatiquement à tous les visiteurs de la page, sans clic sur un lien piégé"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il ne peut jamais atteindre un compte administrateur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le XSS stocké enregistre la charge côté serveur (commentaire, bio, avis) puis la sert à chaque visiteur de la page, sans aucune interaction de la victime, ce qui maximise sa portée."
+    },
+    {
+      "question": "Quel attribut posé sur un cookie de session empêche le JavaScript de la page de le lire, ce qui coupe la voie la plus directe d'un vol de cookie par XSS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Secure"
+        },
+        {
+          "id": "b",
+          "text": "SameSite"
+        },
+        {
+          "id": "c",
+          "text": "Path"
+        },
+        {
+          "id": "d",
+          "text": "HttpOnly"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "HttpOnly interdit au JavaScript d'accéder au cookie. Secure agit sur le chiffrement du transport et SameSite sur les requêtes inter-sites, mais c'est bien HttpOnly qui bloque la lecture par script."
+    },
+    {
+      "question": "Pourquoi un jeton de réinitialisation de mot de passe doit-il être traité avec autant de soin que le mot de passe lui-même ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'il sert à remplacer le mot de passe et donne donc un accès équivalent au compte"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il est simplement plus long à saisir au clavier"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il est obligatoirement stocké en clair dans un cookie"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il prolonge automatiquement la durée de la session"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le jeton de réinitialisation permet de redéfinir le mot de passe : s'il est devinable, court ou séquentiel, un attaquant le reconstitue et prend le compte sans connaître le mot de passe d'origine."
+    },
+    {
+      "question": "Quelle est la cause directe d'une faille IDOR (Insecure Direct Object Reference) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le site utilise HTTP au lieu de HTTPS"
+        },
+        {
+          "id": "b",
+          "text": "Le navigateur stocke un nombre excessif de cookies"
+        },
+        {
+          "id": "c",
+          "text": "Les mots de passe des utilisateurs sont trop faibles"
+        },
+        {
+          "id": "d",
+          "text": "Le serveur récupère un objet par son identifiant sans vérifier qu'il appartient à l'utilisateur connecté"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "L'IDOR survient quand le serveur charge une ressource d'après l'identifiant fourni sans contrôler la propriété : changer le numéro dans l'URL donne alors accès aux données d'autrui."
+    },
+    {
+      "question": "Un bouton Supprimer est caché aux utilisateurs normaux dans l'interface. Cela constitue-t-il un véritable contrôle d'accès ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Oui, car si le bouton est masqué, personne ne peut déclencher la suppression"
+        },
+        {
+          "id": "b",
+          "text": "Non, c'est seulement de l'affichage : tant que la route serveur n'est pas protégée, on peut l'appeler à la main"
+        },
+        {
+          "id": "c",
+          "text": "Oui, à condition de masquer aussi le lien correspondant dans le menu"
+        },
+        {
+          "id": "d",
+          "text": "Non, mais c'est suffisant dès lors que le site est servi en HTTPS"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Tout ce qui vient du client est modifiable : cacher un bouton améliore l'interface mais ne protège rien. Si la route existe et n'est pas contrôlée côté serveur, on peut l'appeler directement."
+    },
+    {
+      "question": "Pourquoi les identifiants par défaut comme admin/admin restent-ils un risque majeur de mauvaise configuration ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'ils empêchent le HTTPS de fonctionner correctement"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'ils expirent automatiquement après un mois d'utilisation"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'ils sont publics, documentés et compilés en listes qu'un scanner teste en quelques secondes"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'ils sont chiffrés avec un algorithme trop faible"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les couples par défaut figurent dans la documentation des produits et dans des listes publiques : un scanner automatisé les essaie en premier et les trouve souvent encore actifs."
+    },
+    {
+      "question": "Qu'apporte à un attaquant un message d'erreur trop verbeux affiché en production ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un contournement direct du chiffrement HTTPS"
+        },
+        {
+          "id": "b",
+          "text": "Des détails comme la version du serveur, le framework et les chemins internes"
+        },
+        {
+          "id": "c",
+          "text": "Un accès administrateur immédiat à la machine"
+        },
+        {
+          "id": "d",
+          "text": "Une élévation automatique des droits sur les fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une trace complète révèle versions logicielles, framework, chemins absolus et noms de colonnes, ce qui aide l'attaquant à cibler des failles connues pour ces versions précises."
+    },
+    {
+      "question": "Pourquoi une page hébergée sur un site tiers peut-elle déclencher une action authentifiée sur la banque où la victime est connectée (CSRF) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le navigateur joint automatiquement les cookies du domaine cible à toute requête vers ce domaine"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la page malveillante lit le cookie de session et le recopie"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'elle vole le mot de passe de la victime au préalable"
+        },
+        {
+          "id": "d",
+          "text": "Parce que le serveur cible n'utilise pas de connexion HTTPS"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le navigateur attache toujours les cookies d'un domaine à toute requête vers ce domaine, sans regarder l'origine. L'attaquant n'a pas besoin de lire le cookie, juste de faire envoyer la requête."
+    },
+    {
+      "question": "Que fait l'attribut SameSite=Lax sur un cookie de session ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il rend le cookie accessible au JavaScript de n'importe quelle page"
+        },
+        {
+          "id": "b",
+          "text": "Il chiffre la valeur du cookie avant de l'envoyer"
+        },
+        {
+          "id": "c",
+          "text": "Il empêche le navigateur de joindre le cookie sur les requêtes POST venant d'un autre site"
+        },
+        {
+          "id": "d",
+          "text": "Il allonge la durée de vie de la session sur le serveur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "SameSite=Lax indique au navigateur de ne pas envoyer le cookie sur les requêtes POST inter-sites, ce qui neutralise le formulaire forgé d'une attaque CSRF."
+    },
+    {
+      "question": "Pourquoi une faille située tout au fond de l'arbre de dépendances vous concerne-t-elle, même si vous n'avez jamais installé ce paquet directement ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que les dépendances transitives s'exécutent toujours plus vite que votre code"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'une dépendance que vous installez en tire d'autres, et tout ce code s'exécute avec les droits de votre application"
+        },
+        {
+          "id": "c",
+          "text": "Parce que les paquets transitifs sont toujours signés par votre équipe"
+        },
+        {
+          "id": "d",
+          "text": "Elle ne vous concerne pas tant que vous n'appelez pas ce paquet explicitement"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une dépendance directe tire des dépendances transitives que vous n'avez pas choisies. Ce code tourne sur votre serveur avec les mêmes droits que le vôtre, donc sa faille devient la vôtre."
+    },
+    {
+      "question": "À quoi sert un SBOM (Software Bill of Materials) dans la gestion des composants tiers ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À chiffrer les dépendances au repos sur le disque"
+        },
+        {
+          "id": "b",
+          "text": "À compiler le code source plus rapidement"
+        },
+        {
+          "id": "c",
+          "text": "À remplacer entièrement l'audit automatique des vulnérabilités"
+        },
+        {
+          "id": "d",
+          "text": "À tenir l'inventaire exact des composants et de leurs versions, pour savoir vite si une nouvelle faille vous concerne"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le SBOM est l'inventaire détaillé des composants embarqués et de leurs versions : le jour où un CVE tombe, il répond en une minute à la question suis-je concerné."
+    },
+    {
+      "question": "Une application sert toutes ses pages en HTTPS. Que peut-on en conclure sur les numéros de carte stockés dans sa base ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Qu'ils sont forcément chiffrés au repos dans la base"
+        },
+        {
+          "id": "b",
+          "text": "Qu'ils sont automatiquement hachés à l'enregistrement"
+        },
+        {
+          "id": "c",
+          "text": "Rien : HTTPS protège le transport, pas le stockage au repos"
+        },
+        {
+          "id": "d",
+          "text": "Qu'ils sont à l'abri de toute injection SQL"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "HTTPS (TLS) chiffre la donnée pendant son trajet réseau, mais s'arrête à la porte du serveur. Une donnée chiffrée en transit peut dormir en clair dans la base si rien ne la chiffre au repos."
+    },
+    {
+      "question": "Vous avez committé une clé d'API par erreur, puis vous la supprimez au commit suivant. Quelle est la bonne réaction ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Révoquer la clé et en générer une nouvelle, car elle reste dans l'historique Git"
+        },
+        {
+          "id": "b",
+          "text": "Ne rien faire de plus, puisque la ligne a été supprimée"
+        },
+        {
+          "id": "c",
+          "text": "Rendre simplement le dépôt privé pour régler le problème"
+        },
+        {
+          "id": "d",
+          "text": "Attendre de constater si la clé est réellement utilisée"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un secret passé une seule fois dans Git reste dans l'historique et peut déjà avoir été récupéré par des robots. La seule réponse correcte est de le considérer comme brûlé, donc de le révoquer et de le régénérer."
+    },
+    {
+      "question": "Lors d'une SSRF en environnement cloud, pourquoi l'adresse 169.254.169.254 est-elle une cible de choix ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elle héberge le site public de la victime"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle désactive le pare-feu de la machine"
+        },
+        {
+          "id": "c",
+          "text": "Parce que l'endpoint de métadonnées peut livrer des identifiants temporaires de la machine"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'elle chiffre tout le trafic sortant du serveur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Cet endpoint de métadonnées, accessible depuis l'intérieur sans authentification, expose la configuration et surtout les identifiants temporaires de la machine, qu'une SSRF peut faire récupérer au serveur."
+    },
+    {
+      "question": "Un développeur affirme : on a installé un pare-feu applicatif (WAF), le code n'a donc plus besoin de gérer la sécurité. Que faut-il répondre ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "C'est exact, le WAF couvre l'ensemble des attaques applicatives connues"
+        },
+        {
+          "id": "b",
+          "text": "Le WAF remplace avantageusement la validation d'entrée côté serveur"
+        },
+        {
+          "id": "c",
+          "text": "Le WAF filtre en surface et se contourne en variant la charge : il ne corrige pas le code, la défense de fond reste dans l'application"
+        },
+        {
+          "id": "d",
+          "text": "Il suffit d'ajouter un second WAF pour atteindre une protection complète"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un WAF cherche des motifs d'attaque connus à l'entrée : c'est un filet utile, pas un correctif. Il ne lit pas votre code ni votre logique métier, et un attaquant contourne ses signatures. La vraie protection reste dans l'application."
+    },
+    {
+      "question": "Lors d'un audit, pour chaque vulnérabilité trouvée, qu'est-ce qui doit obligatoirement figurer dans la fiche du rapport ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le nom de l'outil utilisé et le temps passé à chercher"
+        },
+        {
+          "id": "b",
+          "text": "Les étapes de reproduction, l'impact, la gravité et une correction proposée"
+        },
+        {
+          "id": "c",
+          "text": "Uniquement une capture d'écran de la faille"
+        },
+        {
+          "id": "d",
+          "text": "La liste complète des comptes de test créés pour l'audit"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le livrable d'un audit n'est pas une liste de bugs mais un document actionnable : pour chaque faille on précise où, comment la reproduire, son impact, sa gravité honnête et la correction concrète à appliquer."
+    }
+  ]
+}

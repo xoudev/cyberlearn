@@ -1,0 +1,112 @@
+---
+refCode: CL-LSN-106-V01
+slug: crypto-erreurs
+title: "Les erreurs qui cassent une bonne crypto"
+description: "Les algorithmes sont solides, les mises en oeuvre le sont moins : réinventer sa crypto, mode ECB, nonce réutilisé, aléa prévisible et comparaisons à temps variable, avec la bonne pratique pour chaque piège."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-101-V01"]
+---
+
+Quand un système chiffré tombe, ce n'est presque jamais parce que quelqu'un a cassé AES par force brute. AES-256 demanderait plus d'énergie que n'en contient le système solaire pour parcourir toutes les clés. RSA-2048 résiste aux meilleurs algorithmes de factorisation connus. Les maths tiennent.
+
+Ce qui cède, c'est la façon de s'en servir. On prend un bon algorithme et on le branche de travers : une clé tirée d'un mauvais générateur, un même nonce employé deux fois, une comparaison de mot de passe qui fuit par le temps qu'elle met à répondre. La chaîne casse au maillon de la mise en oeuvre, pas à celui des mathématiques. Voici les pièges qui reviennent le plus souvent, et la bonne pratique pour chacun.
+
+## réinventer sa propre crypto
+
+C'est la tentation classique. On a compris le principe d'un chiffrement, on se dit qu'on va écrire le sien, juste un petit XOR avec une clé, ou une rotation de bits maison. Le résultat compile, la sortie ressemble à du charabia, donc ça a l'air sûr.
+
+Le problème, c'est que "ça a l'air sûr" ne veut rien dire en crypto. Un schéma maison n'a pas été soumis à des années d'analyse par des gens dont le métier est de trouver des failles. Les attaques connues (analyse fréquentielle, attaque à clair connu, biais statistiques) cassent ce genre de bricolage en quelques minutes. Un XOR à clé courte et réutilisée se devine avec un crayon.
+
+La bonne pratique tient en une phrase : on n'écrit pas sa propre primitive cryptographique. On utilise une bibliothèque éprouvée et auditée (libsodium, l'OpenSSL de la plateforme, le module cryptographie standard du langage) et on se contente de l'appeler correctement.
+
+<Callout type="danger">
+Si tu te surprends à écrire une fonction de chiffrement, de hachage ou de génération de clé à la main, arrête-toi. Il existe presque toujours une fonction de bibliothèque qui fait exactement ça, mieux et sans surprise. Ton travail est de bien l'appeler, pas de la réécrire.
+</Callout>
+
+## le mode ECB
+
+Un chiffrement par bloc comme AES traite les données par morceaux de taille fixe. Le mode dit comment enchaîner ces blocs. Le mode ECB (Electronic Codebook) chiffre chaque bloc indépendamment, toujours de la même façon avec la même clé.
+
+Conséquence : deux blocs de clair identiques donnent deux blocs de chiffré identiques. Les motifs du message d'origine traversent le chiffrement et restent visibles. L'exemple célèbre est l'image du pingouin Tux chiffrée en ECB : on reconnaît encore la silhouette du pingouin dans l'image chiffrée, parce que les zones de couleur uniforme produisent des blocs répétés. Le chiffrement n'a rien caché de la structure.
+
+La règle est simple : jamais ECB. On choisit un mode qui mélange les blocs et qui, idéalement, vérifie aussi l'intégrité. AES-GCM est un bon défaut : il chiffre et il authentifie, donc une modification du chiffré est détectée au déchiffrement.
+
+<Callout type="warning">
+Si une bibliothèque te demande de choisir un mode et que ECB figure dans la liste, ne le prends pas par défaut sous prétexte qu'il est premier ou le plus simple. Prends un mode authentifié comme GCM. ECB n'a quasiment aucun usage légitime en pratique.
+</Callout>
+
+## réutiliser un nonce ou un IV
+
+Beaucoup de modes (GCM, CTR, et les chiffrements de flux) ont besoin d'une valeur supplémentaire à côté de la clé : un nonce, ou un IV (vecteur d'initialisation). Son rôle est de faire en sorte que chiffrer deux fois le même message avec la même clé ne donne pas deux fois le même résultat.
+
+Pour que ça marche, cette valeur doit être unique pour chaque message chiffré avec une clé donnée. Le mot "nonce" veut d'ailleurs dire "number used once", nombre utilisé une seule fois. Si on réutilise le même nonce avec la même clé pour deux messages différents, on fuit de l'information. Dans le cas d'un chiffrement de flux ou du mode CTR, un attaquant qui obtient deux chiffrés produits avec le même nonce peut les combiner et retrouver le XOR des deux clairs, ce qui suffit souvent à les reconstituer. Avec GCM, c'est pire encore : la réutilisation d'un nonce permet de récupérer la clé d'authentification et de forger des messages.
+
+La bonne pratique : un nonce neuf à chaque message. Soit on le tire au hasard avec un générateur cryptographique (assez de bits pour que la collision soit improbable), soit on tient un compteur strictement croissant qui ne repart jamais en arrière, même après un redémarrage. Ce qu'il ne faut jamais faire, c'est coder un nonce en dur ou réutiliser le même par paresse.
+
+## un aléa prévisible
+
+Une clé, un jeton de session, un sel : tout ça doit être imprévisible. Si un attaquant peut deviner la valeur, le chiffrement le plus solide ne sert à rien, puisqu'il suffit de recalculer la clé.
+
+Le piège, c'est le générateur. Le module de nombres aléatoires "ordinaire" d'un langage (le `random` de Python, le `Math.random()` de JavaScript) est fait pour des simulations et des jeux, pas pour des secrets. Sa sortie est déterministe : à partir d'une même graine, il rejoue exactement la même suite. Et sa graine est souvent prévisible (l'horloge au moment du lancement, par exemple). Un attaquant qui devine ou retrouve la graine reconstruit toute la séquence.
+
+Le code ci-dessous montre le coeur du problème : même graine, même sortie, deux fois de suite.
+
+<CodePlayground language="python" starterCode={`import random
+
+# MAUVAIS : graine fixe rend la sortie previsible
+random.seed(42)
+print("token 'aleatoire':", random.randint(1000, 9999))
+random.seed(42)
+print("rejoue identique :", random.randint(1000, 9999))
+
+# Pour des secrets, on utilise un generateur cryptographique (secrets/os.urandom),
+# pas le module random standard.`} />
+
+Le générateur a beau s'appeler "aléatoire", il est parfaitement reproductible. Pour un jeton de session, c'est une catastrophe : si deux utilisateurs partagent la même graine, ils obtiennent le même jeton.
+
+<Callout type="info">
+Pour tout ce qui est secret, on utilise un générateur cryptographique : `secrets` ou `os.urandom` en Python, `crypto.randomBytes` en Node, `/dev/urandom` au niveau système. Ces sources sont alimentées par de l'entropie du système d'exploitation et ne se laissent pas rejouer. Règle mnémotechnique : le module `random` sert à tirer un dé, jamais à fabriquer une clé.
+</Callout>
+
+## comparer en temps variable
+
+Imagine qu'on vérifie un jeton ou un code d'authentification en le comparant à la valeur attendue. La comparaison naïve, octet par octet, s'arrête au premier octet qui diffère. C'est plus rapide, et c'est justement le problème.
+
+Le temps de réponse dépend du nombre d'octets corrects en tête. Un attaquant qui mesure ce temps peut deviner le secret octet par octet : il essaie chaque valeur pour le premier octet, garde celle qui fait répondre un peu plus lentement (donc qui est correcte), passe au suivant, et ainsi de suite. C'est une attaque par canal temporel. Elle paraît théorique, mais elle a été démontrée sur des réseaux réels.
+
+La parade est la comparaison à temps constant : on compare toujours la totalité des deux chaînes, sans court-circuit, de sorte que la durée ne dépende pas de l'endroit où elles diffèrent. Les bibliothèques fournissent la fonction toute faite (`hmac.compare_digest` en Python, `crypto.timingSafeEqual` en Node). C'est d'autant plus important pour vérifier un HMAC : comparer le HMAC reçu au HMAC recalculé doit se faire en temps constant, sinon on rouvre la porte qu'on cherchait à fermer.
+
+<Callout type="warning">
+Dès que tu compares un secret (jeton, HMAC, empreinte de mot de passe), n'utilise pas l'égalité ordinaire du langage. Passe par la fonction de comparaison à temps constant de ta bibliothèque crypto.
+</Callout>
+
+## garder des algos obsolètes
+
+Certains algorithmes ont fait leur temps. MD5 et SHA-1 produisent des collisions trouvables en pratique : on sait fabriquer deux fichiers différents qui ont la même empreinte, ce qui détruit toute garantie d'intégrité. DES a une clé de 56 bits, cassable par force brute en quelques heures avec du matériel modeste. RC4 a des biais statistiques connus qui fuient le clair.
+
+Le danger, c'est qu'ils marchent encore. Le code tourne, rien ne plante, donc on les laisse en place par habitude ou par compatibilité. Mais "ça fonctionne" ne veut pas dire "c'est sûr". La bonne pratique est de migrer : SHA-256 ou SHA-3 pour le hachage d'intégrité, AES pour le chiffrement symétrique, et pour le hachage de mots de passe des fonctions lentes et salées conçues pour ça (bcrypt, scrypt, Argon2), surtout pas un simple SHA.
+
+## à toi de jouer
+
+Relance le code plus haut et observe les deux lignes identiques : c'est exactement ce qu'un attaquant exploite quand un secret sort d'un mauvais générateur. Ensuite, les questions.
+
+<Quiz id="q-1" question="Pourquoi le mode ECB est-il à éviter pour chiffrer des données ?" options={["Il est trop lent sur les gros fichiers", "Des blocs de clair identiques donnent des blocs de chiffré identiques, donc les motifs restent visibles", "Il ne fonctionne quavec des clés de 56 bits", "Il nécessite un nonce différent à chaque bloc"]} correct={1} />
+
+<Quiz id="q-2" question="Que se passe-t-il si on réutilise le même nonce avec la même clé pour deux messages différents ?" options={["Rien, le nonce na aucune importance", "Le chiffrement devient plus rapide", "On fuit de linformation : un attaquant peut combiner les chiffrés et retrouver les clairs", "La clé est automatiquement renouvelée"]} correct={2} />
+
+<Quiz id="q-3" question="Pour générer un jeton de session imprévisible en Python, on utilise :" options={["Le module random avec une graine fixe", "Math.random multiplié par lhorloge", "Un générateur cryptographique comme secrets ou os.urandom", "MD5 de lheure courante"]} correct={2} />
+
+## à retenir
+
+- AES et RSA ne se cassent pas par force brute : les échecs viennent de la mise en oeuvre, pas des maths.
+- On n'écrit jamais sa propre primitive crypto. On appelle une bibliothèque auditée.
+- Jamais ECB. On préfère un mode authentifié comme AES-GCM.
+- Un nonce ou un IV est unique par message pour une clé donnée. Le réutiliser fuit de l'information, et avec GCM peut révéler la clé d'authentification.
+- Les secrets (clés, jetons) viennent d'un générateur cryptographique (`secrets`, `os.urandom`, `crypto.randomBytes`), jamais du module aléatoire ordinaire, qui est reproductible.
+- On compare les secrets en temps constant (`hmac.compare_digest`, `crypto.timingSafeEqual`) pour ne pas fuir par le temps de réponse, en particulier pour vérifier un HMAC.
+- On migre hors de MD5, SHA-1, DES et RC4. Pour les mots de passe : bcrypt, scrypt ou Argon2, jamais un simple hash.
+
+OK 10 écrit

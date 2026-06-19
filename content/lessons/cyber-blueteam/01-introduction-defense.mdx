@@ -1,0 +1,97 @@
+---
+refCode: CL-LSN-133-V01
+slug: blueteam-introduction
+title: "La défense : blue team et SOC"
+description: "Comprenez la posture défensive : ce qu'est une blue team et un centre des opérations de sécurité, l'asymétrie entre attaquant et défenseur, et pourquoi la détection compte autant que la prévention."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-084-V01"]
+---
+
+Un attaquant n'a besoin que d'une chose : une porte ouverte. Une seule. Il peut passer des semaines à tester des serrures, et il lui suffit d'en trouver une qui cède. Toi, de l'autre côté, tu dois surveiller toutes les portes, toutes les fenêtres, le toit, la cave, et tu dois le faire la nuit, le week-end, pendant les vacances. C'est le métier de la défense, et c'est la première chose à comprendre avant le reste : on ne joue pas le même jeu que l'attaquant, et on ne le joue pas à armes égales.
+
+Cette leçon pose la posture défensive. Pas d'outil précis pour l'instant, pas de commande. On parle d'abord de la façon de penser, parce que c'est elle qui distingue un bon analyste d'un débutant qui clique sur des alertes au hasard.
+
+## blue team et SOC
+
+Dans le jargon de la sécurité, on parle de couleurs. La red team, c'est l'offensive : ce sont les gens dont le travail est d'attaquer, de simuler un adversaire, de trouver les failles avant les vrais méchants. La blue team, c'est nous : la défense. Notre travail est de protéger les systèmes, de repérer les attaques en cours et de réagir.
+
+Le SOC, c'est le centre des opérations de sécurité (Security Operations Center). Concrètement, c'est l'équipe de la blue team plus les outils qu'elle utilise pour surveiller en continu. Imagine une salle, réelle ou virtuelle, où des analystes regardent ce qui se passe sur le réseau de l'entreprise : les connexions, les ouvertures de session, les fichiers qui s'exécutent, les e-mails qui arrivent. Quand quelque chose sort de l'ordinaire, le SOC le voit, l'examine, et décide quoi faire.
+
+Le quotidien tient en trois verbes. Surveiller : garder un oeil sur les logs et les alertes qui remontent des machines et des outils de sécurité. Détecter : reconnaître, dans ce flot d'événements, ce qui ressemble à une attaque réelle. Répondre : agir quand c'est confirmé, isoler une machine, couper un accès, prévenir les bonnes personnes.
+
+<Callout type="info">
+Un SOC ne dort jamais. Beaucoup tournent en 24/7 avec des analystes qui se relaient. Les attaquants savent très bien que 3 heures du matin un dimanche est un bon moment pour agir, justement parce qu'on imagine que personne ne regarde.
+</Callout>
+
+<Diagram caption="Le cycle de travail d'un SOC">
+flowchart LR
+  A[Collecter les logs] --> B[Surveiller les alertes]
+  B --> C[Trier et investiguer]
+  C --> D[Confirmer ou écarter]
+  D --> E[Répondre et contenir]
+  E --> F[Tirer les leçons]
+  F --> A
+</Diagram>
+
+## l'asymétrie
+
+Reviens à l'image des portes. L'attaquant gagne s'il trouve un seul point faible. Le défenseur, lui, doit tenir partout, sur chaque machine, chaque compte, chaque application, et sans interruption. Cent verrous solides ne servent à rien si le centunième est cassé. C'est ça, l'asymétrie : l'effort n'est pas réparti de la même façon des deux côtés.
+
+Cette asymétrie va plus loin. L'attaquant choisit quand il frappe, par où, et avec quelle technique. Le défenseur subit ce choix et doit réagir à un moment qu'il n'a pas décidé. L'attaquant peut échouer dix fois sans conséquence et réessayer. Le défenseur, lui, n'a pas droit à beaucoup d'erreurs : une seule intrusion réussie peut suffire à faire des dégâts.
+
+Alors comment on compense, si le jeu est aussi injuste ? Par trois leviers. D'abord la visibilité : on ne peut pas défendre ce qu'on ne voit pas, donc on instrumente tout, on collecte des logs partout, pour qu'aucune action ne passe inaperçue. Ensuite la détection : on apprend à reconnaître vite les signes d'une attaque, même discrète. Enfin la vitesse de réponse : plus on réagit tôt, moins l'attaquant a le temps d'avancer. Un intrus repéré à la première minute fait beaucoup moins de mal qu'un intrus tranquille pendant trois mois.
+
+L'asymétrie ne disparaît pas. Mais une bonne défense la rend coûteuse pour l'attaquant : elle l'oblige à se cacher, à aller lentement, à prendre des risques de se faire voir à chaque étape.
+
+## supposer l'intrusion
+
+Voici l'idée reçue la plus tenace, et il faut la défaire tout de suite. Beaucoup de gens pensent que la sécurité, c'est empêcher d'entrer. Construire un mur assez haut, et basta. Si on a un pare-feu et un antivirus, on est protégé.
+
+Le problème, c'est que les murs finissent toujours par avoir une brèche. Un employé clique sur un e-mail piégé. Un logiciel a une faille que personne n'avait vue. Un mot de passe fuite. Avec assez de temps et de cibles, un attaquant motivé finira par passer. Tous les défenseurs sérieux partent de ce principe : on suppose que l'intrusion arrivera, tôt ou tard.
+
+Ça change tout. Si on suppose qu'un attaquant entrera, on ne mise plus seulement sur le mur. On mise aussi sur le repérer une fois qu'il est dedans, et vite, avant qu'il atteigne ce qui compte vraiment. La détection devient aussi importante que la prévention. C'est le sens de la formule "assume breach" : on travaille comme si l'adversaire était déjà à l'intérieur, parce qu'un jour il le sera.
+
+<Callout type="warning">
+"On n'a jamais été piraté, donc on est bien protégé." C'est faux et dangereux. Si tu n'as pas la visibilité pour détecter une intrusion, l'absence d'alerte ne prouve rien. Beaucoup d'attaquants restent des mois sans être vus. Ne pas voir n'est pas la même chose que ne pas être attaqué.
+</Callout>
+
+Cette logique rejoint la défense en profondeur, qu'on a vue ailleurs : plusieurs couches de protection plutôt qu'un seul gros mur, pour que la chute d'une couche ne fasse pas tout tomber. Supposer l'intrusion, c'est ajouter à ces couches une couche de surveillance qui veille à l'intérieur, pas seulement à la frontière.
+
+## les niveaux d'analystes
+
+Un SOC ne fonctionne pas avec une seule sorte de profil. Le travail est organisé en niveaux, souvent notés N1, N2, N3. Ce n'est pas une hiérarchie de mérite, c'est une répartition des tâches selon la difficulté.
+
+Le N1 est en première ligne. Il reçoit le flot d'alertes et fait le tri : laquelle est un faux positif, laquelle mérite un vrai regard. C'est un travail de filtrage, répétitif mais décisif, parce que c'est lui qui décide ce qui mérite de remonter. Le N2 prend les alertes que le N1 lui passe et mène l'investigation : il creuse, recoupe plusieurs sources, reconstitue ce qui s'est passé. Le N3 est l'expert. Il intervient sur les cas les plus durs, conçoit de nouvelles règles de détection, et pratique la chasse aux menaces : au lieu d'attendre une alerte, il part chercher activement un attaquant qui serait passé sous les radars.
+
+| Niveau | Rôle principal |
+| --- | --- |
+| N1 | Tri des alertes, premier filtrage, écarter les faux positifs |
+| N2 | Investigation approfondie, reconstitution des incidents |
+| N3 | Expertise, création de règles, chasse aux menaces |
+
+La plupart des analystes débutent en N1. Ce n'est pas un poste au rabais : c'est là qu'on apprend à reconnaître ce qui est normal et ce qui ne l'est pas, et cette intuition se construit alerte après alerte. Le parcours classique mène ensuite vers le N2, puis le N3 ou des spécialités comme la réponse à incident ou le renseignement sur les menaces.
+
+## prévention, détection, réponse
+
+Tu as maintenant les trois temps de la défense. La prévention, c'est tout ce qui réduit les chances qu'une attaque réussisse : durcir les configurations, corriger les failles, limiter les accès. La détection, c'est repérer ce qui est passé malgré tout. La réponse, c'est agir une fois qu'on a repéré.
+
+Le point à retenir, c'est qu'aucun de ces trois temps ne suffit seul. Une prévention parfaite n'existe pas, donc on aura besoin de détecter. Une détection sans réponse ne fait que regarder le désastre arriver. Une réponse sans détection arrive trop tard, quand les dégâts sont déjà là. Les trois fonctionnent ensemble, et c'est l'équilibre entre eux qui fait une défense solide. Un SOC qui ne ferait que prévenir serait aveugle ; un SOC qui ne ferait que détecter sans répondre serait inutile.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelle phrase résume le mieux l'asymétrie entre attaquant et défenseur ?" options={["Le défenseur dispose de plus de moyens financiers", "L'attaquant n'a besoin de réussir qu'une fois, le défenseur doit tenir partout en permanence", "L'attaquant et le défenseur ont exactement les mêmes contraintes", "Le défenseur choisit le moment de l'affrontement"]} correct={1} />
+
+<Quiz id="q-2" question="Que signifie 'supposer l'intrusion' (assume breach) ?" options={["Accuser un employé d'avoir provoqué une faille", "Renoncer à la prévention puisqu'elle est inutile", "Partir du principe qu'un attaquant finira par entrer, et donc miser aussi sur le fait de le détecter vite", "Attendre une preuve d'attaque avant d'agir"]} correct={2} />
+
+<Quiz id="q-3" question="Quel est le rôle typique d'un analyste N1 dans un SOC ?" options={["Concevoir de nouvelles règles de détection et chasser les menaces", "Trier les alertes entrantes et écarter les faux positifs", "Décider seul de la stratégie de sécurité de l'entreprise", "Mener les attaques de la red team"]} correct={1} />
+
+## à retenir
+
+- La blue team défend ; la red team attaque. Le SOC est l'équipe et les outils qui surveillent en continu pour surveiller, détecter et répondre.
+- L'asymétrie : l'attaquant gagne avec une seule faille, le défenseur doit tenir partout et tout le temps. On compense par la visibilité, la détection rapide et la vitesse de réponse.
+- La sécurité n'est pas seulement empêcher d'entrer. On suppose qu'un attaquant entrera, donc la détection compte autant que la prévention.
+- Les analystes se répartissent en niveaux : N1 trie les alertes, N2 investigue, N3 apporte l'expertise et chasse les menaces. La plupart débutent en N1.
+- Prévention, détection et réponse forment un trio : aucune ne suffit seule, c'est leur équilibre qui tient.

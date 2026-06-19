@@ -1,0 +1,100 @@
+---
+refCode: CL-LSN-074-V01
+slug: cyber-cia
+title: "La triade CIA : confidentialité, intégrité, disponibilité"
+description: "Découvrez la grille de lecture fondamentale de la sécurité : protéger la confidentialité, l'intégrité et la disponibilité des données, avec un exemple d'attaque concret pour chaque pilier."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 220
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Quand on débute en sécurité, on a vite l'impression que le domaine part dans toutes les directions : pare-feux, mots de passe, chiffrement, sauvegardes, journaux d'accès, antivirus. Ça ressemble à une longue liste de gestes sans fil conducteur. Il y en a pourtant un. Presque chaque décision de sécurité, quand on la pousse un peu, revient à protéger l'une de trois choses au sujet de l'information : qui peut la lire, est-ce qu'elle est exacte, et est-ce qu'on peut y accéder au moment voulu.
+
+Ces trois choses portent un nom. En anglais on parle de Confidentiality, Integrity, Availability, ce qui donne l'acronyme CIA. En français : confidentialité, intégrité, disponibilité. C'est ce qu'on appelle la triade CIA, et c'est le premier modèle mental à installer solidement. Pas parce que c'est joli sur une diapo, mais parce que ça te donne une grille : devant n'importe quelle situation, tu peux te demander lequel de ces trois piliers est menacé. La réponse oriente déjà la défense.
+
+<Diagram caption="La triade CIA : trois propriétés à protéger pour toute information.">
+  flowchart TD
+  info["Information à protéger"]
+  info --> C["Confidentialité : seuls les autorisés lisent"]
+  info --> I["Intégrité : la donnée reste exacte et vérifiable"]
+  info --> A["Disponibilité : accessible quand on en a besoin"]
+</Diagram>
+
+## confidentialité
+
+La confidentialité, c'est la garantie que seules les personnes autorisées peuvent accéder à une information. Le reste du monde ne doit pas pouvoir la lire. Ton dossier médical, le numéro de carte d'une cliente, la liste des salaires d'une entreprise : autant de données qui ne regardent qu'un cercle restreint.
+
+Voici comment on la casse. Imagine un site marchand dont la base de données clients se retrouve copiée par un attaquant, parce qu'une faille dans le code laissait interroger la base librement. Du jour au lendemain, des millions d'adresses e-mail, de mots de passe et d'historiques d'achat circulent sur des forums. Personne n'a modifié quoi que ce soit, le site fonctionne toujours. Mais des données qui devaient rester privées sont devenues publiques. C'est une atteinte pure à la confidentialité.
+
+Autre scénario, plus discret : l'écoute réseau. Tu te connectes au Wi-Fi gratuit d'un café, et quelqu'un sur le même réseau capture le trafic qui passe en clair. Si la connexion n'est pas chiffrée, il lit ce que tu envoies. Là encore, rien n'est altéré ni bloqué, mais l'information fuit vers un tiers.
+
+Pour protéger la confidentialité, on s'appuie surtout sur deux familles d'outils. Le chiffrement, d'abord, qui rend la donnée illisible sans la clé, que ce soit sur le disque ou pendant le transport (c'est tout l'intérêt de HTTPS). Le contrôle d'accès, ensuite : authentification pour vérifier qui tu es, autorisation pour décider ce que tu as le droit de voir.
+
+<Callout type="info">
+Chiffrer une donnée ne la cache pas, au sens où elle est toujours là et visible. Le chiffrement la rend inexploitable sans la clé. Un attaquant peut copier un fichier chiffré, il n'en tirera rien d'utile tant qu'il n'a pas la clé. C'est la différence entre cacher et rendre illisible.
+</Callout>
+
+## intégrité
+
+L'intégrité, c'est la garantie qu'une donnée n'est pas modifiée sans autorisation, et qu'on peut détecter si elle l'a été. Deux idées dans une seule phrase : empêcher l'altération, et pouvoir la repérer quand elle arrive quand même.
+
+Le cas qui parle à tout le monde, c'est la transaction bancaire. Tu envoies un virement de 50 euros. Si un attaquant intercepte le message et transforme le montant en 5000 euros, ou remplace le numéro de compte du destinataire par le sien, la confidentialité n'est pas en cause : il s'en fiche de lire ton virement, il veut le changer. C'est l'intégrité qui est attaquée. Le danger n'est plus la fuite, c'est la donnée fausse qui passe pour vraie.
+
+Autre exemple courant : le défacement de site. Un attaquant accède au serveur web et remplace la page d'accueil par son propre message. Les visiteurs voient un contenu qui n'a jamais été validé par le propriétaire. La page est toujours disponible, personne n'a volé de secret, mais le contenu affiché n'est plus celui d'origine.
+
+Pour protéger l'intégrité, l'outil de base est le hachage. Une fonction de hachage produit une empreinte de taille fixe à partir d'un fichier. Change un seul octet, l'empreinte change complètement. En comparant l'empreinte attendue avec celle calculée, on détecte toute altération. Pour aller plus loin, les signatures numériques combinent hachage et cryptographie : elles prouvent à la fois que la donnée n'a pas bougé et qu'elle vient bien de l'émetteur annoncé.
+
+<Callout type="success">
+L'intégrité ne consiste pas seulement à empêcher les modifications. Elle consiste aussi à pouvoir prouver qu'il n'y en a pas eu. Une empreinte de hachage publiée à côté d'un téléchargement sert exactement à ça : tu vérifies toi-même que le fichier reçu correspond à l'original.
+</Callout>
+
+## disponibilité
+
+La disponibilité, c'est la garantie que le service et les données restent accessibles aux personnes autorisées au moment où elles en ont besoin. Une donnée parfaitement confidentielle et parfaitement intègre ne sert à rien si tu ne peux pas l'atteindre quand il le faut.
+
+L'attaque type, c'est le déni de service. Dans sa version distribuée, le DDoS, l'attaquant pilote des milliers de machines pour noyer un serveur sous des requêtes. Le serveur passe son temps à répondre à du faux trafic et n'a plus de ressources pour les vrais utilisateurs. Le site ralentit puis tombe. Aucune donnée n'a fuité, aucune donnée n'a été modifiée. Le service est simplement devenu inaccessible, et pour un site marchand ou un hôpital, c'est une perte réelle.
+
+La disponibilité ne tombe pas que sous les attaques, d'ailleurs. Un disque dur qui lâche, une coupure de courant, une erreur humaine qui efface une base : ce sont aussi des atteintes à la disponibilité. C'est pour ça qu'on traite ce pilier avec des moyens qui ressemblent parfois plus à de la fiabilité qu'à de la sécurité au sens strict. La redondance, pour qu'une panne d'un composant n'arrête pas tout. Les sauvegardes, pour restaurer après une perte. La répartition de charge, pour absorber les pics.
+
+<Callout type="warning">
+On oublie souvent la disponibilité. C'est le pilier le moins spectaculaire : pas de secret volé, pas de fraude, juste un service qui ne répond plus. Pourtant, pour beaucoup d'organisations, l'indisponibilité coûte cher tout de suite. Un site qui reste hors ligne plusieurs heures peut faire plus de dégâts qu'une petite fuite. Ne le traite jamais comme un détail.
+</Callout>
+
+## les trois sont en tension
+
+Voilà le point que les débutants ratent souvent. La triade n'est pas une liste de cases à cocher où l'on pousse chaque pilier au maximum. Les trois sont en tension, et renforcer l'un peut gêner un autre.
+
+Prends le chiffrement intégral des données. Tu améliores la confidentialité, c'est net. Mais tu ajoutes du calcul à chaque lecture et chaque écriture, donc tu ralentis le système, ce qui touche la disponibilité. Et si tu perds la clé, les données chiffrées deviennent illisibles pour tout le monde, y compris toi : la confidentialité poussée à fond peut détruire la disponibilité.
+
+Autre compromis classique : pour garantir l'intégrité, tu peux exiger une double validation humaine avant toute modification d'un enregistrement sensible. Excellent contre les altérations frauduleuses. Mais le jour où il faut corriger une erreur en urgence, la procédure ralentit l'accès légitime. La sécurité, c'est presque toujours un arbitrage entre ces trois propriétés, en fonction de ce qui compte le plus pour le contexte.
+
+## utiliser la triade comme grille d'analyse
+
+C'est là que le modèle devient un outil de tous les jours. Face à une situation, pose-toi une question simple : quel pilier est menacé ici ? La réponse te dit déjà dans quelle direction chercher la défense.
+
+Petit cas pratique. Une PME reçoit un message : ses fichiers ont été chiffrés par un rançongiciel et un attaquant réclame un paiement pour la clé. Question de grille. Confidentialité ? Si l'attaquant a aussi copié les fichiers avant de les chiffrer, oui, il y a un risque de fuite. Intégrité ? Les fichiers sont brouillés, donc inutilisables tels quels, c'est une atteinte. Disponibilité ? Pleinement touchée : l'entreprise ne peut plus accéder à ses propres données. Le rançongiciel attaque les trois piliers à la fois, mais le plus douloureux à l'instant T est la disponibilité. Et ça oriente la première défense à mettre en place : des sauvegardes hors ligne, testées, qui permettent de restaurer sans payer.
+
+Tu vois la mécanique. Le même incident, lu à travers la triade, se range proprement et la priorité saute aux yeux. C'est exactement à ça que sert le modèle.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Un attaquant copie discrètement la base de données clients d'un site sans rien modifier ni bloquer. Quel pilier de la triade est touché ?" options={["La disponibilité", "L'intégrité", "La confidentialité"]} correct={2} />
+
+<Quiz id="q-2" question="Quel mécanisme sert d'abord à vérifier qu'un fichier n'a pas été modifié ?" options={["Le hachage", "Le pare-feu", "La répartition de charge"]} correct={0} />
+
+<Quiz id="q-3" question="Un DDoS sature un serveur de fausses requêtes jusqu'à le rendre inaccessible, sans voler ni altérer de données. Quel pilier est visé ?" options={["L'intégrité", "La disponibilité", "La confidentialité"]} correct={1} />
+</QuizGroup>
+
+## à retenir
+
+- La triade CIA regroupe trois propriétés à protéger pour toute information : confidentialité (qui peut lire), intégrité (la donnée est exacte et vérifiable), disponibilité (on y accède quand il faut).
+- Confidentialité cassée : fuite de base de données, écoute d'un réseau non chiffré. On la protège par le chiffrement et le contrôle d'accès.
+- Intégrité cassée : montant d'un virement altéré, site défacé. On la protège par le hachage et les signatures numériques.
+- Disponibilité cassée : DDoS, panne matérielle, suppression accidentelle. On la protège par la redondance et les sauvegardes.
+- Les trois piliers sont en tension : pousser l'un (chiffrer tout) peut gêner un autre (ralentir, risquer de perdre l'accès).
+- En pratique, la triade sert de grille : devant un incident, demande-toi quel pilier est menacé, et la priorité de défense devient claire.
+
+OK 02-cia.mdx écrit

@@ -1,0 +1,147 @@
+---
+refCode: CL-LSN-069-V01
+slug: docker-compose
+title: "Docker Compose : orchestrer plusieurs services"
+description: "Décrivez et lancez une application multi-conteneurs avec Docker Compose : définir des services dans un fichier YAML, les faire communiquer par leur nom, et persister les données avec des volumes."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 550
+prerequisites: ["CL-LSN-068-V01"]
+---
+
+Jusqu'ici tu as lancé des conteneurs un par un avec `docker run`. Ça marche très bien quand il n'y a qu'une seule image à démarrer. Le problème, c'est qu'une application réelle ressemble rarement à ça.
+
+Prends un site web classique. Il y a le serveur web qui répond aux requêtes, et derrière lui une base de données qui stocke les comptes utilisateurs, les commandes, les articles. Souvent on ajoute aussi un cache comme Redis pour aller plus vite. Ça fait déjà trois conteneurs. Et chacun a sa propre commande `docker run`, avec ses options, ses ports, ses variables. Tu dois les lancer dans le bon ordre, t'assurer qu'ils sont sur le même réseau, retenir les longues lignes par coeur. Le jour où un collègue veut faire tourner le projet sur sa machine, tu lui dictes cinq commandes au téléphone et il en rate une.
+
+Le bon modèle mental, c'est celui-ci : une application = plusieurs conteneurs qui doivent se parler. Docker Compose sert à décrire tout ce petit monde dans un seul fichier texte, puis à le lancer ou l'arrêter d'une seule commande. Le fichier devient la documentation vivante de ton appli. On le versionne avec le code, et n'importe qui fait `docker compose up` pour avoir exactement le même environnement.
+
+## le fichier compose
+
+Compose lit un fichier nommé `compose.yaml` (l'ancien nom `docker-compose.yml` marche encore) à la racine du projet. Tu y décris des **services**. Un service, c'est la recette pour lancer un conteneur : quelle image, quels ports, quelles variables.
+
+Voici un exemple complet : une app web Node accompagnée d'une base PostgreSQL.
+
+```yaml
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://app:secret@db:5432/appdb
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: appdb
+```
+
+Lisons service par service.
+
+Le service `web` utilise `build: .`, ce qui dit à Compose de construire l'image à partir du `Dockerfile` du dossier courant. La ligne `ports` publie le port 3000 du conteneur sur le port 3000 de ta machine, exactement comme l'option `-p` de `docker run`. La section `environment` passe des variables au conteneur ; ici on lui donne l'adresse de la base. Et `depends_on` indique que `web` a besoin de `db`, donc Compose démarre la base avant le serveur.
+
+Le service `db` n'a pas de `build` : il part d'une image toute prête, `postgres:16`, téléchargée depuis le registre. Ses variables d'environnement configurent l'utilisateur, le mot de passe et le nom de la base que l'image Postgres crée au premier démarrage.
+
+Note un détail dans l'URL du service `web` : `postgres://app:secret@db:5432/...`. L'hôte de la base s'appelle `db`. Pas une adresse IP, pas `localhost`. C'est le nom du service. On y revient plus bas, parce que c'est l'endroit où la plupart des gens trébuchent.
+
+## up et down
+
+Une fois le fichier écrit, deux commandes suffisent au quotidien.
+
+`docker compose up -d` construit ce qui doit l'être, crée un réseau, puis démarre tous les services. Le `-d` (detached) rend la main au terminal au lieu de bloquer sur les logs.
+
+`docker compose down` fait l'inverse : il arrête et supprime les conteneurs et le réseau. Pour voir l'état, `docker compose ps`. Pour suivre ce qui se passe, `docker compose logs -f web` affiche les logs d'un service en continu.
+
+<SimulatedTerminal shell="bash" commands={{ "docker compose up -d": "Creating network app_default\nCreating app_db_1 ... done\nCreating app_web_1 ... done", "docker compose ps": "NAME       STATUS     PORTS\napp_web_1  Up         0.0.0.0:3000->3000/tcp\napp_db_1   Up         5432/tcp", "docker compose logs -f web": "app_web_1  | Server listening on port 3000\napp_web_1  | Connected to database db:5432", "docker compose down": "Stopping app_web_1 ... done\nStopping app_db_1 ... done\nRemoving network app_default" }} />
+
+Remarque dans `ps` que `db` n'expose aucun port vers l'extérieur (`5432/tcp` sans `0.0.0.0`). C'est volontaire : la base n'a pas besoin d'être joignable depuis ta machine, seul `web` lui parle, et il le fait par le réseau interne.
+
+## le réseau entre services
+
+Quand tu lances `up`, Compose crée automatiquement un réseau privé et y branche tous tes services. Sur ce réseau, chaque conteneur est joignable par le **nom de son service**. Le service `web` atteint la base en se connectant à l'hôte `db`. Compose fait la résolution de nom pour toi.
+
+<Diagram caption="web et db sur le réseau privé créé par Compose ; web atteint la base par le nom de service db">
+  flowchart LR
+    nav["Navigateur"] --> web["web :3000"]
+    web -->|"db:5432"| db["db Postgres"]
+    net["reseau app_default englobe web et db"]
+</Diagram>
+
+Voici l'erreur classique. Beaucoup de gens écrivent l'URL de la base avec `localhost`, par réflexe : `postgres://app:secret@localhost:5432/appdb`. Ça échoue. À l'intérieur d'un conteneur, `localhost` désigne **le conteneur lui-même**, pas la machine ni les autres conteneurs. Le service `web` cherche alors une base de données dans son propre conteneur, n'en trouve pas, et plante avec une erreur de connexion refusée.
+
+<Callout type="warning">
+Entre conteneurs Compose, on s'adresse par le **nom de service** (`db`, `redis`, `web`), jamais par `localhost`. Un `localhost` dans un conteneur pointe vers ce conteneur tout seul. Si ta connexion à la base est refusée alors que tout semble correct, c'est presque toujours ça : remplace `localhost` par le nom du service.
+</Callout>
+
+## les volumes : persister les données
+
+Un conteneur est jetable. Quand tu fais `docker compose down` puis `up`, ou que tu changes l'image de la base, le conteneur `db` est recréé à neuf. Et tout ce qui était écrit dans son système de fichiers disparaît avec lui. Pour une base de données, ça veut dire : tous tes comptes, toutes tes commandes, envolés.
+
+La solution est le **volume** : un espace de stockage géré par Docker qui vit en dehors du conteneur. Tu le montes à l'endroit où la base écrit ses fichiers, et il survit aux redémarrages comme aux recréations.
+
+```yaml
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: appdb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
+```
+
+Deux choses ici. Dans le service, `db_data:/var/lib/postgresql/data` monte le volume nommé `db_data` sur le dossier où Postgres range ses données. La partie de gauche est le nom du volume, la partie de droite le chemin dans le conteneur. Et tout en bas, la section `volumes:` déclare `db_data` pour que Compose sache le créer.
+
+Maintenant, même après un `down` suivi d'un `up`, les données sont toujours là. Le volume n'est supprimé que si tu le demandes explicitement, avec `docker compose down -v`.
+
+<Callout type="danger">
+Sans volume, les données d'une base dans un conteneur sont effacées dès que le conteneur est recréé. En développement c'est juste agaçant. En production ce serait une perte de données sèche. Toute base de données, toute file de messages, tout ce qui doit survivre à un redémarrage a besoin d'un volume. Et attention : `docker compose down -v` supprime aussi les volumes, donc les données. À manier avec précaution.
+</Callout>
+
+## les variables d'environnement
+
+Tu as vu `environment:` dans les exemples. C'est là qu'on passe la configuration : mot de passe de la base, port d'écoute, mode debug. Écrire le mot de passe en clair dans le fichier Compose est pratique en local, mais ce fichier est versionné, donc tu ne veux pas y mettre de vrais secrets.
+
+Compose lit automatiquement un fichier `.env` placé à côté du `compose.yaml`. Tu y mets les valeurs, et tu les réutilises dans le YAML avec la syntaxe `dollar accolades`.
+
+```yaml
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+```
+
+Le fichier `.env` contient alors `POSTGRES_PASSWORD=secret`, et il est ajouté au `.gitignore` pour ne jamais partir dans Git. Chaque développeur a son `.env` local, le serveur de production a le sien. Le YAML, lui, reste propre et public.
+
+## à toi de jouer
+
+Voici une session typique : on lance la stack, on vérifie, on regarde les logs de la base, puis on arrête en gardant les données.
+
+<SimulatedTerminal shell="bash" commands={{ "docker compose up -d": "Creating network shop_default\nCreating shop_db_1 ... done\nCreating shop_web_1 ... done", "docker compose ps": "NAME        STATUS     PORTS\nshop_web_1  Up         0.0.0.0:3000->3000/tcp\nshop_db_1   Up         5432/tcp", "docker compose logs db": "shop_db_1  | database system is ready to accept connections", "docker compose down": "Stopping shop_web_1 ... done\nStopping shop_db_1 ... done\nRemoving network shop_default" }} />
+
+<Quiz id="q-1" question="Dans le service web, quelle adresse mettre pour joindre une base de données définie comme service db dans le même fichier Compose ?" options={["localhost", "le nom du service, db", "127.0.0.1", "l adresse IP publique de la machine"]} correct={1} />
+
+<Quiz id="q-2" question="Que se passe-t-il pour les données de la base si aucun volume n est défini et que le conteneur est recréé ?" options={["Elles sont sauvegardées automatiquement par Docker", "Elles sont copiées dans l image", "Elles sont perdues", "Elles passent dans le fichier .env"]} correct={2} />
+
+<Quiz id="q-3" question="Que fait docker compose up -d ?" options={["Il affiche les logs en bloquant le terminal", "Il supprime les conteneurs et le réseau", "Il démarre tous les services en arrière-plan", "Il construit l image sans rien lancer"]} correct={2} />
+
+## à retenir
+
+- Une application réelle, c'est plusieurs conteneurs (web, base, cache) qui doivent se parler. Compose les décrit dans un fichier YAML et les lance ensemble.
+- Un **service** définit un conteneur : son image (`image`) ou sa construction (`build`), ses ports, ses variables, ses dépendances.
+- `docker compose up -d` démarre toute la stack, `docker compose down` l'arrête, `docker compose ps` et `logs` permettent de l'observer.
+- Sur le réseau créé par Compose, les conteneurs se joignent par leur **nom de service**, pas par `localhost`. Le `localhost` d'un conteneur, c'est lui-même.
+- Sans **volume**, les données d'une base disparaissent à la recréation du conteneur. Un volume nommé monté sur le dossier de données les fait survivre.
+- Les secrets vont dans un fichier `.env` (ignoré par Git), référencés dans le YAML avec `${VARIABLE}`.
+
+OK 09-docker-compose.mdx écrit

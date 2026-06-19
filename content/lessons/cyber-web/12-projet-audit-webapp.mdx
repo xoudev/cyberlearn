@@ -1,0 +1,120 @@
+---
+refCode: CL-LSN-096-V01
+slug: owasp-projet-audit
+title: "Projet : auditer une application web vulnérable"
+description: "Mettez tout le parcours en pratique sur une application volontairement vulnérable et autorisée : reconnaissance, recherche d'injections, de XSS, de contrôle d'accès défaillant, puis rédaction d'un rapport de vulnérabilités."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 60
+xpReward: 700
+prerequisites: ["CL-LSN-095-V01"]
+---
+
+On a vu les failles une par une le long du parcours. Maintenant on les rassemble. Cette dernière leçon est un projet : tu vas auditer une application web de bout en bout, comme on le ferait sur une vraie mission, mais sur une cible faite exprès pour ça. L'idée n'est pas de trouver le plus de bugs possible, c'est de travailler avec méthode. Reconnaissance, puis tests, puis un rapport propre. C'est ce dernier point qui distingue un audit d'un bidouillage du dimanche.
+
+## le cadre, d'abord
+
+<Callout type="danger">
+On n'audite QUE des applications qu'on a explicitement le droit de tester. Une application qu'on a installée soi-même en local, ou une cible pour laquelle on dispose d'une autorisation écrite. Jamais un site qui ne nous appartient pas. Scanner ou attaquer un système tiers sans accord est un délit, en France comme ailleurs, même si la faille était évidente et même si tu n'as rien cassé. L'intention ne te protège pas. L'autorisation, oui.
+</Callout>
+
+Pour ce projet, on reste donc en terrain balisé : une application volontairement vulnérable, tournant sur ta machine. Elle est conçue pour qu'on s'entraîne dessus légalement.
+
+<ExternalLink href="https://owasp.org/www-project-juice-shop/" description="Une application volontairement vulnérable pour s'entraîner légalement">OWASP Juice Shop</ExternalLink>
+
+Juice Shop est une boutique en ligne moderne, truffée de failles, maintenue par l'OWASP. Une autre option très répandue est DVWA (Damn Vulnerable Web Application), plus dépouillée et organisée par niveau de difficulté. L'une comme l'autre fait l'affaire. On part sur Juice Shop ici parce qu'elle ressemble à une vraie appli.
+
+## préparer son environnement
+
+Le plus simple est de lancer la cible avec Docker. Une seule commande, et l'application répond en local.
+
+```bash
+docker run --rm -p 3000:3000 bkimminich/juice-shop
+```
+
+Une fois le conteneur démarré, ouvre un navigateur sur l'URL locale et note-la quelque part, tu vas y revenir souvent.
+
+```text
+http://localhost:3000
+```
+
+<Callout type="info">
+Tout reste sur ta machine. Le port 3000 n'est exposé qu'en local. Tu peux casser, recommencer, relancer le conteneur autant de fois que tu veux : aucun impact à l'extérieur.
+</Callout>
+
+## étape 1 : reconnaissance
+
+Avant de tester quoi que ce soit, on regarde. La reconnaissance, c'est dresser la carte : quelles pages existent, quels formulaires, quels paramètres dans les URL, quels points d'entrée pour des données utilisateur. Connexion, inscription, recherche de produits, panier, espace client. Chaque champ qu'on peut remplir et chaque paramètre qu'on peut modifier est une porte à essayer plus tard.
+
+Note aussi les technologies visibles (en-têtes de réponse, fichiers JavaScript, messages d'erreur) et les requêtes que le navigateur envoie en arrière-plan vers l'API.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="Reconnaissance de la cible" />
+
+À la fin de cette étape tu dois avoir une liste : telle page, tel formulaire, tel paramètre. C'est ta surface d'attaque. On ne teste bien que ce qu'on a d'abord inventorié.
+
+## étape 2 : tester les injections
+
+On reprend la leçon sur l'injection SQL. L'endroit le plus classique pour commencer, c'est le formulaire de connexion. On envoie dans le champ identifiant une valeur qui, mal filtrée, change le sens de la requête côté serveur. Si l'application te connecte sans mot de passe valide, ou affiche une erreur SQL bavarde, tu tiens quelque chose.
+
+<SimulatedTerminal shell="bash" scenario="sqli-basic" title="Tester l'injection sur le formulaire de connexion" />
+
+Ne t'arrête pas au formulaire de login. Le champ de recherche de produits, les paramètres d'URL, tout ce qui finit dans une requête base de données mérite le même test. Garde la trace exacte de ce que tu as saisi et de ce que l'appli a répondu : tu en auras besoin pour le rapport.
+
+## étape 3 : XSS et contrôle d'accès
+
+Deux familles à passer en revue ici.
+
+Pour le XSS, on cible les champs dont le contenu est réaffiché ailleurs : un nom d'utilisateur, un avis client, un commentaire, un champ de recherche dont le terme revient dans la page de résultats. Le principe vu en cours reste le même : on insère du texte qui ressemble à du balisage et on observe si l'application le réinterprète au lieu de l'afficher tel quel. Si ton entrée ressort intacte dans la page sans être neutralisée, le réaffichage n'est pas protégé.
+
+Pour le contrôle d'accès, on s'intéresse aux identifiants qui voyagent dans l'URL. Une commande, un panier, un profil sont souvent désignés par un numéro. Que se passe-t-il si tu remplaces ton propre numéro par celui du voisin ? Si l'application te montre la ressource d'un autre utilisateur sans vérifier que c'est bien la tienne, c'est une faille de type IDOR : un contrôle d'accès défaillant. C'est l'une des plus fréquentes et l'une des plus graves, parce qu'elle expose directement les données d'autrui.
+
+<Callout type="warning">
+Reste sur des comptes de test que tu crées toi-même dans l'application. Le but est de prouver le défaut d'isolation entre deux utilisateurs, pas de fouiller des données réelles. Sur une cible d'entraînement, ce sont de toute façon des données fictives.
+</Callout>
+
+## étape 4 : le rapport
+
+Trouver la faille, c'est la moitié du travail. Le livrable d'un audit, ce n'est pas une liste de trucs cassés, c'est un document qui permet à une équipe de comprendre et de corriger. Pour chaque trouvaille, on répond toujours aux mêmes questions : où, comment la reproduire, quel impact, quelle gravité, et quelle correction on propose.
+
+<Callout type="success">
+Une vulnérabilité que tu sais reproduire pas à pas et expliquer en deux phrases a bien plus de valeur qu'un exploit spectaculaire que personne ne comprend. Le rapport est ce qui rend ton travail utile et réutilisable par d'autres.
+</Callout>
+
+Voici un gabarit de fiche, à dupliquer pour chaque vulnérabilité.
+
+```text
+Titre        : injection SQL sur le formulaire de connexion
+Emplacement  : POST /rest/user/login, champ email
+Reproduction :
+  1. ouvrir http://localhost:3000/#/login
+  2. saisir dans le champ email une valeur qui altere la requete
+  3. laisser le mot de passe vide, valider
+  4. constater la connexion sans identifiants valides
+Impact       : contournement de l'authentification, acces a un compte
+Gravite      : critique
+Correction   : requetes parametrees, jamais de concatenation d'entrees
+               utilisateur dans une requete SQL
+```
+
+Une gravité honnête tient compte de l'impact réel et de la facilité d'exploitation. Tout n'est pas critique. Un message d'erreur trop bavard et un contournement d'authentification ne se rangent pas dans la même case.
+
+## pour aller plus loin
+
+Juice Shop intègre un tableau de défis classés par difficulté, qui te guide vers des failles de plus en plus subtiles, et il existe des plateformes d'entraînement légales en ligne pour continuer à pratiquer dans un cadre autorisé.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Tu repères une faille évidente sur le site d'une entreprise que tu ne connais pas. Que fais-tu ?" options={["Tu l'exploites vite fait pour confirmer, puis tu préviens", "Tu n'y touches pas : sans autorisation écrite, tester est illégal", "C'est permis tant que tu ne casses rien", "Tu la signales seulement si tu trouves une récompense"]} correct={1} />
+
+<Quiz id="q-2" question="Qu'est-ce qui doit obligatoirement figurer dans une fiche de vulnérabilité ?" options={["Le nom de l'outil utilisé", "Les étapes de reproduction, l'impact et une correction proposée", "Le temps passé à chercher", "Une capture d'écran uniquement"]} correct={1} />
+
+<Quiz id="q-3" question="Tu changes le numéro de commande dans l'URL et tu vois la commande d'un autre utilisateur. De quelle faille s'agit-il ?" options={["Une injection SQL", "Un XSS", "Un contrôle d'accès défaillant (IDOR)", "Une simple erreur d'affichage sans gravité"]} correct={2} />
+
+## à retenir
+
+- On ne teste que des cibles autorisées : une appli installée en local, ou un périmètre couvert par un accord écrit.
+- Une cible d'entraînement comme Juice Shop ou DVWA, lancée avec Docker, permet de pratiquer légalement sur sa propre machine.
+- La démarche tient en quatre temps : reconnaissance pour cartographier la surface, puis tests d'injection, de XSS et de contrôle d'accès.
+- L'IDOR se teste en manipulant les identifiants dans l'URL pour voir si l'isolation entre utilisateurs tient.
+- Le vrai livrable est le rapport : pour chaque faille, où, comment la reproduire, l'impact, la gravité et une correction concrète.
+- Ce projet relie l'ensemble du parcours OWASP : injection, XSS, authentification, contrôle d'accès, et la rigueur d'un audit mené proprement.

@@ -1,0 +1,93 @@
+---
+refCode: CL-LSN-127-V01
+slug: grc-classification-actifs
+title: "Classifier les données, gérer les actifs"
+description: "On ne protège bien que ce qu'on a inventorié et hiérarchisé : apprenez l'inventaire des actifs, la notion de propriétaire, les niveaux de classification et comment ce niveau détermine les mesures de protection."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 460
+prerequisites: ["CL-LSN-122-V01"]
+---
+
+Il y a une question toute simple qui met souvent une organisation mal à l'aise : qu'est-ce qu'on possède, au juste, et où est-ce ? Tant qu'on n'y répond pas, toute la sécurité repose sur des suppositions. On ne peut pas chiffrer un serveur qu'on a oublié, ni restreindre l'accès à un fichier dont personne ne connaît l'existence. Protéger ce qu'on ignore posséder, c'est mathématiquement impossible. Voilà pourquoi tout commence par deux gestes : faire l'inventaire de ce qu'on a, puis hiérarchiser ce qui mérite quel niveau d'effort.
+
+Ces deux gestes vont ensemble. L'inventaire dit ce qui existe. La classification dit ce qui compte. Sans le premier, on a des angles morts. Sans le second, on traite la liste des menus de la cantine avec la même rigueur que les contrats clients, ce qui revient à mal protéger les deux. On va prendre les choses dans l'ordre.
+
+## l'inventaire des actifs
+
+Un actif, en sécurité, c'est tout ce qui a de la valeur pour l'organisation et qu'on doit donc protéger. On range ça en trois grandes familles. Les actifs matériels d'abord : serveurs, postes de travail, ordinateurs portables, téléphones, équipements réseau, supports de stockage. Les actifs logiciels ensuite : systèmes d'exploitation, applications métier, licences, services en ligne utilisés. Et les actifs informationnels, souvent les plus précieux : les données elles-mêmes, dossiers clients, code source, plans, contrats, secrets de fabrication.
+
+Faire l'inventaire, c'est tenir une liste à jour de tout ça. Pas une liste figée prise une fois pour toutes, mais un registre vivant : un nouveau portable arrive, il entre ; un serveur est décommissionné, il sort. Pour chaque entrée, on veut au minimum savoir de quoi il s'agit, où ça se trouve, qui s'en sert et qui en répond.
+
+Ce qui paraît évident sur le papier coince vite dans la réalité. Le vrai danger, ce ne sont pas les actifs qu'on a recensés, c'est ceux qu'on a manqués. Le serveur de test branché il y a deux ans et jamais éteint. La base de données dupliquée pour un projet abandonné. Le compte de service oublié. Ces angles morts ne reçoivent aucun correctif, aucune surveillance, et ce sont souvent eux qui servent de porte d'entrée.
+
+<Callout type="info">
+L'inventaire n'est pas une formalité administrative. C'est la carte du territoire. Un attaquant qui fait sa reconnaissance cherche exactement ce que vous avez oublié de cartographier. Si sa carte de votre réseau est plus complète que la vôtre, le match est déjà mal engagé.
+</Callout>
+
+## le propriétaire d'actif
+
+Une liste, même parfaite, ne se gère pas toute seule. Chaque actif a besoin d'un propriétaire : une personne nommée, pas un service abstrait, qui en répond. Attention au mot, il prête à confusion. Le propriétaire d'actif n'est pas forcément celui qui détient juridiquement la chose, ni celui qui l'administre techniquement. C'est celui qui décide. C'est lui qui fixe le niveau de classification de l'actif, qui dit qui a le droit d'y accéder, et qui assume les conséquences si ça tourne mal.
+
+Souvent le propriétaire est un responsable métier, pas un informaticien. La responsable commerciale est bien placée pour savoir que le fichier des prospects est confidentiel et qui doit y accéder. L'équipe technique, elle, met en oeuvre la décision : elle pose les droits, active le chiffrement, configure les sauvegardes. Le propriétaire décide le quoi, la technique exécute le comment.
+
+Un actif sans propriétaire dérive. Personne ne se sent responsable de le classer, donc il n'est pas classé. Personne ne révise ses accès, donc d'anciens employés y gardent un pied. Personne ne décide de sa fin de vie, donc il traîne. L'absence de propriétaire est rarement un incident en soi, c'est un terrain qui rend tous les incidents plus probables et plus longs à corriger.
+
+## les niveaux de classification
+
+Classer une donnée, c'est lui coller une étiquette qui dit à quel point sa divulgation, sa modification ou sa perte ferait mal. Les noms changent d'une organisation à l'autre, mais l'échelle ressemble presque toujours à ceci.
+
+| Niveau | Exemple | Mesures attendues |
+|---|---|---|
+| Public | Plaquette commerciale, communiqué, offres d'emploi | Aucune restriction de diffusion ; veiller surtout à l'intégrité (ne pas se faire altérer la page) |
+| Interne | Organigramme, procédures, notes de réunion | Réservé aux membres de l'organisation ; pas de diffusion externe sans accord |
+| Confidentiel | Données clients, contrats, paie, code source | Accès au strict besoin d'en connaître, chiffrement, traçabilité des accès |
+| Secret | Secrets industriels, données stratégiques, clés cryptographiques | Cercle très restreint, chiffrement fort, journalisation, parfois isolement physique ou réseau |
+
+Trois ou quatre niveaux suffisent presque toujours. Au-delà, plus personne ne sait dans quelle case ranger un document, et l'outil censé clarifier se met à brouiller. L'échelle doit tenir dans la tête d'un employé non technique en une phrase.
+
+## le niveau dicte les mesures
+
+Voici le ressort de tout le système, et le modèle mental à garder : la donnée porte son étiquette, les mesures suivent. On ne décide pas au cas par cas, dans l'urgence, s'il faut chiffrer tel fichier. On le classe une fois, et la classification déclenche un paquet de règles déjà définies.
+
+Le niveau pilote plusieurs leviers à la fois. Le chiffrement : une donnée confidentielle est chiffrée au repos et en transit, une donnée publique n'en a pas besoin. La restriction d'accès : du tout-le-monde pour le public au besoin d'en connaître strict pour le secret. La durée de conservation : combien de temps on garde, et quand on détruit. Les règles de partage : ce qu'on a le droit d'envoyer par mail, de mettre sur une clé USB, de stocker chez un prestataire externe.
+
+L'intérêt est double. D'abord la cohérence : deux fichiers de même niveau reçoivent le même traitement, peu importe qui les manipule. Ensuite l'économie d'effort. Le budget sécurité n'est pas infini. Classer permet de concentrer le chiffrement fort, la surveillance et les audits là où la donnée le mérite, au lieu de saupoudrer partout un effort moyen qui protège mal le sensible et gaspille sur le banal. C'est ça, le pourquoi de la classification : mettre l'effort où il compte.
+
+## le piège du tout-confidentiel
+
+Quand on demande à des équipes de classer, le réflexe est de tout mettre en confidentiel, par prudence ou pour ne pas avoir à réfléchir. C'est un piège, et il fait plus de dégâts qu'on ne croit. Sur-classer paralyse : si la plaquette commerciale est marquée confidentielle, le commercial doit demander une autorisation pour l'envoyer à un client, l'absurdité saute aux yeux, et les gens se mettent à contourner. Pire, sur-classer banalise. Quand tout est confidentiel, plus rien ne l'est vraiment : l'étiquette devient un bruit de fond qu'on ignore, et le vrai secret se noie au milieu.
+
+Sous-classer, à l'inverse, expose : un fichier de paie marqué interne se retrouve accessible à des gens qui n'ont rien à y faire. Le bon réflexe n'est ni l'un ni l'autre, c'est de viser le juste niveau, celui qui correspond au dommage réel en cas de fuite. La question utile n'est pas est-ce que c'est sensible, mais qu'est-ce qui se passe concrètement si ça sort.
+
+<Callout type="warning">
+Une classification que personne ne suit ne vaut rien. Si vos employés sur-classent par défaut ou ignorent les étiquettes, le problème n'est pas leur discipline, c'est que le schéma est trop compliqué ou les règles trop pénibles. Une bonne classification se vit sans y penser. Si elle gêne au quotidien, elle finit contournée.
+</Callout>
+
+## le cycle de vie de la donnée
+
+Une donnée a une vie : elle est créée, utilisée, stockée, parfois partagée, puis elle doit disparaître. La classification accompagne chacune de ces étapes, y compris la dernière, qu'on néglige presque toujours. Garder indéfiniment une donnée confidentielle dont on n'a plus l'usage, c'est entretenir un risque pour rien : ce qui n'existe plus ne peut pas fuir.
+
+La fin de vie se classe aussi. Une donnée confidentielle ne se jette pas à la corbeille, elle s'efface de façon irréversible ; un disque se rebute après effacement sécurisé ou destruction physique. La durée de conservation, fixée par le propriétaire et parfois par la loi, dit quand cette destruction doit intervenir. Classer, ce n'est donc pas seulement protéger une donnée tant qu'elle vit, c'est aussi savoir quand et comment l'éteindre proprement.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi l'inventaire des actifs est-il le point de départ de toute protection ?" options={["Parce que c'est une obligation légale dans tous les pays", "Parce qu'on ne peut pas protéger un actif dont on ignore l'existence", "Parce qu'il remplace le chiffrement", "Parce qu'il sert uniquement à calculer le budget"]} correct={1} />
+
+<Quiz id="q-2" question="Que détermine en pratique le niveau de classification d'une donnée ?" options={["Uniquement sa couleur dans le tableur", "Les mesures de protection : chiffrement, accès, conservation, partage", "Le salaire de son propriétaire", "Le nombre de sauvegardes obligatoires fixé par la loi"]} correct={1} />
+
+<Quiz id="q-3" question="Quel est le risque de tout marquer comme confidentiel par prudence ?" options={["Cela rend le chiffrement impossible", "Cela paralyse les usages légitimes et banalise l'étiquette, qui finit ignorée", "Cela supprime le besoin d'un propriétaire d'actif", "Cela n'a aucun inconvénient, c'est toujours plus sûr"]} correct={1} />
+
+## à retenir
+
+- On ne protège bien que ce qu'on a inventorié : matériels, logiciels et données forment trois familles d'actifs à tenir dans un registre vivant.
+- Les actifs oubliés sont les plus dangereux, parce qu'ils échappent aux correctifs et à la surveillance.
+- Chaque actif a un propriétaire nommé qui décide de sa classification et de ses accès ; sans propriétaire, un actif dérive.
+- Trois ou quatre niveaux suffisent : public, interne, confidentiel, secret. Au-delà, le schéma devient inutilisable.
+- La donnée porte son étiquette, les mesures suivent : le niveau pilote le chiffrement, les accès, la conservation et les règles de partage.
+- Classer concentre l'effort de sécurité là où la donnée le mérite, au lieu de le saupoudrer uniformément.
+- Sur-classer paralyse et banalise l'étiquette ; sous-classer expose. On vise le juste niveau, celui du dommage réel en cas de fuite.
+- La classification couvre tout le cycle de vie, jusqu'à la destruction sécurisée : ce qui n'existe plus ne peut plus fuir.
+
+OK 07 écrit

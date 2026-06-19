@@ -1,0 +1,128 @@
+---
+refCode: CL-LSN-158-V01
+slug: reseau-modele-osi-tcpip
+title: "Les modèles OSI et TCP/IP"
+description: "Comprenez les sept couches du modèle OSI et les quatre du modèle TCP/IP, comment elles correspondent, et le mécanisme d'encapsulation qui emboîte les en-têtes autour des données à chaque couche."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-157-V01"]
+---
+
+Quand on commence à parler réseau pour de vrai, on tombe vite sur un problème de vocabulaire. Une personne parle de câbles, une autre d'adresses IP, une troisième de ports, et tout le monde a l'impression de parler de la même chose sans jamais s'accorder. Le souci, c'est qu'un réseau fait beaucoup de travail à la fois, et que ce travail se range sur plusieurs niveaux. Sans carte de ces niveaux, on mélange tout.
+
+Cette carte existe. Elle prend même deux formes. Le modèle OSI découpe le travail en sept couches. Le modèle TCP/IP le découpe en quatre. Les deux décrivent la même réalité, vue à deux niveaux de détail. Une fois que vous avez ces couches en tête, n'importe quel problème réseau trouve son étage, et la discussion devient beaucoup plus calme.
+
+## les sept couches d'OSI
+
+OSI veut dire Open Systems Interconnection. C'est un modèle de référence publié dans les années 80. Il empile sept couches, de la plus matérielle (en bas) à la plus proche de l'utilisateur (en haut). Chaque couche a un rôle précis et ne s'occupe que de ça.
+
+De bas en haut, dans l'ordre :
+
+1. **Physique** : les bits sur le support. Tension électrique, lumière dans la fibre, ondes radio. Elle ne sait rien du sens des données, juste des signaux.
+2. **Liaison de données** : organise les bits en trames et gère l'adressage local, via les adresses MAC. C'est elle qui parle au prochain équipement directement relié.
+3. **Réseau** : achemine les données d'un bout à l'autre, à travers plusieurs réseaux. C'est la couche des adresses IP et du routage.
+4. **Transport** : découpe le flux, numérote les morceaux, gère la fiabilité et les ports. TCP et UDP vivent ici.
+5. **Session** : ouvre, maintient et ferme les dialogues entre deux applications.
+6. **Présentation** : met les données dans un format compréhensible. Encodage des caractères, compression, chiffrement.
+7. **Application** : l'interface avec les programmes. HTTP, DNS, SMTP. C'est ce que le logiciel voit.
+
+| Couche | Rôle en une phrase | Exemple |
+| --- | --- | --- |
+| 7 Application | Parle aux programmes | HTTP, DNS, SMTP |
+| 6 Présentation | Format, encodage, chiffrement | TLS, encodage UTF-8 |
+| 5 Session | Ouvre et ferme les dialogues | gestion de session |
+| 4 Transport | Fiabilité, ports, segmentation | TCP, UDP |
+| 3 Réseau | Adressage et routage de bout en bout | IP, ICMP |
+| 2 Liaison | Trames et adresses locales | Ethernet, MAC, Wi-Fi |
+| 1 Physique | Signaux sur le support | câble, fibre, ondes |
+
+<Callout type="info">
+Un moyen courant de retenir l'ordre, de la couche 7 à la couche 1 : All People Seem To Need Data Processing. La première lettre de chaque mot rappelle Application, Présentation, Session, Transport, Network, Data link, Physical.
+</Callout>
+
+## le modèle TCP/IP
+
+TCP/IP est plus ancien qu'OSI dans son usage, et surtout c'est lui qui fait réellement tourner Internet. Il regroupe le même travail en quatre couches, plus larges.
+
+1. **Accès réseau** : tout ce qui touche au support et au lien local. Elle réunit ce qu'OSI sépare en physique et liaison.
+2. **Internet** : l'adressage et le routage entre réseaux. C'est la couche d'IP. Le nom dit bien son but, relier des réseaux entre eux.
+3. **Transport** : exactement comme dans OSI. TCP pour la fiabilité, UDP pour la rapidité sans garantie.
+4. **Application** : elle absorbe les couches session, présentation et application d'OSI en une seule. HTTP, DNS, SMTP s'y trouvent, et chaque protocole gère lui-même son format et son dialogue.
+
+La correspondance avec OSI est directe, à condition de retenir que TCP/IP fusionne le bas et le haut.
+
+| TCP/IP (4 couches) | Couches OSI correspondantes |
+| --- | --- |
+| Application | 7 Application, 6 Présentation, 5 Session |
+| Transport | 4 Transport |
+| Internet | 3 Réseau |
+| Accès réseau | 2 Liaison, 1 Physique |
+
+Le milieu de la pile coïncide parfaitement. Transport reste transport, Internet correspond à la couche réseau. Ce sont les extrémités qui regroupent plusieurs couches OSI en une.
+
+## pourquoi deux modèles
+
+La question revient toujours : si TCP/IP est ce qui tourne, pourquoi apprendre OSI ?
+
+Parce que les deux ne servent pas au même but. OSI est une référence pédagogique. Ses sept couches isolent chaque fonction proprement, ce qui aide à raisonner et à situer un problème. Quand un câble est débranché, on parle d'un souci en couche 1. Quand deux machines ne se voient pas alors que le câble est bon, on regarde la couche 2 ou 3. Ce langage des numéros vient d'OSI, et toute l'industrie l'utilise.
+
+TCP/IP, lui, est le modèle des protocoles qui passent vraiment sur le fil. Il est plus simple parce qu'il colle à l'implémentation réelle, sans chercher à séparer des fonctions qui, en pratique, sont souvent traitées ensemble par un même protocole.
+
+Dans la vie d'un technicien, on mélange les deux sans gêne. On dépanne en couches OSI parce que le découpage est plus fin, et on travaille avec des protocoles TCP/IP parce que ce sont eux qui tournent. Garder les deux modèles côte à côte n'est pas une contradiction, c'est juste deux niveaux de zoom sur la même chose.
+
+## l'encapsulation
+
+Voici le mécanisme à comprendre une bonne fois. Quand vos données descendent la pile pour partir sur le réseau, chaque couche ajoute son propre en-tête autour de ce qu'elle reçoit de la couche du dessus. Elle ne touche pas au contenu, elle l'emballe.
+
+Imaginez une lettre que vous glissez dans une enveloppe, que vous mettez dans une plus grande enveloppe, elle-même dans un colis. Chaque emballage porte des informations utiles à une étape du trajet, et chacun englobe le précédent sans l'ouvrir.
+
+Concrètement, la couche application produit les données. La couche transport y colle son en-tête (avec les ports, le numéro de séquence). La couche réseau ajoute le sien (adresses IP source et destination). La couche liaison ajoute encore le sien (adresses MAC). Au bout, ce sont des bits envoyés sur le support.
+
+À l'arrivée, la machine fait l'inverse, la désencapsulation. Elle ouvre la couche du bas, lit l'en-tête, l'enlève, passe le reste à la couche au-dessus, qui fait pareil. Chaque couche lit l'en-tête posé par sa jumelle à l'envoi, l'utilise, puis le retire. À la fin, l'application reçoit exactement les données de départ, propres, sans aucun en-tête.
+
+<Diagram caption="L'encapsulation à travers les couches">
+flowchart TD
+  A[Application: donnees brutes]
+  B[Transport: en-tete TCP + donnees]
+  C[Reseau: en-tete IP + segment]
+  D[Liaison: en-tete trame + paquet]
+  E[Physique: bits sur le support]
+  A --> B --> C --> D --> E
+</Diagram>
+
+<Callout type="success">
+Le point clé : chaque couche ne dialogue qu'avec son homologue de l'autre côté. La couche transport de l'expéditeur écrit un en-tête que seule la couche transport du destinataire lira. Les couches intermédiaires l'ignorent et le transportent tel quel.
+</Callout>
+
+## les noms à chaque couche
+
+Comme chaque couche ajoute son emballage, l'unité de données change de nom au fil de la descente. Ce n'est pas du pédantisme, ça permet de savoir tout de suite de quel étage on parle.
+
+- En couche transport, on parle de **segment** (ou de datagramme pour UDP).
+- En couche réseau, une fois l'en-tête IP ajouté, c'est un **paquet**.
+- En couche liaison, avec l'en-tête de trame, c'est une **trame**.
+- En couche physique, il ne reste que des **bits**.
+
+Quand quelqu'un dit qu'un paquet est perdu, vous savez qu'il parle du niveau IP. Quand il parle d'une trame, c'est le lien local. Le mot porte l'information de la couche.
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Dans quel ordre, de la plus basse à la plus haute, se trouvent les premières couches du modèle OSI ?" options={["Reseau, physique, liaison, transport", "Physique, liaison, reseau, transport", "Liaison, physique, transport, reseau", "Transport, reseau, liaison, physique"]} correct={1} />
+
+<Quiz id="q-2" question="Pendant l'encapsulation, que fait une couche aux données qu'elle reçoit de la couche du dessus ?" options={["Elle remplace le contenu par le sien", "Elle ajoute son en-tete autour, sans modifier le contenu", "Elle supprime l'en-tete precedent", "Elle chiffre tout systematiquement"]} correct={1} />
+
+<Quiz id="q-3" question="À quelles couches OSI correspond la couche Application du modèle TCP/IP ?" options={["Seulement la couche application", "Transport et reseau", "Application, presentation et session", "Liaison et physique"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- OSI compte sept couches : physique, liaison, réseau, transport, session, présentation, application. TCP/IP en compte quatre : accès réseau, Internet, transport, application.
+- Le milieu des deux modèles coïncide. TCP/IP fusionne physique et liaison en accès réseau, et regroupe session, présentation et application en une seule couche application.
+- OSI sert de référence pour raisonner et dépanner par numéro de couche. TCP/IP est l'ensemble de protocoles qui tourne réellement sur Internet.
+- L'encapsulation : chaque couche ajoute son en-tête autour des données reçues du dessus, comme des enveloppes emboîtées. La désencapsulation fait l'inverse à l'arrivée, couche par couche.
+- L'unité change de nom selon la couche : segment au transport, paquet au réseau, trame à la liaison, bits au physique.

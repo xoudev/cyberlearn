@@ -1,0 +1,95 @@
+---
+refCode: CL-LSN-129-V01
+slug: grc-risque-tiers
+title: "Risque des tiers et chaîne d'approvisionnement"
+description: "Vos fournisseurs et vos logiciels font partie de votre surface d'attaque : comprenez comment un tiers compromis devient un tremplin, et la démarche pour évaluer et encadrer le risque fournisseur."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-122-V01"]
+---
+
+Imagine que tu aies blindé ta maison. Serrures multipoints, alarme, caméras, volets renforcés. Tu dors tranquille. Puis tu confies un double de la clé à une société de ménage pour qu'elle passe le mardi. Cette société garde tes clés dans un tiroir non fermé, avec ton adresse sur l'étiquette. Le jour où elle se fait cambrioler, ce n'est pas seulement son problème : c'est ta clé qui se retrouve dans la nature. Tu as fait tout ce qu'il fallait chez toi, et le risque revient quand même, par une porte que tu avais oublié de compter.
+
+En sécurité informatique, c'est exactement ce qui se passe avec les tiers. Tu peux durcir tes serveurs, former tes équipes, chiffrer tes données. Si un de tes prestataires est négligent, ou si un logiciel que tu utilises est piégé, l'attaque entre par là. Cette leçon parle de ce risque-là : celui qui ne vient pas de chez toi, mais qui te touche quand même.
+
+## pourquoi le tiers est un risque
+
+Aucune organisation ne fait tout elle-même. On loue de l'hébergement chez un fournisseur cloud, on sous-traite le support technique, on confie la paie à un prestataire, on branche un outil de facturation, un service d'envoi d'e-mails, un système de paiement. Côté logiciel, c'est pareil : un projet moderne assemble des dizaines, parfois des centaines de bibliothèques que d'autres ont écrites.
+
+Chacun de ces liens est une délégation. Tu donnes à quelqu'un un accès, des données, ou tu intègres dans ton produit du code que tu n'as ni écrit ni relu en détail. À chaque fois, tu hérites d'une partie de la sécurité de l'autre, sans la contrôler. Un prestataire qui a un accès à ton système d'information est une porte vers chez toi. Une bibliothèque que tu importes s'exécute avec les mêmes droits que ton application.
+
+<Callout type="info">
+Le risque logiciel rejoint directement la leçon sur les dépendances vulnérables. Une dépendance compromise, c'est un tiers que tu héberges toi-même dans ton code. La différence avec un prestataire humain est mince : dans les deux cas, tu fais confiance à un acteur extérieur, et sa faiblesse devient la tienne.
+</Callout>
+
+Le problème de fond, c'est la visibilité. Tu connais à peu près tes propres pratiques. Celles de ton fournisseur, beaucoup moins. Et son fournisseur à lui, presque pas. On parle de chaîne pour cette raison : ta sécurité dépend d'une suite d'acteurs dont tu ne vois clairement que le premier maillon.
+
+## la compromission par la chaîne
+
+Un attaquant intelligent ne s'attaque pas toujours à sa cible directement. Si ta défense est solide, il cherche un chemin plus facile : un de tes fournisseurs, moins bien protégé, qui a déjà un pied chez toi.
+
+Premier schéma, le fournisseur tremplin. Un prestataire de maintenance dispose d'un accès distant à ton réseau pour intervenir. Son poste se fait infecter. L'attaquant récupère cet accès et entre chez toi par un canal légitime, déjà autorisé, qui ne déclenche aucune alerte parce que ce prestataire se connecte tous les jours. Tu n'as rien vu venir, parce que l'attaque n'est jamais passée par ta porte d'entrée à toi.
+
+Deuxième schéma, plus large : la mise à jour empoisonnée. Tu utilises un logiciel que tu mets à jour automatiquement, comme tout le monde et comme on te le recommande. Un jour, l'éditeur de ce logiciel se fait pirater, et l'attaquant glisse du code malveillant dans une version officielle. La mise à jour est signée, elle vient de la bonne source, elle a l'air parfaitement normale. Elle se déploie chez tous les clients en même temps. En une seule opération, l'attaquant touche tout le monde qui faisait confiance à cet éditeur. C'est le scénario qui a marqué les esprits ces dernières années : un seul maillon compromis, des milliers de victimes en aval.
+
+<Callout type="danger">
+La compromission par la chaîne est redoutable parce qu'elle exploite la confiance, pas une faille technique chez toi. Le code malveillant arrive par un canal que tu as toi-même décidé d'autoriser : un accès prestataire, une mise à jour signée. Tes défenses ne se déclenchent pas, puisque tout vient d'une source que tu considérais comme fiable.
+</Callout>
+
+## évaluer avant d'engager
+
+La première discipline consiste à regarder un fournisseur avant de lui donner les clés, pas après l'incident. Cela ne veut pas dire le suspecter : cela veut dire poser des questions et écrire les réponses dans le contrat.
+
+Trois outils reviennent. Le questionnaire de sécurité d'abord : une liste de questions sur ses pratiques (chiffrement, gestion des accès, sauvegardes, plan de réponse à incident). Les certifications ensuite : un fournisseur qui détient une certification reconnue, comme ISO 27001 ou un rapport SOC 2, a déjà fait auditer ses pratiques par un tiers. Ce n'est pas une garantie absolue, mais c'est un signal. Les clauses contractuelles enfin, qui transforment les promesses en obligations.
+
+| Moment | Action concrète |
+| --- | --- |
+| Avant de signer | Envoyer un questionnaire de sécurité et demander les certifications |
+| Dans le contrat | Exiger une clause de sécurité minimale et de notification d'incident sous délai court |
+| Dans le contrat | Inscrire un droit d'audit pour vérifier les pratiques pendant la relation |
+| Pour les données | Préciser où elles sont stockées, qui y accède, comment elles sont protégées |
+
+La clause de notification d'incident mérite une attention particulière. Si ton fournisseur se fait pirater et que tes données partent avec, tu dois l'apprendre vite, pas par la presse trois mois plus tard. Un délai écrit, court et chiffré, te donne le temps de réagir. Le droit d'audit, lui, te permet de ne pas te contenter de déclarations : tu peux aller vérifier.
+
+## encadrer pendant
+
+Évaluer une fois ne suffit pas. La relation dure, et la sécurité du fournisseur peut se dégrader avec le temps.
+
+Le principe central reste le moindre privilège. Un prestataire ne doit avoir accès qu'à ce dont il a strictement besoin, et rien de plus. Le support technique n'a pas besoin de toucher la base de données clients. L'outil de facturation n'a pas besoin de lire tes e-mails. Chaque accès accordé est un risque ; moins tu en accordes, moins tu en perds si le tiers tombe.
+
+Au-delà du moindre privilège, on cloisonne : un accès tiers vit dans une zone séparée, pas au milieu de tout ton système. On surveille : un compte prestataire qui se connecte à trois heures du matin depuis un pays inhabituel doit déclencher une alerte. Et on réévalue régulièrement : le questionnaire de l'an dernier ne dit rien de la situation d'aujourd'hui. Un fournisseur audité à la signature peut avoir changé d'équipe, de pratiques, ou avoir subi un incident depuis.
+
+## prévoir la sortie
+
+Une relation fournisseur a un début, et elle aura une fin. On y pense rarement au moment de signer, et c'est une erreur.
+
+Quand le contrat s'arrête, plusieurs questions se posent. Peux-tu récupérer tes données dans un format exploitable, ou sont-elles prisonnières d'un système que tu quittes ? Les accès du prestataire sont-ils bien révoqués, tous, sans en oublier un dans un coin ? Tes données chez lui sont-elles réellement effacées ? Un compte qui reste actif après la fin d'un contrat est un grand classique des incidents : plus personne ne le surveille, mais il fonctionne encore.
+
+<Callout type="warning">
+Le plan de sortie se prépare avant, pas le jour du départ. Sans clause de réversibilité, tu peux te retrouver incapable de récupérer tes propres données, ou avec des accès oubliés qui restent ouverts des mois après la fin de la relation. La fin d'un contrat est un moment de risque, autant que son début.
+</Callout>
+
+## le maillon faible
+
+Tout cela tient dans un modèle mental simple. Ta sécurité ne vaut pas celle de ta meilleure protection : elle vaut celle de ton maillon le plus faible. Tu peux avoir le pare-feu le plus sérieux du marché, si un prestataire mal protégé a un accès permanent à ton réseau, l'attaquant passera par lui.
+
+C'est ce qui rend la démarche fournisseur si importante. Il ne s'agit pas de paperasse pour rassurer un auditeur. Il s'agit de connaître tes maillons, de mesurer leur solidité, et de ne pas accorder plus de confiance qu'un acteur n'en mérite. Un fournisseur n'est pas neutre du point de vue du risque : il en ajoute. La question n'est pas de savoir si tu lui fais confiance, mais combien, et avec quelles limites écrites.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi la compromission par la chaîne d'approvisionnement est-elle particulièrement difficile à détecter ?" options={["Parce qu'elle exploite un canal de confiance déjà autorisé, comme un accès prestataire ou une mise à jour signée", "Parce qu'elle vise uniquement les pare-feux", "Parce qu'elle ne touche jamais les grandes organisations", "Parce qu'elle nécessite un accès physique aux locaux"]} correct={0} />
+
+<Quiz id="q-2" question="Quelle clause contractuelle te permet d'apprendre vite qu'un fournisseur a subi une fuite touchant tes données ?" options={["La clause de non-concurrence", "La clause de notification d'incident sous délai court", "La clause de renouvellement tacite", "La clause de confidentialité commerciale"]} correct={1} />
+
+<Quiz id="q-3" question="Que devrait-on prévoir AVANT de signer, mais qu'on oublie souvent jusqu'au départ du fournisseur ?" options={["Le logo à mettre sur les factures", "Le plan de sortie : réversibilité des données et révocation des accès", "La couleur de l'interface du prestataire", "Le nombre d'employés du fournisseur"]} correct={1} />
+
+## à retenir
+
+- Tes fournisseurs, prestataires et logiciels font partie de ta surface d'attaque, parce que tu délègues des accès et tu intègres du code que tu ne contrôles pas.
+- Un attaquant peut viser un tiers plus faible pour atteindre sa vraie cible : fournisseur tremplin avec accès déjà autorisé, ou mise à jour légitime mais piégée qui touche tous les clients en même temps.
+- Avant d'engager : questionnaire de sécurité, certifications, clauses de sécurité, de notification d'incident et droit d'audit dans le contrat.
+- Pendant la relation : moindre privilège pour les accès tiers, cloisonnement, surveillance, réévaluation régulière.
+- À la sortie : réversibilité des données, effacement chez le fournisseur, révocation de tous les accès. À prévoir avant, pas le jour du départ.
+- Modèle mental : ta sécurité vaut celle de ton maillon le plus faible, d'où l'importance de connaître et d'encadrer chaque fournisseur.

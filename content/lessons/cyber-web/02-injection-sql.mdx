@@ -1,0 +1,118 @@
+---
+refCode: CL-LSN-086-V01
+slug: owasp-injection-sql
+title: "Injection SQL : mécanisme et défense"
+description: "Comprenez en détail comment une injection SQL détourne une requête, voyez la différence entre une requête vulnérable et une requête paramétrée, et découvrez comment un outil comme sqlmap automatise l'exploitation."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-085-V01"]
+---
+
+Imagine un formulaire de connexion tout simple. Deux champs, un login et un mot de passe, un bouton. Derrière, le serveur prend ce que tu as tapé et va demander à la base de données si un utilisateur correspond. C'est ce moment précis, le passage de ton texte vers la base, qui peut tout faire basculer.
+
+Une injection SQL arrive quand l'entrée d'un utilisateur est collée directement dans une requête SQL sans aucune précaution. Le serveur ne sait plus faire la différence entre tes données et les instructions qu'il doit exécuter. Du coup, en choisissant bien ce qu'on tape, on peut réécrire la requête à la place du développeur. Et là, le formulaire de connexion devient une porte d'entrée.
+
+On va voir comment ça marche concrètement, ce qu'un attaquant en tire, comment un outil automatise tout ça, et surtout comment on s'en protège pour de bon.
+
+## le mécanisme
+
+Reprenons le formulaire. Côté serveur, un développeur pressé écrit souvent la requête comme ça, en collant les valeurs reçues bout à bout.
+
+```sql
+SELECT id, role FROM users
+WHERE username = 'alice' AND password = 'secret123';
+```
+
+Tant que `alice` et `secret123` viennent vraiment d'un formulaire, tout va bien. Le problème, c'est que la requête est construite par concaténation de chaînes. Le serveur fabrique le texte SQL en assemblant un morceau fixe et la valeur tapée par l'utilisateur. Quelque chose qui ressemble à ceci, en pseudo-code.
+
+```sql
+-- requête assemblée par concaténation, en pseudo-code
+"SELECT id, role FROM users WHERE username = '" + entree_login + "' AND password = '" + entree_mdp + "'"
+```
+
+L'apostrophe joue un rôle particulier en SQL : elle marque le début et la fin d'une valeur texte. Le développeur en a mis une avant et une après l'entrée, pour encadrer le nom. Mais si moi, attaquant, je tape une apostrophe dans le champ login, je referme la chaîne plus tôt que prévu et ce qui suit n'est plus une donnée, c'est du SQL que la base va exécuter.
+
+Tapons ceci dans le champ login : `alice' OR 1=1 --` et n'importe quoi dans le mot de passe. La requête finale devient :
+
+```sql
+SELECT id, role FROM users
+WHERE username = 'alice' OR 1=1 --' AND password = 'peu importe';
+```
+
+Suivons-la pas à pas. Mon apostrophe ferme la valeur `username = 'alice'`. Ensuite vient `OR 1=1`, une condition que j'ai injectée. Puis `--` qui démarre un commentaire SQL : tout ce qui suit sur la ligne est ignoré, donc la partie sur le mot de passe disparaît purement et simplement.
+
+La condition se lit maintenant `username = 'alice' OR 1=1`. En SQL, `OR` renvoie vrai dès qu'un seul côté est vrai. Or `1=1` est vrai tout le temps, par construction. La clause `WHERE` est donc vraie pour chaque ligne de la table. La base renvoie tous les utilisateurs, le serveur prend généralement le premier, et je suis connecté sans connaître aucun mot de passe.
+
+<Callout type="danger">
+Le point clé : l'entrée n'a pas seulement changé une valeur, elle a changé la structure de la requête. Une apostrophe et un OR ont transformé un test d'identité en condition toujours vraie. C'est toute la différence entre une donnée et une instruction, et c'est exactement cette frontière que l'injection SQL fait sauter.
+</Callout>
+
+## ce qu'un attaquant peut faire
+
+Contourner l'authentification, comme on vient de le voir, c'est déjà sérieux. Mais ce n'est qu'un début, parce que la même faille permet aussi de lire des données qui n'ont rien à voir avec la requête d'origine.
+
+L'outil pour ça s'appelle `UNION`. Il colle les résultats d'une deuxième requête à ceux de la première, à condition que les deux renvoient le même nombre de colonnes. Si une page affiche des produits via une requête vulnérable, un attaquant peut greffer un `UNION SELECT` pour aller chercher des identifiants dans la table des utilisateurs.
+
+```sql
+-- la requête d'origine renvoie 2 colonnes (nom, prix)
+SELECT name, price FROM products WHERE id = 10
+UNION
+SELECT username, password FROM users;  -- on récupère login et mot de passe à la place des prix
+```
+
+La page croyait afficher un nom et un prix. Elle affiche maintenant des logins et des mots de passe, parce que le `UNION` a fait remonter le contenu d'une autre table dans les mêmes deux colonnes. De fil en aiguille, on liste les tables, on dump les comptes, on extrait la base entière. Selon les droits, ça peut même aller jusqu'à écrire des données ou lire des fichiers du serveur.
+
+## l'exploitation automatisée
+
+Faire tout ça à la main est long. Il faut deviner le nombre de colonnes, leurs types, le nom des tables, gérer les apostrophes et les commentaires de chaque moteur. C'est pour ça qu'existe `sqlmap`, un outil libre qui automatise la détection et l'exploitation des injections SQL.
+
+Le déroulé typique est toujours le même. On pointe sqlmap sur une URL avec un paramètre suspect, il teste des dizaines de charges utiles pour confirmer la faille et identifier le moteur. Une fois la faille confirmée, on lui demande de lister les bases, puis les tables d'une base, puis de dumper le contenu d'une table précise. L'outil fabrique les requêtes injectées tout seul.
+
+<SimulatedTerminal shell="bash" scenario="sqli-basic" title="Injection SQL avec sqlmap" />
+
+<Callout type="warning">
+Éthique, et ce n'est pas négociable : tu ne lances jamais sqlmap, ni aucune attaque, contre un site dont tu n'as pas l'autorisation écrite. Scanner ou exploiter une cible sans accord est une infraction pénale. Entraîne-toi uniquement sur tes propres machines, sur des labos prévus pour ça (DVWA, juice-shop) ou sur des plateformes de CTF qui t'y autorisent explicitement.
+</Callout>
+
+## la défense : requêtes paramétrées
+
+La bonne nouvelle, c'est que la parade est nette et largement appliquée. Le vrai problème venait de la concaténation : on mélangeait la structure de la requête et les données dans une seule chaîne. La solution sépare les deux pour de bon.
+
+Avec une requête paramétrée, on écrit le SQL avec des marqueurs, des placeholders, à la place des valeurs. On envoie d'abord ce gabarit à la base, qui le compile et fige sa structure. On envoie ensuite les valeurs, séparément. La base les traite comme des données pures et rien d'autre.
+
+```sql
+-- la structure est figée d'abord, les ? sont des placeholders
+SELECT id, role FROM users WHERE username = ? AND password = ?;
+-- valeurs fournies à part : 'alice' OR 1=1 --   et   'peu importe'
+```
+
+Maintenant, reprends mon `alice' OR 1=1 --`. La base reçoit cette chaîne comme la valeur du premier placeholder. Elle cherche un utilisateur dont le nom est littéralement `alice' OR 1=1 --`, apostrophe et tout le reste compris. Ce compte n'existe pas, la requête ne renvoie rien, et surtout mon `OR 1=1` n'est jamais interprété comme du SQL. La structure a été fixée avant que ma valeur n'arrive, donc je n'ai plus aucun moyen de la modifier.
+
+<Callout type="success">
+La règle tient en une phrase : ne construis jamais une requête en collant des entrées dans une chaîne. Utilise des requêtes paramétrées (préparées), partout, sans exception. Tous les langages et tous les pilotes les proposent. C'est la défense de fond, celle qui ferme la faille à la source plutôt que de la masquer.
+</Callout>
+
+Deux mesures complètent ça. La validation des entrées, d'abord : vérifie qu'un identifiant numérique est bien un entier, qu'un email a la bonne forme, et refuse le reste. Ça réduit la surface, même si ça ne remplace pas les requêtes paramétrées. Le moindre privilège ensuite : l'utilisateur de base de données que l'application utilise ne doit avoir que les droits dont il a besoin. S'il ne peut pas lire la table des mots de passe ni supprimer de tables, une injection qui passerait quand même fait beaucoup moins de dégâts.
+
+## à toi de jouer
+
+Relance le scénario et observe l'enchaînement détection, bases, tables, dump. Repère à quel moment sqlmap confirme la faille avant de commencer à extraire.
+
+<SimulatedTerminal shell="bash" scenario="sqli-basic" title="Injection SQL avec sqlmap" />
+
+<Quiz id="q-1" question="Dans le login 'alice OR 1=1 --', pourquoi la connexion réussit-elle sans le bon mot de passe ?" options={["Parce que le mot de passe est deviné par force brute", "Parce que OR 1=1 rend la condition WHERE toujours vraie et que -- met le reste en commentaire", "Parce que sqlmap a déjà volé le mot de passe", "Parce que la base est mal configurée en lecture seule"]} correct={1} />
+
+<Quiz id="q-2" question="Quel rôle joue l'apostrophe dans une injection SQL classique ?" options={["Elle chiffre l'entrée utilisateur", "Elle referme la valeur texte plus tôt que prévu, ce qui laisse écrire du SQL ensuite", "Elle est ignorée par toutes les bases", "Elle sert uniquement à afficher des erreurs"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle est la défense de fond contre l'injection SQL ?" options={["Filtrer seulement le mot OR dans les entrées", "Cacher les messages d'erreur de la base", "Utiliser des requêtes paramétrées qui séparent la structure SQL des données", "Renommer la table users"]} correct={2} />
+
+## à retenir
+
+- Une injection SQL se produit quand une entrée est concaténée dans une requête : l'entrée peut alors changer la structure du SQL, pas seulement une valeur.
+- L'apostrophe referme une chaîne texte ; `OR 1=1` rend la condition toujours vraie ; `--` commente la fin de la requête.
+- Avec `UNION SELECT`, un attaquant lit des tables sans rapport avec la requête d'origine et peut extraire toute la base.
+- sqlmap automatise la détection puis l'exploitation : détecter, lister les bases, lister les tables, dumper. À n'utiliser que sur une cible autorisée.
+- La défense de fond, ce sont les requêtes paramétrées : la structure est figée avant l'arrivée des valeurs, donc l'entrée ne peut plus être interprétée comme du SQL.
+- En complément : valider les entrées et donner le moindre privilège à l'utilisateur de base de données.

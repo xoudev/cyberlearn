@@ -1,0 +1,153 @@
+---
+refCode: CL-LSN-063-V01
+slug: git-branches
+title: "Branches et fusion"
+description: "Travaillez sur plusieurs versions en parallèle avec les branches Git : en créer, basculer de l'une à l'autre, fusionner avec merge, et comprendre ce qu'est un conflit."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 450
+prerequisites: ["CL-LSN-062-V01"]
+---
+
+Imagine que tu travailles sur un projet qui fonctionne. Le site est en ligne, les utilisateurs s'en servent. On te demande d'ajouter une page de connexion. Le problème : cette page va te prendre trois jours, et pendant ces trois jours ton code sera à moitié écrit, cassé par moments, plein de tests à l'arrache. Si tu fais tout ça directement sur la version stable du projet, tu prends le risque de mettre en ligne quelque chose qui ne marche pas.
+
+La réponse de Git à ce problème, c'est la branche. Une branche te permet d'ouvrir une ligne de développement à part, de bricoler ta page de connexion tranquillement dessus, et de ne ramener ton travail dans la version stable que le jour où il est prêt. Pendant ce temps, la version stable reste intacte. Si un collègue doit corriger un bug urgent, il peut le faire sans être gêné par ton chantier.
+
+On va voir ce qu'est vraiment une branche (la réponse surprend souvent), comment en créer une, comment passer de l'une à l'autre, et comment recoller les morceaux avec une fusion.
+
+## ce qu'est une branche
+
+Voici le point qui déroute presque tout le monde au début : une branche n'est pas une copie de ton projet. Quand tu crées une branche, Git ne duplique aucun fichier, ne recopie aucun dossier. Une branche, c'est juste un pointeur. Un petit fichier qui contient l'identifiant d'un commit. Rien de plus.
+
+Souviens-toi qu'un commit pointe vers le commit qui le précède, qui pointe vers le précédent, et ainsi de suite jusqu'au tout premier. Cette suite de commits forme l'historique. Une branche, c'est une étiquette posée sur l'un de ces commits, en général le plus récent d'une ligne de travail. Quand tu fais un nouveau commit, Git déplace simplement l'étiquette pour qu'elle pointe vers le nouveau commit.
+
+C'est pour ça que créer une branche est instantané, même sur un énorme projet. Git n'écrit qu'un fichier de quelques octets contenant un identifiant de commit.
+
+La branche `main` n'a rien de spécial en soi. C'est une branche comme les autres, qui porte par convention le travail stable. Git aurait pu l'appeler autrement, et d'ailleurs les vieux projets l'appellent souvent `master`. Ce qui la rend "principale", c'est uniquement l'accord entre les gens qui bossent sur le projet.
+
+<Callout type="info">
+Quand tu es "sur une branche", Git suit un pointeur particulier nommé HEAD, qui indique où tu te trouves. HEAD pointe vers ta branche courante, et ta branche pointe vers un commit. Changer de branche, c'est déplacer HEAD d'une étiquette à une autre.
+</Callout>
+
+## créer et basculer
+
+Pour voir tes branches, tu utilises `git branch` sans argument. L'astérisque marque celle où tu te trouves.
+
+Pour créer une branche, deux étapes possibles. La méthode complète sépare la création et le déplacement :
+
+```bash
+git branch feature/login
+git switch feature/login
+```
+
+La première ligne crée l'étiquette `feature/login` qui pointe vers ton commit actuel. La seconde t'y déplace. Mais comme on enchaîne presque toujours ces deux gestes, il existe un raccourci qui fait les deux d'un coup :
+
+```bash
+git switch -c feature/login
+```
+
+Tu verras aussi très souvent l'ancienne forme, `git checkout -b feature/login`, qui fait exactement la même chose. `switch` est plus récent et plus clair, mais `checkout` reste partout dans les tutos et les vieux scripts, autant le reconnaître.
+
+Un mot sur le nom. `feature/login`, ce n'est pas une syntaxe imposée par Git, c'est une convention d'équipe. Le slash ne crée pas de dossier, c'est juste une habitude lisible : `feature/` pour une fonctionnalité, `fix/` pour une correction, `chore/` pour de la maintenance. `feature/login` se lit "la branche de la fonctionnalité login". Choisis une convention et tiens-t'y, ton historique te remerciera.
+
+<SimulatedTerminal shell="bash" commands={{ "git branch": "* main", "git switch -c feature/login": "Switched to a new branch 'feature/login'", "git branch": "* feature/login\n  main", "git switch main": "Switched to branch 'main'" }} />
+
+## fusionner avec merge
+
+Tu as fini ta page de connexion sur `feature/login`. Tes commits sont propres. Il est temps de ramener ce travail dans `main`. C'est le rôle de la fusion.
+
+La fusion se fait toujours depuis la branche qui doit recevoir le travail. Tu te places donc d'abord sur `main`, puis tu demandes à Git d'y intégrer `feature/login` :
+
+```bash
+git switch main
+git merge feature/login
+```
+
+Ce qui se passe ensuite dépend de l'état des deux branches.
+
+Premier cas, le fast-forward. Si `main` n'a pas bougé depuis que tu as créé ta branche, alors `feature/login` est simplement `main` avec quelques commits en plus. Git n'a rien à inventer : il fait avancer l'étiquette `main` jusqu'au dernier commit de `feature/login`. C'est une fusion "en avance rapide", sans nouveau commit. L'historique reste une ligne droite.
+
+Second cas, le merge commit. Si `main` a reçu d'autres commits pendant que tu travaillais (un collègue a poussé une correction, par exemple), les deux branches ont divergé. Git ne peut pas se contenter de faire glisser l'étiquette. Il crée alors un commit spécial, le merge commit, qui a deux parents : le dernier commit de `main` et le dernier de ta branche. Ce commit réunit les deux histoires en une seule.
+
+<Diagram caption="Une branche feature partant de main, puis fusionnée">
+gitGraph
+   commit id: "init"
+   commit id: "setup"
+   branch feature/login
+   checkout feature/login
+   commit id: "form"
+   commit id: "validation"
+   checkout main
+   merge feature/login
+   commit id: "release"
+</Diagram>
+
+Tu n'as pas à choisir entre les deux : Git décide tout seul selon la situation. Retiens juste que voir un merge commit dans ton historique est normal, ça veut dire que deux lignes de travail se sont rejointes.
+
+## les conflits
+
+La plupart des fusions se passent sans accroc. Git est doué pour combiner des changements qui touchent des endroits différents. Mais il y a un cas qu'il ne peut pas trancher seul : quand les deux branches ont modifié la même ligne du même fichier, de deux façons différentes. Là, Git s'arrête et te demande de choisir. C'est un conflit.
+
+Un conflit n'est pas une erreur ni un signe que tu as mal fait. C'est juste Git qui dit "deux personnes ont écrit quelque chose de différent ici, je ne vais pas deviner laquelle a raison". À toi de décider.
+
+Quand un conflit survient, Git modifie le fichier concerné pour t'y montrer les deux versions, séparées par des marqueurs :
+
+```text
+function greet(name) {
+<<<<<<< HEAD
+  return 'Bonjour ' + name;
+=======
+  return 'Salut ' + name;
+>>>>>>> feature/login
+}
+```
+
+Lis ça calmement. Entre `<<<<<<< HEAD` et `=======`, c'est ta version actuelle, celle de la branche où tu es (ici `main`). Entre `=======` et `>>>>>>> feature/login`, c'est la version qui arrive de l'autre branche. Ton travail : garder ce qui doit rester, supprimer les trois lignes de marqueurs, et laisser le fichier dans l'état final voulu. Par exemple :
+
+```text
+function greet(name) {
+  return 'Bonjour ' + name;
+}
+```
+
+Une fois le fichier remis au propre, tu signales à Git que c'est réglé avec `git add` sur le fichier, puis tu finalises avec `git commit`. La fusion est terminée.
+
+<Callout type="warning">
+Ne supprime jamais un fichier en conflit pour "faire plus vite", et ne laisse jamais traîner un marqueur `=======` dans ton code. Un projet qui contient encore des marqueurs de conflit ne compilera pas, ou pire, partira en production tel quel. Relis le fichier entièrement avant de faire `git add`.
+</Callout>
+
+## supprimer une branche fusionnée
+
+Une fois `feature/login` fusionnée dans `main`, l'étiquette ne sert plus à rien : son travail vit maintenant dans `main`. Tu peux la supprimer pour garder une liste de branches propre.
+
+```bash
+git branch -d feature/login
+```
+
+Le `-d` minuscule est prudent : Git refuse de supprimer une branche qui contient du travail pas encore fusionné, pour t'éviter de perdre des commits. Si tu vois ce refus, c'est en général que tu te trompes de branche ou que la fusion n'a pas eu lieu. Le `-D` majuscule force la suppression, mais ne l'utilise que si tu es sûr de vouloir jeter ce travail.
+
+## à toi de jouer
+
+Voici un cycle complet : on part de `main`, on crée une branche, on revient sur `main`, on fusionne, on nettoie.
+
+<SimulatedTerminal shell="bash" commands={{ "git switch -c fix/typo": "Switched to a new branch 'fix/typo'", "git switch main": "Switched to branch 'main'", "git merge fix/typo": "Updating a1b2c3d..e4f5g6h\nFast-forward\n README.md | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)", "git branch -d fix/typo": "Deleted branch fix/typo (was e4f5g6h)." }} />
+
+<Quiz id="q-1" question="Qu'est-ce qu'une branche Git, concrètement ?" options={["Une copie complète de tous les fichiers du projet", "Un pointeur léger vers un commit", "Un dossier caché contenant une sauvegarde", "Un serveur distant séparé"]} correct={1} />
+
+<Quiz id="q-2" question="Tu viens de créer feature/login et d y travailler. Pour ramener ce travail dans main, que fais-tu ?" options={["git merge main depuis feature/login", "Tu copies les fichiers à la main vers main", "Tu te places sur main, puis git merge feature/login", "git branch -d feature/login"]} correct={2} />
+
+<Quiz id="q-3" question="Tu vois ces lignes dans un fichier après une fusion : <<<<<<< HEAD ... ======= ... >>>>>>> feature. Que signifient-elles ?" options={["Le fichier est corrompu, il faut le supprimer", "Git a fusionné automatiquement, rien à faire", "Un conflit : deux versions de la même ligne, à toi de choisir et d enlever les marqueurs", "Une erreur de syntaxe dans ton code"]} correct={2} />
+
+## à retenir
+
+- Une branche est un pointeur léger vers un commit, pas une copie du projet. La créer est instantané.
+- `main` est une branche comme les autres ; elle porte le travail stable par convention.
+- `git switch -c nom` crée une branche et y bascule. L'ancienne forme est `git checkout -b nom`.
+- Une convention de nommage comme `feature/login` ou `fix/typo` rend l'historique lisible. Le slash ne crée pas de dossier.
+- On fusionne depuis la branche réceptrice : `git switch main` puis `git merge feature/login`.
+- Fast-forward : `main` n'a pas bougé, Git fait juste avancer l'étiquette. Merge commit : les branches ont divergé, Git crée un commit à deux parents.
+- Un conflit arrive quand les deux branches modifient la même ligne. Tu choisis la bonne version, tu enlèves les marqueurs `<<<<<<<`, `=======`, `>>>>>>>`, puis `git add` et `git commit`.
+- `git branch -d nom` supprime une branche déjà fusionnée et refuse de jeter du travail non fusionné.
+
+OK 03-git-branches.mdx écrit

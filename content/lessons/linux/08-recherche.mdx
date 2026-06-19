@@ -1,0 +1,154 @@
+---
+refCode: CL-LSN-056-V01
+slug: linux-recherche
+title: "Rechercher des fichiers et du texte"
+description: "Retrouvez n'importe quoi sur un système : des fichiers par nom, type ou date avec find, et du texte à l'intérieur des fichiers avec grep et ses options les plus utiles."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 420
+prerequisites: ["CL-LSN-052-V01"]
+---
+
+Tu te connectes sur un serveur que tu connais mal. Quelque part il y a un fichier de configuration qui pose problème, mais tu ne sais pas où il est. Ou alors tu sais qu'une erreur s'est glissée dans des logs, sans savoir dans quel fichier. Ce sont deux questions différentes, et elles appellent deux outils différents.
+
+La première question, c'est "où est ce fichier ?". Tu connais un bout de son nom, ou son type, et tu veux savoir à quel endroit du système il se trouve. C'est le travail de `find`.
+
+La deuxième, c'est "quel fichier contient ce mot ?". Le nom du fichier ne t'intéresse pas, c'est ce qu'il y a dedans qui compte. Là, c'est `grep`.
+
+Garde ces deux phrases en tête pendant toute la leçon. À chaque fois que tu hésites entre les deux outils, demande-toi : est-ce que je cherche un nom, ou est-ce que je cherche du contenu ? La réponse te donne la commande.
+
+## find : chercher par nom
+
+`find` parcourt une arborescence de dossiers et te retourne les chemins qui correspondent à un critère. La forme de base est toujours la même :
+
+```bash
+# find  <où chercher>  <quoi chercher>
+find /etc -name 'sshd_config'
+```
+
+Le premier argument est le point de départ. Ici `/etc`, le dossier des configurations système. Le `.` est très courant aussi : il veut dire "à partir du dossier courant". Le deuxième morceau, `-name 'sshd_config'`, dit qu'on filtre sur le nom exact du fichier.
+
+La plupart du temps tu ne connais pas le nom complet. Tu utilises alors un joker. Le `*` remplace n'importe quelle suite de caractères :
+
+```bash
+# tous les fichiers dont le nom finit par .conf, partout sous /etc
+find /etc -name '*.conf'
+
+# tous les fichiers qui commencent par 'host'
+find /etc -name 'host*'
+```
+
+Remarque les apostrophes autour de `'*.conf'`. Elles ne sont pas décoratives. Sans elles, le shell voit le `*` avant `find` et essaie de le remplacer lui-même par les fichiers du dossier courant. `find` recevrait alors une liste déjà transformée et se comporterait n'importe comment. Les apostrophes protègent le motif pour que ce soit `find`, et lui seul, qui décide quoi en faire.
+
+<Callout type="warning">
+L'erreur la plus fréquente avec find concerne le chemin de départ, pas le motif. Beaucoup tapent `find -name '*.log'` en oubliant de dire OÙ chercher. Selon la version de find ça marche ou ça râle, mais surtout ce n'est pas explicite. Prends l'habitude de toujours donner le point de départ : `find . -name '*.log'` pour le dossier courant, ou `find /var/log -name '*.log'` pour un endroit précis. Le chemin vient AVANT les critères, jamais après.
+</Callout>
+
+Voici un petit terrain de jeu. Liste d'abord ce qu'il y a, puis cherche.
+
+<SimulatedTerminal shell="bash" scenario="file-recon" title="Premiers pas avec find" />
+
+## find : par type, par taille, par date
+
+Le nom n'est qu'un critère parmi d'autres. `find` sait filtrer sur le type d'entrée. C'est utile quand un dossier et un fichier portent le même genre de nom et que tu veux séparer les deux.
+
+```bash
+# uniquement les fichiers (type f comme 'file')
+find . -type f
+
+# uniquement les dossiers (type d comme 'directory')
+find . -type d
+
+# les fichiers de logs, partout sous /var
+find /var -type f -name '*.log'
+```
+
+Tu peux empiler les critères : dans le dernier exemple, un fichier doit être à la fois un vrai fichier ET finir par `.log` pour ressortir. Les critères s'additionnent, ils ne s'excluent pas.
+
+Deux autres filtres reviennent souvent. `-size` filtre sur la taille, ce qui aide à repérer un gros fichier qui remplit un disque :
+
+```bash
+# les fichiers de plus de 100 méga-octets sous /var
+find /var -type f -size +100M
+```
+
+Et `-mtime` filtre sur la date de dernière modification, en jours. Pratique quand tu sais à peu près quand un fichier a bougé :
+
+```bash
+# les fichiers modifiés il y a moins d'un jour
+find . -type f -mtime -1
+```
+
+Le `+` veut dire "plus que", le `-` veut dire "moins que". Pas besoin de tout retenir aujourd'hui. Retiens surtout que `find` répond à la question "où", et qu'on peut affiner sur le type, la taille et la date.
+
+## grep : chercher dans le contenu
+
+Maintenant l'autre question. Tu ne cherches plus un nom de fichier, tu cherches une ligne de texte. `grep` lit le contenu et te montre les lignes qui contiennent un motif.
+
+```bash
+# grep  <motif>  <fichier>
+grep 'error' app.log
+```
+
+Cette commande affiche chaque ligne de `app.log` qui contient le mot `error`. Telle quelle, elle a deux limites : elle ne regarde qu'un seul fichier, et elle est sensible à la casse, donc `Error` avec une majuscule passerait à côté. Les options corrigent ça.
+
+```bash
+# -r : descend récursivement dans tous les fichiers d'un dossier
+grep -r 'error' /var/log
+
+# -i : insensible à la casse (error, Error, ERROR, peu importe)
+grep -ri 'error' /var/log
+
+# -n : ajoute le numéro de ligne devant chaque résultat
+grep -rin 'error' /var/log
+
+# -v : inverse, montre les lignes qui NE contiennent PAS le motif
+grep -v 'debug' app.log
+```
+
+Lis la troisième commande de gauche à droite. `-r` plonge dans toute l'arborescence de `/var/log`, `-i` ignore les majuscules, `-n` affiche le numéro de chaque ligne trouvée. Tu obtiens une liste du genre `fichier:numéro:ligne`, qui te dit exactement où aller regarder ensuite.
+
+Le `-v` est le seul qui marche à l'envers. Il sert à enlever le bruit. Par exemple un log plein de lignes `debug` que tu veux écarter pour ne voir que le reste.
+
+<Callout type="info">
+Cas concret en cybersécurité : tu enquêtes sur des tentatives de connexion. `grep -in 'failed password' /var/log/auth.log` sort toutes les lignes d'échec d'authentification, avec leur numéro. En quelques secondes tu vois combien il y en a et depuis quelles adresses. C'est exactement le genre de fouille où grep gagne face à une lecture manuelle de milliers de lignes.
+</Callout>
+
+## combiner avec un tube
+
+`grep` n'a pas besoin d'un fichier. Il sait aussi filtrer ce qu'une autre commande lui envoie, grâce au tube `|`. Le tube branche la sortie de gauche sur l'entrée de droite.
+
+```bash
+# liste tous les processus, ne garde que ceux qui parlent de nginx
+ps aux | grep nginx
+```
+
+`ps aux` produit la liste complète des processus, souvent des centaines de lignes. Le `|` envoie cette liste à `grep`, qui ne laisse passer que les lignes contenant `nginx`. Tu n'as pas eu besoin de fichier intermédiaire : grep a filtré un flux à la volée.
+
+C'est un réflexe à prendre. Dès qu'une commande crache trop de texte, branche un `grep` derrière pour ne garder que ce qui t'intéresse. Même logique avec `ls`, `cat`, ou n'importe quelle commande bavarde.
+
+## à toi de jouer
+
+Ouvre le terminal ci-dessous. Commence par voir ce qui s'y trouve avec `ls`, puis liste tous les fichiers avec `find . -type f`, et enfin retrouve les fichiers texte avec `find . -name '*.txt'`. Lis le contenu d'un fichier avec `cat` quand le nom t'intrigue.
+
+<SimulatedTerminal shell="bash" scenario="file-recon" title="Retrouve les fichiers" expectedCommands={["find . -type f", "find . -name '*.txt'"]} hints={["Commence par ls pour voir le dossier courant", "find . -type f liste tous les fichiers, dossiers compris dans le parcours", "Pour les .txt : find . -name '*.txt' avec les apostrophes"]} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Tu veux savoir QUEL fichier contient le mot 'password'. Quel outil ?" options={["find, car il cherche les fichiers", "grep, car il cherche dans le contenu", "ls, car il liste les fichiers", "cat, car il affiche les fichiers"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi met-on des apostrophes autour de '*.conf' dans une commande find ?" options={["Pour que le résultat soit en couleur", "Par pure convention, ça ne change rien", "Pour que le shell ne remplace pas le * avant que find le reçoive", "Parce que find refuse les motifs sans apostrophes"]} correct={2} />
+
+<Quiz id="q-3" question="Que fait l'option -v de grep ?" options={["Elle affiche la version de grep", "Elle montre les lignes qui ne contiennent PAS le motif", "Elle rend la recherche insensible à la casse", "Elle cherche récursivement dans les sous-dossiers"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- Deux questions, deux outils. "Où est le fichier ?" se résout avec `find`. "Quel fichier contient ce texte ?" se résout avec `grep`.
+- La forme de `find` est `find <chemin de départ> <critère>`. Le chemin vient toujours en premier. `find . -name '*.txt'` cherche dans le dossier courant.
+- Protège les jokers avec des apostrophes : `'*.log'`. Sinon le shell les remplace avant que `find` les voie.
+- `find` filtre aussi par type (`-type f`, `-type d`), par taille (`-size`) et par date (`-mtime`).
+- `grep <motif> <fichier>` montre les lignes contenant le motif. Les options utiles : `-r` récursif, `-i` insensible à la casse, `-n` numéros de ligne, `-v` pour inverser.
+- Le tube `|` branche une commande sur `grep` pour filtrer un flux sans passer par un fichier : `ps aux | grep nginx`.

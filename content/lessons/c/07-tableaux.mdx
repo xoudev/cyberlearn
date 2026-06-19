@@ -1,0 +1,212 @@
+---
+refCode: CL-LSN-031-V01
+slug: c-tableaux
+title: "Les tableaux en C"
+description: "Stockez des collections de valeurs en C avec les tableaux : déclaration, indexation, parcours avec une boucle, tableaux à taille fixe et initialisation."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 320
+prerequisites: ["CL-LSN-030-V01"]
+---
+
+Tu veux garder les températures relevées chaque heure d'une journée. Avec ce que tu connais, ça donnerait `temp0`, `temp1`, `temp2`, jusqu'à `temp23`. Vingt-quatre variables séparées. Et le jour où tu veux la moyenne, tu les additionnes une par une à la main. Multiplie par un relevé toutes les minutes et l'idée s'effondre.
+
+Un tableau règle ça. C'est un bloc de cases du même type, posées côte à côte en mémoire, sous un seul nom. Tu accèdes à chaque case par sa position, un nombre qu'on appelle l'indice. Une boucle peut alors balayer toutes les cases sans que tu aies à les nommer une par une.
+
+## déclarer et remplir
+
+Pour déclarer un tableau, tu donnes le type des cases, le nom, et la taille entre crochets.
+
+```c
+int temperatures[24];
+```
+
+Cette ligne réserve la place pour exactement 24 entiers. La taille est fixée ici, au moment où tu écris le code, et le compilateur la connaît. Tu ne pourras pas l'agrandir plus tard : un tableau classique en C a une taille décidée à la compilation.
+
+Les cases sont numérotées à partir de 0. Donc un tableau de 24 cases a des indices qui vont de 0 à 23. La première case est `temperatures[0]`, pas `temperatures[1]`. Ça surprend au début, et c'est la source d'une bonne partie des bugs des débutants, alors retiens-le tout de suite : la première case porte le numéro 0.
+
+Tu peux remplir un tableau dès la déclaration avec une liste entre accolades.
+
+```c
+int notes[5] = {15, 12, 18, 9, 20};
+```
+
+Ici `notes[0]` vaut 15, `notes[1]` vaut 12, et le dernier, `notes[4]`, vaut 20. Lire une case ou en changer la valeur se fait avec la même notation entre crochets.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void)
+{
+    int notes[5] = {15, 12, 18, 9, 20};
+
+    printf("Premiere note : %d\\n", notes[0]);
+    printf("Troisieme note : %d\\n", notes[2]);
+    printf("Derniere note : %d\\n", notes[4]);
+
+    notes[1] = 14;
+    printf("Apres correction, notes[1] = %d\\n", notes[1]);
+
+    return 0;
+}`} />
+
+Une case de tableau se comporte comme une variable ordinaire. Tu peux la lire, l'écrire, la passer à `printf`, l'utiliser dans un calcul. La ligne `notes[1] = 14;` remplace simplement le contenu de la deuxième case.
+
+## parcourir
+
+Accéder aux cases une par une à la main n'a aucun intérêt dès qu'il y en a plus de trois ou quatre. L'intérêt du tableau, c'est qu'une boucle peut faire le tour. La variable de boucle sert d'indice et avance de 0 jusqu'à la dernière case.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void)
+{
+    int notes[5] = {15, 12, 18, 9, 20};
+
+    for (int i = 0; i < 5; i++)
+    {
+        printf("notes[%d] = %d\\n", i, notes[i]);
+    }
+
+    return 0;
+}`} />
+
+Regarde la condition de près : `i < 5`. La boucle prend la valeur 0, puis 1, 2, 3, 4, et s'arrête. Elle ne va jamais jusqu'à 5. Si tu écrivais `i <= 5`, tu irais lire `notes[5]`, qui n'existe pas, puisque les cases valides s'arrêtent à l'indice 4.
+
+C'est le piège le plus classique avec les tableaux, et il a un nom : l'erreur de décalage d'un, le fameux off-by-one. Un tableau de taille n a des cases numérotées de 0 à n moins 1. La boucle s'écrit presque toujours `i < n`, jamais `i <= n`. Quand un parcours plante ou affiche une valeur bizarre à la fin, c'est la première chose à vérifier.
+
+## pas de garde-fou
+
+Voici le point qui sépare le C de beaucoup d'autres langages, et il faut le prendre au sérieux. Le C ne vérifie pas que ton indice reste dans les limites du tableau. Personne ne contrôle.
+
+Avec un tableau `int t[5]`, les cases valides sont `t[0]` à `t[4]`. Écrire `t[5]`, `t[10]`, ou `t[-1]` compile sans la moindre erreur. Mais à l'exécution, tu lis ou tu écris dans une zone mémoire qui ne fait pas partie de ton tableau. Le langage appelle ça un comportement indéfini : tout peut arriver.
+
+<Callout type="warning">
+Un accès hors limites ne déclenche pas un message d'erreur clair. Le programme peut planter, écraser une autre variable sans prévenir, afficher n'importe quoi, ou sembler marcher aujourd'hui et casser demain sur une autre machine. C'est un bug grave et silencieux. C'est à toi de garantir que chaque indice reste entre 0 et la taille moins 1.
+</Callout>
+
+L'exemple ci-dessous reste, lui, dans les clous. La condition `i < 5` t'empêche de déborder. Lis-le comme le modèle à suivre.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void)
+{
+    int t[5] = {10, 20, 30, 40, 50};
+
+    // Acces valides : indices 0 a 4
+    for (int i = 0; i < 5; i++)
+    {
+        printf("t[%d] = %d\\n", i, t[i]);
+    }
+
+    // t[5] serait hors limites : on ne l'ecrit jamais.
+    printf("Tout est reste dans les bornes.\\n");
+
+    return 0;
+}`} />
+
+La règle tient en une phrase : avant d'écrire un crochet, demande-toi si l'indice peut sortir de la plage 0 à taille moins 1. Si oui, le programme est faux, même si le compilateur ne dit rien.
+
+## la taille d'un tableau
+
+Dans les boucles précédentes, j'ai écrit 5 en dur. Ça marche, mais le jour où tu ajoutes une note, tu dois penser à changer le 5 partout. On peut faire calculer la taille par le programme.
+
+L'opérateur `sizeof` donne le nombre d'octets qu'occupe quelque chose. Pour un tableau, `sizeof(notes)` donne le poids total du bloc. Divise-le par le poids d'une seule case, `sizeof(notes[0])`, et tu obtiens le nombre de cases.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void)
+{
+    int notes[5] = {15, 12, 18, 9, 20};
+    int taille = sizeof(notes) / sizeof(notes[0]);
+
+    printf("Le tableau contient %d cases.\\n", taille);
+
+    int somme = 0;
+    for (int i = 0; i < taille; i++)
+    {
+        somme = somme + notes[i];
+    }
+
+    double moyenne = (double) somme / taille;
+    printf("Somme   : %d\\n", somme);
+    printf("Moyenne : %.2f\\n", moyenne);
+
+    return 0;
+}`} />
+
+Avec `taille` calculée ainsi, tu peux ajouter ou retirer une note dans la liste d'initialisation, et la boucle s'adapte toute seule. Attention quand même : cette astuce ne fonctionne que sur le tableau lui-même, là où il est déclaré. Si tu passes un tableau à une fonction, `sizeof` ne donne plus le bon nombre, mais c'est une autre histoire pour plus tard.
+
+## deux dimensions
+
+Un tableau peut avoir plus d'une dimension. Le cas courant est le tableau à deux dimensions : une grille, comme un tableur ou un plateau de jeu. Tu le déclares avec deux paires de crochets, le nombre de lignes puis le nombre de colonnes.
+
+```c
+int grille[2][3];
+```
+
+C'est en réalité un tableau de tableaux. Pour le parcourir, on imbrique deux boucles : une pour les lignes, une pour les colonnes. Chaque case s'atteint avec `grille[ligne][colonne]`.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void)
+{
+    int grille[2][3] = {
+        {1, 2, 3},
+        {4, 5, 6}
+    };
+
+    for (int ligne = 0; ligne < 2; ligne++)
+    {
+        for (int colonne = 0; colonne < 3; colonne++)
+        {
+            printf("%d ", grille[ligne][colonne]);
+        }
+        printf("\\n");
+    }
+
+    return 0;
+}`} />
+
+Ici `grille[1][2]` vaut 6 : deuxième ligne (indice 1), troisième colonne (indice 2). La même règle des indices à partir de 0 s'applique sur chaque dimension, et le même piège de débordement aussi.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Dans un tableau int t[5], quel est l'indice de la toute premiere case ?" options={['1', '0', '-1', 'Cela depend du compilateur']} correct={1} />
+
+<Quiz id="q-2" question="Pour un tableau int t[5], quel acces deborde des limites ?" options={['t[0]', 't[4]', 't[5]', 't[3]']} correct={2} />
+
+<Quiz id="q-3" question="Que vaut l'expression sizeof(t) / sizeof(t[0]) sur le tableau ou il est declare ?" options={['La somme des elements', 'La valeur de la premiere case', 'Le nombre de cases du tableau', 'La taille en bits d un entier']} correct={2} />
+
+Pars de ce programme, qui trouve déjà la valeur maximale. Modifie-le pour qu'il affiche aussi l'indice où se trouve ce maximum.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void)
+{
+    int valeurs[6] = {7, 23, 4, 42, 15, 8};
+    int taille = sizeof(valeurs) / sizeof(valeurs[0]);
+    int max = valeurs[0];
+
+    for (int i = 1; i < taille; i++)
+    {
+        if (valeurs[i] > max)
+        {
+            max = valeurs[i];
+        }
+    }
+
+    printf("La valeur maximale est %d\\n", max);
+
+    return 0;
+}`} />
+
+## à retenir
+
+- Un tableau range plusieurs valeurs du même type côte à côte en mémoire, sous un seul nom.
+- La taille est fixée à la déclaration et connue à la compilation.
+- Les indices commencent à 0 : un tableau de taille n va de `t[0]` à `t[n-1]`.
+- On parcourt avec une boucle `for`, condition `i < taille`, jamais `i <= taille`.
+- Le C ne vérifie pas les bornes. Un indice hors limites est un comportement indéfini : bug grave et silencieux, à toi de l'éviter.
+- L'erreur de décalage d'un (off-by-one) vient presque toujours d'un `<=` mis à la place d'un `<`.
+- `sizeof(t) / sizeof(t[0])` donne le nombre de cases, là où le tableau est déclaré.
+- Un tableau à deux dimensions est un tableau de tableaux, parcouru par deux boucles imbriquées avec `t[ligne][colonne]`.

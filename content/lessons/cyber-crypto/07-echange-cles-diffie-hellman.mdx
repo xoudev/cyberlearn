@@ -1,0 +1,111 @@
+---
+refCode: CL-LSN-103-V01
+slug: crypto-echange-cles
+title: "Échange de clés : se mettre d'accord sur un secret"
+description: "Comprenez comment deux parties établissent une clé commune sur un canal écouté sans jamais la transmettre, l'idée derrière Diffie-Hellman, et pourquoi les clés éphémères apportent la confidentialité persistante."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-099-V01"]
+---
+
+Au chapitre sur le chiffrement symétrique, on a laissé une question en suspens. Le chiffrement symétrique marche bien : une seule clé, rapide, solide. Mais il y a un problème pratique gênant. Pour que deux personnes l'utilisent, elles doivent partager la même clé. Et comment partager une clé secrète quand le seul moyen de communication est justement le canal qu'on veut protéger ? Si je vous envoie la clé par ce canal, quelqu'un qui écoute la voit passer. On tourne en rond.
+
+Cette leçon raconte la sortie de ce cercle. Une idée qui, la première fois qu'on la comprend, paraît un peu magique : deux personnes qui ne se sont jamais parlé peuvent se mettre d'accord sur un secret commun, en échangeant des messages au vu et au su de tout le monde, sans que personne d'autre ne puisse retrouver ce secret.
+
+## l'idée
+
+Le but n'est pas de transmettre une clé. C'est de la construire. À deux. Chacun apporte un ingrédient secret qu'il garde pour lui, et les deux ingrédients se combinent pour produire un résultat identique des deux côtés. Le canal sert seulement à échanger des valeurs intermédiaires, qui ne suffisent pas, à elles seules, à reconstituer le résultat final.
+
+C'est le renversement à comprendre. Le secret commun n'existe nulle part avant l'échange. Il n'est jamais envoyé. Il apparaît simultanément dans la tête des deux participants, à la fin, parce que chacun a mélangé sa part privée avec ce que l'autre lui a transmis.
+
+<Callout type="info">
+Personne n'envoie la clé. Les deux parties la calculent chacune de leur côté, et tombent sur la même valeur. Un espion qui enregistre tout ce qui circule sur le canal n'obtient que des pièces incomplètes.
+</Callout>
+
+## l'analogie des peintures
+
+L'image classique pour sentir comment ça marche utilise des pots de peinture. Elle a un défaut (elle simplifie les maths à l'extrême), mais elle capture l'essentiel.
+
+Alice et Bob veulent un secret commun. Ils commencent par se mettre d'accord, ouvertement, sur une couleur de départ. Disons un jaune. Tout le monde peut voir ce jaune, ça n'a aucune importance.
+
+Ensuite, chacun choisit une couleur secrète qu'il ne montre à personne. Alice prend un rouge, Bob prend un bleu. Ils gardent ça pour eux.
+
+Alice mélange son rouge secret avec le jaune public. Elle obtient une teinte orange. Bob mélange son bleu secret avec le même jaune public. Il obtient une teinte verte. Ces deux mélanges, l'orange et le vert, ils se les envoient par le canal. Un espion les voit passer, et alors ?
+
+Maintenant le tour de force. Alice prend le vert reçu de Bob et y rajoute son rouge secret. Bob prend l'orange reçu d'Alice et y rajoute son bleu secret. Des deux côtés, on a désormais le même cocktail : jaune plus rouge plus bleu. La même teinte finale. C'est leur secret commun.
+
+<Diagram caption="L'échange de clés : mélanger sans révéler le secret">
+flowchart TD
+  J[Couleur publique commune: jaune] --> A1[Alice ajoute son rouge secret]
+  J --> B1[Bob ajoute son bleu secret]
+  A1 --> AM[Melange orange envoye a Bob]
+  B1 --> BM[Melange vert envoye a Alice]
+  BM --> AF[Alice rajoute son rouge: jaune+rouge+bleu]
+  AM --> BF[Bob rajoute son bleu: jaune+rouge+bleu]
+  AF --> S[Meme secret commun des deux cotes]
+  BF --> S
+</Diagram>
+
+L'espion, lui, a vu trois choses : le jaune public, l'orange d'Alice, le vert de Bob. Il n'a jamais vu le rouge ni le bleu. Et pour obtenir la teinte finale, il faudrait qu'il retrouve une des couleurs secrètes en la « séparant » d'un mélange. Or séparer une peinture mélangée en ses composants d'origine, en pratique, on ne sait pas faire.
+
+## ce qui le rend sûr
+
+C'est là que la peinture rejoint la vraie cryptographie. La sécurité repose sur une opération facile dans un sens, infaisable dans l'autre.
+
+Mélanger des couleurs : facile. Reconstituer les couleurs de départ à partir du mélange : pas faisable. Dans Diffie-Hellman, le vrai mécanisme n'utilise pas de la peinture mais de l'arithmétique sur de très grands nombres. L'opération « facile » est une forme d'exponentiation, l'opération « infaisable » s'appelle le logarithme discret. Calculer dans un sens prend une fraction de seconde. Faire le chemin inverse, avec des nombres assez grands, demanderait à un attaquant un temps qui se compte en milliards d'années.
+
+On ne fera pas les maths complètes ici. Ce qu'il faut retenir, c'est la forme du raisonnement : on construit le secret avec une fonction qu'on sait calculer mais qu'on ne sait pas inverser. Et notez le détail qui change tout par rapport au problème de départ : Alice et Bob n'ont jamais eu besoin de se connaître à l'avance, ni de partager quoi que ce soit de secret avant l'échange. Ils sont partis de rien de commun, sauf une valeur publique que le monde entier peut voir.
+
+## échange de clé n'est pas chiffrement asymétrique
+
+Voici une confusion à éviter tout de suite, parce qu'elle revient sans arrêt.
+
+Diffie-Hellman ne chiffre pas de message. Il ne sert qu'à se mettre d'accord sur une clé. C'est un protocole d'accord, pas un algorithme de chiffrement. À la fin d'un échange Diffie-Hellman, vous n'avez pas envoyé de texte chiffré : vous avez juste, tous les deux, la même clé secrète en main.
+
+Le chiffrement asymétrique, comme RSA, c'est autre chose. Là, il y a une clé publique avec laquelle on chiffre, et une clé privée avec laquelle on déchiffre. On peut réellement envoyer un message chiffré à quelqu'un.
+
+<Callout type="warning">
+Diffie-Hellman ne transporte aucun message. Il produit une clé partagée, point. Cette clé sert ensuite à chiffrer la suite de la conversation avec un algorithme symétrique rapide. On combine les deux : Diffie-Hellman pour s'accorder sur la clé, le symétrique pour le trafic réel.
+</Callout>
+
+C'est exactement ce qui se passe quand vous ouvrez une page en HTTPS. Pendant la poignée de main TLS, votre navigateur et le serveur exécutent un échange de clés pour fabriquer une clé de session commune. Ensuite, tout le contenu de la page, vos requêtes, les réponses, tout ça voyage chiffré symétriquement avec cette clé. L'échange de clés est le démarrage, le symétrique fait le gros du travail.
+
+## la confidentialité persistante
+
+Maintenant le vrai intérêt de faire les choses ainsi, et la raison pour laquelle le web moderne y tient.
+
+Imaginez qu'on génère une nouvelle paire de valeurs Diffie-Hellman à chaque session, qu'on jette dès que la session se termine. On parle alors de clés éphémères, et la variante s'appelle souvent DHE ou ECDHE dans TLS. Chaque conversation a sa propre clé temporaire, sans lien avec les précédentes.
+
+Pourquoi ça change quelque chose ? Supposez qu'un attaquant patient enregistre aujourd'hui tout votre trafic chiffré, sans pouvoir le lire, et le stocke. Des années plus tard, il réussit à voler la clé privée long terme du serveur. Sans clés éphémères, il pourrait alors déchiffrer rétroactivement tout l'historique qu'il avait capturé. Avec des clés éphémères, non. Chaque session avait sa clé jetable, qui n'existe plus nulle part, et que la clé long terme volée ne permet pas de reconstruire.
+
+<Callout type="success">
+La confidentialité persistante (forward secrecy) signifie que compromettre une clé aujourd'hui ne déverrouille pas les conversations d'hier. Les sessions passées restent fermées même après une fuite. C'est le principal argument pour utiliser des échanges éphémères, et c'est devenu le comportement par défaut sur le web sérieux.
+</Callout>
+
+## le maillon faible
+
+Tout ce qui précède protège contre une oreille qui écoute. Une oreille passive ne peut rien faire de ce qu'elle entend. Mais il reste un trou, et il faut le voir clairement.
+
+Diffie-Hellman tout seul ne dit pas à Alice avec qui elle parle. Elle reçoit un mélange, elle suppose qu'il vient de Bob. Et si quelqu'un, placé entre les deux, interceptait activement les échanges ? Il pourrait faire un Diffie-Hellman avec Alice en se faisant passer pour Bob, et un autre avec Bob en se faisant passer pour Alice. Deux secrets, un avec chacun. Il déchiffre, relit, rechiffre, et relaie. Personne ne s'aperçoit de rien. C'est l'attaque de l'homme du milieu.
+
+Le problème ici n'est pas le secret, qui reste solide. C'est l'identité. Rien dans l'échange ne prouve que l'interlocuteur est bien celui qu'on croit. Il manque l'authentification. C'est précisément le rôle des certificats et des signatures, qui viennent attester « cette clé appartient bien à ce serveur ». On verra ce mécanisme plus loin. Pour l'instant, gardez la limite en tête : l'échange de clés résout la confidentialité face à un espion, pas la confiance dans l'identité.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Qu'est-ce qu'un espion qui enregistre tout le canal pendant un échange Diffie-Hellman parvient à obtenir ?" options={["La clé secrète commune en clair", "Seulement les valeurs publiques échangées, insuffisantes pour reconstituer le secret", "Les clés secrètes des deux participants", "Rien du tout, le canal est invisible pour lui"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle affirmation décrit correctement Diffie-Hellman ?" options={["Il chiffre directement les messages comme RSA", "Il met deux parties d'accord sur une clé, sans transporter de message", "Il remplace complètement le chiffrement symétrique pendant la session", "Il sert à signer des documents pour prouver une identité"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi les clés éphémères apportent-elles la confidentialité persistante ?" options={["Elles rendent le chiffrement plus rapide", "Elles permettent de se passer d'authentification", "Une fuite future de la clé long terme ne déverrouille pas les sessions passées", "Elles empêchent toute attaque de l'homme du milieu"]} correct={2} />
+
+## à retenir
+
+- Le but de l'échange de clés est de construire un secret commun, pas de le transmettre. La clé n'est jamais envoyée sur le canal.
+- Chaque partie combine un ingrédient privé avec une valeur publique reçue de l'autre, et les deux tombent sur la même clé finale.
+- La sécurité vient d'une opération facile dans un sens et infaisable dans l'autre : le logarithme discret pour Diffie-Hellman.
+- Diffie-Hellman est un protocole d'accord sur une clé, pas un algorithme de chiffrement. La clé obtenue sert ensuite à une session symétrique.
+- Dans TLS, l'échange de clés démarre la connexion HTTPS, puis le trafic est chiffré symétriquement.
+- Les clés éphémères (DHE, ECDHE) donnent la confidentialité persistante : une clé volée plus tard ne révèle pas les conversations passées.
+- Sans authentification, l'échange reste vulnérable à l'homme du milieu. Les certificats comblent ce trou en prouvant l'identité.

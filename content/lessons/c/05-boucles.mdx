@@ -1,0 +1,243 @@
+---
+refCode: CL-LSN-029-V01
+slug: c-boucles
+title: "Boucles en C : for, while et do-while"
+description: "Répétez des traitements en C avec les boucles for, while et do-while, et contrôlez leur exécution avec break et continue."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 160
+prerequisites: ["CL-LSN-028-V01"]
+---
+
+Vous voulez afficher les nombres de 1 à 100. Vous pourriez écrire cent lignes
+`printf`, mais personne ne fait ça. Quand un même traitement doit se répéter, on
+écrit les instructions une fois et on demande à la machine de les rejouer autant
+de fois qu'il faut. C'est le rôle des boucles.
+
+Le C en propose trois : `for`, `while` et `do-while`. Au fond elles répètent
+toutes un bloc de code. Ce qui change, c'est la manière de poser la condition
+d'arrêt et le moment où on la teste. Voyons chacune, puis les deux mots-clés qui
+permettent de couper court ou de sauter un tour.
+
+## la boucle for
+
+Le `for` rassemble dans son en-tête tout ce qui pilote la répétition. Trois
+parties séparées par des points-virgules : l'initialisation, la condition, et
+l'incrément.
+
+L'initialisation s'exécute une seule fois, avant le premier tour. La condition
+est testée avant chaque tour : tant qu'elle est vraie, le bloc tourne. L'incrément
+s'exécute à la fin de chaque tour, juste avant de retester la condition. C'est ce
+qui fait avancer le compteur.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int n = 7;
+    for (int i = 1; i <= 10; i++) {
+        printf("%d x %d = %d\\n", n, i, n * i);
+    }
+    return 0;
+}
+\`\`\``} />
+
+Ici `i` part de 1, la boucle continue tant que `i` reste inférieur ou égal à 10,
+et `i` gagne 1 à chaque passage. Dix tours, dix lignes, la table de 7 sans la
+recopier. Le `for` brille quand vous savez d'avance combien de fois répéter : un
+parcours de 0 à la taille d'un tableau, une table de multiplication, un compte à
+rebours fixe. Tout le mécanisme tient sur une ligne, ce qui le rend facile à
+relire.
+
+## while
+
+Le `while` répète tant qu'une condition tient. Pas de compteur imposé dans
+l'en-tête, juste une condition. On le choisit quand on ne sait pas à l'avance
+combien de tours seront nécessaires : lire des données jusqu'à la fin d'un
+fichier, attendre qu'un utilisateur tape la bonne valeur, traiter une file tant
+qu'elle n'est pas vide.
+
+La condition est testée avant chaque tour. Si elle est fausse dès le départ, le
+bloc ne s'exécute jamais. Et puisque rien dans l'en-tête ne fait avancer un
+compteur, c'est à vous de faire évoluer la condition à l'intérieur du bloc.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int compte = 5;
+    while (compte > 0) {
+        printf("Decollage dans %d...\\n", compte);
+        compte--;
+    }
+    printf("Decollage !\\n");
+    return 0;
+}
+\`\`\``} />
+
+La ligne `compte--` est ce qui rapproche la condition de sa fin. Sans elle,
+`compte` resterait à 5, `compte > 0` serait vrai pour toujours, et le programme
+afficherait le même message sans jamais s'arrêter.
+
+<Callout type="warning">
+Dans un `while`, c'est vous qui faites bouger la condition. Oubliez la ligne qui
+fait avancer la variable et vous obtenez une boucle infinie : le programme tourne
+sans fin, et il faut souvent le tuer à la main. Avant d'écrire un `while`,
+demandez-vous toujours ce qui, dans le corps, finira par rendre la condition
+fausse.
+</Callout>
+
+## do-while
+
+Le `do-while` ressemble au `while`, à un détail près qui change tout : la
+condition est placée à la fin. Le corps s'exécute d'abord, puis la condition est
+testée. Conséquence directe, le bloc tourne au moins une fois, même si la
+condition est fausse dès l'entrée.
+
+C'est exactement l'idée reçue à retenir : le `do-while` teste après, donc il
+fait toujours au moins un tour. Là où un `while` peut ne jamais s'exécuter, le
+`do-while` garantit un passage.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    int valeur = 10;
+    do {
+        printf("Ce message s'affiche au moins une fois (valeur = %d).\\n", valeur);
+        valeur++;
+    } while (valeur < 5);
+    return 0;
+}
+\`\`\``} />
+
+`valeur` vaut 10, donc `valeur < 5` est fausse d'entrée de jeu. Avec un `while`
+classique, rien ne se serait affiché. Ici le message sort une fois, parce que le
+corps passe avant le test.
+
+Quand est-ce utile ? Chaque fois que l'action doit avoir lieu au moins une fois
+avant qu'on puisse décider de recommencer. Le cas typique : un menu qu'on affiche,
+on lit le choix de l'utilisateur, et on redemande tant que la saisie est
+invalide. On ne peut pas tester la saisie avant de l'avoir demandée. Le `do-while`
+colle naturellement à ce schéma.
+
+## break et continue
+
+Deux mots-clés affinent le déroulement d'une boucle. `break` interrompt la boucle
+sur-le-champ et reprend l'exécution juste après. `continue` abandonne le reste du
+tour courant et saute directement au tour suivant, condition et incrément
+compris.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    for (int i = 1; i <= 10; i++) {
+        if (i == 7) {
+            break; /* on quitte la boucle des qu'on atteint 7 */
+        }
+        if (i % 2 == 0) {
+            continue; /* on ignore les nombres pairs */
+        }
+        printf("Nombre impair : %d\\n", i);
+    }
+    return 0;
+}
+\`\`\``} />
+
+Le `continue` saute les pairs, donc 2, 4 et 6 ne s'affichent pas. Le `break` coupe
+tout quand `i` atteint 7, donc rien au-delà ne sort. Résultat à l'écran : 1, 3 et
+5. Ces deux mots-clés sont pratiques, mais une boucle truffée de `break` et de
+`continue` devient vite difficile à suivre. Réservez-les aux cas où ils
+simplifient vraiment la lecture.
+
+## les pièges
+
+Deux erreurs reviennent sans cesse avec les boucles.
+
+La première, c'est la boucle infinie. Elle arrive quand la condition ne devient
+jamais fausse. Dans un `for`, c'est souvent l'incrément oublié : si vous écrivez
+`for (int i = 0; i < 10; )` sans le `i++`, ou si vous le mettez mais ne touchez
+jamais à `i`, la condition reste vraie indéfiniment. Dans un `while`, c'est la
+variable de la condition qu'on ne fait pas évoluer. Le programme se fige, le
+processeur tourne à fond, et il faut l'arrêter de force.
+
+La seconde, c'est l'erreur de décalage d'un tour, ce qu'on appelle souvent
+l'off-by-one. La boucle fait un tour de trop ou un tour de trop peu, à cause d'un
+`<` mis là où il fallait `<=`, ou l'inverse.
+
+<CodePlayground language="c" starterCode={`\`\`\`c
+#include <stdio.h>
+
+int main(void) {
+    /* On veut compter de 1 a 5 : cinq tours attendus. */
+    printf("Avec <= 5 :\\n");
+    for (int i = 1; i <= 5; i++) {
+        printf("  i = %d\\n", i);
+    }
+
+    printf("Avec < 5 (un tour de moins) :\\n");
+    for (int i = 1; i < 5; i++) {
+        printf("  i = %d\\n", i);
+    }
+    return 0;
+}
+\`\`\``} />
+
+La première boucle affiche 1, 2, 3, 4, 5. La seconde s'arrête à 4, parce que `<`
+exclut la borne 5. Aucun des deux n'est faux en soi : tout dépend de ce que vous
+vouliez. Le réflexe à prendre est de compter à la main combien de tours votre
+boucle fait vraiment, surtout aux deux extrémités. C'est là que le décalage se
+cache.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz
+  id="c-boucles-q1"
+  question="Quelle boucle convient le mieux quand on connaît à l'avance le nombre exact de répétitions ?"
+  options={["La boucle while", "La boucle for", "La boucle do-while", "Aucune des trois"]}
+  correct={1}
+  explanation="Le for réunit init, condition et incrément dans son en-tête : c'est la forme la plus claire quand le nombre de tours est connu d'avance."
+/>
+<Quiz
+  id="c-boucles-q2"
+  question="Pourquoi le corps d'un do-while s'exécute-t-il toujours au moins une fois ?"
+  options={[
+    "Parce que la condition est testée après le corps, pas avant",
+    "Parce que do-while ignore sa condition",
+    "Parce que le compilateur ajoute un tour automatique",
+    "Parce que do-while ne peut pas contenir de break"
+  ]}
+  correct={0}
+  explanation="Le do-while place la condition à la fin. Le corps passe d'abord, le test vient après : donc un tour au minimum, même si la condition est fausse d'entrée."
+/>
+<Quiz
+  id="c-boucles-q3"
+  question="Dans une boucle for, qu'est-ce qui provoque le plus souvent une boucle infinie ?"
+  options={[
+    "Mettre une condition trop longue",
+    "Utiliser un break",
+    "Oublier de faire avancer le compteur, donc la condition ne devient jamais fausse",
+    "Initialiser la variable à zéro"
+  ]}
+  correct={2}
+  explanation="Si l'incrément manque ou ne touche jamais la variable testée, la condition reste vraie pour toujours et la boucle ne s'arrête plus."
+/>
+</QuizGroup>
+
+Ouvre un des bacs à code ci-dessus et écris une boucle qui calcule la somme des
+entiers de 1 à 100. Le résultat attendu est 5050. Modifie-la ensuite pour
+n'additionner que les nombres pairs, puis essaie d'afficher chaque pair entre 1
+et 20. Compte à la main combien de tours chaque version fait : c'est le meilleur
+moyen de repérer un décalage.
+
+## à retenir
+
+- Une boucle répète un bloc sans recopier le code.
+- Le `for` réunit initialisation, condition et incrément dans son en-tête ; on le choisit quand le nombre de tours est connu.
+- Le `while` répète tant qu'une condition tient ; il peut ne jamais s'exécuter, et c'est à vous de faire évoluer la condition.
+- Le `do-while` teste la condition après le corps : il fait toujours au moins un tour.
+- `break` quitte la boucle immédiatement ; `continue` saute au tour suivant.
+- Boucle infinie : la condition ne devient jamais fausse (incrément oublié). Off-by-one : un `<` à la place d'un `<=` fait un tour de trop ou de trop peu.

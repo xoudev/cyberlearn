@@ -1,0 +1,108 @@
+---
+refCode: CL-LSN-162-V01
+slug: reseau-routage
+title: "Le routage : comment un paquet voyage"
+description: "Comprenez comment un paquet traverse plusieurs réseaux : la passerelle par défaut, la table de routage, le déplacement saut par saut où chaque routeur ne connaît que le prochain pas, et le rôle du TTL."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-160-V01"]
+---
+
+Imagine que tu envoies une lettre depuis ton salon à Lyon vers un destinataire à Tokyo. Tu ne connais pas le trajet complet. Tu ne sais pas par quel centre de tri, quel avion, quel camion la lettre va passer. Tu écris juste l'adresse sur l'enveloppe et tu la déposes dans la boîte au coin de la rue. À partir de là, ce n'est plus ton problème. Chaque maillon de la chaîne postale va regarder l'adresse, décider du prochain centre où l'envoyer, et passer le relais.
+
+Un paquet réseau voyage exactement comme ça. Quand tu charges une page hébergée à l'autre bout du monde, ta machine ne calcule pas l'itinéraire entier. Elle ne le connaît même pas. Elle sait juste une chose : « ce paquet n'est pas pour mon réseau local, donc je le donne à la porte de sortie ». Ensuite, le paquet avance de relais en relais, et à chaque relais une seule question se pose : où l'envoyer ensuite. C'est ce mécanisme, le routage, qu'on regarde ici. Garde le modèle mental de la lettre en tête, on va y revenir.
+
+## la passerelle par défaut
+
+Ta machine commence par une question simple : la destination est-elle sur mon réseau local ? Si tu écris à ton imprimante qui est dans la même pièce, sur le même réseau, le paquet part directement vers elle. Pas besoin de routeur. Mais si la destination est ailleurs, sur un autre réseau, ta machine ne sait pas comment l'atteindre. Elle a besoin d'une porte de sortie.
+
+Cette porte, c'est la passerelle par défaut (default gateway). C'est l'adresse d'un routeur sur ton réseau local, en général ta box ou ton routeur d'entreprise. La règle est : « tout ce que je ne sais pas livrer moi-même, je le donne à la passerelle, et elle se débrouille ». Ta machine n'a pas besoin d'en savoir plus. La passerelle est son unique contact avec le reste du monde.
+
+Tu peux voir cette configuration directement.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Table de routage et chemin d'un paquet" commands={{"ip route": "default via 192.168.1.1 dev eth0\n192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.42", "traceroute example.com": "1 192.168.1.1 0.5 ms\n2 10.0.0.1 4 ms\n3 203.0.113.1 12 ms\n4 93.184.216.34 22 ms", "ip route get 8.8.8.8": "8.8.8.8 via 192.168.1.1 dev eth0 src 192.168.1.42"}} />
+
+La première ligne, `default via 192.168.1.1`, c'est ta passerelle. Adresse 192.168.1.1, le routeur qui sert de sortie. Tout paquet sans meilleure règle passera par lui.
+
+<Callout type="info">
+La passerelle par défaut est presque toujours la première adresse du réseau local (du genre 192.168.1.1 ou 192.168.0.1), mais ce n'est qu'une convention de configuration, pas une obligation. Ce qui compte, c'est qu'elle soit sur le même réseau que ta machine. Sinon, ta machine ne pourrait même pas la joindre pour lui passer le relais.
+</Callout>
+
+## la table de routage
+
+La passerelle par défaut n'est qu'une ligne parmi d'autres. Ta machine, comme tout routeur, garde une table de routage : une liste de règles qui disent, pour telle plage de destinations, par où envoyer le paquet.
+
+Reprends la sortie de `ip route` plus haut. Il y a deux règles :
+
+La ligne `192.168.1.0/24 dev eth0` dit : « pour toute adresse entre 192.168.1.0 et 192.168.1.255, c'est mon réseau local, j'envoie directement par l'interface eth0 ». Pas de routeur intermédiaire, ces machines sont mes voisines.
+
+La ligne `default via 192.168.1.1` dit : « pour tout le reste, envoie à 192.168.1.1 ». C'est la route attrape-tout. Elle ne correspond à aucune destination précise, elle ramasse ce qu'aucune autre règle n'a pris.
+
+Quand un paquet doit partir, ta machine lit sa table de haut en bas et choisit la règle la plus précise qui correspond à la destination. Une destination locale tombe sur la première règle. N'importe quelle adresse Internet tombe sur le `default`. Tu peux d'ailleurs demander à la machine quelle décision elle prendrait, sans rien envoyer, avec `ip route get`. Dans la sortie plus haut, `ip route get 8.8.8.8` répond `via 192.168.1.1` : le paquet pour 8.8.8.8 partira vers la passerelle. Logique, 8.8.8.8 n'est pas sur le réseau local.
+
+Une table de routage de machine ordinaire tient en deux ou trois lignes. Une table de gros routeur d'opérateur peut en compter des centaines de milliers. Le principe reste le même : trouver la règle qui correspond, suivre la direction qu'elle indique.
+
+## saut par saut
+
+Voici l'idée la plus importante de cette leçon, et celle qui surprend souvent.
+
+Aucun routeur ne connaît le chemin complet. Ta passerelle ne sait pas comment atteindre le serveur de Tokyo. Elle sait juste à quel routeur le passer ensuite. Ce routeur suivant ne connaît pas non plus le chemin entier : il sait seulement à qui il doit passer le relais. Et ainsi de suite. Chaque routeur prend sa propre décision, en regardant sa propre table, et transmet au prochain. C'est le routage saut par saut (hop by hop).
+
+Personne n'a la carte entière. Chacun connaît seulement la direction du pas suivant. Le paquet n'avance pas parce qu'un chef d'orchestre a tracé l'itinéraire, mais parce qu'à chaque étape, quelqu'un sait juste où le pousser un cran plus loin.
+
+<Diagram caption="Un paquet routé de relais en relais">
+flowchart LR
+  A["Ta machine"] --> B["Passerelle 192.168.1.1"]
+  B --> C["Routeur opérateur 10.0.0.1"]
+  C --> D["Routeur dorsale 203.0.113.1"]
+  D --> E["Serveur 93.184.216.34"]
+</Diagram>
+
+C'est exactement la lettre pour Tokyo. Le facteur de ton quartier ne connaît pas Tokyo. Il sait juste apporter ta lettre au centre de tri régional. Le centre régional la met sur un avion. À l'arrivée, un autre centre prend le relais. Chaque maillon ne voit que le maillon suivant, et pourtant la lettre arrive. Ce découpage est ce qui rend Internet possible : on ne pourrait jamais stocker, dans chaque routeur, l'itinéraire complet vers chacune des milliards de destinations. On stocke juste des directions.
+
+## le TTL
+
+Ce système saut par saut a un danger. Imagine que le routeur A croie qu'il faut passer par B, et que B croie qu'il faut repasser par A. Le paquet ferait l'aller-retour indéfiniment, sans jamais arriver, en gaspillant de la bande passante. Une boucle.
+
+Pour éviter ça, chaque paquet porte un compteur appelé TTL (Time To Live, durée de vie). C'est un nombre, par exemple 64 au départ. À chaque routeur traversé, ce nombre baisse de un. 64, 63, 62, et ainsi de suite. Si le TTL atteint zéro avant que le paquet soit arrivé, le routeur le jette et prévient l'expéditeur. Le paquet ne tournera donc jamais sans fin : au pire, il meurt après quelques dizaines de sauts. Le TTL ne compte pas un temps en secondes malgré son nom, il compte des sauts.
+
+Cette mécanique a un effet secondaire malin, qu'un outil exploite pour cartographier le chemin. La commande `traceroute` envoie un paquet avec un TTL de 1. Le premier routeur le décrémente à 0, le jette, et renvoie une erreur en signalant son adresse. On vient d'apprendre l'identité du premier saut. On recommence avec un TTL de 2 : le paquet meurt au deuxième routeur, qui se signale. Et ainsi de suite, en augmentant le TTL d'un cran à chaque fois, jusqu'à atteindre la destination.
+
+Regarde la sortie de `traceroute example.com` dans le terminal plus haut. Chaque ligne est un saut, dans l'ordre. La passerelle locale, puis un routeur opérateur, puis un routeur de dorsale, puis le serveur. C'est la liste des relais que le paquet traverse, révélée saut après saut grâce au TTL.
+
+<Callout type="warning">
+Les délais affichés par traceroute (les millisecondes) ne sont pas toujours fiables. Certains routeurs traitent les paquets expirés en basse priorité, ou refusent carrément de répondre et affichent une étoile. Un saut lent dans traceroute ne signifie pas forcément que ce routeur ralentit ton trafic réel. Lis-le comme une carte des étapes, pas comme une mesure de performance exacte.
+</Callout>
+
+## comment les routes se forment
+
+Reste une question : comment chaque routeur remplit sa table ? D'où viennent ces règles ?
+
+Deux origines. La première, ce sont les routes statiques : quelqu'un les écrit à la main dans la configuration. « Pour atteindre tel réseau, passe par tel routeur. » Simple, mais ça ne s'adapte pas. Si un lien tombe, la route reste écrite et le paquet part dans le vide. Ça convient à de petits réseaux stables.
+
+La seconde, ce sont les routes apprises par des protocoles de routage. Les routeurs se parlent entre eux et s'échangent ce qu'ils savent : « moi, je sais joindre tel réseau, en tant de sauts ». Chacun compile ces informations et construit sa table tout seul. Si un lien tombe, l'information se propage, et les routeurs recalculent un autre chemin. Le réseau s'auto-répare. Des protocoles comme OSPF (à l'intérieur d'une organisation) ou BGP (entre les grands réseaux qui forment Internet) jouent ce rôle. On ne détaille pas leur fonctionnement ici, retiens juste l'idée : les routes ne sont pas toutes écrites à la main, beaucoup sont découvertes et tenues à jour automatiquement par des routeurs qui se tiennent au courant les uns les autres.
+
+## à toi de jouer
+
+Relance les commandes du terminal et relis-les avec ce que tu sais maintenant. Quelle ligne est la passerelle ? Quelle ligne est le réseau local ? Combien de sauts traceroute révèle-t-il, et lequel est ta propre passerelle ?
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Table de routage et chemin d'un paquet" commands={{"ip route": "default via 192.168.1.1 dev eth0\n192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.42", "traceroute example.com": "1 192.168.1.1 0.5 ms\n2 10.0.0.1 4 ms\n3 203.0.113.1 12 ms\n4 93.184.216.34 22 ms", "ip route get 8.8.8.8": "8.8.8.8 via 192.168.1.1 dev eth0 src 192.168.1.42"}} />
+
+<Quiz id="q-1" question="Ta machine veut envoyer un paquet à une adresse qui n'est pas sur son réseau local. Où l'envoie-t-elle ?" options={["Directement à la destination finale, qu'elle connaît par coeur", "À la passerelle par défaut, sa porte de sortie vers les autres réseaux", "À tous les routeurs d'Internet en même temps", "Nulle part, un paquet ne peut pas quitter le réseau local"]} correct={1} />
+
+<Quiz id="q-2" question="Dans le routage saut par saut, que connaît un routeur donné ?" options={["Le chemin complet du paquet, de la source à la destination", "Uniquement le prochain saut vers lequel transmettre le paquet", "La liste de toutes les machines connectées à Internet", "Rien, il transmet les paquets au hasard"]} correct={1} />
+
+<Quiz id="q-3" question="À quoi sert le TTL d'un paquet ?" options={["À mesurer la vitesse de la connexion en mégabits", "À chiffrer le contenu du paquet", "À éviter qu'un paquet tourne en boucle indéfiniment : il décroît à chaque saut et le paquet est jeté à zéro", "À choisir la passerelle par défaut"]} correct={2} />
+
+## à retenir
+
+- Une machine envoie un paquet directement s'il est destiné à son réseau local, sinon elle le passe à la passerelle par défaut, sa porte de sortie.
+- La table de routage est une liste de règles : pour telle plage de destinations, envoie par là. La route `default` attrape tout ce qu'aucune autre règle ne prend.
+- Le routage se fait saut par saut : aucun routeur ne connaît le chemin complet, chacun sait seulement à qui passer le relais ensuite.
+- Le TTL est un compteur qui baisse de un à chaque saut. À zéro, le paquet est jeté, ce qui empêche les boucles infinies.
+- traceroute se sert du TTL pour révéler chaque relais du chemin, un par un.
+- Les routes sont soit statiques (écrites à la main), soit apprises automatiquement par des protocoles de routage comme OSPF ou BGP.
+
+OK 06 écrit

@@ -1,0 +1,105 @@
+---
+refCode: CL-LSN-184-V01
+slug: systeme-gestion-paquets
+title: "La gestion des paquets"
+description: "Installer et tenir à jour des logiciels proprement : le rôle d'un gestionnaire de paquets et des dépôts, les familles apt et dnf, la résolution des dépendances, et l'importance des mises à jour de sécurité."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 480
+prerequisites: ["CL-LSN-181-V01"]
+---
+
+Tu administres un serveur et tu as besoin d'un serveur web. Première idée : aller sur un site, télécharger un fichier, le lancer. Mauvaise idée. Sur Linux, on n'installe pas un logiciel en attrapant un binaire au hasard sur Internet. On passe par un gestionnaire de paquets. C'est l'outil qui télécharge le logiciel depuis une source de confiance, l'installe au bon endroit, tire automatiquement tout ce dont il dépend, et te permet plus tard de le mettre à jour ou de le retirer sans laisser de traces partout sur le disque.
+
+Cette leçon explique comment ce système fonctionne, pourquoi il existe, et les quelques commandes que tu taperas tous les jours sur un serveur.
+
+## le gestionnaire de paquets
+
+Un paquet, c'est un logiciel mis en boîte : le programme lui-même, plus des informations sur ce qu'il lui faut pour tourner et sur l'endroit où ranger chaque fichier. Le gestionnaire de paquets est le programme qui ouvre ces boîtes et tient un registre de tout ce qui est installé sur la machine.
+
+Il sait faire quatre choses. Installer un logiciel. Le mettre à jour quand une nouvelle version sort. Le supprimer proprement. Et, à chaque opération, gérer les dépendances. Une dépendance, c'est un autre logiciel ou une bibliothèque dont ton paquet a besoin pour fonctionner. Un serveur web s'appuie sur des bibliothèques de chiffrement, de compression, et ainsi de suite. Tu ne veux pas aller les chercher une par une. Le gestionnaire les repère et les installe pour toi.
+
+Compare avec le bricolage à la main. Tu télécharges un binaire, tu le poses quelque part, ça plante parce qu'il manque une bibliothèque. Tu vas chercher la bibliothèque, mauvaise version, ça plante encore. Six mois plus tard, une faille est annoncée dans ce logiciel : tu n'as aucune trace de l'endroit où tu l'as mis ni de la version installée. Le gestionnaire de paquets supprime tout ce désordre. Il sait ce qui est là, en quelle version, et d'où ça vient.
+
+<Callout type="info">
+Le modèle mental : le gestionnaire de paquets est l'unique point d'entrée pour les logiciels du système. Tout ce qui passe par lui est connu, versionné, et réparable. Tout ce qui rentre à côté devient ton problème personnel le jour où ça casse.
+</Callout>
+
+## les dépôts
+
+Le gestionnaire ne sort pas les paquets de nulle part. Il les récupère dans des dépôts. Un dépôt est un serveur qui héberge une collection de paquets, maintenue par ta distribution ou par un éditeur connu. La liste des dépôts que ta machine accepte est inscrite dans sa configuration.
+
+Ce qui rend un dépôt digne de confiance, c'est la signature. Les paquets sont signés cryptographiquement par celui qui les publie, et ta machine connaît la clé publique correspondante. Au moment d'installer, le gestionnaire vérifie que le paquet vient bien de la source attendue et n'a pas été modifié en route. Un paquet dont la signature ne colle pas est refusé.
+
+C'est pour ça qu'on ne colle pas n'importe quel dépôt dans sa configuration. Ajouter un dépôt, c'est dire à ta machine : fais confiance à ce serveur pour t'envoyer du logiciel qui tournera, souvent, avec les pleins droits. Un dépôt douteux peut te livrer une version piégée d'un programme courant. La règle de prudence : t'en tenir aux dépôts officiels de ta distribution, et n'ajouter une source tierce que si elle est largement reconnue et que tu comprends qui est derrière.
+
+<Callout type="warning">
+Chaque dépôt ajouté agrandit la liste des gens à qui tu fais confiance pour installer du code sur ta machine. Avant d'en ajouter un trouvé dans un tutoriel, demande-toi qui le maintient. Un dépôt non officiel mal choisi, c'est une porte ouverte.
+</Callout>
+
+## apt et dnf
+
+Toutes les distributions n'utilisent pas le même gestionnaire. Il existe deux grandes familles, selon la lignée de la distribution.
+
+Sur Debian, Ubuntu et leurs dérivées, le gestionnaire est apt, qui manipule des paquets au format .deb. Sur Red Hat, Fedora, CentOS, Rocky et compagnie, c'est dnf (l'évolution de l'ancien yum), avec des paquets au format .rpm.
+
+Les idées sont les mêmes des deux côtés : des dépôts signés, une résolution automatique des dépendances, les mêmes opérations de base. Seuls les noms de commandes changent. Si tu comprends l'une des familles, tu retrouves tes repères dans l'autre en quelques minutes.
+
+| Opération | apt (Debian/Ubuntu) | dnf (Red Hat/Fedora) |
+|---|---|---|
+| Mettre à jour l'index | sudo apt update | (automatique) |
+| Installer un paquet | sudo apt install nginx | sudo dnf install nginx |
+| Mettre à jour le système | sudo apt upgrade | sudo dnf upgrade |
+| Rechercher | apt search nginx | dnf search nginx |
+| Supprimer | sudo apt remove nginx | sudo dnf remove nginx |
+| Lister l'installé | apt list --installed | dnf list installed |
+
+Petite nuance : avec apt, il faut rafraîchir l'index des paquets soi-même avec `update` avant d'installer. Avec dnf, ce rafraîchissement se fait tout seul au début de chaque commande.
+
+## les opérations courantes
+
+Le `sudo` qui précède plusieurs commandes n'est pas décoratif. Installer ou retirer un logiciel modifie le système entier, donc il faut les droits d'administration. Rechercher ou lister, en revanche, ne change rien et se fait sans privilèges.
+
+L'enchaînement habituel sur une machine Debian ou Ubuntu : d'abord mettre à jour l'index avec `apt update`, qui va demander aux dépôts la liste des versions disponibles. Sans ce rafraîchissement, ta machine raisonne sur un catalogue périmé et risque d'installer une vieille version. Ensuite tu peux chercher, installer, vérifier, puis plus tard mettre à jour ou supprimer.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Gérer les paquets avec apt" commands={{"sudo apt update": "All packages are up to date.", "apt search nginx": "nginx/stable - small, powerful, scalable web server", "sudo apt install -y nginx": "Setting up nginx ... done.", "apt list --installed | grep nginx": "nginx/stable now installed", "sudo apt upgrade": "0 upgraded, 0 newly installed", "sudo apt remove nginx": "Removing nginx ..."}} />
+
+Remarque la résolution des dépendances en action : tu as demandé nginx, et l'installation a mis en place ce paquet plus tout ce qu'il réclame, sans que tu aies eu à les nommer. Quand tu supprimes, le gestionnaire retire le paquet et peut te proposer d'enlever aussi les dépendances qui ne servaient qu'à lui.
+
+## les mises à jour de sécurité
+
+La commande `upgrade` n'est pas juste là pour avoir les dernières fonctionnalités. C'est surtout ton outil de sécurité au quotidien. Quand une faille est découverte dans un logiciel, son éditeur publie une version corrigée, et cette correction arrive dans les dépôts sous forme de mise à jour. Tant que tu ne l'as pas appliquée, la faille reste ouverte sur ta machine.
+
+Tu te souviens des composants vulnérables vus côté sécurité : un logiciel installé et jamais mis à jour devient une cible connue, dont les failles sont publiques et déjà outillées par les attaquants. Mettre à jour régulièrement, c'est fermer ces portes avant qu'on ne les pousse. Sur un serveur, une mise à jour de l'index et un `upgrade` à intervalle régulier font partie de l'entretien de base, pas d'une corvée optionnelle.
+
+<Callout type="danger">
+Un serveur qu'on n'a pas mis à jour depuis des mois accumule des failles connues et corrigées partout sauf chez lui. Ce n'est pas une question de si, mais de quand. La mise à jour régulière est la mesure de sécurité la moins coûteuse et la plus efficace que tu puisses prendre.
+</Callout>
+
+## installer depuis les sources
+
+Il arrive qu'un logiciel ne soit pas packagé pour ta distribution, ou que tu aies besoin d'une version plus récente que celle des dépôts. Dans ce cas, on installe depuis les sources : on récupère le code, on le compile soi-même, on l'installe à la main.
+
+Ça marche, mais le confort du gestionnaire disparaît. Tu deviens responsable des dépendances, et surtout des mises à jour : aucun `upgrade` ne corrigera automatiquement une faille dans un logiciel compilé à la main. Tu devras suivre les annonces et recompiler toi-même. C'est pour ça qu'on garde la compilation depuis les sources comme dernier recours, quand le paquet n'existe vraiment pas.
+
+## à toi de jouer
+
+Reprends l'enchaînement sur une machine de type Red Hat avec dnf, et observe les différences de commandes.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Gérer les paquets avec dnf" commands={{"dnf search nginx": "nginx.x86_64 - A high performance web server", "sudo dnf install -y nginx": "Installed: nginx ... Complete!", "dnf list installed | grep nginx": "nginx.x86_64 installed", "sudo dnf upgrade": "Nothing to do. Complete!", "sudo dnf remove nginx": "Removed: nginx ... Complete!"}} />
+
+<Quiz id="q-1" question="Pourquoi installe-t-on un logiciel via un gestionnaire de paquets plutôt qu'en téléchargeant un binaire au hasard ?" options={["Parce que c'est plus rapide à taper", "Parce que la source est de confiance, les dépendances sont gérées et le logiciel reste suivi et réparable", "Parce que les binaires téléchargés ne fonctionnent jamais", "Parce que le gestionnaire chiffre le disque"]} correct={1} />
+
+<Quiz id="q-2" question="Que fait la résolution automatique des dépendances lors d'une installation ?" options={["Elle supprime les anciens fichiers de configuration", "Elle installe aussi les autres logiciels et bibliothèques dont le paquet a besoin pour fonctionner", "Elle vérifie ton mot de passe administrateur", "Elle compile le logiciel depuis son code source"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi faut-il se méfier avant d'ajouter un dépôt tiers à sa machine ?" options={["Parce que ça ralentit les installations", "Parce qu'on accorde sa confiance à ce serveur pour livrer du code qui tournera souvent avec les pleins droits", "Parce que les dépôts tiers sont toujours payants", "Parce que ça efface les dépôts officiels"]} correct={1} />
+
+## à retenir
+
+- Un gestionnaire de paquets installe, met à jour et supprime des logiciels, et gère leurs dépendances automatiquement.
+- Les paquets viennent de dépôts, des sources signées dont la machine vérifie l'authenticité ; on n'ajoute pas un dépôt tiers à la légère.
+- Deux familles selon la distribution : apt sur Debian et Ubuntu, dnf (ex-yum) sur Red Hat et Fedora. Mêmes idées, commandes différentes.
+- Sur Debian/Ubuntu, on rafraîchit l'index avec `apt update` avant d'installer ; sur dnf, c'est automatique.
+- Appliquer régulièrement les mises à jour ferme des failles de sécurité connues et corrigées.
+- Compiler depuis les sources reste un dernier recours : plus de travail et plus de maintenance manuelle, notamment pour la sécurité.

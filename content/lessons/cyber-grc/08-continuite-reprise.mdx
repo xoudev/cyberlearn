@@ -1,0 +1,106 @@
+---
+refCode: CL-LSN-128-V01
+slug: grc-continuite-reprise
+title: "Continuité d'activité et reprise après sinistre"
+description: "Comment une organisation tient et redémarre après un incident majeur : analyse d'impact, objectifs RTO et RPO, stratégies de sauvegarde, sites de secours, et l'importance de tester un plan plutôt que de le ranger."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-122-V01"]
+---
+
+Posons la question autrement. La plupart des plans de sécurité cherchent à empêcher l'incident. C'est utile, mais incomplet. Un serveur finit toujours par tomber, un disque par lâcher, un incendie par se déclencher dans la salle voisine, un rançongiciel par passer. La vraie question n'est donc pas de savoir si un incident grave arrivera un jour, mais comment l'organisation tient le coup pendant, et comment elle redémarre après. C'est tout le sujet de la continuité d'activité.
+
+Une entreprise qui ne peut plus facturer pendant deux semaines, ou un hôpital qui perd l'accès aux dossiers patients pendant trois jours, ne vit pas un simple désagrément technique. Elle perd de l'argent, des clients, parfois la vie de quelqu'un. Anticiper, c'est décider à froid, au calme, ce qu'on fera quand tout ira mal. Le jour de la crise, on n'improvise pas un plan, on l'exécute.
+
+## PCA et PRA
+
+Deux sigles reviennent sans cesse, et on les confond souvent. Le PCA, plan de continuité d'activité, vise à maintenir les activités vitales pendant la crise. Le PRA, plan de reprise après sinistre, vise à remettre les systèmes informatiques en état de marche après le sinistre.
+
+Une image aide. Imaginez une boulangerie dont le four électrique grille. Le PCA, c'est cuire chez le boulanger d'à côté ce matin pour livrer quand même les clients : l'activité continue, même en mode dégradé. Le PRA, c'est commander, installer et raccorder un nouveau four pour revenir à la normale. Le premier répond à « comment je tiens maintenant », le second à « comment je répare et reviens à l'état d'avant ».
+
+<Callout type="info">
+Le PRA est en général une partie du PCA, sa composante technique. Le PCA est plus large : il couvre aussi les locaux, les personnes, les fournisseurs, la communication de crise. On peut avoir un excellent PRA et quand même couler, parce que personne ne savait qui décide quoi pendant les premières heures.
+</Callout>
+
+## l'analyse d'impact
+
+Avant d'écrire le moindre plan, il faut savoir quoi protéger en priorité. C'est le rôle de l'analyse d'impact sur l'activité, souvent appelée BIA pour business impact analysis. L'idée est simple à formuler : pour chaque activité, on se demande ce que coûte son interruption, et à quelle vitesse ce coût grimpe.
+
+Toutes les activités ne se valent pas. Pour un commerçant en ligne, le système de paiement qui s'arrête fait mal tout de suite, chaque minute compte. La mise à jour du blog peut attendre une semaine sans que personne ne s'en rende compte. On classe donc les activités selon leur criticité, et on protège d'abord celles dont l'arrêt fait le plus mal, le plus vite.
+
+Cette analyse sert de fondation à tout le reste. Sans elle, on dépense autant d'énergie à protéger le blog que le paiement, ce qui revient à mal protéger les deux. La BIA force des choix, et ces choix se chiffrent ensuite en objectifs concrets.
+
+## RTO et RPO
+
+Ces objectifs portent deux noms qu'il faut bien distinguer, parce qu'ils mesurent des choses différentes.
+
+Le RTO, recovery time objective, répond à la question : combien de temps d'arrêt tolère-t-on ? C'est la durée maximale entre le moment où le service tombe et le moment où il doit être de nouveau disponible. Un RTO de quatre heures veut dire qu'on s'engage à tout remettre en route en moins de quatre heures.
+
+Le RPO, recovery point objective, répond à une autre question : combien de données récentes accepte-t-on de perdre ? C'est l'écart maximal entre la dernière sauvegarde utilisable et l'instant du sinistre. Un RPO d'une heure signifie qu'au pire on perd la dernière heure de travail, parce qu'on sauvegarde au moins toutes les heures.
+
+<Diagram caption="RTO et RPO autour d'un incident">
+flowchart LR
+  A[Derniere sauvegarde] --> B[Incident a 14h]
+  B --> C[Service retabli]
+  A -. RPO : donnees perdues .-> B
+  B -. RTO : duree d-arret .-> C
+</Diagram>
+
+Un exemple chiffré pour ancrer tout ça. Une PME sauvegarde sa base clients chaque nuit à 2 h. Un rançongiciel frappe à 14 h. Le RPO réel est de douze heures : tout le travail fait depuis 2 h est perdu. Si l'équipe restaure depuis la sauvegarde de la nuit et redémarre à 18 h, le RTO réel est de quatre heures. Si ces chiffres dépassent ce que l'activité supporte, il faut sauvegarder plus souvent pour baisser le RPO, et préparer une restauration plus rapide pour baisser le RTO. Viser un RPO et un RTO proches de zéro coûte très cher : on calibre selon ce que dit la BIA, pas selon un idéal.
+
+## les sauvegardes
+
+Une sauvegarde n'a de valeur que si elle existe encore le jour où on en a besoin, et qu'on peut la restaurer. D'où une règle simple et éprouvée, dite 3-2-1 : trois copies des données, sur deux types de supports différents, dont une copie hors site.
+
+Détaillons. Trois copies, c'est l'original plus deux sauvegardes, pour qu'une copie corrompue n'emporte pas tout. Deux supports, par exemple un disque et un service cloud, parce qu'un même type de matériel peut tomber en panne de la même façon au même moment. Une hors site, dans un autre lieu géographique, pour qu'un incendie ou un dégât des eaux ne détruise pas l'original et sa sauvegarde d'un seul coup.
+
+<Callout type="warning">
+Une variante moderne ajoute un chiffre : 3-2-1-1-0. Le second 1 désigne une copie hors ligne ou immuable, et le 0 signifie zéro erreur aux tests de restauration. Ce détail compte énormément face aux rançongiciels, comme on va le voir.
+</Callout>
+
+Justement, le lien avec les rançongiciels mérite qu'on s'y arrête. Un rançongiciel moderne ne se contente pas de chiffrer vos fichiers de travail. Il cherche activement les sauvegardes accessibles depuis le réseau et les chiffre aussi, ou les supprime, pour vous priver de toute issue autre que payer. Une sauvegarde branchée en permanence, montée comme un disque réseau, est à sa portée. Une sauvegarde hors ligne, débranchée physiquement, ou immuable, c'est-à-dire impossible à modifier ou effacer pendant une durée fixée, reste hors d'atteinte. C'est souvent elle qui fait la différence entre payer la rançon et restaurer tranquillement.
+
+## les sites de secours
+
+Restaurer des données, c'est bien. Encore faut-il un endroit où les faire tourner si le bâtiment principal est inutilisable. On parle alors de site de secours, et il en existe trois niveaux, qui se distinguent par leur coût et leur rapidité de bascule.
+
+| Type de site | Ce qu'il contient | Délai de reprise | Coût |
+| --- | --- | --- | --- |
+| Froid | Un local vide, alimenté, sans matériel installé | Plusieurs jours | Faible |
+| Tiède | Matériel présent, données à restaurer | Quelques heures à un jour | Moyen |
+| Chaud | Système répliqué en continu, prêt à prendre le relais | Quelques minutes | Élevé |
+
+Le compromis saute aux yeux. Un site froid coûte peu mais vous laisse plusieurs jours à l'arrêt, le temps d'apporter et de configurer les machines. Un site chaud bascule presque instantanément mais vous fait payer un second système qui tourne en doublon, même quand tout va bien. Le choix découle directement du RTO fixé par la BIA : un RTO de quelques minutes impose un site chaud, un RTO de plusieurs jours se contente d'un site froid.
+
+## tester, sinon rien
+
+Voici le point que les organisations négligent le plus, et qui les fait échouer le jour J. Un plan rangé dans un classeur, jamais éprouvé, n'est pas un plan, c'est un espoir.
+
+Les raisons d'un échec sont banales et nombreuses. La sauvegarde tournait depuis des mois, mais personne n'avait jamais tenté une restauration complète, et le jour venu on découvre que les fichiers sont illisibles. Le numéro du prestataire de secours a changé. La personne qui connaissait la procédure a quitté l'entreprise. Le site de secours n'a pas assez de capacité pour la charge réelle. Aucune de ces failles ne se voit sur le papier. Toutes se révèlent à un exercice.
+
+<Callout type="danger">
+Une sauvegarde dont la restauration n'a jamais été testée doit être considérée comme inexistante. Le seul moyen de savoir qu'on peut récupérer ses données, c'est de l'avoir déjà fait pour de vrai, dans des conditions proches du réel.
+</Callout>
+
+Tester, ce n'est pas un événement unique. On planifie des exercices réguliers, du plus simple au plus exigeant : revue sur table où l'équipe déroule le scénario à l'oral, restauration d'un échantillon, puis bascule complète vers le site de secours. Chaque exercice révèle un défaut, on le corrige, et le plan s'améliore. Un plan testé deux fois par an reste vivant. Un plan écrit une fois et oublié vieillit en silence jusqu'à devenir inutile.
+
+## à toi de jouer
+
+<Quiz id="q-rto-rpo" question="Une organisation sauvegarde toutes les 6 heures et vise un retour en service sous 2 heures. Que valent son RPO et son RTO ?" options={["RPO de 2 heures, RTO de 6 heures", "RPO de 6 heures, RTO de 2 heures", "RPO et RTO valent tous deux 6 heures", "RPO et RTO sont indépendants de ces chiffres"]} correct={1} />
+
+<Quiz id="q-321" question="Que décrit la règle 3-2-1 pour les sauvegardes ?" options={["Trois sauvegardes par jour, deux par semaine, une par mois", "Trois copies, sur deux supports différents, dont une hors site", "Trois serveurs, deux pare-feux, un site de secours", "Trois jours de RTO, deux heures de RPO, une restauration"]} correct={1} />
+
+<Quiz id="q-ransom" question="Pourquoi une sauvegarde hors ligne ou immuable est-elle décisive face à un rançongiciel ?" options={["Elle se restaure plus vite qu une sauvegarde en ligne", "Elle occupe moins d espace de stockage", "Le rançongiciel ne peut pas la chiffrer ni l effacer car elle est hors de sa portée", "Elle chiffre automatiquement les données pour les protéger"]} correct={2} />
+
+## à retenir
+
+- Le PCA maintient les activités vitales pendant la crise ; le PRA remet les systèmes en marche après. Le PRA est la partie technique du PCA.
+- La BIA classe les activités par criticité et chiffre le coût d'une interruption. Elle fonde tous les choix qui suivent.
+- Le RTO mesure la durée d'arrêt tolérée ; le RPO mesure la quantité de données récentes qu'on accepte de perdre. Ce sont deux choses distinctes.
+- La règle 3-2-1 : trois copies, deux supports, une hors site. Une copie hors ligne ou immuable protège contre les rançongiciels qui visent aussi les sauvegardes en ligne.
+- Les sites de secours vont du froid (lent, peu coûteux) au chaud (quasi instantané, coûteux). Le RTO dicte le choix.
+- Un plan jamais testé échoue le jour J. Une sauvegarde dont on n'a jamais testé la restauration doit être tenue pour inexistante.
+
+OK 08 écrit

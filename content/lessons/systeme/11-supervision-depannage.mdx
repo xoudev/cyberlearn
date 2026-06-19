@@ -1,0 +1,113 @@
+---
+refCode: CL-LSN-191-V01
+slug: systeme-supervision-depannage
+title: "Superviser et dépanner un serveur"
+description: "Diagnostiquer un serveur lent avec méthode : lire la charge, la mémoire et les entrées-sorties, repérer le goulot d'étranglement entre processeur, mémoire, disque et réseau avant de conclure."
+category: DEV
+difficulty: ADVANCED
+estimatedMinutes: 45
+xpReward: 560
+prerequisites: ["CL-LSN-187-V01"]
+---
+
+Un collègue t'envoie un message : "le serveur est lent, tu peux regarder ?". C'est une plainte, pas un diagnostic. Lent à cause de quoi ? Un serveur qui rame, c'est presque toujours l'une de ces quatre ressources qui sature : le processeur, la mémoire, le disque, ou le réseau. Tant que tu n'as pas trouvé laquelle, tu n'as rien trouvé.
+
+La bonne façon de procéder ressemble au travail d'un médecin. Le patient dit "j'ai mal au ventre". Le médecin ne sort pas le bistouri tout de suite. Il prend la température, palpe, demande depuis quand, écarte les hypothèses une par une. Le symptôme (la lenteur) n'est pas la cause. Ton boulot, c'est de remonter du symptôme à la cause, en mesurant, pas en devinant. La tentation du débutant, c'est d'agir vite : redémarrer le service, ajouter de la RAM, relancer la machine. Parfois ça marche, par hasard. Souvent ça masque le vrai problème, qui revient le lendemain. Mesure d'abord.
+
+## lire la charge
+
+Le premier réflexe, c'est de regarder le load average. Trois chiffres, donnés par `uptime` ou par la première ligne de `top` : la charge moyenne sur 1, 5 et 15 minutes.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Lire la charge et le nombre de coeurs" commands={{"uptime": "14:02:31 up 12 days, load average: 8.42, 7.91, 5.30", "nproc": "4"}} />
+
+Le piège classique : croire qu'une charge de 8 est forcément grave. Faux. Le load average compte le nombre moyen de processus qui veulent du temps CPU (ou qui attendent le disque) à un instant donné. Ce chiffre n'a aucun sens tant que tu ne le compares pas au nombre de coeurs.
+
+La règle mentale : une charge égale au nombre de coeurs, c'est une machine pleine mais pas en surcharge. Sur une machine à 4 coeurs, une charge de 4 veut dire que chaque coeur a exactement un processus à servir, sans file d'attente. Sur une machine à 8 coeurs, cette même charge de 4 laisse la moitié des coeurs au repos. Donc ici, charge de 8.42 sur 4 coeurs : il y a deux fois plus de demande que de capacité. Des processus attendent leur tour. Ça, c'est un vrai signal.
+
+Compare aussi les trois chiffres entre eux. Le premier (1 minute) est plus haut que le troisième (15 minutes) : la charge monte, le problème est récent et en cours. Si c'était l'inverse, tu regarderais peut-être les restes d'un pic déjà passé.
+
+<Callout type="info">
+Le load average ne distingue pas un CPU saturé d'un disque saturé. Sous Linux, un processus bloqué en attente d'entrées-sorties compte dans la charge au même titre qu'un processus qui calcule. Une charge haute te dit qu'il y a un embouteillage, pas où il se trouve. C'est le point de départ de l'enquête, pas la conclusion.
+</Callout>
+
+## la mémoire
+
+Vient la mémoire, et avec elle l'idée reçue la plus tenace de l'administration Linux.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Lire la mémoire et le swap" commands={{"free -h": "Mem: 7.8Gi used 7.2Gi  available 0.3Gi\nSwap: 2.0Gi used 1.8Gi"}} />
+
+Beaucoup de gens voient "7.2 sur 7.8 utilisés" et paniquent : la RAM est pleine. Mais une grande partie de cette mémoire "utilisée" sert de cache. Linux garde en RAM les fichiers lus récemment, parce que de la RAM libre, c'est de la RAM gaspillée. Si une application réclame cette mémoire, le noyau libère le cache instantanément. La colonne à regarder n'est pas `used`, c'est `available` : ce que le système peut donner à une nouvelle application sans souffrir. Une RAM pleine de cache n'est pas un problème, c'est un système qui fait son travail.
+
+Ce qui doit t'inquiéter, c'est le swap. Le swap, c'est de la mémoire simulée sur le disque, des centaines de fois plus lente que la vraie RAM. Un peu de swap occupé, dormant, n'est pas grave. Mais un swap qui s'emballe (qui grossit, où le système écrit et lit en permanence) veut dire que la machine n'a plus assez de RAM réelle et déplace sans arrêt des pages entre disque et mémoire. C'est le "swapping" ou "thrashing". À ce moment, tout ralentit d'un coup, parce que le disque devient le facteur limitant de chaque accès mémoire.
+
+<Callout type="warning">
+"La RAM est pleine, il faut en rajouter" est une conclusion hâtive. Regarde `available` avant de juger, et surtout regarde si le swap est actif et croissant. Une RAM pleine de cache avec un swap au repos : tout va bien. Une RAM saturée avec un swap qui s'agite : là tu as une vraie pénurie de mémoire à traiter.
+</Callout>
+
+## le disque
+
+Le disque pose deux problèmes différents qu'on confond souvent. Le premier, c'est l'espace plein.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Espace disque et saturation des entrees-sorties" commands={{"df -h /": "/dev/sda1 49G 48G 0 100% /", "iostat -x 1 1": "%util 99.8"}} />
+
+Un disque plein à 100 % comme ici fait planter tout ce qui veut écrire : logs, bases de données, fichiers temporaires. Une application qui n'arrive plus à écrire son fichier de log peut se figer ou tomber. `df -h` te donne cette photo en une ligne. Quand l'espace manque, le coupable est souvent un répertoire de logs qui a gonflé ou un fichier temporaire oublié.
+
+Le second problème, plus discret, c'est la saturation des entrées-sorties. Le disque a de la place, mais il est sollicité au-delà de ce qu'il peut suivre. C'est ce que mesure `iostat -x` avec la colonne `%util` : le pourcentage de temps où le disque est occupé. À 99.8 %, le disque ne respire jamais. Tout ce qui doit lire ou écrire fait la queue. Et comme l'attente disque compte dans le load average, tu retrouves ici l'explication possible d'une charge haute sans que le CPU soit débordé.
+
+C'est le piège du serveur qui semble inactif côté processeur mais reste lent : ce n'est pas le calcul qui bloque, c'est l'accès aux données. Un swap qui s'emballe, justement, peut être la cause de cette saturation disque. Les symptômes se chaînent.
+
+## les processus
+
+La charge, la mémoire et le disque te disent quelle ressource sature. Reste à trouver qui la sature. C'est le rôle de `top`, ou de son cousin plus lisible `htop`.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Trouver le processus coupable" commands={{"top -bn1 | head -8": "PID USER %CPU %MEM COMMAND\n2451 www 380 12 java"}} />
+
+Dans `top`, deux colonnes guident l'enquête : `%CPU` et `%MEM`. Tu tries par l'une ou l'autre selon le goulot identifié. Si la charge est haute et le CPU saturé, tu tries par `%CPU` et tu regardes qui est en tête. Ici, un processus Java à 380 % de CPU : sur une machine multi-coeurs, un processus peut dépasser 100 %, car le chiffre additionne tous les coeurs qu'il occupe. 380 %, c'est presque quatre coeurs mangés par un seul programme. Voilà ton suspect.
+
+Si le goulot était la mémoire, tu trierais par `%MEM` pour repérer le processus qui mange la RAM et pousse au swap. Le même outil, deux angles de lecture selon ce que les étapes précédentes t'ont appris.
+
+## la démarche méthodique
+
+Tout ce qui précède n'a de valeur que dans le bon ordre. Le coeur de ce métier, ce n'est pas de connaître les outils, c'est de les enchaîner avec méthode.
+
+Trois principes. D'abord, mesurer avant d'agir : ne touche à rien tant que tu n'as pas une mesure qui pointe une ressource précise. Redémarrer un service au hasard te fait perdre l'information dont tu as besoin pour comprendre. Ensuite, isoler le goulot : une seule des quatre ressources est, en général, le facteur limitant à un instant donné. Trouve-la avant de regarder le reste. Enfin, une hypothèse à la fois : tu formules une supposition ("c'est le disque"), tu la vérifies avec une mesure, tu confirmes ou tu écartes, puis tu passes à la suivante. Si tu changes trois choses en même temps et que ça va mieux, tu ne sauras jamais laquelle a compté.
+
+<Diagram caption="Localiser le goulot d'etranglement">
+flowchart TD
+  A[Serveur lent] --> B[uptime : charge vs nproc]
+  B -->|charge faible| C[Verifier reseau et application]
+  B -->|charge haute| D[top : qui consomme]
+  D -->|CPU sature| E[Processus gourmand en CPU]
+  D -->|CPU calme| F[free -h : swap actif ?]
+  F -->|swap qui s emballe| G[Penurie de RAM]
+  F -->|swap au repos| H[iostat : %util disque]
+  H -->|util elevee| I[Disque sature en E/S]
+  H -->|util faible| C
+</Diagram>
+
+Cet arbre n'est pas une recette rigide, c'est une trame. Charge basse mais serveur lent ? Le goulot est probablement ailleurs, côté réseau ou dans l'application elle-même (une requête qui attend une autre machine, par exemple). Charge haute ? Tu descends : CPU saturé pointe vers un processus gourmand, CPU calme te renvoie vers la mémoire puis le disque. Chaque embranchement correspond à une mesure, pas à une intuition.
+
+## à toi de jouer
+
+Reprends le scénario du début. Un serveur à 4 coeurs, charge de 8.42, et tu enquêtes.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Diagnostiquer un serveur lent" commands={{"uptime": "14:02:31 up 12 days, load average: 8.42, 7.91, 5.30", "nproc": "4", "free -h": "Mem: 7.8Gi used 7.2Gi  available 0.3Gi\nSwap: 2.0Gi used 1.8Gi", "top -bn1 | head -8": "PID USER %CPU %MEM COMMAND\n2451 www 380 12 java", "df -h /": "/dev/sda1 49G 48G 0 100% /", "iostat -x 1 1": "%util 99.8"}} />
+
+Charge de 8.42 sur 4 coeurs : surcharge confirmée. `top` montre un Java à 380 % de CPU, donc un processus accapare le processeur. Mais `df` révèle aussi un disque plein à 100 % et `iostat` un disque saturé en E/S. Plusieurs pistes coexistent : c'est justement le moment d'appliquer la méthode, une hypothèse à la fois, plutôt que de tout redémarrer.
+
+<Quiz id="q-1" question="Un serveur a 8 coeurs et un load average de 4. Que conclure ?" options={["La machine est en surcharge, il faut agir vite", "La machine est tranquille, environ la moitie des coeurs est libre", "Le load average est inutilisable sans connaitre la RAM", "Il faut ajouter des coeurs immediatement"]} correct={1} />
+
+<Quiz id="q-2" question="free -h montre la RAM presque pleine mais le swap au repos. Que faire ?" options={["Rajouter de la RAM en urgence", "Redemarrer le serveur pour vider la memoire", "Rien : la RAM sert de cache, regarder la colonne available", "Desactiver le cache du noyau"]} correct={2} />
+
+<Quiz id="q-3" question="Le CPU est calme mais le serveur est lent et iostat affiche %util a 99.8. Quel est le goulot le plus probable ?" options={["Le processeur", "Le disque, sature en entrees-sorties", "Le nombre de coeurs", "Le load average lui-meme"]} correct={1} />
+
+## à retenir
+
+- "Le serveur est lent" est un symptôme, pas un diagnostic : trouve laquelle des quatre ressources sature (CPU, mémoire, disque, réseau).
+- Le load average n'a de sens que comparé au nombre de coeurs (`nproc`) : charge 4 sur 4 coeurs = plein, charge 4 sur 8 coeurs = tranquille.
+- Une RAM pleine de cache n'est pas un problème : lis la colonne `available`, pas `used`. Le vrai signal d'alerte mémoire, c'est un swap qui s'emballe.
+- Le disque a deux maux distincts : l'espace plein (`df`) et la saturation des E/S (`iostat`, colonne `%util`). L'attente disque gonfle le load average.
+- `top` ou `htop` désignent le processus coupable : tri par `%CPU` ou `%MEM` selon le goulot. Un processus peut dépasser 100 % de CPU sur plusieurs coeurs.
+- La méthode prime sur les outils : mesurer avant d'agir, isoler le goulot, vérifier une hypothèse à la fois.
+
+OK 11 écrit

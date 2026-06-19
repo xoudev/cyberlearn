@@ -1,0 +1,101 @@
+---
+refCode: CL-LSN-088-V01
+slug: owasp-auth-failures
+title: "Défaillances d'authentification et de session"
+description: "Comprenez pourquoi la gestion de l'identité échoue souvent : mots de passe faibles tolérés, sessions mal protégées, jetons prévisibles, et récupération de compte vulnérable, avec les bonnes pratiques associées."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 480
+prerequisites: ["CL-LSN-085-V01"]
+---
+
+Prouver qui on est, puis rester connecté pendant une demi-heure sans avoir à retaper son mot de passe à chaque clic : ça paraît banal côté utilisateur. Côté serveur, c'est une des choses les plus difficiles à faire correctement. Il faut vérifier une identité, fabriquer une preuve temporaire que l'utilisateur va trimballer de page en page, protéger cette preuve contre le vol, la faire expirer au bon moment, et prévoir un chemin de secours quand quelqu'un perd son accès. Chacune de ces étapes a son lot de pièges, et beaucoup d'applications s'y cassent les dents.
+
+Le modèle mental à garder : l'authentification n'est pas un moment unique. C'est l'identité au départ, puis une session qui dure. Une grande partie des incidents ne vient pas de l'écran de connexion lui-même, mais de ce qui se passe après, ou de la porte de derrière qu'est la récupération de compte.
+
+## ce que recouvre cette catégorie
+
+Sous l'étiquette OWASP des défaillances d'identification et d'authentification, on range plusieurs problèmes qui ont l'air distincts mais qui se rejoignent.
+
+Premier groupe : les politiques de mots de passe trop laxistes. Une appli qui accepte `azerty` ou `password1` laisse la porte grande ouverte. Deuxième groupe : les attaques par essais répétés que rien ne ralentit, force brute ou réutilisation de mots de passe fuités ailleurs. Troisième groupe : la gestion de session faible, quand le cookie ou le jeton qui prouve votre connexion est volable, devinable, ou ne meurt jamais. Quatrième groupe, le plus négligé : la récupération de compte, qui permet souvent de contourner tout le reste.
+
+Le fil rouge, c'est que l'attaquant ne cherche pas forcément à deviner votre mot de passe. Il cherche le maillon le moins surveillé pour se faire passer pour vous.
+
+## les sessions et leurs cookies
+
+Une fois connecté, votre navigateur ne renvoie pas votre mot de passe à chaque requête. Le serveur vous remet un identifiant de session, le plus souvent dans un cookie, et votre navigateur le rejoue automatiquement à chaque page. Ce cookie est la preuve « c'est bien la personne qui s'est connectée ». Quiconque le possède est vous, aux yeux du serveur.
+
+D'où le vol de session : si un attaquant met la main sur votre cookie, via une faille XSS, un réseau non chiffré, ou un journal qui le stocke par erreur, il n'a même pas besoin de votre mot de passe. Il colle le cookie dans son propre navigateur et il est connecté.
+
+```http
+Set-Cookie: session=8fk2p9xq7m3v1z; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=1800
+```
+
+Trois attributs font le gros du travail. `HttpOnly` interdit au JavaScript de lire le cookie, ce qui coupe la voie la plus directe pour un XSS qui voudrait l'exfiltrer. `Secure` empêche l'envoi du cookie sur une connexion non chiffrée, donc plus de cookie qui passe en clair. `SameSite` limite l'envoi du cookie quand la requête vient d'un autre site, ce qui aide contre le CSRF.
+
+<Callout type="info">
+Un cookie de session sans `HttpOnly` ni `Secure`, c'est comme laisser la clé de la maison sur le paillasson. La clé est valide, elle ouvre bien la porte, et n'importe qui peut la ramasser. Vérifiez ces attributs dès la première session de test.
+</Callout>
+
+## les attaques courantes
+
+Le bourrage d'identifiants, ou credential stuffing, exploite une réalité triste : les gens réutilisent leurs mots de passe. Quand un site se fait pirater et que sa base de comptes fuite, les attaquants prennent ces millions de couples e-mail / mot de passe et les essaient en masse sur d'autres sites. Ils ne devinent rien, ils rejouent des identifiants déjà valides ailleurs. Si votre utilisateur a le même mot de passe sur votre appli et sur le site fuité, son compte tombe.
+
+La force brute, elle, teste des combinaisons jusqu'à trouver. Sans limite de tentatives, un script peut essayer des milliers de mots de passe par minute sur un même compte. Une appli qui répond indéfiniment à chaque essai sans jamais ralentir ni bloquer offre tout le temps nécessaire à l'attaquant.
+
+```text
+POST /login  email=victime@exemple.fr  password=123456     -> 401
+POST /login  email=victime@exemple.fr  password=qwerty     -> 401
+POST /login  email=victime@exemple.fr  password=soleil2024 -> 401
+... 4000 essais plus tard, toujours aucun blocage ...
+POST /login  email=victime@exemple.fr  password=Maman1985! -> 200 OK
+```
+
+Troisième cas, plus discret : les jetons de session prévisibles. Si l'identifiant de session est un simple compteur (`session=1001`, puis `1002`...) ou repose sur l'heure, un attaquant devine les jetons des autres utilisateurs et se connecte à leur place sans rien voler du tout. Un identifiant de session doit être tiré d'un générateur aléatoire cryptographique, assez long pour qu'on ne puisse pas l'énumérer.
+
+## la récupération de compte
+
+Voilà le maillon qu'on oublie. On blinde l'écran de connexion, on met un mot de passe fort obligatoire, et juste à côté il y a un lien « mot de passe oublié » qui contourne tout ça.
+
+Les questions secrètes sont une fausse bonne idée. « Nom de jeune fille de votre mère », « ville de naissance », « nom de votre premier animal » : ces réponses se trouvent sur les réseaux sociaux ou se devinent. Pire, elles ne changent jamais, contrairement à un mot de passe.
+
+Les jetons de réinitialisation devinables sont l'autre grand classique. Si le lien envoyé par e-mail contient un jeton court, séquentiel, ou basé sur l'horodatage, un attaquant peut le reconstituer, prendre le contrôle du lien, et changer le mot de passe avant la victime. Le jeton de réinitialisation est aussi sensible que le mot de passe lui-même, parce qu'il sert exactement à le remplacer.
+
+<Callout type="warning">
+Une question fréquente : « le mot de passe est solide, pourquoi se soucier de la récupération ? » Parce qu'un attaquant n'attaque jamais le point fort. Si réinitialiser le mot de passe est plus facile que de le deviner, c'est par là qu'il passe. La récupération mérite autant de soin que la connexion, pas moins.
+</Callout>
+
+## les défenses
+
+Contre les essais répétés, on limite. Compter les échecs par compte et par adresse IP, ralentir après quelques tentatives, exiger un CAPTCHA ou un délai croissant. Le but n'est pas de tout bloquer mais de rendre la force brute et le bourrage trop lents pour valoir le coup.
+
+Pour les sessions, l'identifiant doit être aléatoire et long, généré côté serveur. Il doit expirer après une période d'inactivité, et un nouvel identifiant doit être émis au moment de la connexion pour éviter qu'un jeton fixé d'avance ne reste valide. La déconnexion doit réellement invalider la session côté serveur, pas seulement effacer le cookie du navigateur.
+
+L'authentification à deux facteurs change la donne contre le bourrage et la force brute. Même avec le bon mot de passe, l'attaquant bute sur le second facteur qu'il ne possède pas. C'est la mesure qui apporte le plus pour des comptes sensibles.
+
+Côté récupération, le jeton de réinitialisation doit être aléatoire, long, à usage unique et à durée courte. Quelques minutes de validité, invalidé dès qu'il sert ou dès qu'un nouveau est demandé. On préfère un lien envoyé sur un canal vérifié, l'e-mail enregistré, plutôt que des questions secrètes qu'on devrait de toute façon traiter comme un mot de passe à part entière.
+
+<Callout type="success">
+Un bon réflexe de revue : pour chaque compte, demandez-vous comment un attaquant entrerait sans connaître le mot de passe. S'il existe un chemin plus simple que la connexion normale, c'est lui qu'il faut renforcer en premier.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quel attribut de cookie empêche le JavaScript de la page de lire un cookie de session ?" options={["Secure", "HttpOnly", "SameSite"]} correct={1} />
+
+<Quiz id="q-2" question="Une appli accepte un nombre illimité de tentatives de connexion sans jamais ralentir ni bloquer. Quelle attaque cela facilite-t-il surtout ?" options={["La force brute sur les mots de passe", "L'injection SQL", "Le vol de cookie par XSS"]} correct={0} />
+
+<Quiz id="q-3" question="Pourquoi un jeton de réinitialisation de mot de passe doit-il être traité avec autant de soin que le mot de passe lui-même ?" options={["Parce qu'il est plus long à taper", "Parce qu'il sert à remplacer le mot de passe et donne donc le même accès", "Parce qu'il est stocké dans un cookie"]} correct={1} />
+
+## à retenir
+
+L'authentification se joue en deux temps : prouver l'identité, puis tenir une session. Une bonne partie des failles vient du second temps et de la récupération de compte, pas de l'écran de connexion.
+
+Le cookie de session est une preuve volable : `HttpOnly`, `Secure` et `SameSite` la protègent. Un identifiant de session doit être aléatoire, long, et expirer.
+
+Le bourrage d'identifiants rejoue des mots de passe fuités ailleurs ; la force brute teste sans relâche quand rien ne limite les tentatives. La limitation des essais et la 2FA répondent aux deux.
+
+La récupération de compte est souvent le chemin le plus facile : questions secrètes faibles et jetons devinables contournent tout le reste. Un jeton de réinitialisation doit être aléatoire, à usage unique, et valide quelques minutes seulement.
+
+OK 04-auth-failures.mdx écrit

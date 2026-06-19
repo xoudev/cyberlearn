@@ -1,0 +1,120 @@
+---
+refCode: CL-LSN-080-V01
+slug: cyber-securite-web
+title: "Les bases de la sécurité web"
+description: "Comprenez pourquoi la plupart des failles web viennent d'une confiance excessive dans les entrées utilisateur, avec le mécanisme de l'injection SQL et du cross-site scripting expliqué simplement."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 480
+prerequisites: ["CL-LSN-074-V01"]
+---
+
+Tu vas voir des dizaines de noms de failles dans ta carrière : injection SQL, XSS, traversée de répertoire, injection de commande. Au début, on a l'impression qu'il faut tout apprendre par coeur, comme une liste de maladies sans rapport entre elles. C'est faux. Presque toutes ces failles ont la même origine. Le serveur reçoit une donnée que l'attaquant contrôle, et il la traite comme si elle était sûre. C'est tout. Si tu retiens ce seul fil rouge, tu comprendras la moitié des vulnérabilités web avant même d'avoir lu leur définition.
+
+Cette leçon part de là. On regarde d'abord pourquoi le serveur se fait piéger, puis on démonte deux failles classiques pour de bon, et on finit par la seule défense qui marche vraiment.
+
+## le modèle client-serveur et la confiance
+
+Quand tu remplis un formulaire sur un site, ton navigateur envoie une requête au serveur. Cette requête contient des données : l'URL, les champs du formulaire, les cookies, parfois des en-têtes. Le serveur lit tout ça, fait son travail, et renvoie une réponse.
+
+Le piège est là. Toutes ces données viennent du client, donc de la machine de l'utilisateur. Et un utilisateur peut être un attaquant. Il ne se contente pas de cliquer sur des boutons. Il peut ouvrir les outils de développement, intercepter la requête avec un proxy, ou la fabriquer à la main avec un outil en ligne de commande. Rien ne l'oblige à respecter ton joli formulaire avec sa limite de 20 caractères et son champ "âge" qui n'accepte que des chiffres. Cette limite n'existe que dans le navigateur, et le navigateur, c'est lui qui le contrôle.
+
+Prends un formulaire de connexion mal protégé. Le développeur s'est dit : le champ "nom d'utilisateur" recevra un nom, genre `alice`. Il a raison dans 99 pour cent des cas. Mais le 1 pour cent restant, c'est quelqu'un qui tape autre chose à la place, exprès, pour voir ce qui se passe. Et souvent, ce qui se passe est intéressant.
+
+<Callout type="info">
+Règle de base : tout ce qui vient du client est potentiellement hostile. L'URL, les champs cachés, les cookies, les en-têtes HTTP. Le serveur ne doit jamais supposer qu'une entrée est bien formée juste parce que son propre formulaire la demandait poliment.
+</Callout>
+
+## l'injection SQL
+
+Regardons un cas précis. Le serveur veut vérifier un identifiant dans la base. Beaucoup de code débutant construit la requête en collant directement le texte de l'utilisateur dedans :
+
+```sql
+-- requête vulnérable : le nom d'utilisateur est collé tel quel
+SELECT * FROM users WHERE username = 'alice' AND password = 'secret';
+```
+
+Tant que l'utilisateur tape un nom normal, tout va bien. Mais le serveur ne voit pas deux choses séparées, "la requête" et "la donnée". Il voit une seule chaîne de texte qu'il envoie à la base. Si l'attaquant tape un nom d'utilisateur qui contient une apostrophe et un peu de SQL, il sort du cadre prévu :
+
+```sql
+-- l'attaquant a tapé   ' OR '1'='1   dans le champ username
+SELECT * FROM users WHERE username = '' OR '1'='1' AND password = '';
+```
+
+La condition `'1'='1'` est toujours vraie. La requête ne cherche plus un utilisateur précis, elle dit "renvoie tout". L'attaquant vient de changer le sens de la requête sans avoir le mot de passe. Il peut se connecter, lire des données qui ne le regardent pas, parfois effacer une table entière. L'apostrophe a fermé la chaîne de texte plus tôt que prévu, et tout ce qui suit a été lu comme du code SQL au lieu d'être lu comme une donnée.
+
+<Callout type="danger">
+L'injection SQL ne demande aucun outil sophistiqué. Une apostrophe au bon endroit suffit à tester. C'est l'une des failles les plus anciennes et elle reste dans le top des attaques réussies, parce que coller du texte dans une requête est tentant et que ça marche... jusqu'au jour où ça ne marche plus.
+</Callout>
+
+La défense est nette et elle a un nom : les requêtes paramétrées (aussi appelées requêtes préparées). Au lieu de coller le texte dans la requête, tu envoies la requête et les données séparément. La base sait alors que l'entrée est une donnée, point. Même si elle contient une apostrophe ou le mot `OR`, elle ne sera jamais lue comme du code.
+
+```sql
+-- requête paramétrée : le ? est une place réservée à une donnée
+SELECT * FROM users WHERE username = ? AND password = ?;
+-- la valeur tapée par l'utilisateur est passée à part, jamais interprétée comme du SQL
+```
+
+C'est le même principe pour toutes les injections : on ne mélange jamais le code et les données contrôlées par quelqu'un d'autre.
+
+## le cross-site scripting (XSS)
+
+L'injection SQL piège la base. Le XSS piège le navigateur des autres visiteurs. Le mécanisme reste le même : une entrée non contrôlée est traitée comme du code.
+
+Imagine un champ de commentaire sur un blog. Tu écris un message, le serveur le stocke, puis il l'affiche à tous ceux qui lisent l'article. Si le serveur réaffiche ton texte tel quel, sans le nettoyer, un attaquant peut poster un commentaire qui ne contient pas du texte mais du code de page.
+
+Concrètement, il poste quelque chose comme ceci dans le champ commentaire :
+
+```text
+<script>alert(1)</script>
+```
+
+Si le serveur recrache ce contenu sans précaution dans la page HTML, le navigateur de chaque visiteur ne lit plus ça comme un commentaire. Il le lit comme une instruction de page et l'exécute. Ici c'est un simple `alert(1)` inoffensif, mais le même procédé permet de voler le cookie de session d'un visiteur, de le rediriger vers un faux site, ou d'agir en son nom. L'attaquant n'a même pas touché au serveur de la victime : il a juste déposé du code que le serveur a ensuite servi à tout le monde.
+
+Le mot clé, encore une fois, c'est la confiance. Le serveur a fait confiance à un commentaire et l'a réinjecté dans une page sans se demander s'il contenait du code.
+
+La défense s'appelle l'échappement de la sortie. Avant de réafficher une donnée venue d'un utilisateur, on remplace les caractères spéciaux du HTML par leur version neutre : le chevron ouvrant devient `&lt;`, le chevron fermant `&gt;`. Le navigateur affiche alors le texte des chevrons à l'écran au lieu d'y voir une balise. Le commentaire malveillant apparaît comme du texte visible, bête et inoffensif, et plus rien ne s'exécute. La plupart des frameworks modernes échappent automatiquement, mais dès que tu insères du HTML "à la main", la responsabilité revient sur toi.
+
+<Callout type="warning">
+Idée reçue à corriger : "j'ai mis une vérification en JavaScript dans le navigateur, donc mes entrées sont validées." Non. Tout contrôle qui vit côté client peut être désactivé ou contourné par l'attaquant, puisque c'est sa machine. La validation côté navigateur sert le confort de l'utilisateur honnête. La sécurité, elle, se joue uniquement côté serveur. Si tu ne valides pas côté serveur, tu ne valides pas.
+</Callout>
+
+## explorer une cible (reconnaissance web)
+
+Avant d'attaquer, un pentesteur observe. La reconnaissance web consiste à cartographier le site : quelles pages existent, lesquelles sont cachées, quels en-têtes le serveur renvoie, est-ce qu'un paramètre réagit bizarrement à une apostrophe. Le fichier `robots.txt`, par exemple, liste souvent des dossiers que le site préfère cacher des moteurs de recherche, ce qui en fait une liste de pistes toute prête pour un curieux.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="Exploration d'une cible web" />
+
+<Callout type="warning">
+Éthique, non négociable. Ces techniques ne s'utilisent que sur des cibles que tu as le droit de tester : un environnement de CTF, un laboratoire à toi, ou un système pour lequel tu as une autorisation écrite. Lancer un scan ou tester une injection sur un site qui ne t'appartient pas est illégal, même "juste pour voir". L'intention ne te protège pas devant la loi.
+</Callout>
+
+## la défense de fond
+
+Tu as peut-être remarqué que les deux failles ont la même parade au fond. On ne fait jamais confiance à l'entrée, et on traite chaque donnée selon l'endroit où elle va.
+
+Trois réflexes couvrent l'essentiel. D'abord, valider en entrée : le serveur vérifie que la donnée a la forme attendue (un email ressemble à un email, un identifiant numérique est bien un nombre) et refuse le reste. Ensuite, séparer le code des données : requêtes paramétrées pour la base, jamais de texte utilisateur collé dans une commande. Enfin, échapper en sortie : avant d'afficher une donnée dans une page, on neutralise les caractères qui pourraient être lus comme du code.
+
+Ces trois gestes répondent à la même question posée à chaque frontière du système : cette donnée vient-elle de quelqu'un en qui je peux avoir confiance ? La réponse, sur le web, est presque toujours non. Coder en sécurité, c'est intégrer ce "non" par défaut, pas le rajouter après coup quand un audit le réclame.
+
+## à toi de jouer
+
+Reviens sur la cible et observe ce que la reconnaissance révèle, puis teste ta compréhension.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="Reconnaissance d'une cible CTF" />
+
+<Quiz id="q-1" question="Quelle est la cause commune derrière la plupart des failles web (injection SQL, XSS...) ?" options={["Le serveur traite une entrée contrôlée par l'attaquant comme si elle était sûre", "Les mots de passe sont trop courts", "Le serveur est trop lent à répondre", "Le navigateur est mal configuré"]} correct={0} />
+
+<Quiz id="q-2" question="Quelle est la défense correcte contre l'injection SQL ?" options={["Limiter la taille du champ dans le navigateur", "Utiliser des requêtes paramétrées qui séparent le code des données", "Cacher la page de connexion", "Interdire les apostrophes en JavaScript"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi une validation faite uniquement côté navigateur ne protège-t-elle pas le serveur ?" options={["Parce que le JavaScript est trop lent", "Parce que l'attaquant contrôle sa propre machine et peut contourner ce contrôle", "Parce que les navigateurs ne savent pas valider", "Parce que le serveur ne lit jamais les formulaires"]} correct={1} />
+
+## à retenir
+
+- Presque toute faille web a la même racine : le serveur traite une entrée contrôlée par l'attaquant comme si elle était sûre.
+- Tout ce qui vient du client (URL, formulaires, cookies, en-têtes) peut être modifié par un attaquant. On ne lui fait jamais confiance.
+- L'injection SQL : du texte utilisateur collé dans une requête change le sens de cette requête. Défense : requêtes paramétrées qui séparent le code des données.
+- Le XSS : une entrée réaffichée sans échappement s'exécute comme du code dans le navigateur des autres visiteurs. Défense : échapper la sortie.
+- La validation côté navigateur sert le confort, pas la sécurité. La sécurité se joue côté serveur.
+- La reconnaissance web (robots.txt, pages cachées, en-têtes) ne se pratique que sur des cibles autorisées ou un CTF.

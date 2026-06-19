@@ -1,0 +1,105 @@
+---
+refCode: CL-LSN-185-V01
+slug: systeme-fichiers-stockage
+title: "Système de fichiers et stockage"
+description: "Comprendre le stockage Linux : l'arbre unique sans lettres de lecteur, les partitions et le montage, le rôle de fstab, la surveillance de l'espace, et le piège du disque plein d'inodes."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 540
+prerequisites: ["CL-LSN-181-V01"]
+---
+
+Si tu viens de Windows, tu as l'habitude des lettres de lecteur : C: pour le disque système, D: pour un second disque, E: pour la clé USB. Chaque support a sa propre racine, sa propre arborescence séparée des autres. Sous Linux, ce modèle n'existe pas. Il n'y a pas de C, pas de D, pas de lettre du tout. Tout pend d'un seul point de départ : la racine, écrite avec une simple barre oblique. Tous les fichiers, qu'ils soient sur le disque interne, sur une clé branchée à l'instant ou sur un partage réseau, vivent quelque part dans ce même arbre.
+
+C'est le premier réflexe à acquérir, et celui qui dérange le plus au début. Quand tu ajoutes un disque sous Linux, tu ne reçois pas une nouvelle lettre. Tu choisis un dossier déjà présent dans l'arbre et tu y greffes le contenu du disque. Le reste de la leçon part de cette idée et en tire toutes les conséquences pratiques.
+
+## l'arbre unique
+
+Imagine un seul arbre généalogique. Tout en haut, la racine. En dessous, des branches : un dossier pour les programmes, un pour les fichiers de configuration, un pour les répertoires personnels des utilisateurs, et ainsi de suite. Un disque physique, ou plus exactement une partition de ce disque, vient se rattacher à l'une de ces branches. On appelle ça monter le disque, et le dossier choisi s'appelle le point de montage.
+
+Conséquence directe : un même chemin peut conduire à des disques différents selon ce qui y est monté. Le dossier où l'on branche les clés USB est juste un dossier ordinaire. Tant que rien n'y est monté, il est vide. Dès qu'une clé est montée dessus, parcourir ce dossier revient à lire la clé. Tu ne navigues jamais "vers un disque", tu navigues dans l'arbre, et le système sait quel support se cache derrière chaque branche.
+
+<Diagram caption="L'arbre unique et les points de montage">
+flowchart TD
+  ROOT[racine /] --> BIN[/usr disque systeme/]
+  ROOT --> HOME[/home disque systeme/]
+  ROOT --> MNT[/mnt/data deuxieme disque/]
+  ROOT --> USB[/media/usb cle USB/]
+  HOME --> U1[/home/alice/]
+  HOME --> U2[/home/bob/]
+</Diagram>
+
+<Callout type="info">
+Un point de montage est juste un dossier normal. Avant qu'un disque y soit monté, c'est un dossier vide. Après le montage, son contenu devient celui du disque. Cette unification est ce qui rend un partage réseau aussi simple à utiliser qu'un dossier local : pour les programmes, c'est le même arbre.
+</Callout>
+
+## disques et partitions
+
+Un disque physique se présente au système sous un nom comme sda (premier disque SATA ou USB), sdb (le deuxième), ou nvme0n1 pour un SSD NVMe. Un disque brut n'est pas utilisable tel quel. On le découpe d'abord en partitions, qui sont des tranches indépendantes. La première partition de sda s'appelle sda1, la deuxième sda2, et ainsi de suite.
+
+Pourquoi découper ? Pour isoler. Tu peux réserver une partition au système, une autre aux données, une troisième à l'espace d'échange (le swap, utilisé quand la mémoire vive est saturée). Si une partition se remplit, les autres ne sont pas touchées. La commande lsblk dresse la carte de tout ça : les disques, leurs partitions, leur taille et leur point de montage.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Disques, montages et espace" commands={{"lsblk": "sda      8:0    0  50G\n  sda1   8:1    0  49G  /\n  sda2   8:2    0   1G  [SWAP]", "df -h": "/dev/sda1  49G  30G  17G  64%  /", "df -i": "/dev/sda1  3.1M  280K  2.8M  10%  /", "du -sh /var/log": "1.2G  /var/log", "mount | grep sda1": "/dev/sda1 on / type ext4 (rw,relatime)"}} />
+
+Sur chaque partition, on installe un système de fichiers : la structure qui décide comment les octets sont rangés, comment retrouver un fichier par son nom, où sont les permissions. Sous Linux, le plus courant est ext4. Il est éprouvé, gère bien les pannes de courant grâce à son journal, et convient à la grande majorité des usages. D'autres existent (xfs, btrfs), avec leurs forces, mais ext4 reste le choix par défaut sur la plupart des distributions.
+
+## monter et démonter
+
+Monter, c'est rattacher un système de fichiers à un dossier de l'arbre. La commande mount prend deux arguments : quoi monter et où. Démonter, avec umount, fait l'inverse : on détache proprement le support pour pouvoir le retirer sans corrompre de données. C'est pour ça qu'on ne débranche jamais une clé brutalement : il faut d'abord la démonter pour que les écritures en attente soient bien terminées.
+
+Un montage fait à la main disparaît au redémarrage. Pour qu'un disque soit remonté automatiquement à chaque démarrage, on l'inscrit dans le fichier /etc/fstab. Chaque ligne y décrit un montage : quel système de fichiers, sur quel point de montage, de quel type, avec quelles options. Au démarrage, le système lit ce fichier et reconstitue tous les montages déclarés.
+
+<Callout type="warning">
+Une faute dans /etc/fstab peut empêcher la machine de démarrer. Si tu y déclares un disque qui n'existe plus, ou avec une mauvaise option, le démarrage peut se bloquer en attendant ce montage impossible. Modifie ce fichier avec prudence, garde une copie de la version qui marche, et teste tes nouvelles lignes avec un montage manuel avant de redémarrer. C'est l'une des rares manipulations capables de rendre un serveur injoignable.
+</Callout>
+
+## surveiller l'espace
+
+Deux commandes répondent à deux questions différentes. Combien d'espace reste-t-il, et qui le mange.
+
+df montre l'espace par partition : taille totale, espace utilisé, espace libre, pourcentage d'occupation. Avec l'option -h, les tailles sont lisibles (Go, Mo) plutôt qu'en blocs bruts. C'est ta vue d'ensemble : tu vois d'un coup d'oeil quelle partition approche de la saturation.
+
+du, lui, mesure ce que pèse un dossier précis, en additionnant tout ce qu'il contient. du -sh sur un dossier te donne son poids total. C'est l'outil d'enquête : quand df t'a dit que la partition racine est pleine à 90 %, du te dit dans quel dossier le poids s'est accumulé. En pratique, on remonte de proche en proche, dossier par dossier, jusqu'à trouver le coupable. Très souvent ce sont les journaux dans /var/log, un cache qui a gonflé, ou de vieilles sauvegardes oubliées.
+
+## les inodes
+
+Voici le piège que tout le monde rencontre un jour. Un système de fichiers ne stocke pas seulement les octets des fichiers, il stocke aussi, pour chaque fichier, une fiche d'identité : taille, propriétaire, permissions, emplacement des données sur le disque. Cette fiche s'appelle un inode. Chaque fichier, même vide, en consomme un. Et le nombre d'inodes est fixé à la création du système de fichiers : il est limité.
+
+Conséquence surprenante : on peut tomber en panne d'inodes alors qu'il reste de l'espace libre. Un dossier qui accumule des millions de tout petits fichiers (sessions, fichiers temporaires, files d'attente d'un service mal configuré) épuise les inodes bien avant de remplir le disque en octets. df classique affiche alors de la place disponible, et pourtant le système refuse de créer le moindre fichier en se plaignant d'un disque plein. Déroutant tant qu'on ne connaît pas la cause.
+
+<Callout type="danger">
+Si df -h montre de l'espace libre mais qu'aucun fichier ne peut être créé, vérifie les inodes avec df -i. Si la colonne d'occupation des inodes est à 100 %, voilà le vrai problème. La solution n'est pas d'agrandir le disque mais de trouver et supprimer la multitude de petits fichiers qui saturent les inodes, le plus souvent un dossier temporaire ou de cache qui a débordé.
+</Callout>
+
+## LVM en bref
+
+LVM (Logical Volume Manager) ajoute une couche souple par-dessus les partitions : il regroupe l'espace de plusieurs disques dans un réservoir commun, puis y découpe des volumes logiques que tu peux agrandir, réduire ou étendre sur un nouveau disque sans tout refaire. Pratique sur un serveur dont les besoins de stockage évoluent, là où une partition fixe obligerait à de lourdes manipulations.
+
+## à toi de jouer
+
+Reprends les commandes de cette leçon et lis ce qu'elles racontent : la carte des disques, l'occupation des partitions, le poids d'un dossier, et surtout la différence entre df -h et df -i.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Disques, montages et espace" commands={{"lsblk": "sda      8:0    0  50G\n  sda1   8:1    0  49G  /\n  sda2   8:2    0   1G  [SWAP]", "df -h": "/dev/sda1  49G  30G  17G  64%  /", "df -i": "/dev/sda1  3.1M  280K  2.8M  10%  /", "du -sh /var/log": "1.2G  /var/log", "mount | grep sda1": "/dev/sda1 on / type ext4 (rw,relatime)"}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Sous Linux, comment rend-on accessible le contenu d'un deuxième disque ?" options={["On lui attribue une lettre comme D:", "On le monte sur un dossier de l'arbre unique", "On le copie dans la racine", "Rien, il apparaît seul comme un nouveau lecteur"]} correct={1} />
+
+<Quiz id="q-2" question="df -h affiche de l'espace libre, mais le système refuse de créer un fichier. Quelle est la cause la plus probable ?" options={["La partition est en lecture seule", "Les inodes sont épuisés, vérifiables avec df -i", "Le swap est plein", "Le disque est démonté"]} correct={1} />
+
+<Quiz id="q-3" question="À quoi sert le fichier /etc/fstab ?" options={["À lister les utilisateurs du système", "À déclarer les montages à remonter automatiquement au démarrage", "À mesurer le poids des dossiers", "À découper un disque en partitions"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- Sous Linux, pas de lettres de lecteur : un seul arbre part de la racine, et chaque disque s'y greffe sur un dossier appelé point de montage.
+- Un disque se découpe en partitions ; lsblk en dresse la carte avec tailles et points de montage.
+- mount rattache un système de fichiers à un dossier, umount le détache proprement ; /etc/fstab remonte les disques au démarrage, et une erreur dans ce fichier peut empêcher la machine de démarrer.
+- ext4 est le système de fichiers par défaut, journalisé et fiable.
+- df montre l'espace par partition (df -h en tailles lisibles), du le poids d'un dossier ; on combine les deux pour trouver ce qui remplit un disque.
+- Chaque fichier consomme un inode, en nombre limité : on peut manquer d'inodes alors qu'il reste de la place ; df -i le révèle.
+- LVM ajoute une couche souple pour redimensionner et étendre les volumes au-dessus des partitions.
+
+OK 05 écrit

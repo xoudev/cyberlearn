@@ -1,0 +1,151 @@
+---
+refCode: CL-LSN-010-V01
+slug: python-modules
+title: "Modules et bibliothèque standard Python"
+description: "Réutilisez du code existant en important des modules : la syntaxe import, les modules essentiels de la bibliothèque standard (math, random, datetime, json) et comment les explorer."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 350
+prerequisites: ["CL-LSN-004-V01"]
+---
+
+Imaginez devoir écrire vous-même le calcul d'une racine carrée. Pas le bouton de la calculatrice, l'algorithme : la méthode de Newton, les itérations, la gestion des arrondis. Ou un générateur de nombres aléatoires de qualité, avec une vraie distribution. Ou le parsing d'une date au format ISO. Ces problèmes ont déjà été résolus, testés, corrigés pendant des années par des gens dont c'était le métier. Vous n'allez pas les réécrire. Vous allez les importer.
+
+C'est exactement le rôle d'un module : un fichier Python qui contient des fonctions, des constantes et des classes prêtes à l'emploi, que d'autres programmes peuvent réutiliser. Quand vous tapez `import math`, vous branchez tout ce travail dans votre script en une ligne. Python est livré avec une vaste collection de ces fichiers, la bibliothèque standard, disponible sans rien installer.
+
+## importer
+
+Un module se charge avec le mot-clé `import`. Une fois importé, vous accédez à son contenu en préfixant les noms par celui du module, avec un point.
+
+<CodePlayground language="python" starterCode={`import math
+
+print(math.sqrt(144))   # 12.0
+print(math.pi)          # 3.141592653589793
+print(math.floor(4.7))  # 4
+print(math.ceil(4.2))   # 5`} />
+
+Le préfixe `math.` n'est pas une corvée, c'est une information. En lisant `math.sqrt`, on sait d'où vient cette fonction. Le code reste traçable.
+
+Quand vous n'avez besoin que d'une ou deux choses dans un module, la forme `from ... import ...` les fait entrer directement dans votre espace de travail, sans préfixe.
+
+<CodePlayground language="python" starterCode={`from math import sqrt, pi
+
+print(sqrt(81))      # 9.0
+print(pi * 2)        # 6.283185307179586`} />
+
+Ici `sqrt` et `pi` sont utilisables tels quels. Pratique quand un nom revient souvent dans le fichier.
+
+Dernière forme : l'alias avec `as`. Il sert quand le nom du module est long, ou quand une convention existe dans la communauté. Vous renommez l'objet importé pour la durée du fichier.
+
+<CodePlayground language="python" starterCode={`import datetime as dt
+
+rendez_vous = dt.datetime(2026, 6, 13, 9, 30)
+print(rendez_vous.year)   # 2026
+print(rendez_vous.hour)   # 9`} />
+
+Trois formes, trois usages. `import module` quand vous voulez garder la trace de l'origine. `from module import nom` quand vous ciblez quelques noms précis. `as` quand vous voulez raccourcir ou suivre une convention.
+
+## pourquoi pas import étoile
+
+Il existe une quatrième forme, `from math import *`, qui aspire tout le contenu du module dans votre fichier d'un coup. Elle a l'air pratique. Elle ne l'est pas.
+
+Le problème porte un nom : la pollution de l'espace de noms. Quand vous écrivez `from math import *`, vous faites entrer des dizaines de noms (`sqrt`, `pi`, `floor`, `gamma`, `tau`...) sans savoir lesquels exactement. Si deux modules importés en étoile définissent un nom identique, le second écrase silencieusement le premier, et rien ne vous prévient. Pire, en relisant le code, plus aucun indice ne dit d'où vient un nom. `sqrt(x)` apparaît seul, comme s'il était à vous, alors qu'il vient d'ailleurs.
+
+<Callout type="warning">
+On entend parfois que `from x import *` rend le code plus court donc plus lisible. C'est l'inverse. Cela raccourcit l'écriture mais détruit la traçabilité : impossible de savoir quel module a fourni quel nom, et les collisions entre modules passent inaperçues. Importez ce dont vous avez besoin, nommément. Votre vous du mois prochain vous remerciera.
+</Callout>
+
+La règle tient en une phrase : importez peu, importez explicitement. Soit vous gardez le préfixe (`math.sqrt`), soit vous nommez ce que vous prenez (`from math import sqrt`). Jamais l'étoile dans du code que vous comptez relire.
+
+## quelques modules utiles
+
+La bibliothèque standard contient des dizaines de modules. En voici quatre que vous croiserez vite.
+
+`random` produit de l'aléatoire. Par défaut chaque exécution donne un résultat différent, ce qui est gênant pour un exemple. On fixe donc une graine avec `random.seed`, et la suite devient reproductible : même graine, même tirage.
+
+<CodePlayground language="python" starterCode={`import random
+
+random.seed(42)
+print(random.randint(1, 6))           # 6
+print(random.choice(['a', 'b', 'c'])) # a
+
+cartes = [1, 2, 3, 4, 5]
+random.shuffle(cartes)
+print(cartes)                         # [4, 2, 3, 5, 1]`} />
+
+`datetime` manipule dates et heures. On construit un instant, on calcule un écart, on lit un champ précis.
+
+<CodePlayground language="python" starterCode={`from datetime import date
+
+sortie = date(2026, 6, 13)
+depart = date(1991, 9, 17)
+
+ecart = sortie - depart
+print(ecart.days)        # 12688
+print(sortie.weekday())  # 5  (0 = lundi, donc 5 = samedi)`} />
+
+`json` traduit entre les structures Python (dictionnaires, listes) et le format texte JSON, celui qu'utilisent les API et les fichiers de configuration. `dumps` sérialise vers une chaîne, `loads` relit une chaîne vers du Python.
+
+<CodePlayground language="python" starterCode={`import json
+
+profil = {'nom': 'Ada', 'niveau': 7, 'actif': True}
+
+texte = json.dumps(profil)
+print(texte)              # {"nom": "Ada", "niveau": 7, "actif": true}
+
+relu = json.loads(texte)
+print(relu['niveau'])     # 7
+print(type(relu))         # <class 'dict'>`} />
+
+Notez le détail au passage : `True` côté Python devient `true` côté JSON. Les deux mondes ont leurs conventions, et `json` fait la traduction dans les deux sens.
+
+## les paquets tiers
+
+La bibliothèque standard couvre beaucoup de besoins, mais pas tout. Pour le reste, il existe un dépôt public, PyPI, où des milliers de bibliothèques sont publiées : `requests` pour les requêtes web, `pandas` pour les données tabulaires, `rich` pour de jolis affichages en terminal. On les installe avec l'outil `pip`.
+
+<CodePlayground language="python" starterCode={`# Dans un terminal, pas dans le script :
+#   pip install requests
+#
+# Puis, dans votre code :
+#   import requests
+#   reponse = requests.get('https://example.com')
+
+# Ici on reste sur la stdlib, toujours disponible.
+import math
+print(math.gcd(48, 36))   # 12  (plus grand commun diviseur)`} />
+
+Un piège vous attend avec ces imports, et il est sournois. Quand vous écrivez `import math`, Python cherche d'abord un fichier `math.py` dans votre dossier courant, avant de regarder la bibliothèque standard. Donc si vous appelez votre propre fichier `math.py`, ou `random.py`, ou `json.py`, c'est lui que Python trouvera. Votre `import math` chargera votre fichier presque vide à la place du vrai module, et `math.sqrt` lèvera une erreur incompréhensible. La règle : ne nommez jamais un fichier comme un module standard. Un fichier baptisé `calcul.py` plutôt que `math.py` vous épargne des heures de confusion.
+
+## à toi de jouer
+
+<PythonChallenge id="py-1" title="Racine carrée" description="Importez le module math et renvoyez la racine carrée de n avec math.sqrt." starterCode="import math
+
+def solution(n):
+    pass" tests={[{ input: "solution(16)", expected: "4.0" }, { input: "solution(81)", expected: "9.0" }, { input: "solution(2)", expected: "1.4142135623730951" }]} />
+
+<Quiz id="q-1"
+  question="Pourquoi éviter 'from math import *' dans du code destiné à être relu ?"
+  options={[
+    "Parce que c'est plus lent à l'exécution que les autres formes d'import",
+    "Parce que cela importe des dizaines de noms sans tracer leur origine et masque les collisions entre modules",
+    "Parce que l'étoile n'est pas une syntaxe Python valide"
+  ]}
+  correct={1}
+/>
+
+<Quiz id="q-2"
+  question="Vous nommez votre fichier 'random.py' et écrivez 'import random'. Que se passe-t-il ?"
+  options={[
+    "Python charge votre propre fichier au lieu du vrai module random, ce qui casse l'accès aux fonctions attendues",
+    "Python refuse de lancer le script car le nom est réservé",
+    "Tout fonctionne, Python sait toujours distinguer les deux"
+  ]}
+  correct={0}
+/>
+
+## à retenir
+
+Un module est un fichier de code réutilisable ; `import nom` le charge et on accède à son contenu via `nom.fonction`. La forme `from module import x` fait entrer un nom précis sans préfixe, et `as` crée un alias. Évitez `import *` : il pollue l'espace de noms et casse la traçabilité. La bibliothèque standard fournit gratuitement `math`, `random`, `datetime`, `json` et bien d'autres ; au-delà, `pip` installe des paquets tiers depuis PyPI. Et ne nommez jamais un de vos fichiers comme un module standard, sinon il prend sa place et tout casse.
+
+OK 10 réécrit

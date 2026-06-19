@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Dans l'instruction 'mov rbx, rax', quel est l'effet exact sur les deux registres ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le contenu de rbx est copie dans rax, et rbx est ensuite remis a zero"
+        },
+        {
+          "id": "b",
+          "text": "Le contenu de rax est copie dans rbx, et rax reste inchange"
+        },
+        {
+          "id": "c",
+          "text": "rax et rbx echangent leurs valeurs en une seule operation"
+        },
+        {
+          "id": "d",
+          "text": "Le contenu de rax est deplace dans rbx, ce qui vide rax"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La syntaxe est 'mov destination, source' : la valeur de la source (rax) est copiee dans la destination (rbx). Malgre le nom mov, il s'agit d'une copie, donc la source reste intacte."
+    },
+    {
+      "question": "Dans un programme assembleur, a quoi sert la directive 'global main' associee au label 'main:' ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A declarer le point d'entree ou l'execution commence"
+        },
+        {
+          "id": "b",
+          "text": "A reserver de la memoire pour les variables globales"
+        },
+        {
+          "id": "c",
+          "text": "A importer les pseudo-instructions d'affichage du simulateur"
+        },
+        {
+          "id": "d",
+          "text": "A activer l'acces aux registres 64 bits"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "'global main' declare le point d'entree du programme et le label 'main:' marque la premiere ligne executee. C'est par la que debute l'execution."
+    },
+    {
+      "question": "Apres 'mov rax, 5', puis 'add rax, 3', puis 'imul rax, 2', quelle valeur contient rax ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "13"
+        },
+        {
+          "id": "b",
+          "text": "11"
+        },
+        {
+          "id": "c",
+          "text": "16"
+        },
+        {
+          "id": "d",
+          "text": "10"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les instructions s'executent dans l'ordre : rax devient 5, puis 5+3=8, puis 8*2=16. C'est le programmeur qui fixe l'ordre des operations, le processeur ne respecte aucune priorite."
+    },
+    {
+      "question": "Quelle est la particularite de l'instruction de division 'idiv' par rapport a 'add' ou 'imul' ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle ne fonctionne qu'avec des nombres non signes"
+        },
+        {
+          "id": "b",
+          "text": "Elle accepte une seule forme : idiv destination, source"
+        },
+        {
+          "id": "c",
+          "text": "Elle range toujours son resultat dans rbx"
+        },
+        {
+          "id": "d",
+          "text": "Elle impose des registres fixes : le quotient va dans rax et le reste dans rdx"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Contrairement a add ou imul, on ne peut pas ecrire 'idiv rax, rbx'. La division attend son dividende dans une paire de registres fixes et place elle-meme le quotient dans rax et le reste dans rdx."
+    },
+    {
+      "question": "Quelle relation existe entre les registres eax et rax en x86-64 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "eax designe les 32 bits de poids faible de rax, c'est le meme emplacement physique"
+        },
+        {
+          "id": "b",
+          "text": "eax est un registre voisin et totalement independant de rax"
+        },
+        {
+          "id": "c",
+          "text": "eax fait 64 bits et contient rax a l'interieur"
+        },
+        {
+          "id": "d",
+          "text": "eax designe les 8 bits de poids faible de rax"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "eax n'est pas un registre separe : c'est la moitie basse (32 bits) de rax, sous un autre nom. Ecrire dans eax modifie donc aussi rax, car ils occupent les memes bits physiques."
+    },
+    {
+      "question": "Combien de registres generaux l'architecture x86-64 met-elle a disposition, et quelle consequence pratique cela a-t-il ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Trente-deux, ce qui permet une variable par registre sans jongler"
+        },
+        {
+          "id": "b",
+          "text": "Huit, ce qui interdit tout calcul sans acces memoire"
+        },
+        {
+          "id": "c",
+          "text": "Seize, ce qui oblige a reutiliser constamment les registres pour differentes valeurs"
+        },
+        {
+          "id": "d",
+          "text": "Soixante-quatre, un par bit du registre rax"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "x86-64 propose seize registres generaux. Cette rarete oblige le programmeur a les reutiliser en permanence : charger une valeur, s'en servir, la ranger ailleurs, puis reemployer le registre."
+    },
+    {
+      "question": "Quel est le resultat de l'operation binaire 12 AND 10 (soit 1100 AND 1010 en binaire) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "14"
+        },
+        {
+          "id": "b",
+          "text": "8"
+        },
+        {
+          "id": "c",
+          "text": "6"
+        },
+        {
+          "id": "d",
+          "text": "2"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "AND donne 1 uniquement quand les deux bits valent 1. En alignant 1100 et 1010, seule la colonne de poids 8 a deux 1, ce qui donne 1000, soit 8."
+    },
+    {
+      "question": "Pourquoi l'idiome 'xor rax, rax' est-il tres utilise pour remettre un registre a zero ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'il double la valeur puis la divise par elle-meme"
+        },
+        {
+          "id": "b",
+          "text": "Parce que XOR inverse tous les bits, ce qui finit par donner zero"
+        },
+        {
+          "id": "c",
+          "text": "Parce que c'est la seule facon de mettre un registre a zero en x86-64"
+        },
+        {
+          "id": "d",
+          "text": "Parce que XOR d'une valeur avec elle-meme donne toujours zero, avec un encodage plus compact que mov rax, 0"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Comparer chaque bit a lui-meme donne toujours 0 (0 XOR 0 = 0 et 1 XOR 1 = 0). L'encodage machine est plus compact que 'mov rax, 0' et les processeurs modernes le reconnaissent comme une remise a zero pure."
+    },
+    {
+      "question": "Que fait l'instruction 'shr rax, 1' a la valeur contenue dans rax, et avec quelle limite ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle multiplie rax par 2, comme un decalage a gauche"
+        },
+        {
+          "id": "b",
+          "text": "Elle inverse tous les bits de rax"
+        },
+        {
+          "id": "c",
+          "text": "Elle divise rax par 2 en division entiere, le bit sortant par la droite etant perdu"
+        },
+        {
+          "id": "d",
+          "text": "Elle ne modifie rax que si sa valeur est impaire"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Decaler a droite d'une position divise par 2, mais en division entiere : le bit qui sort par la droite est perdu, donc le reste eventuel disparait et le resultat n'est pas exact pour un nombre impair."
+    },
+    {
+      "question": "Apres 'push 10', 'push 20', 'push 30', dans quel ordre les valeurs ressortent-elles avec trois 'pop' successifs ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "30, puis 20, puis 10, car la pile est LIFO"
+        },
+        {
+          "id": "b",
+          "text": "10, puis 20, puis 30, dans l'ordre d'empilement"
+        },
+        {
+          "id": "c",
+          "text": "20, puis 10, puis 30, selon la position de rsp"
+        },
+        {
+          "id": "d",
+          "text": "Toujours 10, car seul le fond de la pile est accessible"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La pile fonctionne en LIFO (Last In, First Out) : la derniere valeur empilee est la premiere depilee. Le premier pop ramene donc 30, puis 20, puis 10, soit l'ordre inverse."
+    },
+    {
+      "question": "Quel registre pointe en permanence vers le sommet de la pile, et comment est-il gere lors d'un push ou d'un pop ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "rax, qu'il faut ajuster manuellement a chaque empilement"
+        },
+        {
+          "id": "b",
+          "text": "rip, qui est automatiquement mis a jour par le processeur"
+        },
+        {
+          "id": "c",
+          "text": "rsp, ajuste automatiquement par push et pop sans intervention du programmeur"
+        },
+        {
+          "id": "d",
+          "text": "rbp, qu'il faut copier dans rsp avant chaque pop"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "rsp (Stack Pointer) contient l'adresse du sommet de la pile. push et pop l'ajustent automatiquement ; il vaut mieux ne pas y toucher manuellement, sous peine de corrompre la pile."
+    },
+    {
+      "question": "Que fait precisement l'instruction 'cmp a, b', et quel est son effet sur les registres ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle additionne a et b et range le total dans b"
+        },
+        {
+          "id": "b",
+          "text": "Elle stocke a moins b dans a et leve le drapeau zero"
+        },
+        {
+          "id": "c",
+          "text": "Elle copie b dans a apres les avoir compares"
+        },
+        {
+          "id": "d",
+          "text": "Elle calcule a moins b sans stocker le resultat et positionne les drapeaux ; les registres restent intacts"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "cmp calcule a moins b mais jette le resultat : aucun registre n'est modifie. Sa seule action est de positionner les drapeaux qui decriront la relation entre a et b."
+    },
+    {
+      "question": "Pourquoi 'test rax, rax' permet-il de savoir si rax vaut zero ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que test additionne rax avec lui-meme, donnant zero seulement si rax etait nul"
+        },
+        {
+          "id": "b",
+          "text": "Parce que rax ET rax redonne rax, donc le resultat est nul seulement si rax etait deja nul"
+        },
+        {
+          "id": "c",
+          "text": "Parce que test remet systematiquement rax a zero avant de comparer"
+        },
+        {
+          "id": "d",
+          "text": "Parce que test compare rax a la constante 1"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "test fait un ET logique sans rien stocker. Or rax ET rax redonne toujours rax, donc le drapeau zero ne se leve que si rax etait deja nul. C'est plus court qu'un cmp avec une constante."
+    },
+    {
+      "question": "Pourquoi place-t-on souvent un 'jmp fin' a la fin d'une branche dans une structure conditionnelle en assembleur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour que le processeur arme a nouveau les drapeaux avant la sortie"
+        },
+        {
+          "id": "b",
+          "text": "Parce que jmp est obligatoire apres chaque label"
+        },
+        {
+          "id": "c",
+          "text": "Pour empecher le processeur de continuer tout droit et d'executer la branche suivante"
+        },
+        {
+          "id": "d",
+          "text": "Pour liberer la memoire occupee par les labels precedents"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un label n'arrete pas le flot d'instructions : sans un jmp explicite vers la fin, le processeur continue sur la ligne d'en dessous et execute la branche suivante, affichant deux messages au lieu d'un."
+    },
+    {
+      "question": "Apres 'cmp rax, 10' avec rax valant 3, lequel de ces sauts conditionnels se declenche effectivement ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "jg (jump if greater)"
+        },
+        {
+          "id": "b",
+          "text": "jl (jump if less)"
+        },
+        {
+          "id": "c",
+          "text": "je (jump if equal)"
+        },
+        {
+          "id": "d",
+          "text": "jge (jump if greater or equal)"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "cmp rax, 10 calcule 3 moins 10, un resultat negatif. La premiere valeur (3) etant plus petite que la seconde (10), c'est jl, le saut si inferieur, qui se declenche."
+    },
+    {
+      "question": "Dans une boucle qui descend vers zero, pourquoi le couple 'dec rcx' suivi de 'jnz boucle' evite-t-il un cmp separe ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que jnz ne lit jamais les drapeaux, il saute toujours"
+        },
+        {
+          "id": "b",
+          "text": "Parce que dec ne modifie pas le compteur, seul jnz le fait"
+        },
+        {
+          "id": "c",
+          "text": "Parce que dec positionne lui-meme le drapeau de zero, que jnz consulte ensuite"
+        },
+        {
+          "id": "d",
+          "text": "Parce que jnz incremente rcx avant de comparer a zero"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Quand dec retire 1, le processeur sait immediatement si le resultat est nul et positionne le drapeau correspondant. jnz (jump if not zero) lit ce drapeau, donc aucun cmp separe n'est necessaire."
+    },
+    {
+      "question": "Que se passe-t-il exactement lorsqu'une instruction 'call fonction' est executee ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle empile l'adresse de retour (l'instruction suivant le call), puis saute au label de la fonction"
+        },
+        {
+          "id": "b",
+          "text": "Elle saute au label sans rien memoriser, comme un jmp"
+        },
+        {
+          "id": "c",
+          "text": "Elle copie automatiquement rdi dans rax avant de sauter"
+        },
+        {
+          "id": "d",
+          "text": "Elle range l'adresse de retour dans un registre special reserve"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "call empile d'abord l'adresse de retour (celle de l'instruction qui suit le call), puis saute au label. C'est cette adresse, posee sur la pile, que ret reprendra ensuite."
+    },
+    {
+      "question": "Selon la convention d'appel presentee, ou passe le premier argument d'une fonction et ou revient son resultat ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Premier argument dans rax, resultat dans rdi"
+        },
+        {
+          "id": "b",
+          "text": "Premier argument et resultat tous deux dans rbx"
+        },
+        {
+          "id": "c",
+          "text": "Premier argument dans rdi, resultat dans rax"
+        },
+        {
+          "id": "d",
+          "text": "Premier argument dans rsi, resultat dans rdx"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Par convention, le premier argument passe dans rdi (puis rsi, rdx, rcx...), et le resultat est renvoye dans rax. C'est un contrat respecte par l'appelant et la fonction."
+    },
+    {
+      "question": "Dans la declaration 'message db \"Salut\", 0' de la section .data, quel est le role du 0 final ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il compte le nombre de caracteres de la chaine"
+        },
+        {
+          "id": "b",
+          "text": "Il marque la fin de la chaine pour que la machine sache ou s'arreter de lire"
+        },
+        {
+          "id": "c",
+          "text": "Il indique que la chaine est vide au demarrage"
+        },
+        {
+          "id": "d",
+          "text": "Il reserve un octet supplementaire pour l'affichage en couleur"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le zero final (caractere nul) marque la fin de la chaine. Sans ce repere, prints continuerait a lire la memoire au-dela du texte et afficherait des octets quelconques jusqu'a tomber par hasard sur un zero."
+    },
+    {
+      "question": "Dans la calculatrice du projet final, les sous-routines addition, soustraction et multiplication recoivent leurs operandes dans rax et rbx. Pourquoi 'main' refait-il les 'mov rax' et 'mov rbx' avant chaque 'call' ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que ret efface le contenu de tous les registres en revenant"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la directive .data verrouille rax et rbx entre deux appels"
+        },
+        {
+          "id": "c",
+          "text": "Par simple habitude de style, sans effet reel sur le calcul"
+        },
+        {
+          "id": "d",
+          "text": "Parce que la sous-routine precedente a deja modifie rax (et parfois rbx), aucun registre ne se restaurant tout seul"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Apres addition, rax contient deja le resultat precedent, pas l'operande de depart. En assembleur aucun registre ne se restaure seul entre deux appels, donc il faut recharger les operandes avant chaque call sous peine de calculer sur de mauvaises valeurs."
+    }
+  ]
+}

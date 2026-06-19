@@ -1,0 +1,109 @@
+---
+refCode: CL-LSN-169-V01
+slug: cloud-introduction
+title: "Le cloud : louer plutôt que posséder"
+description: "Comprenez ce qu'est le cloud, les trois modèles de service IaaS, PaaS et SaaS et ce qu'on gère à chaque niveau, les modèles de déploiement, et les contreparties de la location de ressources."
+category: NETWORK
+difficulty: BEGINNER
+estimatedMinutes: 35
+xpReward: 430
+prerequisites: []
+---
+
+Imagine que tu lances un site. Avant le cloud, il fallait acheter un serveur physique, le poser dans une salle climatisée ou chez un hébergeur, l'allumer, le configurer, et prier pour qu'il tienne. Tu payais le matériel d'avance, tu l'amortissais sur plusieurs années, et si ton site explosait de popularité, tu rachetais des machines en urgence. Si personne ne venait, tu avais quand même payé.
+
+Le cloud renverse cette logique. Au lieu de posséder tes serveurs, tu loues de la puissance de calcul et du stockage à la demande, chez un fournisseur comme AWS, Google Cloud ou Microsoft Azure. Tu démarres une machine en quelques secondes, tu l'éteins quand tu n'en as plus besoin, et tu ne paies que ce que tu consommes. Le matériel reste celui du fournisseur. Toi, tu loues un usage.
+
+Garde ce modèle mental tout au long de la leçon : **louer plutôt que posséder**. C'est la même différence qu'entre acheter une voiture et prendre un taxi quand tu en as besoin. Les deux te déplacent, mais l'engagement, le coût et la souplesse ne sont pas les mêmes.
+
+## ce que ça change
+
+Trois choses rendent la location attractive.
+
+D'abord l'élasticité. Tu peux prendre dix serveurs un mardi soir de forte affluence, puis revenir à un seul le lendemain matin. La capacité s'ajuste au besoin réel, presque en temps réel. Avec du matériel possédé, tu dimensionnes pour le pic et tu payes ce pic toute l'année, même les nuits creuses.
+
+Ensuite le paiement à l'usage. Tu es facturé à l'heure, parfois à la seconde ou à la requête. Pas d'usage, pas de facture. Ça transforme une grosse dépense d'investissement en petite dépense courante, ce qui change beaucoup la façon dont une entreprise gère son budget.
+
+Enfin l'absence d'investissement initial lourd. Un étudiant peut lancer une application mondiale sans acheter une seule machine. Cette barrière d'entrée qui a longtemps réservé l'infrastructure aux grosses structures a presque disparu.
+
+<Callout type="info">
+L'élasticité n'est pas qu'un confort. Elle permet de survivre à un pic imprévu (un article qui devient viral) sans avoir surpayé du matériel inutilisé le reste du temps. C'est souvent la première raison qui pousse une équipe vers le cloud.
+</Callout>
+
+## les trois modèles de service
+
+C'est le point le plus important de la leçon. Quand tu loues du cloud, tu ne loues pas toujours la même chose. On distingue trois niveaux, selon ce que le fournisseur gère et ce qui reste à ta charge.
+
+Avec l'**IaaS** (Infrastructure as a Service), tu loues l'infrastructure brute : des serveurs virtuels, du stockage, du réseau. Le fournisseur s'occupe du matériel physique et de la salle machine. Tout le reste est à toi : le système d'exploitation, les mises à jour, la base de données, ton application. Tu as un contrôle maximal, mais aussi un maximum de travail.
+
+Avec le **PaaS** (Platform as a Service), tu loues une plateforme prête à recevoir ton code. Le fournisseur gère le système, les serveurs, les correctifs de sécurité. Toi, tu déposes ton application et tu la fais tourner. Tu gères moins de choses, en échange de moins de contrôle sur les couches basses.
+
+Avec le **SaaS** (Software as a Service), tu ne gères plus rien du tout : tu consommes un logiciel fini, accessible depuis ton navigateur. Gmail, Notion, Slack sont du SaaS. Tu n'installes rien, tu ne mets rien à jour, tu utilises.
+
+| Modèle | Ce que tu gères toi-même | Exemple |
+|--------|--------------------------|---------|
+| IaaS | OS, runtime, base de données, application | Serveur virtuel sur AWS EC2 |
+| PaaS | Uniquement ton application et ses données | Heroku, Google App Engine |
+| SaaS | Rien (tu utilises le service) | Gmail, Notion |
+
+Une image utile : l'IaaS, c'est louer un appartement vide que tu meubles entièrement. Le PaaS, c'est un appartement meublé où tu poses juste tes affaires. Le SaaS, c'est la chambre d'hôtel où tout est fait pour toi.
+
+<Diagram caption="Ce qu'on gère selon le modèle de service">
+flowchart TB
+  A[Materiel physique et reseau] --> B[Toujours gere par le fournisseur]
+  C[Systeme d exploitation et runtime] --> D[IaaS: a toi - PaaS: fournisseur]
+  E[Ton application et tes donnees] --> F[IaaS: a toi - PaaS: a toi - SaaS: fournisseur]
+</Diagram>
+
+Plus tu montes vers le SaaS, moins tu gères de choses, et moins tu décides de choses. Le bon niveau dépend de combien de contrôle tu veux garder contre combien de travail tu acceptes de déléguer.
+
+## les modèles de déploiement
+
+Au-delà de ce que tu loues, il y a la question de où ça tourne et pour qui.
+
+Le cloud **public** est mutualisé : le fournisseur possède d'immenses centres de données et loue des morceaux de cette capacité à des milliers de clients en même temps. Tes machines virtuelles cohabitent (de façon isolée) avec celles d'autres entreprises. C'est le moins cher et le plus souple. La majorité des projets démarrent là.
+
+Le cloud **privé** est dédié à une seule organisation. L'infrastructure n'est partagée avec personne, parfois même hébergée dans les propres locaux de l'entreprise. On le choisit quand des contraintes réglementaires ou de sécurité interdisent de mélanger ses données avec celles d'autrui. C'est plus cher et moins élastique, mais plus maîtrisé.
+
+Le cloud **hybride** combine les deux : on garde les données sensibles dans le privé et on envoie le reste (calculs ponctuels, pics de trafic) dans le public. Beaucoup de grandes organisations fonctionnent ainsi, par étapes, sans tout migrer d'un coup.
+
+## les contreparties
+
+Louer a un revers. Trois points méritent ton attention.
+
+La dépendance au fournisseur, d'abord. Plus tu utilises ses services spécifiques, plus changer de fournisseur devient difficile et coûteux. On parle d'enfermement (vendor lock-in). Une application bâtie autour des outils maison d'un fournisseur ne se déménage pas en un clic.
+
+Les coûts qui dérapent, ensuite. Le paiement à l'usage coupe dans les deux sens. Une machine oubliée allumée tout un mois, un stockage qui gonfle sans surveillance, et la facture grimpe vite. Le cloud demande de surveiller activement sa consommation, ce que beaucoup découvrent trop tard.
+
+Les données confiées à un tiers, enfin. Tes fichiers et ceux de tes utilisateurs vivent sur des machines que tu ne possèdes pas, parfois dans un autre pays, sous une autre juridiction. Ça soulève des questions de confidentialité, de conformité et de confiance.
+
+<Callout type="warning">
+Le piège le plus courant chez les débutants, ce sont les ressources oubliées. Une base de données de test laissée active, une grosse machine arrêtée mais pas supprimée (le stockage reste facturé) : ce sont des euros qui partent pour rien. Prends l'habitude de vérifier et de nettoyer ce que tu n'utilises plus.
+</Callout>
+
+## l'idée reçue
+
+Tu entendras souvent : « le cloud, c'est juste l'ordinateur de quelqu'un d'autre ». Techniquement, ce n'est pas faux. Derrière le mot cloud, il y a bien des machines physiques, dans des centres de données, qui appartiennent à un fournisseur.
+
+Mais cette phrase réduit le cloud à son matériel, et passe à côté de ce qui fait sa valeur. Ce que tu loues, ce n'est pas qu'un ordinateur distant. C'est aussi des services managés (bases de données, files de messages, stockage) que tu n'as plus à installer ni maintenir, une capacité à passer de un à mille serveurs en quelques minutes, et une automatisation qui te laisse décrire ton infrastructure par du code plutôt que par des branchements.
+
+Dire que le cloud n'est qu'un ordinateur distant, c'est comme dire qu'un smartphone n'est qu'un téléphone. Vrai sur le papier, mais ça rate tout ce qui change la pratique.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelle est l'idée centrale du cloud ?" options={["Posseder plus de serveurs que ses concurrents", "Louer de la puissance et du stockage a la demande au lieu de les posseder", "Stocker uniquement des fichiers en ligne", "Remplacer Internet par un reseau prive"]} correct={1} />
+
+<Quiz id="q-2" question="Dans quel modele de service ne gere-t-on que sa propre application, le fournisseur s'occupant du systeme et des serveurs ?" options={["IaaS", "PaaS", "SaaS", "Cloud prive"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle est une vraie contrepartie du cloud ?" options={["Il devient impossible d'augmenter sa capacite", "Le materiel initial coute toujours tres cher a l'achat", "Les couts peuvent deraper si on ne surveille pas sa consommation", "On ne peut jamais confier ses donnees a un fournisseur"]} correct={2} />
+
+## à retenir
+
+- Le cloud, c'est louer des ressources informatiques à la demande chez un fournisseur, plutôt que posséder et héberger ses propres serveurs.
+- Trois atouts l'ont imposé : élasticité (ajuster la capacité au besoin), paiement à l'usage, pas d'investissement matériel initial.
+- Trois modèles de service, du plus à ta charge au moins : IaaS (tu gères tout sauf le matériel), PaaS (tu gères ton application), SaaS (tu consommes un logiciel fini).
+- Trois modèles de déploiement : public (mutualisé, moins cher), privé (dédié, plus maîtrisé), hybride (les deux).
+- Les contreparties : dépendance au fournisseur, coûts qui dérapent sans surveillance, données confiées à un tiers.
+- « L'ordinateur de quelqu'un d'autre » est vrai au sens strict, mais le cloud, c'est aussi des services managés, de l'échelle et de l'automatisation.
+
+OK 01 écrit

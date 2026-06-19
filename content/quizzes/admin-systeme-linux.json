@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Sur un serveur partagé entre plusieurs administrateurs, pourquoi privilégie-t-on l'usage ponctuel de sudo plutôt qu'une session permanente sous le compte root ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "sudo accorde davantage de droits que root et permet donc d'aller plus loin"
+        },
+        {
+          "id": "b",
+          "text": "root ne peut pas lire les fichiers de log du système"
+        },
+        {
+          "id": "c",
+          "text": "Une erreur sous root n'a aucun filet, alors que sudo limite la fenêtre de risque et journalise chaque action sensible"
+        },
+        {
+          "id": "d",
+          "text": "sudo chiffre automatiquement les commandes envoyées au système"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Sous root il n'y a ni confirmation ni corbeille, donc une faute est immédiate ; sudo réduit le temps passé en privilège élevé et trace qui a fait quoi."
+    },
+    {
+      "question": "Sur un système Linux respectant le Filesystem Hierarchy Standard, où chercher en priorité le message d'erreur d'un service qui refuse de démarrer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "/var/log"
+        },
+        {
+          "id": "b",
+          "text": "/usr/bin"
+        },
+        {
+          "id": "c",
+          "text": "/home"
+        },
+        {
+          "id": "d",
+          "text": "/tmp"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Les journaux du système et des services vivent dans /var/log : c'est presque toujours là que se trouve la réponse quand quelque chose ne fonctionne pas."
+    },
+    {
+      "question": "Quel fichier contient les empreintes (hachées et salées) des mots de passe et n'est lisible que par root ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "/etc/passwd"
+        },
+        {
+          "id": "b",
+          "text": "/etc/group"
+        },
+        {
+          "id": "c",
+          "text": "/etc/sudoers"
+        },
+        {
+          "id": "d",
+          "text": "/etc/shadow"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "/etc/passwd est lisible par tous et ne contient qu'un 'x' ; les empreintes des mots de passe sont isolées dans /etc/shadow, accessible au seul root."
+    },
+    {
+      "question": "Un binaire appartenant à root porte le bit SUID. Avec quels droits s'exécute-t-il quand un utilisateur ordinaire le lance ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avec les droits du propriétaire du fichier, donc root"
+        },
+        {
+          "id": "b",
+          "text": "Avec les droits de l'utilisateur qui le lance"
+        },
+        {
+          "id": "c",
+          "text": "Sans aucun droit particulier, comme un fichier normal"
+        },
+        {
+          "id": "d",
+          "text": "Avec les droits du groupe propriétaire uniquement"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le SUID fait tourner l'exécutable avec les droits du propriétaire du fichier ; c'est pourquoi passwd, propriété de root et SUID, peut écrire dans /etc/shadow."
+    },
+    {
+      "question": "Pourquoi modifie-t-on /etc/sudoers avec visudo plutôt qu'avec un éditeur de texte classique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "visudo est nettement plus rapide à lancer"
+        },
+        {
+          "id": "b",
+          "text": "visudo chiffre le fichier après l'enregistrement"
+        },
+        {
+          "id": "c",
+          "text": "visudo vérifie la syntaxe avant d'enregistrer et évite de casser sudo"
+        },
+        {
+          "id": "d",
+          "text": "C'est une obligation : sudoers rejette tout autre éditeur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Une faute de frappe dans sudoers peut rendre sudo inutilisable ; visudo contrôle la syntaxe avant d'écrire et empêche d'enregistrer un fichier cassé."
+    },
+    {
+      "question": "Vous lancez 'sudo systemctl start nginx', tout fonctionne, puis la machine redémarre cette nuit. Que se passe-t-il pour nginx ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il redémarre automatiquement, car start active aussi le service au boot"
+        },
+        {
+          "id": "b",
+          "text": "Il ne redémarre pas : start agit dans l'instant, il fallait aussi enable pour le démarrage au boot"
+        },
+        {
+          "id": "c",
+          "text": "Il redémarre une fois puis s'arrête définitivement"
+        },
+        {
+          "id": "d",
+          "text": "systemd empêche tout redémarrage tant que nginx tourne"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "start lance le service immédiatement mais ne touche pas au démarrage automatique ; il faut enable (ou enable --now) pour qu'il revienne après un reboot."
+    },
+    {
+      "question": "Pourquoi passe-t-on systématiquement par un gestionnaire de paquets plutôt que par un binaire téléchargé au hasard sur Internet ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le gestionnaire chiffre le disque pendant l'installation"
+        },
+        {
+          "id": "b",
+          "text": "Parce que les binaires téléchargés ne fonctionnent jamais sous Linux"
+        },
+        {
+          "id": "c",
+          "text": "Parce que c'est simplement plus rapide à taper"
+        },
+        {
+          "id": "d",
+          "text": "Parce que la source est de confiance et signée, les dépendances sont gérées, et le logiciel reste suivi et réparable"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le gestionnaire récupère un paquet signé d'un dépôt de confiance, tire les dépendances, et garde la trace de la version installée pour permettre mises à jour et suppression propres."
+    },
+    {
+      "question": "Quelle paire associe correctement chaque famille de gestionnaire de paquets à sa distribution d'origine ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "apt pour Red Hat, dnf pour Debian"
+        },
+        {
+          "id": "b",
+          "text": "apt pour Debian et Ubuntu, dnf pour Red Hat et Fedora"
+        },
+        {
+          "id": "c",
+          "text": "dnf pour Ubuntu, apt pour Fedora"
+        },
+        {
+          "id": "d",
+          "text": "apt et dnf sont tous deux propres à Debian"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "apt manipule des paquets .deb sur Debian, Ubuntu et dérivées ; dnf (l'évolution de yum) manipule des .rpm sur Red Hat, Fedora, CentOS et Rocky."
+    },
+    {
+      "question": "Sous Linux, comment rend-on accessible le contenu d'un deuxième disque dans l'arborescence ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "On le monte sur un dossier de l'arbre unique, son point de montage"
+        },
+        {
+          "id": "b",
+          "text": "Il apparaît automatiquement comme un nouveau lecteur séparé"
+        },
+        {
+          "id": "c",
+          "text": "On lui attribue une lettre de lecteur comme D:"
+        },
+        {
+          "id": "d",
+          "text": "On copie tout son contenu directement à la racine /"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Il n'y a pas de lettres de lecteur sous Linux : un seul arbre part de la racine, et chaque disque se greffe sur un dossier existant qu'on appelle point de montage."
+    },
+    {
+      "question": "df -h affiche de l'espace libre sur la partition, mais le système refuse de créer le moindre fichier. Quelle est la cause la plus probable ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La partition est passée en lecture seule"
+        },
+        {
+          "id": "b",
+          "text": "Le swap est saturé"
+        },
+        {
+          "id": "c",
+          "text": "Le disque a été démonté en cours de route"
+        },
+        {
+          "id": "d",
+          "text": "Les inodes sont épuisés, ce que révèle df -i"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Chaque fichier consomme un inode en nombre limité ; une multitude de petits fichiers peut épuiser les inodes alors qu'il reste des octets libres, et df -i le confirme."
+    },
+    {
+      "question": "Une adresse posée à la main avec 'ip addr add' disparaît au redémarrage du serveur. Pourquoi ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que la commande ip est dépréciée et non persistante"
+        },
+        {
+          "id": "b",
+          "text": "Parce que le noyau reconstruit sa config réseau au démarrage à partir de fichiers sur le disque, pas des commandes tapées en session"
+        },
+        {
+          "id": "c",
+          "text": "Parce que l'adresse fournie était forcément invalide"
+        },
+        {
+          "id": "d",
+          "text": "Parce que le pare-feu efface les adresses au reboot"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une commande ip agit en mémoire pour la session courante ; pour être permanente, la configuration doit vivre dans un fichier lu par le service réseau au démarrage (netplan, NetworkManager, etc.)."
+    },
+    {
+      "question": "Vous administrez un serveur distant uniquement par SSH. Quel ordre de configuration du pare-feu évite de vous verrouiller dehors ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Activer ufw d'abord, puis autoriser le port 22"
+        },
+        {
+          "id": "b",
+          "text": "Couper SSH avant toute configuration de pare-feu"
+        },
+        {
+          "id": "c",
+          "text": "Poser le deny par défaut en premier, autoriser SSH ensuite"
+        },
+        {
+          "id": "d",
+          "text": "Autoriser le port 22, puis poser le deny par défaut en entrée et activer ufw"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Si on active un deny incoming sans avoir d'abord autorisé le 22, la session SSH en cours est coupée ; on autorise donc SSH avant d'activer le pare-feu."
+    },
+    {
+      "question": "Quelle commande affiche uniquement les messages de log du service nginx via le journal unifié de systemd ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "journalctl -u nginx"
+        },
+        {
+          "id": "b",
+          "text": "systemctl logs nginx"
+        },
+        {
+          "id": "c",
+          "text": "ps aux | grep nginx"
+        },
+        {
+          "id": "d",
+          "text": "cat /var/log/nginx"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'option -u suivie du nom du service filtre le journal de systemd pour ne montrer que les messages de ce service, sans le bruit du reste du système."
+    },
+    {
+      "question": "À quoi sert logrotate sur un serveur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À suivre les fichiers de log en temps réel"
+        },
+        {
+          "id": "b",
+          "text": "À envoyer les logs vers un serveur central distant"
+        },
+        {
+          "id": "c",
+          "text": "À chiffrer les fichiers de log au repos"
+        },
+        {
+          "id": "d",
+          "text": "À archiver, compresser et purger les vieux logs pour qu'un fichier ne remplisse pas le disque"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Un fichier de log ne fait que grossir ; logrotate le renomme en archive à intervalle régulier, en démarre un neuf, compresse et supprime les plus anciens pour éviter de saturer le disque."
+    },
+    {
+      "question": "Quelle ligne de crontab planifie correctement une tâche tous les jours à 2h00 du matin ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "2 0 * * * /script.sh"
+        },
+        {
+          "id": "b",
+          "text": "0 2 * * * /script.sh"
+        },
+        {
+          "id": "c",
+          "text": "0 0 2 * * /script.sh"
+        },
+        {
+          "id": "d",
+          "text": "* * 2 0 * /script.sh"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les cinq champs sont minute, heure, jour du mois, mois, jour de semaine ; 0 2 * * * signifie minute 0 de l'heure 2, tous les jours."
+    },
+    {
+      "question": "Un script de sauvegarde fonctionne quand on le lance à la main mais 'ne s'exécute pas' en tâche cron. Quelle est la cause la plus fréquente ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "cron est désactivé par défaut sur tous les serveurs Linux"
+        },
+        {
+          "id": "b",
+          "text": "Il faut redémarrer la machine après chaque crontab -e"
+        },
+        {
+          "id": "c",
+          "text": "cron démarre la tâche dans un environnement minimal : un PATH réduit ou un chemin relatif fait échouer le script, et la sortie perdue masque l'erreur"
+        },
+        {
+          "id": "d",
+          "text": "Une crontab ne peut contenir qu'une seule ligne active"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "cron lance la tâche avec un PATH minimal et sans l'environnement de session ; on corrige avec des chemins absolus et en redirigeant la sortie vers un fichier avec >> log 2>&1."
+    },
+    {
+      "question": "Sur un serveur exposé, pourquoi régler PasswordAuthentication no et passer aux clés SSH coupe-t-il les attaques par force brute ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le serveur change automatiquement de port à chaque tentative"
+        },
+        {
+          "id": "b",
+          "text": "Parce que cela active fail2ban en même temps"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il n'y a plus de mot de passe à deviner, la clé privée ne quittant jamais la machine cliente"
+        },
+        {
+          "id": "d",
+          "text": "Parce que cela supprime le compte root du serveur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La force brute essaie de deviner un mot de passe ; en refusant l'authentification par mot de passe au profit d'une clé cryptographique privée non transmise, il n'y a plus rien à brutaliser."
+    },
+    {
+      "question": "Une stratégie de sauvegarde incrémentale est en place. De quoi a-t-on besoin pour restaurer l'état le plus récent des données ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La dernière sauvegarde complète, puis chaque incrément dans l'ordre"
+        },
+        {
+          "id": "b",
+          "text": "La dernière sauvegarde incrémentale seule suffit"
+        },
+        {
+          "id": "c",
+          "text": "Uniquement la première sauvegarde complète"
+        },
+        {
+          "id": "d",
+          "text": "N'importe quelle sauvegarde prise au hasard"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'incrémentale ne copie que ce qui a changé depuis la dernière sauvegarde ; restaurer exige donc de rejouer la complète puis tous les incréments dans l'ordre, et un maillon manquant casse la chaîne."
+    },
+    {
+      "question": "Un serveur possède 8 cœurs et affiche un load average de 4. Que faut-il en conclure ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La machine est en surcharge, il faut intervenir en urgence"
+        },
+        {
+          "id": "b",
+          "text": "Le load average est inexploitable sans connaître la quantité de RAM"
+        },
+        {
+          "id": "c",
+          "text": "La machine est tranquille : environ la moitié des cœurs reste disponible"
+        },
+        {
+          "id": "d",
+          "text": "Il faut ajouter des cœurs immédiatement"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le load average se compare au nombre de cœurs : une charge de 4 sur 8 cœurs signifie qu'environ la moitié de la capacité est libre, donc aucune surcharge."
+    },
+    {
+      "question": "Lors de la mise en service d'un serveur web, pourquoi le faire tourner sous un utilisateur de service dédié, sans shell de connexion, plutôt que sous root ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que root ne peut pas servir de pages web"
+        },
+        {
+          "id": "b",
+          "text": "Pour limiter les dégâts : si le service est compromis, l'attaquant n'hérite que des droits restreints de ce compte, pas de la machine entière"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'un service refuse de démarrer sous root"
+        },
+        {
+          "id": "d",
+          "text": "Pour que le service consomme moins de mémoire"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "C'est le moindre privilège : un compte de service limité et sans shell réduit la surface d'attaque, de sorte qu'une compromission du service ne donne pas les pleins pouvoirs sur le serveur."
+    }
+  ]
+}

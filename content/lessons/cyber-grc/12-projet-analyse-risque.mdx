@@ -1,0 +1,139 @@
+---
+refCode: CL-LSN-132-V01
+slug: grc-projet-analyse-risque
+title: "Projet : une analyse de risque pour une PME"
+description: "Mettez tout le parcours en pratique : pour une petite entreprise fictive, dressez l'inventaire, classez les données, identifiez et évaluez les risques, choisissez des traitements et esquissez un programme GRC réaliste."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 700
+prerequisites: ["CL-LSN-131-V01"]
+---
+
+On arrive au bout du parcours. Jusqu'ici on a vu les morceaux un par un : la gouvernance, le risque, la conformité, la classification des données, la continuité. Cette dernière leçon les recolle ensemble sur un cas. Pas de théorie nouvelle, juste un exercice complet, du genre qu'on vous demanderait en vrai lors d'une première mission.
+
+Le cas : une boutique en ligne, appelons-la Brindille, qui vend du matériel de jardinage. Quinze personnes, dont deux au support, trois à la prépa des commandes, le reste réparti entre marketing, achats et direction. Le site tourne sur une plateforme e-commerce hébergée chez un prestataire. Les paiements passent par un prestataire externe, Brindille ne stocke aucun numéro de carte. Mais elle conserve les comptes clients : nom, adresse, e-mail, historique de commandes. Une trentaine de milliers de comptes. Aucune personne dédiée à la sécurité. La direction sait qu'elle doit s'en occuper mais ne sait pas par où commencer. C'est votre point de départ.
+
+L'idée du projet : produire un livrable court mais sérieux, que la direction puisse lire en quinze minutes et qui mène à des décisions. On va le construire étape par étape.
+
+## étape 1 : inventaire et classification
+
+On ne protège pas ce qu'on ne connaît pas. Premier réflexe, lister ce qui compte : les actifs (données, systèmes, services) et le niveau de sensibilité de chacun. On reprend ici l'échelle vue dans la leçon sur la classification (public, interne, confidentiel, restreint).
+
+| Actif | Description | Classification |
+|---|---|---|
+| Comptes clients | Nom, adresse, e-mail, historique | Confidentiel |
+| Identifiants de connexion | Comptes du personnel, accès admin du site | Restreint |
+| Catalogue produits et prix | Fiches publiées sur le site | Public |
+| Données comptables | Factures, chiffre d'affaires | Confidentiel |
+| Plateforme e-commerce | Service hébergé qui fait tourner la boutique | Confidentiel |
+| Messagerie d'équipe | E-mails internes et avec clients | Interne |
+
+Cet inventaire tient sur une page. C'est volontaire : pour une PME, mieux vaut une liste courte tenue à jour qu'un catalogue exhaustif qui pourrit dans un tiroir.
+
+## étape 2 : identifier les risques
+
+Maintenant on se demande ce qui peut mal tourner pour ces actifs. On ne cherche pas l'exhaustivité, on cherche les scénarios crédibles pour une boutique de cette taille. Quelques candidats évidents :
+
+- Un rançongiciel chiffre la plateforme et les sauvegardes, la boutique est à l'arrêt.
+- Une fuite des comptes clients, par une faille du site ou un accès admin volé.
+- Une panne prolongée de l'hébergeur, le site tombe en pleine période de ventes.
+- Un hameçonnage qui piège un membre du personnel et donne un accès interne.
+- Un fournisseur compromis (le prestataire e-commerce lui-même) qui propage l'incident.
+
+On reste concret. Chaque scénario doit pouvoir se raconter en une phrase à un dirigeant qui n'est pas technique.
+
+## étape 3 : évaluer et prioriser
+
+Identifier ne suffit pas, il faut hiérarchiser. On reprend la méthode des leçons sur le risque : pour chaque scénario, une probabilité et un impact, puis un niveau global qui sert à trier. On garde une échelle simple à trois crans (faible, moyen, élevé). Le registre est le coeur du livrable.
+
+| Risque | Probabilité | Impact | Niveau | Traitement |
+|---|---|---|---|---|
+| Rançongiciel | Moyenne | Élevé | Élevé | Réduire |
+| Fuite comptes clients | Moyenne | Élevé | Élevé | Réduire |
+| Hameçonnage du personnel | Élevée | Moyen | Élevé | Réduire |
+| Panne de l'hébergeur | Faible | Élevé | Moyen | Transférer / Réduire |
+| Fournisseur compromis | Faible | Élevé | Moyen | Transférer |
+
+Le tri saute aux yeux : trois risques de niveau élevé passent en premier. On ne traite pas tout en même temps, on commence par le haut du tableau.
+
+## étape 4 : traiter
+
+Pour chaque risque prioritaire, on décrit la mesure concrète, son coût d'effort et qui la porte. Trois exemples détaillés.
+
+Rançongiciel. La mesure qui change tout, c'est la sauvegarde selon la règle 3-2-1 : trois copies des données, sur deux supports différents, dont une hors ligne ou immuable. Une sauvegarde qu'un rançongiciel ne peut pas atteindre permet de repartir sans payer. On y ajoute des tests de restauration réguliers, parce qu'une sauvegarde jamais testée n'est qu'une hypothèse.
+
+Hameçonnage et accès volés. Activer la double authentification (2FA) sur tous les comptes du personnel, en priorité les accès admin du site et la messagerie. Coupler ça à une sensibilisation courte deux fois par an, avec des exemples de faux e-mails réels. La 2FA ne coûte presque rien et bloque la majorité des prises de contrôle de comptes.
+
+Fournisseur compromis. On agit par le contrat : une clause de sécurité avec le prestataire e-commerce, qui impose une notification rapide en cas d'incident et précise ses engagements. Pour le risque de panne, on regarde les garanties de disponibilité du contrat et, si besoin, une assurance cyber pour la part qu'on accepte de transférer.
+
+<Callout type="info">
+Notez la logique : on ne réduit pas tout. Réduire (sauvegardes, 2FA), transférer (assurance, clause fournisseur), parfois accepter un petit reste. Le but n'est pas le risque zéro, c'est un niveau de risque que la direction assume en connaissance de cause.
+</Callout>
+
+## étape 5 : conformité et politiques
+
+Brindille manipule des données personnelles de clients européens, donc le RGPD s'applique. Concrètement : une base légale pour le traitement, un registre des traitements, une information claire des clients, et une procédure de notification sous 72 heures en cas de violation. Sur les paiements, Brindille ne stocke pas les cartes, mais la norme PCI-DSS reste dans le décor via le prestataire de paiement. Il faut vérifier que ce prestataire est bien conforme et que l'intégration n'expose pas de données de carte.
+
+Côté politiques, inutile d'écrire un classeur de cent pages. On part du minimum utile :
+
+- Une politique de mot de passe et d'authentification (longueur, 2FA obligatoire).
+- Une politique de sauvegarde et de restauration (fréquence, tests, rétention).
+- Une procédure de réponse à incident (qui prévenir, dans quel ordre, sous quel délai).
+- Une charte d'usage pour le personnel (e-mails, accès, signalement).
+
+Quatre documents courts, lus et signés, valent mieux qu'une bibliothèque que personne n'ouvre.
+
+## étape 6 : continuité et indicateurs
+
+Si la boutique tombe, combien de temps peut-on tenir avant que ça fasse vraiment mal, et combien de données peut-on se permettre de perdre. Ce sont le RTO et le RPO. Pour Brindille, une cible raisonnable : RTO de 8 heures (remettre le site debout en une journée de travail) et RPO de 4 heures (au pire on perd quatre heures de commandes). Ces chiffres se discutent avec la direction, pas avec la technique seule.
+
+Pour piloter dans la durée, trois indicateurs suffisent au début :
+
+- Pourcentage de comptes du personnel avec la 2FA active (cible : 100 %).
+- Délai depuis la dernière restauration de sauvegarde testée avec succès.
+- Nombre d'incidents et de tentatives d'hameçonnage signalés par trimestre.
+
+<Diagram caption="La démarche du mini-programme GRC">
+flowchart TD
+  A[Inventaire et classification] --> B[Identifier les risques]
+  B --> C[Évaluer et prioriser]
+  C --> D[Choisir les traitements]
+  D --> E[Politiques et conformité]
+  E --> F[Continuité et indicateurs]
+  F --> G[Revue régulière]
+  G --> A
+</Diagram>
+
+La boucle est importante : un programme GRC n'est pas un document qu'on fige, c'est un cycle qu'on repasse au moins une fois par an.
+
+## le livrable
+
+Ce qu'on remet à la direction de Brindille tient en trois pièces :
+
+- Une synthèse d'une page : le contexte, les trois risques majeurs, la position recommandée.
+- Le registre de risque : le tableau de l'étape 3, qui sert de tableau de bord.
+- Un plan d'action priorisé : les mesures dans l'ordre, avec un responsable et une échéance pour chacune.
+
+<Callout type="success">
+Un bon livrable GRC se mesure à une chose : la direction peut décider après l'avoir lu. Si elle sait quoi financer en premier et qui pilote quoi, le travail a servi. S'il faut un expert pour le comprendre, il est raté.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-ordre" question="Dans quel ordre mène-t-on la démarche ?" options={["Traiter les risques, puis faire l'inventaire", "Inventaire et classification, puis identifier les risques, puis évaluer, puis traiter", "Écrire les politiques d'abord, l'inventaire à la fin", "Évaluer les risques avant de savoir quels actifs existent"]} correct={1} />
+
+<Quiz id="q-rancon" question="Quelle mesure protège le mieux contre un rançongiciel qui tente de tout chiffrer ?" options={["Changer les mots de passe tous les mois", "Une sauvegarde 3-2-1 avec une copie hors ligne et des restaurations testées", "Publier moins de produits sur le site", "Augmenter la bande passante de l'hébergeur"]} correct={1} />
+
+<Quiz id="q-traitement" question="Brindille décide de souscrire une assurance cyber pour la panne d'hébergeur. De quel type de traitement s'agit-il ?" options={["Réduire", "Accepter", "Transférer", "Éviter"]} correct={2} />
+
+## à retenir
+
+- Un mini-programme GRC suit une suite logique : inventorier et classer, identifier, évaluer, traiter, encadrer par des politiques et la conformité, prévoir la continuité, suivre des indicateurs, puis recommencer.
+- Le registre de risque (risque, probabilité, impact, niveau, traitement) est l'outil central : il trie et sert de tableau de bord.
+- On ne réduit pas tout : réduire, transférer, accepter, le mélange se décide avec la direction selon le niveau de risque.
+- Pour une PME, court et tenu à jour bat exhaustif et abandonné, autant pour l'inventaire que pour les politiques.
+- Le livrable réussit quand la direction peut décider après lecture : synthèse, registre, plan d'action priorisé.
+- Ce parcours a couvert la gouvernance, le risque, la conformité (RGPD, PCI-DSS), la classification, la continuité, et leur assemblage dans un programme cohérent.
+
+OK 12 écrit

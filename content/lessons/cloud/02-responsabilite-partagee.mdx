@@ -1,0 +1,111 @@
+---
+refCode: CL-LSN-170-V01
+slug: cloud-responsabilite-partagee
+title: "Le modèle de responsabilité partagée"
+description: "Dans le cloud, le fournisseur sécurise l'infrastructure et le client sécurise ce qu'il y met. Comprenez cette ligne de partage, comment elle bouge selon le modèle, et pourquoi la confondre cause tant d'incidents."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-169-V01"]
+---
+
+Quand une entreprise migre vers le cloud, il y a une croyance qui circule presque toujours dans les couloirs : maintenant que c'est chez AWS, Azure ou Google, la sécurité, c'est leur problème. C'est faux, et c'est une erreur qui finit régulièrement dans les journaux sous la forme de millions de fiches clients exposées.
+
+Passer au cloud ne transfère pas toute la sécurité au fournisseur. Il existe une ligne qui sépare ce qu'il protège de ce que vous, le client, devez protéger. Cette ligne a un nom : le modèle de responsabilité partagée. La mal lire, c'est laisser une porte ouverte en pensant que quelqu'un d'autre l'a fermée. Voyons où passe cette ligne, comment elle se déplace, et pourquoi tant de gens la confondent.
+
+## la sécurité DU cloud et DANS le cloud
+
+Le partage tient en une formule simple que les fournisseurs répètent partout : ils sont responsables de la sécurité **du** cloud, vous êtes responsable de la sécurité **dans** le cloud.
+
+La sécurité du cloud, c'est tout ce qui fait tourner la plateforme et que vous ne voyez jamais. Les datacenters physiques avec leurs portes blindées et leurs gardes. Le matériel : serveurs, disques, câbles réseau. La couche de virtualisation, l'hyperviseur qui découpe une grosse machine en plusieurs machines virtuelles. L'alimentation, la climatisation, la protection contre les incendies. Tout ça, c'est le fournisseur. Vous n'y avez pas accès et vous ne pouvez pas le sécuriser même si vous le vouliez.
+
+La sécurité dans le cloud, c'est ce que vous déposez sur cette plateforme. Vos données. Les comptes et les permissions de vos utilisateurs. La façon dont vous configurez chaque service. Le code de vos applications. Le chiffrement que vous activez ou non. Ces éléments vous appartiennent et le fournisseur ne peut pas deviner comment vous voulez les protéger.
+
+<Callout type="info">
+Une image qui aide : le fournisseur loue un appartement bien construit, avec des murs solides et une porte d'entrée. Vous, locataire, décidez si vous fermez à clé, qui a un double, et ce que vous laissez traîner sur le balcon. Le bailleur a fait sa part. Le reste dépend de vous.
+</Callout>
+
+## la ligne bouge selon le modèle
+
+Voilà l'idée centrale de cette leçon. La ligne de partage n'est pas fixe. Elle se déplace selon le type de service que vous consommez.
+
+En **IaaS** (infrastructure as a service), vous louez des machines virtuelles nues. Le fournisseur gère le matériel et l'hyperviseur, mais à partir du système d'exploitation, tout est à vous : les correctifs de sécurité de l'OS, la configuration du réseau, le pare-feu, l'application qui tourne dessus, les données. Vous gérez beaucoup.
+
+En **PaaS** (platform as a service), vous déployez votre code sur une plateforme gérée. Le fournisseur s'occupe de l'OS, des mises à jour système, du runtime. Il vous reste votre application, vos données et vos accès. La charge baisse.
+
+En **SaaS** (software as a service), vous utilisez un logiciel fini, du type messagerie ou CRM en ligne. Le fournisseur gère presque tout. Il vous reste vos données et la gestion de vos accès. C'est peu, mais ce n'est jamais rien.
+
+| Modèle | Le fournisseur gère | Le client gère |
+| --- | --- | --- |
+| IaaS | Matériel, datacenter, hyperviseur | OS, réseau, runtime, application, accès, données |
+| PaaS | Matériel, hyperviseur, OS, runtime | Application, accès, données |
+| SaaS | Tout sauf vos données et vos accès | Accès, données, configuration du service |
+
+<Diagram caption="La ligne de partage selon le modèle">
+flowchart LR
+  A[Matériel et datacenter] --> B[Hyperviseur]
+  B --> C[Systeme d exploitation]
+  C --> D[Runtime et plateforme]
+  D --> E[Application]
+  E --> F[Donnees et acces]
+  A2[IaaS: ligne basse, client gere a partir de l OS]
+  A3[PaaS: ligne au milieu, client gere a partir de l app]
+  A4[SaaS: ligne haute, client gere les donnees et acces]
+</Diagram>
+
+Plus le service est clé en main, moins vous avez de surface à sécuriser, mais plus vous dépendez des choix du fournisseur. Plus le service est brut, plus vous contrôlez, et plus vous portez de responsabilités.
+
+## ce qui reste TOUJOURS au client
+
+Regardez les trois lignes du tableau. Deux choses reviennent dans chacune, quel que soit le modèle : vos **données** et vos **accès**. Ajoutez-y la **configuration** des services que vous activez.
+
+Ces trois-là ne se délèguent jamais. Le fournisseur ne sait pas qui, dans votre organisation, a le droit de lire telle base. Il ne sait pas si un fichier doit être public ou privé. Il ne sait pas quel mot de passe vous choisissez ni si vous activez l'authentification à deux facteurs. Même en SaaS, où il gère le logiciel de bout en bout, la décision « cet utilisateur peut-il voir ces données » reste la vôtre.
+
+<Callout type="warning">
+Retenez le réflexe : données, accès, configuration. Si un incident touche l'un de ces trois, regardez d'abord de votre côté avant d'accuser le fournisseur. Dans l'immense majorité des cas, c'est votre part.
+</Callout>
+
+## pourquoi les incidents
+
+Maintenant le coeur du problème. Pourquoi tant de fuites viennent d'une mauvaise lecture de cette ligne ?
+
+Parce que beaucoup de gens entendent « le cloud est sécurisé » et comprennent « tout ce que je mets dans le cloud est sécurisé automatiquement ». Les deux phrases n'ont rien à voir. La plateforme peut être impeccable pendant que votre configuration, elle, laisse tout ouvert.
+
+L'exemple le plus connu, c'est le bucket de stockage laissé public. Un bucket, c'est un espace de stockage de fichiers, du type Amazon S3 ou Google Cloud Storage. Par défaut, on peut le configurer en privé ou en public. Quelqu'un crée un bucket pour stocker des sauvegardes, des exports de base, des documents internes, et coche « public » sans y penser, ou laisse une permission trop large. Le fichier devient accessible à n'importe qui sur Internet avec le bon lien. Pas besoin de pirater quoi que ce soit : la porte est ouverte.
+
+<Callout type="danger">
+Quand un bucket public expose des données clients, ce n'est pas une faille du fournisseur. Le service a fonctionné exactement comme demandé : rendre le fichier accessible publiquement. Le réglage « public » était une décision du client. C'est sa part de responsabilité, pas celle du cloud. Des fuites massives, de Verizon à Accenture en passant par des administrations entières, sont parties exactement de là.
+</Callout>
+
+Même logique pour les droits trop larges. Donner à un compte de service la permission de tout lire « pour que ça marche vite » revient à laisser un trousseau de clés universel traîner. Le fournisseur a fourni un système de permissions précis. L'avoir réglé trop large, c'est votre configuration.
+
+## bien lire son contrat
+
+Chaque service cloud a sa répartition documentée. Avant de déployer quoi que ce soit, prenez le temps de répondre à une question : pour ce service précis, qu'est-ce qui est de mon côté de la ligne ?
+
+Cela paraît évident, mais c'est rarement fait. Les fournisseurs publient des matrices de responsabilité partagée service par service. Une base de données managée ne demande pas le même travail qu'une machine virtuelle brute. Activer le chiffrement, restreindre les accès, fermer ce qui doit l'être : ces tâches changent d'un service à l'autre, et personne ne les fera à votre place.
+
+Le bon moment pour lire cette répartition, c'est avant le déploiement, pas après l'incident. Une habitude simple suffit : pour chaque nouveau service, lister ce qui reste à votre charge et le traiter comme une checklist avant la mise en production.
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Dans le modèle de responsabilité partagée, qui est responsable de la sécurité de l hyperviseur et des datacenters physiques ?" options={["Le client", "Le fournisseur cloud", "Les deux a parts egales", "Un auditeur externe obligatoire"]} correct={1} />
+
+<Quiz id="q-2" question="Un bucket de stockage est laisse accessible publiquement et des donnees clients fuitent. A qui revient la responsabilite ?" options={["Au fournisseur, car c est son stockage", "Au client, car la configuration d acces est sa part", "A personne, c est un risque normal du cloud", "Au fournisseur, sauf en SaaS"]} correct={1} />
+
+<Quiz id="q-3" question="Quels elements restent a la charge du client quel que soit le modele (IaaS, PaaS ou SaaS) ?" options={["Le materiel et le reseau physique", "L hyperviseur et la climatisation", "Les donnees, les acces et la configuration", "Uniquement le systeme d exploitation"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- Le fournisseur sécurise la sécurité **du** cloud (matériel, datacenters, hyperviseur). Le client sécurise la sécurité **dans** le cloud (données, accès, configuration, application).
+- La ligne de partage se déplace selon le modèle : en IaaS le client gère beaucoup (à partir de l'OS), en PaaS moins, en SaaS presque rien sauf ses données et ses accès.
+- Trois choses ne se délèguent jamais, quel que soit le modèle : les **données**, les **accès**, la **configuration**.
+- Beaucoup d'incidents viennent d'une confusion : croire que « le cloud est sécurisé » signifie que tout est protégé par défaut. Un bucket laissé public ou des droits trop larges, c'est la part du client, pas celle du fournisseur.
+- Avant de déployer un service, lisez sa répartition de responsabilité et traitez ce qui reste de votre côté comme une checklist.
+
+OK 02 écrit

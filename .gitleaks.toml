@@ -19,6 +19,9 @@ paths = [
   # Auth-hook signature tests (Deno): fixture webhook secrets used to sign
   # synthetic requests, never real credentials.
   '''supabase/functions/custom-access-token/.*\.test\.ts''',
+  # The "crypto failures" lesson deliberately hardcodes a fake API key as a
+  # bad example (teaching "never commit secrets in code"); not a real credential.
+  '''content/lessons/cyber-web/09-crypto-failures\.mdx''',
 ]
 regexes = [
   # The CI Build job writes a placeholder .env (ci.yml); every fake value

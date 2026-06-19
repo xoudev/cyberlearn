@@ -1,0 +1,133 @@
+---
+refCode: CL-LSN-057-V01
+slug: linux-paquets
+title: "Installer et gérer des logiciels"
+description: "Comprenez le rôle d'un gestionnaire de paquets, des dépôts et des dépendances, et installez, mettez à jour et supprimez des logiciels avec apt sur Debian et Ubuntu."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 380
+prerequisites: ["CL-LSN-049-V01"]
+---
+
+Sous Windows, installer un logiciel ressemble souvent à ça : on trouve un site, on télécharge un fichier `.exe`, on double-clique, on clique sur Suivant trois fois. Sous Linux, ce réflexe n'existe pas. On ne va pas chercher un installateur sur le premier site venu. À la place, on demande à un programme spécialisé, le gestionnaire de paquets, d'aller chercher le logiciel pour nous. Et il ne ramène pas que le logiciel : il ramène aussi tout ce dont ce logiciel a besoin pour fonctionner.
+
+Ce changement d'habitude déroute au début. Puis on comprend qu'il rend la vie bien plus simple. Une seule commande installe un serveur web complet. Une autre met à jour la totalité du système d'un coup. Voyons comment ça marche.
+
+## le modèle : dépôts, paquets, dépendances
+
+Trois mots reviennent tout le temps. Prenons-les un par un.
+
+Un **paquet**, c'est un logiciel emballé proprement : le programme lui-même, plus quelques informations sur sa version, son éditeur et ce qu'il lui faut pour tourner. Quand vous installez `git`, vous installez le paquet `git`.
+
+Un **dépôt** (repository en anglais) est un serveur géré par votre distribution qui héberge des milliers de paquets prêts à l'emploi. Debian, Ubuntu et les autres maintiennent leurs propres dépôts. Votre machine connaît leur adresse et sait y piocher. C'est un peu comme un magasin d'applications, sauf qu'il est en ligne de commande et qu'il existait bien avant les stores des smartphones.
+
+Une **dépendance** est un autre paquet dont votre logiciel a besoin pour fonctionner. Beaucoup de programmes réutilisent des briques communes : une bibliothèque pour le chiffrement, une autre pour lire des images, etc. Plutôt que chaque logiciel embarque sa copie, le système installe la brique une fois et tout le monde la partage. Quand vous demandez un paquet, le gestionnaire calcule la liste complète des dépendances et les installe à votre place. Vous ne vous en occupez pas.
+
+<Callout type="info">
+Pourquoi passer par un dépôt plutôt que télécharger au hasard ? Parce que les paquets des dépôts officiels sont signés cryptographiquement. Votre machine vérifie cette signature avant d'installer quoi que ce soit. Si un fichier a été modifié en route, l'installation échoue. Télécharger un binaire sur un site inconnu ne vous offre aucune de ces garanties.
+</Callout>
+
+Le modèle mental à retenir : vous ne gérez pas des fichiers, vous gérez des paquets. Le gestionnaire tient un inventaire de ce qui est installé, sait d'où ça vient, et peut tout retirer proprement le moment venu.
+
+## apt update et apt upgrade
+
+Sur Debian et Ubuntu, l'outil s'appelle `apt`. Deux commandes prêtent souvent à confusion, alors clarifions-les tout de suite.
+
+`apt update` ne met à jour aucun logiciel. Il rafraîchit seulement la **liste** des paquets disponibles en interrogeant les dépôts. Votre machine garde en local un catalogue de ce qui existe et en quelle version. Ce catalogue vieillit. `apt update` le remet à neuf.
+
+`apt upgrade` installe les nouvelles versions des paquets déjà présents sur votre système, en se basant sur le catalogue que `update` vient de rafraîchir.
+
+D'où la séquence classique pour maintenir une machine à jour :
+
+```bash
+# 1. Rafraîchir le catalogue des paquets disponibles
+sudo apt update
+
+# 2. Installer les mises à jour disponibles
+sudo apt upgrade
+```
+
+Sur un serveur, faire ça régulièrement n'est pas une coquetterie. Les mises à jour corrigent des failles de sécurité. Un nginx ou un OpenSSH non mis à jour reste vulnérable à des bugs déjà connus et déjà documentés par les attaquants. Mettre à jour, c'est fermer ces portes.
+
+<Callout type="warning">
+L'erreur la plus fréquente des débutants : lancer `apt install` sans avoir fait `apt update` avant. Si votre catalogue date de plusieurs semaines, apt peut chercher une version de paquet qui n'existe plus sur le dépôt, et l'installation échoue avec une erreur du type 'Unable to locate package' ou '404 Not Found'. Réflexe à ancrer : `update` d'abord, le reste ensuite.
+</Callout>
+
+## installer et supprimer
+
+Une fois le catalogue à jour, installer un logiciel tient en une ligne.
+
+```bash
+# Installer le serveur web nginx
+sudo apt install nginx
+```
+
+apt calcule les dépendances, vous montre ce qu'il va installer et combien d'espace ça prend, puis demande confirmation. Tapez `o` (ou `y` selon la langue) et c'est parti. En quelques secondes, nginx et tout ce qu'il lui faut sont en place.
+
+Remarquez le `sudo` au début. Installer un logiciel modifie le système entier, pas juste votre dossier personnel. Cette action demande les droits administrateur, et `sudo` est ce qui vous les accorde le temps d'une commande. Sans lui, apt refusera avec une erreur de permission.
+
+Pour retirer un logiciel, deux niveaux :
+
+```bash
+# Supprime le programme mais garde ses fichiers de configuration
+sudo apt remove nginx
+
+# Supprime le programme ET sa configuration
+sudo apt purge nginx
+```
+
+La différence compte. `remove` laisse les fichiers de config en place, pratique si vous comptez réinstaller plus tard sans tout reconfigurer. `purge` fait table rase. Si vous voulez repartir de zéro, c'est `purge`.
+
+<SimulatedTerminal shell="bash" title="Installer puis vérifier nginx" commands={{ "sudo apt update": "Réception... Lecture des listes de paquets... Fait", "sudo apt install nginx": "Les NOUVEAUX paquets suivants seront installés :\n  nginx nginx-common nginx-core\nParamétrage de nginx (1.24.0)...\nFait", "which nginx": "/usr/sbin/nginx", "sudo apt remove nginx": "Les paquets suivants seront ENLEVÉS :\n  nginx\nFait" }} />
+
+## chercher et inspecter
+
+Vous ne connaissez pas le nom exact d'un paquet ? `apt search` cherche par mot-clé dans le catalogue.
+
+```bash
+# Trouver les paquets liés à un mot-clé
+apt search serveur web
+
+# Voir le détail d'un paquet : version, taille, description, dépendances
+apt show nginx
+```
+
+Et pour savoir si un programme est déjà installé et où il se trouve, `which` répond en une ligne :
+
+```bash
+which git
+# Affiche /usr/bin/git si git est là, rien sinon
+```
+
+`apt show` est utile avant d'installer : il vous dit qui édite le paquet, à quoi il sert et ce qu'il va tirer comme dépendances. Un coup d'oeil rapide qui évite les surprises.
+
+## familles de distributions
+
+`apt` n'est pas universel. Il appartient à la famille Debian, qui inclut Ubuntu, Linux Mint et quelques autres. Les autres grandes familles ont leur propre outil :
+
+- **Debian, Ubuntu** : `apt` (et les paquets `.deb`)
+- **Fedora, Red Hat, CentOS** : `dnf` (ou son ancêtre `yum`, paquets `.rpm`)
+- **Arch Linux, Manjaro** : `pacman`
+
+Les commandes diffèrent (`dnf install` au lieu de `apt install`, par exemple) mais l'idée reste identique partout : un gestionnaire, des dépôts, des dépendances calculées pour vous. Apprenez le modèle une fois, vous le retrouverez sur n'importe quelle distribution. Cette leçon se concentre sur `apt`, le plus répandu pour débuter.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Que fait 'apt update' exactement ?" options={["Il met à jour tous les logiciels installés", "Il rafraîchit la liste des paquets disponibles dans les dépôts", "Il installe un nouveau paquet"]} correct={1} />
+<Quiz id="q-2" question="Pourquoi installer un paquet depuis un dépôt officiel est-il plus sûr qu'un téléchargement au hasard ?" options={["Parce que c'est plus rapide", "Parce que les paquets sont signés et vérifiés avant installation", "Parce que ça ne demande pas de mot de passe"]} correct={1} />
+<Quiz id="q-3" question="Quelle commande supprime un logiciel ET ses fichiers de configuration ?" options={["sudo apt purge nginx", "sudo apt remove nginx", "sudo apt update nginx"]} correct={0} />
+</QuizGroup>
+
+<SimulatedTerminal shell="bash" title="À toi : explore les paquets installés" commands={{ "apt update": "Lecture des listes de paquets... Fait", "apt list --installed": "git/stable 2.40.1\nnginx/stable 1.24.0\nopenssh-server/stable 9.2", "which git": "/usr/bin/git", "apt show nginx": "Package: nginx\nVersion: 1.24.0\nDescription: serveur web HTTP haute performance" }} />
+
+## à retenir
+
+- Sous Linux, on installe les logiciels via un gestionnaire de paquets, pas en téléchargeant des fichiers au hasard.
+- Un dépôt héberge les paquets signés ; une dépendance est un paquet requis par un autre, installé automatiquement pour vous.
+- `apt update` rafraîchit le catalogue, `apt upgrade` installe les mises à jour. On fait toujours `update` avant d'installer.
+- `sudo apt install paquet` installe, `apt remove` retire en gardant la config, `apt purge` retire tout.
+- `sudo` est requis pour installer ou supprimer, car ces actions modifient le système entier.
+- `apt search`, `apt show` et `which` servent à chercher, inspecter et vérifier ce qui est présent.
+- D'autres familles utilisent `dnf` (Fedora, RHEL) ou `pacman` (Arch), mais le modèle dépôts/paquets/dépendances reste le même.

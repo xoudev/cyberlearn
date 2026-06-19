@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Dans le vocabulaire de la sécurité, comment qualifie-t-on une serrure de mauvaise qualité ou un logiciel qui n'a pas été mis à jour ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une menace"
+        },
+        {
+          "id": "b",
+          "text": "Une vulnérabilité"
+        },
+        {
+          "id": "c",
+          "text": "Un risque"
+        },
+        {
+          "id": "d",
+          "text": "Un exploit"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une vulnérabilité est une faiblesse qui existe que quelqu'un en profite ou non. La menace est l'agent extérieur qui pourrait l'exploiter, et le risque combine les deux avec la valeur de ce qui est exposé."
+    },
+    {
+      "question": "D'après ce qui ressort des incidents réels, quelle est de loin la cause la plus fréquente des compromissions de sécurité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Des techniques d'attaque extrêmement avancées"
+        },
+        {
+          "id": "b",
+          "text": "La puissance de calcul des ordinateurs des attaquants"
+        },
+        {
+          "id": "c",
+          "text": "L'absence d'antivirus payant"
+        },
+        {
+          "id": "d",
+          "text": "Les erreurs humaines et les mauvaises configurations"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La majorité des incidents viennent de gestes ordinaires (mot de passe réutilisé, pièce jointe ouverte trop vite, serveur laissé en réglages par défaut), pas de prouesses techniques. Ce sont aussi les failles les plus faciles à corriger."
+    },
+    {
+      "question": "Un attaquant intercepte un virement de 50 euros et remplace le numéro de compte du destinataire par le sien, sans chercher à lire ni à bloquer quoi que ce soit. Quel pilier de la triade CIA est attaqué ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'intégrité"
+        },
+        {
+          "id": "b",
+          "text": "La confidentialité"
+        },
+        {
+          "id": "c",
+          "text": "La disponibilité"
+        },
+        {
+          "id": "d",
+          "text": "L'authentification"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'attaquant ne cherche ni à lire (confidentialité) ni à bloquer (disponibilité) la donnée : il la modifie pour qu'une donnée fausse passe pour vraie. C'est une atteinte à l'intégrité."
+    },
+    {
+      "question": "Pourquoi dit-on que les trois piliers de la triade CIA sont en tension les uns avec les autres ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'ils protègent tous la même chose de manière redondante"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'un seul d'entre eux suffit toujours à sécuriser un système"
+        },
+        {
+          "id": "c",
+          "text": "Parce que renforcer l'un peut dégrader un autre, comme le chiffrement intégral qui ralentit l'accès"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'ils ne s'appliquent qu'aux données et jamais aux systèmes"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La triade n'est pas une liste de cases à pousser au maximum. Chiffrer tout améliore la confidentialité mais ralentit le système (disponibilité), et perdre la clé rend tout illisible. La sécurité est un arbitrage."
+    },
+    {
+      "question": "Quel type de logiciel malveillant se copie tout seul d'une machine à l'autre en exploitant une faille réseau, sans qu'aucune action humaine ne soit nécessaire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un cheval de Troie"
+        },
+        {
+          "id": "b",
+          "text": "Un spyware"
+        },
+        {
+          "id": "c",
+          "text": "Un virus"
+        },
+        {
+          "id": "d",
+          "text": "Un ver"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le ver est autonome : il n'a pas besoin qu'on l'exécute et se propage à la vitesse du réseau. Le virus a besoin d'un hôte, le cheval de Troie se déguise pour être installé, le spyware observe discrètement."
+    },
+    {
+      "question": "Sur quel ressort psychologique repose le plus souvent un mail de phishing pour pousser la victime à agir sans réfléchir ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La curiosité technique"
+        },
+        {
+          "id": "b",
+          "text": "L'urgence ou la peur (compte suspendu, paiement échoué)"
+        },
+        {
+          "id": "c",
+          "text": "L'ennui de la victime"
+        },
+        {
+          "id": "d",
+          "text": "La promesse d'un long délai pour répondre"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le message crée une émotion d'urgence ou de peur pour empêcher la victime de vérifier. Une vraie organisation laisse le temps de contrôler, donc tout message qui presse mérite justement qu'on ralentisse."
+    },
+    {
+      "question": "En sécurité, que désigne précisément la surface d'attaque d'un système, et comment la réduit-on ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'ensemble de ce qui est exposé (ports, services, formulaires, comptes), qu'on réduit en fermant ce qui ne sert pas"
+        },
+        {
+          "id": "b",
+          "text": "La quantité de données stockées, qu'on réduit en supprimant des fichiers"
+        },
+        {
+          "id": "c",
+          "text": "Le nombre d'utilisateurs, qu'on réduit en limitant les comptes administrateurs"
+        },
+        {
+          "id": "d",
+          "text": "La vitesse du réseau, qu'on réduit en bridant la bande passante"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La surface d'attaque regroupe tous les points d'entrée exposés. On la réduit non pas en surveillant mieux chaque ouverture, mais en supprimant ce qui ne sert pas : un service inutile, un vieux port oublié, un compte d'un employé parti."
+    },
+    {
+      "question": "Que représente un identifiant comme CVE-2021-44228 dans l'écosystème de la sécurité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le nom de code d'un groupe d'attaquants"
+        },
+        {
+          "id": "b",
+          "text": "Un correctif officiel publié par un éditeur"
+        },
+        {
+          "id": "c",
+          "text": "Un identifiant public unique attribué à une vulnérabilité précise"
+        },
+        {
+          "id": "d",
+          "text": "Un type d'exploit vendu sur le marché noir"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Une CVE (Common Vulnerabilities and Exposures) est un identifiant public unique d'une vulnérabilité, composé de l'année puis d'un numéro. Il permet à tout le monde de désigner exactement la même faille."
+    },
+    {
+      "question": "Quelles sont les trois grandes familles de facteurs d'authentification permettant de prouver son identité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ce que tu sais, ce que tu vois, ce que tu entends"
+        },
+        {
+          "id": "b",
+          "text": "Ce que tu sais, ce que tu possèdes, ce que tu es"
+        },
+        {
+          "id": "c",
+          "text": "Ton mot de passe, ton login, ton adresse e-mail"
+        },
+        {
+          "id": "d",
+          "text": "Le pare-feu, l'antivirus, le chiffrement"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les trois facteurs sont : ce que tu sais (mot de passe, code PIN), ce que tu possèdes (téléphone, clé physique) et ce que tu es (biométrie). Les combiner rend une attaque beaucoup plus coûteuse."
+    },
+    {
+      "question": "Parmi ces seconds facteurs d'authentification, lequel est le plus exposé au détournement de ligne téléphonique (SIM swapping) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une clé de sécurité physique"
+        },
+        {
+          "id": "b",
+          "text": "Une application d'authentification générant un code toutes les 30 secondes"
+        },
+        {
+          "id": "c",
+          "text": "Une empreinte digitale"
+        },
+        {
+          "id": "d",
+          "text": "Le code reçu par SMS"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le SMS vaut mieux que rien, mais c'est le maillon faible : par SIM swapping, un attaquant peut convaincre l'opérateur de transférer la ligne sur sa carte, et le code arrive alors chez lui. Application ou clé physique sont préférables."
+    },
+    {
+      "question": "À quoi sert le sel ajouté à un mot de passe avant de le hacher ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À rendre chaque empreinte unique et à neutraliser les tables précalculées (rainbow tables)"
+        },
+        {
+          "id": "b",
+          "text": "À chiffrer le mot de passe une seconde fois avec une clé secrète"
+        },
+        {
+          "id": "c",
+          "text": "À raccourcir l'empreinte pour gagner de la place en base"
+        },
+        {
+          "id": "d",
+          "text": "À cacher le mot de passe dans une zone secrète de la base"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le sel est une valeur aléatoire unique par utilisateur, stockée en clair à côté de l'empreinte. Il fait que deux mêmes mots de passe donnent des empreintes différentes et rend les rainbow tables inutiles."
+    },
+    {
+      "question": "Quelle est la différence fondamentale entre le hachage et le chiffrement ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le hachage utilise une clé secrète, pas le chiffrement"
+        },
+        {
+          "id": "b",
+          "text": "Il n'y a aucune différence réelle entre les deux"
+        },
+        {
+          "id": "c",
+          "text": "Le chiffrement est réversible avec la bonne clé, alors que le hachage est à sens unique"
+        },
+        {
+          "id": "d",
+          "text": "Le hachage est toujours plus sûr que le chiffrement dans tous les cas"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le chiffrement se déchiffre avec une clé pour retrouver le message d'origine. Le hachage n'a ni clé ni fonction inverse : on ne peut pas déhacher une empreinte, au mieux deviner l'entrée par force brute."
+    },
+    {
+      "question": "Pourquoi dit-on qu'un pare-feu, à lui seul, ne suffit pas à protéger un système ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'il ralentit toujours fortement le réseau"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il chiffre les données et empêche de les lire"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il ne fonctionne qu'en HTTPS"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il laisse passer le trafic autorisé sans inspecter son contenu, donc une attaque via un port ouvert le traverse"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le pare-feu filtre selon des règles de port et de provenance, mais ne regarde pas le détail de ce qui est autorisé. Une application mal codée derrière un port ouvert (ex : 443) reste vulnérable malgré un pare-feu parfait."
+    },
+    {
+      "question": "Que garantit exactement le cadenas HTTPS affiché dans la barre d'adresse d'un navigateur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que le site est honnête et sans danger"
+        },
+        {
+          "id": "b",
+          "text": "Que la communication avec ce serveur est chiffrée"
+        },
+        {
+          "id": "c",
+          "text": "Que le serveur ne sera jamais piraté"
+        },
+        {
+          "id": "d",
+          "text": "Que vos données y sont sauvegardées automatiquement"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le cadenas signifie seulement que la connexion entre vous et le serveur est chiffrée (TLS). Il ne dit rien sur l'honnêteté du site : un site de phishing peut parfaitement avoir un certificat HTTPS valide et gratuit."
+    },
+    {
+      "question": "Quelle est la défense correcte et fiable contre l'injection SQL ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Utiliser des requêtes paramétrées qui séparent le code des données"
+        },
+        {
+          "id": "b",
+          "text": "Limiter la taille du champ dans le navigateur"
+        },
+        {
+          "id": "c",
+          "text": "Cacher la page de connexion derrière une URL secrète"
+        },
+        {
+          "id": "d",
+          "text": "Interdire les apostrophes uniquement en JavaScript côté client"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'injection SQL vient du fait de coller le texte de l'utilisateur dans la requête. Les requêtes paramétrées envoient la requête et les données séparément, de sorte que l'entrée n'est jamais interprétée comme du code."
+    },
+    {
+      "question": "Quelle est la défense de référence contre une faille de type cross-site scripting (XSS) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Limiter la longueur des commentaires"
+        },
+        {
+          "id": "b",
+          "text": "Bloquer les utilisateurs non connectés"
+        },
+        {
+          "id": "c",
+          "text": "Échapper la sortie, en neutralisant les caractères spéciaux du HTML avant de réafficher une donnée"
+        },
+        {
+          "id": "d",
+          "text": "Valider les entrées uniquement dans le navigateur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le XSS survient quand une entrée est réaffichée telle quelle et exécutée comme du code. L'échappement de la sortie remplace les caractères comme < et > par leur version neutre, de sorte que le contenu s'affiche en texte inoffensif."
+    },
+    {
+      "question": "Un serveur web est compromis par un bug du logiciel. Sous quel compte ce service limite-t-il le mieux les dégâts d'une telle intrusion ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un compte administrateur disposant de tous les droits"
+        },
+        {
+          "id": "b",
+          "text": "Le compte personnel d'un employé de l'entreprise"
+        },
+        {
+          "id": "c",
+          "text": "Le compte d'un autre service tournant sur la même machine"
+        },
+        {
+          "id": "d",
+          "text": "Un compte dédié avec uniquement les droits nécessaires à sa tâche"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "C'est le principe du moindre privilège : un service ne reçoit que les droits dont il a besoin. Si le serveur web tourne sous un compte limité, l'attaquant qui en hérite ne peut presque rien faire d'autre."
+    },
+    {
+      "question": "Un poste affiche un message de rançon et chiffre les fichiers. Quel est le bon premier réflexe immédiat ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Isoler la machine du réseau en la laissant allumée"
+        },
+        {
+          "id": "b",
+          "text": "Éteindre tout de suite la machine pour stopper le chiffrement"
+        },
+        {
+          "id": "c",
+          "text": "Payer rapidement pour limiter les dégâts"
+        },
+        {
+          "id": "d",
+          "text": "Supprimer les fichiers suspects pour faire le ménage"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "On débranche le réseau (câble et Wi-Fi) pour stopper la propagation, mais on laisse la machine allumée : sa mémoire vive contient des indices (processus, clés, connexions) qui disparaissent dès qu'on l'éteint."
+    },
+    {
+      "question": "Lors d'un audit de sécurité sur une cible d'entraînement autorisée, qu'est-ce qui rend le rapport final réellement utile à celui qui le reçoit ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La liste complète de toutes les commandes lancées dans le terminal"
+        },
+        {
+          "id": "b",
+          "text": "Le plus grand nombre possible de failles, listées à plat sans tri"
+        },
+        {
+          "id": "c",
+          "text": "Des constats triés par priorité, décrivant la faiblesse, son impact et sa correction"
+        },
+        {
+          "id": "d",
+          "text": "Des captures d'écran prouvant qu'on a su faire tomber le service"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un audit ne se juge pas au terminal mais au rapport. Vingt constats listés à plat sont vingt décisions à prendre ; trois constats triés du plus grave au moins grave, avec impact et correction, forment un plan d'action exploitable."
+    },
+    {
+      "question": "Qu'est-ce qui distingue un test de sécurité parfaitement légal d'un délit, alors que la commande technique peut être identique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le fait de ne rien casser pendant le test"
+        },
+        {
+          "id": "b",
+          "text": "L'autorisation de la personne qui détient le système"
+        },
+        {
+          "id": "c",
+          "text": "La bonne intention et la curiosité de la personne qui teste"
+        },
+        {
+          "id": "d",
+          "text": "Le fait d'utiliser des outils connus et publics"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La technique est neutre : c'est le contexte qui décide. Seule l'autorisation du propriétaire du système rend l'action légitime. Ni l'absence de dégât ni la simple curiosité ne sont des défenses devant la loi."
+    }
+  ]
+}

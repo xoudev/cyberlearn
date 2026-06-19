@@ -1,0 +1,187 @@
+---
+refCode: CL-LSN-008-V01
+slug: python-comprehensions
+title: "Compréhensions de listes et de dictionnaires"
+description: "Écrivez du code Python concis et élégant avec les compréhensions de listes et de dictionnaires pour filtrer, transformer et générer des collections en une ligne."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 350
+prerequisites: ["CL-LSN-006-V01"]
+---
+
+Prends une liste de prix, ajoute la TVA à chacun. Prends une liste de noms, garde seulement ceux qui commencent par une voyelle. Prends un dictionnaire, inverse les clés et les valeurs. Ces trois opérations, transformer et filtrer une collection, reviennent tellement souvent que Python leur a donné une syntaxe dédiée : la compréhension. C'est une façon de construire une nouvelle liste ou un nouveau dictionnaire en décrivant ce qu'on veut dedans, plutôt qu'en remplissant un contenant vide étape par étape.
+
+La compréhension n'est pas un gadget pour frimer ni un moyen de gagner des lignes. Bien utilisée, elle dit ton intention plus clairement qu'une boucle. Mal utilisée, elle produit une ligne que personne, toi compris dans six mois, ne saura relire. On va voir les deux faces.
+
+## de la boucle à la compréhension
+
+Commençons par le réflexe qu'on a tous au début : créer une liste vide, puis la remplir dans une boucle.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5]
+
+# version boucle : on construit la liste pas à pas
+carres = []
+for n in nombres:
+    carres.append(n * n)
+
+print(carres)  # [1, 4, 9, 16, 25]`} />
+
+Trois lignes pour dire une chose simple : je veux le carré de chaque nombre. La compréhension de liste exprime exactement la même idée, mais d'un coup.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5]
+
+carres = [n * n for n in nombres]
+
+print(carres)  # [1, 4, 9, 16, 25]`} />
+
+Lis la syntaxe de gauche à droite et tu retrouves la boucle. Le `for n in nombres` est le même que dans la version longue. Ce qui était dans le `append` passe devant : `n * n`, l'expression qui décrit chaque élément du résultat. Les crochets autour signalent qu'on construit une liste. On peut donc traduire mot pour mot :
+
+```text
+[ expression   for élément in itérable ]
+   n * n         for n      in nombres
+```
+
+La compréhension fait elle-même la création de la liste vide et les `append`. Tu n'as plus qu'à dire le quoi, pas le comment. Et l'expression devant le `for` peut être n'importe quoi : un appel de fonction, une concaténation, un calcul.
+
+<CodePlayground language="python" starterCode={`mots = ["chat", "maison", "python"]
+
+longueurs = [len(mot) for mot in mots]
+majuscules = [mot.upper() for mot in mots]
+
+print(longueurs)    # [4, 6, 6]
+print(majuscules)   # ['CHAT', 'MAISON', 'PYTHON']`} />
+
+## filtrer
+
+Transformer chaque élément, c'est la moitié du travail. Souvent on veut aussi en jeter certains. Dans une boucle, ça donne un `if` à l'intérieur.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5, 6, 7, 8]
+
+# version boucle : on ne garde que les pairs
+pairs = []
+for n in nombres:
+    if n % 2 == 0:
+        pairs.append(n)
+
+print(pairs)  # [2, 4, 6, 8]`} />
+
+La compréhension accueille ce `if` à la fin, après le `for`. La condition décide si l'élément entre dans le résultat ou non.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5, 6, 7, 8]
+
+pairs = [n for n in nombres if n % 2 == 0]
+
+print(pairs)  # [2, 4, 6, 8]`} />
+
+L'ordre de lecture suit la boucle : pour chaque `n` dans `nombres`, si `n` est pair, garde `n`. On peut transformer et filtrer en même temps. Ici on prend les carrés, mais seulement des nombres pairs.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5, 6]
+
+carres_pairs = [n * n for n in nombres if n % 2 == 0]
+
+print(carres_pairs)  # [4, 16, 36]`} />
+
+Attention à ne pas confondre ce `if` final, qui filtre, avec un `if/else` placé devant le `for`. Quand tu veux une valeur de remplacement plutôt qu'une exclusion, l'expression elle-même devient un `if/else`, et là tout passe : aucun élément n'est jeté, ils sont juste transformés différemment.
+
+<CodePlayground language="python" starterCode={`nombres = [1, 2, 3, 4, 5, 6]
+
+# if APRÈS le for = filtre (on garde ou on jette)
+# if/else AVANT le for = choix de valeur (on garde tout)
+etiquettes = ["pair" if n % 2 == 0 else "impair" for n in nombres]
+
+print(etiquettes)
+# ['impair', 'pair', 'impair', 'pair', 'impair', 'pair']`} />
+
+## la compréhension de dictionnaire
+
+La même mécanique marche pour construire un dictionnaire. On change les crochets en accolades et on fournit une paire `clé: valeur` au lieu d'une seule expression.
+
+<CodePlayground language="python" starterCode={`mots = ["chat", "maison", "python"]
+
+# version boucle
+tailles = {}
+for mot in mots:
+    tailles[mot] = len(mot)
+
+# version compréhension de dictionnaire
+tailles = {mot: len(mot) for mot in mots}
+
+print(tailles)  # {'chat': 4, 'maison': 6, 'python': 6}`} />
+
+Tout ce qu'on a vu reste valable : on peut filtrer avec un `if` final, et la clé comme la valeur sont des expressions libres. Un cas qui revient souvent, inverser un dictionnaire pour retrouver une clé à partir de sa valeur.
+
+<CodePlayground language="python" starterCode={`prix = {"pain": 2, "lait": 1, "oeufs": 3}
+
+# garder seulement les articles à plus de 1 euro
+chers = {nom: cout for nom, cout in prix.items() if cout > 1}
+print(chers)  # {'pain': 2, 'oeufs': 3}
+
+# inverser clés et valeurs
+par_prix = {cout: nom for nom, cout in prix.items()}
+print(par_prix)  # {2: 'pain', 1: 'lait', 3: 'oeufs'}`} />
+
+Le `.items()` donne les paires `(clé, valeur)` du dictionnaire de départ, qu'on déballe en `nom, cout`. Le reste, tu le connais déjà.
+
+## quand s'arrêter
+
+Voilà le piège. Comme la compréhension tient sur une ligne, on est tenté d'y caser de plus en plus. Conditions multiples, boucles imbriquées, calculs à rallonge. Et la ligne qui devait clarifier devient un mur de caractères qu'on relit trois fois sans comprendre.
+
+<CodePlayground language="python" starterCode={`matrice = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+# compréhension avec deux for imbriqués : déjà difficile à lire
+plat = [valeur for ligne in matrice for valeur in ligne if valeur % 2 == 1]
+print(plat)  # [1, 3, 5, 7, 9]
+
+# la même chose en boucle : plus longue, mais on suit
+plat = []
+for ligne in matrice:
+    for valeur in ligne:
+        if valeur % 2 == 1:
+            plat.append(valeur)
+print(plat)  # [1, 3, 5, 7, 9]`} />
+
+La version compréhension à deux `for` reste lisible pour un oeil entraîné, mais on est déjà à la limite. Dès qu'on ajoute une condition de plus ou un calcul non trivial, la boucle redevient le meilleur choix : elle se lit ligne par ligne, on peut y poser un point d'arrêt, y glisser un `print` de débogage, y commenter une étape.
+
+<Callout type="warning">
+La concision n'est pas un but en soi. Une compréhension est bonne quand elle se lit d'un coup d'oeil et dit clairement son intention. Si tu dois t'arrêter pour la décoder, ou si elle empile deux `for` et deux `if`, repasse à une boucle. Du code clair en cinq lignes vaut mieux qu'une ligne illisible.
+</Callout>
+
+La bonne question n'est pas « est-ce que je peux le faire en une ligne », mais « est-ce que cette ligne sera plus claire que la boucle ». Pour une transformation simple ou un filtre net, la réponse est oui. Pour une logique tordue, c'est non, et il n'y a aucune honte à écrire la boucle.
+
+## à toi de jouer
+
+<PythonChallenge id="py-1" title="Carrés d'une liste" description="Écris une fonction qui prend une liste d'entiers et renvoie une nouvelle liste contenant le carré de chaque élément. Une compréhension de liste suffit." starterCode="def solution(liste):
+    pass" tests={[{ input: "solution([1, 2, 3, 4])", expected: "[1, 4, 9, 16]" }]} />
+
+<Quiz
+  question="Dans la compréhension [n * 2 for n in valeurs if n > 0], à quoi sert le if à la fin ?"
+  options={[
+    "À remplacer les valeurs négatives par zéro",
+    "À ne garder que les éléments où n > 0 dans le résultat",
+    "À trier la liste par ordre croissant"
+  ]}
+  correct={1}
+/>
+
+<Quiz id="q-1"
+  question="Quelle syntaxe construit un dictionnaire associant chaque mot à sa longueur ?"
+  options={[
+    "{len(mot) for mot in mots}",
+    "[mot: len(mot) for mot in mots]",
+    "{mot: len(mot) for mot in mots}"
+  ]}
+  correct={2}
+/>
+
+## à retenir
+
+Une compréhension de liste s'écrit `[expression for élément in itérable]` et remplace une boucle qui crée une liste vide puis la remplit avec `append`. L'expression devant le `for` décrit chaque élément du résultat.
+
+Un `if` placé après le `for` filtre : il décide si l'élément entre dans la liste. Un `if/else` placé devant le `for` choisit une valeur sans rien exclure. Ce sont deux choses distinctes.
+
+La compréhension de dictionnaire utilise des accolades et une paire `clé: valeur` : `{cle: valeur for ... in ...}`. Le `.items()` permet de parcourir un dictionnaire existant par paires.
+
+La compréhension gagne sa place quand elle se lit d'un trait. Dès que la logique s'empile, deux `for`, plusieurs conditions, un calcul long, la boucle classique redevient plus lisible et plus facile à déboguer. Choisis la forme qui se comprend le plus vite, pas la plus courte.
+
+OK 08 réécrit

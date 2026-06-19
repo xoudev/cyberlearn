@@ -1,0 +1,113 @@
+---
+refCode: CL-LSN-089-V01
+slug: owasp-controle-acces
+title: "Contrôle d'accès défaillant et IDOR"
+description: "Comprenez la faille la plus répandue du web : une application qui ne vérifie pas correctement les droits, et le cas de l'IDOR où changer un identifiant dans l'URL donne accès aux données d'autrui."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 480
+prerequisites: ["CL-LSN-085-V01"]
+---
+
+Dans les classements récents des failles web, le contrôle d'accès défaillant arrive en tête. Ce n'est pas un hasard. C'est la catégorie la plus large, la plus facile à introduire sans s'en rendre compte, et souvent la plus simple à exploiter une fois qu'on a un compte valide. L'idée tient en une phrase : l'application laisse un utilisateur faire une action qu'elle aurait dû refuser.
+
+Le mot « action » est large à dessein. Lire une facture qui n'est pas la sienne, modifier le profil d'un autre, supprimer un commentaire, accéder à une page d'administration sans être administrateur. À chaque fois le serveur a reçu une requête, et au lieu de répondre « non, ce n'est pas à vous », il a exécuté la demande.
+
+## le principe
+
+Il faut distinguer deux choses qu'on confond souvent. L'authentification répond à la question « qui es-tu ». L'autorisation répond à « as-tu le droit de faire ça ». Le contrôle d'accès, c'est l'autorisation. Et l'autorisation doit être décidée côté serveur, à chaque requête, pour chaque ressource touchée.
+
+Pourquoi côté serveur, et pourquoi à chaque fois ? Parce que tout ce qui vient du navigateur est sous le contrôle de l'utilisateur. Le menu affiché, les boutons présents, le JavaScript chargé, les champs cachés d'un formulaire, les en-têtes envoyés. Un attaquant peut modifier tout cela. Cacher un bouton « Supprimer » à un utilisateur normal améliore l'interface, mais ne protège rien. Si la route qui supprime existe et qu'on peut l'appeler à la main, le bouton caché n'est qu'un décor.
+
+Le bon modèle mental : imaginez que chaque requête arrive nue, sans contexte d'interface. Le serveur ne voit qu'une méthode HTTP, une URL, des paramètres, un cookie de session. À partir de ça seul, il doit décider. Si la décision dépend d'un état que seul le client connaît, c'est déjà cassé.
+
+<Callout type="warning">
+Ne faites jamais confiance à ce qui vient du client pour décider des droits. L'identifiant de l'utilisateur courant se lit dans la session côté serveur, jamais dans un champ de formulaire, un paramètre d'URL ou un cookie modifiable. Si la décision d'autorisation peut être influencée par une valeur que l'utilisateur peut changer, ce n'est pas du contrôle d'accès.
+</Callout>
+
+## l'IDOR expliqué
+
+IDOR veut dire Insecure Direct Object Reference, référence directe à un objet non sécurisée. C'est la forme la plus courante du contrôle d'accès défaillant, et la plus parlante.
+
+Le schéma est simple. Une application identifie ses objets par un identifiant : une facture porte le numéro 1043, une commande le numéro 87, un message le numéro 5521. Cet identifiant apparaît quelque part dans la requête, souvent dans l'URL. Quand l'utilisateur consulte sa facture, le navigateur demande la ressource correspondant à son numéro.
+
+Le problème survient si le serveur récupère l'objet par son identifiant sans vérifier qu'il appartient bien à l'utilisateur connecté. À ce moment-là, changer le numéro suffit.
+
+```text
+GET /api/invoices/1043   -> votre facture, tout va bien
+GET /api/invoices/1042   -> la facture du client précédent
+GET /api/invoices/1044   -> la facture du client suivant
+```
+
+Les identifiants séquentiels rendent l'attaque triviale : on incrémente, on décrémente, on parcourt. Mais remplacer un entier par un UUID aléatoire ne corrige pas la faille, cela la rend seulement plus difficile à deviner. Si l'UUID fuite ailleurs (un lien partagé, un log, une réponse d'API), l'accès reste ouvert. La vraie correction n'est jamais de cacher l'identifiant, c'est de vérifier la propriété.
+
+L'IDOR ne se limite pas à la lecture. Le même défaut sur une requête qui écrit permet de modifier ou supprimer l'objet d'autrui.
+
+```text
+POST /api/users/512/email   { "email": "attaquant@mail.tld" }
+```
+
+Si le serveur fait confiance au 512 présent dans l'URL au lieu de prendre l'identifiant de la session, l'attaquant change l'email de la victime, déclenche une réinitialisation de mot de passe, et prend le compte.
+
+<Callout type="danger">
+Un IDOR exploitable sur une donnée sensible (facture, dossier médical, message privé, paramètre de compte) est une fuite de données massive en puissance. Un script qui boucle de l'identifiant 1 à 100000 aspire toute la base en quelques minutes. Plusieurs incidents publics majeurs n'étaient au fond qu'un seul identifiant non vérifié.
+</Callout>
+
+## tester un IDOR
+
+Sur une cible que vous avez le droit de tester, la démarche tient en trois temps. D'abord, se connecter avec un compte normal et naviguer en observant le trafic. Repérez les requêtes qui contiennent un identifiant : un nombre dans l'URL, un champ `id` dans un corps JSON, un paramètre de requête. Ensuite, notez la valeur qui correspond à vos propres objets. Enfin, rejouez la même requête en remplaçant l'identifiant par un autre, idéalement celui d'un second compte de test que vous contrôlez.
+
+Le test décisif consiste à comparer. Avec deux comptes à vous, vous savez exactement quelles données chacun devrait voir. Si le compte A obtient une ressource du compte B en changeant juste l'identifiant, l'IDOR est confirmé, sans la moindre ambiguïté et sans toucher aux données d'un vrai tiers.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="repérer puis tester une référence directe" />
+
+<Callout type="warning">
+Cette manipulation ne se fait que sur un système qui vous appartient ou pour lequel vous avez une autorisation écrite (mandat de test, programme de bug bounty avec son périmètre). Incrémenter un identifiant sur un site tiers pour lire les données de ses clients est une intrusion, punie par la loi. Utilisez toujours vos propres comptes de test.
+</Callout>
+
+## les variantes
+
+L'IDOR n'est qu'un cas. Le contrôle d'accès défaillant prend plusieurs formes qui partagent la même racine.
+
+L'élévation de privilèges horizontale, c'est exactement l'IDOR : accéder aux ressources d'un utilisateur de même niveau que soi. L'élévation verticale, elle, vise un niveau supérieur. Un utilisateur normal devine ou découvre une route réservée aux administrateurs, par exemple `/admin/users`, et y accède parce que le serveur a protégé le lien dans le menu mais pas la route elle-même. Le menu absent ne prouve rien : la route répond quand même.
+
+Autre variante, le forçage d'action interdite. L'interface n'offre pas le bouton, mais l'endpoint existe. Changer un statut de commande, valider un paiement, attribuer un rôle, supprimer le compte d'un autre. Parfois il suffit de changer une méthode HTTP, ou d'ajouter un paramètre que le formulaire normal n'envoie pas mais que le serveur accepte, comme `role=admin` lors d'une inscription.
+
+Le point commun de toutes ces variantes : le serveur a supposé que personne n'irait au-delà du chemin prévu par l'interface. Un attaquant, lui, ignore l'interface et parle directement à l'API.
+
+## la défense
+
+La défense est conceptuellement simple, même si elle demande de la rigueur. Pour chaque requête qui touche une ressource, le serveur doit répondre à deux questions avant d'agir. Cet utilisateur a-t-il le rôle requis pour ce type d'action ? Et cette ressource précise lui appartient-elle, ou a-t-il une raison légitime d'y accéder ?
+
+Concrètement, l'identité se lit dans la session, jamais dans la requête. Au lieu de « récupère la facture 1042 », la logique devient « récupère la facture 1042 si et seulement si son propriétaire est l'utilisateur de la session ». La vérification de propriété se fait au moment de la lecture en base, pas après. Si la requête en base inclut déjà la condition d'appartenance, un objet qui n'est pas à l'utilisateur n'est tout simplement jamais chargé, et le serveur répond 404 ou 403.
+
+Deux principes structurent une bonne défense. Refuser par défaut : une route sans contrôle explicite doit être interdite, pas ouverte. Et centraliser : appliquer l'autorisation à un endroit traversé par toutes les requêtes (un middleware, une couche d'accès aux données) plutôt que la réécrire dans chaque contrôleur, où une seule oubliée crée le trou.
+
+<Callout type="success">
+La bonne réponse mentale : pour chaque action, vérifier le rôle et la propriété côté serveur, à partir de l'identité de session. Ne jamais utiliser une valeur fournie par le client pour décider qui est l'utilisateur ou ce qu'il possède. Refuser par défaut, autoriser explicitement.
+</Callout>
+
+## à toi de jouer
+
+Mets en pratique sur l'environnement d'entraînement, puis vérifie ta compréhension.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="exploiter un IDOR sur une cible d'entraînement" />
+
+<Quiz id="q-1" question="Quelle est la cause directe d'un IDOR ?" options={["Les mots de passe des utilisateurs sont trop faibles", "Le serveur récupère un objet par son identifiant sans vérifier que l'objet appartient à l'utilisateur connecté", "Le site utilise du HTTP au lieu du HTTPS", "Le navigateur stocke trop de cookies"]} correct={1} />
+
+<Quiz id="q-2" question="Un bouton 'Supprimer' est caché aux utilisateurs normaux dans l'interface. Est-ce du contrôle d'accès ?" options={["Oui, si le bouton est caché personne ne peut supprimer", "Non, c'est seulement de l'affichage ; tant que la route serveur n'est pas protégée, on peut l'appeler à la main", "Oui, à condition de cacher aussi le lien dans le menu", "Non, mais c'est suffisant si le site est en HTTPS"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle est la bonne défense contre l'IDOR ?" options={["Remplacer les identifiants séquentiels par des UUID aléatoires", "Chiffrer l'identifiant dans l'URL", "Vérifier côté serveur, à partir de l'identité de session, que la ressource demandée appartient bien à l'utilisateur", "Cacher l'URL à l'utilisateur"]} correct={2} />
+
+## à retenir
+
+- Le contrôle d'accès défaillant est en tête des failles web : l'application exécute une action qu'elle aurait dû refuser.
+- L'autorisation se décide côté serveur, à chaque requête, à partir de l'identité lue dans la session.
+- Tout ce qui vient du client est modifiable : cacher un bouton ou un lien n'est pas une protection.
+- L'IDOR : un objet référencé par son identifiant, récupéré sans vérifier la propriété ; changer l'identifiant donne accès aux données d'autrui.
+- Remplacer un identifiant séquentiel par un UUID complique l'attaque mais ne la corrige pas. La correction est la vérification de propriété.
+- Variantes : élévation horizontale (IDOR), élévation verticale (page admin), forçage d'action interdite via une route ou un paramètre non prévu.
+- Défense : vérifier rôle et propriété côté serveur, refuser par défaut, centraliser le contrôle. On ne teste un IDOR que sur ses propres comptes ou avec autorisation.
+
+OK 05-controle-acces.mdx écrit

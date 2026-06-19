@@ -1,0 +1,179 @@
+---
+refCode: CL-LSN-058-V01
+slug: linux-bash-scripting
+title: "Premiers scripts Bash"
+description: "Automatisez vos tâches en écrivant des scripts Bash : le shebang, rendre un script exécutable, afficher avec echo, utiliser des variables et lire des arguments."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 480
+prerequisites: ["CL-LSN-050-V01"]
+---
+
+Tu connais déjà les commandes du terminal : `ls`, `cd`, `cp`, `mkdir`. Tu en enchaînes une, puis une autre, puis une troisième. Et le lendemain, tu retapes exactement la même série. C'est le moment où un script devient utile.
+
+Un script Bash n'est rien de plus que ça : une suite de commandes rangées dans un fichier, que le shell exécute du haut vers le bas, ligne par ligne, comme si tu les tapais toi-même une par une. Au lieu de retaper dix lignes, tu lances un seul fichier. C'est tout le modèle mental à retenir pour aujourd'hui.
+
+Le cas concret le plus parlant, c'est la sauvegarde. Imagine que chaque soir tu copies un dossier de travail vers un dossier d'archive, en ajoutant la date. Trois ou quatre commandes, chaque jour, à la main. Un script fait ce travail en une fois, sans erreur de frappe, et tu peux même le planifier pour qu'il tourne tout seul. On ne va pas jusqu'à la planification ici, mais on va écrire le script qui sert de base à tout ça.
+
+## un premier script
+
+Ouvre un fichier texte nommé `bonjour.sh` et mets ceci dedans :
+
+```bash
+#!/bin/bash
+# Mon tout premier script
+# Les lignes qui commencent par # sont des commentaires, le shell les ignore
+
+echo "Bonjour depuis mon script"
+echo "Nous sommes le :"
+date
+```
+
+Trois choses à décortiquer dans ce fichier.
+
+La première ligne, `#!/bin/bash`, s'appelle le shebang. C'est elle qui dit au système quel programme doit lire la suite du fichier. Ici on demande `/bin/bash`. Sans cette ligne, le système ne sait pas forcément que ton fichier doit être interprété par Bash, et il peut le traiter avec un autre shell, voire refuser de le lancer. Le shebang doit être tout en haut, sur la première ligne, sans rien avant lui, pas même une ligne vide.
+
+Les lignes qui commencent par `#` (sauf le shebang) sont des commentaires. Bash ne les exécute pas. Elles servent à toi, et à la personne qui relira le script dans six mois. Commenter ce qu'un bloc fait te fait gagner un temps fou plus tard.
+
+`echo` affiche du texte à l'écran. C'est l'équivalent du `print` que tu connais peut-être dans d'autres langages. Et `date` est une commande normale : un script peut appeler n'importe quelle commande que tu taperais au clavier.
+
+<Callout type="info">
+Le shebang se lit "sharp-bang" en anglais : le `#` (sharp) suivi du `!` (bang). C'est lui qui transforme un simple fichier texte en programme lançable. Si tu l'oublies, le script peut quand même marcher avec `bash bonjour.sh`, mais il ne fonctionnera pas en `./bonjour.sh`.
+</Callout>
+
+## rendre exécutable et lancer
+
+Le fichier existe, mais si tu tapes `./bonjour.sh` tout de suite, tu obtiens une erreur de permission. Normal : par défaut un fichier texte n'a pas le droit d'être exécuté. Il faut le lui accorder.
+
+```bash
+chmod +x bonjour.sh
+./bonjour.sh
+```
+
+`chmod +x` ajoute la permission d'exécution au fichier. Tu ne le fais qu'une seule fois, pas à chaque lancement.
+
+Le `./` devant le nom intrigue souvent. Il veut dire "le fichier situé dans le dossier courant". Sans lui, Bash cherche un programme appelé `bonjour.sh` dans les dossiers système (ceux listés dans `PATH`), et ne le trouve pas, puisque ton script est dans ton dossier à toi. Le `./` lui indique explicitement où regarder : ici, maintenant.
+
+Il existe une autre façon de lancer le script, qui ne demande ni `chmod` ni `./` :
+
+```bash
+bash bonjour.sh
+```
+
+Là, tu appelles `bash` directement et tu lui passes ton fichier à lire. Pratique pour un test rapide. La version `./bonjour.sh` reste la plus propre pour un script que tu utiliseras souvent.
+
+<SimulatedTerminal shell="bash" scenario="bash-scripting" title="Rendre le script exécutable et le lancer" />
+
+<Callout type="warning">
+L'oubli le plus fréquent du débutant : écrire le script, taper `./bonjour.sh`, et tomber sur "Permission denied". La cause est presque toujours le `chmod +x` oublié. Le réflexe : `chmod +x mon-script.sh` une fois, puis `./mon-script.sh` autant que tu veux.
+</Callout>
+
+## les variables
+
+Une variable, c'est une étiquette qui retient une valeur pour la réutiliser. On la crée avec un nom, le signe `=`, et une valeur :
+
+```bash
+#!/bin/bash
+
+NOM="Sarah"
+DOSSIER="/home/sarah/archives"
+
+echo "Utilisateur : $NOM"
+echo "Sauvegarde vers : $DOSSIER"
+```
+
+Pour affecter une valeur, on écrit juste le nom collé au `=`. Pour récupérer la valeur ensuite, on met un `$` devant le nom : `$NOM` vaut `Sarah`. Le `$` est le signal qui dit à Bash "ne prends pas ce mot au pied de la lettre, remplace-le par son contenu".
+
+Il y a un piège réel ici, et tout le monde tombe dedans au moins une fois. En Bash, on ne met pas d'espace autour du `=`. Ceci marche :
+
+```bash
+NOM="Sarah"
+```
+
+Ceci ne marche pas :
+
+```bash
+NOM = "Sarah"
+```
+
+<Callout type="warning">
+`NOM = "Sarah"` avec des espaces n'affecte rien du tout. Bash croit que tu lances une commande appelée `NOM` avec les arguments `=` et `Sarah`, et il répond "command not found". Pour une affectation, le nom, le `=` et la valeur doivent être collés : `NOM="Sarah"`. C'est différent de la plupart des autres langages, où les espaces sont permis. Retiens la règle : pas d'espace autour du `=` en Bash.
+</Callout>
+
+Quand la valeur contient une espace, mets-la entre guillemets : `MESSAGE="Bonjour à tous"`. Sans les guillemets, Bash découperait au premier espace.
+
+## lire des arguments
+
+Un script gagne en utilité quand il accepte des informations au lancement. Ces informations s'appellent des arguments, et tu les passes après le nom du script. Bash les range dans des variables spéciales :
+
+```bash
+#!/bin/bash
+# Salue la personne passée en argument
+
+echo "Le script lancé s'appelle : $0"
+echo "Premier argument : $1"
+echo "Deuxième argument : $2"
+echo "Bonjour $1, content de te voir"
+echo "Tous les arguments d'un coup : $@"
+```
+
+Si tu lances ce script ainsi :
+
+```bash
+./salut.sh Marc Léa
+```
+
+alors `$1` vaut `Marc`, `$2` vaut `Léa`, et `$0` vaut le nom du script lui-même (`./salut.sh`). La variable `$@` regroupe tous les arguments d'un seul coup, ce qui sert quand tu ne sais pas combien il y en aura.
+
+C'est ce mécanisme qui rend un script réutilisable. Le même fichier `salut.sh` salue Marc, puis Léa, puis n'importe qui, sans qu'on touche au code. Tu changes juste l'argument.
+
+## variables d'environnement
+
+En plus de tes propres variables, le système t'en fournit déjà toute une série, disponibles partout. On les appelle les variables d'environnement, et elles sont écrites en majuscules par convention. Trois sont utiles tout de suite :
+
+```bash
+#!/bin/bash
+
+echo "Mon nom d'utilisateur : $USER"
+echo "Mon dossier personnel : $HOME"
+echo "Les dossiers où Bash cherche les programmes : $PATH"
+```
+
+`USER` contient ton identifiant, `HOME` le chemin de ton dossier personnel (souvent `/home/ton-nom`), et `PATH` la liste des dossiers où le shell va chercher les commandes que tu tapes. C'est d'ailleurs ce `PATH` qui explique pourquoi `ls` marche sans `./` : le programme `ls` vit dans un dossier listé dans `PATH`, contrairement à ton script à toi.
+
+## à toi de jouer
+
+Écris un petit script, rends-le exécutable, et lance-le. Le terminal ci-dessous attend que tu donnes la permission d'exécution puis que tu lances le fichier. Pense à `bash -n` si tu veux vérifier la syntaxe sans exécuter quoi que ce soit.
+
+<SimulatedTerminal
+  shell="bash"
+  scenario="bash-scripting"
+  title="Crée, rends exécutable et lance ton script"
+  expectedCommands={["chmod +x script.sh", "./script.sh"]}
+  hints={[
+    "Regarde le contenu avec cat script.sh avant de lancer quoi que ce soit",
+    "chmod +x script.sh donne la permission d execution, une seule fois",
+    "Lance ensuite avec ./script.sh sans oublier le ./ devant"
+  ]}
+/>
+
+<Quiz id="q-1" question="À quoi sert la première ligne #!/bin/bash dans un script ?" options={["À écrire un commentaire que le shell ignore", "À indiquer quel programme doit interpréter le fichier", "À rendre le script exécutable automatiquement", "À afficher du texte à l écran"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi une affectation avec des espaces autour du = (du type NOM espace = espace valeur) échoue-t-elle en Bash ?" options={["Parce que la valeur doit être en minuscules", "Parce qu il manque le signe dollar", "Parce qu en Bash l affectation ne tolère pas d espaces autour du =", "Parce que le nom de variable est trop court"]} correct={2} />
+
+<Quiz id="q-3" question="Dans un script lancé par ./salut.sh Marc Léa, que contient la variable $1 ?" options={["Marc", "Léa", "Le nom du script", "Les deux arguments collés"]} correct={0} />
+
+## à retenir
+
+- Un script Bash est une suite de commandes dans un fichier, exécutée de haut en bas.
+- La première ligne `#!/bin/bash` est le shebang : elle désigne l'interpréteur. Elle doit être tout en haut.
+- Les lignes commençant par `#` sont des commentaires, ignorés par Bash.
+- `chmod +x mon-script.sh` donne la permission d'exécution, une seule fois. Ensuite on lance avec `./mon-script.sh`.
+- Le `./` désigne le dossier courant. Sans lui, Bash cherche le programme dans `PATH` et ne le trouve pas.
+- Variante sans `chmod` ni `./` : `bash mon-script.sh`.
+- Une variable se définit avec `NOM="valeur"`, sans espace autour du `=`, et se relit avec `$NOM`.
+- Les arguments passés au lancement se lisent avec `$1`, `$2`, `$0` (le nom du script) et `$@` (tous les arguments).
+- Les variables d'environnement comme `USER`, `HOME` et `PATH` sont fournies par le système et lisibles avec `echo`.
+
+OK 10-bash-scripting.mdx écrit

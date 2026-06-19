@@ -1,0 +1,127 @@
+---
+refCode: CL-LSN-140-V01
+slug: blueteam-analyse-logs
+title: "Analyser des logs pour repérer une intrusion"
+description: "La pratique de l'analyste : lire des journaux pour reconstituer une attaque, reconnaître les motifs d'une force brute ou d'une exfiltration, et filtrer en ligne de commande pour faire parler les données."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 540
+prerequisites: ["CL-LSN-134-V01"]
+---
+
+Un fichier de logs ne contient nulle part la phrase "ici, une intrusion a eu lieu". Il contient des milliers de lignes plates, datées, répétitives, où un événement banal et un événement grave se ressemblent comme deux gouttes d'eau. Tout le métier de l'analyste tient dans cette tension : transformer un mur de texte en une histoire qui a un début, des acteurs et une fin.
+
+Dans cette leçon, on travaille comme on travaille pour de vrai. On part d'un journal d'authentification SSH, on le réduit, on repère une anomalie, on remonte le fil, et on reconstruit ce que l'attaquant a fait. Les commandes sont simples. Ce qui compte, c'est la démarche et l'oeil.
+
+## la démarche
+
+Devant un gros volume de logs, personne ne lit ligne par ligne. On suit toujours le même mouvement en quatre temps.
+
+D'abord on part large : on regarde le type d'événements présents, leur volume, la période couverte. On ne cherche rien de précis, on prend la température. Ensuite on filtre pour réduire le bruit : on isole une catégorie d'événements (les échecs de connexion, par exemple) pour faire tomber dix mille lignes à quelques centaines. Puis on corrèle : on rapproche plusieurs sources ou plusieurs champs, parce qu'un fait isolé ne dit pas grand-chose et que c'est la mise en relation qui révèle l'intention. Enfin on reconstruit la chronologie : une fois un acteur suspect identifié, on remet ses actions dans l'ordre du temps pour raconter l'histoire.
+
+<Diagram type="flowchart">
+graph TD
+  A[Partir large : volume, periode, types] --> B[Filtrer : isoler une categorie]
+  B --> C[Correler : croiser champs et sources]
+  C --> D[Reconstruire : frise chronologique]
+  D --> E[Histoire coherente ?]
+  E -- non --> B
+  E -- oui --> F[Conclusion et preuve]
+</Diagram>
+
+<Callout type="info">
+Ce cycle n'est pas linéaire. On revient souvent en arrière : une corrélation ouvre une piste, qui demande un nouveau filtre, qui révèle un autre acteur. L'enquête zigzague avant de se refermer.
+</Callout>
+
+## les motifs révélateurs
+
+Avec l'expérience, certains motifs sautent aux yeux. Quatre reviennent tout le temps.
+
+La force brute réussie. Une longue rafale d'échecs d'authentification depuis une même adresse, suivie d'un succès depuis cette même adresse. Les échecs seuls sont du bruit de fond permanent sur Internet. C'est l'enchaînement échecs massifs puis succès qui change tout : ça veut dire que quelqu'un a fini par deviner le bon mot de passe.
+
+La connexion à une heure creuse. Un compte administrateur qui se connecte à 3 h du matin un dimanche, alors qu'il travaille toujours en journée la semaine. L'événement est techniquement normal (authentification valide), mais le contexte horaire est anormal.
+
+L'accès anormal à des fichiers sensibles. Un compte qui d'habitude ne touche jamais le répertoire des bases de données et qui, soudain, l'ouvre et le copie.
+
+Le pic de trafic sortant. Une machine qui envoie d'un coup plusieurs gigaoctets vers une adresse externe inconnue, alors qu'elle ne fait normalement qu'en recevoir. Signature classique d'une exfiltration de données.
+
+Voici à quoi ressemble une force brute dans un journal SSH brut :
+
+```text
+Jan 10 03:11:02 srv sshd[2041]: Failed password for admin from 203.0.113.9 port 51022 ssh2
+Jan 10 03:11:03 srv sshd[2041]: Failed password for admin from 203.0.113.9 port 51024 ssh2
+Jan 10 03:11:04 srv sshd[2041]: Failed password for admin from 203.0.113.9 port 51026 ssh2
+Jan 10 03:11:05 srv sshd[2041]: Failed password for admin from 203.0.113.9 port 51028 ssh2
+Jan 10 03:14:88 srv sshd[2055]: Accepted password for admin from 203.0.113.9 port 51999 ssh2
+```
+
+Quatre échecs en quatre secondes, puis un "Accepted" depuis la même IP. Le rythme rapide trahit un outil automatisé, et le succès final clôt la séquence. C'est exactement le motif que l'on apprend à reconnaître d'un coup d'oeil.
+
+## les outils de base
+
+Pas besoin d'une plateforme lourde pour ce travail. Cinq commandes Unix suffisent, et tout leur intérêt vient du fait qu'on les enchaîne avec des tubes (`|`), chaque commande recevant le résultat de la précédente.
+
+`grep` filtre : il garde les lignes qui contiennent un texte. `grep -oE` va plus loin et extrait seulement la portion qui correspond à une expression régulière, par exemple une adresse IP. `sort` trie les lignes, ce qui est nécessaire avant de compter. `uniq -c` regroupe les lignes identiques consécutives et préfixe chacune par son nombre d'occurrences. `wc -l` compte les lignes. `head` ne garde que les premières.
+
+La combinaison gagnante pour trouver qui frappe le plus fort : extraire les IP, les trier, les regrouper avec leur compte, retrier par compte décroissant, garder le sommet. En une ligne, on passe de "il y a beaucoup d'échecs" à "voici les trois adresses responsables".
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Repérer une force brute dans les logs" commands={{"grep 'Failed password' auth.log | wc -l": "342", "grep 'Failed password' auth.log | grep -oE '([0-9]+\\.){3}[0-9]+' | sort | uniq -c | sort -rn | head -3": "318 203.0.113.9\n12 198.51.100.7\n4 192.0.2.5", "grep 'Accepted password' auth.log | grep '203.0.113.9'": "Jan 10 03:14:88 srv sshd: Accepted password for admin from 203.0.113.9", "grep '203.0.113.9' auth.log | wc -l": "319"}} />
+
+Lis bien la séquence. La première commande dit qu'il y a 342 échecs au total : beaucoup, mais on ne sait pas encore si c'est un attaquant ou du bruit. La deuxième concentre 318 de ces 342 échecs sur une seule IP, 203.0.113.9. La troisième révèle que cette même IP a fini par réussir une connexion. La quatrième compte 319 lignes pour elle : 318 échecs et 1 succès. Le verdict tombe seul : force brute réussie contre le compte admin.
+
+## reconstruire l'histoire
+
+Trouver l'IP coupable n'est pas la fin de l'enquête, c'est le début. La question devient : une fois entré, qu'a fait l'attaquant ?
+
+On change de pivot. On ne filtre plus sur "Failed password", on filtre sur l'adresse 203.0.113.9 dans tous les journaux disponibles, et on remet les résultats dans l'ordre chronologique. SSH d'abord, puis les logs système (sudo, création d'utilisateur), puis les logs applicatifs (accès fichiers), puis le firewall (trafic sortant). On bâtit une frise :
+
+```text
+03:11:02  debut rafale d'echecs (force brute) depuis 203.0.113.9
+03:14:88  connexion reussie : compte admin
+03:15:10  sudo : elevation en root
+03:16:02  lecture de /etc/shadow
+03:18:44  copie de /var/backups/db_dump.sql
+03:21:30  connexion sortante vers 203.0.113.9 : 1.4 Go transferes
+03:22:05  deconnexion
+```
+
+Là, l'histoire est complète : intrusion, élévation de privilèges, vol du dump de base de données, exfiltration vers l'adresse de l'attaquant. La frise n'est pas qu'un résumé, c'est ce qui transforme une suite d'événements isolés en récit défendable.
+
+<Callout type="warning">
+Une corrélation n'est pas une preuve. Le fait que la même IP apparaisse partout est très convaincant, mais avant de conclure on confirme : l'horloge des serveurs est-elle synchronisée ? Les logs ont-ils pu être altérés ? L'IP n'est-elle pas un relais partagé ? On bâtit l'hypothèse, puis on la teste, on ne la suppose pas vraie.
+</Callout>
+
+## des faux amis
+
+Tout ce qui ressemble à une attaque n'en est pas une. C'est le piège le plus courant, et le contexte est le seul juge.
+
+Une rafale d'échecs d'authentification peut être un utilisateur légitime qui a oublié son mot de passe et réessaie six fois de suite avant de le retrouver. Ici, l'IP est interne, c'est son poste habituel, les essais sont espacés de plusieurs secondes (un humain qui tape), et le succès vient depuis la même machine que d'habitude. Rien à voir avec 318 essais en deux minutes depuis une IP étrangère.
+
+Une connexion nocturne peut être une astreinte planifiée. Un pic de trafic sortant peut être une sauvegarde programmée vers un stockage cloud connu. À chaque fois, la même discipline : avant de crier à l'incident, on cherche l'explication banale. Si elle tient, on classe. Si elle ne tient pas, on creuse.
+
+## à toi de jouer
+
+Reprends la même méthode sur un autre extrait et observe ce que chaque commande t'apprend.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Compter et regrouper les utilisateurs ciblés" commands={{"grep 'Failed password' auth.log | grep -oE 'for [a-z]+' | sort | uniq -c | sort -rn": "291 for admin\n38 for root\n13 for postgres", "grep 'Accepted password' auth.log | wc -l": "2", "grep 'Accepted password' auth.log": "Jan 10 03:14:88 srv sshd: Accepted password for admin from 203.0.113.9\nJan 10 09:02:11 srv sshd: Accepted password for jordan from 192.168.1.20"}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Dans un journal SSH, quel enchaînement signale une force brute réussie ?" options={["Un seul échec suivi d'un succès depuis une IP différente", "Une longue rafale d'échecs puis un succès, le tout depuis la même IP", "Plusieurs succès consécutifs depuis des IP variées", "Une absence totale d'échecs avant un succès"]} correct={1} />
+
+<Quiz id="q-2" question="À quoi sert l'enchaînement sort puis uniq -c sur une liste d'adresses IP extraites ?" options={["À chiffrer les adresses pour les anonymiser", "À regrouper les adresses identiques et compter leurs occurrences", "À supprimer toutes les adresses en double sans les compter", "À trier les adresses par ordre chronologique"]} correct={1} />
+
+<Quiz id="q-3" question="Une rafale d'échecs d'authentification depuis le poste interne habituel d'un employé, espacés de quelques secondes, suivie d'un succès depuis ce même poste. Quelle conclusion est la plus raisonnable ?" options={["Une exfiltration de données en cours", "Probablement un oubli de mot de passe, à confirmer par le contexte", "Une force brute automatisée certaine", "Une élévation de privilèges root"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- Les logs ne désignent jamais une intrusion d'eux-mêmes ; l'analyste construit l'histoire en partant large, en filtrant, en corrélant, puis en reconstruisant la chronologie.
+- Le motif d'une force brute réussie : rafale d'échecs d'authentification puis un succès, depuis la même IP. Les échecs seuls sont du bruit de fond.
+- Autres motifs à reconnaître : connexion à une heure creuse, accès anormal à des fichiers sensibles, pic de trafic sortant (exfiltration).
+- Cinq commandes suffisent, enchaînées par des tubes : `grep` filtre, `grep -oE` extrait, `sort` + `uniq -c` comptent et regroupent, `wc -l` dénombre, `head` garde le sommet.
+- Une corrélation n'est pas une preuve : on confirme avant de conclure, et on écarte d'abord l'explication banale (mot de passe oublié, sauvegarde planifiée).
+
+OK 08 écrit

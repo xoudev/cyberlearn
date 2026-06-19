@@ -1,0 +1,148 @@
+---
+refCode: CL-LSN-002-V01
+slug: python-conditions
+title: "Conditions et logique booléenne en Python"
+description: "Maîtrisez les structures conditionnelles if, elif, else, les opérateurs de comparaison et les opérateurs logiques and, or, not pour faire des choix dans votre code."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 140
+prerequisites: ["CL-LSN-001-V01"]
+---
+
+Un programme qui fait toujours la même chose, quoi qu'il arrive, ne sert pas à grand-chose. Ce qui rend le code utile, c'est sa capacité à réagir : afficher un message différent selon l'heure, refuser un mot de passe trop court, accorder une réduction si le panier dépasse un certain montant. À chaque fois, le programme regarde une donnée, se pose une question, et choisit une branche. C'est exactement le rôle des conditions.
+
+Vous savez déjà manipuler des variables et des nombres. On va maintenant apprendre à faire bifurquer le code selon ce que ces variables contiennent.
+
+## if, elif, else
+
+Le mot-clé `if` introduit une condition. Si elle est vraie, le bloc qui suit s'exécute. Sinon, Python passe à la suite. Voilà la forme la plus simple.
+
+<CodePlayground language="python" starterCode={`age = 20
+
+if age >= 18:
+    print("Tu es majeur.")
+    print("Tu peux voter.")
+
+print("Fin du programme.")`} />
+
+Regardez les deux lignes décalées vers la droite après le `if`. Ce décalage n'est pas là pour faire joli. En Python, l'indentation définit le bloc. Les lignes indentées appartiennent au `if` et ne s'exécutent que si la condition est vraie. La ligne `print("Fin du programme.")`, elle, est revenue à la marge : elle s'exécute toujours, condition vraie ou non.
+
+Dans la plupart des autres langages, on délimite les blocs avec des accolades et l'indentation reste facultative. Python a fait un autre choix : ici l'indentation est la structure. Changez-la, et vous changez le sens du programme. On y revient plus bas, c'est une source d'erreurs fréquente.
+
+Quand il y a plusieurs cas possibles, on enchaîne avec `elif` (contraction de « else if ») et on termine éventuellement par `else`, qui attrape tout le reste.
+
+<CodePlayground language="python" starterCode={`note = 14
+
+if note >= 16:
+    print("Mention tres bien")
+elif note >= 14:
+    print("Mention bien")
+elif note >= 12:
+    print("Mention assez bien")
+else:
+    print("Pas de mention")`} />
+
+Python teste les conditions dans l'ordre, du haut vers le bas, et s'arrête à la première qui est vraie. Avec `note = 14`, la première condition (`>= 16`) est fausse, la deuxième (`>= 14`) est vraie, donc on affiche « Mention bien » et on saute tout le reste. L'ordre compte : si vous mettiez `note >= 12` en premier, toutes les notes au-dessus de 12 tomberaient dans cette branche et les mentions supérieures ne seraient jamais atteintes.
+
+Notez aussi le deux-points à la fin de chaque ligne `if`, `elif` et `else`. Il annonce le bloc indenté qui suit. L'oublier provoque une erreur de syntaxe.
+
+## comparer
+
+Pour poser une question à Python, on compare des valeurs. Les opérateurs de comparaison renvoient toujours un booléen : `True` ou `False`.
+
+<CodePlayground language="python" starterCode={`print(5 == 5)    # egalite           -> True
+print(5 != 3)    # difference        -> True
+print(5 < 3)     # inferieur         -> False
+print(5 > 3)     # superieur         -> True
+print(5 <= 5)    # inferieur ou egal -> True
+print(7 >= 9)    # superieur ou egal -> False`} />
+
+Le piège classique se cache dans le tout premier : `==`, avec deux signes égal. Beaucoup de débutants écrivent un seul `=` en pensant tester une égalité. Erreur. Le simple `=` sert à affecter une valeur à une variable (`age = 20` range 20 dans `age`). Le double `==` sert à comparer (`age == 20` demande « est-ce que age vaut 20 ? »).
+
+Confondre les deux ne passe pas inaperçu, et c'est tant mieux. Écrire `if age = 20:` déclenche une erreur de syntaxe immédiate, Python refuse de lancer le programme. Retenez la règle simple : un seul égal pour ranger, deux égals pour questionner.
+
+<CodePlayground language="python" starterCode={`age = 20             # affectation : on range 20 dans age
+print(age == 20)     # comparaison : on demande si age vaut 20 -> True
+print(age == 21)     # -> False`} />
+
+Ces comparaisons marchent aussi sur les chaînes de caractères. `"chat" == "chat"` vaut `True`, et l'ordre alphabétique se compare avec `<` et `>`. Attention quand même : Python distingue les majuscules des minuscules, donc `"Chat" == "chat"` vaut `False`.
+
+## combiner avec and, or, not
+
+Une seule condition suffit rarement. Souvent on veut vérifier plusieurs choses à la fois. Trois mots permettent de les assembler.
+
+`and` est vrai seulement si les deux conditions sont vraies. `or` est vrai si au moins une des deux est vraie. `not` inverse : il transforme `True` en `False` et inversement.
+
+<CodePlayground language="python" starterCode={`age = 25
+a_le_permis = True
+
+if age >= 18 and a_le_permis:
+    print("Peut conduire.")
+
+if age < 12 or age > 65:
+    print("Tarif reduit.")
+
+if not a_le_permis:
+    print("Doit passer le permis.")`} />
+
+Ici la personne a 25 ans et le permis : la première condition est vraie des deux côtés, donc « Peut conduire » s'affiche. Pour le tarif réduit, ni `age < 12` ni `age > 65` n'est vrai, rien ne s'affiche. Et comme `a_le_permis` vaut `True`, `not a_le_permis` vaut `False`, donc le dernier message est sauté.
+
+Un exemple plus parlant : valider un mot de passe qui doit faire au moins 8 caractères et contenir un chiffre.
+
+<CodePlayground language="python" starterCode={`mot_de_passe = "secret42"
+
+assez_long = len(mot_de_passe) >= 8
+contient_chiffre = any(c.isdigit() for c in mot_de_passe)
+
+if assez_long and contient_chiffre:
+    print("Mot de passe accepte.")
+else:
+    print("Mot de passe trop faible.")`} />
+
+Découper la logique en variables nommées (`assez_long`, `contient_chiffre`) rend la condition lisible. On lit presque la phrase en français. C'est une bonne habitude à prendre dès qu'une condition devient longue.
+
+## la valeur de vérité
+
+Jusqu'ici nos conditions renvoyaient clairement `True` ou `False`. Mais Python est plus souple que ça : il sait évaluer n'importe quelle valeur comme vraie ou fausse dès qu'on la place dans un `if`. On parle de valeur de vérité.
+
+Sont considérés comme faux : le nombre `0`, la chaîne vide `""`, la liste vide `[]`, et `None`. Presque tout le reste compte comme vrai : un nombre non nul, une chaîne qui contient au moins un caractère, une liste qui contient au moins un élément.
+
+<CodePlayground language="python" starterCode={`nom = ""
+
+if nom:
+    print("Bonjour " + nom)
+else:
+    print("Tu n'as pas saisi de nom.")
+
+panier = [1, 2, 3]
+
+if panier:
+    print("Le panier contient", len(panier), "articles.")`} />
+
+Comme `nom` est une chaîne vide, `if nom:` est faux et on affiche le message d'absence. La liste `panier`, elle, contient des éléments, donc `if panier:` est vrai.
+
+C'est pratique parce que ça évite des comparaisons verbeuses. Au lieu d'écrire `if len(nom) > 0:` ou `if len(panier) != 0:`, on écrit directement `if nom:` ou `if panier:`. Le code dit alors « si le nom existe » ou « si le panier n'est pas vide », ce qui colle à l'intention. Vous croiserez cette tournure partout dans le code Python réel, autant la reconnaître tôt.
+
+## à toi de jouer
+
+Écris une fonction qui renvoie `"pair"` si le nombre reçu est pair, et `"impair"` sinon. Souviens-toi que l'opérateur `%` donne le reste d'une division : un nombre est pair quand `n % 2` vaut `0`.
+
+<PythonChallenge id="py-1" title="Pair ou impair" description="Renvoie la chaine 'pair' si n est pair, 'impair' sinon." starterCode="def solution(n):
+    pass" tests={[{ input: "solution(4)", expected: "pair" }, { input: "solution(7)", expected: "impair" }, { input: "solution(0)", expected: "pair" }]} />
+
+<Quiz id="q-1" question="Quelle est la différence entre = et == en Python ?" options={["= compare deux valeurs, == affecte une valeur à une variable", "= affecte une valeur à une variable, == compare deux valeurs", "Les deux font exactement la même chose"]} correct={1} />
+
+<Quiz id="q-2" question="Parmi ces valeurs, laquelle est considérée comme fausse dans un if ?" options={["Le nombre 42", "La chaîne 'bonjour'", "La liste vide []"]} correct={2} />
+
+## à retenir
+
+- `if` exécute un bloc quand sa condition est vraie ; `elif` teste un autre cas, `else` attrape le reste. Python s'arrête à la première condition vraie.
+- L'indentation n'est pas décorative : elle délimite le bloc. La changer change le sens du programme.
+- Chaque `if`, `elif` et `else` se termine par un deux-points.
+- `==` compare, `=` affecte. Confondre les deux avec `if age = 20:` provoque une erreur de syntaxe.
+- Les opérateurs de comparaison (`==`, `!=`, `<`, `>`, `<=`, `>=`) renvoient `True` ou `False`.
+- `and` exige les deux conditions vraies, `or` se contente d'une seule, `not` inverse.
+- Comptent comme faux : `0`, `""`, `[]`, `None`. Le reste compte comme vrai, ce qui permet d'écrire `if nom:` plutôt que `if len(nom) > 0:`.
+
+OK 02 réécrit

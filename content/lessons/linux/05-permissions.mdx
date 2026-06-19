@@ -1,0 +1,169 @@
+---
+refCode: CL-LSN-053-V01
+slug: linux-permissions
+title: "Permissions et propriété des fichiers"
+description: "Décodez les permissions Linux (rwx pour utilisateur, groupe et autres), changez-les avec chmod, changez le propriétaire avec chown, et comprenez pourquoi chmod 777 est une mauvaise idée."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 380
+prerequisites: ["CL-LSN-051-V01"]
+---
+
+Sur un poste Windows familial, on a tous l'habitude de fichiers qui appartiennent un peu à tout le monde. Linux ne fonctionne pas comme ça. Dès l'origine, il a été pensé pour que plusieurs personnes travaillent sur la même machine en même temps sans se marcher dessus. Un serveur aujourd'hui, c'est exactement la même logique : il y a vous, il y a le compte qui fait tourner le serveur web, il y a le compte de la base de données, et chacun ne doit toucher qu'à ce qui le concerne.
+
+Les permissions sont le mécanisme qui décide, pour chaque fichier et chaque dossier, qui a le droit de le lire, de le modifier, ou de l'exécuter. Quand un script refuse de se lancer, quand un serveur web renvoie une erreur 403 alors que le fichier existe bien, quand un collègue n'arrive pas à ouvrir un dossier partagé, neuf fois sur dix la réponse est dans les permissions. C'est aussi la première ligne de défense d'une machine : un fichier de mot de passe lisible par n'importe qui, c'est une fuite en attente.
+
+## lire une ligne de ls -l
+
+Tout commence avec `ls -l`. Cette commande affiche le détail de chaque fichier, et la colonne de gauche contient tout ce qui nous intéresse ici. Prenons une vraie ligne.
+
+```text
+-rwxr-xr-x  1  alice  developers  2048  Jun 13 09:14  deploy.sh
+```
+
+Le premier bloc, `-rwxr-xr-x`, fait dix caractères. On le découpe ainsi :
+
+```text
+-    rwx       r-x       r-x
+│    │         │         │
+│    │         │         └─ autres (other)   : r-x  = lecture + exécution
+│    │         └─────────── groupe (group)   : r-x  = lecture + exécution
+│    └───────────────────── propriétaire     : rwx  = lecture + écriture + exécution
+└────────────────────────── type de fichier  : -    = fichier ordinaire
+```
+
+Le tout premier caractère n'est pas une permission, c'est le type. Un tiret `-` veut dire fichier ordinaire, un `d` veut dire dossier (directory), un `l` veut dire lien symbolique. Ensuite viennent trois groupes de trois caractères, toujours dans le même ordre : r, w, x. Un tiret à la place d'une lettre signifie que la permission est absente.
+
+Le reste de la ligne se lit aussi. Le `1` est le nombre de liens. Puis `alice` est le propriétaire du fichier, et `developers` est le groupe propriétaire. Viennent ensuite la taille en octets, la date de dernière modification, et le nom. Donc cette ligne dit : le fichier `deploy.sh` appartient à alice, est rattaché au groupe developers, alice peut tout faire dessus, et tous les autres peuvent le lire et l'exécuter mais pas le modifier.
+
+## les trois permissions r, w, x
+
+Trois lettres, trois pouvoirs. Mais leur sens change selon qu'on parle d'un fichier ou d'un dossier, et c'est là que beaucoup de gens trébuchent.
+
+Pour un fichier :
+
+- `r` (read) : ouvrir le fichier et lire son contenu.
+- `w` (write) : modifier le contenu du fichier, ou le vider.
+- `x` (execute) : lancer le fichier comme un programme ou un script.
+
+Pour un dossier, les mêmes lettres veulent dire autre chose :
+
+- `r` : lister les noms des fichiers contenus dans le dossier.
+- `w` : créer, renommer ou supprimer des fichiers dans le dossier.
+- `x` : entrer dans le dossier, c'est-à-dire le traverser pour atteindre ce qu'il contient.
+
+<Callout type="info">
+Le `x` sur un dossier surprend toujours. Sans lui, vous ne pouvez même pas faire `cd` dans le dossier, et un fichier à l'intérieur reste inaccessible même si vous avez le droit de le lire. Pensez au `x` d'un dossier comme à la clé de la porte : peu importe que vous ayez le droit de lire un livre si vous ne pouvez pas entrer dans la pièce où il est rangé.
+</Callout>
+
+Détail qui découle de là : supprimer un fichier ne dépend pas des permissions du fichier lui-même, mais du `w` sur le dossier qui le contient. C'est logique une fois qu'on y pense, parce que supprimer un fichier revient à retirer son nom de la liste tenue par le dossier.
+
+## les trois catégories : user, group, other
+
+Les permissions s'appliquent à trois publics distincts, dans cet ordre fixe.
+
+- user (souvent noté `u`) : le propriétaire du fichier, une seule personne.
+- group (`g`) : tous les membres du groupe propriétaire du fichier.
+- other (`o`) : tout le reste, c'est-à-dire n'importe quel utilisateur de la machine qui n'est ni le propriétaire ni dans le groupe.
+
+Reprenons `deploy.sh`, propriété d'alice, groupe developers. Si bob fait partie du groupe developers, il tombe dans la catégorie group : il a `r-x`, donc il peut lire et exécuter le script. Si carol n'est dans aucun groupe pertinent, elle tombe dans other, et avec `r-x` elle peut aussi lire et exécuter. Alice, elle, est le propriétaire, donc seule la première triplette `rwx` la concerne. Le système regarde votre catégorie et s'arrête là : être propriétaire avec moins de droits que le groupe ne vous fait pas hériter des droits du groupe.
+
+## chmod : changer les permissions
+
+`chmod` (change mode) modifie les permissions. Il existe deux façons de l'écrire, et les deux sont utiles.
+
+La notation symbolique se lit presque comme une phrase. On désigne une catégorie (`u`, `g`, `o`, ou `a` pour all), un opérateur (`+` pour ajouter, `-` pour retirer, `=` pour fixer), puis les lettres.
+
+```bash
+# Rendre un script exécutable pour son propriétaire
+chmod u+x deploy.sh
+
+# Retirer le droit d'écriture au groupe et aux autres
+chmod go-w notes.txt
+
+# Donner lecture + exécution à tout le monde, d'un coup
+chmod a+rx public.sh
+```
+
+La notation octale est plus compacte et c'est celle qu'on voit partout dans la documentation. Chaque permission vaut un chiffre : `r` vaut 4, `w` vaut 2, `x` vaut 1. On additionne les chiffres pour une catégorie, ce qui donne un chiffre de 0 à 7. On écrit ensuite trois chiffres, un par catégorie, dans l'ordre user, group, other.
+
+```text
+r = 4    w = 2    x = 1
+
+rwx = 4+2+1 = 7
+r-x = 4+0+1 = 5
+r-- = 4+0+0 = 4
+rw- = 4+2+0 = 6
+```
+
+Donc le fameux `755` veut dire `rwxr-xr-x` : le propriétaire fait tout (7), le groupe et les autres lisent et exécutent (5 et 5). C'est exactement le réglage typique d'un script ou d'un dossier que tout le monde peut consulter mais que seul le propriétaire peut modifier.
+
+```bash
+# Le propriétaire peut tout, les autres lisent et exécutent
+chmod 755 deploy.sh
+
+# Un fichier de config privé : propriétaire lit et écrit, personne d'autre n'y touche
+chmod 600 config.env
+
+# Un dossier où seul le propriétaire entre et écrit
+chmod 700 ~/.ssh
+```
+
+Le cas concret le plus fréquent : vous écrivez un script, vous le lancez, et le terminal répond `Permission denied`. Le fichier existe, son contenu est bon, mais il lui manque le bit `x`. Un `chmod +x mon-script.sh` règle l'affaire, et le script démarre.
+
+## chown : changer le propriétaire
+
+`chmod` change ce que chaque catégorie peut faire. `chown` (change owner) change qui est le propriétaire, et au passage le groupe.
+
+```bash
+# Donner le fichier à l'utilisateur www-data (compte du serveur web)
+sudo chown www-data app.log
+
+# Changer propriétaire ET groupe en une fois
+sudo chown www-data:www-data /var/www/site
+
+# Changer uniquement le groupe
+sudo chown :developers rapport.md
+```
+
+Le `sudo` est presque toujours nécessaire, et pour une bonne raison : si un utilisateur ordinaire pouvait donner ses fichiers à n'importe qui, ou s'attribuer ceux des autres, tout le modèle de sécurité s'effondrerait. Seul l'administrateur décide de qui possède quoi. On rencontre `chown` typiquement quand on installe un site et que les fichiers doivent appartenir au compte du serveur web pour qu'il puisse les servir.
+
+## le piège chmod 777
+
+Tôt ou tard, un tutoriel mal écrit ou un forum pressé vous suggérera `chmod 777` pour faire disparaître une erreur de permission. Ça marche, sur le moment, et c'est précisément ce qui le rend dangereux.
+
+`777` veut dire `rwxrwxrwx` : lecture, écriture et exécution pour le propriétaire, pour le groupe, et pour absolument tout le monde. Sur un serveur, ce « tout le monde » inclut le compte du serveur web, les autres utilisateurs, et donc, en cas de faille, le code d'un attaquant qui aurait pris la main sur un de ces comptes.
+
+<Callout type="danger">
+Mettre un fichier en `777`, c'est autoriser n'importe quel processus de la machine à le réécrire. Sur un script exécutable, ça veut dire que quelqu'un peut remplacer votre code par le sien, et ce code tournera ensuite avec vos droits à vous. On a réglé un message d'erreur en ouvrant une porte d'entrée. La règle saine : donner le minimum de droits qui fait fonctionner les choses, jamais le maximum par confort.
+</Callout>
+
+La bonne démarche quand une permission bloque, c'est de se demander qui a besoin d'accéder au fichier et pourquoi. Le plus souvent il manque juste un `x` sur un script, ou le fichier appartient au mauvais compte et un `chown` ciblé suffit. `600`, `644`, `755`, `700` couvrent la quasi-totalité des besoins réels. `777` n'en couvre aucun de sain.
+
+## à toi de jouer
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Le bloc affiché par ls -l est -rwxr-xr--. Que peut faire un membre du groupe propriétaire ?" options={["Lire, écrire et exécuter", "Lire et exécuter, mais pas écrire", "Seulement lire", "Rien du tout"]} correct={1} />
+
+<Quiz id="q-2" question="À quoi correspond chmod 755 sur un fichier ?" options={["rw-r--r--", "rwxrwxrwx", "rwxr-xr-x", "r-xr-xr-x"]} correct={2} />
+
+<Quiz id="q-3" question="Un dossier porte les permissions r-- pour votre catégorie. Vous pouvez voir la liste des noms de fichiers mais cd échoue. Pourquoi ?" options={["Il manque le bit w sur le dossier", "Il manque le bit x, nécessaire pour entrer dans un dossier", "Les fichiers à l'intérieur sont en 000", "Un dossier ne peut jamais avoir le bit r seul"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- La colonne de `ls -l` se lit en quatre parties : type, puis trois triplettes `rwx` pour user, group, other.
+- `r` lit, `w` modifie, `x` exécute un fichier ou permet d'entrer dans un dossier.
+- Le `x` sur un dossier est obligatoire pour faire `cd` ou atteindre quoi que ce soit à l'intérieur.
+- Supprimer un fichier dépend du `w` du dossier qui le contient, pas des droits du fichier.
+- Notation octale : `r=4`, `w=2`, `x=1`, additionnés par catégorie. `755` donne `rwxr-xr-x`.
+- `chmod +x script.sh` règle le classique `Permission denied` sur un script.
+- `chown` change le propriétaire et demande `sudo` ; on l'utilise pour donner des fichiers au compte du serveur web.
+- `chmod 777` rend un fichier modifiable par tout le monde, y compris un attaquant. À éviter ; donnez le minimum de droits, pas le maximum.
+
+OK 05-permissions.mdx écrit

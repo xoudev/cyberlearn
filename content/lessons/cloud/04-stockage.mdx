@@ -1,0 +1,99 @@
+---
+refCode: CL-LSN-172-V01
+slug: cloud-stockage
+title: "Le stockage cloud"
+description: "Les trois grands types de stockage cloud, objet, bloc et fichier, la différence entre durabilité et disponibilité, les classes chaud et froid, et la sécurité d'un stockage privé par défaut."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-169-V01"]
+---
+
+Quand on débute, on imagine souvent le stockage cloud comme un grand disque dur quelque part sur internet. C'est plus subtil que ça. Stocker dans le cloud, ce n'est pas un seul service mais une famille de services, pensés pour des usages différents. Une vidéo de quelques gigaoctets qu'on partage avec le monde entier ne se range pas comme le disque système d'une machine virtuelle, ni comme un dossier partagé entre plusieurs serveurs d'une même équipe.
+
+Si tu choisis le mauvais type, ça marche quand même au début, puis ça coince. Trop lent, trop cher, ou impossible à faire grossir. Cette leçon te donne l'éventail et surtout les critères pour savoir quoi prendre, quand.
+
+## le stockage objet
+
+Le stockage objet range des fichiers entiers, chacun identifié par une clé, dans des conteneurs qu'on appelle des buckets. Tu ne montes pas un disque, tu ne navigues pas dans une arborescence comme sur ton ordinateur. Tu déposes un fichier avec un nom, et tu le récupères plus tard avec ce même nom, via le réseau. La clé peut ressembler à un chemin (`photos/2026/vacances.jpg`) mais c'est une illusion : sous le capot, il n'y a pas de vrais dossiers, juste des clés à plat.
+
+C'est le bon choix pour les médias (images, vidéos, audio), les sauvegardes, les exports, les données statiques d'un site, les logs archivés. Chaque objet vit indépendamment et le système peut en accueillir des milliards sans que tu t'en occupes. C'est ce qui rend le stockage objet extensible quasiment sans limite : tu ne dimensionnes jamais à l'avance, tu paies ce que tu déposes.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Manipuler du stockage objet (exemple)" commands={{"aws s3 ls s3://mon-bucket": "2026-01-10 photo.jpg\n2026-01-11 rapport.pdf", "aws s3 cp fichier.txt s3://mon-bucket/": "upload: fichier.txt to s3://mon-bucket/fichier.txt", "aws s3api get-bucket-acl --bucket mon-bucket": "Owner: moi  Grants: private"}} />
+
+<Callout type="info">
+On accède à un objet par une URL ou un appel d'API, pas en montant un disque. C'est parfait pour servir des fichiers à grande échelle, mais ce n'est pas fait pour qu'un programme écrive dedans octet par octet comme dans un fichier local. Quand tu modifies un objet, tu le réécris en entier.
+</Callout>
+
+## le stockage bloc
+
+Le stockage bloc se comporte comme un disque dur attaché à une machine. Le système d'exploitation le voit comme un volume brut, qu'il formate avec son propre système de fichiers, puis dans lequel il lit et écrit par petits morceaux, les blocs. De ton côté, ça ressemble exactement à un disque physique : tu y installes un OS, tu y poses des fichiers, tu modifies un octet au milieu d'un gros fichier sans tout réécrire.
+
+C'est ce qu'il faut quand une application a besoin d'un disque rapide et d'accès fin. Le disque système d'une machine virtuelle, c'est du stockage bloc. Une base de données qui fait des milliers de petites écritures par seconde, c'est du stockage bloc. La contrepartie : un volume bloc est en général attaché à une seule machine à la fois. Il ne se partage pas naturellement entre plusieurs serveurs, et il ne s'expose pas directement sur internet par une URL.
+
+## le stockage fichier
+
+Le stockage fichier, c'est le partage réseau classique. Un volume monté par plusieurs machines en même temps, avec une vraie arborescence de dossiers, via des protocoles réseau comme NFS ou SMB. Plusieurs serveurs voient le même dossier, lisent et écrivent les mêmes fichiers, exactement comme un lecteur réseau d'entreprise.
+
+C'est utile quand des applications existantes attendent un système de fichiers partagé : un répertoire commun entre plusieurs instances d'une application, des fichiers de configuration partagés, du contenu qu'une flotte de serveurs doit voir de façon identique. Voici comment les trois se répartissent.
+
+| Type | Modèle mental | Usage typique |
+| --- | --- | --- |
+| Objet | un casier avec une clé, accessible par le réseau | médias, sauvegardes, données statiques, archives |
+| Bloc | un disque attaché à une machine | disque système d'une VM, base de données |
+| Fichier | un dossier partagé en réseau | partage entre plusieurs serveurs |
+
+## durabilité et disponibilité
+
+Deux mots qu'on confond tout le temps, et qui ne disent pas la même chose.
+
+La durabilité, c'est la promesse de ne pas perdre la donnée. Le fournisseur ne garde pas une seule copie de ton fichier : il en écrit plusieurs, réparties sur des machines et souvent des bâtiments différents. Si un disque meurt, une autre copie prend le relais et le système en recrée une nouvelle, sans que tu fasses rien. C'est pour ça qu'on voit des chiffres comme « onze 9 » de durabilité (99,999999999 %) sur le stockage objet : statistiquement, tu perds une donnée à peu près jamais.
+
+La disponibilité, c'est autre chose : la promesse de pouvoir y accéder à un instant donné. Une donnée peut être parfaitement durable, donc présente et intacte, mais temporairement inaccessible parce que le service traverse une panne. Durable veut dire « elle existe toujours ». Disponible veut dire « je peux la lire maintenant ».
+
+<Callout type="warning">
+Ne mélange pas les deux quand tu lis une fiche de service. Une durabilité énorme ne te garantit pas que le service répondra à chaque seconde, et une bonne disponibilité ne te dit rien sur le risque de perte définitive. Ce sont deux engagements séparés.
+</Callout>
+
+## les classes de stockage
+
+Toutes les données n'ont pas la même valeur d'usage. Une photo de profil consultée mille fois par jour n'a rien à voir avec une sauvegarde légale qu'on ne rouvrira peut-être jamais. Les fournisseurs proposent donc des classes de stockage, et le bon réflexe est de choisir selon la fréquence d'accès.
+
+La classe chaude (standard) est faite pour l'accès fréquent. Tu lis tes données souvent et vite, et tu paies un prix de stockage plus élevé, mais peu ou pas de frais pour y accéder.
+
+Les classes froides et archive inversent l'équation. Le stockage coûte beaucoup moins cher, parfois dix fois moins, parce que la donnée est rarement consultée. En échange, récupérer un fichier peut coûter un petit supplément et, pour l'archive la plus profonde, prendre de quelques minutes à plusieurs heures. Tu ne mets pas en archive des données dont tu as besoin tout de suite.
+
+<Callout type="success">
+Bonne habitude : laisser les données récentes en chaud, puis les faire glisser automatiquement vers le froid après quelques semaines ou mois, via une règle de cycle de vie. Tu réduis fortement la facture sans jamais déplacer un fichier à la main.
+</Callout>
+
+## la sécurité
+
+La règle de base, c'est privé par défaut. Un bucket ou un volume bien configuré n'est accessible qu'à toi et à ce que tu autorises explicitement. À cela s'ajoute le chiffrement au repos : les données sont chiffrées sur les disques du fournisseur, si bien qu'un disque volé ou mal effacé ne livre rien de lisible. La plupart des services l'activent par défaut aujourd'hui.
+
+Et puis il y a le piège classique, celui qui fait régulièrement les gros titres : le bucket de stockage objet laissé public par erreur. Comme un objet s'expose facilement par une URL, il suffit d'une case mal cochée ou d'une politique trop large pour que des fichiers sensibles deviennent accessibles à n'importe qui sur internet. Pas de mot de passe forcé, pas d'attaque sophistiquée : juste une mauvaise configuration.
+
+<Callout type="danger">
+Avant de déposer la moindre donnée sensible dans un bucket, vérifie qu'il est bien privé et que rien n'autorise un accès public. Active le chiffrement, restreins les permissions au strict nécessaire, et surveille les alertes de ton fournisseur sur les buckets ouverts. Une fuite par bucket public n'est pas un bug du cloud : elle tombe de ton côté de la responsabilité partagée.
+</Callout>
+
+Ce dernier point rejoint le modèle de responsabilité partagée vu plus tôt. Le fournisseur sécurise le matériel et l'infrastructure du stockage. La configuration des accès, le choix de garder un bucket privé, la gestion des permissions : tout cela reste à ta charge.
+
+## à toi de jouer
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Vérifier qu'un bucket reste privé (exemple)" commands={{"aws s3api get-bucket-acl --bucket mon-bucket": "Owner: moi  Grants: private", "aws s3api get-public-access-block --bucket mon-bucket": "BlockPublicAcls: true\nIgnorePublicAcls: true\nBlockPublicPolicy: true", "aws s3 ls s3://mon-bucket": "2026-01-10 photo.jpg\n2026-01-11 rapport.pdf"}} />
+
+<Quiz id="q-1" question="Tu héberges la vidéothèque publique d'un site, des milliers de fichiers servis par URL. Quel type de stockage choisis-tu ?" options={["Stockage bloc, comme un disque attaché", "Stockage objet, des fichiers accessibles par une clé", "Stockage fichier monté sur chaque navigateur", "Aucun, une vidéo ne se stocke pas dans le cloud"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle phrase décrit correctement la différence entre durabilité et disponibilité ?" options={["Ce sont deux mots pour la même garantie", "La durabilité parle de ne pas perdre la donnée, la disponibilité de pouvoir y accéder à un instant donné", "La disponibilité parle de plusieurs copies, la durabilité de la vitesse", "La durabilité ne concerne que le stockage bloc"]} correct={1} />
+
+<Quiz id="q-3" question="Une sauvegarde légale qu'on ne rouvrira presque jamais : quelle classe est la plus adaptée ?" options={["Stockage bloc rapide", "Classe chaude, pour un accès immédiat", "Peu importe, le prix est identique partout", "Classe archive, peu chère mais lente à récupérer"]} correct={3} />
+
+## à retenir
+
+- Trois grands types : objet (fichiers par clé, via le réseau, extensible à l'infini), bloc (disque attaché à une machine, accès rapide et fin), fichier (partage réseau monté par plusieurs machines).
+- Objet pour les médias et sauvegardes, bloc pour les disques système et bases de données, fichier pour le partage entre serveurs.
+- Durabilité veut dire « la donnée n'est pas perdue », grâce à plusieurs copies réparties. Disponibilité veut dire « je peux y accéder maintenant ». Ce sont deux engagements distincts.
+- Classes de stockage : chaud pour l'accès fréquent (plus cher au stockage), froid et archive pour le rarement consulté (peu cher, mais lent et parfois payant à la récupération). On choisit selon la fréquence d'accès, idéalement via des règles de cycle de vie.
+- Sécurité : privé par défaut, chiffrement au repos. Le piège récurrent reste le bucket objet rendu public par erreur, une mauvaise configuration qui tombe de ton côté de la responsabilité partagée.

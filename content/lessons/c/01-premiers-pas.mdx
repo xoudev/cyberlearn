@@ -1,0 +1,157 @@
+---
+refCode: CL-LSN-025-V01
+slug: c-premiers-pas
+title: "Premiers pas en C : structure d'un programme"
+description: "Découvrez le langage C : la structure d'un programme, la fonction main, les directives #include, la compilation et l'affichage avec printf."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 130
+prerequisites: []
+---
+
+Le C n'est pas un langage qu'on lance directement. Si tu viens de Python, c'est sans doute le premier changement qui va te surprendre. En Python, tu écris un fichier et tu le passes à l'interpréteur, qui lit ton code ligne par ligne et l'exécute au vol. En C, ce schéma ne fonctionne pas. Ton fichier source ne sert à rien tel quel : le processeur ne sait pas le lire. Il faut d'abord le traduire en un programme que la machine comprend, et c'est seulement ce programme traduit que tu lances ensuite.
+
+Cette traduction s'appelle la compilation, et elle change tout. Tu écris du code, tu le compiles, et tu obtiens un fichier exécutable autonome. C'est cette mécanique en deux temps qui fait du C un langage rapide et proche du matériel, celui qu'on retrouve dans les systèmes d'exploitation, les pilotes, l'embarqué et tout ce qui doit aller vite. On va commencer par le programme le plus simple possible, et on va vraiment le faire tourner.
+
+<Callout type="info">
+Rien à installer ici. Les blocs de code de cette leçon sont réellement compilés et exécutés. Tu cliques sur Exécuter, et tu regardes ce qui sort.
+</Callout>
+
+## la structure minimale
+
+Voici à quoi ressemble le plus petit programme C qui affiche quelque chose. Lis-le, puis exécute-le.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Bonjour\n");
+    return 0;
+}
+```
+</CodePlayground>
+
+Quatre lignes, et chacune a un rôle précis.
+
+La première, la directive include, demande d'ajouter la bibliothèque standard d'entrées-sorties au programme. C'est elle qui contient la fonction printf. Sans cette ligne, le compilateur tomberait sur printf un peu plus bas sans savoir ce que c'est, et il s'arrêterait. Le fichier stdio.h est ce qu'on appelle un en-tête : il décrit les outils disponibles, dont l'affichage.
+
+La ligne `int main(void)` déclare la fonction principale. C'est le point d'entrée. Quand tu lances ton programme, c'est ici que l'exécution démarre, nulle part ailleurs. Le mot `void` entre les parenthèses dit simplement que main ne reçoit aucune information de départ. Le `int` devant indique que la fonction va renvoyer un nombre entier à la fin, et on y revient juste en dessous.
+
+Les deux accolades encadrent le corps de la fonction. Tout ce qui se trouve entre l'accolade ouvrante et l'accolade fermante, ce sont les instructions à exécuter, dans l'ordre. L'accolade ouvre un bloc, l'accolade ferme le bloc.
+
+Enfin, `return 0;` renvoie la valeur zéro au système. Par convention, zéro veut dire que le programme s'est terminé normalement, sans incident. Une autre valeur servirait à signaler qu'un problème est survenu. C'est un code de sortie, et des outils plus avancés s'en servent pour savoir si ton programme a réussi.
+
+## compiler, pas interpréter
+
+C'est le point qui mérite qu'on s'arrête. Beaucoup de débutants écrivent leur premier fichier `.c`, essaient de le lancer comme un script, et ne comprennent pas pourquoi rien ne se passe. La réponse est simple : un fichier C n'est pas exécutable. C'est du texte. Il faut le compiler avant.
+
+Le déroulé se fait en deux temps. D'abord tu écris ton code source dans un fichier, par exemple `programme.c`. Ensuite un programme appelé compilateur lit ce fichier et le traduit en instructions machine, celles que le processeur exécute directement. Le résultat de cette traduction est un fichier exécutable, séparé de ton code source. C'est lui que tu lances.
+
+Sur une vraie machine, avec le compilateur gcc, les commandes ressembleraient à ceci.
+
+```bash
+gcc programme.c -o programme
+./programme
+```
+
+La première ligne compile `programme.c` et produit un exécutable nommé `programme`. La seconde le lance. Si tu modifies ton code source, l'ancien exécutable ne change pas tout seul : il faut recompiler pour que tes changements soient pris en compte. C'est une habitude à prendre.
+
+Pourquoi s'embêter avec cette étape, alors que Python s'en passe ? Parce que la traduction est faite une bonne fois pour toutes, avant le lancement. Pendant l'exécution, le processeur n'a plus rien à interpréter : il déroule directement les instructions machine. C'est ce qui rend le C beaucoup plus rapide, et c'est aussi ce qui te donne un contrôle fin sur la mémoire et sur la machine. Un langage interprété fait ce travail de traduction en permanence, à chaque ligne, à chaque exécution. Le C le fait une fois, en amont. Ce compromis explique pourquoi on l'utilise là où la performance compte vraiment.
+
+<Callout type="info">
+Sur cette plateforme, la compilation est gérée pour toi. Tu écris, tu cliques, et en coulisses ton code passe bien par un compilateur avant de tourner. Mais le mécanisme reste celui-là : source, puis traduction, puis exécution.
+</Callout>
+
+## afficher avec printf
+
+La fonction printf est ton outil d'affichage. Son nom vient de print formatted. Tu lui passes une chaîne de caractères entre guillemets, et elle l'écrit à l'écran.
+
+Le détail à comprendre, c'est la séquence `\n`. Elle ne s'affiche pas comme une barre oblique suivie d'un n. C'est un saut de ligne. Quand printf rencontre `\n`, il passe à la ligne suivante. Sans elle, deux appels à printf collent leur texte l'un derrière l'autre, sur la même ligne. Regarde ce que ça donne.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Bonjour ");
+    printf("tout le monde\n");
+    printf("Ligne une\n");
+    printf("Ligne deux\n");
+    printf("Sans saut... ");
+    printf("on reste sur la meme ligne\n");
+    return 0;
+}
+```
+</CodePlayground>
+
+Les deux premiers appels forment une seule ligne, parce que le premier ne contient pas de `\n`. En revanche, Ligne une et Ligne deux sont bien séparées, chacune se terminant par son saut de ligne. C'est `\n` qui décide, pas le passage d'un appel à l'autre.
+
+Le `\n` fait partie d'une famille appelée caractères d'échappement. La barre oblique inverse prévient printf que le caractère suivant a un sens spécial. On trouve aussi `\t` pour une tabulation, qui décale le texte vers la droite, et `\\` pour afficher une vraie barre oblique inverse.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Nom\tAge\n");
+    printf("Alice\t30\n");
+    printf("Bob\t25\n");
+    printf("Un antislash : \\\n");
+    return 0;
+}
+```
+</CodePlayground>
+
+Les `\t` alignent les colonnes, et `\\` produit un seul antislash à l'écran. Si tu écrivais une seule barre oblique inverse suivie d'un espace, printf essaierait d'interpréter une séquence d'échappement qui n'existe pas.
+
+## la rigueur du C
+
+Le C ne pardonne pas l'à-peu-près. Deux règles reviennent sans arrêt chez les débutants, et les deux génèrent des erreurs de compilation.
+
+La première, c'est le point-virgule. Chaque instruction se termine par un point-virgule. Pas la peine de chercher midi à quatorze heures : `printf(...)` se finit par un `;`, `return 0` se finit par un `;`. Oublie-le, et le compilateur va se plaindre, souvent en pointant la ligne suivante, ce qui peut induire en erreur. Quand un message d'erreur te paraît incompréhensible, le premier réflexe est de vérifier le point-virgule de la ligne d'avant.
+
+Attention quand même : la directive include, en première ligne, ne prend pas de point-virgule. C'est une directive de préprocesseur, traitée avant la compilation proprement dite, et elle suit ses propres règles. Les accolades non plus n'en prennent pas. Le point-virgule termine les instructions, pas les blocs.
+
+La seconde règle concerne justement les accolades. Elles vont par paires et délimitent les blocs. Chaque accolade ouvrante attend sa fermante. Si tu en oublies une, le compilateur lit ton programme comme un bloc qui ne se referme jamais, et il s'arrête sur une erreur. Indenter ton code, c'est-à-dire décaler les lignes à l'intérieur d'un bloc, n'est pas obligatoire pour le compilateur, mais ça t'aide énormément à repérer quelle accolade va avec quelle autre.
+
+Voici les mêmes erreurs, corrigées. Essaie de retirer un point-virgule ou une accolade et de relancer pour voir le compilateur réagir.
+
+<CodePlayground language="c">
+```c
+#include <stdio.h>
+
+int main(void) {
+    printf("Le point-virgule termine chaque instruction.\n");
+    printf("Les accolades delimitent le bloc de main.\n");
+    return 0;
+}
+```
+</CodePlayground>
+
+Ces erreurs sont normales au début. Le réflexe vient avec la pratique, et un message de compilation, même intimidant, t'indique presque toujours où regarder.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi un fichier .c ne peut-il pas se lancer directement comme un script Python ?" options={['Parce qu il manque toujours la fonction printf', 'Parce que le C doit etre compile en executable avant de pouvoir tourner', 'Parce que le C ne sert qu a ecrire des bibliotheques']} correct={1} />
+
+<Quiz id="q-2" question="Que provoque la sequence \n dans une chaine passee a printf ?" options={['Elle affiche les caracteres barre oblique et n', 'Elle efface la ligne precedente', 'Elle provoque un saut a la ligne suivante']} correct={2} />
+
+<Quiz id="q-3" question="Quelle ligne ne prend PAS de point-virgule a la fin ?" options={['La directive include en tete du fichier', 'L appel a printf', 'L instruction return 0']} correct={0} />
+
+## à retenir
+
+Le C est un langage compilé. Tu écris du code source, un compilateur le traduit en exécutable, et c'est l'exécutable que tu lances. Cette étape de traduction est obligatoire, et elle explique la vitesse du langage.
+
+Tout programme contient une fonction `int main(void)`, son point d'entrée, dont le corps est encadré par des accolades. La directive include en première ligne rend disponibles des outils comme printf, et elle ne prend pas de point-virgule.
+
+printf affiche du texte. La séquence `\n` provoque un saut de ligne, et fait partie des caractères d'échappement comme `\t` ou `\\`.
+
+Chaque instruction se termine par un point-virgule, et chaque accolade ouvrante attend sa fermante. Ce sont les deux oublis les plus fréquents au début, et les deux que le compilateur signale en premier.
+
+`return 0;` indique au système que le programme s'est terminé sans erreur.
+
+La prochaine leçon portera sur les variables et les types, pour stocker et manipuler des données dans tes programmes.
+
+OK 01 réécrit

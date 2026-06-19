@@ -1,0 +1,117 @@
+---
+refCode: CL-LSN-155-V01
+slug: osint-defensif
+title: "OSINT défensif : se voir comme une cible"
+description: "Retourner les techniques du parcours contre soi-même pour mesurer son exposition et la réduire : s'auto-évaluer comme une cible, prioriser le sensible, et reprendre la main sur son empreinte numérique."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 480
+prerequisites: ["CL-LSN-154-V01"]
+---
+
+Tu as passé tout ce parcours à apprendre comment on retrouve des gens, des comptes, des photos, des serveurs. Maintenant on change de chaise. La question n'est plus "comment trouver quelqu'un" mais "qu'est-ce qu'on trouve sur moi". Et la seule façon honnête d'y répondre, ce n'est pas de deviner ni de se rassurer. C'est de le faire. De lancer les mêmes recherches sur toi-même, avec les mêmes outils, dans le même état d'esprit qu'un attaquant qui aurait décidé de te cibler.
+
+On appelle ça l'OSINT défensif, ou parfois la reconnaissance de sa propre surface d'exposition. L'idée tient en une phrase : pour réduire ce qu'on voit de vous, il faut d'abord voir ce qu'on voit de vous. Tant que tu n'as pas regardé, tu travailles à l'aveugle. Tu protèges peut-être un compte qui n'intéresse personne pendant qu'une vieille fuite traîne ton mot de passe en clair sur un forum.
+
+## se chercher comme une cible
+
+La démarche est simple à décrire et inconfortable à faire. Tu pars de ce que quelqu'un connaît de toi (souvent juste un nom et un prénom, parfois un pseudo ou un e-mail) et tu déroules. Chaque trouvaille ouvre la suivante. Un pseudo mène à un profil, le profil mène à une photo, la photo a une légende qui donne une ville, la ville recoupe une autre publication, et ainsi de suite. C'est exactement le pivot que le parcours t'a montré, sauf que la cible, c'est toi.
+
+<Diagram caption="La démarche d'auto-évaluation OSINT">
+flowchart TD
+    A[Point de départ: nom, prénom] --> B[Moteurs de recherche, guillemets, variantes]
+    B --> C[Pseudos récurrents]
+    C --> D[Profils réseaux sociaux]
+    D --> E[Photos et métadonnées]
+    B --> F[Adresses e-mail]
+    F --> G[Vérif fuites de données]
+    A --> H[Nom de domaine perso]
+    H --> I[WHOIS, sous-domaines, dépôts publics]
+    E --> J[Recoupements: lieu, entourage, habitudes]
+    G --> J
+    I --> J
+    J --> K[Inventaire de l'exposition]
+</Diagram>
+
+Concrètement, tu passes en revue : ton nom entre guillemets sur plusieurs moteurs, tes pseudos habituels (et leurs variantes, parce qu'on réutilise toujours les mêmes), tes adresses e-mail vérifiées contre les bases de fuites connues, tes photos publiques et ce qu'elles racontent en arrière-plan, ton nom de domaine si tu en as un, et tes dépôts de code publics. Sur les dépôts, regarde l'historique : un secret committé puis retiré reste dans les anciens commits, et l'adresse e-mail de l'auteur des commits est souvent bien réelle.
+
+<Callout type="info">
+Note tout dans un fichier, froidement, sans te justifier. La tentation est de minimiser ('bon, cette photo c'est rien'). Le but de cette étape n'est pas de juger, c'est d'inventorier. Le tri vient après.
+</Callout>
+
+## prioriser le sensible
+
+Une fois l'inventaire posé, tu vas vite voir que tout n'a pas le même poids. Une photo de vacances anodine et ton adresse postale exacte ne jouent pas dans la même catégorie. Le critère utile, c'est : qu'est-ce qu'un attaquant peut faire avec ça.
+
+Trois choses montent toujours en haut de la pile. Ce qui sert l'usurpation d'identité : date de naissance complète, nom de jeune fille de la mère, numéro de téléphone, réponses possibles aux questions de sécurité. Ce qui localise ton domicile : adresse, photos qui montrent la rue ou le numéro, géolocalisation dans les métadonnées, publications "à la maison" répétées. Et ce qui donne accès à un compte : e-mails associés à des fuites, mots de passe réutilisés, indices qui aident à deviner un identifiant de connexion.
+
+Le reste (tes goûts musicaux, une vieille photo de soirée) existe peut-être, mais ce n'est pas par là qu'on attaque. Tu ne vas pas tout traiter d'un coup. Tu traites d'abord ce qui ouvre une porte.
+
+## agir sur ce qu'on contrôle
+
+Bonne nouvelle : une grande partie de ce que tu trouveras vient de toi, et donc tu peux agir dessus. Voici le passage de l'exposition à l'action.
+
+| Exposition repérée | Action |
+| --- | --- |
+| Profils réseaux trop ouverts | Passer en privé, retirer les anciennes publications sensibles, vérifier qui peut voir la liste d'amis |
+| Photos avec métadonnées (GPS, appareil) | Nettoyer les EXIF avant publication, désactiver la géolocalisation de l'appareil photo |
+| Contenu te concernant sur un site tiers | Demander le retrait à l'éditeur, puis le déréférencement au moteur de recherche si le retrait échoue |
+| E-mail apparu dans une fuite | Changer le mot de passe partout où il servait, activer la 2FA, surveiller les alertes |
+| Adresse ou téléphone publiés par toi | Supprimer le post, retirer le champ des profils, recréer un contact pro distinct |
+| Domaine WHOIS à découvert | Activer la protection de la vie privée WHOIS chez le registrar |
+
+Le déréférencement mérite un mot. Demander à un moteur de retirer un lien des résultats ne supprime pas la page d'origine : le contenu reste là où il est hébergé, il devient juste plus difficile à trouver par ton nom. C'est souvent un compromis acceptable quand l'éditeur ne répond pas, mais ce n'est pas une suppression.
+
+## ce qu'on ne contrôle pas directement
+
+Tout n'est pas entre tes mains, et c'est important de l'accepter pour ne pas s'épuiser. Une partie de tes données vit chez des tiers : courtiers en données, sites d'agrégation, registres publics (commerce, électoral selon les pays), bases de fuites déjà copiées un peu partout. Tu n'as pas de bouton "supprimer" sur ces choses.
+
+Là, tu agis autrement. Tu exerces tes droits : en Europe, le RGPD te donne un droit d'accès, de rectification et d'effacement que tu peux opposer à un courtier en données ou à un éditeur. Tu surveilles : une alerte sur ton nom et ton e-mail te prévient quand quelque chose réapparaît. Et tu acceptes un résidu. Une fuite ancienne, une fois recopiée, ne disparaîtra jamais complètement d'Internet. L'objectif n'est pas zéro, l'objectif est de réduire et de garder l'oeil.
+
+<Callout type="warning">
+Méfie-toi des services payants qui promettent de 'tout effacer d'Internet'. Aucun ne peut tenir cette promesse sur des données déjà copiées. Au mieux ils automatisent des demandes de retrait chez quelques courtiers, ce que tu peux souvent faire toi-même. Au pire ils te font payer une illusion.
+</Callout>
+
+## les comptes
+
+Une bonne part de l'OSINT défensif, ce n'est pas du nettoyage de contenu, c'est de l'hygiène de comptes. Parce que la vraie valeur d'un e-mail trouvé dans une fuite, c'est qu'il sert de clé. Si le même mot de passe ouvre dix services, une seule fuite les ouvre tous.
+
+Trois réflexes coupent l'essentiel des recoupements. Un mot de passe unique par compte, géré dans un gestionnaire, pour qu'une fuite reste isolée à un seul service. La double authentification partout où elle existe, de préférence par application ou clé physique plutôt que par SMS. Et la séparation des identités : un e-mail et un pseudo pour le pro, d'autres pour le perso, idéalement sans pont visible entre les deux. C'est ce pont qui permet à quelqu'un de relier ton profil professionnel sérieux à ton compte de jeu d'il y a dix ans.
+
+<Callout type="success">
+Si tu ne fais qu'une chose après cette leçon, fais celle-là : des mots de passe uniques plus la 2FA. Ça neutralise la grande majorité des attaques opportunistes qui partent d'une simple adresse e-mail trouvée en OSINT.
+</Callout>
+
+## l'empreinte minimale viable
+
+Il faut se débarrasser d'un fantasme : tu ne vas pas disparaître d'Internet, et ce n'est même pas le but. Vivre, travailler, candidater, exister socialement, tout ça laisse des traces, et essayer de tout effacer est à la fois impossible et contre-productif (un profil pro inexistant, ça se remarque aussi).
+
+Le bon modèle mental, c'est l'empreinte minimale viable. Tu décides ce que tu exposes, en fonction de qui tu veux être visible et pour quoi. Ton profil professionnel reste public parce qu'il te sert. Ton adresse, tes habitudes, tes comptes secondaires, ton entourage, eux, restent fermés parce qu'ils ne servent qu'à un attaquant. La cible n'est pas l'invisibilité, c'est la maîtrise : que ce qui est public soit public par choix, et pas par oubli.
+
+Et c'est pour ça qu'on commence par se voir comme un attaquant nous voit. Pas par paranoïa, mais parce que c'est le seul point de vue qui montre l'écart entre ce que tu crois exposer et ce que tu exposes vraiment. Une fois cet écart visible, le réduire devient une suite de décisions concrètes plutôt qu'une angoisse vague.
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Quel est le premier intérêt de lancer des recherches OSINT sur soi-même ?" options={["Effacer définitivement ses données du web", "Voir l'écart entre ce qu'on croit exposer et ce qu'on expose vraiment", "Empêcher la création de nouvelles fuites", "Rendre ses comptes introuvables"]} correct={1} />
+
+<Quiz id="q-2" question="Parmi ces trouvailles, laquelle priorises-tu en premier dans ton inventaire ?" options={["Une vieille photo de soirée anodine", "Tes goûts musicaux publics", "Une adresse e-mail apparue dans une fuite avec un mot de passe réutilisé", "Le nom de ton groupe préféré"]} correct={2} />
+
+<Quiz id="q-3" question="Que signifie le concept d'empreinte minimale viable ?" options={["Supprimer toute présence en ligne", "Choisir ce qu'on expose et maîtriser le reste, sans chercher à disparaître", "Confier sa réputation à un service d'effacement payant", "Ne jamais publier de profil professionnel"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- L'OSINT défensif consiste à lancer sur soi les techniques du parcours pour mesurer son exposition avant de la réduire.
+- On déroule la même démarche qu'un attaquant : nom, pseudos, e-mails, photos, domaine, dépôts, puis recoupements.
+- On priorise ce qui sert l'usurpation d'identité, la localisation du domicile et l'accès aux comptes.
+- Sur ce qu'on contrôle, on agit : confidentialité, nettoyage des métadonnées, retrait, déréférencement.
+- Le déréférencement cache un lien dans un moteur, il ne supprime pas la page source.
+- Sur ce qu'on ne contrôle pas (tiers, registres, fuites copiées), on exerce ses droits RGPD, on surveille, on accepte un résidu.
+- Mots de passe uniques, 2FA partout, identités pro et perso séparées : ça coupe les recoupements et neutralise les attaques opportunistes.
+- L'objectif n'est pas de disparaître mais de garder une empreinte minimale viable : public par choix, pas par oubli.
+
+OK 11 écrit

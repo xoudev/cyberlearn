@@ -1,0 +1,149 @@
+---
+refCode: CL-LSN-062-V01
+slug: git-bases
+title: "Les bases de Git : add, commit, log"
+description: "Maîtrisez le cycle de travail de Git au quotidien : voir l'état avec status, préparer des changements avec add, les enregistrer avec commit, et relire l'historique avec log."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 35
+xpReward: 280
+prerequisites: ["CL-LSN-061-V01"]
+---
+
+Une fois Git installé et un dépôt initialisé, le quotidien tient dans un petit cycle que tu vas répéter des dizaines de fois par jour. Tu modifies des fichiers, tu choisis ceux qui vont dans le prochain enregistrement, tu enregistres, et de temps en temps tu relis ce que tu as fait. C'est tout. Le reste de Git, aussi gros soit-il, se construit autour de ces quatre gestes.
+
+Ce cycle a trois zones à garder en tête. Il y a ton répertoire de travail, là où tu édites les fichiers. Il y a la zone de préparation (le staging, aussi appelé index), une sorte de panier où tu mets ce que tu veux enregistrer. Et il y a le dépôt, la suite des instantanés que Git conserve. Le cycle, c'est passer du répertoire de travail vers la zone de préparation avec `add`, puis de la zone de préparation vers le dépôt avec `commit`.
+
+Voici le schéma à se mettre en tête une bonne fois.
+
+<Diagram>
+  flowchart LR
+    A["répertoire de travail"] -->|"git add"| B["zone de préparation"]
+    B -->|"git commit"| C["dépôt (historique)"]
+</Diagram>
+
+On va dérouler chaque étape avec les commandes que tu taperas vraiment.
+
+## git status, ta boussole
+
+C'est la commande que tu vas taper le plus souvent, et de loin. Avant de préparer, avant d'enregistrer, dès que tu reviens sur un projet, tu tapes `git status`. Elle te dit où tu en es : quels fichiers ont changé, lesquels sont déjà préparés pour le prochain commit, lesquels Git ne suit pas encore.
+
+<SimulatedTerminal shell="bash" commands={{ "git status": "On branch main\nChanges not staged for commit:\n  (use 'git add <file>...' to update what will be committed)\n  modified: index.html\n\nUntracked files:\n  (use 'git add <file>...' to include in what will be committed)\n  style.css\n\nno changes added to commit (use 'git add' to commit)" }} />
+
+Lis ce que Git te raconte. `index.html` est modifié mais pas préparé : il est dans ton répertoire de travail, pas encore dans le panier. `style.css` est listé comme untracked, ce qui veut dire que Git le voit mais ne le suit pas encore (il est nouveau, jamais ajouté). La dernière ligne te rappelle quoi faire ensuite. Git est bavard exprès : ces messages sont des indices, prends l'habitude de les lire au lieu de les survoler.
+
+## git add : préparer
+
+`git add` met un fichier dans la zone de préparation. Tu déclares à Git : ce changement-là, je veux qu'il fasse partie du prochain commit.
+
+```bash
+# préparer un fichier précis
+git add index.html
+
+# préparer plusieurs fichiers nommés
+git add index.html style.css
+
+# tout préparer d'un coup (fichiers modifiés et nouveaux du dossier courant)
+git add .
+```
+
+Pourquoi cette étape existe-t-elle au juste ? On pourrait imaginer un Git qui enregistre tout ce qui a bougé, sans demander. Mais la zone de préparation te donne le contrôle sur le contenu de chaque commit. Disons que tu as corrigé un bug dans `index.html` et qu'en même temps tu as commencé à bidouiller `style.css` sans avoir fini. Tu peux préparer seulement `index.html`, enregistrer la correction du bug toute seule, et laisser `style.css` de côté pour plus tard. Le commit reste propre et ne mélange pas deux sujets.
+
+`git add .` est pratique mais à manier avec un peu d'attention. Il prépare tout ce qui a changé dans le dossier courant et ses sous-dossiers. Tant que tu as fait `git status` juste avant et que tu sais ce qui va partir, pas de souci. Le réflexe à garder : status, puis add, puis status à nouveau pour vérifier que le panier contient bien ce que tu crois.
+
+## git commit : enregistrer
+
+`git commit` prend tout ce qui est dans la zone de préparation et en fait un instantané dans l'historique. Un commit, c'est une photo de ton projet à un instant donné, accompagnée d'un message qui explique ce que tu as fait.
+
+```bash
+git commit -m "fix: corrige le lien cassé dans le menu de navigation"
+```
+
+Le `-m` permet de donner le message directement sur la ligne. Sans lui, Git ouvre un éditeur pour que tu rédiges le message, ce qui surprend souvent les débutants la première fois (on se retrouve dans Vim ou Nano sans savoir comment en sortir). Avec `-m`, tu restes dans ton terminal.
+
+Le message de commit n'est pas une formalité. Dans six mois, quand tu reliras l'historique pour comprendre pourquoi telle ligne existe, ce message sera ta seule explication. Un bon message tient en quelques mots, à l'impératif, et dit ce que le commit fait, pas comment.
+
+<Callout type="info">
+Pour un bon message de commit : verbe à l'impératif présent (corrige, ajoute, supprime), une ligne courte sous 50 caractères qui résume le quoi. Si tu veux expliquer le pourquoi, saute une ligne et ajoute un paragraphe. Compare 'corrige le calcul de TVA arrondi au mauvais sens' avec 'modifs', et tu vois lequel t'aidera plus tard.
+</Callout>
+
+L'erreur la plus fréquente chez les débutants, c'est le commit fourre-tout. On code pendant deux heures, on touche à dix fichiers sur trois sujets différents, puis on fait un seul `git add .` suivi d'un `git commit -m "update"`. Sur le moment ça va plus vite. Mais ce commit devient illisible : impossible de comprendre ce qu'il contient, impossible d'annuler une partie sans annuler le reste.
+
+<Callout type="warning">
+Évite le commit géant qui mélange tout. Un commit devrait raconter une seule idée : une correction, une fonctionnalité, un renommage. Si tu n'arrives pas à résumer ton commit en une phrase claire, c'est probablement qu'il en contient plusieurs. Mieux vaut commiter souvent et petit que rarement et énorme.
+</Callout>
+
+## git log : relire l'histoire
+
+`git log` affiche l'historique des commits, du plus récent au plus ancien. Chaque entrée montre l'auteur, la date, l'identifiant du commit et son message.
+
+```bash
+git log
+```
+
+```text
+commit a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
+Author: Jordan <jordan@example.com>
+Date:   Fri Jun 13 10:24:11 2026 +0200
+
+    fix: corrige le lien cassé dans le menu de navigation
+```
+
+La longue suite de caractères après `commit` est le hash, l'identifiant unique de ce commit. Git le calcule à partir du contenu, ce qui fait que deux commits différents ne portent jamais le même. Tu n'as presque jamais besoin du hash entier : les sept premiers caractères suffisent à le désigner.
+
+Pour une vue plus compacte, `--oneline` réduit chaque commit à une seule ligne.
+
+```bash
+git log --oneline
+```
+
+```text
+a1b2c3d fix: corrige le lien cassé dans le menu de navigation
+9f8e7d6 feat: ajoute la page de contact
+3c2b1a0 chore: initialise le projet
+```
+
+C'est la forme que tu utiliseras le plus pour balayer l'historique d'un coup d'oeil.
+
+## revenir voir un état
+
+Avant de préparer, tu veux souvent savoir ce que tu as changé exactement. `git diff` montre les modifications de ton répertoire de travail qui ne sont pas encore préparées, ligne par ligne.
+
+```bash
+git diff
+```
+
+Et si tu as bousillé un fichier et que tu veux jeter tes modifications non commitées pour revenir à la dernière version enregistrée ? `git checkout` sur ce fichier le restaure.
+
+```bash
+# attention : ceci efface tes modifs non commitées sur ce fichier
+git checkout -- index.html
+```
+
+Cette commande est utile mais sans filet : les changements jetés ne reviennent pas, puisqu'ils n'avaient jamais été enregistrés. Vérifie bien le nom du fichier avant de valider. C'est précisément pour ça que commiter souvent est rassurant : tout ce qui est dans l'historique se récupère, tout ce qui n'y est pas peut disparaître.
+
+## à toi de jouer
+
+Déroule le cycle complet dans ce terminal. Regarde l'état, prépare un fichier, enregistre, puis relis.
+
+<SimulatedTerminal shell="bash" expectedCommands={["git status", "git add index.html", "git commit -m 'add navigation menu'", "git log --oneline"]} commands={{ "git status": "On branch main\nChanges not staged for commit:\n  modified: index.html\n\nno changes added to commit (use 'git add' to commit)", "git add index.html": "", "git commit -m 'add navigation menu'": "[main a1b2c3d] add navigation menu\n 1 file changed, 10 insertions(+)", "git log --oneline": "a1b2c3d add navigation menu\n3c2b1a0 initial commit" }} />
+
+Remarque qu'un `git add` réussi ne renvoie rien : pas de message, c'est normal. Et que le `commit` répond avec le hash court et un résumé du nombre de fichiers et de lignes touchés.
+
+<Quiz id="q-1" question="Dans le cycle Git, à quoi sert git add ?" options={["À enregistrer définitivement les changements dans l'historique", "À choisir quels changements iront dans le prochain commit, en les plaçant dans la zone de préparation", "À afficher la liste des fichiers modifiés"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle commande donne une vue compacte de l'historique, une ligne par commit ?" options={["git log --oneline", "git status --short", "git commit --list"]} correct={0} />
+
+<Quiz id="q-3" question="Pourquoi vaut-il mieux éviter un gros commit qui mélange plusieurs sujets ?" options={["Parce que Git refuse les commits de plus de dix fichiers", "Parce que le commit devient illisible et qu'on ne peut pas annuler une partie sans le reste", "Parce que le hash devient trop long à lire"]} correct={1} />
+
+## à retenir
+
+- Le cycle quotidien tient en trois zones : répertoire de travail, zone de préparation, dépôt.
+- `git status` montre où tu en es : fichiers modifiés, préparés, non suivis. Tape-la tout le temps.
+- `git add fichier` prépare un fichier précis ; `git add .` prépare tout le dossier courant.
+- `git commit -m "message"` enregistre la zone de préparation dans l'historique.
+- Un bon message est court, à l'impératif, et dit le quoi. Un commit = une seule idée.
+- `git log` lit l'historique ; `git log --oneline` en donne une vue compacte. Les sept premiers caractères du hash suffisent à désigner un commit.
+- `git diff` montre les modifs non préparées ; `git checkout -- fichier` jette les modifs non commitées d'un fichier (sans retour possible).
+
+OK 02-git-bases.mdx écrit

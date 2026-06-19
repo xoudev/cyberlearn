@@ -1,0 +1,237 @@
+---
+refCode: CL-LSN-046-V01
+slug: asm-donnees
+title: "Chaînes et section de données"
+description: "Stockez et affichez du texte en assembleur grâce à la section .data : déclarer des chaînes avec db, et les afficher avec la pseudo-instruction prints."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 380
+prerequisites: ["CL-LSN-037-V01"]
+---
+
+Jusqu'ici, vous avez travaillé avec des nombres. Des additions, des
+comparaisons, des sauts selon le résultat d'un test. C'est l'ordinaire du
+processeur : il sait compter et décider. Mais un programme que quelqu'un va
+vraiment utiliser doit aussi parler. Un message d'accueil, un libellé devant un
+résultat, un mot qui dit si le test est passé ou non. Or le texte ne se range
+pas dans un registre comme un entier. Un registre tient une valeur, un nombre
+unique. Une phrase, elle, c'est plusieurs lettres à la suite, et il faut bien
+les poser quelque part avant de pouvoir les montrer. Ce quelque part, c'est la
+mémoire, et l'endroit où on les déclare s'appelle la section de données.
+
+Dans cette leçon vous allez déclarer des chaînes avec la directive `db`, les
+afficher avec la pseudo-instruction `prints`, mêler du texte et des nombres
+dans une même sortie, et choisir le message selon une condition. Rien de
+compliqué une fois qu'on a vu ce qui se passe réellement en mémoire.
+
+## la section .data
+
+Un programme assembleur n'est pas un bloc unique. Il est découpé en sections,
+et chacune a un rôle bien à elle. La section `.text` contient le code : ce sont
+vos instructions, les `mov`, `add`, `cmp`, `jmp`, tout ce que le processeur
+exécute pas à pas. La section `.data` contient autre chose : les données déjà
+remplies au moment où le programme démarre. Des valeurs connues à l'avance, qui
+n'ont pas besoin d'être calculées. Vos chaînes de texte en font partie.
+
+Pour déclarer une chaîne, on lui donne un nom, on écrit la directive `db`
+(define bytes, soit définir des octets), puis le texte entre guillemets, et un
+zéro à la fin. Le modèle de base tient en une ligne.
+
+<CodePlayground language="asm" starterCode={`global main
+section .data
+    message db "Bonjour le monde", 0
+
+section .text
+main:
+    prints message
+    ret`} />
+
+Regardons ce que fait vraiment la ligne `message db "Bonjour le monde", 0`. Le
+mot `db` demande à réserver des octets en mémoire. Chaque lettre du texte
+occupe un octet : le B, le o, le n, et ainsi de suite jusqu'au dernier
+caractère, puis vient l'octet zéro. Le nom `message` n'est pas une boîte qui
+contiendrait toute la phrase. C'est une étiquette, une adresse, qui pointe vers
+le premier octet de la suite. Quand vous écrivez `prints message`, vous dites
+en réalité : commence à lire là où `message` pointe, et continue.
+
+<Callout type="info">
+Le zéro de la fin n'est pas un caprice de syntaxe. C'est lui qui marque la fin
+de la chaîne. La machine lit les octets un par un et s'arrête quand elle tombe
+sur cet octet zéro, qu'on appelle le caractère nul. Sans ce repère, elle ne
+saurait pas où s'arrêter : elle continuerait à lire la mémoire au-delà de votre
+texte et afficherait n'importe quels octets qui traînent là, jusqu'à tomber par
+hasard sur un zéro. On parle de chaîne terminée par zéro.
+</Callout>
+
+C'est l'idée la plus importante de la leçon, alors prenons le temps. Une chaîne
+en mémoire, ce n'est rien de plus qu'une suite d'octets posés côte à côte. La
+mémoire ne sait pas qu'il s'agit d'un mot, d'une phrase ou d'un bout de code.
+Elle ne voit que des nombres dans des cases. Pour qu'un octet représente la
+lettre A, il y a une convention, un code qui dit que telle valeur correspond à
+telle lettre. Mais même avec cette convention, rien dans la mémoire ne dit où le
+texte se termine. La case suivante contient un octet, comme toutes les autres,
+et le programme n'a aucun moyen de deviner si c'est encore une lettre de votre
+mot ou autre chose. D'où le besoin d'un repère explicite. Le zéro final est ce
+repère, ce panneau stop posé juste après la dernière lettre.
+
+## afficher une chaîne stockée
+
+La chaîne déclarée, l'afficher demande peu : `prints` suivi du nom de la
+variable. Vous pouvez en déclarer autant que vous voulez dans la section
+`.data`, chacune avec son nom et son zéro de fin.
+
+<CodePlayground language="asm" starterCode={`global main
+section .data
+    salutation db "Salut", 0
+    nom db "Cyber Learn", 0
+    fin db "A bientot", 0
+
+section .text
+main:
+    prints salutation
+    prints nom
+    prints fin
+    ret`} />
+
+Chaque `prints` part de l'étiquette qu'on lui donne et lit jusqu'au zéro. Un
+détail mérite attention : c'est l'ordre des instructions dans `.text` qui
+décide de l'ordre d'affichage, pas l'ordre des déclarations dans `.data`. Vous
+pourriez déclarer `fin` en premier dans les données et l'afficher en dernier.
+Les données vivent dans leur coin, le code décide de ce qu'il va chercher et
+quand. Cette séparation n'est pas un hasard de présentation. Le code et les
+données ne jouent pas le même rôle : l'un est exécuté, l'autre est lu. Les
+ranger dans des sections distinctes permet à la machine de les traiter
+différemment, et permet à vous, plus tard, de retrouver vos chaînes au même
+endroit sans fouiller dans le code.
+
+## mêler texte et nombres
+
+La plupart du temps, on ne veut pas afficher un texte seul ou un nombre seul,
+mais un libellé suivi d'un résultat. `prints` s'occupe du texte, `println`
+affiche la valeur d'un registre sur sa propre ligne. Calculons une somme et
+présentons-la proprement.
+
+<CodePlayground language="asm" starterCode={`global main
+section .data
+    libelle db "Resultat du calcul :", 0
+
+section .text
+main:
+    prints libelle
+    mov eax, 12
+    add eax, 30
+    println eax
+    ret`} />
+
+`prints libelle` montre d'abord le texte qui explique ce qui suit. Ensuite le
+calcul fait son travail : `12` arrive dans `eax`, `add eax, 30` y ajoute `30`,
+et `eax` vaut `42`. `println eax` affiche cette valeur. Le lecteur voit une
+ligne qui a du sens au lieu d'un `42` lâché sans contexte. Notez la division du
+travail entre les deux pseudo-instructions : `prints` lit une suite d'octets en
+mémoire jusqu'au zéro, `println` prend le contenu d'un registre et le transforme
+en chiffres affichables. Deux mécaniques différentes pour deux natures de
+données différentes.
+
+## plusieurs messages selon une condition
+
+Là où le texte devient utile, c'est quand le programme choisit quoi afficher.
+On compare deux valeurs avec `cmp`, et selon le résultat on saute vers une
+branche ou vers l'autre, chacune avec son propre message. C'est le schéma d'un
+test qui passe ou qui échoue.
+
+<CodePlayground language="asm" starterCode={`global main
+section .data
+    reussi db "Test reussi", 0
+    echoue db "Test echoue", 0
+
+section .text
+main:
+    mov eax, 18
+    cmp eax, 10
+    jl trop_petit
+    prints reussi
+    jmp termine
+trop_petit:
+    prints echoue
+termine:
+    ret`} />
+
+On charge `18` dans `eax`, on le compare à `10`. Le saut `jl trop_petit` ne part
+que si la valeur est inférieure à `10` ; comme `18` ne l'est pas, on continue
+tout droit et on affiche `reussi`. Le `jmp termine` qui suit enjambe la branche
+d'échec : sans lui, le programme afficherait aussi `echoue` au passage, ce qui
+n'aurait aucun sens. Les deux messages sont déclarés côte à côte dans `.data`,
+mais un seul est lu à l'exécution. Changez la valeur de départ pour un nombre
+plus petit que `10` et c'est l'autre message qui apparaît.
+
+## à vous de jouer
+
+Avant l'exercice final, vérifiez que les points clés sont bien en place.
+
+<Quiz
+  id="q-1"
+  question="Quel est le rôle de la section .data dans un programme assembleur ?"
+  options={[
+    "Contenir le code exécutable, comme les instructions mov et add",
+    "Stocker les données initialisées, comme les chaines de texte",
+    "Définir le point d'entree du programme",
+    "Allouer de la memoire vide pour la pile"
+  ]}
+  correct={1}
+/>
+
+<Quiz
+  id="q-2"
+  question="À quoi sert le 0 placé après une chaîne, comme dans message db 'Salut', 0 ?"
+  options={[
+    "Il indique la couleur du texte a l'affichage",
+    "Il marque la fin de la chaine pour que la machine sache ou s'arreter",
+    "Il compte le nombre de caracteres de la chaine",
+    "Il est ignore et ne sert a rien"
+  ]}
+  correct={1}
+/>
+
+<Quiz
+  id="q-3"
+  question="Quelle pseudo-instruction affiche une chaîne déclarée dans .data ?"
+  options={[
+    "println nomvar",
+    "mov nomvar",
+    "prints nomvar",
+    "cmp nomvar"
+  ]}
+  correct={2}
+/>
+
+À votre tour d'écrire. Déclarez une chaîne `titre` valant `Mon score`,
+affichez-la, puis calculez `25 + 25` et affichez le résultat sur la ligne
+suivante.
+
+<CodePlayground language="asm" starterCode={`global main
+section .data
+    titre db "Mon score", 0
+
+section .text
+main:
+    prints titre
+    mov eax, 25
+    add eax, 25
+    println eax
+    ret`} />
+
+## récapitulatif
+
+- La section `.data` garde les données déjà remplies au démarrage, comme les
+  chaînes ; la section `.text` garde le code exécuté.
+- Une chaîne se déclare avec `nomvar db "texte", 0`. En mémoire c'est une suite
+  d'octets, et le zéro final dit à la machine où elle s'arrête.
+- Le nom d'une chaîne est une étiquette qui pointe vers son premier octet ;
+  `prints nomvar` lit à partir de là jusqu'au zéro.
+- `println registre` affiche une valeur numérique ; on alterne `prints` pour
+  les libellés et `println` pour les résultats calculés.
+- Avec `cmp` et les sauts (`jl`, `jmp`...), on choisit le message à afficher
+  selon une condition.
+
+OK 10-donnees.mdx écrit

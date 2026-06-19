@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Quelle définition correspond le mieux à l'OSINT (Open Source Intelligence) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Recouper des informations publiquement accessibles pour en tirer du renseignement, sans rien contourner"
+        },
+        {
+          "id": "b",
+          "text": "Exploiter une faille pour accéder à un espace protégé par mot de passe"
+        },
+        {
+          "id": "c",
+          "text": "Acheter et fouiller des bases de données issues de fuites"
+        },
+        {
+          "id": "d",
+          "text": "Deviner les identifiants de connexion d'une cible"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'OSINT consiste à collecter et recouper ce qui est déjà accessible à tous (moteurs, registres, réseaux), la compétence étant la méthode et la lecture, pas l'accès. Dès qu'il faut forcer, deviner ou exploiter une faille, on quitte le domaine des sources ouvertes."
+    },
+    {
+      "question": "Laquelle de ces actions relève de la reconnaissance active plutôt que passive ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Lire une page déjà indexée par un moteur de recherche"
+        },
+        {
+          "id": "b",
+          "text": "Vous connecter directement au serveur de la cible et laisser votre IP dans ses journaux"
+        },
+        {
+          "id": "c",
+          "text": "Consulter un registre public d'entreprises"
+        },
+        {
+          "id": "d",
+          "text": "Regarder un instantané ancien dans une archive web"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La reconnaissance passive observe sans toucher la cible (lecture d'index, archives, bases publiques). Dès qu'on interagit avec la cible elle-même, comme se connecter à son serveur, on laisse des traces et l'on bascule en reconnaissance active."
+    },
+    {
+      "question": "Pourquoi vaut-il mieux formuler une question précise avant de lancer une enquête OSINT ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que les outils d'enquête l'exigent en entrée"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la loi impose de déclarer son objectif"
+        },
+        {
+          "id": "c",
+          "text": "Parce que c'est nécessaire pour facturer le temps passé"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'elle délimite ce qui compte, écarte le hors-sujet et indique quand l'enquête est terminée"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Sans question précise, toute information semble pertinente, on collecte tout et on ne conclut rien. Une bonne question dit ce qui compte, signale les pistes hors sujet et indique quand on a obtenu sa réponse."
+    },
+    {
+      "question": "Quel opérateur de recherche restreint les résultats à un seul nom de domaine ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "filetype:"
+        },
+        {
+          "id": "b",
+          "text": "intitle:"
+        },
+        {
+          "id": "c",
+          "text": "inurl:"
+        },
+        {
+          "id": "d",
+          "text": "site:"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "L'opérateur site: limite les résultats à un domaine précis. filetype: cible un type de fichier, intitle: cherche dans le titre de la page, et inurl: dans l'adresse."
+    },
+    {
+      "question": "Pourquoi les dorks (requêtes combinant des opérateurs) parviennent-ils à révéler des fichiers sensibles exposés ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ils tirent parti d'une vulnérabilité du moteur de recherche"
+        },
+        {
+          "id": "b",
+          "text": "Ils contournent l'authentification des sites visés"
+        },
+        {
+          "id": "c",
+          "text": "Ils exploitent des données laissées accessibles par négligence de configuration, indexées normalement par le moteur"
+        },
+        {
+          "id": "d",
+          "text": "Ils déchiffrent les fichiers protégés par mot de passe"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un dork ne casse rien : le moteur indexe simplement ce qui est public. Le problème vient en amont d'une négligence (fichier sensible accessible, listing de répertoire actif, sauvegarde oubliée), le moteur n'étant que le messager."
+    },
+    {
+      "question": "Pourquoi réutiliser le même pseudonyme distinctif sur plusieurs plateformes pose-t-il un problème de vie privée ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'un pseudo réutilisé est plus facile à pirater"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il permet de relier entre eux des profils que l'on croyait cloisonnés"
+        },
+        {
+          "id": "c",
+          "text": "Parce que le RGPD interdit l'usage des pseudonymes"
+        },
+        {
+          "id": "d",
+          "text": "Parce que cela ralentit le chargement des pages"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un pseudo un peu distinctif fonctionne presque comme un identifiant unique : il permet de relier un compte gaming, un profil professionnel et un forum intime que l'on pensait séparés. Le danger est dans le lien, pas dans chaque présence isolée."
+    },
+    {
+      "question": "Du point de vue du RGPD, que dit-on du fait de collecter et d'agréger des informations publiques pour profiler une personne ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "C'est libre dès lors que chaque information est publique"
+        },
+        {
+          "id": "b",
+          "text": "C'est autorisé uniquement pour les personnes mineures"
+        },
+        {
+          "id": "c",
+          "text": "C'est un traitement de données personnelles qui exige une base légale (consentement, obligation, intérêt légitime justifié)"
+        },
+        {
+          "id": "d",
+          "text": "C'est permis tant que l'on ne diffuse pas le résultat"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Public ne veut pas dire collectable : en Europe, agréger des données personnelles est un traitement qui exige une base légale. Compiler un dossier sur quelqu'un par curiosité ou rancune n'entre dans aucune de ces bases."
+    },
+    {
+      "question": "Pourquoi une réponse WHOIS ne donne-t-elle souvent pas le vrai nom du titulaire d'un domaine ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le DNS chiffre ces informations"
+        },
+        {
+          "id": "b",
+          "text": "Les services d'anonymisation et le RGPD masquent fréquemment les données personnelles du titulaire"
+        },
+        {
+          "id": "c",
+          "text": "WHOIS ne stocke jamais aucune donnée d'identité"
+        },
+        {
+          "id": "d",
+          "text": "Seul le registrar a techniquement le droit de lire ces champs"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les coordonnées du titulaire sont souvent remplacées par un service d'anonymisation, et le RGPD caviarde les données personnelles des titulaires européens. Restent fiables les éléments techniques : dates, registrar et serveurs de noms, à traiter comme indices, pas comme preuve d'identité."
+    },
+    {
+      "question": "Quelle source révèle souvent des sous-domaines internes oubliés sans avoir à deviner des noms un par un ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les journaux de transparence des certificats (Certificate Transparency)"
+        },
+        {
+          "id": "b",
+          "text": "Les enregistrements MX du domaine"
+        },
+        {
+          "id": "c",
+          "text": "La date de création figurant dans le WHOIS"
+        },
+        {
+          "id": "d",
+          "text": "Le fait que le port 443 soit ouvert"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Tout nom couvert par un certificat TLS est inscrit pour toujours dans les journaux de transparence, même si le service a été coupé. On y lit donc une liste de noms réellement utilisés, plus rentable que de deviner des sous-domaines à l'aveugle."
+    },
+    {
+      "question": "Consulter un moteur comme Shodan pour voir les services exposés d'une organisation est considéré comme :",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un scan de ports que vous avez vous-même lancé contre la cible"
+        },
+        {
+          "id": "b",
+          "text": "De la reconnaissance active, toujours illégale"
+        },
+        {
+          "id": "c",
+          "text": "De la reconnaissance passive, car vous lisez un index déjà collecté par un tiers"
+        },
+        {
+          "id": "d",
+          "text": "Une intrusion directe sur la cible"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Lire un index comme Shodan est passif : le scan a été fait par un tiers pour tout Internet, et vous ne touchez pas la cible. Lancer soi-même un scan de ports contre une cible non autorisée serait de la reconnaissance active, encadrée par la loi."
+    },
+    {
+      "question": "Parmi ces éléments, lequel constitue un indice involontaire glissé dans une photo publiée sur un réseau social ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le nombre de likes affiché sous la publication"
+        },
+        {
+          "id": "b",
+          "text": "Un commentaire écrit par un autre utilisateur"
+        },
+        {
+          "id": "c",
+          "text": "Le titre que l'auteur a donné à la publication"
+        },
+        {
+          "id": "d",
+          "text": "Une enseigne de commerce ou une plaque d'immatriculation visible en arrière-plan"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le contenu volontaire d'une image n'est qu'une partie de ce qu'elle transmet. Une enseigne, une plaque, un reflet ou un badge en arrière-plan localisent sans que l'auteur l'ait voulu, contrairement aux likes ou aux commentaires qui ne sont pas des indices visuels du décor."
+    },
+    {
+      "question": "Une photo circule avec la légende « inondations d'hier dans la ville X ». Quel est le premier réflexe pour la vérifier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Lancer une recherche d'image inversée pour voir si elle est déjà apparue ailleurs et dans quel contexte"
+        },
+        {
+          "id": "b",
+          "text": "Mesurer la longueur des ombres pour dater la scène"
+        },
+        {
+          "id": "c",
+          "text": "Identifier l'architecture des bâtiments pour la géolocaliser"
+        },
+        {
+          "id": "d",
+          "text": "Analyser le type de prise électrique pour trouver le pays"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le premier réflexe est de chercher d'où vient l'image : la recherche inversée révèle vite une vraie photo recyclée hors contexte, le détournement le plus courant en désinformation. L'analyse des indices visuels et des ombres vient ensuite."
+    },
+    {
+      "question": "En géolocalisation par l'image, que permet principalement l'ombre projetée par un objet vertical ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Retrouver le photographe original de l'image"
+        },
+        {
+          "id": "b",
+          "text": "Déterminer le type de prise électrique du pays"
+        },
+        {
+          "id": "c",
+          "text": "Estimer une orientation et une heure approximatives (chronolocalisation)"
+        },
+        {
+          "id": "d",
+          "text": "Identifier le pays grâce à la couleur de l'ombre"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La direction de l'ombre par rapport au nord indique l'orientation du soleil donc une heure approximative, et sa longueur dépend de la hauteur du soleil donc de l'heure et de la saison. Une ombre incohérente avec l'heure annoncée signale un mensonge."
+    },
+    {
+      "question": "Une photo prise au smartphone est postée sur un forum public. Quelle métadonnée représente le risque le plus direct pour la vie privée ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le modèle de l'appareil photo"
+        },
+        {
+          "id": "b",
+          "text": "Les coordonnées GPS du lieu de prise inscrites dans les EXIF"
+        },
+        {
+          "id": "c",
+          "text": "Les réglages optiques de l'objectif"
+        },
+        {
+          "id": "d",
+          "text": "L'orientation de l'image"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Quand la géolocalisation est active, la latitude et la longitude exactes du lieu de prise sont inscrites dans les EXIF, à quelques mètres près. Une image anodine peut ainsi révéler un domicile sans qu'aucun texte ne l'indique : c'est la fuite la plus dangereuse car involontaire et précise."
+    },
+    {
+      "question": "Avant de publier une photo, quelle suite d'actions avec exiftool est correcte pour éviter une fuite de métadonnées ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Effacer sans vérifier, la plateforme finira le travail"
+        },
+        {
+          "id": "b",
+          "text": "Recadrer l'image, ce qui supprime automatiquement les EXIF"
+        },
+        {
+          "id": "c",
+          "text": "Renommer le fichier pour masquer l'auteur"
+        },
+        {
+          "id": "d",
+          "text": "Lire les métadonnées, les effacer avec exiftool -all=, puis relire pour confirmer"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La bonne habitude tient en trois gestes : lire ce qui s'y trouve, effacer avec exiftool -all=, puis relire pour vérifier que les champs sensibles sont vides. Il ne faut jamais compter sur la plateforme, dont le comportement varie et change avec le temps."
+    },
+    {
+      "question": "Qu'est-ce que le bourrage d'identifiants (credential stuffing) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Rejouer automatiquement des couples e-mail + mot de passe issus d'une fuite sur d'autres sites"
+        },
+        {
+          "id": "b",
+          "text": "Deviner un mot de passe en testant des milliers de combinaisons au hasard"
+        },
+        {
+          "id": "c",
+          "text": "Inonder un serveur de connexions pour le faire tomber"
+        },
+        {
+          "id": "d",
+          "text": "Intercepter un mot de passe pendant sa saisie au clavier"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le credential stuffing rejoue des couples déjà valides ailleurs : l'attaquant ne devine pas le mot de passe, il le connaît et teste s'il ouvre d'autres portes. Il ne fonctionne que si la victime a réutilisé le même mot de passe, d'où l'intérêt d'un mot de passe unique par service plus la 2FA."
+    },
+    {
+      "question": "Que révèle le plus souvent une offre d'emploi technique détaillée sur l'entreprise qui recrute ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les mots de passe de ses serveurs internes"
+        },
+        {
+          "id": "b",
+          "text": "Le contenu de ses bases de données"
+        },
+        {
+          "id": "c",
+          "text": "Le salaire de l'ensemble de ses employés"
+        },
+        {
+          "id": "d",
+          "text": "Sa pile technologique, et parfois les versions des outils internes utilisés"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Pour attirer le bon candidat, une annonce énumère des compétences qui sont presque toujours des produits et technologies nommés (orchestration, cloud, ERP, outil de supervision). Cela décrit l'infrastructure interne et, via les versions, oriente vers les failles publiques connues."
+    },
+    {
+      "question": "Pourquoi un secret (clé d'API, mot de passe) commité puis corrigé dans un dépôt de code public reste-t-il un risque ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il reste consultable dans l'historique des commits tant que celui-ci n'est pas réécrit"
+        },
+        {
+          "id": "b",
+          "text": "Il devient automatiquement chiffré une fois le fichier corrigé"
+        },
+        {
+          "id": "c",
+          "text": "Il disparaît dès qu'on édite le fichier visible"
+        },
+        {
+          "id": "d",
+          "text": "Il n'a jamais constitué un vrai risque de sécurité"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Corriger le fichier visible ne suffit pas : le commit reste dans l'historique, qui n'oublie rien tant qu'il n'est pas réécrit. Un secret poussé une fois dans un dépôt public n'est plus un secret."
+    },
+    {
+      "question": "Que signifie réellement le déréférencement d'un contenu auprès d'un moteur de recherche ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le contenu est supprimé du site qui l'héberge"
+        },
+        {
+          "id": "b",
+          "text": "Le lien est retiré des résultats du moteur, mais la page source reste en ligne là où elle est hébergée"
+        },
+        {
+          "id": "c",
+          "text": "Le contenu est chiffré pour le rendre illisible"
+        },
+        {
+          "id": "d",
+          "text": "Tous les moteurs cessent simultanément et définitivement de l'indexer"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le déréférencement rend une page plus difficile à trouver par son nom, mais ne supprime pas la page d'origine, qui reste hébergée au même endroit. C'est un compromis acceptable quand l'éditeur ne répond pas, pas une suppression."
+    },
+    {
+      "question": "Pour un projet d'enquête OSINT responsable, quelle cible est acceptable ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un collègue, afin de tester ses paramètres de confidentialité"
+        },
+        {
+          "id": "b",
+          "text": "Un voisin, tant qu'on ne publie aucun résultat"
+        },
+        {
+          "id": "c",
+          "text": "Vous-même, en auto-évaluation de votre exposition publique"
+        },
+        {
+          "id": "d",
+          "text": "Un inconnu croisé en ligne, par simple curiosité"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "On n'enquête que sur une cible éthique : soi-même de préférence, ou une cible d'entraînement consentante ou fictive. Enquêter sur un particulier réel sans son consentement ni base légale n'est pas un exercice mais du harcèlement, puni par la loi."
+    }
+  ]
+}

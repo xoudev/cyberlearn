@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Dans le cadre de la GRC, à quelle question répond le pilier gouvernance ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Qui décide, avec quelle autorité, et selon quelles règles internes"
+        },
+        {
+          "id": "b",
+          "text": "Quelles lois et normes extérieures s'imposent à nous"
+        },
+        {
+          "id": "c",
+          "text": "Quel actif protéger en priorité et à quel coût"
+        },
+        {
+          "id": "d",
+          "text": "Comment chiffrer correctement les bases de données"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La gouvernance définit les rôles, les responsabilités et les règles internes : elle dit qui tranche une décision de sécurité et avec quelle autorité. Le risque traite des priorités, la conformité des règles extérieures."
+    },
+    {
+      "question": "Une entreprise décide de ne pas chiffrer une donnée pour ne pas ralentir son application. Comment qualifier ce choix ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un simple réglage technique sans portée réelle"
+        },
+        {
+          "id": "b",
+          "text": "Une obligation directement imposée par le RGPD"
+        },
+        {
+          "id": "c",
+          "text": "Une décision de risque qui engage la responsabilité de l'organisation"
+        },
+        {
+          "id": "d",
+          "text": "Une tâche qui relève uniquement du prestataire externe"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Accepter un risque n'est pas un geste technique : c'est une décision qui engage l'argent, la réputation et la responsabilité juridique de l'entreprise, donc elle relève de la direction."
+    },
+    {
+      "question": "Un serveur présente une vulnérabilité connue, mais il est vide, isolé et ne contient rien d'utile. Pourquoi le risque associé reste-t-il faible ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'une vulnérabilité sans menace correspondante n'existe jamais"
+        },
+        {
+          "id": "b",
+          "text": "Parce que l'impact est quasi nul, donc le produit menace x vulnérabilité x impact reste bas"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'un serveur isolé ne peut pas avoir de vulnérabilité"
+        },
+        {
+          "id": "d",
+          "text": "Parce que la probabilité d'exploitation tombe automatiquement à zéro"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un risque naît de la rencontre menace, vulnérabilité et impact. Si l'un des facteurs tend vers zéro, ici l'impact, le risque global reste faible, même si la vulnérabilité existe bien."
+    },
+    {
+      "question": "Que désigne le risque résiduel après le traitement d'un risque ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le risque total avant toute mesure de protection"
+        },
+        {
+          "id": "b",
+          "text": "La part de risque qui subsiste une fois les mesures appliquées"
+        },
+        {
+          "id": "c",
+          "text": "Un risque qu'on a volontairement ignoré sans l'analyser"
+        },
+        {
+          "id": "d",
+          "text": "Le coût annuel attendu d'un incident chiffré en euros"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le risque résiduel est ce qui reste après traitement. C'est normal et attendu : on vérifie ensuite qu'il passe sous l'appétence au risque définie par l'organisation."
+    },
+    {
+      "question": "Une organisation souscrit une cyberassurance qui rembourse une partie des frais après une attaque. Quel traitement du risque met-elle en oeuvre ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Éviter"
+        },
+        {
+          "id": "b",
+          "text": "Réduire"
+        },
+        {
+          "id": "c",
+          "text": "Accepter"
+        },
+        {
+          "id": "d",
+          "text": "Transférer"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Transférer, c'est faire porter une partie du risque par un tiers, comme une assurance. Attention : le coût financier est transféré, pas la responsabilité légale ni l'atteinte à la réputation."
+    },
+    {
+      "question": "Dans la hiérarchie documentaire de la sécurité, quelle est la bonne distinction entre une politique et une procédure ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La politique donne le mode d'emploi pas à pas, la procédure fixe l'intention"
+        },
+        {
+          "id": "b",
+          "text": "La politique fixe l'intention et le pourquoi, la procédure donne le comment pas à pas"
+        },
+        {
+          "id": "c",
+          "text": "Les deux disent la même chose à deux endroits différents"
+        },
+        {
+          "id": "d",
+          "text": "La procédure est signée par la direction, la politique par les utilisateurs"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La politique est un document de haut niveau qui pose l'intention et le pourquoi ; la procédure est le mode d'emploi détaillé, étape par étape, pour exécuter une tâche conforme."
+    },
+    {
+      "question": "Quel niveau documentaire traduit l'intention en chiffres et en seuils, par exemple une longueur minimale de douze caractères et la double authentification obligatoire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La charte"
+        },
+        {
+          "id": "b",
+          "text": "La politique"
+        },
+        {
+          "id": "c",
+          "text": "Le standard"
+        },
+        {
+          "id": "d",
+          "text": "La procédure"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le standard dit la règle précise : il traduit l'intention de la politique en seuils chiffrés et contraignants, comme la longueur minimale d'un mot de passe."
+    },
+    {
+      "question": "Quelle est la différence correcte entre une norme et une certification ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une norme atteste qu'on respecte une certification"
+        },
+        {
+          "id": "b",
+          "text": "Les deux mots désignent exactement la même chose"
+        },
+        {
+          "id": "c",
+          "text": "Une certification pose des exigences, une norme les vérifie"
+        },
+        {
+          "id": "d",
+          "text": "Une norme pose des exigences, une certification atteste qu'on les respecte à un instant donné"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une norme comme ISO 27001 décrit des exigences à respecter ; la certification est l'attestation, par un tiers indépendant et à un instant donné, que ces exigences sont respectées."
+    },
+    {
+      "question": "Quelles sont les cinq fonctions du NIST Cybersecurity Framework ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Identifier, protéger, détecter, répondre, récupérer"
+        },
+        {
+          "id": "b",
+          "text": "Planifier, exécuter, vérifier, agir, certifier"
+        },
+        {
+          "id": "c",
+          "text": "Inventorier, chiffrer, sauvegarder, auditer, signaler"
+        },
+        {
+          "id": "d",
+          "text": "Prévenir, bloquer, alerter, isoler, reconstruire"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le NIST CSF s'organise autour de cinq fonctions couvrant tout le cycle de vie d'un incident : identifier, protéger, détecter, répondre, récupérer."
+    },
+    {
+      "question": "Une entreprise est totalement conforme à un référentiel de sécurité. Que peut-on en conclure sur sa sécurité réelle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle est désormais à l'abri de toute attaque"
+        },
+        {
+          "id": "b",
+          "text": "Rien de certain : on peut être conforme et rester vulnérable"
+        },
+        {
+          "id": "c",
+          "text": "Elle n'a plus besoin de mesures techniques"
+        },
+        {
+          "id": "d",
+          "text": "La conformité remplace définitivement la sécurité"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Être conforme signifie respecter les règles écrites à un instant donné ; être sécurisé signifie résister réellement aux attaques. On peut cocher toutes les cases et rester vulnérable."
+    },
+    {
+      "question": "Une boutique en ligne traite l'adresse d'un client uniquement pour lui livrer sa commande. Quelle base légale du RGPD convient le mieux ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le consentement, car il faut toujours demander l'accord"
+        },
+        {
+          "id": "b",
+          "text": "L'intérêt vital, car la livraison est urgente"
+        },
+        {
+          "id": "c",
+          "text": "Le contrat, car le traitement est nécessaire pour exécuter la vente"
+        },
+        {
+          "id": "d",
+          "text": "Aucune base n'est nécessaire pour une livraison"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le traitement est nécessaire à l'exécution du contrat de vente : la base est donc le contrat. Demander le consentement serait même trompeur, le client ne pouvant refuser sans perdre le service."
+    },
+    {
+      "question": "Sous quel délai un responsable de traitement doit-il notifier une violation de données à l'autorité de contrôle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Immédiatement, dans l'heure qui suit"
+        },
+        {
+          "id": "b",
+          "text": "Dans les 72 heures après en avoir pris connaissance"
+        },
+        {
+          "id": "c",
+          "text": "Dans un délai d'un mois"
+        },
+        {
+          "id": "d",
+          "text": "Seulement à la fin de l'enquête interne"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le RGPD impose une notification à l'autorité de contrôle dans les 72 heures à compter de la découverte de la violation, sauf risque négligeable pour les personnes."
+    },
+    {
+      "question": "Pourquoi l'inventaire des actifs est-il le point de départ de toute démarche de protection ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'on ne peut pas protéger un actif dont on ignore l'existence"
+        },
+        {
+          "id": "b",
+          "text": "Parce que c'est une obligation légale dans tous les pays"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'il remplace le chiffrement des données"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il sert uniquement à calculer le budget annuel"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Protéger ce qu'on ignore posséder est impossible : un serveur oublié ne reçoit ni correctif ni surveillance. L'inventaire est la carte du territoire qui rend la protection possible."
+    },
+    {
+      "question": "Quel est le principal risque à classer toutes les données comme confidentielles par prudence ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Cela rend techniquement impossible le chiffrement des fichiers"
+        },
+        {
+          "id": "b",
+          "text": "Cela supprime le besoin d'un propriétaire d'actif"
+        },
+        {
+          "id": "c",
+          "text": "Cela paralyse les usages légitimes et banalise l'étiquette, qui finit ignorée"
+        },
+        {
+          "id": "d",
+          "text": "Cela n'a aucun inconvénient, c'est toujours plus sûr"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Sur-classer paralyse les usages légitimes et noie le vrai secret dans le bruit. Quand tout est confidentiel, plus rien ne l'est : on vise le juste niveau, celui du dommage réel en cas de fuite."
+    },
+    {
+      "question": "Une PME sauvegarde sa base toutes les 6 heures et vise un retour en service en moins de 2 heures. Que valent son RPO et son RTO ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "RPO de 2 heures, RTO de 6 heures"
+        },
+        {
+          "id": "b",
+          "text": "RPO et RTO valent tous deux 6 heures"
+        },
+        {
+          "id": "c",
+          "text": "RPO de 6 heures, RTO de 2 heures"
+        },
+        {
+          "id": "d",
+          "text": "Le RPO et le RTO sont indépendants de ces chiffres"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le RPO (données récentes qu'on accepte de perdre) suit la fréquence de sauvegarde, soit 6 heures ; le RTO (durée d'arrêt tolérée) est la cible de retour en service, soit 2 heures."
+    },
+    {
+      "question": "Pourquoi une sauvegarde hors ligne ou immuable est-elle décisive face à un rançongiciel ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle se restaure toujours plus vite qu'une sauvegarde en ligne"
+        },
+        {
+          "id": "b",
+          "text": "Le rançongiciel ne peut ni la chiffrer ni l'effacer car elle est hors de sa portée"
+        },
+        {
+          "id": "c",
+          "text": "Elle occupe nettement moins d'espace de stockage"
+        },
+        {
+          "id": "d",
+          "text": "Elle chiffre automatiquement les données pour les protéger"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un rançongiciel moderne cherche aussi à chiffrer ou supprimer les sauvegardes accessibles depuis le réseau. Une copie débranchée ou immuable reste hors d'atteinte et permet de restaurer sans payer."
+    },
+    {
+      "question": "Pourquoi une compromission par la chaîne d'approvisionnement (fournisseur ou mise à jour piégée) est-elle particulièrement difficile à détecter ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elle vise uniquement les pare-feux mal configurés"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle nécessite toujours un accès physique aux locaux"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'elle ne touche jamais les grandes organisations"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'elle exploite un canal de confiance déjà autorisé, comme un accès prestataire ou une mise à jour signée"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Elle exploite la confiance plutôt qu'une faille technique : le code malveillant arrive par un canal que vous avez vous-même autorisé, donc vos défenses ne se déclenchent pas."
+    },
+    {
+      "question": "Pourquoi sanctionner un employé qui a cliqué sur un e-mail d'hameçonnage est-il généralement contre-productif ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que la sanction coûte trop cher à l'entreprise"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la peur pousse les gens à cacher leurs erreurs, donc à signaler trop tard"
+        },
+        {
+          "id": "c",
+          "text": "Parce que les employés ne lisent de toute façon jamais leurs courriels"
+        },
+        {
+          "id": "d",
+          "text": "Parce que la loi interdit toute sanction liée à la sécurité"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une culture qui punit obtient le silence : l'employé cache l'incident par crainte du sermon, et un compte compromis signalé tard a le temps de se propager. La vitesse de signalement change tout."
+    },
+    {
+      "question": "Dans une simulation d'hameçonnage, quel indicateur reflète le mieux une culture de sécurité qui progresse ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le taux de signalement des courriels suspects"
+        },
+        {
+          "id": "b",
+          "text": "Le nombre de courriels de test envoyés"
+        },
+        {
+          "id": "c",
+          "text": "Le coût total de la campagne"
+        },
+        {
+          "id": "d",
+          "text": "Le nombre de dossiers de formation créés"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Au-delà du taux de clic, c'est le taux de signalement qui compte : il indique que les gens reconnaissent activement les faux courriels et deviennent des capteurs d'alerte plutôt que de simples cibles."
+    },
+    {
+      "question": "Pour un auditeur, comment est considéré un contrôle qui a bien été réalisé mais dont aucune trace n'a été conservée ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il compte double car il a été fait avec soin"
+        },
+        {
+          "id": "b",
+          "text": "Il est valable s'il est juré sur l'honneur"
+        },
+        {
+          "id": "c",
+          "text": "Il est considéré comme inexistant, faute de preuve"
+        },
+        {
+          "id": "d",
+          "text": "Il doit être refait immédiatement devant l'auditeur"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Pour un auditeur, un contrôle sans trace n'existe pas : l'audit porte sur le vérifiable, pas sur les intentions. D'où l'habitude de documenter au fil de l'eau, et non la veille de l'audit."
+    }
+  ]
+}
