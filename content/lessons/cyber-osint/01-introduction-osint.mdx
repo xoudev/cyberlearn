@@ -1,0 +1,110 @@
+---
+refCode: CL-LSN-145-V01
+slug: osint-introduction
+title: "OSINT : le renseignement en sources ouvertes"
+description: "Comprenez ce qu'est l'OSINT, tirer du renseignement d'informations publiques, ses usages légitimes en enquête, sécurité et défense, et surtout le cadre éthique et légal qui sépare l'investigation du harcèlement."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 420
+prerequisites: ["CL-LSN-084-V01"]
+---
+
+La plupart des informations qui comptent sur une personne, une entreprise ou un système ne sont pas cachées derrière un mur. Elles sont déjà publiques. Un profil professionnel, un nom de domaine enregistré, une photo postée un soir d'été, une offre d'emploi un peu trop détaillée. Prises une par une, ces miettes ne disent presque rien. Le travail de l'OSINT, c'est de les retrouver et de les mettre bout à bout jusqu'à ce qu'elles racontent quelque chose.
+
+OSINT veut dire Open Source Intelligence, le renseignement en sources ouvertes. La partie qui compte vraiment, ce n'est pas le mot renseignement, c'est sources ouvertes. On ne parle pas de pirater quoi que ce soit. On parle d'utiliser ce qui est accessible à n'importe qui : moteurs de recherche, réseaux sociaux, registres publics, archives, données d'entreprise, métadonnées de fichiers. La compétence n'est pas dans l'accès, elle est dans la méthode et dans la lecture.
+
+Le modèle mental tient en une phrase. Tout le monde laisse des traces ouvertes ; l'OSINT les recoupe. Vous laissez des traces, votre entreprise en laisse, vos adversaires aussi. La question n'est jamais de savoir si la trace existe, mais qui prend le temps de la rassembler.
+
+## de la donnée éparse au renseignement
+
+Une donnée isolée n'a pas de valeur. Un prénom, ça ne mène nulle part. Une ville non plus. Mais un prénom, plus un employeur trouvé sur un réseau professionnel, plus une photo géolocalisable, plus un pseudo réutilisé sur un forum, et soudain vous avez relié des points qui n'étaient reliés nulle part. C'est ce passage de la donnée brute au renseignement qui définit le métier. Le renseignement, c'est de l'information à laquelle on a donné un contexte et une direction.
+
+Le recoupement fonctionne par confirmation et par contradiction. Deux sources qui disent la même chose renforcent une hypothèse. Deux sources qui se contredisent vous obligent à creuser, et c'est souvent là que se cache l'erreur ou le mensonge. Un bon enquêteur ne croit pas la première source venue. Il cherche la deuxième, puis la troisième, et il garde trace d'où vient chaque élément.
+
+<Diagram caption="Recouper des sources ouvertes">
+flowchart TD
+    A[Donnee isolee: un pseudo] --> B[Reseau social: meme pseudo]
+    A --> C[Forum public: meme pseudo]
+    B --> D[Recoupement]
+    C --> D
+    D --> E[Hypothese: meme personne]
+    E --> F[Verification par une source independante]
+    F --> G[Renseignement confirme ou rejete]
+</Diagram>
+
+<Callout type="info">
+Une information non vérifiée n'est pas un renseignement, c'est une rumeur. Tant qu'une hypothèse ne tient que sur une seule source, traitez-la comme fragile. Le travail sérieux consiste à confirmer, pas à collectionner.
+</Callout>
+
+## les usages légitimes
+
+L'OSINT n'est pas une activité de l'ombre réservée à des espions. C'est un outil de tous les jours pour beaucoup de métiers honnêtes, à condition de rester dans son cadre.
+
+| Usage | Exemple concret |
+| --- | --- |
+| Enquête et vérification | Un journaliste recoupe la date d'une photo avec la météo et l'ombre pour prouver qu'elle a été prise un autre jour que celui annoncé. |
+| Reconnaissance en pentest autorisé | Avec un mandat écrit, un testeur cartographie les sous-domaines et les adresses mail d'une cible avant de chercher une faille. |
+| Diligence avant un partenariat | Une entreprise vérifie l'existence réelle, les dirigeants et les litiges connus d'un fournisseur avant de signer. |
+| Veille et journalisme | Vérifier l'origine d'une vidéo virale avant de la relayer, plutôt que de propager une fausse information. |
+| Défense de sa propre exposition | Vous faites de l'OSINT sur vous-même pour voir ce qu'un inconnu peut trouver, et vous corrigez ce qui traîne. |
+
+Ce dernier point mérite qu'on s'y arrête. La meilleure façon de comprendre l'OSINT offensif, c'est de le retourner contre soi. Cherchez votre nom, votre pseudo, votre adresse mail. Regardez ce que vos photos publiques révèlent de vos habitudes. C'est souvent un réveil utile, et c'est un usage entièrement sain de ces techniques.
+
+## légal n'est pas éthique
+
+Voici le point le plus important de cette leçon, et celui qu'on oublie le plus vite quand on découvre à quel point c'est facile.
+
+Le fait qu'une information soit publique ne la rend pas libre d'usage. Une photo postée sur un profil ouvert reste la vie d'une personne. Un nom dans un registre public reste rattaché à un humain. Pouvoir trouver une information ne donne aucun droit d'en faire n'importe quoi. La loi pose un plancher, pas un plafond. Beaucoup de choses parfaitement légales à collecter deviennent un problème dès qu'on les agrège, qu'on les conserve sans raison ou qu'on les utilise pour nuire.
+
+Le RGPD s'applique dès que vous traitez des données personnelles, y compris des données publiques. Avoir le droit de voir une donnée ne signifie pas avoir le droit de la stocker, de la croiser et de la diffuser. La finalité compte, la proportionnalité compte, la conservation compte.
+
+<Callout type="danger">
+La ligne rouge est simple. On ne traque pas une personne, on ne la harcèle pas, on ne reconstitue pas ses déplacements pour l'intimider, on ne publie pas son adresse. Recouper les sources ouvertes pour exposer, suivre ou faire pression sur quelqu'un porte un nom, et ce n'est pas de l'OSINT, c'est du harcèlement ou du stalking. Selon les pays cela tombe sous le harcèlement, l'atteinte à la vie privée ou la collecte illicite de données. Avant chaque recherche, posez-vous une question : si la personne savait ce que je fais, est-ce que je pourrais l'assumer.
+</Callout>
+
+Une autre garde-fou pratique : agissez toujours dans un cadre. En pentest, ce cadre est un mandat signé qui dit ce que vous avez le droit de faire et sur quel périmètre. Dans une enquête, c'est une finalité claire et notée. Sans cadre, vous n'avez pas d'autorisation, vous avez juste une capacité technique, et ce n'est pas la même chose.
+
+## actif et passif
+
+On distingue deux postures, et la différence n'est pas un détail.
+
+La reconnaissance passive consiste à observer sans jamais toucher la cible. Vous lisez ce que les moteurs ont déjà indexé, vous consultez des archives, vous regardez des bases publiques. La cible ne voit rien, parce que vous ne lui parlez jamais. C'est l'OSINT au sens strict.
+
+La reconnaissance active commence dès que vous interagissez avec la cible elle-même : visiter directement son serveur, lui envoyer un message, vous connecter à un de ses services, cliquer sur son site en y laissant votre adresse IP dans ses journaux. Là, vous laissez des traces, et vous pouvez déclencher une alerte. Ce n'est plus de la pure observation, et selon le contexte cela peut sortir du cadre légal sans autorisation.
+
+Garder cette frontière en tête change votre manière de travailler. La discrétion et l'hygiène de votre propre poste deviennent un sujet à part entière, qu'on traitera dans la leçon dédiée à l'hygiène de l'enquêteur.
+
+## ce que l'OSINT n'est pas
+
+Parce que le mot renseignement impressionne, mettons les choses au clair.
+
+L'OSINT n'est pas du piratage. Si vous devez contourner un mot de passe, exploiter une faille, deviner des identifiants ou accéder à un espace qui ne vous est pas ouvert, vous avez quitté le domaine des sources ouvertes. Une donnée accessible parce qu'un serveur est mal configuré reste une donnée protégée par l'intention de son propriétaire : y accéder volontairement peut constituer une intrusion, même sans casser de mot de passe.
+
+L'OSINT n'est pas non plus de l'achat de bases volées ni de l'usage de fuites. Une fuite de données n'est pas une source ouverte, c'est le produit d'un délit, et la manipuler vous expose autant que ceux qui l'ont créée.
+
+<Callout type="warning">
+Le test mental est net. Si l'information est mise à disposition de n'importe qui, sans contournement, vous êtes dans l'ouvert. Dès qu'il faut forcer, deviner, contourner ou exploiter une faille pour l'obtenir, vous n'êtes plus dans l'OSINT, et vous êtes probablement dans l'illégalité.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Qu'est-ce qui définit le mieux l'OSINT ?" options={["Pirater des comptes pour extraire des donnees cachees", "Recouper des informations publiquement accessibles pour en tirer du renseignement", "Acheter des bases de donnees issues de fuites", "Deviner les mots de passe d'une cible"]} correct={1} />
+
+<Quiz id="q-2" question="Une information est publique. Que pouvez-vous en conclure sur le plan ethique et legal ?" options={["Que vous pouvez en faire ce que vous voulez", "Que le RGPD ne s'applique jamais aux donnees publiques", "Que la legalite de la collecte ne garantit pas un usage ethique, et que traquer ou harceler reste interdit", "Qu'elle n'appartient plus a personne"]} correct={2} />
+
+<Quiz id="q-3" question="Quelle action releve de la reconnaissance active plutot que passive ?" options={["Lire une page deja indexee par un moteur de recherche", "Consulter un registre public d'entreprises", "Vous connecter directement au serveur de la cible et laisser votre IP dans ses journaux", "Regarder une archive web ancienne"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- OSINT veut dire renseignement en sources ouvertes : on utilise ce qui est accessible à tous, on ne contourne rien.
+- Une donnée isolée ne vaut rien ; le renseignement naît du recoupement et de la vérification par des sources indépendantes.
+- Usages légitimes : enquête et vérification, reconnaissance en pentest autorisé par un mandat, diligence avant partenariat, veille journalistique, et défense de sa propre exposition.
+- Légal n'est pas éthique. Une information publique reste sensible. Le RGPD s'applique aux données personnelles, même publiques.
+- La ligne rouge : pas de traque, pas de harcèlement, pas de pression sur une personne. Toujours agir dans un cadre et une finalité clairs.
+- Passif veut dire observer sans toucher la cible ; actif veut dire interagir avec elle, ce qui laisse des traces et peut alerter ou sortir du cadre légal.
+- Dès qu'il faut forcer, deviner, contourner ou exploiter une faille, ce n'est plus de l'OSINT.
+
+OK 01 écrit

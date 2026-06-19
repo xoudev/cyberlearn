@@ -1,0 +1,125 @@
+---
+refCode: CL-LSN-177-V01
+slug: cloud-infrastructure-as-code
+title: "L'infrastructure as code"
+description: "Décrire son infrastructure dans des fichiers versionnés plutôt que de cliquer : l'approche déclarative, l'idempotence, le plan avant l'application, et pourquoi cela rend l'infrastructure reproductible et revue."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 520
+prerequisites: ["CL-LSN-173-V01"]
+---
+
+La première fois que tu montes un serveur dans une console cloud, tout se passe bien. Tu cliques sur « créer une instance », tu choisis une taille, tu coches une case pour le réseau, tu ajoutes une règle de pare-feu, et quelques minutes plus tard ta machine répond. C'est rapide, c'est visuel, ça marche.
+
+Le problème arrive après. Trois semaines plus tard, on te demande le même serveur dans un autre environnement, ou un collègue doit reproduire ta configuration, ou il faut tout remonter après un incident. Et là, personne ne se souvient exactement de ce qui a été coché. Quelle taille déjà ? Quelle règle de pare-feu ? Le sous-réseau, c'était lequel ? Le clic manuel ne laisse aucune trace réutilisable. Chaque création est un acte ponctuel qui s'évapore dès qu'il est terminé.
+
+L'infrastructure as code répond exactement à ça. Au lieu de cliquer, tu écris dans des fichiers ce que tu veux : tel serveur, tel réseau, telle règle. Ces fichiers sont du texte, donc tu les versionnes dans Git, tu les relis, tu les rejoues. L'infrastructure devient un artefact comme le reste de ton code, avec son historique et ses revues.
+
+## déclarer l'état voulu
+
+Il y a deux façons de dire à un ordinateur de construire quelque chose. La façon impérative liste les étapes : crée le réseau, puis crée le serveur, attache-le au réseau, ouvre le port 22. Tu décris le chemin. La façon déclarative décrit la destination : je veux un réseau, un serveur attaché à ce réseau, avec le port 22 ouvert. Tu ne dis pas comment, tu dis quoi.
+
+L'IaC moderne est déclarative. Tu écris l'état final souhaité, et l'outil se débrouille pour calculer les actions nécessaires. Voici à quoi ça ressemble avec Terraform, un des outils les plus répandus :
+
+```hcl
+resource "aws_instance" "web" {
+  ami           = "ami-0abcdef1234567890"
+  instance_type = "t3.micro"
+
+  tags = {
+    Name = "serveur-web"
+  }
+}
+
+resource "aws_security_group" "web_sg" {
+  name = "autorise-ssh"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
+}
+```
+
+Ce fichier ne dit jamais « clique ici puis là ». Il décrit deux ressources et leurs propriétés. C'est à l'outil de comparer cette description à la réalité et d'agir.
+
+<Callout type="info">
+La différence déclaratif/impératif change ta façon de penser. Tu arrêtes de te demander quelles étapes exécuter et tu te demandes seulement à quoi doit ressembler le résultat. L'outil porte la charge de trouver le chemin, et ce chemin reste correct même si l'état de départ change.
+</Callout>
+
+## l'idempotence
+
+Voilà une propriété qui surprend au début. Si tu appliques deux fois la même description, la seconde fois ne fait rien. C'est l'idempotence : le résultat ne dépend pas du nombre de fois où tu lances l'opération, seulement de la description.
+
+Pourquoi c'est utile ? Parce que tu n'as plus à te demander « est-ce que j'ai déjà créé ce serveur ou pas ? ». Tu appliques ta description, et l'outil ne touche qu'à l'écart entre ce que tu veux et ce qui existe. Rien à changer ? Rien ne bouge. Une seule différence ? Il ne corrige que celle-là.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Le cycle Terraform" commands={{"terraform init": "Terraform has been successfully initialized!", "terraform plan": "Plan: 2 to add, 0 to change, 0 to destroy.", "terraform apply": "Apply complete! Resources: 2 added, 0 changed, 0 destroyed.", "terraform plan (rejoue)": "No changes. Your infrastructure matches the configuration."}} />
+
+Regarde le dernier appel. Après l'application, on relance le plan et l'outil répond que rien ne change : l'infrastructure correspond déjà à la configuration. C'est ça, l'idempotence en action. Le même fichier appliqué deux fois ne recrée pas deux serveurs, il en garde un seul.
+
+## voir avant d'appliquer
+
+Le mot important dans cette séquence, c'est `plan`. Avant de toucher à quoi que ce soit, l'outil te montre exactement ce qu'il compte faire : ce qu'il va créer, ce qu'il va modifier, ce qu'il va détruire. `Plan: 2 to add, 0 to change, 0 to destroy.` te dit en une ligne qu'il ajoutera deux ressources et n'en supprimera aucune.
+
+Ça paraît anodin, mais c'est ce qui rend l'IaC supportable au quotidien. Dans une console, tu cliques et l'action part. Avec un plan, tu as un aperçu avant l'engagement. Tu peux relire, repérer une erreur, demander un avis. Le jour où tu vois `3 to destroy` sur un environnement de production que tu pensais juste mettre à jour, ce plan vient peut-être de t'éviter une catastrophe.
+
+Le plan transforme un geste irréversible en une décision réfléchie. Tu regardes, tu valides, ensuite seulement tu appliques.
+
+## les bénéfices
+
+Une fois que ton infrastructure tient dans des fichiers, plusieurs choses deviennent possibles d'un coup.
+
+Reproductible : le même code recrée le même environnement. Tu veux une copie de production pour tester ? Tu rejoues les fichiers dans un autre compte et tu obtiens la même chose, aux identifiants près. Plus de « ça marchait sur l'autre serveur, je ne sais pas pourquoi ».
+
+Versionné : ces fichiers vivent dans Git. Tu as l'historique de chaque changement, qui l'a fait, quand, et pourquoi grâce au message de commit. Tu peux revenir en arrière sur une modification d'infrastructure comme sur une ligne de code.
+
+Revu en équipe : un changement d'infra passe par une pull request. Quelqu'un relit le diff, voit que tu ouvres un nouveau port ou que tu changes une taille de machine, et donne son accord avant que ça parte. La sécurité et la qualité entrent dans le processus au lieu de dépendre d'un clic isolé.
+
+Sans dérive : la dérive de configuration, c'est quand la réalité s'éloigne doucement de ce qui était prévu, parce que quelqu'un a bricolé un réglage à la main un soir d'incident. Avec l'IaC, le `plan` révèle cet écart : il te dit que la réalité ne correspond plus à tes fichiers, et tu peux la ramener à l'état décrit.
+
+<Callout type="success">
+C'est ici que l'IaC rejoint le parcours DevOps. Tes fichiers Terraform sont dans Git, donc une pipeline de CI/CD peut lancer `terraform plan` automatiquement à chaque pull request et afficher le diff d'infrastructure. L'application, elle, ne se déclenche qu'après revue et fusion. L'infrastructure suit exactement le même flux que ton application : commit, revue, intégration, déploiement.
+</Callout>
+
+## les précautions
+
+L'IaC n'est pas magique et mérite quelques garde-fous.
+
+D'abord, l'outil garde un fichier d'état qui mémorise ce qu'il a créé. Cet état est sensible : il peut contenir des valeurs comme des mots de passe ou des identifiants de ressources. On ne le commit pas en clair dans Git n'importe comment, on le stocke dans un emplacement protégé et chiffré, avec un verrou pour éviter que deux personnes l'écrasent en même temps.
+
+Ensuite, un `apply` mal relu peut détruire. Si tu renommes une ressource sans faire attention, l'outil peut comprendre « supprime l'ancienne, crée la nouvelle », et ta base de données part avec. D'où la règle simple : on lit le plan avant d'appliquer, toujours. Surtout les lignes `to destroy`.
+
+<Callout type="warning">
+Ne jamais appliquer un plan que tu n'as pas lu, en particulier sur un environnement réel. Un `Plan: 0 to add, 0 to change, 0 to destroy` est rassurant ; un `to destroy` inattendu est un signal d'arrêt. Et garde l'état hors de Git public : il fait partie des secrets de ton infrastructure.
+</Callout>
+
+## à toi de jouer
+
+Rejoue mentalement le cycle complet et observe ce que dit l'outil à chaque étape.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Cycle complet" commands={{"terraform init": "Terraform has been successfully initialized!", "terraform plan": "Plan: 2 to add, 0 to change, 0 to destroy.", "terraform apply": "Apply complete! Resources: 2 added, 0 changed, 0 destroyed.", "terraform plan (rejoue)": "No changes. Your infrastructure matches the configuration."}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Qu'est-ce qui distingue une approche déclarative d'une approche impérative en IaC ?" options={["L'approche déclarative décrit l'état final voulu, l'impérative liste les étapes à exécuter", "L'approche déclarative est toujours plus lente", "L'approche impérative ne fonctionne que dans le cloud", "Il n'y a aucune différence pratique"]} correct={0} />
+
+<Quiz id="q-2" question="Que signifie l'idempotence pour une configuration IaC ?" options={["Le code ne peut être appliqué qu'une seule fois", "Appliquer la même description plusieurs fois donne le même résultat sans recréer ce qui existe déjà", "Chaque application double le nombre de ressources", "L'idempotence empêche tout changement futur"]} correct={1} />
+
+<Quiz id="q-3" question="À quoi sert l'étape 'plan' avant l'apply ?" options={["À supprimer l'ancienne infrastructure", "À chiffrer le fichier d'état", "À montrer ce qui sera créé, modifié ou détruit avant d'agir", "À installer l'outil Terraform"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- L'IaC décrit l'infrastructure dans des fichiers texte versionnés au lieu de la cliquer dans une console, ce qui laisse une trace réutilisable.
+- L'approche déclarative décrit l'état voulu ; l'outil calcule les actions pour y arriver, au lieu de suivre une liste d'étapes.
+- L'idempotence garantit qu'appliquer deux fois la même description ne change rien de plus : l'outil ne corrige que l'écart.
+- Le `plan` affiche ce qui sera ajouté, modifié ou détruit avant toute action, ce qui transforme un geste irréversible en décision relue.
+- Les bénéfices : reproductible, versionné dans Git, revu par pull request, et protégé contre la dérive de configuration.
+- L'IaC s'intègre à la CI/CD du parcours DevOps : `plan` automatique sur les pull requests, `apply` après revue et fusion.
+- Précautions : le fichier d'état est sensible et se stocke chiffré hors de Git public ; on lit toujours le plan avant d'appliquer, surtout les lignes `to destroy`.
+
+OK 09 écrit

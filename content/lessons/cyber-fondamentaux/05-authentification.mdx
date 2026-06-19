@@ -1,0 +1,120 @@
+---
+refCode: CL-LSN-077-V01
+slug: cyber-authentification
+title: "Authentification et mots de passe"
+description: "Comprenez la différence entre authentification et autorisation, les trois facteurs d'authentification, ce qui fait un bon mot de passe aujourd'hui, et pourquoi la double authentification change tout."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 380
+prerequisites: ["CL-LSN-074-V01"]
+---
+
+Avant de pouvoir lire ton courrier, virer de l'argent ou publier sous ton nom, un système doit répondre à une question toute bête : es-tu bien la personne que tu prétends être ? C'est la première porte de tout. Si elle cède, tout ce qu'il y a derrière tombe avec elle. Tes données, tes contacts, ton argent, ta réputation. Cette leçon parle de cette porte, de la façon dont on la verrouille, et des erreurs qu'on commet encore aujourd'hui sans s'en rendre compte.
+
+## authentification vs autorisation
+
+Ces deux mots se ressemblent et on les confond tout le temps, mais ils répondent à deux questions différentes.
+
+L'authentification, c'est prouver qui on est. Quand tu tapes ton mot de passe, tu dis au système : voici la preuve que ce compte est le mien.
+
+L'autorisation, c'est autre chose. Une fois qu'on sait qui tu es, le système décide ce que tu as le droit de faire. Lire un fichier, le supprimer, accéder à la zone admin, virer de l'argent. Deux personnes authentifiées correctement peuvent avoir des droits complètement différents.
+
+Une image simple : à l'entrée d'un immeuble de bureaux, le gardien vérifie ton badge, c'est l'authentification. Mais ton badge n'ouvre que certaines portes, pas le coffre ni la salle serveur, c'est l'autorisation.
+
+<Callout type="info">
+Authentification = qui es-tu. Autorisation = qu'as-tu le droit de faire. On s'authentifie d'abord, on est autorisé ensuite. Beaucoup de failles graves viennent d'un système qui authentifie bien mais autorise mal, par exemple un utilisateur normal qui réussit à atteindre une page réservée aux administrateurs.
+</Callout>
+
+Dans cette leçon on se concentre sur la première moitié : prouver qui on est.
+
+## les trois facteurs
+
+Pour prouver son identité, il existe trois grandes familles de preuves. On les appelle les facteurs d'authentification.
+
+Le premier, c'est ce que tu sais. Un mot de passe, un code PIN, la réponse à une question secrète. L'avantage, c'est que ça ne coûte rien et que ça tient dans ta tête. L'inconvénient, c'est qu'une information peut se deviner, s'observer par-dessus l'épaule, ou fuiter dans une base de données piratée.
+
+Le deuxième, c'est ce que tu possèdes. Ton téléphone qui reçoit un code, une application qui génère des chiffres toutes les trente secondes, une petite clé physique que tu branches en USB. Pour usurper ce facteur, un attaquant doit mettre la main sur l'objet, ce qui est beaucoup plus difficile à distance.
+
+Le troisième, c'est ce que tu es. Ton empreinte digitale, ton visage, ta voix. C'est la biométrie. Pratique parce qu'on ne peut pas l'oublier, mais avec une limite importante : si une empreinte fuite un jour, tu ne peux pas en changer comme d'un mot de passe.
+
+L'idée centrale, c'est de combiner ces facteurs. Un mot de passe seul, c'est un seul facteur. Un mot de passe plus un code envoyé sur ton téléphone, c'est deux facteurs de familles différentes. Et c'est précisément cette combinaison qui rend une attaque beaucoup plus coûteuse. Voler quelque chose que tu sais ET quelque chose que tu possèdes, en même temps, c'est une autre paire de manches.
+
+## ce qui fait un bon mot de passe aujourd'hui
+
+Pendant des années on a appris des règles qui se révèlent aujourd'hui dépassées, voire contre-productives. Remettons les choses à plat.
+
+Ce qui compte le plus, c'est la longueur, pas la complexité tarabiscotée. Un mot de passe long est plus dur à casser qu'un mot de passe court bourré de symboles. Le nombre de combinaisons à tester augmente bien plus vite avec chaque caractère ajouté qu'avec un point d'exclamation de plus.
+
+D'où l'idée de la phrase de passe : quatre ou cinq mots sans rapport entre eux, faciles à retenir pour toi, longs pour une machine. Quelque chose comme `cheval-lampe-orage-biscuit` est à la fois mémorisable et solide, bien plus que `P@ss1!` qui a l'air compliqué mais reste court.
+
+Maintenant l'idée reçue qu'il faut corriger. Pendant longtemps on a imposé de changer son mot de passe tous les mois ou tous les trois mois. Les recommandations modernes, notamment celles du NIST aux États-Unis, disent l'inverse : ne forcez plus le changement périodique sans raison. Pourquoi ce revirement ? Parce que dans la vraie vie, quand on oblige les gens à changer souvent, ils font de tout petits ajustements prévisibles. `Hiver2024` devient `Hiver2025`, puis `Printemps2025`. Le mot de passe paraît neuf mais reste trivial à deviner. On change le mot de passe seulement quand on a une bonne raison : un soupçon de fuite, un appareil perdu, un partage qu'on regrette.
+
+Même logique pour l'obligation de mettre au moins un chiffre, une majuscule et un symbole. Ces règles poussent surtout les gens vers les mêmes schémas paresseux, du genre `Motdepasse1!`. Mieux vaut un long mot de passe libre qu'un court mot de passe qui coche des cases.
+
+<Callout type="warning">
+La pire habitude n'est pas un mot de passe faible, c'est le même mot de passe partout. Le jour où un seul site se fait pirater, ton identifiant et ton mot de passe se retrouvent dans une liste qui circule. Les attaquants vont alors les essayer sur ta boîte mail, ta banque, tes réseaux. Un mot de passe unique par site limite les dégâts à un seul compte.
+</Callout>
+
+Retenir un mot de passe différent pour cinquante sites, c'est impossible de tête. C'est exactement le travail d'un gestionnaire de mots de passe, on y revient juste après.
+
+## les attaques sur les mots de passe
+
+Pour comprendre pourquoi ces conseils tiennent debout, regardons comment on s'attaque concrètement à un mot de passe.
+
+La force brute, c'est tester toutes les combinaisons possibles, une par une. Efficace contre un mot de passe court, désespérant contre un long. Chaque caractère ajouté multiplie le temps nécessaire.
+
+L'attaque par dictionnaire est plus maligne : au lieu de tout essayer, on teste d'abord les mots de passe les plus courants et les mots du dictionnaire, parce que les humains sont prévisibles. Voici l'allure d'une telle tentative.
+
+```text
+[*] Cible : compte alice@exemple.fr
+[*] Liste de 10 000 mots de passe courants chargee
+[+] essai : 123456          -> echec
+[+] essai : password        -> echec
+[+] essai : azerty          -> echec
+[+] essai : soleil2023      -> echec
+[+] essai : motdepasse      -> SUCCES
+[*] Compte compromis en 0,8 seconde
+```
+
+Le bourrage d'identifiants, ou credential stuffing, est le plus courant aujourd'hui. L'attaquant ne devine rien du tout. Il part d'une fuite réelle d'un autre site et rejoue tes vrais identifiants ailleurs, en masse, de façon automatisée. Si tu réutilises tes mots de passe, ça marche directement. Si chaque site a le sien, l'attaque tombe à plat.
+
+C'est là qu'un gestionnaire de mots de passe devient ton meilleur allié. Il génère pour chaque site un mot de passe long, aléatoire et unique, puis il le retient à ta place. Tu ne mémorises plus qu'un seul mot de passe maître, solide, et le logiciel s'occupe du reste. Plus de réutilisation, plus de phrases devinables, et le remplissage automatique te protège en prime de certains sites d'hameçonnage, puisqu'il refuse de remplir un formulaire sur une adresse qui ne correspond pas.
+
+## la double authentification (2FA)
+
+Admettons le pire : ton mot de passe a fuité. Avec un seul facteur, c'est fini, l'attaquant entre. C'est exactement le trou que bouche la double authentification.
+
+L'idée tient en une phrase : exiger un deuxième facteur en plus du mot de passe. Même avec ton mot de passe en main, l'attaquant bute sur une seconde preuve qu'il n'a pas. Il faudrait qu'il vole aussi ton téléphone ou ta clé, au même moment. La grande majorité des attaques à distance s'arrêtent là.
+
+Tous les seconds facteurs ne se valent pas, du moins sûr au plus sûr.
+
+Le code par SMS vaut mieux que rien, mais c'est le maillon faible. Un numéro peut être détourné par une fraude appelée SIM swapping, où l'attaquant convainc l'opérateur de transférer ta ligne sur sa carte. Le code arrive alors chez lui.
+
+L'application d'authentification, comme celles qui affichent un code à six chiffres renouvelé toutes les trente secondes, est nettement meilleure. Le code est généré sur ton appareil, il ne transite par aucun réseau, donc rien à intercepter.
+
+La clé de sécurité physique est le haut du panier. C'est un petit objet que tu branches ou que tu approches du téléphone. En plus de prouver ta possession, elle vérifie l'adresse du site et refuse de fonctionner sur un faux. C'est aujourd'hui la protection la plus solide contre l'hameçonnage.
+
+<Callout type="success">
+Activer la double authentification est le geste qui rapporte le plus pour le moins d'effort. Commence par tes comptes les plus sensibles : ta boîte mail d'abord, parce qu'elle sert à réinitialiser tous les autres, puis ta banque et tes réseaux sociaux. Si tu peux choisir, préfère une application d'authentification ou une clé physique plutôt que le SMS.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelle est la différence entre authentification et autorisation ?" options={["L'authentification prouve qui on est, l'autorisation définit ce qu'on a le droit de faire", "Ce sont deux mots pour la même chose", "L'authentification concerne les fichiers, l'autorisation les comptes", "L'autorisation vient toujours avant l'authentification"]} correct={0} />
+
+<Quiz id="q-2" question="Aujourd'hui, qu'est-ce qui rend un mot de passe le plus solide ?" options={["Le changer chaque mois", "Y mettre beaucoup de symboles compliques", "Une bonne longueur, comme une phrase de passe de plusieurs mots, unique par site", "Ajouter son annee de naissance a la fin"]} correct={2} />
+
+<Quiz id="q-3" question="Parmi ces seconds facteurs, lequel est le plus vulnerable au detournement de ligne (SIM swapping) ?" options={["Une cle de securite physique", "Une application d'authentification", "Le code recu par SMS", "Une empreinte digitale"]} correct={2} />
+
+## à retenir
+
+- Authentification = prouver qui on est. Autorisation = ce qu'on a le droit de faire. Deux étapes distinctes.
+- Trois facteurs : ce qu'on sait (mot de passe), ce qu'on possède (téléphone, clé), ce qu'on est (biométrie). Les combiner, c'est ça la force.
+- La longueur prime sur les symboles. Une phrase de passe de plusieurs mots bat un mot de passe court et alambiqué.
+- Le changement mensuel forcé n'est plus recommandé. On change quand il y a une raison, pas par calendrier.
+- Un mot de passe unique par site, c'est la règle qui compte le plus. La réutilisation transforme une seule fuite en compromission générale.
+- Le credential stuffing rejoue tes identifiants fuités ailleurs. Un gestionnaire de mots de passe coupe court à cette attaque.
+- La double authentification arrête la plupart des attaques même si le mot de passe a fuité. Application ou clé physique plutôt que SMS quand c'est possible.
+
+OK 05-authentification.mdx écrit

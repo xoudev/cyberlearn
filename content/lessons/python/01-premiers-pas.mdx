@@ -1,0 +1,120 @@
+---
+refCode: CL-LSN-001-V01
+slug: python-premiers-pas
+title: "Premiers pas en Python : variables et types"
+description: "Découvrez Python : écrire votre premier programme, créer des variables et manipuler les types de base (entiers, flottants, chaînes, booléens)."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 20
+xpReward: 120
+prerequisites: []
+---
+
+Programmer, au fond, c'est écrire une suite d'instructions qu'une machine va exécuter, une par une, dans l'ordre. L'ordinateur ne devine rien. Il fait exactement ce qu'on lui dit, ni plus ni moins. Python a une qualité rare pour un langage de programmation : son code se lit presque comme de l'anglais courant, ce qui te laisse penser au raisonnement plutôt qu'à la ponctuation.
+
+Voici une première instruction. Lance-la et regarde ce qui se passe.
+
+<CodePlayground language="python" starterCode={`print("Mon premier programme tourne.")`} />
+
+Une ligne, un résultat. C'est déjà un programme complet.
+
+## afficher avec print
+
+`print` est une fonction. Tu lui donnes quelque chose entre parenthèses, et elle l'affiche dans la console. Ce « quelque chose », ici, c'est du texte. En programmation, un morceau de texte s'appelle une chaîne de caractères, et on le délimite par des guillemets. Les guillemets ne sont pas affichés : ils servent à dire à Python « tout ce qui est entre ces deux marques, c'est du texte brut, ne cherche pas à l'interpréter ».
+
+Tu peux enchaîner plusieurs `print`. Chacun écrit sur sa propre ligne.
+
+<CodePlayground language="python" starterCode={`print("Ligne une")
+print("Ligne deux")
+print("Ligne trois")`} />
+
+Si tu oublies les guillemets autour d'un texte, Python croit que tu lui parles d'autre chose, un nom ou une commande, et il s'arrête sur une erreur. Le guillemet, c'est la frontière entre « du texte » et « des instructions ».
+
+## les variables
+
+Afficher du texte fixe, ça va deux minutes. Le vrai intérêt vient quand on garde une valeur quelque part pour la réutiliser plus loin. C'est le rôle d'une variable.
+
+<CodePlayground language="python" starterCode={`prenom = "Alice"
+age = 25
+print(prenom)
+print(age)`} />
+
+On lit ça de droite à gauche : la valeur `"Alice"` existe, et on lui colle le nom `prenom`. Ensuite, chaque fois que j'écris `prenom`, Python va chercher la valeur derrière ce nom.
+
+Le signe `=` mérite qu'on s'arrête dessus. En mathématiques, `=` annonce une égalité : `x = 3` veut dire « x vaut 3, c'est un fait ». En Python, `=` est une affectation : « prends la valeur de droite et attache-lui le nom de gauche ». Ce n'est pas une affirmation, c'est une action. La preuve, cette ligne serait absurde en maths mais elle est parfaitement valide ici :
+
+<CodePlayground language="python" starterCode={`compteur = 0
+compteur = compteur + 1
+print(compteur)`} />
+
+« compteur égale compteur plus un » n'a aucun sens comme égalité. Comme affectation, c'est limpide : prends la valeur actuelle de `compteur`, qui vaut 0, ajoute 1, et réattache le nom `compteur` au résultat, qui vaut 1.
+
+Un mot sur une image qu'on entend souvent : la variable serait une « boîte » dans laquelle on range une valeur. C'est trompeur. Une variable en Python est plutôt une étiquette posée sur une valeur. Le nom ne contient pas la valeur, il pointe vers elle. Garde l'idée de l'étiquette : un nom d'un côté, et au bout du fil, une donnée.
+
+Côté noms, quelques règles. Pas d'espace, pas d'accent, et ça ne commence jamais par un chiffre. On utilise des minuscules et le underscore pour séparer les mots, comme `nom_utilisateur`. Un nom qui dit ce qu'il contient vaut mieux qu'un `x` mystérieux que tu ne comprendras plus dans une heure.
+
+## les types de base
+
+Chaque valeur a un type, c'est-à-dire une nature. Python en propose quatre que tu croiseras partout au début.
+
+Un entier, ou `int`, est un nombre sans virgule : `0`, `42`, `-7`. Un flottant, ou `float`, est un nombre à virgule, qu'on note avec un point et non une virgule à la française : `3.14`, `-0.5`, `2.0`. Une chaîne, ou `str`, est du texte entre guillemets : `"bonjour"`, `"42"`. Un booléen, ou `bool`, ne peut valoir que deux choses, `True` ou `False` avec une majuscule, et sert à représenter le vrai et le faux.
+
+<CodePlayground language="python" starterCode={`temperature = 19.5
+nom = "console"
+nombre_de_vies = 3
+partie_gagnee = False
+print(temperature)
+print(nom)
+print(nombre_de_vies)
+print(partie_gagnee)`} />
+
+Pourquoi se soucier du type ? Parce que la même opération ne veut pas dire la même chose selon la nature des valeurs. Regarde de près.
+
+<CodePlayground language="python" starterCode={`print(5 + 5)
+print("5" + "5")`} />
+
+La première ligne affiche `10` : deux entiers, le `+` fait une addition. La seconde affiche `55` : deux chaînes, le `+` colle les textes bout à bout. C'est la même touche du clavier, mais deux comportements complètement différents.
+
+C'est le piège classique du débutant. Le nombre `5` et la chaîne `"5"` se ressemblent à l'écran, et pourtant ce ne sont pas les mêmes objets. L'un est une quantité avec laquelle on peut calculer. L'autre est un caractère de texte, le dessin du chiffre cinq, avec lequel on ne calcule pas. Mélanger les deux donne soit un résultat surprenant, soit une erreur franche.
+
+<CodePlayground language="python" starterCode={`print("5" + 5)`} />
+
+Python refuse, parce qu'il ne sait pas si tu veux coller du texte ou additionner des nombres. Il ne choisit pas à ta place, et c'est une bonne chose : l'erreur arrive tout de suite, au bon endroit, au lieu de produire un résultat faux en silence.
+
+## le typage dynamique
+
+Tu as peut-être remarqué qu'on n'a jamais annoncé le type d'une variable. On a écrit `age = 25` sans préciser « ceci est un entier ». Python le déduit tout seul à partir de la valeur. On appelle ça le typage dynamique : le type suit la valeur, pas le nom.
+
+Pour vérifier, la fonction `type()` te dit la nature d'une valeur.
+
+<CodePlayground language="python" starterCode={`print(type(25))
+print(type(3.14))
+print(type("texte"))
+print(type(True))`} />
+
+Tu obtiens `int`, `float`, `str`, `bool`. Pratique quand un résultat te surprend : demande son type, tu comprendras souvent d'où vient le malentendu.
+
+## à toi de jouer
+
+Un petit exercice. Écris une fonction qui prend deux nombres et renvoie leur somme.
+
+<PythonChallenge id="py-1" title="Additionner deux nombres" description="Complète la fonction pour qu'elle renvoie la somme de a et b." starterCode="def solution(a, b):
+    pass" tests={[{ input: "solution(2, 3)", expected: "5" }, { input: "solution(10, 7)", expected: "17" }]} />
+
+<Quiz id="q-1" question="Que vaut '3' + '4' en Python, avec les guillemets autour des deux ?" options={["7", "'34'", "Une erreur", "12"]} correct={1} />
+
+<Quiz id="q-2" question="En Python, à quoi sert le signe = dans la ligne age = 30 ?" options={["Il teste si age est égal à 30", "Il affiche age à l'écran", "Il attache la valeur 30 au nom age", "Il compare deux nombres"]} correct={2} />
+
+## à retenir
+
+`print()` affiche ce qu'on lui donne entre parenthèses. Un texte se met entre guillemets et forme une chaîne de caractères.
+
+Une variable est un nom attaché à une valeur, pas une boîte qui la contient. Le `=` est une affectation, une action, pas l'égalité des mathématiques.
+
+Les quatre types de base sont l'entier `int`, le flottant `float` avec un point décimal et non une virgule, la chaîne `str` et le booléen `bool` qui vaut `True` ou `False`.
+
+Le type change le sens d'une opération : `5 + 5` donne `10`, `"5" + "5"` donne `"55"`. Le nombre `5` et la chaîne `"5"` sont deux objets distincts, et les confondre est la source d'erreur la plus fréquente au début.
+
+Python devine le type tout seul à partir de la valeur, c'est le typage dynamique. `type()` te le confirme quand tu as un doute.
+
+OK 01 réécrit

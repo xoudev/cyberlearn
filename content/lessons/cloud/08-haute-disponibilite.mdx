@@ -1,0 +1,116 @@
+---
+refCode: CL-LSN-176-V01
+slug: cloud-haute-disponibilite
+title: "Haute disponibilité et résilience géographique"
+description: "Rester debout malgré une panne : les régions et zones de disponibilité, pourquoi répartir protège d'une défaillance locale, la différence entre haute disponibilité et reprise après sinistre, et la bascule automatique."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-175-V01"]
+---
+
+Imagine que toute ton application tourne dans une seule salle machine. Un seul bâtiment, une seule arrivée électrique, un seul lien réseau. Tant que tout va bien, personne ne s'en soucie. Le jour où le climatiseur de cette salle lâche en pleine canicule, ou qu'une pelleteuse sectionne la fibre dans la rue, ton service entier disparaît d'un coup. Pas une partie. Tout.
+
+C'est ce qu'on appelle un point unique de défaillance : un élément dont la panne suffit à tout arrêter, parce qu'il n'a pas de doublure. Le cloud ne supprime pas les pannes, elles arrivent quand même. Ce qu'il propose, c'est de répartir ton service sur plusieurs endroits indépendants, pour qu'une panne quelque part n'emporte pas l'ensemble. On va voir comment cette répartition est organisée, et ce qu'elle change concrètement.
+
+## régions et zones
+
+Les fournisseurs cloud découpent leur infrastructure à deux niveaux.
+
+Une **région** est une zone géographique : Paris, Francfort, l'Irlande, la Virginie. Quand tu choisis une région, tu choisis dans quelle partie du monde tes données et tes serveurs vivent physiquement. Ce choix compte pour la latence (plus c'est proche de tes utilisateurs, plus c'est rapide) et pour des raisons légales (héberger des données européennes en Europe, par exemple).
+
+À l'intérieur d'une région, il y a plusieurs **zones de disponibilité**. Chaque zone est un datacenter, ou un groupe de datacenters, isolé des autres. Isolé veut dire que les zones ne partagent ni la même alimentation électrique, ni le même refroidissement, ni les mêmes liens réseau principaux. Elles sont assez proches pour communiquer très vite entre elles, mais assez séparées pour qu'un incendie, une coupure de courant ou une inondation dans l'une ne touche pas les autres.
+
+<Diagram caption="Une région contient plusieurs zones de disponibilité isolées">
+flowchart TD
+  R[Region Paris] --> Z1[Zone A datacenter isole]
+  R --> Z2[Zone B datacenter isole]
+  R --> Z3[Zone C datacenter isole]
+  Z1 --> A1[Alimentation et reseau propres]
+  Z2 --> A2[Alimentation et reseau propres]
+  Z3 --> A3[Alimentation et reseau propres]
+</Diagram>
+
+<Callout type="info">
+Retiens la hiérarchie : la région est la grande zone géographique, la zone de disponibilité est un datacenter isolé à l'intérieur de cette région. Plusieurs zones par région, plusieurs régions dans le monde.
+</Callout>
+
+## répartir pour tenir
+
+L'intérêt des zones devient évident quand on place ses ressources dedans.
+
+Si tu déploies ton application sur une seule machine dans une seule zone, tu retrouves ton point unique de défaillance. La zone tombe, ton service tombe avec elle. Mais si tu lances deux copies de ton application, une dans la zone A et une dans la zone B, la situation change. La zone A subit une coupure de courant ? La copie de la zone B continue de répondre aux utilisateurs. Tu as perdu la moitié de ta capacité, pas la totalité de ton service.
+
+C'est le principe de base de la haute disponibilité : ne jamais dépendre d'un seul élément. On répartit les copies sur plusieurs zones, et on place devant un répartiteur de charge qui distribue le trafic vers les copies en bonne santé. Quand une zone disparaît, le répartiteur arrête de lui envoyer du trafic et concentre tout sur celles qui répondent encore.
+
+<Diagram caption="Répartir sur plusieurs zones de disponibilité">
+flowchart TD
+  U[Utilisateurs] --> LB[Repartiteur de charge]
+  LB --> S1[Serveur zone A]
+  LB --> S2[Serveur zone B]
+  LB --> S3[Serveur zone C]
+  S1 --> DB[(Base repliquee multi-zones)]
+  S2 --> DB
+  S3 --> DB
+</Diagram>
+
+Ce schéma vaut aussi pour la base de données. Une base répliquée sur plusieurs zones garde une copie à jour ailleurs, prête à prendre le relais. Sinon, tu aurais de beaux serveurs redondants pointant tous vers une unique base, qui redeviendrait ton point unique de défaillance.
+
+## disponibilité contre reprise
+
+On confond souvent deux idées qui répondent à des problèmes différents.
+
+La **haute disponibilité** vise à éviter l'interruption. On maintient plusieurs copies actives en même temps, de sorte que la panne d'une copie passe presque inaperçue. C'est une protection contre les incidents courants : une machine qui crashe, une zone qui tombe. Le service ne s'arrête pas, ou pour quelques secondes seulement.
+
+La **reprise après sinistre** vise à redémarrer après une catastrophe. Là on parle d'un événement qui frappe toute une région : un séisme majeur, une panne réseau régionale, une erreur humaine qui corrompt l'ensemble des données. La haute disponibilité dans une seule région ne suffit plus, puisque toutes ses zones sont touchées. La reprise après sinistre consiste à pouvoir relancer le service depuis une autre région, à partir de sauvegardes ou d'une copie tenue à distance.
+
+Tu as croisé deux mesures dans le parcours GRC qui cadrent exactement ce sujet. Le **RTO** (objectif de temps de reprise) dit en combien de temps le service doit être de nouveau debout après un sinistre. Le **RPO** (objectif de point de reprise) dit combien de données on accepte de perdre, mesuré en temps : un RPO d'une heure signifie qu'on tolère de perdre au pire la dernière heure de données. Ces deux objectifs dictent l'architecture. Un RTO de quelques minutes impose une copie déjà prête dans une autre région. Un RPO proche de zéro impose une réplication quasi continue, qui coûte cher.
+
+| Notion | Objectif principal | Échelle de la panne |
+| --- | --- | --- |
+| Haute disponibilité | Éviter l'interruption, rester debout | Une machine, une zone |
+| Reprise après sinistre | Redémarrer après la catastrophe | Une région entière |
+| RTO | Délai acceptable de remise en service | Mesure de la reprise |
+| RPO | Volume de données acceptable à perdre | Mesure de la reprise |
+
+<Callout type="success">
+Une façon courte de retenir : la haute disponibilité, c'est ne pas tomber. La reprise après sinistre, c'est savoir se relever vite quand on est vraiment tombé.
+</Callout>
+
+## la bascule automatique
+
+Avoir une copie de secours ne sert à rien si personne ne s'en sert au bon moment. C'est le rôle de la bascule automatique, ou failover.
+
+Le mécanisme tient en deux temps. D'abord détecter : un système surveille en permanence la santé des ressources, en envoyant de petits appels réguliers (des contrôles de santé). Si une ressource arrête de répondre, elle est marquée comme défaillante. Ensuite rediriger : le trafic qui allait vers la ressource morte est automatiquement réorienté vers une ressource saine. Pour une base de données, une copie secondaire est promue au rang de copie principale et prend la suite des écritures.
+
+Pourquoi automatiser plutôt que laisser un humain décider ? Parce qu'une panne n'attend pas. Elle peut survenir à trois heures du matin, un dimanche, pendant que toute l'équipe dort. Le temps qu'une alerte réveille quelqu'un, qu'il se connecte, comprenne la situation et agisse, plusieurs dizaines de minutes ont passé, et autant de clients ont vu une page d'erreur. La bascule automatique réagit en secondes. L'humain reste dans la boucle pour analyser après coup, pas pour appuyer sur le bouton dans l'urgence.
+
+<Quiz id="q-1" question="Quelle est la différence correcte entre une région et une zone de disponibilité ?" options={["La région est un serveur, la zone est un disque dur", "La région est une zone géographique qui contient plusieurs zones de disponibilité, chacune étant un datacenter isolé", "La zone de disponibilité contient plusieurs régions", "Région et zone de disponibilité désignent exactement la même chose"]} correct={1} />
+
+## le coût de la résilience
+
+Toute cette redondance n'est pas gratuite. Chaque copie supplémentaire de ton application, chaque réplique de base de données, chaque région de secours consomme des ressources que tu paies. Tenir une copie complète prête à démarrer dans une seconde région peut doubler une partie de la facture.
+
+D'où une décision à prendre service par service. Le système de paiement d'une boutique justifie sans doute une reprise après sinistre rapide, parce que chaque minute d'arrêt se traduit en ventes perdues et en clients agacés. Un outil interne consulté par dix personnes le matin n'a pas besoin du même niveau : une simple sauvegarde quotidienne et quelques heures de remise en route suffisent. Le bon réflexe est de partir des objectifs métier (le RTO et le RPO acceptables) et de ne payer que la redondance nécessaire pour les atteindre.
+
+<Callout type="warning">
+La résilience est un curseur, pas un interrupteur. Vouloir un RTO de quelques secondes et un RPO nul partout coûte une fortune et complexifie tout. Ajuste le niveau de protection à l'importance réelle de chaque service.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-2" question="Une copie active de ton application tourne dans la zone A et une autre dans la zone B, derrière un répartiteur de charge. La zone A subit une coupure de courant. Que se passe-t-il ?" options={["Tout le service s'arrête car les deux zones partagent l'alimentation", "Le répartiteur cesse d'envoyer du trafic vers la zone A et le service continue via la zone B", "Les utilisateurs doivent changer de région manuellement", "La zone B s'éteint aussi par sécurité"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi la bascule automatique est-elle préférable à une intervention humaine en cas de panne ?" options={["Parce qu'un humain coûte plus cher qu'un serveur", "Parce qu'une panne peut survenir à toute heure et qu'attendre une réaction humaine prolonge l'interruption de plusieurs dizaines de minutes", "Parce que les humains ne savent pas redémarrer un serveur", "Parce que la loi interdit aux humains de gérer les pannes"]} correct={1} />
+
+## à retenir
+
+- Un seul datacenter est un point unique de défaillance : sa panne emporte tout le service, faute de doublure.
+- Une région est une zone géographique ; elle contient plusieurs zones de disponibilité, des datacenters isolés en alimentation, refroidissement et réseau.
+- Répartir ses copies sur plusieurs zones, derrière un répartiteur de charge, est la base de la haute disponibilité : une zone tombe, les autres continuent.
+- La base de données doit être répliquée elle aussi, sinon elle redevient le point unique de défaillance.
+- Haute disponibilité : éviter l'interruption face à une panne de machine ou de zone. Reprise après sinistre : redémarrer depuis une autre région après une catastrophe régionale.
+- Le RTO fixe le délai de remise en service acceptable, le RPO le volume de données perdable. Ces objectifs dictent l'architecture.
+- La bascule automatique détecte la panne via des contrôles de santé et redirige le trafic vers une ressource saine en secondes, sans attendre un humain.
+- Plus on réplique, plus c'est cher : on dose le niveau de résilience selon l'importance de chaque service.

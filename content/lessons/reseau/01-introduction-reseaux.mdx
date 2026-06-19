@@ -1,0 +1,98 @@
+---
+refCode: CL-LSN-157-V01
+slug: reseau-introduction
+title: "À quoi sert un réseau"
+description: "Comprenez ce qu'est un réseau et un protocole, pourquoi la communication se découpe en couches qui séparent les responsabilités, et la différence entre Internet et le web."
+category: NETWORK
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 400
+prerequisites: []
+---
+
+Imagine deux ordinateurs posés sur une table, à un mètre l'un de l'autre. Tu veux que le premier envoie un fichier au second. Première question toute bête : par où passe le fichier ? Il faut un chemin physique, un câble entre les deux, ou des ondes radio si tu préfères le sans-fil. Sans ce support, rien ne bouge. Mais le câble ne suffit pas.
+
+Suppose que le câble existe et que la première machine se met à envoyer du courant électrique. Comment la seconde sait-elle où commence le fichier, où il finit, et ce que veulent dire les petits signaux qu'elle reçoit ? Si les deux machines n'ont pas décidé à l'avance ce que veut dire chaque signal, elles entendent du bruit. C'est exactement comme deux personnes qui se parlent sans partager de langue commune. Le son passe, le sens non.
+
+Un réseau, c'est donc deux choses ensemble : un moyen de transporter des signaux, et un accord sur la façon de les interpréter. Faire communiquer des machines, c'est régler ces deux problèmes en même temps. Le reste de cette leçon, et une bonne partie du parcours, sert à comprendre comment on s'y prend.
+
+## le protocole
+
+Cet accord sur la façon d'interpréter les signaux porte un nom : un protocole. Un protocole, c'est un ensemble de règles partagées que les deux machines respectent pour se comprendre.
+
+Prends une conversation téléphonique humaine. Il y a des règles tacites. Tu décroches, tu dis allô, tu attends que l'autre réponde, tu ne parles pas tous les deux en même temps, et quand tu as fini tu dis au revoir avant de raccrocher. Ces règles ne sont écrites nulle part, mais tout le monde les suit. Si quelqu'un raccroche sans prévenir au milieu d'une phrase, tu trouves ça impoli, parce qu'il a cassé le protocole.
+
+Pour les machines, c'est pareil, sauf que les règles sont écrites noir sur blanc et suivies à la lettre. Un protocole précise des choses très concrètes : qui parle en premier, dans quel ordre les informations arrivent, comment on marque le début et la fin d'un message, ce qu'on fait si un morceau se perd en route. Deux machines qui suivent le même protocole se comprennent, même si elles ont été fabriquées par des entreprises différentes, à dix ans d'écart, sur deux continents.
+
+<Callout type="info">
+Le mot protocole revient sans arrêt en réseau, et il désigne toujours la même idée : un ensemble de règles que les deux côtés ont accepté de suivre pour se comprendre. HTTP, IP, TCP que tu croiseras plus tard sont tous des protocoles. Chacun règle un problème précis.
+</Callout>
+
+## pourquoi des couches
+
+On arrive à l'idée la plus importante de tout le parcours, alors prends ton temps ici.
+
+Faire communiquer deux machines, ce n'est pas un seul problème. C'en est plusieurs, empilés. Il faut transporter des signaux dans un câble. Il faut savoir à quelle machine on parle quand il y en a des millions. Il faut découper un gros fichier en morceaux et le recoller proprement. Il faut enfin que l'application, ton navigateur ou ta messagerie, sache quoi faire du contenu une fois arrivé.
+
+On pourrait essayer de tout régler d'un coup, dans un seul gros bloc. Personne ne fait ça, parce que ce serait ingérable. À la place, on découpe en couches. Chaque couche règle un problème, et un seul. Elle reçoit le travail de la couche du dessus, fait sa part, et passe à la couche du dessous. Surtout, chaque couche ignore ce que font les autres. La couche qui gère le câble se moque de savoir si elle transporte une photo ou un message. L'application se moque de savoir s'il y a un câble ou du Wi-Fi en dessous.
+
+L'image qui marche le mieux, c'est l'enveloppe postale. Quand tu écris une lettre, tu sépares trois choses sans même y penser. Il y a le contenu, ta lettre à l'intérieur. Il y a l'adresse sur l'enveloppe, qui dit où ça va. Et il y a le facteur et les camions, le transport, qui amènent l'enveloppe à bon port. Le facteur n'ouvre jamais ta lettre. Il lit l'adresse, il transporte, c'est tout. De ton côté, quand tu écris, tu ne penses pas à l'itinéraire des camions. Chacun fait son travail sans se mêler de celui des autres.
+
+<Diagram caption="Une communication découpée en couches">
+flowchart TD
+  A[Application : le contenu, ta lettre] --> B[Adressage : à quelle machine, l'adresse sur l'enveloppe]
+  B --> C[Transport : découper et recoller les morceaux]
+  C --> D[Lien physique : signaux dans le câble ou les ondes, le facteur]
+  D --> E[Machine de destination]
+</Diagram>
+
+Une machine en réseau empile exactement ce genre de couches. Le message part d'en haut, traverse chaque couche qui ajoute sa part, file dans le câble, puis remonte les mêmes couches dans l'autre sens chez le destinataire. Chaque couche d'arrivée parle à la couche correspondante au départ, comme si elles discutaient en direct, en ignorant tout le reste.
+
+## ce que ça change
+
+Découper en couches n'est pas une lubie de théoricien. Ça change la vie pour trois raisons concrètes.
+
+D'abord, tu peux changer une couche sans toucher aux autres. Le jour où tu passes du câble au Wi-Fi, seule la couche du bas change. Ton navigateur ne s'en aperçoit même pas, il continue à afficher des pages comme avant. Le facteur peut passer du vélo au camion, ta lettre reste la même.
+
+Ensuite, chaque couche évolue à son rythme. Les gens qui améliorent les câbles et les antennes travaillent de leur côté. Les gens qui inventent de nouvelles applications travaillent du leur. Ils n'ont pas besoin de se coordonner en permanence, parce que la frontière entre les couches est claire et stable.
+
+Enfin, quand quelque chose ne marche pas, tu diagnostiques couche par couche. Le câble est-il branché ? La machine a-t-elle une adresse valide ? Les morceaux arrivent-ils bien ? L'application répond-elle ? Tu remontes les couches une à une jusqu'à trouver celle qui coince, au lieu de fixer un problème géant et flou. C'est une méthode de dépannage que tu utiliseras tout le temps.
+
+## Internet n'est pas le web
+
+Voici une confusion qui traîne partout, et qu'il vaut mieux corriger tôt.
+
+Internet, c'est le réseau mondial. C'est l'ensemble des machines reliées entre elles à l'échelle de la planète, avec les câbles, les antennes et les règles qui leur permettent de se trouver et de s'échanger des données. C'est la route, l'infrastructure.
+
+Le web, lui, est un service qui tourne sur Internet. C'est l'ensemble des pages que tu consultes dans ton navigateur, reliées par des liens. Le web utilise Internet pour acheminer ses pages, mais il n'est pas Internet.
+
+Et ce n'est pas le seul service. Quand tu envoies un courriel, ce n'est pas du web, c'est un autre service qui passe aussi par Internet. Quand tu joues en ligne, quand tu passes un appel vidéo, quand une application synchronise tes fichiers, ce sont encore d'autres services. Tous roulent sur la même infrastructure mondiale, chacun avec ses propres protocoles.
+
+<Callout type="warning">
+Dire Internet et le web, c'est pareil, c'est comme dire la route et les camionnettes de livraison, c'est pareil. La route, c'est Internet. Les camionnettes, le courrier, les bus, ce sont les services. Le web est l'un de ces services, le plus visible, mais pas le seul.
+</Callout>
+
+## quelques mots de vocabulaire
+
+Quelques termes vont revenir souvent. Pas besoin de tout retenir aujourd'hui, juste de reconnaître les mots.
+
+Un hôte, c'est simplement une machine connectée au réseau : un ordinateur, un téléphone, un serveur, un objet connecté. Un paquet, c'est un petit morceau de données qui voyage sur le réseau, parce qu'on ne transmet presque jamais un gros fichier d'un bloc, on le découpe. Client et serveur décrivent deux rôles : le client demande quelque chose, le serveur répond. Ton navigateur est un client, le site qu'il contacte tourne sur un serveur. Enfin, local désigne ce qui est tout près, sur ton réseau domestique par exemple, et distant ce qui se trouve ailleurs, à l'autre bout d'Internet.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi un câble entre deux machines ne suffit-il pas à les faire communiquer ?" options={["Parce que le câble est trop lent", "Parce qu'il manque un protocole, un accord sur la façon d'interpréter les signaux", "Parce qu'il faut toujours du Wi-Fi", "Parce que les machines doivent être de la même marque"]} correct={1} />
+
+<Quiz id="q-2" question="Quel est l'intérêt principal de découper la communication en couches ?" options={["Rendre le réseau plus rapide", "Chiffrer les données automatiquement", "Séparer les responsabilités, pour qu'une couche change sans toucher aux autres", "Réduire le nombre de câbles nécessaires"]} correct={2} />
+
+<Quiz id="q-3" question="Quelle phrase décrit correctement la relation entre Internet et le web ?" options={["Le web est le réseau mondial, Internet est un service dessus", "Internet et le web désignent exactement la même chose", "Le web est un service parmi d'autres qui tourne sur Internet", "Internet ne sert qu'à afficher des pages web"]} correct={2} />
+
+## à retenir
+
+- Un réseau a besoin de deux choses : un support pour transporter des signaux, et un protocole, un accord sur la façon de les interpréter.
+- Un protocole est un ensemble de règles que les deux côtés acceptent de suivre pour se comprendre, comme les conventions d'une conversation.
+- On découpe la communication en couches pour séparer les responsabilités : chaque couche règle un seul problème et ignore les autres, comme le contenu, l'adresse et le transport d'une enveloppe postale.
+- Grâce aux couches, on change une partie sans toucher au reste, chaque couche évolue à son rythme, et on dépanne couche par couche.
+- Internet est le réseau mondial, l'infrastructure. Le web est un service qui tourne dessus, au même titre que le courriel ou les jeux en ligne.
+- Vocabulaire de base : hôte (une machine connectée), paquet (un morceau de données qui voyage), client et serveur (qui demande, qui répond), local et distant.
+
+OK 01 écrit

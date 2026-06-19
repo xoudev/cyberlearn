@@ -1,0 +1,146 @@
+---
+refCode: CL-LSN-039-V01
+slug: asm-registres
+title: "Les registres et leurs tailles"
+description: "Comprenez l'architecture des registres x86-64 : les registres généraux 64 bits (rax, rbx...) et leurs sous-parties 32, 16 et 8 bits (eax, ax, al)."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 200
+prerequisites: ["CL-LSN-037-V01"]
+---
+
+Un processeur passe sa vie à manipuler des nombres : additionner, comparer, déplacer, recommencer. Pour faire ce travail il lui faut un endroit où poser les valeurs en cours de traitement, un endroit qu'il peut lire et écrire sans attendre. Cet endroit, ce sont les registres. Ce ne sont pas des cases en mémoire vive, ce sont des cases situées directement dans le processeur, à quelques nanomètres des circuits de calcul. Résultat : un registre se lit et s'écrit en une fraction du temps qu'il faudrait pour aller chercher la même donnée en RAM.
+
+L'image du cuisinier est commode. La mémoire vive, c'est le garde-manger et les placards : beaucoup de place, mais il faut se lever pour y aller. Les registres, c'est le plan de travail juste sous les mains : minuscule, on y tient à peine quelques ingrédients, mais tout ce qui s'y trouve est immédiatement utilisable. Un cuisinier efficace garde sur son plan de travail ce dont il a besoin tout de suite et ne retourne dans les placards que quand il n'a pas le choix. Le processeur fonctionne pareil.
+
+## un nombre limité de cases
+
+La première chose à intégrer, c'est qu'il y a très peu de registres. L'architecture x86-64 en propose seize pour un usage général. Seize. Pas seize mille, pas un par variable de ton programme. Cette rareté n'est pas un oubli des concepteurs : un registre coûte cher en surface de silicium et en complexité, et plus on en ajoute, plus les instructions qui doivent les désigner deviennent lourdes. Seize est un compromis. Conséquence directe pour le programmeur en assembleur : on jongle. On charge une valeur dans un registre, on s'en sert, on la range ailleurs quand on a fini, et on réutilise le registre pour autre chose. Cette gymnastique fait partie du métier, et elle explique pourquoi le code assembleur ressemble souvent à un ballet de `mov` entre la mémoire et ces quelques cases.
+
+Voici les seize registres généraux, sous leur nom 64 bits : rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp, puis r8, r9, r10, r11, r12, r13, r14 et r15.
+
+Chacun a un usage de prédilection, hérité de conventions que tout le monde respecte pour que les programmes se comprennent entre eux. Le registre rax récupère souvent le résultat d'un calcul ou la valeur qu'une fonction renvoie. rcx joue volontiers le rôle de compteur, rdx celui de stockage temporaire, rsi et rdi servent à passer des arguments. Rien de tout cela n'est imposé par le matériel : tu peux mettre presque n'importe quelle valeur dans presque n'importe quel registre. Mais suivre ces conventions rend ton code lisible et compatible avec le reste du monde, ce qui n'est pas un luxe.
+
+L'exemple ci-dessous fait travailler trois registres pour additionner deux nombres et déposer le total dans rax.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rbx, 12
+    mov rcx, 30
+    mov rax, rbx
+    add rax, rcx
+    println rax
+    ret`} />
+
+rbx et rcx portent les deux opérandes. On recopie rbx dans rax, puis on lui ajoute rcx. Le total, quarante-deux, se retrouve dans rax, là où on s'attend à trouver un résultat.
+
+## un même registre, quatre tailles
+
+Voici le point qui déroute presque tout le monde au début. Un registre n'a pas une taille unique. rax fait soixante-quatre bits, d'accord, mais ses bits de poids faible portent en plus leurs propres noms, et ces noms désignent des morceaux du même registre.
+
+Les trente-deux bits inférieurs de rax s'appellent eax. Les seize bits inférieurs s'appellent ax. Les huit bits inférieurs s'appellent al. Voici comment lire ça :
+
+| nom  | taille  | ce que c'est                          |
+|------|---------|---------------------------------------|
+| rax  | 64 bits | le registre complet                   |
+| eax  | 32 bits | la moitié basse de rax                |
+| ax   | 16 bits | les 16 bits bas de eax                |
+| al   | 8 bits  | l'octet le plus bas de ax             |
+
+L'idée reçue à démonter, c'est de croire que eax serait un registre voisin de rax, posé à côté. Faux. eax n'existe pas séparément. C'est simplement la moitié basse de rax, vue sous un autre nom. Si tu écris une valeur dans eax, tu écris dans la moitié basse de rax, point. Et inversement, si tu modifies rax, tu modifies du même coup ce que vaut eax, ax et al, puisqu'ils occupent les mêmes bits physiques. Quatre noms, un seul emplacement mémoire dans le silicium.
+
+<Callout type="info">
+Les noms eax, ax et al sont des fenêtres emboîtées sur rax. rax (64 bits) contient eax (32 bits), qui contient ax (16 bits), qui contient al (8 bits). Écrire dans al touche aussi rax, car c'est la même mémoire physique. Cette imbrication se retrouve pour les autres registres : rbx donne ebx, bx et bl ; rcx donne ecx, cx et cl.
+</Callout>
+
+<Diagram>
+flowchart LR
+    A[rax 64 bits] --> B[eax 32 bits]
+    B --> C[ax 16 bits]
+    C --> D[al 8 bits]
+</Diagram>
+
+Cette imbrication n'est pas une coquetterie. Elle vient de l'histoire. Les processeurs Intel ont commencé en 16 bits, avec un registre nommé ax. Quand l'architecture est passée à 32 bits, les concepteurs ont voulu garder les anciens programmes fonctionnels : ils ont donc étendu ax à trente-deux bits et appelé la version élargie eax, le e signifiant extended, tout en laissant ax désigner encore la moitié basse. Le passage à 64 bits a rejoué le même tour avec rax. Chaque génération a englobé la précédente plutôt que de tout remplacer. C'est à la fois de la compatibilité ascendante et de l'économie : pas besoin d'ajouter de nouveaux registres physiques, on a élargi ceux qui existaient et empilé les noms.
+
+## écrire dans une sous-partie
+
+Travailler sur une fenêtre plus petite que rax est très fréquent, dès qu'une valeur tient sur peu de bits. Un octet va de zéro à deux cent cinquante-cinq, ce qui rentre pile dans al.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov al, 65
+    println al
+    ret`} />
+
+On dépose soixante-cinq dans al, la plus petite fenêtre de rax, et on l'affiche. Huit bits suffisent largement, et choisir al plutôt que rax dit quelque chose au lecteur : cette valeur est petite, c'est un octet, pas un grand nombre. Le choix de la taille n'est donc pas seulement technique, il porte une intention.
+
+## pourquoi se limiter à ces cases
+
+Si les registres sont si rapides, pourquoi le processeur n'en met-il pas mille et n'y range-t-il pas tout ? Parce que la rapidité d'un registre tient justement à sa proximité et à sa rareté. Plus il y a de registres, plus il faut de bits dans chaque instruction pour préciser lequel on vise, plus le décodage se complique, plus la puce gonfle. Seize est le point d'équilibre retenu par x86-64. La leçon pratique reste la même : tant qu'un calcul tient dans les registres, il vole ; dès qu'il doit faire des allers-retours vers la mémoire, il ralentit. Un bon code assembleur cherche donc à garder ses valeurs de travail dans les registres aussi longtemps que possible.
+
+L'exemple suivant enchaîne une multiplication et une addition sans jamais sortir des registres.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rax, 5
+    mov rbx, 4
+    imul rax, rbx
+    mov rcx, 2
+    add rax, rcx
+    println rax
+    ret`} />
+
+Cinq fois quatre donne vingt, plus deux donne vingt-deux. Trois registres, aucun accès mémoire, et le résultat tombe dans rax.
+
+## à vous de jouer
+
+<Quiz
+  id="q-1"
+  question="Quelle est la taille du registre rax en x86-64 ?"
+  options={["8 bits", "16 bits", "32 bits", "64 bits"]}
+  correct={3}
+/>
+<Quiz
+  id="q-2"
+  question="Quelle relation existe entre eax et rax ?"
+  options={[
+    "eax est un registre totalement séparé de rax",
+    "eax désigne les 32 bits de poids faible de rax",
+    "eax fait 64 bits et contient rax",
+    "eax est la version 8 bits de rax"
+  ]}
+  correct={1}
+/>
+<Quiz
+  id="q-3"
+  question="Combien de bits manipule-t-on en écrivant dans al ?"
+  options={["8 bits", "16 bits", "32 bits", "64 bits"]}
+  correct={0}
+/>
+
+À ton tour : place la valeur cent dans rbx, copie-la dans rax, puis ajoute dix avant d'afficher rax.
+
+<CodePlayground language="asm" starterCode={`global main
+section .text
+main:
+    mov rbx, 100
+    mov rax, rbx
+    add rax, 10
+    println rax
+    ret`} />
+
+## récapitulatif
+
+- L'architecture x86-64 offre seize registres généraux : rax, rbx, rcx, rdx, rsi, rdi, rbp, rsp et r8 à r15.
+- Ils sont peu nombreux par choix, car ils coûtent cher en silicium ; on les réutilise donc en permanence.
+- Par convention, rax sert souvent à stocker les résultats et valeurs de retour.
+- Un même registre se manipule en plusieurs tailles : rax (64 bits) contient eax (32 bits), ax (16 bits) et al (8 bits).
+- eax n'est pas un registre voisin de rax mais sa moitié basse ; écrire dans al, ax ou eax modifie aussi rax.
+- Cette imbrication vient de l'histoire 16 puis 32 puis 64 bits, et sert la compatibilité comme l'économie.
+- Les registres sont bien plus rapides que la mémoire, d'où l'intérêt d'y garder les valeurs de travail.
+
+OK 03-registres.mdx écrit

@@ -1,0 +1,138 @@
+---
+refCode: CL-LSN-049-V01
+slug: linux-introduction
+title: "Le terminal Linux : pourquoi et comment"
+description: "Comprenez ce qu'est un shell, pourquoi la ligne de commande reste si utilisée par les développeurs et les administrateurs, et tapez vos premières commandes."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 200
+prerequisites: []
+---
+
+Le terminal traîne une réputation de truc obscur réservé aux gens qui tapent vite dans le noir. Dans les films, c'est l'écran vert qui défile pendant qu'on "pirate le mainframe". La réalité est beaucoup plus banale, et beaucoup plus utile : le terminal, c'est simplement la façon la plus directe de donner des ordres à une machine. Pas d'icônes à chercher, pas de menus à dérouler. Vous écrivez ce que vous voulez, la machine le fait.
+
+Pourquoi apprendre ça quand on a déjà des fenêtres et une souris ? Parce qu'une grande partie des ordinateurs qui font tourner le monde n'ont ni écran ni souris. Un serveur web, dans un datacenter, c'est une carte mère dans un rack. Personne ne va lui brancher un moniteur. On s'y connecte à distance, et ce qu'on obtient, c'est un terminal. Si vous voulez déployer un site, lire les logs d'une application qui plante, ou installer un outil sur une machine de production, vous passerez par là. Autant être à l'aise.
+
+## shell, terminal, ligne de commande : qui fait quoi
+
+Trois mots qu'on emploie souvent comme synonymes, alors qu'ils désignent des choses différentes. Mettons-les au clair, parce que confondre les trois rend la suite floue.
+
+Le **terminal**, c'est la fenêtre. Le programme qui affiche du texte et reçoit vos frappes au clavier. Sur votre machine, ça peut s'appeler Terminal, GNOME Terminal, Konsole, iTerm. C'est une boîte d'affichage, rien de plus.
+
+Le **shell**, c'est le programme qui tourne à l'intérieur de cette fenêtre et qui interprète ce que vous tapez. Quand vous écrivez `ls`, c'est le shell qui comprend que vous voulez lister des fichiers, qui va chercher le bon programme, le lance, et vous renvoie le résultat. Le shell le plus répandu sur Linux s'appelle **bash** (Bourne Again Shell). Il en existe d'autres, comme `zsh` ou `fish`, mais ils font le même travail de base.
+
+La **ligne de commande**, enfin, c'est la méthode : taper du texte pour piloter la machine, par opposition à cliquer. On parle aussi de CLI (Command Line Interface), opposée à la GUI (l'interface graphique).
+
+Une image qui aide : le terminal est le combiné téléphonique, le shell est la personne au bout du fil qui écoute et agit, la ligne de commande est le fait de parler plutôt que d'envoyer des signaux de fumée.
+
+<Diagram title="terminal, shell, commande">
+  flowchart TD
+    A["Vous tapez du texte dans le TERMINAL (la fenetre)"] --> B["Le SHELL (bash) lit ce texte et le comprend"]
+    B --> C["Le SHELL lance le bon programme"]
+    C --> D["Le programme s'execute et renvoie son resultat"]
+    D --> E["Resultat affiche dans le terminal"]
+</Diagram>
+
+## pourquoi apprendre la ligne de commande
+
+Trois raisons concrètes, pas de la philosophie.
+
+La **rapidité**. Renommer trois cents fichiers à la souris prend une demi-heure et donne mal au poignet. En ligne de commande, c'est une seule instruction. Filtrer un fichier de logs de deux millions de lignes pour ne garder que les erreurs, idem : une commande, une seconde.
+
+L'**automatisation**. Tout ce que vous tapez peut être enregistré dans un fichier (un script) et rejoué. C'est la base de la CI : quand vous poussez du code, un serveur exécute une suite de commandes (installer, tester, construire, déployer) sans qu'aucun humain ne touche un bouton. Ce que vous apprenez ici, c'est le langage de ces scripts.
+
+L'**accès distant**. Avec SSH, vous ouvrez un shell sur une machine située à l'autre bout du monde, comme si vous étiez devant. C'est ainsi qu'on administre les serveurs, qu'on déploie, qu'on intervient à 3 h du matin quand quelque chose tombe en panne.
+
+En cybersécurité, c'est encore plus direct : la plupart des outils d'analyse, de scan réseau ou d'investigation sont en ligne de commande. Fouiller un système compromis ou inspecter des fichiers suspects se fait au clavier, parce qu'on veut voir exactement ce qui se passe, sans couche graphique entre soi et la machine.
+
+## l'invite de commande (le prompt)
+
+Quand le shell est prêt à recevoir un ordre, il affiche une invite, qu'on appelle le **prompt**. Apprendre à le lire vous renseigne déjà sur la machine. Un prompt typique ressemble à ça :
+
+```text
+jordan@serveur-web:~$
+```
+
+Chaque partie a son rôle :
+
+- `jordan` : l'utilisateur connecté. C'est sous cette identité que vos commandes s'exécutent.
+- `@serveur-web` : le nom de la machine (le hostname). Pratique quand vous jonglez entre plusieurs serveurs ouverts en même temps : ça évite de taper une commande sur le mauvais.
+- `~` : le répertoire courant, l'endroit où vous vous trouvez dans l'arborescence. Le tilde `~` est un raccourci pour votre dossier personnel (`/home/jordan`).
+- `$` : indique que vous êtes un utilisateur normal. Si vous voyez un `#` à la place, c'est que vous êtes root, l'administrateur tout-puissant. Le `#` est un signal : à cet instant, une faute de frappe peut casser le système. Prudence.
+
+Testez trois commandes qui répondent justement à ces questions : qui suis-je, où suis-je, sur quelle machine.
+
+<SimulatedTerminal shell="bash" title="lire son contexte" />
+
+Tapez `whoami` (votre identité), `pwd` (le chemin complet de l'endroit où vous êtes, pour "print working directory"), puis `hostname` (le nom de la machine). Vous retrouverez les mêmes informations que celles affichées dans le prompt, mais cette fois c'est vous qui les demandez.
+
+## anatomie d'une commande
+
+Presque toutes les commandes suivent le même moule. Une fois que vous voyez le motif, vous lisez n'importe quelle ligne sans la subir.
+
+```bash
+ls -la /home
+```
+
+Trois morceaux :
+
+- `ls` : la **commande**, le programme à lancer. Ici, lister le contenu d'un dossier.
+- `-la` : les **options** (ou flags). Elles modifient le comportement. `-l` demande le format long (détaillé, une ligne par fichier), `-a` demande d'inclure les fichiers cachés. On les a collées ici, mais `-l -a` revient au même.
+- `/home` : l'**argument**, ce sur quoi la commande agit. Le dossier à lister.
+
+Donc cette ligne se lit : "liste-moi le contenu du dossier `/home`, en format détaillé, fichiers cachés compris". Sans argument, `ls` liste le dossier courant. Sans options, il donne juste les noms.
+
+<Callout type="warning">
+Linux est sensible à la casse et aux espaces. `ls` n'est pas `LS`, et `Documents` n'est pas `documents` : ce sont des noms différents. L'espace sépare les mots de la commande, donc un dossier nommé `Mon Dossier` doit s'écrire `"Mon Dossier"` ou `Mon\ Dossier`, sinon le shell croit que vous parlez de deux choses distinctes. C'est l'erreur de débutant numéro un.
+</Callout>
+
+## se repérer et demander de l'aide
+
+Personne ne retient toutes les options de toutes les commandes. Les pros non plus. La différence, c'est qu'ils savent où chercher.
+
+Deux réflexes. Le premier, `--help` :
+
+```bash
+ls --help
+```
+
+Ça affiche un résumé rapide : la syntaxe et la liste des options. Parfait pour un rappel express.
+
+Le second, `man` (pour "manual"), le manuel complet :
+
+```bash
+man ls
+```
+
+Ça ouvre la documentation détaillée. Vous naviguez avec les flèches, vous cherchez un mot en tapant `/motcle` puis Entrée, et vous quittez avec la touche `q`. Beaucoup de débutants restent coincés dans `man` parce qu'ils ne savent pas comment en sortir : c'est `q`, retenez-le.
+
+<Callout type="danger">
+Quand une commande échoue, elle vous parle. Ne fermez pas les yeux sur le message. `bash: lss: command not found` veut dire que la commande `lss` n'existe pas (faute de frappe pour `ls` ?). `ls: cannot access '/hom': No such file or directory` veut dire que le chemin est faux. Lire la sortie d'erreur, mot à mot, résout neuf problèmes sur dix tout seul. L'erreur classique du débutant n'est pas de se tromper, c'est de ne pas lire ce que la machine répond.
+</Callout>
+
+Une nuance utile : `id` complète `whoami`. Là où `whoami` donne juste votre nom, `id` donne votre identifiant numérique (UID), votre groupe principal et tous vos groupes secondaires. En administration et en sécurité, les groupes décident de ce à quoi vous avez le droit de toucher. `uname -a` de son côté affiche les informations sur le système lui-même : le noyau, sa version, l'architecture du processeur. C'est la première commande qu'on tape sur une machine inconnue pour savoir où on a atterri.
+
+## à toi de jouer
+
+Enchaînez deux commandes : d'abord savoir qui vous êtes, ensuite sur quel système vous tournez. Tapez `whoami`, regardez le résultat, puis `uname -a`.
+
+<SimulatedTerminal shell="bash" expectedCommands={["whoami", "uname -a"]} hints={["Commencez par la commande qui affiche votre nom d'utilisateur, en un seul mot.", "Ensuite, uname avec l'option -a (a comme all) pour tout savoir du systeme."]} />
+
+<Quiz id="q-1" question="Dans le prompt jordan@serveur-web:~$, que represente le symbole ~ ?" options={["Le nom de la machine", "Le repertoire personnel de l'utilisateur", "Le fait d'etre administrateur root", "Une commande en cours d'execution"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle est la difference entre un terminal et un shell ?" options={["Aucune, ce sont deux mots pour la meme chose", "Le terminal est la fenetre d'affichage, le shell est le programme qui interprete les commandes", "Le shell est plus rapide que le terminal", "Le terminal sert sous Linux, le shell sous Windows"]} correct={1} />
+
+<Quiz id="q-3" question="Dans la commande ls -la /home, comment appelle-t-on /home ?" options={["L'argument, ce sur quoi la commande agit", "Une option qui modifie le comportement", "Le nom du shell", "Une variable d'environnement"]} correct={0} />
+
+## à retenir
+
+- Terminal = la fenêtre. Shell = le programme qui interprète (souvent bash). Ligne de commande = piloter par du texte plutôt que par la souris.
+- On apprend ça pour la rapidité, l'automatisation (scripts, CI) et l'accès distant (SSH) aux serveurs qui n'ont ni écran ni souris.
+- Le prompt se lit : `utilisateur@machine:répertoire`, terminé par `$` (utilisateur normal) ou `#` (root, danger).
+- Une commande se compose de : la commande, ses options (`-l`, `-a`), ses arguments (le chemin ou le fichier visé).
+- Linux distingue majuscules et minuscules, et l'espace sépare les mots : un nom de fichier avec espace se met entre guillemets.
+- En cas de blocage : `--help` pour un rappel, `man commande` pour le manuel complet, et `q` pour sortir de `man`.
+- Quand ça échoue, la machine écrit pourquoi. Lire le message d'erreur résout la plupart des problèmes.
+
+OK 01-introduction.mdx écrit

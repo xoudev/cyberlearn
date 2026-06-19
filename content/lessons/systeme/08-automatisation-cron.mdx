@@ -1,0 +1,134 @@
+---
+refCode: CL-LSN-188-V01
+slug: systeme-automatisation-cron
+title: "Automatiser avec cron et les timers"
+description: "Faire travailler le serveur tout seul : la syntaxe de la crontab, les pièges qui empêchent une tâche de s'exécuter, les timers systemd, et l'écriture de scripts de maintenance fiables."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-183-V01"]
+---
+
+Une sauvegarde qu'il faut penser à lancer chaque nuit finira oubliée. Pas par négligence : c'est juste que personne ne se réveille à 2h du matin pour taper une commande, et que les jours où on est débordé, la sauvegarde passe à la trappe. Or une sauvegarde qu'on ne fait qu'une fois sur deux ne sert presque à rien le jour où le disque lâche.
+
+C'est exactement le genre de tâche qu'on ne veut pas confier à un humain. Répétitive, à heure fixe, sans grand intérêt à la faire à la main, mais lourde de conséquences si on l'oublie. On la confie à une planification. La machine s'en charge toute seule, à l'heure dite, tous les jours, sans qu'on ait à y penser. On y gagne trois choses : la fiabilité, parce que la tâche tourne vraiment chaque nuit ; le fait de ne rien oublier, parce que le programme ne fatigue pas ; et la reproductibilité, parce que c'est toujours la même commande qui s'exécute de la même façon.
+
+Vous savez déjà écrire un script Bash. Ici on ne réapprend pas à scripter : on apprend à faire exécuter ces scripts tout seuls, à heure fixe, et à les écrire de façon à ce qu'ils tournent sans surveillance sans faire de dégâts.
+
+## la crontab
+
+L'outil historique pour planifier des tâches sous Linux, c'est cron. Il tourne en permanence en arrière-plan et, chaque minute, il regarde s'il y a quelque chose à lancer. La liste de ce qu'il doit lancer s'appelle la crontab, la table de cron. Chaque utilisateur a la sienne.
+
+Une ligne de crontab tient sur une ligne et se lit en deux morceaux : d'abord cinq champs qui disent quand, ensuite la commande à exécuter. Les cinq champs, dans l'ordre, sont la minute, l'heure, le jour du mois, le mois, et le jour de la semaine. Une étoile dans un champ veut dire « toutes les valeurs », c'est-à-dire « peu importe ».
+
+```bash
+# minute  heure  jour-du-mois  mois  jour-de-semaine  commande
+#
+# tous les jours a 2h00 du matin
+0 2 * * * /usr/local/bin/sauvegarde.sh
+#
+# toutes les heures, a la minute 0 (1h00, 2h00, 3h00...)
+0 * * * * /usr/local/bin/collecte-stats.sh
+#
+# tous les lundis a 8h30 (le 1 final = lundi)
+30 8 * * 1 /usr/local/bin/rapport-hebdo.sh
+```
+
+La logique demande un temps d'adaptation parce qu'on lit de gauche à droite des unités de plus en plus grandes. `0 2 * * *` se lit « à la minute 0 de l'heure 2, n'importe quel jour, n'importe quel mois, n'importe quel jour de semaine ». Donc tous les jours à 2h pile. Le piège du débutant, c'est d'oublier le premier champ : `2 * * * *` ne veut pas dire « à 2h », ça veut dire « à la minute 2 de chaque heure », soit 24 fois par jour. Quand une tâche tourne beaucoup plus souvent que prévu, c'est presque toujours le premier champ qui est mal compris.
+
+<Callout type="info">
+Pour éditer sa propre crontab, on tape `crontab -e` (e pour edit), jamais on ne modifie un fichier à la main. Pour la relire sans risquer de la casser, `crontab -l` (l pour list). Et si vous ne connaissez pas par coeur la syntaxe des cinq champs, le site crontab.guru en ligne traduit une planification en phrase et inversement. Personne ne retient ces cinq champs sans s'y reprendre à plusieurs fois.
+</Callout>
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Planifier une tache avec cron" commands={{"crontab -l": "0 2 * * * /usr/local/bin/sauvegarde.sh", "crontab -e": "(ouvre l editeur de crontab)", "grep CRON /var/log/syslog | tail -1": "CRON[3122]: (root) CMD (/usr/local/bin/sauvegarde.sh)", "systemctl list-timers --no-pager | head -2": "NEXT  LEFT  UNIT\nMon 02:00  9h  sauvegarde.timer"}} />
+
+## les pièges de cron
+
+Voici la phrase qu'on entend le plus souvent à propos de cron : « mon script marche quand je le lance à la main, mais ma tâche cron ne s'exécute pas ». Dans l'immense majorité des cas, le script s'exécute bien. Le problème, c'est qu'il s'exécute dans un environnement qui n'est pas le vôtre.
+
+Quand vous lancez une commande dans votre terminal, vous héritez de tout votre environnement de session : la variable `PATH` qui dit où trouver les commandes, les variables que votre shell a chargées, votre répertoire de travail. cron, lui, démarre vos tâches dans un environnement quasi vide. Le `PATH` y est réduit au minimum. Conséquence directe : un script qui appelle `mysqldump` ou `aws` sans chemin complet va planter, parce que cron ne sait pas où ces commandes se trouvent. La règle est simple : dans une tâche cron, on écrit les chemins absolus, à la fois pour le script lui-même et pour les commandes qu'il appelle, ou bien on définit `PATH` en haut de la crontab.
+
+Le second piège est plus sournois parce qu'il rend le premier invisible. Par défaut, tout ce que votre script affiche, ses messages comme ses erreurs, part dans le vide. Vous ne le voyez nulle part. Du coup quand la tâche échoue, vous n'avez aucune trace, et vous concluez à tort qu'elle ne s'est pas lancée. La solution est de rediriger la sortie vers un fichier de log.
+
+```bash
+# on redirige la sortie normale ET les erreurs vers un fichier
+0 2 * * * /usr/local/bin/sauvegarde.sh >> /var/log/sauvegarde.log 2>&1
+```
+
+Le `>>` ajoute à la fin du fichier sans l'écraser, et `2>&1` redirige aussi les erreurs au même endroit que la sortie normale. Avec ça, le lendemain matin, vous ouvrez le log et vous voyez exactement ce qui s'est passé.
+
+<Callout type="warning">
+Avant de conclure que cron est cassé, vérifiez dans cet ordre : la tâche a-t-elle été déclenchée (regardez `/var/log/syslog` ou `/var/log/cron`, cron y note chaque lancement) ; le script utilise-t-il des chemins absolus ; la sortie est-elle redirigée quelque part où vous pouvez la lire. Neuf fois sur dix, le coupable est le PATH ou un chemin relatif, pas cron lui-même.
+</Callout>
+
+## les timers systemd
+
+cron fait le travail depuis des décennies, mais il a des limites : ses logs partent à part, il ne sait pas reprendre une tâche manquée pendant que la machine était éteinte, et déboguer revient à fouiller dans des fichiers. Les distributions modernes proposent une autre voie, les timers systemd.
+
+Un timer, c'est une unit systemd dont le rôle est de déclencher une autre unit, en général un service, selon un calendrier. On a donc deux fichiers : le `.service` qui décrit la tâche à faire, et le `.timer` qui décrit quand la déclencher. C'est plus verbeux que la seule ligne de cron, mais on y gagne plusieurs choses. La sortie de la tâche atterrit directement dans le journal systemd, donc `journalctl -u sauvegarde.service` montre l'historique complet, comme pour n'importe quel service. On peut demander qu'une tâche manquée pendant une coupure se rattrape au redémarrage. Et `systemctl list-timers` donne d'un coup d'oeil la prochaine échéance de chaque tâche.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Lister les timers systemd" commands={{"systemctl list-timers --no-pager | head -2": "NEXT  LEFT  UNIT\nMon 02:00  9h  sauvegarde.timer", "systemctl status sauvegarde.timer": "active (waiting) since Sun 18:00", "journalctl -u sauvegarde.service -n 1 --no-pager": "sauvegarde terminee : 1.2 Go ecrits"}} />
+
+En pratique : pour une petite planification personnelle ou un script vite fait, cron reste plus rapide à écrire. Pour une tâche d'administration sérieuse sur un serveur, surtout si vous voulez de bons logs et le rattrapage, les timers systemd valent l'effort des deux fichiers.
+
+## des scripts de maintenance fiables
+
+Un script qu'on lance à la main, on le surveille : on voit l'erreur, on relance. Un script planifié tourne sans personne pour le regarder. Il faut donc qu'il se comporte bien tout seul, et ça change la façon de l'écrire. Trois exigences.
+
+D'abord, vérifier les erreurs au lieu de foncer. Si la sauvegarde du dossier échoue, on ne veut surtout pas que le script continue comme si de rien n'était et efface l'ancienne sauvegarde. Ensuite, journaliser ce qu'on fait, avec l'heure, pour qu'en cas de problème on puisse reconstituer ce qui s'est passé. Enfin, être idempotent : pouvoir relancer le script deux fois de suite sans casser quoi que ce soit. Si la tâche tourne à moitié puis est relancée, le second passage doit retomber sur ses pieds, pas empiler les dégâts.
+
+```bash
+#!/bin/bash
+# arrete le script a la premiere erreur, plutot que de continuer a l aveugle
+set -euo pipefail
+
+LOG=/var/log/sauvegarde.log
+SRC=/var/www/site
+DEST=/var/backups
+
+# une petite fonction pour journaliser avec la date
+log() {
+  echo "$(date '+%F %T') $1" >> "$LOG"
+}
+
+log "debut de la sauvegarde"
+
+# idempotent : on cree le dossier seulement s il manque, sans erreur s il existe
+mkdir -p "$DEST"
+
+# si rsync echoue, set -e arrete le script avant le message de fin
+rsync -a "$SRC" "$DEST"
+
+log "sauvegarde terminee avec succes"
+```
+
+La première ligne utile est `set -euo pipefail`. Le `-e` arrête le script dès qu'une commande échoue, ce qui évite de continuer sur une base cassée. Le `mkdir -p` est l'exemple type de l'idempotence : il crée le dossier s'il manque et ne dit rien s'il existe déjà, donc relancer le script ne provoque pas d'erreur. Et la fonction `log` horodate chaque message, de sorte qu'en lisant le fichier de log on sait quand chaque étape a eu lieu.
+
+<Callout type="success">
+Un bon réflexe : un script de maintenance devrait pouvoir être lancé deux fois d'affilée sans que ça change le résultat final. Si relancer votre script crée des doublons, empile des fichiers ou plante, c'est qu'il n'est pas encore prêt pour une planification. Testez-le toujours à la main d'abord, puis lancez-le manuellement avec l'environnement réduit de cron pour débusquer les chemins manquants avant de le confier à la crontab.
+</Callout>
+
+## à toi de jouer
+
+Inspecte une planification existante, vérifie dans les logs qu'elle s'est bien lancée, puis regarde du côté des timers systemd.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Inspecter une planification" commands={{"crontab -l": "0 2 * * * /usr/local/bin/sauvegarde.sh >> /var/log/sauvegarde.log 2>&1", "grep CRON /var/log/syslog | tail -1": "CRON[3122]: (root) CMD (/usr/local/bin/sauvegarde.sh)", "tail -1 /var/log/sauvegarde.log": "2026-06-13 02:00:11 sauvegarde terminee avec succes", "systemctl list-timers --no-pager | head -2": "NEXT  LEFT  UNIT\nMon 02:00  9h  sauvegarde.timer"}} />
+
+<Quiz id="q-1" question="Dans une ligne de crontab, que signifient les cinq premiers champs avant la commande ?" options={["seconde, minute, heure, jour, mois", "minute, heure, jour du mois, mois, jour de la semaine", "heure, minute, jour, mois, annee", "jour, mois, annee, heure, minute"]} correct={1} />
+
+<Quiz id="q-2" question="Votre script marche à la main mais la tâche cron 'ne s'exécute pas'. Quelle est la cause la plus probable ?" options={["cron est desactive sur tous les serveurs Linux", "cron tourne avec un environnement minimal : un PATH reduit ou un chemin relatif fait echouer le script, et la sortie perdue masque l erreur", "il faut redemarrer la machine apres chaque crontab -e", "une crontab ne peut contenir qu une seule ligne"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle ligne planifie une tâche tous les jours à 2h00 du matin ?" options={["2 0 * * * /script.sh", "0 2 * * * /script.sh", "* * 2 0 * /script.sh", "0 0 2 * * /script.sh"]} correct={1} />
+
+## à retenir
+
+- On automatise les tâches répétitives pour la fiabilité, pour ne rien oublier, et pour que ce soit toujours exécuté de la même façon.
+- Une ligne de crontab a cinq champs de temps (minute, heure, jour du mois, mois, jour de la semaine) suivis de la commande ; l'étoile veut dire « toutes les valeurs ».
+- On édite sa crontab avec `crontab -e` et on la relit avec `crontab -l`, jamais en touchant un fichier à la main.
+- cron tourne dans un environnement minimal : utilisez des chemins absolus, et redirigez la sortie vers un log avec `>> fichier 2>&1`, sinon une erreur passe inaperçue.
+- « Ma tâche cron ne s'exécute pas » vient presque toujours d'un PATH réduit, d'un chemin relatif, ou d'une sortie perdue, pas de cron lui-même.
+- Les timers systemd sont l'alternative moderne : deux fichiers (`.service` et `.timer`), des logs unifiés via journalctl, et le rattrapage des tâches manquées.
+- Un script de maintenance doit vérifier ses erreurs (`set -euo pipefail`), journaliser avec l'heure, et être idempotent pour pouvoir tourner sans surveillance.
+
+OK 08 écrit

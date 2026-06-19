@@ -1,0 +1,93 @@
+---
+refCode: CL-LSN-125-V01
+slug: grc-conformite-secteurs
+title: "Conformité : des règles selon le secteur"
+description: "Les obligations de sécurité varient selon les données traitées, le secteur et le territoire. Panorama du RGPD, de PCI-DSS, des règles santé et finance et de NIS2, et pourquoi conformité et sécurité ne se confondent pas."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-121-V01"]
+---
+
+Beaucoup de gens imaginent qu'il existe une grande loi de la cybersécurité, un texte unique qui dirait à chaque entreprise quoi faire. Ce n'est pas comme ça que ça marche. Il n'y a pas une règle, il y en a beaucoup, et celles qui s'appliquent à toi dépendent de trois choses : les données que tu manipules, le secteur dans lequel tu travailles, et le territoire où tout ça se passe.
+
+Une boutique en ligne qui encaisse des paiements n'a pas les mêmes obligations qu'un cabinet médical, qui lui-même n'a pas les mêmes contraintes qu'une banque ou qu'un opérateur d'énergie. Le but de cette leçon n'est pas de te faire mémoriser des dizaines de textes. C'est de te donner le réflexe qui permet, devant n'importe quelle situation, de savoir quelles questions poser pour identifier ce qui s'applique.
+
+## le modèle mental
+
+Avant de chercher la moindre réglementation, pose-toi trois questions, dans cet ordre.
+
+D'abord : quelles données est-ce que je traite ? Des noms et des adresses email ? Des numéros de carte bancaire ? Des dossiers médicaux ? Des données de paie ? Plus la donnée est sensible, plus elle attire des règles strictes.
+
+Ensuite : dans quel secteur ? Un hôpital, une banque, un fournisseur d'électricité et une agence de marketing ne sont pas soumis aux mêmes obligations, même à données égales. Certains secteurs sont considérés comme critiques pour la société, et l'État y impose davantage.
+
+Enfin : sur quel territoire ? Le pays où sont stockées les données, le pays où vivent les personnes concernées, et le pays où l'entreprise opère peuvent chacun déclencher leurs propres règles.
+
+<Callout type="info">
+Le réflexe à garder en tête : données + secteur + territoire = obligations. Tant que tu n'as pas répondu à ces trois questions, tu ne peux pas savoir ce qui s'applique. Et souvent, plusieurs régimes s'empilent en même temps.
+</Callout>
+
+## RGPD, le socle transversal
+
+Le RGPD est le premier texte que tout le monde croise en Europe. Il protège les données personnelles, c'est-à-dire toute information qui permet d'identifier une personne : un nom, un email, une adresse IP, un numéro client. Sa particularité, c'est qu'il est transversal. Il ne vise pas un secteur, il s'applique à n'importe quelle organisation qui traite des données personnelles de personnes en Europe, qu'elle soit une startup, un hôpital ou une multinationale.
+
+Il pose des principes que tu retrouveras partout : ne collecter que ce qui est nécessaire, expliquer pourquoi, garder les données un temps limité, les sécuriser, et permettre aux personnes d'exercer leurs droits (accès, rectification, effacement). Le RGPD aura sa propre leçon, on ne le détaille pas ici. Retiens juste qu'il sert de base commune, sur laquelle viennent se greffer des règles sectorielles plus spécifiques.
+
+## par secteur
+
+C'est là que les choses se précisent. Selon le métier, des textes dédiés ajoutent des exigences ciblées. Voici les grands cas qu'un praticien GRC rencontre.
+
+| Secteur | Réglementation | Ce qu'elle vise |
+|---|---|---|
+| Paiement par carte | PCI-DSS | Protéger les données de cartes bancaires partout où elles transitent ou sont stockées |
+| Santé | Règles sur les données de santé | Encadrer fortement des données très sensibles : dossiers, diagnostics, hébergement agréé |
+| Finance / banque | Obligations bancaires et financières | Traçabilité des opérations, lutte anti-fraude, continuité de service, contrôle interne |
+| Infrastructures essentielles | NIS2 | Imposer un socle de cybersécurité aux entités critiques (énergie, transport, eau, santé) |
+| Secteur public | Référentiels et règles administratives | Sécuriser les services et les données des citoyens, souvent avec des exigences propres |
+
+Quelques précisions utiles. PCI-DSS n'est pas une loi mais un standard imposé par les acteurs des cartes bancaires ; si tu acceptes des paiements par carte, tu dois t'y conformer, sous peine de perdre le droit de les traiter. Les données de santé sont parmi les plus encadrées qui soient, avec dans plusieurs pays des obligations d'hébergement certifié. La finance cumule règles de protection des données et règles prudentielles, avec une attention forte à la traçabilité. NIS2, plus récente, élargit le cercle des entités qui doivent prouver un niveau de sécurité minimal et signaler leurs incidents.
+
+Tu n'as pas à connaître chaque article. Tu dois savoir reconnaître qu'un projet touche au paiement, à la santé ou à une infrastructure critique, et donc qu'il faut aller chercher le texte sectoriel correspondant.
+
+## territoire
+
+La même donnée peut tomber sous des règles différentes selon l'endroit. Le RGPD protège les personnes en Europe, peu importe où se trouve l'entreprise qui traite leurs données. À l'inverse, héberger des données dans un autre pays peut les exposer à la loi locale de ce pays.
+
+Le cas le plus fréquent, ce sont les transferts hors de l'Union européenne. Quand des données personnelles d'Européens partent vers un pays tiers, par exemple chez un prestataire cloud dont les serveurs sont ailleurs, le RGPD impose des garanties particulières. On ne peut pas envoyer ces données n'importe où sans encadrement.
+
+<Callout type="warning">
+Une donnée qui traverse une frontière change parfois de régime juridique. Avant de choisir un hébergeur ou un outil, vérifie où les données seront stockées et traitées. Un service pratique et bon marché peut t'imposer un transfert hors UE qui complique sérieusement ta conformité.
+</Callout>
+
+## conformité n'est pas sécurité
+
+C'est le point le plus mal compris, et le plus important. Être conforme veut dire que tu respectes les règles écrites. Être sécurisé veut dire que tu résistes réellement aux attaques. Ce sont deux choses différentes, et l'une ne garantit pas l'autre.
+
+Tu peux cocher toutes les cases d'un référentiel, avoir tous les documents en règle, et rester vulnérable parce qu'un audit a une date alors qu'une attaque arrive n'importe quand. À l'inverse, une équipe peut tenir un niveau de sécurité réel très élevé sans avoir encore produit toute la paperasse exigée par une norme, et se retrouver formellement non conforme.
+
+<Callout type="danger">
+Le piège, c'est de se sentir protégé parce qu'on est conforme. La conformité décrit un minimum à un instant donné, pas une garantie permanente. Un attaquant ne lit pas ton certificat avant de t'attaquer. Traite la conformité et la sécurité comme deux objectifs qui se renforcent, jamais comme l'un remplaçant l'autre.
+</Callout>
+
+Dans le bon sens, les deux se nourrissent. La conformité donne un cadre, des obligations minimales et un langage commun avec la direction et les clients. La sécurité, elle, fait le travail concret de réduction du risque au quotidien. Un programme GRC sérieux poursuit les deux en parallèle.
+
+## les sanctions
+
+Si la direction s'intéresse à la conformité, c'est rarement par amour des règles. C'est parce que ne pas s'y plier coûte cher. Les amendes peuvent atteindre des montants élevés, calculés parfois en pourcentage du chiffre d'affaires. Dans certains secteurs, le non-respect peut aller jusqu'à l'interdiction d'exercer une activité, par exemple perdre le droit de traiter des paiements.
+
+Et il y a un coût moins visible mais durable : la réputation. Une fuite de données médicales ou bancaires qui fait la presse abîme la confiance des clients pour longtemps, bien au-delà de l'amende. C'est cet ensemble, financier, opérationnel et réputationnel, qui fait de la conformité un sujet de direction et pas seulement un sujet technique.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelles sont les trois questions du modèle mental pour identifier ses obligations ?" options={["Budget, équipe et calendrier", "Données traitées, secteur et territoire", "Taille de l entreprise, ancienneté et localisation du siège", "Type d attaque, attaquant et impact"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle réglementation s applique spécifiquement aux données de cartes bancaires dans le secteur du paiement ?" options={["PCI-DSS", "NIS2", "Le RGPD seul", "Les règles d hébergement de santé"]} correct={0} />
+
+<Quiz id="q-3" question="Une entreprise est totalement conforme à un référentiel. Que peut-on en conclure sur sa sécurité réelle ?" options={["Elle est forcément à l abri de toute attaque", "Rien de certain : on peut être conforme et rester vulnérable", "Elle n a plus besoin de mesures techniques", "La conformité remplace la sécurité"]} correct={1} />
+
+## à retenir
+
+Il n'existe pas une seule règle de cybersécurité. Ce qui s'applique dépend des données traitées, du secteur et du territoire. Le RGPD est le socle transversal en Europe pour les données personnelles. Par-dessus se greffent des textes sectoriels : PCI-DSS pour les cartes, des règles strictes pour la santé, des obligations de traçabilité en finance, NIS2 pour les infrastructures essentielles. Le territoire compte aussi, et un transfert de données hors UE déclenche des garanties supplémentaires. Surtout, conformité et sécurité ne sont pas la même chose : on peut être conforme et vulnérable, ou sûr sans être encore formellement conforme. Les deux se complètent. Et le non-respect expose à des amendes, à des interdictions d'activité et à une perte de réputation, ce qui en fait un sujet de direction.
+
+OK 05 écrit

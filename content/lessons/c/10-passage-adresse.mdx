@@ -1,0 +1,165 @@
+---
+refCode: CL-LSN-034-V01
+slug: c-passage-adresse
+title: "Pointeurs et passage par adresse"
+description: "Exploitez les pointeurs en pratique : passer une variable par adresse à une fonction pour la modifier, et le lien étroit entre pointeurs et tableaux en C."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 420
+prerequisites: ["CL-LSN-033-V01"]
+---
+
+Quand vous appelez une fonction en C et que vous lui passez une variable, la fonction ne touche jamais cette variable. Elle reçoit une copie de sa valeur, posée dans un nouveau coin de mémoire. Elle bidouille cette copie autant qu'elle veut, et au moment où elle se termine, la copie est jetée. La variable d'origine, elle, n'a pas bougé. C'est le passage par valeur, et c'est le comportement par défaut du langage.
+
+Tant qu'on veut juste lire une valeur, ça convient parfaitement. Le problème commence dès qu'on veut qu'une fonction modifie pour de bon une variable de l'appelant. Là, le passage par valeur devient un mur. Le passage par adresse fait tomber ce mur : au lieu d'envoyer la valeur, on envoie l'adresse de la variable. La fonction reçoit donc l'emplacement exact de la case mémoire et peut écrire dedans directement. Cette leçon tourne entièrement autour de ce basculement.
+
+## le rappel du problème
+
+Regardons d'abord ce qui ne marche pas. Voici une fonction qui prétend doubler un entier. Elle fait bien le calcul, mais sur sa propre copie.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void doubler(int n) {
+    n = n * 2;
+    printf("Dans la fonction : n = %d\\n", n);
+}
+
+int main(void) {
+    int valeur = 21;
+    doubler(valeur);
+    printf("Apres l'appel : valeur = %d\\n", valeur);
+    return 0;
+}`} />
+
+Lancez-le. La fonction affiche 42, fière d'elle. Et juste après, l'appelant affiche 21. Rien n'a changé. C'est logique : `valeur` et le paramètre `n` sont deux cases mémoire distinctes. La ligne `doubler(valeur)` recopie 21 dans `n`, la fonction double `n`, puis `n` disparaît au retour. La case `valeur` n'a jamais été touchée.
+
+Beaucoup de débutants butent ici en pensant que `n` et `valeur`, c'est la même chose puisqu'on a passé `valeur` à la fonction. Non. Le passage par valeur fabrique toujours un clone jetable.
+
+## passer l'adresse
+
+Pour que la fonction atteigne la vraie case, il faut lui donner son adresse. On écrit `&valeur` à l'appel, et le paramètre devient un pointeur sur entier, noté `int *`. Dans le corps de la fonction, on accède au contenu pointé avec l'étoile : `*p` désigne la valeur logée à l'adresse `p`.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void doubler(int *p) {
+    *p = *p * 2;
+    printf("Dans la fonction : *p = %d\\n", *p);
+}
+
+int main(void) {
+    int valeur = 21;
+    doubler(&valeur);
+    printf("Apres l'appel : valeur = %d\\n", valeur);
+    return 0;
+}`} />
+
+Cette fois l'appelant affiche 42. La fonction a reçu l'adresse de `valeur` grâce à `&valeur`, et `*p = *p * 2` est allé écrire directement dans cette case. Le changement survit au retour parce qu'il a eu lieu dans la mémoire de l'appelant, pas dans une copie locale.
+
+Notez les deux opérateurs et leur rôle exact. Le `&` devant une variable produit son adresse. L'étoile devant un pointeur ouvre la case pointée, en lecture comme en écriture. Ce sont eux qui font tout le travail, et ce sont aussi eux qu'on oublie le plus souvent. Écrire `doubler(valeur)` au lieu de `doubler(&valeur)`, c'est repasser sur le code qui ne marche pas. Et oublier l'étoile dans la fonction, en écrivant `p = p * 2`, modifie l'adresse elle-même au lieu de la valeur, ce que le compilateur refusera ou ce qui produira n'importe quoi.
+
+<Callout type="info">
+Une façon de retenir : `&` transforme une variable en adresse, `*` transforme une adresse en variable. L'un défait ce que l'autre fait. À l'appel on met `&`, dans la fonction on met `*`.
+</Callout>
+
+## l'échange canonique
+
+L'exemple qui démontre vraiment l'intérêt des pointeurs, c'est l'échange de deux variables. On veut une fonction `swap` qui intervertit le contenu de `a` et `b`. Par valeur, c'est tout simplement impossible : la fonction échangerait ses copies et l'appelant n'en verrait rien. Par adresse, ça marche.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void swap(int *pa, int *pb) {
+    int tampon = *pa;
+    *pa = *pb;
+    *pb = tampon;
+}
+
+int main(void) {
+    int x = 3;
+    int y = 8;
+    printf("Avant : x = %d, y = %d\\n", x, y);
+    swap(&x, &y);
+    printf("Apres : x = %d, y = %d\\n", x, y);
+    return 0;
+}`} />
+
+La fonction reçoit les adresses de `x` et `y`. Elle range la valeur de `*pa` dans un tampon, écrase `*pa` avec `*pb`, puis remet le tampon dans `*pb`. Tout se passe dans les cases d'origine. Après l'appel, `x` vaut 8 et `y` vaut 3.
+
+Essayez de réécrire ce `swap` sans pointeurs, juste `void swap(int a, int b)`. Vous verrez que l'échange a bien lieu à l'intérieur de la fonction, mais que `main` continue d'afficher 3 et 8. C'est le test qui rend la notion concrète : sans adresse, une fonction ne peut pas modifier l'appelant.
+
+## le cas des tableaux
+
+Il y a un endroit où le passage par adresse se produit sans qu'on l'ait demandé : les tableaux. En C, le nom d'un tableau vaut l'adresse de son premier élément. Écrire `notes` revient en pratique à écrire `&notes[0]`. Du coup, quand vous passez un tableau à une fonction, vous ne passez jamais une copie de tous ses éléments. Vous passez un pointeur vers le premier. La fonction travaille donc directement sur le tableau d'origine.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+void doublerTab(int t[], int taille) {
+    for (int i = 0; i < taille; i++) {
+        t[i] = t[i] * 2;
+    }
+}
+
+int main(void) {
+    int donnees[4] = {3, 5, 7, 9};
+    doublerTab(donnees, 4);
+    for (int i = 0; i < 4; i++) {
+        printf("donnees[%d] = %d\\n", i, donnees[i]);
+    }
+    return 0;
+}`} />
+
+Aucun `return` ici, et pourtant le tableau de `main` est bien modifié. Le paramètre `int t[]` est en réalité un `int *` déguisé : la fonction écrit dans les vraies cases. C'est le même mécanisme que `swap`, sauf qu'avec les tableaux il est automatique.
+
+Cette commodité a une contrepartie. Comme la fonction ne reçoit qu'une adresse de départ, elle ignore combien d'éléments contient le tableau. Le pointeur ne mémorise pas la longueur.
+
+<Callout type="info">
+Une fonction qui reçoit un tableau ne connaît pas sa taille. Vous devez toujours la passer en paramètre à part, comme le `taille` ci-dessus. Sans ça, la fonction n'a aucun moyen de savoir où s'arrêter, et la moindre boucle qui dépasse lit ou écrit hors limites. Le `sizeof` qui donnait la taille dans `main` ne vaut plus rien une fois le tableau passé à la fonction : il y mesurerait la taille d'un pointeur, pas du tableau.
+</Callout>
+
+## à quoi ça sert
+
+Trois raisons reviennent constamment pour passer par adresse.
+
+La première, on l'a vue partout : permettre à une fonction de modifier une variable de l'appelant. C'est `doubler`, `swap`, `doublerTab`.
+
+La deuxième, c'est de renvoyer plusieurs résultats. Une fonction C ne peut faire qu'un seul `return`. Mais elle peut remplir autant de variables qu'on veut si on lui passe leurs adresses. Une fonction `minMax` reçoit `int *pmin` et `int *pmax`, parcourt un tableau, et dépose le minimum dans `*pmin` et le maximum dans `*pmax`. Un seul appel, deux valeurs récupérées. C'est le motif idiomatique pour contourner le `return` unique.
+
+La troisième, c'est l'efficacité. Copier un `int` ne coûte rien, mais copier une grosse structure de plusieurs centaines d'octets à chaque appel, c'est du gaspillage. En passant l'adresse, on transmet juste un pointeur, quelques octets, quelle que soit la taille de l'objet. La fonction lit la structure sur place sans la dupliquer. C'est pour ça que les gros objets en C circulent presque toujours par adresse.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz
+  id="c-adresse-q1"
+  question="Que reçoit une fonction lorsqu'on lui passe une variable par valeur ?"
+  options={["L'adresse de la variable", "Une copie de la valeur de la variable", "Un pointeur vers la variable", "Rien, la fonction lit la variable globale"]}
+  correct={1}
+  explanation="Par valeur, la fonction reçoit une copie jetable ; modifier cette copie ne touche pas l'original."
+/>
+<Quiz
+  id="c-adresse-q2"
+  question="Dans une fonction swap par adresse, pourquoi l'échange persiste-t-il après le retour ?"
+  options={["Parce que la fonction renvoie les deux valeurs avec return", "Parce que la fonction écrit dans les cases d'origine via les pointeurs reçus", "Parce que les variables sont globales", "Parce que le C copie le résultat automatiquement"]}
+  correct={1}
+  explanation="On passe &x et &y ; la fonction modifie *pa et *pb, c'est-à-dire les vraies cases mémoire de l'appelant."
+/>
+<Quiz
+  id="c-adresse-q3"
+  question="Pourquoi faut-il passer la taille d'un tableau à une fonction ?"
+  options={["Parce que le pointeur reçu ne contient pas le nombre d'éléments", "Parce que le C interdit les tableaux sans taille", "Pour que la fonction soit plus rapide", "Ce n'est jamais nécessaire"]}
+  correct={0}
+  explanation="Le nom du tableau se dégrade en pointeur vers le premier élément ; l'information de taille est perdue et doit être transmise séparément."
+/>
+</QuizGroup>
+
+## à retenir
+
+- Le passage par valeur transmet une copie. Modifier le paramètre ne change pas la variable de l'appelant.
+- Le passage par adresse transmet un pointeur. À l'appel on met `&variable`, dans la fonction on écrit dans l'original via `*p`.
+- L'échange de deux variables est impossible par valeur. Une fonction `swap` n'existe qu'avec des pointeurs.
+- Le nom d'un tableau vaut l'adresse de son premier élément. Passer un tableau passe donc un pointeur, jamais une copie : la fonction modifie le tableau d'origine.
+- Une fonction ignore la taille du tableau reçu. Il faut toujours la transmettre en paramètre séparé, sinon on lit ou on écrit hors limites.
+- On passe par adresse pour trois raisons : modifier l'appelant, renvoyer plusieurs résultats, et éviter de recopier de gros objets.
+- Les pièges récurrents : oublier le `&` à l'appel, oublier l'étoile dans la fonction.
+
+OK 10 réécrit

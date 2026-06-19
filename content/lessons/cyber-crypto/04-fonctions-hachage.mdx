@@ -1,0 +1,114 @@
+---
+refCode: CL-LSN-100-V01
+slug: crypto-hachage
+title: "Fonctions de hachage cryptographiques"
+description: "Comprenez ce qui distingue une fonction de hachage cryptographique : empreinte de taille fixe à sens unique, effet avalanche, résistance aux collisions, et son rôle pour vérifier l'intégrité des données."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 480
+prerequisites: ["CL-LSN-097-V01"]
+---
+
+Prenez n'importe quoi : un mot de trois lettres, un film de deux heures, l'intégralité d'une bibliothèque. Une fonction de hachage le ramène à une suite de caractères de longueur fixe, toujours la même taille, quelle que soit la donnée de départ. Avec SHA-256, cette suite fait 256 bits, soit 64 caractères hexadécimaux. Le mot abc et un fichier de dix gigaoctets sortent tous les deux sous la forme d'une empreinte de 64 caractères.
+
+Et voilà le point qui change tout : une fois cette empreinte calculée, vous ne pouvez pas revenir en arrière. Il n'existe pas de bouton qui, à partir de l'empreinte, vous redonne le fichier d'origine. L'information de départ n'est pas cachée dans l'empreinte, elle est broyée. C'est ce qu'on appelle une fonction à sens unique, et c'est précisément ce qui rend ces fonctions utiles en sécurité.
+
+## les propriétés qui comptent
+
+Une fonction de hachage n'est pas n'importe quel mélangeur de données. Pour être qualifiée de cryptographique, elle doit tenir plusieurs promesses en même temps.
+
+Elle est déterministe. La même entrée donne toujours, sur n'importe quelle machine et à n'importe quel moment, exactement la même empreinte. Si abc sortait parfois différemment, l'empreinte ne servirait à rien pour comparer.
+
+Elle est rapide à calculer. Hacher un gros fichier doit prendre une fraction de seconde. C'est pratique pour l'intégrité, mais gardez cette rapidité en tête : elle deviendra un défaut quand on parlera des mots de passe, plus loin.
+
+Elle est à sens unique. À partir d'une empreinte donnée, retrouver une entrée qui la produit doit être hors de portée. On appelle ça la résistance à la préimage. Pas un peu difficile : infaisable en pratique, même avec énormément de puissance de calcul.
+
+Elle a un effet avalanche. Changez un seul bit de l'entrée, et l'empreinte change du tout au tout, en moyenne la moitié des bits basculent. Il n'y a aucune ressemblance entre l'empreinte de abc et celle de abd. Rien ne permet de deviner qu'on est passé d'une entrée à une entrée presque identique.
+
+Elle résiste aux collisions. Une collision, c'est deux entrées différentes qui produisent la même empreinte. Comme il y a une infinité d'entrées possibles pour un nombre fini d'empreintes, des collisions existent forcément en théorie. La propriété cryptographique demande qu'on soit incapable d'en fabriquer une volontairement. Tant que personne ne sait construire deux fichiers distincts avec la même empreinte, la fonction tient.
+
+<Callout type="info">
+Distinguez deux choses proches. La résistance à la préimage protège une empreinte précise : on vous donne une empreinte, vous ne savez pas remonter à une entrée. La résistance aux collisions est plus exigeante : personne ne doit pouvoir trouver une paire quelconque d'entrées qui collisionnent, même en choisissant les deux librement. C'est cette seconde propriété qui a lâché sur MD5 et SHA-1.
+</Callout>
+
+## l'effet avalanche en pratique
+
+Le mieux pour sentir l'effet avalanche, c'est de le calculer soi-même. Voici de quoi produire une empreinte SHA-256 en Python.
+
+<PythonChallenge id="py-1" title="Calculer une empreinte SHA-256" description="Renvoie l'empreinte SHA-256 hexadécimale du texte donné. Indice : encode() puis hexdigest()." starterCode="import hashlib
+
+def solution(texte):
+    pass" tests={[{ input: "solution('abc')", expected: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" }, { input: "solution('hello')", expected: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824" }]} />
+
+Une fois que ça marche, faites l'expérience qui compte. Hachez abc, puis hachez abd. Une seule lettre de différence, la dernière, décalée d'un cran. Comparez les deux empreintes côte à côte. Vous ne verrez aucun motif commun, aucun bloc préservé. C'est l'avalanche : la modification minuscule en entrée se propage à toute la sortie. C'est aussi pour ça qu'une empreinte est un excellent détecteur de changement, on y revient plus bas.
+
+## hachage n'est pas chiffrement
+
+Beaucoup de gens confondent les deux, alors posons la frontière nettement.
+
+Le chiffrement est réversible par conception. On transforme un message en quelque chose d'illisible avec une clé, et la personne qui possède la bonne clé peut refaire le chemin en sens inverse et retrouver le message exact. Le but du chiffrement, c'est de protéger la confidentialité tout en gardant la possibilité de récupérer la donnée.
+
+Le hachage n'a pas de clé et ne se défait pas. Il n'y a pas de version chiffrée puis déchiffrée : il y a une donnée, et son empreinte, point. On ne récupère jamais l'entrée à partir de l'empreinte. Le but n'est pas de cacher pour ensuite révéler, mais de produire une signature courte et fidèle de la donnée.
+
+<Callout type="warning">
+Si quelqu'un vous parle de déchiffrer un hash ou de décrypter un SHA-256, c'est un contresens. On ne déchiffre pas une empreinte, il n'y a rien à déchiffrer. Ce qu'on peut parfois faire, c'est deviner l'entrée en essayant des candidats et en comparant les empreintes. C'est de la recherche par essais, pas une inversion de la fonction.
+</Callout>
+
+## les algorithmes
+
+Tous les algorithmes de hachage ne se valent pas, et certains qui étaient corrects il y a vingt ans ne le sont plus.
+
+SHA-256 fait partie de la famille SHA-2, publiée par le NIST. C'est le choix standard aujourd'hui pour l'intégrité et les signatures. Aucune méthode connue ne permet de fabriquer des collisions, et l'empreinte de 256 bits laisse une marge confortable. Ses cousins SHA-384 et SHA-512 existent quand on veut une sortie plus longue. Plus récent, SHA-3 repose sur une construction différente et sert d'alternative, sans remplacer SHA-2.
+
+MD5 et SHA-1, eux, sont cassés pour les collisions. MD5 est tombé dès le milieu des années 2000 : on sait produire deux fichiers distincts avec la même empreinte MD5, et ça se fait vite. SHA-1 a suivi en 2017 avec l'attaque SHAttered, qui a montré deux PDF différents partageant la même empreinte SHA-1. Attention au piège : ces deux algorithmes restent à sens unique au sens de la préimage, mais leur résistance aux collisions est morte. Pour tout usage de sécurité, vous les remplacez par SHA-256.
+
+<Callout type="danger">
+N'utilisez jamais MD5 ou SHA-1 pour une signature, un certificat, ou tout ce qui doit prouver qu'un contenu n'a pas été remplacé. Un attaquant capable de fabriquer une collision peut faire passer un fichier malveillant pour un fichier légitime. Pour un simple checksum de détection d'erreur de transfert, sans adversaire, MD5 traîne encore, mais dès qu'il y a un enjeu de sécurité, c'est SHA-256.
+</Callout>
+
+## à quoi ça sert
+
+L'usage le plus direct, c'est vérifier qu'un fichier n'a pas changé. Un éditeur publie son logiciel et, à côté du lien de téléchargement, affiche l'empreinte SHA-256 du fichier. Vous téléchargez, vous calculez l'empreinte de votre côté, vous comparez. Si les deux empreintes sont identiques, le fichier que vous avez est bit pour bit celui qui a été publié. Si une seule donnée a bougé, l'effet avalanche fait diverger l'empreinte et vous le voyez immédiatement.
+
+```text
+Fichier publié :  installer-2.4.1.iso
+SHA-256 annoncé : 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+
+$ sha256sum installer-2.4.1.iso
+9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08  installer-2.4.1.iso
+                              ^ les deux empreintes correspondent : fichier intact
+```
+
+L'autre grande idée, c'est de comparer sans stocker l'original. Comme l'empreinte est fidèle à la donnée et qu'on ne peut pas remonter à la donnée, on peut conserver l'empreinte au lieu du contenu. Un système de fichiers anti-doublons, une base de fichiers connus malveillants, un cache : tous comparent des empreintes plutôt que de comparer des contenus entiers.
+
+Le stockage des mots de passe est souvent cité comme exemple, et c'est là qu'il faut être prudent. Un mot de passe ne se range pas avec un simple SHA-256. La rapidité de SHA-256, qui est une qualité pour l'intégrité, devient un défaut face à un attaquant qui teste des milliards de candidats. Il faut un sel et une fonction lente, conçue exprès. C'est tout un sujet, traité dans sa propre leçon dédiée. Ne haché pas un mot de passe avec ce que vous venez d'apprendre ici.
+
+## à toi de jouer
+
+Reprenez votre fonction et servez-vous-en pour répondre.
+
+<PythonChallenge id="py-2" title="Comparer deux empreintes" description="Renvoie True si les deux textes ont la même empreinte SHA-256, False sinon. Réutilisez hashlib." starterCode="import hashlib
+
+def solution(a, b):
+    pass" tests={[{ input: "solution('abc', 'abc')", expected: "True" }, { input: "solution('abc', 'abd')", expected: "False" }]} />
+
+<Quiz id="q-1" question="Que garantit la résistance aux collisions d'une fonction de hachage ?" options={["Qu'on ne peut pas retrouver l'entrée à partir de l'empreinte", "Qu'on ne peut pas fabriquer deux entrées différentes ayant la même empreinte", "Que l'empreinte fait toujours 256 bits", "Que l'empreinte peut être déchiffrée avec une clé"]} correct={1} />
+
+<Quiz id="q-2" question="Vous changez une seule lettre dans un fichier puis recalculez son SHA-256. À quoi vous attendez-vous ?" options={["Une empreinte presque identique, à un caractère près", "Une empreinte totalement différente de la précédente", "La même empreinte, car le fichier reste proche", "Une empreinte plus longue qu'avant"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi éviter MD5 et SHA-1 pour la sécurité aujourd'hui ?" options={["Ils produisent des empreintes trop longues", "On sait fabriquer des collisions volontaires sur ces algorithmes", "Ils sont réversibles avec une clé", "Ils ne sont pas déterministes"]} correct={1} />
+
+## à retenir
+
+Une fonction de hachage cryptographique transforme une entrée de taille quelconque en une empreinte de taille fixe, à sens unique. SHA-256 produit 64 caractères hexadécimaux quelle que soit l'entrée.
+
+Les propriétés à connaître : déterministe, rapide, à sens unique (préimage), effet avalanche (un bit change, toute l'empreinte change), et résistance aux collisions (impossible de fabriquer deux entrées avec la même empreinte).
+
+Hachage et chiffrement sont deux choses différentes. Le chiffrement se défait avec une clé, le hachage ne se défait pas. On ne déchiffre pas une empreinte.
+
+SHA-256 est le standard actuel. MD5 et SHA-1 sont cassés pour les collisions et ne doivent plus servir en sécurité.
+
+Usage principal : vérifier l'intégrité en comparant une empreinte recalculée à une empreinte publiée. Pour les mots de passe, un simple SHA-256 ne suffit pas, voyez la leçon dédiée.
+
+OK 04 écrit

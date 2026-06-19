@@ -1,0 +1,92 @@
+---
+refCode: CL-LSN-187-V01
+slug: systeme-journaux-supervision
+title: "Journaux et supervision d'un serveur"
+description: "Savoir ce qui se passe sur un serveur : où vivent les logs, comment les filtrer et les suivre avec journalctl, la rotation pour ne pas saturer le disque, et l'idée de centralisation et de supervision."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 510
+prerequisites: ["CL-LSN-183-V01"]
+---
+
+Un serveur, la plupart du temps, tu ne le regardes pas. Il tourne tout seul, quelque part dans un datacenter, et personne ne se connecte dessus pendant des semaines. Puis un jour le site ne répond plus, ou il rame, ou un service refuse de démarrer. Et là, première question : qu'est-ce qui s'est passé ?
+
+Tu n'étais pas devant l'écran au moment du problème. Personne ne l'était. La seule chose qui a vu ce qui s'est passé, c'est la machine elle-même, et elle a (normalement) tout noté quelque part. Ces notes, ce sont les journaux. Les logs.
+
+Pense au serveur comme à une boîte noire d'avion. Tu ne peux pas remonter dans le temps pour observer le crash en direct, mais l'enregistreur a tout gardé : à quelle heure, quel service, quel message. Lire les logs, c'est ouvrir cette boîte noire. C'est presque toujours le premier geste de dépannage, avant de toucher à quoi que ce soit. On regarde ce que la machine raconte, puis on agit.
+
+## où vivent les logs
+
+Sur un Linux moderne, les journaux vivent à deux endroits, et il faut connaître les deux.
+
+Le premier, c'est le journal de systemd. systemd, c'est le chef d'orchestre qui démarre et surveille tous les services de la machine (le serveur web, SSH, la base de données...). Au passage, il collecte tout ce que ces services racontent dans un journal binaire centralisé. Tu ne lis pas ce journal avec un éditeur de texte : tu l'interroges avec une commande, `journalctl`.
+
+Le second endroit, ce sont les bons vieux fichiers texte dans `/var/log`. Beaucoup de programmes écrivent directement leurs lignes dans des fichiers là-dedans : un fichier pour l'authentification, un pour les messages système, un dossier pour ton serveur web, etc. Ce sont de simples fichiers que tu peux lire ligne par ligne.
+
+<Callout type="info">
+Sur les systèmes récents, journalctl et /var/log se recoupent en partie : un même événement peut apparaître aux deux endroits. Ce n'est pas grave. Retiens juste qu'il y a une porte centrale (journalctl) et des fichiers à part (/var/log), et que selon les distributions et les services, l'info est plutôt d'un côté ou de l'autre.
+</Callout>
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Lire et suivre les journaux" commands={{"journalctl -u ssh --no-pager | tail -3": "Accepted password for admin from 10.0.0.5", "journalctl -p err --no-pager | tail -2": "kernel: Out of memory: Killed process 2451 (java)", "journalctl -f": "(suit les nouveaux messages en temps reel)", "ls /var/log": "auth.log  syslog  nginx/  dpkg.log", "tail -f /var/log/nginx/access.log": "10.0.0.5 GET /index.html 200"}} />
+
+## filtrer et suivre
+
+Un serveur en production peut produire des milliers de lignes par minute. Si tu lis tout, tu ne vois rien. Tout l'art consiste à cibler.
+
+Filtrer par service, d'abord. Avec `journalctl -u ssh`, tu ne vois que ce qui concerne SSH. Tu débugges un problème de serveur web ? `journalctl -u nginx`, et tu ne te noies pas dans le bruit des autres services. C'est le filtre que tu utiliseras le plus.
+
+Filtrer par priorité, ensuite. Chaque message a un niveau de gravité : info, avertissement, erreur, critique. La plupart des lignes sont du bruit normal. Ce qui t'intéresse quand ça casse, ce sont les erreurs. `journalctl -p err` ne garde que les messages de niveau erreur et au-dessus. En une commande, tu passes de dix mille lignes à la poignée qui compte vraiment. Dans la sortie ci-dessus, c'est comme ça qu'on voit que le noyau a tué un processus Java par manque de mémoire : un indice énorme sur la cause de la panne.
+
+Suivre en temps réel, enfin. L'option `-f` (pour *follow*) garde la commande ouverte et affiche les nouvelles lignes au fur et à mesure qu'elles arrivent. Tu lances `journalctl -f` dans un coin, tu reproduis le bug dans un autre, et tu vois les messages apparaître en direct au moment exact où ça se produit. C'est le réflexe quand tu cherches à comprendre un problème que tu peux déclencher à la demande.
+
+Ces trois filtres se combinent. `journalctl -u nginx -p err -f` te montre, en direct, uniquement les erreurs du serveur web. Tu as réduit un fleuve à un filet d'eau que ton cerveau peut traiter.
+
+## les fichiers de /var/log
+
+Tous les services ne passent pas par journalctl. Certains, surtout les serveurs web et beaucoup d'applis, écrivent dans leurs propres fichiers sous `/var/log`. Quelques noms à connaître.
+
+`auth.log` (ou `secure` sur d'autres distributions) note tout ce qui touche à l'authentification : qui s'est connecté, qui a échoué, quel `sudo` a été lancé. C'est le premier fichier qu'on ouvre quand on soupçonne une intrusion ou qu'on enquête sur un accès. `syslog` est le fourre-tout des messages système généraux. Et les applis ont leurs propres logs : un serveur web nginx tient typiquement un `access.log` (chaque requête reçue) et un `error.log` (ce qui a planté).
+
+Pour suivre un fichier en direct, le réflexe est le même que `-f` côté journalctl : `tail -f /var/log/nginx/access.log` affiche les nouvelles requêtes au moment où elles arrivent. Tu visites une page, tu la vois apparaître dans le terminal une seconde plus tard. Très pratique pour vérifier qu'un trafic arrive bien jusqu'au serveur, ou pour regarder une attaque tenter ses requêtes une par une.
+
+## la rotation des logs
+
+Un fichier de log, par nature, ne fait que grossir. Chaque requête, chaque erreur ajoute une ligne, et rien n'est jamais effacé tout seul. Sur un serveur web qui prend du trafic, `access.log` peut prendre des centaines de mégaoctets par jour. Laissé sans surveillance, il finit par remplir le disque. Et un disque plein, c'est la panne classique : plus rien ne peut écrire, les services tombent, et le pire, c'est que les logs eux-mêmes ne peuvent plus s'écrire, donc tu perds la trace du moment où tout a basculé.
+
+La solution s'appelle la rotation, gérée par un outil nommé `logrotate`. L'idée est simple : à intervalle régulier (chaque jour, chaque semaine), il renomme le log courant en archive, en démarre un neuf et vide, compresse les archives, et supprime les plus vieilles au-delà d'un certain nombre. Tu te retrouves avec `access.log`, `access.log.1`, `access.log.2.gz`, et ainsi de suite, sur une fenêtre bornée. Tu gardes l'historique récent sans jamais laisser un seul fichier grossir à l'infini.
+
+<Callout type="warning">
+La rotation tourne en général déjà toute seule pour les logs standards. Le piège, c'est ton appli maison qui écrit dans un fichier que personne n'a pensé à inclure dans logrotate. Il grossit tranquillement pendant des mois, puis un matin le disque est plein et le serveur tombe. Quand tu fais écrire un log à un programme, demande-toi tout de suite : qui va le faire tourner ?
+</Callout>
+
+## centraliser et superviser
+
+Garder les logs sur la machine elle-même a deux limites. D'abord, si tu as cinquante serveurs, te connecter à chacun pour lire ses logs ne tient pas la route. Ensuite, et c'est le point sécurité, un attaquant qui prend le contrôle d'une machine commence souvent par effacer les logs pour cacher son passage. Si la seule copie est sur place, elle disparaît avec le reste.
+
+D'où l'idée de centralisation : chaque serveur envoie ses logs, en continu, vers un serveur de collecte dédié. Les logs vivent ailleurs, à un endroit que l'intrus compromis ne touche pas. C'est exactement la logique d'un SOC, le centre de surveillance côté défense. Les analystes ne se baladent pas de machine en machine ; ils regardent un flux unifié où tous les logs convergent, ce qui leur permet de repérer une attaque qui touche plusieurs serveurs à la fois. Les logs, ici, ne servent plus à dépanner mais à détecter.
+
+L'autre moitié, c'est la supervision des métriques : surveiller en continu des chiffres comme la charge processeur, la mémoire libre, l'espace disque, et déclencher une alerte avant la panne. Le disque atteint 90 % ? Tu reçois une notification pendant qu'il reste de la marge, au lieu de découvrir le problème quand tout est déjà tombé. Les logs te disent ce qui s'est passé ; les métriques te préviennent de ce qui est en train de mal tourner.
+
+## à toi de jouer
+
+Reprends les commandes et observe ce que chaque filtre te montre. Note comment `-u` cible un service et comment `-p err` fait remonter directement la cause d'une panne.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Lire et suivre les journaux" commands={{"journalctl -u ssh --no-pager | tail -3": "Accepted password for admin from 10.0.0.5", "journalctl -p err --no-pager | tail -2": "kernel: Out of memory: Killed process 2451 (java)", "journalctl -f": "(suit les nouveaux messages en temps reel)", "ls /var/log": "auth.log  syslog  nginx/  dpkg.log", "tail -f /var/log/nginx/access.log": "10.0.0.5 GET /index.html 200"}} />
+
+<Quiz id="q-1" question="Tu débugges uniquement le serveur SSH. Quelle commande limite le journal à ce seul service ?" options={["journalctl -p ssh", "journalctl -u ssh", "journalctl --service=ssh", "tail -f ssh"]} correct={1} />
+
+<Quiz id="q-2" question="À quoi sert logrotate sur un serveur ?" options={["À chiffrer les fichiers de log", "À envoyer les logs vers un SOC distant", "À archiver et purger les vieux logs pour qu'un fichier ne remplisse pas le disque", "À suivre les logs en temps réel"]} correct={2} />
+
+<Quiz id="q-3" question="Pourquoi envoyer les logs vers un serveur central distant est utile côté sécurité ?" options={["Ça accélère la machine d'origine", "Un attaquant qui efface les logs locaux ne touche pas la copie distante", "Ça remplace la rotation des logs", "Ça désactive les erreurs de priorité err"]} correct={1} />
+
+## à retenir
+
+- Quand un serveur cloche, on lit les logs en premier : la machine a noté ce qu'on n'a pas vu. Modèle de la boîte noire.
+- Deux endroits : le journal de systemd, interrogé par `journalctl`, et les fichiers texte de `/var/log`.
+- On filtre au lieu de tout lire : `-u service` cible un service, `-p err` ne garde que les erreurs, `-f` suit en temps réel. Ces filtres se combinent.
+- Dans `/var/log` : `auth.log` (connexions), `syslog` (système), les logs applicatifs comme `nginx/access.log`. `tail -f` suit un fichier en direct.
+- Sans rotation, un log grossit jusqu'à remplir le disque et faire tomber le serveur. `logrotate` archive, compresse et purge.
+- Centraliser les logs ailleurs les met hors de portée d'un attaquant qui efface ses traces (logique du SOC). Surveiller les métriques (charge, mémoire, disque) permet de réagir avant la panne.
+
+OK 07 écrit

@@ -1,0 +1,105 @@
+---
+refCode: CL-LSN-082-V01
+slug: cyber-reponse-incident
+title: "Réagir à un incident de sécurité"
+description: "Sachez quoi faire quand ça tourne mal : les étapes de la réponse à incident (préparation, détection, confinement, éradication, récupération), et les réflexes à éviter dans la panique."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 400
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Un matin, un de tes collègues t'appelle. Son écran affiche un message rouge : ses fichiers sont chiffrés, on lui demande de payer en bitcoins pour les récupérer. Il a déjà cliqué partout, débranché des câbles au hasard, et il s'apprête à éteindre son poste « pour que ça s'arrête ». Que fais-tu dans les dix minutes qui suivent ?
+
+Cette leçon parle de ce moment précis. Pas de la théorie générale, mais des gestes concrets quand un incident est en cours.
+
+Première idée à intégrer : la question n'est pas de savoir si un incident arrivera, mais quand. Même une petite structure finit par voir passer un poste infecté, un mot de passe volé, une boîte mail compromise. Si tu attends ce jour-là pour réfléchir à quoi faire, tu prendras tes décisions dans la panique. Et la panique pousse aux mauvais choix : éteindre la machine, payer la rançon, supprimer des traces, prévenir personne. Un plan préparé à froid remplace l'improvisation par des réflexes.
+
+## les étapes de la réponse
+
+La réponse à incident suit une suite d'étapes assez stable, quel que soit le référentiel. On peut la résumer ainsi.
+
+<Diagram caption="Le cycle de réponse à incident, de la préparation au retour d'expérience">
+flowchart TD
+  A[Préparation : plan, contacts, sauvegardes] --> B[Détection : on repère quelque chose d anormal]
+  B --> C[Confinement : on limite la propagation]
+  C --> D[Éradication : on supprime la cause]
+  D --> E[Récupération : on remet en service proprement]
+  E --> F[Leçons apprises : on corrige et on documente]
+  F --> A
+</Diagram>
+
+**Préparation.** C'est tout ce que tu fais avant l'incident : avoir une liste de qui appeler, savoir où sont les sauvegardes, disposer d'un minimum de procédures. Sans préparation, les autres étapes se font à l'aveugle.
+
+**Détection et identification.** Quelqu'un ou quelque chose repère un signe : une alerte antivirus, un comportement bizarre, un fichier de rançon, un collègue qui signale un mail suspect. Il faut confirmer qu'il s'agit bien d'un incident et en cerner l'ampleur. Combien de machines ? Quels comptes ? Depuis quand ?
+
+**Confinement.** On empêche la chose de s'étendre. Isoler une machine, couper un accès, désactiver un compte compromis. L'objectif est d'arrêter l'hémorragie sans tout casser.
+
+**Éradication.** On retire la cause : le logiciel malveillant, le compte pirate, la faille exploitée. Nettoyer ne suffit pas toujours ; parfois il faut réinstaller la machine de zéro.
+
+**Récupération.** On remet le service en route, en surveillant que l'attaquant ne revient pas. On restaure depuis des sauvegardes saines, on remet les utilisateurs au travail par étapes.
+
+**Leçons apprises.** Une fois le calme revenu, on regarde ce qui s'est passé, pourquoi, et ce qu'on change pour que ça ne recommence pas.
+
+## confiner sans détruire les preuves
+
+C'est ici que se joue l'erreur la plus fréquente. Face à une machine infectée, le premier réflexe de beaucoup de gens est de l'éteindre. C'est compréhensible, mais c'est souvent une mauvaise idée.
+
+Ce qu'il faut faire d'abord : isoler la machine du réseau. Concrètement, tu débranches le câble Ethernet et tu coupes le Wi-Fi. La machine reste allumée, mais elle ne peut plus parler à rien. Tu stoppes ainsi la propagation et la communication avec l'attaquant, sans perdre d'information.
+
+Pourquoi ne pas éteindre ? Parce que la mémoire vive (la RAM) contient des éléments qui disparaissent dès que la machine s'arrête : processus en cours, clés de chiffrement parfois encore présentes, connexions réseau actives, traces de ce que faisait le programme malveillant. Pour quelqu'un qui analysera l'incident, cette mémoire raconte une partie de l'histoire. L'éteindre, c'est effacer le tableau avant d'avoir pris la photo.
+
+<Callout type="warning">
+Le réflexe « j'éteins tout » détruit la mémoire vive, qui contient souvent les indices les plus utiles à l'analyse. Débranche le réseau, mais laisse la machine allumée, sauf consigne contraire de la personne qui mène l'investigation. Si un chiffrement est en cours et progresse, c'est l'une des rares situations où couper l'alimentation peut se justifier pour sauver des fichiers.
+</Callout>
+
+## le cas du rançongiciel
+
+Reprenons le poste de ton collègue. Les fichiers sont chiffrés, une rançon est demandée. Trois questions reviennent toujours : on paie ? on isole ? on restaure ?
+
+On n'isole d'abord. Le rançongiciel cherche souvent à se propager aux dossiers partagés et aux autres machines. Couper le réseau de la machine touchée limite les dégâts au reste du parc.
+
+On ne paie pas. C'est une règle simple, et voici pourquoi. Payer ne te garantit rien : dans une partie des cas, la clé de déchiffrement ne fonctionne pas, ou n'arrive jamais. Payer finance directement une activité criminelle et encourage les attaquants à recommencer, chez toi ou ailleurs. Et payer fait de toi une cible connue pour « payeuse », donc une bonne candidate pour la prochaine attaque.
+
+<Callout type="danger">
+Payer une rançon n'achète aucune certitude. Tu peux verser l'argent et ne jamais récupérer tes données. Tu finances le crime, tu signales que tu paies, et tu n'as toujours aucune preuve que l'attaquant a quitté ton réseau. Avant même de penser au paiement, contacte les autorités compétentes : il existe parfois des outils de déchiffrement gratuits pour certaines familles de rançongiciels.
+</Callout>
+
+On restaure depuis des sauvegardes. C'est la vraie réponse au rançongiciel. Si tu as des sauvegardes récentes, propres et déconnectées du réseau, tu réinstalles les machines et tu remets les données. Le mot important est « testées ». Une sauvegarde qu'on n'a jamais essayé de restaurer est une promesse, pas une garantie. Beaucoup d'organisations découvrent le jour de l'incident que leurs sauvegardes étaient incomplètes, corrompues, ou elles-mêmes chiffrées parce qu'elles restaient branchées en permanence.
+
+## les journaux et les preuves
+
+Pendant que tu réagis, des journaux (logs) enregistrent ce qui se passe : connexions, accès aux fichiers, événements système, trafic réseau. Au moment de l'incident, ils peuvent sembler accessoires. Après coup, ce sont eux qui répondent aux vraies questions.
+
+Par où l'attaquant est-il entré ? Quel compte a été utilisé ? À quelle heure ? Quelles données ont été consultées ou copiées ? Sans journaux, tu sais que quelque chose s'est passé, mais pas comment ni jusqu'où. Avec eux, tu peux reconstituer le déroulé et savoir si l'attaquant est encore là.
+
+D'où deux réflexes. Ne supprime rien dans la précipitation : un fichier effacé pour « faire le ménage » est peut-être une preuve. Et conserve les journaux à part, idéalement sur un système centralisé que l'attaquant ne peut pas modifier, parce qu'un intrus malin commence souvent par effacer ses traces.
+
+## après : les leçons apprises
+
+L'incident est terminé, le service tourne à nouveau. La tentation est de tourner la page. C'est une erreur, car tu risques de revivre exactement la même chose.
+
+Le point central : corriger la cause, pas seulement le symptôme. Si le rançongiciel est entré par une pièce jointe ouverte par un employé, réinstaller la machine ne change rien au problème de fond. La cause, c'était peut-être l'absence de filtrage des mails, un manque de sensibilisation, ou un compte aux droits trop larges. Tant que la cause reste, la porte reste ouverte.
+
+Documente, aussi. Écris ce qui s'est passé, ce que vous avez fait, ce qui a bien marché et ce qui a coincé. Pas pour blâmer quelqu'un, mais pour que la prochaine réponse soit plus rapide. Un compte rendu honnête d'incident vaut plus que dix réunions sur la sécurité « en général ». Tu en tires des actions concrètes : activer les sauvegardes hors-ligne, fermer un accès, former une équipe.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Un poste affiche un message de rançon. Quel est le bon premier réflexe ?" options={["Éteindre immédiatement la machine pour stopper le chiffrement", "Isoler la machine du réseau en la laissant allumée", "Payer vite pour limiter les dégâts", "Supprimer les fichiers suspects pour nettoyer"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi évite-t-on d éteindre une machine compromise si on peut l isoler ?" options={["Parce que le redémarrage est trop long", "Parce que la mémoire vive contient des indices qui disparaissent à l arrêt", "Parce que l antivirus a besoin que la machine reste allumée", "Parce qu éteindre annule les sauvegardes"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle est la meilleure réponse durable à une attaque par rançongiciel ?" options={["Payer la rançon pour obtenir la clé", "Négocier le montant avec les attaquants", "Restaurer depuis des sauvegardes saines et testées", "Renommer les fichiers chiffrés"]} correct={2} />
+
+## à retenir
+
+- Un incident finit toujours par arriver. Avoir un plan évite les décisions de panique.
+- Les étapes : préparation, détection, confinement, éradication, récupération, leçons apprises.
+- Face à une machine infectée, isole-la du réseau au lieu de l'éteindre : la mémoire vive contient des preuves.
+- Ne paie pas la rançon. Aucune garantie, ça finance le crime, et ça te désigne comme cible.
+- La vraie parade au rançongiciel, ce sont des sauvegardes récentes, déconnectées et testées.
+- Conserve les journaux et ne détruis pas de traces : ils expliquent comment l'attaque a eu lieu.
+- Après l'incident, corrige la cause et documente, sinon tu rejoueras la même scène.
+
+OK 10-reponse-incident.mdx écrit

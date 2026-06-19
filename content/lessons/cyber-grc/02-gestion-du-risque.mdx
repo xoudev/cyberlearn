@@ -1,0 +1,113 @@
+---
+refCode: CL-LSN-122-V01
+slug: grc-gestion-du-risque
+title: "La gestion du risque"
+description: "Le coeur de la GRC : définir un risque, l'analyser avec une matrice probabilité-impact, choisir entre éviter, réduire, transférer ou accepter, et comprendre pourquoi le risque zéro n'est pas l'objectif."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-121-V01"]
+---
+
+Une organisation a un budget sécurité fini et une liste de menaces qui, elle, ne l'est pas. Si vous essayez de tout protéger avec la même intensité, vous dépensez autant pour blinder l'imprimante du couloir que pour protéger la base de données des clients. C'est absurde, et pourtant beaucoup d'équipes fonctionnent comme ça par défaut, en colmatant ce qui fait le plus de bruit plutôt que ce qui compte le plus.
+
+Gérer le risque, c'est sortir de ce réflexe. C'est décider, de façon explicite et défendable, où mettre l'effort et où on accepte de ne pas en mettre. Cette leçon pose la mécanique de cette décision : ce qu'est un risque, comment on l'analyse, et comment on choisit quoi en faire.
+
+## qu'est-ce qu'un risque
+
+Un risque n'est pas une menace toute seule, ni une faille toute seule. Il naît de la rencontre de trois éléments.
+
+La **menace**, c'est ce qui peut mal tourner et qui vient de l'extérieur de votre contrôle direct : un attaquant, un incendie, une erreur humaine, une panne matérielle. La **vulnérabilité**, c'est la faiblesse chez vous que la menace peut exploiter : un mot de passe par défaut, un serveur non patché, un local sans détection incendie. L'**impact**, c'est ce que vous perdez si ça se produit : de l'argent, des données, du temps, de la réputation, une amende.
+
+Un risque existe seulement quand les trois se rencontrent. Une menace sans vulnérabilité correspondante ne mène à rien : un rançongiciel qui cible Windows ne fait rien à un parc 100 % Linux. Une vulnérabilité sans impact ne mérite pas qu'on s'inquiète : une faille sur un serveur de test vide et isolé reste une faille, mais elle ne coûte rien si elle est exploitée.
+
+On résume souvent ça par une formule mentale : risque = menace x vulnérabilité x impact. Ce n'est pas une vraie multiplication chiffrée, c'est un modèle. Le message est qu'il suffit qu'un seul des trois facteurs tombe à zéro pour que le risque disparaisse. Vous ne pouvez pas supprimer les menaces (elles existent dans le monde), mais vous pouvez agir sur les vulnérabilités et, parfois, réduire l'impact.
+
+<Callout type="info">
+Exemple concret. Menace : un employé clique sur un mail de phishing. Vulnérabilité : les comptes n'ont pas de double authentification, un mot de passe volé suffit pour entrer. Impact : accès à la boîte mail du dirigeant, fraude au virement. Les trois ensemble forment un risque réel. Activez la double authentification et vous n'avez pas supprimé la menace (les mails de phishing continuent), mais vous avez fermé la vulnérabilité, donc le risque chute.
+</Callout>
+
+## le processus
+
+La gestion du risque n'est pas un acte unique qu'on coche une fois pour toutes. C'est un cycle qu'on reparcourt, parce que le contexte bouge : de nouveaux systèmes arrivent, de nouvelles menaces apparaissent, les mesures vieillissent.
+
+On peut le découper en cinq étapes. **Identifier** : lister ce qu'on a à protéger (les actifs) et ce qui peut leur arriver. **Analyser** : pour chaque risque, estimer sa probabilité et son impact. **Évaluer** : comparer ces risques entre eux et les classer, pour savoir lesquels traiter en premier. **Traiter** : décider quoi faire de chacun (on verra les quatre options plus bas). **Surveiller** : vérifier que les mesures tiennent dans le temps et reprendre le cycle.
+
+<Diagram caption="Le cycle de gestion du risque">
+flowchart TD
+  A[Identifier les actifs et les risques] --> B[Analyser probabilite et impact]
+  B --> C[Evaluer et prioriser]
+  C --> D[Traiter eviter reduire transferer accepter]
+  D --> E[Surveiller dans le temps]
+  E --> A
+</Diagram>
+
+La flèche qui revient au début est la partie que les gens oublient. Un registre des risques fait une fois puis rangé dans un tiroir ne vaut rien six mois plus tard. C'est un document vivant.
+
+## la matrice probabilité-impact
+
+Une fois qu'on a une liste de risques, il faut les trier. On ne peut pas tous les traiter en même temps, donc on a besoin d'un moyen simple de dire lequel passe avant. La matrice probabilité-impact sert exactement à ça : on croise deux axes, la probabilité que l'événement arrive et la gravité de ses conséquences, et la case où tombe un risque donne sa priorité.
+
+| Probabilité \ Impact | Impact faible | Impact moyen | Impact élevé |
+|---|---|---|---|
+| **Probabilité élevée** | Moyen | Élevé | Élevé |
+| **Probabilité moyenne** | Faible | Moyen | Élevé |
+| **Probabilité faible** | Faible | Faible | Moyen |
+
+On la lit de façon intuitive. Un risque très probable mais sans conséquence (le café renversé sur un clavier remplaçable) reste bas. Un risque rare mais catastrophique (l'incendie de la salle serveur) monte quand même, parce que l'impact compense la faible probabilité. Le coin en haut à droite, probable et grave, c'est ce qu'on traite d'abord et sans discuter.
+
+Cette matrice est dite qualitative : on classe en faible, moyen, élevé sans chiffrer en euros. C'est rapide et suffisant pour prioriser. Quand l'enjeu le justifie, on passe à une approche quantitative, où on estime un coût annuel attendu (par exemple : un incident qui coûte 50 000 euros et survient en moyenne une fois tous les cinq ans représente une exposition de 10 000 euros par an). Le chiffre rend la comparaison plus fine, mais demande des données qu'on n'a pas toujours.
+
+## les quatre traitements
+
+Une fois un risque priorisé, vous avez quatre façons de le traiter. Aucune n'est meilleure dans l'absolu, le bon choix dépend du coût et de l'enjeu.
+
+**Éviter**, c'est supprimer l'activité qui crée le risque. Vous arrêtez de stocker les numéros de carte bancaire de vos clients : plus de données de carte chez vous, plus de risque de fuite de cartes. C'est radical et efficace, mais ça vous prive parfois de quelque chose d'utile, donc on l'emploie surtout quand le risque dépasse clairement le bénéfice.
+
+**Réduire**, c'est garder l'activité mais poser une mesure qui fait baisser la probabilité ou l'impact. C'est le traitement le plus courant. Vous chiffrez les disques, vous mettez de la double authentification, vous segmentez le réseau, vous faites des sauvegardes. Le risque ne disparaît pas, il devient plus petit.
+
+**Transférer**, c'est faire porter une partie du risque par quelqu'un d'autre. La cyberassurance qui rembourse une partie des frais après une attaque en est l'exemple type. Sous-traiter l'hébergement à un prestataire qui s'engage contractuellement en est un autre. Attention : transférer le coût financier ne transfère pas la responsabilité légale ni l'atteinte à la réputation. L'assurance paie, mais ce sont toujours vos clients dont les données ont fuité.
+
+**Accepter**, c'est décider, en connaissance de cause, de vivre avec le risque tel quel. Vous estimez qu'une mesure coûterait 80 000 euros pour protéger contre un incident qui coûterait au pire 5 000 euros une fois tous les dix ans. Dépenser pour ça n'a pas de sens. Vous documentez la décision et vous passez à autre chose. Accepter n'est pas ignorer : un risque ignoré n'a jamais été analysé, un risque accepté a été regardé en face puis assumé.
+
+## risque résiduel et appétence
+
+Après avoir traité un risque, il en reste presque toujours un morceau. Vous avez mis de la double authentification, mais un attaquant déterminé pourrait encore piéger un utilisateur par ingénierie sociale en temps réel. Ce qui subsiste après traitement s'appelle le **risque résiduel**. C'est normal, et c'est même attendu.
+
+La question devient alors : ce résidu est-il acceptable ? La réponse dépend de l'**appétence au risque** de l'organisation, c'est-à-dire le niveau de risque qu'elle est prête à porter pour atteindre ses objectifs. Une banque a une appétence faible sur les données clients et forte sur l'innovation produit. Une startup peut accepter plus de risque opérationnel pour aller vite. Il n'y a pas de bon chiffre universel, c'est un choix propre à chaque organisation.
+
+C'est là qu'on comprend pourquoi viser le risque zéro est une mauvaise idée. Chaque tranche de risque qu'on retire coûte de plus en plus cher : passer de 90 % à 99 % de protection coûte souvent autant que les 90 % du début, et passer de 99 % à 99,9 % coûte encore plus. À un moment, l'argent dépensé pour grappiller le dernier pourcent serait mieux investi ailleurs, ou rendrait le système si verrouillé que plus personne ne peut travailler. L'objectif n'est pas zéro risque, c'est un risque ramené sous le seuil que l'organisation a décidé d'accepter.
+
+<Callout type="warning">
+Le risque zéro n'existe pas, et le poursuivre est contre-productif. Un coffre-fort si lourd qu'on ne peut plus l'ouvrir ne protège plus rien d'utile. Le bon niveau de sécurité est celui qui ramène le risque résiduel sous l'appétence définie, pas celui qui l'annule à n'importe quel prix.
+</Callout>
+
+## qui décide
+
+Un point qu'on néglige souvent : accepter un risque n'est pas une décision technique. Quand un ingénieur dit "on laisse ce risque, c'est trop cher à corriger", il prend en réalité une décision de gestion qui engage l'organisation, sans en avoir forcément le mandat.
+
+L'acceptation d'un risque appartient à un responsable, à un niveau hiérarchique cohérent avec la gravité. Un petit risque opérationnel peut être accepté par un chef d'équipe. Un risque majeur sur des données sensibles remonte à la direction. Et cette acceptation se documente : on écrit quel risque, qui l'a accepté, à quelle date, sur quelle base. Le jour où l'incident survient, cette trace fait la différence entre une décision assumée et une négligence.
+
+C'est aussi ce qui protège les équipes techniques. Une faille connue, signalée, et que la direction a choisi de ne pas corriger pour des raisons de budget, devient la responsabilité de celui qui a signé l'acceptation, pas de l'ingénieur qui l'avait remontée.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Une vulnérabilité existe sur un serveur, mais ce serveur est vide, isolé et ne contient rien d'utile. Pourquoi le risque associé est-il faible ?" options={["Parce qu'une vulnérabilité sans menace n'existe pas", "Parce que l'impact est quasi nul, donc le produit menace x vulnérabilité x impact reste bas", "Parce qu'un serveur isolé n'a jamais de vulnérabilité", "Parce que la probabilité est forcément nulle"]} correct={1} />
+
+<Quiz id="q-2" question="Une entreprise souscrit une cyberassurance qui rembourse les frais après une attaque. Quel traitement du risque applique-t-elle ?" options={["Éviter", "Réduire", "Transférer", "Accepter"]} correct={2} />
+
+<Quiz id="q-3" question="Après avoir activé la double authentification et chiffré ses sauvegardes, une organisation constate qu'un risque résiduel subsiste. Quelle est la bonne lecture de la situation ?" options={["Les mesures ont échoué, il faut tout recommencer", "C'est anormal, un bon traitement doit ramener le risque à zéro", "C'est normal : on vérifie que ce résidu passe sous l'appétence au risque définie", "Il faut accepter ce résidu sans le documenter"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- Un risque naît de la rencontre de trois facteurs : menace, vulnérabilité, impact. Si l'un tombe à zéro, le risque disparaît. On agit surtout sur les vulnérabilités et l'impact, rarement sur les menaces.
+- La gestion du risque est un cycle : identifier, analyser, évaluer, traiter, surveiller, puis recommencer. Un registre figé ne sert à rien.
+- La matrice probabilité-impact croise la chance qu'un événement arrive et la gravité de ses suites, pour prioriser. Le coin probable et grave passe en premier.
+- Quatre traitements : éviter (supprimer l'activité), réduire (poser une mesure), transférer (assurance, sous-traitance), accepter (assumer en connaissance). Le bon choix dépend du rapport coût / enjeu.
+- Après traitement il reste un risque résiduel. L'appétence au risque définit le niveau acceptable. Viser zéro coûte trop cher et n'a pas de sens.
+- Accepter un risque est une décision de responsable, documentée, pas un choix technique discret. La trace écrite protège l'organisation et les équipes.
+
+OK 02 écrit

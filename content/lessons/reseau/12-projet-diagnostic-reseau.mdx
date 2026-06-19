@@ -1,0 +1,128 @@
+---
+refCode: CL-LSN-168-V01
+slug: reseau-projet-diagnostic
+title: "Projet : diagnostiquer une panne réseau"
+description: "Mettez toute la pile en pratique : face à un poste qui n'accède plus à Internet, localisez la panne couche par couche, de l'adresse IP au service, et proposez la correction."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 700
+prerequisites: ["CL-LSN-167-V01"]
+---
+
+On arrive au bout du parcours. Tu as vu l'adressage IP, le DHCP, le routage, la passerelle, le NAT, le DNS. Pris séparément, chaque morceau a sa logique. Le vrai test, c'est quand ça casse et que personne ne te dit où.
+
+Voici la scène. Un collègue t'appelle : son poste n'accède plus à Internet. Le navigateur tourne dans le vide, les pages ne chargent pas. Lui n'a rien touché, bien sûr. À toi de trouver pourquoi. On ne va pas deviner. On va remonter la pile, méthodiquement, et coller chaque symptôme à une couche précise.
+
+## la méthode
+
+Le réflexe gagnant : partir du bas. La machine a-t-elle une adresse ? Si oui, parle-t-elle à sa passerelle ? Si oui, sort-elle vers une IP publique ? Si oui, résout-elle les noms ? Si oui, le service distant répond-il ? Chaque réponse "oui" te fait monter d'un cran et réduit le champ. Chaque "non" te donne la couche fautive.
+
+L'intérêt de cet ordre : une panne en bas casse tout ce qui est au-dessus. Pas la peine de soupçonner le DNS si la machine n'a même pas d'IP. Tu perdrais du temps à regarder le mauvais étage.
+
+<Diagram caption="L'arbre de décision du diagnostic">
+flowchart TD
+  A[Le poste n a plus Internet] --> B[A-t-il une IP valide ?]
+  B -- non --> B1[Piste 1 : lien down ou DHCP]
+  B -- oui --> C[La passerelle repond au ping ?]
+  C -- non --> C1[Piste 2 : passerelle injoignable]
+  C -- oui --> D[Une IP publique repond ?]
+  D -- non --> D1[Piste 3 : route ou NAT en amont]
+  D -- oui --> E[Les noms se resolvent ?]
+  E -- non --> E1[Piste 4 : DNS casse]
+  E -- oui --> F[Piste 5 : le service distant]
+</Diagram>
+
+<Callout type="info">
+Note chaque résultat au fur et à mesure. Un diagnostic, c'est une liste de faits, pas une intuition. À la fin tu dois pouvoir dire "ça marche jusqu'ici, ça casse là".
+</Callout>
+
+## piste 1 : pas d'adresse
+
+Première question, toujours la même : la machine a-t-elle une adresse IP ? On regarde l'interface. Si le lien est down, ou si aucune adresse n'est posée, le DHCP n'a pas fait son travail (câble débranché, switch éteint, serveur DHCP absent).
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Diagnostic : la machine a-t-elle une IP ?" commands={{"ip addr show eth0": "eth0: <NO-CARRIER> state DOWN", "ip addr show eth0 (apres correction)": "inet 192.168.1.42/24 state UP", "ping -c1 192.168.1.1": "64 bytes from 192.168.1.1: time=0.5 ms"}} />
+
+Le premier affichage dit tout : NO-CARRIER, state DOWN. Pas de signal sur le câble. La machine ne peut pas obtenir de bail DHCP si elle n'a pas de lien physique. On rebranche, le lien remonte, et l'interface décroche enfin son inet 192.168.1.42/24. À partir de là elle a une adresse et un masque cohérents avec le réseau local. Si le lien était bon mais l'adresse absente, on relancerait la demande DHCP. Tant qu'il n'y a pas d'IP, rien d'autre ne sert à être testé.
+
+## piste 2 : passerelle injoignable
+
+Admettons maintenant que l'IP soit là. On monte d'un cran : la machine joint-elle sa passerelle ? La passerelle, c'est la porte de sortie du réseau local. Sans elle, on reste enfermé dans le sous-réseau.
+
+On ping la passerelle. Si ça répond, la couche locale est saine. Si ça ne répond pas alors que l'IP est correcte, le souci est entre la machine et le routeur : câble douteux, mauvaise route par défaut, ou passerelle mal configurée.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Diagnostic : la passerelle répond-elle ?" commands={{"ip route show": "default via 192.168.1.1 dev eth0", "ping -c1 192.168.1.1": "From 192.168.1.42 Destination Host Unreachable", "ping -c1 192.168.1.1 (apres recablage)": "64 bytes from 192.168.1.1: time=0.6 ms"}} />
+
+La route par défaut pointe bien vers 192.168.1.1. Pourtant le premier ping renvoie Destination Host Unreachable : la machine sait où aller mais n'atteint pas physiquement la passerelle. Après vérification du câblage côté switch, le ping passe. La couche locale est confirmée. On peut monter.
+
+## piste 3 : pas de sortie
+
+La passerelle répond, et pourtant Internet reste muet. On teste une IP publique connue, par numéro, sans passer par les noms. 8.8.8.8 est commode pour ça : un serveur DNS public que presque tout le monde laisse joindre.
+
+Si la passerelle répond mais qu'une IP publique reste injoignable, le problème est en amont : une route manquante chez le routeur, un NAT mal réglé, ou la liaison du fournisseur qui est tombée. Là, ce n'est plus le poste qui est en cause. C'est la sortie du réseau.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Diagnostic : sort-on vers une IP publique ?" commands={{"ping -c1 192.168.1.1": "64 bytes from 192.168.1.1: time=0.5 ms", "ping -c1 8.8.8.8": "From 192.168.1.1 icmp_seq=1 Destination Net Unreachable", "traceroute 8.8.8.8": "1  192.168.1.1  0.5 ms\n2  * * *"}} />
+
+Le ping de la passerelle passe, mais celui de 8.8.8.8 revient en Destination Net Unreachable, et le message vient du routeur lui-même. Le traceroute confirme : on atteint le premier saut, puis plus rien. La panne est au niveau de la liaison amont ou du NAT du routeur, pas sur le poste. Dans ce cas, on remonte au routeur ou au fournisseur.
+
+## piste 4 : DNS cassé
+
+C'est le grand classique. La machine sort, 8.8.8.8 répond, mais ouvrir un site par son nom échoue. Internet marche, les noms non. Symptôme typique d'un DNS qui ne résout plus.
+
+Pourquoi ? Souvent un /etc/resolv.conf qui pointe vers un serveur DNS injoignable, ou le serveur DNS lui-même qui est down. La traduction nom vers adresse ne se fait plus, alors que la route, elle, est intacte.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Diagnostic : le DNS résout-il ?" commands={{"ping -c1 8.8.8.8": "64 bytes from 8.8.8.8: time=12 ms", "ping -c1 example.com": "ping: example.com: Name or service not known", "cat /etc/resolv.conf": "nameserver 192.168.1.1", "dig +short example.com": "93.184.216.34"}} />
+
+Regarde l'enchaînement. Le ping vers 8.8.8.8 passe : la sortie est bonne. Le ping vers example.com échoue avec Name or service not known : pas un problème de route, un problème de résolution. On lit resolv.conf, qui pointe vers 192.168.1.1. On interroge directement ce résolveur avec dig, et là il répond 93.184.216.34. Donc le serveur fonctionne. Le défaut était entre les deux : le système n'utilisait pas le bon résolveur, ou le cache était corrompu. On remet resolv.conf au propre, on vide le cache, et les noms repassent.
+
+<Callout type="warning">
+"Le ping par IP marche, le ping par nom non" est presque toujours du DNS. Garde ce réflexe : si tu doutes, ping 8.8.8.8 puis ping un nom. Le premier qui casse te dit où regarder.
+</Callout>
+
+## piste 5 : le service
+
+Dernier cas, le plus traître parce qu'il ressemble à une panne réseau sans en être une. Tout marche : IP, passerelle, sortie publique, DNS. Pourtant un site précis ne s'ouvre pas. Le réseau du poste est sain. C'est le service distant qui ne répond pas.
+
+On confirme avec curl. Si la résolution se fait, la connexion s'établit, mais le serveur renvoie une erreur ou un timeout côté distant, alors le problème n'est pas chez toi.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Diagnostic : est-ce le service distant ?" commands={{"dig +short exemple-site.fr": "203.0.113.10", "curl -I https://exemple-site.fr": "curl: (7) Failed to connect to exemple-site.fr port 443: Connection refused", "curl -I https://example.com": "HTTP/2 200"}} />
+
+Le nom se résout : 203.0.113.10. Donc le DNS va bien. Mais curl vers ce site revient en Connection refused sur le port 443 : la machine a trouvé l'adresse, a tenté la connexion, et c'est le serveur distant qui a fermé la porte. À côté, curl vers un autre site renvoie un beau HTTP/2 200. Ton réseau fonctionne. Le service ciblé est en panne ou son port HTTPS est fermé. Rien à corriger côté poste : on remonte au propriétaire du service.
+
+## conclure
+
+Une fois la cause trouvée, écris-la noir sur blanc. Quoi : symptôme observé. Où : la couche qui casse. Pourquoi : la cause. Comment : la correction appliquée. Quatre lignes suffisent, et elles valent de l'or quand la même panne revient dans trois mois.
+
+Ce qui compte ici, c'est la démarche. On raisonne par élimination, pas par devinette. Chaque test valide une couche et en élimine une partie. À la fin, il ne reste qu'une seule explication possible, celle qui colle à tous les faits.
+
+<Callout type="success">
+Tu viens d'utiliser tout le parcours d'un coup : adressage, DHCP, passerelle, routage, NAT, DNS, services. C'est exactement le réflexe qu'un admin réseau applique tous les jours. Méthode du bas vers le haut, un fait à la fois.
+</Callout>
+
+## à toi de jouer
+
+Reprends les terminaux et lis-les comme une enquête. Pour chacun, demande-toi : à quelle couche s'arrête le diagnostic, et qu'est-ce que ça élimine ?
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Enquête : où ça casse ?" commands={{"ip addr show eth0": "inet 192.168.1.42/24 state UP", "ping -c1 192.168.1.1": "64 bytes from 192.168.1.1: time=0.4 ms", "ping -c1 8.8.8.8": "64 bytes from 8.8.8.8: time=11 ms", "ping -c1 example.com": "ping: example.com: Name or service not known"}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="IP présente, passerelle OK, ping 8.8.8.8 OK, mais ping example.com échoue avec 'Name or service not known'. Quelle couche est en cause ?" options={["L adressage IP du poste", "La passerelle par défaut", "Le DNS", "Le câble réseau"]} correct={2} />
+
+<Quiz id="q-2" question="Dans quel ordre mène-t-on le diagnostic pour ne pas perdre de temps ?" options={["Du service distant vers l adresse IP, de haut en bas", "De l adresse IP vers le service distant, de bas en haut", "On teste le DNS en premier, c est le plus fréquent", "On ping un nom de domaine et on s arrête là"]} correct={1} />
+
+<Quiz id="q-3" question="Le ping de la passerelle passe, mais ping 8.8.8.8 renvoie 'Destination Net Unreachable' émis par le routeur. Où est la panne ?" options={["Sur le poste, qui n a pas d IP", "Entre le poste et la passerelle", "En amont : route ou NAT du routeur, ou liaison du fournisseur", "Dans le fichier resolv.conf du poste"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- On diagnostique de bas en haut : IP, puis passerelle, puis sortie publique, puis DNS, puis service. Une panne en bas masque tout le reste.
+- Pas d'IP ou lien down : côté physique ou DHCP. On vérifie le câble et le bail avant tout.
+- Passerelle qui ne répond pas alors que l'IP est bonne : couche locale, câble ou route par défaut.
+- IP publique injoignable depuis la passerelle : route ou NAT en amont, ou liaison fournisseur. Plus le poste.
+- Ping par IP qui marche mais pas par nom : c'est le DNS. Le réflexe ping 8.8.8.8 puis ping un nom tranche en deux commandes.
+- Tout marche sauf un site précis : c'est le service distant, confirmé par curl. Rien à corriger côté poste.
+- On raisonne par élimination, on note chaque fait, et on conclut en quatre lignes : quoi, où, pourquoi, comment.
+
+OK 12 écrit

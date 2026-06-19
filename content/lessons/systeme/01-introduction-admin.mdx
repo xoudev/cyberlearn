@@ -1,0 +1,110 @@
+---
+refCode: CL-LSN-181-V01
+slug: systeme-introduction-admin
+title: "Devenir administrateur d'un système Linux"
+description: "Passer d'utilisateur à administrateur : le rôle de l'admin système, la distinction entre root et sudo, la philosophie Unix, et la carte mentale d'un serveur Linux pour savoir où tout se trouve."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-060-V01"]
+---
+
+Tu sais déjà te déplacer dans un système Linux : ouvrir un terminal, lister des fichiers, lire des permissions, lancer un script, rediriger une sortie. C'était le métier d'utilisateur. Administrer une machine, c'est autre chose. L'utilisateur se sert du système ; l'administrateur le maintient en état de marche pour que d'autres puissent s'en servir.
+
+La différence se résume à trois questions que tu vas te poser tout le temps. Est-ce que le serveur tourne ? Est-ce qu'il est sûr ? Est-ce qu'il est assez rapide ? Garder une machine en vie, la protéger, et la maintenir performante : voilà le travail. Le reste, ce sont des outils pour répondre à ces trois questions.
+
+Le saut peut sembler intimidant parce qu'un serveur n'a souvent pas d'écran ni de souris. Tu y accèdes à distance, par le réseau, dans un terminal. Mais tu as déjà ce terminal en main. Ce qui change, ce ne sont pas les commandes que tu tapes, c'est ta responsabilité quand tu les tapes. Sur ta machine, une erreur t'embête toi. Sur un serveur, une erreur peut couper un service pour cent personnes.
+
+## root et sudo
+
+Sur un système Linux, un compte est au-dessus de tous les autres : `root`, aussi appelé le superutilisateur. Root n'a aucune limite. Il lit n'importe quel fichier, modifie n'importe quel réglage, supprime n'importe quoi, arrête n'importe quel programme. Les permissions que tu as apprises ne s'appliquent pas à lui : il passe à travers.
+
+Ce pouvoir total est exactement ce qui le rend dangereux. Quand tu es root, le système ne te protège plus de toi-même. Une commande de suppression mal écrite ne demande pas confirmation, elle exécute. Il n'y a pas de filet. C'est pour ça qu'on ne reste pas connecté en root toute la journée, même quand on en a le droit.
+
+La pratique normale est l'inverse : tu travailles avec un compte utilisateur ordinaire, limité, et tu élèves tes droits seulement le temps d'une commande précise, avec `sudo`. Le mot veut dire « substitute user do », faire quelque chose en tant qu'un autre utilisateur, par défaut root. Tu écris `sudo` devant la commande qui a besoin de droits administrateur, le système te demande ton mot de passe, exécute cette commande-là avec les pleins pouvoirs, puis te rend ton compte normal.
+
+L'intérêt est triple, et chaque point compte. D'abord, tu agis en simple utilisateur la plupart du temps, donc une bêtise reste contenue. Ensuite, écrire `sudo` est un moment de pause : tu déclares explicitement que cette action est sérieuse. Enfin, chaque usage de `sudo` est enregistré dans les logs, donc on sait qui a fait quoi et quand. Sur une machine partagée entre plusieurs admins, cette trace vaut de l'or.
+
+<Callout type="warning">
+En root, il n'y a pas de confirmation et pas de corbeille. Une suppression de fichiers est immédiate et définitive. C'est la raison pour laquelle on préfère `sudo` ponctuel à une session root permanente : on réduit la fenêtre pendant laquelle une faute de frappe peut tout casser.
+</Callout>
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Premiers repères sur un serveur" />
+
+## la philosophie Unix
+
+Linux descend d'Unix, et il en garde une manière de penser qui a quarante ans mais qui tient toujours. Trois idées suffisent à la résumer, et elles vont guider tout ce parcours.
+
+La première : tout est fichier. Un document est un fichier, évidemment. Mais un disque dur est aussi vu comme un fichier, une connexion réseau peut l'être, un périphérique branché apparaît comme un fichier dans `/dev`. Même certains réglages du noyau se lisent et s'écrivent comme des fichiers. Conséquence pratique : les outils que tu connais déjà pour lire et modifier des fichiers servent à inspecter et piloter presque tout le système.
+
+La deuxième : de petits outils qui font une seule chose, et qu'on combine. Plutôt qu'un gros programme qui fait tout, Unix propose des dizaines de petites commandes spécialisées que tu assembles avec les tubes et les redirections que tu as déjà vus. Filtrer, compter, trier, chercher : chaque brique est simple, la puissance vient de la combinaison.
+
+La troisième : la configuration est en texte clair. Les réglages d'un service Linux ne sont pas cachés dans une base binaire illisible. Ce sont des fichiers texte, le plus souvent rangés dans `/etc`. Tu les ouvres avec un éditeur, tu les lis, tu les modifies, tu les copies, tu les compares avec une version d'avant. Tu peux même les mettre sous gestion de version comme du code.
+
+<Callout type="info">
+Cette logique te rend autonome. Si la config est du texte dans `/etc`, alors administrer revient souvent à lire un fichier, comprendre une ligne, en changer une, et relancer le service concerné. Pas de menu caché, pas de magie : ce que fait le système est écrit quelque part, et tu peux aller le lire.
+</Callout>
+
+## la carte du système
+
+Un système Linux range ses affaires à des endroits prévisibles. Cette organisation porte un nom, le Filesystem Hierarchy Standard, mais l'important n'est pas le nom : c'est que d'une machine à l'autre, les choses sont au même endroit. Une fois cette carte en tête, tu sais où chercher sans deviner.
+
+| Dossier | Ce qu'on y trouve |
+| --- | --- |
+| `/etc` | La configuration du système et des services, en texte clair. Le premier endroit où aller quand tu veux changer un comportement. |
+| `/var/log` | Les journaux. Quand quelque chose ne marche pas, la réponse est presque toujours ici. |
+| `/usr/bin` | Les programmes installés, les commandes que tu lances. |
+| `/home` | Les dossiers personnels des utilisateurs, leurs fichiers et leurs réglages à eux. |
+| `/tmp` | Les fichiers temporaires, souvent effacés au redémarrage. N'y range rien d'important. |
+| `/var` | Les données qui changent pendant que la machine tourne : logs, files d'attente, données de services. |
+| `/root` | Le dossier personnel du superutilisateur. À ne pas confondre avec `/`, la racine de tout. |
+
+Cette carte est la plus utile de toute l'administration. Un service refuse de démarrer ? Sa config est dans `/etc`, son erreur est dans `/var/log`. Tu veux savoir d'où vient une commande ? Elle est probablement dans `/usr/bin`. Un utilisateur a perdu un fichier ? Regarde dans son `/home`. Tu n'as pas besoin de tout mémoriser aujourd'hui ; tu as besoin de savoir que chaque chose a sa place, et laquelle.
+
+La raison de ce rangement est pratique avant d'être esthétique. Séparer la config des données et des logs permet, par exemple, de sauvegarder `/etc` d'un côté et `/var` de l'autre, selon des rythmes différents. Ça permet aussi de comprendre un serveur qu'on n'a jamais vu : les mêmes dossiers, le même rôle, partout.
+
+## se repérer sur une machine inconnue
+
+Tôt ou tard tu te connecteras à un serveur que tu ne connais pas, monté par quelqu'un d'autre, peut-être il y a des années. Quelques réflexes de départ évitent de naviguer à l'aveugle.
+
+D'abord, qui suis-je ? La commande `whoami` te dit sous quel compte tu es connecté, et `id` complète avec les groupes auxquels tu appartiens, ce qui détermine ce que tu as le droit de faire. Savoir si tu peux utiliser `sudo` change tout pour la suite.
+
+Ensuite, quel système ? Le fichier `/etc/os-release` indique la distribution et sa version. Une commande qui marche sur une famille de distributions n'a pas toujours le même nom sur une autre, donc connaître la distribution oriente tes choix. La commande `uname -a` complète avec la version du noyau.
+
+Enfin, qu'est-ce qui tourne ici ? Tu as déjà vu les processus lors du parcours précédent. Sur un serveur, la question devient : quels services sont actifs, et lesquels écoutent sur le réseau. Un serveur n'existe presque jamais pour lui-même ; il rend un service, web, base de données, fichiers. Identifier ce service est la première chose à comprendre avant de toucher quoi que ce soit.
+
+## la prudence de l'admin
+
+Un serveur de production, c'est une machine dont d'autres dépendent en ce moment même. Une commande qui passerait inaperçue sur ton poste peut, là, interrompre un site, couper une base de données, déconnecter des utilisateurs. La compétence d'admin n'est pas de taper vite, c'est de réfléchir avant de valider.
+
+Deux habitudes te protègent presque de tout. La première : lire avant d'agir. Avant de lancer une commande puissante, relis-la, surtout si elle contient `sudo`, une suppression, ou un caractère générique comme `*` qui peut viser plus large que prévu. La seconde : sauvegarder avant de modifier. Avant de toucher un fichier de config dans `/etc`, copie-le. Si le service ne redémarre plus, tu reviens à la version d'avant en quelques secondes au lieu de réécrire de mémoire un fichier que tu ne maîtrises pas encore.
+
+<Callout type="danger">
+La commande la plus dangereuse n'est pas celle qui échoue, c'est celle qui réussit alors que tu t'es trompé de cible. Sur un serveur partagé, prends l'habitude de te demander, avant chaque commande à droits élevés : qu'est-ce qui se passe si je me trompe, et comment je reviens en arrière ? Si tu n'as pas de réponse à la deuxième question, fais une copie de sauvegarde d'abord.
+</Callout>
+
+## à toi de jouer
+
+Mets en pratique les premiers réflexes : identifie ton compte, élève tes droits proprement, et repère où vit la config.
+
+<SimulatedTerminal shell="bash" scenario="bash-admin" title="Premiers repères sur un serveur" />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Pourquoi travaille-t-on avec un compte utilisateur normal et sudo plutôt qu'en restant connecté en root ?" options={["Parce que root est plus lent que sudo", "Parce qu'une erreur en root est sans filet et que sudo limite et trace les actions sensibles", "Parce que root ne peut pas lire les logs", "Parce que sudo donne plus de droits que root"]} correct={1} />
+
+<Quiz id="q-2" question="Sur un serveur Linux, dans quel dossier vas-tu d'abord chercher la configuration d'un service ?" options={["/etc", "/tmp", "/home", "/var/log"]} correct={0} />
+
+<Quiz id="q-3" question="Le service refuse de démarrer et tu veux comprendre pourquoi. Où regardes-tu en priorité ?" options={["/usr/bin", "/root", "/var/log", "/tmp"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- Administrer, ce n'est pas utiliser : le travail tient en trois questions, le serveur tourne-t-il, est-il sûr, est-il rapide.
+- `root` peut tout faire, donc une erreur en root n'a aucun filet ; on travaille en utilisateur normal et on élève ses droits ponctuellement avec `sudo`, qui limite la casse et garde une trace.
+- Philosophie Unix : tout est fichier, de petits outils qui se combinent, la configuration en texte clair dans `/etc`. Lire un fichier et changer une ligne, c'est souvent ça administrer.
+- La carte du système est fixe : config dans `/etc`, logs dans `/var/log`, programmes dans `/usr/bin`, données utilisateurs dans `/home`, temporaire dans `/tmp`. Chaque chose a sa place.
+- Sur une machine inconnue : `whoami` et `id` pour savoir qui tu es, `/etc/os-release` et `uname -a` pour le système, puis identifier le service rendu.
+- En production : lire avant d'agir, sauvegarder un fichier de config avant de le modifier, et toujours savoir comment revenir en arrière.

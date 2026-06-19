@@ -1,0 +1,122 @@
+---
+refCode: CL-LSN-066-V01
+slug: docker-introduction
+title: "Docker : pourquoi les conteneurs"
+description: "Comprenez le problème que Docker résout, ce qu'est un conteneur et en quoi il diffère d'une machine virtuelle, et lancez votre premier conteneur."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 420
+prerequisites: ["CL-LSN-049-V01"]
+---
+
+Tu as fini ton appli. Sur ta machine, tout tourne. Tu l'envoies à un collègue, ou tu la déploies sur un serveur, et là, plus rien. Une version de Node différente, une librairie système absente, une variable d'environnement oubliée. Tu connais sûrement la phrase qui sort à ce moment-là : "pourtant ça marche sur ma machine".
+
+Ce n'est pas une excuse, c'est un vrai problème. Ton appli ne tourne jamais toute seule. Elle a besoin d'un interpréteur, de bibliothèques, de fichiers de config, parfois d'une certaine version d'un outil système. Tout ça, c'est son environnement. Et cet environnement, sur ta machine, n'est pas le même que sur celle du collègue ni sur le serveur de production.
+
+Docker s'attaque exactement à ça. L'idée tient en une phrase : on emballe l'application avec tout ce dont elle a besoin pour tourner, et ce paquet se comporte pareil partout. Même version de Node, mêmes librairies, même config, que tu sois sur ton portable, sur celui d'un collègue ou sur un serveur à l'autre bout du monde. Le paquet isolé qui contient l'appli et ses dépendances, c'est un conteneur.
+
+Garde ce modèle mental simple : un conteneur, c'est ton appli plus son environnement, scellés ensemble dans une boîte qui tourne de façon isolée du reste du système.
+
+## image et conteneur
+
+Voilà la distinction la plus importante de cette leçon, et celle qui embrouille tout le monde au début.
+
+Une **image** est un modèle figé. C'est un plan, un patron, un instantané qui décrit tout ce qu'il faut : le système de base, les librairies, le code de l'appli, la commande à lancer. L'image ne tourne pas. Elle reste sur le disque, immuable, comme un fichier.
+
+Un **conteneur** est une instance qui tourne, créée à partir d'une image. Quand tu lances une image, Docker en fait un conteneur : un processus vivant, avec sa propre mémoire, ses fichiers, son réseau isolé.
+
+L'analogie qui marche bien : l'image est comme une classe en programmation, le conteneur est comme un objet. Ou alors, l'image est la recette, le conteneur est le plat que tu cuisines à partir d'elle. Une seule recette, autant de plats que tu veux.
+
+À partir d'une même image, tu peux lancer un conteneur, dix conteneurs, cent conteneurs. Ils sont identiques au départ puisqu'ils sortent du même modèle, mais chacun vit sa vie une fois démarré.
+
+<Callout type="info">
+Image et conteneur ne sont pas deux mots pour la même chose. L'image est le modèle figé sur le disque ; le conteneur est ce qui tourne, créé à partir de l'image. Si tu modifies des fichiers dans un conteneur puis que tu le supprimes, ces modifications disparaissent : l'image, elle, n'a pas bougé.
+</Callout>
+
+## conteneur vs machine virtuelle
+
+Beaucoup de gens découvrent Docker en pensant : "un conteneur, c'est une petite VM". C'est faux, et comprendre pourquoi t'aide à saisir ce qui rend Docker léger.
+
+Une machine virtuelle embarque un système d'exploitation complet. Par-dessus ta machine, un logiciel (l'hyperviseur) simule du matériel, et là-dessus tu installes un OS entier, avec son noyau, ses pilotes, ses services. Si tu lances trois VM, tu as trois OS complets qui tournent en même temps. C'est lourd : plusieurs giga-octets par VM, et un démarrage qui prend des dizaines de secondes, le temps que l'OS boote.
+
+Un conteneur ne fait pas ça. Il ne contient pas d'OS complet. Il partage le noyau de la machine hôte et n'embarque que ce qui est propre à l'appli : ses librairies, son code, sa config. Du coup un conteneur pèse souvent quelques dizaines ou centaines de méga-octets, et démarre en une fraction de seconde, comme un simple processus.
+
+<Diagram caption="VM : chaque appli traîne son OS complet. Conteneur : les applis partagent le noyau de l'hôte.">
+flowchart TD
+  subgraph VM [Machine virtuelle]
+    H1[Materiel] --> HY[Hyperviseur]
+    HY --> OS1[OS complet 1] --> A1[Appli 1]
+    HY --> OS2[OS complet 2] --> A2[Appli 2]
+  end
+  subgraph CT [Conteneurs]
+    H2[Materiel] --> K[Noyau hote partage]
+    K --> D[Moteur Docker]
+    D --> C1[Conteneur 1 - appli + libs]
+    D --> C2[Conteneur 2 - appli + libs]
+  end
+</Diagram>
+
+Ce n'est pas que l'un soit meilleur que l'autre. C'est un compromis. La VM isole plus fort puisqu'elle a son propre noyau, et elle peut faire tourner un OS totalement différent de l'hôte. Le conteneur est bien plus léger et rapide, mais il partage le noyau de l'hôte, ce qui impose certaines limites (un conteneur Linux a besoin d'un noyau Linux dessous). Pour packager et déployer des applis, la légèreté du conteneur change le quotidien : tu peux en lancer beaucoup, vite, sans saturer la machine.
+
+## premier conteneur
+
+Assez de théorie. Tu vas lancer le conteneur que tout le monde lance en premier.
+
+```bash
+docker run hello-world
+```
+
+Voici ce qui se passe quand tu tapes ça :
+
+1. Docker cherche l'image `hello-world` sur ta machine. La première fois, elle n'y est pas.
+2. Il la télécharge depuis Docker Hub, le dépôt public d'images en ligne.
+3. Il crée un conteneur à partir de cette image et le lance.
+4. Le conteneur affiche un message, puis s'arrête tout seul, son travail étant fait.
+
+<SimulatedTerminal shell="bash" commands={{ "docker --version": "Docker version 24.0.5", "docker run hello-world": "Hello from Docker!\nThis message shows that your installation appears to be working correctly.", "docker ps": "CONTAINER ID   IMAGE   STATUS   NAMES", "docker images": "REPOSITORY   TAG   IMAGE ID   SIZE\nnginx        latest  a1b2c3d4   142MB" }} />
+
+Si tu vois "Hello from Docker!", ton installation fonctionne. Ce petit conteneur ne sert qu'à ça : vérifier que la chaîne complète (téléchargement, création, exécution) tient debout.
+
+## voir ce qui tourne
+
+Une fois que tu lances des conteneurs, tu veux les inspecter et les gérer. Trois commandes te suffisent pour démarrer.
+
+```bash
+# Lister les conteneurs en cours d'execution
+docker ps
+
+# Lister toutes les images presentes sur la machine
+docker images
+
+# Arreter un conteneur a partir de son ID ou de son nom
+docker stop nom_du_conteneur
+```
+
+Une remarque qui évite une confusion classique : `docker ps` ne montre que les conteneurs **en train de tourner**. Le conteneur `hello-world` s'est arrêté immédiatement, donc il n'apparaît pas ici. Pour voir aussi les conteneurs arrêtés, tu ajoutes `-a` (`docker ps -a`). Et n'oublie pas la différence : `docker ps` parle de conteneurs (ce qui tourne), `docker images` parle d'images (les modèles sur le disque).
+
+## où vivent les images
+
+Quand tu as tapé `docker run hello-world`, Docker est allé chercher l'image sur **Docker Hub**. C'est le dépôt public d'images, une sorte de bibliothèque en ligne où des milliers d'images sont prêtes à l'emploi : `nginx`, `postgres`, `node`, `python`, et bien d'autres. Tu télécharges une image avec `docker pull nom_image`, et `docker run` le fait automatiquement si l'image manque en local. Plus tard, tu apprendras à construire tes propres images et à les publier, mais pour l'instant retiens juste que Docker Hub est l'endroit par défaut d'où viennent les images.
+
+## à toi de jouer
+
+Rejoue les commandes de base et observe la différence entre conteneurs et images.
+
+<SimulatedTerminal shell="bash" commands={{ "docker --version": "Docker version 24.0.5", "docker run hello-world": "Hello from Docker!\nThis message shows that your installation appears to be working correctly.", "docker ps": "CONTAINER ID   IMAGE   STATUS   NAMES", "docker images": "REPOSITORY   TAG   IMAGE ID   SIZE\nnginx        latest  a1b2c3d4   142MB" }} />
+
+<Quiz id="q-1" question="Quelle est la difference entre une image et un conteneur ?" options={["Ce sont deux mots pour la meme chose", "L'image est un modele fige sur le disque, le conteneur est une instance qui tourne creee a partir d'elle", "L'image tourne, le conteneur est le fichier de config", "L'image est plus rapide a demarrer que le conteneur"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi un conteneur est-il plus leger qu'une machine virtuelle ?" options={["Il partage le noyau de l'hote au lieu d'embarquer un OS complet", "Il compresse le code de l'appli", "Il supprime les librairies inutiles automatiquement", "Il tourne uniquement en memoire sans disque"]} correct={0} />
+
+<Quiz id="q-3" question="Que fait 'docker run hello-world' la premiere fois ?" options={["Il cree une machine virtuelle Linux", "Il telecharge l'image depuis Docker Hub puis lance un conteneur a partir d'elle", "Il publie ton appli sur Docker Hub", "Il installe Docker sur ta machine"]} correct={1} />
+
+## à retenir
+
+- Docker résout le "ça marche sur ma machine" en emballant l'appli avec son environnement dans un conteneur qui tourne pareil partout.
+- Une image est un modèle figé sur le disque ; un conteneur est une instance qui tourne, créée à partir d'une image. Une image, autant de conteneurs que tu veux.
+- Une VM embarque un OS complet ; un conteneur partage le noyau de l'hôte, donc il est plus léger (quelques dizaines de Mo) et démarre en une fraction de seconde. C'est un compromis, pas un classement.
+- `docker run` crée et lance un conteneur, en téléchargeant l'image si besoin. `docker ps` liste les conteneurs qui tournent, `docker images` liste les images locales, `docker stop` arrête un conteneur.
+- Les images publiques viennent de Docker Hub, le dépôt par défaut.
+
+OK 06-docker-introduction.mdx écrit

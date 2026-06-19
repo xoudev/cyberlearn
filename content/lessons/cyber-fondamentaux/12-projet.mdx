@@ -1,0 +1,140 @@
+---
+refCode: CL-LSN-084-V01
+slug: cyber-projet
+title: "Projet : un audit de sécurité méthodique"
+description: "Réunissez les fondamentaux en menant un petit audit sur un environnement d'entraînement autorisé : cartographier la surface d'attaque, repérer les faiblesses, et rédiger un rapport clair et utile."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 700
+prerequisites: ["CL-LSN-076-V01", "CL-LSN-080-V01"]
+---
+
+Vous arrivez au bout du parcours. Jusqu'ici, chaque notion est venue séparément : la surface d'attaque, les ports et les services, le chiffrement en transit, la validation des entrées, la lecture d'un en-tête HTTP. Cette leçon les remet ensemble dans un même mouvement, celui d'un petit audit.
+
+Un audit, ce n'est pas lancer dix outils au hasard et regarder ce qui clignote en rouge. C'est une démarche : on sait ce qu'on cherche, on sait dans quel ordre, et on sait quoi faire de ce qu'on trouve. Les outils ne sont qu'une partie. Le reste, c'est de la méthode et un peu de discipline.
+
+Et avant toute chose, une limite qui n'est pas négociable.
+
+<Callout type="danger">
+On teste UNIQUEMENT une cible qu'on a le droit de tester. Soit elle vous appartient, soit vous avez une autorisation écrite, soit c'est un environnement d'entraînement prévu pour ça. Scanner ou sonder un système sans accord est illégal dans la plupart des pays, y compris un simple scan de ports. Tout cet exercice se déroule sur une cible d'entraînement autorisée. Pas d'exception.
+</Callout>
+
+## le cadre d'abord
+
+Avant le premier scan, on pose le cadre. C'est l'étape qu'on a envie de sauter parce qu'elle n'a rien de technique, et c'est pourtant elle qui sépare un test légitime d'un délit.
+
+Trois choses à fixer. Le périmètre : quelles adresses IP, quels noms de domaine, quelles applications sont dans le champ, et lesquelles n'y sont pas. L'autorisation : qui vous donne le feu vert, et sous quelle forme (un e-mail signé suffit pour un exercice, un contrat pour un vrai mandat). Les limites : ce que vous avez le droit de faire (scanner, énumérer) et ce que vous ne ferez pas (exploiter, supprimer des données, mettre le service à genoux).
+
+Pour ce projet, le cadre est simple : une cible d'entraînement que vous avez montée vous-même, ou une plateforme conçue pour l'apprentissage. Le périmètre, c'est cette machine et rien d'autre.
+
+<Callout type="warning">
+Une cible d'entraînement partage parfois un réseau avec d'autres machines, par exemple votre box ou d'autres appareils de la maison. Vérifiez l'adresse IP exacte avant de scanner. Un scan lancé sur la mauvaise plage touche des systèmes hors périmètre, et là vous sortez du cadre sans même le vouloir.
+</Callout>
+
+## étape 1 : reconnaissance
+
+La reconnaissance répond à une question : qu'est-ce qui est exposé ? On cherche les hôtes joignables, puis sur chaque hôte les ports ouverts, puis derrière chaque port le service qui écoute.
+
+C'est exactement la surface d'attaque vue plus tôt dans le parcours. Chaque port ouvert est une porte. Chaque service est un logiciel qui peut avoir une version, une configuration, une faiblesse connue. On ne juge rien encore, on dresse la carte.
+
+`nmap` est l'outil de base pour ça. Un scan simple liste les ports ouverts ; en ajoutant la détection de version, on apprend quel service et quelle version se cachent derrière.
+
+<SimulatedTerminal shell="bash" scenario="nmap-basic" />
+
+Notez ce que le scan révèle : un port, un service, parfois une version. Gardez tout. À ce stade un port ouvert n'est ni bon ni mauvais, c'est juste une information. Le tri viendra à l'étape 3.
+
+## étape 2 : énumération web
+
+Si un service web tourne (port 80 en HTTP, 443 en HTTPS), il mérite son propre passage. Une application web a sa propre surface : des pages, des chemins, des paramètres, des en-têtes.
+
+On commence par le visible. `robots.txt` liste souvent des chemins que le site préfère cacher des moteurs de recherche, ce qui en fait une carte de départ inattendue. Les en-têtes de réponse HTTP indiquent le serveur, parfois sa version, et révèlent ce qui manque (pas de `Strict-Transport-Security`, pas de `Content-Security-Policy`). On cherche aussi les pages qui ne sont liées nulle part : une page d'administration, une sauvegarde oubliée, un ancien formulaire.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" />
+
+L'idée n'est pas de tout casser. C'est d'inventorier : voici les chemins qui répondent, voici les en-têtes présents et absents, voici les endroits où l'application accepte une entrée de l'utilisateur. On note, on continue.
+
+## étape 3 : analyse des faiblesses
+
+Maintenant on relie. Chaque trouvaille de la reconnaissance et de l'énumération se rattache à une notion du parcours, et c'est ce lien qui transforme une liste brute en constat.
+
+Un port ouvert sur un service dont personne n'a besoin, c'est une porte inutile : moins on en a, plus la surface est petite. Du HTTP en clair sur un formulaire de connexion, c'est un mot de passe qui voyage en clair, exactement le problème que résout le chiffrement en transit. Un champ qui renvoie votre saisie telle quelle dans la page, c'est une entrée non validée, la racine de toute une famille de failles d'injection.
+
+On reste sur l'analyse. On constate la faiblesse, on comprend pourquoi c'en est une, on ne va pas plus loin. Pas d'exploitation agressive, pas de tentative de connexion en force, pas de charge qui pourrait casser la cible. Le but ici est de comprendre et de documenter, pas de prouver qu'on sait faire tomber un service.
+
+<Diagram caption="La démarche d'audit, du cadre au rapport">
+flowchart TD
+  A[Autorisation et perimetre] --> B[Reconnaissance: hotes ports services]
+  B --> C[Enumeration web: pages en-tetes entrees]
+  C --> D[Analyse: relier aux notions vues]
+  D --> E[Faiblesse confirmee?]
+  E -->|oui| F[Constat: impact et priorite]
+  E -->|non| B
+  F --> G[Rapport ecrit]
+</Diagram>
+
+## étape 4 : le rapport
+
+C'est le livrable. Personne ne verra vos commandes, personne ne relira votre terminal. On lira votre rapport. Un audit dont le rapport est confus n'a servi à rien.
+
+Un bon constat tient en quatre points. La faiblesse : décrite simplement, sans jargon inutile, avec de quoi la retrouver (l'URL, le port, l'étape). L'impact : qu'est-ce qu'un attaquant pourrait en faire, concrètement. La correction : quoi changer pour fermer le trou. La priorité : à quel point c'est urgent, pour que le lecteur sache par où commencer.
+
+La priorité compte autant que le reste. Vingt constats listés à plat, c'est vingt décisions à prendre pour celui qui reçoit le rapport. Trois constats triés du plus grave au moins grave, c'est un plan d'action.
+
+```text
+CONSTAT 02 - Mot de passe transmis en clair
+Priorite : eleve
+
+Ou : page de connexion, http://cible-entrainement.local/login
+Le formulaire est servi en HTTP. Les identifiants partent
+en clair sur le reseau.
+
+Impact : toute personne placee sur le chemin reseau (Wi-Fi
+partage, equipement compromis) peut lire le mot de passe au
+moment ou l'utilisateur se connecte.
+
+Correction : servir la page en HTTPS, rediriger le HTTP vers
+le HTTPS, ajouter l'en-tete Strict-Transport-Security.
+```
+
+Une fiche par constat, le même gabarit pour toutes, et un classement par priorité en tête de rapport. C'est tout ce qu'il faut.
+
+## à toi de jouer
+
+Voici une session sur une cible d'entraînement. Suivez la démarche dans l'ordre, puis répondez.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" />
+
+<Quiz id="q-1" question="Quelle est la toute première étape d'un audit, avant le moindre scan ?" options={["Lancer nmap pour gagner du temps", "Vérifier le périmètre et l'autorisation", "Rédiger le rapport final", "Installer le maximum d'outils"]} correct={1} />
+
+<Quiz id="q-2" question="Vous trouvez un formulaire de connexion servi en HTTP simple. À quelle notion du parcours cela renvoie-t-il ?" options={["La taille des mots de passe", "Le nombre de ports ouverts", "Le chiffrement des données en transit", "La fréquence des sauvegardes"]} correct={2} />
+
+<Quiz id="q-3" question="Qu'est-ce qui rend un rapport d'audit utile à celui qui le reçoit ?" options={["Une liste de toutes les commandes lancées", "Des constats triés par priorité avec impact et correction", "Le plus grand nombre de failles possible", "Des captures d'écran du terminal"]} correct={1} />
+
+## ton projet personnel
+
+<Callout type="success">
+Votre projet : reproduire la démarche complète, de bout en bout, sur une cible que vous avez le droit de tester. Montez l'environnement, faites la reconnaissance, l'énumération, l'analyse, et surtout rédigez un vrai rapport. C'est en écrivant le rapport qu'on comprend si on a vraiment compris ce qu'on a trouvé.
+</Callout>
+
+Quelques idées, de la plus simple à la plus ambitieuse :
+
+1. Montez une machine virtuelle volontairement vulnérable sur votre propre ordinateur, dans un réseau isolé, et scannez-la avec `nmap`. Rien ne sort de votre machine.
+2. Inscrivez-vous sur une plateforme d'entraînement légale qui héberge des cibles prévues pour l'apprentissage. Faites un exercice web débutant en suivant les quatre étapes.
+3. Reprenez la même cible et rédigez le rapport comme si vous le remettiez à un client : gabarit propre, constats priorisés, corrections concrètes.
+4. Ajoutez l'énumération web à votre routine : `robots.txt`, en-têtes de réponse, chemins cachés, en notant chaque trouvaille avant de l'interpréter.
+5. Refaites l'audit complet sur une seconde cible, puis comparez vos deux rapports. Vous verrez votre méthode se stabiliser.
+
+<ExternalLink href="https://owasp.org/">OWASP</ExternalLink> est une bonne porte d'entrée : guides de test, liste des risques web les plus courants, applications volontairement vulnérables conçues pour s'entraîner sans rien casser de réel.
+
+<Callout type="danger">
+On le redit parce que ça vaut le coup : pas de scan, pas de sonde, pas de test sur une cible qui n'est pas la vôtre ou pour laquelle vous n'avez pas d'autorisation écrite. Une plateforme d'entraînement vous donne ce cadre légal clé en main. Restez dedans.
+</Callout>
+
+## à retenir
+
+Sur l'ensemble du parcours, vous savez maintenant poser un cadre avant d'agir, cartographier une surface d'attaque avec un scan de ports, énumérer une application web par ses pages et ses en-têtes, relier chaque trouvaille à une notion (port inutile, HTTP en clair, entrée non validée), et tout regrouper dans un rapport priorisé qui décrit la faiblesse, son impact et sa correction.
+
+La compétence qui tient le tout n'est pas un outil, c'est la méthode : savoir dans quel ordre on avance et pourquoi. Et la limite qui ne bouge jamais : on ne teste qu'avec autorisation.
+
+OK 12-projet.mdx écrit

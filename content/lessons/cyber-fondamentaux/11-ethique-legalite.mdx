@@ -1,0 +1,96 @@
+---
+refCode: CL-LSN-083-V01
+slug: cyber-ethique-legalite
+title: "Éthique, légalité et hacking responsable"
+description: "Comprenez ce qui sépare un test de sécurité légal d'un délit : le rôle de l'autorisation, la divulgation responsable des failles, le bug bounty, et les cadres légaux à connaître."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 250
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Tape `nmap -sV exemple.fr` dans un terminal. Cette commande scanne une machine et liste les services qui tournent dessus. Sur le serveur de ton entreprise, avec l'accord de ton employeur, c'est un travail d'audit tout à fait normal, le genre de chose pour laquelle on te paie. Sur le serveur d'une boîte que tu ne connais pas, à qui tu n'as rien demandé, c'est potentiellement un délit. Même commande. Même résultat technique. La seule différence tient en un mot : l'autorisation.
+
+C'est le point de départ de cette leçon, et c'est ce qu'il faut comprendre avant tout le reste. La technique ne décide pas si une action est permise ou interdite. Le contexte le décide. Un scan de ports, un test d'injection, un outil de brute force, ce sont des objets neutres. Ce qui les rend légitimes ou criminels, c'est de savoir si la personne qui détient le système t'a donné le droit d'y toucher.
+
+## la ligne rouge : l'autorisation
+
+Garde un modèle mental simple. Tu peux faire ce que tu veux sur ce qui t'appartient ou sur ce pour quoi on t'a donné un accord écrit. Tout le reste appartient à quelqu'un d'autre, et tu n'y touches pas.
+
+Tester ton propre site, ta propre application, ta machine virtuelle montée chez toi : aucun problème, c'est chez toi. Tester le système d'un client qui t'a signé un mandat d'audit, avec un périmètre défini noir sur blanc : pas de problème non plus, parce que l'autorisation existe et qu'elle est traçable. Mais lancer ne serait-ce qu'un scan sur le site d'une entreprise au hasard, sans rien lui avoir demandé, c'est franchir la ligne. Le fait que tu n'aies rien cassé, rien volé, rien modifié, ne change pas grand-chose : l'accès non autorisé est en lui-même le problème.
+
+C'est là qu'il faut tuer une idée reçue tenace. Beaucoup de débutants se disent : « je voulais juste voir si c'était possible, je n'avais pas de mauvaise intention, j'étais curieux ». La curiosité n'est pas une excuse légale. La loi ne te demande pas si tu avais l'intention de nuire ; elle regarde si tu avais le droit d'être là. Entrer chez quelqu'un par une porte qu'il a oublié de fermer reste une intrusion, même si tu n'as rien pris et que tu trouvais ça amusant de vérifier que la porte s'ouvrait.
+
+<Callout type="danger">
+Pas d'autorisation, pas de test. Aucune zone grise sur ce point. « Juste pour voir », « la faille était évidente », « je n'ai rien cassé » ne sont pas des défenses. La frontière n'est pas l'intention ni le dégât, c'est l'accord de la personne qui détient le système.
+</Callout>
+
+## les chapeaux
+
+Le milieu range souvent les gens selon une métaphore de couleur de chapeau. C'est pratique pour parler, à condition de ne pas s'en servir pour se raconter des histoires.
+
+Le white hat travaille avec autorisation. C'est l'auditeur, le pentester, le défenseur, la personne qui cherche les failles pour qu'elles soient corrigées, dans un cadre accepté par tout le monde. C'est le métier que beaucoup visent en apprenant la cybersécurité, et il est parfaitement légal.
+
+Le black hat agit sans autorisation et pour son propre bénéfice : voler des données, demander une rançon, revendre des accès, saboter. C'est du crime, point.
+
+Le grey hat est entre les deux, et c'est là qu'il faut être honnête. On parle de quelqu'un qui trouve une faille sans autorisation, souvent sans intention de nuire, parfois pour alerter ensuite l'éditeur. Le problème, c'est que l'accès initial était quand même non autorisé. Le grey hat sonne bien, ça donne une image de justicier, mais aux yeux de la loi l'étape « j'ai accédé sans permission » reste un délit, même si la suite était bien intentionnée. Ne romance pas cette position. Beaucoup de gens se croient grey hat et sont juste en infraction.
+
+## la divulgation responsable
+
+Imagine que tu découvres une faille sérieuse, par exemple en analysant un logiciel libre que tu utilises légitimement, ou via un programme qui t'y autorise. Tu fais quoi de cette trouvaille ?
+
+La mauvaise réponse, c'est de la publier tout de suite sur les réseaux ou de la balancer dans un forum. Tant que l'éditeur n'a pas corrigé, tu donnes une carte au trésor à n'importe quel attaquant, et tu mets en danger tous les utilisateurs du produit.
+
+La bonne pratique s'appelle la divulgation responsable, ou divulgation coordonnée. Tu préviens l'éditeur en privé, tu décris la faille assez précisément pour qu'il puisse la reproduire, et tu lui laisses un délai raisonnable pour corriger avant de rendre quoi que ce soit public. Beaucoup d'organisations publient pour ça un fichier `security.txt` ou une adresse de contact sécurité dédiée. L'idée est d'agir dans l'intérêt des utilisateurs plutôt que pour le buzz.
+
+<Callout type="info">
+La divulgation responsable, c'est : signaler en privé d'abord, laisser le temps de corriger, publier ensuite si c'est utile. L'ordre compte. Une faille révélée au public avant son correctif, c'est une faille offerte aux attaquants.
+</Callout>
+
+## le bug bounty
+
+Et si tu veux chercher des failles dans de vrais systèmes, en étant couvert et même récompensé ? C'est exactement ce que proposent les programmes de bug bounty.
+
+Une entreprise publie un programme qui dit, en substance : « voici les domaines et applications que tu as le droit de tester, voici les types d'attaques autorisés et interdits, voici ce que tu gagnes si tu trouves une faille valide ». À partir du moment où tu respectes ce périmètre et ces règles, tu as ton autorisation, écrite et publique. Tu peux chercher, signaler, et toucher une prime. Sors du périmètre défini, par contre, et tu n'es plus couvert du tout.
+
+C'est l'une des meilleures façons de pratiquer légalement contre des cibles réelles, parce que le cadre transforme une activité autrement risquée en activité encadrée et payée. Pour t'outiller, commence par bien connaître les grandes familles de failles web.
+
+<ExternalLink href="https://owasp.org/www-project-top-ten/" description="Le classement des risques de sécurité web les plus répandus">OWASP Top 10</ExternalLink>
+
+## les cadres légaux
+
+Sans entrer dans un cours de droit, retiens que ces comportements sont encadrés par la loi, et que les sanctions sont réelles. En France, l'accès ou le maintien frauduleux dans un système de traitement automatisé de données, ainsi que le fait d'entraver ou de fausser son fonctionnement, sont des infractions pénales. Des textes équivalents existent dans la plupart des pays.
+
+Tu n'as pas besoin de mémoriser les articles. Ce qu'il faut garder en tête, c'est qu'un accès non autorisé n'est pas une zone de tolérance technique : c'est quelque chose qui peut mener à une condamnation, à une amende, parfois bien plus. Le « je ne savais pas que c'était illégal » ne protège pas davantage ici qu'ailleurs.
+
+## où pratiquer légalement
+
+Bonne nouvelle : tu n'as aucun besoin de toucher au système d'autrui pour progresser. Tout ce dont tu as besoin pour t'entraîner existe dans un cadre prévu pour ça.
+
+Tes propres machines d'abord. Monte une ou deux machines virtuelles chez toi, installe-y des applications volontairement vulnérables, et attaque-les autant que tu veux : c'est ton labo, tu en fais ce que tu veux.
+
+Les plateformes d'entraînement ensuite. Il existe des sites dont le métier est de te fournir des cibles légales : des machines à compromettre, des défis progressifs, des environnements jetables. Tu y pratiques de vraies techniques sans jamais sortir du cadre.
+
+Les CTF enfin (Capture The Flag), des compétitions où tu dois résoudre des épreuves de sécurité pour récupérer des « drapeaux ». C'est ludique, c'est légal, et c'est une excellente façon d'apprendre en se mesurant à d'autres.
+
+La règle est simple : si la cible est conçue pour être attaquée, ou si elle est à toi, vas-y. Sinon, abstiens-toi.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Qu'est-ce qui rend un test de sécurité légal plutôt qu'illégal ?" options={["Le fait de ne rien casser pendant le test", "L'autorisation de la personne qui détient le système", "La bonne intention de la personne qui teste", "Le fait d'utiliser des outils connus et publics"]} correct={1} />
+
+<Quiz id="q-2" question="Tu découvres une faille grave dans un logiciel que tu utilises. Quelle est la meilleure conduite ?" options={["La publier tout de suite pour avertir tout le monde", "Prévenir l'éditeur en privé et lui laisser le temps de corriger", "L'exploiter discrètement tant que personne ne le remarque", "Ne rien faire, ce n'est pas ton problème"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi le grey hat ne devrait-il pas être romancé ?" options={["Parce que ces personnes ne trouvent jamais de vraies failles", "Parce que l'accès initial reste non autorisé, donc souvent illégal", "Parce que le bug bounty paie toujours mieux", "Parce que les outils utilisés sont interdits à la vente"]} correct={1} />
+
+## à retenir
+
+- La même technique (un scan, un test d'injection) est légale ou criminelle selon une seule chose : l'autorisation.
+- Tu peux tester ce qui t'appartient ou ce pour quoi tu as un accord écrit. Tout le reste, non.
+- La curiosité et l'absence de dégât ne sont pas des défenses légales. C'est l'accès non autorisé qui pose problème.
+- White hat : autorisé. Black hat : criminel. Grey hat : accès non autorisé au départ, donc souvent illégal malgré les bonnes intentions.
+- Divulgation responsable : signaler en privé, laisser corriger, publier ensuite si utile.
+- Le bug bounty fournit une autorisation écrite et un périmètre : un moyen légal de chercher des failles réelles, parfois récompensé.
+- Des lois encadrent l'accès frauduleux à un système (en France, l'atteinte aux systèmes de traitement automatisé de données). Les sanctions sont réelles.
+- Pour pratiquer sans risque : tes propres VM, les plateformes d'entraînement, les CTF.

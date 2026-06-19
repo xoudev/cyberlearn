@@ -1,0 +1,104 @@
+---
+refCode: CL-LSN-159-V01
+slug: reseau-couche-liaison
+title: "Le réseau local : MAC, Ethernet et ARP"
+description: "Comprenez comment les machines communiquent sur un réseau local : les adresses MAC, les trames Ethernet, le rôle d'un commutateur, et le protocole ARP qui relie adresses IP et adresses matérielles."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-158-V01"]
+---
+
+Avant qu'une machine ne sache parler à un serveur à l'autre bout du monde, elle doit d'abord savoir parler à la machine d'à côté. Sur ton réseau local, ton ordinateur, ton téléphone, ta box et l'imprimante partagent un même segment. À ce niveau, ils ne se connaissent pas par leur adresse IP. Ils se connaissent par leur adresse matérielle, celle de leur carte réseau.
+
+C'est tout l'objet de cette leçon. On reste collés au câble (ou au Wi-Fi) et on regarde comment les machines d'un même réseau s'identifient et s'échangent des données, avant même que la notion d'Internet n'entre en jeu. Cette couche s'appelle la couche liaison. C'est l'étage juste au-dessus du signal physique, et juste en dessous de la couche IP que tu verras ensuite.
+
+## l'adresse MAC
+
+Chaque carte réseau possède une adresse MAC. C'est un identifiant gravé par le fabricant au moment de la production, théoriquement unique au monde. Elle tient sur 48 bits, qu'on écrit en hexadécimal sous la forme de six paires séparées par des deux-points, par exemple `08:00:27:4e:66:a1`.
+
+Cette adresse a une logique interne. Les trois premières paires identifient le fabricant de la carte (le constructeur a acheté un préfixe). Les trois dernières sont attribuées par ce fabricant à chaque carte qu'il produit. Résultat : deux cartes réseau différentes n'ont jamais la même MAC, du moins en principe.
+
+Sur un réseau local, c'est cette adresse qui désigne une machine. Quand une trame doit arriver à ton ordinateur précisément, c'est ta MAC qui sert de cible. Tu peux voir la tienne en regardant l'interface réseau.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Voir l'adresse MAC de tes interfaces" commands={{"ip link show": "1: lo: <LOOPBACK> mtu 65536\n    link/loopback 00:00:00:00:00:00\n2: eth0: <BROADCAST,MULTICAST,UP> mtu 1500\n    link/ether 08:00:27:4e:66:a1 brd ff:ff:ff:ff:ff:ff"}} />
+
+La ligne `link/ether 08:00:27:4e:66:a1` te donne l'adresse MAC de l'interface `eth0`. L'adresse `ff:ff:ff:ff:ff:ff` qui apparaît juste après est l'adresse de diffusion (broadcast) : une trame envoyée vers elle s'adresse à toutes les machines du segment.
+
+<Callout type="info">
+L'adresse MAC est rattachée au matériel, pas au réseau. Si tu déplaces ta carte réseau dans une autre ville, sa MAC ne change pas. L'adresse IP, elle, dépend du réseau auquel tu te connectes. C'est une distinction qui va revenir tout au long de la leçon.
+</Callout>
+
+## la trame Ethernet
+
+La couche liaison transporte ses données dans une unité appelée trame. Sur un réseau filaire classique, c'est une trame Ethernet. Sa structure est simple à retenir.
+
+En tête de trame, on trouve l'adresse MAC de destination, puis l'adresse MAC source. Vient ensuite un champ qui indique le type de contenu transporté (souvent du trafic IP). Puis les données elles-mêmes, qui peuvent aller jusqu'à environ 1500 octets. Et enfin, à la fin, un champ de contrôle d'erreur qui permet au destinataire de vérifier que la trame n'a pas été abîmée pendant le transport. Si le contrôle échoue, la trame est jetée.
+
+Retiens surtout ceci : une trame Ethernet sait toujours de quelle MAC elle vient et vers quelle MAC elle va. Le reste du réseau local s'appuie sur ces deux champs pour acheminer la donnée au bon endroit.
+
+## le commutateur
+
+Posons une question concrète. Tu as cinq machines branchées sur un même appareil au centre du réseau. Une trame arrive, destinée à une seule de ces machines. Que fait l'appareil ?
+
+Les anciens appareils, les concentrateurs (hubs), faisaient la chose la plus bête possible : ils recopiaient la trame sur tous les ports, à toutes les machines. Chaque machine recevait tout le trafic, y compris ce qui ne la concernait pas, et ignorait poliment ce qui n'était pas pour elle. Ça marchait, mais ça gaspillait la bande passante et, surtout, ça permettait à n'importe qui sur le réseau d'écouter le trafic des autres.
+
+Le commutateur (switch) fait beaucoup mieux. Il apprend. À chaque trame qu'il reçoit sur un port, il note l'adresse MAC source et le port d'où elle vient. Petit à petit, il construit une table qui dit quelle MAC se trouve derrière quel port. Quand une trame arrive avec une MAC de destination connue, il ne l'envoie que sur le bon port, et nulle part ailleurs.
+
+<Diagram type="flowchart">
+graph TD
+  A[Trame reçue sur un port] --> B[Lire la MAC source]
+  B --> C[Mémoriser : cette MAC est sur ce port]
+  C --> D[La MAC de destination est-elle dans la table ?]
+  D -->|Oui| E[Envoyer la trame uniquement sur le bon port]
+  D -->|Non| F[Diffuser sur tous les ports sauf celui d origine]
+  F --> G[La réponse révèle le bon port<br/>pour la prochaine fois]
+</Diagram>
+
+La première fois qu'il rencontre une destination inconnue, le commutateur diffuse quand même la trame partout, le temps d'apprendre. Mais dès que la machine répond, sa MAC et son port sont enregistrés, et les échanges suivants vont droit au but. Cette mémoire évite le gaspillage du hub et limite fortement la possibilité d'espionner le trafic d'un voisin.
+
+## ARP, le pont MAC-IP
+
+Voici le point qui surprend souvent. Tes applications raisonnent en adresses IP. Tu tapes une IP ou un nom, jamais une MAC. Mais sur le réseau local, la trame a besoin d'une MAC de destination. Comment passer de l'une à l'autre ?
+
+C'est le rôle d'ARP (Address Resolution Protocol). Quand ta machine veut joindre une IP locale et ne connaît pas la MAC correspondante, elle envoie une question à tout le segment, en diffusion : « qui possède l'adresse 192.168.1.20 ? ». Toutes les machines reçoivent la question. Une seule se reconnaît et répond directement : « c'est moi, voici ma MAC ». Ta machine note la correspondance et peut enfin construire sa trame.
+
+Pour éviter de redemander à chaque envoi, le système garde ces correspondances dans une table ARP, en mémoire, pendant un certain temps.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Voir la table ARP" commands={{"ip neigh": "192.168.1.1 dev eth0 lladdr 00:0c:29:1a:2b:3c REACHABLE\n192.168.1.20 dev eth0 lladdr 08:00:27:9f:aa:bb STALE", "arp -a": "gateway (192.168.1.1) at 00:0c:29:1a:2b:3c [ether] on eth0\n? (192.168.1.20) at 08:00:27:9f:aa:bb [ether] on eth0"}} />
+
+Chaque ligne associe une IP locale à une MAC. L'état `REACHABLE` indique une correspondance récemment confirmée, `STALE` une entrée encore connue mais qui mériterait une vérification. La passerelle (`gateway`), c'est-à-dire ta box, apparaît toujours dans cette table : c'est par elle que passe tout le trafic vers l'extérieur.
+
+<Callout type="warning">
+ARP n'a aucun mécanisme d'authentification. Une machine malveillante peut répondre à une question ARP en se faisant passer pour la passerelle : c'est l'usurpation ARP (ARP spoofing), une technique classique pour intercepter le trafic local. Tu reverras ce risque dans le parcours sécurité.
+</Callout>
+
+## pourquoi MAC et IP
+
+À ce stade, une question légitime se pose : pourquoi deux adresses ? Si la MAC suffit pour identifier une machine, à quoi sert l'IP ?
+
+La réponse tient à la portée. La MAC ne fonctionne que sur le segment local. Elle n'a aucune logique géographique : connaître la MAC d'un serveur à Tokyo ne t'aide en rien à acheminer une donnée jusqu'à lui, car aucun routeur intermédiaire ne sait où elle se trouve. L'adresse IP, elle, est organisée par réseaux et sous-réseaux. Cette structure permet aux routeurs de décider, étape après étape, dans quelle direction pousser un paquet pour qu'il traverse le monde.
+
+Les deux travaillent donc ensemble, à des échelles différentes. L'IP indique la destination finale à l'échelle de la planète. La MAC indique le prochain saut concret, ici et maintenant, sur le segment où se trouve ta machine. À chaque étape du voyage, l'IP de destination reste la même, mais la MAC de destination change : elle désigne toujours l'équipement suivant sur le chemin. C'est exactement cette couche IP, et la façon dont elle structure les adresses, que tu vas aborder ensuite.
+
+## à toi de jouer
+
+Regarde une trame qui part : ta machine résout l'IP en MAC via ARP, puis le commutateur l'achemine au bon port.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter MAC, voisins et passerelle" commands={{"ip link show eth0": "2: eth0: <BROADCAST,MULTICAST,UP> mtu 1500\n    link/ether 08:00:27:4e:66:a1 brd ff:ff:ff:ff:ff:ff", "ip neigh": "192.168.1.1 dev eth0 lladdr 00:0c:29:1a:2b:3c REACHABLE\n192.168.1.20 dev eth0 lladdr 08:00:27:9f:aa:bb STALE", "arp -a": "gateway (192.168.1.1) at 00:0c:29:1a:2b:3c [ether] on eth0"}} />
+
+<QuizGroup>
+<Quiz id="q-1" question="Sur combien de bits tient une adresse MAC ?" options={["32 bits", "48 bits", "64 bits", "128 bits"]} correct={1} />
+<Quiz id="q-2" question="Quelle est la différence entre un commutateur (switch) et un ancien concentrateur (hub) ?" options={["Le commutateur apprend quelle MAC est sur quel port et n envoie la trame qu au bon port", "Le commutateur diffuse toujours chaque trame à toutes les machines", "Le concentrateur est plus rapide car il filtre le trafic", "Il n y a aucune différence de comportement"]} correct={0} />
+<Quiz id="q-3" question="À quoi sert le protocole ARP sur un réseau local ?" options={["À chiffrer le trafic entre deux machines", "À attribuer une adresse IP à chaque machine", "À trouver l adresse MAC correspondant à une adresse IP locale", "À router les paquets vers Internet"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- L'adresse MAC est un identifiant matériel sur 48 bits, gravé sur la carte réseau, qui désigne une machine sur le segment local.
+- La trame Ethernet est l'unité de la couche liaison : elle porte une MAC source, une MAC destination, les données et un contrôle d'erreur.
+- Le commutateur apprend quelle MAC est derrière quel port et n'envoie la trame qu'au bon port, là où le hub diffusait à tout le monde.
+- ARP fait le lien entre une IP locale et une MAC : il demande « qui a cette IP ? » et garde la réponse dans la table ARP.
+- ARP n'authentifie rien, d'où le risque d'usurpation ARP.
+- La MAC adresse en local, l'IP permet de router à l'échelle mondiale ; les deux fonctionnent ensemble, et la couche IP est la suite logique.

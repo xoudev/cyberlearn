@@ -1,0 +1,130 @@
+---
+refCode: CL-LSN-007-V01
+slug: python-chaines
+title: "Manipuler les chaînes de caractères en Python"
+description: "Découpez, transformez et analysez du texte avec les méthodes de chaînes (upper, lower, split, join, replace, strip), le slicing et les f-strings."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 320
+prerequisites: ["CL-LSN-005-V01"]
+---
+
+Une fois passés les exercices de calcul, on découvre vite qu'une grande part de la programmation consiste à trafiquer du texte. Un nom saisi dans un formulaire avec trois espaces en trop, une adresse e-mail tapée en majuscules, une ligne lue dans un fichier qu'il faut couper en morceaux, un message à composer avec le prénom de l'utilisateur dedans. Tout ça, c'est de la manipulation de chaînes. Python a un outillage complet pour ce travail, et quand on le connaît, on gagne un temps fou.
+
+Le type s'appelle `str`. Une chaîne, c'est une suite de caractères entre guillemets. Regardons ce qu'on peut en faire.
+
+## les méthodes de base
+
+Une méthode, c'est une fonction attachée à un objet. On l'appelle avec un point juste après la chaîne. Les quatre que tu croiseras sans arrêt : `upper` met tout en majuscules, `lower` met tout en minuscules, `strip` enlève les espaces (et sauts de ligne) au début et à la fin, `replace` échange un bout de texte contre un autre.
+
+<CodePlayground language="python" starterCode={`nom = "  Alice Martin  "
+
+print(nom.upper())            # "  ALICE MARTIN  "
+print(nom.lower())            # "  alice martin  "
+print(nom.strip())            # "Alice Martin" (espaces des bords retirés)
+print(nom.replace("a", "@"))  # "  Alice M@rtin  " le "A" majuscule reste
+
+# On peut enchaîner : strip d'abord, puis lower
+print(nom.strip().lower())    # "alice martin"`} />
+
+Regarde le dernier exemple. `nom.strip()` renvoie une chaîne nettoyée, et on appelle `.lower()` directement dessus. On enchaîne les méthodes en les collant l'une après l'autre, de gauche à droite. C'est lisible et ça évite les variables intermédiaires.
+
+Note aussi que `replace` distingue les majuscules des minuscules. Le `A` de "Alice" n'est pas touché, seuls les `a` minuscules le sont. Si tu veux remplacer sans tenir compte de la casse, passe d'abord par `lower`.
+
+## l'immuabilité
+
+Voici le point que presque tout le monde rate au début. Une chaîne ne se modifie jamais sur place. Quand tu écris `nom.upper()`, Python ne touche pas à `nom` : il fabrique une nouvelle chaîne en majuscules et te la renvoie. Si tu ne ranges pas ce résultat quelque part, il disparaît.
+
+<CodePlayground language="python" starterCode={`prenom = "bob"
+
+prenom.upper()      # crée "BOB"... mais on ne le garde pas
+print(prenom)       # "bob" -> prenom n'a pas bougé !
+
+# Pour vraiment "changer" prenom, il faut réaffecter
+prenom = prenom.upper()
+print(prenom)       # "BOB" -> maintenant oui`} />
+
+C'est la source d'un bug archi-classique. On écrit `texte.strip()` tout seul sur une ligne en croyant nettoyer `texte`, et plus loin on s'étonne que les espaces soient toujours là. La méthode a bien fait son travail, mais on a jeté son résultat. La règle à graver : une méthode de chaîne ne modifie pas l'originale, elle en renvoie une copie transformée. Pour conserver le changement, on réaffecte avec `=`.
+
+Cette propriété s'appelle l'immuabilité. Une chaîne est figée une fois créée. Tu ne peux même pas changer un seul caractère par son indice.
+
+<CodePlayground language="python" starterCode={`mot = "chot"
+# mot[1] = "a"   # erreur : 'str' object does not support item assignment
+
+# La bonne façon : reconstruire une nouvelle chaîne
+mot = mot.replace("o", "a")
+print(mot)   # "chat"`} />
+
+Ce n'est pas gênant en pratique. On reconstruit, on réaffecte, et tout va bien. Mais comprendre que la chaîne d'origine reste intacte t'évite des heures de confusion.
+
+## découper et recoller
+
+Deux méthodes forment un couple qu'on retrouve partout. `split` coupe une chaîne en une liste de morceaux. Sans argument, elle coupe sur les espaces, ce qui revient à séparer une phrase en mots. `join` fait l'inverse : elle recolle une liste de chaînes en une seule, avec un séparateur de ton choix.
+
+<CodePlayground language="python" starterCode={`phrase = "le chat dort sur le canape"
+
+mots = phrase.split()        # coupe sur les espaces
+print(mots)                  # ['le', 'chat', 'dort', 'sur', 'le', 'canape']
+print(len(mots))             # 6 -> pratique pour compter les mots
+
+# split accepte un séparateur précis
+date = "13/06/2026"
+parties = date.split("/")
+print(parties)               # ['13', '06', '2026']
+
+# join recolle : la chaîne devant join est le séparateur
+print("-".join(parties))     # "13-06-2026"
+print(" ".join(mots))        # "le chat dort sur le canape"`} />
+
+Attention à la syntaxe de `join`, elle surprend au début. On écrit `separateur.join(liste)`, donc le séparateur est devant le point et la liste est l'argument. C'est l'inverse de ce qu'on imagine. Une bonne façon de le lire : "colle ces morceaux en mettant tel séparateur entre eux".
+
+Le duo `split` puis `join` sert dès qu'on retraite du texte. Couper une ligne CSV, normaliser des espaces en trop, reformater une date, recoller des fragments après les avoir filtrés.
+
+## slicing et f-strings
+
+Une chaîne se découpe aussi par tranches, exactement comme une liste. La syntaxe `chaine[debut:fin]` renvoie la portion qui va de l'indice `debut` jusqu'à `fin` exclu. Les indices commencent à zéro, et un indice négatif compte depuis la fin.
+
+<CodePlayground language="python" starterCode={`texte = "Python"
+
+print(texte[0])       # "P" -> premier caractère
+print(texte[0:3])     # "Pyt" -> du début jusqu'à l'indice 3 exclu
+print(texte[3:])      # "hon" -> de l'indice 3 jusqu'au bout
+print(texte[-1])      # "n" -> dernier caractère
+print(texte[-3:])     # "hon" -> les trois derniers
+print(len(texte))     # 6 -> longueur de la chaîne`} />
+
+Pour composer du texte avec des variables dedans, l'outil moderne est la f-string. Tu mets un `f` juste avant le guillemet d'ouverture, puis tu glisses tes variables entre accolades directement dans le texte. Python les remplace par leur valeur. C'est plus lisible que de coller des morceaux avec des `+`.
+
+<CodePlayground language="python" starterCode={`prenom = "Alice"
+age = 30
+
+# Sans f-string, lourd et fragile
+message = "Bonjour " + prenom + ", tu as " + str(age) + " ans."
+print(message)
+
+# Avec f-string, direct
+message = f"Bonjour {prenom}, tu as {age} ans."
+print(message)
+
+# On peut même glisser un petit calcul dans les accolades
+print(f"L'an prochain tu auras {age + 1} ans.")`} />
+
+Avec l'opérateur `+`, on doit convertir les nombres en chaîne via `str(age)`, sinon Python refuse d'additionner un texte et un entier. La f-string fait cette conversion toute seule. C'est pour ça qu'on la préfère aujourd'hui.
+
+## à toi de jouer
+
+Un exercice et deux questions pour ancrer tout ça.
+
+<PythonChallenge id="py-1" title="Compter les mots" description="Écris une fonction qui renvoie le nombre de mots dans une phrase. Indice : split découpe sur les espaces, et len compte les éléments de la liste obtenue." starterCode="def solution(phrase):
+    pass" tests={[{ input: "solution('bonjour le monde')", expected: "3" }, { input: "solution('python est genial')", expected: "3" }, { input: "solution('un')", expected: "1" }]} />
+
+<Quiz id="q-1" question="Après s = 'bonjour' puis s.upper() seule sur sa ligne, que vaut s ?" options={["'BONJOUR'", "'bonjour'", "Une erreur est levée"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle expression recolle la liste ['a', 'b', 'c'] en la chaîne 'a-b-c' ?" options={["['a','b','c'].join('-')", "'-'.join(['a','b','c'])", "join('-', ['a','b','c'])"]} correct={1} />
+
+## à retenir
+
+`upper`, `lower`, `strip` et `replace` transforment du texte et renvoient chacune une nouvelle chaîne. Une chaîne est immuable : aucune méthode ne la modifie sur place, il faut réaffecter avec `=` pour garder le résultat, et c'est l'erreur la plus fréquente du débutant. `split` transforme une chaîne en liste de morceaux, `join` recolle une liste en chaîne avec le séparateur écrit devant le point. Le slicing `chaine[debut:fin]` extrait une tranche, la borne de fin étant exclue, et les indices négatifs comptent depuis la fin. La f-string, préfixée d'un `f`, insère des variables entre accolades sans conversion manuelle et remplace avantageusement la concaténation avec `+`.
+
+OK 07 réécrit

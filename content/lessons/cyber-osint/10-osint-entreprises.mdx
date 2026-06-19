@@ -1,0 +1,105 @@
+---
+refCode: CL-LSN-154-V01
+slug: osint-entreprises
+title: "OSINT sur les organisations"
+description: "Reconstituer l'empreinte numérique d'une société depuis l'ouvert : registres, offres d'emploi qui trahissent la pile technologique, profils des employés et dépôts de code, et pourquoi cette empreinte nourrit l'ingénierie sociale."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 480
+prerequisites: ["CL-LSN-149-V01"]
+---
+
+Une entreprise laisse derrière elle bien plus de traces qu'elle ne l'imagine. Son site, ses annonces de recrutement, les profils de ses salariés, les dépôts de code qu'un développeur a rendus publics un soir de septembre : tout cela existe au grand jour, accessible sans le moindre outil clandestin. Mis bout à bout, ces fragments dessinent un portrait étonnamment précis de l'organisation, de sa structure et de ses moyens techniques.
+
+Reconstituer cette empreinte est un travail à double face. Un attaquant le fait pour préparer son terrain. Un défenseur le fait pour voir ce que l'adversaire verrait, et corriger avant lui. Un cabinet qui audite une cible avant un rachat le fait pour mesurer un risque. Dans tous les cas la matière première est la même, et c'est de l'ouvert.
+
+Posons le cadre tout de suite. On parle ici de reconnaissance dans un pentest mandaté par contrat, de diligence sur une société qu'on évalue, ou de la défense de sa propre organisation. Consulter des sources publiques ne vous met pas hors la loi, mais agréger des données personnelles d'employés, les recouper et les exploiter peut vite tomber sous le coup du RGPD ou d'autres textes. La règle pratique : une autorisation écrite avant tout test contre un système, et de la retenue dès qu'il s'agit de personnes.
+
+## les sources officielles
+
+Le point de départ est le plus simple. Le site de l'entreprise donne déjà son activité, ses implantations, ses contacts, parfois ses clients de référence. Les mentions légales, obligatoires, livrent le nom exact de la société, son numéro d'immatriculation, l'adresse du siège et le nom de l'hébergeur.
+
+À partir de là, les registres d'entreprises prennent le relais. En France, des bases comme l'INPI ou Pappers exposent gratuitement les statuts, les dirigeants, le capital, les comptes déposés et l'historique des modifications. On y trouve les noms des mandataires, leur date de naissance partielle, parfois leurs autres mandats dans d'autres sociétés. Ailleurs il existe des équivalents : Companies House au Royaume-Uni, les bases SEC pour les sociétés cotées américaines.
+
+<Callout type="info">
+Ces registres sont publics par conception : la loi impose la transparence des entreprises pour protéger les tiers qui commercent avec elles. Les consulter est parfaitement légitime. Ce qui change de nature, c'est l'agrégation systématique et le recoupement à grande échelle.
+</Callout>
+
+<Diagram caption="L'empreinte numérique d'une organisation">
+flowchart TD
+  ORG[Organisation cible] --> SITE[Site et mentions legales]
+  ORG --> REG[Registres d entreprises]
+  ORG --> JOBS[Offres d emploi]
+  ORG --> EMP[Profils des employes]
+  ORG --> CODE[Depots de code publics]
+  SITE --> PORT[Portrait recoupe]
+  REG --> PORT
+  JOBS --> PORT
+  EMP --> PORT
+  CODE --> PORT
+  PORT --> SE[Ingenierie sociale ciblee]
+</Diagram>
+
+## les offres d'emploi, mine d'or
+
+Voilà une source qu'on sous-estime souvent. Une annonce de recrutement doit décrire le poste avec assez de précision pour attirer le bon candidat. Pour cela elle énumère les compétences attendues, et ces compétences sont presque toujours des produits et des technologies nommément cités.
+
+Une offre qui demande de l'expérience sur Kubernetes, une stack Java Spring, du Terraform sur AWS et un poste de connaissance sur Splunk vient de vous décrire l'infrastructure interne, l'orchestration, le cloud utilisé et même l'outil de supervision sécurité. Une autre qui cherche un administrateur familier d'une version précise d'un ERP vous donne le logiciel métier et un indice sur sa version, donc sur les failles publiques qui le concernent.
+
+Pour un attaquant, cette cartographie raccourcit la phase de reconnaissance : il sait quoi chercher avant même d'avoir touché un seul serveur. Pour un défenseur ou un analyste, la même lecture révèle la maturité technique de l'organisation et les zones où elle recrute, donc celles qu'elle renforce ou qui lui manquent. Croiser plusieurs annonces sur quelques mois donne une vue d'ensemble assez fidèle du système d'information.
+
+## les employés
+
+Les profils professionnels publics, sur les réseaux dédiés au travail, forment un organigramme officieux. En listant qui travaille où, avec quel intitulé de poste, on reconstitue les équipes, la chaîne hiérarchique, les responsables d'un service donné. On apprend qui gère la paie, qui dirige l'informatique, qui vient d'être promu.
+
+De ces noms découlent souvent des adresses e-mail. Si l'on observe que l'entreprise utilise le format prenom.nom@societe.fr pour un employé, on peut déduire l'adresse de tous les autres. À partir de là, contacter une personne précise en se faisant passer pour un collègue ou un prestataire devient réaliste.
+
+<Callout type="warning">
+C'est le maillon humain qui paie ici. Un attaquant qui connaît le nom du DAF, celui de son assistante, le format des e-mails et le logiciel comptable de la maison peut écrire un message de fraude au virement bien plus crédible qu'un hameçonnage générique. Le facteur humain redevient la cible parce que l'empreinte ouverte a fourni le scénario.
+</Callout>
+
+## les dépôts de code publics
+
+Le code source que des équipes publient en ouvert est une source à part, parce qu'il fuite parfois des choses qui n'auraient jamais dû sortir. Un développeur pressé commite un fichier de configuration avec un mot de passe en clair, une clé d'API, un jeton d'accès cloud, une adresse de serveur interne, une chaîne de connexion à une base de données. Le commit reste dans l'historique même après correction du fichier visible.
+
+On retrouve dans ces dépôts des noms de serveurs internes, des schémas d'architecture en commentaire, des adresses IP privées, des références à des outils internes. C'est exactement le genre de défaillance cryptographique vue ailleurs : un secret stocké en clair n'est plus un secret dès qu'il touche un dépôt public. Et l'historique d'un dépôt n'oublie rien : ce qui a été poussé une fois reste consultable tant que l'historique n'est pas réécrit.
+
+## de l'empreinte à l'attaque
+
+Prenons chaque pièce isolément : un nom de dirigeant dans un registre, une techno citée dans une annonce, un format d'e-mail déduit, une adresse de serveur trouvée dans un commit. Aucune n'est alarmante seule. Assemblées, elles permettent de rédiger un message qui sonne juste : le bon expéditeur supposé, le bon vocabulaire interne, la bonne référence à un outil réellement utilisé, adressé à la bonne personne au bon moment.
+
+C'est tout l'intérêt de la démarche, et toute sa dangerosité. Le travail de l'attaquant n'est pas de pirater un mur, c'est de paraître légitime. L'empreinte ouverte lui fournit le costume. Voilà pourquoi on cherche à la réduire : moins de pièces disponibles, moins de costume crédible.
+
+## réduire l'exposition
+
+On ne fait pas disparaître une entreprise des registres, et on ne veut pas non plus recruter à l'aveugle. Il s'agit de réduire le superflu, pas de se cacher.
+
+Côté annonces, on peut décrire un poste par les compétences générales plutôt que par la liste exacte des produits et des versions internes. Côté code, on impose une analyse automatique des secrets avant chaque commit et on contrôle régulièrement ses dépôts publics, en sachant que corriger un fichier ne suffit pas si le secret traîne encore dans l'historique. Côté employés, la sensibilisation prime : expliquer comment une simple information de profil sert un scénario de fraude rend les gens plus prudents face à un message inhabituel.
+
+<Callout type="success">
+La bonne posture défensive consiste à faire soi-même cet exercice d'OSINT sur sa propre organisation, à intervalle régulier. Vous découvrez ce qui fuite avant qu'un attaquant ne s'en serve, et vous priorisez les corrections sur du concret plutôt que sur des suppositions.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Que révèle le plus souvent une offre d'emploi technique sur une entreprise ?" options={["Le salaire de tous ses employes", "Sa pile technologique et parfois les versions des outils internes", "Les mots de passe de ses serveurs", "Le contenu de ses bases de donnees"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi un secret commite puis corrige dans un depot public reste-t-il un risque ?" options={["Il devient automatiquement chiffre", "Il disparait des qu on edite le fichier", "Il reste consultable dans l historique des commits", "Il n a jamais ete un vrai risque"]} correct={2} />
+
+<Quiz id="q-3" question="En quoi les profils des employes nourrissent-ils l'ingenierie sociale ?" options={["Ils donnent noms, roles et un format d e-mail deductible pour cibler une personne", "Ils fournissent directement les acces aux systemes", "Ils sont chiffres et donc inutilisables", "Ils ne concernent jamais la securite"]} correct={0} />
+</QuizGroup>
+
+## à retenir
+
+- L'empreinte d'une organisation se reconstitue depuis l'ouvert : site et mentions légales, registres d'entreprises, offres d'emploi, profils d'employés, dépôts de code.
+- Les registres (INPI, Pappers, Companies House, SEC) sont publics par conception et livrent dirigeants, adresses et historique.
+- Une offre d'emploi nomme des produits et des versions, donc décrit la pile technologique interne.
+- Les profils professionnels donnent un organigramme officieux et permettent de déduire les adresses e-mail.
+- Un dépôt public peut contenir clés, mots de passe et adresses internes ; l'historique garde la trace même après correction.
+- Recoupées, ces pièces rendent un hameçonnage crédible : on réduit l'exposition pour réduire ce risque.
+- Le cadre légitime suppose une autorisation écrite pour tout test, et de la retenue dès qu'on traite des données personnelles.
+- La meilleure défense est de faire l'exercice sur soi, régulièrement, et de corriger ce qui fuit.
+
+OK 10 écrit

@@ -1,0 +1,88 @@
+---
+refCode: CL-LSN-097-V01
+slug: crypto-introduction
+title: "À quoi sert vraiment la cryptographie"
+description: "Au-delà de cacher un message : comprenez les quatre objectifs de la cryptographie (confidentialité, intégrité, authenticité, non-répudiation) et le vocabulaire de base avant d'entrer dans les algorithmes."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 400
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Quand on dit « cryptographie », presque tout le monde pense à la même image : un message secret qu'on rend illisible pour qu'un espion ne puisse pas le lire. C'est vrai, mais c'est une petite partie de l'histoire. Réduire la crypto à « cacher des messages », c'est comme dire qu'une serrure sert juste à fermer une porte, en oubliant qu'elle prouve aussi qui a la clé.
+
+En réalité, la cryptographie répond à quatre besoins différents, et il est utile de les séparer tout de suite. Confidentialité : que personne d'autre ne puisse lire. Intégrité : savoir si le message a été modifié en route. Authenticité : savoir de qui il vient vraiment. Non-répudiation : empêcher l'auteur de nier qu'il l'a envoyé. Ce sont quatre questions distinctes, et un même outil ne les couvre pas toutes à la fois. Voyons-les une par une.
+
+## confidentialité
+
+C'est l'objectif le plus connu. Tu as un message, tu veux que seul le destinataire prévu puisse en lire le contenu. Tout le monde peut intercepter le message qui circule, mais sans la bonne clé, ils ne voient qu'une suite de caractères qui ne veut rien dire.
+
+Exemple concret : tu te connectes à ta banque. Entre ton navigateur et le serveur, ton numéro de compte et ton mot de passe traversent des dizaines de machines (routeurs, points d'accès Wi-Fi, fournisseurs d'accès). Le chiffrement HTTPS fait que chacune de ces machines voit passer le trafic, mais aucune ne peut le décoder. Seuls ton navigateur et le serveur de la banque partagent de quoi déchiffrer.
+
+<Callout type="info">
+La confidentialité protège le contenu, pas le fait que tu communiques. Un observateur peut voir que tu parles à ta banque, à quelle heure et combien de données circulent, même s'il ne lit rien. Cacher l'existence de la communication elle-même est un autre problème, qu'on appelle l'anonymat ou la résistance à l'analyse de trafic.
+</Callout>
+
+## intégrité
+
+Confidentialité et intégrité sont souvent confondues, alors qu'elles n'ont rien à voir. Un message peut être parfaitement secret et quand même falsifié. L'intégrité, c'est la garantie que le message reçu est exactement celui qui a été envoyé, sans une seule modification.
+
+Prends un virement bancaire. Tu envoies l'ordre « virer 50 euros au compte de Léa ». Un attaquant qui contrôle le réseau ne lit peut-être pas le contenu (il est chiffré), mais imagine qu'il puisse retourner quelques bits au passage et transformer 50 en 5000, ou changer le numéro de compte. Sans mécanisme d'intégrité, le serveur reçoit l'ordre modifié et l'exécute sans rien soupçonner. La crypto ajoute ici une sorte de scellé : si un seul bit change, la vérification échoue et le message est rejeté. Le but n'est pas d'empêcher la modification, c'est de la détecter à coup sûr.
+
+## authenticité
+
+Savoir que le message n'a pas changé, c'est bien. Mais qui te dit qu'il vient de la bonne personne ? L'authenticité répond à cette question : prouver l'identité de l'émetteur.
+
+Exemple : tu reçois un e-mail de ton patron qui te demande de payer une facture en urgence. Le texte est intact, personne ne l'a modifié. Sauf qu'il ne vient pas du tout de ton patron, c'est une arnaque qui a simplement écrit son nom dans le champ « De ». Rien dans un e-mail classique ne prouve l'identité réelle de l'expéditeur. L'authenticité cryptographique, elle, repose sur quelque chose que seul le véritable émetteur possède (une clé privée). Si la vérification passe, c'est que le message vient bien de quelqu'un qui détient cette clé, pas d'un imposteur qui a recopié un nom.
+
+## non-répudiation
+
+Le quatrième objectif est plus subtil, et c'est celui qu'on oublie le plus souvent. La non-répudiation empêche l'auteur de nier après coup qu'il est bien à l'origine du message. Ce n'est plus une protection contre un tiers, c'est une protection contre l'émetteur lui-même.
+
+Exemple : tu signes électroniquement un contrat. Plus tard, l'autre partie prétend ne jamais l'avoir signé. Une signature numérique correctement faite ne peut être produite que par le détenteur d'une clé privée précise. Toi, tu n'as que la clé publique, qui sert uniquement à vérifier, pas à signer. Comme tu n'aurais jamais pu fabriquer cette signature toi-même, sa présence prouve que c'est bien l'autre partie qui l'a posée. Elle ne peut donc pas le nier de façon crédible.
+
+C'est exactement ce qui distingue une signature numérique d'un simple code partagé. Si deux personnes connaissent le même secret, chacune peut produire une preuve, et donc accuser l'autre. La non-répudiation exige que l'auteur soit le seul à pouvoir signer.
+
+## le vocabulaire
+
+Avant d'entrer dans les algorithmes, fixons les mots. Le texte clair est le message lisible, celui que tu veux protéger. Le texte chiffré est le résultat, illisible sans la clé. L'algorithme est la recette mathématique qui transforme l'un en l'autre. La clé est l'information secrète qui paramètre cette transformation.
+
+La distinction entre algorithme et clé est le point que beaucoup de débutants ratent. On pourrait croire que la sécurité vient du secret de la méthode. C'est faux, et c'est même l'inverse. Le principe de Kerckhoffs, énoncé au dix-neuvième siècle, dit qu'un système doit rester sûr même si l'attaquant connaît tout du fonctionnement de l'algorithme. La seule chose qui doit rester secrète, c'est la clé.
+
+<Diagram caption="Le même algorithme, public, transforme le texte clair en texte chiffré et inversement. Seule la clé est secrète.">
+flowchart LR
+  A[Texte clair] -->|Chiffrement avec la cle| B[Texte chiffre]
+  B -->|Dechiffrement avec la cle| C[Texte clair]
+  K[Cle secrete] --> A
+  K --> B
+</Diagram>
+
+Pourquoi rendre l'algorithme public ? Parce qu'un algorithme analysé par des milliers d'experts pendant des années est bien plus fiable qu'un algorithme « secret » que personne n'a vérifié. Les bonnes méthodes de chiffrement sont publiques, documentées, et restent solides malgré tout.
+
+<Callout type="warning">
+N'invente jamais ta propre crypto pour un usage réel. C'est tentant, ça paraît simple, et c'est presque toujours cassé en quelques minutes par quelqu'un qui s'y connaît. Les algorithmes standard ont survécu à des décennies d'attaques publiques. Ton bricolage maison, lui, n'a été testé par personne. Utilise les outils existants et reconnus, ne réécris pas la primitive.
+</Callout>
+
+## ce que la crypto ne fait pas
+
+La cryptographie protège les données pendant qu'elles circulent ou pendant qu'elles dorment chiffrées. Elle ne protège pas le moment où elles sont utilisées en clair. Un message chiffré de bout en bout sera tout de même lisible sur l'appareil qui le reçoit, puisqu'il faut bien le déchiffrer pour l'afficher. Si cet appareil est infecté par un logiciel espion, l'attaquant lit le message après déchiffrement, et toute la crypto du monde n'y change rien.
+
+Autrement dit, la crypto est un maillon, pas la chaîne entière. Elle ne remplace ni un système d'exploitation à jour, ni des mots de passe corrects, ni la prudence face au phishing. Elle résout très bien un problème précis. Le reste de la sécurité reste à ta charge.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Un virement chiffré est intercepté par un attaquant qui ne peut pas le lire, mais réussit à changer le montant en route sans être détecté. Quel objectif a échoué ?" options={["La confidentialité", "L'intégrité", "La non-répudiation", "L'anonymat"]} correct={1} />
+
+<Quiz id="q-2" question="Selon le principe de Kerckhoffs, qu'est-ce qui doit rester secret dans un bon système ?" options={["L'algorithme de chiffrement", "Le texte clair d'origine", "La clé", "La taille du message"]} correct={2} />
+
+<Quiz id="q-3" question="Pourquoi une signature numérique apporte-t-elle la non-répudiation, contrairement à un secret partagé entre deux personnes ?" options={["Parce qu'elle chiffre aussi le message", "Parce que seul le détenteur de la clé privée peut la produire", "Parce qu'elle est plus longue", "Parce qu'elle cache l'identité de l'auteur"]} correct={1} />
+
+## à retenir
+
+- La cryptographie couvre quatre objectifs distincts : confidentialité (empêcher de lire), intégrité (détecter une modification), authenticité (prouver l'émetteur), non-répudiation (empêcher l'auteur de nier).
+- Confidentialité et intégrité sont indépendantes : un message peut être secret et falsifié, ou en clair et intact.
+- Texte clair, texte chiffré, algorithme, clé : l'algorithme transforme, la clé paramètre la transformation.
+- Principe de Kerckhoffs : la sécurité tient au secret de la clé, jamais au secret de l'algorithme.
+- N'invente pas ta propre crypto. Les algorithmes standard sont publics et éprouvés.
+- La crypto protège les données en transit et au repos, pas au moment où elles sont déchiffrées sur une machine compromise.

@@ -1,0 +1,130 @@
+---
+refCode: CL-LSN-070-V01
+slug: cicd-introduction
+title: "CI/CD : intégration et déploiement continus"
+description: "Comprenez ce que signifient l'intégration continue et le déploiement continu, le rôle d'un pipeline automatisé, et pourquoi tester et livrer à chaque changement réduit les risques."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-065-V01"]
+---
+
+Repense à la dernière fois que tu as mis du code en ligne à la main. Tu te connectes au serveur, tu tires la dernière version, tu relances l'application, tu cliques un peu partout pour vérifier que rien n'a cassé, et tu croises les doigts. Ça marche, jusqu'au jour où ça ne marche plus. Quelqu'un a oublié de lancer les tests, une dépendance manquait, un fichier n'a pas été copié. Et comme ces déploiements sont pénibles, on les fait rarement. Du coup chaque mise en ligne embarque des semaines de changements, et quand un problème surgit, on ne sait même plus lequel des cinquante commits l'a provoqué.
+
+L'idée du CI/CD, c'est de prendre tout ce travail manuel et stressant et de le confier à une machine. À chaque changement de code, une suite d'étapes se déclenche toute seule : on installe, on teste, on construit, et si tout est vert, on livre. Tu ne fais plus ce travail à la main, tu écris une fois la recette, et elle s'exécute à l'identique à chaque fois. CI/CD veut dire intégration continue (Continuous Integration) et déploiement continu (Continuous Deployment ou Delivery). On va voir les deux moitiés séparément, parce qu'elles répondent à des questions différentes.
+
+## intégration continue (CI)
+
+L'intégration continue répond à une question simple : est-ce que mon code, fusionné avec celui des autres, fonctionne encore ?
+
+Dans un projet à plusieurs, chacun travaille sur sa branche. Tant que les branches restent séparées, tout va bien. Le problème arrive au moment de tout réunir. Avant, on intégrait les changements de tout le monde d'un coup, après des semaines, et on découvrait alors une montagne de conflits et de régressions. L'intégration continue inverse la logique : on intègre souvent, par petits bouts, et à chaque fois une machine vérifie que ça tient.
+
+Concrètement, à chaque `git push`, un serveur distant récupère ton code et exécute une série de vérifications, toujours les mêmes :
+
+```bash
+# Ce qu'une machine de CI lance typiquement à chaque push
+pnpm install          # installer les dépendances, à partir de zéro
+pnpm lint             # vérifier le style et les erreurs évidentes
+pnpm typecheck        # vérifier les types TypeScript
+pnpm test             # lancer toute la suite de tests
+pnpm build            # vérifier que le projet compile vraiment
+```
+
+Le modèle mental le plus utile, c'est celui d'un collègue invisible et infatigable. Dès que tu pousses du code, il récupère une copie propre du projet sur une machine neuve, déroule la liste, et te dit en quelques minutes si quelque chose ne va pas. Le mot important est « machine neuve ». Sur ton poste, un test peut passer parce que tu as un fichier de config oublié, une variable d'environnement, ou une dépendance installée à la main il y a six mois. La CI part de rien à chaque fois, donc elle attrape ce fameux « pourtant chez moi ça marche ».
+
+L'intérêt, c'est le moment où le problème est détecté. Un test qui casse pendant la CI, c'est cinq minutes après ton push, sur ton écran, avec en mémoire exactement ce que tu viens de changer. Le même bug découvert en production, c'est trois semaines plus tard, signalé par un utilisateur, sur du code que tu as oublié. Plus tu détectes tôt, moins ça coûte cher.
+
+<Callout type="info">
+Pour que la CI serve à quelque chose, il faut avoir des tests. Une CI sans tests, c'est juste une machine qui vérifie que le code compile. Utile, mais loin du compte. La valeur réelle vient des tests automatiques qui décrivent ce que ton application est censée faire.
+</Callout>
+
+## déploiement continu (CD)
+
+La CI dit « le code est bon ». La question suivante : et maintenant, comment il arrive devant les utilisateurs ?
+
+C'est le rôle du CD. Si la CI passe au vert, le code est automatiquement livré : copié sur un serveur, poussé chez un hébergeur, publié. Tu ne te connectes plus en SSH à minuit pour tirer la dernière version. La même machine qui a testé enchaîne avec la livraison.
+
+Il y a une nuance entre deux termes qui se cachent derrière le « CD », et elle compte :
+
+- **Livraison continue** (Continuous Delivery) : à chaque changement validé, une version prête à partir est préparée automatiquement. La mise en production réelle attend qu'un humain appuie sur un bouton. Tu gardes le contrôle du « quand ».
+- **Déploiement continu** (Continuous Deployment) : on va jusqu'au bout sans intervention. Si tout est vert, le code part directement en production, sans validation manuelle.
+
+La différence tient à cette dernière étape manuelle. Beaucoup d'équipes commencent par la livraison continue : tout est automatisé sauf le tout dernier clic, ce qui rassure quand on débute. Le déploiement continu complet demande une confiance solide dans la suite de tests, parce qu'il n'y a plus de filet humain.
+
+<Callout type="success">
+Pas besoin de tout faire d'un coup. Commence par une bonne CI qui tourne à chaque push. Ajoute ensuite un déploiement automatique vers un environnement de test. Garde la production en validation manuelle au début. Tu serres la vis progressivement, à mesure que ta confiance grandit.
+</Callout>
+
+## le pipeline
+
+Tout ça s'organise dans ce qu'on appelle un pipeline : une suite d'étapes (on parle souvent de « jobs ») qui s'enchaînent, déclenchées par un évènement. L'évènement, c'est en général un `git push` ou l'ouverture d'une pull request.
+
+Chaque étape attend que la précédente réussisse. Si les tests échouent, on n'enchaîne pas sur le build ni le déploiement. Le pipeline s'arrête et te signale où ça a cassé. C'est exactement le comportement qu'on veut : du code qui rate ses tests ne doit jamais arriver en production.
+
+<Diagram caption="Un pipeline CI/CD typique, déclenché par un push">
+  flowchart TD
+    A["Push ou pull request"] --> B["Installer les dépendances"]
+    B --> C["Lint et vérification des types"]
+    C --> D["Lancer les tests"]
+    D --> E["Construire le projet"]
+    E --> F["Déployer si tout est vert"]
+    D --> G["Stop et alerte si un test échoue"]
+</Diagram>
+
+Ce qui rend le pipeline fiable, c'est qu'il est décrit dans un fichier versionné, dans le dépôt, à côté du code. La recette n'est pas dans la tête de la personne qui déploie d'habitude. Elle est écrite, partagée, et tourne pareil pour tout le monde. Si quelqu'un quitte l'équipe, le pipeline continue de tourner sans lui.
+
+## ce que ça change concrètement
+
+Le premier effet, c'est moins de bugs en production. Pas zéro, mais beaucoup moins, parce qu'aucun changement n'arrive en ligne sans être passé par la même série de vérifications.
+
+Le deuxième, c'est la taille des déploiements. Quand déployer est pénible, on accumule et on livre rarement de gros paquets risqués. Quand c'est automatique et indolore, on livre souvent, par petites touches. Et un petit changement qui casse quelque chose se diagnostique en quelques minutes, parce qu'il n'y a qu'une poignée de lignes à examiner.
+
+Le troisième, c'est la confiance. Déployer un vendredi après-midi cesse d'être un acte de bravoure. Tu pousses, le pipeline fait son travail, et s'il y a un souci il t'arrête avant la production. Cette tranquillité change la façon de travailler au quotidien.
+
+<Callout type="warning">
+L'erreur la plus classique : déployer à la main le vendredi soir, sans pipeline, en se disant que ça ira vite. C'est précisément le moment où un détail oublié passe inaperçu et casse la prod pour le week-end. La bonne pratique : aucun déploiement manuel direct en production. Tout passe par le pipeline, tests inclus. Si le pipeline ne peut pas le faire, c'est le pipeline qu'on corrige, pas une exception qu'on fait à la main.
+</Callout>
+
+## les outils
+
+Plusieurs outils font tourner ces pipelines. **GitHub Actions** est intégré à GitHub : tu décris ton pipeline dans un fichier YAML rangé dans `.github/workflows/`, et il se déclenche sur les évènements de ton dépôt. **GitLab CI** joue le même rôle dans l'écosystème GitLab. **Jenkins** est un serveur d'automatisation plus ancien, très configurable, qu'on installe et gère soi-même.
+
+Les concepts (déclencheur, jobs, étapes) se ressemblent d'un outil à l'autre. Apprends-en un correctement et tu retrouveras tes repères ailleurs. Dans la suite, on utilisera GitHub Actions, parce qu'il est gratuit pour beaucoup de projets et directement collé au dépôt.
+
+## à toi de jouer
+
+Voici un pipeline décrit en pseudo-étapes lisibles, pour fixer l'enchaînement avant de le traduire en YAML réel dans la prochaine leçon :
+
+```text
+Déclencheur : push sur la branche main, ou ouverture d'une pull request
+
+Job « verifier » :
+  1. recuperer le code du depot
+  2. installer Node et pnpm
+  3. installer les dependances (pnpm install)
+  4. lancer le lint (pnpm lint)
+  5. verifier les types (pnpm typecheck)
+  6. lancer les tests (pnpm test)
+  7. construire le projet (pnpm build)
+
+Job « deployer » (seulement si « verifier » a reussi, et seulement sur main) :
+  1. recuperer le projet construit
+  2. publier vers l hebergeur
+```
+
+<Quiz id="q-1" question="Quelle est la différence principale entre intégration continue (CI) et déploiement continu (CD) ?" options={["La CI teste le code à chaque changement, le CD livre le code validé vers son environnement", "La CI sert au frontend, le CD au backend", "La CI est gratuite, le CD est payant", "Il n y a aucune différence, ce sont deux noms pour la même chose"]} correct={0} />
+
+<Quiz id="q-2" question="Pourquoi la CI attrape-t-elle des problèmes invisibles sur ton poste de travail ?" options={["Parce qu elle utilise une machine plus puissante", "Parce qu elle part d une machine propre, sans tes fichiers ni configs oubliés", "Parce qu elle exécute le code plus lentement", "Parce qu elle relit le code ligne par ligne"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle pratique correspond à un usage sain d un pipeline CI/CD ?" options={["Déployer à la main le vendredi soir pour aller plus vite", "Faire passer chaque changement par le pipeline, tests inclus, avant la production", "Désactiver les tests quand ils ralentissent le pipeline", "Garder la recette de déploiement uniquement dans la tête du responsable"]} correct={1} />
+
+## à retenir
+
+- CI/CD veut dire intégration continue et déploiement (ou livraison) continu.
+- La CI lance, à chaque push, les mêmes vérifications sur une machine propre : install, lint, types, tests, build. Elle détecte les problèmes tôt.
+- Le CD livre automatiquement le code une fois la CI au vert. Livraison continue garde un dernier clic manuel ; déploiement continu va jusqu'en production sans intervention.
+- Un pipeline est une suite de jobs enchaînés, déclenchés par un évènement (push, pull request), et décrits dans un fichier versionné dans le dépôt.
+- Une CI sans tests n'a quasiment aucune valeur : la valeur vient des tests automatiques.
+- À éviter : le déploiement manuel direct en production. À faire : tout passe par le pipeline.
+- Outils courants : GitHub Actions, GitLab CI, Jenkins. On utilisera GitHub Actions ensuite.

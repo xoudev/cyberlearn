@@ -1,0 +1,216 @@
+---
+refCode: CL-LSN-072-V01
+slug: devops-projet
+title: "Projet : conteneuriser et déployer avec un pipeline"
+description: "Réunissez Git, Docker et CI/CD : versionnez une petite application, écrivez son Dockerfile, décrivez ses services avec Compose, et automatisez tests et build avec un workflow GitHub Actions."
+category: DEV
+difficulty: ADVANCED
+estimatedMinutes: 75
+xpReward: 1000
+prerequisites: ["CL-LSN-069-V01", "CL-LSN-071-V01"]
+---
+
+On a vu Git, Docker et l'intégration continue chacun de leur côté. Maintenant on les met ensemble sur un cas concret. Le point de départ : un dossier qui contient une petite API web, écrite en Node, qui répond sur un port et garde quelques données dans une base. Le point d'arrivée : un dépôt sur GitHub où, à chaque fois que tu pousses du code, une machine distante installe les dépendances, lance les tests, et construit l'image Docker de l'application. Si un test casse, tu le sais en quelques minutes sans avoir rien lancé toi-même.
+
+On avance par étapes, et à chaque étape je dis pourquoi on fait ce choix. Le but n'est pas de copier un fichier magique, c'est de comprendre ce que fait chaque ligne pour pouvoir l'adapter à ton propre projet ensuite.
+
+## le plan
+
+Voici ce qu'on va produire, dans l'ordre :
+
+- un dépôt Git propre, avec un `.gitignore` qui évite de pousser des fichiers qu'on ne veut jamais dans l'historique ;
+- un `Dockerfile` qui transforme le code en une image exécutable n'importe où ;
+- un `docker-compose.yml` qui décrit l'app plus sa base de données, avec un volume pour que les données survivent à un redémarrage ;
+- un workflow GitHub Actions qui, à chaque push, installe, teste et construit l'image.
+
+Le tout forme une chaîne. Quand elle est en place, ton travail quotidien se résume à coder et à pousser. Le reste se déclenche tout seul.
+
+<Diagram caption="Le pipeline complet, du push au déploiement">
+  flowchart TD
+    A["Tu codes en local"] --> B["git push origin main"]
+    B --> C["GitHub recoit le commit"]
+    C --> D["GitHub Actions demarre le workflow"]
+    D --> E["Step install: npm ci"]
+    E --> F["Step test: npm test"]
+    F --> G["Tests OK ?"]
+    G -->|"Non"| H["Workflow rouge, build annule"]
+    G -->|"Oui"| I["Step build de l image Docker"]
+    I --> J["Image prete a etre deployee"]
+    J --> K["Deploiement vers un hebergeur"]
+</Diagram>
+
+## étape 1 : versionner
+
+Avant tout, on met le code sous Git. Tant qu'un projet n'est pas versionné, chaque modification est risquée : pas de retour en arrière, pas d'historique, rien à pousser.
+
+```bash
+cd mon-api
+git init
+git add .
+git commit -m "chore: initial project structure"
+```
+
+Mais attention à ce qu'on ajoute. Le dossier `node_modules` pèse souvent plusieurs centaines de mégaoctets et se régénère avec `npm install`. Il n'a rien à faire dans Git. Pire, un fichier `.env` contient en général des mots de passe ou des clés d'API. S'il part dans l'historique, il y reste, même après suppression, et n'importe qui ayant accès au dépôt peut le lire. On crée donc un `.gitignore` avant le premier commit :
+
+```bash
+# .gitignore
+node_modules/
+.env
+.env.local
+npm-debug.log
+dist/
+coverage/
+```
+
+<Callout type="warning">
+Le `.gitignore` doit exister avant le premier `git add`. Si tu commits `node_modules` ou `.env` puis que tu les ajoutes au `.gitignore` ensuite, les fichiers restent dans l'historique. Il faut alors les retirer du suivi avec `git rm -r --cached` puis recommiter, ce qui est plus pénible que de bien faire dès le départ.
+</Callout>
+
+Ensuite on crée un dépôt vide sur GitHub, on le relie au dépôt local, et on pousse.
+
+```bash
+git remote add origin git@github.com:user/mon-api.git
+git branch -M main
+git push -u origin main
+```
+
+<SimulatedTerminal shell="bash" commands={{ "git push -u origin main": "Enumerating objects: 12, done.\nCounting objects: 100% (12/12), done.\nWriting objects: 100% (12/12), 4.21 KiB, done.\nTo github.com:user/mon-api.git\n * [new branch]      main -> main\nbranch 'main' set up to track 'origin/main'.", "git status": "On branch main\nYour branch is up to date with 'origin/main'.\n\nnothing to commit, working tree clean" }} />
+
+## étape 2 : le Dockerfile
+
+Le `Dockerfile` décrit comment construire une image : une boîte qui contient le code, ses dépendances et juste ce qu'il faut pour le faire tourner. L'intérêt, c'est qu'une fois l'image construite, elle tourne pareil sur ta machine, sur celle d'un collègue, et sur le serveur.
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+Ligne par ligne. `FROM node:20-alpine` part d'une image officielle de Node en version 20, sur une base Alpine, qui est légère. `WORKDIR /app` fixe le dossier de travail dans le conteneur. Ensuite vient le point qui surprend souvent : on copie `package.json` et `package-lock.json` seuls, puis on installe, et seulement après on copie le reste du code avec `COPY . .`.
+
+Pourquoi cet ordre ? Docker construit l'image par couches et met chaque couche en cache. Tant que `package.json` ne change pas, la couche `npm ci` est reprise du cache et l'installation n'est pas refaite. Si tu copiais tout le code d'abord, la moindre modification d'une ligne de ton serveur invaliderait le cache et relancerait l'installation complète des dépendances à chaque build. En séparant, tu ne réinstalles que quand les dépendances bougent vraiment.
+
+`EXPOSE 3000` documente le port sur lequel l'app écoute. `CMD` donne la commande lancée au démarrage du conteneur.
+
+<Callout type="info">
+`npm ci` n'est pas `npm install`. Il installe exactement les versions du `package-lock.json`, échoue si le lock et le `package.json` divergent, et part d'un `node_modules` propre. C'est ce qu'on veut en build : reproductible et sans surprise.
+</Callout>
+
+## étape 3 : docker-compose
+
+Une API seule, c'est rare. Il lui faut souvent une base de données. On pourrait lancer deux conteneurs à la main, mais c'est fastidieux et fragile. Compose décrit l'ensemble dans un seul fichier et démarre tout d'une commande.
+
+```yaml
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://app:secret@db:5432/appdb
+    depends_on:
+      - db
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: appdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+```
+
+Deux services. `web` est construit depuis le `Dockerfile` du dossier courant et publie son port 3000 vers ta machine. `db` utilise l'image officielle de PostgreSQL. Le `depends_on` dit à Compose de démarrer la base avant l'app. Remarque que `web` parle à la base via l'hôte `db`, qui est simplement le nom du service : Compose crée un réseau interne où chaque service est joignable par son nom.
+
+Le bloc `volumes` est ce qui empêche de tout perdre. Sans lui, les données vivent dans le conteneur, et si tu détruis le conteneur les données partent avec. Le volume `pgdata` stocke les fichiers de la base à l'extérieur du conteneur, donc un `docker compose down` puis `up` retrouve les données intactes.
+
+<SimulatedTerminal shell="bash" commands={{ "docker compose up -d": "[+] Running 3/3\n Network monapi_default   Created\n Container monapi-db-1     Started\n Container monapi-web-1    Started", "docker compose ps": "NAME             IMAGE              STATUS         PORTS\nmonapi-db-1      postgres:16-alpine Up 4 seconds   5432/tcp\nmonapi-web-1     monapi-web         Up 3 seconds   0.0.0.0:3000->3000/tcp" }} />
+
+## étape 4 : le pipeline GitHub Actions
+
+C'est la pièce qui automatise tout. Un workflow est un fichier YAML placé dans `.github/workflows/`. GitHub le lit et lance les étapes décrites dès qu'un événement se produit, ici un push.
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Lancer les tests
+        run: npm test
+
+      - name: Construire l image Docker
+        run: docker build -t mon-api:${{ github.sha }} .
+```
+
+Bloc par bloc. `on` déclare les déclencheurs : tout push sur `main`, et toute pull request. La double couverture est utile car elle teste le code d'une PR avant qu'il n'atteigne `main`.
+
+`jobs` contient un job nommé `test-and-build` qui tourne sur une machine Ubuntu fournie par GitHub. Les `steps` s'exécutent dans l'ordre, et si l'un d'eux renvoie une erreur, les suivants sont annulés. C'est exactement ce qu'on veut : si `npm test` échoue, l'étape de build ne se lance pas, donc on ne construit jamais une image à partir de code cassé.
+
+Le premier step récupère le code. Le deuxième installe Node. Puis on installe les dépendances avec `npm ci`, on lance les tests, et enfin on construit l'image en la taguant avec `github.sha`, l'identifiant du commit, ce qui donne une image unique par commit.
+
+<Callout type="info">
+Ne mets jamais un mot de passe ou une clé en clair dans le YAML : le fichier est dans le dépôt, donc visible par tous ceux qui y ont accès. Utilise les secrets du dépôt (Settings, puis Secrets and variables, puis Actions) et lis-les dans le workflow avec la syntaxe `${{ secrets.MON_SECRET }}`. Le secret n'apparaît jamais dans les logs.
+</Callout>
+
+## étape 5 : vérifier
+
+Une fois le fichier de workflow poussé, va dans l'onglet Actions du dépôt sur GitHub. Tu y vois la liste des runs, un par push. Clique sur le dernier : chaque step apparaît avec une coche verte ou une croix rouge, et tu peux déplier un step pour lire sa sortie complète.
+
+Quand un step échoue, le log dit où. Un `npm test` rouge montre l'assertion qui a cassé. Un `npm ci` rouge signale souvent un `package-lock.json` pas à jour ou pas commité. Tu corriges en local, tu re-commits, tu re-pushes, et un nouveau run démarre. Tant que tu n'as pas une coche verte de bout en bout, considère que le code n'est pas prêt à être déployé.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi copie-t-on package.json puis lance-t-on npm ci AVANT de copier le reste du code dans le Dockerfile ?" options={["Parce que npm exige que package.json soit seul dans le dossier", "Pour profiter du cache de couches : tant que les dependances ne changent pas, l install n est pas refaite", "Parce que COPY . . ne fonctionne pas apres un RUN", "Pour reduire le nombre de lignes du fichier"]} correct={1} />
+
+<Quiz id="q-2" question="A quoi sert le bloc volumes dans le docker-compose pour le service de base de donnees ?" options={["A accelerer le demarrage du conteneur", "A exposer un port supplementaire vers l hote", "A conserver les donnees en dehors du conteneur pour qu elles survivent a un down/up", "A chiffrer les donnees au repos"]} correct={2} />
+
+<Quiz id="q-3" question="Dans le workflow, que se passe-t-il pour le step de build Docker si le step npm test echoue ?" options={["Le build se lance quand meme avec un avertissement", "Le build est annule, car un step en erreur stoppe les steps suivants", "Le build se lance mais sans tag", "GitHub relance automatiquement les tests trois fois"]} correct={1} />
+
+<SimulatedTerminal shell="bash" commands={{ "git push origin main": "Enumerating objects: 7, done.\nTo github.com:user/mon-api.git\n   a1b2c3d..e4f5g6h  main -> main", "docker build -t mon-api .": "[+] Building 18.2s (11/11) FINISHED\n => exporting to image\n => => naming to docker.io/library/mon-api:latest\nSuccessfully tagged mon-api:latest" }} />
+
+## ton projet personnel
+
+<Callout type="success">
+Reprends une de tes propres petites applications, ou pars d'un squelette d'API vide, et fais-lui suivre exactement les cinq étapes ci-dessus sur ta vraie machine. Tu repars avec un dépôt GitHub qui teste et construit tout seul. C'est un projet qu'on peut montrer.
+</Callout>
+
+Une fois la chaîne de base en place, ajoute des extensions, dans cet ordre de difficulté croissante :
+
+1. **Un cache des dépendances dans la CI.** Ajoute `cache: npm` à l'action `setup-node`. Les installations suivantes réutilisent les paquets déjà téléchargés, et le workflow gagne de précieuses secondes à chaque run.
+2. **Un badge de statut.** GitHub génère une image qui affiche vert ou rouge selon le dernier run. Colle-la en haut de ton `README.md` pour montrer d'un coup d'oeil que la branche est saine.
+3. **Des tests d'intégration.** Ajoute un service de base de données au job avec `services:`, et écris un test qui parle vraiment à la base au lieu de la simuler. Tu vérifies alors que l'app et sa base s'entendent bien.
+4. **Un environnement de préproduction.** Crée une branche `staging` et un workflow qui déploie cette branche vers un serveur de test. Tu valides les changements sur un environnement proche de la production avant de toucher à `main`.
+5. **Un déploiement réel.** Ajoute un dernier job qui, après un build vert sur `main`, pousse l'image vers un hébergeur et la met en ligne. Garde les identifiants dans les secrets du dépôt, jamais dans le YAML.
+
+Mets tout ça sur GitHub au fur et à mesure. Un dépôt public avec un pipeline qui passe, un README clair et un badge vert, c'est une preuve concrète de ce que tu sais faire.
+
+## à retenir
+
+Sur l'ensemble de ce parcours, tu as relié trois outils en une seule chaîne de travail. Git garde l'historique et sert de source unique pour tout le reste. Le `.gitignore` empêche les fichiers lourds et les secrets de partir dans cet historique. Le `Dockerfile` rend l'application reproductible, et l'ordre de ses instructions n'est pas cosmétique : il décide de ce que Docker peut mettre en cache. Compose décrit plusieurs services d'un coup et, avec un volume, garde les données entre deux redémarrages. Le workflow GitHub Actions exécute install, tests et build à chaque push, dans un ordre où un test cassé bloque le build. Et tu sais lire un run dans l'onglet Actions pour diagnostiquer un échec. À partir de là, déploiement réel, cache, badges et préprod ne sont que des couches que tu ajoutes sur cette base.
+
+OK 12-projet.mdx écrit

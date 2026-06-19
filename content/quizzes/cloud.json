@@ -1,0 +1,466 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 12,
+  "questions": [
+    {
+      "question": "Quelle phrase résume le mieux l'idée centrale du cloud par rapport à l'informatique traditionnelle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Louer de la puissance de calcul et du stockage à la demande au lieu de posséder et héberger son propre matériel"
+        },
+        {
+          "id": "b",
+          "text": "Acheter davantage de serveurs physiques pour ne jamais manquer de capacité"
+        },
+        {
+          "id": "c",
+          "text": "Stocker uniquement des fichiers en ligne sans calcul possible"
+        },
+        {
+          "id": "d",
+          "text": "Remplacer Internet par un réseau totalement privé et isolé"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le cloud renverse la logique de possession : on loue un usage de ressources à la demande chez un fournisseur, et on ne paie que ce que l'on consomme, au lieu d'acheter et d'amortir du matériel."
+    },
+    {
+      "question": "Une équipe veut déployer son application sans gérer le système d'exploitation ni les correctifs serveur, mais souhaite garder la maîtrise du code applicatif. Quel modèle de service correspond ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "IaaS, car on loue l'infrastructure brute et on gère l'OS soi-même"
+        },
+        {
+          "id": "b",
+          "text": "PaaS, car le fournisseur gère le système et les serveurs et on dépose son application"
+        },
+        {
+          "id": "c",
+          "text": "SaaS, car on consomme un logiciel fini sans toucher au code"
+        },
+        {
+          "id": "d",
+          "text": "Un cloud privé dédié à l'organisation"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "En PaaS, le fournisseur gère le système, les serveurs et les correctifs, tandis que le client ne s'occupe que de son application et de ses données."
+    },
+    {
+      "question": "Dans le modèle de responsabilité partagée, qui est responsable de la sécurité de l'hyperviseur, du matériel et des centres de données physiques ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le client, car il choisit ce qu'il déploie"
+        },
+        {
+          "id": "b",
+          "text": "Un auditeur externe imposé par la réglementation"
+        },
+        {
+          "id": "c",
+          "text": "Le fournisseur cloud, au titre de la sécurité DU cloud"
+        },
+        {
+          "id": "d",
+          "text": "Les deux à parts strictement égales"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le fournisseur assure la sécurité DU cloud : matériel, centres de données et hyperviseur, des couches auxquelles le client n'a aucun accès."
+    },
+    {
+      "question": "Quels éléments restent à la charge du client quel que soit le modèle de service consommé (IaaS, PaaS ou SaaS) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'hyperviseur, l'alimentation électrique et la climatisation"
+        },
+        {
+          "id": "b",
+          "text": "Le réseau physique et le câblage des centres de données"
+        },
+        {
+          "id": "c",
+          "text": "Le système d'exploitation et son runtime, uniquement"
+        },
+        {
+          "id": "d",
+          "text": "Les données, les accès et la configuration des services"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Même en SaaS, les données, les accès et la configuration ne se délèguent jamais : le fournisseur ignore qui doit lire quoi et comment vous voulez protéger vos informations."
+    },
+    {
+      "question": "Quelle est la différence principale entre un conteneur et une machine virtuelle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le conteneur partage le système de la machine hôte, ce qui le rend plus léger et plus rapide à démarrer"
+        },
+        {
+          "id": "b",
+          "text": "Le conteneur embarque toujours son propre système d'exploitation complet"
+        },
+        {
+          "id": "c",
+          "text": "Le conteneur ne peut pas faire tourner d'application web"
+        },
+        {
+          "id": "d",
+          "text": "Le conteneur se facture uniquement à la fraction de seconde d'exécution"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Contrairement à une VM qui embarque tout un système, le conteneur partage le système de l'hôte : il est donc beaucoup plus léger et démarre en quelques secondes."
+    },
+    {
+      "question": "Une tâche courte, déclenchée par un événement et appelée seulement quelques fois par jour, doit être exécutée à moindre coût. Quel palier de calcul convient le mieux ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une machine virtuelle allumée en permanence"
+        },
+        {
+          "id": "b",
+          "text": "Un cluster de conteneurs orchestré en continu"
+        },
+        {
+          "id": "c",
+          "text": "Un serveur physique dédié"
+        },
+        {
+          "id": "d",
+          "text": "Le sans-serveur, facturé seulement quand la fonction tourne"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le sans-serveur facture au temps d'exécution réel et ne coûte rien à l'arrêt, ce qui le rend idéal pour des tâches courtes, événementielles et à charge irrégulière."
+    },
+    {
+      "question": "Vous devez héberger la vidéothèque publique d'un site : des milliers de fichiers servis directement aux navigateurs par une URL. Quel type de stockage choisir ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Du stockage bloc, comme un disque attaché à une machine"
+        },
+        {
+          "id": "b",
+          "text": "Du stockage fichier monté sur chaque navigateur des visiteurs"
+        },
+        {
+          "id": "c",
+          "text": "Du stockage objet, où chaque fichier est accessible par une clé via le réseau"
+        },
+        {
+          "id": "d",
+          "text": "Aucun stockage cloud : les vidéos doivent rester locales"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le stockage objet range des fichiers entiers identifiés par une clé, accessibles par URL, et s'étend quasiment sans limite : c'est le choix adapté pour des médias servis à grande échelle."
+    },
+    {
+      "question": "Comment distinguer correctement durabilité et disponibilité d'un service de stockage ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La durabilité, c'est ne pas perdre la donnée ; la disponibilité, c'est pouvoir y accéder à un instant donné"
+        },
+        {
+          "id": "b",
+          "text": "Ce sont deux mots pour la même garantie de fiabilité"
+        },
+        {
+          "id": "c",
+          "text": "La disponibilité parle des copies multiples, la durabilité de la vitesse de lecture"
+        },
+        {
+          "id": "d",
+          "text": "La durabilité ne concerne que le stockage bloc"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La durabilité promet que la donnée existe toujours (grâce à plusieurs copies réparties), tandis que la disponibilité promet qu'on peut y accéder maintenant : ce sont deux engagements distincts."
+    },
+    {
+      "question": "Distinguer un sous-réseau public d'un sous-réseau privé dans un VPC repose sur une seule chose. Laquelle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le public utilise IPv6 et le privé IPv4"
+        },
+        {
+          "id": "b",
+          "text": "Le public a une route vers Internet, le privé n'en a pas"
+        },
+        {
+          "id": "c",
+          "text": "Le public est plus grand que le privé"
+        },
+        {
+          "id": "d",
+          "text": "Le public est chiffré et le privé ne l'est pas"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "La distinction tient à la route vers Internet : un sous-réseau public en possède une (serveurs exposés), un sous-réseau privé n'en a pas (bases de données, ressources protégées)."
+    },
+    {
+      "question": "Une base de données placée dans un sous-réseau privé doit pouvoir télécharger des mises à jour depuis Internet, sans jamais être joignable depuis l'extérieur. Quelle pièce utilisez-vous ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La passerelle Internet, ouverte dans les deux sens"
+        },
+        {
+          "id": "b",
+          "text": "Un groupe de sécurité ouvert à 0.0.0.0/0"
+        },
+        {
+          "id": "c",
+          "text": "La passerelle NAT, qui laisse sortir le trafic privé sans le rendre joignable"
+        },
+        {
+          "id": "d",
+          "text": "Un second VPC dédié aux mises à jour"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La passerelle NAT laisse une machine privée initier une sortie en traduisant son adresse, mais la connexion ne fonctionne que dans un sens : personne sur Internet ne peut l'atteindre."
+    },
+    {
+      "question": "Quelle est la principale différence entre un utilisateur et un rôle en IAM ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un utilisateur a des identifiants permanents, un rôle s'assume pour un temps avec des identifiants temporaires"
+        },
+        {
+          "id": "b",
+          "text": "Un rôle ne peut servir qu'aux humains, jamais aux services"
+        },
+        {
+          "id": "c",
+          "text": "Un utilisateur coûte systématiquement plus cher qu'un rôle"
+        },
+        {
+          "id": "d",
+          "text": "Il n'y a aucune différence, ce sont deux mots pour la même chose"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'utilisateur porte des identifiants permanents valables jusqu'à révocation, alors qu'un rôle distribue des identifiants temporaires qui expirent, d'où la préférence du rôle pour les services."
+    },
+    {
+      "question": "Pourquoi le compte racine d'un abonnement cloud ne doit-il pas servir au travail quotidien ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il est techniquement plus lent que les comptes ordinaires"
+        },
+        {
+          "id": "b",
+          "text": "Il ne peut pas créer de buckets ni de machines"
+        },
+        {
+          "id": "c",
+          "text": "Il ne fonctionne que le premier jour après l'inscription"
+        },
+        {
+          "id": "d",
+          "text": "Il peut absolument tout faire, donc sa compromission donne un contrôle total ; on le réserve aux rares opérations initiales"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le compte racine peut tout faire, y compris fermer le compte ou modifier la facturation : on le protège par une authentification forte et on travaille avec des identités dédiées aux droits limités."
+    },
+    {
+      "question": "Quelle différence sépare la montée en charge verticale de la montée en charge horizontale ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La verticale ajoute des machines, l'horizontale en retire"
+        },
+        {
+          "id": "b",
+          "text": "La verticale concerne le stockage, l'horizontale le réseau"
+        },
+        {
+          "id": "c",
+          "text": "La verticale remplace une machine par une plus puissante, l'horizontale ajoute des machines en parallèle"
+        },
+        {
+          "id": "d",
+          "text": "Il n'y a aucune différence pratique entre les deux"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La montée verticale grossit une seule machine (avec un plafond et souvent un redémarrage), tandis que la montée horizontale ajoute des instances en parallèle, sans plafond pratique et tolérante aux pannes."
+    },
+    {
+      "question": "Pourquoi une application qui stocke la session de l'utilisateur en mémoire locale d'une instance pose-t-elle problème pour la mise à l'échelle horizontale ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle consomme trop de processeur sur chaque instance"
+        },
+        {
+          "id": "b",
+          "text": "Si l'instance est retirée ou si l'équilibreur redirige ailleurs, la session est perdue"
+        },
+        {
+          "id": "c",
+          "text": "Elle empêche l'équilibreur de démarrer correctement"
+        },
+        {
+          "id": "d",
+          "text": "Elle double automatiquement le coût de chaque instance"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Garder l'état en local empêche de retirer ou de remplacer une instance sans perdre les données : pour rester interchangeables, les instances doivent être sans état et stocker session et panier dans un magasin partagé."
+    },
+    {
+      "question": "Quelle phrase décrit correctement la relation entre une région et une zone de disponibilité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une région est une zone géographique qui contient plusieurs zones de disponibilité, chacune étant un datacenter isolé"
+        },
+        {
+          "id": "b",
+          "text": "Une zone de disponibilité contient plusieurs régions réparties dans le monde"
+        },
+        {
+          "id": "c",
+          "text": "Une région est un serveur et une zone de disponibilité est un disque dur"
+        },
+        {
+          "id": "d",
+          "text": "Région et zone de disponibilité désignent exactement la même chose"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "La région est la grande zone géographique ; elle abrite plusieurs zones de disponibilité, des datacenters isolés en alimentation, refroidissement et réseau, pour qu'un incident local n'emporte pas tout."
+    },
+    {
+      "question": "Un service doit redémarrer après la perte d'une région entière, et l'on décide qu'au plus une heure de données peut être perdue. À quoi correspond cet objectif ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À la haute disponibilité, qui évite toute interruption"
+        },
+        {
+          "id": "b",
+          "text": "Au RTO, le délai de remise en service acceptable"
+        },
+        {
+          "id": "c",
+          "text": "À un groupe de sécurité multi-zones"
+        },
+        {
+          "id": "d",
+          "text": "Au RPO, le volume de données acceptable à perdre, mesuré en temps"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le RPO (objectif de point de reprise) exprime en temps la quantité de données qu'on tolère de perdre ; un RPO d'une heure impose une réplication régulière, alors que le RTO mesure le délai de remise en service."
+    },
+    {
+      "question": "Dans une approche d'infrastructure as code, à quoi sert l'étape 'plan' avant le 'apply' ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À installer l'outil et initialiser le projet"
+        },
+        {
+          "id": "b",
+          "text": "À chiffrer automatiquement le fichier d'état"
+        },
+        {
+          "id": "c",
+          "text": "À montrer ce qui sera créé, modifié ou détruit avant d'agir"
+        },
+        {
+          "id": "d",
+          "text": "À supprimer définitivement l'ancienne infrastructure"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le 'plan' affiche l'écart entre l'état décrit et la réalité (ressources à ajouter, modifier ou détruire), ce qui transforme un geste irréversible en décision relue, notamment grâce aux lignes 'to destroy'."
+    },
+    {
+      "question": "Dans le cloud, une machine virtuelle reste allumée alors que plus personne ne l'utilise. Que se passe-t-il côté facturation ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle ne coûte plus rien tant qu'elle reste inactive"
+        },
+        {
+          "id": "b",
+          "text": "Elle coûte le même prix qu'une machine en pleine charge, car c'est son existence qui est facturée"
+        },
+        {
+          "id": "c",
+          "text": "Elle est facturée à la moitié du tarif normal"
+        },
+        {
+          "id": "d",
+          "text": "Le fournisseur l'éteint automatiquement au bout de quelques minutes"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le paiement à l'usage facture la réservation de la ressource, pas le travail utile : une machine allumée mais inactive coûte autant qu'une machine chargée, ce qui fait de l'oubli la première cause de gaspillage."
+    },
+    {
+      "question": "Dans la grande majorité des fuites de données dans le cloud, quelle est la cause la plus fréquente ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un chiffrement militaire cassé par force brute"
+        },
+        {
+          "id": "b",
+          "text": "Une faille zero-day dans l'hyperviseur du fournisseur"
+        },
+        {
+          "id": "c",
+          "text": "Une erreur de configuration qui laisse une ressource accessible (bucket public, port d'administration ouvert à tous)"
+        },
+        {
+          "id": "d",
+          "text": "Une panne matérielle du centre de données"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La cause dominante n'est pas une attaque sophistiquée mais une mauvaise configuration : stockage rendu public, groupe de sécurité ouvert à 0.0.0.0/0 ou port d'administration exposé, des réglages côté client qui ne déclenchent aucune alarme."
+    },
+    {
+      "question": "Dans l'architecture d'une application web qui doit tenir la charge et rester sécurisée, où place-t-on la base de données ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Dans le sous-réseau public, pour qu'elle réponde plus vite aux visiteurs"
+        },
+        {
+          "id": "b",
+          "text": "Dans le sous-réseau privé, sans route vers Internet, joignable seulement depuis les serveurs web"
+        },
+        {
+          "id": "c",
+          "text": "Directement derrière l'équilibreur de charge, exposée à Internet"
+        },
+        {
+          "id": "d",
+          "text": "Dans le stockage objet, à la place des médias"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une base de données ne se place jamais dans le sous-réseau public : on la met dans le sous-réseau privé, sans route vers Internet, et son groupe de sécurité n'accepte du trafic que depuis les serveurs web."
+    }
+  ]
+}

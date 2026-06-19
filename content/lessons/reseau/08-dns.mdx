@@ -1,0 +1,113 @@
+---
+refCode: CL-LSN-164-V01
+slug: reseau-dns
+title: "Le DNS : l'annuaire d'Internet"
+description: "Comprenez comment un nom de domaine se traduit en adresse IP : la hiérarchie du DNS, le déroulé d'une résolution, le rôle du cache et du TTL, et les principaux types d'enregistrements."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-160-V01"]
+---
+
+Tu tapes `cyberlearn.app` dans ton navigateur et la page s'affiche. Mais une machine sur le réseau ne sait pas joindre `cyberlearn.app`. Elle sait joindre une adresse IP, une suite de chiffres comme `93.184.216.34`. Entre le nom que tu retiens et l'adresse que la machine utilise, il manque une étape : la traduction. C'est le travail du DNS, le système de noms de domaine.
+
+Le DNS tourne en permanence, sous chaque page que tu ouvres, chaque mail que tu envoies, chaque appli qui contacte un serveur. Tu ne le vois jamais, et c'est exactement le but. Pense à un annuaire téléphonique : tu connais le nom de quelqu'un, tu cherches son numéro. Le DNS fait pareil, sauf qu'il associe des noms de domaine à des adresses IP, et qu'il le fait des milliards de fois par seconde à l'échelle de la planète.
+
+## le besoin
+
+Personne ne retient des adresses IP. `93.184.216.34` ne veut rien dire pour un humain, et le jour où le serveur change d'adresse, tout le monde devrait apprendre la nouvelle. Un nom comme `cyberlearn.app` est lisible, mémorisable, et il peut pointer vers n'importe quelle adresse sans que tu aies à le savoir.
+
+Le DNS résout ce problème en tenant une correspondance entre les deux. Tu donnes un nom, il rend une adresse. La machine garde les noms pour les humains et les adresses pour le réseau, et le DNS fait le pont au milieu.
+
+<Callout type="info">
+Séparer le nom de l'adresse, c'est ce qui permet de déménager un site sans rien casser. On change l'adresse vers laquelle le nom pointe, et tout le monde suit automatiquement. Les visiteurs continuent de taper le même nom.
+</Callout>
+
+## la hiérarchie
+
+Le DNS n'est pas un seul gros fichier quelque part. C'est une arborescence, répartie sur des milliers de serveurs, et elle se lit de droite à gauche.
+
+Prends `www.cyberlearn.app`. Tout à droite, invisible, il y a la racine, le point de départ commun à tous les noms. Juste à gauche vient le domaine de premier niveau, le TLD : `app` ici, ou `com`, `fr`, `org`. Encore à gauche, le domaine lui-même : `cyberlearn`. Et enfin le sous-domaine : `www`, mais ça pourrait être `mail`, `blog`, `api`.
+
+Chaque niveau délègue au suivant. La racine ne connaît pas ton site, mais elle sait qui gère le `.app`. Le gestionnaire du `.app` ne connaît pas tes pages, mais il sait quel serveur fait autorité sur `cyberlearn.app`. Ce serveur-là, enfin, connaît tes adresses. Personne ne sait tout, chacun sait à qui demander la suite.
+
+## une résolution pas à pas
+
+Voyons ce qui se passe quand tu tapes un nom. La pièce centrale est le résolveur, souvent fourni par ton fournisseur d'accès ou par un service public. C'est lui qui fait les démarches à ta place.
+
+Ton ordinateur demande au résolveur l'adresse de `www.cyberlearn.app`. Si le résolveur a déjà la réponse en mémoire, il la rend tout de suite. Sinon, il part la chercher.
+
+Il interroge d'abord un serveur racine : « qui gère le `.app` ? ». La racine répond avec l'adresse des serveurs du TLD `.app`. Le résolveur les interroge : « qui fait autorité sur `cyberlearn.app` ? ». Le TLD répond avec l'adresse du serveur faisant autorité. Le résolveur lui pose enfin la vraie question : « quelle est l'adresse de `www.cyberlearn.app` ? ». Le serveur faisant autorité, qui détient la réponse officielle, la donne. Le résolveur la transmet à ton ordinateur, qui peut alors ouvrir la connexion.
+
+<Diagram caption="Le déroulé d'une résolution DNS">
+flowchart TD
+  A[Ton ordinateur demande www.cyberlearn.app] --> B[Resolveur recoit la demande]
+  B --> C[Serveur racine: qui gere le .app ?]
+  C --> D[Serveur TLD .app: qui fait autorite sur cyberlearn.app ?]
+  D --> E[Serveur faisant autorite: quelle adresse pour www ?]
+  E --> F[Resolveur renvoie l adresse IP]
+  F --> A
+</Diagram>
+
+Ça fait beaucoup d'allers-retours pour une seule page. Heureusement, ça n'arrive pas à chaque fois.
+
+## le cache et le TTL
+
+Refaire tout ce parcours pour chaque visite serait un gaspillage. Alors les réponses sont gardées un moment, en cache, à plusieurs niveaux : dans ton ordinateur, dans ton navigateur, et surtout dans le résolveur.
+
+Chaque réponse DNS arrive avec une durée de validité, le TTL (time to live, durée de vie). Le TTL dit combien de temps on a le droit de garder la réponse avant de la redemander. Un TTL de 3600 signifie une heure. Pendant cette heure, le résolveur sert la même adresse sans rien redemander à personne. C'est ce qui rend le DNS rapide la plupart du temps : la première résolution fait le tour complet, les suivantes sortent du cache.
+
+Le revers de la médaille apparaît quand tu changes une adresse DNS. Tant que les caches contiennent encore l'ancienne valeur, ils continuent de la servir jusqu'à l'expiration du TTL. C'est pour ça qu'un changement DNS « met du temps à se propager » : on attend que les anciennes copies expirent partout. Si tu prévois une migration, tu baisses le TTL à l'avance pour que les caches se vident vite le jour J.
+
+## les types d'enregistrements
+
+Une zone DNS ne contient pas qu'une correspondance nom vers IP. Elle contient plusieurs sortes d'enregistrements, chacun pour un usage précis.
+
+| Type | Rôle |
+|------|------|
+| A | Adresse IPv4 d'un nom |
+| AAAA | Adresse IPv6 d'un nom |
+| MX | Serveur de courrier qui reçoit les mails du domaine |
+| CNAME | Alias : ce nom renvoie vers un autre nom |
+| TXT | Texte libre (vérifications, politiques de mail) |
+| NS | Serveurs de noms qui font autorité sur la zone |
+
+Le A est le plus courant : il donne l'adresse IPv4. Le AAAA fait pareil en IPv6. Le MX dit aux autres serveurs où livrer le courrier adressé à ton domaine. Le CNAME crée un alias, pratique quand `www` doit toujours suivre le domaine principal. Le TXT range du texte, souvent utilisé pour prouver qu'on possède un domaine ou pour configurer l'anti-spam. Le NS désigne les serveurs faisant autorité, c'est lui qui rend la délégation possible.
+
+On interroge tout ça avec des outils en ligne de commande. `dig` et `nslookup` posent une question au DNS et affichent la réponse.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Interroger le DNS" commands={{"dig +short example.com": "93.184.216.34", "dig +short MX example.com": "10 mail.example.com", "dig +short NS example.com": "a.iana-servers.net\nb.iana-servers.net", "nslookup example.com": "Name: example.com\nAddress: 93.184.216.34"}} />
+
+## quand le DNS tombe
+
+Imagine que la résolution ne fonctionne plus. Le serveur web tourne très bien, l'application répond, les bases de données sont en ligne. Mais plus personne ne sait traduire le nom en adresse. Résultat : les utilisateurs tapent le nom, n'obtiennent pas d'adresse, et voient un site « injoignable ». Tout marche, sauf l'annuaire, et sans annuaire on ne trouve plus la porte.
+
+C'est ce qui rend le DNS sensible. Une grosse panne chez un fournisseur de DNS peut rendre des centaines de services inaccessibles d'un coup, alors qu'aucun de leurs serveurs n'est en cause. Côté sécurité, le DNS peut aussi être attaqué : l'empoisonnement de cache consiste à glisser une fausse réponse dans un résolveur pour rediriger les visiteurs ailleurs, et les versions chiffrées comme DNS over HTTPS protègent la confidentialité et l'intégrité des requêtes.
+
+<Callout type="warning">
+Quand un site semble injoignable, vérifie la résolution avant d'accuser le serveur. Un `dig` ou un `nslookup` qui ne rend rien pointe vers le DNS, pas vers l'application. La panne est souvent dans l'annuaire, pas derrière la porte.
+</Callout>
+
+## à toi de jouer
+
+Pose quelques questions au DNS toi-même, puis vérifie ce que tu as retenu.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Explorer un domaine" commands={{"dig +short example.com": "93.184.216.34", "dig +short MX example.com": "10 mail.example.com", "dig +short NS example.com": "a.iana-servers.net\nb.iana-servers.net", "nslookup example.com": "Name: example.com\nAddress: 93.184.216.34"}} />
+
+<QuizGroup>
+<Quiz id="q-1" question="À quoi sert le DNS ?" options={["À chiffrer le trafic réseau", "À traduire un nom de domaine en adresse IP", "À attribuer une adresse IP à une machine sur le réseau local", "À router les paquets entre deux réseaux"]} correct={1} />
+<Quiz id="q-2" question="Dans une résolution, lequel détient la réponse officielle pour un nom ?" options={["Le serveur racine", "Le serveur TLD", "Le serveur faisant autorité", "Le navigateur"]} correct={2} />
+<Quiz id="q-3" question="Quel enregistrement indique où livrer le courrier d'un domaine ?" options={["A", "MX", "CNAME", "NS"]} correct={1} />
+</QuizGroup>
+
+## à retenir
+
+- Le DNS traduit des noms de domaine en adresses IP ; les humains gardent les noms, le réseau utilise les adresses.
+- Les noms forment une arborescence lue de droite à gauche : racine, TLD, domaine, sous-domaine. Chaque niveau délègue au suivant.
+- Une résolution passe par le résolveur, qui interroge la racine, puis le TLD, puis le serveur faisant autorité qui détient la réponse.
+- Les réponses sont mises en cache pour une durée fixée par le TTL ; c'est pour ça qu'un changement DNS met du temps à se propager.
+- Types courants : A (IPv4), AAAA (IPv6), MX (courrier), CNAME (alias), TXT (texte), NS (serveurs de noms).
+- Si le DNS tombe, les sites semblent injoignables même quand les serveurs marchent ; on vérifie la résolution avec `dig` ou `nslookup`.
+
+OK 08 écrit

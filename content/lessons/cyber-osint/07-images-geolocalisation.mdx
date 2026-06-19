@@ -1,0 +1,93 @@
+---
+refCode: CL-LSN-151-V01
+slug: osint-images-geolocalisation
+title: "Images : recherche inversée et géolocalisation"
+description: "Une photo en dit long si on sait la lire : retrouver l'origine d'une image par recherche inversée, la situer par ses indices visuels, et la dater, pour vérifier une information ou démasquer une manipulation."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-146-V01"]
+---
+
+Quand quelqu'un publie une photo, il partage rarement ce qu'il croit partager. Il pense montrer son chat sur un canapé. En réalité, il y a aussi la marque de la prise électrique au mur, le reflet d'une rue dans la fenêtre, la langue sur un emballage qui traîne, et l'ombre qui dit l'heure. Une image porte une quantité d'informations qui dépasse largement l'intention de celui qui appuie sur le déclencheur.
+
+Apprendre à lire ces détails, c'est le métier du geoint, la géolocalisation par l'image. Et il faut poser tout de suite l'angle de cette leçon : on apprend à lire une image pour vérifier, pas pour traquer. La différence est entière. Vérifier qu'une photo virale dit bien ce qu'elle prétend dire, c'est du travail de salubrité publique. Géolocaliser le domicile d'un inconnu parce que sa tête ne vous revient pas, c'est du harcèlement. Les techniques sont les mêmes. L'intention, non.
+
+## la recherche d'image inversée
+
+Le premier réflexe devant une image douteuse n'est pas de l'analyser, c'est de chercher d'où elle vient. La recherche d'image inversée prend une image en entrée et cherche où elle apparaît ailleurs sur le web. C'est l'opération qui démasque le plus grand nombre de manipulations, et c'est souvent la plus rapide.
+
+Le scénario classique : une photo circule avec une légende dramatique. « Voici les inondations d'hier dans telle ville. » Vous lancez une recherche inversée, et l'image ressort sur un site d'actualité de 2014, dans un autre pays, à propos d'un autre événement. La photo est authentique, mais sa légende est fausse. C'est le détournement le plus courant en désinformation : pas une image truquée, juste une vraie image recyclée hors de son contexte.
+
+La recherche inversée sert aussi à retrouver l'origine d'une image : sa première apparition connue, sa résolution la plus grande, le photographe original. Plusieurs moteurs existent, et ils ne donnent pas les mêmes résultats, parce qu'ils n'indexent pas le même web. Lancer la même image dans plusieurs d'entre eux fait partie du métier.
+
+<Callout type="info">
+Recouper les moteurs change tout. Un moteur généraliste excelle sur les photos très partagées ; un autre, spécialisé, retrouve mieux les visages ou les visuels rares. Recadrer l'image sur un détail précis (une enseigne, un véhicule) avant de relancer la recherche donne souvent de meilleurs résultats qu'avec l'image entière.
+</Callout>
+
+## géolocaliser par les indices
+
+Quand la recherche inversée ne donne rien, ou quand on veut confirmer un lieu, on lit l'image elle-même. L'idée tient en une phrase : chaque détail visible réduit la zone possible. On part du monde entier, et on resserre.
+
+La langue d'abord. Un panneau, une enseigne, un graffiti, l'étiquette d'une bouteille : la langue écarte d'un coup la plupart des pays. L'alphabet seul fait déjà un gros tri. Ensuite les détails qui suivent les frontières administratives sans qu'on y pense : le format des plaques d'immatriculation, la couleur des taxis, le côté de la route où roulent les voitures, le type de prise électrique au mur, les marquages au sol, le mobilier urbain (poteaux, bornes, panneaux de signalisation, dont la forme varie d'un pays à l'autre).
+
+Puis les choses plus lentes à changer : l'architecture, les matériaux de construction, la végétation. Un palmier et un bouleau ne poussent pas au même endroit. Un toit en tuiles rouges, un toit plat, un toit en tôle ondulée racontent des climats et des régions différents.
+
+| Indice dans l'image | Ce qu'il révèle |
+| --- | --- |
+| Langue sur enseignes et panneaux | Pays ou groupe linguistique |
+| Format de plaque d'immatriculation | Pays, parfois région |
+| Côté de circulation, type de prise | Pays ou bloc de pays |
+| Mobilier urbain, signalisation | Pays, parfois municipalité |
+| Architecture et matériaux | Région, époque de construction |
+| Végétation, espèces d'arbres | Zone climatique, saison |
+| Relief en arrière-plan, ligne d'horizon | Confirmation d'un lieu précis |
+
+Aucun indice ne suffit seul. C'est leur accumulation qui transforme une vague impression en hypothèse solide. Une enseigne en portugais plus des plaques jaunes plus une certaine architecture plus un type de montagne au fond, et la zone candidate se réduit à quelques kilomètres.
+
+## l'heure et la date
+
+Une image ne dit pas seulement où, elle dit aussi quand. Le travail de datation s'appelle la chronolocalisation, et l'outil le plus fiable est l'ombre.
+
+Une ombre a une direction et une longueur. La direction, par rapport au nord, indique l'orientation du soleil donc une heure approximative. La longueur, rapportée à la hauteur de l'objet qui la projette, dépend de la hauteur du soleil dans le ciel, donc de l'heure et de la saison. Avec un objet vertical bien net (un poteau, un lampadaire) et un lieu connu, on remonte à une fourchette horaire raisonnable. À l'inverse, si l'heure prétendue d'une photo ne colle pas avec l'ombre visible, c'est un signal qu'on ment quelque part.
+
+La saison se lit ailleurs. Les arbres en feuilles ou nus, la présence de neige, l'état d'un champ (semé, en pleine pousse, moissonné), la météo cohérente avec les archives. Mis bout à bout, ça resserre une date sur quelques semaines, parfois sur quelques jours quand un événement daté est visible dans le décor (une affiche, un chantier, un panneau d'horaires).
+
+## recouper avec la cartographie
+
+Tout ce qui précède produit une hypothèse, pas une preuve. L'étape qui transforme l'une en l'autre, c'est la confrontation avec la cartographie : vues satellites et vues de rue.
+
+On prend l'hypothèse (« ce serait ce quartier de cette ville ») et on va vérifier sur place, virtuellement. La forme d'un carrefour, l'alignement d'un toit avec une cheminée, l'espacement de deux lampadaires, la silhouette d'une colline à l'arrière-plan : si tout se superpose entre la photo et la vue de rue, le lieu est confirmé. Si un seul élément ne colle pas, l'hypothèse tombe et on recommence.
+
+<Callout type="warning">
+La pire erreur en géolocalisation, c'est de conclure trop vite parce qu'un indice colle. Le cerveau adore valider sa première idée et ignorer ce qui la contredit. Une localisation sérieuse exige plusieurs points de concordance indépendants, et une explication honnête pour chaque détail qui semble cadrer mal. Si vous n'arrivez pas à confirmer, écrivez « non confirmé », ce n'est pas un échec, c'est de la rigueur.
+</Callout>
+
+## l'usage responsable
+
+Ces méthodes ont une raison d'être claire. Vérifier l'authenticité d'une photo avant de la relayer. Établir qu'une image virale a été sortie de son contexte. Permettre au journalisme d'enquête de situer et dater un événement quand les sources officielles se taisent ou mentent. Des collectifs de vérification documentent des conflits et des violations en géolocalisant des vidéos image par image, et ce travail tient devant des tribunaux.
+
+Le revers est tout aussi net. Ces mêmes outils, pointés sur un particulier qui n'a rien demandé, deviennent de la surveillance et du pistage. Retrouver où vit quelqu'un à partir d'une photo de vacances, ce n'est pas de l'OSINT, c'est une atteinte.
+
+<Callout type="danger">
+Géolocaliser une personne privée à partir de ses images, sans mandat ni intérêt public légitime, est une atteinte à la vie privée et, selon le contexte, du harcèlement. L'enquête vise des faits et des informations publiques, jamais le domicile ou les déplacements d'un individu lambda.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Une photo circule avec la légende 'inondations d'hier en ville X'. Quel est le tout premier réflexe pour la vérifier ?" options={["Analyser les ombres pour dater la scène", "Lancer une recherche d'image inversée pour voir si elle est déjà apparue ailleurs", "Géolocaliser l'architecture des bâtiments", "Mesurer la longueur des ombres"]} correct={1} />
+
+<Quiz id="q-2" question="En géolocalisation par indices visuels, pourquoi aucun indice ne suffit-il à lui seul ?" options={["Parce que les indices sont toujours faux", "Parce que c'est l'accumulation de plusieurs indices concordants qui réduit la zone et fonde une hypothèse solide", "Parce qu'un seul indice est interdit par la loi", "Parce que les moteurs de recherche les ignorent"]} correct={1} />
+
+<Quiz id="q-3" question="Que permet principalement l'ombre d'un objet vertical dans une image ?" options={["Identifier le pays grâce à sa couleur", "Estimer une orientation et une heure approximatives (chronolocalisation)", "Retrouver le photographe original", "Déterminer le type de prise électrique"]} correct={1} />
+
+## à retenir
+
+- La recherche d'image inversée cherche où une image apparaît ailleurs ; elle démasque surtout les vraies photos recyclées hors contexte, le détournement le plus courant en désinformation. Recouper plusieurs moteurs et recadrer sur un détail améliore les résultats.
+- On géolocalise en accumulant des indices : langue, plaques, côté de circulation, prises, mobilier urbain, architecture, végétation. Chaque détail réduit la zone ; c'est leur convergence qui compte, pas un indice isolé.
+- La chronolocalisation s'appuie d'abord sur l'ombre (direction et longueur donnent orientation, heure et saison), complétée par l'état de la végétation, la neige, la météo des archives.
+- Une hypothèse se confirme par la cartographie (vues satellites et de rue), avec plusieurs points de concordance. On ne conclut jamais sur un seul indice, et « non confirmé » est une réponse valable.
+- Ces techniques servent à vérifier, lutter contre la désinformation et au journalisme d'enquête. Pointées sur un particulier, elles deviennent de la surveillance. L'intention fait toute la différence.
+
+OK 07 écrit

@@ -1,0 +1,101 @@
+---
+refCode: CL-LSN-076-V01
+slug: cyber-vulnerabilites
+title: "Vulnérabilités, exploits et surface d'attaque"
+description: "Distinguez une vulnérabilité d'un exploit, comprenez ce qu'est la surface d'attaque d'un système, le rôle des CVE et des correctifs, et pourquoi maintenir à jour réduit les risques."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 380
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Un système ne se fait pas pirater par magie. Quand un serveur tombe, quand des données fuitent, il y a presque toujours la même histoire derrière : un défaut quelque part dans le logiciel, et quelqu'un qui savait s'en servir. Pas de sorcellerie, pas de génie maléfique avec une cagoule. Une faille, et une personne qui en profite.
+
+Le problème, c'est qu'on mélange souvent les mots. On dit "il y a une faille" pour parler de l'attaque, ou "c'est un exploit" pour parler du trou dans le logiciel. Ces confusions empêchent de raisonner correctement. Dans cette leçon on pose trois mots avec précision : la vulnérabilité, l'exploit, et la surface d'attaque. Ensuite on voit comment les failles deviennent publiques, ce qu'est un zero-day, et pourquoi la défense la plus banale (mettre à jour) reste la plus efficace.
+
+## vulnérabilité vs exploit
+
+Une vulnérabilité, c'est un défaut. Un endroit du logiciel, de la configuration ou du système où quelque chose ne se passe pas comme prévu et ouvre une porte. Le défaut existe que quelqu'un l'utilise ou non. Une fenêtre laissée déverrouillée est une vulnérabilité, même si personne n'entre jamais par là.
+
+Un exploit, c'est l'autre moitié : la technique ou le bout de code qui se sert de cette faille pour obtenir quelque chose. Continuer pousser la fenêtre et entrer. L'exploit a besoin de la vulnérabilité pour fonctionner. Sans le défaut, la technique ne mène nulle part.
+
+Prenons un cas concret. Imagine un formulaire de connexion qui construit sa requête à la base de données en collant directement ce que l'utilisateur tape, sans le vérifier. Si tu écris ton nom, tout va bien. Mais si tu écris quelque chose qui ressemble à un fragment de commande à la base, le logiciel l'exécute comme s'il en faisait partie. Le fait que le formulaire ne vérifie pas l'entrée, ça c'est la vulnérabilité. Le texte précis que l'attaquant tape pour détourner la requête et lire des données qui ne le concernent pas, ça c'est l'exploit.
+
+<Callout type="info">
+Retiens le couple : la vulnérabilité est le défaut qui dort dans le système, l'exploit est l'action concrète qui en tire parti. Corriger la vulnérabilité rend tous les exploits qui en dépendent inutiles d'un coup. C'est pour ça qu'on patche la faille, pas chaque attaque une par une.
+</Callout>
+
+Une idée reçue à corriger tout de suite : avoir une vulnérabilité ne veut pas dire être déjà piraté. Beaucoup de systèmes tournent des années avec des défauts que personne n'a remarqués ni utilisés. La vulnérabilité est un risque, pas un incident. Mais c'est un risque qu'on ne contrôle pas : on ignore qui la connaît déjà.
+
+## la surface d'attaque
+
+La surface d'attaque, c'est l'ensemble de tout ce qui est exposé et qu'un attaquant pourrait viser. Chaque point d'entrée compte : un port réseau ouvert, un service qui écoute, un formulaire web, une API, un compte utilisateur, une page d'administration accessible depuis l'extérieur. Plus il y a de portes, plus il y a de chances qu'une d'entre elles soit mal fermée.
+
+L'image la plus simple : ta surface d'attaque, c'est le périmètre de ta maison vu par un cambrioleur. Chaque porte, chaque fenêtre, chaque soupirail est une occasion. Tu ne réduis pas le risque en surveillant mieux chaque ouverture, tu le réduis surtout en en supprimant. Une fenêtre murée ne peut pas être forcée.
+
+C'est exactement le principe en sécurité : réduire la surface d'attaque veut dire fermer ce qui ne sert pas. Ce service de base de données accessible depuis Internet alors qu'il ne devrait l'être qu'en interne. Ce vieux port ouvert oublié après un test il y a six mois. Ce compte d'un employé parti depuis longtemps. Chacun de ces oublis est une porte de plus, et chaque porte peut cacher une vulnérabilité.
+
+Pour évaluer une surface d'attaque réseau, on commence souvent par lister ce qui répond. Un outil comme nmap interroge une machine et signale quels ports sont ouverts, donc quels services tournent et écoutent.
+
+<SimulatedTerminal shell="bash" scenario="nmap-basic" title="Reconnaissance des ports ouverts" />
+
+Chaque ligne de port ouvert correspond à un service que l'on pourrait attaquer. Si un de ces services contient une vulnérabilité connue, il devient une cible directe. Et un port que personne ne savait ouvert est un cadeau pour l'attaquant : il est exposé sans que personne ne le surveille.
+
+<Callout type="warning">
+Scanner un système qui ne t'appartient pas, sans autorisation écrite, est illégal dans la plupart des pays, même si tu ne fais que regarder les ports. Les exercices de cette plateforme se font sur des cibles simulées ou des environnements explicitement prévus pour l'entraînement. En conditions réelles, on ne scanne que ce qu'on a le droit de scanner.
+</Callout>
+
+## CVE et divulgation
+
+Quand une vulnérabilité est découverte dans un logiciel répandu, il faut un moyen d'en parler sans ambiguïté. C'est le rôle des CVE. Une CVE (Common Vulnerabilities and Exposures) est un identifiant public unique attribué à une vulnérabilité précise. Il ressemble à `CVE-2021-44228` : l'année, puis un numéro. Cet identifiant permet à tout le monde, éditeurs, défenseurs, chercheurs, de désigner exactement la même faille.
+
+Le déroulé typique est le suivant. Un chercheur trouve un défaut. Plutôt que de le rendre public immédiatement, il prévient en général l'éditeur du logiciel en privé. L'éditeur prépare un correctif. Une fois le correctif disponible, la vulnérabilité reçoit une CVE et l'information devient publique, avec assez de détails pour que chacun comprenne le risque et applique la mise à jour. Cette manière de faire s'appelle la divulgation responsable : laisser le temps de corriger avant de publier.
+
+Le point à comprendre : à partir du moment où une CVE sort, la faille est connue de tout le monde, attaquants compris. Le correctif existe, mais il faut encore que chaque administrateur l'applique. La fenêtre entre la publication et l'application réelle est un moment dangereux.
+
+## le zero-day
+
+Un zero-day est une vulnérabilité connue de certains attaquants mais pas encore de l'éditeur, ou pas encore corrigée. Le nom vient de l'idée que les défenseurs ont eu "zéro jour" pour se préparer : au moment où elle est utilisée, aucun correctif n'existe.
+
+C'est ce qui rend le zero-day redouté. Contre une faille déjà patchée, la défense est simple : mettre à jour. Contre un zero-day, il n'y a pas de correctif à appliquer. On ne peut que limiter les dégâts par d'autres moyens (réduire la surface d'attaque, surveiller les comportements anormaux, segmenter le réseau). Les zero-days qui visent des logiciels très répandus ont une valeur élevée, et ils se vendent, légalement ou non.
+
+<Callout type="warning">
+Ne surestime pas le zero-day pour autant. Les attaques par zero-day font les gros titres, mais elles sont minoritaires. La grande majorité des intrusions n'utilise aucune faille inédite : elles exploitent des vulnérabilités déjà publiées et déjà corrigées, sur des systèmes que personne n'a mis à jour.
+</Callout>
+
+## la défense de base : mettre à jour
+
+C'est la partie qui semble ennuyeuse et qui pourtant compte le plus. Une large part des intrusions réussies exploite des failles pour lesquelles un correctif existait déjà, parfois depuis des mois. La vulnérabilité était connue, la CVE publiée, le patch disponible. Personne ne l'a appliqué.
+
+Pourquoi ces systèmes restent non patchés ? Rarement par négligence pure. Souvent parce qu'une mise à jour fait peur : elle pourrait casser une application qui tourne, alors on repousse. Parce qu'un vieux serveur a été oublié dans un coin du réseau. Parce que la machine fait tourner un logiciel si ancien qu'il ne reçoit plus de correctifs du tout. Le résultat est le même : une porte ouverte, documentée publiquement, que n'importe qui peut franchir avec un exploit trouvé en quelques minutes.
+
+<Callout type="danger">
+Un système exposé sur Internet et non mis à jour n'est pas un risque théorique. Des outils automatisés scannent en permanence des plages entières d'adresses à la recherche de versions vulnérables connues. Un serveur non patché branché sur Internet peut être compromis en heures, pas en mois. La mise à jour régulière n'est pas une corvée optionnelle, c'est la première barrière.
+</Callout>
+
+Mettre à jour, réduire la surface d'attaque, retirer ce qui ne sert pas : ces gestes ne sont pas spectaculaires, mais ils éliminent la majeure partie du risque réel. La sécurité commence par l'hygiène, pas par les outils sophistiqués.
+
+## à toi de jouer
+
+Reprends un scan pour bien associer ports ouverts et surface d'attaque, puis vérifie ta compréhension des notions.
+
+<SimulatedTerminal shell="bash" scenario="nmap-basic" title="Cartographier les services exposés" />
+
+<QuizGroup>
+<Quiz id="q-1" question="Un formulaire ne vérifie pas ce que tape l'utilisateur, et un attaquant tape un texte qui détourne la requête. Lequel est l'exploit ?" options={["L'absence de vérification dans le formulaire", "Le texte précis tapé pour détourner la requête", "Le serveur de base de données lui-même", "Le compte de l'attaquant"]} correct={1} />
+
+<Quiz id="q-2" question="Que signifie réduire la surface d'attaque d'un système ?" options={["Surveiller plus attentivement chaque service", "Fermer et retirer ce qui est exposé sans être nécessaire", "Augmenter le nombre de comptes administrateurs", "Rendre les services accessibles depuis Internet"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi un zero-day est-il particulièrement redouté ?" options={["Il vise uniquement les vieux logiciels", "Aucun correctif n'existe encore au moment où il est utilisé", "Il a toujours une CVE publiée", "Il ne fonctionne que sur les ports ouverts"]} correct={1} />
+</QuizGroup>
+
+## à retenir
+
+- Une vulnérabilité est un défaut du système ; un exploit est la technique qui s'en sert. Le défaut existe même si personne ne l'utilise.
+- Avoir une vulnérabilité ne veut pas dire être déjà piraté : c'est un risque, pas un incident.
+- La surface d'attaque est l'ensemble de ce qui est exposé : ports, services, formulaires, comptes. La réduire, c'est fermer ce qui ne sert pas.
+- Une CVE est un identifiant public unique pour une vulnérabilité ; la divulgation responsable laisse le temps de corriger avant de publier.
+- Un zero-day est une faille sans correctif disponible au moment où elle est exploitée, d'où sa dangerosité, mais ces cas restent minoritaires.
+- La majorité des intrusions exploite des failles déjà corrigées mais non appliquées. Mettre à jour reste la première et la plus efficace des défenses.
+- Scanner un système sans autorisation est illégal ; les exercices se font sur des cibles simulées ou autorisées.

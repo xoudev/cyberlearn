@@ -1,0 +1,127 @@
+---
+refCode: CL-LSN-067-V01
+slug: docker-images
+title: "Images, couches et registres"
+description: "Comprenez comment une image Docker est construite en couches, ce qu'apportent les tags, le rôle du cache au build, et comment récupérer et nettoyer des images."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 420
+prerequisites: ["CL-LSN-066-V01"]
+---
+
+Quand on débute avec Docker, on imagine souvent une image comme un gros fichier unique, une sorte de fichier ZIP qui contiendrait tout ton application. C'est l'intuition naturelle, et elle est fausse. Une image Docker n'est pas un bloc opaque. Elle est faite de couches empilées les unes sur les autres, et chaque couche est en lecture seule.
+
+Ce détail a l'air technique et secondaire. En réalité il explique presque tout ce qui te surprendra plus tard : pourquoi deux images très différentes peuvent occuper bien moins de place que la somme de leurs tailles, pourquoi un rebuild prend parfois trois secondes et parfois trois minutes, et pourquoi l'ordre des instructions dans un Dockerfile a une telle importance. Une fois que tu as ce modèle mental en tête, beaucoup de comportements de Docker cessent d'être mystérieux.
+
+## les couches
+
+Une image est construite par une série d'instructions. Chaque instruction qui modifie le système de fichiers ajoute une nouvelle couche par-dessus la précédente. Tu pars d'une couche de base (par exemple une distribution Linux minimale), puis tu poses une couche qui installe des paquets, puis une couche qui copie ton code, et ainsi de suite. Le résultat empilé, c'est l'image.
+
+Chaque couche ne contient que la différence par rapport à la couche du dessous. Si une instruction ajoute un fichier de 5 Mo, la couche pèse environ 5 Mo. Si une autre ne fait que créer un dossier vide, sa couche est minuscule. L'image finale, c'est la somme de toutes ces différences.
+
+<Diagram caption="Empilement des couches d'une image, de la base vers le sommet">
+  flowchart BT
+    A["Couche base: Linux minimal 80 Mo"] --> B["Couche apt: paquets installes 40 Mo"]
+    B --> C["Couche copie: code applicatif 5 Mo"]
+    C --> D["Couche config: variables et port"]
+    D --> E["Image finale en lecture seule"]
+</Diagram>
+
+Le point qui change tout : les couches sont partagées entre images. Si tu as dix images basées sur la même image de départ, la couche de base n'est stockée qu'une seule fois sur ton disque. Les dix images y pointent. Docker ne duplique rien.
+
+<Callout type="info">
+C'est pour ça qu'une première image semble lourde à télécharger, puis que les suivantes arrivent presque instantanément. Elles réutilisent les couches déjà présentes. Sur une machine avec vingt images, l'espace disque réellement occupé est souvent bien inférieur à la somme affichée image par image, parce qu'une grande partie des couches est mutualisée.
+</Callout>
+
+Cela répond aussi à une question fréquente : pourquoi une image pèse-t-elle 100 Mo ou parfois 1 Go ? La taille dépend surtout de l'image de base et de ce que tu installes. Une base type `alpine` fait quelques mégaoctets. Une base type `ubuntu` complète en fait plusieurs dizaines. Ajoute un environnement avec des dizaines de dépendances, des outils de compilation, et tu dépasses vite le gigaoctet. Le poids n'est pas une fatalité, c'est la conséquence de choix.
+
+## le cache de couches
+
+Maintenant le côté pratique le plus utile au quotidien. Quand tu reconstruis une image, Docker ne recommence pas tout. Il parcourt les instructions une par une et, pour chacune, se demande : est-ce que cette étape a déjà été calculée à l'identique auparavant ? Si oui, il réutilise la couche déjà en cache au lieu de la recalculer.
+
+C'est ce qui explique qu'un rebuild soit parfois quasi instantané. Tu n'as rien changé en amont, alors Docker ressort toutes les couches du cache et termine en quelques secondes.
+
+Mais il y a une règle stricte : dès qu'une couche change, toutes les couches au-dessus d'elle sont invalidées et recalculées. Le cache fonctionne en cascade, du bas vers le haut. Si tu modifies une instruction au milieu de la pile, tout ce qui suit doit être reconstruit, même si ces étapes-là n'ont pas bougé d'un octet.
+
+D'où une conséquence directe : l'ordre des instructions compte. On place en bas, donc tôt dans la construction, ce qui change rarement (l'installation des dépendances système). On place en haut, donc tard, ce qui change souvent (ton code source). Comme ça, modifier une ligne de code n'invalide que les dernières couches, et l'installation lourde reste en cache. On verra le détail dans la prochaine leçon sur le Dockerfile, mais le principe se comprend déjà : du stable en bas, du volatil en haut.
+
+## les tags
+
+Une image se désigne par un nom et un tag, séparés par deux-points : `nginx:1.24`. Le nom identifie le dépôt, le tag identifie une version précise à l'intérieur de ce dépôt. Si tu ne donnes pas de tag, Docker en ajoute un par défaut : `latest`.
+
+```bash
+# tag explicite : une version figee et reproductible
+docker pull nginx:1.24
+
+# pas de tag : Docker complete avec latest
+docker pull nginx
+# equivaut a docker pull nginx:latest
+```
+
+Le piège, c'est de croire que `latest` veut dire "la dernière version" en permanence. Faux. `latest` est juste un tag comme un autre, qui pointe vers une image au moment où tu l'as récupérée. Il ne se met pas à jour tout seul, et rien ne garantit que le `latest` d'aujourd'hui soit le même que celui de la semaine prochaine sur le registre.
+
+<Callout type="warning">
+En production, ne déploie jamais sur `latest`. Deux machines qui font `docker pull monapp:latest` à deux moments différents peuvent récupérer deux images distinctes, et tu te retrouves avec un comportement qui change sans qu'aucune ligne de ton code n'ait bougé. Épingle toujours une version explicite, du genre `monapp:1.4.2`. Tu sais exactement ce qui tourne, et tu peux reproduire un incident à l'identique.
+</Callout>
+
+## récupérer une image : docker pull
+
+Une image vient d'un registre, un serveur qui stocke et distribue des images. Par défaut, Docker interroge Docker Hub, le registre public officiel. Quand tu écris `docker pull nginx`, Docker va chercher l'image `nginx` sur Docker Hub, couche par couche, et ne télécharge que les couches qu'il n'a pas déjà localement.
+
+<SimulatedTerminal shell="bash" commands={{ "docker pull nginx": "Using default tag: latest\nlatest: Pulling from library/nginx\na2abf6c4d29d: Pull complete\n2dde4c10674e: Pull complete\nStatus: Downloaded newer image for nginx:latest\ndocker.io/library/nginx:latest", "docker pull nginx:1.24": "1.24: Pulling from library/nginx\na2abf6c4d29d: Already exists\n7c3c9d2f4d92: Pull complete\nStatus: Downloaded newer image for nginx:1.24\ndocker.io/library/nginx:1.24", "docker images": "REPOSITORY  TAG     IMAGE ID   SIZE\nnginx       latest  a1b2c3d4   142MB\nnginx       1.24    e5f6a7b8   141MB" }} />
+
+Regarde la deuxième commande de près. En tirant `nginx:1.24` juste après `nginx:latest`, certaines couches affichent `Already exists`. Docker a reconnu des couches communes déjà présentes et ne les a pas retéléchargées. C'est le partage des couches en action, directement visible dans la sortie.
+
+Au-delà de Docker Hub, on peut récupérer une image depuis un registre privé (celui d'une entreprise, ou un registre cloud). Le principe reste identique, seul le préfixe du nom change pour indiquer l'adresse du registre.
+
+## nettoyer
+
+Les images s'accumulent sans qu'on s'en aperçoive. Chaque `pull`, chaque build laisse des couches sur le disque. Et surtout, quand tu reconstruis une image avec le même tag, l'ancienne version ne disparaît pas : elle perd son tag et devient une image "orpheline", sans nom, souvent affichée comme `<none>`. Elle occupe toujours de la place. Au bout de quelques semaines de travail, ces images mortes peuvent représenter plusieurs gigaoctets.
+
+```bash
+# lister les images presentes localement
+docker images
+
+# supprimer une image par nom ou par ID
+docker rmi nginx:1.24
+
+# supprimer les images orphelines (sans tag, plus referencees)
+docker image prune
+
+# version plus agressive : toutes les images inutilisees
+docker image prune -a
+```
+
+`docker rmi` cible une image précise. `docker image prune` fait le ménage automatique des orphelines, celles qui ne servent plus. La variante `-a` va plus loin et enlève toute image qu'aucun conteneur n'utilise, ce qui libère beaucoup d'espace mais te forcera à re-télécharger ensuite. À utiliser en connaissance de cause.
+
+<Callout type="success">
+Prends l'habitude de lancer `docker image prune` de temps en temps. C'est une commande sans danger pour les images que tu utilises encore (elle ne touche qu'aux orphelines non taguées), et elle évite que ton disque se remplisse en silence.
+</Callout>
+
+## à toi de jouer
+
+Récupère une image, regarde-la, puis fais le ménage. Observe ce que renvoie chaque commande.
+
+<SimulatedTerminal shell="bash" commands={{ "docker pull alpine": "Using default tag: latest\nlatest: Pulling from library/alpine\nStatus: Downloaded newer image for alpine:latest\ndocker.io/library/alpine:latest", "docker images": "REPOSITORY  TAG     IMAGE ID   SIZE\nalpine      latest  c2b3d4e5   7MB\nnginx       latest  a1b2c3d4   142MB", "docker rmi alpine": "Untagged: alpine:latest\nDeleted: sha256:c2b3d4e5", "docker image prune": "WARNING! This will remove all dangling images.\nDeleted Images:\ndeleted: sha256:0f9e8d7c\nTotal reclaimed space: 56MB" }} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Pourquoi deux images basées sur la même couche de départ occupent-elles moins de place que la somme de leurs tailles affichées ?" options={["Docker compresse automatiquement les images les plus anciennes", "Les couches communes sont stockées une seule fois et partagées entre les images", "La deuxième image est stockée sous forme de raccourci vers la première"]} correct={1} />
+
+<Quiz id="q-2" question="Que faut-il penser du tag latest pour un déploiement en production ?" options={["C'est le meilleur choix car il pointe toujours vers la dernière version stable", "C'est un piège : il peut désigner des images différentes selon le moment, mieux vaut épingler une version explicite", "Il est interdit par Docker et provoque une erreur au pull"]} correct={1} />
+
+<Quiz id="q-3" question="Que fait la commande docker image prune sans option ?" options={["Elle supprime les images orphelines sans tag, qui ne sont plus référencées", "Elle supprime toutes les images présentes, taguées ou non", "Elle met à jour toutes les images vers leur dernière version"]} correct={0} />
+
+</QuizGroup>
+
+## à retenir
+
+- Une image n'est pas un bloc unique : c'est un empilement de couches en lecture seule, chaque couche stockant une différence par rapport à celle du dessous.
+- Les couches sont partagées entre images, ce qui économise du disque et accélère les téléchargements suivants.
+- Le cache de couches rend les rebuilds rapides quand rien n'a changé en amont. Dès qu'une couche change, toutes celles au-dessus sont recalculées, d'où l'importance de mettre le stable en bas et le volatil en haut.
+- Un tag désigne une version dans un dépôt. `latest` n'est qu'un tag par défaut, pas une garantie de fraîcheur : en production, on épingle une version précise.
+- `docker pull` récupère une image depuis un registre (Docker Hub par défaut), couche par couche, sans retélécharger ce qui est déjà présent.
+- Les images mortes s'accumulent, notamment les orphelines créées par les rebuilds. `docker images`, `docker rmi` et `docker image prune` servent à garder le disque propre.
+
+OK 07-docker-images.mdx écrit

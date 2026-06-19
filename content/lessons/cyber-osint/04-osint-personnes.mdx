@@ -1,0 +1,110 @@
+---
+refCode: CL-LSN-148-V01
+slug: osint-personnes
+title: "OSINT sur les personnes, avec prudence"
+description: "Comment des traces éparses se recoupent en un profil, traité de façon responsable : les mécanismes à comprendre pour mesurer sa propre exposition, et les limites éthiques et légales à ne jamais franchir."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-146-V01"]
+---
+
+Tu publies une photo de vacances. Tu réutilises le même pseudo qu'au collège sur un forum. Tu donnes ton adresse e-mail pour une newsletter. Chacune de ces actions, prise seule, n'a l'air de rien. Le problème commence quand quelqu'un les met bout à bout. Une trace plus une trace plus une trace, et soudain un inconnu sait où tu travailles, dans quelle ville tu vis, à quoi ressemble ton salon et quel est ton deuxième prénom.
+
+C'est ça, l'OSINT sur les personnes : reconstituer un profil à partir d'informations publiques, dispersées, que la personne a souvent semées elle-même sans y penser. Cette leçon explique comment ce recoupement fonctionne. Le but n'est pas de t'apprendre à pister quelqu'un. C'est l'inverse. Comprendre le mécanisme sert d'abord à voir ta propre exposition, et à savoir où s'arrête une démarche légitime.
+
+<Callout type="danger">
+Posons le cadre tout de suite. L'OSINT sur une personne ne se justifie que dans un contexte précis : vérifier l'identité d'un fraudeur dans une enquête autorisée, répondre à une réquisition légale, ou auditer ta propre empreinte numérique. Traquer un particulier, surveiller un ex, retrouver l'adresse de quelqu'un qui veut rester anonyme, collecter des données sur un mineur : c'est du harcèlement ou une atteinte à la vie privée, et c'est puni par la loi. La technique est neutre, l'intention ne l'est pas. Cette leçon décrit des concepts pour te défendre, pas un manuel de filature.
+</Callout>
+
+## le pseudonyme réutilisé
+
+Beaucoup de gens gardent le même pseudo pendant des années, sur des dizaines de services. Le gamertag de 2012, le handle Twitter, le compte Reddit, l'identifiant sur un forum de passionnés. Ils croient ces profils séparés. Ils ne le sont pas.
+
+Un pseudo un peu distinctif est presque un identifiant unique. Si tu t'appelles `nightowl_42` quelque part, il y a de fortes chances que le `nightowl_42` aperçu ailleurs soit toi. Il existe des outils qui prennent un pseudo et listent en quelques secondes les plateformes où ce nom existe. À partir de là, on relie des facettes que tu pensais cloisonnées : ton compte gaming anodin, ton profil professionnel sérieux, et le forum où tu parles de sujets plus intimes.
+
+Le danger n'est pas dans une seule de ces présences. Il est dans le lien. Le compte gaming dit ta ville. Le forum dit un problème de santé. Le profil pro dit ton vrai nom. Mis ensemble, ces trois éléments dessinent quelqu'un d'identifiable et de vulnérable.
+
+<Diagram caption="Recouper des traces autour d'un pseudonyme">
+flowchart TD
+  A[Pseudo reutilise: nightowl_42] --> B[Compte gaming: ville indiquee]
+  A --> C[Forum loisir: detail personnel]
+  A --> D[Profil pro: vrai nom]
+  B --> E[Recoupement]
+  C --> E
+  D --> E
+  E --> F[Personne identifiable et localisee]
+</Diagram>
+
+<Callout type="info">
+La parade tient en une phrase : ne réutilise pas le même identifiant pour des facettes que tu veux séparer. Un pseudo neutre et différent par contexte casse le fil. Ton compte pro et ton forum de défoulement ne doivent rien partager : ni le pseudo, ni l'avatar, ni l'adresse e-mail.
+</Callout>
+
+## l'adresse e-mail comme pivot
+
+L'adresse e-mail est un point de jonction encore plus solide que le pseudo, parce qu'elle est souvent unique et stable dans le temps. Tu la donnes pour t'inscrire partout. Elle devient une clé qui relie tous ces comptes entre eux.
+
+Deux mécanismes la rendent sensible. D'abord, certains services révèlent indirectement qu'une adresse est enregistrée chez eux, par exemple via le formulaire de récupération de mot de passe. On apprend ainsi sur quelles plateformes une personne a un compte. Ensuite, et c'est le plus important, les adresses e-mail apparaissent dans les fuites de données. Quand un site se fait pirater, sa base d'utilisateurs circule. Ton adresse s'y retrouve, parfois accompagnée d'un mot de passe, d'une date de naissance ou d'un numéro.
+
+Une seule adresse fuitée peut donc relier ton identité à plusieurs services et exposer des données que tu croyais privées. On creusera précisément ce sujet dans la leçon sur les fuites de données. Retiens ici le principe : une adresse e-mail réutilisée partout est un fil conducteur qui relie ta vie numérique en un seul nœud.
+
+Au passage, cela explique l'intérêt des alias. Une adresse différente par service, ou des alias jetables, limite la casse : si l'une fuite, elle ne trahit pas les autres.
+
+## la présence multi-plateformes
+
+Le point le plus déstabilisant de l'OSINT sur les personnes, c'est qu'il n'a souvent besoin de rien de secret. Tout est ouvert, public, publié volontairement. La menace naît de l'agrégation.
+
+Prenons un cas. Sur un réseau pro, une personne indique son métier et son employeur. Sur un réseau de photos, elle poste ses vacances, et l'arrière-plan d'un cliché montre une rue reconnaissable. Sur un réseau social classique, elle mentionne son club de sport. Aucune de ces informations n'est confidentielle. Mais ensemble, elles disent : voici son nom, son employeur, le quartier où elle vit, ses horaires probables, son visage. C'est largement assez pour de l'ingénierie sociale, pour un phishing ciblé, ou pire.
+
+Les photos méritent une attention particulière. Une image peut contenir des métadonnées de géolocalisation. Un reflet, une plaque, une enseigne, un uniforme d'école sur un enfant en arrière-plan : autant de détails qui localisent. On publie une ambiance, on diffuse une adresse sans le vouloir.
+
+Le vrai sujet n'est pas que ces infos existent. C'est que personne ne mesure l'effet cumulé. Chaque publication semble inoffensive isolément. Le profil complet, lui, ne l'est pas.
+
+## la limite à ne pas franchir
+
+Il faut une frontière nette, parce qu'elle est facile à enjamber sans s'en rendre compte. Vérifier l'identité affichée d'un compte qui se prétend être ton entreprise, dans le cadre d'une enquête mandatée : démarche légitime. Reconstituer le domicile et les habitudes d'un particulier qui ne t'a rien demandé : intrusion, même si chaque donnée était publique.
+
+Le caractère public d'une information ne rend pas sa collecte légale. En Europe, le RGPD considère qu'agréger des données personnelles, c'est un traitement de données. Cela exige une base légale : consentement, obligation légale, intérêt légitime dûment justifié. Compiler un dossier sur quelqu'un pour ton compte, par curiosité ou par rancune, n'entre dans aucune de ces cases.
+
+<Callout type="warning">
+Trois lignes rouges absolues. Jamais de collecte ciblant des mineurs. Jamais de surveillance d'un particulier sans base légale claire. Jamais d'usage de ce que tu trouves pour intimider, menacer ou exposer quelqu'un, ce que l'on appelle le doxxing. Franchir ces lignes ne fait pas de toi un enquêteur, mais un harceleur, et la loi te traitera comme tel. Dans le doute, abstiens-toi et demande un cadre.
+</Callout>
+
+## se protéger
+
+La bonne nouvelle, c'est que comprendre l'attaque donne la défense. Tu ne peux pas effacer toutes tes traces, mais tu peux casser les liens qui les relient et réduire ce qui circule.
+
+Cloisonne tes identités. Un pseudo différent par contexte, et surtout une adresse e-mail distincte ou un alias par service important. Le jour où l'un fuite, il ne déroule pas le reste de ta vie.
+
+Reprends tes paramètres de confidentialité. Sur chaque réseau, regarde qui peut voir tes publications, ta liste d'amis, tes anciennes photos. Restreins par défaut. Coupe la géolocalisation automatique des photos.
+
+Modère ce que tu publies, surtout l'effet cumulé. Avant de poster, demande-toi ce que ça ajoute à ton profil public. Une rue reconnaissable, une plaque, un badge d'entreprise, le visage d'un enfant : ce sont des détails qui localisent. Floute, recadre, ou ne publie pas.
+
+Enfin, fais ton propre OSINT sur toi. Cherche ton nom, tes pseudos, ton adresse e-mail. Vois ce qu'un inconnu trouverait. C'est l'usage le plus sain de ces techniques : auditer ta surface d'exposition pour la réduire.
+
+<Callout type="success">
+Tu as le droit de demander le retrait de tes données. En Europe, le droit à l'effacement te permet d'exiger qu'un site supprime tes informations personnelles. Tu peux aussi demander aux moteurs de déréférencer certains résultats te concernant. Ton empreinte n'est pas figée : tu peux la réduire activement.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Pourquoi réutiliser le même pseudonyme distinctif sur plusieurs plateformes pose-t-il un problème de vie privée ?" options={["Parce que le pseudo est plus facile à pirater", "Parce qu'il permet de relier entre eux des profils que l'on croyait séparés", "Parce que les pseudos sont interdits par le RGPD", "Parce que cela ralentit le chargement des pages"]} correct={1} />
+
+<Quiz id="q-2" question="Une information est publiquement accessible. Que dit le RGPD sur le fait de la collecter et de l'agréger pour profiler une personne ?" options={["C'est libre, puisque l'information est publique", "C'est un traitement de données qui exige une base légale", "C'est autorisé uniquement la nuit", "C'est permis seulement pour les mineurs"]} correct={1} />
+
+<Quiz id="q-3" question="Quel est l'usage le plus sain des techniques d'OSINT sur les personnes ?" options={["Retrouver l'adresse d'un inconnu croisé en ligne", "Surveiller discrètement un proche", "Auditer sa propre exposition pour réduire ses traces", "Constituer un dossier sur un concurrent par curiosité"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- Des traces banales prises isolément (pseudo, e-mail, photo) se recoupent en un profil identifiable. Le danger est dans le lien, pas dans chaque trace.
+- Un pseudonyme réutilisé relie des profils que tu croyais cloisonnés. Varier ses identifiants casse le fil.
+- L'adresse e-mail est un pivot stable : elle relie tes comptes et apparaît dans les fuites. Les alias limitent les dégâts.
+- L'agrégation d'informations publiques suffit à exposer quelqu'un. Aucune n'est secrète, le total l'est.
+- Public ne veut pas dire collectable. Le RGPD encadre l'agrégation de données personnelles, qui exige une base légale.
+- Lignes rouges : pas de mineurs, pas de surveillance d'un particulier sans base légale, pas de doxxing.
+- Se protéger : cloisonner pseudos et e-mails, verrouiller la confidentialité, modérer l'effet cumulé des publications, et s'auditer soi-même.
+
+OK 04 écrit

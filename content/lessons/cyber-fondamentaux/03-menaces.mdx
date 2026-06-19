@@ -1,0 +1,129 @@
+---
+refCode: CL-LSN-075-V01
+slug: cyber-menaces
+title: "Les menaces : malwares, phishing et ingénierie sociale"
+description: "Comprenez comment fonctionnent vraiment les attaques courantes : virus, vers, rançongiciels, hameçonnage et manipulation humaine, et pourquoi l'humain est souvent la cible la plus facile."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 35
+xpReward: 280
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Quand on imagine une attaque informatique, on pense souvent à un génie qui casse un pare-feu à coups de lignes de code dans une cave sombre. La réalité est beaucoup plus terre à terre. La grande majorité des intrusions qui réussissent ne forcent rien du tout. Elles convainquent quelqu'un de cliquer, de taper son mot de passe au mauvais endroit, ou d'ouvrir une pièce jointe.
+
+Garde ça en tête pour toute cette leçon, parce que ça change la façon de penser la sécurité. Une serrure technique très solide ne sert à rien si l'attaquant se contente de sonner à la porte et de demander gentiment qu'on lui ouvre. L'attaquant moderne fait les deux : il a des outils techniques, mais il vise d'abord la personne, parce que c'est plus rapide et moins risqué pour lui.
+
+On va regarder les outils qu'il utilise, puis la méthode humaine, et enfin comment une attaque se déroule du début à la fin.
+
+## les familles de logiciels malveillants
+
+Le mot malware veut juste dire logiciel malveillant. C'est un terme parapluie. En dessous, il y a plusieurs familles qu'on distingue moins par leurs dégâts que par leur façon de se propager.
+
+Un virus a besoin d'un hôte. Il se greffe à un fichier ou un programme existant, et il ne se réveille que quand on exécute ce fichier. Tant que personne ne lance le programme infecté, il dort.
+
+Un ver est plus autonome. Il n'a pas besoin qu'on l'exécute, il se copie tout seul d'une machine à l'autre en exploitant une faille réseau. C'est ce qui rend les vers redoutables : ils se répandent à la vitesse du réseau, sans aucune action humaine.
+
+Un cheval de Troie, lui, ne se propage pas. Il se déguise. Il a l'air d'un logiciel utile, un lecteur vidéo, une fausse mise à jour, et c'est l'utilisateur qui l'installe de son plein gré. Le piège est dans l'apparence, pas dans la diffusion.
+
+Un spyware reste discret et observe. Il enregistre ce que tu tapes, capture des mots de passe, surveille ton activité, et renvoie tout ça à l'attaquant. Son but n'est pas de casser, c'est de rester invisible le plus longtemps possible.
+
+Le rançongiciel, ou ransomware, mérite qu'on s'arrête dessus parce que c'est la menace qui fait le plus de dégâts aujourd'hui. Le principe est brutalement simple. Une fois sur la machine, il parcourt les fichiers et les chiffre un par un, c'est-à-dire qu'il les rend illisibles avec une clé de chiffrement que seul l'attaquant possède. Tes documents sont toujours là, mais tu ne peux plus les ouvrir. Ensuite s'affiche un message de rançon : payez tant en cryptomonnaie sous tel délai, et on vous rend la clé. Souvent l'attaquant copie aussi les fichiers avant de les chiffrer, pour menacer de les publier si on ne paie pas. C'est la double extorsion.
+
+<Callout type="info">
+Payer la rançon ne garantit rien. Dans une part importante des cas, la clé fournie ne fonctionne pas, ou l'attaquant revient quelques mois plus tard. La seule vraie protection contre un rançongiciel reste une sauvegarde récente, déconnectée, que le malware ne peut pas atteindre.
+</Callout>
+
+## le phishing
+
+Le phishing, ou hameçonnage, c'est l'art de te faire faire quelque chose en te faisant croire que la demande vient d'une source de confiance. Un mail qui ressemble à celui de ta banque, de ton employeur, d'un service que tu utilises.
+
+La mécanique est presque toujours la même. Le message crée une émotion, le plus souvent de l'urgence ou de la peur. Votre compte va être suspendu, un paiement a échoué, vous avez un colis bloqué. Cette émotion a un but précis : t'empêcher de réfléchir. Quand on est pressé ou inquiet, on vérifie moins. Puis le mail te pousse vers une action, cliquer sur un lien, ouvrir une pièce jointe, communiquer un code. Le lien mène vers une fausse page qui imite le vrai site et récupère ce que tu y tapes.
+
+Voici un exemple typique, avec ce qui doit alerter.
+
+```text
+De : Service Sécurité <securite@paypa1-support.com>
+       (le 1 à la place du l : ce n'est pas le vrai domaine)
+
+Objet : Action requise sous 24h - compte suspendu
+
+Bonjour Cher Client,
+   (pas de nom : ils ne savent pas qui tu es)
+
+Nous avons détecté une connexion inhabituelle. Votre compte
+sera definitivement bloqué dans 24 heures.
+   (urgence + menace + faute d'orthographe)
+
+Cliquez ici pour verifier votre identite :
+   http://secure-paypal-verify.tk/login
+   (domaine qui n'a rien à voir, extension douteuse)
+```
+
+Les signaux pris ensemble forment un faisceau. L'adresse d'expéditeur ne correspond pas au vrai domaine. Le ton joue l'urgence. La salutation est générique. Le lien, quand tu survoles sans cliquer, pointe ailleurs que là où il prétend aller. Aucun de ces signaux n'est une preuve absolue à lui seul, mais quand plusieurs s'accumulent, méfiance.
+
+<Callout type="warning">
+Sur ordinateur, survole un lien sans cliquer : l'adresse réelle apparaît en bas du navigateur ou de la messagerie. Si le texte affiché dit une chose et que l'adresse réelle en dit une autre, c'est un signal fort. Un service légitime ne te demandera jamais ton mot de passe par mail.
+</Callout>
+
+## l'ingénierie sociale
+
+Le phishing par mail n'est qu'une forme d'une chose plus large : l'ingénierie sociale. L'idée, c'est de manipuler une personne pour qu'elle donne un accès ou une information, en exploitant des réflexes humains normaux.
+
+Trois leviers reviennent tout le temps. L'autorité : on obéit plus facilement à quelqu'un qui se présente comme un supérieur, un technicien, un policier. L'urgence : sous pression de temps, on saute les vérifications. La confiance : on aide volontiers quelqu'un qui a l'air légitime et sympathique.
+
+Le faux support technique est un classique. Quelqu'un appelle, dit travailler pour le service informatique, explique qu'il y a un problème sur ton poste, et te demande d'installer un outil de prise en main à distance ou de donner ton mot de passe pour résoudre ça vite. Tout est crédible parce que ça ressemble à une vraie situation que tu as déjà vécue.
+
+Le prétexte, c'est l'histoire inventée qui sert de couverture. L'attaquant se fait passer pour un nouveau prestataire, un livreur, un collègue d'une autre agence, et construit un scénario qui justifie sa demande. Plus le prétexte colle au quotidien de la cible, mieux ça marche.
+
+Pourquoi est-ce que ça fonctionne sur tout le monde, même sur des gens prudents ? Parce que ces leviers ne visent pas l'intelligence, ils visent des automatismes sociaux. Rendre service, obéir à une figure d'autorité, réagir vite à une urgence, ce sont des comportements utiles dans la vie normale. L'attaquant les retourne contre toi. Ce n'est pas une question d'être bête ou malin, c'est une question d'attention au bon moment.
+
+## la chaîne d'attaque
+
+Une attaque sérieuse ne se joue pas en un clic. Elle se déroule par étapes, parfois sur des semaines. Voir cette suite aide à comprendre où on peut l'arrêter.
+
+<Diagram>
+  flowchart LR
+    A["Reconnaissance"] --> B["Accès initial"]
+    B --> C["Escalade de privilèges"]
+    C --> D["Persistance"]
+    D --> E["Exfiltration"]
+</Diagram>
+
+La reconnaissance, c'est la collecte d'informations avant de frapper. L'attaquant regarde le site de l'entreprise, les profils des employés sur les réseaux, les adresses mail, l'organigramme. Il prépare un message crédible et choisit sa cible.
+
+L'accès initial, c'est le premier pied dans la porte, souvent via un phishing réussi ou un mot de passe volé. À ce stade, l'attaquant a un accès, mais limité, celui d'un utilisateur ordinaire.
+
+L'escalade de privilèges, c'est passer de ce compte limité à un compte qui a plus de droits, idéalement administrateur. Avec des droits étendus, il peut faire bien plus.
+
+La persistance, c'est s'installer durablement pour pouvoir revenir même si on change le mot de passe d'entrée. Il crée des accès cachés.
+
+L'exfiltration, enfin, c'est sortir les données ou déclencher l'effet final, comme lancer le chiffrement d'un rançongiciel. Souvent l'attaquant est présent depuis longtemps avant qu'on s'en rende compte.
+
+L'intérêt de ce schéma : chaque étape est une occasion de détecter et de bloquer. Une attaque n'est pas un événement instantané, c'est un processus.
+
+## se protéger sans paranoïa
+
+Se protéger ne veut pas dire vivre dans la peur de tout. Quelques réflexes simples couvrent l'essentiel des cas.
+
+Vérifier avant d'agir. Devant une demande sensible, un virement, un mot de passe, l'installation d'un outil, prends le temps de confirmer par un autre canal. Un appel inattendu du support ? Raccroche et rappelle le numéro officiel que tu connais, pas celui qu'on te donne.
+
+Douter de l'urgence. L'urgence est l'outil numéro un de l'attaquant. Un message qui te presse de faire quelque chose tout de suite mérite, justement pour cette raison, qu'on ralentisse. Une vraie organisation te laisse le temps de vérifier.
+
+Signaler plutôt que régler seul. Si tu reçois un mail suspect au travail, ne te contente pas de le supprimer, préviens l'équipe sécurité. Ce qui t'a visé vise probablement d'autres collègues, et un signalement rapide peut couper l'attaque avant qu'elle ne réussisse ailleurs.
+
+Et garder des sauvegardes. Pour le particulier comme pour l'entreprise, une sauvegarde récente et déconnectée transforme un rançongiciel d'une catastrophe en un simple désagrément.
+
+## à toi de jouer
+
+<Quiz id="q-ransomware" question="Qu'est-ce qui caractérise un rançongiciel (ransomware) ?" options={["Il se copie tout seul de machine en machine via le réseau", "Il chiffre les fichiers et réclame un paiement pour la clé", "Il se déguise en logiciel utile pour se faire installer", "Il enregistre discrètement tout ce que tu tapes"]} correct={1} />
+
+<Quiz id="q-phishing" question="Dans le faux mail vu plus haut, quel élément est le signal le PLUS fiable d'une tentative de phishing ?" options={["Le mail parle de sécurité", "Le domaine de l'expéditeur est paypa1-support au lieu du vrai domaine", "Le mail est en français", "Le message contient un objet"]} correct={1} />
+
+<Quiz id="q-social" question="Pourquoi l'ingénierie sociale fonctionne-t-elle même sur des personnes prudentes ?" options={["Parce que les gens prudents sont rares", "Parce qu'elle exploite des automatismes sociaux normaux comme obéir à l'autorité ou rendre service", "Parce qu'elle nécessite toujours un malware avancé", "Parce que les pare-feux ne servent à rien"]} correct={1} />
+
+## à retenir
+
+La plupart des attaques réussies ne cassent pas une protection technique, elles trompent une personne. Le malware se décline en familles qui se distinguent surtout par leur mode de propagation : le virus a besoin d'un hôte, le ver se copie seul, le cheval de Troie se déguise, le spyware espionne, le rançongiciel chiffre et réclame une rançon. Le phishing joue sur l'urgence et la confiance pour te pousser à cliquer ou à donner tes accès, et les signaux d'alerte sont l'adresse d'expéditeur, le ton pressant et le lien qui pointe ailleurs. L'ingénierie sociale exploite des réflexes humains normaux, ce qui la rend efficace sur tout le monde. Une attaque sérieuse suit une chaîne, de la reconnaissance à l'exfiltration, et chaque étape est une chance de l'arrêter. Pour se protéger : vérifier par un autre canal, se méfier de l'urgence, signaler, et sauvegarder.
+
+OK 03-menaces.mdx écrit

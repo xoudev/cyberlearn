@@ -1,0 +1,102 @@
+---
+refCode: CL-LSN-134-V01
+slug: blueteam-journaux
+title: "Les journaux : la matière première de la défense"
+description: "Sans journaux, un défenseur est aveugle. Comprenez les sources de logs, ce qu'on journalise, pourquoi l'horloge commune et la centralisation comptent, et comment ces traces permettent de détecter une intrusion."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-133-V01"]
+---
+
+Posons une règle simple avant tout le reste : on ne détecte que ce qu'on a enregistré. Si une machine ne note nulle part qu'une connexion a eu lieu à 3h12 du matin depuis une adresse inconnue, alors pour vous cette connexion n'a jamais existé. Vous pouvez avoir le meilleur analyste du monde devant son écran, sans trace il regarde un mur blanc.
+
+C'est le bon moment pour poser le modèle mental qui va servir toute cette leçon. Les journaux sont les caméras de vidéosurveillance de votre système d'information. Une caméra ne stoppe pas le cambrioleur. Mais après coup elle vous dit par quelle porte il est entré, à quelle heure, combien de temps il est resté, et ce qu'il a emporté. Sans ces images, vous savez juste qu'il manque quelque chose, sans rien comprendre. Les logs jouent exactement ce rôle. Ils ne bloquent rien, ils gardent la trace. Et un défenseur qui n'a pas ses caméras travaille à l'aveugle.
+
+## ce qu'est un log
+
+Un log, ou journal, c'est une trace écrite d'un événement, avec une date précise. Rien de plus mystérieux. Chaque fois qu'un programme fait quelque chose qui mérite d'être noté (quelqu'un se connecte, un fichier est ouvert, une erreur survient, un service démarre), il écrit une ligne dans un fichier. Cette ligne raconte trois choses au minimum : quand, quoi, et qui ou quoi en est l'origine.
+
+Voici une ligne réelle, telle qu'on la trouve dans le journal d'authentification d'un serveur Linux :
+
+```text
+Jan 10 14:22:01 srv01 sshd[2041]: Failed password for root from 203.0.113.9 port 51234 ssh2
+# Le 10 janvier à 14h22, le service SSH du serveur srv01
+# a refusé un mot de passe pour le compte root, venant de l'adresse 203.0.113.9.
+```
+
+Lisez-la lentement. Une seule ligne, et vous savez déjà que quelqu'un, depuis une adresse externe, essaie de deviner le mot de passe du compte administrateur. Une ligne isolée ne prouve pas une attaque (un mot de passe se tape mal). Mais cent lignes identiques en deux minutes, là, le tableau change.
+
+<Callout type="info">
+Un log se lit toujours dans le même ordre : la date d'abord, puis la source (quel programme), puis l'événement. Une fois que cet ordre est dans votre tête, n'importe quelle ligne devient lisible, même dans un format inconnu.
+</Callout>
+
+## les sources
+
+Aucune source de logs ne voit tout. Chacune regarde le système depuis son angle, et c'est précisément en croisant ces angles qu'on reconstitue une histoire complète.
+
+Les **journaux système** notent la vie de la machine : démarrage, arrêt de services, erreurs matérielles, plantages. Les **journaux d'authentification** notent qui se connecte et qui échoue à se connecter, par SSH, par interface web, par l'écran de login. Les **journaux réseau** voient les connexions qui entrent et sortent : quelle machine a parlé à quelle autre, sur quel port. Les **journaux applicatifs** sont produits par vos propres logiciels (un site web, une base de données) et racontent ce qui se passe à l'intérieur de l'application. Enfin les **journaux de pare-feu** notent ce qui a été autorisé ou bloqué à la frontière du réseau.
+
+Pourquoi croiser ? Imaginez une intrusion. Le pare-feu vous montre une connexion entrante autorisée vers un serveur web. Le journal applicatif du site vous montre une requête bizarre au même instant. Le journal d'authentification vous montre, deux minutes plus tard, une connexion réussie sur ce serveur. Le journal système vous montre, peu après, un nouveau service qui démarre. Pris séparément, chacun de ces événements peut sembler anodin. Mis bout à bout, ils racontent une compromission du début à la fin. Une seule source ne vous l'aurait jamais donnée.
+
+## quoi journaliser, quoi éviter
+
+Tout journaliser coûte cher et noie l'information utile dans le bruit. Mais ne pas journaliser les bons événements, c'est se condamner à ne rien voir. Le bon réflexe est de toujours enregistrer les événements de sécurité : les connexions réussies et échouées, les changements de droits (quelqu'un devient administrateur), la création et la suppression de comptes, les accès à des fichiers sensibles, le démarrage et l'arrêt des services de sécurité eux-mêmes. Ce sont les moments où un attaquant laisse forcément une empreinte.
+
+Il y a en revanche une chose qu'on ne journalise jamais : les données sensibles en clair. Pas de mots de passe dans les logs, jamais, même en cas d'échec de connexion. Pas de numéros de carte bancaire, pas de jetons de session, pas de données personnelles inutiles. La raison est directe : un fichier de logs se lit, se copie, se sauvegarde, et finit souvent par traîner sur plusieurs serveurs. Si vos mots de passe s'y trouvent, vous avez fabriqué de vos mains la liste de courses idéale pour un attaquant.
+
+<Callout type="warning">
+Un mot de passe tapé par erreur dans le champ « nom d'utilisateur » peut se retrouver journalisé tel quel. C'est un piège classique. Vérifiez ce que vos applications écrivent réellement dans leurs journaux, pas seulement ce qu'elles sont censées écrire.
+</Callout>
+
+## le temps commun
+
+Voici un point qu'on sous-estime presque toujours, jusqu'au jour où il fait rater une enquête. Pour croiser deux sources, il faut que leurs horloges soient d'accord sur l'heure qu'il est.
+
+Reprenez l'exemple de l'intrusion. Vous voulez prouver que la connexion vue par le pare-feu et la requête vue par l'application sont le même événement. Votre seul lien, c'est l'horodatage. Si le pare-feu pense qu'il est 14h22 et que le serveur web pense qu'il est 14h23, ces deux lignes ne se rejoignent plus. Une minute d'écart suffit à briser la chaîne, et vous passez à côté de la corrélation.
+
+La solution s'appelle NTP, le protocole qui synchronise l'heure de toutes les machines sur une référence commune. Concrètement, chaque serveur, chaque équipement réseau cale régulièrement son horloge sur une source de temps fiable. Tant que tout le parc partage la même heure à la seconde près, les journaux de sources différentes redeviennent superposables. Sans cette discipline, vos caméras filment toutes, mais aucune n'a la même horloge au coin de l'image, et plus personne ne sait dans quel ordre les choses se sont produites.
+
+## centraliser et protéger
+
+Posez-vous une question gênante. Un attaquant prend le contrôle d'un serveur. Que fait-il en priorité ? Il efface les journaux de ce serveur pour faire disparaître ses traces. Et s'il a les droits administrateur, il en a parfaitement le pouvoir, puisque les logs sont sur cette machine, sous son contrôle.
+
+D'où l'idée de centralisation : on ne garde pas les logs uniquement là où ils naissent, on les recopie en temps réel vers un serveur dédié, séparé, que les machines surveillées ne peuvent pas modifier. Ainsi, même si un serveur tombe entièrement aux mains d'un attaquant, la copie de ses journaux reste intacte ailleurs. L'attaquant peut effacer ce qu'il y a sur la machine compromise, il ne touche pas à la copie centrale. C'est la différence entre une caméra dont la bande est dans le boîtier (que le cambrioleur emporte) et une caméra qui envoie son flux en direct vers un local fermé à l'autre bout du bâtiment.
+
+<Callout type="danger">
+L'effacement des journaux est un signal d'alerte en soi. Un trou inexpliqué dans la chronologie, des logs qui s'arrêtent net puis reprennent, un fichier de journal soudain vide : ce ne sont pas des incidents techniques anodins, c'est souvent la signature de quelqu'un qui nettoie derrière lui.
+</Callout>
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Lire les journaux système" commands={{"journalctl -u ssh --no-pager | tail -5": "Jan 10 14:22:01 srv sshd[2041]: Failed password for root from 203.0.113.9 port 51234", "cat /var/log/auth.log | grep 'Failed password' | wc -l": "147", "last -n 5": "user1   pts/0   10.0.0.5   Mon 14:20  still logged in"}} />
+
+Regardez le deuxième résultat : 147 échecs de mot de passe. Une machine saine en compte une poignée. Ce nombre, à lui seul, justifie d'aller voir de plus près.
+
+## la rétention
+
+Combien de temps garder tout ça ? Assez longtemps pour enquêter, pas indéfiniment. Le problème, c'est qu'une intrusion se découvre rarement le jour même. Les attaquants restent parfois des semaines ou des mois dans un système avant d'être repérés. Le jour où vous comprenez qu'il y a eu compromission, vous voulez remonter le temps jusqu'au point d'entrée initial. Si vos journaux ne couvrent que les dernières quarante-huit heures, vous ne verrez jamais le début de l'histoire.
+
+À l'inverse, tout garder pour toujours coûte du stockage, complique les recherches et accumule des données sensibles dont on devient responsable. La rétention est donc un équilibre. On garde les logs courants accessibles vite pour le travail quotidien, on archive les plus anciens de façon plus compacte, et on fixe une durée raisonnable au-delà de laquelle on supprime, selon les besoins métier et les obligations légales. La bonne réponse dépend du contexte, mais la mauvaise réponse, elle, est universelle : c'est de ne pas y avoir réfléchi du tout.
+
+## à toi de jouer
+
+Reprenez le terminal ci-dessus et relisez chaque sortie en vous demandant : quelle source me parle, et que m'apprend cette ligne ? Puis répondez aux questions.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Enquêter dans les journaux" commands={{"journalctl -u ssh --no-pager | tail -5": "Jan 10 14:22:01 srv sshd[2041]: Failed password for root from 203.0.113.9 port 51234", "cat /var/log/auth.log | grep 'Failed password' | wc -l": "147", "last -n 5": "user1   pts/0   10.0.0.5   Mon 14:20  still logged in"}} />
+
+<QuizGroup>
+<Quiz id="q-1" question="Pourquoi recopie-t-on les journaux vers un serveur central séparé ?" options={["Pour gagner de la place sur les machines surveillées", "Pour qu'un attaquant qui prend une machine ne puisse pas effacer les traces conservées ailleurs", "Pour accélérer le démarrage des services", "Parce que la loi interdit de garder des logs en local"]} correct={1} />
+
+<Quiz id="q-2" question="Deux journaux de sources différentes ont une minute d'écart sur leurs horloges. Quelle est la conséquence pour une enquête ?" options={["Aucune, une minute est négligeable", "Les logs deviennent illisibles", "On ne peut plus relier de façon fiable deux événements qui sont en réalité le même", "Le pare-feu cesse de fonctionner"]} correct={2} />
+
+<Quiz id="q-3" question="Lequel de ces éléments ne doit jamais apparaître dans un journal ?" options={["Un mot de passe en clair", "Une adresse IP source", "L'heure d'une connexion", "Le nom du service qui a échoué"]} correct={0} />
+</QuizGroup>
+
+## à retenir
+
+- Un log est une trace horodatée d'un événement : quand, quoi, qui. On ne détecte que ce qu'on a enregistré.
+- Les sources (système, authentification, réseau, applications, pare-feu) voient chacune un angle. C'est en les croisant qu'on reconstitue une intrusion complète.
+- On journalise les événements de sécurité (connexions, échecs, changements de droits). On ne journalise jamais de mots de passe ni de données sensibles en clair.
+- Sans horloges synchronisées par NTP, deux sources ne se corrèlent plus. Une minute d'écart peut casser une enquête.
+- On centralise les logs vers un serveur séparé pour qu'un attaquant ne puisse pas effacer ses traces. Un journal vidé ou troué est en soi un signal d'alerte.
+- La rétention est un équilibre : assez long pour remonter à l'origine d'une intrusion découverte tardivement, pas infini pour le coût et la responsabilité.

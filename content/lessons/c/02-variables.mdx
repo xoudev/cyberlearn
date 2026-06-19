@@ -1,0 +1,209 @@
+---
+refCode: CL-LSN-026-V01
+slug: c-variables-types
+title: "Variables et types en C"
+description: "Déclarez et utilisez des variables en C : les types fondamentaux (int, float, double, char), la déclaration, l'initialisation et l'affichage formaté avec printf."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 25
+xpReward: 140
+prerequisites: ["CL-LSN-025-V01"]
+---
+
+Si vous arrivez de Python ou de JavaScript, vous avez l'habitude d'écrire `x = 42` et de passer à la suite. La machine se débrouille pour savoir que `x` contient un nombre, et si plus tard vous lui mettez du texte, elle accepte sans broncher. En C, ça ne marche pas comme ça. Avant d'utiliser une variable, vous devez annoncer son type. Pas parce que le langage est tatillon pour le plaisir, mais parce qu'il a besoin de savoir combien de place réserver en mémoire et comment interpréter les octets qu'il y range. Un entier et un nombre à virgule ne s'écrivent pas de la même manière dans la mémoire ; le C veut que vous tranchiez à l'avance.
+
+C'est ce qu'on appelle le typage statique. Le type est fixé à la déclaration et ne bouge plus. Le compilateur le connaît avant même que le programme tourne, ce qui lui permet d'attraper beaucoup d'erreurs au moment de la compilation plutôt qu'en plein milieu de l'exécution.
+
+## déclarer une variable
+
+La forme de base est toujours la même : le type, puis le nom, et éventuellement une valeur de départ.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int age = 30;        /* type, nom, valeur en une fois */
+    int score;           /* declaree, mais pas encore initialisee */
+
+    score = 100;         /* on lui donne une valeur ici */
+
+    printf("age   : %d\\n", age);
+    printf("score : %d\\n", score);
+    return 0;
+}`} />
+
+Vous pouvez séparer la déclaration de l'affectation, comme avec `score` ci-dessus. Mais attention à un point qui surprend les débutants : une variable déclarée sans valeur ne vaut pas zéro. Elle contient ce qui traînait déjà à cet endroit de la mémoire, c'est-à-dire n'importe quoi. On parle de valeur indéterminée.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int mystere;   /* jamais initialisee */
+
+    /* la valeur affichee est imprevisible : 0, 32766, un grand nombre... */
+    printf("mystere : %d\\n", mystere);
+    return 0;
+}`} />
+
+Lancez ce programme plusieurs fois et vous verrez peut-être des valeurs différentes, ou la même valeur étrange. Le réflexe à prendre : initialisez vos variables au moment où vous les déclarez. Ça évite des bugs qui n'apparaissent qu'une fois sur dix et qui sont pénibles à traquer.
+
+## les types de base
+
+Le C fournit une poignée de types que vous croiserez en permanence. Chacun stocke un genre de valeur précis et occupe une place fixe en mémoire.
+
+`int` garde un entier, positif ou négatif, sans partie décimale. Il pèse en général 4 octets. `float` et `double` gardent des nombres à virgule. Le `float` occupe 4 octets, le `double` en occupe 8 et offre donc plus de précision et une plage plus large ; en pratique on prend `double` la plupart du temps. `char` tient sur 1 seul octet et sert à stocker un caractère, comme la lettre `A` ou le point d'interrogation.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int annee = 2026;
+    float taille = 1.75f;       /* le f indique un float */
+    double pi = 3.14159265358979;
+    char initiale = 'C';        /* apostrophes simples pour un char */
+
+    printf("annee    : %d\\n", annee);
+    printf("taille   : %f\\n", taille);
+    printf("pi       : %f\\n", pi);
+    printf("initiale : %c\\n", initiale);
+
+    /* sizeof donne la taille en octets sur cette machine */
+    printf("\\ntaille d'un int    : %zu octets\\n", sizeof(int));
+    printf("taille d'un double : %zu octets\\n", sizeof(double));
+    printf("taille d'un char   : %zu octets\\n", sizeof(char));
+    return 0;
+}`} />
+
+L'opérateur `sizeof` vous dit combien d'octets un type occupe sur la machine où le programme tourne. Les tailles peuvent varier légèrement d'un système à l'autre, mais l'ordre de grandeur reste celui-là. Pourquoi cette histoire de taille compte ? Parce qu'elle fixe l'étendue des valeurs possibles. Un type sur peu d'octets ne peut représenter qu'une plage limitée de nombres, et dépasser cette plage produit des résultats inattendus, on y revient plus bas.
+
+## printf et les spécificateurs
+
+`printf` affiche du texte, et pour glisser la valeur d'une variable dans ce texte on utilise un spécificateur de format, introduit par `%`. Chaque type a le sien : `%d` pour un `int`, `%f` pour un `float` ou un `double`, `%c` pour un `char`, et `%s` pour une chaîne de caractères.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int quantite = 12;
+    double prix = 19.99;
+    char categorie = 'A';
+    char nom[] = "CyberLearn";
+
+    printf("quantite  : %d\\n", quantite);
+    printf("prix      : %f\\n", prix);
+    printf("categorie : %c\\n", categorie);
+    printf("nom       : %s\\n", nom);
+    return 0;
+}`} />
+
+Le spécificateur n'est pas une simple décoration. Il dit à `printf` comment lire les octets qu'on lui passe. Si vous mentez sur le type, `printf` lit la mémoire de travers et affiche n'importe quoi.
+
+<Callout type="warning">
+Confondre les spécificateurs est l'une des erreurs les plus fréquentes en C. Écrire `printf("%d", prix)` alors que `prix` est un `double` ne déclenche pas forcément d'erreur de compilation, mais l'affichage sera faux : souvent un grand nombre absurde, parce que printf interprète les octets du double comme s'ils formaient un entier. Le type de la variable et son spécificateur doivent toujours correspondre.
+</Callout>
+
+## char, un petit entier
+
+Voici une idée reçue qui mérite d'être démontée : un `char` ne stocke pas vraiment la lettre `A`. Il stocke un nombre. Dans la table ASCII, la lettre `A` correspond au code 65, `B` au code 66, et ainsi de suite. Quand vous écrivez `char c = 'A';`, vous rangez en réalité l'entier 65 dans un octet. L'apostrophe `'A'` est juste une façon commode d'écrire 65 sans avoir à le retenir.
+
+Du coup, un `char` est un petit entier, et vous pouvez l'afficher des deux manières : en `%c` pour voir le caractère, en `%d` pour voir son code.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    char lettre = 'A';
+
+    printf("comme caractere : %c\\n", lettre);   /* affiche A */
+    printf("comme nombre    : %d\\n", lettre);   /* affiche 65 */
+
+    /* puisque c'est un nombre, on peut compter dessus */
+    char suivante = lettre + 1;
+    printf("la suivante     : %c\\n", suivante); /* affiche B */
+    return 0;
+}`} />
+
+Le fait d'ajouter 1 à un caractère et d'obtenir le suivant n'a rien de magique : on a simplement passé de 65 à 66, et 66 s'affiche comme `B`. C'est la base de pas mal de manipulations de texte en C.
+
+## const et limites
+
+Quand une valeur ne doit jamais changer, marquez-la avec `const`. Le compilateur refusera alors toute tentative de modification, ce qui protège contre les fautes d'inattention. La directive `#define` fait quelque chose de différent : elle dit au préprocesseur de remplacer un nom par un texte avant la compilation, sans créer de variable.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+#define VIES_MAX 3
+
+int main(void) {
+    const double TVA = 0.20;
+    double prix_ht = 100.0;
+    double prix_ttc = prix_ht * (1.0 + TVA);
+
+    printf("vies max : %d\\n", VIES_MAX);
+    printf("prix TTC : %f\\n", prix_ttc);
+
+    /* TVA = 0.25;  <- decommentez cette ligne : le compilateur refuse */
+    return 0;
+}`} />
+
+Maintenant les limites. Un `int` ne peut pas grandir indéfiniment. Sur la plupart des machines il monte jusqu'à 2 147 483 647. Si vous lui ajoutez 1 alors qu'il est déjà au maximum, il ne passe pas à 2 147 483 648 : il bascule dans les négatifs. C'est le débordement, ou overflow. Le compteur fait le tour, comme un odomètre qui repasse à zéro.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <limits.h>
+
+int main(void) {
+    printf("int maximum : %d\\n", INT_MAX);
+
+    int grand = INT_MAX;
+    int trop = grand + 1;   /* on depasse la limite */
+
+    printf("apres + 1   : %d\\n", trop);   /* devient negatif */
+    return 0;
+}`} />
+
+`INT_MAX`, défini dans `limits.h`, donne la plus grande valeur qu'un `int` peut contenir. Ajouter 1 au-delà fait basculer le résultat vers le négatif. Ce comportement n'est pas un bug du C, c'est une conséquence directe du nombre d'octets réservés. Quand vous manipulez de grandes valeurs, il faut y penser et choisir un type plus large si besoin.
+
+Un dernier piège, lié aux entiers lui aussi : la division. Quand les deux opérandes sont des entiers, le C fait une division entière et jette la partie décimale.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    int a = 7;
+    int b = 2;
+
+    printf("division entiere : %d\\n", a / b);        /* affiche 3, pas 3.5 */
+    printf("avec des doubles : %f\\n", 7.0 / 2.0);    /* affiche 3.5 */
+    return 0;
+}`} />
+
+`7 / 2` ne donne pas 3.5 mais 3, parce que les deux nombres sont des `int` et que le résultat reste un `int`. Pour obtenir 3.5, il faut qu'au moins un des deux soit un nombre à virgule, d'où le `7.0 / 2.0`.
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz
+  id="c-var-format"
+  question="Quel specificateur de format printf affiche correctement une variable de type double ?"
+  options={["%d", "%f", "%c"]}
+  correct={1}
+  explanation="%f affiche les float et les double. %d sert aux int et donnerait un affichage faux ici."
+/>
+<Quiz
+  id="c-var-char"
+  question="Que stocke reellement une variable char qui vaut 'A' ?"
+  options={["Le code numerique 65", "La chaine de texte 'A'", "Un pointeur vers la lettre"]}
+  correct={0}
+  explanation="Un char est un petit entier. 'A' est rangee comme le nombre 65 (son code ASCII), affichable en %c ou en %d."
+/>
+<Quiz
+  id="c-var-division"
+  question="En C, que vaut l'expression 7 / 2 quand 7 et 2 sont des int ?"
+  options={["3.5", "4", "3"]}
+  correct={2}
+  explanation="Deux entiers donnent une division entiere : la partie decimale est jetee, donc 3. Pour obtenir 3.5 il faut un double, comme 7.0 / 2.0."
+/>
+</QuizGroup>
+
+## à retenir
+
+- Le C est typé statiquement : on déclare le type de chaque variable, et le compilateur s'en sert pour réserver la bonne quantité de mémoire.
+- Une variable déclarée sans valeur ne vaut pas zéro mais contient une donnée indéterminée ; initialisez toujours à la déclaration.
+- Les types de base : `int` (entier, 4 octets), `float` (virgule, 4 octets), `double` (virgule, 8 octets, plus précis), `char` (1 octet).
+- Le spécificateur de `printf` doit correspondre au type : `%d` pour `int`, `%f` pour `float` et `double`, `%c` pour `char`, `%s` pour une chaîne. Un mauvais spécificateur affiche n'importe quoi.
+- Un `char` est un petit entier : `'A'` vaut 65, affichable en `%c` ou en `%d`.
+- `const` empêche la modification d'une valeur ; un `int` a des bornes, et les dépasser provoque un débordement qui fait basculer le résultat dans les négatifs.
+- Une division entre deux `int` jette la partie décimale : `7 / 2` donne 3.

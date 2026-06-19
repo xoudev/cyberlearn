@@ -1,0 +1,125 @@
+---
+refCode: CL-LSN-167-V01
+slug: reseau-outils-diagnostic
+title: "Outils et diagnostic réseau"
+description: "Dépanner un réseau avec méthode plutôt qu'au hasard : tester couche par couche avec ip, ping, traceroute, dig, ss et curl, et savoir quel outil répond à quelle question."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 540
+prerequisites: ["CL-LSN-164-V01"]
+---
+
+Le site ne charge pas. La première réaction, presque toujours, c'est de cliquer partout : recharger la page, relancer le navigateur, redémarrer le wifi, peut-être la box pendant qu'on y est. Parfois ça marche. Souvent on a juste perdu dix minutes sans savoir ce qui s'est réellement passé, et le problème revient le lendemain.
+
+Le dépannage réseau gagne énormément à être méthodique. Quand quelque chose ne répond pas, il y a une dizaine de raisons possibles, et elles ne sont pas au même endroit. Ta carte réseau peut ne pas avoir d'adresse. Ta passerelle peut être injoignable. Le DNS peut être en panne alors que le reste fonctionne. Le serveur distant peut être debout mais le service web tombé. Tâtonner, c'est tester ces causes dans le désordre, sans jamais être sûr d'avoir éliminé les précédentes.
+
+L'idée de cette leçon : tester dans l'ordre des couches, de bas en haut. Chaque test valide une marche avant de passer à la suivante. Quand un test échoue, tu sais que le problème est là, ni avant ni après.
+
+## la démarche par couches
+
+Imagine un escalier. En bas, le plus proche de ta machine ; en haut, le service que tu veux atteindre. Tu montes une marche à la fois, et tu ne montes pas tant que la précédente ne tient pas.
+
+Les marches, dans l'ordre :
+
+1. Ai-je une adresse IP ? Si ma carte n'a pas d'IP, rien ne peut sortir. Inutile de tester le DNS.
+2. Ma passerelle répond-elle ? La passerelle (souvent la box ou le routeur) est ma porte vers l'extérieur. Si elle ne répond pas au ping, je ne sors pas de mon réseau local.
+3. Puis-je sortir vers Internet ? Un ping vers une IP publique connue, comme 8.8.8.8, dit si le trafic passe vraiment au-delà de la passerelle.
+4. Le DNS résout-il ? Si je peux pinguer 8.8.8.8 mais pas example.com, le réseau marche et c'est la résolution de noms qui coince.
+5. Le service répond-il ? Le nom résout, la machine est joignable, mais le serveur web renvoie-t-il bien une réponse ? C'est la dernière marche.
+
+<Diagram caption="Diagnostiquer en montant les couches">
+flowchart TD
+  A[Ai-je une IP ?] -->|non| A1[Probleme local DHCP ou carte]
+  A -->|oui| B[Passerelle repond au ping ?]
+  B -->|non| B1[Probleme LAN ou routeur]
+  B -->|oui| C[Ping 8.8.8.8 OK ?]
+  C -->|non| C1[Sortie Internet coupee]
+  C -->|oui| D[DNS resout le nom ?]
+  D -->|non| D1[Probleme DNS]
+  D -->|oui| E[Service repond ?]
+  E -->|non| E1[Service distant en cause]
+  E -->|oui| F[Tout fonctionne]
+</Diagram>
+
+<Callout type="info">
+La force de la méthode est négative autant que positive. Chaque test réussi élimine définitivement tout ce qui est en dessous. Quand tu arrives au DNS, tu sais déjà que la carte, la passerelle et la sortie Internet vont bien. Tu n'as plus à y penser.
+</Callout>
+
+## connaître sa config
+
+Avant de tester quoi que ce soit vers l'extérieur, regarde ce que ta machine sait d'elle-même. Sur Linux moderne, la commande est `ip`. L'ancienne `ifconfig` existe encore sur beaucoup de systèmes et donne des infos comparables.
+
+`ip addr show` liste tes interfaces et leurs adresses. Tu cherches trois choses : ton interface a-t-elle une adresse IP, le masque a-t-il l'air correct, et l'adresse n'est-elle pas une 169.254.x.x. Cette dernière, l'APIPA, signale que la machine n'a obtenu aucune adresse du DHCP et s'en est attribué une toute seule. Dans ce cas, tu n'iras nulle part : le problème est local, côté DHCP ou câble.
+
+Pour la passerelle, `ip route` affiche la route par défaut, la ligne qui commence par `default via`. C'est l'adresse vers laquelle part tout le trafic qui ne reste pas sur ton réseau local. Note-la, tu vas la pinguer juste après.
+
+## tester la joignabilité
+
+`ping` est l'outil de la deuxième et troisième marche. Il envoie un petit paquet (un echo request ICMP) et attend le retour. Si la réponse revient, la machine est joignable et le chemin aller-retour fonctionne, au moins pour ICMP.
+
+L'ordre compte. Pingue d'abord ta passerelle : si elle répond, ton réseau local va bien. Pingue ensuite une IP publique comme 8.8.8.8 : si elle répond, tu sors. Pingue toujours une **adresse IP** d'abord, pas un nom, sinon tu mélanges le test de joignabilité avec le test DNS.
+
+L'absence de réponse n'est pas toujours une panne. Un ping qui n'aboutit pas peut vouloir dire trois choses : la machine est vraiment injoignable, ou un pare-feu en chemin bloque ICMP sans bloquer le reste, ou la machine répond mais filtre les pings. Beaucoup de serveurs publics ignorent volontairement les pings. Donc « ça ne pingue pas » est un indice, pas un verdict.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Tester couche par couche" commands={{"ip addr show eth0 | grep inet": "inet 192.168.1.42/24", "ip route | grep default": "default via 192.168.1.1 dev eth0", "ping -c1 192.168.1.1": "64 bytes from 192.168.1.1: time=0.5 ms", "ping -c1 8.8.8.8": "64 bytes from 8.8.8.8: time=12 ms", "dig +short example.com": "93.184.216.34", "curl -I https://example.com": "HTTP/2 200"}} />
+
+## suivre le chemin
+
+Si la passerelle répond mais que 8.8.8.8 ne répond pas, le blocage est quelque part entre les deux. `traceroute` (ou `tracert` sous Windows, `tracepath` sur certains Linux) montre la liste des routeurs traversés pour atteindre une destination, saut par saut, avec le temps de chaque étape.
+
+Tu lis la sortie de haut en bas. Les premières lignes sont ton réseau et ton fournisseur. Si la trace s'arrête net à un certain saut et n'avance plus (des étoiles à répétition), c'est souvent là que ça bloque, ou juste après. C'est utile pour distinguer « mon réseau est cassé » de « le problème est loin, chez un opérateur intermédiaire », ce sur quoi tu ne pourras rien faire à part attendre.
+
+Attention quand même : un saut qui affiche des étoiles ne veut pas forcément dire panne. Comme pour le ping, certains routeurs ne répondent pas aux sondes mais laissent passer le trafic. Ce qui compte, c'est de savoir si la trace atteint la destination ou pas.
+
+## vérifier le DNS et les services
+
+Arrivé en haut, deux questions restent : le nom se traduit-il en IP, et le service écoute-t-il ?
+
+Pour le DNS, `dig` est l'outil de référence. `dig +short example.com` renvoie juste l'adresse, sans le détail. Si tu obtiens une IP, la résolution marche. Si tu n'obtiens rien alors que `ping 8.8.8.8` passait, ton problème est isolé : c'est le DNS. `nslookup` fait un travail proche et existe partout, y compris sous Windows.
+
+Pour les ports et connexions sur ta propre machine, `ss` (le successeur de `netstat`) liste ce qui écoute et ce qui est connecté. `ss -tlnp` montre les ports TCP en écoute avec le programme derrière. Pratique pour vérifier qu'un service local tourne bien sur le port attendu avant d'accuser le réseau.
+
+Pour tester un service web de bout en bout, `curl` envoie une vraie requête HTTP. `curl -I https://example.com` ne récupère que les en-têtes et te donne le code de réponse. Un `HTTP/2 200`, le service est debout. Un timeout, le port est peut-être fermé ou filtré. Un `503`, le serveur répond mais a un souci interne, ce qui n'a plus rien à voir avec le réseau.
+
+| Outil | Question à laquelle il répond |
+| --- | --- |
+| ip / ifconfig | Ai-je une adresse, un masque, une passerelle ? |
+| ping | Cette machine est-elle joignable ? |
+| traceroute | Où, sur le chemin, ça bloque-t-il ? |
+| dig / nslookup | Ce nom se résout-il en IP ? |
+| ss / netstat | Quels ports écoutent, quelles connexions existent ? |
+| curl | Le service web répond-il, et avec quel code ? |
+| tcpdump | Que contiennent vraiment les paquets ? |
+
+## capturer le trafic
+
+Quand les outils précédents ne suffisent pas, on descend au niveau du paquet. `tcpdump` capture le trafic qui passe par une interface et l'affiche en direct. `tcpdump -i eth0 port 53` montre par exemple toutes les requêtes DNS. Ça sert quand le comportement est bizarre et qu'on veut voir ce qui part réellement sur le câble, pas ce qu'on croit qui part.
+
+Pour analyser plus confortablement, on enregistre la capture dans un fichier `.pcap` et on l'ouvre dans Wireshark, qui offre une interface graphique, des filtres puissants et le décodage de centaines de protocoles. Wireshark sert à comprendre en détail un échange déjà capturé ; tcpdump sert à capturer vite, souvent sur un serveur sans écran.
+
+<Callout type="warning">
+Capturer du trafic, c'est lire ce que les autres envoient sur le réseau. Sur une machine ou un réseau qui n'est pas le tien, ou sans autorisation explicite, c'est une atteinte à la vie privée et c'est souvent illégal. Ne capture que sur des équipements que tu administres, dans un cadre autorisé, et seulement le trafic nécessaire au diagnostic.
+</Callout>
+
+## à toi de jouer
+
+Reprends l'escalier de zéro sur un scénario réel et regarde quelle marche cède.
+
+<SimulatedTerminal shell="bash" scenario="network-recon" title="Diagnostiquer la connectivité" />
+
+<Quiz id="q-1" question="Tu peux pinguer 8.8.8.8 mais pas example.com. Quel outil cible le problème ?" options={["ping vers la passerelle", "dig pour tester la resolution DNS", "ip addr pour verifier ta carte", "traceroute vers la passerelle"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi tester dans l'ordre des couches plutot que tout essayer en meme temps ?" options={["Parce que les commandes vont plus vite dans cet ordre", "Parce que chaque test reussi elimine definitivement les causes en dessous", "Parce que ping ne marche qu'apres dig", "Parce que c'est la seule facon d'utiliser tcpdump"]} correct={1} />
+
+<Quiz id="q-3" question="Un ping vers un serveur public reste sans reponse. Que peux-tu en conclure de plus sur ?" options={["Le serveur est forcement en panne", "Le DNS est forcement casse", "Rien de certain : un pare-feu peut bloquer ICMP sans bloquer le reste", "Ta carte reseau n'a pas d'IP"]} correct={2} />
+
+## à retenir
+
+- On dépanne de bas en haut : IP locale, puis passerelle, puis sortie Internet, puis DNS, puis service. Chaque marche validée élimine tout ce qui est en dessous.
+- `ip addr` et `ip route` donnent ta config locale. Une adresse en 169.254.x.x veut dire « aucune IP obtenue », problème côté DHCP.
+- `ping` teste la joignabilité ; pingue une IP avant un nom pour ne pas mélanger réseau et DNS. Pas de réponse n'égale pas forcément panne, ICMP est souvent filtré.
+- `traceroute` montre où le chemin s'arrête. `dig` et `nslookup` testent la résolution. `ss` montre les ports en écoute. `curl -I` teste un service web et donne son code de réponse.
+- `tcpdump` capture les paquets, Wireshark les analyse en détail. À n'utiliser que sur des équipements et un trafic que tu es autorisé à observer.
+
+OK 11 écrit

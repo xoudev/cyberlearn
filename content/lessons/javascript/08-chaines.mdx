@@ -1,0 +1,128 @@
+---
+refCode: CL-LSN-020-V01
+slug: js-chaines
+title: "Chaînes de caractères et template literals"
+description: "Manipulez du texte en JavaScript : méthodes essentielles (toUpperCase, slice, split, replace, trim), indexation et les puissants template literals avec backticks."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 30
+xpReward: 320
+prerequisites: ["CL-LSN-013-V01"]
+---
+
+Quand on écrit du code, une grande partie du temps on bricole du texte. Un nom tapé dans un formulaire, un message d'erreur affiché à l'écran, une réponse renvoyée par une API, le contenu d'un fichier : tout ça, ce sont des chaînes de caractères. En JavaScript on parle de `string`. Le langage en propose un paquet d'outils, et une fois qu'on les connaît, manipuler du texte devient une routine sans surprise.
+
+On va voir les méthodes qui reviennent le plus souvent, comment couper une phrase en morceaux, comment assembler du texte proprement avec les template literals, et un point que beaucoup de débutants ratent : une chaîne ne change jamais sur place.
+
+## les méthodes utiles
+
+Une chaîne traîne avec elle une série de méthodes intégrées. La propriété `length` te donne le nombre de caractères. `toUpperCase` et `toLowerCase` changent la casse. `trim` retire les espaces qui traînent au début et à la fin, ce qui est pratique quand un utilisateur tape son nom avec une espace en trop. `includes` répond par vrai ou faux à la question : ce fragment est-il présent ? Et `slice` extrait une portion entre deux positions.
+
+Chacune de ces méthodes renvoie une nouvelle valeur. Aucune ne touche à la chaîne de départ, garde ça en tête, on y revient.
+
+<CodePlayground language="javascript" starterCode={`const message = '   Bonjour CyberLearn   ';
+console.log(message.length);
+console.log(message.trim());
+console.log(message.trim().toUpperCase());
+console.log('Apprendre'.toLowerCase());
+console.log('cybersecurite'.includes('secu'));
+console.log('JavaScript'.slice(0, 4));`} />
+
+Remarque qu'on peut enchaîner les appels : `message.trim().toUpperCase()` nettoie d'abord les espaces, puis met le résultat en majuscules. Chaque méthode renvoie une chaîne, donc on peut appeler la suivante dessus directement.
+
+Pour `slice(debut, fin)`, le caractère à la position `fin` n'est pas inclus. `slice(0, 4)` sur `'JavaScript'` prend les positions 0, 1, 2 et 3, donc `Java`. La numérotation commence à zéro, comme partout en JavaScript. Si tu donnes un seul argument, `slice(4)` part de la position 4 jusqu'au bout.
+
+## l'immuabilité
+
+Voici le piège classique. Tu écris `texte.toUpperCase()` en pensant que ta variable `texte` passe en majuscules. Elle ne bouge pas d'un poil.
+
+En JavaScript, les chaînes sont immuables. Ça veut dire qu'une chaîne, une fois créée, ne peut pas être modifiée. Les méthodes comme `toUpperCase`, `trim` ou `slice` ne transforment pas l'original : elles fabriquent et renvoient une chaîne toute neuve. Si tu ne récupères pas ce qu'elles renvoient, le travail part à la poubelle.
+
+<CodePlayground language="javascript" starterCode={`let texte = 'cyberlearn';
+
+// On appelle la méthode mais on ignore le retour
+texte.toUpperCase();
+console.log(texte); // toujours 'cyberlearn'
+
+// Il faut réaffecter pour garder le résultat
+texte = texte.toUpperCase();
+console.log(texte); // 'CYBERLEARN'`} />
+
+La première ligne calcule bien `'CYBERLEARN'`, mais comme personne ne range cette valeur quelque part, elle disparaît aussitôt. La variable `texte` continue de pointer vers `'cyberlearn'`. C'est seulement quand on écrit `texte = texte.toUpperCase()` qu'on remplace le contenu de la variable par la nouvelle chaîne.
+
+Donc la règle est simple : une méthode de chaîne ne modifie rien, elle renvoie. À toi de stocker ou d'utiliser ce retour.
+
+## découper et chercher
+
+Découper une chaîne en plusieurs morceaux, c'est le travail de `split`. Tu lui donnes un séparateur, et elle te rend un tableau. Très utile pour transformer une ligne de CSV en liste de valeurs, ou pour compter les mots d'une phrase en coupant sur l'espace.
+
+`replace` remplace une occurrence par une autre. Et `includes`, qu'on a déjà croisée, teste juste la présence d'un fragment.
+
+<CodePlayground language="javascript" starterCode={`const ligne = 'nom,prenom,age,ville';
+const colonnes = ligne.split(',');
+console.log(colonnes);
+console.log(colonnes.length);
+
+const phrase = 'le reseau est partout';
+console.log(phrase.replace('reseau', 'code'));
+
+console.log(phrase.includes('reseau'));
+console.log(phrase.includes('cloud'));`} />
+
+Petit point sur `replace` : par défaut, elle ne remplace que la première occurrence trouvée. Si la même chaîne apparaît trois fois, seule la première change. Pour les remplacer toutes, on utilise `replaceAll`. Et comme toujours, `replace` ne modifie pas la phrase d'origine, elle renvoie une copie modifiée.
+
+Un combo fréquent : nettoyer puis découper. On `trim` d'abord pour virer les espaces parasites, ensuite on `split` sur l'espace pour récupérer la liste des mots.
+
+<CodePlayground language="javascript" starterCode={`const saisie = '  apprendre le code change tout  ';
+const mots = saisie.trim().split(' ');
+console.log(mots);
+console.log(mots.length);`} />
+
+## les template literals
+
+Avant, pour insérer une variable dans un texte, on additionnait des bouts de chaîne avec l'opérateur `+`. Ça donnait des lignes pénibles à lire, avec des guillemets ouverts et fermés un peu partout, et il fallait penser à ajouter les espaces à la main. Une espace oubliée et le message ressortait collé.
+
+Les template literals règlent ce problème. On utilise les backticks (l'accent grave) au lieu des guillemets, et on glisse une expression directement avec la syntaxe dollar-accolade. JavaScript évalue l'expression et insère le résultat. C'est pour ça que ça a remplacé la concaténation un peu partout : le texte se lit comme une phrase, pas comme un puzzle.
+
+<CodePlayground language="javascript" starterCode={`const prenom = 'Amel';
+const niveau = 7;
+
+// L'ancienne façon, avec des additions
+const ancien = 'Bonjour ' + prenom + ', tu es au niveau ' + niveau + '.';
+console.log(ancien);
+
+// Avec un template literal
+console.log(\`Bonjour \${prenom}, tu es au niveau \${niveau}.\`);
+
+// On peut mettre une vraie expression entre les accolades
+console.log(\`L'an prochain : niveau \${niveau + 1}.\`);`} />
+
+L'autre avantage, c'est le multi-lignes. Avec des guillemets classiques, écrire un texte sur plusieurs lignes oblige à insérer des caractères spéciaux. Entre backticks, tu appuies juste sur Entrée et le retour à la ligne est conservé tel quel.
+
+<CodePlayground language="javascript" starterCode={`const prenom = 'Amel';
+const niveau = 7;
+
+const carte = \`Profil
+  Nom    : \${prenom}
+  Niveau : \${niveau}\`;
+
+console.log(carte);`} />
+
+Tout ce qui tient entre les backticks, espaces et sauts de ligne compris, fait partie de la chaîne. Pratique pour générer un petit rapport, un message structuré ou un bout de HTML.
+
+## à toi de jouer
+
+<Quiz id="q-casse" question="Que renvoie 'Reseau'.toLowerCase() ?" options={["RESEAU", "reseau", "Reseau"]} correct={1} />
+
+<Quiz id="q-immuable" question="Après 'cyberlearn'.toUpperCase() sans réaffectation, que vaut la variable d'origine ?" options={["Elle passe en majuscules", "Elle reste inchangée car la chaîne est immuable", "Elle devient undefined"]} correct={1} />
+
+<Quiz id="q-template" question="Avec un template literal, comment insère-t-on une variable nom dans le texte ?" options={["Avec %nom% entre apostrophes", "Avec {nom} entre guillemets", "Avec une expression dollar-accolade entre backticks"]} correct={2} />
+
+## à retenir
+
+- `length` donne le nombre de caractères ; `slice(debut, fin)` extrait une portion, `fin` exclue.
+- `toUpperCase`, `toLowerCase` et `trim` transforment le texte ; `includes` teste la présence d'un fragment.
+- Les chaînes sont immuables : une méthode ne modifie jamais l'original, elle renvoie une nouvelle chaîne. Réaffecte si tu veux garder le résultat.
+- `split` découpe une chaîne en tableau selon un séparateur ; `replace` remplace la première occurrence (`replaceAll` pour toutes).
+- Les template literals utilisent les backticks, interpolent une expression avec la syntaxe dollar-accolade et gèrent le multi-lignes sans astuce.
+- Ils ont remplacé la concaténation parce que le résultat est plus lisible et qu'on oublie moins d'espaces.

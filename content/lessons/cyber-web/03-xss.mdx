@@ -1,0 +1,107 @@
+---
+refCode: CL-LSN-087-V01
+slug: owasp-xss
+title: "Cross-site scripting (XSS)"
+description: "Comprenez comment une entrée non échappée permet d'exécuter du code dans le navigateur d'autres utilisateurs, les trois types de XSS, leur impact réel, et comment s'en protéger par l'échappement."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-085-V01"]
+---
+
+Le XSS, pour cross-site scripting, c'est faire exécuter du code choisi par un attaquant dans le navigateur de quelqu'un d'autre. Pas sur sa propre machine, pas dans un labo isolé : dans le navigateur d'une vraie victime, sur le vrai site, avec la vraie session de cette personne.
+
+L'idée tient en une phrase. Une application web reçoit une entrée de l'utilisateur (un commentaire, un nom de profil, un terme de recherche), puis elle réaffiche cette entrée quelque part dans une page. Si elle la réaffiche telle quelle, sans la transformer en texte inoffensif, le navigateur de la personne qui consulte la page ne fait pas la différence entre le contenu légitime et le code glissé par l'attaquant. Il interprète tout. Le code de l'attaquant tourne alors avec les droits de la victime sur ce site.
+
+C'est une faille de confusion entre données et code. L'attaquant fournit des données, mais ces données finissent traitées comme du code exécutable parce que la sortie n'a pas été échappée.
+
+## le mécanisme
+
+Prenons un champ de recherche. Vous tapez un mot, le site vous répond « Aucun résultat pour : *votremot* ». Pratique, le site renvoie votre terme dans la page. Maintenant, regardez ce que ça donne si le terme contient du balisage au lieu d'un simple mot.
+
+Voici une entrée d'attaquant typique, montrée ici comme texte inerte :
+
+```html
+<script>alert(document.cookie)</script>
+```
+
+Si le serveur réinjecte ce terme directement dans le HTML de la page de résultats, le navigateur ne voit pas « un mot bizarre ». Il voit une vraie balise, il l'exécute, et le code à l'intérieur tourne. Ici c'est une simple alerte, mais ce pourrait être n'importe quoi.
+
+La cause est toujours la même : la sortie n'a pas été échappée. Échapper, c'est convertir les caractères qui ont un sens en HTML (le chevron ouvrant, le chevron fermant, les guillemets, l'esperluette) en leur équivalent affichable. Une fois échappé, le chevron ouvrant devient une suite de caractères qui s'affiche à l'écran sans rien déclencher. Le texte reste lisible, mais il ne peut plus former de balise.
+
+<Callout type="danger">
+Si une seule des entrées affichées par votre site repart vers le navigateur sans échappement, vous avez probablement un XSS. Et il suffit d'un seul point d'injection pour compromettre une session. Le filtre des autres pages ne vous sauve pas.
+</Callout>
+
+## les trois types
+
+On classe le XSS selon le trajet que prend la charge avant d'arriver dans le navigateur de la victime.
+
+Le XSS **réfléchi** voyage dans la requête elle-même, souvent dans l'URL. L'attaquant prépare un lien qui contient la charge dans un paramètre, par exemple un terme de recherche piégé. La victime clique sur ce lien (reçu par mail, par message, sur un forum), le serveur renvoie immédiatement la page avec la charge réinjectée, et le code s'exécute. Rien n'est stocké côté serveur : la charge n'existe que le temps de cette requête. Le danger, c'est l'ingénierie sociale autour du lien.
+
+Le XSS **stocké** est le plus dangereux. La charge est enregistrée par l'application : un commentaire, un message de forum, un champ « bio » de profil, un avis produit. Plus tard, le serveur sert ce contenu à tous ceux qui consultent la page, sans que personne ait besoin de cliquer sur un lien spécial. Un seul commentaire piégé sous un article populaire, et la charge s'exécute dans le navigateur de chaque lecteur, automatiquement. C'est ce qui a permis des vers qui se propageaient de profil en profil sur les premiers réseaux sociaux.
+
+Le XSS **DOM** se joue entièrement côté client. Le serveur n'est même pas en cause : c'est le JavaScript de la page qui lit une donnée (souvent un morceau de l'URL, comme le fragment après le dièse) et l'écrit dans la page de façon dangereuse. Si ce code insère la valeur dans le HTML au lieu de l'insérer comme texte, la charge s'exécute. La faille est dans le navigateur, pas dans la réponse du serveur, ce qui la rend plus discrète à repérer dans les logs.
+
+## l'impact réel
+
+« Afficher une alerte » est juste la démonstration la plus rapide. Ce qui compte, c'est ce que le code de l'attaquant peut faire une fois qu'il tourne dans la page de la victime.
+
+Il s'exécute avec les droits de la victime sur le site. Il peut donc lire les cookies de session si ceux-ci ne sont pas protégés, et les envoyer à un serveur contrôlé par l'attaquant. Avec ce cookie, l'attaquant rejoue la session et se retrouve connecté en tant que la victime, sans jamais connaître son mot de passe. Il peut aussi agir directement au nom de la victime sans voler quoi que ce soit : envoyer un message, changer une adresse mail, valider un formulaire, en utilisant la session déjà ouverte dans le navigateur. Il peut enfin modifier ce que la victime voit (défacement) ou rediriger vers une fausse page de connexion pour récolter des identifiants.
+
+<Callout type="warning">
+Un XSS stocké sur une page vue par un administrateur est une voie classique vers la prise de contrôle complète. Si l'admin ouvre la page piégée, la charge tourne dans une session à privilèges élevés. Posez l'attribut HttpOnly sur vos cookies de session : le JavaScript ne peut alors plus les lire, ce qui coupe le vol de cookie le plus simple. Ça ne corrige pas le XSS, mais ça réduit ce qu'il rapporte.
+</Callout>
+
+## reconnaissance
+
+Avant de parler défense, voyons comment un point d'injection se repère. La démarche : trouver chaque endroit où une entrée que vous contrôlez se reflète dans la page, puis vérifier si les caractères de balisage y survivent ou s'ils sont échappés.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="Repérer où une entrée se reflète" />
+
+On envoie une valeur reconnaissable dans chaque paramètre et chaque champ, on regarde où elle ressort, et on inspecte le contexte exact : est-ce entre deux balises, dans la valeur d'un attribut, dans un bloc de script ? Le contexte décide de la charge nécessaire et de la défense appropriée.
+
+<Callout type="info">
+Ne testez le XSS que sur des cibles qui vous appartiennent ou pour lesquelles vous avez une autorisation écrite. Injecter du code dans le site d'autrui, même « juste une alerte », est illégal. Les environnements d'entraînement existent pour ça.
+</Callout>
+
+## la défense
+
+La règle de fond : échapper la sortie au moment de l'affichage, en fonction du contexte où la donnée atterrit.
+
+Le contexte est ce qui piège la plupart des gens. Une donnée affichée entre deux balises HTML demande un échappement HTML. La même donnée placée dans la valeur d'un attribut demande un échappement d'attribut. Insérée dans du JavaScript, elle demande encore autre chose. Un échappement correct pour un contexte peut être inutile pour un autre. La bonne nouvelle : les frameworks modernes échappent par défaut quand vous insérez une variable dans un gabarit. Le vrai danger vient des fonctions qui écrivent du HTML brut, celles qu'on utilise pour « insérer du contenu riche » et qui contournent l'échappement automatique. Chaque usage de ce genre de fonction doit être justifié et la donnée nettoyée en amont.
+
+Côté client, insérez les données comme texte plutôt que comme HTML. Écrire dans le contenu textuel d'un élément place la valeur sans jamais l'interpréter comme du balisage ; écrire dans le HTML interne l'interprète. Préférez systématiquement la première approche.
+
+La CSP, pour Content Security Policy, est une deuxième ligne de défense. C'est un en-tête HTTP par lequel le serveur dit au navigateur quelles sources de script il a le droit d'exécuter, ce qui permet de bloquer les scripts injectés en ligne même si une faille passe. Elle ne remplace pas l'échappement : elle limite les dégâts quand l'échappement a manqué quelque part.
+
+<Callout type="success">
+La défense de base tient en deux gestes : échapper toute donnée à la sortie selon son contexte, et ne jamais traiter une entrée comme sûre parce qu'elle « vient d'un formulaire de chez vous ». Ajoutez par-dessus une CSP, des cookies en HttpOnly, et un nettoyage strict des rares endroits où vous acceptez du HTML riche.
+</Callout>
+
+## à toi de jouer
+
+Mettez la main dessus dans un environnement prévu pour. Trouvez le point d'injection, identifiez son contexte, puis raisonnez sur l'échappement qui aurait fermé la porte.
+
+<SimulatedTerminal shell="bash" scenario="ctf-web" title="Trouver et qualifier un point d'injection" />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Quelle est la cause directe d'une faille XSS ?" options={["Un mot de passe trop court côté serveur", "Une entrée utilisateur réaffichée sans échappement, que le navigateur interprète comme du code", "Un certificat TLS expiré", "Un port ouvert sur le pare-feu"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi le XSS stocké est-il considéré comme le plus dangereux des trois types ?" options={["Il ne fonctionne que sur la machine de l'attaquant", "La charge est enregistrée puis servie automatiquement à tous les visiteurs de la page, sans clic sur un lien piégé", "Il ne touche jamais les administrateurs", "Il exige le mot de passe de la victime"]} correct={1} />
+
+<Quiz id="q-3" question="Quelle mesure constitue la défense de base contre le XSS ?" options={["Échapper la sortie selon son contexte et ne pas faire confiance à l'entrée", "Allonger la durée des sessions", "Désactiver les cookies", "Renommer les paramètres d'URL"]} correct={0} />
+
+</QuizGroup>
+
+## à retenir
+
+- Le XSS fait exécuter du code choisi par l'attaquant dans le navigateur d'une victime, sur le site visé, avec sa session.
+- La cause est une entrée réaffichée sans échappement : le navigateur prend des données pour du code.
+- Réfléchi : la charge passe dans la requête (souvent l'URL) et est renvoyée tout de suite. Stocké : la charge est enregistrée puis servie à tous, le plus dangereux. DOM : tout se passe côté client, dans le JavaScript de la page.
+- Impact : vol de cookie de session, actions au nom de la victime, défacement, redirection vers de fausses pages.
+- Défense : échapper la sortie selon le contexte (HTML, attribut, JS), insérer les données comme texte côté client, ajouter une CSP, poser HttpOnly sur les cookies, ne jamais traiter une entrée comme sûre.
+
+OK 03-xss.mdx écrit

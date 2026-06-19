@@ -1,0 +1,208 @@
+---
+refCode: CL-LSN-048-V01
+slug: asm-projet
+title: "Projet : une calculatrice en assembleur"
+description: "Synthétisez le parcours en assemblant un mini-programme de calcul : sous-routines arithmétiques, affichage de libellés, et un menu de démonstration enchaînant plusieurs opérations."
+category: DEV
+difficulty: ADVANCED
+estimatedMinutes: 60
+xpReward: 1000
+prerequisites: ["CL-LSN-044-V01", "CL-LSN-045-V01"]
+---
+
+Onze leçons plus tôt, vous ne connaissiez probablement aucun registre par son nom. Maintenant vous savez ce que contient `rax`, comment `cmp` arme les drapeaux que `je` ira lire, et pourquoi `call` et `ret` se passent une adresse sur la pile. Cette dernière leçon ne présente aucune notion nouvelle. Elle range tout ce que vous avez appris dans un seul programme qui fait quelque chose d'utile : une petite calculatrice qui additionne, soustrait et multiplie, puis affiche chaque résultat avec son libellé.
+
+Un mot sur ce que cette calculatrice ne fait pas. Elle ne lit rien au clavier. Les nombres sont écrits en dur dans le code, avec des `mov`. La raison est technique : lire une touche demande un appel système (`sys_read` sous Linux), et le simulateur dans lequel votre code tourne ici ne fournit pas ces appels. Vous retrouverez la saisie réelle à la toute fin, dans le projet à faire sur votre machine. Pour l'instant, le but est ailleurs : voir comment des opérandes connues traversent une sous-routine, ressortent transformées, et arrivent à l'écran. C'est l'ossature de n'importe quel programme de calcul, quelle que soit la provenance des nombres.
+
+## l'architecture
+
+La calculatrice tient sur trois sous-routines : `addition`, `soustraction`, `multiplication`. Une sous-routine, ici, c'est un label suivi de quelques instructions et clos par `ret`. Rien de plus que ce que vous avez vu à la leçon sur les fonctions. La convention qu'on se donne pour ce programme est simple : les deux opérandes arrivent dans `rax` et `rbx`, et le résultat repart dans `rax`. Toujours `rax`. Ce choix n'est pas arbitraire, c'est aussi là que la plupart des conventions d'appel réelles déposent la valeur de retour d'une fonction.
+
+Le bloc `main` orchestre. Il charge les opérandes avec `mov`, déclenche l'appel avec `call`, et au retour il sait que `rax` contient le résultat sans avoir à le chercher ailleurs. Les libellés, eux, vivent dans la section `.data` : des chaînes déclarées une fois, terminées par un octet nul, qu'on affiche autant de fois qu'on veut.
+
+<Diagram caption="Flux principal de la calculatrice : main prépare les opérandes, appelle une sous-routine, puis affiche le résultat avant de passer à l'opération suivante.">
+  flowchart TD
+    A["main prépare les opérandes"] --> B["call addition"]
+    B --> C["résultat dans rax"]
+    C --> D["prints libellé"]
+    D --> E["println valeur"]
+    E --> F["opération suivante"]
+    F --> G["fin du programme"]
+</Diagram>
+
+Cette découpe n'a rien de spécifique à l'assembleur. Des blocs courts, une responsabilité chacun, un flux principal qui les enchaîne : c'est ce qui rend un code lisible dans n'importe quel langage. L'assembleur vous oblige seulement à le faire à la main, sans filet.
+
+## étape 1 : les sous-routines arithmétiques
+
+Voici le coeur du programme, sans affichage décoré pour l'instant. Lisez-le de bas en haut une première fois pour repérer les trois sous-routines, puis de haut en bas pour suivre `main`.
+
+<CodePlayground language="asm" starterCode={`global main
+
+section .text
+main:
+    mov rax, 12
+    mov rbx, 5
+    call addition
+    println rax
+
+    mov rax, 12
+    mov rbx, 5
+    call soustraction
+    println rax
+
+    mov rax, 12
+    mov rbx, 5
+    call multiplication
+    println rax
+    ret
+
+addition:
+    add rax, rbx
+    ret
+
+soustraction:
+    sub rax, rbx
+    ret
+
+multiplication:
+    imul rax, rbx
+    ret`} />
+
+Regardez chaque sous-routine. `addition` fait `add rax, rbx`, ce qui écrase `rax` avec la somme des deux. `soustraction` fait `sub rax, rbx`, donc `rax` moins `rbx`, soit 12 moins 5. `multiplication` fait `imul rax, rbx`, la version signée de la multiplication, qui range le produit dans `rax`. Chacune se termine par `ret`, qui dépile l'adresse que `call` avait empilée et renvoie l'exécution juste après l'appel. Vous obtenez 17, 7 et 60.
+
+Un détail qui n'en est pas un : avant chaque `call`, on refait les deux `mov`. Pourquoi recharger 12 et 5 trois fois de suite ? Parce que la sous-routine précédente a modifié `rax`. Après `addition`, `rax` vaut 17, pas 12. Si on n'écrasait pas, `soustraction` calculerait 17 moins 5. En assembleur, aucun registre ne se restaure tout seul entre deux appels. Vous gardez ce que vous protégez, vous perdez le reste. Cette absence de garde-fou, vous l'aviez déjà croisée avec la pile ; ici elle dicte la structure de `main`.
+
+## étape 2 : afficher avec un libellé
+
+Un nombre seul ne dit pas grand-chose. On ajoute une chaîne dans `.data` et on l'affiche juste avant la valeur.
+
+<CodePlayground language="asm" starterCode={`global main
+
+section .data
+lbl_somme db "Somme : ", 0
+
+section .text
+main:
+    prints lbl_somme
+    mov rax, 8
+    mov rbx, 9
+    call addition
+    println rax
+    ret
+
+addition:
+    add rax, rbx
+    ret`} />
+
+La sortie devient « Somme : 17 ». L'ordre compte : `prints lbl_somme` écrit le texte sans passer à la ligne, puis `println rax` écrit le nombre et termine la ligne. Notez où vit quoi. Le texte est dans `.data`, le calcul dans `.text`. Cette frontière entre les données et les instructions n'est pas une lubie de syntaxe, c'est la façon dont la machine elle-même range un programme en mémoire, et vous l'aviez rencontrée dès la leçon sur les sections.
+
+## étape 3 : enchaîner les opérations
+
+On assemble les morceaux. Trois libellés, trois opérandes identiques, trois sous-routines, trois affichages à la suite.
+
+<CodePlayground language="asm" starterCode={`global main
+
+section .data
+lbl_add db "Addition       : ", 0
+lbl_sub db "Soustraction   : ", 0
+lbl_mul db "Multiplication : ", 0
+
+section .text
+main:
+    prints lbl_add
+    mov rax, 20
+    mov rbx, 6
+    call addition
+    println rax
+
+    prints lbl_sub
+    mov rax, 20
+    mov rbx, 6
+    call soustraction
+    println rax
+
+    prints lbl_mul
+    mov rax, 20
+    mov rbx, 6
+    call multiplication
+    println rax
+    ret
+
+addition:
+    add rax, rbx
+    ret
+
+soustraction:
+    sub rax, rbx
+    ret
+
+multiplication:
+    imul rax, rbx
+    ret`} />
+
+Avec 20 et 6, vous lisez 26, 14 et 120, chacun derrière son libellé aligné par des espaces dans la chaîne. Les sous-routines, elles, n'ont pas bougé d'un octet entre l'étape 1 et ici. C'est tout l'intérêt de les avoir isolées : `main` change, elles restent. Vous tenez là un programme à plusieurs niveaux, avec une zone de données, une zone de code, un point d'entrée et des fonctions appelées dans l'ordre. À son échelle, c'est un vrai logiciel.
+
+## à vous de jouer
+
+Avant le projet personnel, trois questions pour fixer l'essentiel.
+
+<Quiz id="q-1" question="Dans nos sous-routines, où est renvoyé le résultat du calcul ?" options={['Dans rbx', 'Dans rax', 'Dans la section .data', 'Sur la pile uniquement']} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi recharge-t-on rax et rbx avant chaque call ?" options={['Par habitude, sans utilite reelle', 'Parce que la sous-routine precedente a modifie ces registres', 'Parce que ret efface la memoire', 'Parce que .data verrouille les registres']} correct={1} />
+
+<Quiz id="q-3" question="Quelle instruction termine une sous-routine et rend la main a l appelant ?" options={['jmp', 'call', 'ret', 'nop']} correct={2} />
+
+Maintenant codez. Écrivez une sous-routine qui calcule le double d'une valeur et affichez le résultat. Doubler, c'est multiplier par deux, ou ajouter un nombre à lui-même.
+
+<CodePlayground language="asm" starterCode={`global main
+
+section .data
+lbl_double db "Le double : ", 0
+
+section .text
+main:
+    prints lbl_double
+    mov rax, 21
+    call le_double
+    println rax
+    ret
+
+le_double:
+    mov rbx, 2
+    imul rax, rbx
+    ret`} />
+
+Remarquez que `le_double` ne reçoit qu'un opérande dans `rax` et fabrique le second elle-même avec `mov rbx, 2`. Une sous-routine n'est pas obligée de tout recevoir de l'appelant ; elle peut poser ses propres constantes. Tentez ensuite une sous-routine `le_carre` qui multiplie un nombre par lui-même : copiez `rax` dans `rbx`, puis `imul rax, rbx`. Même mécanique, une ligne de plus.
+
+## votre projet personnel
+
+<Callout type="success">
+Vous avez de quoi aller plus loin. La version qui tourne ici reste bornée : pas de clavier, pas de syscall. Sur votre machine, avec un assembleur installé, rien ne vous empêche d'en faire une calculatrice qui dialogue vraiment avec l'utilisateur.
+</Callout>
+
+Installez NASM, assemblez sous Linux et liez avec `ld`. Étendez la calculatrice par paliers, du plus simple au plus exigeant.
+
+1. **Saisie réelle.** Lisez deux nombres au clavier avec `sys_read`, au lieu de les coder en dur. C'est là que les appels système entrent en scène.
+2. **Boucle de menu.** Affichez un menu (1 = addition, 2 = soustraction, et ainsi de suite) dans une boucle, et recommencez tant que l'utilisateur ne choisit pas de quitter. Vous y rejouerez les sauts conditionnels.
+3. **Division.** Ajoutez la division entière avec `idiv`. Elle a une particularité : le quotient va dans `rax` et le reste dans `rdx`, donc vous pouvez afficher les deux.
+4. **Nombres négatifs.** Gérez le signe à l'affichage. Détectez une valeur négative, écrivez le tiret, puis affichez sa valeur absolue avec `neg`.
+5. **Affichage formaté.** Convertissez vous-même un entier en chaîne de chiffres, sans `println`. C'est l'exercice qui révèle ce qu'une fonction d'affichage fait réellement sous le capot.
+
+Assemblez avec `nasm -f elf64 calc.asm -o calc.o`, liez avec `ld calc.o -o calc`. Quand votre calculatrice tient debout, poussez-la sur GitHub avec un README qui explique chaque sous-routine. Un développeur capable de descendre jusqu'à ce niveau de détail a là une pièce de portfolio qui se remarque.
+
+## récapitulatif
+
+Vous arrivez au bout du parcours. Ce que vous savez faire désormais :
+
+- Lire et manipuler les **registres** généraux (rax, rbx, et les autres) et raisonner en bas niveau.
+- Exécuter l'**arithmétique entière** : add, sub, imul, ainsi que inc, dec et neg.
+- Travailler les **opérations sur les bits** : and, or, xor, not, décalages shl et shr.
+- Maîtriser le **contrôle de flux** : cmp, test, jmp et les sauts conditionnels (je, jne, jg, jl).
+- Utiliser la **pile** avec push et pop, et comprendre le rôle de call et ret.
+- Structurer un programme en **sous-routines** réutilisables, avec passage d'arguments par registres.
+- Stocker et afficher des **données** depuis la section `.data` avec des libellés.
+- Réunir tout cela dans un **projet** cohérent, prêt à grandir avec un vrai assembleur.
+
+Vous avez écrit un programme assembleur de bout en bout, des registres jusqu'à l'écran. C'est exactement ce que fait votre processeur, des milliards de fois par seconde, à chaque ligne de code que vous taperez désormais dans n'importe quel langage.
+
+OK 12-projet.mdx écrit

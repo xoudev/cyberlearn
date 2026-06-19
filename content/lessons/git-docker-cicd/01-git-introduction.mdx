@@ -1,0 +1,116 @@
+---
+refCode: CL-LSN-061-V01
+slug: git-introduction
+title: "Git : pourquoi versionner son code"
+description: "Comprenez le problème que Git résout, ce qu'est un système de contrôle de version, la différence entre Git et GitHub, et créez votre premier dépôt local."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 220
+prerequisites: []
+---
+
+Tu travailles sur un projet depuis deux semaines. Tout marche. Tu décides de tenter une grosse modification, tu touches à dix fichiers, et d'un coup plus rien ne fonctionne. Tu voudrais revenir à la version d'hier soir, celle qui tournait. Mais tu n'as pas de version d'hier soir. Tu as juste le code actuel, cassé, devant toi.
+
+La parade artisanale, beaucoup l'ont essayée. On duplique le dossier avant de toucher à quoi que ce soit. Au bout d'un mois on se retrouve avec `projet`, `projet_copie`, `projet_v2`, `projet_final`, et le fameux `projet_final_v2_vraiment_final.zip`. Personne ne sait lequel est le bon, ni ce qui change entre deux. Et si tu travailles à plusieurs, c'est pire : qui a modifié quoi, et pourquoi, devient un mystère.
+
+Git existe pour répondre exactement à ce problème. C'est un outil qui garde l'historique de ton projet, te laisse revenir à n'importe quel état précédent, et note qui a changé quoi.
+
+## ce qu'est un contrôle de version
+
+Un système de contrôle de version (en anglais VCS, pour version control system) est un programme qui enregistre l'évolution d'un projet au fil du temps. Au lieu d'avoir une seule version vivante de tes fichiers, tu as une suite d'états enregistrés, chacun avec une date, un auteur et une description.
+
+Le bon modèle mental, c'est une suite de photos. À chaque fois que tu décides « voilà, là c'est un bon point d'étape », tu prends une photo de l'ensemble du projet. Git appelle ça un commit. Plus tard, tu peux feuilleter l'album, comparer deux photos pour voir ce qui a changé, ou restaurer l'état du projet tel qu'il était sur une photo précise.
+
+Ce que ça te donne concrètement :
+
+- l'historique complet, donc tu peux relire l'évolution du projet ligne par ligne.
+- le retour en arrière, donc une bêtise reste réversible au lieu d'être définitive.
+- la traçabilité, donc chaque changement porte le nom de son auteur et un message qui explique le pourquoi.
+
+Ce dernier point compte plus qu'on ne le croit au début. Six mois après, en relisant ton propre code, la question n'est jamais « qu'est-ce que ça fait », c'est « pourquoi j'ai écrit ça comme ça ». Un bon message de commit répond à cette question.
+
+## git n'est pas github
+
+C'est la confusion la plus fréquente chez les débutants, et elle vaut la peine d'être levée tout de suite.
+
+Git est l'outil. Il vit sur ta machine. Il fonctionne sans connexion internet, tout seul, dans un dossier de ton ordinateur. Tu peux faire toute ta carrière de versionnement en local sans jamais mettre quoi que ce soit en ligne.
+
+GitHub est un service. C'est un site web, une entreprise (rachetée par Microsoft), qui héberge des dépôts Git sur ses serveurs. Il en existe d'autres du même genre : GitLab, Bitbucket, Codeberg. Leur rôle est de stocker une copie de ton dépôt en ligne pour que d'autres personnes y accèdent, et d'ajouter des outils par-dessus (revue de code, suivi de bugs, automatisation).
+
+<Callout type="info">
+Git est le moteur, GitHub est un garage qui héberge des moteurs. Tu peux utiliser Git sans GitHub. Tu ne peux pas vraiment utiliser GitHub sans Git derrière. Quand on dit « pousser sur GitHub », on veut dire « envoyer mes commits Git vers une copie hébergée chez GitHub ». Cette leçon ne parle que de Git en local, on n'a besoin d'aucun compte en ligne.
+</Callout>
+
+## installer et se présenter
+
+Sur la plupart des systèmes Git est déjà là ou s'installe en une commande. Pour vérifier sa présence, on demande sa version. Ensuite, et c'est une étape qu'on oublie souvent, il faut dire à Git qui tu es. Comme chaque commit enregistre son auteur, Git a besoin d'un nom et d'une adresse e-mail avant de pouvoir signer tes photos.
+
+```bash
+# Vérifier que Git est installé
+git --version
+
+# Se présenter (à faire une seule fois par machine)
+git config --global user.name "Ada Lovelace"
+git config --global user.email "ada@example.com"
+
+# Relire ce qui est enregistré
+git config --global --list
+```
+
+L'option `--global` veut dire « pour tous mes projets sur cette machine ». Tu fais ça une fois, c'est valable partout ensuite. L'e-mail que tu mets ici n'a rien de secret : il apparaîtra dans l'historique, c'est normal, c'est même le but. Si tu sautes cette configuration, ton premier commit échouera avec un message du genre « please tell me who you are », et au moins maintenant tu sauras pourquoi.
+
+## créer un dépôt
+
+Versionner un projet commence par transformer un dossier ordinaire en dépôt Git. Une seule commande suffit : `git init`. Elle crée un sous-dossier caché nommé `.git` à la racine du projet. Tout l'historique, toutes les photos, toute la mécanique de Git vit dans ce `.git`. Tes fichiers de travail ne bougent pas, Git pose juste son cerveau à côté d'eux.
+
+<SimulatedTerminal shell="bash" title="Initialiser un dépôt" commands={{ "git init": "Initialized empty Git repository in /projet/.git/", "git status": "On branch main\n\nNo commits yet\n\nnothing to commit (create/copy files and use 'git add' to track)" }} />
+
+Tant que ce dossier `.git` existe, ton projet est versionné. Si tu le supprimais, tu perdrais tout l'historique mais pas tes fichiers actuels. À l'inverse, ne crée jamais un dépôt dans ton dossier personnel entier ou à la racine du disque, tu finirais par demander à Git de surveiller des milliers de fichiers qui ne le concernent pas. Un dépôt, c'est un projet, un dossier dédié.
+
+## les trois zones
+
+Voici l'idée la plus importante de Git, celle qui débloque tout le reste une fois comprise. Git ne passe pas directement de « j'ai modifié un fichier » à « c'est enregistré dans l'historique ». Il y a une étape intermédiaire, volontaire, et c'est ce qui déroute au début.
+
+Un fichier traverse trois zones :
+
+- le répertoire de travail (working directory) : tes fichiers réels, ceux que tu édites. Git voit tes changements ici mais ne les a pas encore retenus.
+- la zone de préparation (staging area, aussi appelée index) : un brouillon où tu déposes les changements que tu veux inclure dans la prochaine photo. La commande `git add` met un fichier dans cette zone.
+- le dépôt (repository) : l'historique des commits, dans `.git`. La commande `git commit` prend tout ce qui est en zone de préparation et en fait une photo définitive.
+
+<Diagram caption="Le trajet d'une modification à travers les trois zones de Git">
+flowchart LR
+  A[Repertoire de travail] -->|git add| B[Zone de preparation]
+  B -->|git commit| C[Depot .git]
+  C -->|git checkout| A
+</Diagram>
+
+Pourquoi cette zone de préparation au milieu, plutôt que de tout enregistrer d'un coup ? Parce qu'elle te laisse choisir ce qui entre dans une photo. Imagine que tu as corrigé un bug dans un fichier et, dans la foulée, commencé une autre fonctionnalité dans un second fichier. Tu peux mettre seulement le fichier corrigé en préparation, faire un commit propre « correction du bug de connexion », puis t'occuper du reste séparément. Un commit raconte une seule idée, pas un fourre-tout.
+
+<Callout type="info">
+Erreur de débutant très courante : faire `git add` puis croire que c'est sauvegardé. Non. `git add` ne fait que poser le fichier dans la zone de préparation. Tant que tu n'as pas fait `git commit`, aucune photo n'est prise. Le réflexe à garder : `git status` te dit en permanence dans quelle zone se trouve chaque fichier. En cas de doute, tape `git status`.
+</Callout>
+
+## à toi de jouer
+
+Voici la séquence typique du tout premier enregistrement, depuis le dossier vide jusqu'à la première photo. Lis les sorties, elles t'apprennent à interpréter ce que Git te raconte.
+
+<SimulatedTerminal shell="bash" title="Du dossier vide au premier commit" commands={{ "git init": "Initialized empty Git repository in /projet/.git/", "git status": "On branch main\n\nNo commits yet\n\nUntracked files:\n  (use 'git add <file>' to include in what will be committed)\n        index.html\n\nnothing added to commit but untracked files present", "git add index.html": "", "git commit -m 'Premier commit : page d accueil'": "[main (root-commit) a1b2c3d] Premier commit : page d accueil\n 1 file changed, 12 insertions(+)\n create mode 100644 index.html", "git status": "On branch main\nnothing to commit, working tree clean" }} />
+
+Remarque la dernière ligne : « working tree clean ». Ça veut dire que ton répertoire de travail est identique à la dernière photo, rien n'attend d'être enregistré. C'est l'état dans lequel tu veux finir chaque session de travail.
+
+<Quiz id="q-1" question="Quelle est la différence correcte entre Git et GitHub ?" options={["Git et GitHub sont deux noms du meme logiciel", "Git est l outil de versionnement sur ta machine ; GitHub est un service en ligne qui heberge des depots Git", "Git sert au code, GitHub sert aux images", "GitHub fonctionne hors ligne, pas Git"]} correct={1} />
+
+<Quiz id="q-2" question="Tu viens de faire `git add fichier.txt`. Le changement est-il enregistre dans l historique ?" options={["Oui, git add cree un commit", "Non, il faut encore faire git commit pour prendre la photo", "Oui, mais seulement apres redemarrage", "Non, il faut dabord faire git init une seconde fois"]} correct={1} />
+
+<Quiz id="q-3" question="Que cree la commande `git init` dans ton dossier ?" options={["Un fichier README.md", "Un sous-dossier cache .git qui contient tout l historique", "Une copie de sauvegarde du projet en ligne", "Rien de visible tant qu on n a pas fait un commit"]} correct={1} />
+
+## à retenir
+
+- Git enregistre l'historique d'un projet sous forme de commits, des photos successives de l'ensemble des fichiers.
+- Un commit porte un auteur, une date et un message ; c'est pour ça qu'on configure `user.name` et `user.email` avant de commencer.
+- Git est local et fonctionne sans internet. GitHub est un service distinct qui héberge des dépôts Git en ligne ; ils ne sont pas la même chose.
+- `git init` crée le dossier `.git`, qui contient tout l'historique. Sans lui, pas de versionnement.
+- Un fichier passe par trois zones : répertoire de travail, zone de préparation (`git add`), dépôt (`git commit`).
+- `git add` ne sauvegarde rien dans l'historique, il prépare. Seul `git commit` enregistre une photo.
+- `git status` indique à tout moment où se trouve chaque fichier. C'est la commande à taper quand on est perdu.

@@ -1,0 +1,89 @@
+---
+refCode: CL-LSN-147-V01
+slug: osint-recherche-avancee
+title: "Recherche avancée et dorks"
+description: "Aller au-delà de la recherche naïve : les opérateurs comme site, filetype et intitle, la combinaison de dorks pour trouver ce que les autres ratent, et la prudence face aux données exposées par négligence."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 490
+prerequisites: ["CL-LSN-146-V01"]
+---
+
+Quand tu tapes quelques mots dans un moteur de recherche, tu utilises peut-être un pour cent de ce qu'il sait faire. Le moteur a indexé des milliards de pages, et la plupart du temps il te rend les plus populaires, celles qui collent à ton intention probable. C'est confortable, mais c'est aussi un filtre. Une enquête, elle, commence souvent là où ce filtre s'arrête : sur la page qui n'est pas populaire, le document que personne n'a pensé à protéger, le fichier oublié sur un serveur.
+
+Les opérateurs de recherche transforment le moteur en outil d'enquête. Au lieu de demander vaguement, tu poses une requête précise : sur ce domaine, ce type de fichier, ce mot dans le titre. Le moteur arrête de deviner et te répond exactement. Cette leçon est consacrée à ces opérateurs, à la manière de les combiner, et à ce qu'on appelle les dorks. Avec une mise en garde qui revient tout du long : ces techniques exposent souvent des données laissées à découvert par négligence, et la bonne réaction n'est jamais d'en abuser.
+
+## les opérateurs de base
+
+Un opérateur, c'est un mot-clé qui change la manière dont le moteur interprète ta requête. Voici les plus utiles, et ce qu'ils font.
+
+`site:` limite les résultats à un domaine. Tu veux tout ce que le moteur connaît d'un site précis, sans le reste du web autour. `filetype:` restreint à un type de fichier : pdf, xls, docx, sql. C'est l'opérateur qui débusque les documents, parce qu'un PDF ou un tableur exposé ne ressemble pas à une page web ordinaire et passe sous le radar d'une recherche normale.
+
+`intitle:` cherche un mot dans le titre de la page, `inurl:` dans son adresse. Les deux sont précieux : un mot dans le titre ou l'URL en dit souvent plus long sur la nature de la page que son contenu. Les guillemets imposent la phrase exacte : `"rapport interne 2024"` ne renverra que les pages où ces trois mots se suivent dans cet ordre. Et le signe moins exclut : `-recrutement` retire tout ce qui parle de recrutement, utile quand un terme parasite noie tes résultats.
+
+```text
+site:exemple.org              tout ce qui est indexé sur ce domaine
+filetype:pdf rapport          uniquement des PDF qui parlent de rapport
+intitle:index.of              pages dont le titre contient index of
+inurl:admin                   adresses qui contiennent admin
+"directeur des ressources"    cette phrase exacte, mots collés dans l'ordre
+budget -prévisionnel          budget, mais on écarte prévisionnel
+```
+
+<Callout type="info">
+Les opérateurs varient un peu d'un moteur à l'autre, et certains changent ou disparaissent avec le temps. Vérifie sur le moteur que tu utilises avant de conclure qu'une requête ne marche pas. Si un opérateur ne donne rien, c'est parfois lui qui n'est plus supporté, pas l'absence de résultat.
+</Callout>
+
+## combiner pour cibler
+
+Un opérateur seul est utile. La vraie puissance vient de l'enchaînement. Chaque opérateur que tu ajoutes réduit le bruit, et le bruit est l'ennemi de l'enquête : tu ne veux pas mille résultats vaguement pertinents, tu veux les trois qui comptent.
+
+Imagine que tu cherches des documents internes laissés accessibles sur le domaine d'une organisation. Une recherche naïve avec le nom de l'organisation te noie sous les articles de presse et les pages d'accueil. En combinant, tu cibles.
+
+```text
+site:exemple.org filetype:pdf confidentiel
+site:exemple.org filetype:xlsx "ne pas diffuser"
+site:exemple.org inurl:backup
+site:exemple.org intitle:"index of" -html
+```
+
+La première requête cherche des PDF, sur ce domaine précis, contenant le mot confidentiel. Tu es passé de millions de pages à une poignée de documents que personne n'aurait dû pouvoir trouver par hasard. La logique est toujours la même : commence large, puis ajoute des contraintes une par une en regardant comment le nombre de résultats fond. Quand il devient gérable, tu lis. C'est un travail d'entonnoir, pas de coup de chance.
+
+## les dorks
+
+Un dork, c'est une requête prête à l'emploi, souvent une combinaison d'opérateurs qui vise un schéma connu de fichier ou de page exposé par erreur. Le terme vient des Google dorks, mais l'idée marche sur d'autres moteurs. Des listes entières circulent, chacune ciblant un type d'exposition : répertoires ouverts qu'un serveur laisse lister, fichiers de configuration qui traînent, sauvegardes de bases de données, parfois même des fichiers contenant des identifiants.
+
+Pourquoi est-ce que ça fonctionne ? Pas à cause d'une faille du moteur de recherche. Le moteur fait son travail normalement : il indexe ce qui est public. Le problème est en amont. Quelqu'un a mis un fichier sensible à un endroit accessible, n'a pas désactivé le listing d'un répertoire, a oublié de retirer une sauvegarde après une migration. Le dork ne casse rien. Il exploite la négligence de configuration, et le moteur n'est que le messager.
+
+<Callout type="warning">
+Un dork qui révèle un fichier exposé ne t'autorise pas à t'en servir. Voir n'est pas prendre. Télécharger des identifiants, fouiller une base exposée, utiliser ce que tu trouves pour accéder à un système : c'est franchir la ligne de l'intrusion, avec les conséquences légales qui vont avec. L'usage légitime de ces techniques est défensif. Tu les retournes contre tes propres domaines pour vérifier ce que toi tu exposes sans le savoir, et tu corriges. Si tu découvres une exposition chez quelqu'un d'autre, la bonne réaction est le signalement responsable, pas l'exploitation.
+</Callout>
+
+## les moteurs spécialisés
+
+Le moteur généraliste voit le web des pages. Il ne voit pas tout. D'autres moteurs indexent des choses qu'il ignore, et chacun a son angle mort que les autres comblent.
+
+Il existe des moteurs qui indexent le code source public, pratiques pour retrouver un bout de configuration ou une clé laissée dans un dépôt. D'autres scrutent les appareils connectés à internet : serveurs, caméras, objets exposés, avec leurs ports et leurs bannières de service. D'autres encore sont orientés archives, registres, données publiques. L'idée à retenir n'est pas la liste des noms, qui change, mais le réflexe : quand le généraliste ne donne rien, demande-toi quel moteur spécialisé verrait ce que lui ne voit pas. Un fichier de code ne se cherche pas comme une page web, et un appareil connecté encore moins.
+
+## les archives
+
+Une page peut disparaître. Elle est supprimée, modifiée, mise hors ligne. Mais le web ouvert garde la mémoire. Les moteurs conservent souvent une copie en cache d'une page récente, et des projets d'archivage gardent des instantanés datés de pages anciennes, parfois sur des années.
+
+Pour une enquête, c'est décisif. La version d'une page qu'on cherche à effacer aujourd'hui existe peut-être encore dans une archive d'il y a six mois. Un profil modifié, une mention retirée, une page entière dépubliée : si elle a été indexée ou archivée avant la suppression, elle survit quelque part. Le réflexe vaut d'être pris : quand une page semble avoir changé ou disparu, va voir si une copie antérieure existe. Souvent, l'information la plus intéressante est celle que quelqu'un a essayé de faire disparaître.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quel opérateur limite une recherche à un seul nom de domaine ?" options={["filetype:", "site:", "intitle:", "inurl:"]} correct={1} />
+
+<Quiz id="q-2" question="Un dork révèle un fichier de configuration exposé sur un serveur tiers. Quelle est la réaction correcte ?" options={["Télécharger le fichier et tester les identifiants qu il contient", "Ne pas exploiter, et envisager un signalement responsable", "Le partager publiquement pour alerter", "Rien, car le moteur a une faille à corriger"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi les dorks fonctionnent-ils ?" options={["Le moteur de recherche a une vulnérabilité", "Ils contournent l authentification des sites", "Ils exploitent des données laissées accessibles par négligence de configuration", "Ils déchiffrent les fichiers protégés"]} correct={2} />
+
+## à retenir
+
+Un moteur de recherche fait bien plus que répondre à des mots vagues : les opérateurs en font un outil d'enquête précis. `site:` restreint à un domaine, `filetype:` à un type de fichier, `intitle:` et `inurl:` cherchent dans le titre ou l'adresse, les guillemets imposent la phrase exacte, le moins exclut un terme.
+
+La puissance vient de la combinaison : on enchaîne les opérateurs pour passer de millions de résultats à une poignée qui comptent, par entonnoir. Les dorks sont des requêtes prêtes qui débusquent des fichiers et pages exposés par erreur. Ils marchent à cause de la négligence de configuration, pas d'une faille du moteur, et voir un fichier exposé n'autorise jamais à s'en servir : l'usage légitime est défensif, on vérifie sa propre exposition. Au-delà du généraliste, des moteurs spécialisés voient le code, les appareils connectés, les archives. Et l'ouvert garde la mémoire : une page supprimée survit souvent dans un cache ou une archive.
+
+OK 03 écrit

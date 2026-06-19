@@ -1,0 +1,94 @@
+---
+refCode: CL-LSN-121-V01
+slug: grc-introduction
+title: "Gouvernance, risque, conformité : pourquoi la GRC"
+description: "Comprenez ce que la GRC apporte à côté de la sécurité technique : organiser les décisions, piloter le risque et respecter les règles. Une vue d'ensemble des trois piliers avant d'entrer dans le détail."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 30
+xpReward: 400
+prerequisites: ["CL-LSN-073-V01"]
+---
+
+Imagine une équipe qui a fait du bon travail technique. Le pare-feu est bien réglé, les mots de passe sont solides, les sauvegardes tournent toutes les nuits. Un matin, une question arrive sur la table : faut-il ouvrir un accès au prestataire qui doit intervenir sur la base de données clients ? Le pare-feu ne répond pas à ça. Il sait bloquer ou laisser passer, mais il ne dit pas QUI a le droit de décider, ni selon quelle règle, ni quel risque on accepte en disant oui.
+
+C'est exactement le manque que comble la GRC : gouvernance, risque et conformité. La technique protège les systèmes. La GRC organise les décisions autour de ces systèmes. Les deux travaillent ensemble, mais ce ne sont pas le même métier, et c'est ce que cette leçon va clarifier.
+
+## les trois piliers
+
+La GRC tient sur trois mots. Voyons-les un par un, avec un cas concret à chaque fois.
+
+La **gouvernance** répond à la question : qui décide, et avec quelle autorité ? Elle définit les rôles, les responsabilités et les règles internes. Sans gouvernance, personne ne sait à qui revient une décision de sécurité, et tout le monde se renvoie la balle. Exemple : dans une entreprise, une politique écrite dit que toute ouverture d'accès à un prestataire externe doit être validée par le responsable de la sécurité, pas par le technicien qui exécute. Ça, c'est de la gouvernance. On a posé qui tranche.
+
+Le **risque** répond à la question : qu'est-ce qu'on protège en priorité, et que se passe-t-il si ça tourne mal ? On ne peut pas tout sécuriser au même niveau, le budget et le temps sont limités. Gérer le risque, c'est identifier ce qui peut arriver, estimer la gravité et la probabilité, puis arbitrer. Exemple : on note que la fuite du fichier clients aurait un impact lourd (perte de confiance, amende possible) alors qu'une panne du site vitrine pendant une heure est gênante mais sans gravité. On met donc plus de moyens sur le fichier clients. C'est un arbitrage de risque.
+
+La **conformité** répond à la question : quelles règles extérieures devons-nous respecter ? Ce sont les lois, les normes et les contrats qui s'imposent à l'entreprise, qu'elle le veuille ou non. Exemple : le RGPD oblige à protéger les données personnelles des clients et à pouvoir prouver qu'on le fait. Tenir un registre des traitements et chiffrer la base, c'est de la conformité. On respecte une règle qu'on n'a pas écrite nous-mêmes.
+
+<Diagram caption="Les trois piliers de la GRC">
+flowchart TD
+  A[Décision de sécurite] --> B[Gouvernance : qui decide et selon quelles regles internes]
+  A --> C[Risque : que protege-t-on en priorite et a quel cout]
+  A --> D[Conformite : quelles lois et normes s imposent a nous]
+  B --> E[Decision tracee et assumee]
+  C --> E
+  D --> E
+</Diagram>
+
+<Callout type="info">
+Retenez les trois questions plutôt que les définitions par coeur. Gouvernance : qui décide ? Risque : que protège-t-on d'abord ? Conformité : à quelles règles obéit-on ? Si vous savez répondre à ces trois questions sur un sujet, vous faites de la GRC.
+</Callout>
+
+## l'idée reçue
+
+Beaucoup de débutants arrivent avec une conviction : la sécurité, c'est l'affaire des techniciens. On installe les bons outils, on configure correctement, et le problème est réglé. Cette vision est confortable mais fausse, et elle coûte cher quand on s'y accroche.
+
+Voilà pourquoi. Accepter ou refuser un risque, ce n'est pas un geste technique, c'est une décision de direction. Quand on choisit de ne pas chiffrer une certaine donnée parce que ça ralentirait l'application, on accepte un risque au nom de l'entreprise. Ce choix engage la responsabilité de la structure, pas celle du technicien qui appuie sur les touches. Si une fuite survient ensuite, la question posée par un juge ou un client ne sera pas « le pare-feu était-il bien réglé », mais « qui a décidé d'accepter ce risque, et avait-il l'autorité pour le faire ».
+
+Le technicien sait dire ce qui est possible et combien ça coûte. Il ne peut pas, seul, décider de ce qui est acceptable pour l'entreprise. Cette décision-là remonte à la direction, parce qu'elle engage l'argent, la réputation et la responsabilité juridique.
+
+<Callout type="warning">
+Croire que la sécurité se règle entièrement avec des outils mène à un angle mort. Les meilleurs outils du monde n'empêchent pas une mauvaise décision de risque, parce qu'aucun outil ne décide à votre place de ce que vous êtes prêt à perdre.
+</Callout>
+
+## technique et GRC se répondent
+
+Inutile d'opposer les deux. La technique exécute, la GRC encadre et priorise. L'une sans l'autre laisse des trous.
+
+Prenons un exemple. La GRC décide qu'un mot de passe doit faire au moins douze caractères et qu'une double authentification est obligatoire pour accéder aux données clients. C'est une règle, une décision. Mais une règle dans un document ne protège rien tant que personne ne l'applique. C'est la technique qui la rend réelle : configurer le système pour refuser les mots de passe trop courts, brancher l'application de double authentification. La règle sans l'exécution reste du papier. L'exécution sans règle part dans tous les sens et personne ne sait pourquoi tel choix a été fait.
+
+À l'inverse, une équipe technique très compétente mais sans cadre va sécuriser au feeling. Tel serveur sera très protégé parce que l'administrateur s'y intéresse, tel autre négligé parce que personne ne s'en occupe, alors qu'il contient peut-être les données les plus sensibles. La GRC apporte la priorité que la technique seule ne fixe pas : on protège d'abord ce qui compte le plus pour l'entreprise, pas ce qui intéresse le plus l'ingénieur.
+
+## à quoi ça sert concrètement
+
+La GRC n'est pas une couche d'administration pour faire joli. Elle répond à des besoins très matériels. Éviter les amendes liées au RGPD ou à d'autres réglementations. Tenir debout face à un audit, c'est-à-dire pouvoir montrer à un contrôleur extérieur que les choses sont en ordre. Décider où mettre le budget sécurité, qui n'est jamais infini. Et prouver sa diligence, autrement dit démontrer qu'on a pris des mesures raisonnables, ce qui change tout en cas de litige.
+
+Voici comment chaque pilier se raccroche à une question concrète.
+
+| Pilier | Question à laquelle il répond |
+| --- | --- |
+| Gouvernance | Qui a le droit de décider, et qui rend des comptes ? |
+| Risque | Qu'est-ce qui peut mal tourner, et qu'est-ce qu'on protège en premier ? |
+| Conformité | Quelles règles extérieures devons-nous respecter et prouver ? |
+
+## pour qui
+
+On croit souvent que la GRC ne concerne que les grands groupes avec des services entiers dédiés. C'est faux. Une PME qui gère des données clients a déjà des obligations, à commencer par le RGPD dès qu'elle traite des informations personnelles. Une boutique en ligne de cinq personnes manipule des adresses, des e-mails, parfois des données de paiement. Les règles s'appliquent à elle aussi, même si elle les met en oeuvre plus simplement. La différence avec un grand groupe tient à l'échelle et aux moyens, pas au principe. Avoir des données à protéger suffit pour que la GRC vous concerne.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Que recouvre la gouvernance dans la GRC ?" options={["Le réglage technique du pare-feu et des serveurs", "La définition de qui décide, des rôles et des règles internes", "Le respect des lois et des normes extérieures", "Le chiffrement des bases de données"]} correct={1} />
+
+<Quiz id="q-2" question="Une entreprise choisit de ne pas chiffrer une donnée pour ne pas ralentir l'application. Quelle est la nature de ce choix ?" options={["Un simple réglage technique sans portée", "Une décision de risque qui engage l'entreprise", "Une obligation imposée par le RGPD", "Une tâche réservée au prestataire externe"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi technique et GRC ont-elles besoin l'une de l'autre ?" options={["La GRC remplace la technique une fois les outils installés", "La technique fixe les priorités et la GRC les exécute", "La GRC encadre et priorise, la technique exécute les règles", "Elles traitent des sujets totalement séparés sans lien"]} correct={2} />
+
+## à retenir
+
+- GRC veut dire gouvernance, risque, conformité. La technique protège les systèmes, la GRC organise les décisions autour d'eux.
+- Gouvernance : qui décide et selon quelles règles internes. Risque : ce qu'on protège en priorité et ce qu'on accepte de perdre. Conformité : les lois et normes extérieures à respecter et à prouver.
+- Accepter un risque est une décision de direction, pas un geste technique. La sécurité n'est donc pas seulement le travail des techniciens.
+- Technique et GRC se complètent : une règle sans exécution reste du papier, une exécution sans règle part dans tous les sens.
+- La GRC sert à éviter les amendes, tenir face à un audit, arbitrer le budget sécurité et prouver sa diligence.
+- Elle concerne aussi les PME : dès qu'on gère des données clients, on a des obligations.
+
+OK 01 écrit

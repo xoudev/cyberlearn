@@ -1,0 +1,110 @@
+---
+refCode: CL-LSN-104-V01
+slug: crypto-pki-tls
+title: "Certificats, PKI et TLS : la confiance sur le web"
+description: "Comprenez comment une autorité de certification garantit qu'une clé publique appartient bien à un site, comment la chaîne de confiance fonctionne, et comment TLS assemble tout pour sécuriser HTTPS."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 45
+xpReward: 540
+prerequisites: ["CL-LSN-103-V01"]
+---
+
+Dans la leçon précédente, tu as vu le chiffrement asymétrique. Une idée simple et puissante : n'importe qui peut chiffrer un message avec ta clé publique, mais toi seul peux le déchiffrer avec ta clé privée. Parfait, sauf qu'il reste un trou béant dans le raisonnement.
+
+Toute la sécurité repose sur une supposition : que tu connaisses la vraie clé publique de ton interlocuteur. Quand tu tapes l'adresse de ta banque et que le serveur t'envoie une clé publique, qui te dit que cette clé appartient bien à ta banque, et pas à quelqu'un assis entre vous deux ? Une clé publique, en soi, n'a pas d'étiquette. C'est juste un grand nombre. Elle ne porte aucune preuve d'identité.
+
+C'est exactement le problème que résolvent les certificats. Cette leçon explique comment on passe d'une clé publique anonyme à une clé publique dont on peut prouver l'appartenance, et comment HTTPS s'appuie là-dessus.
+
+## le problème de l'identité
+
+Reprenons l'attaque de l'homme du milieu vue précédemment. Tu veux parler à ta banque. Un attaquant s'intercale sur le réseau. Quand ta banque t'envoie sa clé publique, l'attaquant la remplace par la sienne. Tu chiffres alors tes données avec la clé de l'attaquant, persuadé de parler à ta banque. Il déchiffre, lit, rechiffre avec la vraie clé de la banque, et transmet. Personne ne voit rien.
+
+Le chiffrement a parfaitement fonctionné. Le problème n'est pas le chiffrement, c'est l'authentification. Tu as chiffré pour la mauvaise personne parce que tu n'avais aucun moyen de vérifier à qui appartenait la clé reçue.
+
+<Callout type="warning">
+Une clé publique sans preuve d'identité ne vaut rien pour la sécurité. Recevoir une clé et l'utiliser sans vérifier son propriétaire, c'est ouvrir grand la porte à l'imposteur. Le vrai défi du web n'est pas de chiffrer, c'est de savoir à qui appartient la clé qu'on s'apprête à utiliser.
+</Callout>
+
+## le certificat et l'autorité
+
+L'idée du certificat est de coller une étiquette vérifiable sur une clé publique. Un certificat est un fichier qui dit, en gros : « cette clé publique appartient à example.com, valable du tel jour au tel jour ». Mais n'importe qui pourrait écrire ça. Ce qui rend le certificat crédible, c'est qu'il est signé.
+
+Signé par qui ? Par une autorité de certification, qu'on abrège CA pour Certificate Authority. C'est une organisation dont le métier est de vérifier les identités puis de signer des certificats avec sa propre clé privée. Quand example.com veut un certificat, il prouve à la CA qu'il contrôle bien le domaine. La CA appose alors sa signature sur le certificat. Cette signature, tu te souviens du principe de la leçon précédente, ne peut être produite que par le détenteur de la clé privée de la CA, et n'importe qui peut la vérifier avec la clé publique de la CA.
+
+Reste une question évidente : pourquoi ferais-tu confiance à la CA ? Parce que ton navigateur et ton système d'exploitation arrivent avec une liste de CA de confiance déjà installée, le magasin de certificats racine. Ces racines ont été auditées et intégrées par les éditeurs de navigateurs. Quand un certificat est signé par une de ces autorités, ton navigateur l'accepte sans te poser de question.
+
+<Callout type="info">
+La confiance ne vient pas du certificat lui-même mais de qui l'a signé. Ton navigateur fait confiance à un petit ensemble d'autorités racine préinstallées. Tout certificat qui remonte, par signatures successives, jusqu'à l'une de ces racines est considéré comme valide. Tu n'as jamais à juger un site inconnu toi-même : tu délègues ce jugement aux autorités racine.
+</Callout>
+
+## la chaîne de confiance
+
+En pratique, les CA racine ne signent presque jamais directement les certificats des sites. Elles gardent leur clé privée racine au coffre, hors ligne, parce que sa compromission serait une catastrophe. À la place, la racine signe un ou plusieurs certificats intermédiaires, et ce sont ces intermédiaires qui signent les certificats des sites au quotidien.
+
+On obtient donc une chaîne. Le certificat du site est signé par un intermédiaire, l'intermédiaire est signé par la racine, et la racine est dans ton magasin de confiance. Ton navigateur vérifie chaque maillon : il contrôle que la signature du certificat du site est bien valide pour la clé de l'intermédiaire, puis que la signature de l'intermédiaire est valide pour la clé de la racine. Si tous les maillons tiennent et que la racine est connue, la chaîne est validée.
+
+<Diagram caption="La chaîne de confiance d'un certificat">
+flowchart TD
+  A[CA racine - dans le navigateur] -->|signe| B[CA intermediaire]
+  B -->|signe| C[Certificat du site example.com]
+  C -->|contient| D[Cle publique du site]
+  E[Navigateur] -->|verifie chaque signature| A
+</Diagram>
+
+Si un seul maillon casse, signature invalide, intermédiaire inconnu, racine absente du magasin, toute la chaîne est rejetée. C'est ce qui rend le système solide : il suffit d'un défaut quelque part pour que la validation échoue.
+
+## la poignée de main TLS
+
+TLS est le protocole qui sécurise HTTPS. Quand tu te connectes à un site en https, une négociation a lieu avant le moindre échange de données. On l'appelle la poignée de main, ou handshake. Voici la version simplifiée.
+
+D'abord, le client annonce qu'il veut établir une connexion sécurisée et liste les algorithmes qu'il sait utiliser. Le serveur répond et, surtout, présente son certificat. Le client vérifie ce certificat : la chaîne de confiance remonte-t-elle à une racine connue ? Le nom du domaine correspond-il à celui qu'on a tapé ? Le certificat est-il toujours valide dans le temps ? Si l'une de ces réponses est non, la connexion s'arrête là.
+
+Une fois le certificat accepté, client et serveur se mettent d'accord sur une clé de session. C'est ici que se combinent les deux mondes vus dans les leçons précédentes. L'asymétrique sert à établir cette clé de session de façon sûre, en s'appuyant sur la clé publique authentifiée par le certificat. Ensuite, toute la conversation passe en chiffrement symétrique avec cette clé de session, parce que le symétrique est bien plus rapide pour de gros volumes. Autrement dit : l'asymétrique authentifie et met en place le secret, le symétrique fait le travail de transport.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Inspecter un certificat" commands={{"openssl s_client -connect example.com:443": "Certificate chain\n 0 s:CN=example.com\n   i:CN=Example CA\n 1 s:CN=Example CA\n   i:CN=Example Root CA\nVerify return code: 0 (ok)", "curl -vI https://example.com": "* SSL certificate verify ok.\n< HTTP/2 200"}} />
+
+Dans cette sortie, tu vois la chaîne se dérouler : le certificat du site (0) émis par Example CA, lui-même (1) émis par Example Root CA. Le message `Verify return code: 0 (ok)` signifie que la chaîne a été validée jusqu'à une racine de confiance.
+
+## ce que le cadenas garantit, et pas
+
+Le petit cadenas dans la barre d'adresse rassure tout le monde. Il faut comprendre précisément ce qu'il dit, et ce qu'il ne dit pas.
+
+Ce qu'il garantit : le transport est chiffré, donc personne sur le réseau ne lit ni ne modifie ce qui circule entre toi et le serveur. Et le domaine est authentifié, donc tu parles bien au serveur qui contrôle ce nom de domaine, pas à un imposteur intercalé.
+
+Ce qu'il ne garantit pas : que le site soit honnête. Le cadenas ne dit rien sur les intentions de la personne en face. Obtenir un certificat valide est aujourd'hui gratuit et automatique. Un site d'hameçonnage qui imite ta banque peut très bien afficher un cadenas parfaitement vert, avec un certificat valide pour son propre domaine frauduleux.
+
+<Callout type="danger">
+Chiffré ne veut pas dire honnête. Le cadenas prouve que la connexion est privée et que tu parles bien au domaine affiché. Il ne prouve absolument pas que ce domaine appartient à une entreprise digne de confiance. Un site de phishing peut afficher un cadenas valide. Vérifie toujours le nom de domaine lui-même, lettre par lettre, et pas seulement la présence du cadenas.
+</Callout>
+
+## quand ça casse
+
+Parfois ton navigateur affiche un gros avertissement rouge au lieu de la page. Les causes les plus courantes : le certificat a expiré et n'est plus valable dans le temps, il a été émis par une autorité que ton navigateur ne reconnaît pas, ou bien le nom du domaine dans le certificat ne correspond pas à l'adresse que tu visites.
+
+Ces erreurs ont l'air pénibles, et beaucoup de gens cliquent « continuer quand même » par réflexe. C'est une mauvaise habitude. Un avertissement de certificat peut être bénin, un administrateur qui a oublié de renouveler, mais il peut aussi être le signe exact qu'une attaque de l'homme du milieu est en cours et que quelqu'un te présente un faux certificat. Du point de vue du navigateur, les deux situations sont indiscernables. C'est pourquoi il refuse et te demande de décider en connaissance de cause. Sur un site sensible, banque, messagerie, administration, un tel avertissement doit te faire reculer, pas avancer.
+
+## à toi de jouer
+
+Inspecte la chaîne de confiance d'un site avec openssl, puis réponds aux questions.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Lire la chaîne et la date de validité" commands={{"openssl s_client -connect cyberlearn.app:443": "Certificate chain\n 0 s:CN=cyberlearn.app\n   i:CN=R3\n 1 s:CN=R3\n   i:CN=ISRG Root X1\nVerify return code: 0 (ok)", "openssl x509 -noout -dates -in site.pem": "notBefore=Apr  1 00:00:00 2026 GMT\nnotAfter=Jun 30 23:59:59 2026 GMT"}} />
+
+<QuizGroup>
+<Quiz id="q-1" question="A quoi sert la signature d'une autorite de certification sur un certificat ?" options={["A chiffrer le trafic entre le client et le serveur", "A prouver que la cle publique du certificat appartient bien a l'identite annoncee", "A accelerer la poignee de main TLS", "A compresser les donnees echangees"]} correct={1} />
+
+<Quiz id="q-2" question="Un site d'hameconnage parfaitement imitant ta banque affiche un cadenas vert avec un certificat valide. Qu'est-ce que cela prouve ?" options={["Que le site est sur et appartient a ta banque", "Que la connexion est chiffree et que le domaine affiche est bien authentifie, rien de plus", "Que le certificat a forcement ete vole", "Que ton navigateur s'est trompe"]} correct={1} />
+
+<Quiz id="q-3" question="Dans une poignee de main TLS, quel est le role respectif de l'asymetrique et du symetrique ?" options={["Le symetrique authentifie, l'asymetrique transporte les donnees", "Tout est fait en asymetrique du debut a la fin", "L'asymetrique authentifie le serveur et etablit une cle de session, le symetrique chiffre ensuite le trafic", "Aucun chiffrement n'est utilise avant l'envoi du mot de passe"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+- Une clé publique seule ne prouve aucune identité ; c'est le problème central que résolvent les certificats.
+- Un certificat lie une identité à une clé publique, et il est signé par une autorité de certification (CA).
+- La confiance vient de la chaîne : certificat du site signé par un intermédiaire, intermédiaire signé par une racine, racine préinstallée dans ton navigateur. Chaque signature est vérifiée.
+- La poignée de main TLS présente le certificat, le client le vérifie, on établit une clé de session, puis tout le trafic passe en chiffrement symétrique. L'asymétrique authentifie et installe le secret, le symétrique transporte.
+- Le cadenas garantit le chiffrement du transport et l'authentification du domaine. Il ne garantit pas l'honnêteté du site : un site de phishing peut avoir un certificat valide.
+- Un avertissement de certificat, expiré, autorité inconnue, mauvais domaine, peut signaler une attaque en cours. Ne clique pas « continuer quand même » à la légère sur un site sensible.
+
+OK 08 écrit

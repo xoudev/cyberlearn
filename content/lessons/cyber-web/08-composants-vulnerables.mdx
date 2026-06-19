@@ -1,0 +1,79 @@
+---
+refCode: CL-LSN-092-V01
+slug: owasp-composants-vulnerables
+title: "Composants et dépendances vulnérables"
+description: "Comprenez pourquoi le code que vous n'avez pas écrit est souvent le maillon faible : dépendances obsolètes, failles connues héritées, et comment auditer puis maintenir à jour la chaîne de dépendances."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 450
+prerequisites: ["CL-LSN-085-V01"]
+---
+
+Ouvre n'importe quel projet web récent et regarde le dossier des dépendances. Tu y trouveras des centaines, parfois des milliers de paquets. Toi, tu en as installé une dizaine. Le reste est venu tout seul, tiré par les premiers. Quand tu écris une appli moderne, tu écris une petite part du code qui tourne réellement. Le gros, c'est du code écrit par d'autres, que tu n'as jamais lu, et qui s'exécute pourtant sur ton serveur avec les mêmes droits que le tien.
+
+C'est un marché plutôt équitable. Tu gagnes un temps fou : pas besoin de réécrire un parseur de dates, un client HTTP ou une lib de chiffrement. Mais il y a une contrepartie que beaucoup oublient. La sécurité de tout ce code tiers devient ta sécurité. Une faille dans une bibliothèque que tu utilises est une faille dans ton appli, point. Le navigateur, l'attaquant, ton client : aucun d'eux ne fait la distinction entre ton code et celui d'un paquet téléchargé.
+
+## le modèle mental
+
+Représente-toi tes dépendances comme un arbre. À la racine, ton projet. Juste en dessous, les paquets que tu as installés volontairement : ce sont tes dépendances directes. Mais chacun d'eux a ses propres besoins, et tire à son tour d'autres paquets. Ceux-là tirent les leurs. On appelle ça les dépendances transitives, et elles forment la grande majorité de l'arbre.
+
+Le point important : tu n'as choisi presque rien de cet arbre. Tu as dit "je veux ce framework", et il a décidé pour toi des deux cents paquets qui l'accompagnent. Si une faille apparaît tout au fond, dans un petit utilitaire que tu n'as jamais entendu nommer, elle est quand même dans ton appli. Tu en hérites sans l'avoir choisi, et souvent sans même savoir qu'il est là.
+
+<Callout type="info">
+Quand on dit qu'une appli moderne est faite à 80 pour cent de code tiers, ce n'est pas une figure de style. Compte tes dépendances directes, puis regarde le total réellement installé. Le rapport est souvent de un à cent. La surface que tu dois surveiller n'est pas ton code : c'est tout cet arbre.
+</Callout>
+
+## les failles connues
+
+La plupart des compromissions liées aux dépendances n'utilisent pas une faille secrète. Elles utilisent une faille publique. Quand un chercheur découvre une vulnérabilité dans une bibliothèque, elle reçoit un identifiant (un CVE), elle est décrite en détail, et l'information circule. C'est une bonne chose pour les défenseurs, qui peuvent corriger. Mais les attaquants lisent les mêmes bulletins. À la minute où une faille est publiée, le monde entier sait quelles versions sont vulnérables et comment les exploiter.
+
+À partir de là, tourner une version vulnérable connue n'est plus un pari. C'est une porte laissée ouverte, avec une pancarte indiquant où elle se trouve. Les attaquants scannent Internet en masse à la recherche de serveurs encore sur l'ancienne version. Ils n'ont pas besoin de te viser toi : ils visent tout le monde, et tu fais partie du lot si tu n'as pas mis à jour.
+
+Le cas le plus parlant de ces dernières années touchait une bibliothèque de journalisation extrêmement répandue dans l'écosystème Java. Une faille critique permettait d'exécuter du code à distance simplement en envoyant une chaîne de caractères piégée que l'appli allait ensuite écrire dans ses logs. Le problème n'était pas tant la faille elle-même que sa portée : cette lib était partout, souvent en dépendance transitive, donc des entreprises entières se sont retrouvées exposées sans même savoir qu'elles l'utilisaient. La course au correctif a duré des semaines.
+
+<Callout type="danger">
+Une faille publique sur une lib populaire est exploitée massivement dans les heures qui suivent sa divulgation. Le délai entre "le CVE est publié" et "des bots scannent ton IP" se compte en heures, pas en mois. La fenêtre pour corriger est courte, et elle commence sans toi.
+</Callout>
+
+## auditer ses dépendances
+
+Tu ne peux pas relire à la main un arbre de mille paquets. Heureusement, tu n'as pas à le faire. Des outils d'audit comparent automatiquement ton arbre de dépendances aux bases publiques de vulnérabilités, et te disent quels paquets sont concernés, à quel niveau de gravité, et quelle version corrige le problème.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Auditer les dépendances" commands={{"npm audit": "found 3 high severity vulnerabilities", "npm audit fix": "fixed 3 of 3 vulnerabilities"}} />
+
+Un audit comme celui-ci tourne en quelques secondes et devrait faire partie de ton intégration continue, pas d'une corvée manuelle qu'on oublie. Deux notions reviennent autour de ce sujet. Le SCA (Software Composition Analysis) désigne la famille d'outils qui analysent en continu la composition de ton appli pour repérer les composants tiers vulnérables. Le SBOM (Software Bill of Materials) est l'inventaire détaillé de tout ce que ton appli embarque : la liste exacte des composants et de leurs versions, que tu peux relire le jour où une nouvelle faille tombe pour savoir en une minute si tu es concerné.
+
+## la difficulté de mettre à jour
+
+Si corriger se résume souvent à monter une version, pourquoi tant de projets traînent des dépendances vieilles de plusieurs années ? Parce que mettre à jour fait peur. On craint de casser quelque chose qui marchait. Une montée de version majeure peut changer des comportements, retirer des fonctions, casser une API. Plus tu attends, plus l'écart se creuse, et plus la mise à jour devient un gros chantier au lieu d'un petit geste régulier.
+
+C'est exactement le piège. Repousser donne l'impression d'économiser du temps aujourd'hui, mais la dette s'accumule en silence. Le jour où une faille critique te force à mettre à jour en urgence, tu dois rattraper trois ans de retard d'un coup, sous pression, sans marge pour tester. Une petite mise à jour fréquente coûte toujours moins cher qu'un grand saut tardif fait dans la panique.
+
+## la défense
+
+Il n'y a pas de tour de magie ici, juste une hygiène à tenir.
+
+<Callout type="success">
+Garde une trace de ce que tu utilises : un SBOM à jour répond en une minute à la question "suis-je concerné par ce CVE ?". Mets à jour régulièrement, par petits incréments, plutôt que par grands sauts. Retire les dépendances que tu n'utilises plus : une lib absente ne peut pas te trahir. Et abonne-toi aux annonces de sécurité de tes briques principales pour ne pas découvrir une faille critique par hasard, trois semaines trop tard.
+</Callout>
+
+Automatise tout ce qui peut l'être. Un audit dans la CI qui bloque un déploiement si une faille de gravité haute apparaît, un robot qui ouvre des pull requests de mise à jour : ce sont des choses qui tournent seules une fois posées, et qui transforment la maintenance de tes dépendances en routine plutôt qu'en crise.
+
+## à toi de jouer
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Vérifier puis corriger" commands={{"npm audit": "found 3 high severity vulnerabilities", "npm audit fix": "fixed 3 of 3 vulnerabilities"}} />
+
+<QuizGroup>
+<Quiz id="q-1" question="Pourquoi une faille au fond de l'arbre des dépendances te concerne-t-elle, même si tu n'as jamais installé ce paquet directement ?" options={["Parce que les paquets transitifs sont tous obligatoires", "Parce qu'une dépendance que tu installes en tire d'autres, et tout ce code s'exécute avec les droits de ton appli", "Parce que les dépendances transitives sont plus rapides", "Elle ne te concerne pas tant que tu ne l'appelles pas"]} correct={1} />
+
+<Quiz id="q-2" question="Qu'est-ce qui rend une faille connue (CVE) particulièrement dangereuse une fois publiée ?" options={["Elle reste secrète et difficile à trouver", "Les attaquants connaissent les versions touchées et l'exploitation, et scannent Internet en masse", "Elle ne touche que les vieux serveurs hors ligne", "Elle disparait après le correctif officiel"]} correct={1} />
+
+<Quiz id="q-3" question="À quoi sert un SBOM ?" options={["À compiler ton code plus vite", "À chiffrer tes dépendances au repos", "À tenir l'inventaire exact des composants et versions, pour savoir vite si une nouvelle faille te concerne", "À remplacer l'audit automatique"]} correct={2} />
+</QuizGroup>
+
+## à retenir
+
+Une appli moderne est surtout faite de code tiers : la sécurité de tes dépendances est la tienne. L'arbre des dépendances est dominé par des paquets transitifs que tu n'as pas choisis ; une faille au fond te touche quand même. Les failles connues sont publiques et exploitées massivement dès leur divulgation, donc tourner une version vulnérable connue est une porte ouverte. Audite ton arbre avec un outil qui le compare aux bases de vulnérabilités, garde un inventaire (SBOM), mets à jour par petits incréments réguliers, retire ce que tu n'utilises plus, et suis les annonces de sécurité de tes briques principales.
+
+OK 08-composants-vulnerables.mdx écrit

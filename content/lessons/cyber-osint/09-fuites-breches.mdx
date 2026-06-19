@@ -1,0 +1,103 @@
+---
+refCode: CL-LSN-153-V01
+slug: osint-fuites-breches
+title: "Fuites de données : vérifier son exposition"
+description: "Les fuites diffusent des bases entières d'identifiants. Comprenez comment une adresse e-mail révèle quels services ont fuité, comment vérifier sa propre exposition légalement, et pourquoi la réutilisation de mots de passe est si dangereuse."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 470
+prerequisites: ["CL-LSN-148-V01"]
+---
+
+Quand un service en ligne se fait pirater, ses comptes ne restent pas chez l'attaquant. Tôt ou tard, la base de données sort : elle se vend, se troque, puis finit diffusée largement. Si tu avais un compte sur ce service, ton adresse e-mail et peut-être ton mot de passe se retrouvent dans cette base. Savoir que tu es concerné, c'est pouvoir réagir avant qu'on n'utilise tes identifiants contre toi.
+
+Cette leçon prend le sujet par le côté défensif. L'objectif n'est pas d'apprendre à manipuler des fuites, mais à vérifier ta propre exposition et celle de ton organisation, puis à comprendre ce que ces fuites rendent possible.
+
+<Callout type="danger">
+On ne télécharge pas, on ne stocke pas et on n'exploite pas des dumps de fuites. Posséder ou fouiller une base de comptes volée pour y chercher les données d'autrui est illégal, et ça nourrit l'écosystème criminel. Pour vérifier une exposition, on passe par des services dédiés qui répondent par oui ou non sans jamais te livrer les données brutes. C'est la seule approche acceptable.
+</Callout>
+
+## qu'est-ce qu'une fuite
+
+Une fuite, c'est une base de comptes volée à un service puis rendue accessible en dehors de lui. Concrètement, un attaquant entre dans les systèmes d'un site, copie la table des utilisateurs et la fait sortir. Cette table contient en général des adresses e-mail, des mots de passe, et souvent d'autres données : nom, date de naissance, numéro de téléphone, adresse, historique d'achats selon le service.
+
+Les mots de passe ne sont pas toujours stockés de la même manière. Dans le meilleur des cas, le service les avait hachés avec un algorithme lent et salé, ce qui rend leur récupération coûteuse. Dans le pire, ils étaient en clair, et la fuite les expose tels quels. Entre les deux, on trouve des hachages faibles que des attaquants cassent en masse. Une même fuite peut donc être plus ou moins grave selon la façon dont le service protégeait ses données.
+
+<Callout type="info">
+Une fuite n'est pas un événement ponctuel qui se referme. Une fois qu'une base circule, elle est recopiée indéfiniment. C'est pour ça qu'un mot de passe apparu dans une fuite ancienne reste à risque tant que tu ne l'as pas changé : il est toujours quelque part, dans une liste, prêt à être rejoué.
+</Callout>
+
+## l'adresse e-mail comme pivot
+
+L'adresse e-mail est l'identifiant qui relie tes comptes entre eux. Tu l'utilises pour t'inscrire partout, et c'est elle qui figure dans presque toutes les fuites. C'est ce qui en fait un pivot : en cherchant une adresse dans l'ensemble des fuites connues, on apprend sur quels services elle apparaît et à quelle date chacun a fuité.
+
+Pour toi, défensivement, c'est une information précieuse. Si ton adresse ressort dans la fuite d'un service de 2019 et dans celle d'un autre de 2023, tu sais exactement quels comptes vérifier et quels mots de passe changer. Tu ne devines pas, tu agis sur une liste précise.
+
+Cette vérification se fait via des services légitimes. Tu saisis ton adresse, le service la compare à un index de fuites compilées et te répond : présente ou non, et dans quelles fuites. Il ne te montre jamais les mots de passe ni les données des autres comptes. C'est exactement la ligne à tenir : on consulte un verdict, pas un fichier.
+
+<ExternalLink href="https://haveibeenpwned.com/" description="Un service qui indique si une adresse e-mail figure dans des fuites connues, avec la liste des fuites concernées et leur date">Have I Been Pwned</ExternalLink>
+
+Le même raisonnement vaut pour un numéro de téléphone, qui sert lui aussi souvent d'identifiant. Mais l'e-mail reste le pivot le plus large, parce qu'il est présent dans presque tout.
+
+## ce qu'une fuite déclenche
+
+La conséquence la plus directe d'une fuite, c'est le bourrage d'identifiants, ou credential stuffing. Le principe est simple et c'est ce qui le rend redoutable. Les attaquants récupèrent les couples e-mail plus mot de passe d'une fuite, puis les rejouent automatiquement sur des dizaines d'autres sites : ta banque, ta messagerie, tes réseaux, ton service de streaming. Ils ne cherchent pas à deviner ton mot de passe, ils le connaissent déjà ; ils testent juste s'il ouvre d'autres portes.
+
+Et tout repose sur un pari : que tu aies réutilisé le même mot de passe ailleurs. Si le mot de passe fuité du service piraté est unique, le rejeu échoue partout. S'il est aussi celui de ta boîte mail, l'attaquant prend ta boîte mail, puis s'en sert pour réinitialiser le reste. La fuite d'un petit forum oublié peut ainsi ouvrir ton compte le plus sensible, non parce que ce compte a été piraté, mais parce que tu as recyclé un mot de passe.
+
+C'est le lien direct avec les attaques de mots de passe vues plus tôt. Une fuite fournit aux attaquants une liste de couples déjà valides quelque part. Le bourrage d'identifiants se distingue du forçage classique justement par là : il n'essaie pas mille combinaisons au hasard, il en essaie une seule, mais une qui a de bonnes chances de marcher.
+
+## réagir à une exposition
+
+Quand une vérification révèle que ton adresse figure dans une fuite, la réaction tient en quelques gestes. Tu changes le mot de passe du service concerné, et surtout tous ceux que tu avais réutilisés ailleurs, parce que ce sont eux la vraie surface d'attaque. Tu actives la double authentification là où elle est disponible, ce qui rend un mot de passe seul insuffisant pour entrer. Puis tu restes attentif aux signaux d'usage frauduleux pendant quelque temps.
+
+| Signal | Action |
+| --- | --- |
+| Adresse présente dans une fuite récente | Changer le mot de passe du service, vérifier s'il était réutilisé |
+| Même mot de passe utilisé sur plusieurs comptes | Le remplacer partout par des mots de passe uniques |
+| Connexion ou tentative inconnue sur un compte | Changer le mot de passe, déconnecter les sessions, activer la 2FA |
+| E-mail de réinitialisation que tu n'as pas demandé | Sécuriser d'abord la boîte mail, puis le compte visé |
+
+<Callout type="success">
+Le réflexe qui désamorce presque tout, c'est un mot de passe unique par service plus la 2FA. Avec ça, une fuite reste contenue au seul service touché : le couple volé ne rejoue nulle part, et même sur le service concerné, le second facteur bloque l'entrée. Un gestionnaire de mots de passe rend cette discipline tenable sans effort de mémoire.
+</Callout>
+
+## côté organisation
+
+Pour une organisation, l'enjeu change d'échelle mais la logique tient. Le but est de surveiller l'exposition des adresses de ses domaines. Certains services de vérification permettent de suivre un domaine entier et d'être alerté quand une nouvelle fuite touche une de ses adresses, sans avoir à interroger chaque compte un par un.
+
+Une adresse professionnelle exposée dans une fuite est une porte d'entrée vers le système d'information, surtout si la personne réutilise son mot de passe entre vie privée et vie professionnelle. D'où trois leviers qui se renforcent : sensibiliser les équipes pour qu'elles comprennent le risque de réutilisation, imposer techniquement des mots de passe uniques et la double authentification, et réagir vite quand une alerte tombe en forçant le changement des identifiants concernés. La surveillance ne sert à rien sans la capacité à agir derrière.
+
+## la limite
+
+La frontière est nette et il faut la garder en tête. Vérifier ta propre exposition, ou celle des adresses de ton organisation quand tu en as la responsabilité, est légitime : tu consultes un verdict sur des données qui te concernent, via un service prévu pour ça.
+
+Fouiller les données d'autres personnes dans des dumps de fuites est une autre activité, illégale et nuisible. Télécharger une base volée, y chercher l'adresse de quelqu'un, en extraire son mot de passe ou ses informations personnelles : ce n'est pas de la vérification, c'est de l'exploitation de données volées. Le fait que la base soit techniquement accessible ne la rend ni légale ni acceptable.
+
+<Callout type="warning">
+La différence ne tient pas à l'outil mais à l'usage. Un service de vérification te dit si une adresse est exposée sans révéler la donnée ; un dump te livre la donnée brute. Le premier est un réflexe d'hygiène, le second une manipulation de bien volé. Reste du premier côté, toujours.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+<Quiz id="q-1" question="Qu'est-ce que le bourrage d'identifiants (credential stuffing) ?" options={["Deviner un mot de passe en testant des milliers de combinaisons au hasard", "Rejouer des couples e-mail plus mot de passe issus d'une fuite sur d'autres sites", "Inonder un serveur de connexions pour le faire tomber", "Intercepter un mot de passe pendant sa saisie"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi une adresse e-mail est-elle un bon pivot pour vérifier son exposition ?" options={["Parce qu'elle contient le mot de passe", "Parce qu'elle change à chaque fuite", "Parce qu'elle apparaît dans presque toutes les fuites et relie les comptes entre eux", "Parce qu'elle est impossible à retrouver dans une fuite"]} correct={2} />
+
+<Quiz id="q-3" question="Ton adresse ressort dans une fuite récente. Quelle réaction est la plus saine ?" options={["Télécharger la fuite pour vérifier quel mot de passe a fuité", "Changer le mot de passe concerné et tous ceux réutilisés, puis activer la 2FA", "Ne rien faire si le service touché n'est pas important", "Supprimer l'adresse e-mail"]} correct={1} />
+</QuizGroup>
+
+## à retenir
+
+- Une fuite est une base de comptes volée à un service puis diffusée ; elle contient des e-mails, des mots de passe (hachés ou en clair) et d'autres données personnelles.
+- Une fois diffusée, une base circule indéfiniment : un mot de passe apparu dans une fuite reste à risque tant qu'il n'a pas été changé.
+- L'adresse e-mail est le pivot : la chercher dans les fuites connues, via un service légitime, révèle quels services l'ont exposée et quand.
+- Les services de vérification répondent par un verdict sans livrer les données brutes. On les utilise, on ne touche pas aux dumps.
+- Le bourrage d'identifiants rejoue les couples fuités sur d'autres sites ; il ne marche que si tu réutilises tes mots de passe.
+- La parade : un mot de passe unique par service plus la 2FA, ce qui contient une fuite au seul service touché.
+- Côté organisation : surveiller l'exposition des domaines, sensibiliser, imposer l'unicité et la 2FA, réagir vite aux alertes.
+- Vérifier sa propre exposition est légitime ; fouiller les données d'autrui dans des dumps est illégal et nuisible.
+
+OK 09 écrit

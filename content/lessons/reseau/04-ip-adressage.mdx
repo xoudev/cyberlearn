@@ -1,0 +1,117 @@
+---
+refCode: CL-LSN-160-V01
+slug: reseau-ip-adressage
+title: "L'adressage IP"
+description: "Comprenez l'adresse IPv4 et sa structure en partie réseau et partie hôte, la différence entre adresses privées et publiques, quelques adresses particulières, et pourquoi IPv6 prend le relais."
+category: NETWORK
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 520
+prerequisites: ["CL-LSN-159-V01"]
+---
+
+Dans la leçon précédente, tu as vu que chaque carte réseau porte une adresse MAC gravée en usine. Sur ton réseau local, elle suffit largement : le switch sait quelle machine se cache derrière quel port, et les trames circulent sans souci. Le problème commence dès qu'on veut sortir de la maison.
+
+Une adresse MAC, c'est plat. Aucune logique, aucune hiérarchie. Deux machines voisines sur ton bureau ont des MAC qui n'ont rien à voir l'une avec l'autre, et c'est pareil pour une machine à Tokyo et une autre à Lille. Imagine maintenant que tu doives router un paquet à travers la planète en te basant uniquement sur ces adresses : il faudrait que chaque routeur de la Terre connaisse l'emplacement exact de chacune des milliards de cartes réseau existantes. Impossible à tenir.
+
+Il faut donc une deuxième adresse, logique celle-là, qu'on peut attribuer et organiser nous-mêmes selon une géographie de réseau. C'est l'adresse IP. Elle vient se superposer à la MAC, et elle est conçue pour qu'on puisse router à grande échelle.
+
+## l'adresse IPv4
+
+Une adresse IPv4 tient sur 32 bits. Ces 32 bits sont découpés en quatre groupes de 8 bits, qu'on appelle des octets. Chaque octet vaut entre 0 et 255 (parce que 8 bits permettent de compter de 0 à 255), et on les écrit en décimal, séparés par des points. C'est la notation décimale pointée, celle que tu croises partout.
+
+Voici une adresse classique et ce qu'elle vaut réellement, bit par bit :
+
+```text
+192.168.1.42
+
+  192      168        1        42
+11000000 10101000 00000001 00101010
+```
+
+La machine, elle, ne voit que la suite de 32 bits. La notation pointée n'existe que pour nous, parce que retenir quatre nombres entre 0 et 255 est nettement plus confortable que de relire une bouillie de zéros et de uns. Au total, 32 bits autorisent un peu plus de 4 milliards de combinaisons. Ça paraît énorme. On verra plus loin que ça ne l'est pas tant que ça.
+
+Tu peux regarder l'adresse de ta propre machine en une commande :
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Voir sa configuration IP" commands={{"ip addr show eth0": "inet 192.168.1.42/24 brd 192.168.1.255 scope global eth0", "hostname -I": "192.168.1.42", "curl -s ifconfig.me": "203.0.113.55", "ping -c1 127.0.0.1": "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.03 ms"}} />
+
+<Callout type="info">
+Tu remarques que `ip addr` montre `192.168.1.42` alors que `curl ifconfig.me` renvoie `203.0.113.55`. Ce ne sont pas la même adresse, et ce n'est pas un bug. La première est ton adresse locale, la seconde est l'adresse sous laquelle Internet te voit. On y revient juste après.
+</Callout>
+
+## réseau et hôte
+
+Une adresse IP ne désigne pas seulement une machine. Elle dit aussi sur quel réseau cette machine se trouve. C'est tout l'intérêt par rapport à la MAC : l'adresse est coupée en deux morceaux. Une partie identifie le réseau, l'autre identifie l'hôte (la machine) à l'intérieur de ce réseau.
+
+Le modèle mental le plus simple, c'est l'adresse postale. Quand tu écris une adresse, tu ne mets pas juste un numéro de maison dans le vide. Tu écris une ville, puis une rue, puis un numéro. Le facteur national lit d'abord la ville pour aiguiller le courrier vers la bonne région, le centre de tri local lit ensuite la rue, et le facteur du quartier finit par le numéro. Chacun ne regarde que la partie qui le concerne.
+
+L'IP fonctionne pareil. Un routeur lointain ne s'intéresse qu'à la partie réseau de l'adresse : ça lui suffit pour pousser le paquet dans la bonne direction. Ce n'est qu'une fois arrivé sur le bon réseau que la partie hôte sert à livrer le paquet à la bonne machine. Cette hiérarchie est exactement ce qui rend le routage mondial possible sans que chaque routeur connaisse chaque machine.
+
+Reste une question : où s'arrête la partie réseau et où commence la partie hôte ? Ce n'est pas fixe, et c'est le masque de sous-réseau qui tranche. Pour l'instant retiens juste le principe, le notation `/24` que tu as vue plus haut en est l'indice. Le masque fait l'objet de la prochaine leçon, on le détaillera là-bas.
+
+## privé contre public
+
+Toutes les adresses IPv4 ne se valent pas. Certaines plages ont été réservées pour un usage purement interne : ce sont les adresses privées, définies par la RFC 1918. Elles servent à numéroter les machines à l'intérieur d'un réseau local (ta box, ton entreprise, un datacenter) et elles ne sont pas routables sur Internet. Aucun routeur du réseau public n'acceptera de transporter un paquet vers une adresse privée.
+
+Voici les trois plages à connaître :
+
+| Plage privée | Usage typique |
+| --- | --- |
+| `10.0.0.0` à `10.255.255.255` | grands réseaux d'entreprise, datacenters |
+| `172.16.0.0` à `172.31.255.255` | réseaux de taille moyenne |
+| `192.168.0.0` à `192.168.255.255` | box domestiques, petits réseaux |
+
+C'est pour ça que ta machine porte un `192.168.1.42` : c'est une adresse privée, valable seulement chez toi. Tout ce qui n'appartient pas à ces plages est, en gros, une adresse publique, unique à l'échelle de la planète et routable sur Internet.
+
+Le pont entre les deux mondes, c'est ta box. Elle possède une adresse publique côté Internet (le fameux `203.0.113.55`) et elle traduit les adresses privées de ton réseau vers cette adresse publique quand tes machines sortent. Ce mécanisme s'appelle le NAT, et il a sa propre leçon plus loin. Pour l'instant, garde l'image : à l'intérieur tu es en privé, à l'extérieur tout le monde te voit derrière une seule adresse publique.
+
+## des adresses particulières
+
+Quelques adresses ne désignent pas une machine ordinaire et méritent qu'on les connaisse.
+
+`127.0.0.1` est la boucle locale, la loopback. Elle désigne la machine elle-même. Quand tu pings `127.0.0.1`, le paquet ne touche jamais la carte réseau : il fait demi-tour à l'intérieur du système. C'est pratique pour tester qu'une application répond en local sans dépendre du réseau.
+
+L'adresse de diffusion (broadcast) sert à parler à toutes les machines d'un réseau d'un coup. Sur le réseau `192.168.1.0/24`, c'est `192.168.1.255`. Un paquet envoyé là est reçu par tout le monde sur ce réseau.
+
+Enfin `0.0.0.0` est une adresse spéciale au sens flou : selon le contexte elle veut dire « cette machine, adresse inconnue » ou « toutes les interfaces ». Un serveur qui écoute sur `0.0.0.0` accepte les connexions sur n'importe laquelle de ses adresses.
+
+## l'épuisement et IPv6
+
+Reprenons les 4 milliards d'adresses IPv4. À l'échelle d'une planète où chaque humain possède un téléphone, un ordinateur, parfois une montre et une poignée d'objets connectés, ce nombre est ridiculement petit. Les blocs d'adresses publiques ont commencé à manquer dès le début des années 2010. Le NAT et les plages privées ont retardé l'échéance, mais ils ne créent pas de nouvelles adresses.
+
+La vraie réponse, c'est IPv6. Une adresse IPv6 tient sur 128 bits au lieu de 32. L'espace devient si vaste qu'on a du mal à se le représenter : on parle de milliards de milliards d'adresses par millimètre carré de surface terrestre. La pénurie disparaît.
+
+Comme 128 bits feraient une notation décimale interminable, IPv6 s'écrit en hexadécimal, en huit groupes de quatre chiffres séparés par des deux-points :
+
+```text
+2001:0db8:85a3:0000:0000:8a2e:0370:7334
+```
+
+On peut raccourcir les groupes de zéros, ce qui donne souvent des adresses plus courtes à l'écran. Le principe de fond reste le même : une partie réseau, une partie hôte, du routage hiérarchique.
+
+<Callout type="warning">
+La transition IPv4 vers IPv6 traîne depuis des années. Les deux coexistent encore partout, et beaucoup de réseaux font tourner les deux en parallèle (on dit « dual stack »). Tu vas continuer à voir de l'IPv4 pendant longtemps, donc maîtrise-la d'abord. IPv6 n'est ici qu'un aperçu.
+</Callout>
+
+## à toi de jouer
+
+Repère sur ta propre machine ce qui est privé et ce qui est public, puis vérifie la boucle locale.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Distinguer privé, public et loopback" commands={{"ip addr show eth0": "inet 192.168.1.42/24 brd 192.168.1.255 scope global eth0", "hostname -I": "192.168.1.42", "curl -s ifconfig.me": "203.0.113.55", "ping -c1 127.0.0.1": "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.03 ms"}} />
+
+<Quiz id="q-1" question="Combien de bits compose une adresse IPv4 ?" options={["8 bits", "32 bits", "64 bits", "128 bits"]} correct={1} />
+
+<Quiz id="q-2" question="Parmi ces adresses, laquelle est une adresse privée non routable sur Internet ?" options={["203.0.113.55", "8.8.8.8", "192.168.1.42", "1.1.1.1"]} correct={2} />
+
+<Quiz id="q-3" question="À quoi correspond l'adresse 127.0.0.1 ?" options={["L'adresse publique de la box", "La machine elle-même (boucle locale)", "L'adresse de diffusion du réseau", "Une adresse IPv6 raccourcie"]} correct={1} />
+
+## à retenir
+
+- Une adresse IPv4 tient sur 32 bits, écrits en quatre octets de 0 à 255 séparés par des points (notation décimale pointée).
+- L'adresse est logique, pas gravée comme la MAC, et elle est hiérarchique : une partie réseau, une partie hôte. C'est ce qui permet le routage mondial.
+- Le découpage réseau/hôte est fixé par le masque de sous-réseau, détaillé à la prochaine leçon.
+- Les plages privées (RFC 1918) sont `10.x`, `172.16` à `172.31.x` et `192.168.x` : internes, non routables sur Internet. Le reste est public.
+- `127.0.0.1` désigne la machine elle-même, l'adresse de diffusion parle à tout le réseau, `0.0.0.0` est un cas spécial.
+- IPv4 est presque épuisée. IPv6 prend le relais sur 128 bits en notation hexadécimale, avec un espace d'adresses immense.
+
+OK 04 écrit

@@ -1,0 +1,92 @@
+---
+refCode: CL-LSN-149-V01
+slug: osint-domaines-infrastructure
+title: "OSINT sur les domaines et l'infrastructure"
+description: "Dessiner l'empreinte technique d'une organisation à partir de sources ouvertes : WHOIS et ses limites, les enregistrements DNS, les journaux de transparence des certificats, et les moteurs d'appareils connectés."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-146-V01"]
+---
+
+Tape un nom de domaine dans ton navigateur et tu vois une page. Mais derrière ce nom, il y a une infrastructure entière : des serveurs, des adresses IP, des sous-domaines pour le webmail, le VPN, l'admin, des certificats émis au fil des ans, des services qui écoutent sur des ports. Une bonne partie de tout ça est consultable depuis des sources ouvertes, sans jamais toucher la cible.
+
+C'est exactement ce que fait un pentester pendant la phase de reconnaissance passive. Avant de lancer le moindre scan, il collecte ce qui est déjà public : à quoi ressemble la surface de l'organisation vue de l'extérieur. L'idée de cette leçon, c'est de te donner les quatre grandes familles de sources et de te montrer comment elles se complètent. Tu vas voir qu'avec un peu de patience, on reconstitue une carte assez précise sans rien faire d'agressif.
+
+Un mot avant de commencer. Consulter un index public est une chose. Aller sonder activement une machine en est une autre. On reviendra sur cette frontière, mais garde-la en tête dès maintenant : la recon passive se contente de lire ce que d'autres ont déjà publié.
+
+## WHOIS
+
+Quand quelqu'un enregistre un domaine, il passe par un bureau d'enregistrement (le registrar) et fournit des informations : qui est le titulaire, ses coordonnées, les dates de création et d'expiration, les serveurs de noms utilisés. La base WHOIS expose une partie de ces données. C'est souvent le premier réflexe : qui possède ce domaine, depuis quand, et chez quel registrar.
+
+Ça peut donner des pistes précieuses. Une date de création récente sur un domaine qui se fait passer pour une grande banque, c'est un signal. Un serveur de noms partagé entre deux domaines suggère qu'ils sont gérés par la même entité.
+
+Le problème, c'est que les coordonnées du titulaire sont de plus en plus masquées. Beaucoup de registrars proposent un service d'anonymisation (privacy proxy) qui remplace le nom réel par celui d'un intermédiaire. Et depuis le RGPD, les données personnelles des titulaires européens sont largement caviardées dans les réponses WHOIS publiques. Tu obtiendras souvent les dates et les serveurs de noms, rarement le vrai nom de la personne.
+
+<Callout type="info">
+Ne traite jamais une réponse WHOIS comme une preuve d'identité. Les champs peuvent être faux, anonymisés, ou vidés par le RGPD. Ce qui reste fiable, ce sont les éléments techniques : dates, registrar, serveurs de noms. Le reste, c'est de l'indice, pas de la certitude.
+</Callout>
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Interroger WHOIS" commands={{"whois example.com": "Registrar: ICANN\nCreation Date: 1995-08-14\nUpdated Date: 2023-08-14\nName Server: a.iana-servers.net\nName Server: b.iana-servers.net\nRegistrant: REDACTED FOR PRIVACY", "whois -h whois.example.com domain.test": "No match for DOMAIN.TEST"}} />
+
+## le DNS
+
+Le DNS traduit les noms en adresses, mais il porte beaucoup plus que ça. Chaque domaine expose des enregistrements de différents types, et chacun raconte un bout de l'infrastructure.
+
+Un enregistrement A donne l'adresse IPv4 d'un nom, AAAA son équivalent IPv6. Les enregistrements MX listent les serveurs de courrier : ils te disent si l'organisation héberge son mail elle-même ou passe par un prestataire (Google, Microsoft). Les enregistrements TXT contiennent souvent des politiques anti-spam comme SPF et DMARC, qui révèlent au passage quels services ont le droit d'envoyer du mail au nom du domaine. Les enregistrements NS pointent vers les serveurs de noms qui font autorité.
+
+Le vrai gisement, ce sont les sous-domaines. Une organisation ne se limite presque jamais à `exemple.com`. Il y a `mail.exemple.com`, `vpn.exemple.com`, `dev.exemple.com`, `admin.exemple.com`, `api.exemple.com`. Chaque sous-domaine est une porte potentielle, et chacun pointe vers une machine ou un service. Plus tu en trouves, plus la carte se précise.
+
+Trouver des sous-domaines à l'aveugle est laborieux. On peut tester une liste de noms courants, mais ça ressemble vite à du devinette. Heureusement, il existe une source bien plus efficace.
+
+## la transparence des certificats
+
+Quand un site obtient un certificat TLS (le `https`), l'autorité qui le délivre l'inscrit dans des journaux publics et infalsifiables : les journaux de transparence des certificats (Certificate Transparency). Le but initial était de détecter les certificats émis frauduleusement. Effet de bord pour l'enquêteur : chaque nom couvert par un certificat se retrouve dans ces journaux.
+
+Concrètement, si l'équipe a un jour mis en place `vpn-interne.exemple.com` avec un certificat valide, le nom est journalisé pour toujours, même si le service a été coupé depuis. On découvre ainsi des sous-domaines que personne ne devine : environnements de test, anciens portails, machines internes oubliées. Des sites comme crt.sh exposent ces journaux et se requêtent facilement.
+
+C'est presque toujours plus rentable que de deviner des noms un par un. Tu ne tries pas une liste de possibilités, tu lis une liste de noms réellement utilisés.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Énumérer via les certificats et le DNS" commands={{"dig +short example.com": "93.184.216.34", "dig +short mx example.com": "10 mail.example.com.", "dig +short txt example.com": "v=spf1 -all", "curl -s 'https://crt.sh/?q=%25.example.com&output=json'": "[{name_value: 'vpn.example.com'}, {name_value: 'api.example.com'}, {name_value: 'staging.example.com'}, {name_value: 'admin.example.com'}]"}} />
+
+## les moteurs d'appareils connectés
+
+Des moteurs comme Shodan, Censys ou ZoomEye balayent en permanence Internet et indexent les services qu'ils trouvent. Pour chaque adresse IP, ils enregistrent les ports ouverts, les bannières renvoyées par les services, les versions de logiciels, parfois les certificats et des captures d'écran. C'est un peu un moteur de recherche, mais pour les machines au lieu des pages web.
+
+Pour un enquêteur, c'est une mine. À partir des adresses IP trouvées via le DNS, tu interroges Shodan et tu vois ce qui tourne dessus : un serveur web en telle version, une base de données qui traîne sur un port public, un panneau d'administration exposé, du matériel réseau identifiable. Tu lis la surface exposée de l'organisation sans avoir scanné quoi que ce soit toi-même. Le scan, c'est Shodan qui l'a fait, pour tout Internet, en continu.
+
+<Callout type="warning">
+Attention à la frontière légale. Lire un index public comme Shodan est passif : tu consultes des données déjà collectées par un tiers. Lancer toi-même un scan de ports ou tester des services sur une cible que tu n'es pas autorisé à viser, c'est de la reconnaissance active, et selon les pays ça peut tomber sous le coup de la loi. La recon active ne se fait que sur un périmètre explicitement autorisé, par écrit.
+</Callout>
+
+## assembler l'empreinte
+
+Aucune de ces sources ne suffit seule. La valeur vient du croisement. WHOIS te donne le domaine et son contexte. Le DNS te donne les adresses, les serveurs de courrier, et un premier lot de sous-domaines. La transparence des certificats complète la liste avec les noms oubliés. Les moteurs d'appareils te disent ce qui tourne derrière chaque adresse.
+
+Tu relies tout ça : un domaine se résout vers une plage d'IP, ces IP hébergent tels services, plusieurs sous-domaines partagent la même machine, le mail passe par tel prestataire. Tu obtiens une carte de l'empreinte technique. C'est précisément le livrable de la phase de recon en pentest : avant de toucher quoi que ce soit, tu sais où sont les portes, lesquelles ont l'air anciennes, et lesquelles méritent un regard.
+
+Le modèle mental à garder : tu n'inventes rien, tu agrèges du public. Chaque source a ses angles morts (WHOIS caviardé, DNS qui ne montre que ce qui est déclaré, certificats qui ratent les services sans HTTPS), donc tu recoupes pour combler les trous.
+
+## à toi de jouer
+
+Reprends un domaine et déroule la chaîne : WHOIS pour le contexte, DNS pour les adresses et le mail, certificats pour les sous-domaines, puis tu relèves les IP à passer dans un moteur d'appareils.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Dérouler la reconnaissance passive" commands={{"whois example.com": "Registrar: ICANN\nCreation Date: 1995-08-14\nName Server: a.iana-servers.net", "dig +short example.com": "93.184.216.34", "dig +short ns example.com": "a.iana-servers.net.\nb.iana-servers.net.", "curl -s 'https://crt.sh/?q=%25.example.com&output=json'": "[{name_value: 'vpn.example.com'}, {name_value: 'api.example.com'}, {name_value: 'old-portal.example.com'}]"}} />
+
+<Quiz id="q-1" question="Pourquoi une réponse WHOIS ne donne-t-elle souvent pas le vrai nom du titulaire d'un domaine ?" options={["Le DNS chiffre ces informations", "Les services d'anonymisation et le RGPD masquent les données personnelles", "WHOIS ne stocke jamais d'identité", "Seul le registrar peut lire ces champs"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle source révèle souvent des sous-domaines internes oubliés sans avoir à deviner des noms ?" options={["Les journaux de transparence des certificats", "Les enregistrements MX", "La date de création WHOIS", "Le port 443 ouvert"]} correct={0} />
+
+<Quiz id="q-3" question="Consulter Shodan pour voir les services exposés d'une organisation est considéré comme :" options={["De la reconnaissance active toujours illégale", "Un scan de ports lancé par toi", "De la reconnaissance passive, car tu lis un index déjà collecté", "Une intrusion sur la cible"]} correct={2} />
+
+## à retenir
+
+- WHOIS donne le registrar, les dates et les serveurs de noms. Les coordonnées du titulaire sont souvent anonymisées ou caviardées par le RGPD : indice, pas preuve.
+- Le DNS expose adresses (A, AAAA), serveurs de courrier (MX), politiques mail (TXT) et serveurs de noms (NS). Les sous-domaines sont le vrai gisement de pistes.
+- Les journaux de transparence des certificats listent tout nom ayant eu un certificat TLS, y compris des sous-domaines internes oubliés. Plus efficace que de deviner.
+- Les moteurs d'appareils (Shodan, Censys) indexent les services exposés : ports, bannières, versions. Tu vois la surface sans scanner.
+- Consulter ces index est passif et légal. Scanner ou sonder activement une cible non autorisée ne l'est pas. La recon active exige un périmètre autorisé par écrit.
+- L'empreinte technique naît du croisement des quatre sources, jamais d'une seule.
+
+OK 05 écrit

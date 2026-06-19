@@ -1,0 +1,112 @@
+---
+refCode: CL-LSN-123-V01
+slug: grc-politiques-securite
+title: "Politiques, standards et procédures"
+description: "Comprenez le corpus documentaire qui encadre la sécurité : la différence entre une politique, un standard, une procédure et une charte, et le cycle de vie qui fait vivre ces documents au lieu de les laisser dormir."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 460
+prerequisites: ["CL-LSN-121-V01"]
+---
+
+Voici une situation banale. Un nouvel arrivant demande à son collègue : combien de caractères doit faire mon mot de passe ? Le collègue répond douze, mais il n'en est pas sûr. Il l'a entendu quelque part. Personne ne sait où c'est écrit, et personne ne sait si c'est encore vrai.
+
+Une règle de sécurité qui vit uniquement dans la tête des gens n'existe pas vraiment. On ne peut pas l'appliquer de façon constante, parce que chacun s'en souvient à sa manière. On ne peut pas la prouver à un auditeur, parce qu'il n'y a rien à montrer. Et le jour où la personne qui la connaissait part, la règle part avec elle.
+
+C'est exactement le problème que le corpus documentaire vient résoudre. Une organisation qui prend la sécurité au sérieux écrit ses règles, et elle les écrit à plusieurs niveaux selon ce qu'elle veut dire. Cette leçon décrit ces niveaux, comment ils s'emboîtent, et comment éviter le travers le plus courant : produire des documents que personne n'ouvre.
+
+## la hiérarchie
+
+Les documents de sécurité ne sont pas tous au même étage. Quatre niveaux reviennent partout, et chacun répond à une question différente.
+
+La **politique** dit l'intention. C'est le document de haut niveau, court, signé par la direction. Il fixe le quoi et le pourquoi : nous protégeons nos accès parce que la confidentialité de nos données engage notre responsabilité. Une politique ne descend pas dans le détail technique. Elle pose un cap qui doit tenir plusieurs années sans devenir faux.
+
+Le **standard** dit la règle précise. Il traduit l'intention en chiffres et en seuils. Là où la politique affirme « les accès doivent être protégés », le standard tranche : longueur minimale de douze caractères, double authentification obligatoire sur les comptes à privilèges. C'est le niveau du combien, du quoi exactement. Un standard est contraignant, pas indicatif.
+
+La **procédure** dit le comment. C'est le mode d'emploi, pas à pas, pour exécuter une tâche conforme au standard. Réinitialiser un mot de passe, ouvrir un compte, révoquer un accès : la procédure liste les étapes dans l'ordre, qui fait quoi, avec quel outil. Deux personnes qui suivent la même procédure arrivent au même résultat.
+
+La **charte** (parfois appelée directive) dit les engagements des utilisateurs. C'est le document que chacun lit et accepte, souvent à l'embauche. Il formule en langage clair ce que l'on attend des personnes : ne pas partager ses identifiants, ne pas brancher de clé USB inconnue, signaler un courriel suspect. La charte transforme des règles abstraites en engagements personnels.
+
+<Diagram caption="La hiérarchie documentaire de la sécurité">
+flowchart TD
+  A[Politique - intention, le quoi et le pourquoi] --> B[Standard - regle precise, le combien]
+  B --> C[Procedure - le comment, pas a pas]
+  A --> D[Charte / directive - engagements des utilisateurs]
+</Diagram>
+
+<Callout type="info">
+Le repère pratique : plus on descend, plus le texte devient précis et concret. La politique change rarement. Les procédures changent souvent, parce qu'elles dépendent des outils du moment.
+</Callout>
+
+## un exemple qui descend les niveaux
+
+Prenons un sujet que tout le monde connaît, les mots de passe, et regardons-le traverser les quatre niveaux.
+
+| Niveau | Document | Ce qu'il dit |
+| --- | --- | --- |
+| Politique | Politique de gestion des accès | L'organisation protège ses systèmes par une authentification fiable de chaque utilisateur. |
+| Standard | Standard d'authentification | Mot de passe de douze caractères minimum, renouvelé en cas de fuite, double authentification sur les comptes sensibles. |
+| Procédure | Procédure de réinitialisation | Étapes pour réinitialiser un mot de passe oublié, de la demande au support jusqu'à la confirmation par l'utilisateur. |
+| Charte | Charte informatique | L'utilisateur s'engage à ne jamais partager son mot de passe ni à le réutiliser sur des services externes. |
+
+Lisez le tableau de haut en bas et la logique apparaît. La politique fixe un principe stable. Le standard le rend mesurable. La procédure le rend exécutable. La charte le rend opposable à chaque personne. Aucun niveau ne suffit seul. Une charte sans standard ne dit pas combien de caractères. Un standard sans procédure laisse chacun improviser la réinitialisation.
+
+## le cycle de vie
+
+Un document de sécurité n'est pas gravé une fois pour toutes. Il suit un cycle, et c'est ce cycle qui le maintient vivant.
+
+On commence par **rédiger**. Quelqu'un écrit le texte, en s'appuyant sur les risques réels et, souvent, sur un référentiel externe comme l'ISO 27001 ou les guides de l'ANSSI.
+
+Puis on fait **approuver** par la direction. Sans validation hiérarchique, un document n'a aucune autorité. C'est la signature de la direction qui transforme une bonne idée en règle que l'on peut faire respecter.
+
+Ensuite on **diffuse**. Un document approuvé mais rangé dans un dossier que personne ne trouve ne sert à rien. La diffusion passe par un endroit connu de tous, et idéalement par une accusé de lecture pour les textes que chacun doit accepter, comme la charte.
+
+On **applique**. Les règles entrent dans les outils, dans les contrôles, dans les habitudes. C'est l'étape où l'écrit rencontre le réel, et où l'on découvre parfois qu'une règle est intenable et qu'il faut la revoir.
+
+Enfin on **révise** à intervalle régulier, souvent une fois par an. Le monde bouge : nouveaux outils, nouvelles menaces, nouvelle réglementation. Un document figé devient faux sans que personne ne l'ait décidé. La date de dernière revue et la prochaine échéance figurent toujours quelque part dans le document, justement pour rendre cet oubli visible.
+
+## le piège des documents morts
+
+Demandez à un salarié au hasard ce que dit la charte informatique qu'il a signée. La réponse, le plus souvent, est un haussement d'épaules. C'est là le travers que tout le monde redoute : un corpus de documents que personne ne lit, produits pour cocher une case, et rangés jusqu'au prochain audit.
+
+Ce piège n'est pas une fatalité, il vient de mauvais réflexes de rédaction. Voici comment l'éviter.
+
+Faites **court**. Un standard de quarante pages ne sera pas lu. Quand un texte ne tient pas en quelques pages, c'est souvent qu'il mélange plusieurs niveaux ou qu'il noie la règle sous le commentaire.
+
+Rendez-les **utiles**. Un document doit répondre à une question que les gens se posent vraiment. La procédure de réinitialisation est lue parce qu'on en a besoin un mardi matin. Écrivez en pensant au moment où quelqu'un l'ouvrira.
+
+Rendez-les **connus**. Liez le corpus à la sensibilisation. Une charte présentée et expliquée à l'arrivée, rappelée dans les formations, vaut dix fois une charte signée sans être lue.
+
+<Callout type="warning">
+Le signe qu'un corpus est mort : on ne le retrouve qu'au moment de l'audit. S'il ne sert que de preuve une fois par an, c'est qu'il n'a jamais servi le reste de l'année. Un bon document a une vie quotidienne, pas seulement une vie d'archive.
+</Callout>
+
+## pourquoi l'écrit compte
+
+On pourrait croire que toute cette paperasse est un mal nécessaire imposé par les auditeurs. Elle remplit en réalité trois fonctions que rien d'autre ne remplit.
+
+L'écrit est la **base de l'application**. On ne peut pas reprocher à quelqu'un d'avoir enfreint une règle qui n'existait nulle part. Le document rend la règle connaissable, donc opposable. Sans lui, toute sanction ou correction repose sur du sable.
+
+L'écrit est la **preuve en audit**. Quand un auditeur ou un client demande comment vous gérez les accès, vous ne racontez pas une histoire, vous montrez un standard daté et approuvé. La conformité se démontre avec des documents, pas avec des intentions.
+
+L'écrit assure la **continuité**. Les personnes changent, partent, oublient. Un document survit aux départs. La connaissance des règles ne dépend plus d'une mémoire individuelle ; elle est posée quelque part où le suivant pourra la reprendre.
+
+Le modèle mental à garder : un document de sécurité est un contrat avec le futur. Il fige aujourd'hui une décision pour qu'elle reste applicable, vérifiable et transmissible demain, quand ni le contexte ni les gens ne seront plus les mêmes.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Quelle est la bonne distinction entre une politique et une procédure ?" options={["La politique donne le mode d'emploi pas à pas, la procédure fixe l'intention", "La politique fixe l'intention et le pourquoi, la procédure donne le comment pas à pas", "Politique et procédure disent la même chose à deux endroits différents", "La procédure est signée par la direction, la politique par les utilisateurs"]} correct={1} />
+
+<Quiz id="q-2" question="Pourquoi une règle de sécurité qui n'est écrite nulle part pose-t-elle problème ?" options={["Parce qu'elle coûte plus cher à mettre en oeuvre", "Parce qu'elle est forcément techniquement fausse", "Parce qu'on ne peut ni l'appliquer de façon constante ni la prouver en audit", "Parce qu'elle empêche la double authentification"]} correct={2} />
+
+<Quiz id="q-3" question="Quel est le meilleur moyen d'éviter un corpus de documents que personne ne lit ?" options={["Les rendre courts, utiles, connus et liés à la sensibilisation", "Les allonger pour qu'ils paraissent plus sérieux", "Ne les sortir qu'au moment de l'audit annuel", "Interdire aux utilisateurs d'y accéder pour les protéger"]} correct={0} />
+
+## à retenir
+
+- Quatre niveaux : la politique dit l'intention, le standard dit la règle précise, la procédure dit le comment, la charte dit les engagements des utilisateurs.
+- Plus on descend dans la hiérarchie, plus le texte est concret et plus il change souvent.
+- Le même sujet, les mots de passe, se décline aux quatre niveaux : principe, seuils chiffrés, mode d'emploi, engagement personnel.
+- Le cycle de vie d'un document : rédiger, faire approuver par la direction, diffuser, appliquer, réviser régulièrement. Un document non révisé devient faux.
+- L'écrit sert à trois choses : rendre la règle applicable, la prouver en audit, assurer la continuité quand les personnes changent.
+- Le piège des documents morts s'évite avec des textes courts, utiles, connus et reliés à la sensibilisation.

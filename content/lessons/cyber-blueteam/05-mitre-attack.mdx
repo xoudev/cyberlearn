@@ -1,0 +1,115 @@
+---
+refCode: CL-LSN-137-V01
+slug: blueteam-mitre-attack
+title: "MITRE ATT and CK : cartographier les attaques"
+description: "Comprenez la matrice qui catalogue les comportements d'attaquants en tactiques et techniques, pourquoi elle donne à la défense un langage commun, et comment cartographier sa couverture de détection."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 480
+prerequisites: ["CL-LSN-133-V01"]
+---
+
+Pour défendre un système, il faut connaître la palette de gestes d'un attaquant. Pas en théorie vague, mais concrètement : par où il entre, comment il se maintient, comment il vole des données. Pendant longtemps chaque équipe décrivait ça avec ses propres mots, et deux analystes pouvaient parler du même incident sans se comprendre. MITRE ATT&CK règle ce problème. C'est un catalogue partagé des comportements d'attaquants, construit à partir d'attaques réelles observées sur le terrain, classées et nommées de façon stable.
+
+Je m'en sers tous les jours au SOC. Quand je relie une alerte à une entrée de la matrice, je sais exactement de quoi je parle, et la personne d'à côté aussi. C'est ça la valeur principale : un vocabulaire commun, adossé à des faits.
+
+## tactiques et techniques
+
+La matrice repose sur deux niveaux. La tactique répond au pourquoi : quel objectif l'attaquant cherche à atteindre à cet instant. La technique répond au comment : la manière concrète d'y arriver.
+
+Les tactiques sont peu nombreuses, une douzaine pour la matrice Enterprise. On y trouve l'accès initial, l'exécution, la persistance, l'élévation de privilèges, l'évasion de défense, l'accès aux identifiants, la découverte, le mouvement latéral, la collecte, le commandement et contrôle, l'exfiltration, l'impact. Chacune est une colonne de la matrice.
+
+Sous chaque tactique vivent les techniques, et c'est là que ça devient précis. Une même tactique se réalise de dizaines de façons différentes.
+
+| Tactique (le but) | Exemple de technique (le comment) |
+| --- | --- |
+| Accès initial | Hameçonnage avec pièce jointe piégée |
+| Exécution | Interpréteur de commandes (PowerShell, Bash) |
+| Persistance | Tâche planifiée ou service Windows créé |
+| Élévation de privilèges | Abus d'un jeton d'accès volé |
+| Accès aux identifiants | Vidage de la mémoire du processus LSASS |
+| Mouvement latéral | Connexion RDP avec des identifiants volés |
+| Exfiltration | Envoi de données vers un canal de commande et contrôle |
+
+Chaque technique a un identifiant stable, par exemple T1059 pour l'interpréteur de commandes, avec des sous-techniques numérotées (T1059.001 pour PowerShell). Cet identifiant ne change pas, ce qui permet de le citer dans un ticket, un rapport ou une règle de détection sans ambiguïté.
+
+<Callout type="info">
+Une technique décrit un comportement, pas un outil précis ni un logiciel malveillant nommé. PowerShell n'est pas malveillant en soi : c'est son usage pour exécuter du code hostile qui correspond à la technique T1059.001. La matrice reste donc valable même quand les outils des attaquants changent.
+</Callout>
+
+Pour consulter la matrice complète et naviguer entre tactiques et techniques, la source officielle est la meilleure porte d'entrée.
+
+<ExternalLink href="https://attack.mitre.org/" description="La base de connaissances des tactiques et techniques d'attaquants">MITRE ATT and CK</ExternalLink>
+
+## pourquoi côté défense
+
+Le premier bénéfice, je l'ai dit, c'est le langage commun. Quand j'écris dans un rapport que l'attaquant a utilisé T1003 (vidage d'identifiants), n'importe quel analyste sur la planète sait précisément ce qui s'est passé. Pas besoin de paraphraser, pas de risque de malentendu. Ça vaut entre collègues, mais aussi entre organisations qui partagent du renseignement sur les menaces.
+
+Le deuxième bénéfice, c'est la comparaison. Les rapports de menaces décrivent souvent les groupes d'attaquants par les techniques qu'ils emploient. Quand un éditeur publie une analyse, elle est presque toujours étiquetée avec des identifiants ATT&CK. Du coup je peux comparer deux campagnes, ou vérifier si mon outil de détection couvre bien les techniques d'un groupe qui vise mon secteur.
+
+Le troisième bénéfice, c'est la mesure. Une matrice, ce n'est pas qu'un dictionnaire : c'est une grille sur laquelle je peux poser ma propre situation. Et c'est là que ça devient un outil de pilotage.
+
+## cartographier sa couverture
+
+Voici le modèle mental le plus parlant. Imagine la matrice imprimée comme un grand tableau, une colonne par tactique, et dans chaque colonne les techniques empilées. Maintenant je colorie chaque case selon ce que je sais détecter.
+
+Vert : j'ai une règle qui se déclenche de façon fiable sur cette technique. Orange : j'ai une visibilité partielle, je verrais peut-être l'attaque mais sans certitude. Rouge : aveugle, cette technique passerait sans alerte.
+
+Ce coloriage donne une carte de chaleur de ma couverture de détection. D'un coup d'œil je vois mes points forts et, surtout, mes trous. Si toute la colonne mouvement latéral est rouge, je sais qu'un attaquant déjà entré pourrait se promener sur mon réseau sans que je m'en aperçoive. Cette information vaut de l'or pour décider où investir.
+
+<Callout type="success">
+La carte de chaleur transforme une question floue, est-ce que je détecte bien les attaques, en une liste concrète et priorisable : voici les techniques où je suis aveugle, classées par fréquence d'usage réel. On arrête de couvrir ce qui est facile à couvrir pour couvrir ce qui compte.
+</Callout>
+
+Un piège à connaître : être vert partout n'est ni réaliste ni l'objectif. Certaines techniques sont rares ou très coûteuses à détecter. On priorise selon ce que les attaquants utilisent vraiment contre des cibles comme la nôtre, pas selon l'envie de remplir le tableau.
+
+## ATT and CK et la kill chain
+
+On confond parfois ATT&CK avec la cyber kill chain. Les deux décrivent des attaques, mais à des échelles différentes, et ils se complètent.
+
+La kill chain découpe une attaque en grandes étapes successives, de la reconnaissance jusqu'à l'action finale sur l'objectif. C'est une vue linéaire, en sept étapes dans le modèle d'origine. Elle raconte le déroulé d'une intrusion comme une histoire avec un début, un milieu et une fin.
+
+ATT&CK ne raconte pas une histoire linéaire. C'est un référentiel de comportements. Là où la kill chain dit reconnaissance, livraison, exploitation, ATT&CK fournit le détail des techniques précises mobilisables à chacune de ces étapes. La kill chain donne la trame, ATT&CK donne le contenu de chaque case.
+
+| | Cyber kill chain | MITRE ATT and CK |
+| --- | --- | --- |
+| Forme | Étapes linéaires d'une attaque | Matrice de tactiques et techniques |
+| Granularité | Grosses phases | Comportements précis et identifiés |
+| Usage | Comprendre le déroulé global | Cartographier détection et techniques |
+
+En pratique je ne choisis pas l'un contre l'autre. La kill chain m'aide à expliquer une intrusion de bout en bout à un public non technique. ATT&CK m'aide à travailler les détails de détection et de réponse.
+
+## au quotidien
+
+Concrètement, à quoi ça sert dans une journée de SOC. Trois usages reviennent sans cesse.
+
+Relier une alerte à une technique. Une alerte tombe : exécution PowerShell encodée en base64. Je l'étiquette T1059.001 et T1027 (fichiers obfusqués). Cette étiquette oriente tout de suite mes hypothèses sur ce que l'attaquant cherche.
+
+Enrichir une enquête. Une fois une technique identifiée, je regarde ce que les attaquants font typiquement avant et après. Si j'ai du vidage d'identifiants, je vais chercher du mouvement latéral dans les heures qui suivent, parce que c'est la suite logique. La matrice me souffle où regarder.
+
+Guider la chasse. En dehors de toute alerte, je choisis une technique non couverte sur ma carte de chaleur et je vais chasser activement ses traces dans les journaux. C'est de la chasse aux menaces structurée par la matrice plutôt que par l'intuition seule.
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Dans MITRE ATT and CK, quelle est la différence entre une tactique et une technique ?" options={["La tactique est le but visé par l'attaquant, la technique est la manière concrète d'y parvenir", "La tactique est manuelle, la technique est automatisée", "La tactique vise les serveurs, la technique vise les postes", "Il n'y a aucune différence, ce sont deux mots pour la meme chose"]} correct={0} />
+
+<Quiz id="q-2" question="À quoi sert le coloriage de la matrice en carte de chaleur côté défense ?" options={["À choisir la couleur du tableau de bord", "À visualiser quelles techniques on détecte et lesquelles nous échappent, pour prioriser", "À classer les attaquants par dangerosité", "À chiffrer les fichiers sensibles"]} correct={1} />
+
+<Quiz id="q-3" question="Comment ATT and CK se situe par rapport à la cyber kill chain ?" options={["ATT and CK remplace la kill chain qui est obsolète", "La kill chain donne le détail des techniques, ATT and CK donne les étapes", "La kill chain donne le déroulé global en étapes, ATT and CK détaille les techniques de chaque étape", "Les deux décrivent la meme chose au mot pres"]} correct={2} />
+
+</QuizGroup>
+
+## à retenir
+
+- MITRE ATT&CK est un catalogue partagé des comportements d'attaquants, bâti à partir d'attaques réelles.
+- Deux niveaux : la tactique est le but (accès initial, persistance, exfiltration), la technique est le comment, avec un identifiant stable du type T1059.
+- Une technique décrit un comportement, pas un outil précis : la matrice survit au changement des outils.
+- Côté défense, elle apporte un langage commun, la comparaison entre menaces et outils, et la mesure de sa couverture.
+- La carte de chaleur, en coloriant chaque technique selon ce qu'on détecte, révèle les trous de détection et permet de prioriser.
+- La kill chain donne la trame linéaire d'une attaque ; ATT&CK détaille les techniques à chaque étape. Ils se complètent.
+- Au quotidien : étiqueter une alerte, enrichir une enquête en anticipant la suite, guider la chasse aux menaces.
+
+OK 05 écrit

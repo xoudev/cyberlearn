@@ -1,0 +1,340 @@
+---
+refCode: CL-LSN-024-V01
+slug: js-projet
+title: "Projet : un quiz interactif en JavaScript"
+description: "Assemblez tout le parcours en construisant un moteur de quiz : stocker les questions, vérifier les réponses, calculer le score et afficher un bilan."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 60
+xpReward: 600
+prerequisites: ["CL-LSN-022-V01", "CL-LSN-018-V01"]
+---
+
+Vous êtes au bout du parcours. Variables, tableaux, objets, fonctions, boucles,
+conditions : chacune de ces briques est maintenant entre vos mains. Le moment est
+venu de les faire travailler ensemble dans un seul programme. On va construire un
+moteur de quiz, mais sans page web ni boutons pour l'instant. Juste de la logique,
+exécutable dans l'éditeur, avec `console.log` pour suivre ce qui se passe à chaque
+étape.
+
+Pourquoi un quiz ? Parce qu'il touche à presque tout ce qu'on a vu. Il faut ranger
+des questions quelque part, écrire une fonction qui dit si une réponse est juste,
+parcourir la liste, additionner les points, puis transformer un nombre en phrase
+lisible. On va le faire dans cet ordre, en testant chaque morceau avant de passer
+au suivant. À la fin, vous aurez un petit programme complet que vous pourrez
+brancher sur une vraie interface.
+
+## modéliser les questions
+
+La première décision est aussi la plus importante : où ranger les questions. On
+pourrait tout écrire en dur dans le code, une variable par énoncé, mais ce serait
+ingérable dès la troisième question. À la place, on range les questions dans un
+tableau, et chaque question est un objet.
+
+Un objet regroupe les informations qui vont ensemble. Pour une question, ça fait
+trois choses : l'énoncé (un texte), les options proposées (un tableau de textes),
+et l'index de la bonne réponse (un nombre, qui pointe vers une case du tableau
+d'options). On garde l'index plutôt que le texte de la bonne réponse, parce que
+comparer deux nombres est plus simple et plus sûr que comparer deux chaînes.
+
+<CodePlayground language="javascript">
+
+```javascript
+const questions = [
+  {
+    enonce: 'Quel mot-cle declare une variable qui ne change pas ?',
+    options: ['var', 'let', 'const'],
+    bonneReponse: 2
+  },
+  {
+    enonce: 'Que renvoie typeof [] ?',
+    options: ['array', 'object', 'list'],
+    bonneReponse: 1
+  },
+  {
+    enonce: 'Quelle methode ajoute un element a la fin d un tableau ?',
+    options: ['push', 'pop', 'shift'],
+    bonneReponse: 0
+  }
+];
+
+console.log('Nombre de questions :', questions.length);
+console.log('Premier enonce :', questions[0].enonce);
+console.log('Bonne option de la premiere :', questions[0].options[questions[0].bonneReponse]);
+```
+
+</CodePlayground>
+
+Remarquez ce qu'on a gagné. Les données vivent dans `questions`, séparées de toute
+logique. Si demain vous voulez vingt questions au lieu de trois, vous ne touchez
+que ce tableau. Le code qui pose les questions et compte les points ne bouge pas.
+Cette séparation entre les données et le traitement est une habitude qui paiera sur
+tous vos futurs programmes.
+
+## poser une question et vérifier
+
+Maintenant une fonction qui prend une question et la réponse choisie par le joueur,
+et qui dit simplement si c'est juste. Elle ne s'occupe de rien d'autre : pas
+d'affichage compliqué, pas de score. Une fonction, un travail.
+
+La réponse choisie sera un index, comme `bonneReponse`. Vérifier devient une seule
+comparaison.
+
+<CodePlayground language="javascript">
+
+```javascript
+const question = {
+  enonce: 'Quel mot-cle declare une variable qui ne change pas ?',
+  options: ['var', 'let', 'const'],
+  bonneReponse: 2
+};
+
+function verifier(question, indexChoisi) {
+  return indexChoisi === question.bonneReponse;
+}
+
+console.log('Reponse 2 (const) :', verifier(question, 2));
+console.log('Reponse 0 (var) :', verifier(question, 0));
+```
+
+</CodePlayground>
+
+La fonction renvoie un booléen, `true` ou `false`. C'est tout ce dont on a besoin
+pour la suite. On utilise `===` et pas `==`, pour comparer sans conversion
+implicite : un index est un nombre, on veut une égalité stricte de nombres.
+
+On peut aussi écrire une petite fonction d'affichage qui montre la question et ses
+options numérotées, histoire de simuler ce que verrait un joueur.
+
+<CodePlayground language="javascript">
+
+```javascript
+const question = {
+  enonce: 'Que renvoie typeof [] ?',
+  options: ['array', 'object', 'list'],
+  bonneReponse: 1
+};
+
+function afficherQuestion(question) {
+  console.log(question.enonce);
+  question.options.forEach((option, index) => {
+    console.log('  ' + index + ' - ' + option);
+  });
+}
+
+afficherQuestion(question);
+```
+
+</CodePlayground>
+
+`forEach` parcourt les options et nous donne au passage l'index de chacune. C'est
+exactement ce numéro que le joueur taperait pour répondre.
+
+## parcourir le quiz et compter
+
+On a une liste de questions et une fonction qui valide une réponse. Il manque le
+liant : parcourir toutes les questions, comparer chaque réponse du joueur, et
+compter les bonnes. Les réponses du joueur, on les range dans un tableau d'index,
+dans le même ordre que les questions.
+
+Première version, avec une boucle classique. Elle est lisible et on voit bien le
+compteur monter.
+
+<CodePlayground language="javascript">
+
+```javascript
+const questions = [
+  { enonce: 'const ?', options: ['var', 'let', 'const'], bonneReponse: 2 },
+  { enonce: 'typeof [] ?', options: ['array', 'object', 'list'], bonneReponse: 1 },
+  { enonce: 'ajouter en fin ?', options: ['push', 'pop', 'shift'], bonneReponse: 0 }
+];
+
+const reponsesJoueur = [2, 1, 2];
+
+function compterBonnes(questions, reponses) {
+  let score = 0;
+  for (let i = 0; i < questions.length; i++) {
+    if (reponses[i] === questions[i].bonneReponse) {
+      score = score + 1;
+    }
+  }
+  return score;
+}
+
+console.log('Score :', compterBonnes(questions, reponsesJoueur));
+```
+
+</CodePlayground>
+
+Le joueur a répondu `[2, 1, 2]`. Les deux premières sont justes, la dernière non
+(la bonne était `0`), donc le score affiché est `2`. La même logique s'écrit avec
+`reduce`, qui replie le tableau sur un seul nombre. Le résultat est identique, le
+style est juste plus compact.
+
+<CodePlayground language="javascript">
+
+```javascript
+const questions = [
+  { enonce: 'const ?', options: ['var', 'let', 'const'], bonneReponse: 2 },
+  { enonce: 'typeof [] ?', options: ['array', 'object', 'list'], bonneReponse: 1 },
+  { enonce: 'ajouter en fin ?', options: ['push', 'pop', 'shift'], bonneReponse: 0 }
+];
+
+const reponsesJoueur = [2, 1, 2];
+
+const score = questions.reduce((total, question, i) => {
+  return reponsesJoueur[i] === question.bonneReponse ? total + 1 : total;
+}, 0);
+
+console.log('Score :', score);
+```
+
+</CodePlayground>
+
+Les deux approches sont valables. La boucle parle d'elle-même quand on débute,
+`reduce` devient naturel une fois qu'on a l'habitude. Choisissez celle que vous
+relisez sans effort.
+
+## afficher le résultat
+
+Un score brut, `2 sur 3`, c'est correct mais sec. On va transformer ce nombre en
+un message qui dépend de la performance. C'est l'occasion d'utiliser les template
+literals, ces chaînes avec des accents graves qui acceptent des variables au
+milieu du texte.
+
+On calcule au passage le pourcentage, et on choisit la mention avec quelques
+conditions.
+
+<CodePlayground language="javascript">
+
+```javascript
+function afficherResultat(score, total) {
+  const pourcentage = Math.round((score / total) * 100);
+  let mention;
+
+  if (pourcentage === 100) {
+    mention = 'Sans faute';
+  } else if (pourcentage >= 60) {
+    mention = 'Bien joue';
+  } else {
+    mention = 'A retravailler';
+  }
+
+  return `Score : ${score}/${total} (${pourcentage}%) - ${mention}`;
+}
+
+console.log(afficherResultat(3, 3));
+console.log(afficherResultat(2, 3));
+console.log(afficherResultat(1, 3));
+```
+
+</CodePlayground>
+
+`Math.round` arrondit pour éviter un pourcentage à rallonge. La fonction renvoie la
+phrase au lieu de l'afficher directement, ce qui la rend réutilisable : on pourra
+plus tard l'envoyer vers une page web sans rien réécrire.
+
+## assembler le tout
+
+On a quatre morceaux : les données, la vérification, le comptage, l'affichage. Il
+reste à les enchaîner dans une seule fonction qui lance le quiz du début à la fin.
+On l'appelle `lancerQuiz`. Elle prend les questions et les réponses du joueur,
+affiche chaque question, compte le score, puis rend le bilan.
+
+Voici le moteur complet, en un bloc qui s'exécute seul.
+
+<CodePlayground language="javascript">
+
+```javascript
+const questions = [
+  {
+    enonce: 'Quel mot-cle declare une constante ?',
+    options: ['var', 'let', 'const'],
+    bonneReponse: 2
+  },
+  {
+    enonce: 'Que renvoie typeof [] ?',
+    options: ['array', 'object', 'list'],
+    bonneReponse: 1
+  },
+  {
+    enonce: 'Quelle methode ajoute en fin de tableau ?',
+    options: ['push', 'pop', 'shift'],
+    bonneReponse: 0
+  }
+];
+
+function verifier(question, indexChoisi) {
+  return indexChoisi === question.bonneReponse;
+}
+
+function afficherResultat(score, total) {
+  const pourcentage = Math.round((score / total) * 100);
+  let mention;
+  if (pourcentage === 100) mention = 'Sans faute';
+  else if (pourcentage >= 60) mention = 'Bien joue';
+  else mention = 'A retravailler';
+  return `Score : ${score}/${total} (${pourcentage}%) - ${mention}`;
+}
+
+function lancerQuiz(questions, reponses) {
+  let score = 0;
+  questions.forEach((question, i) => {
+    const choisi = reponses[i];
+    const juste = verifier(question, choisi);
+    console.log(`Q${i + 1} : ${question.enonce}`);
+    console.log(`  reponse : ${question.options[choisi]} -> ${juste ? 'juste' : 'faux'}`);
+    if (juste) score = score + 1;
+  });
+  console.log('---');
+  console.log(afficherResultat(score, questions.length));
+}
+
+lancerQuiz(questions, [2, 1, 0]);
+```
+
+</CodePlayground>
+
+Lancez-le. Vous voyez chaque question, la réponse donnée, si elle est juste, puis
+le bilan final. Changez le tableau de réponses passé à `lancerQuiz` et observez le
+score bouger. C'est le même programme, mais il réagit à des entrées différentes,
+exactement comme le ferait un vrai joueur.
+
+Prenez un instant pour relire la structure. Chaque fonction reste petite et ne fait
+qu'une chose. `lancerQuiz` ne sait pas comment on vérifie une réponse, elle délègue
+à `verifier`. Elle ne sait pas comment formuler le bilan, elle délègue à
+`afficherResultat`. C'est cette découpe qui rend le code facile à modifier sans tout
+casser.
+
+## pour aller plus loin
+
+Le moteur tourne en console, mais rien ne vous empêche de le brancher sur une page.
+Remplacez les `console.log` par des éléments HTML, transformez chaque option en
+bouton, et au clic appelez `verifier` avec l'index du bouton. La logique ne change
+pas, seul l'affichage devient visuel.
+
+Deux autres pistes naturelles : charger les questions depuis un fichier JSON avec
+`fetch` au lieu de les écrire en dur, ce qui sépare encore plus le contenu du code ;
+et garder le meilleur score d'une partie à l'autre en le rangeant dans
+`localStorage`. Chacune réutilise ce que vous avez déjà construit ici.
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Pourquoi stocke-t-on l'index de la bonne reponse plutot que son texte ?" options={["Pour economiser de la memoire", "Parce que comparer deux nombres est plus simple et plus sur que comparer deux chaines", "Parce que JavaScript interdit les chaines dans un objet"]} correct={1} />
+
+<Quiz id="q-2" question="Que renvoie la fonction verifier(question, indexChoisi) ?" options={["Le texte de la bonne reponse", "Le score total", "Un booleen true ou false"]} correct={2} />
+
+<Quiz id="q-3" question="Quel interet a separer les questions (donnees) du code qui les traite ?" options={["On peut ajouter ou modifier des questions sans toucher a la logique", "Le code s'execute plus vite", "C'est obligatoire en JavaScript"]} correct={0} />
+
+## à retenir
+
+On a construit un moteur de quiz complet à partir des briques du parcours. Les
+questions vivent dans un tableau d'objets, séparées du code. Une fonction `verifier`
+compare un index choisi à la bonne réponse et renvoie un booléen. Le comptage se
+fait avec une boucle ou un `reduce`, au choix. Un template literal transforme le
+score en message avec mention. Et `lancerQuiz` enchaîne le tout en déléguant à des
+fonctions courtes qui ne font chacune qu'une chose. À partir de là, brancher une
+interface web ou charger les questions depuis du JSON n'est plus qu'une question
+d'affichage et de chargement : la logique, elle, est déjà en place.
+
+OK 12 réécrit

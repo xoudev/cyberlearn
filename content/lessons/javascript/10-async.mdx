@@ -1,0 +1,197 @@
+---
+refCode: CL-LSN-022-V01
+slug: js-async
+title: "Asynchrone : promesses et async/await"
+description: "Domptez le code asynchrone en JavaScript : le modèle non bloquant, les promesses (Promise), then/catch, et la syntaxe moderne async/await."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 450
+prerequisites: ["CL-LSN-021-V01"]
+---
+
+Tu cliques sur un bouton qui va chercher des données sur un serveur. La réponse met parfois une demi-seconde, parfois deux. Pendant ce temps, qu'est-ce que ton programme fait ? S'il attend les bras croisés, la page se fige : plus de scroll, plus de clic, le navigateur affiche le petit sablier. C'est exactement ce qu'on veut éviter. Le code asynchrone, c'est la réponse de JavaScript à ce problème : lancer une opération qui prend du temps, et continuer à vivre en attendant qu'elle revienne.
+
+## le problème du temps
+
+JavaScript fait une chose à la fois. Un seul thread, une seule file. Si une ligne de code prend deux secondes à s'exécuter, les deux secondes suivantes sont mortes : rien d'autre ne tourne. Pour du calcul pur, ce n'est pas grave, ça va vite. Le souci arrive avec les opérations qui attendent quelque chose d'extérieur : une réponse réseau, un fichier sur le disque, un délai. Là, le programme ne calcule rien, il poireaute.
+
+Si cette attente était bloquante, tout le reste serait gelé pendant ce temps. La solution de JavaScript : déléguer l'attente à l'environnement (le navigateur, ou Node.js) et passer à la suite. Quand le résultat arrive, le code prévu pour le traiter est rappelé. La fonction setTimeout montre ce mécanisme dans sa forme la plus simple : elle planifie une fonction pour plus tard, sans bloquer la ligne d'après.
+
+Regarde l'ordre des messages. Le code synchrone passe en premier, et la fonction différée passe ensuite, même avec un délai de zéro.
+
+<CodePlayground language="javascript" starterCode={`console.log('1 - tout de suite');
+
+setTimeout(function () {
+  console.log('3 - plus tard');
+}, 0);
+
+console.log('2 - tout de suite aussi');
+// Affiche dans l ordre : 1, 2, 3`} />
+
+Zéro milliseconde et pourtant le message arrive en dernier. C'est le point à retenir : asynchrone ne veut pas dire « en parallèle » ni « plus vite », ça veut dire « plus tard, une fois que le code en cours a fini ». La fonction passée à setTimeout est mise dans une file et n'est appelée qu'après.
+
+## les callbacks et leur limite
+
+Comment dit-on à JavaScript « voici ce qu'il faut faire quand ce sera prêt » ? La première réponse, historiquement, c'est le callback : une fonction qu'on passe en argument, et que le système rappelle une fois l'opération terminée. setTimeout fonctionne déjà comme ça. Le callback, c'est juste la fonction qu'on lui donne.
+
+Ça marche très bien pour une étape. Le problème commence quand une opération dépend de la précédente, qui dépend de la précédente. Comme chaque résultat n'est disponible que dans le callback, on imbrique un callback dans un callback dans un callback. Voilà ce que ça donne avec trois étapes simulées.
+
+<CodePlayground language="javascript" starterCode={`function etape(nom, suite) {
+  setTimeout(function () {
+    console.log('Terminé :', nom);
+    suite();
+  }, 300);
+}
+
+etape('connexion', function () {
+  etape('chargement du profil', function () {
+    etape('chargement des messages', function () {
+      console.log('Tout est prêt');
+    });
+  });
+});`} />
+
+Trois étapes et le code part déjà en escalier vers la droite. Ajoute la gestion des erreurs à chaque niveau et ça devient vite difficile à lire et à maintenir. C'est ce qu'on appelle l'enfer des callbacks : la logique est correcte, mais la forme imbriquée masque le déroulé. On voulait juste « fais ça, puis ça, puis ça », et on se retrouve avec une pyramide.
+
+## les promesses
+
+Une promesse change la manière de représenter le résultat. Au lieu de passer une fonction à rappeler, une opération asynchrone te rend tout de suite un objet : une Promise. Cet objet ne contient pas encore la valeur, mais il représente le résultat futur. Tu y attaches ce que tu veux faire ensuite avec then pour le succès, et catch pour l'erreur.
+
+Une promesse vit dans un de trois états. Au départ elle est en attente (pending). Puis elle bascule, une fois pour toutes, soit en tenue (fulfilled) si l'opération réussit, soit en rompue (rejected) si elle échoue. Ce basculement est définitif : une promesse tenue ne redeviendra jamais en attente.
+
+À la création, on lui passe une fonction qui reçoit resolve (pour signaler le succès avec une valeur) et reject (pour signaler l'erreur). Ici on simule l'attente avec setTimeout.
+
+<CodePlayground language="javascript" starterCode={`const operation = new Promise(function (resolve, reject) {
+  setTimeout(function () {
+    const reussite = true;
+    if (reussite) {
+      resolve('Données reçues');
+    } else {
+      reject(new Error('Échec de l opération'));
+    }
+  }, 500);
+});
+
+operation
+  .then(function (resultat) {
+    console.log('Succès :', resultat);
+  })
+  .catch(function (erreur) {
+    console.log('Erreur :', erreur.message);
+  });`} />
+
+L'intérêt sur les callbacks devient visible quand on enchaîne : chaque then peut renvoyer une nouvelle promesse, et on les met les uns à la suite des autres au lieu de les imbriquer. Le code descend au lieu de partir en escalier. Un seul catch en bout de chaîne attrape les erreurs de toutes les étapes.
+
+## async et await
+
+Les promesses aplatissent le code, mais on peut faire encore plus lisible. Deux mots-clés : async et await. Mettre async devant une fonction veut dire deux choses : la fonction renvoie toujours une promesse, et on a le droit d'utiliser await à l'intérieur. Le mot await, lui, se place devant une promesse : il suspend la fonction jusqu'à ce que la promesse soit résolue, puis donne sa valeur directement, comme si l'opération avait été synchrone.
+
+Voici un point qui prête souvent à confusion. await ne bloque pas le programme. Il suspend uniquement la fonction async où il se trouve. Pendant cette suspension, le reste du programme continue de tourner : autres événements, autres tâches en file. C'est la fonction qui patiente, pas tout JavaScript.
+
+Le même exemple, version async/await. Les erreurs se gèrent avec un try/catch ordinaire, celui que tu connais déjà du synchrone.
+
+<CodePlayground language="javascript" starterCode={`function operationLongue() {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      resolve('Données reçues');
+    }, 500);
+  });
+}
+
+async function principal() {
+  try {
+    const resultat = await operationLongue();
+    console.log('Succès :', resultat);
+  } catch (erreur) {
+    console.log('Erreur :', erreur.message);
+  }
+}
+
+principal();`} />
+
+Enchaîner plusieurs étapes devient trivial : on aligne les await, et la lecture reste linéaire, de haut en bas, comme une recette.
+
+<CodePlayground language="javascript" starterCode={`function etape(nom, valeur, delai) {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      console.log('Terminé :', nom);
+      resolve(valeur);
+    }, delai);
+  });
+}
+
+async function enchainer() {
+  const jeton = await etape('connexion', 'token-123', 300);
+  console.log('Jeton :', jeton);
+
+  const profil = await etape('profil', 'Alice', 300);
+  console.log('Profil :', profil);
+
+  console.log('Tout est prêt');
+}
+
+enchainer();`} />
+
+Compare avec la pyramide de callbacks du début : même logique, même délais, mais ça se lit d'une traite.
+
+Reste le piège classique. Si tu oublies le await, tu ne récupères pas la valeur : tu récupères la promesse elle-même, l'objet en attente. Et un objet Promise n'est ni le texte ni le nombre que tu attendais. Observe la différence.
+
+<CodePlayground language="javascript" starterCode={`function lireValeur() {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      resolve(42);
+    }, 300);
+  });
+}
+
+async function demo() {
+  const sansAwait = lireValeur();
+  console.log('Sans await :', sansAwait);
+  // Affiche un objet Promise, pas 42
+
+  const avecAwait = await lireValeur();
+  console.log('Avec await :', avecAwait);
+  // Affiche 42, la vraie valeur
+}
+
+demo();`} />
+
+<Callout type="warning">
+await ne s'utilise qu'à l'intérieur d'une fonction déclarée async (ou au niveau supérieur d'un module). Dans une fonction classique, c'est une erreur de syntaxe. Et souviens-toi : oublier await te donne la promesse, pas sa valeur. C'est l'un des bugs les plus fréquents en asynchrone.
+</Callout>
+
+## à toi de jouer
+
+<Quiz id="q-1" question="Tu écris un console.log, puis un setTimeout(..., 0), puis un autre console.log. Dans quel ordre les messages apparaissent ?" options={["Les deux console.log d abord, puis le setTimeout", "Le setTimeout en premier, puis les deux console.log", "Tout en même temps", "L ordre est imprévisible"]} correct={0} />
+
+<Quiz id="q-2" question="Tu écris const x = chargerDonnees() sans await, où chargerDonnees renvoie une promesse. Que contient x ?" options={["La valeur finale de l opération", "Un objet Promise encore en attente", "Une erreur de syntaxe", "La chaîne vide"]} correct={1} />
+
+<Quiz id="q-3" question="Que fait await exactement ?" options={["Il met en pause tout le programme JavaScript", "Il suspend la fonction async jusqu à la résolution de la promesse, sans bloquer le reste", "Il transforme une fonction synchrone en boucle", "Il annule la promesse si elle prend trop de temps"]} correct={1} />
+
+À ton tour : complète la fonction async pour attendre la promesse simulée et afficher sa valeur réelle.
+
+<CodePlayground language="javascript" starterCode={`function chargerMessage() {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      resolve('Bonjour depuis une promesse');
+    }, 400);
+  });
+}
+
+async function afficher() {
+  const message = await chargerMessage();
+  console.log(message);
+}
+
+afficher();`} />
+
+## à retenir
+
+- JavaScript a un seul thread et fait une chose à la fois ; l'asynchrone sert à attendre une opération longue sans figer le programme.
+- setTimeout planifie une fonction pour plus tard : le code différé passe après tout le code synchrone en cours, même avec un délai de zéro.
+- Un callback est une fonction rappelée une fois l'opération finie ; en enchaîner beaucoup mène à l'imbrication illisible, l'enfer des callbacks.
+- Une promesse (Promise) représente un résultat futur, avec trois états : en attente, tenue, rompue. On la lit avec then et catch, et on l'enchaîne à plat.
+- async/await pose une syntaxe lisible sur les promesses : await suspend la fonction (pas tout le programme) jusqu'à la résolution, puis renvoie la valeur.
+- Les erreurs se gèrent avec try/catch autour des await.
+- Oublier await te donne la promesse au lieu de sa valeur : un piège fréquent à surveiller.

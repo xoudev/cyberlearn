@@ -1,0 +1,238 @@
+---
+refCode: CL-LSN-032-V01
+slug: c-chaines
+title: "Chaînes de caractères en C"
+description: "Manipulez du texte en C : les chaînes comme tableaux de char terminés par un caractère nul, et les fonctions de string.h (strlen, strcpy, strcmp, strcat)."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 35
+xpReward: 350
+prerequisites: ["CL-LSN-031-V01"]
+---
+
+En C, une chaîne de caractères n'est pas un type à part. Il n'existe pas de mot-clé
+`string` comme dans d'autres langages. Quand vous voulez stocker du texte, vous
+manipulez un tableau de `char`, et ce tableau se termine par un marqueur invisible.
+Ce petit détail explique presque tout ce qui suit : pourquoi on mesure une longueur,
+pourquoi on ne compare pas avec `==`, pourquoi un mauvais usage peut planter le
+programme ou ouvrir une faille. Une fois que vous tenez l'idée du marqueur de fin,
+le reste s'enchaîne.
+
+## le caractère nul
+
+Prenez le mot `"chat"`. Vous diriez quatre lettres. En mémoire, le C en range cinq.
+Après le `t`, il ajoute un caractère supplémentaire dont la valeur vaut zéro, noté
+`'\0'`. On l'appelle le caractère nul. Il ne s'affiche pas, mais il occupe bel et
+bien une case.
+
+Pourquoi cette case en plus ? Parce qu'un tableau, en C, ne connaît pas sa propre
+taille. Quand une fonction reçoit l'adresse d'une chaîne, elle ne sait pas où le
+texte s'arrête. Le `'\0'` est la convention qui répond à cette question : on lit
+case après case jusqu'à tomber sur la valeur zéro, et là on s'arrête. Sans ce
+marqueur, le programme continuerait à lire la mémoire voisine, qui ne lui appartient
+pas, avec des résultats imprévisibles.
+
+Le programme ci-dessous parcourt une chaîne à la main et s'arrête dès qu'il
+rencontre le caractère nul.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+
+int main(void) {
+    char mot[] = "chat";
+    int i = 0;
+
+    while (mot[i] != '\\0') {
+        printf("case %d : %c\\n", i, mot[i]);
+        i++;
+    }
+    printf("le mot fait %d lettres, mais occupe %d cases\\n", i, i + 1);
+    return 0;
+}`} />
+
+La boucle compte quatre lettres. Le tableau, lui, occupe cinq cases. Gardez ce
+chiffre en tête : il revient à chaque fois que vous dimensionnez un tableau de
+caractères.
+
+## les fonctions de string.h
+
+Parcourir une chaîne à la main, comme on vient de le faire, marche, mais l'en-tête
+`string.h` fait le travail pour vous. Trois fonctions reviennent sans cesse.
+
+`strlen` renvoie la longueur, c'est-à-dire le nombre de lettres avant le `'\0'`.
+Pour `"chat"`, elle renvoie 4, pas 5. Elle fait exactement ce que faisait notre
+boucle : elle avance jusqu'au caractère nul et compte les pas.
+
+`strcpy(dest, source)` copie la chaîne `source` dans le tableau `dest`, caractère
+nul compris. À vous de garantir que `dest` est assez grand.
+
+`strcat(dest, source)` colle `source` à la fin de `dest`. C'est la concaténation.
+Ici aussi, `dest` doit avoir de la place pour les deux chaînes réunies, plus le
+`'\0'` final.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    char message[50];
+
+    strcpy(message, "Bonjour");
+    strcat(message, ", ");
+    strcat(message, "le monde");
+
+    printf("texte : %s\\n", message);
+    printf("longueur : %zu\\n", strlen(message));
+    return 0;
+}`} />
+
+Notez le type renvoyé par `strlen` : un `size_t`, un entier non signé fait pour
+représenter des tailles. Le format `%zu` lui correspond dans `printf`. Le tableau
+`message` est déclaré avec 50 cases ; nos trois morceaux réunis tiennent largement
+dedans. Si on avait déclaré `char message[10]`, le `strcat` aurait débordé. On y
+revient plus bas.
+
+## comparer avec strcmp
+
+Voici le piège qui surprend tout le monde au début. On voudrait écrire `if (a == b)`
+pour savoir si deux chaînes sont égales. Ça compile, ça tourne, et ça donne souvent
+le mauvais résultat.
+
+La raison est que `a` et `b`, dans ce contexte, valent l'adresse de chaque tableau.
+L'opérateur `==` compare donc deux adresses mémoire, pas le texte qu'elles
+contiennent. Deux chaînes identiques rangées à des endroits différents ont des
+adresses différentes, et `==` les déclare différentes.
+
+Pour comparer le contenu, on utilise `strcmp`. Elle parcourt les deux chaînes
+lettre par lettre et renvoie `0` quand elles sont identiques, une valeur négative
+si la première vient avant l'autre dans l'ordre des caractères, positive sinon.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    char saisie[] = "chat";
+
+    if (saisie == "chat") {
+        printf("== dit : identiques (souvent faux !)\\n");
+    } else {
+        printf("== dit : differents (alors que le texte est le meme)\\n");
+    }
+
+    if (strcmp(saisie, "chat") == 0) {
+        printf("strcmp dit : meme contenu\\n");
+    }
+    return 0;
+}`} />
+
+Retenez aussi le sens du retour : `strcmp` renvoie `0` quand les chaînes sont
+égales. Or, en C, zéro vaut « faux ». Écrire `if (strcmp(a, b))` teste donc si elles
+sont différentes, ce qui est l'inverse de ce qu'on croit souvent. Pour tester
+l'égalité, il faut bien écrire `if (strcmp(a, b) == 0)`.
+
+## le débordement de tampon
+
+Reprenons `strcpy`. Elle copie tout ce qu'elle trouve dans la source jusqu'au
+`'\0'`, sans jamais regarder la taille de la destination. Si la source est plus
+longue que le tableau d'arrivée, `strcpy` continue d'écrire au-delà des cases
+prévues et déborde sur la mémoire voisine. C'est un débordement de tampon, en
+anglais buffer overflow.
+
+Dans le meilleur des cas, le programme plante. Dans le pire, un attaquant qui
+contrôle le texte copié peut écrire ce qu'il veut dans la mémoire et détourner le
+programme. Une grande partie des failles de sécurité historiques en C vient
+exactement de là : une copie sans vérification de taille.
+
+<CodePlayground language="c" starterCode={`#include <stdio.h>
+#include <string.h>
+
+int main(void) {
+    char petit[5];
+
+    /* "Bonjour" fait 7 lettres + le \\0 = 8 cases.
+       Le tableau n'en a que 5 : strcpy deborde. */
+    strcpy(petit, "Bonjour");
+    printf("%s\\n", petit);
+
+    /* Version bornee : on ne copie jamais plus que la place dispo. */
+    char sur[5];
+    strncpy(sur, "Bonjour", sizeof(sur) - 1);
+    sur[sizeof(sur) - 1] = '\\0';
+    printf("tronque mais sain : %s\\n", sur);
+    return 0;
+}`} />
+
+La seconde moitié montre la parade : `strncpy` prend un troisième argument qui
+limite le nombre de caractères copiés. On lui passe la taille du tableau moins une
+case, puis on pose nous-même le `'\0'` final, car les versions bornées ne le
+garantissent pas toujours. La règle générale : dès qu'une fonction écrit dans un
+tableau, vérifiez que la destination est assez grande, et préférez les variantes
+bornées (`strncpy`, `strncat`, `snprintf`) quand le texte vient de l'extérieur.
+
+<Callout type="warning">
+`strcpy` et `strcat` ne contrôlent jamais la taille de la destination. Une chaîne
+trop longue écrase la mémoire d'à côté : plantage au mieux, faille de sécurité au
+pire. Réservez toujours une case de plus pour le `'\0'`, et utilisez les versions
+bornées dès que la longueur de la source n'est pas sous votre contrôle.
+</Callout>
+
+## à toi de jouer
+
+<QuizGroup>
+
+<Quiz
+  id="c-chaines-q1"
+  question="Combien de cases mémoire occupe la chaîne 'chat' en C ?"
+  options={[
+    "4, une par lettre",
+    "5, les quatre lettres plus le caractère nul de fin",
+    "3, car la première lettre sert d'indicateur",
+    "8, le C arrondit toujours à une puissance de deux"
+  ]}
+  correct={1}
+  explanation="Aux quatre lettres s'ajoute le caractère nul '\0' qui marque la fin. Le tableau occupe donc 5 cases, même si strlen renvoie 4."
+/>
+
+<Quiz
+  id="c-chaines-q2"
+  question="Comment compare-t-on correctement le contenu de deux chaînes en C ?"
+  options={[
+    "Avec strcmp, qui renvoie 0 quand les chaînes sont identiques",
+    "Avec l'opérateur == (par exemple a == b)",
+    "Avec strlen appliqué à chacune des deux chaînes",
+    "Avec l'opérateur != suivi de strcat"
+  ]}
+  correct={0}
+  explanation="L'opérateur == compare des adresses, pas du texte. On utilise strcmp : elle renvoie 0 lorsque les deux chaînes ont exactement le même contenu."
+/>
+
+<Quiz
+  id="c-chaines-q3"
+  question="Pourquoi strcpy peut-il provoquer une faille de sécurité ?"
+  options={[
+    "Parce qu'elle est trop lente sur les longues chaînes",
+    "Parce qu'elle ne fonctionne qu'avec ctype.h",
+    "Parce qu'elle copie sans vérifier la taille de la destination et peut déborder en mémoire",
+    "Parce qu'elle oublie systématiquement le caractère nul"
+  ]}
+  correct={2}
+  explanation="strcpy copie tout jusqu'au '\0' sans regarder la place disponible. Si la source dépasse la destination, elle écrit sur la mémoire voisine : c'est le débordement de tampon, source de nombreuses failles."
+/>
+
+</QuizGroup>
+
+## à retenir
+
+- En C, une chaîne est un tableau de `char` terminé par le caractère nul `'\0'`.
+  Ce n'est pas un type natif.
+- Le `'\0'` vaut zéro, ne s'affiche pas, mais occupe une case. `"chat"` occupe donc
+  5 cases. Prévoyez toujours une case de plus que le nombre de lettres.
+- `strlen` (de `string.h`) renvoie le nombre de lettres sans compter le `'\0'`,
+  sous forme de `size_t`.
+- `strcpy` copie, `strcat` concatène, `strcmp` compare. Toutes exigent une
+  destination assez grande quand elles écrivent.
+- On ne compare jamais deux chaînes avec `==`, qui compare des adresses. On utilise
+  `strcmp`, qui renvoie `0` en cas d'égalité.
+- `strcpy` et `strcat` ne vérifient pas la taille de la destination : une source
+  trop longue déborde en mémoire. Préférez `strncpy`, `strncat` ou `snprintf` quand
+  le texte n'est pas sous votre contrôle.
+
+OK 08 réécrit

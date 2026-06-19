@@ -1,0 +1,115 @@
+---
+refCode: CL-LSN-064-V01
+slug: git-remote
+title: "Travailler avec un dépôt distant"
+description: "Reliez votre dépôt local à GitHub : cloner un projet, ajouter un remote, envoyer vos commits avec push, récupérer ceux des autres avec pull, et comprendre origin et main."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 450
+prerequisites: ["CL-LSN-062-V01"]
+---
+
+Jusqu'ici, tout votre travail Git vit sur votre machine. Vous faites des commits, vous consultez votre historique, vous changez de branche, et tout ça reste dans le dossier `.git` de votre projet. C'est très bien pour apprendre, mais ça pose deux problèmes concrets. Si votre disque dur lâche, votre historique disparaît avec lui. Et si un collègue veut travailler sur le même code, il n'a aucun moyen d'y accéder.
+
+Un dépôt distant règle les deux d'un coup. L'idée est simple : c'est une copie de votre dépôt qui vit sur un serveur, accessible en ligne. GitHub, GitLab et Bitbucket sont les hébergeurs les plus connus, mais le principe reste le même partout. Vous envoyez vos commits vers cette copie partagée, vos collègues récupèrent les leurs, et chacun garde son dépôt local synchronisé avec celui du serveur.
+
+Le modèle mental à garder en tête : le dépôt distant n'est pas magique. C'est un dépôt Git comme le vôtre, juste posé sur une machine que tout le monde peut joindre. Il sert de point de rendez-vous. Personne ne travaille directement dessus ; on y envoie et on en récupère des commits.
+
+## cloner un projet existant
+
+La plupart du temps, vous ne partez pas d'une page blanche : vous rejoignez un projet qui existe déjà sur un serveur. La commande pour ça est `git clone`.
+
+```bash
+git clone https://github.com/user/projet.git
+```
+
+Cette commande fait plusieurs choses en une seule fois. Elle crée un dossier `projet` sur votre machine, télécharge tout l'historique du dépôt distant dedans, et configure automatiquement le lien vers ce serveur. Vous récupérez donc le projet complet, avec tous ses commits et toutes ses branches, prêt à l'emploi. Pas besoin de faire `git init` ni de configurer quoi que ce soit derrière.
+
+Une fois le clone terminé, entrez dans le dossier et vous êtes dans un vrai dépôt Git, déjà relié au serveur d'où il vient.
+
+## origin et le remote
+
+Quand Git parle d'un dépôt distant, il a besoin de lui donner un nom. Par convention, ce nom est `origin`. Ce n'est pas un mot réservé du langage, juste une habitude que tout le monde respecte : `origin` désigne le serveur d'où vient votre projet, ou celui vers lequel vous poussez par défaut.
+
+Vous pouvez voir les remotes configurés avec `git remote -v` (le `-v` veut dire verbose, donc en clair il affiche les URL).
+
+<SimulatedTerminal shell="bash" commands={{ "git remote -v": "origin  https://github.com/user/projet.git (fetch)\norigin  https://github.com/user/projet.git (push)", "git clone https://github.com/user/projet.git": "Cloning into 'projet'..." }} />
+
+Vous remarquez deux lignes : une pour `fetch` (récupérer) et une pour `push` (envoyer). En général elles pointent vers la même URL, mais Git distingue les deux usages pour pouvoir, dans des cas avancés, lire à un endroit et écrire à un autre.
+
+<Callout type="info">
+`origin` est juste un nom, pas une obligation. Vous pourriez l'appeler `serveur` ou `github`. Mais comme tous les outils et tous les tutoriels supposent `origin`, gardez-le. Un projet peut avoir plusieurs remotes (par exemple `origin` et `upstream` quand vous contribuez à un projet que vous avez forké).
+</Callout>
+
+## pousser : git push
+
+Faire des commits en local ne change rien sur le serveur. Tant que vous ne poussez pas, vos commits restent chez vous. La commande `git push` envoie les commits de votre branche locale vers le dépôt distant.
+
+La première fois que vous poussez une branche, vous devez dire à Git où elle doit aller. C'est le rôle de `git push -u origin main`. Le `-u` (pour upstream) crée un lien permanent entre votre branche locale `main` et la branche `main` du remote `origin`. Une fois ce lien posé, Git s'en souvient : les fois suivantes, un simple `git push` suffit, sans répéter la destination.
+
+<SimulatedTerminal shell="bash" commands={{ "git push -u origin main": "To github.com:user/projet.git\n * [new branch] main -> main", "git push": "Everything up-to-date" }} />
+
+La ligne `[new branch] main -> main` confirme que votre branche locale a été créée sur le serveur. Après ça, vos collègues peuvent voir vos commits, et votre travail est sauvegardé en ligne. Pensez à pousser régulièrement, pas seulement à la fin de la journée : c'est aussi votre sauvegarde.
+
+## récupérer : git pull et git fetch
+
+Pousser, c'est la moitié du travail. L'autre moitié, c'est récupérer ce que les autres ont envoyé. Deux commandes existent, et la différence compte.
+
+`git fetch` va chercher les nouveaux commits du serveur et les télécharge dans votre dépôt local, mais sans toucher à votre branche de travail. Vous récupérez l'information sans rien fusionner. C'est l'option prudente : vous regardez ce qui a changé avant de décider.
+
+`git pull` fait deux choses d'affilée : un `fetch`, puis un `merge` dans votre branche courante. En une commande, vous récupérez les commits distants et vous les intégrez à votre travail.
+
+```bash
+# Voir ce qui a changé sur le serveur sans rien intégrer
+git fetch
+
+# Récupérer ET fusionner dans la branche courante
+git pull
+```
+
+En pratique, prenez l'habitude de faire `git pull` avant de commencer à travailler le matin, et surtout avant de pousser. Pourquoi avant de pousser ? Parce que si quelqu'un a poussé pendant que vous codiez, votre version du serveur est en retard, et Git va refuser votre push. C'est exactement le cas suivant.
+
+## le push rejeté
+
+Voici l'erreur que tout le monde rencontre tôt ou tard. Vous faites `git push`, et au lieu d'un message de succès, vous obtenez un refus du genre `rejected` avec la mention `non-fast-forward`.
+
+Ce que ça veut dire : pendant que vous travailliez, un collègue a poussé ses propres commits sur la même branche. Le serveur a donc avancé, et votre version locale ne contient pas ces nouveaux commits. Git refuse d'écraser ce travail. Il ne perd jamais des commits sans votre accord, et c'est une bonne chose.
+
+<Callout type="warning">
+Marche à suivre quand un push est rejeté : ne forcez surtout pas avec `--force`, vous écraseriez le travail des autres. Faites d'abord `git pull` pour récupérer les commits du serveur et les fusionner aux vôtres. Si Git signale un conflit, résolvez-le, faites un commit, puis relancez `git push`. Votre push passera cette fois, parce que votre branche locale contient désormais l'historique complet.
+</Callout>
+
+Retenez la séquence : push rejeté, donc `git pull`, on règle les éventuels conflits, puis `git push` à nouveau. Avec un peu d'habitude, le réflexe devient de faire un `pull` juste avant chaque `push`.
+
+## ne jamais pousser de secrets
+
+Un dépôt distant est partagé, et souvent visible par plus de monde que prévu. Tout ce que vous poussez peut être lu, copié, et même retrouvé dans l'historique longtemps après. Donc certains fichiers ne doivent jamais partir.
+
+<Callout type="danger">
+Ne poussez jamais de mots de passe, de clés API, de tokens ni de fichiers `.env`. Une clé poussée par erreur doit être considérée comme compromise immédiatement, même si vous l'effacez juste après : elle reste dans l'historique des commits. La bonne pratique est d'ajouter ces fichiers à votre `.gitignore` dès le début du projet, pour que Git les ignore et ne les suive jamais. Et si une clé fuite, révoquez-la et générez-en une nouvelle.
+</Callout>
+
+Le `.gitignore` est votre filet de sécurité : un fichier texte à la racine du projet où vous listez les chemins que Git doit laisser de côté. Mettez-y `.env`, vos dossiers de build, et tout ce qui contient des informations sensibles ou inutiles à partager.
+
+## à toi de jouer
+
+Entraînez-vous sur les commandes de base d'un dépôt distant. Tapez-les dans le terminal ci-dessous.
+
+<SimulatedTerminal shell="bash" commands={{ "git clone https://github.com/user/projet.git": "Cloning into 'projet'...", "git remote -v": "origin  https://github.com/user/projet.git (fetch)\norigin  https://github.com/user/projet.git (push)", "git push -u origin main": "To github.com:user/projet.git\n * [new branch] main -> main", "git pull": "Already up to date." }} />
+
+<Quiz id="q-1" question="Que fait la commande git clone ?" options={["Elle envoie vos commits locaux vers le serveur", "Elle télécharge un dépôt distant et configure le lien vers le serveur", "Elle supprime un dépôt distant", "Elle crée une nouvelle branche locale"]} correct={1} />
+
+<Quiz id="q-2" question="Quelle est la différence entre push et pull ?" options={["push récupère les commits du serveur, pull les envoie", "Les deux envoient des commits, mais push est plus rapide", "push envoie vos commits vers le serveur, pull récupère ceux du serveur", "push concerne les branches, pull concerne les fichiers"]} correct={2} />
+
+<Quiz id="q-3" question="Votre push est rejeté avec un message non-fast-forward. Que faire ?" options={["Forcer le push avec --force pour passer outre", "Faire git pull, régler les conflits éventuels, puis git push", "Supprimer le dépôt distant et recloner", "Attendre que le serveur se mette à jour tout seul"]} correct={1} />
+
+## à retenir
+
+- Un dépôt distant est une copie de votre projet sur un serveur, qui sert de point de partage et de sauvegarde.
+- `git clone URL` télécharge un projet existant et configure automatiquement le lien vers le serveur.
+- `origin` est le nom conventionnel du dépôt distant ; `git remote -v` affiche les URL configurées.
+- `git push` envoie vos commits vers le serveur ; la première fois, `git push -u origin main` lie votre branche locale à celle du remote.
+- `git pull` récupère et fusionne les commits du serveur ; `git fetch` les télécharge sans fusionner.
+- Un push rejeté signifie que le serveur a avancé : faites `git pull`, réglez les conflits, puis poussez à nouveau. Jamais de `--force`.
+- Ne poussez jamais de secrets (clés API, mots de passe, `.env`). Protégez-les avec un `.gitignore` dès le départ.
