@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { computeLevel, computeSm2 } from "@cyberlearn/lib";
+import { computeSm2 } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
+import { creditXp } from "@/lib/xp/credit";
 
 export interface SubmitReviewResult {
   success: boolean;
@@ -63,20 +64,9 @@ export async function submitReviewAction(
     });
     reviewXp = lesson ? Math.floor(lesson.xpReward * 0.1) : 0;
     if (reviewXp > 0) {
-      // Credit and recompute the level in one transaction. The previous
-      // /review action incremented xpTotal without ever updating level, so
-      // review XP could silently cross a level threshold.
-      await prisma.$transaction(async (tx) => {
-        const user = await tx.user.update({
-          where: { id: authUser.id },
-          data: { xpTotal: { increment: reviewXp } },
-          select: { xpTotal: true },
-        });
-        await tx.user.update({
-          where: { id: authUser.id },
-          data: { level: computeLevel(user.xpTotal).level },
-        });
-      });
+      // Credit through the single XP source of truth: level recompute, the
+      // level-up notification, and (later) seasonXp all happen in one place.
+      await prisma.$transaction((tx) => creditXp(tx, authUser.id, reviewXp));
     }
   }
 

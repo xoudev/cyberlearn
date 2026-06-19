@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   buildBadgeCriterionStats,
-  computeLevel,
   dayKey,
   evaluateBadges,
   registerActivity,
@@ -12,6 +11,7 @@ import {
 import { requireRequestUser } from "@/lib/auth";
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
 import { awardBadges } from "@/lib/badges/award";
+import { creditXp } from "@/lib/xp/credit";
 import { checkAndIssueCertificates } from "@/app/(app)/paths/[slug]/_actions/generate-certificate";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
@@ -52,9 +52,9 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
   const isFirstCompletion = existing?.status !== "COMPLETED";
   const now = new Date();
 
-  // ── XP + level (lesson reward only - badge rewards are credited in-tx) ─────
+  // Projected XP total after the lesson reward - used ONLY to evaluate
+  // XP_THRESHOLD badges below. The actual credit happens via creditXp in-tx.
   const newXpTotal = isFirstCompletion ? user.xpTotal + lesson.xpReward : user.xpTotal;
-  const { level: newLevel } = computeLevel(newXpTotal);
 
   // ── Streak (only a brand-new lesson completion is a qualifying activity) ─────
   const streak = registerActivity(
@@ -106,22 +106,17 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
       },
     });
 
-    await tx.user.update({
-      where: { id: authUser.id },
-      data: isFirstCompletion
-        ? {
-            xpTotal: newXpTotal,
-            level: newLevel,
-            streakDays: streak.currentStreak,
-            longestStreak: streak.longestStreak,
-            streakFreezes: streak.freezes,
-            lastActiveAt: now,
-          }
-        : { xpTotal: newXpTotal, level: newLevel },
-    });
-
-    // Record today's activity day (Europe/Paris) - source of the heatmap.
+    // A brand-new completion advances the streak and logs today's activity day.
     if (isFirstCompletion) {
+      await tx.user.update({
+        where: { id: authUser.id },
+        data: {
+          streakDays: streak.currentStreak,
+          longestStreak: streak.longestStreak,
+          streakFreezes: streak.freezes,
+          lastActiveAt: now,
+        },
+      });
       const today = new Date(dayKey(now));
       await tx.userActivityDay.upsert({
         where: { userId_day: { userId: authUser.id, day: today } },
@@ -130,12 +125,18 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
       });
     }
 
-    // Insert userBadge rows, credit their xpReward on top of the lesson XP,
-    // and notify - only for rows actually inserted (idempotent re-awards).
+    // Credit the lesson reward through the single XP source of truth (level-up
+    // notification suppressed: one combined LEVEL_UP is emitted below).
+    const lessonCredit = isFirstCompletion
+      ? await creditXp(tx, authUser.id, lesson.xpReward, { notifyLevelUp: false })
+      : null;
+
+    // Insert userBadge rows and credit their xpReward (also via creditXp) -
+    // only for rows actually inserted (idempotent re-awards).
     const awardResult = await awardBadges(tx, authUser.id, earnedBadges, { lessonId });
 
-    const txXpTotal = awardResult.newXpTotal ?? newXpTotal;
-    const txLevel = awardResult.newLevel ?? newLevel;
+    const txXpTotal = awardResult.newXpTotal ?? lessonCredit?.newXpTotal ?? user.xpTotal;
+    const txLevel = awardResult.newLevel ?? lessonCredit?.newLevel ?? user.level;
 
     if (txLevel > user.level) {
       const totalGained = lesson.xpReward + awardResult.xpGained;

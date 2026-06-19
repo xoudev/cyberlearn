@@ -18,7 +18,8 @@
 
 import { badgeRepository, prisma, userRepository } from "@cyberlearn/db";
 import type { Prisma } from "@cyberlearn/db";
-import { buildBadgeCriterionStats, computeLevel, evaluateBadges } from "@cyberlearn/lib";
+import { buildBadgeCriterionStats, evaluateBadges } from "@cyberlearn/lib";
+import { creditXp } from "@/lib/xp/credit";
 
 /** Structural shape - full Prisma Badge rows satisfy it. */
 export interface AwardableBadge {
@@ -76,18 +77,12 @@ export async function awardBadges(
   let newXpTotal: number | null = null;
   let newLevel: number | null = null;
   if (xpGained > 0) {
-    // Read inside the transaction: the caller may have just updated xpTotal
-    // (e.g. the lesson reward) earlier in the same transaction.
-    const user = await tx.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { xpTotal: true },
-    });
-    newXpTotal = user.xpTotal + xpGained;
-    newLevel = computeLevel(newXpTotal).level;
-    await tx.user.update({
-      where: { id: userId },
-      data: { xpTotal: newXpTotal, level: newLevel },
-    });
+    // Credit through the single XP source of truth (also keeps seasonXp in sync).
+    // The level-up notification is suppressed here: the caller owns that message
+    // (the lesson flow emits one combined LEVEL_UP for lesson + badge XP).
+    const credit = await creditXp(tx, userId, xpGained, { notifyLevelUp: false });
+    newXpTotal = credit.newXpTotal;
+    newLevel = credit.newLevel;
   }
 
   if (options.notify !== false) {
