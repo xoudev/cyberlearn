@@ -11,12 +11,20 @@ import matter from "gray-matter";
 import { compile } from "@mdx-js/mdx";
 
 const FIX = process.argv.includes("--fix");
-const sub = process.argv.find((a) => !a.startsWith("--") && !a.includes("node") && !a.endsWith(".mjs"));
+const sub = process.argv.find(
+  (a) => !a.startsWith("--") && !a.includes("node") && !a.endsWith(".mjs"),
+);
 const ROOT = path.resolve("../../content/lessons");
 
 const INJECTION = [
-  /<script[\s>]/i, /<iframe[\s>]/i, /<object[\s>]/i, /<embed[\s>]/i,
-  /javascript:/i, /data:text\/html/i, /\bon[A-Z][a-zA-Z]*\s*=/, /dangerouslySetInnerHTML/i,
+  /<script[\s>]/i,
+  /<iframe[\s>]/i,
+  /<object[\s>]/i,
+  /<embed[\s>]/i,
+  /javascript:/i,
+  /data:text\/html/i,
+  /\bon[A-Z][a-zA-Z]*\s*=/,
+  /dangerouslySetInnerHTML/i,
 ];
 const REFCODE = /^CL-LSN-\d{3}-V\d{2}$/;
 const SLUG = /^[a-z0-9-]+$/;
@@ -71,11 +79,20 @@ for (const file of files) {
   const name = `${path.basename(path.dirname(file))}/${path.basename(file)}`;
   if (FIX) {
     const fixed = fixCodePlayground(quoteFrontmatter(raw));
-    if (fixed !== raw) { writeFileSync(file, fixed); raw = fixed; }
+    if (fixed !== raw) {
+      writeFileSync(file, fixed);
+      raw = fixed;
+    }
   }
   const errs = [];
   let parsed;
-  try { parsed = matter(raw); } catch (e) { console.log(`FAIL ${name}: YAML ${e.message.split("\n")[0]}`); fail++; continue; }
+  try {
+    parsed = matter(raw);
+  } catch (e) {
+    console.log(`FAIL ${name}: YAML ${e.message.split("\n")[0]}`);
+    fail++;
+    continue;
+  }
   const d = parsed.data;
   if (!REFCODE.test(d.refCode || "")) errs.push("refCode");
   if (!SLUG.test(d.slug || "")) errs.push("slug");
@@ -87,10 +104,17 @@ for (const file of files) {
   for (const p of INJECTION) if (p.test(stripped)) errs.push(`injection ${p}`);
   if (body.split(/\s+/).filter(Boolean).length < 300) errs.push("<300 mots");
   if (!/<Quiz[\s>]/.test(body)) errs.push("aucun Quiz");
-  try { await compile(body, { outputFormat: "function-body", development: false }); }
-  catch (e) { errs.push(`MDX ${e.line ? `L${e.line}:${e.column}` : ""} ${String(e.reason || e.message).slice(0, 55)}`); }
-  if (errs.length) { console.log(`FAIL ${name}: ${errs.join(" | ")}`); fail++; }
-  else console.log(`OK   ${name}  [${d.refCode}] ${d.difficulty}`);
+  try {
+    await compile(body, { outputFormat: "function-body", development: false });
+  } catch (e) {
+    errs.push(
+      `MDX ${e.line ? `L${e.line}:${e.column}` : ""} ${String(e.reason || e.message).slice(0, 55)}`,
+    );
+  }
+  if (errs.length) {
+    console.log(`FAIL ${name}: ${errs.join(" | ")}`);
+    fail++;
+  } else console.log(`OK   ${name}  [${d.refCode}] ${d.difficulty}`);
 }
 console.log(`\n${files.length - fail}/${files.length} valides`);
 process.exit(fail ? 1 : 0);
