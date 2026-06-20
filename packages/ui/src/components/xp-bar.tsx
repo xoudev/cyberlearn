@@ -38,7 +38,9 @@ export function XPBar({
           style={{ color: "#6B6890" }}
         >
           <span>
-            <span style={{ color: "#0AFFD4" }}>{currentXP.toLocaleString("fr-FR")}</span>
+            <span style={{ color: "var(--cosmetic-accent)" }}>
+              {currentXP.toLocaleString("fr-FR")}
+            </span>
             {" / "}
             {xpForNextLevel.toLocaleString("fr-FR")} XP
           </span>
@@ -58,8 +60,8 @@ export function XPBar({
           className="h-full rounded-full"
           style={{
             width: `${String(width)}%`,
-            background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
-            boxShadow: "0 0 12px rgba(10,255,212,0.5)",
+            background: "linear-gradient(90deg, var(--color-brand-blue), var(--cosmetic-accent))",
+            boxShadow: "0 0 12px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
             transition: "width 800ms ease-out",
           }}
         />

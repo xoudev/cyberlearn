@@ -68,7 +68,7 @@
   --secondary-foreground: var(--color-text-secondary);
   --muted: #dddff0;
   --muted-foreground: var(--color-text-muted);
-  --accent: var(--color-brand-turquoise);
+  --accent: var(--cosmetic-accent);
   --accent-foreground: var(--color-bg-base);
   --destructive: var(--color-danger);
   --destructive-foreground: #ffffff;
@@ -118,7 +118,7 @@
   --color-rarity-legendary: #ffb547;
 
   /* shadcn aliases update automatically via var(--color-*) chain */
-  --ring: var(--color-brand-turquoise);
+  --ring: var(--cosmetic-accent);
   --secondary: #1e1a50;
   --secondary-foreground: var(--color-text-secondary);
   --muted: #1e1a50;
@@ -126,12 +126,102 @@
   /* Sidebar - spec: design-system.md */
   --sidebar: #030219;
   --sidebar-foreground: #6b6890;
-  --sidebar-primary: #0affd4;
+  --sidebar-primary: var(--cosmetic-accent);
   --sidebar-primary-foreground: #030219;
-  --sidebar-accent: rgba(10, 255, 212, 0.06);
-  --sidebar-accent-foreground: #0affd4;
+  --sidebar-accent: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+  --sidebar-accent-foreground: var(--cosmetic-accent);
   --sidebar-border: #1f1b47;
-  --sidebar-ring: #0affd4;
+  --sidebar-ring: var(--cosmetic-accent);
+}
+
+/* ─── Cosmetics: equipped-cosmetic variables (data-attributes from the loadout) ─── */
+/* The app shell sets data-accent / data-hex / data-frame / data-terminal on a
+ * wrapper from the user's equipped cosmetics; these rules override the defaults.
+ * Components read the var(--cosmetic-*) values so equipping changes the UI live. */
+
+:root {
+  /* Accent: brand turquoise by default; overridden by the equipped accent. */
+  --cosmetic-accent: var(--color-brand-turquoise);
+  /* Hexagon motif accent + glow strength. */
+  --cosmetic-hex-accent: var(--cosmetic-accent);
+  --cosmetic-hex-glow: 0.35;
+  /* Profile frame accent + glow (around the avatar). */
+  --cosmetic-frame-accent: var(--color-rarity-legendary);
+  --cosmetic-frame-glow: 0;
+  /* Terminal theme (lesson code blocks / simulated terminal). */
+  --cosmetic-terminal-bg: var(--color-bg-elevated);
+  --cosmetic-terminal-fg: var(--color-text-secondary);
+}
+
+/* Accent color cosmetics (accent-turquoise = default, no override needed). */
+[data-accent="accent-blue"] {
+  --cosmetic-accent: #4d8bff;
+}
+[data-accent="accent-amber"] {
+  --cosmetic-accent: #ffb547;
+}
+[data-accent="accent-magenta"] {
+  --cosmetic-accent: #ff4dd2;
+}
+[data-accent="accent-violet"] {
+  --cosmetic-accent: #b14dff;
+}
+[data-accent="accent-acid"] {
+  --cosmetic-accent: #39ff14;
+}
+
+/* Hexagon style cosmetics (hex-solid = default). */
+[data-hex="hex-outline"] {
+  --cosmetic-hex-glow: 0;
+}
+[data-hex="hex-neon"] {
+  --cosmetic-hex-glow: 0.7;
+}
+[data-hex="hex-glitch"] {
+  --cosmetic-hex-glow: 0.5;
+}
+[data-hex="hex-prisme"] {
+  --cosmetic-hex-glow: 0.6;
+}
+
+/* Profile frame cosmetics (frame-standard = default). */
+[data-frame="frame-carbon"] {
+  --cosmetic-frame-accent: #8892a0;
+  --cosmetic-frame-glow: 0.15;
+}
+[data-frame="frame-gilded"] {
+  --cosmetic-frame-accent: #ffd700;
+  --cosmetic-frame-glow: 0.4;
+}
+[data-frame="frame-hologram"] {
+  --cosmetic-frame-accent: var(--cosmetic-accent);
+  --cosmetic-frame-glow: 0.5;
+}
+[data-frame="frame-elite"] {
+  --cosmetic-frame-accent: #b14dff;
+  --cosmetic-frame-glow: 0.5;
+}
+
+/* Terminal theme cosmetics (theme-midnight-ops = default). */
+[data-terminal="theme-acid"] {
+  --cosmetic-terminal-bg: #001b00;
+  --cosmetic-terminal-fg: #39ff14;
+}
+[data-terminal="theme-amber-mono"] {
+  --cosmetic-terminal-bg: #1a1200;
+  --cosmetic-terminal-fg: #ffb000;
+}
+[data-terminal="theme-synthwave"] {
+  --cosmetic-terminal-bg: #1a0b2e;
+  --cosmetic-terminal-fg: #ff6ad5;
+}
+[data-terminal="theme-ghost"] {
+  --cosmetic-terminal-bg: #0e0e14;
+  --cosmetic-terminal-fg: #9aa0b5;
+}
+[data-terminal="theme-red-team"] {
+  --cosmetic-terminal-bg: #1a0000;
+  --cosmetic-terminal-fg: #ff5b5b;
 }
 
 /* ─── Component: LessonCard ──────────────────────────────────────────────── */
