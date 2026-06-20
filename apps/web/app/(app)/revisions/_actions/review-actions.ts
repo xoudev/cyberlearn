@@ -66,7 +66,7 @@ export async function submitReviewAction(
     if (reviewXp > 0) {
       // Credit through the single XP source of truth: level recompute, the
       // level-up notification, and (later) seasonXp all happen in one place.
-      await prisma.$transaction((tx) => creditXp(tx, authUser.id, reviewXp));
+      await prisma.$transaction((tx) => creditXp(tx, authUser.id, reviewXp, "REVIEW"));
     }
   }
 

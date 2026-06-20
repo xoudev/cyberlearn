@@ -79,6 +79,7 @@ export type {
   UserCosmeticLoadout,
   Season,
   LeagueMembership,
+  XpLedger,
 } from "@prisma/client";
 
 export {
@@ -98,4 +99,5 @@ export {
   CosmeticType,
   SeasonStatus,
   LeagueDivision,
+  XpSource,
 } from "@prisma/client";

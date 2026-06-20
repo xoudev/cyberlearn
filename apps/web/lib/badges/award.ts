@@ -80,7 +80,7 @@ export async function awardBadges(
     // Credit through the single XP source of truth (also keeps seasonXp in sync).
     // The level-up notification is suppressed here: the caller owns that message
     // (the lesson flow emits one combined LEVEL_UP for lesson + badge XP).
-    const credit = await creditXp(tx, userId, xpGained, { notifyLevelUp: false });
+    const credit = await creditXp(tx, userId, xpGained, "BADGE", { notifyLevelUp: false });
     newXpTotal = credit.newXpTotal;
     newLevel = credit.newLevel;
   }
