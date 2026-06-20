@@ -11,6 +11,7 @@ const m = vi.hoisted(() => ({
   userUpdate: vi.fn(),
   notificationCreate: vi.fn(),
   seasonFindFirst: vi.fn(),
+  xpLedgerCreate: vi.fn(),
   transaction: vi.fn(),
 }));
 
@@ -43,12 +44,14 @@ beforeEach(() => {
   m.scheduleUpdate.mockResolvedValue({});
   m.lessonFindUnique.mockResolvedValue({ xpReward: 50 });
   m.seasonFindFirst.mockResolvedValue(null);
+  m.xpLedgerCreate.mockResolvedValue({});
   // creditXp runs inside the tx: it reads the user, then writes xpTotal + level.
   m.transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
     cb({
       user: { findUniqueOrThrow: m.userFindUniqueOrThrow, update: m.userUpdate },
       notification: { create: m.notificationCreate },
       season: { findFirst: m.seasonFindFirst },
+      xpLedger: { create: m.xpLedgerCreate },
     }),
   );
   m.userFindUniqueOrThrow.mockResolvedValue({ xpTotal: 100, level: computeLevel(100).level });

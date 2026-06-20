@@ -68,6 +68,7 @@ model User {
   cosmetics         UserCosmetic[]
   cosmeticLoadout   UserCosmeticLoadout?
   leagueMemberships LeagueMembership[]
+  xpLedger          XpLedger[]
 
   @@index([username])
   @@index([role])
@@ -926,4 +927,32 @@ model AccountDeletionToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("account_deletion_tokens")
+}
+
+// ============================================================
+// XP LEDGER (append-only; powers period-bucketed XP / Wrapped)
+// ============================================================
+
+enum XpSource {
+  LESSON
+  BADGE
+  QUEST
+  CHALLENGE
+  REVIEW
+}
+
+// One row per XP credit, written inside creditXp's transaction. Append-only and
+// server-written; lets us bucket XP by period (month / season), which the
+// running User.xpTotal alone cannot express.
+model XpLedger {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  amount    Int
+  source    XpSource
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("xp_ledger")
 }
