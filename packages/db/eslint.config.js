@@ -12,6 +12,7 @@ export default tseslint.config(
       "prisma/seed-paths.ts",
       "prisma/seed-quizzes.ts",
       "prisma/seed-cosmetics.ts",
+      "prisma/seed-season.ts",
       "prisma/backfill-badge-xp.ts",
       "prisma/backfill-daily-streaks.ts",
     ],

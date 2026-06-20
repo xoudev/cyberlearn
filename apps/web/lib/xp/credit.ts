@@ -1,5 +1,6 @@
 import type { Prisma } from "@cyberlearn/db";
 import { computeLevel } from "@cyberlearn/lib";
+import { recordSeasonXp } from "@/lib/league/record-season-xp";
 
 /**
  * Single source of truth for crediting XP to a user.
@@ -47,6 +48,10 @@ export async function creditXp(
     where: { id: userId },
     data: { xpTotal: newXpTotal, level: newLevel },
   });
+
+  // Mirror the gain into the active season's leaderboard (no-op until a season
+  // is seeded), so seasonXp stays in lock-step with every xp credit.
+  await recordSeasonXp(tx, userId, amount);
 
   if (leveledUp && options.notifyLevelUp !== false) {
     const shownXp = options.notifyXp ?? amount;
