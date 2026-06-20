@@ -34,6 +34,7 @@ export { streakRepository } from "./repositories/streak.repository.js";
 export type { StreakOverview } from "./repositories/streak.repository.js";
 export { cosmeticRepository } from "./repositories/cosmetic.repository.js";
 export type { CosmeticWithState, EquippedCodes } from "./repositories/cosmetic.repository.js";
+export { leagueRepository } from "./repositories/league.repository.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
 export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
@@ -75,6 +76,8 @@ export type {
   Cosmetic,
   UserCosmetic,
   UserCosmeticLoadout,
+  Season,
+  LeagueMembership,
 } from "@prisma/client";
 
 export {
@@ -92,4 +95,6 @@ export {
   ChallengeType,
   QuestType,
   CosmeticType,
+  SeasonStatus,
+  LeagueDivision,
 } from "@prisma/client";

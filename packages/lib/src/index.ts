@@ -13,6 +13,7 @@ export * from "./gamification/streak-state.js";
 export * from "./gamification/week.js";
 export * from "./gamification/quest.js";
 export * from "./gamification/tier.js";
+export * from "./gamification/league.js";
 export * from "./sm2.js";
 export * from "./terminal/scenarios.js";
 export * from "./quiz/quiz.js";

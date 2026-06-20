@@ -11,6 +11,7 @@ function mockTx(xpTotal: number) {
       update: vi.fn().mockResolvedValue({}),
     },
     notification: { create: vi.fn().mockResolvedValue({}) },
+    season: { findFirst: vi.fn().mockResolvedValue(null) },
   };
 }
 

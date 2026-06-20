@@ -18,6 +18,7 @@ const m = vi.hoisted(() => ({
     notification: { create: vi.fn(), createMany: vi.fn() },
     reviewSchedule: { upsert: vi.fn() },
     userActivityDay: { upsert: vi.fn() },
+    season: { findFirst: vi.fn() },
   },
 }));
 
@@ -82,6 +83,7 @@ beforeEach(() => {
   });
   m.transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(m.tx));
   m.tx.userBadge.createManyAndReturn.mockResolvedValue([{ badgeId: "b1" }]);
+  m.tx.season.findFirst.mockResolvedValue(null);
   // creditXp reads/writes the user's XP inside the tx; track it statefully so the
   // lesson credit (90→110) and the badge credit (110→160) chain correctly.
   xpState = 90;
