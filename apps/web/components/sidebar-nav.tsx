@@ -177,6 +177,24 @@ function IconFlash() {
   );
 }
 
+function IconCasier() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={15}
+      height={15}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8 1.5 14 5v6L8 14.5 2 11V5z" />
+      <circle cx="8" cy="8" r="2" />
+    </svg>
+  );
+}
+
 // ── Nav sections ──────────────────────────────────────────────────────────────
 
 const LEARN_ITEMS = [
@@ -194,6 +212,7 @@ const ACTIVITY_ITEMS = [
   // the tag when the first active challenges ship again.
   { href: "/challenges", label: "Défis", Icon: IconFlash, count: null, tag: "WIP" },
   { href: "/profile", label: "Profil", Icon: IconUser, count: null, tag: undefined },
+  { href: "/casier", label: "Casier", Icon: IconCasier, count: null, tag: undefined },
 ] as const;
 
 // ── Section label ─────────────────────────────────────────────────────────────
