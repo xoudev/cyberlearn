@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { divisionDown, divisionUp, pickPod } from "../league";
+import { divisionDown, divisionUp, pickPod, podOutcome } from "../league";
 
 describe("pickPod", () => {
   it("fills the lowest pod that still has room", () => {
@@ -40,5 +40,24 @@ describe("division movement", () => {
     expect(divisionDown("DIAMANT")).toBe("PLATINE");
     expect(divisionDown("ARGENT")).toBe("BRONZE");
     expect(divisionDown("BRONZE")).toBeNull();
+  });
+});
+
+describe("podOutcome", () => {
+  it("promotes 4 / relegates 3 in a full pod", () => {
+    expect(podOutcome(15)).toEqual({ promote: 4, relegate: 3 });
+    expect(podOutcome(12)).toEqual({ promote: 4, relegate: 3 });
+  });
+
+  it("shrinks the relegation zone first, never overlapping promotion", () => {
+    expect(podOutcome(6)).toEqual({ promote: 4, relegate: 2 });
+    expect(podOutcome(5)).toEqual({ promote: 4, relegate: 1 });
+    expect(podOutcome(4)).toEqual({ promote: 4, relegate: 0 });
+  });
+
+  it("promotes everyone when the pod is below the promotion count", () => {
+    expect(podOutcome(3)).toEqual({ promote: 3, relegate: 0 });
+    expect(podOutcome(1)).toEqual({ promote: 1, relegate: 0 });
+    expect(podOutcome(0)).toEqual({ promote: 0, relegate: 0 });
   });
 });
