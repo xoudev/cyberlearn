@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import type { LeaderboardEntry } from "@cyberlearn/db";
+import type { LeaderboardEntry, PodLadderEntry } from "@cyberlearn/db";
+import type { LeagueDivisionCode } from "@cyberlearn/lib";
+import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
+import { LigueClient } from "./LigueClient";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -19,21 +22,7 @@ function getTierClass(level: number): "master" | "expert" | "adept" | "novice" {
   return "novice";
 }
 
-function getMonogram(displayName: string | null, username: string | null): string {
-  const name = displayName ?? username ?? "Anonyme";
-  const parts = name.split(/[\s._-]/);
-  if (parts.length >= 2) return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
-
-function fmtXp(xp: number): string {
-  return xp.toLocaleString("fr-FR");
-}
-
 // ── Style constants ────────────────────────────────────────────────────────────
-
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-const DISPLAY: React.CSSProperties = { fontFamily: "var(--font-sans)" };
 
 const TIER_COLORS: Record<string, { color: string; border: string }> = {
   master: { color: "#FFB547", border: "rgba(255,181,71,0.4)" },
@@ -55,72 +44,6 @@ function FlameIcon({ size = 14 }: { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 3C12 7.5 8 9 8 13.5C8 14.8 8.7 15.5 9.6 15.5C8.6 17 8 18.3 8 19.5C8 22 10 24 13 24C16.5 24 19 21.5 19 17.8C19 13.5 14.5 12 14.5 8C14.5 6 13.7 4.5 12 3Z" />
     </svg>
-  );
-}
-
-function HexAvatar({ mono, grad, size = 36 }: { mono: string; grad: string; size?: number }) {
-  const s = size;
-  return (
-    <div
-      style={{
-        position: "relative",
-        width: s,
-        height: Math.round(s * 1.15),
-        display: "grid",
-        placeItems: "center",
-        flexShrink: 0,
-      }}
-    >
-      {/* outer hex */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: grad,
-          clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
-        }}
-      />
-      {/* inner fill */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 2,
-          background: "#0A0826",
-          clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
-        }}
-      />
-      {/* content */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          width: `calc(100% - ${String(Math.round(s * 0.14))}px)`,
-          height: `calc(100% - ${String(Math.round(s * 0.14))}px)`,
-          display: "grid",
-          placeItems: "center",
-          clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
-          background: "linear-gradient(160deg, #1a1640, #070520aa)",
-          overflow: "hidden",
-        }}
-      >
-        <span
-          style={{
-            ...DISPLAY,
-            fontWeight: 800,
-            fontSize: Math.round(s * 0.38),
-            letterSpacing: "-0.04em",
-            background: grad,
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          {mono}
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -749,10 +672,22 @@ interface Props {
   entries: LeaderboardEntry[];
   userRank: number;
   currentEntry: LeaderboardEntry | null;
+  season: { index: number; startsAt: number; endsAt: number } | null;
+  membership: { division: LeagueDivisionCode; pod: number; seasonXp: number } | null;
+  podLadder: PodLadderEntry[];
+  podMemberCount: number;
 }
 
-export function ClassementClient({ entries, userRank, currentEntry }: Props): React.JSX.Element {
-  const [filter, setFilter] = useState<"global" | "mois" | "sem">("global");
+export function ClassementClient({
+  entries,
+  userRank,
+  currentEntry,
+  season,
+  membership,
+  podLadder,
+  podMemberCount,
+}: Props): React.JSX.Element {
+  const [filter, setFilter] = useState<"global" | "mois" | "sem" | "ligue">("global");
 
   // Podium order: silver (rank 2), gold (rank 1), bronze (rank 3)
   const podiumOrder = [
@@ -771,6 +706,7 @@ export function ClassementClient({ entries, userRank, currentEntry }: Props): Re
 
   const FILTERS = [
     { id: "global" as const, label: "Global" },
+    { id: "ligue" as const, label: "Ligue" },
     { id: "mois" as const, label: "Ce mois" },
     { id: "sem" as const, label: "Cette semaine" },
   ];
@@ -843,7 +779,8 @@ export function ClassementClient({ entries, userRank, currentEntry }: Props): Re
               }}
             >
               <span style={{ color: "#44406B" }}>{"// "}</span>
-              SAISON · 04 · 2026 · <b style={{ color: "#0AFFD4", fontWeight: 500 }}>LIVE</b>
+              SAISON · {season ? String(season.index).padStart(2, "0") : "--"} ·{" "}
+              <b style={{ color: "#0AFFD4", fontWeight: 500 }}>LIVE</b>
             </span>
             <h1
               style={{
@@ -867,7 +804,7 @@ export function ClassementClient({ entries, userRank, currentEntry }: Props): Re
               >
                 Classement
               </em>{" "}
-              global.
+              {filter === "ligue" ? "ligue." : "global."}
             </h1>
           </div>
 
@@ -963,150 +900,161 @@ export function ClassementClient({ entries, userRank, currentEntry }: Props): Re
           </span>
         </div>
 
-        {/* Podium */}
-        {podiumOrder.length >= 3 && (
-          <section
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1.15fr 1fr",
-              gap: 24,
-              alignItems: "end",
-              marginBottom: 96,
-            }}
-          >
-            {podiumOrder.map((entry) => (
-              <PodiumCard
-                key={entry.rank}
-                entry={entry}
-                rank={entry.rank}
-                isMe={entry.isCurrentUser}
-              />
-            ))}
-          </section>
-        )}
+        {filter === "ligue" ? (
+          <LigueClient
+            season={season}
+            membership={membership}
+            podLadder={podLadder}
+            podMemberCount={podMemberCount}
+          />
+        ) : (
+          <>
+            {/* Podium */}
+            {podiumOrder.length >= 3 && (
+              <section
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1.15fr 1fr",
+                  gap: 24,
+                  alignItems: "end",
+                  marginBottom: 96,
+                }}
+              >
+                {podiumOrder.map((entry) => (
+                  <PodiumCard
+                    key={entry.rank}
+                    entry={entry}
+                    rank={entry.rank}
+                    isMe={entry.isCurrentUser}
+                  />
+                ))}
+              </section>
+            )}
 
-        {/* Your position banner */}
-        <YouBanner entry={currentEntry} userRank={userRank} totalPlayers={entries.length} />
+            {/* Your position banner */}
+            <YouBanner entry={currentEntry} userRank={userRank} totalPlayers={entries.length} />
 
-        {/* Table */}
-        <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              justifyContent: "space-between",
-              marginBottom: 16,
-            }}
-          >
-            <h3
-              style={{
-                ...MONO,
-                fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "#B8B5D1",
-                margin: 0,
-              }}
-            >
-              <span style={{ color: "#6B6890" }}>{"// "}</span>JOUEURS · TOP MONDIAL
-            </h3>
-            <span
-              style={{
-                ...MONO,
-                fontSize: 11,
-                letterSpacing: "0.1em",
-                color: "#6B6890",
-                textTransform: "uppercase",
-              }}
-            >
-              <b style={{ color: "#F5F5FA" }}>1–{Math.min(12, entries.length)}</b> sur{" "}
-              {entries.length.toLocaleString("fr-FR")}
-            </span>
-          </div>
-
-          <div
-            style={{
-              position: "relative",
-              border: "1px solid #2A2560",
-              background: "rgba(5,4,26,0.5)",
-              overflow: "hidden",
-            }}
-          >
-            {/* Header */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
-                alignItems: "center",
-                gap: 16,
-                padding: "12px 24px",
-                borderBottom: "1px solid #2A2560",
-                background: "rgba(0,0,0,0.25)",
-                ...MONO,
-                fontSize: 10,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "#6B6890",
-                fontWeight: 600,
-              }}
-            >
-              <span>#</span>
-              <span>JOUEUR</span>
-              <span style={{ textAlign: "right" }}>XP TOTAL</span>
-              <span>NIVEAU</span>
-              <span style={{ justifySelf: "end" }}>STREAK</span>
-            </div>
-
-            {/* Top rows */}
-            {top12.map((entry) => (
-              <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
-            ))}
-
-            {/* Ellipsis */}
-            {userRank > 15 && contextRows.length > 0 && (
+            {/* Table */}
+            <div>
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 14,
-                  padding: "14px 24px",
-                  borderBottom: "1px solid rgba(31,27,71,0.5)",
-                  ...MONO,
-                  fontSize: 11,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: "#6B6890",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  marginBottom: 16,
                 }}
               >
+                <h3
+                  style={{
+                    ...MONO,
+                    fontWeight: 600,
+                    fontSize: 12,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: "#B8B5D1",
+                    margin: 0,
+                  }}
+                >
+                  <span style={{ color: "#6B6890" }}>{"// "}</span>JOUEURS · TOP MONDIAL
+                </h3>
                 <span
                   style={{
-                    flex: 1,
-                    height: 1,
-                    background:
-                      "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
+                    ...MONO,
+                    fontSize: 11,
+                    letterSpacing: "0.1em",
+                    color: "#6B6890",
+                    textTransform: "uppercase",
                   }}
-                />
-                ··· {Math.max(0, userRank - 14)} joueurs ···
-                <span
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    background:
-                      "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
-                  }}
-                />
+                >
+                  <b style={{ color: "#F5F5FA" }}>1–{Math.min(12, entries.length)}</b> sur{" "}
+                  {entries.length.toLocaleString("fr-FR")}
+                </span>
               </div>
-            )}
 
-            {/* Context rows around current user */}
-            {userRank > 15 &&
-              contextRows.map((entry) => (
-                <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
-              ))}
-          </div>
-        </div>
+              <div
+                style={{
+                  position: "relative",
+                  border: "1px solid #2A2560",
+                  background: "rgba(5,4,26,0.5)",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Header */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
+                    alignItems: "center",
+                    gap: 16,
+                    padding: "12px 24px",
+                    borderBottom: "1px solid #2A2560",
+                    background: "rgba(0,0,0,0.25)",
+                    ...MONO,
+                    fontSize: 10,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: "#6B6890",
+                    fontWeight: 600,
+                  }}
+                >
+                  <span>#</span>
+                  <span>JOUEUR</span>
+                  <span style={{ textAlign: "right" }}>XP TOTAL</span>
+                  <span>NIVEAU</span>
+                  <span style={{ justifySelf: "end" }}>STREAK</span>
+                </div>
+
+                {/* Top rows */}
+                {top12.map((entry) => (
+                  <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
+                ))}
+
+                {/* Ellipsis */}
+                {userRank > 15 && contextRows.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 14,
+                      padding: "14px 24px",
+                      borderBottom: "1px solid rgba(31,27,71,0.5)",
+                      ...MONO,
+                      fontSize: 11,
+                      letterSpacing: "0.2em",
+                      textTransform: "uppercase",
+                      color: "#6B6890",
+                    }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        height: 1,
+                        background:
+                          "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
+                      }}
+                    />
+                    ··· {Math.max(0, userRank - 14)} joueurs ···
+                    <span
+                      style={{
+                        flex: 1,
+                        height: 1,
+                        background:
+                          "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Context rows around current user */}
+                {userRank > 15 &&
+                  contextRows.map((entry) => (
+                    <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
+                  ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );
