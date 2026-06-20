@@ -500,16 +500,17 @@ model Season {
 // season (distinct from User.xpTotal). division/pod/seasonXp/rank are written
 // server-side only (creditXp + the rollover); never by clients.
 model LeagueMembership {
-  id        String         @id @default(uuid()) @db.Uuid
-  userId    String         @db.Uuid
-  seasonId  String         @db.Uuid
-  division  LeagueDivision @default(BRONZE)
-  pod       Int            @default(1)
-  seasonXp  Int            @default(0)
-  finalRank Int?
-  promoted  Boolean        @default(false)
-  relegated Boolean        @default(false)
-  joinedAt  DateTime       @default(now())
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @db.Uuid
+  seasonId   String         @db.Uuid
+  division   LeagueDivision @default(BRONZE)
+  pod        Int            @default(1)
+  seasonXp   Int            @default(0)
+  finalRank  Int? // rank within the pod (1..15), set at rollover
+  globalRank Int? // rank across the whole season by seasonXp, set at rollover
+  promoted   Boolean        @default(false)
+  relegated  Boolean        @default(false)
+  joinedAt   DateTime       @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
