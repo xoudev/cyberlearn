@@ -69,6 +69,7 @@ model User {
   cosmeticLoadout   UserCosmeticLoadout?
   leagueMemberships LeagueMembership[]
   xpLedger          XpLedger[]
+  wrappedSnapshots  WrappedSnapshot[]
 
   @@index([username])
   @@index([role])
@@ -956,4 +957,31 @@ model XpLedger {
 
   @@index([userId, createdAt])
   @@map("xp_ledger")
+}
+
+// ============================================================
+// WRAPPED (curated, shareable monthly/season recap snapshots)
+// ============================================================
+
+enum WrappedPeriod {
+  MONTH
+  SEASON
+}
+
+// A frozen, curated recap for one user + period. `payload` holds ONLY the
+// curated stats (no raw or private data), so it is safe to render and (later)
+// share. Server-written; one row per user + period.
+model WrappedSnapshot {
+  id        String        @id @default(uuid()) @db.Uuid
+  userId    String        @db.Uuid
+  period    WrappedPeriod @default(MONTH)
+  periodKey String        @db.VarChar(16) // "2026-03" for a month
+  payload   Json
+  createdAt DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period, periodKey])
+  @@index([userId])
+  @@map("wrapped_snapshots")
 }
