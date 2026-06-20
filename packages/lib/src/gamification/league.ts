@@ -58,3 +58,18 @@ export function pickPod(
   }
   return maxPod + 1;
 }
+
+/**
+ * How many of a pod of `n` members promote and relegate at rollover, never
+ * overlapping: the top `promote` advance and the bottom `relegate` drop, and a
+ * small pod shrinks the zones (promotion wins ties for the scarce slots).
+ */
+export function podOutcome(
+  n: number,
+  promoteN: number = PROMOTE_COUNT,
+  relegateN: number = RELEGATE_COUNT,
+): { promote: number; relegate: number } {
+  const promote = Math.max(0, Math.min(promoteN, n));
+  const relegate = Math.max(0, Math.min(relegateN, n - promote));
+  return { promote, relegate };
+}
