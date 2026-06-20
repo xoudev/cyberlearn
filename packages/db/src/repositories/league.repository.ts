@@ -20,6 +20,45 @@ export const leagueRepository = {
   },
 
   /**
+   * The user's standing in the most recently CLOSED season, plus the season's
+   * total member count (for the percentile). Powers the Wrapped end-of-season
+   * card. Null when no season has closed or the user did not take part.
+   */
+  async getLatestClosedSeasonResult(userId: string): Promise<{
+    seasonIndex: number;
+    division: string;
+    globalRank: number | null;
+    totalMembers: number;
+    promoted: boolean;
+    relegated: boolean;
+  } | null> {
+    const season = await prisma.season.findFirst({
+      where: { status: "CLOSED" },
+      orderBy: { index: "desc" },
+      select: { id: true, index: true },
+    });
+    if (!season) return null;
+
+    const [membership, totalMembers] = await Promise.all([
+      prisma.leagueMembership.findUnique({
+        where: { userId_seasonId: { userId, seasonId: season.id } },
+        select: { division: true, globalRank: true, promoted: true, relegated: true },
+      }),
+      prisma.leagueMembership.count({ where: { seasonId: season.id } }),
+    ]);
+    if (!membership) return null;
+
+    return {
+      seasonIndex: season.index,
+      division: membership.division,
+      globalRank: membership.globalRank,
+      totalMembers,
+      promoted: membership.promoted,
+      relegated: membership.relegated,
+    };
+  },
+
+  /**
    * The anonymized ladder for one pod (a division + pod within a season).
    *
    * SECURITY: returns ONLY client-safe PodLadderEntry rows - never raw users,

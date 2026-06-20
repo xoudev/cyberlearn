@@ -36,6 +36,7 @@ export { cosmeticRepository } from "./repositories/cosmetic.repository.js";
 export type { CosmeticWithState, EquippedCodes } from "./repositories/cosmetic.repository.js";
 export { leagueRepository } from "./repositories/league.repository.js";
 export type { PodLadderEntry } from "./repositories/league.visibility.js";
+export { wrappedRepository } from "./repositories/wrapped.repository.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
 export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
@@ -80,6 +81,7 @@ export type {
   Season,
   LeagueMembership,
   XpLedger,
+  WrappedSnapshot,
 } from "@prisma/client";
 
 export {
@@ -100,4 +102,5 @@ export {
   SeasonStatus,
   LeagueDivision,
   XpSource,
+  WrappedPeriod,
 } from "@prisma/client";
