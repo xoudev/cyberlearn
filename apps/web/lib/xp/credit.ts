@@ -1,4 +1,4 @@
-import type { Prisma } from "@cyberlearn/db";
+import type { Prisma, XpSource } from "@cyberlearn/db";
 import { computeLevel } from "@cyberlearn/lib";
 import { recordSeasonXp } from "@/lib/league/record-season-xp";
 
@@ -33,6 +33,7 @@ export async function creditXp(
   tx: Prisma.TransactionClient,
   userId: string,
   amount: number,
+  source: XpSource,
   options: CreditXpOptions = {},
 ): Promise<CreditXpResult> {
   const user = await tx.user.findUniqueOrThrow({
@@ -52,6 +53,10 @@ export async function creditXp(
   // Mirror the gain into the active season's leaderboard (no-op until a season
   // is seeded), so seasonXp stays in lock-step with every xp credit.
   await recordSeasonXp(tx, userId, amount);
+
+  // Append to the XP ledger so the gain can be bucketed by period (month /
+  // season) later. The running xpTotal alone cannot express this.
+  await tx.xpLedger.create({ data: { userId, amount, source } });
 
   if (leveledUp && options.notifyLevelUp !== false) {
     const shownXp = options.notifyXp ?? amount;

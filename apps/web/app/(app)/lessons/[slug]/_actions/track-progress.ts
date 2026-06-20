@@ -128,7 +128,7 @@ export async function completeLesson(lessonId: string): Promise<CompleteLessonRe
     // Credit the lesson reward through the single XP source of truth (level-up
     // notification suppressed: one combined LEVEL_UP is emitted below).
     const lessonCredit = isFirstCompletion
-      ? await creditXp(tx, authUser.id, lesson.xpReward, { notifyLevelUp: false })
+      ? await creditXp(tx, authUser.id, lesson.xpReward, "LESSON", { notifyLevelUp: false })
       : null;
 
     // Insert userBadge rows and credit their xpReward (also via creditXp) -

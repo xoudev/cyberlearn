@@ -231,7 +231,10 @@ async function awardChallengeXp(
       },
     });
     // Single XP source of truth - emits the LEVEL_UP notification when crossed.
-    await creditXp(tx, userId, xpReward, { notifyXp: xpReward, metadata: { challengeId } });
+    await creditXp(tx, userId, xpReward, "CHALLENGE", {
+      notifyXp: xpReward,
+      metadata: { challengeId },
+    });
   });
 
   // Weekly quests: a challenge completion keeps the streak quest moving too.

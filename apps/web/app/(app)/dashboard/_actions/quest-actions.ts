@@ -46,7 +46,7 @@ export async function claimQuestAction(questId: string): Promise<ClaimQuestResul
       where: { id: row.id },
       data: { claimed: true, claimedAt: now },
     });
-    await creditXp(tx, authUser.id, row.quest.xpReward, {
+    await creditXp(tx, authUser.id, row.quest.xpReward, "QUEST", {
       notifyXp: row.quest.xpReward,
       metadata: { questCode: row.quest.code },
     });

@@ -19,6 +19,7 @@ const m = vi.hoisted(() => ({
     user: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
     notification: { createMany: vi.fn() },
     season: { findFirst: vi.fn() },
+    xpLedger: { create: vi.fn() },
   },
 }));
 
@@ -96,6 +97,7 @@ beforeEach(() => {
   m.tx.userBadge.createManyAndReturn.mockResolvedValue([]);
   m.tx.user.findUniqueOrThrow.mockResolvedValue({ xpTotal: 0 });
   m.tx.season.findFirst.mockResolvedValue(null);
+  m.tx.xpLedger.create.mockResolvedValue({});
 });
 
 describe("issueCertificate - gate + idempotence guards", () => {
