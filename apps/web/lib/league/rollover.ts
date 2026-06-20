@@ -44,13 +44,34 @@ export async function finalizeSeason(seasonId: string, now: Date): Promise<Rollo
       });
       const members = await tx.leagueMembership.findMany({
         where: { seasonId },
-        select: { id: true, userId: true, division: true, pod: true },
+        select: {
+          id: true,
+          userId: true,
+          division: true,
+          pod: true,
+          seasonXp: true,
+          joinedAt: true,
+        },
         orderBy: [{ division: "asc" }, { pod: "asc" }, { seasonXp: "desc" }, { joinedAt: "asc" }],
       });
 
+      // Global season rank by seasonXp across ALL pods (same tiebreak as a pod),
+      // distinct from the pod-local finalRank below.
+      const globalRankById = new Map<string, number>();
+      [...members]
+        .sort((a, b) => b.seasonXp - a.seasonXp || a.joinedAt.getTime() - b.joinedAt.getTime())
+        .forEach((m, idx) => {
+          globalRankById.set(m.id, idx + 1);
+        });
+
       // Rank each pod, decide promotion/relegation, compute the next division.
-      const standings: { id: string; finalRank: number; promoted: boolean; relegated: boolean }[] =
-        [];
+      const standings: {
+        id: string;
+        finalRank: number;
+        promoted: boolean;
+        relegated: boolean;
+        globalRank: number;
+      }[] = [];
       const placements: { userId: string; division: LeagueDivision }[] = [];
       let promotedTotal = 0;
       let relegatedTotal = 0;
@@ -79,7 +100,13 @@ export async function finalizeSeason(seasonId: string, now: Date): Promise<Rollo
             : relegated
               ? (divisionDown(m.division) ?? m.division)
               : m.division;
-          standings.push({ id: m.id, finalRank: rank, promoted, relegated });
+          standings.push({
+            id: m.id,
+            finalRank: rank,
+            promoted,
+            relegated,
+            globalRank: globalRankById.get(m.id) ?? rank,
+          });
           placements.push({ userId: m.userId, division: nextDivision });
           if (promoted) promotedTotal++;
           if (relegated) relegatedTotal++;
@@ -91,7 +118,12 @@ export async function finalizeSeason(seasonId: string, now: Date): Promise<Rollo
       for (const s of standings) {
         await tx.leagueMembership.update({
           where: { id: s.id },
-          data: { finalRank: s.finalRank, promoted: s.promoted, relegated: s.relegated },
+          data: {
+            finalRank: s.finalRank,
+            promoted: s.promoted,
+            relegated: s.relegated,
+            globalRank: s.globalRank,
+          },
         });
       }
 
