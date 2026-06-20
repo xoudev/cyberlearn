@@ -33,8 +33,7 @@ export function LevelBadge({ level, size, className }: LevelBadgeProps) {
     <span
       className={cn(levelBadgeVariants({ size }), className)}
       style={{
-        background:
-          "linear-gradient(135deg, var(--color-brand-blue), var(--color-brand-turquoise))",
+        background: "linear-gradient(135deg, var(--color-brand-blue), var(--cosmetic-accent))",
         color: "#ffffff",
         boxShadow:
           "0 1px 3px color-mix(in srgb, var(--color-brand-blue) 40%, transparent), inset 0 1px 0 rgba(255,255,255,0.15)",
