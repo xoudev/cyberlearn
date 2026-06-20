@@ -32,6 +32,7 @@ interface TxMock {
   userBadge: { createManyAndReturn: ReturnType<typeof vi.fn> };
   user: { findUniqueOrThrow: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   notification: { createMany: ReturnType<typeof vi.fn> };
+  season: { findFirst: ReturnType<typeof vi.fn> };
 }
 
 function makeTx(insertedBadgeIds: string[], xpTotal: number): TxMock {
@@ -46,6 +47,7 @@ function makeTx(insertedBadgeIds: string[], xpTotal: number): TxMock {
       update: vi.fn().mockResolvedValue({}),
     },
     notification: { createMany: vi.fn().mockResolvedValue({ count: 0 }) },
+    season: { findFirst: vi.fn().mockResolvedValue(null) },
   };
 }
 
