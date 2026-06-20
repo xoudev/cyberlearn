@@ -224,6 +224,27 @@
   --cosmetic-terminal-fg: #ff5b5b;
 }
 
+/* ─── Leagues: seasonal division + promotion/relegation zone colors ───────── */
+/* Distinct from the permanent prestige tiers (packages/lib tier.ts): divisions
+ * are seasonal and a user moves between them via promotion/relegation. Kept as
+ * their own tokens (seeded from the tier palette) so they can diverge from tier
+ * colors later without a code change. Same in light + dark - they are vivid
+ * badge colors, not theme surfaces. */
+
+:root {
+  --color-division-bronze: #c77b3a;
+  --color-division-argent: #aeb7c7;
+  --color-division-or: #ffb547;
+  --color-division-platine: #7fe3e0;
+  --color-division-diamant: #0affd4;
+
+  /* Pod ladder zones: the top of a pod promotes, the bottom relegates. Chosen
+   * distinct from the cyan brand + the cyan "TOI" highlight so the three states
+   * (promote / safe / relegate) read clearly. */
+  --color-promote: #34d399;
+  --color-relegate: #ff5b6e;
+}
+
 /* ─── Component: LessonCard ──────────────────────────────────────────────── */
 
 .lesson-card {
