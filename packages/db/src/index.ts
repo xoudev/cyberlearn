@@ -35,6 +35,7 @@ export type { StreakOverview } from "./repositories/streak.repository.js";
 export { cosmeticRepository } from "./repositories/cosmetic.repository.js";
 export type { CosmeticWithState, EquippedCodes } from "./repositories/cosmetic.repository.js";
 export { leagueRepository } from "./repositories/league.repository.js";
+export type { PodLadderEntry } from "./repositories/league.visibility.js";
 export { createSupabaseServerClient } from "./supabase/server.js";
 export { createSupabaseBrowserClient } from "./supabase/client.js";
 export { createSupabaseAdminClient } from "./supabase/admin.js";
