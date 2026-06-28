@@ -45,9 +45,15 @@ export async function creditXp(
   const { level: newLevel } = computeLevel(newXpTotal);
   const leveledUp = newLevel > user.level;
 
+  // Atomic increment on xpTotal so concurrent credits (two tabs, a double
+  // submit, overlapping lesson/review/quest/challenge/badge credits) never
+  // clobber each other - an absolute set was a lost-update race that left
+  // xpTotal under-counting vs the xp_ledger and seasonXp. The level is set from
+  // the read total (best-effort, self-corrects on the next credit); only the
+  // persisted xpTotal must be exact.
   await tx.user.update({
     where: { id: userId },
-    data: { xpTotal: newXpTotal, level: newLevel },
+    data: { xpTotal: { increment: amount }, level: newLevel },
   });
 
   // Mirror the gain into the active season's leaderboard (no-op until a season

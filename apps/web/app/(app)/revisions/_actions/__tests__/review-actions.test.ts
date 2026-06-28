@@ -104,7 +104,7 @@ describe("submitReviewAction", () => {
     expect(m.userUpdate).toHaveBeenCalledTimes(1);
     expect(m.userUpdate).toHaveBeenCalledWith({
       where: { id: "u1" },
-      data: { xpTotal: 105, level: computeLevel(105).level },
+      data: { xpTotal: { increment: 5 }, level: computeLevel(105).level },
     });
     expect(m.revalidatePath).toHaveBeenCalledWith("/revisions");
     expect(m.revalidatePath).toHaveBeenCalledWith("/dashboard");

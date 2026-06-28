@@ -29,7 +29,7 @@ describe("creditXp", () => {
     expect(r.newLevel).toBe(computeLevel(110).level);
     expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: "u1" },
-      data: { xpTotal: 110, level: computeLevel(110).level },
+      data: { xpTotal: { increment: 20 }, level: computeLevel(110).level },
     });
   });
 
