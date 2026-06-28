@@ -5,7 +5,9 @@ import { prisma, notificationRepository } from "@cyberlearn/db";
 // Sends REVIEW_REMINDER notifications to users with lessons due today.
 export async function GET(request: Request): Promise<NextResponse> {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET ?? ""}`) {
+  // Fail closed: a missing/empty CRON_SECRET must never authorize.
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -47,6 +49,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   let sent = 0;
+  let failed = 0;
   for (const [userId, { count, titles }] of byUser) {
     const firstTitle = titles[0] ?? "";
     const body =
@@ -54,16 +57,22 @@ export async function GET(request: Request): Promise<NextResponse> {
         ? `Il est temps de revoir "${firstTitle}".`
         : `Tu as ${String(count)} leçons à réviser aujourd'hui.`;
 
-    await notificationRepository.create({
-      userId,
-      type: "REVIEW_REMINDER",
-      title: count === 1 ? "Révision recommandée" : `${String(count)} révisions à faire`,
-      body,
-      actionUrl: "/lessons",
-      metadata: { count },
-    });
-    sent++;
+    // Isolate failures: a single bad user must not stop every later reminder.
+    try {
+      await notificationRepository.create({
+        userId,
+        type: "REVIEW_REMINDER",
+        title: count === 1 ? "Révision recommandée" : `${String(count)} révisions à faire`,
+        body,
+        actionUrl: "/lessons",
+        metadata: { count },
+      });
+      sent++;
+    } catch (error) {
+      failed++;
+      console.error(`[review-reminders] notification failed for user ${userId}:`, error);
+    }
   }
 
-  return NextResponse.json({ ok: true, sent });
+  return NextResponse.json({ ok: true, sent, failed });
 }

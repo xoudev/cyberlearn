@@ -194,7 +194,7 @@ describe("issueCertificate - path badge awarding through the shared helper", () 
     // XP credited + level recomputed (fake computeLevel: floor(xp/100)+1).
     expect(m.tx.user.update).toHaveBeenCalledWith({
       where: { id: "u1" },
-      data: { xpTotal: 275, level: 3 },
+      data: { xpTotal: { increment: 75 }, level: 3 },
     });
     // Notification carries the xpReward.
     const notifArg = m.tx.notification.createMany.mock.calls[0]?.[0] as {
