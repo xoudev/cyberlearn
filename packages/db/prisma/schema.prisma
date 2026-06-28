@@ -70,6 +70,7 @@ model User {
   leagueMemberships LeagueMembership[]
   xpLedger          XpLedger[]
   wrappedSnapshots  WrappedSnapshot[]
+  answerUpvotes     LessonAnswerUpvote[]
 
   @@index([username])
   @@index([role])
@@ -578,11 +579,28 @@ model LessonAnswer {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  question LessonQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  user     User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  question      LessonQuestion       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user          User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  upvoteRecords LessonAnswerUpvote[]
 
   @@index([questionId, isHidden])
   @@map("lesson_answers")
+}
+
+// One row per (answer, user): a user can upvote a given answer at most once.
+// LessonAnswer.upvotes stays as a denormalized count, kept in sync server-side.
+model LessonAnswerUpvote {
+  id        String   @id @default(uuid()) @db.Uuid
+  answerId  String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  answer LessonAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([answerId, userId])
+  @@index([answerId])
+  @@map("lesson_answer_upvotes")
 }
 
 // ============================================================

@@ -176,20 +176,17 @@ async function awardChallengeXp(
   xpReward: number,
   challengeTitle: string,
 ): Promise<void> {
-  const [user] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        xpTotal: true,
-        level: true,
-        streakDays: true,
-        longestStreak: true,
-        streakFreezes: true,
-        lastActiveAt: true,
-      },
-    }),
-    challengeRepository.completeChallenge(userId, challengeId),
-  ]);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      xpTotal: true,
+      level: true,
+      streakDays: true,
+      longestStreak: true,
+      streakFreezes: true,
+      lastActiveAt: true,
+    },
+  });
 
   if (!user) return;
 
@@ -206,6 +203,22 @@ async function awardChallengeXp(
   const today = new Date(dayKey(now));
 
   await prisma.$transaction(async (tx) => {
+    // Ensure a progress row exists, then atomically flip it to COMPLETED only if
+    // it is not already. The transaction that wins this flip is the ONLY one that
+    // credits XP / streak / notification - idempotent against a double submit or
+    // double click (the earlier non-transactional status check was not a real
+    // gate, so two concurrent correct submissions both credited).
+    await tx.userChallengeProgress.upsert({
+      where: { userId_challengeId: { userId, challengeId } },
+      create: { userId, challengeId, status: "IN_PROGRESS", attempts: 1 },
+      update: {},
+    });
+    const completed = await tx.userChallengeProgress.updateMany({
+      where: { userId, challengeId, status: { not: "COMPLETED" } },
+      data: { status: "COMPLETED", completedAt: now },
+    });
+    if (completed.count === 0) return;
+
     await tx.user.update({
       where: { id: userId },
       data: {
