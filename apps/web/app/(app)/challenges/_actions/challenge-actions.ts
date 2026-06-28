@@ -144,21 +144,21 @@ export async function revealHintAction(
   if (alreadyRevealed) return { content: hint.content };
 
   if (hint.xpCost > 0) {
-    const userData = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { xpTotal: true },
+    // Atomic conditional spend: decrement only while the balance still covers the
+    // cost, so concurrent reveals can't drive xpTotal negative. The reveal is
+    // bound to the successful spend in one transaction.
+    const revealed = await prisma.$transaction(async (tx) => {
+      const spend = await tx.user.updateMany({
+        where: { id: user.id, xpTotal: { gte: hint.xpCost } },
+        data: { xpTotal: { decrement: hint.xpCost } },
+      });
+      if (spend.count === 0) return false;
+      await tx.challengeHintReveal.create({ data: { userId: user.id, hintId } });
+      return true;
     });
-    if (!userData) return { error: "Utilisateur introuvable." };
-    if (userData.xpTotal < hint.xpCost) {
+    if (!revealed) {
       return { error: `XP insuffisants (coût : ${String(hint.xpCost)} XP).` };
     }
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: { xpTotal: { decrement: hint.xpCost } },
-      }),
-      prisma.challengeHintReveal.create({ data: { userId: user.id, hintId } }),
-    ]);
     revalidatePath("/challenges");
     revalidatePath("/dashboard");
     return { content: hint.content };
