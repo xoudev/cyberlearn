@@ -98,7 +98,7 @@ describe("awardBadges", () => {
     expect(result.newLevel).toBe(computeLevel(180).level);
     expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: "u1" },
-      data: { xpTotal: 180, level: computeLevel(180).level },
+      data: { xpTotal: { increment: 80 }, level: computeLevel(180).level },
     });
   });
 
@@ -128,7 +128,7 @@ describe("awardBadges", () => {
     expect(result.xpGained).toBe(10);
     expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: "u1" },
-      data: { xpTotal: 210, level: computeLevel(210).level },
+      data: { xpTotal: { increment: 10 }, level: computeLevel(210).level },
     });
     // Notifications only for the inserted row.
     const notifArg = tx.notification.createMany.mock.calls[0]?.[0] as { data: unknown[] };

@@ -8,7 +8,11 @@ import { Redis } from "@upstash/redis";
 
 function isAuthorized(req: NextRequest): boolean {
   const auth = req.headers.get("authorization");
-  return auth === `Bearer ${process.env.CRON_SECRET ?? ""}`;
+  // Fail closed: a missing/empty CRON_SECRET must never authorize (otherwise
+  // `Bearer ` matches `Bearer ` and the cron is open to anyone).
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  return auth === `Bearer ${secret}`;
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {

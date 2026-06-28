@@ -92,10 +92,14 @@ beforeEach(() => {
   m.tx.user.findUniqueOrThrow.mockImplementation(() =>
     Promise.resolve({ xpTotal: xpState, level: computeLevel(xpState).level }),
   );
-  m.tx.user.update.mockImplementation((args: { data: { xpTotal?: number } }) => {
-    if (typeof args.data.xpTotal === "number") xpState = args.data.xpTotal;
-    return Promise.resolve({});
-  });
+  m.tx.user.update.mockImplementation(
+    (args: { data: { xpTotal?: number | { increment: number } } }) => {
+      const xp = args.data.xpTotal;
+      if (typeof xp === "number") xpState = xp;
+      else if (xp && typeof xp.increment === "number") xpState += xp.increment;
+      return Promise.resolve({});
+    },
+  );
 });
 
 describe("completeLesson - badge xpReward crediting (interactive transaction)", () => {
@@ -106,12 +110,12 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
     expect(result.xpGained).toBe(70);
     expect(result.newBadges).toEqual([{ name: "Hacktiviste", rarity: "EPIC", xpReward: 50 }]);
 
-    // creditXp writes lesson XP (110) then badge XP (160); the streak-only
+    // creditXp increments lesson XP (+20) then badge XP (+50); the streak-only
     // update carries no xpTotal and is filtered out.
     const xpUpdates = m.tx.user.update.mock.calls
-      .map((c) => (c[0] as { data: { xpTotal?: number } }).data.xpTotal)
+      .map((c) => (c[0] as { data: { xpTotal?: { increment: number } } }).data.xpTotal?.increment)
       .filter((x): x is number => typeof x === "number");
-    expect(xpUpdates).toEqual([110, 160]);
+    expect(xpUpdates).toEqual([20, 50]);
 
     // Final level derives from the credited total.
     expect(result.newLevel).toBe(computeLevel(160).level);
@@ -148,9 +152,9 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
     expect(result.newBadges).toHaveLength(0);
     // Only the lesson XP is credited; no badge credit when the row lost the race.
     const xpUpdates = m.tx.user.update.mock.calls
-      .map((c) => (c[0] as { data: { xpTotal?: number } }).data.xpTotal)
+      .map((c) => (c[0] as { data: { xpTotal?: { increment: number } } }).data.xpTotal?.increment)
       .filter((x): x is number => typeof x === "number");
-    expect(xpUpdates).toEqual([110]);
+    expect(xpUpdates).toEqual([20]);
   });
 
   it("does not re-credit anything on an already-completed lesson", async () => {

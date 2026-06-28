@@ -8,7 +8,9 @@ import { applyDayBoundary, dayKey } from "@cyberlearn/lib";
 // (the same notion of "day" as the activity logic, via dayKey).
 export async function GET(request: Request): Promise<NextResponse> {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET ?? ""}`) {
+  // Fail closed: a missing/empty CRON_SECRET must never authorize.
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -63,12 +65,18 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (brokenIds.length > 0) {
     ops.push(prisma.user.updateMany({ where: { id: { in: brokenIds } }, data: { streakDays: 0 } }));
   }
-  await Promise.all(ops);
+  // Isolate failures: one bad write must not abort the whole nightly batch.
+  const results = await Promise.allSettled(ops);
+  const failed = results.filter((r) => r.status === "rejected").length;
+  if (failed > 0) {
+    console.error(`[streak-reset] ${String(failed)} streak write(s) failed`);
+  }
 
   return NextResponse.json({
     ok: true,
     scanned: candidates.length,
     frozen: frozenIds.length,
     broken: brokenIds.length,
+    failed,
   });
 }
