@@ -14,8 +14,19 @@ export const wrappedRepository = {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { level: true } });
     if (!user) return null;
 
-    const [xpEntries, lessons, badges, totalBadges, overview, season] = await Promise.all([
-      prisma.xpLedger.findMany({ where: { userId }, select: { amount: true, createdAt: true } }),
+    const [xpByMonth, lessons, badges, totalBadges, overview, season] = await Promise.all([
+      // Aggregate XP per Europe/Paris month in SQL. xp_ledger is the busiest
+      // table (one row per credit), so we never pull every all-time row into
+      // memory per request - only one sum per month crosses the wire.
+      prisma.$queryRaw<{ month: string; total: bigint }[]>`
+        SELECT to_char(
+                 date_trunc('month', "createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris'),
+                 'YYYY-MM'
+               ) AS month,
+               SUM(amount)::bigint AS total
+        FROM xp_ledger
+        WHERE "userId" = ${userId}::uuid
+        GROUP BY 1`,
       prisma.userLessonProgress.findMany({
         where: { userId, status: "COMPLETED", completedAt: { not: null } },
         select: { completedAt: true, lesson: { select: { category: true } } },
@@ -31,7 +42,12 @@ export const wrappedRepository = {
 
     return assembleWrapped({
       periodKey,
-      xpEntries,
+      // One synthetic entry per month (mid-month noon UTC stays inside the same
+      // Paris month), so the pure assembler buckets them identically to before.
+      xpEntries: xpByMonth.map((r) => ({
+        amount: Number(r.total),
+        createdAt: new Date(`${r.month}-15T12:00:00Z`),
+      })),
       lessons: lessons.flatMap((l) =>
         l.completedAt ? [{ completedAt: l.completedAt, category: l.lesson.category }] : [],
       ),
