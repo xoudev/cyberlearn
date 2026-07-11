@@ -5,7 +5,7 @@ const m = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   requireRequestUser: vi.fn(),
   scheduleFindUnique: vi.fn(),
-  scheduleUpdate: vi.fn(),
+  scheduleUpdateMany: vi.fn(),
   lessonFindUnique: vi.fn(),
   userFindUniqueOrThrow: vi.fn(),
   userUpdate: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("@/lib/auth", () => ({ requireRequestUser: m.requireRequestUser }));
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
-    reviewSchedule: { findUnique: m.scheduleFindUnique, update: m.scheduleUpdate },
+    reviewSchedule: { findUnique: m.scheduleFindUnique, updateMany: m.scheduleUpdateMany },
     lesson: { findUnique: m.lessonFindUnique },
     $transaction: m.transaction,
   },
@@ -35,13 +35,15 @@ const SCHEDULE = {
   easeFactor: 2.5,
   intervalDays: 1,
   repetitions: 0,
+  // Due in the past so the atomic "is it due" guard matches.
+  nextReviewAt: new Date(Date.now() - 86_400_000),
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireRequestUser.mockResolvedValue({ id: "u1" });
   m.scheduleFindUnique.mockResolvedValue(SCHEDULE);
-  m.scheduleUpdate.mockResolvedValue({});
+  m.scheduleUpdateMany.mockResolvedValue({ count: 1 });
   m.lessonFindUnique.mockResolvedValue({ xpReward: 50 });
   m.seasonFindFirst.mockResolvedValue(null);
   m.xpLedgerCreate.mockResolvedValue({});
@@ -66,7 +68,7 @@ describe("submitReviewAction", () => {
     const res = await submitReviewAction(SCHEDULE_ID, 5);
 
     expect(res.success).toBe(false);
-    expect(m.scheduleUpdate).not.toHaveBeenCalled();
+    expect(m.scheduleUpdateMany).not.toHaveBeenCalled();
   });
 
   it("rejects a non-uuid schedule id before touching the db", async () => {
@@ -84,8 +86,8 @@ describe("submitReviewAction", () => {
     expect(res.success).toBe(true);
     expect(res.reviewXp).toBe(5);
     // SAFETY: shape of the recorded prisma.reviewSchedule.update call argument.
-    const arg = m.scheduleUpdate.mock.calls[0]?.[0] as {
-      where: { id: string };
+    const arg = m.scheduleUpdateMany.mock.calls[0]?.[0] as {
+      where: { id: string; userId: string; nextReviewAt: { lte: Date } };
       data: {
         easeFactor: number;
         intervalDays: number;
@@ -94,7 +96,8 @@ describe("submitReviewAction", () => {
         lastReviewedAt: Date;
       };
     };
-    expect(arg.where).toEqual({ id: SCHEDULE_ID });
+    expect(arg.where.id).toBe(SCHEDULE_ID);
+    expect(arg.where.userId).toBe("u1");
     expect(arg.data.easeFactor).toBe(expected.easeFactor);
     expect(arg.data.intervalDays).toBe(expected.intervalDays);
     expect(arg.data.repetitions).toBe(expected.repetitions);
@@ -110,12 +113,23 @@ describe("submitReviewAction", () => {
     expect(m.revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 
+  it("rejects a review that is not due (anti-replay) and credits nothing", async () => {
+    // The atomic due-guard matches 0 rows when the review was already graded.
+    m.scheduleUpdateMany.mockResolvedValue({ count: 0 });
+
+    const res = await submitReviewAction(SCHEDULE_ID, 5);
+
+    expect(res.success).toBe(false);
+    expect(m.transaction).not.toHaveBeenCalled();
+    expect(m.userUpdate).not.toHaveBeenCalled();
+  });
+
   it("reschedules without any XP when the lesson was forgotten (quality 1)", async () => {
     const res = await submitReviewAction(SCHEDULE_ID, 1);
 
     expect(res.success).toBe(true);
     expect(res.reviewXp).toBe(0);
-    expect(m.scheduleUpdate).toHaveBeenCalled();
+    expect(m.scheduleUpdateMany).toHaveBeenCalled();
     expect(m.lessonFindUnique).not.toHaveBeenCalled();
     expect(m.transaction).not.toHaveBeenCalled();
   });

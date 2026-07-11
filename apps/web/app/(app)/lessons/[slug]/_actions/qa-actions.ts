@@ -98,13 +98,18 @@ export async function upvoteAnswerAction(
   answerId: string,
   lessonSlug: string,
 ): Promise<QaActionResult> {
-  await requireRequestUser();
+  const user = await requireRequestUser();
 
   const z_id = z.string().uuid().safeParse(answerId);
   if (!z_id.success) return { success: false, error: "ID invalide." };
 
-  await qaRepository.incrementUpvotes(answerId);
-  revalidatePath(`/lessons/${lessonSlug}`);
+  const outcome = await qaRepository.castUpvote(z_id.data, user.id);
+  if (outcome === "notfound") return { success: false, error: "Réponse introuvable." };
+  if (outcome === "self") {
+    return { success: false, error: "Tu ne peux pas voter pour ta propre réponse." };
+  }
 
+  // "ok" and "already" are both a success state: the upvote counts exactly once.
+  revalidatePath(`/lessons/${lessonSlug}`);
   return { success: true };
 }
