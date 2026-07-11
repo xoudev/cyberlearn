@@ -351,6 +351,30 @@ jobs:
       image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so Semgrep can diff this change against its baseline.
+          fetch-depth: 0
 
       - name: Semgrep scan
-        run: semgrep scan --error --config p/default --config p/typescript --config p/react
+        # Diff-aware scan: only findings introduced by this change fail the build.
+        # The hosted rulesets (p/default etc.) update on their own, so without a
+        # baseline they flag pre-existing, unchanged code and break CI with no
+        # change on our side. --baseline-commit scopes --error to the diff while
+        # still gating newly written code. Baseline is the PR base on a pull
+        # request, or the previous commit on a push; a full scan is the fallback
+        # when no valid baseline exists.
+        # BASE is passed via env (never interpolated into the shell) to avoid
+        # script injection.
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          if [ -n "$BASE" ] && git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "Diff-aware Semgrep scan against baseline $BASE"
+            semgrep scan --error --baseline-commit "$BASE" \
+              --config p/default --config p/typescript --config p/react
+          else
+            echo "No valid baseline ($BASE); running a full scan"
+            semgrep scan --error \
+              --config p/default --config p/typescript --config p/react
+          fi
