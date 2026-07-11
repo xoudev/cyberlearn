@@ -295,6 +295,7 @@ function YouBanner({
 
   return (
     <section
+      className="cl-you-banner"
       style={{
         position: "relative",
         display: "grid",
@@ -399,10 +400,16 @@ function YouBanner({
       </div>
 
       {/* separator */}
-      <span style={{ width: 1, alignSelf: "stretch", background: "#2A2560" }} />
+      <span
+        className="cl-you-sep"
+        style={{ width: 1, alignSelf: "stretch", background: "#2A2560" }}
+      />
 
       {/* XP metric */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "right" }}>
+      <div
+        className="cl-you-metric"
+        style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "right" }}
+      >
         <span
           style={{
             ...MONO,
@@ -431,7 +438,10 @@ function YouBanner({
       </div>
 
       {/* level metric */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "right" }}>
+      <div
+        className="cl-you-metric"
+        style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "right" }}
+      >
         <span
           style={{
             ...MONO,
@@ -718,6 +728,41 @@ export function ClassementClient({
         @keyframes cl-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
         @media (prefers-reduced-motion:reduce){.cl-caret{animation:none!important}.cl-live-dot{animation:none!important}}
         .cl-row:not(.cl-row-head):hover{background:rgba(10,255,212,0.03)!important}
+
+        /* Podium: 3-across only on wide screens. Content width drops to
+           viewport-240 once the sidebar reappears at 1024px, so the podium
+           (needs ~1000px for 3 columns) stays 3-across only from 1280px up.
+           Below that it becomes a single centered column. */
+        @media (max-width: 1279px) {
+          .cl-podium {
+            grid-template-columns: min(100%, 440px) !important;
+            justify-content: center;
+            align-items: stretch !important;
+            gap: 20px !important;
+            margin-bottom: 56px !important;
+          }
+          /* Drop the desktop "staircase" offset when stacked vertically. */
+          .cl-podium > * { transform: none !important; }
+          /* DOM order is silver, gold, bronze; reorder so the winner leads:
+             gold #1, then #2, then #3. */
+          .cl-podium > :nth-child(1) { order: 2; }
+          .cl-podium > :nth-child(2) { order: 1; }
+          .cl-podium > :nth-child(3) { order: 3; }
+        }
+
+        /* "Ta position" banner: collapse the multi-track grid to a single
+           column below 1024px (where content is the full, narrower viewport)
+           so the username and the XP/level metrics stop overlapping. */
+        @media (max-width: 1023px) {
+          .cl-you-banner {
+            grid-template-columns: 1fr !important;
+            gap: 14px !important;
+            padding: 20px 18px !important;
+          }
+          .cl-you-banner > * { min-width: 0; }
+          .cl-you-sep { display: none !important; }
+          .cl-you-metric { text-align: left !important; }
+        }
       `}</style>
 
       <div className="page-container">
@@ -912,6 +957,7 @@ export function ClassementClient({
             {/* Podium */}
             {podiumOrder.length >= 3 && (
               <section
+                className="cl-podium"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1.15fr 1fr",
@@ -935,7 +981,7 @@ export function ClassementClient({
             <YouBanner entry={currentEntry} userRank={userRank} totalPlayers={entries.length} />
 
             {/* Table */}
-            <div>
+            <div style={{ minWidth: 0, maxWidth: "100%" }}>
               <div
                 style={{
                   display: "flex",
@@ -971,86 +1017,94 @@ export function ClassementClient({
                 </span>
               </div>
 
+              {/* Horizontal scroll wrapper: below ~800px the fixed columns no
+                  longer fit, so the table scrolls sideways instead of silently
+                  dropping the STREAK column. The inner track carries the panel
+                  border/background and a min-width so rows keep their full width
+                  (and the highlighted row stays intact) while scrolling. */}
               <div
-                style={{
-                  position: "relative",
-                  border: "1px solid #2A2560",
-                  background: "rgba(5,4,26,0.5)",
-                  overflow: "hidden",
-                }}
+                style={{ position: "relative", overflowX: "auto", maxWidth: "100%", minWidth: 0 }}
               >
-                {/* Header */}
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
-                    alignItems: "center",
-                    gap: 16,
-                    padding: "12px 24px",
-                    borderBottom: "1px solid #2A2560",
-                    background: "rgba(0,0,0,0.25)",
-                    ...MONO,
-                    fontSize: 10,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "#6B6890",
-                    fontWeight: 600,
+                    minWidth: 800,
+                    border: "1px solid #2A2560",
+                    background: "rgba(5,4,26,0.5)",
                   }}
                 >
-                  <span>#</span>
-                  <span>JOUEUR</span>
-                  <span style={{ textAlign: "right" }}>XP TOTAL</span>
-                  <span>NIVEAU</span>
-                  <span style={{ justifySelf: "end" }}>STREAK</span>
-                </div>
-
-                {/* Top rows */}
-                {top12.map((entry) => (
-                  <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
-                ))}
-
-                {/* Ellipsis */}
-                {userRank > 15 && contextRows.length > 0 && (
+                  {/* Header */}
                   <div
                     style={{
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
                       alignItems: "center",
-                      justifyContent: "center",
-                      gap: 14,
-                      padding: "14px 24px",
-                      borderBottom: "1px solid rgba(31,27,71,0.5)",
+                      gap: 16,
+                      padding: "12px 24px",
+                      borderBottom: "1px solid #2A2560",
+                      background: "rgba(0,0,0,0.25)",
                       ...MONO,
-                      fontSize: 11,
-                      letterSpacing: "0.2em",
+                      fontSize: 10,
+                      letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       color: "#6B6890",
+                      fontWeight: 600,
                     }}
                   >
-                    <span
-                      style={{
-                        flex: 1,
-                        height: 1,
-                        background:
-                          "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
-                      }}
-                    />
-                    ··· {Math.max(0, userRank - 14)} joueurs ···
-                    <span
-                      style={{
-                        flex: 1,
-                        height: 1,
-                        background:
-                          "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
-                      }}
-                    />
+                    <span>#</span>
+                    <span>JOUEUR</span>
+                    <span style={{ textAlign: "right" }}>XP TOTAL</span>
+                    <span>NIVEAU</span>
+                    <span style={{ justifySelf: "end" }}>STREAK</span>
                   </div>
-                )}
 
-                {/* Context rows around current user */}
-                {userRank > 15 &&
-                  contextRows.map((entry) => (
+                  {/* Top rows */}
+                  {top12.map((entry) => (
                     <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
                   ))}
+
+                  {/* Ellipsis */}
+                  {userRank > 15 && contextRows.length > 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 14,
+                        padding: "14px 24px",
+                        borderBottom: "1px solid rgba(31,27,71,0.5)",
+                        ...MONO,
+                        fontSize: 11,
+                        letterSpacing: "0.2em",
+                        textTransform: "uppercase",
+                        color: "#6B6890",
+                      }}
+                    >
+                      <span
+                        style={{
+                          flex: 1,
+                          height: 1,
+                          background:
+                            "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
+                        }}
+                      />
+                      ··· {Math.max(0, userRank - 14)} joueurs ···
+                      <span
+                        style={{
+                          flex: 1,
+                          height: 1,
+                          background:
+                            "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Context rows around current user */}
+                  {userRank > 15 &&
+                    contextRows.map((entry) => (
+                      <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
+                    ))}
+                </div>
               </div>
             </div>
           </>

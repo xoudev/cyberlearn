@@ -132,6 +132,8 @@ function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
           color: "#F5F5FA",
           margin: "0 0 8px",
           letterSpacing: "-0.01em",
+          overflowWrap: "anywhere",
+          maxWidth: "100%",
         }}
       >
         {badge.name}
@@ -609,6 +611,8 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
         style={{
           display: "flex",
           alignItems: "center",
+          flexWrap: "wrap",
+          rowGap: 8,
           borderBottom: "1px solid #1F1B47",
           marginBottom: 36,
         }}
@@ -716,7 +720,7 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
               gap: 16,
             }}
           >

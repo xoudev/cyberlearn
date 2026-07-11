@@ -117,7 +117,8 @@
 }
 .pc2-root .pc2-telemetry__row {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 6px 16px;
   align-items: center;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -168,6 +169,7 @@
 }
 .pc2-root .pc2-filters__group {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 .pc2-root .pc2-pill {
@@ -774,6 +776,7 @@
   position: relative;
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
+  min-width: 0;
   background: radial-gradient(
       ellipse 220px 220px at 12% 30%,
       color-mix(in oklab, var(--k-color) 14%, transparent),
@@ -836,6 +839,7 @@
   font-weight: 700;
 }
 .pc2-root .active-card__title {
+  min-width: 0;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 22px;
@@ -1435,5 +1439,17 @@
   }
   .pc2-root .active-card__glyph {
     display: none;
+  }
+}
+/* PROGRESSION "active" cards (.pc2-duo) are wide (132px glyph + content column),
+   so they need far more room than the compact discover cards before they can sit
+   side by side. Below 1024px the app sidebar is an off-canvas drawer and content
+   spans the full viewport; at >=1024px the sidebar reclaims 240px, leaving only
+   ~1040px of content at a 1280px viewport. Keep .pc2-duo single-column until then
+   so the second card never clips off the right edge and titles never wrap per-word.
+   Overrides the multi-column states above (later + equal specificity wins). */
+@media (max-width: 1279px) {
+  .pc2-root .pc2-duo {
+    grid-template-columns: 1fr;
   }
 }

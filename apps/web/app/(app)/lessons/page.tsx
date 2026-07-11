@@ -327,6 +327,10 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            // wrap so the page-number cluster drops below the count on narrow
+            // screens instead of the "SUIV" button spilling past the strip edge
+            flexWrap: "wrap",
+            gap: 12,
             padding: "14px 20px",
             border: "1px solid #2A2560",
             background: "rgba(5,4,26,0.5)",
@@ -344,7 +348,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             </b>{" "}
             sur <b style={{ color: "#F5F5FA" }}>{total}</b>
           </span>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {page > 1 && <PageBtn href={buildUrl(p, { page: String(page - 1) })}>← PRÉC</PageBtn>}
             {buildPageRange(page, totalPages).map((n, i) =>
               n === "…" ? (

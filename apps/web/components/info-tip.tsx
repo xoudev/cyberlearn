@@ -92,7 +92,9 @@ export function InfoTip({ title, children }: InfoTipProps): React.JSX.Element {
           left: "50%",
           transform: `translateX(-50%) translateY(${visible ? "0" : "-4px"})`,
           width: 280,
-          maxWidth: 280,
+          // Never exceed the viewport on small screens: cap at 280px but
+          // shrink to fit when the screen is narrower than that plus margin.
+          maxWidth: "min(280px, calc(100vw - 2rem))",
           background: "#110F33",
           border: "1px solid rgba(10,255,212,0.35)",
           boxShadow: "0 12px 40px rgba(0,0,0,0.5), 0 0 24px rgba(10,255,212,0.1)",

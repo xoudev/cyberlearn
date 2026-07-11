@@ -157,6 +157,9 @@ export function LandingTerminal(): React.ReactElement {
           lineHeight: 1.65,
           color: "#B8B5D1",
           minHeight: 260,
+          // Let long `white-space: pre` code lines scroll inside the box on
+          // narrow phones instead of being clipped by the outer overflow:hidden.
+          overflowX: "auto",
         }}
       >
         {LINES.slice(0, visibleCount).map((line, i) => (
