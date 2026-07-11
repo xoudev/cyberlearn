@@ -1,6 +1,9 @@
 import * as React from "react";
 
-const MOBILE_BREAKPOINT = 768;
+// Below this width the app sidebar becomes an off-canvas drawer, so the tablet
+// band gets the full content width. Kept in sync with the .sidebar-wrapper drawer
+// media query in globals.css and toggleSidebar's matchMedia.
+const MOBILE_BREAKPOINT = 1024;
 
 export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);

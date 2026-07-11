@@ -1589,7 +1589,13 @@
 /* ==========================================================================
    RESPONSIVE
    ========================================================================== */
-@media (max-width: 900px) {
+/* Keep the exam intro single-column until the content area is genuinely wide.
+   Below 1024px the app sidebar is an off-canvas drawer (content = full viewport);
+   at >=1024px it reclaims 240px, so a 1280px viewport still leaves only ~1040px
+   of content. The two-column intro body needs more than that, otherwise the right
+   column wraps to 2-3 words per line with dead space above the CTA. All selectors
+   in this block belong to the intro screen only. */
+@media (max-width: 1279px) {
   .exam-root .exam-stage {
     padding: 0;
     align-items: stretch;

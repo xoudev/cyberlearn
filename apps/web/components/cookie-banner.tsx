@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 const COOKIE_NAME = "cl_consent";
@@ -17,12 +17,32 @@ interface CookieBannerProps {
 
 export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.Element | null {
   const [visible, setVisible] = useState(false);
+  const [bannerHeight, setBannerHeight] = useState(0);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!initialConsent) {
       setVisible(true);
     }
   }, [initialConsent]);
+
+  // The banner is position:fixed, so it is out of flow and would cover the
+  // bottom of page content. Measure its live height (it wraps to several lines
+  // at narrow widths) and reserve the same amount of in-flow space below.
+  useEffect(() => {
+    if (!visible) return;
+    const el = bannerRef.current;
+    if (!el) return;
+    const update = (): void => {
+      setBannerHeight(el.getBoundingClientRect().height);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -32,71 +52,77 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
   }
 
   return (
-    <div
-      role="region"
-      aria-labelledby="cookie-notice-title"
-      style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        background: "#0A0826",
-        borderTop: "1px solid #2A2560",
-        padding: "14px 24px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: "12px",
-      }}
-    >
-      <h2 id="cookie-notice-title" className="sr-only">
-        Information cookies
-      </h2>
-      <p
+    <>
+      <div
+        ref={bannerRef}
+        role="region"
+        aria-labelledby="cookie-notice-title"
         style={{
-          margin: 0,
-          fontSize: "12px",
-          color: "#B8B5D1",
-          fontFamily: "var(--font-mono)",
-          maxWidth: "720px",
-          lineHeight: "1.5",
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: "#0A0826",
+          borderTop: "1px solid #2A2560",
+          padding: "14px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
         }}
       >
-        Ce site utilise uniquement des cookies strictement nécessaires à son fonctionnement
-        (authentification, préférences de session). Ces cookies sont exemptés de consentement au
-        titre de l&apos;article 82 de la loi Informatique et Libertés.{" "}
-        <Link href="/privacy#cookies" style={{ color: "#4D8BFF", textDecoration: "none" }}>
-          En savoir plus
-        </Link>
-      </p>
-
-      <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-        <button
-          onClick={handleAcknowledge}
+        <h2 id="cookie-notice-title" className="sr-only">
+          Information cookies
+        </h2>
+        <p
           style={{
-            padding: "6px 16px",
+            margin: 0,
             fontSize: "12px",
+            color: "#B8B5D1",
             fontFamily: "var(--font-mono)",
-            fontWeight: 600,
-            background: "#0024FF",
-            border: "1px solid #0024FF",
-            borderRadius: "0px",
-            color: "#F5F5FA",
-            cursor: "pointer",
-            transition: "background 200ms",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "#1A3AFF";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "#0024FF";
+            maxWidth: "720px",
+            lineHeight: "1.5",
           }}
         >
-          J&apos;AI COMPRIS
-        </button>
+          Ce site utilise uniquement des cookies strictement nécessaires à son fonctionnement
+          (authentification, préférences de session). Ces cookies sont exemptés de consentement au
+          titre de l&apos;article 82 de la loi Informatique et Libertés.{" "}
+          <Link href="/privacy#cookies" style={{ color: "#4D8BFF", textDecoration: "none" }}>
+            En savoir plus
+          </Link>
+        </p>
+
+        <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+          <button
+            onClick={handleAcknowledge}
+            style={{
+              padding: "6px 16px",
+              fontSize: "12px",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 600,
+              background: "#0024FF",
+              border: "1px solid #0024FF",
+              borderRadius: "0px",
+              color: "#F5F5FA",
+              cursor: "pointer",
+              transition: "background 200ms",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = "#1A3AFF";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = "#0024FF";
+            }}
+          >
+            J&apos;AI COMPRIS
+          </button>
+        </div>
       </div>
-    </div>
+      {/* In-flow spacer matching the fixed banner height so the banner never
+          covers the bottom of page content. */}
+      <div aria-hidden="true" style={{ height: bannerHeight }} />
+    </>
   );
 }

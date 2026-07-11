@@ -570,6 +570,7 @@
 /* mission card */
 .pd2 .cp-card {
   position: relative;
+  min-width: 0;
   padding: 16px 18px;
   background: rgba(10, 8, 38, 0.55);
   border: 1px solid var(--border);
@@ -1250,7 +1251,14 @@
     position: static;
   }
 }
-@media (max-width: 760px) {
+/* Collapse the two-sided checkpoint timeline to a single side (rail on the left,
+   full-width cards on the right) well before real mobile. The two-sided layout
+   needs ~1000px of horizontal room; below 1024px the app sidebar is an off-canvas
+   drawer, and at >=1024px it reclaims 240px (plus the 320px aside), so even a
+   1280px viewport leaves the timeline column too narrow for two sides. Keep the
+   single-side stack until 1280px so is-right cards are never crammed into the
+   node column and titles never wrap one word per line. */
+@media (max-width: 1279px) {
   .pd2 .cp-row,
   .pd2 .cp-gate,
   .pd2 .cp-final {
@@ -1259,7 +1267,10 @@
   .pd2 .cp-row .cp-cell--empty {
     display: none;
   }
-  .pd2 .cp-row.is-left .cp-cell--card {
+  /* Both sides' cards drop into the single stacked column (right of the rail);
+     without is-right here, even rows land in the 64px node column and cram. */
+  .pd2 .cp-row.is-left .cp-cell--card,
+  .pd2 .cp-row.is-right .cp-cell--card {
     order: 2;
   }
   .pd2 .cp-row .cp-mid {

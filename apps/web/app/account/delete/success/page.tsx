@@ -24,6 +24,7 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
             color: "#6F6B99",
             marginBottom: 24,
             display: "inline-flex",
+            flexWrap: "wrap",
             alignItems: "center",
             gap: 8,
           }}
