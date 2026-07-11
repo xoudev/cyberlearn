@@ -657,7 +657,8 @@ export function BadgesCollection({
               height: 6,
               background: "#05041A",
               border: "1px solid #2A2560",
-              width: 320,
+              width: "100%",
+              maxWidth: 320,
               overflow: "visible",
             }}
             role="progressbar"

@@ -146,8 +146,10 @@ aside[data-state="collapsed"] .sidebar-label {
   padding-bottom: 20px;
 }
 
-/* Mobile: fixed drawer that slides in from the left */
-@media (max-width: 767px) {
+/* Tablet + mobile: fixed drawer that slides in from the left. Extends through
+   the tablet band so the 240px in-flow sidebar stops squeezing the content
+   column (grids assume viewport width and clip when the sidebar is present). */
+@media (max-width: 1023px) {
   .sidebar-wrapper {
     position: fixed;
     top: 0;
@@ -1236,7 +1238,7 @@ article.lesson-content blockquote p code {
   border-bottom: 1px solid #2a2560;
   align-items: end;
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .catalog-header-grid {
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     gap: 48px;
@@ -1620,6 +1622,12 @@ article.lesson-content blockquote p code {
   max-width: 1320px;
   margin: 0 auto;
   padding: 20px 16px 80px;
+  /* width:100% + min-width:0 pin the column to the content area. Without them the
+     block is a flex item (of <main>) that content-sizes to its widest descendant
+     (the horizontal section-nav), blowing the whole lesson past the viewport on
+     mobile instead of letting that nav scroll inside its own overflow-x:auto. */
+  width: 100%;
+  min-width: 0;
 }
 @media (min-width: 768px) {
   .lesson-page {
@@ -1634,12 +1642,15 @@ article.lesson-content blockquote p code {
 
 .lesson-hero-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, 1fr) not 1fr: a bare 1fr track grows to the min-content of a wide
+     child (a diagram/code block), which blew the whole lesson column past the
+     viewport on mobile. minmax(0,...) caps the track so children must fit. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 32px;
   margin-bottom: 40px;
   align-items: start;
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .lesson-hero-grid {
     grid-template-columns: minmax(0, 1.5fr) minmax(360px, 1fr);
     gap: 56px;
@@ -1649,13 +1660,13 @@ article.lesson-content blockquote p code {
 
 .lesson-rating-qa-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   margin-top: 40px;
   padding-top: 36px;
   border-top: 1px solid #1f1b47;
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .lesson-rating-qa-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
     gap: 32px;
@@ -1667,10 +1678,10 @@ article.lesson-content blockquote p code {
 /* ─── Lesson stepper - responsive grid + rail + nav bar ─────────────────── */
 .lesson-stepper-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .lesson-stepper-grid {
     grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr);
     gap: 56px;
@@ -1680,7 +1691,7 @@ article.lesson-content blockquote p code {
 .lesson-stepper-rail {
   display: none;
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .lesson-stepper-rail {
     display: block;
     position: sticky;

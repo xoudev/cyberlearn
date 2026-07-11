@@ -108,6 +108,10 @@ export async function StreakPanel({
         border: "1px solid #2A2560",
         background: "rgba(10,8,38,0.5)",
         padding: "clamp(20px,3vw,30px)",
+        // Allow this card to shrink inside a flex/grid parent so the heatmap
+        // below can bound its own horizontal scroll instead of overflowing.
+        minWidth: 0,
+        maxWidth: "100%",
       }}
     >
       {/* Counter + record */}
@@ -254,7 +258,7 @@ export async function StreakPanel({
       </div>
 
       {/* Heatmap */}
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24, minWidth: 0 }}>
         <div
           style={{
             display: "flex",
@@ -280,7 +284,7 @@ export async function StreakPanel({
             plus
           </span>
         </div>
-        <div style={{ overflowX: "auto", paddingBottom: 4 }}>
+        <div style={{ overflowX: "auto", maxWidth: "100%", minWidth: 0, paddingBottom: 4 }}>
           <div style={{ display: "inline-flex", flexDirection: "column", gap: 6 }}>
             {/* Month labels, aligned above their week columns */}
             <div style={{ display: "flex" }}>

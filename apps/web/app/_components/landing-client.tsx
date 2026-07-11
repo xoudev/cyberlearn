@@ -1097,7 +1097,7 @@ export function LandingClient({ stats }: { stats: LandingStats }): React.ReactEl
                 cyber<span style={{ color: "#0AFFD4" }}>learn</span>
               </span>
             </Link>
-            <div style={{ display: "flex", gap: 28 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 28px" }}>
               {(
                 [
                   { label: "Parcours", href: "#" },
