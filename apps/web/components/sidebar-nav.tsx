@@ -484,8 +484,8 @@ export function SidebarNav({
             style={{
               height: "100%",
               width: `${xpPercent.toFixed(1)}%`,
-              background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
-              boxShadow: "0 0 10px rgba(10,255,212,0.5)",
+              background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
+              boxShadow: "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
               transition: "width 700ms ease-out",
             }}
           />
@@ -500,7 +500,7 @@ export function SidebarNav({
             letterSpacing: "0.04em",
           }}
         >
-          <b style={{ color: "#0AFFD4", fontWeight: 600 }}>
+          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>
             +{xpNeededToNext.toLocaleString("fr-FR")} XP
           </b>
           {" → LVL·"}

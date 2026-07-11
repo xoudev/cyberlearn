@@ -794,15 +794,19 @@ article.lesson-content blockquote p code {
 
 .sidebar-nav-item:not([aria-current="page"]):hover {
   color: #f5f5fa;
-  background-color: rgba(10, 255, 212, 0.04);
-  border-left-color: rgba(10, 255, 212, 0.3);
+  background-color: color-mix(in srgb, var(--cosmetic-accent) 4%, transparent);
+  border-left-color: color-mix(in srgb, var(--cosmetic-accent) 30%, transparent);
 }
 
 .sidebar-nav-item[aria-current="page"] {
   color: #f5f5fa;
-  background: linear-gradient(90deg, rgba(10, 255, 212, 0.1), transparent);
-  border-left-color: #0affd4;
-  box-shadow: -2px 0 12px rgba(10, 255, 212, 0.3);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--cosmetic-accent) 10%, transparent),
+    transparent
+  );
+  border-left-color: var(--cosmetic-accent);
+  box-shadow: -2px 0 12px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent);
 }
 
 /* Icon inside nav item */
@@ -813,7 +817,7 @@ article.lesson-content blockquote p code {
 }
 
 .sidebar-nav-item[aria-current="page"] .sidebar-nav-icon {
-  color: #0affd4;
+  color: var(--cosmetic-accent);
 }
 
 .sidebar-nav-item:not([aria-current="page"]):hover .sidebar-nav-icon {
@@ -833,8 +837,8 @@ article.lesson-content blockquote p code {
 }
 
 .sidebar-nav-item[aria-current="page"] .sidebar-nav-badge {
-  color: #0affd4;
-  border-color: rgba(10, 255, 212, 0.35);
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
 }
 
 .sidebar-nav-item:not([aria-current="page"]):hover .sidebar-nav-badge {
