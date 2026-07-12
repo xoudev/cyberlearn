@@ -186,7 +186,7 @@ export async function Navbar(): Promise<React.ReactElement> {
             height: 34,
             border: "1px solid #2A2560",
             borderRadius: 2,
-            background: "rgba(10,255,212,0.03)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
           }}
         >
           {/* Hexagon avatar */}
@@ -237,7 +237,7 @@ export async function Navbar(): Promise<React.ReactElement> {
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               fontWeight: 600,
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               letterSpacing: "0.04em",
             }}
           >
