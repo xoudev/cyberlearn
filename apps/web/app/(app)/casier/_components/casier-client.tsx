@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { equipCosmeticAction } from "../_actions/cosmetic-actions";
 import { useCosmetics } from "@/components/cosmetics-provider";
 import type { CosmeticAttrs } from "@/lib/cosmetics/attrs";
+import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -521,6 +522,8 @@ export function CasierClient({
                 height: 94,
                 display: "grid",
                 placeItems: "center",
+                // layered hexagon + profile-frame aura, so equipping a frame is visible here too
+                ...cosmeticAvatarFilter(1),
               }}
             >
               <span
@@ -531,8 +534,6 @@ export function CasierClient({
                   clipPath: HEX,
                   background: "var(--cosmetic-hex-accent)",
                   opacity: 0.9,
-                  boxShadow:
-                    "0 0 22px color-mix(in srgb, var(--cosmetic-hex-accent) calc(var(--cosmetic-hex-glow) * 100%), transparent)",
                 }}
               />
               <span
@@ -604,6 +605,33 @@ export function CasierClient({
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Mini terminal, so the equipped terminal-theme reads at a glance */}
+          <div
+            style={{
+              borderRadius: 6,
+              border: "1px solid #1F1B47",
+              background: "var(--cosmetic-terminal-bg)",
+              color: "var(--cosmetic-terminal-fg)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              lineHeight: 1.6,
+              padding: "10px 12px",
+              marginBottom: 18,
+              overflow: "hidden",
+            }}
+          >
+            <div>
+              <span style={{ color: "var(--cosmetic-accent)" }}>$</span> whoami
+            </div>
+            <div style={{ opacity: 0.85 }}>
+              {profile.username ? `@${profile.username}` : profile.displayName}
+            </div>
+            <div>
+              <span style={{ color: "var(--cosmetic-accent)" }}>$</span> level --show{" "}
+              <span style={{ opacity: 0.6 }}>›</span> {profile.level} ✓
+            </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
