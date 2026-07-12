@@ -15,6 +15,20 @@ import type { CosmeticAttrs } from "@/lib/cosmetics/attrs";
  */
 
 type SlotAttr = keyof CosmeticAttrs;
+// Every slot is always present; an unequipped slot is `undefined`, which React
+// omits when spread onto the wrapper (so the CSS falls back to the default).
+// Keeping every key present means clearing a slot is a plain assignment rather
+// than a dynamic delete.
+type SlotRecord = Record<SlotAttr, string | undefined>;
+
+function toRecord(attrs: CosmeticAttrs): SlotRecord {
+  return {
+    "data-accent": attrs["data-accent"],
+    "data-hex": attrs["data-hex"],
+    "data-frame": attrs["data-frame"],
+    "data-terminal": attrs["data-terminal"],
+  };
+}
 
 interface CosmeticsContextValue {
   /** Set (code) or clear (null) one cosmetic slot, applied app-wide at once. */
@@ -38,26 +52,19 @@ export function CosmeticsProvider({
   initial: CosmeticAttrs;
   children: React.ReactNode;
 }): React.JSX.Element {
-  const [attrs, setAttrs] = useState<CosmeticAttrs>(initial);
+  const [attrs, setAttrs] = useState<SlotRecord>(() => toRecord(initial));
 
-  // Re-sync when the server sends a fresh loadout (e.g. after router.refresh,
-  // or an equip/unequip made on another surface). Compared by value so an
-  // identical loadout does not clobber an in-flight optimistic update.
+  // Re-sync when the server sends a fresh loadout (e.g. after router.refresh, or
+  // an equip/unequip made on another surface). Compared by value so an identical
+  // loadout does not clobber an in-flight optimistic update.
   const initialKey = JSON.stringify(initial);
   useEffect(() => {
-    setAttrs(JSON.parse(initialKey) as CosmeticAttrs);
+    // Parse back the serialised initial attributes to rebuild the record.
+    setAttrs(toRecord(JSON.parse(initialKey) as CosmeticAttrs));
   }, [initialKey]);
 
   const setCosmetic = useCallback((attr: SlotAttr, code: string | null) => {
-    setAttrs((prev) => {
-      const next = { ...prev };
-      if (code) {
-        next[attr] = code;
-      } else {
-        delete next[attr];
-      }
-      return next;
-    });
+    setAttrs((prev) => ({ ...prev, [attr]: code ?? undefined }));
   }, []);
 
   return (
