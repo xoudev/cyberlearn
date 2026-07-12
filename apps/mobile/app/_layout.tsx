@@ -1,3 +1,5 @@
+// Must be the first import (native side-effect for gesture handling).
+import "react-native-gesture-handler";
 import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
@@ -16,6 +18,7 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
 import { ensureUserRow } from "@/lib/queries";
@@ -91,13 +94,15 @@ export default function RootLayout(): React.JSX.Element | null {
   if (!loaded) return null;
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <SessionProvider>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </SessionProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <SessionProvider>
+            <StatusBar style="light" />
+            <RootNavigator />
+          </SessionProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
