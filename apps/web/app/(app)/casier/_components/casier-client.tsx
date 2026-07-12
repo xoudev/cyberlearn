@@ -263,12 +263,24 @@ function Card({
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.06em",
-              color: "#6F6B99",
+              fontSize: 9,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "var(--cosmetic-accent)",
             }}
           >
-            ● {item.condition}
+            🔒 Comment débloquer
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11.5,
+              letterSpacing: "0.02em",
+              color: "#B8B5D1",
+              lineHeight: 1.45,
+            }}
+          >
+            {item.condition}
           </span>
           {item.progressTotal > 0 && (
             <span style={{ display: "flex", alignItems: "center", gap: 8 }}>

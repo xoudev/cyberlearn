@@ -56,7 +56,7 @@ export function CodeBlock({
           padding: "7px 16px",
           background: "rgba(5,4,26,0.85)",
           border: "1px solid #2A2560",
-          borderLeft: "3px solid #0AFFD4",
+          borderLeft: "3px solid var(--cosmetic-accent)",
           borderBottom: "none",
         }}
       >
@@ -145,9 +145,10 @@ export function CodeBlock({
         {...rest}
         style={{
           margin: 0,
-          background: "#0A0826",
+          // terminal-theme cosmetic drives the code surface background
+          background: "var(--cosmetic-terminal-bg)",
           border: "1px solid #2A2560",
-          borderLeft: "3px solid #0AFFD4",
+          borderLeft: "3px solid var(--cosmetic-accent)",
           borderRadius: 0,
           padding: "16px 20px",
         }}
