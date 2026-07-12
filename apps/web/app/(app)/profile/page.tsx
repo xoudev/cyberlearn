@@ -7,6 +7,7 @@ import { computeLevel, computeTier } from "@cyberlearn/lib";
 import { userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StreakPanel } from "@/components/streak-panel";
 import { TierBadge } from "@/components/tier-badge";
 import { ProfileContent } from "./_components/profile-content";
@@ -95,6 +96,8 @@ function HexAvatar({
         flexShrink: 0,
         display: "grid",
         placeItems: "center",
+        // equipped hexagon glow + profile frame, applied to the composited hex
+        ...cosmeticAvatarFilter(1),
       }}
     >
       {/* Gradient ring */}

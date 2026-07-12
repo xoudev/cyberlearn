@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { computeLevel } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
@@ -212,6 +213,8 @@ export async function Navbar(): Promise<React.ReactElement> {
                   fontWeight: 700,
                   fontSize: 11,
                   color: "#030219",
+                  // equipped hexagon glow + frame on the user's own avatar
+                  ...cosmeticAvatarFilter(0.4),
                 }}
                 aria-hidden="true"
               >
