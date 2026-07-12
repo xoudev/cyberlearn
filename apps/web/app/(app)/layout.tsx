@@ -4,6 +4,7 @@ import { cosmeticRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { cosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { CosmeticsProvider } from "@/components/cosmetics-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -25,7 +26,9 @@ export default async function AppLayout({
   return (
     // Suspense boundaries let AppSidebar, Navbar and the page render
     // concurrently; React.cache in lib/auth.ts dedupes the auth + user fetch.
-    <div {...cosmetics} style={{ display: "contents" }}>
+    // CosmeticsProvider seeds the equipped-cosmetic attributes from the server
+    // (correct first paint) and lets the casier equip them live, app-wide.
+    <CosmeticsProvider initial={cosmetics}>
       <SidebarProvider defaultOpen={defaultOpen}>
         <Suspense
           fallback={
@@ -61,6 +64,6 @@ export default async function AppLayout({
           <Footer />
         </div>
       </SidebarProvider>
-    </div>
+    </CosmeticsProvider>
   );
 }

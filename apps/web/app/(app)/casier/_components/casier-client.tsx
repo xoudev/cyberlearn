@@ -4,6 +4,8 @@ import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { equipCosmeticAction } from "../_actions/cosmetic-actions";
+import { useCosmetics } from "@/components/cosmetics-provider";
+import type { CosmeticAttrs } from "@/lib/cosmetics/attrs";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -39,7 +41,7 @@ const SLOTS: { type: CosmeticType; label: string }[] = [
   { type: "ACCENT_COLOR", label: "Accents" },
 ];
 
-const SLOT_ATTR: Record<CosmeticType, string> = {
+const SLOT_ATTR: Record<CosmeticType, keyof CosmeticAttrs> = {
   TERMINAL_THEME: "data-terminal",
   HEXAGON_STYLE: "data-hex",
   PROFILE_FRAME: "data-frame",
@@ -314,6 +316,7 @@ export function CasierClient({
   profile: CasierProfile;
 }): React.ReactElement {
   const router = useRouter();
+  const { setCosmetic } = useCosmetics();
   const [busy, start] = useTransition();
   const [activeTab, setActiveTab] = useState<CosmeticType>("TERMINAL_THEME");
   const [equipped, setEquipped] = useState<Record<CosmeticType, string | null>>(() =>
@@ -323,13 +326,17 @@ export function CasierClient({
   function equip(item: CasierItem): void {
     if (!item.unlocked || busy || equipped[item.type] === item.code) return;
     const previous = equipped[item.type];
+    // Optimistic: local state drives this page's cards + preview, and setCosmetic
+    // applies the equipped look to the whole app shell instantly (no reload).
     setEquipped((e) => ({ ...e, [item.type]: item.code }));
+    setCosmetic(SLOT_ATTR[item.type], item.code);
     start(async () => {
       const res = await equipCosmeticAction(item.code);
       if (res.ok) {
         router.refresh();
       } else {
         setEquipped((e) => ({ ...e, [item.type]: previous }));
+        setCosmetic(SLOT_ATTR[item.type], previous);
         toast.error(res.error ?? "Équipement impossible.");
       }
     });
