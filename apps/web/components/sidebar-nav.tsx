@@ -212,12 +212,31 @@ function IconWrapped() {
   );
 }
 
+function IconNote() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={15}
+      height={15}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3.5 2h6l3 3v9h-9z" />
+      <path d="M6 6.5h4M6 9.5h4" />
+    </svg>
+  );
+}
+
 // ── Nav sections ──────────────────────────────────────────────────────────────
 
 const LEARN_ITEMS = [
   { href: "/dashboard", label: "Dashboard", Icon: IconDashboard, badgeKey: null },
   { href: "/lessons", label: "Leçons", Icon: IconBook, badgeKey: "lessons" },
   { href: "/revisions", label: "Révisions", Icon: IconReview, badgeKey: null },
+  { href: "/notes", label: "Bloc-notes", Icon: IconNote, badgeKey: null },
   { href: "/paths", label: "Parcours", Icon: IconRoute, badgeKey: null },
   { href: "/badges", label: "Badges", Icon: IconBadge, badgeKey: null },
   { href: "/certifs", label: "Certificats", Icon: IconCert, badgeKey: null },
