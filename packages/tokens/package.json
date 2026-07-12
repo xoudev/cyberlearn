@@ -1,0 +1,10 @@
+{
+  "name": "@cyberlearn/tokens",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared design tokens (plain TS constants, no deps) for web + mobile.",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
