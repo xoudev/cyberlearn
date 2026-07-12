@@ -72,3 +72,15 @@ test-results/
 # Lesson content (MDX) is authored locally and imported via the admin UI;
 # it is not tracked in the repo.
 content/
+
+# design-sync: local design tooling workspace (kept on disk, never committed)
+.ds-sync/
+ds-bundle/
+.design-sync/
+
+# Local-only working docs and dev tooling (kept on disk, not tracked in the repo)
+/CLAUDE.md
+/CyberLearn.md
+/CyberLearn_Patch_ImportLessons.md
+/.agents/
+/skills-lock.json

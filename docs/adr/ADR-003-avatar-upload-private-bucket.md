@@ -9,7 +9,7 @@ Users could only pick one of 8 built-in SVG avatars (served statically from
 `/public/avatars`) or a generated glyph. We want them to upload their own
 profile picture.
 
-The root `CLAUDE.md` storage convention is: every Supabase Storage bucket is
+The project storage convention is: every Supabase Storage bucket is
 **private by default**, accessed server-side via `service_role` + short-lived
 signed URLs, with MIME types restricted per bucket; any exception requires an
 ADR. Avatars are public-facing profile images (shown on public profiles and the

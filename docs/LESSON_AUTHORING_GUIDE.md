@@ -1,6 +1,6 @@
 # CyberLearn - Guide de rédaction des leçons MDX
 
-Ce document est destiné à être fourni à Claude pour générer des leçons complètes et prêtes à l'import.  
+Ce document décrit le format attendu pour rédiger des leçons complètes et prêtes à l'import.
 Chaque leçon est un fichier `.mdx` avec un frontmatter YAML + un corps en MDX (Markdown + composants JSX).
 
 ---
@@ -1086,20 +1086,20 @@ Avant de soumettre le fichier `.mdx` à l'admin, vérifier :
 
 ---
 
-## 9. Génération assistée par Claude
+## 9. Réunir les informations d'une leçon
 
-Lorsque vous demandez à Claude de générer une leçon, fournissez :
+Avant de rédiger une nouvelle leçon, réunissez :
 
 1. **Le sujet** : thème précis, angle pédagogique souhaité
 2. **La cible** : difficulté + durée estimée + catégorie
-3. **Le refCode** : demandez à Claude de choisir le prochain disponible ou spécifiez-le
+3. **Le refCode** : le prochain disponible, ou une valeur imposée
 4. **Les prérequis** : liste des `refCode` prérequis si applicable
 5. **Le focus** : ce que l'étudiant doit savoir faire à la fin
 
-**Exemple de prompt :**
+**Exemple de brief :**
 
 ```
-Génère une leçon MDX pour CyberLearn sur "Les injections SQL - détection et exploitation basique".
+Leçon MDX pour CyberLearn sur "Les injections SQL - détection et exploitation basique".
 - refCode: CL-LSN-031-V01
 - slug: injection-sql-bases
 - category: CYBERSEC, difficulty: INTERMEDIATE, estimatedMinutes: 40, xpReward: 450
