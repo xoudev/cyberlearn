@@ -852,7 +852,9 @@ function TerminalCard({
         style={{
           position: "relative",
           padding: "20px 28px 28px",
-          background: "linear-gradient(180deg, rgba(10,255,212,0.04), transparent 40%), #05041A",
+          // base surface follows the equipped terminal-theme cosmetic
+          background:
+            "linear-gradient(180deg, rgba(10,255,212,0.04), transparent 40%), var(--cosmetic-terminal-bg)",
           overflow: "hidden",
         }}
       >

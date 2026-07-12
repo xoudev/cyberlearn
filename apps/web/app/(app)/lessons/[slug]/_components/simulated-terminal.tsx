@@ -466,13 +466,33 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       const { Terminal } = await import("@xterm/xterm");
       const { FitAddon } = await import("@xterm/addon-fit");
 
+      // Resolve the equipped terminal-theme cosmetic to concrete hex. xterm paints
+      // to a canvas with JS colors, so we read the cascaded var(--cosmetic-terminal-*)
+      // off a probe element (custom props with nested var() do not resolve directly).
+      const resolveColor = (name: string, fallback: string): string => {
+        const host = containerRef.current;
+        if (!host) return fallback;
+        const probe = document.createElement("span");
+        probe.style.cssText = `display:none;color:var(${name})`;
+        host.appendChild(probe);
+        const rgb = getComputedStyle(probe).color;
+        host.removeChild(probe);
+        const m = /(\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
+        if (!m) return fallback;
+        const [, r = "0", g = "0", bl = "0"] = m;
+        const hex = (v: string): string => Number(v).toString(16).padStart(2, "0");
+        return `#${hex(r)}${hex(g)}${hex(bl)}`;
+      };
+      const termBg = resolveColor("--cosmetic-terminal-bg", "#030219");
+      const termFg = resolveColor("--cosmetic-terminal-fg", "#B8B5D1");
+
       term = new Terminal({
         theme: {
-          background: "#030219",
-          foreground: "#B8B5D1",
+          background: termBg,
+          foreground: termFg,
           cursor: isPs ? "#FFFF54" : "#0AFFD4",
-          cursorAccent: "#030219",
-          black: "#030219",
+          cursorAccent: termBg,
+          black: termBg,
           green: "#0AFFD4",
           cyan: "#4D8BFF",
           red: "#FF4757",
@@ -628,7 +648,8 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       style={{
         margin: "32px 0",
         border: `1px solid ${isPs ? "#1B2A4A" : "#1F1B47"}`,
-        background: "#030219",
+        // surface follows the equipped terminal-theme cosmetic (matches the xterm canvas)
+        background: "var(--cosmetic-terminal-bg)",
         position: "relative",
       }}
     >
