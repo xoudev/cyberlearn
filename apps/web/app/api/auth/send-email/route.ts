@@ -9,6 +9,7 @@ const hookPayloadSchema = z.object({
     email: z.string().email(),
   }),
   email_data: z.object({
+    token: z.string().optional(), // 6-digit OTP code (used by the mobile app)
     token_hash: z.string(),
     redirect_to: z.string(),
     email_action_type: z.string(),
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const { user, email_data } = parsed.data;
-    const { token_hash, redirect_to, email_action_type } = email_data;
+    const { token, token_hash, redirect_to, email_action_type } = email_data;
 
     const magicLink = `${env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
 
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       magicLink,
       // SAFETY: email_action_type comes from Supabase schema, values match EmailActionType
       type: email_action_type as EmailActionType,
+      code: token,
     });
 
     return NextResponse.json({});
