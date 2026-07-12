@@ -92,6 +92,15 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
         // SAFETY: SVG produced by mermaid from admin-authored diagram syntax only.
         // Mermaid's renderer outputs sanitized SVG with no JS event handlers.
         containerRef.current.innerHTML = svg;
+        // Mermaid emits an intrinsic pixel width on the SVG (via a max-width
+        // style plus width/height attributes). Left as-is, that width leaks up
+        // the flex/grid chain and locks the whole lesson column to the diagram
+        // size. Force the SVG to scale down to its container instead.
+        const svgEl = containerRef.current.querySelector("svg");
+        if (svgEl) {
+          svgEl.style.maxWidth = "100%";
+          svgEl.style.height = "auto";
+        }
         setRendered(true);
       } catch {
         if (!cancelled) setError("Syntaxe de diagramme invalide");
@@ -113,6 +122,12 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
         border: "1px solid #1F1B47",
         borderLeft: "3px solid #0AFFD4",
         padding: "24px",
+        // min-width:0 lets the figure shrink below the diagram's intrinsic
+        // width inside its flex/grid parent; width:100% keeps it filling the
+        // column. overflowX:auto is the fallback so an oversized diagram
+        // scrolls inside its own box rather than widening the page.
+        minWidth: 0,
+        width: "100%",
         overflowX: "auto",
       }}
     >
@@ -145,6 +160,9 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
         style={{
           display: rendered ? "flex" : "none",
           justifyContent: "center",
+          width: "100%",
+          minWidth: 0,
+          maxWidth: "100%",
         }}
       />
       {caption !== undefined && (

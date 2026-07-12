@@ -340,14 +340,17 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         }}
       >
         {/* Left: avatar + identity */}
-        <div style={{ display: "flex", gap: 28, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", gap: 28, alignItems: "flex-start", flexWrap: "wrap" }}>
           <HexAvatar
             avatarUrl={resolvedAvatarUrl}
             displayName={user.displayName}
             rarity={avatarRarity}
           />
 
-          <div style={{ paddingTop: 6, minWidth: 0, flex: 1 }}>
+          {/* flex-basis forces the identity block onto its own row once the
+              avatar leaves too little space (mobile), so the username tail and
+              level never get clipped. minWidth:0 lets it shrink and wrap. */}
+          <div style={{ paddingTop: 6, minWidth: 0, flex: "1 1 260px" }}>
             <h1
               style={{
                 fontFamily: "var(--font-sans)",
@@ -357,6 +360,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 letterSpacing: "-0.04em",
                 color: "#F5F5FA",
                 margin: "0 0 14px",
+                overflowWrap: "anywhere",
               }}
             >
               {user.username && (
@@ -747,11 +751,14 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             <span style={{ color: "#0AFFD4", fontWeight: 700 }}>{Math.round(xpPct)}%</span>
           </div>
 
-          {/* Segmented bar */}
+          {/* Segmented bar (marginBottom reserves a row for the YOU marker,
+              which now sits below the bar so it never overlaps the centered
+              "Niv. N+1" label in the row above) */}
           <div
             style={{
               position: "relative",
               height: 10,
+              marginBottom: 22,
               background: "#05041A",
               border: "1px solid #1F1B47",
               overflow: "visible",
@@ -794,11 +801,12 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 aria-hidden="true"
               />
             </div>
-            {/* YOU label */}
+            {/* YOU label - placed below the bar so it never collides with the
+                centered "Niv. N+1" label sitting above the track */}
             <span
               style={{
                 position: "absolute",
-                top: -22,
+                top: "calc(100% + 5px)",
                 left: `${xpPct.toFixed(1)}%`,
                 transform: "translateX(-50%)",
                 fontFamily: "var(--font-mono)",

@@ -95,7 +95,7 @@ const SidebarProvider = React.forwardRef<
     // SSR/hydration timing window where isMobile is false even on a mobile viewport.
     const toggleSidebar = React.useCallback(() => {
       const onMobile =
-        typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+        typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
       onMobile ? setOpenMobile((prev) => !prev) : setOpen((prev) => !prev);
     }, [setOpen, setOpenMobile]);
 

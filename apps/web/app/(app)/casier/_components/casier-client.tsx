@@ -359,6 +359,32 @@ export function CasierClient({
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,48px)" }}>
+      {/* Responsive layout: two columns on wide screens, single stacked column
+          below 1024px (where the app sidebar becomes an off-canvas drawer and the
+          content area is too narrow for the content grid + 320px preview side by
+          side). Media queries live here because inline styles cannot be overridden
+          by a class breakpoint. */}
+      <style>{`
+        .casier-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 28px;
+          align-items: start;
+        }
+        .casier-preview {
+          position: sticky;
+          top: 24px;
+        }
+        @media (max-width: 1024px) {
+          .casier-layout {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .casier-preview {
+            position: static;
+            top: auto;
+          }
+        }
+      `}</style>
       <div
         style={{
           fontFamily: "var(--font-mono)",
@@ -396,14 +422,7 @@ export function CasierClient({
         accents : ta carte de profil change en direct.
       </p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) 320px",
-          gap: 28,
-          alignItems: "start",
-        }}
-      >
+      <div className="casier-layout">
         {/* Left: tabs + grid */}
         <div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
@@ -459,9 +478,8 @@ export function CasierClient({
         {/* Right: live preview */}
         <div
           {...previewAttrs}
+          className="casier-preview"
           style={{
-            position: "sticky",
-            top: 24,
             border: "1px solid #2A2560",
             background: "rgba(10,8,38,0.5)",
             padding: 24,

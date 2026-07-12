@@ -68,12 +68,14 @@ export default function SettingsLoading(): React.ReactElement {
           </div>
         </div>
 
-        {/* SaveBar: status text + Annuler / Enregistrer buttons */}
+        {/* SaveBar: status text + Annuler / Enregistrer buttons.
+            Mirrors the real SaveBar wrap behaviour so the skeleton matches on mobile. */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            flexWrap: "wrap",
             gap: 16,
             marginTop: 8,
             padding: "14px 20px",
@@ -81,7 +83,15 @@ export default function SettingsLoading(): React.ReactElement {
           }}
         >
           <Skeleton w={170} h={11} />
-          <div style={{ display: "flex", gap: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              flex: "1 1 auto",
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+              gap: 10,
+            }}
+          >
             <Skeleton w={96} h={40} radius={0} />
             <Skeleton w={140} h={40} radius={0} />
           </div>

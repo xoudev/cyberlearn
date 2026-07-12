@@ -144,21 +144,21 @@ export async function revealHintAction(
   if (alreadyRevealed) return { content: hint.content };
 
   if (hint.xpCost > 0) {
-    const userData = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { xpTotal: true },
+    // Atomic conditional spend: decrement only while the balance still covers the
+    // cost, so concurrent reveals can't drive xpTotal negative. The reveal is
+    // bound to the successful spend in one transaction.
+    const revealed = await prisma.$transaction(async (tx) => {
+      const spend = await tx.user.updateMany({
+        where: { id: user.id, xpTotal: { gte: hint.xpCost } },
+        data: { xpTotal: { decrement: hint.xpCost } },
+      });
+      if (spend.count === 0) return false;
+      await tx.challengeHintReveal.create({ data: { userId: user.id, hintId } });
+      return true;
     });
-    if (!userData) return { error: "Utilisateur introuvable." };
-    if (userData.xpTotal < hint.xpCost) {
+    if (!revealed) {
       return { error: `XP insuffisants (coût : ${String(hint.xpCost)} XP).` };
     }
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: { xpTotal: { decrement: hint.xpCost } },
-      }),
-      prisma.challengeHintReveal.create({ data: { userId: user.id, hintId } }),
-    ]);
     revalidatePath("/challenges");
     revalidatePath("/dashboard");
     return { content: hint.content };
@@ -176,20 +176,17 @@ async function awardChallengeXp(
   xpReward: number,
   challengeTitle: string,
 ): Promise<void> {
-  const [user] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        xpTotal: true,
-        level: true,
-        streakDays: true,
-        longestStreak: true,
-        streakFreezes: true,
-        lastActiveAt: true,
-      },
-    }),
-    challengeRepository.completeChallenge(userId, challengeId),
-  ]);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      xpTotal: true,
+      level: true,
+      streakDays: true,
+      longestStreak: true,
+      streakFreezes: true,
+      lastActiveAt: true,
+    },
+  });
 
   if (!user) return;
 
@@ -206,6 +203,22 @@ async function awardChallengeXp(
   const today = new Date(dayKey(now));
 
   await prisma.$transaction(async (tx) => {
+    // Ensure a progress row exists, then atomically flip it to COMPLETED only if
+    // it is not already. The transaction that wins this flip is the ONLY one that
+    // credits XP / streak / notification - idempotent against a double submit or
+    // double click (the earlier non-transactional status check was not a real
+    // gate, so two concurrent correct submissions both credited).
+    await tx.userChallengeProgress.upsert({
+      where: { userId_challengeId: { userId, challengeId } },
+      create: { userId, challengeId, status: "IN_PROGRESS", attempts: 1 },
+      update: {},
+    });
+    const completed = await tx.userChallengeProgress.updateMany({
+      where: { userId, challengeId, status: { not: "COMPLETED" } },
+      data: { status: "COMPLETED", completedAt: now },
+    });
+    if (completed.count === 0) return;
+
     await tx.user.update({
       where: { id: userId },
       data: {

@@ -129,6 +129,9 @@ export function ToggleRow({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        // Wrap on narrow viewports so the control drops below the label/description
+        // instead of overlapping it. Stays side-by-side once the row has room.
+        flexWrap: "wrap",
         gap: 20,
         padding: "16px 0",
         borderBottom: last ? "none" : `1px solid ${S.borderSoft}`,
@@ -182,6 +185,10 @@ export function SaveBar({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        // Wrap on narrow viewports (the button row drops to its own line) so the
+        // primary submit button is never clipped off the card edge. gap doubles
+        // as the row-gap once wrapped.
+        flexWrap: "wrap",
         gap: 16,
         marginTop: 8,
         padding: "14px 20px",
@@ -208,7 +215,18 @@ export function SaveBar({
         />
         {dirty ? "Modifications en attente" : "Synchronisé"}
       </span>
-      <div style={{ display: "flex", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          // When the parent wraps, this group takes the whole line and keeps the
+          // buttons right-aligned (matches the desktop layout); on desktop the
+          // grow is absorbed and the appearance is unchanged.
+          flex: "1 1 auto",
+          justifyContent: "flex-end",
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
         <button
           type="button"
           onClick={onCancel}

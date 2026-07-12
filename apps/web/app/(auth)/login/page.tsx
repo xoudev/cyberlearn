@@ -123,6 +123,18 @@ function LoginContent(): React.ReactElement {
         }}
       />
 
+      {/* Responsive: below the md breakpoint, hide the secondary status items
+          (separators, live-sync indicator, version tag) so the fixed single-row
+          status bar never clips on phones. Mirrors globals.css conventions
+          (max-width: 767px + !important to override inline display). */}
+      <style>{`
+        @media (max-width: 767px) {
+          .login-status-secondary {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* ── Top status bar ───────────────────────────────────────────────── */}
       <header
         style={{
@@ -181,11 +193,16 @@ function LoginContent(): React.ReactElement {
           cyber<span style={{ color: "#0AFFD4" }}>learn</span>
         </span>
 
-        <span style={{ color: "#44406B" }}>/</span>
+        <span className="login-status-secondary" style={{ color: "#44406B" }}>
+          /
+        </span>
         <span>ACCÈS SÉCURISÉ</span>
-        <span style={{ color: "#44406B" }}>/</span>
+        <span className="login-status-secondary" style={{ color: "#44406B" }}>
+          /
+        </span>
 
         <span
+          className="login-status-secondary"
           style={{
             marginLeft: "auto",
             display: "inline-flex",
@@ -208,8 +225,10 @@ function LoginContent(): React.ReactElement {
           />
           SYNC EN DIRECT
         </span>
-        <span style={{ color: "#44406B" }}>/</span>
-        <span>v2.4</span>
+        <span className="login-status-secondary" style={{ color: "#44406B" }}>
+          /
+        </span>
+        <span className="login-status-secondary">v2.4</span>
       </header>
 
       {/* ── Main split ───────────────────────────────────────────────────── */}

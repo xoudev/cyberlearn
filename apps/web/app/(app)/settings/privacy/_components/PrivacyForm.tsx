@@ -111,7 +111,15 @@ export function PrivacyForm({
           role="radiogroup"
           aria-label="Visibilité dans le classement"
           className="settings-visibility"
-          style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 4 }}
+          // auto-fit collapses 3 -> 2 -> 1 columns by the real content width, so the
+          // cards never get squeezed (and the "Recommandé" badge stops overlapping)
+          // when the sidebar leaves a narrow content column at laptop widths.
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+            marginTop: 4,
+          }}
         >
           {OPTIONS.map((o) => {
             const selected = visibility === o.id;

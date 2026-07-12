@@ -44,16 +44,23 @@ export async function submitReviewAction(
     repetitions: schedule.repetitions,
   });
 
-  await prisma.reviewSchedule.update({
-    where: { id: schedule.id },
+  // Atomically advance ONLY a review that is genuinely due (and owned). Replaying
+  // the action or a double submit cannot farm XP: once graded, nextReviewAt jumps
+  // forward, so a re-grade matches 0 rows and credits nothing.
+  const now = new Date();
+  const advanced = await prisma.reviewSchedule.updateMany({
+    where: { id: schedule.id, userId: authUser.id, nextReviewAt: { lte: now } },
     data: {
       easeFactor: result.easeFactor,
       intervalDays: result.intervalDays,
       repetitions: result.repetitions,
       nextReviewAt: result.nextReviewAt,
-      lastReviewedAt: new Date(),
+      lastReviewedAt: now,
     },
   });
+  if (advanced.count === 0) {
+    return { success: false };
+  }
 
   // A successful recall (quality >= 3) earns 10% of the lesson XP.
   let reviewXp = 0;

@@ -1,4 +1,7 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
+
+export type UpvoteOutcome = "ok" | "already" | "self" | "notfound";
 
 const QUESTION_USER_SELECT = {
   id: true,
@@ -92,12 +95,38 @@ export const qaRepository = {
     ]);
   },
 
-  async incrementUpvotes(answerId: string) {
-    return prisma.lessonAnswer.update({
+  /**
+   * Casts one upvote for an answer by a user. Idempotent (a unique
+   * (answerId, userId) row) and rejects self-upvotes, so the upvote count can no
+   * longer be farmed by replaying the action. The denormalized
+   * LessonAnswer.upvotes count is incremented only on a genuinely new vote,
+   * atomically with the vote row.
+   */
+  async castUpvote(answerId: string, userId: string): Promise<UpvoteOutcome> {
+    const answer = await prisma.lessonAnswer.findUnique({
       where: { id: answerId },
-      data: { upvotes: { increment: 1 } },
-      select: { upvotes: true },
+      select: { userId: true },
     });
+    if (!answer) return "notfound";
+    if (answer.userId === userId) return "self";
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.lessonAnswerUpvote.create({ data: { answerId, userId } });
+        await tx.lessonAnswer.update({
+          where: { id: answerId },
+          data: { upvotes: { increment: 1 } },
+        });
+      });
+      return "ok";
+    } catch (error) {
+      // Unique violation on (answerId, userId) -> the user already upvoted; the
+      // whole transaction rolled back, so the count was not double-incremented.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        return "already";
+      }
+      throw error;
+    }
   },
 
   async findQuestionOwner(questionId: string) {
