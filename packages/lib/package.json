@@ -5,7 +5,10 @@
   "description": "Shared business logic utilities (XP/levels, SM-2, auth guards, etc.)",
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./xp": "./src/xp.ts",
+    "./sm2": "./src/sm2.ts",
+    "./gamification/*": "./src/gamification/*.ts"
   },
   "scripts": {
     "build": "tsc",
