@@ -34,6 +34,7 @@ export default async function NotesPage(): Promise<React.JSX.Element> {
     id: f.id,
     name: f.name,
     color: f.color,
+    icon: f.icon,
     position: f.position,
   }));
 

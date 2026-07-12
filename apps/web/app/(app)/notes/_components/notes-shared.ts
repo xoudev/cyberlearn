@@ -20,8 +20,28 @@ export interface SerializedFolder {
   id: string;
   name: string;
   color: string | null;
+  icon: string | null;
   position: number;
 }
+
+/** Fixed set of folder icon names (validated server-side too). */
+export const FOLDER_ICON_NAMES = [
+  "folder",
+  "shield",
+  "terminal",
+  "book",
+  "bug",
+  "network",
+  "key",
+  "flask",
+  "star",
+  "code",
+] as const;
+
+export type FolderIconName = (typeof FOLDER_ICON_NAMES)[number];
+
+/** Icon shown for a folder with no icon set. */
+export const FOLDER_DEFAULT_ICON: FolderIconName = "folder";
 
 export const CAT: Record<Category, { label: string; color: string }> = {
   CYBERSEC: { label: "Cybersec", color: "#FF4757" },
