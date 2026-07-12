@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 import { Screen } from "@/components/screen";
+import { requestLoginCode } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 export default function VerifyOtp(): React.JSX.Element {
@@ -20,11 +21,13 @@ export default function VerifyOtp(): React.JSX.Element {
     }
     setError(null);
     setBusy(true);
-    const { error: err } = await supabase.auth.verifyOtp({
-      email,
-      token: code.trim(),
-      type: "email",
-    });
+    // The code comes from admin.generateLink({type:"magiclink"}), so accept both
+    // verification types (GoTrue exposes it as email or magiclink depending on version).
+    const token = code.trim();
+    let err = (await supabase.auth.verifyOtp({ email, token, type: "email" })).error;
+    if (err) {
+      err = (await supabase.auth.verifyOtp({ email, token, type: "magiclink" })).error;
+    }
     setBusy(false);
     if (err) {
       setError("Code invalide ou expiré.");
@@ -36,7 +39,7 @@ export default function VerifyOtp(): React.JSX.Element {
   async function resend(): Promise<void> {
     if (!email) return;
     setError(null);
-    await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    await requestLoginCode(email);
   }
 
   return (
