@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 import { Screen } from "@/components/screen";
+import { requestLoginCode } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 void WebBrowser.maybeCompleteAuthSession();
@@ -24,13 +25,12 @@ export default function Login(): React.JSX.Element {
     }
     setError(null);
     setBusy("otp");
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email: value,
-      options: { shouldCreateUser: true },
-    });
+    // Server-side flow: the web API emails our template with the 6-digit code
+    // (supabase.auth.signInWithOtp would send Supabase's link-only email).
+    const res = await requestLoginCode(value);
     setBusy(null);
-    if (err) {
-      setError("Envoi impossible. Réessaie dans un instant.");
+    if (!res.ok) {
+      setError(res.error ?? "Envoi impossible. Réessaie dans un instant.");
       return;
     }
     router.push({ pathname: "/verify-otp", params: { email: value } });
