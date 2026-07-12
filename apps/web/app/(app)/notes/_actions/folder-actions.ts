@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { noteFolderRepository, noteRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { FOLDER_ICON_NAMES } from "../_components/notes-shared";
 
 const nameSchema = z.string().trim().min(1).max(40);
 // Hex colour from the fixed client palette (or null to clear it).
@@ -11,10 +12,17 @@ const colorSchema = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/)
   .nullable();
+// Icon name from the fixed client set (or null for the default folder glyph).
+const iconSchema = z.enum(FOLDER_ICON_NAMES).nullable();
 
-const createSchema = z.object({ name: nameSchema, color: colorSchema.optional() });
+const createSchema = z.object({
+  name: nameSchema,
+  color: colorSchema.optional(),
+  icon: iconSchema.optional(),
+});
 const renameSchema = z.object({ folderId: z.string().uuid(), name: nameSchema });
 const recolorSchema = z.object({ folderId: z.string().uuid(), color: colorSchema });
+const reiconSchema = z.object({ folderId: z.string().uuid(), icon: iconSchema });
 const deleteSchema = z.object({ folderId: z.string().uuid() });
 const moveSchema = z.object({
   noteId: z.string().uuid(),
@@ -23,7 +31,13 @@ const moveSchema = z.object({
 
 export interface FolderResult {
   ok: boolean;
-  folder?: { id: string; name: string; color: string | null; position: number };
+  folder?: {
+    id: string;
+    name: string;
+    color: string | null;
+    icon: string | null;
+    position: number;
+  };
   error?: string;
 }
 
@@ -31,6 +45,7 @@ export interface FolderResult {
 export async function createFolderAction(input: {
   name: string;
   color?: string | null;
+  icon?: string | null;
 }): Promise<FolderResult> {
   const user = await requireRequestUser();
   const parsed = createSchema.safeParse(input);
@@ -40,6 +55,7 @@ export async function createFolderAction(input: {
       user.id,
       parsed.data.name,
       parsed.data.color ?? null,
+      parsed.data.icon ?? null,
     );
     revalidatePath("/notes");
     return { ok: true, folder };
@@ -73,6 +89,21 @@ export async function recolorFolderAction(input: {
   if (!parsed.success) return { ok: false };
   const ok = await noteFolderRepository.update(user.id, parsed.data.folderId, {
     color: parsed.data.color,
+  });
+  if (ok) revalidatePath("/notes");
+  return { ok };
+}
+
+/** Change a folder's icon (or clear it to the default folder glyph with null). */
+export async function reiconFolderAction(input: {
+  folderId: string;
+  icon: string | null;
+}): Promise<{ ok: boolean }> {
+  const user = await requireRequestUser();
+  const parsed = reiconSchema.safeParse(input);
+  if (!parsed.success) return { ok: false };
+  const ok = await noteFolderRepository.update(user.id, parsed.data.folderId, {
+    icon: parsed.data.icon,
   });
   if (ok) revalidatePath("/notes");
   return { ok };

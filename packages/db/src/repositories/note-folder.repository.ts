@@ -5,6 +5,7 @@ export interface NoteFolderSummary {
   id: string;
   name: string;
   color: string | null;
+  icon: string | null;
   position: number;
 }
 
@@ -12,6 +13,7 @@ const FOLDER_SELECT = {
   id: true,
   name: true,
   color: true,
+  icon: true,
   position: true,
 } as const;
 
@@ -26,22 +28,27 @@ export const noteFolderRepository = {
   },
 
   /** Create a folder, appended after the user's existing folders. */
-  async create(userId: string, name: string, color: string | null): Promise<NoteFolderSummary> {
+  async create(
+    userId: string,
+    name: string,
+    color: string | null,
+    icon: string | null,
+  ): Promise<NoteFolderSummary> {
     const count = await prisma.noteFolder.count({ where: { userId } });
     return prisma.noteFolder.create({
-      data: { userId, name, color, position: count },
+      data: { userId, name, color, icon, position: count },
       select: FOLDER_SELECT,
     });
   },
 
   /**
-   * Update a folder the user owns (name and/or color). Scoped by userId so a
-   * user can never edit another user's folder. Returns false when no row matched.
+   * Update a folder the user owns (name, colour and/or icon). Scoped by userId so
+   * a user can never edit another user's folder. Returns false when no row matched.
    */
   async update(
     userId: string,
     folderId: string,
-    data: { name?: string; color?: string | null },
+    data: { name?: string; color?: string | null; icon?: string | null },
   ): Promise<boolean> {
     const res = await prisma.noteFolder.updateMany({
       where: { id: folderId, userId },

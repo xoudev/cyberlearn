@@ -8,18 +8,26 @@ import {
   deleteFolderAction,
   moveNoteAction,
   recolorFolderAction,
+  reiconFolderAction,
   renameFolderAction,
 } from "../_actions/folder-actions";
 import { saveNoteAction } from "../_actions/note-actions";
 import {
   CAT,
   FOLDER_DEFAULT_COLOR,
+  FOLDER_DEFAULT_ICON,
+  FOLDER_ICON_NAMES,
   FOLDER_PALETTE,
+  type FolderIconName,
   type SerializedFolder,
   type SerializedNote,
 } from "./notes-shared";
+import { AllNotesGlyph, FolderGlyph } from "./folder-icons";
 import { NoteReader } from "./note-reader";
 import { downloadMarkdown, notesToMarkdown } from "@/lib/notes/export";
+
+// Payload key for the native drag-and-drop of note cards onto folders.
+const DND_MIME = "application/x-cyberlearn-note";
 
 export type { SerializedNote } from "./notes-shared";
 
@@ -77,7 +85,12 @@ export function NotesLibrary({
   // Folder create form + rename drafts.
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string | null>(FOLDER_PALETTE[0] ?? null);
+  const [newIcon, setNewIcon] = useState<FolderIconName>(FOLDER_DEFAULT_ICON);
   const [renameDrafts, setRenameDrafts] = useState<Record<string, string>>({});
+
+  // Drag-and-drop of note cards onto folders.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
 
   useEffect(() => {
     setNow(Date.now());
@@ -127,7 +140,11 @@ export function NotesLibrary({
       const fn = filtered.filter((n) => n.folderId === f.id);
       if (fn.length > 0) out.push({ id: f.id, title: f.name, color: f.color, notes: fn });
     }
-    const loose = filtered.filter((n) => n.folderId === null);
+    // "Sans dossier" also catches notes whose folder is not in the loaded list
+    // (e.g. the folders query fell back to [] during the pre-migration deploy
+    // window) so a note is never rendered in no group at all.
+    const knownIds = new Set(folders.map((f) => f.id));
+    const loose = filtered.filter((n) => n.folderId === null || !knownIds.has(n.folderId));
     if (loose.length > 0) {
       out.push({ id: NONE, title: "Sans dossier", color: null, notes: loose });
     }
@@ -141,7 +158,7 @@ export function NotesLibrary({
   const handleCreateFolder = (): void => {
     const name = newName.trim();
     if (!name) return;
-    void createFolderAction({ name, color: newColor }).then((res) => {
+    void createFolderAction({ name, color: newColor, icon: newIcon }).then((res) => {
       if (res.ok && res.folder) {
         const created = res.folder;
         setFolders((prev) => [...prev, created]);
@@ -149,6 +166,17 @@ export function NotesLibrary({
         toast.success("Dossier créé");
       } else {
         toast.error(res.error ?? "Création impossible");
+      }
+    });
+  };
+
+  const handleReicon = (folder: SerializedFolder, icon: FolderIconName): void => {
+    const prevIcon = folder.icon;
+    setFolders((prev) => prev.map((f) => (f.id === folder.id ? { ...f, icon } : f)));
+    void reiconFolderAction({ folderId: folder.id, icon }).then((res) => {
+      if (!res.ok) {
+        setFolders((prev) => prev.map((f) => (f.id === folder.id ? { ...f, icon: prevIcon } : f)));
+        toast.error("Changement d'icône impossible");
       }
     });
   };
@@ -213,6 +241,7 @@ export function NotesLibrary({
     const target = notes.find((n) => n.id === noteId);
     if (!target) return;
     const prevFolder = target.folderId;
+    if (prevFolder === folderId) return; // already there: no-op (avoids a wasted call)
     setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, folderId } : n)));
     void moveNoteAction({ noteId, folderId }).then((res) => {
       if (res.ok) {
@@ -223,6 +252,40 @@ export function NotesLibrary({
       }
     });
   };
+
+  // Drop-target props for a folder key (NONE = "Sans dossier", or a folder id).
+  const dropProps = (key: string, folderId: string | null) => ({
+    onDragOver: (e: React.DragEvent): void => {
+      if (!draggingId) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      if (dragOverKey !== key) setDragOverKey(key);
+    },
+    onDragLeave: (): void => {
+      setDragOverKey((k) => (k === key ? null : k));
+    },
+    onDrop: (e: React.DragEvent): void => {
+      e.preventDefault();
+      const id = e.dataTransfer.getData(DND_MIME) || draggingId;
+      setDragOverKey(null);
+      setDraggingId(null);
+      if (id) handleMove(id, folderId);
+    },
+  });
+
+  // Drag-source props for a note card.
+  const dragProps = (noteId: string) => ({
+    draggable: true,
+    onDragStart: (e: React.DragEvent): void => {
+      e.dataTransfer.setData(DND_MIME, noteId);
+      e.dataTransfer.effectAllowed = "move";
+      setDraggingId(noteId);
+    },
+    onDragEnd: (): void => {
+      setDraggingId(null);
+      setDragOverKey(null);
+    },
+  });
 
   const handleSaveContent = async (noteId: string, content: string): Promise<boolean> => {
     const target = notes.find((n) => n.id === noteId);
@@ -425,6 +488,9 @@ export function NotesLibrary({
         <FolderPill
           label="Toutes"
           count={notes.length}
+          icon={
+            <AllNotesGlyph color={selectedFolder === ALL ? "#05041A" : "var(--cosmetic-accent)"} />
+          }
           active={selectedFolder === ALL}
           onClick={() => {
             setSelectedFolder(ALL);
@@ -433,22 +499,40 @@ export function NotesLibrary({
         <FolderPill
           label="Sans dossier"
           count={countFor(null)}
-          dot={FOLDER_DEFAULT_COLOR}
+          icon={
+            <FolderGlyph
+              name="folder"
+              color={selectedFolder === NONE ? "#05041A" : FOLDER_DEFAULT_COLOR}
+            />
+          }
           active={selectedFolder === NONE}
           onClick={() => {
             setSelectedFolder(NONE);
           }}
+          droppable
+          dragActive={draggingId !== null}
+          dragOver={dragOverKey === NONE}
+          dropHandlers={dropProps(NONE, null)}
         />
         {folders.map((f) => (
           <FolderPill
             key={f.id}
             label={f.name}
             count={countFor(f.id)}
-            dot={f.color ?? FOLDER_DEFAULT_COLOR}
+            icon={
+              <FolderGlyph
+                name={f.icon}
+                color={selectedFolder === f.id ? "#05041A" : (f.color ?? FOLDER_DEFAULT_COLOR)}
+              />
+            }
             active={selectedFolder === f.id}
             onClick={() => {
               setSelectedFolder(f.id);
             }}
+            droppable
+            dragActive={draggingId !== null}
+            dragOver={dragOverKey === f.id}
+            dropHandlers={dropProps(f.id, f.id)}
           />
         ))}
         <button
@@ -537,6 +621,13 @@ export function NotesLibrary({
                 setNewColor(c);
               }}
             />
+            <IconDots
+              value={newIcon}
+              color={newColor ?? FOLDER_DEFAULT_COLOR}
+              onPick={(ic) => {
+                setNewIcon(ic);
+              }}
+            />
             <button
               type="button"
               onClick={handleCreateFolder}
@@ -578,6 +669,13 @@ export function NotesLibrary({
                   value={f.color}
                   onPick={(c) => {
                     handleRecolor(f, c);
+                  }}
+                />
+                <IconDots
+                  value={f.icon ?? FOLDER_DEFAULT_ICON}
+                  color={f.color ?? FOLDER_DEFAULT_COLOR}
+                  onPick={(ic) => {
+                    handleReicon(f, ic);
                   }}
                 />
                 <input
@@ -661,150 +759,172 @@ export function NotesLibrary({
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-          {groups.map((g) => (
-            <section key={g.id}>
-              {g.title !== null && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    marginBottom: 14,
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: "#B8B5D1",
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
+          {groups.map((g) => {
+            const gFolder = g.id === NONE ? null : folders.find((f) => f.id === g.id);
+            // Distinct key from the folder pill so hovering the header highlights
+            // only the header, not also the pill for the same folder.
+            const headerKey = `hdr:${g.id}`;
+            const headerDragOver = dragOverKey === headerKey;
+            return (
+              <section key={g.id}>
+                {g.title !== null && (
+                  <div
+                    {...dropProps(headerKey, g.id === NONE ? null : g.id)}
                     style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 2,
-                      background: "color" in g && g.color ? g.color : "var(--cosmetic-accent)",
-                    }}
-                  />
-                  {g.title}
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: "#6F6B99",
-                      border: "1px solid #2A2560",
-                      padding: "2px 7px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      marginBottom: 14,
+                      marginLeft: -8,
+                      padding: "5px 8px",
+                      borderRadius: 4,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: "#B8B5D1",
+                      border: `1px ${draggingId && !headerDragOver ? "dashed" : "solid"} ${
+                        headerDragOver
+                          ? "var(--cosmetic-accent)"
+                          : draggingId
+                            ? "#3A3568"
+                            : "transparent"
+                      }`,
+                      background: headerDragOver
+                        ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
+                        : "transparent",
                     }}
                   >
-                    {g.notes.length} note{g.notes.length > 1 ? "s" : ""}
-                  </span>
-                </div>
-              )}
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                  gap: 16,
-                }}
-              >
-                {g.notes.map((n) => {
-                  const cat = CAT[n.lessonCategory];
-                  return (
-                    <button
-                      key={n.id}
-                      type="button"
-                      onClick={() => {
-                        setReaderId(n.id);
-                      }}
-                      className="note-card"
+                    <FolderGlyph
+                      name={gFolder?.icon ?? "folder"}
+                      color={
+                        gFolder?.color ??
+                        (g.id === NONE ? FOLDER_DEFAULT_COLOR : "var(--cosmetic-accent)")
+                      }
+                    />
+                    {g.title}
+                    <span
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 10,
-                        padding: 18,
-                        textAlign: "left",
-                        background: "rgba(5,4,26,0.5)",
-                        border: "1px solid #1F1B47",
-                        borderLeft: `3px solid ${cat.color}`,
-                        cursor: "pointer",
-                        minHeight: 150,
-                        font: "inherit",
-                        color: "inherit",
+                        fontSize: 10,
+                        color: "#6F6B99",
+                        border: "1px solid #2A2560",
+                        padding: "2px 7px",
                       }}
                     >
-                      <span
+                      {g.notes.length} note{g.notes.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                    gap: 16,
+                  }}
+                >
+                  {g.notes.map((n) => {
+                    const cat = CAT[n.lessonCategory];
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => {
+                          setReaderId(n.id);
+                        }}
+                        {...dragProps(n.id)}
+                        className="note-card"
+                        title="Glisse cette note vers un dossier, ou clique pour l'ouvrir"
                         style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 7,
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 9.5,
-                          fontWeight: 700,
-                          letterSpacing: "0.14em",
-                          textTransform: "uppercase",
-                          color: cat.color,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 10,
+                          padding: 18,
+                          textAlign: "left",
+                          background: "rgba(5,4,26,0.5)",
+                          border: "1px solid #1F1B47",
+                          borderLeft: `3px solid ${cat.color}`,
+                          cursor: draggingId === n.id ? "grabbing" : "grab",
+                          opacity: draggingId === n.id ? 0.45 : 1,
+                          minHeight: 150,
+                          font: "inherit",
+                          color: "inherit",
                         }}
                       >
                         <span
-                          aria-hidden="true"
                           style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            background: cat.color,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 7,
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 9.5,
+                            fontWeight: 700,
+                            letterSpacing: "0.14em",
+                            textTransform: "uppercase",
+                            color: cat.color,
                           }}
-                        />
-                        {cat.label}
-                        {n.pathTitle ? (
-                          <span style={{ color: "#6F6B99", letterSpacing: "0.06em" }}>
-                            · {n.pathTitle}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-sans)",
-                          fontWeight: 700,
-                          fontSize: 15,
-                          color: "#F5F5FA",
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {n.lessonTitle}
-                      </span>
-                      <span
-                        style={{
-                          flex: 1,
-                          fontFamily: "var(--font-body)",
-                          fontSize: 13,
-                          color: "#8B88A8",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {excerpt(n.content) || "Note vide"}
-                      </span>
-                      <span
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 10.5,
-                          color: "#6F6B99",
-                          borderTop: "1px solid #1F1B47",
-                          paddingTop: 10,
-                        }}
-                      >
-                        <span suppressHydrationWarning>{timeAgo(n.updatedAt, now)}</span>
-                        <span>
-                          {n.wordCount} mot{n.wordCount > 1 ? "s" : ""}
+                        >
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              background: cat.color,
+                            }}
+                          />
+                          {cat.label}
+                          {n.pathTitle ? (
+                            <span style={{ color: "#6F6B99", letterSpacing: "0.06em" }}>
+                              · {n.pathTitle}
+                            </span>
+                          ) : null}
                         </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                        <span
+                          style={{
+                            fontFamily: "var(--font-sans)",
+                            fontWeight: 700,
+                            fontSize: 15,
+                            color: "#F5F5FA",
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {n.lessonTitle}
+                        </span>
+                        <span
+                          style={{
+                            flex: 1,
+                            fontFamily: "var(--font-body)",
+                            fontSize: 13,
+                            color: "#8B88A8",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {excerpt(n.content) || "Note vide"}
+                        </span>
+                        <span
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 10.5,
+                            color: "#6F6B99",
+                            borderTop: "1px solid #1F1B47",
+                            paddingTop: 10,
+                          }}
+                        >
+                          <span suppressHydrationWarning>{timeAgo(n.updatedAt, now)}</span>
+                          <span>
+                            {n.wordCount} mot{n.wordCount > 1 ? "s" : ""}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
 
@@ -825,23 +945,45 @@ export function NotesLibrary({
   );
 }
 
+interface DropHandlers {
+  onDragOver: (e: React.DragEvent) => void;
+  onDragLeave: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+}
+
 function FolderPill({
   label,
   count,
-  dot,
+  icon,
   active,
   onClick,
+  droppable = false,
+  dragActive = false,
+  dragOver = false,
+  dropHandlers,
 }: {
   label: string;
   count: number;
-  dot?: string;
+  icon: React.ReactNode;
   active: boolean;
   onClick: () => void;
+  droppable?: boolean;
+  dragActive?: boolean;
+  dragOver?: boolean;
+  dropHandlers?: DropHandlers;
 }): React.JSX.Element {
+  const borderColor = active || dragOver ? "var(--cosmetic-accent)" : "#2A2560";
+  const borderStyle = droppable && dragActive && !active ? "dashed" : "solid";
+  const background = active
+    ? "var(--cosmetic-accent)"
+    : dragOver
+      ? "color-mix(in srgb, var(--cosmetic-accent) 16%, transparent)"
+      : "transparent";
   return (
     <button
       type="button"
       onClick={onClick}
+      {...(droppable && dropHandlers ? dropHandlers : {})}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -851,24 +993,63 @@ function FolderPill({
         fontWeight: 700,
         letterSpacing: "0.06em",
         color: active ? "#05041A" : "#B8B5D1",
-        background: active ? "var(--cosmetic-accent)" : "transparent",
-        border: `1px solid ${active ? "var(--cosmetic-accent)" : "#2A2560"}`,
+        background,
+        border: `1px ${borderStyle} ${borderColor}`,
         padding: "8px 12px",
         cursor: "pointer",
         maxWidth: 220,
       }}
     >
-      {dot && (
-        <span
-          aria-hidden="true"
-          style={{ width: 8, height: 8, borderRadius: 2, background: dot, flexShrink: 0 }}
-        />
-      )}
+      {icon}
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {label}
       </span>
       <span style={{ opacity: 0.7 }}>{count}</span>
     </button>
+  );
+}
+
+function IconDots({
+  value,
+  color,
+  onPick,
+}: {
+  value: string;
+  color: string;
+  onPick: (icon: FolderIconName) => void;
+}): React.JSX.Element {
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
+      {FOLDER_ICON_NAMES.map((name) => {
+        const active = value === name;
+        return (
+          <button
+            key={name}
+            type="button"
+            onClick={() => {
+              onPick(name);
+            }}
+            aria-label={`Icône ${name}`}
+            title={name}
+            style={{
+              display: "grid",
+              placeItems: "center",
+              width: 24,
+              height: 24,
+              borderRadius: 4,
+              background: active
+                ? "color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
+                : "transparent",
+              border: `1px solid ${active ? "var(--cosmetic-accent)" : "#2A2560"}`,
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            <FolderGlyph name={name} color={color} size={14} />
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
