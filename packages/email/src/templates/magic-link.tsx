@@ -19,6 +19,8 @@ export type EmailActionType = "magiclink" | "signup" | "recovery" | "invite" | "
 interface MagicLinkEmailProps {
   magicLink: string;
   type?: EmailActionType;
+  /** 6-digit OTP code, shown for the mobile app (which cannot follow the link). */
+  code?: string | undefined;
 }
 
 const SUBJECT: Record<EmailActionType, string> = {
@@ -56,6 +58,7 @@ const BUTTON_LABEL: Record<EmailActionType, string> = {
 export function MagicLinkEmail({
   magicLink,
   type = "magiclink",
+  code,
 }: MagicLinkEmailProps): React.ReactElement {
   return (
     <Html>
@@ -80,6 +83,13 @@ export function MagicLinkEmail({
                 {BUTTON_LABEL[type]}
               </Button>
             </Section>
+
+            {code ? (
+              <Section style={styles.codeWrap}>
+                <Text style={styles.codeLabel}>Ou entre ce code dans l&apos;app mobile</Text>
+                <Text style={styles.code}>{code}</Text>
+              </Section>
+            ) : null}
 
             <Hr style={styles.hr} />
 
@@ -176,6 +186,28 @@ const styles = {
     display: "inline-block",
   } satisfies React.CSSProperties,
 
+  codeWrap: {
+    margin: "8px 0 4px",
+    textAlign: "center" as const,
+  } satisfies React.CSSProperties,
+
+  codeLabel: {
+    fontSize: "11px",
+    color: "#6B6890",
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    margin: "0 0 8px",
+  } satisfies React.CSSProperties,
+
+  code: {
+    fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+    fontSize: "30px",
+    fontWeight: "700",
+    letterSpacing: "0.35em",
+    color: "#0AFFD4",
+    margin: "0",
+  } satisfies React.CSSProperties,
+
   hr: {
     borderColor: "#1F1B47",
     margin: "24px 0",
@@ -211,6 +243,7 @@ interface SendMagicLinkOptions {
   to: string;
   magicLink: string;
   type?: EmailActionType;
+  code?: string | undefined;
 }
 
 export async function sendMagicLinkEmail({
@@ -219,9 +252,10 @@ export async function sendMagicLinkEmail({
   to,
   magicLink,
   type = "magiclink",
+  code,
 }: SendMagicLinkOptions): Promise<void> {
   const resend = new Resend(apiKey);
-  const html = await render(MagicLinkEmail({ magicLink, type }));
+  const html = await render(MagicLinkEmail({ magicLink, type, code }));
   const { error } = await resend.emails.send({
     from,
     to,
