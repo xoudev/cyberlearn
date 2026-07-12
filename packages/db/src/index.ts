@@ -14,6 +14,10 @@ export type { CreateCertificateInput } from "./repositories/certificate.reposito
 export { ratingRepository } from "./repositories/rating.repository.js";
 export { qaRepository } from "./repositories/qa.repository.js";
 export { noteRepository, type NoteSummary } from "./repositories/note.repository.js";
+export {
+  noteFolderRepository,
+  type NoteFolderSummary,
+} from "./repositories/note-folder.repository.js";
 export { notificationRepository } from "./repositories/notification.repository.js";
 export type { NotificationItem } from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
@@ -61,6 +65,8 @@ export type {
   Rating,
   LessonQuestion,
   LessonAnswer,
+  Note,
+  NoteFolder,
   Certificate,
   Notification,
   ReviewSchedule,

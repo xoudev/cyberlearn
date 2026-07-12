@@ -72,6 +72,7 @@ model User {
   wrappedSnapshots  WrappedSnapshot[]
   answerUpvotes     LessonAnswerUpvote[]
   notes             Note[]
+  noteFolders       NoteFolder[]
 
   @@index([username])
   @@index([role])
@@ -207,24 +208,48 @@ model Lesson {
 }
 
 // One markdown note per (user, lesson): written from the in-lesson note drawer
-// and listed, grouped by parcours, in the notes library. A user fully owns their
-// notes (RLS: own rows only). content is markdown; wordCount is denormalized for
-// the library cards.
+// and listed in the notes library. A user fully owns their notes (RLS: own rows
+// only). content is markdown; wordCount is denormalized for the library cards.
+// folderId is the user's optional custom organization (SetNull: deleting a
+// folder ungroups its notes rather than deleting them).
 model Note {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
   lessonId  String   @db.Uuid
+  folderId  String?  @db.Uuid
   content   String   @default("") @db.Text
   wordCount Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  folder NoteFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@unique([userId, lessonId])
   @@index([userId])
+  @@index([folderId])
   @@map("notes")
+}
+
+// A user-owned folder for organizing notes. A note points at most to one folder
+// (single-membership, "dossier" model). A user fully owns their folders
+// (RLS: own rows only). position drives manual ordering; color is an optional
+// accent from a fixed palette.
+model NoteFolder {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  name      String   @db.Text
+  color     String?  @db.Text
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes Note[]
+
+  @@index([userId])
+  @@map("note_folders")
 }
 
 model LessonPrerequisite {
