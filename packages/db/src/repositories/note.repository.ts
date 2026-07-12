@@ -5,6 +5,7 @@ import { prisma } from "../prisma.js";
 export interface NoteSummary {
   id: string;
   lessonId: string;
+  folderId: string | null;
   content: string;
   wordCount: number;
   updatedAt: Date;
@@ -59,6 +60,7 @@ export const noteRepository = {
       select: {
         id: true,
         lessonId: true,
+        folderId: true,
         content: true,
         wordCount: true,
         updatedAt: true,
@@ -79,6 +81,7 @@ export const noteRepository = {
     return rows.map((r) => ({
       id: r.id,
       lessonId: r.lessonId,
+      folderId: r.folderId,
       content: r.content,
       wordCount: r.wordCount,
       updatedAt: r.updatedAt,
@@ -88,5 +91,27 @@ export const noteRepository = {
       pathSlug: r.lesson.pathLessons[0]?.path.slug ?? null,
       pathTitle: r.lesson.pathLessons[0]?.path.title ?? null,
     }));
+  },
+
+  /**
+   * Move one of the user's notes into a folder (or out of any folder when
+   * folderId is null). Ownership is enforced on both sides: the note must belong
+   * to the user, and a non-null target folder must belong to the user too (so a
+   * note can never be parented under someone else's folder). Returns false when
+   * either ownership check fails or the note does not exist.
+   */
+  async moveToFolder(userId: string, noteId: string, folderId: string | null): Promise<boolean> {
+    if (folderId !== null) {
+      const folder = await prisma.noteFolder.findFirst({
+        where: { id: folderId, userId },
+        select: { id: true },
+      });
+      if (!folder) return false;
+    }
+    const res = await prisma.note.updateMany({
+      where: { id: noteId, userId },
+      data: { folderId },
+    });
+    return res.count > 0;
   },
 };

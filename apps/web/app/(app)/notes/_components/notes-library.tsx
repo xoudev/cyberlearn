@@ -1,26 +1,27 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import type { Category } from "@cyberlearn/db";
+import {
+  createFolderAction,
+  deleteFolderAction,
+  moveNoteAction,
+  recolorFolderAction,
+  renameFolderAction,
+} from "../_actions/folder-actions";
+import { saveNoteAction } from "../_actions/note-actions";
+import {
+  CAT,
+  FOLDER_DEFAULT_COLOR,
+  FOLDER_PALETTE,
+  type SerializedFolder,
+  type SerializedNote,
+} from "./notes-shared";
+import { NoteReader } from "./note-reader";
+import { downloadMarkdown, notesToMarkdown } from "@/lib/notes/export";
 
-export interface SerializedNote {
-  id: string;
-  lessonSlug: string;
-  lessonTitle: string;
-  lessonCategory: Category;
-  pathSlug: string | null;
-  pathTitle: string | null;
-  content: string;
-  wordCount: number;
-  updatedAt: string;
-}
-
-const CAT: Record<Category, { label: string; color: string }> = {
-  CYBERSEC: { label: "Cybersec", color: "#FF4757" },
-  DEV: { label: "Dev", color: "#6E8BFF" },
-  NETWORK: { label: "Réseau", color: "#0AFFD4" },
-};
+export type { SerializedNote } from "./notes-shared";
 
 const FILTERS: { key: "ALL" | Category; label: string }[] = [
   { key: "ALL", label: "Toutes" },
@@ -29,7 +30,8 @@ const FILTERS: { key: "ALL" | Category; label: string }[] = [
   { key: "NETWORK", label: "Réseau" },
 ];
 
-const NO_PATH = "__none__";
+const ALL = "__all__";
+const NONE = "__none__";
 
 /** Strip markdown to a short plain-text preview for the card. */
 function excerpt(markdown: string): string {
@@ -56,18 +58,50 @@ function timeAgo(iso: string, now: number | null): string {
   return new Date(iso).toLocaleDateString("fr-FR");
 }
 
-export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.Element {
+export function NotesLibrary({
+  notes: initialNotes,
+  folders: initialFolders,
+}: {
+  notes: SerializedNote[];
+  folders: SerializedFolder[];
+}): React.JSX.Element {
+  const [notes, setNotes] = useState<SerializedNote[]>(initialNotes);
+  const [folders, setFolders] = useState<SerializedFolder[]>(initialFolders);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"ALL" | Category>("ALL");
+  const [selectedFolder, setSelectedFolder] = useState<string>(ALL);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [readerId, setReaderId] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
+
+  // Folder create form + rename drafts.
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState<string | null>(FOLDER_PALETTE[0] ?? null);
+  const [renameDrafts, setRenameDrafts] = useState<Record<string, string>>({});
+
   useEffect(() => {
     setNow(Date.now());
   }, []);
+
+  // NB: local state is authoritative once mounted. Every mutation updates it
+  // optimistically and reverts on failure, so we deliberately do NOT re-absorb
+  // revalidated props - doing so would clobber a still-pending optimistic update
+  // (e.g. a concurrent move) with a stale server snapshot and flicker.
+
+  const countFor = useCallback(
+    (folderId: string | null): number =>
+      notes.filter((n) => (n.folderId ?? null) === folderId).length,
+    [notes],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return notes.filter((n) => {
       if (filter !== "ALL" && n.lessonCategory !== filter) return false;
+      if (selectedFolder === NONE && n.folderId !== null) return false;
+      if (selectedFolder !== ALL && selectedFolder !== NONE && n.folderId !== selectedFolder) {
+        return false;
+      }
       if (!q) return true;
       return (
         n.lessonTitle.toLowerCase().includes(q) ||
@@ -75,22 +109,169 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
         (n.pathTitle?.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [notes, query, filter]);
+  }, [notes, query, filter, selectedFolder]);
 
-  // Group by parcours (path). Preserve newest-first order inside each group.
+  // In the "Toutes" view, group by folder (folder order, then "Sans dossier").
+  // In a specific-folder view, a single flat group.
   const groups = useMemo(() => {
-    const map = new Map<string, { title: string; notes: SerializedNote[] }>();
-    for (const n of filtered) {
-      const key = n.pathSlug ?? NO_PATH;
-      const title = n.pathTitle ?? "Sans parcours";
-      const g = map.get(key) ?? { title, notes: [] };
-      g.notes.push(n);
-      map.set(key, g);
+    if (selectedFolder !== ALL) {
+      return filtered.length > 0 ? [{ id: selectedFolder, title: null, notes: filtered }] : [];
     }
-    return [...map.values()];
-  }, [filtered]);
+    const out: {
+      id: string;
+      title: string | null;
+      color: string | null;
+      notes: SerializedNote[];
+    }[] = [];
+    for (const f of folders) {
+      const fn = filtered.filter((n) => n.folderId === f.id);
+      if (fn.length > 0) out.push({ id: f.id, title: f.name, color: f.color, notes: fn });
+    }
+    const loose = filtered.filter((n) => n.folderId === null);
+    if (loose.length > 0) {
+      out.push({ id: NONE, title: "Sans dossier", color: null, notes: loose });
+    }
+    return out;
+  }, [filtered, folders, selectedFolder]);
 
-  const pathCount = new Set(notes.map((n) => n.pathSlug ?? NO_PATH)).size;
+  const readerNote = readerId ? (notes.find((n) => n.id === readerId) ?? null) : null;
+
+  // ── Folder mutations (optimistic, revert on failure) ──────────────────────
+
+  const handleCreateFolder = (): void => {
+    const name = newName.trim();
+    if (!name) return;
+    void createFolderAction({ name, color: newColor }).then((res) => {
+      if (res.ok && res.folder) {
+        const created = res.folder;
+        setFolders((prev) => [...prev, created]);
+        setNewName("");
+        toast.success("Dossier créé");
+      } else {
+        toast.error(res.error ?? "Création impossible");
+      }
+    });
+  };
+
+  const handleRename = (folder: SerializedFolder): void => {
+    const draft = (renameDrafts[folder.id] ?? folder.name).trim();
+    if (!draft || draft === folder.name) {
+      // Normalize the draft back to the canonical name (empty or unchanged).
+      setRenameDrafts((prev) => ({ ...prev, [folder.id]: folder.name }));
+      return;
+    }
+    const prevName = folder.name;
+    setFolders((prev) => prev.map((f) => (f.id === folder.id ? { ...f, name: draft } : f)));
+    setRenameDrafts((prev) => ({ ...prev, [folder.id]: draft }));
+    void renameFolderAction({ folderId: folder.id, name: draft }).then((res) => {
+      if (!res.ok) {
+        setFolders((prev) => prev.map((f) => (f.id === folder.id ? { ...f, name: prevName } : f)));
+        setRenameDrafts((prev) => ({ ...prev, [folder.id]: prevName }));
+        toast.error("Renommage impossible");
+      }
+    });
+  };
+
+  const handleRecolor = (folder: SerializedFolder, color: string | null): void => {
+    const prevColor = folder.color;
+    setFolders((prev) => prev.map((f) => (f.id === folder.id ? { ...f, color } : f)));
+    void recolorFolderAction({ folderId: folder.id, color }).then((res) => {
+      if (!res.ok) {
+        setFolders((prev) =>
+          prev.map((f) => (f.id === folder.id ? { ...f, color: prevColor } : f)),
+        );
+        toast.error("Changement de couleur impossible");
+      }
+    });
+  };
+
+  const handleDeleteFolder = (folder: SerializedFolder): void => {
+    if (
+      !window.confirm(
+        `Supprimer le dossier « ${folder.name} » ? Les notes iront dans Sans dossier.`,
+      )
+    ) {
+      return;
+    }
+    const prevFolders = folders;
+    const affected = notes.filter((n) => n.folderId === folder.id).map((n) => n.id);
+    setFolders((prev) => prev.filter((f) => f.id !== folder.id));
+    setNotes((prev) => prev.map((n) => (n.folderId === folder.id ? { ...n, folderId: null } : n)));
+    if (selectedFolder === folder.id) setSelectedFolder(ALL);
+    void deleteFolderAction({ folderId: folder.id }).then((res) => {
+      if (!res.ok) {
+        setFolders(prevFolders);
+        setNotes((prev) =>
+          prev.map((n) => (affected.includes(n.id) ? { ...n, folderId: folder.id } : n)),
+        );
+        toast.error("Suppression impossible");
+      }
+    });
+  };
+
+  const handleMove = (noteId: string, folderId: string | null): void => {
+    const target = notes.find((n) => n.id === noteId);
+    if (!target) return;
+    const prevFolder = target.folderId;
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, folderId } : n)));
+    void moveNoteAction({ noteId, folderId }).then((res) => {
+      if (res.ok) {
+        toast.success(folderId ? "Note déplacée" : "Note retirée du dossier");
+      } else {
+        setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, folderId: prevFolder } : n)));
+        toast.error("Déplacement impossible");
+      }
+    });
+  };
+
+  const handleSaveContent = async (noteId: string, content: string): Promise<boolean> => {
+    const target = notes.find((n) => n.id === noteId);
+    if (!target) return false;
+    const res = await saveNoteAction({ lessonId: target.lessonId, content });
+    if (res.ok) {
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === noteId
+            ? {
+                ...n,
+                content,
+                wordCount: res.wordCount ?? n.wordCount,
+                updatedAt: res.savedAt ?? n.updatedAt,
+              }
+            : n,
+        ),
+      );
+      toast.success("Note enregistrée");
+      return true;
+    }
+    toast.error(res.error ?? "Enregistrement impossible");
+    return false;
+  };
+
+  const exportAll = (): void => {
+    if (filtered.length === 0) {
+      toast.error("Aucune note à exporter");
+      return;
+    }
+    const heading =
+      selectedFolder === ALL
+        ? "Mes notes"
+        : selectedFolder === NONE
+          ? "Sans dossier"
+          : (folders.find((f) => f.id === selectedFolder)?.name ?? "Mes notes");
+    const md = notesToMarkdown(
+      filtered.map((n) => ({
+        lessonTitle: n.lessonTitle,
+        lessonSlug: n.lessonSlug,
+        pathTitle: n.pathTitle,
+        categoryLabel: CAT[n.lessonCategory].label,
+        content: n.content,
+        updatedAt: n.updatedAt,
+      })),
+      heading,
+    );
+    downloadMarkdown(heading, md);
+  };
 
   return (
     <div
@@ -131,21 +312,22 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
           fontFamily: "var(--font-body)",
           fontSize: 15,
           color: "#B8B5D1",
-          maxWidth: 560,
+          maxWidth: 620,
           margin: "0 0 30px",
         }}
       >
-        Prends des notes sans quitter la leçon, et retrouve-les regroupées par parcours ici.
+        Relis tes notes sans rouvrir la leçon, range-les dans des dossiers, et exporte-les en
+        markdown quand tu veux.
       </p>
 
-      {/* Search + filters */}
+      {/* Search + domain filters */}
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
           gap: 14,
-          marginBottom: 28,
+          marginBottom: 16,
         }}
       >
         <div style={{ position: "relative", flex: "1 1 300px", minWidth: 0 }}>
@@ -182,18 +364,6 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
               outline: "none",
             }}
           />
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#6F6B99",
-          }}
-        >
-          <b style={{ color: "#F5F5FA" }}>{notes.length}</b> note{notes.length > 1 ? "s" : ""} ·{" "}
-          <b style={{ color: "#F5F5FA" }}>{pathCount}</b> parcours
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginLeft: "auto" }}>
           {FILTERS.map((f) => {
@@ -240,6 +410,239 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
         </div>
       </div>
 
+      {/* Folder bar */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+          paddingBottom: 16,
+          marginBottom: 22,
+          borderBottom: "1px solid #1F1B47",
+        }}
+      >
+        <FolderPill
+          label="Toutes"
+          count={notes.length}
+          active={selectedFolder === ALL}
+          onClick={() => {
+            setSelectedFolder(ALL);
+          }}
+        />
+        <FolderPill
+          label="Sans dossier"
+          count={countFor(null)}
+          dot={FOLDER_DEFAULT_COLOR}
+          active={selectedFolder === NONE}
+          onClick={() => {
+            setSelectedFolder(NONE);
+          }}
+        />
+        {folders.map((f) => (
+          <FolderPill
+            key={f.id}
+            label={f.name}
+            count={countFor(f.id)}
+            dot={f.color ?? FOLDER_DEFAULT_COLOR}
+            active={selectedFolder === f.id}
+            onClick={() => {
+              setSelectedFolder(f.id);
+            }}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => {
+            setManageOpen((v) => !v);
+          }}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: manageOpen ? "#05041A" : "#8B88A8",
+            background: manageOpen ? "var(--cosmetic-accent)" : "transparent",
+            border: "1px dashed #2A2560",
+            padding: "8px 12px",
+            cursor: "pointer",
+          }}
+        >
+          ⚙ Gérer
+        </button>
+        <button
+          type="button"
+          onClick={exportAll}
+          style={{
+            marginLeft: "auto",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#B8B5D1",
+            background: "transparent",
+            border: "1px solid #2A2560",
+            padding: "8px 12px",
+            cursor: "pointer",
+          }}
+        >
+          ↧ Exporter tout
+        </button>
+      </div>
+
+      {/* Manage folders panel */}
+      {manageOpen && (
+        <div
+          style={{
+            border: "1px solid #2A2560",
+            background: "rgba(5,4,26,0.5)",
+            padding: 18,
+            marginBottom: 26,
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          {/* Create */}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+            <input
+              value={newName}
+              onChange={(e) => {
+                setNewName(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateFolder();
+              }}
+              placeholder="Nom du nouveau dossier"
+              aria-label="Nom du nouveau dossier"
+              maxLength={40}
+              style={{
+                flex: "1 1 200px",
+                minWidth: 0,
+                height: 38,
+                padding: "0 12px",
+                background: "rgba(3,2,25,0.6)",
+                border: "1px solid #2A2560",
+                color: "#F5F5FA",
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                outline: "none",
+              }}
+            />
+            <PaletteDots
+              value={newColor}
+              onPick={(c) => {
+                setNewColor(c);
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleCreateFolder}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#05041A",
+                background: "var(--cosmetic-accent)",
+                border: "1px solid var(--cosmetic-accent)",
+                padding: "9px 14px",
+                cursor: "pointer",
+              }}
+            >
+              Créer
+            </button>
+          </div>
+
+          {folders.length === 0 ? (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6F6B99" }}>
+              {"Aucun dossier pour l'instant. Crée-en un ci-dessus."}
+            </div>
+          ) : (
+            folders.map((f) => (
+              <div
+                key={f.id}
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: 10,
+                  paddingTop: 12,
+                  borderTop: "1px solid #1F1B47",
+                }}
+              >
+                <PaletteDots
+                  value={f.color}
+                  onPick={(c) => {
+                    handleRecolor(f, c);
+                  }}
+                />
+                <input
+                  value={renameDrafts[f.id] ?? f.name}
+                  onChange={(e) => {
+                    setRenameDrafts((prev) => ({ ...prev, [f.id]: e.target.value }));
+                  }}
+                  onBlur={() => {
+                    handleRename(f);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
+                  maxLength={40}
+                  aria-label={`Renommer ${f.name}`}
+                  style={{
+                    flex: "1 1 160px",
+                    minWidth: 0,
+                    height: 34,
+                    padding: "0 10px",
+                    background: "rgba(3,2,25,0.6)",
+                    border: "1px solid #2A2560",
+                    color: "#F5F5FA",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 13,
+                    outline: "none",
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    color: "#6F6B99",
+                    minWidth: 54,
+                  }}
+                >
+                  {countFor(f.id)} note{countFor(f.id) > 1 ? "s" : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDeleteFolder(f);
+                  }}
+                  aria-label={`Supprimer ${f.name}`}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: "#FF6B7A",
+                    background: "transparent",
+                    border: "1px solid rgba(255,71,87,0.4)",
+                    padding: "7px 11px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Supprimer
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* Groups */}
       {groups.length === 0 ? (
         <div
@@ -259,41 +662,43 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {groups.map((g) => (
-            <section key={g.title}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  marginBottom: 14,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "#B8B5D1",
-                }}
-              >
-                <span
-                  aria-hidden="true"
+            <section key={g.id}>
+              {g.title !== null && (
+                <div
                   style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: "var(--cosmetic-accent)",
-                  }}
-                />
-                {g.title}
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: "#6F6B99",
-                    border: "1px solid #2A2560",
-                    padding: "2px 7px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 14,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "#B8B5D1",
                   }}
                 >
-                  {g.notes.length} note{g.notes.length > 1 ? "s" : ""}
-                </span>
-              </div>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 2,
+                      background: "color" in g && g.color ? g.color : "var(--cosmetic-accent)",
+                    }}
+                  />
+                  {g.title}
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: "#6F6B99",
+                      border: "1px solid #2A2560",
+                      padding: "2px 7px",
+                    }}
+                  >
+                    {g.notes.length} note{g.notes.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
 
               <div
                 style={{
@@ -305,20 +710,26 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
                 {g.notes.map((n) => {
                   const cat = CAT[n.lessonCategory];
                   return (
-                    <Link
+                    <button
                       key={n.id}
-                      href={`/lessons/${n.lessonSlug}`}
+                      type="button"
+                      onClick={() => {
+                        setReaderId(n.id);
+                      }}
                       className="note-card"
                       style={{
                         display: "flex",
                         flexDirection: "column",
                         gap: 10,
                         padding: 18,
+                        textAlign: "left",
                         background: "rgba(5,4,26,0.5)",
                         border: "1px solid #1F1B47",
                         borderLeft: `3px solid ${cat.color}`,
-                        textDecoration: "none",
+                        cursor: "pointer",
                         minHeight: 150,
+                        font: "inherit",
+                        color: "inherit",
                       }}
                     >
                       <span
@@ -344,6 +755,11 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
                           }}
                         />
                         {cat.label}
+                        {n.pathTitle ? (
+                          <span style={{ color: "#6F6B99", letterSpacing: "0.06em" }}>
+                            · {n.pathTitle}
+                          </span>
+                        ) : null}
                       </span>
                       <span
                         style={{
@@ -383,7 +799,7 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
                           {n.wordCount} mot{n.wordCount > 1 ? "s" : ""}
                         </span>
                       </span>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
@@ -391,6 +807,121 @@ export function NotesLibrary({ notes }: { notes: SerializedNote[] }): React.JSX.
           ))}
         </div>
       )}
+
+      {readerNote && (
+        <NoteReader
+          note={readerNote}
+          folders={folders}
+          onClose={() => {
+            setReaderId(null);
+          }}
+          onMove={(folderId) => {
+            handleMove(readerNote.id, folderId);
+          }}
+          onSaveContent={(content) => handleSaveContent(readerNote.id, content)}
+        />
+      )}
+    </div>
+  );
+}
+
+function FolderPill({
+  label,
+  count,
+  dot,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  dot?: string;
+  active: boolean;
+  onClick: () => void;
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: "0.06em",
+        color: active ? "#05041A" : "#B8B5D1",
+        background: active ? "var(--cosmetic-accent)" : "transparent",
+        border: `1px solid ${active ? "var(--cosmetic-accent)" : "#2A2560"}`,
+        padding: "8px 12px",
+        cursor: "pointer",
+        maxWidth: 220,
+      }}
+    >
+      {dot && (
+        <span
+          aria-hidden="true"
+          style={{ width: 8, height: 8, borderRadius: 2, background: dot, flexShrink: 0 }}
+        />
+      )}
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {label}
+      </span>
+      <span style={{ opacity: 0.7 }}>{count}</span>
+    </button>
+  );
+}
+
+function PaletteDots({
+  value,
+  onPick,
+}: {
+  value: string | null;
+  onPick: (color: string | null) => void;
+}): React.JSX.Element {
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+      {FOLDER_PALETTE.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => {
+            onPick(c);
+          }}
+          aria-label={`Couleur ${c}`}
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: "50%",
+            background: c,
+            border: value === c ? "2px solid #F5F5FA" : "2px solid transparent",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        />
+      ))}
+      <button
+        type="button"
+        onClick={() => {
+          onPick(null);
+        }}
+        aria-label="Aucune couleur"
+        title="Aucune couleur"
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: "50%",
+          background: "transparent",
+          border: value === null ? "2px solid #F5F5FA" : "2px solid #2A2560",
+          cursor: "pointer",
+          padding: 0,
+          color: "#6F6B99",
+          fontSize: 11,
+          lineHeight: 1,
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
