@@ -31,7 +31,14 @@ function stripNode(node: { type?: string; children?: unknown[] }): void {
 }
 import { requireRequestUser } from "@/lib/auth";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
-import { lessonRepository, ratingRepository, qaRepository, prisma } from "@cyberlearn/db";
+import {
+  lessonRepository,
+  ratingRepository,
+  qaRepository,
+  noteRepository,
+  prisma,
+} from "@cyberlearn/db";
+import { NoteDrawer } from "./_components/note-drawer";
 import { LessonRating } from "./_components/lesson-rating";
 import { LessonQA } from "./_components/lesson-qa";
 import { NextBar } from "./_components/next-bar";
@@ -120,7 +127,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const lesson = await lessonRepository.findBySlug(slug);
   if (!lesson) notFound();
 
-  const [existing, nextLesson, ratingData, userRating, questions] = await Promise.all([
+  const [existing, nextLesson, ratingData, userRating, questions, note] = await Promise.all([
     lessonRepository.findProgress(authUser.id, lesson.id),
     prisma.lesson.findFirst({
       where: { status: "PUBLISHED", publishedAt: { gt: lesson.publishedAt ?? new Date(0) } },
@@ -137,6 +144,11 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     ratingRepository.findLessonStats(lesson.id),
     ratingRepository.findUserLessonRating(authUser.id, lesson.id),
     qaRepository.findQuestionsByLesson(lesson.id),
+    // Tolerate the window between deploy and the prod notes migration: a missing
+    // table yields no preloaded note rather than a crashed lesson page.
+    noteRepository
+      .findForLesson(authUser.id, lesson.id)
+      .catch(() => null),
   ]);
 
   if (!existing) {
@@ -162,6 +174,12 @@ export default async function LessonPage({ params }: Props): Promise<React.React
 
   return (
     <div className="lesson-page">
+      <NoteDrawer
+        lessonId={lesson.id}
+        lessonTitle={lesson.title}
+        initialContent={note?.content ?? ""}
+        initialWordCount={note?.wordCount ?? 0}
+      />
       {/* ── Terminal breadcrumb ───────────────────────────────────────────── */}
       <div
         style={{

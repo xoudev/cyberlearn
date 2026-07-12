@@ -13,6 +13,7 @@ export { certificateRepository } from "./repositories/certificate.repository.js"
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
 export { ratingRepository } from "./repositories/rating.repository.js";
 export { qaRepository } from "./repositories/qa.repository.js";
+export { noteRepository, type NoteSummary } from "./repositories/note.repository.js";
 export { notificationRepository } from "./repositories/notification.repository.js";
 export type { NotificationItem } from "./repositories/notification.repository.js";
 export { leaderboardRepository } from "./repositories/leaderboard.repository.js";
