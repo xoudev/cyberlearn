@@ -103,7 +103,7 @@ export default function Login(): React.JSX.Element {
             autoComplete="email"
             style={inputStyle}
           />
-          <Text variant="bodySm">Sans mot de passe. On t&apos;envoie un code valable 15 min.</Text>
+          <Text variant="bodySm">Sans mot de passe. On t&apos;envoie un code valable 1 h.</Text>
         </View>
 
         {error ? (
@@ -137,6 +137,11 @@ export default function Login(): React.JSX.Element {
             </Text>
           )}
         </Pressable>
+
+        {/* Build marker: confirms which JS bundle the device is running. */}
+        <Text variant="micro" style={{ textAlign: "center", color: colors.textDisabled }}>
+          build otp-v2
+        </Text>
       </View>
     </Screen>
   );

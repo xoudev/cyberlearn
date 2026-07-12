@@ -15,8 +15,9 @@ export default function VerifyOtp(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
   async function verify(): Promise<void> {
+    // GoTrue OTP length is configurable (6 by default, 8 on some projects).
     if (!email || code.trim().length < 6) {
-      setError("Entre le code à 6 chiffres reçu par e-mail.");
+      setError("Entre le code complet reçu par e-mail.");
       return;
     }
     setError(null);
@@ -50,16 +51,16 @@ export default function VerifyOtp(): React.JSX.Element {
             Lien envoyé
           </Text>
           <Text variant="h1">Vérifie ta boîte mail</Text>
-          <Text variant="bodySm">On a envoyé un code à 6 chiffres à {email ?? "ton adresse"}.</Text>
+          <Text variant="bodySm">On a envoyé un code de connexion à {email ?? "ton adresse"}.</Text>
         </View>
 
         <TextInput
           value={code}
-          onChangeText={(t) => setCode(t.replace(/[^0-9]/g, "").slice(0, 6))}
-          placeholder="123456"
+          onChangeText={(t) => setCode(t.replace(/[^0-9]/g, "").slice(0, 8))}
+          placeholder="12345678"
           placeholderTextColor={colors.textDisabled}
           keyboardType="number-pad"
-          maxLength={6}
+          maxLength={8}
           style={{
             height: 56,
             borderWidth: 1,
@@ -67,8 +68,8 @@ export default function VerifyOtp(): React.JSX.Element {
             backgroundColor: "rgba(5,4,26,0.6)",
             color: colors.textPrimary,
             fontFamily: `${fonts.mono}_700Bold`,
-            fontSize: 24,
-            letterSpacing: 8,
+            fontSize: 22,
+            letterSpacing: 6,
             textAlign: "center",
           }}
         />
