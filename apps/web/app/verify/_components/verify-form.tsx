@@ -10,28 +10,62 @@ export function VerifyForm(): React.JSX.Element {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
+  const [focused, setFocused] = useState(false);
 
-  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+  const ready = value.trim().length > 0;
+
+  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>): void {
     e.preventDefault();
-    const id = value.trim();
+    const id = value.trim().replace(/^#/, "");
     if (!UUID_RE.test(id)) {
-      setError("Identifiant invalide. Format attendu : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
+      setError("Identifiant invalide. Attendu : un identifiant unique (UUID).");
       return;
     }
     setError("");
     router.push(`/verify/${id}`);
   }
 
+  const borderColor = error ? "#FF4757" : focused ? "#0AFFD4" : "#2A2560";
+
   return (
-    <>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div>
-          <label
-            htmlFor="cert-id"
-            style={{ display: "block", color: "#B8B5D1", fontSize: 13, marginBottom: 8 }}
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <label
+          htmlFor="cert-id"
+          style={{
+            display: "block",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10.5,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "#6F6B99",
+            marginBottom: 10,
+          }}
+        >
+          Identifiant du certificat
+        </label>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            background: "#05041A",
+            border: `1px solid ${borderColor}`,
+            boxShadow: focused ? "0 0 0 1px rgba(10,255,212,0.25)" : "none",
+            transition: "border-color 160ms ease, box-shadow 160ms ease",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              padding: "0 12px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 15,
+              color: error ? "#FF4757" : "#0AFFD4",
+            }}
           >
-            Identifiant du certificat
-          </label>
+            #
+          </span>
           <input
             id="cert-id"
             type="text"
@@ -40,49 +74,92 @@ export function VerifyForm(): React.JSX.Element {
               setValue(e.target.value);
               setError("");
             }}
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            onFocus={() => {
+              setFocused(true);
+            }}
+            onBlur={() => {
+              setFocused(false);
+            }}
+            placeholder="0f8a1c2e-3b4d-5e6f-7a8b-9c0d1e2f3a4b"
             style={{
-              width: "100%",
-              background: "#110F33",
-              border: `1px solid ${error ? "#ff4d4d" : "#2A2560"}`,
-              borderRadius: 8,
-              padding: "10px 14px",
+              flex: 1,
+              minWidth: 0,
+              background: "transparent",
+              border: "none",
+              padding: "13px 14px 13px 0",
               color: "#F5F5FA",
               fontSize: 14,
               fontFamily: "var(--font-mono)",
+              letterSpacing: "0.02em",
               outline: "none",
-              boxSizing: "border-box",
             }}
             autoComplete="off"
             spellCheck={false}
+            aria-invalid={error ? "true" : undefined}
           />
-          {error && <p style={{ color: "#ff4d4d", fontSize: 12, marginTop: 6 }}>{error}</p>}
         </div>
 
-        <button
-          type="submit"
-          disabled={!value.trim()}
+        {error ? (
+          <p
+            style={{ color: "#FF4757", fontSize: 12, marginTop: 8, fontFamily: "var(--font-mono)" }}
+          >
+            {error}
+          </p>
+        ) : (
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "#44406B",
+              marginTop: 8,
+            }}
+          >
+            Identifiant unique · visible en bas de chaque certificat
+          </p>
+        )}
+      </div>
+
+      <button
+        type="submit"
+        disabled={!ready}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          width: "100%",
+          padding: "14px 20px",
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: 12,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          border: "none",
+          color: ready ? "#05041A" : "#6B6890",
+          background: ready ? "linear-gradient(90deg, #0AFFD4, #4DFFE0)" : "#15122A",
+          boxShadow: ready ? "0 0 24px rgba(10,255,212,0.28)" : "none",
+          cursor: ready ? "pointer" : "not-allowed",
+          transition: "background 180ms ease, box-shadow 180ms ease",
+        }}
+      >
+        Vérifier <span aria-hidden="true">→</span>
+      </button>
+
+      <div style={{ borderTop: "1px solid #1F1B47", paddingTop: 18 }}>
+        <Link
+          href="/"
           style={{
-            background: value.trim() ? "#0024FF" : "#1F1B47",
-            color: value.trim() ? "#F5F5FA" : "#6B6890",
-            border: "none",
-            borderRadius: 8,
-            padding: "10px 20px",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: value.trim() ? "pointer" : "not-allowed",
-            transition: "background 200ms ease",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#6F6B99",
+            textDecoration: "none",
           }}
         >
-          Vérifier
-        </button>
-      </form>
-
-      <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #1F1B47" }}>
-        <Link href="/" style={{ color: "#4D8BFF", fontSize: 13, textDecoration: "none" }}>
-          ← Retour à l&apos;accueil
+          <span aria-hidden="true">←</span> Retour à l&apos;accueil
         </Link>
       </div>
-    </>
+    </form>
   );
 }
