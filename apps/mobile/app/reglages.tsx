@@ -6,7 +6,7 @@ import { Pressable, Switch, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { Rise } from "@/components/anim";
 import { Screen } from "@/components/screen";
-import { GuidedTour } from "@/components/tour";
+import { useTour } from "@/components/tour";
 import { Card, Divider, SectionLabel, Text } from "@/components/ui";
 import {
   deviceNotificationsSupported,
@@ -32,7 +32,7 @@ export default function Reglages(): React.JSX.Element {
   const { data: profile } = useProfile(userId);
   const { data: prefs } = usePreferences(userId);
   const [deviceNotifs, setDeviceNotifs] = useState(true);
-  const [showTour, setShowTour] = useState(false);
+  const { start: startTour } = useTour();
 
   useEffect(() => {
     void isDeviceNotificationsEnabled().then(setDeviceNotifs);
@@ -157,7 +157,7 @@ export default function Reglages(): React.JSX.Element {
           ))}
           <Divider />
           <Pressable
-            onPress={() => setShowTour(true)}
+            onPress={startTour}
             style={{ flexDirection: "row", justifyContent: "space-between", padding: 14 }}
           >
             <Text variant="h3">Revoir la visite guidée</Text>
@@ -167,8 +167,6 @@ export default function Reglages(): React.JSX.Element {
           </Pressable>
         </Card>
       </Rise>
-
-      {showTour ? <GuidedTour onDone={() => setShowTour(false)} /> : null}
 
       {/* Sign out */}
       <Rise index={3}>

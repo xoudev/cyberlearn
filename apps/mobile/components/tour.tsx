@@ -1,8 +1,25 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useEffect, useState } from "react";
-import { Pressable, View } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
-import Svg, { Circle, Path, Polygon, Polyline, Rect } from "react-native-svg";
+import { useRouter } from "expo-router";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Pressable, useWindowDimensions, View } from "react-native";
+import Animated, {
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
+import Svg, { Defs, Mask, Rect } from "react-native-svg";
 import { colors } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { LogoMark } from "@/components/logo";
@@ -14,200 +31,417 @@ export async function isTourDone(): Promise<boolean> {
   return (await AsyncStorage.getItem(TOUR_KEY)) === "1";
 }
 
-export async function resetTour(): Promise<void> {
-  await AsyncStorage.removeItem(TOUR_KEY);
-}
+// ── Steps: a real walkthrough over the live UI ───────────────────────────────
+// `anchor` points at a registered on-screen element (spotlight); no anchor =
+// centered card. `route` navigates there before highlighting.
 
-interface Step {
-  icon: React.ReactNode;
+interface TourStep {
+  anchor?: string;
+  route?: string;
   title: string;
   body: string;
 }
 
-function StepIcon({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return (
-    <Svg
-      width={64}
-      height={64}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={colors.accent}
-      strokeWidth={1.3}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {children}
-    </Svg>
-  );
-}
-
-const STEPS: Step[] = [
+const STEPS: TourStep[] = [
   {
-    icon: <LogoMark size={72} />,
     title: "Bienvenue sur CyberLearn",
-    body: "Apprends le dev, la cybersécurité et le réseau avec des missions concrètes, de l'XP et une vraie progression.",
+    body: "On te fait visiter ? 2 minutes, montre en main. Tu peux passer à tout moment.",
   },
   {
-    icon: (
-      <StepIcon>
-        <Path d="M4 19 V10 M10 19 V5 M16 19 v-7 M4 19 h16" />
-        <Circle cx="19" cy="6" r="2.5" />
-      </StepIcon>
-    ),
-    title: "Gagne de l'XP chaque jour",
-    body: "Chaque leçon terminée rapporte de l'XP, fait monter ton niveau et entretient ta série 🔥. Les quêtes hebdo ajoutent des bonus.",
+    anchor: "home-xp",
+    route: "/accueil",
+    title: "Ton niveau et ton XP",
+    body: "Chaque leçon terminée remplit cette barre. Niveau après niveau, tu montes de palier.",
   },
   {
-    icon: (
-      <StepIcon>
-        <Rect x="4" y="4" width="16" height="16" />
-        <Path d="M8 9 h8 M8 12.5 h8 M8 16 h5" />
-      </StepIcon>
-    ),
-    title: "Parcours et leçons",
-    body: "Suis un parcours mission par mission, lis la leçon section par section, puis valide le quiz pour empocher l'XP.",
+    anchor: "home-streak",
+    route: "/accueil",
+    title: "Ta série 🔥",
+    body: "Un jour actif = la chaîne continue. Rate un jour et elle repart de zéro, alors reviens souvent !",
   },
   {
-    icon: (
-      <StepIcon>
-        <Polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5" />
-        <Polyline points="8.5,12.5 11,15 16,9" />
-      </StepIcon>
-    ),
-    title: "Ligue, badges et certificats",
-    body: "Grimpe dans ta poule de ligue chaque saison, débloque des badges et décroche des certificats vérifiables.",
+    anchor: "home-bell",
+    route: "/accueil",
+    title: "Tes notifications",
+    body: "Badges débloqués, montées de niveau, certificats : tout arrive ici (et dans la barre de ton téléphone sur l'app installée).",
   },
   {
-    icon: (
-      <StepIcon>
-        <Circle cx="12" cy="8" r="3.5" />
-        <Path d="M5 20 c1.5-4 4-6 7-6 s5.5 2 7 6" />
-      </StepIcon>
-    ),
-    title: "Tout part du Profil",
-    body: "Bloc-notes, casier, classement, notifications et réglages t'attendent dans l'onglet Profil. Bonne chasse !",
+    anchor: "paths-search",
+    route: "/parcours",
+    title: "Les parcours",
+    body: "Des séries de missions qui se déverrouillent dans l'ordre. Cherche, filtre par domaine ou difficulté, et lance-toi.",
+  },
+  {
+    anchor: "lessons-filters",
+    route: "/lecons",
+    title: "Les leçons",
+    body: "Chaque leçon se lit section par section et se termine par un quiz. Réussis-le pour empocher l'XP.",
+  },
+  {
+    anchor: "profil-id",
+    route: "/profil",
+    title: "Ton QG : le Profil",
+    body: "Ton avatar, ton palier, tes badges et certifs. Plus bas : Bloc-notes, Casier, Classement, Réglages… tout part d'ici.",
+  },
+  {
+    title: "C'est parti !",
+    body: "Ouvre un parcours, termine ta première mission et regarde l'XP tomber. Bonne chasse !",
   },
 ];
 
-/** Full-screen first-launch guided tour. Renders nothing once completed. */
-export function GuidedTour({ onDone }: { onDone: () => void }): React.JSX.Element {
-  const [index, setIndex] = useState(0);
-  const step = STEPS[index];
-  const isLast = index === STEPS.length - 1;
+// ── Context: anchor registry + tour controls ─────────────────────────────────
 
-  async function finish(): Promise<void> {
-    await AsyncStorage.setItem(TOUR_KEY, "1");
-    onDone();
-  }
+interface TourContextValue {
+  registerAnchor: (key: string, ref: React.RefObject<View | null>) => void;
+  unregisterAnchor: (key: string) => void;
+  start: () => void;
+  running: boolean;
+}
 
-  if (!step) return <View />;
+const TourContext = createContext<TourContextValue | null>(null);
 
+/** Attach the returned ref to the View a tour step should spotlight. */
+export function useTourAnchor(key: string): React.RefObject<View | null> {
+  const ref = useRef<View | null>(null);
+  const ctx = useContext(TourContext);
+  useEffect(() => {
+    ctx?.registerAnchor(key, ref);
+    return () => ctx?.unregisterAnchor(key);
+  }, [ctx, key]);
+  return ref;
+}
+
+export function useTour(): { start: () => void; running: boolean } {
+  const ctx = useContext(TourContext);
+  return { start: ctx?.start ?? ((): void => undefined), running: ctx?.running ?? false };
+}
+
+// ── Spotlight overlay ─────────────────────────────────────────────────────────
+
+interface Hole {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function PulseBorder({ hole }: { hole: Hole }): React.JSX.Element {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 900, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+    );
+  }, [t]);
+  const style = useAnimatedStyle(() => ({ opacity: 0.45 + t.value * 0.55 }));
   return (
     <Animated.View
-      entering={FadeIn.duration(200)}
-      style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: 70,
-        backgroundColor: "rgba(2,1,14,0.96)",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 28,
-      }}
-    >
-      {/* Skip */}
-      <Pressable
-        onPress={() => void finish()}
-        style={{ position: "absolute", top: 60, right: 24, padding: 8 }}
-      >
-        <Text variant="micro" style={{ color: colors.textMuted }}>
-          Passer
-        </Text>
-      </Pressable>
-
-      <View key={index} style={{ alignItems: "center", gap: 18, maxWidth: 300 }}>
-        <View
-          style={{
-            width: 110,
-            height: 110,
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: colors.borderDefault,
-            backgroundColor: colors.bgElevated,
-          }}
-        >
-          {step.icon}
-        </View>
-        <Text variant="h1" style={{ textAlign: "center" }}>
-          {step.title}
-        </Text>
-        <Text variant="body" style={{ textAlign: "center" }}>
-          {step.body}
-        </Text>
-      </View>
-
-      {/* Dots */}
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 30 }}>
-        {STEPS.map((_, i) => (
-          <View
-            key={i}
-            style={{
-              width: i === index ? 22 : 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: i === index ? colors.accent : colors.borderDefault,
-            }}
-          />
-        ))}
-      </View>
-
-      <View style={{ flexDirection: "row", gap: 10, marginTop: 26, alignSelf: "stretch" }}>
-        {index > 0 ? (
-          <PressableScale
-            onPress={() => setIndex(index - 1)}
-            style={{
-              flex: 1,
-              height: 46,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: colors.borderDefault,
-            }}
-          >
-            <Text variant="micro">← Précédent</Text>
-          </PressableScale>
-        ) : null}
-        <PressableScale
-          onPress={() => {
-            if (isLast) void finish();
-            else setIndex(index + 1);
-          }}
-          style={{
-            flex: 2,
-            height: 46,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.accent,
-          }}
-        >
-          <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-            {isLast ? "C'est parti !" : "Suivant →"}
-          </Text>
-        </PressableScale>
-      </View>
-    </Animated.View>
+      pointerEvents="none"
+      style={[
+        {
+          position: "absolute",
+          left: hole.x - 3,
+          top: hole.y - 3,
+          width: hole.w + 6,
+          height: hole.h + 6,
+          borderWidth: 1.5,
+          borderColor: colors.accent,
+          borderRadius: 6,
+        },
+        style,
+      ]}
+    />
   );
 }
 
-/** Mounts the tour on first launch (post-login). */
-export function TourGate(): React.JSX.Element | null {
-  const [show, setShow] = useState(false);
+function TourOverlayView({
+  stepIndex,
+  onNext,
+  onPrev,
+  onSkip,
+  measure,
+}: {
+  stepIndex: number;
+  onNext: () => void;
+  onPrev: () => void;
+  onSkip: () => void;
+  measure: (anchor: string) => Promise<Hole | null>;
+}): React.JSX.Element | null {
+  const { width, height } = useWindowDimensions();
+  const [hole, setHole] = useState<Hole | null>(null);
+  const [ready, setReady] = useState(false);
+  const step = STEPS[stepIndex];
+
   useEffect(() => {
-    void isTourDone().then((done) => {
-      if (!done) setShow(true);
+    let cancelled = false;
+    setReady(false);
+    setHole(null);
+    if (!step) return;
+    if (!step.anchor) {
+      setReady(true);
+      return;
+    }
+    // The target screen may still be mounting after navigation: retry briefly.
+    const anchor = step.anchor;
+    void (async () => {
+      for (let attempt = 0; attempt < 14; attempt++) {
+        const h = await measure(anchor);
+        if (cancelled) return;
+        if (h && h.w > 0 && h.h > 0 && h.y > -h.h && h.y < 4000) {
+          setHole(h);
+          setReady(true);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      if (!cancelled) setReady(true); // fallback: centered card, no spotlight
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, measure]);
+
+  if (!step) return null;
+
+  const isLast = stepIndex === STEPS.length - 1;
+  const pad = 6;
+  const clampedHole = hole
+    ? {
+        x: Math.max(4, hole.x - pad),
+        y: Math.max(4, hole.y - pad),
+        w: Math.min(width - 8, hole.w + pad * 2),
+        h: hole.h + pad * 2,
+      }
+    : null;
+
+  // Bubble above or below the hole, wherever there is room.
+  const bubbleBelow = clampedHole ? clampedHole.y + clampedHole.h + 190 < height : false;
+  const bubbleTop = clampedHole
+    ? bubbleBelow
+      ? clampedHole.y + clampedHole.h + 14
+      : undefined
+    : undefined;
+  const bubbleBottom = clampedHole && !bubbleBelow ? height - clampedHole.y + 14 : undefined;
+
+  return (
+    <View style={{ position: "absolute", inset: 0, zIndex: 80 }} pointerEvents="auto">
+      {/* Dimmer with a cut-out over the target */}
+      {ready && clampedHole ? (
+        <>
+          <Svg width={width} height={height} style={{ position: "absolute" }}>
+            <Defs>
+              <Mask id="tour-hole">
+                <Rect x={0} y={0} width={width} height={height} fill="#fff" />
+                <Rect
+                  x={clampedHole.x}
+                  y={clampedHole.y}
+                  width={clampedHole.w}
+                  height={clampedHole.h}
+                  rx={6}
+                  fill="#000"
+                />
+              </Mask>
+            </Defs>
+            <Rect
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+              fill="rgba(2,1,14,0.88)"
+              mask="url(#tour-hole)"
+            />
+          </Svg>
+          <PulseBorder hole={clampedHole} />
+        </>
+      ) : (
+        <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(2,1,14,0.92)" }} />
+      )}
+
+      {/* Skip */}
+      <Pressable
+        onPress={onSkip}
+        style={{ position: "absolute", top: 54, right: 22, padding: 8 }}
+        hitSlop={8}
+      >
+        <Text variant="micro" style={{ color: colors.textMuted }}>
+          Passer le tuto
+        </Text>
+      </Pressable>
+
+      {/* Bubble */}
+      {ready ? (
+        <Animated.View
+          key={stepIndex}
+          entering={FadeIn.duration(200)}
+          style={[
+            {
+              position: "absolute",
+              left: 20,
+              right: 20,
+              backgroundColor: colors.bgElevated,
+              borderWidth: 1,
+              borderColor: colors.accent,
+              padding: 18,
+              gap: 10,
+            },
+            clampedHole
+              ? { top: bubbleTop, bottom: bubbleBottom }
+              : { top: "50%", transform: [{ translateY: -110 }] },
+          ]}
+        >
+          {!clampedHole && stepIndex === 0 ? (
+            <View style={{ alignItems: "center", marginBottom: 4 }}>
+              <LogoMark size={54} />
+            </View>
+          ) : null}
+          <Text variant="micro" style={{ color: colors.accent, letterSpacing: 2 }}>
+            {stepIndex + 1} / {STEPS.length}
+          </Text>
+          <Text variant="h2">{step.title}</Text>
+          <Text variant="body">{step.body}</Text>
+
+          {/* Dots + nav */}
+          <View style={{ flexDirection: "row", gap: 6, marginTop: 2 }}>
+            {STEPS.map((_, i) => (
+              <View
+                key={i}
+                style={{
+                  width: i === stepIndex ? 18 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: i === stepIndex ? colors.accent : colors.borderDefault,
+                }}
+              />
+            ))}
+          </View>
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 6 }}>
+            {stepIndex > 0 ? (
+              <PressableScale
+                onPress={onPrev}
+                style={{
+                  flex: 1,
+                  height: 44,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: colors.borderDefault,
+                }}
+              >
+                <Text variant="micro">←</Text>
+              </PressableScale>
+            ) : null}
+            <PressableScale
+              onPress={onNext}
+              style={{
+                flex: 3,
+                height: 44,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.accent,
+              }}
+            >
+              <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
+                {isLast ? "C'est parti !" : "Suivant →"}
+              </Text>
+            </PressableScale>
+          </View>
+        </Animated.View>
+      ) : null}
+    </View>
+  );
+}
+
+// ── Provider ──────────────────────────────────────────────────────────────────
+
+export function TourProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
+  const router = useRouter();
+  const anchors = useRef(new Map<string, React.RefObject<View | null>>());
+  const [running, setRunning] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
+
+  const registerAnchor = useCallback((key: string, ref: React.RefObject<View | null>): void => {
+    anchors.current.set(key, ref);
+  }, []);
+  const unregisterAnchor = useCallback((key: string): void => {
+    anchors.current.delete(key);
+  }, []);
+
+  const measure = useCallback((anchor: string): Promise<Hole | null> => {
+    return new Promise((resolve) => {
+      const node = anchors.current.get(anchor)?.current;
+      if (!node) {
+        resolve(null);
+        return;
+      }
+      node.measureInWindow((x, y, w, h) => {
+        resolve({ x, y, w, h });
+      });
     });
   }, []);
-  if (!show) return null;
-  return <GuidedTour onDone={() => setShow(false)} />;
+
+  const goTo = useCallback(
+    (index: number): void => {
+      const step = STEPS[index];
+      if (!step) return;
+      setStepIndex(index);
+      if (step.route) {
+        // SAFETY: typed routes are disabled; these are registered pathnames.
+        router.navigate(step.route as never);
+      }
+    },
+    [router],
+  );
+
+  const start = useCallback((): void => {
+    setStepIndex(0);
+    setRunning(true);
+  }, []);
+
+  const finish = useCallback((): void => {
+    setRunning(false);
+    void AsyncStorage.setItem(TOUR_KEY, "1");
+  }, []);
+
+  const value = useMemo(
+    () => ({ registerAnchor, unregisterAnchor, start, running }),
+    [registerAnchor, unregisterAnchor, start, running],
+  );
+
+  return (
+    <TourContext.Provider value={value}>
+      {children}
+      {running ? (
+        <TourOverlayView
+          stepIndex={stepIndex}
+          measure={measure}
+          onNext={() => {
+            if (stepIndex >= STEPS.length - 1) finish();
+            else goTo(stepIndex + 1);
+          }}
+          onPrev={() => goTo(Math.max(0, stepIndex - 1))}
+          onSkip={finish}
+        />
+      ) : null}
+    </TourContext.Provider>
+  );
+}
+
+/** Auto-starts the walkthrough once, on the first authenticated launch. */
+export function TourAutoStart(): null {
+  const { start, running } = useTour();
+  const fired = useRef(false);
+  useEffect(() => {
+    if (fired.current || running) return;
+    fired.current = true;
+    void isTourDone().then((done) => {
+      if (!done) {
+        // Let the Accueil screen mount and register its anchors first.
+        setTimeout(start, 900);
+      }
+    });
+  }, [start, running]);
+  return null;
 }

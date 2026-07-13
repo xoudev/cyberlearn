@@ -22,6 +22,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
 import { BrandedLoader } from "@/components/loader";
+import { TourProvider } from "@/components/tour";
 import { mirrorInboxToDevice } from "@/lib/device-notifications";
 import { ensureUserRow, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
@@ -112,9 +113,11 @@ export default function RootLayout(): React.JSX.Element | null {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <SessionProvider>
-            <StatusBar style="light" />
-            <NotificationMirror />
-            <RootNavigator />
+            <TourProvider>
+              <StatusBar style="light" />
+              <NotificationMirror />
+              <RootNavigator />
+            </TourProvider>
           </SessionProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

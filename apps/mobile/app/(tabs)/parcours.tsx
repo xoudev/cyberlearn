@@ -4,6 +4,7 @@ import { colors, fonts } from "@cyberlearn/tokens";
 import { PathCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
+import { useTourAnchor } from "@/components/tour";
 import { Pill, SectionLabel, Text } from "@/components/ui";
 import {
   CATEGORY_COLOR,
@@ -23,6 +24,7 @@ export default function Parcours(): React.JSX.Element {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [difficulty, setDifficulty] = useState<Difficulty | "ALL">("ALL");
+  const searchAnchor = useTourAnchor("paths-search");
 
   const filtered = useMemo(() => {
     const s = query.trim().toLowerCase();
@@ -49,13 +51,15 @@ export default function Parcours(): React.JSX.Element {
         title="Catalogue Parcours"
         right={data ? <Text variant="micro">{filtered.length} parcours</Text> : undefined}
       />
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Rechercher un parcours…"
-        placeholderTextColor={colors.textDisabled}
-        style={searchStyle}
-      />
+      <View ref={searchAnchor} collapsable={false}>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Rechercher un parcours…"
+          placeholderTextColor={colors.textDisabled}
+          style={searchStyle}
+        />
+      </View>
 
       {/* Category filters */}
       <ScrollView

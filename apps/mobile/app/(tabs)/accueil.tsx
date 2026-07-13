@@ -11,6 +11,7 @@ import { LogoMark } from "@/components/logo";
 import { BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
+import { useTourAnchor } from "@/components/tour";
 import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
 import { CATEGORY_LABEL, RARITY_COLOR } from "@/lib/db";
 import { useDashboard, useQuests, useUnreadCount } from "@/lib/queries";
@@ -24,6 +25,9 @@ export default function Accueil(): React.JSX.Element {
   const weekKey = useMemo(() => isoWeekKey(new Date()), []);
   const { data: quests } = useQuests(userId, weekKey);
   const { data: unread } = useUnreadCount(userId);
+  const xpAnchor = useTourAnchor("home-xp");
+  const streakAnchor = useTourAnchor("home-streak");
+  const bellAnchor = useTourAnchor("home-bell");
 
   if (isLoading || !data) {
     return (
@@ -63,33 +67,39 @@ export default function Accueil(): React.JSX.Element {
             </Text>
           </View>
         </View>
-        <Pressable onPress={() => router.push("/notifications")} hitSlop={8} style={{ padding: 6 }}>
-          <BellIcon color={colors.textSecondary} size={22} />
-          {(unread ?? 0) > 0 ? (
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                minWidth: 16,
-                height: 16,
-                borderRadius: 8,
-                backgroundColor: colors.danger,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 3,
-              }}
-            >
-              <Text style={{ fontFamily: `${fonts.mono}_700Bold`, fontSize: 9, color: "#fff" }}>
-                {unread}
-              </Text>
-            </View>
-          ) : null}
-        </Pressable>
+        <View ref={bellAnchor} collapsable={false}>
+          <Pressable
+            onPress={() => router.push("/notifications")}
+            hitSlop={8}
+            style={{ padding: 6 }}
+          >
+            <BellIcon color={colors.textSecondary} size={22} />
+            {(unread ?? 0) > 0 ? (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  backgroundColor: colors.danger,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 3,
+                }}
+              >
+                <Text style={{ fontFamily: `${fonts.mono}_700Bold`, fontSize: 9, color: "#fff" }}>
+                  {unread}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
       </View>
 
       {/* Level + XP */}
-      <Rise index={1}>
+      <View ref={xpAnchor} collapsable={false}>
         <Card style={{ marginBottom: 20, gap: 10 }}>
           <View
             style={{
@@ -108,10 +118,10 @@ export default function Accueil(): React.JSX.Element {
             ◆ Palier {tier.tier.label}
           </Text>
         </Card>
-      </Rise>
+      </View>
 
       {/* Streak */}
-      <Rise index={2}>
+      <View ref={streakAnchor} collapsable={false}>
         <SectionLabel eyebrow="Progression" title="Ta série" />
         <Card
           style={{
@@ -141,7 +151,7 @@ export default function Accueil(): React.JSX.Element {
             Ne casse pas la chaîne · record {me.longestStreak} j
           </Text>
         </Card>
-      </Rise>
+      </View>
 
       {/* Weekly quests */}
       {(quests ?? []).length > 0 ? (
