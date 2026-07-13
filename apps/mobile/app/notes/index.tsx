@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
-import { colors, fonts } from "@cyberlearn/tokens";
+import { colors, fonts, radius } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { ActionChip, BackButton } from "@/components/buttons";
 import { FOLDER_ICON_NAMES, FolderGlyph } from "@/components/folder-icons";
@@ -279,7 +279,6 @@ export default function Notes(): React.JSX.Element {
                 fontFamily: `${fonts.mono}_400Regular`,
                 fontSize: 13,
                 paddingHorizontal: 12,
-                borderRadius: 8,
               }}
             />
 
@@ -320,7 +319,7 @@ export default function Notes(): React.JSX.Element {
                   style={{
                     width: 42,
                     height: 42,
-                    borderRadius: 10,
+                    borderRadius: radius.sm,
                     alignItems: "center",
                     justifyContent: "center",
                     borderWidth: 1.5,
@@ -356,7 +355,6 @@ export default function Notes(): React.JSX.Element {
                   justifyContent: "center",
                   backgroundColor:
                     draft && draft.name.trim() !== "" ? colors.accent : colors.bgOverlay,
-                  borderRadius: 8,
                 }}
               >
                 <Text
@@ -376,7 +374,6 @@ export default function Notes(): React.JSX.Element {
                   marginTop: 12,
                   borderWidth: 1,
                   borderColor: "rgba(255,77,109,0.5)",
-                  borderRadius: 8,
                   padding: 12,
                   gap: 10,
                 }}
@@ -436,7 +433,6 @@ export default function Notes(): React.JSX.Element {
                       movingNote?.folderId === f.id
                         ? (f.color ?? colors.accent)
                         : colors.borderDefault,
-                    borderRadius: 8,
                     paddingHorizontal: 12,
                     paddingVertical: 11,
                   }}
@@ -462,7 +458,6 @@ export default function Notes(): React.JSX.Element {
                   borderWidth: 1,
                   borderStyle: "dashed",
                   borderColor: colors.borderDefault,
-                  borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 11,
                 }}
@@ -528,7 +523,7 @@ function NoteCard({
                 gap: 4,
                 borderWidth: 1,
                 borderColor: folder ? `${folder.color ?? colors.accent}66` : colors.borderDefault,
-                borderRadius: 999,
+                borderRadius: radius.sm,
                 paddingHorizontal: 8,
                 paddingVertical: 2,
               }}
@@ -564,7 +559,7 @@ const modalCard = {
   backgroundColor: colors.bgElevated,
   borderWidth: 1,
   borderColor: colors.borderDefault,
-  borderRadius: 14,
+
   padding: 18,
   gap: 10,
 };

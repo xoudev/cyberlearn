@@ -44,7 +44,6 @@ export function CardSkeleton(): React.JSX.Element {
         borderColor: colors.borderSubtle,
         backgroundColor: colors.bgElevated,
         padding: 16,
-        borderRadius: 14,
         gap: 10,
       }}
     >
@@ -106,7 +105,6 @@ export function EmptyState({
             borderWidth: 1,
             borderColor: colors.accent,
             paddingHorizontal: 18,
-            borderRadius: 999,
             paddingVertical: 10,
           }}
         >
@@ -152,7 +150,6 @@ export function ErrorState({
             marginTop: 6,
             backgroundColor: colors.accent,
             paddingHorizontal: 22,
-            borderRadius: 999,
             paddingVertical: 11,
           }}
         >

@@ -51,7 +51,7 @@ export default function Lecons(): React.JSX.Element {
   }
 
   return (
-    <Screen onRefresh={() => refetch()} padForTabBar>
+    <Screen onRefresh={() => refetch()}>
       <SectionLabel eyebrow="Cyber Learn" title="Catalogue Leçons" />
       <View ref={filtersAnchor} collapsable={false}>
         <TextInput
