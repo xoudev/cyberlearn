@@ -5,6 +5,7 @@ import { Rise } from "@/components/anim";
 import { LessonCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
+import { useTourAnchor } from "@/components/tour";
 import { Pill, SectionLabel, Text } from "@/components/ui";
 import {
   CATEGORY_COLOR,
@@ -24,6 +25,7 @@ export default function Lecons(): React.JSX.Element {
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [difficulty, setDifficulty] = useState<Difficulty | "ALL">("ALL");
   const [query, setQuery] = useState("");
+  const filtersAnchor = useTourAnchor("lessons-filters");
 
   // Category / difficulty go to the server (stable query key); free-text search
   // filters the fetched page client-side so typing does not refetch every key.
@@ -51,13 +53,15 @@ export default function Lecons(): React.JSX.Element {
   return (
     <Screen onRefresh={() => refetch()}>
       <SectionLabel eyebrow="Cyber Learn" title="Catalogue Leçons" />
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Rechercher une leçon…"
-        placeholderTextColor={colors.textDisabled}
-        style={searchStyle}
-      />
+      <View ref={filtersAnchor} collapsable={false}>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Rechercher une leçon…"
+          placeholderTextColor={colors.textDisabled}
+          style={searchStyle}
+        />
+      </View>
 
       {/* Domain filters */}
       <ScrollView

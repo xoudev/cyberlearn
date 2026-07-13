@@ -8,6 +8,7 @@ import { ChevronRight } from "@/components/icons";
 import { Avatar, BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
+import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
 import { RARITY_COLOR } from "@/lib/db";
 import { useProfile } from "@/lib/queries";
@@ -38,6 +39,7 @@ export default function Profil(): React.JSX.Element {
   const { session } = useSession();
   const { data, isLoading, error, refetch } = useProfile(session?.user.id);
   const [sub, setSub] = useState<Sub>("Badges");
+  const idAnchor = useTourAnchor("profil-id");
 
   if (isLoading || !data) {
     return (
@@ -56,7 +58,11 @@ export default function Profil(): React.JSX.Element {
   return (
     <Screen onRefresh={() => refetch()}>
       {/* Identity */}
-      <View style={{ alignItems: "center", gap: 10, marginBottom: 20 }}>
+      <View
+        ref={idAnchor}
+        collapsable={false}
+        style={{ alignItems: "center", gap: 10, marginBottom: 20 }}
+      >
         <Avatar
           avatarUrl={me.avatarUrl}
           displayName={me.displayName}

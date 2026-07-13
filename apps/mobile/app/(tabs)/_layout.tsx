@@ -4,13 +4,13 @@ import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { BookIcon, HomeIcon, RouteIcon, UserIcon } from "@/components/icons";
-import { TourGate } from "@/components/tour";
+import { TourAutoStart } from "@/components/tour";
 
 export default function TabsLayout(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1 }}>
-      <TourGate />
+      <TourAutoStart />
       <Tabs
         screenOptions={{
           headerShown: false,
