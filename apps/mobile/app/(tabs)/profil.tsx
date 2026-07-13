@@ -19,12 +19,12 @@ type Sub = (typeof SUB_TABS)[number];
 // In-app screens first, then sections that still live on the web.
 const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Classement", route: "/classement" },
+  { label: "Bloc-notes", route: "/notes" },
+  { label: "Casier", route: "/casier" },
   { label: "Notifications", route: "/notifications" },
   { label: "Réglages", route: "/reglages" },
   { label: "Révisions", url: "https://www.cyberlearn.fr/revisions" },
-  { label: "Bloc-notes", url: "https://www.cyberlearn.fr/notes" },
   { label: "Défis", url: "https://www.cyberlearn.fr/challenges" },
-  { label: "Casier", url: "https://www.cyberlearn.fr/casier" },
   { label: "Wrapped", url: "https://www.cyberlearn.fr/wrapped" },
 ];
 

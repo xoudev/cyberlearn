@@ -108,3 +108,33 @@ export async function fetchClassement(): Promise<ClassementData> {
   if (!body.ok) throw new Error("Chargement impossible");
   return { entries: body.entries, userRank: body.userRank, league: body.league };
 }
+
+// ── Casier (cosmetics loadout - guarded ownership check server-side) ──────────
+
+export type CosmeticSlot = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
+
+export async function equipCosmetic(code: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/loadout", {
+      method: "POST",
+      body: JSON.stringify({ action: "equip", code }),
+    });
+    return (await res.json()) as { ok: boolean; error?: string };
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export async function unequipCosmetic(
+  type: CosmeticSlot,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/loadout", {
+      method: "POST",
+      body: JSON.stringify({ action: "unequip", type }),
+    });
+    return (await res.json()) as { ok: boolean; error?: string };
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}

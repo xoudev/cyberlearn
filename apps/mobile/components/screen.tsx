@@ -36,6 +36,8 @@ export function Screen({
           backgroundColor: colors.bgBase,
           paddingTop: padTop,
           paddingHorizontal: 18,
+          // Footer buttons (lesson reader) must clear the gesture/nav bar.
+          paddingBottom: Math.max(insets.bottom, 10),
         }}
       >
         {children}

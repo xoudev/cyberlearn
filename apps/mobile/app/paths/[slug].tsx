@@ -3,7 +3,7 @@ import React from "react";
 import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
-import { CheckIcon, ChevronRight } from "@/components/icons";
+import { CheckIcon, ChevronRight, LockIcon } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -134,109 +134,100 @@ function PathBody({
         </Card>
       </Rise>
 
-      {/* Missions timeline */}
+      {/* Missions */}
       <Rise index={2}>
-        <SectionLabel eyebrow="Missions" title={`${total} missions`} />
-        <View>
+        <SectionLabel eyebrow="Parcours" title={`${total} missions`} />
+        <View style={{ gap: 10 }}>
           {data.missions.map((m, i) => {
             const state = states[i] ?? "locked";
-            const isLast = i === total - 1;
+            const stateColor =
+              state === "done"
+                ? colors.success
+                : state === "current"
+                  ? colors.accent
+                  : colors.textDisabled;
             return (
-              <View key={m.lessonId} style={{ flexDirection: "row" }}>
-                {/* Timeline rail */}
-                <View style={{ width: 34, alignItems: "center" }}>
+              <PressableScale
+                key={m.lessonId}
+                disabled={state === "locked"}
+                onPress={() => onOpenLesson(m.slug)}
+              >
+                <Card
+                  accent={state === "current" ? colors.accent : undefined}
+                  style={{
+                    opacity: state === "locked" ? 0.6 : 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 14,
+                    paddingVertical: 14,
+                  }}
+                >
+                  {/* Number / state chip */}
                   <View
                     style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
                       alignItems: "center",
                       justifyContent: "center",
                       borderWidth: 1.5,
-                      borderColor:
+                      borderColor: stateColor,
+                      backgroundColor:
                         state === "done"
-                          ? colors.success
+                          ? "rgba(10,255,212,0.10)"
                           : state === "current"
-                            ? colors.accent
-                            : colors.borderDefault,
-                      backgroundColor: state === "done" ? "rgba(10,255,212,0.12)" : "transparent",
+                            ? "rgba(10,255,212,0.06)"
+                            : "transparent",
                     }}
                   >
                     {state === "done" ? (
-                      <CheckIcon color={colors.success} size={13} strokeWidth={2} />
+                      <CheckIcon color={colors.success} size={15} strokeWidth={2} />
+                    ) : state === "locked" ? (
+                      <LockIcon color={colors.textDisabled} size={14} strokeWidth={1.4} />
                     ) : (
                       <Text
-                        variant="mono"
                         style={{
-                          fontSize: 10,
-                          color: state === "current" ? colors.accent : colors.textDisabled,
+                          fontFamily: `${fonts.mono}_700Bold`,
+                          fontSize: 13,
+                          lineHeight: 17,
+                          color: colors.accent,
                         }}
                       >
                         {i + 1}
                       </Text>
                     )}
                   </View>
-                  {!isLast ? (
-                    <View
-                      style={{
-                        flex: 1,
-                        width: 1.5,
-                        backgroundColor: state === "done" ? colors.success : colors.borderSubtle,
-                        opacity: state === "done" ? 0.5 : 1,
-                      }}
+
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text variant="micro" style={{ color: stateColor, letterSpacing: 1 }}>
+                      {state === "done"
+                        ? `Mission ${String(i + 1)} · terminée`
+                        : state === "current"
+                          ? `Mission ${String(i + 1)} · tu es ici`
+                          : `Mission ${String(i + 1)}`}
+                    </Text>
+                    <Text
+                      variant="h3"
+                      numberOfLines={2}
+                      style={state === "locked" ? { color: colors.textSecondary } : undefined}
+                    >
+                      {m.title}
+                    </Text>
+                    <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
+                      {state === "locked"
+                        ? "Termine la mission précédente pour déverrouiller"
+                        : `${m.estimatedMinutes} min · +${m.xpReward} XP`}
+                    </Text>
+                  </View>
+
+                  {state !== "locked" ? (
+                    <ChevronRight
+                      color={state === "current" ? colors.accent : colors.textMuted}
+                      size={15}
                     />
                   ) : null}
-                </View>
-
-                {/* Mission card */}
-                <PressableScale
-                  disabled={state === "locked"}
-                  onPress={() => onOpenLesson(m.slug)}
-                  style={{ flex: 1, marginBottom: 12 }}
-                >
-                  <Card
-                    accent={state === "current" ? colors.accent : undefined}
-                    style={{
-                      opacity: state === "locked" ? 0.55 : 1,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <View style={{ flex: 1, gap: 3 }}>
-                      {state === "current" ? (
-                        <Text variant="micro" style={{ color: colors.accent }}>
-                          › Tu es ici
-                        </Text>
-                      ) : null}
-                      <Text variant="h3" numberOfLines={2}>
-                        {m.title}
-                      </Text>
-                      <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
-                        {state === "locked"
-                          ? "Complète la mission précédente"
-                          : `${m.estimatedMinutes} min · +${m.xpReward} XP`}
-                      </Text>
-                    </View>
-                    {state !== "locked" ? (
-                      <ChevronRight
-                        color={state === "current" ? colors.accent : colors.textMuted}
-                        size={15}
-                      />
-                    ) : (
-                      <Text
-                        style={{
-                          fontFamily: `${fonts.mono}_400Regular`,
-                          fontSize: 13,
-                          color: colors.textDisabled,
-                        }}
-                      >
-                        ⬡
-                      </Text>
-                    )}
-                  </Card>
-                </PressableScale>
-              </View>
+                </Card>
+              </PressableScale>
             );
           })}
           {total === 0 ? <Pill label="Aucune mission publiée" color={colors.textMuted} /> : null}
