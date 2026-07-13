@@ -33,9 +33,12 @@ export interface ParsedLesson {
   quizzes: QuizBlock[];
 }
 
+const EXPECTED_CMDS_RE = /expectedCommands\s*=\s*\{(\[[\s\S]*?\])\}/;
+const HINTS_RE = /hints\s*=\s*\{(\[[\s\S]*?\])\}/;
+
 /** Extract a `prop={["a","b"]}` string array from a JSX tag's attributes. */
-function extractStringArray(tag: string, prop: string): string[] {
-  const raw = new RegExp(`${prop}\\s*=\\s*\\{(\\[[\\s\\S]*?\\])\\}`).exec(tag)?.[1];
+function extractStringArray(tag: string, re: RegExp): string[] {
+  const raw = re.exec(tag)?.[1];
   if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -185,8 +188,8 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
     put({
       kind: "terminal",
       title: /title\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1] ?? null,
-      commands: extractStringArray(tag, "expectedCommands"),
-      hints: extractStringArray(tag, "hints"),
+      commands: extractStringArray(tag, EXPECTED_CMDS_RE),
+      hints: extractStringArray(tag, HINTS_RE),
     });
   text = text.replace(/<SimulatedTerminal[\s\S]*?\/>/g, terminalToBlock);
   text = text.replace(/<SimulatedTerminal[\s\S]*?<\/SimulatedTerminal>/g, terminalToBlock);
