@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 import type { NotificationItem } from "@/lib/queries";
 
@@ -14,12 +15,20 @@ const ENABLED_KEY = "cl.notifications.deviceEnabled";
 
 type NotificationsModule = typeof import("expo-notifications");
 
+// Expo Go ("store client") has no notification runtime on Android since
+// SDK 53 - requiring the module there logs a red error even when caught.
+const IS_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
 let cached: NotificationsModule | null | undefined;
 
 function getNotifications(): NotificationsModule | null {
   if (cached !== undefined) return cached;
+  if (IS_EXPO_GO && Platform.OS === "android") {
+    cached = null;
+    return cached;
+  }
   try {
-    // SAFETY: dynamic require so the import-time throw in Expo Go (Android)
+    // SAFETY: dynamic require so an import-time throw in a stripped runtime
     // cannot break every module that transitively imports this file.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     cached = require("expo-notifications") as NotificationsModule;
