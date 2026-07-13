@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
+import { PressableScale } from "@/components/anim";
 import { Card, Pill, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, type ProgressStatus } from "@/lib/db";
 import type { LessonCard, PathCard } from "@/lib/queries";
@@ -16,7 +17,7 @@ export function PathCardView({ path }: { path: PathCard }): React.JSX.Element {
   const router = useRouter();
   const cat = CATEGORY_COLOR[path.category];
   return (
-    <Pressable
+    <PressableScale
       onPress={() => router.push({ pathname: "/paths/[slug]", params: { slug: path.slug } })}
     >
       <Card accent={cat} style={{ gap: 8 }}>
@@ -48,7 +49,7 @@ export function PathCardView({ path }: { path: PathCard }): React.JSX.Element {
           />
         </View>
       </Card>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -56,7 +57,7 @@ export function LessonCardView({ lesson }: { lesson: LessonCard }): React.JSX.El
   const router = useRouter();
   const cat = CATEGORY_COLOR[lesson.category];
   return (
-    <Pressable
+    <PressableScale
       onPress={() => router.push({ pathname: "/lessons/[slug]", params: { slug: lesson.slug } })}
     >
       <Card accent={cat} style={{ gap: 8 }}>
@@ -88,6 +89,6 @@ export function LessonCardView({ lesson }: { lesson: LessonCard }): React.JSX.El
           ) : null}
         </View>
       </Card>
-    </Pressable>
+    </PressableScale>
   );
 }

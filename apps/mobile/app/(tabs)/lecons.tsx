@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
+import { Rise } from "@/components/anim";
 import { LessonCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
+import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Pill, SectionLabel, Text } from "@/components/ui";
 import {
   CATEGORY_COLOR,
@@ -25,7 +27,7 @@ export default function Lecons(): React.JSX.Element {
 
   // Category / difficulty go to the server (stable query key); free-text search
   // filters the fetched page client-side so typing does not refetch every key.
-  const { data, isLoading, error } = useLessons(session?.user.id, {
+  const { data, isLoading, error, refetch } = useLessons(session?.user.id, {
     search: "",
     category,
     difficulty,
@@ -99,22 +101,26 @@ export default function Lecons(): React.JSX.Element {
       </ScrollView>
 
       {isLoading ? (
-        <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+        <ListSkeleton rows={4} />
       ) : error ? (
-        <Text variant="bodySm" style={{ textAlign: "center", marginTop: 40, color: colors.danger }}>
-          Chargement impossible.
-        </Text>
+        <ErrorState onRetry={() => void refetch()} code="LESSONS_LOAD" />
       ) : filtered.length === 0 ? (
-        <View style={{ alignItems: "center", marginTop: 40, gap: 12 }}>
-          <Text variant="bodySm">Aucune leçon trouvée.</Text>
-          <Pressable onPress={reset}>
-            <Pill label="Réinitialiser les filtres" color={colors.accent} />
-          </Pressable>
-        </View>
+        <EmptyState
+          title="Aucune leçon trouvée"
+          body={
+            query
+              ? `Rien pour « ${query} ». Essaie un autre mot-clé ou élargis les filtres.`
+              : "Aucune leçon ne correspond à ces filtres."
+          }
+          actionLabel="Réinitialiser les filtres"
+          onAction={reset}
+        />
       ) : (
         <View style={{ gap: 12 }}>
-          {filtered.map((l) => (
-            <LessonCardView key={l.id} lesson={l} />
+          {filtered.map((l, i) => (
+            <Rise key={l.id} index={Math.min(i, 6)}>
+              <LessonCardView lesson={l} />
+            </Rise>
           ))}
         </View>
       )}
