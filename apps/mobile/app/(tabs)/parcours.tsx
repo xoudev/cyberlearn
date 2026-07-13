@@ -46,7 +46,7 @@ export default function Parcours(): React.JSX.Element {
   };
 
   return (
-    <Screen onRefresh={() => refetch()}>
+    <Screen onRefresh={() => refetch()} padForTabBar>
       <SectionLabel
         eyebrow="Cyber Learn"
         title="Catalogue Parcours"
@@ -130,6 +130,7 @@ export default function Parcours(): React.JSX.Element {
 }
 
 export const searchStyle = {
+  borderRadius: 12,
   height: 44,
   borderWidth: 1,
   borderColor: colors.borderDefault,

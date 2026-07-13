@@ -43,7 +43,7 @@ export default function Profil(): React.JSX.Element {
 
   if (isLoading || !data) {
     return (
-      <Screen>
+      <Screen padForTabBar>
         {error ? (
           <ErrorState onRetry={() => void refetch()} code="PROFILE_LOAD" />
         ) : (
@@ -56,7 +56,7 @@ export default function Profil(): React.JSX.Element {
   const { me, level, tier, completed, badges, certificates } = data;
 
   return (
-    <Screen onRefresh={() => refetch()}>
+    <Screen onRefresh={() => refetch()} padForTabBar>
       {/* Identity */}
       <View
         ref={idAnchor}

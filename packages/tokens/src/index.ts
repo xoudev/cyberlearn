@@ -69,6 +69,8 @@ export const fonts = {
 export const radius = {
   none: 0,
   sm: 2,
+  md: 10,
+  lg: 14,
   pill: 999,
 } as const;
 

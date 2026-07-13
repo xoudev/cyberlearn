@@ -12,7 +12,7 @@ import {
   Rise,
   SparkBurst,
 } from "@/components/anim";
-import { ActionChip, BackButton } from "@/components/buttons";
+import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { CheckIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
@@ -253,20 +253,11 @@ function ReadView({
             <Text variant="micro">← Précédent</Text>
           </PressableScale>
         ) : null}
-        <PressableScale
+        <GradientButton
+          label={isLast ? (hasQuiz ? "Passer au quiz →" : "Terminer la leçon ✓") : "Continuer →"}
           onPress={onNext}
-          style={{
-            flex: 2,
-            height: 46,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.accent,
-          }}
-        >
-          <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-            {isLast ? (hasQuiz ? "Passer au quiz →" : "Terminer la leçon ✓") : "Continuer →"}
-          </Text>
-        </PressableScale>
+          style={{ flex: 2 }}
+        />
       </View>
     </View>
   );
@@ -530,20 +521,7 @@ function ResultView({
             <Text variant="micro">Rejouer</Text>
           </PressableScale>
         ) : null}
-        <PressableScale
-          onPress={onContinue}
-          style={{
-            flex: 2,
-            height: 46,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.accent,
-          }}
-        >
-          <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-            Continuer →
-          </Text>
-        </PressableScale>
+        <GradientButton label="Continuer →" onPress={onContinue} style={{ flex: 2 }} />
       </View>
     </ScrollView>
   );

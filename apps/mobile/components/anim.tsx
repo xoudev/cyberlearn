@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import Svg, { Polygon } from "react-native-svg";
-import { colors, fonts } from "@cyberlearn/tokens";
+import { colors, fonts, radius } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 
 // NOTE: content screens render statically (no entrance/press motion). Animation
@@ -189,6 +189,7 @@ export function AnimatedXPBar({
         backgroundColor: "rgba(5,4,26,0.9)",
         borderWidth: 1,
         borderColor: colors.borderDefault,
+        borderRadius: radius.pill,
         overflow: "hidden",
       }}
     >

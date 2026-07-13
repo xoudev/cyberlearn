@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
+import { GradientButton } from "@/components/buttons";
 import { Logo } from "@/components/logo";
 import { Screen } from "@/components/screen";
 import { requestLoginCode } from "@/lib/api";
@@ -113,15 +114,12 @@ export default function Login(): React.JSX.Element {
             </Text>
           ) : null}
 
-          <Pressable onPress={sendCode} disabled={busy !== null} style={primaryBtn(busy === "otp")}>
-            {busy === "otp" ? (
-              <ActivityIndicator color={colors.bgBase} />
-            ) : (
-              <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-                Recevoir le code
-              </Text>
-            )}
-          </Pressable>
+          <GradientButton
+            label="Recevoir le code"
+            onPress={() => void sendCode()}
+            disabled={busy !== null}
+            loading={busy === "otp"}
+          />
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: colors.borderSubtle }} />
@@ -145,6 +143,7 @@ export default function Login(): React.JSX.Element {
 }
 
 const inputStyle = {
+  borderRadius: 12,
   height: 48,
   borderWidth: 1,
   borderColor: colors.borderDefault,
@@ -155,17 +154,8 @@ const inputStyle = {
   paddingHorizontal: 14,
 } as const;
 
-function primaryBtn(busy: boolean) {
-  return {
-    height: 48,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: colors.accent,
-    opacity: busy ? 0.7 : 1,
-  };
-}
-
 const ghostBtn = {
+  borderRadius: 12,
   height: 48,
   alignItems: "center" as const,
   justifyContent: "center" as const,

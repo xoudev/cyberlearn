@@ -8,7 +8,7 @@ import {
   type ViewProps,
   type ViewStyle,
 } from "react-native";
-import { colors, fonts, space } from "@cyberlearn/tokens";
+import { colors, fonts, radius, space } from "@cyberlearn/tokens";
 
 // ── Typography ────────────────────────────────────────────────────────────────
 
@@ -78,7 +78,13 @@ export function Card({
           borderColor: colors.borderDefault,
           borderLeftWidth: accent ? 3 : 1,
           borderLeftColor: accent ?? colors.borderDefault,
+          borderRadius: radius.lg,
           padding: space.lg,
+          shadowColor: accent ?? "#000",
+          shadowOpacity: accent ? 0.25 : 0.35,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 5 },
+          elevation: 3,
         },
         style,
       ]}
@@ -106,7 +112,7 @@ export function SectionLabel({
     <View style={{ marginBottom: space.md }}>
       {eyebrow ? (
         <Text variant="micro" style={{ color: colors.accent, marginBottom: 4 }}>
-          {eyebrow}
+          {`// ${eyebrow}`}
         </Text>
       ) : null}
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -137,8 +143,9 @@ export function Pill({
         gap: 6,
         borderWidth: 1,
         borderColor: active ? color : colors.borderDefault,
-        backgroundColor: active ? color : "transparent",
-        paddingHorizontal: 10,
+        backgroundColor: active ? color : "rgba(5,4,26,0.5)",
+        borderRadius: radius.pill,
+        paddingHorizontal: 12,
         paddingVertical: 6,
       }}
     >
@@ -175,6 +182,8 @@ export function StatCell({
         flex: 1,
         borderWidth: 1,
         borderColor: colors.borderSubtle,
+        borderRadius: radius.md,
+        backgroundColor: "rgba(10,8,38,0.5)",
         paddingVertical: 12,
         alignItems: "center",
       }}
@@ -208,6 +217,7 @@ export function XPBar({
         backgroundColor: "rgba(5,4,26,0.9)",
         borderWidth: 1,
         borderColor: colors.borderDefault,
+        borderRadius: radius.pill,
         overflow: "hidden",
       }}
     >
