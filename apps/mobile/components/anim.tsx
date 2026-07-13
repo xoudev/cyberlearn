@@ -4,7 +4,6 @@ import { Pressable, type PressableProps, View, type ViewStyle } from "react-nati
 import Animated, {
   Easing,
   FadeIn,
-  FadeInUp,
   runOnJS,
   useAnimatedReaction,
   useAnimatedStyle,
@@ -18,11 +17,14 @@ import Animated, {
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 
-// ── Entrances ─────────────────────────────────────────────────────────────────
+// NOTE: content screens render statically (no entrance/press motion). Animation
+// is reserved for genuine *reward* moments - XP fill, count-up, level-up, badge
+// reveals - so it reads as feedback, not decoration.
 
-/** Staggered rise-in for screen sections (mockup clRise). */
+// ── Layout passthroughs (kept so callers stay unchanged) ─────────────────────
+
+/** Plain wrapper - no entrance animation. */
 export function Rise({
-  index = 0,
   children,
   style,
 }: {
@@ -30,14 +32,32 @@ export function Rise({
   children: React.ReactNode;
   style?: ViewStyle;
 }): React.JSX.Element {
+  return style ? <View style={style}>{children}</View> : <>{children}</>;
+}
+
+/**
+ * Pressable with a subtle opacity dip on press (no scale wrapper). Applies the
+ * given style directly to the Pressable, so flex layouts (e.g. timeline rows)
+ * are preserved.
+ */
+export function PressableScale({
+  children,
+  style,
+  disabled,
+  ...rest
+}: PressableProps & { children: React.ReactNode; style?: ViewStyle }): React.JSX.Element {
   return (
-    <Animated.View entering={FadeInUp.duration(380).delay(index * 70)} style={style}>
+    <Pressable
+      {...rest}
+      disabled={disabled}
+      style={({ pressed }) => [style, pressed && !disabled ? { opacity: 0.6 } : null]}
+    >
       {children}
-    </Animated.View>
+    </Pressable>
   );
 }
 
-/** Spring pop-in (badge reveals, rewards). */
+/** Spring pop-in for reward reveals (badges, result checkmark). */
 export function PopIn({
   delay = 0,
   children,
@@ -56,31 +76,6 @@ export function PopIn({
     <Animated.View entering={FadeIn.duration(150).delay(delay)} style={[animStyle, style]}>
       {children}
     </Animated.View>
-  );
-}
-
-/** Press feedback: scales down while pressed (whole-app tactile feel). */
-export function PressableScale({
-  children,
-  style,
-  ...rest
-}: PressableProps & { children: React.ReactNode; style?: ViewStyle }): React.JSX.Element {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  return (
-    <Pressable
-      {...rest}
-      onPressIn={(e) => {
-        scale.value = withTiming(0.97, { duration: 80 });
-        rest.onPressIn?.(e);
-      }}
-      onPressOut={(e) => {
-        scale.value = withSpring(1, { damping: 14 });
-        rest.onPressOut?.(e);
-      }}
-    >
-      <Animated.View style={[animStyle, style]}>{children}</Animated.View>
-    </Pressable>
   );
 }
 

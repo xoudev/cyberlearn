@@ -3,9 +3,9 @@ import * as WebBrowser from "expo-web-browser";
 import React, { useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
-import { AnimatedXPBar, PopIn, PressableScale, Rise } from "@/components/anim";
-import { HexAvatar } from "@/components/hex-avatar";
+import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { ChevronRight } from "@/components/icons";
+import { Avatar, BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
@@ -27,12 +27,6 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Casier", url: "https://www.cyberlearn.fr/casier" },
   { label: "Wrapped", url: "https://www.cyberlearn.fr/wrapped" },
 ];
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2 && parts[0] && parts[1]) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -60,17 +54,18 @@ export default function Profil(): React.JSX.Element {
   const { me, level, tier, completed, badges, certificates } = data;
 
   return (
-    <Screen>
+    <Screen onRefresh={() => refetch()}>
       {/* Identity */}
-      <Rise index={0}>
-        <View style={{ alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <PopIn>
-            <HexAvatar initials={initialsOf(me.displayName)} color={tier.tier.color} />
-          </PopIn>
-          <Text variant="h1">{me.username ? `@${me.username}` : me.displayName}</Text>
-          <Pill label={`◆ Palier ${tier.tier.label}`} color={tier.tier.color} />
-        </View>
-      </Rise>
+      <View style={{ alignItems: "center", gap: 10, marginBottom: 20 }}>
+        <Avatar
+          avatarUrl={me.avatarUrl}
+          displayName={me.displayName}
+          size={104}
+          color={tier.tier.color}
+        />
+        <Text variant="h1">{me.username ? `@${me.username}` : me.displayName}</Text>
+        <Pill label={`◆ Palier ${tier.tier.label}`} color={tier.tier.color} />
+      </View>
 
       {/* XP */}
       <Rise index={1}>
@@ -123,27 +118,16 @@ export default function Profil(): React.JSX.Element {
       {sub === "Badges" || sub === "Collection" ? (
         badges.length > 0 ? (
           <View style={{ gap: 10 }}>
-            {badges.map((b, i) => (
-              <PopIn key={b.name} delay={i * 60}>
-                <Card style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                  <View
-                    style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: 15,
-                      backgroundColor: `${RARITY_COLOR[b.rarity]}22`,
-                      borderWidth: 1,
-                      borderColor: RARITY_COLOR[b.rarity],
-                    }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text variant="h3">{b.name}</Text>
-                    <Text variant="micro" style={{ color: RARITY_COLOR[b.rarity] }}>
-                      {b.rarity}
-                    </Text>
-                  </View>
-                </Card>
-              </PopIn>
+            {badges.map((b) => (
+              <Card key={b.name} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <BadgeIcon iconUrl={b.iconUrl} color={RARITY_COLOR[b.rarity]} size={40} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="h3">{b.name}</Text>
+                  <Text variant="micro" style={{ color: RARITY_COLOR[b.rarity] }}>
+                    {b.rarity}
+                  </Text>
+                </View>
+              </Card>
             ))}
           </View>
         ) : (

@@ -27,7 +27,16 @@ const config: ExpoConfig = {
     "expo-secure-store",
     "expo-web-browser",
     "expo-font",
-    "expo-splash-screen",
+    [
+      "expo-splash-screen",
+      {
+        // Dark brand splash instead of the default white screen.
+        backgroundColor: "#030219",
+        image: "./assets/splash-icon.png",
+        imageWidth: 180,
+        resizeMode: "contain",
+      },
+    ],
   ],
   extra: {
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",

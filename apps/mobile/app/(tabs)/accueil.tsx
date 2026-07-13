@@ -4,13 +4,15 @@ import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
-import { AnimatedXPBar, CountUp, PressableScale, Pulse, Rise } from "@/components/anim";
+import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { PathCardView } from "@/components/cards";
 import { BellIcon, ChevronRight } from "@/components/icons";
+import { LogoMark } from "@/components/logo";
+import { BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
-import { CATEGORY_LABEL } from "@/lib/db";
+import { CATEGORY_LABEL, RARITY_COLOR } from "@/lib/db";
 import { useDashboard, useQuests, useUnreadCount } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
@@ -40,48 +42,51 @@ export default function Accueil(): React.JSX.Element {
   const activeQuests = (quests ?? []).filter((q) => !q.completed).length;
 
   return (
-    <Screen>
+    <Screen onRefresh={() => refetch()}>
       {/* Greeting */}
-      <Rise index={0}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 12,
-          }}
-        >
-          <View>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+          <LogoMark size={30} />
+          <View style={{ flex: 1 }}>
             <Text variant="micro" style={{ color: colors.accent }}>
               Bon retour
             </Text>
-            <Text variant="h1">{me.username ? `@${me.username}` : me.displayName}</Text>
+            <Text variant="h2" numberOfLines={1}>
+              {me.username ? `@${me.username}` : me.displayName}
+            </Text>
           </View>
-          <Pressable onPress={() => router.push("/notifications")} style={{ padding: 6 }}>
-            <BellIcon color={colors.textSecondary} size={22} />
-            {(unread ?? 0) > 0 ? (
-              <Pulse
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  backgroundColor: colors.danger,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 3,
-                }}
-              >
-                <Text style={{ fontFamily: `${fonts.mono}_700Bold`, fontSize: 9, color: "#fff" }}>
-                  {unread}
-                </Text>
-              </Pulse>
-            ) : null}
-          </Pressable>
         </View>
-      </Rise>
+        <Pressable onPress={() => router.push("/notifications")} hitSlop={8} style={{ padding: 6 }}>
+          <BellIcon color={colors.textSecondary} size={22} />
+          {(unread ?? 0) > 0 ? (
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                minWidth: 16,
+                height: 16,
+                borderRadius: 8,
+                backgroundColor: colors.danger,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: 3,
+              }}
+            >
+              <Text style={{ fontFamily: `${fonts.mono}_700Bold`, fontSize: 9, color: "#fff" }}>
+                {unread}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
+      </View>
 
       {/* Level + XP */}
       <Rise index={1}>
@@ -117,11 +122,18 @@ export default function Accueil(): React.JSX.Element {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Pulse amplitude={1.12}>
-              <Text style={{ fontSize: 26 }}>🔥</Text>
-            </Pulse>
+            <Text style={{ fontSize: 30, lineHeight: 40 }}>🔥</Text>
             <View>
-              <CountUp to={me.streakDays} fontSize={30} color={colors.warning} suffix="" />
+              <Text
+                style={{
+                  fontSize: 30,
+                  lineHeight: 36,
+                  color: colors.warning,
+                  fontFamily: `${fonts.sans}_800ExtraBold`,
+                }}
+              >
+                {me.streakDays}
+              </Text>
               <Text variant="micro">jours de série</Text>
             </View>
           </View>
@@ -243,16 +255,7 @@ export default function Accueil(): React.JSX.Element {
                 key={b.name}
                 style={{ flex: 1, alignItems: "center", gap: 6, paddingVertical: 14 }}
               >
-                <View
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: "rgba(10,255,212,0.08)",
-                    borderWidth: 1,
-                    borderColor: colors.borderDefault,
-                  }}
-                />
+                <BadgeIcon iconUrl={b.iconUrl} color={RARITY_COLOR[b.rarity]} size={38} />
                 <Text variant="micro" numberOfLines={1} style={{ color: colors.textSecondary }}>
                   {b.name}
                 </Text>

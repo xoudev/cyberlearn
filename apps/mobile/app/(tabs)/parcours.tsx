@@ -1,11 +1,19 @@
 import React, { useMemo, useState } from "react";
-import { TextInput, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
-import { Rise } from "@/components/anim";
 import { PathCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
-import { SectionLabel, Text } from "@/components/ui";
+import { Pill, SectionLabel, Text } from "@/components/ui";
+import {
+  CATEGORY_COLOR,
+  CATEGORY_LABEL,
+  CATEGORY_ORDER,
+  DIFFICULTY_LABEL,
+  DIFFICULTY_ORDER,
+  type Category,
+  type Difficulty,
+} from "@/lib/db";
 import { usePaths } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
@@ -13,22 +21,33 @@ export default function Parcours(): React.JSX.Element {
   const { session } = useSession();
   const { data, isLoading, error, refetch } = usePaths(session?.user.id);
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<Category | "ALL">("ALL");
+  const [difficulty, setDifficulty] = useState<Difficulty | "ALL">("ALL");
 
   const filtered = useMemo(() => {
     const s = query.trim().toLowerCase();
-    const paths = data ?? [];
-    if (!s) return paths;
-    return paths.filter(
-      (p) => p.title.toLowerCase().includes(s) || p.description.toLowerCase().includes(s),
-    );
-  }, [data, query]);
+    return (data ?? []).filter((p) => {
+      if (category !== "ALL" && p.category !== category) return false;
+      if (difficulty !== "ALL" && p.difficulty !== difficulty) return false;
+      if (s && !p.title.toLowerCase().includes(s) && !p.description.toLowerCase().includes(s))
+        return false;
+      return true;
+    });
+  }, [data, query, category, difficulty]);
+
+  const hasFilter = category !== "ALL" || difficulty !== "ALL" || query.length > 0;
+  const reset = (): void => {
+    setCategory("ALL");
+    setDifficulty("ALL");
+    setQuery("");
+  };
 
   return (
-    <Screen>
+    <Screen onRefresh={() => refetch()}>
       <SectionLabel
         eyebrow="Cyber Learn"
         title="Catalogue Parcours"
-        right={data ? <Text variant="micro">{data.length} parcours</Text> : undefined}
+        right={data ? <Text variant="micro">{filtered.length} parcours</Text> : undefined}
       />
       <TextInput
         value={query}
@@ -37,7 +56,48 @@ export default function Parcours(): React.JSX.Element {
         placeholderTextColor={colors.textDisabled}
         style={searchStyle}
       />
-      <View style={{ height: 16 }} />
+
+      {/* Category filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingVertical: 12 }}
+      >
+        <Pressable onPress={() => setCategory("ALL")}>
+          <Pill label="Tous" color={colors.accent} active={category === "ALL"} />
+        </Pressable>
+        {CATEGORY_ORDER.map((c) => (
+          <Pressable key={c} onPress={() => setCategory(c)}>
+            <Pill
+              label={CATEGORY_LABEL[c]}
+              color={CATEGORY_COLOR[c]}
+              active={category === c}
+              dot={CATEGORY_COLOR[c]}
+            />
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {/* Difficulty filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
+      >
+        <Pressable onPress={() => setDifficulty("ALL")}>
+          <Pill label="Tous niveaux" color={colors.textSecondary} active={difficulty === "ALL"} />
+        </Pressable>
+        {DIFFICULTY_ORDER.map((d) => (
+          <Pressable key={d} onPress={() => setDifficulty(d)}>
+            <Pill
+              label={DIFFICULTY_LABEL[d]}
+              color={colors.textSecondary}
+              active={difficulty === d}
+            />
+          </Pressable>
+        ))}
+      </ScrollView>
+
       {isLoading ? (
         <ListSkeleton rows={4} />
       ) : error ? (
@@ -46,19 +106,17 @@ export default function Parcours(): React.JSX.Element {
         <EmptyState
           title="Aucun parcours trouvé"
           body={
-            query
-              ? `Rien pour « ${query} ». Essaie un autre mot-clé.`
+            hasFilter
+              ? "Rien ne correspond à ces filtres. Élargis ta recherche."
               : "Le catalogue arrive bientôt."
           }
-          actionLabel={query ? "Réinitialiser" : undefined}
-          onAction={query ? () => setQuery("") : undefined}
+          actionLabel={hasFilter ? "Réinitialiser" : undefined}
+          onAction={hasFilter ? reset : undefined}
         />
       ) : (
         <View style={{ gap: 12 }}>
-          {filtered.map((p, i) => (
-            <Rise key={p.id} index={Math.min(i, 6)}>
-              <PathCardView path={p} />
-            </Rise>
+          {filtered.map((p) => (
+            <PathCardView key={p.id} path={p} />
           ))}
         </View>
       )}

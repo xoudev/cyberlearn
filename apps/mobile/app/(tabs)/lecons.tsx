@@ -49,7 +49,7 @@ export default function Lecons(): React.JSX.Element {
   }
 
   return (
-    <Screen>
+    <Screen onRefresh={() => refetch()}>
       <SectionLabel eyebrow="Cyber Learn" title="Catalogue Leçons" />
       <TextInput
         value={query}

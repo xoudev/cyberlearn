@@ -21,6 +21,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
+import { BrandedLoader } from "@/components/loader";
 import { ensureUserRow } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -63,6 +64,8 @@ function RootNavigator(): React.JSX.Element {
       active = false;
     };
   }, [session?.user.id, router]);
+
+  if (initializing) return <BrandedLoader label="Connexion" />;
 
   return (
     <Stack
