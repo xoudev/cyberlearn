@@ -4,6 +4,7 @@ import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { ChevronRight } from "@/components/icons";
+import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, SectionLabel, Text } from "@/components/ui";
@@ -49,9 +50,9 @@ export default function Notes(): React.JSX.Element {
 
   return (
     <Screen onRefresh={() => refetch()}>
-      <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text variant="micro">← Retour</Text>
-      </Pressable>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton />
+      </View>
 
       <SectionLabel
         eyebrow="Bloc-notes"

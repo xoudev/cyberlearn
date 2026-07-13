@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { PressableScale } from "@/components/anim";
 import { PathCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
@@ -67,18 +68,18 @@ export default function Parcours(): React.JSX.Element {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8, paddingVertical: 12 }}
       >
-        <Pressable onPress={() => setCategory("ALL")}>
+        <PressableScale onPress={() => setCategory("ALL")}>
           <Pill label="Tous" color={colors.accent} active={category === "ALL"} />
-        </Pressable>
+        </PressableScale>
         {CATEGORY_ORDER.map((c) => (
-          <Pressable key={c} onPress={() => setCategory(c)}>
+          <PressableScale key={c} onPress={() => setCategory(c)}>
             <Pill
               label={CATEGORY_LABEL[c]}
               color={CATEGORY_COLOR[c]}
               active={category === c}
               dot={CATEGORY_COLOR[c]}
             />
-          </Pressable>
+          </PressableScale>
         ))}
       </ScrollView>
 
@@ -88,17 +89,17 @@ export default function Parcours(): React.JSX.Element {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
       >
-        <Pressable onPress={() => setDifficulty("ALL")}>
+        <PressableScale onPress={() => setDifficulty("ALL")}>
           <Pill label="Tous niveaux" color={colors.textSecondary} active={difficulty === "ALL"} />
-        </Pressable>
+        </PressableScale>
         {DIFFICULTY_ORDER.map((d) => (
-          <Pressable key={d} onPress={() => setDifficulty(d)}>
+          <PressableScale key={d} onPress={() => setDifficulty(d)}>
             <Pill
               label={DIFFICULTY_LABEL[d]}
               color={colors.textSecondary}
               active={difficulty === d}
             />
-          </Pressable>
+          </PressableScale>
         ))}
       </ScrollView>
 

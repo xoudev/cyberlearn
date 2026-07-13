@@ -100,3 +100,11 @@ export function LockIcon(p: IconProps): React.JSX.Element {
     </Base>
   );
 }
+
+export function ChevronLeft(p: IconProps): React.JSX.Element {
+  return (
+    <Base {...p}>
+      <Polyline points="10,3 5,8 10,13" />
+    </Base>
+  );
+}

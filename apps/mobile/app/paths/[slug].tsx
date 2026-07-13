@@ -4,6 +4,7 @@ import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { CheckIcon, ChevronRight, LockIcon } from "@/components/icons";
+import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -33,9 +34,9 @@ export default function PathDetail(): React.JSX.Element {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text variant="micro">← Retour · Parcours</Text>
-      </Pressable>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton label="Parcours" />
+      </View>
 
       {isLoading ? (
         <ListSkeleton rows={4} />

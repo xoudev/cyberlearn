@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors, division as divisionColors, fonts } from "@cyberlearn/tokens";
+import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -52,9 +53,9 @@ export default function Classement(): React.JSX.Element {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text variant="micro">← Retour</Text>
-      </Pressable>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton />
+      </View>
 
       {isLoading ? (
         <ListSkeleton rows={6} />

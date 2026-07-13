@@ -49,6 +49,7 @@ export function PressableScale({
 }: PressableProps & { children: React.ReactNode; style?: ViewStyle }): React.JSX.Element {
   return (
     <Pressable
+      accessibilityRole="button"
       {...rest}
       disabled={disabled}
       style={({ pressed }) => [style, pressed && !disabled ? { opacity: 0.6 } : null]}

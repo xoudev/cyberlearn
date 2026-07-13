@@ -812,3 +812,12 @@ export function useCasier(userId: string | undefined) {
     },
   });
 }
+
+/** Mark one notification as read (tap on its row). */
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  await supabase
+    .from("notifications")
+    .update({ readAt: new Date().toISOString() })
+    .eq("id", notificationId)
+    .is("readAt", null);
+}

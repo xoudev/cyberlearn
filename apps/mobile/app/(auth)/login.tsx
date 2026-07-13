@@ -2,7 +2,14 @@ import { makeRedirectUri } from "expo-auth-session";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  TextInput,
+  View,
+} from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 import { Logo } from "@/components/logo";
@@ -73,61 +80,66 @@ export default function Login(): React.JSX.Element {
 
   return (
     <Screen scroll={false}>
-      <View style={{ flex: 1, justifyContent: "center", gap: 22 }}>
-        <View style={{ alignItems: "center", gap: 14, marginBottom: 8 }}>
-          <Logo size={72} layout="column" />
-          <Text variant="micro" style={{ color: colors.accent }}>
-            Apprends. Progresse. Domine.
-          </Text>
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Text variant="micro">Adresse e-mail</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="toi@exemple.fr"
-            placeholderTextColor={colors.textDisabled}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            style={inputStyle}
-          />
-          <Text variant="bodySm">Sans mot de passe. On t&apos;envoie un code valable 1 h.</Text>
-        </View>
-
-        {error ? (
-          <Text variant="bodySm" style={{ color: colors.danger }}>
-            {error}
-          </Text>
-        ) : null}
-
-        <Pressable onPress={sendCode} disabled={busy !== null} style={primaryBtn(busy === "otp")}>
-          {busy === "otp" ? (
-            <ActivityIndicator color={colors.bgBase} />
-          ) : (
-            <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-              Recevoir le code
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={{ flex: 1, justifyContent: "center", gap: 22 }}>
+          <View style={{ alignItems: "center", gap: 14, marginBottom: 8 }}>
+            <Logo size={72} layout="column" />
+            <Text variant="micro" style={{ color: colors.accent }}>
+              Apprends. Progresse. Domine.
             </Text>
-          )}
-        </Pressable>
+          </View>
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: colors.borderSubtle }} />
-          <Text variant="micro">ou</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: colors.borderSubtle }} />
-        </View>
+          <View style={{ gap: 8 }}>
+            <Text variant="micro">Adresse e-mail</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="toi@exemple.fr"
+              placeholderTextColor={colors.textDisabled}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              style={inputStyle}
+            />
+            <Text variant="bodySm">Sans mot de passe. On t&apos;envoie un code valable 1 h.</Text>
+          </View>
 
-        <Pressable onPress={signInGithub} disabled={busy !== null} style={ghostBtn}>
-          {busy === "github" ? (
-            <ActivityIndicator color={colors.textPrimary} />
-          ) : (
-            <Text variant="micro" style={{ color: colors.textPrimary, letterSpacing: 1 }}>
-              Continuer avec GitHub
+          {error ? (
+            <Text variant="bodySm" style={{ color: colors.danger }}>
+              {error}
             </Text>
-          )}
-        </Pressable>
-      </View>
+          ) : null}
+
+          <Pressable onPress={sendCode} disabled={busy !== null} style={primaryBtn(busy === "otp")}>
+            {busy === "otp" ? (
+              <ActivityIndicator color={colors.bgBase} />
+            ) : (
+              <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
+                Recevoir le code
+              </Text>
+            )}
+          </Pressable>
+
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.borderSubtle }} />
+            <Text variant="micro">ou</Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.borderSubtle }} />
+          </View>
+
+          <Pressable onPress={signInGithub} disabled={busy !== null} style={ghostBtn}>
+            {busy === "github" ? (
+              <ActivityIndicator color={colors.textPrimary} />
+            ) : (
+              <Text variant="micro" style={{ color: colors.textPrimary, letterSpacing: 1 }}>
+                Continuer avec GitHub
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

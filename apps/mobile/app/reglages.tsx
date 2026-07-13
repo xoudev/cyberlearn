@@ -4,7 +4,8 @@ import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { Pressable, Switch, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
-import { Rise } from "@/components/anim";
+import { PressableScale, Rise } from "@/components/anim";
+import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { useTour } from "@/components/tour";
 import { Card, Divider, SectionLabel, Text } from "@/components/ui";
@@ -60,9 +61,9 @@ export default function Reglages(): React.JSX.Element {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text variant="micro">← Retour</Text>
-      </Pressable>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton />
+      </View>
 
       <SectionLabel eyebrow="Compte · RGPD" title="Réglages" />
 
@@ -144,7 +145,7 @@ export default function Reglages(): React.JSX.Element {
           ].map((l, i) => (
             <View key={l.label}>
               {i > 0 ? <Divider /> : null}
-              <Pressable
+              <PressableScale
                 onPress={() => void WebBrowser.openBrowserAsync(l.url)}
                 style={{ flexDirection: "row", justifyContent: "space-between", padding: 14 }}
               >
@@ -152,11 +153,11 @@ export default function Reglages(): React.JSX.Element {
                 <Text variant="micro" style={{ color: colors.textMuted }}>
                   web ↗
                 </Text>
-              </Pressable>
+              </PressableScale>
             </View>
           ))}
           <Divider />
-          <Pressable
+          <PressableScale
             onPress={startTour}
             style={{ flexDirection: "row", justifyContent: "space-between", padding: 14 }}
           >
@@ -164,13 +165,13 @@ export default function Reglages(): React.JSX.Element {
             <Text variant="micro" style={{ color: colors.accent }}>
               ▶
             </Text>
-          </Pressable>
+          </PressableScale>
         </Card>
       </Rise>
 
       {/* Sign out */}
       <Rise index={3}>
-        <Pressable
+        <PressableScale
           onPress={() => void supabase.auth.signOut()}
           style={{
             height: 46,
@@ -183,7 +184,7 @@ export default function Reglages(): React.JSX.Element {
           <Text variant="micro" style={{ color: colors.danger }}>
             Se déconnecter
           </Text>
-        </Pressable>
+        </PressableScale>
         <Text
           variant="micro"
           style={{ textAlign: "center", marginTop: 14, color: colors.textDisabled }}

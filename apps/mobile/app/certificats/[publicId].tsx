@@ -5,6 +5,7 @@ import { Pressable, Share, View } from "react-native";
 import Svg, { Polygon } from "react-native-svg";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { PopIn, PressableScale, Rise } from "@/components/anim";
+import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { Card, Divider, Text } from "@/components/ui";
 
@@ -22,9 +23,9 @@ export default function CertificateDetail(): React.JSX.Element {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text variant="micro">← Retour</Text>
-      </Pressable>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton />
+      </View>
 
       <Rise index={0}>
         {/* Certificate frame */}

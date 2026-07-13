@@ -5,6 +5,7 @@ import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { CheckIcon, LockIcon } from "@/components/icons";
+import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -56,9 +57,9 @@ export default function Casier(): React.JSX.Element {
 
   return (
     <Screen onRefresh={() => refetch()}>
-      <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text variant="micro">← Retour</Text>
-      </Pressable>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton />
+      </View>
 
       <SectionLabel
         eyebrow="Cosmétiques"
@@ -154,7 +155,7 @@ export default function Casier(): React.JSX.Element {
                         ) : item.equipped ? (
                           <Pill label="Équipé" color={colors.accent} active />
                         ) : item.owned ? (
-                          <Pill label="Équiper" color={colors.textSecondary} />
+                          <Pill label="Équiper" color={colors.accent} />
                         ) : (
                           <Pill label="Verrouillé" color={colors.textDisabled} />
                         )}
