@@ -174,6 +174,28 @@ function TourOverlayView({
   const [hole, setHole] = useState<Hole | null>(null);
   const [ready, setReady] = useState(false);
   const step = STEPS[stepIndex];
+  const overlayRef = useRef<View | null>(null);
+
+  // Both the target and the overlay are measured in WINDOW coordinates, then
+  // the overlay origin is subtracted: this cancels any constant offset (status
+  // bar / edge-to-edge differences on Android) between the two spaces.
+  const measureRelative = useCallback(
+    async (anchor: string): Promise<Hole | null> => {
+      const target = await measure(anchor);
+      if (!target) return null;
+      const origin = await new Promise<{ x: number; y: number } | null>((resolve) => {
+        const node = overlayRef.current;
+        if (!node) {
+          resolve(null);
+          return;
+        }
+        node.measureInWindow((x, y) => resolve({ x, y }));
+      });
+      if (!origin) return target;
+      return { x: target.x - origin.x, y: target.y - origin.y, w: target.w, h: target.h };
+    },
+    [measure],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -184,25 +206,46 @@ function TourOverlayView({
       setReady(true);
       return;
     }
-    // The target screen may still be mounting after navigation: retry briefly.
     const anchor = step.anchor;
-    void (async () => {
-      for (let attempt = 0; attempt < 14; attempt++) {
-        const h = await measure(anchor);
-        if (cancelled) return;
-        if (h && h.w > 0 && h.h > 0 && h.y > -h.h && h.y < 4000) {
+    let last: Hole | null = null;
+    const tryMeasure = async (): Promise<boolean> => {
+      const h = await measureRelative(anchor);
+      if (cancelled) return true;
+      if (h && h.w > 0 && h.h > 0 && h.y > -h.h && h.y < 4000) {
+        // Only re-render when the target actually moved (layout settling).
+        if (
+          !last ||
+          Math.abs(h.x - last.x) > 1 ||
+          Math.abs(h.y - last.y) > 1 ||
+          Math.abs(h.h - last.h) > 1
+        ) {
+          last = h;
           setHole(h);
-          setReady(true);
-          return;
         }
-        await new Promise((r) => setTimeout(r, 120));
+        setReady(true);
+        return true;
       }
-      if (!cancelled) setReady(true); // fallback: centered card, no spotlight
+      return false;
+    };
+    // The target screen may still be mounting/loading after navigation: retry,
+    // then keep tracking so the spotlight follows late layout shifts
+    // (skeletons swapping to real content).
+    void (async () => {
+      let found = false;
+      for (let attempt = 0; attempt < 25 && !cancelled && !found; attempt++) {
+        found = await tryMeasure();
+        if (!found) await new Promise((r) => setTimeout(r, 120));
+      }
+      if (!found && !cancelled) setReady(true); // fallback: centered card
+      while (!cancelled) {
+        await new Promise((r) => setTimeout(r, 400));
+        if (!cancelled) await tryMeasure();
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [step, measure]);
+  }, [step, measureRelative]);
 
   if (!step) return null;
 
@@ -227,8 +270,14 @@ function TourOverlayView({
   const bubbleBottom = clampedHole && !bubbleBelow ? height - clampedHole.y + 14 : undefined;
 
   return (
-    <View style={{ position: "absolute", inset: 0, zIndex: 80 }} pointerEvents="auto">
-      {/* Dimmer with a cut-out over the target */}
+    <View
+      ref={overlayRef}
+      collapsable={false}
+      style={{ position: "absolute", inset: 0, zIndex: 80 }}
+      pointerEvents="auto"
+    >
+      {/* Dimmer with a cut-out over the target - light enough that the page
+          stays readable behind the spotlight. */}
       {ready && clampedHole ? (
         <>
           <Svg width={width} height={height} style={{ position: "absolute" }}>
@@ -250,14 +299,14 @@ function TourOverlayView({
               y={0}
               width={width}
               height={height}
-              fill="rgba(2,1,14,0.88)"
+              fill="rgba(2,1,14,0.55)"
               mask="url(#tour-hole)"
             />
           </Svg>
           <PulseBorder hole={clampedHole} />
         </>
       ) : (
-        <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(2,1,14,0.92)" }} />
+        <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(2,1,14,0.85)" }} />
       )}
 
       {/* Skip */}
