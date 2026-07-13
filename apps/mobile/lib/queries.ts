@@ -322,7 +322,10 @@ export async function ensureUserRow(
   // RLS `users_insert_self` allows a client to insert only its own row.
   await supabase
     .from("users")
-    .upsert({ id: userId, email, displayName }, { onConflict: "id", ignoreDuplicates: true });
+    .upsert(
+      { id: userId, email, displayName, updatedAt: new Date().toISOString() },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
 }
 
 // ── Path detail (missions timeline) ───────────────────────────────────────────
@@ -732,7 +735,10 @@ export async function saveNoteForLesson(
   const wordCount = content.trim() === "" ? 0 : content.trim().split(/\s+/).length;
   await supabase
     .from("notes")
-    .upsert({ userId, lessonId, content, wordCount }, { onConflict: "userId,lessonId" });
+    .upsert(
+      { userId, lessonId, content, wordCount, updatedAt: new Date().toISOString() },
+      { onConflict: "userId,lessonId" },
+    );
 }
 
 export async function deleteNote(noteId: string): Promise<void> {
@@ -833,7 +839,7 @@ export async function createNoteFolder(
 ): Promise<void> {
   const { error } = await supabase
     .from("note_folders")
-    .insert({ userId, name, color, icon, position });
+    .insert({ userId, name, color, icon, position, updatedAt: new Date().toISOString() });
   if (error) throw new Error(error.message);
 }
 
@@ -841,7 +847,10 @@ export async function updateNoteFolder(
   folderId: string,
   patch: { name?: string; color?: string; icon?: string },
 ): Promise<void> {
-  const { error } = await supabase.from("note_folders").update(patch).eq("id", folderId);
+  const { error } = await supabase
+    .from("note_folders")
+    .update({ ...patch, updatedAt: new Date().toISOString() })
+    .eq("id", folderId);
   if (error) throw new Error(error.message);
 }
 
@@ -852,6 +861,9 @@ export async function deleteNoteFolder(folderId: string): Promise<void> {
 }
 
 export async function moveNoteToFolder(noteId: string, folderId: string | null): Promise<void> {
-  const { error } = await supabase.from("notes").update({ folderId }).eq("id", noteId);
+  const { error } = await supabase
+    .from("notes")
+    .update({ folderId, updatedAt: new Date().toISOString() })
+    .eq("id", noteId);
   if (error) throw new Error(error.message);
 }
