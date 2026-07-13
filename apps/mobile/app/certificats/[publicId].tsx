@@ -118,6 +118,7 @@ export default function CertificateDetail(): React.JSX.Element {
               justifyContent: "center",
               borderWidth: 1,
               borderColor: colors.borderDefault,
+              borderRadius: 10,
             }}
           >
             <Text variant="micro">Partager</Text>
@@ -130,6 +131,7 @@ export default function CertificateDetail(): React.JSX.Element {
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: colors.accent,
+              borderRadius: 10,
             }}
           >
             <Text variant="micro" style={{ color: colors.bgBase }}>

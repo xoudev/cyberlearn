@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, View, type ViewStyle } from "react-native";
-import { colors } from "@cyberlearn/tokens";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, radius } from "@cyberlearn/tokens";
 import { ChevronLeft } from "@/components/icons";
 import { Text } from "@/components/ui";
 
@@ -25,6 +26,7 @@ export function BackButton({ label = "Retour" }: { label?: string }): React.JSX.
         gap: 6,
         minHeight: 36,
         paddingHorizontal: 12,
+        borderRadius: radius.pill,
         borderWidth: 1,
         borderColor: pressed ? colors.accent : colors.borderDefault,
         backgroundColor: pressed ? "rgba(10,255,212,0.08)" : "rgba(5,4,26,0.5)",
@@ -67,6 +69,7 @@ export function ActionChip({
         gap: 6,
         minHeight: 34,
         paddingHorizontal: 12,
+        borderRadius: radius.pill,
         borderWidth: 1,
         borderColor: pressed ? color : `${color}66`,
         backgroundColor: pressed ? `${color}14` : "transparent",
@@ -117,6 +120,58 @@ export function IconButton({
     >
       {children}
       {badge ? <View style={{ position: "absolute", top: -2, right: -2 }}>{badge}</View> : null}
+    </Pressable>
+  );
+}
+
+/** Hero CTA: brand gradient fill + glow. Use for the primary action of a screen. */
+export function GradientButton({
+  label,
+  onPress,
+  disabled = false,
+  loading = false,
+  style,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: ViewStyle;
+}): React.JSX.Element {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        {
+          borderRadius: radius.md,
+          // Shadow lives here (no overflow) so iOS renders the glow; the inner
+          // wrapper clips the gradient to the rounded shape.
+          opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+          shadowColor: colors.accent,
+          shadowOpacity: 0.45,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+          backgroundColor: colors.bgElevated,
+        },
+        style,
+      ]}
+    >
+      <View style={{ borderRadius: radius.md, overflow: "hidden" }}>
+        <LinearGradient
+          colors={[colors.brandBlue, "#0C7FE8", colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ height: 48, alignItems: "center", justifyContent: "center" }}
+        >
+          <Text variant="micro" style={{ color: "#02010E", letterSpacing: 1.5, fontSize: 11 }}>
+            {loading ? "…" : label}
+          </Text>
+        </LinearGradient>
+      </View>
     </Pressable>
   );
 }

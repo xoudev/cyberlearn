@@ -12,7 +12,7 @@ import {
   Rise,
   SparkBurst,
 } from "@/components/anim";
-import { ActionChip, BackButton } from "@/components/buttons";
+import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { CheckIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
@@ -243,7 +243,8 @@ function ReadView({
             onPress={onPrev}
             style={{
               flex: 1,
-              height: 46,
+              height: 48,
+              borderRadius: 10,
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
@@ -253,20 +254,11 @@ function ReadView({
             <Text variant="micro">← Précédent</Text>
           </PressableScale>
         ) : null}
-        <PressableScale
+        <GradientButton
+          label={isLast ? (hasQuiz ? "Passer au quiz →" : "Terminer la leçon ✓") : "Continuer →"}
           onPress={onNext}
-          style={{
-            flex: 2,
-            height: 46,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.accent,
-          }}
-        >
-          <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-            {isLast ? (hasQuiz ? "Passer au quiz →" : "Terminer la leçon ✓") : "Continuer →"}
-          </Text>
-        </PressableScale>
+          style={{ flex: 2 }}
+        />
       </View>
     </View>
   );
@@ -321,6 +313,7 @@ function QuizView({
                       alignItems: "center",
                       gap: 12,
                       borderWidth: 1.5,
+                      borderRadius: 10,
                       borderColor: border,
                       backgroundColor:
                         isPicked && !revealed ? "rgba(10,255,212,0.06)" : colors.bgElevated,
@@ -357,6 +350,7 @@ function QuizView({
             <View
               style={{
                 borderLeftWidth: 3,
+                borderRadius: 8,
                 borderLeftColor: picked === quiz.correct ? colors.success : colors.danger,
                 backgroundColor:
                   picked === quiz.correct ? "rgba(10,255,212,0.07)" : "rgba(255,77,109,0.07)",
@@ -376,27 +370,17 @@ function QuizView({
         ) : null}
       </ScrollView>
       <View style={{ paddingVertical: 10 }}>
-        <PressableScale
-          onPress={revealed ? onNext : onValidate}
-          disabled={picked === null}
-          style={{
-            height: 46,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: picked === null ? colors.bgOverlay : colors.accent,
-          }}
-        >
-          <Text
-            variant="micro"
-            style={{ color: picked === null ? colors.textMuted : colors.bgBase, letterSpacing: 1 }}
-          >
-            {revealed
+        <GradientButton
+          label={
+            revealed
               ? isLast
                 ? "Voir le résultat →"
                 : "Question suivante →"
-              : "Valider ma réponse"}
-          </Text>
-        </PressableScale>
+              : "Valider ma réponse"
+          }
+          onPress={revealed ? onNext : onValidate}
+          disabled={picked === null}
+        />
       </View>
     </View>
   );
@@ -520,7 +504,8 @@ function ResultView({
             onPress={onReplay}
             style={{
               flex: 1,
-              height: 46,
+              height: 48,
+              borderRadius: 10,
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
@@ -530,20 +515,7 @@ function ResultView({
             <Text variant="micro">Rejouer</Text>
           </PressableScale>
         ) : null}
-        <PressableScale
-          onPress={onContinue}
-          style={{
-            flex: 2,
-            height: 46,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.accent,
-          }}
-        >
-          <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-            Continuer →
-          </Text>
-        </PressableScale>
+        <GradientButton label="Continuer →" onPress={onContinue} style={{ flex: 2 }} />
       </View>
     </ScrollView>
   );

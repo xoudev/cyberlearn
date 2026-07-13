@@ -32,7 +32,7 @@ export default function Accueil(): React.JSX.Element {
 
   if (isLoading || !data) {
     return (
-      <Screen>
+      <Screen padForTabBar>
         {error ? (
           <ErrorState onRetry={() => void refetch()} code="HOME_LOAD" />
         ) : (
@@ -47,7 +47,7 @@ export default function Accueil(): React.JSX.Element {
   const activeQuests = (quests ?? []).filter((q) => !q.completed).length;
 
   return (
-    <Screen onRefresh={() => refetch()}>
+    <Screen onRefresh={() => refetch()} padForTabBar>
       {/* Greeting */}
       <View
         style={{

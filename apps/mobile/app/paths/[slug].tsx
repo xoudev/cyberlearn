@@ -4,7 +4,7 @@ import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { CheckIcon, ChevronRight, LockIcon } from "@/components/icons";
-import { BackButton } from "@/components/buttons";
+import { BackButton, GradientButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -102,25 +102,17 @@ function PathBody({
           </View>
           <AnimatedXPBar current={data.completedCount} needed={Math.max(total, 1)} />
           {resume ? (
-            <PressableScale
+            <GradientButton
+              label={`${data.completedCount > 0 ? "REPRENDRE" : "COMMENCER"} - MISSION ${String(currentIndex + 1)}`}
               onPress={() => onOpenLesson(resume.slug)}
-              style={{
-                marginTop: 6,
-                height: 46,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: colors.accent,
-              }}
-            >
-              <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-                {data.completedCount > 0 ? "Reprendre" : "Commencer"} — Mission {currentIndex + 1}
-              </Text>
-            </PressableScale>
+              style={{ marginTop: 6 }}
+            />
           ) : total > 0 ? (
             <View
               style={{
                 marginTop: 6,
-                height: 46,
+                height: 48,
+                borderRadius: 10,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,

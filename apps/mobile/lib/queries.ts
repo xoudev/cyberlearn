@@ -821,3 +821,37 @@ export async function markNotificationRead(notificationId: string): Promise<void
     .eq("id", notificationId)
     .is("readAt", null);
 }
+
+// ── Note folders (Drive-style management, RLS self CRUD) ─────────────────────
+
+export async function createNoteFolder(
+  userId: string,
+  name: string,
+  color: string,
+  icon: string,
+  position: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from("note_folders")
+    .insert({ userId, name, color, icon, position });
+  if (error) throw new Error(error.message);
+}
+
+export async function updateNoteFolder(
+  folderId: string,
+  patch: { name?: string; color?: string; icon?: string },
+): Promise<void> {
+  const { error } = await supabase.from("note_folders").update(patch).eq("id", folderId);
+  if (error) throw new Error(error.message);
+}
+
+/** Delete a folder; its notes fall back to "unfiled" (FK ON DELETE SET NULL). */
+export async function deleteNoteFolder(folderId: string): Promise<void> {
+  const { error } = await supabase.from("note_folders").delete().eq("id", folderId);
+  if (error) throw new Error(error.message);
+}
+
+export async function moveNoteToFolder(noteId: string, folderId: string | null): Promise<void> {
+  const { error } = await supabase.from("notes").update({ folderId }).eq("id", noteId);
+  if (error) throw new Error(error.message);
+}

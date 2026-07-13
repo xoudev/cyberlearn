@@ -8,7 +8,7 @@ import {
   type ViewProps,
   type ViewStyle,
 } from "react-native";
-import { colors, fonts, space } from "@cyberlearn/tokens";
+import { colors, fonts, radius, space } from "@cyberlearn/tokens";
 
 // ── Typography ────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ export function Text({
 
 // ── Surfaces ──────────────────────────────────────────────────────────────────
 
-/** Square-cornered elevated card, matching the mockup. */
+/** Rounded elevated card; `accent` draws an inner colored strip on the left. */
 export function Card({
   style,
   accent,
@@ -76,13 +76,33 @@ export function Card({
           backgroundColor: colors.bgElevated,
           borderWidth: 1,
           borderColor: colors.borderDefault,
-          borderLeftWidth: accent ? 3 : 1,
-          borderLeftColor: accent ?? colors.borderDefault,
+          borderRadius: radius.lg,
           padding: space.lg,
+          shadowColor: accent ?? "#000",
+          shadowOpacity: accent ? 0.25 : 0.35,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 5 },
+          elevation: 3,
         },
         style,
       ]}
     >
+      {accent ? (
+        // Inner strip instead of a thicker left border: a non-uniform border
+        // would bend and taper around the rounded corners.
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 12,
+            bottom: 12,
+            width: 3,
+            borderRadius: 2,
+            backgroundColor: accent,
+          }}
+        />
+      ) : null}
       {children}
     </View>
   );
@@ -106,7 +126,7 @@ export function SectionLabel({
     <View style={{ marginBottom: space.md }}>
       {eyebrow ? (
         <Text variant="micro" style={{ color: colors.accent, marginBottom: 4 }}>
-          {eyebrow}
+          {`// ${eyebrow}`}
         </Text>
       ) : null}
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -137,8 +157,9 @@ export function Pill({
         gap: 6,
         borderWidth: 1,
         borderColor: active ? color : colors.borderDefault,
-        backgroundColor: active ? color : "transparent",
-        paddingHorizontal: 10,
+        backgroundColor: active ? color : "rgba(5,4,26,0.5)",
+        borderRadius: radius.pill,
+        paddingHorizontal: 12,
         paddingVertical: 6,
       }}
     >
@@ -175,6 +196,8 @@ export function StatCell({
         flex: 1,
         borderWidth: 1,
         borderColor: colors.borderSubtle,
+        borderRadius: radius.md,
+        backgroundColor: "rgba(10,8,38,0.5)",
         paddingVertical: 12,
         alignItems: "center",
       }}
@@ -208,6 +231,7 @@ export function XPBar({
         backgroundColor: "rgba(5,4,26,0.9)",
         borderWidth: 1,
         borderColor: colors.borderDefault,
+        borderRadius: radius.pill,
         overflow: "hidden",
       }}
     >
