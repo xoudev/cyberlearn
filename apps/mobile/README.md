@@ -4,18 +4,35 @@ Native mobile app (Expo / React Native + Expo Router). Dedicated mobile UI built
 from the mobile mockup; it reuses only the backend (Supabase + shared TS
 packages), never the web UI.
 
-## Phase 1 scope
+## Scope
 
-The mobile shell (bottom tab bar + per-screen headers + safe-area) and the 4
-core tab screens, read-mostly:
+The full app flow, gamified:
 
-- **Accueil** - greeting, level + XP, streak, resume card, classement mini, suggested paths
-- **Parcours** - path catalog + search
-- **Leçons** - lesson catalog + domain/difficulty filters + search
-- **Profil** - hexagon avatar, tier, XP, stat cells, sub-tabs (Badges/Certificats/Stats/Collection), hub to the other sections
+- **Tabs**: Accueil (level/XP, streak, weekly quests, resume, classement mini,
+  suggested paths), Parcours, Leçons (filters + search), Profil (avatar, tier,
+  stats, Badges/Certificats/Stats/Collection sub-tabs, Explorer hub).
+- **Path detail**: hero, progress, resume CTA, vertical missions timeline
+  (done / current / locked).
+- **Lesson reader**: contentMdx parsed to native blocks (headings, paragraphs,
+  lists, code, callouts; web-only interactives become placeholders), section
+  pager, native quiz (extracted from the MDX `<Quiz>` components), result
+  screen with real +XP / badges / level-up through the guarded server flow.
+- **Classement**: league pod ladder (promotion/relegation zones, season
+  countdown) + global top, served by `/api/mobile/classement`.
+- **Notifications** inbox (mark all read), **Réglages** (account, notification
+  prefs, RGPD links, sign out), **Certificat** detail (verification code +
+  share + verify link).
+- **States**: skeletons, empty states, network-error retry everywhere.
+- **Animations** (reanimated): staggered rise-ins, animated XP bars, count-ups,
+  streak flame pulse, press scaling, badge pop-ins, XP spark burst, level-up
+  overlay.
 
-Auth: Supabase email OTP (6-digit code) + GitHub OAuth. Detail screens
-(lesson/quiz, path detail) and all guarded writes (progress, XP) come in Phase 2.
+Auth: Supabase email OTP (code in our Resend email) + GitHub OAuth.
+
+Guarded writes go through `apps/web/app/api/mobile/*` (Bearer JWT):
+- `POST /progress` - lesson completion via the same `completeLessonForUser`
+  flow as the web (XP ledger, streak, badges, quests, certificates).
+- `GET /classement` - leaderboard + pod ladder (RLS keeps pods server-side).
 
 ## Run it
 

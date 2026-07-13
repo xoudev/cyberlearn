@@ -1,0 +1,329 @@
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
+import { Pressable, type PressableProps, View, type ViewStyle } from "react-native";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInUp,
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { colors, fonts } from "@cyberlearn/tokens";
+import { Text } from "@/components/ui";
+
+// ── Entrances ─────────────────────────────────────────────────────────────────
+
+/** Staggered rise-in for screen sections (mockup clRise). */
+export function Rise({
+  index = 0,
+  children,
+  style,
+}: {
+  index?: number;
+  children: React.ReactNode;
+  style?: ViewStyle;
+}): React.JSX.Element {
+  return (
+    <Animated.View entering={FadeInUp.duration(380).delay(index * 70)} style={style}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** Spring pop-in (badge reveals, rewards). */
+export function PopIn({
+  delay = 0,
+  children,
+  style,
+}: {
+  delay?: number;
+  children: React.ReactNode;
+  style?: ViewStyle;
+}): React.JSX.Element {
+  const scale = useSharedValue(0);
+  useEffect(() => {
+    scale.value = withDelay(delay, withSpring(1, { damping: 11, stiffness: 160 }));
+  }, [scale, delay]);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Animated.View entering={FadeIn.duration(150).delay(delay)} style={[animStyle, style]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** Press feedback: scales down while pressed (whole-app tactile feel). */
+export function PressableScale({
+  children,
+  style,
+  ...rest
+}: PressableProps & { children: React.ReactNode; style?: ViewStyle }): React.JSX.Element {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return (
+    <Pressable
+      {...rest}
+      onPressIn={(e) => {
+        scale.value = withTiming(0.97, { duration: 80 });
+        rest.onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        scale.value = withSpring(1, { damping: 14 });
+        rest.onPressOut?.(e);
+      }}
+    >
+      <Animated.View style={[animStyle, style]}>{children}</Animated.View>
+    </Pressable>
+  );
+}
+
+// ── Loops ─────────────────────────────────────────────────────────────────────
+
+/** Soft infinite pulse (streak flame, live dots). */
+export function Pulse({
+  children,
+  style,
+  amplitude = 1.06,
+}: {
+  children: React.ReactNode;
+  style?: ViewStyle;
+  amplitude?: number;
+}): React.JSX.Element {
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(amplitude, { duration: 700, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+    );
+  }, [scale, amplitude]);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
+}
+
+// ── Numbers ───────────────────────────────────────────────────────────────────
+
+/** Animated count-up number (XP gains, ranks). */
+export function CountUp({
+  to,
+  duration = 900,
+  prefix = "",
+  suffix = "",
+  fontSize = 30,
+  color = colors.accent,
+  delay = 0,
+}: {
+  to: number;
+  duration?: number;
+  prefix?: string;
+  suffix?: string;
+  fontSize?: number;
+  color?: string;
+  delay?: number;
+}): React.JSX.Element {
+  const progress = useSharedValue(0);
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    progress.value = 0;
+    progress.value = withDelay(
+      delay,
+      withTiming(to, { duration, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [progress, to, duration, delay]);
+  useAnimatedReaction(
+    () => Math.round(progress.value),
+    (v, prev) => {
+      if (v !== prev) runOnJS(setDisplay)(v);
+    },
+  );
+  return (
+    <Text style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize, color }}>
+      {prefix}
+      {display}
+      {suffix}
+    </Text>
+  );
+}
+
+// ── Bars ──────────────────────────────────────────────────────────────────────
+
+/** XP bar that fills with a timed sweep + accent glow (mockup clBar). */
+export function AnimatedXPBar({
+  current,
+  needed,
+  height = 6,
+  delay = 150,
+}: {
+  current: number;
+  needed: number;
+  height?: number;
+  delay?: number;
+}): React.JSX.Element {
+  const pct = needed > 0 ? Math.max(0, Math.min(1, current / needed)) : 0;
+  const fill = useSharedValue(0);
+  useEffect(() => {
+    fill.value = withDelay(
+      delay,
+      withTiming(pct, { duration: 900, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [fill, pct, delay]);
+  const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
+  return (
+    <View
+      style={{
+        height,
+        backgroundColor: "rgba(5,4,26,0.9)",
+        borderWidth: 1,
+        borderColor: colors.borderDefault,
+        overflow: "hidden",
+      }}
+    >
+      <Animated.View style={[{ height: "100%" }, fillStyle]}>
+        <LinearGradient
+          colors={[colors.brandBlue, colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ flex: 1 }}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
+// ── Reward effects ────────────────────────────────────────────────────────────
+
+/** A single spark rising from the reward area. */
+function Spark({ index }: { index: number }): React.JSX.Element {
+  const progress = useSharedValue(0);
+  // Deterministic pseudo-random per index so re-renders stay stable.
+  const seed = (index * 9301 + 49297) % 233280;
+  const rand = seed / 233280;
+  const startX = 20 + rand * 200;
+  const drift = (rand - 0.5) * 60;
+  useEffect(() => {
+    progress.value = withDelay(index * 120, withTiming(1, { duration: 1400 }));
+  }, [progress, index]);
+  const style = useAnimatedStyle(() => ({
+    opacity: progress.value < 0.15 ? progress.value * 6 : 1 - progress.value,
+    transform: [
+      { translateX: startX + drift * progress.value },
+      { translateY: -110 * progress.value },
+      { scale: 0.6 + 0.5 * (1 - progress.value) },
+    ],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: "absolute",
+          bottom: 0,
+          width: 6,
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: index % 3 === 0 ? colors.warning : colors.accent,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+/** Burst of XP sparks behind a reward number. */
+export function SparkBurst({ count = 10 }: { count?: number }): React.JSX.Element {
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", inset: 0 }}>
+      {Array.from({ length: count }, (_, i) => (
+        <Spark key={i} index={i} />
+      ))}
+    </View>
+  );
+}
+
+/** Full-screen level-up celebration overlay. */
+export function LevelUpOverlay({
+  level,
+  onClose,
+}: {
+  level: number;
+  onClose: () => void;
+}): React.JSX.Element {
+  const glow = useSharedValue(0.4);
+  useEffect(() => {
+    glow.value = withRepeat(
+      withSequence(withTiming(1, { duration: 800 }), withTiming(0.4, { duration: 800 })),
+      -1,
+    );
+  }, [glow]);
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
+  return (
+    <Animated.View
+      entering={FadeIn.duration(250)}
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 60,
+        backgroundColor: "rgba(2,1,14,0.94)",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 18,
+      }}
+    >
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            width: 260,
+            height: 260,
+            borderRadius: 130,
+            backgroundColor: colors.accent,
+            opacity: 0.4,
+            transform: [{ scale: 1 }],
+            shadowColor: colors.accent,
+            shadowRadius: 60,
+            shadowOpacity: 0.9,
+          },
+          glowStyle,
+          { opacity: 0.12 },
+        ]}
+      />
+      <Text variant="micro" style={{ color: colors.accent, letterSpacing: 3 }}>
+        Niveau supérieur
+      </Text>
+      <PopIn delay={150}>
+        <Text
+          style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize: 88, color: colors.accent }}
+        >
+          {level}
+        </Text>
+      </PopIn>
+      <Text variant="body" style={{ textAlign: "center", maxWidth: 240 }}>
+        Continue comme ça, la machine est lancée.
+      </Text>
+      <PressableScale
+        onPress={onClose}
+        style={{
+          marginTop: 10,
+          paddingHorizontal: 28,
+          height: 46,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.accent,
+        }}
+      >
+        <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
+          Continuer
+        </Text>
+      </PressableScale>
+    </Animated.View>
+  );
+}

@@ -27,4 +27,20 @@ config.resolver.nodeModulesPaths = [
 //    (e.g. expo-router -> @expo/metro-runtime). Symlink following is on by
 //    default in this Metro version.
 
+// 4. Shared workspace packages use NodeNext ESM specifiers ("./day.js" for a
+//    day.ts source file). Metro resolves literally, so strip the .js extension
+//    on relative imports and let sourceExts (.ts/.tsx) take over.
+const defaultResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  const resolve = defaultResolveRequest ?? context.resolveRequest;
+  if (moduleName.endsWith(".js") && (moduleName.startsWith("./") || moduleName.startsWith("../"))) {
+    try {
+      return resolve(context, moduleName.slice(0, -3), platform);
+    } catch {
+      // Fall through: a genuine .js file resolves below.
+    }
+  }
+  return resolve(context, moduleName, platform);
+};
+
 module.exports = config;

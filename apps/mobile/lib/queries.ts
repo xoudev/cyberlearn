@@ -324,3 +324,318 @@ export async function ensureUserRow(
     .from("users")
     .upsert({ id: userId, email, displayName }, { onConflict: "id", ignoreDuplicates: true });
 }
+
+// ── Path detail (missions timeline) ───────────────────────────────────────────
+
+export interface PathMission {
+  lessonId: string;
+  slug: string;
+  title: string;
+  position: number;
+  estimatedMinutes: number;
+  xpReward: number;
+  status: ProgressStatus | null;
+}
+
+export interface PathDetail {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  category: Category;
+  difficulty: Difficulty;
+  estimatedHours: number;
+  missions: PathMission[];
+  completedCount: number;
+}
+
+export function usePathDetail(userId: string | undefined, slug: string | undefined) {
+  return useQuery({
+    queryKey: ["path", slug, userId],
+    enabled: Boolean(slug),
+    queryFn: async (): Promise<PathDetail> => {
+      const pathRes = await supabase
+        .from("paths")
+        .select(
+          "id,slug,title,description,category,difficulty,estimatedHours, path_lessons(position, lessons(id,slug,title,estimatedMinutes,xpReward))",
+        )
+        .eq("slug", slug as string) // gated by `enabled`
+        .eq("status", "PUBLISHED")
+        .single();
+      const raw = pathRes.data as unknown as {
+        id: string;
+        slug: string;
+        title: string;
+        description: string;
+        category: Category;
+        difficulty: Difficulty;
+        estimatedHours: number;
+        path_lessons: {
+          position: number;
+          lessons: Embed<{
+            id: string;
+            slug: string;
+            title: string;
+            estimatedMinutes: number;
+            xpReward: number;
+          }>;
+        }[];
+      } | null;
+      if (!raw) throw new Error("Parcours introuvable");
+
+      let statusByLesson = new Map<string, ProgressStatus>();
+      if (userId) {
+        const { data } = await supabase
+          .from("user_lesson_progress")
+          .select("lessonId,status")
+          .eq("userId", userId);
+        statusByLesson = new Map(
+          ((data ?? []) as { lessonId: string; status: ProgressStatus }[]).map((r) => [
+            r.lessonId,
+            r.status,
+          ]),
+        );
+      }
+
+      const missions: PathMission[] = raw.path_lessons
+        .map((pl) => {
+          const lesson = one(pl.lessons);
+          if (!lesson) return null;
+          return {
+            lessonId: lesson.id,
+            slug: lesson.slug,
+            title: lesson.title,
+            position: pl.position,
+            estimatedMinutes: lesson.estimatedMinutes,
+            xpReward: lesson.xpReward,
+            status: statusByLesson.get(lesson.id) ?? null,
+          };
+        })
+        .filter((m): m is PathMission => m !== null)
+        .sort((a, b) => a.position - b.position);
+
+      return {
+        id: raw.id,
+        slug: raw.slug,
+        title: raw.title,
+        description: raw.description,
+        category: raw.category,
+        difficulty: raw.difficulty,
+        estimatedHours: raw.estimatedHours,
+        missions,
+        completedCount: missions.filter((m) => m.status === "COMPLETED").length,
+      };
+    },
+  });
+}
+
+// ── Lesson detail (native reader) ─────────────────────────────────────────────
+
+export interface LessonDetail {
+  id: string;
+  slug: string;
+  title: string;
+  category: Category;
+  difficulty: Difficulty;
+  estimatedMinutes: number;
+  xpReward: number;
+  contentMdx: string;
+  status: ProgressStatus | null;
+}
+
+export function useLessonDetail(userId: string | undefined, slug: string | undefined) {
+  return useQuery({
+    queryKey: ["lesson", slug, userId],
+    enabled: Boolean(slug),
+    queryFn: async (): Promise<LessonDetail> => {
+      const res = await supabase
+        .from("lessons")
+        .select("id,slug,title,category,difficulty,estimatedMinutes,xpReward,contentMdx")
+        .eq("slug", slug as string) // gated by `enabled`
+        .eq("status", "PUBLISHED")
+        .single();
+      const lesson = res.data as Omit<LessonDetail, "status"> | null;
+      if (!lesson) throw new Error("Leçon introuvable");
+
+      let status: ProgressStatus | null = null;
+      if (userId) {
+        const { data } = await supabase
+          .from("user_lesson_progress")
+          .select("status")
+          .eq("userId", userId)
+          .eq("lessonId", lesson.id)
+          .maybeSingle();
+        status = (data as { status: ProgressStatus } | null)?.status ?? null;
+      }
+      return { ...lesson, status };
+    },
+  });
+}
+
+/** Mark a lesson as opened (IN_PROGRESS) - resume tracking, no XP involved. */
+export async function markLessonOpened(userId: string, lessonId: string): Promise<void> {
+  // RLS self insert/update permits this; COMPLETED rows are left untouched.
+  const { data } = await supabase
+    .from("user_lesson_progress")
+    .select("id,status")
+    .eq("userId", userId)
+    .eq("lessonId", lessonId)
+    .maybeSingle();
+  const existing = data as { id: string; status: ProgressStatus } | null;
+  const now = new Date().toISOString();
+  if (!existing) {
+    await supabase
+      .from("user_lesson_progress")
+      .insert({ userId, lessonId, status: "IN_PROGRESS", lastAccessedAt: now });
+  } else if (existing.status !== "COMPLETED") {
+    await supabase
+      .from("user_lesson_progress")
+      .update({ lastAccessedAt: now })
+      .eq("id", existing.id);
+  }
+}
+
+// ── Weekly quests (dashboard) ─────────────────────────────────────────────────
+
+export interface QuestItem {
+  id: string;
+  title: string;
+  target: number;
+  xpReward: number;
+  progress: number;
+  completed: boolean;
+}
+
+export function useQuests(userId: string | undefined, weekKey: string) {
+  return useQuery({
+    queryKey: ["quests", userId, weekKey],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<QuestItem[]> => {
+      const [questsRes, progressRes] = await Promise.all([
+        supabase
+          .from("quests")
+          .select("id,title,target,xpReward,orderIndex")
+          .eq("isActive", true)
+          .order("orderIndex"),
+        supabase
+          .from("user_quest_progress")
+          .select("questId,progress,completed")
+          .eq("userId", userId as string) // gated by `enabled`
+          .eq("weekKey", weekKey),
+      ]);
+      const progress = new Map(
+        (
+          (progressRes.data ?? []) as { questId: string; progress: number; completed: boolean }[]
+        ).map((p) => [p.questId, p]),
+      );
+      return (
+        (questsRes.data ?? []) as {
+          id: string;
+          title: string;
+          target: number;
+          xpReward: number;
+        }[]
+      ).map((q) => ({
+        id: q.id,
+        title: q.title,
+        target: q.target,
+        xpReward: q.xpReward,
+        progress: progress.get(q.id)?.progress ?? 0,
+        completed: progress.get(q.id)?.completed ?? false,
+      }));
+    },
+  });
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export function useNotifications(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["notifications", userId],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<NotificationItem[]> => {
+      const { data } = await supabase
+        .from("notifications")
+        .select("id,type,title,body,readAt,createdAt")
+        .eq("userId", userId as string) // gated by `enabled`
+        .order("createdAt", { ascending: false })
+        .limit(50);
+      return (data ?? []) as NotificationItem[];
+    },
+  });
+}
+
+export function useUnreadCount(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["notifications-unread", userId],
+    enabled: Boolean(userId),
+    refetchInterval: 60_000,
+    queryFn: async (): Promise<number> => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("userId", userId as string) // gated by `enabled`
+        .is("readAt", null);
+      return count ?? 0;
+    },
+  });
+}
+
+export async function markAllNotificationsRead(userId: string): Promise<void> {
+  await supabase
+    .from("notifications")
+    .update({ readAt: new Date().toISOString() })
+    .eq("userId", userId)
+    .is("readAt", null);
+}
+
+// ── Preferences (settings) ────────────────────────────────────────────────────
+
+export interface Preferences {
+  emailNotifications: boolean;
+  reviewReminders: boolean;
+  weeklyDigest: boolean;
+  streakReminder: boolean;
+}
+
+const DEFAULT_PREFS: Preferences = {
+  emailNotifications: true,
+  reviewReminders: true,
+  weeklyDigest: true,
+  streakReminder: true,
+};
+
+export function usePreferences(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["preferences", userId],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<Preferences> => {
+      const { data } = await supabase
+        .from("user_preferences")
+        .select("emailNotifications,reviewReminders,weeklyDigest,streakReminder")
+        .eq("userId", userId as string) // gated by `enabled`
+        .maybeSingle();
+      return (data as Preferences | null) ?? DEFAULT_PREFS;
+    },
+  });
+}
+
+export async function updatePreference(
+  userId: string,
+  key: keyof Preferences,
+  value: boolean,
+): Promise<void> {
+  // prefs_self_all RLS: upsert covers users without a row yet.
+  await supabase
+    .from("user_preferences")
+    .upsert({ userId, [key]: value }, { onConflict: "userId" });
+}

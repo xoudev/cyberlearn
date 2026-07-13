@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
+import { Rise } from "@/components/anim";
 import { PathCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
+import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { SectionLabel, Text } from "@/components/ui";
 import { usePaths } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 export default function Parcours(): React.JSX.Element {
   const { session } = useSession();
-  const { data, isLoading, error } = usePaths(session?.user.id);
+  const { data, isLoading, error, refetch } = usePaths(session?.user.id);
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -37,19 +39,26 @@ export default function Parcours(): React.JSX.Element {
       />
       <View style={{ height: 16 }} />
       {isLoading ? (
-        <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+        <ListSkeleton rows={4} />
       ) : error ? (
-        <Text variant="bodySm" style={{ textAlign: "center", marginTop: 40, color: colors.danger }}>
-          Chargement impossible.
-        </Text>
+        <ErrorState onRetry={() => void refetch()} code="PATHS_LOAD" />
       ) : filtered.length === 0 ? (
-        <Text variant="bodySm" style={{ textAlign: "center", marginTop: 40 }}>
-          Aucun parcours ne correspond.
-        </Text>
+        <EmptyState
+          title="Aucun parcours trouvé"
+          body={
+            query
+              ? `Rien pour « ${query} ». Essaie un autre mot-clé.`
+              : "Le catalogue arrive bientôt."
+          }
+          actionLabel={query ? "Réinitialiser" : undefined}
+          onAction={query ? () => setQuery("") : undefined}
+        />
       ) : (
         <View style={{ gap: 12 }}>
-          {filtered.map((p) => (
-            <PathCardView key={p.id} path={p} />
+          {filtered.map((p, i) => (
+            <Rise key={p.id} index={Math.min(i, 6)}>
+              <PathCardView path={p} />
+            </Rise>
           ))}
         </View>
       )}

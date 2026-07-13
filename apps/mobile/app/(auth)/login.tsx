@@ -137,11 +137,6 @@ export default function Login(): React.JSX.Element {
             </Text>
           )}
         </Pressable>
-
-        {/* Build marker: confirms which JS bundle the device is running. */}
-        <Text variant="micro" style={{ textAlign: "center", color: colors.textDisabled }}>
-          build otp-v2
-        </Text>
       </View>
     </Screen>
   );
