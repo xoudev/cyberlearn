@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, View, type ViewStyle } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { colors, radius } from "@cyberlearn/tokens";
 import { ChevronLeft } from "@/components/icons";
 import { Text } from "@/components/ui";
@@ -26,7 +25,7 @@ export function BackButton({ label = "Retour" }: { label?: string }): React.JSX.
         gap: 6,
         minHeight: 36,
         paddingHorizontal: 12,
-        borderRadius: radius.pill,
+        borderRadius: radius.sm,
         borderWidth: 1,
         borderColor: pressed ? colors.accent : colors.borderDefault,
         backgroundColor: pressed ? "rgba(10,255,212,0.08)" : "rgba(5,4,26,0.5)",
@@ -69,7 +68,7 @@ export function ActionChip({
         gap: 6,
         minHeight: 34,
         paddingHorizontal: 12,
-        borderRadius: radius.pill,
+        borderRadius: radius.sm,
         borderWidth: 1,
         borderColor: pressed ? color : `${color}66`,
         backgroundColor: pressed ? `${color}14` : "transparent",
@@ -108,7 +107,7 @@ export function IconButton({
         {
           width: 42,
           height: 42,
-          borderRadius: 21,
+          borderRadius: radius.sm,
           alignItems: "center",
           justifyContent: "center",
           borderWidth: 1,
@@ -124,7 +123,7 @@ export function IconButton({
   );
 }
 
-/** Hero CTA: brand gradient fill + glow. Use for the primary action of a screen. */
+/** Primary CTA: flat accent block (square), per the site design system. */
 export function GradientButton({
   label,
   onPress,
@@ -146,32 +145,18 @@ export function GradientButton({
       accessibilityLabel={label}
       style={({ pressed }) => [
         {
-          borderRadius: radius.md,
-          // Shadow lives here (no overflow) so iOS renders the glow; the inner
-          // wrapper clips the gradient to the rounded shape.
+          height: 48,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.accent,
           opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
-          shadowColor: colors.accent,
-          shadowOpacity: 0.45,
-          shadowRadius: 14,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
-          backgroundColor: colors.bgElevated,
         },
         style,
       ]}
     >
-      <View style={{ borderRadius: radius.md, overflow: "hidden" }}>
-        <LinearGradient
-          colors={[colors.brandBlue, "#0C7FE8", colors.accent]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{ height: 48, alignItems: "center", justifyContent: "center" }}
-        >
-          <Text variant="micro" style={{ color: "#02010E", letterSpacing: 1.5, fontSize: 11 }}>
-            {loading ? "…" : label}
-          </Text>
-        </LinearGradient>
-      </View>
+      <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1.5, fontSize: 11 }}>
+        {loading ? "…" : label}
+      </Text>
     </Pressable>
   );
 }

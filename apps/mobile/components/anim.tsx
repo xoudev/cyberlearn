@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import Svg, { Polygon } from "react-native-svg";
-import { colors, fonts, radius } from "@cyberlearn/tokens";
+import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 
 // NOTE: content screens render statically (no entrance/press motion). Animation
@@ -189,7 +189,6 @@ export function AnimatedXPBar({
         backgroundColor: "rgba(5,4,26,0.9)",
         borderWidth: 1,
         borderColor: colors.borderDefault,
-        borderRadius: radius.pill,
         overflow: "hidden",
       }}
     >
@@ -320,7 +319,6 @@ export function LevelUpOverlay({
           backgroundColor: colors.bgElevated,
           borderWidth: 1,
           borderColor: colors.accent,
-          borderRadius: 16,
         }}
       >
         <Text variant="micro" style={{ color: colors.accent, letterSpacing: 3 }}>
@@ -364,7 +362,6 @@ export function LevelUpOverlay({
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: colors.accent,
-            borderRadius: 10,
           }}
         >
           <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>

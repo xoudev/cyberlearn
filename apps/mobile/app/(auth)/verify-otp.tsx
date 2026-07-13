@@ -64,7 +64,6 @@ export default function VerifyOtp(): React.JSX.Element {
           maxLength={8}
           style={{
             height: 56,
-            borderRadius: 10,
             borderWidth: 1,
             borderColor: colors.borderDefault,
             backgroundColor: "rgba(5,4,26,0.6)",

@@ -25,7 +25,6 @@ export default function OnboardingRequired(): React.JSX.Element {
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: colors.accent,
-            borderRadius: 10,
             marginTop: 8,
           }}
         >

@@ -143,7 +143,6 @@ export default function Login(): React.JSX.Element {
 }
 
 const inputStyle = {
-  borderRadius: 10,
   height: 48,
   borderWidth: 1,
   borderColor: colors.borderDefault,
@@ -155,7 +154,6 @@ const inputStyle = {
 } as const;
 
 const ghostBtn = {
-  borderRadius: 10,
   height: 48,
   alignItems: "center" as const,
   justifyContent: "center" as const,

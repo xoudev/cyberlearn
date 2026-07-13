@@ -244,7 +244,6 @@ function ReadView({
             style={{
               flex: 1,
               height: 48,
-              borderRadius: 10,
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
@@ -313,7 +312,6 @@ function QuizView({
                       alignItems: "center",
                       gap: 12,
                       borderWidth: 1.5,
-                      borderRadius: 10,
                       borderColor: border,
                       backgroundColor:
                         isPicked && !revealed ? "rgba(10,255,212,0.06)" : colors.bgElevated,
@@ -350,7 +348,6 @@ function QuizView({
             <View
               style={{
                 borderLeftWidth: 3,
-                borderRadius: 8,
                 borderLeftColor: picked === quiz.correct ? colors.success : colors.danger,
                 backgroundColor:
                   picked === quiz.correct ? "rgba(10,255,212,0.07)" : "rgba(255,77,109,0.07)",
@@ -505,7 +502,6 @@ function ResultView({
             style={{
               flex: 1,
               height: 48,
-              borderRadius: 10,
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
