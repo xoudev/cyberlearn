@@ -1,7 +1,15 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { colors, fonts, radius } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { ActionChip, BackButton } from "@/components/buttons";
@@ -42,6 +50,68 @@ interface FolderDraft {
   name: string;
   color: string;
   icon: string;
+}
+
+// Drop-zone key: a folder id, or "__unfiled__" for the no-folder section.
+const UNFILED_KEY = "__unfiled__";
+
+/**
+ * Long-press then drag a note card; the card follows the finger and the parent
+ * is told where it hovers/drops (window coordinates, like measureInWindow).
+ */
+function DraggableNote({
+  noteId,
+  onDragStart,
+  onHoverAt,
+  onDropAt,
+  children,
+}: {
+  noteId: string;
+  onDragStart: () => void;
+  onHoverAt: (y: number) => void;
+  onDropAt: (noteId: string, y: number) => void;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
+  const active = useSharedValue(0);
+
+  const pan = Gesture.Pan()
+    .activateAfterLongPress(250)
+    .onStart(() => {
+      active.value = withTiming(1, { duration: 120 });
+      runOnJS(onDragStart)();
+    })
+    .onUpdate((e) => {
+      tx.value = e.translationX;
+      ty.value = e.translationY;
+      runOnJS(onHoverAt)(e.absoluteY);
+    })
+    .onEnd((e) => {
+      runOnJS(onDropAt)(noteId, e.absoluteY);
+    })
+    .onFinalize(() => {
+      active.value = withTiming(0, { duration: 150 });
+      tx.value = withSpring(0, { damping: 16 });
+      ty.value = withSpring(0, { damping: 16 });
+    });
+
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: tx.value },
+      { translateY: ty.value },
+      { scale: 1 + active.value * 0.03 },
+    ],
+    opacity: 1 - active.value * 0.1,
+    zIndex: active.value > 0 ? 100 : 0,
+    elevation: active.value > 0 ? 10 : 0,
+  }));
+
+  return (
+    <GestureDetector gesture={pan}>
+      <Animated.View style={style}>{children}</Animated.View>
+    </GestureDetector>
+  );
 }
 
 export default function Notes(): React.JSX.Element {
@@ -125,6 +195,64 @@ export default function Notes(): React.JSX.Element {
     });
   };
 
+  // ── Drag and drop: folder sections are drop zones ───────────────────────────
+  const zoneRefs = useRef(new Map<string, View | null>());
+  const zoneRects = useRef(new Map<string, { y1: number; y2: number }>());
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
+  const lastHover = useRef<string | null>(null);
+
+  const setZoneRef = (key: string) => (node: View | null) => {
+    zoneRefs.current.set(key, node);
+  };
+
+  const measureZones = useCallback((): void => {
+    zoneRects.current.clear();
+    for (const [key, node] of zoneRefs.current) {
+      node?.measureInWindow((_x, y, _w, h) => {
+        zoneRects.current.set(key, { y1: y, y2: y + h });
+      });
+    }
+  }, []);
+
+  const zoneAt = (y: number): string | null => {
+    for (const [key, r] of zoneRects.current) {
+      if (y >= r.y1 && y <= r.y2) return key;
+    }
+    return null;
+  };
+
+  const handleHoverAt = useCallback((y: number): void => {
+    const key = zoneAt(y);
+    if (key !== lastHover.current) {
+      lastHover.current = key;
+      setHoverKey(key);
+    }
+  }, []);
+
+  const handleDropAt = useCallback(
+    (noteId: string, y: number): void => {
+      lastHover.current = null;
+      setHoverKey(null);
+      const key = zoneAt(y);
+      if (key === null) return;
+      const note = notes.find((n) => n.id === noteId);
+      if (!note) return;
+      const targetFolderId = key === UNFILED_KEY ? null : key;
+      if (targetFolderId === note.folderId) return;
+      void (async () => {
+        try {
+          await moveNoteToFolder(noteId, targetFolderId);
+        } catch {
+          setMutError("Déplacement impossible. Vérifie ta connexion.");
+          return;
+        }
+        setMutError(null);
+        await invalidate();
+      })();
+    },
+    [notes, invalidate],
+  );
+
   return (
     <Screen onRefresh={() => refetch()}>
       <View
@@ -165,11 +293,37 @@ export default function Notes(): React.JSX.Element {
         />
       ) : (
         <View style={{ gap: 22 }}>
+          {mutError ? (
+            <Text variant="bodySm" style={{ color: colors.danger }}>
+              {mutError}
+            </Text>
+          ) : null}
+          {notes.length > 0 && folders.length > 0 ? (
+            <Text variant="micro" style={{ color: colors.textDisabled }}>
+              Astuce : reste appuyé sur une note et glisse-la sur un dossier.
+            </Text>
+          ) : null}
           {folders.map((f) => {
             const items = byFolder.get(f.id) ?? [];
             const tint = f.color ?? colors.accent;
+            const hovered = hoverKey === f.id;
             return (
-              <View key={f.id}>
+              <View
+                key={f.id}
+                ref={setZoneRef(f.id)}
+                collapsable={false}
+                style={
+                  hovered
+                    ? {
+                        backgroundColor: `${tint}14`,
+                        borderWidth: 1,
+                        borderColor: tint,
+                        padding: 6,
+                        margin: -7,
+                      }
+                    : undefined
+                }
+              >
                 {/* Folder header: tap = rename / recolor / delete */}
                 <PressableScale
                   accessibilityLabel={`Modifier le dossier ${f.name}`}
@@ -192,6 +346,7 @@ export default function Notes(): React.JSX.Element {
                   <FolderGlyph name={f.icon} color={tint} size={16} />
                   <Text variant="micro" style={{ color: tint, letterSpacing: 1.5, flex: 1 }}>
                     {f.name} · {items.length}
+                    {hovered ? "  ← déposer ici" : ""}
                   </Text>
                   <Text variant="micro" style={{ color: colors.textDisabled }}>
                     modifier ✎
@@ -200,18 +355,25 @@ export default function Notes(): React.JSX.Element {
                 {items.length > 0 ? (
                   <View style={{ gap: 10 }}>
                     {items.map((n) => (
-                      <NoteCard
+                      <DraggableNote
                         key={n.id}
-                        note={n}
-                        folder={f}
-                        onPress={() => openNote(n)}
-                        onMove={() => setMovingNote(n)}
-                      />
+                        noteId={n.id}
+                        onDragStart={measureZones}
+                        onHoverAt={handleHoverAt}
+                        onDropAt={handleDropAt}
+                      >
+                        <NoteCard
+                          note={n}
+                          folder={f}
+                          onPress={() => openNote(n)}
+                          onMove={() => setMovingNote(n)}
+                        />
+                      </DraggableNote>
                     ))}
                   </View>
                 ) : (
                   <Text variant="micro" style={{ color: colors.textDisabled, marginLeft: 24 }}>
-                    Dossier vide · range une note ici via sa pastille
+                    Dossier vide · glisse une note ici
                   </Text>
                 )}
               </View>
@@ -219,21 +381,43 @@ export default function Notes(): React.JSX.Element {
           })}
 
           {unfiled.length > 0 ? (
-            <View>
+            <View
+              ref={setZoneRef(UNFILED_KEY)}
+              collapsable={false}
+              style={
+                hoverKey === UNFILED_KEY
+                  ? {
+                      backgroundColor: "rgba(184,181,209,0.08)",
+                      borderWidth: 1,
+                      borderColor: colors.textMuted,
+                      padding: 6,
+                      margin: -7,
+                    }
+                  : undefined
+              }
+            >
               {folders.length > 0 ? (
                 <Text variant="micro" style={{ marginBottom: 10, letterSpacing: 1.5 }}>
                   Sans dossier · {unfiled.length}
+                  {hoverKey === UNFILED_KEY ? "  ← déposer ici" : ""}
                 </Text>
               ) : null}
               <View style={{ gap: 10 }}>
                 {unfiled.map((n) => (
-                  <NoteCard
+                  <DraggableNote
                     key={n.id}
-                    note={n}
-                    folder={null}
-                    onPress={() => openNote(n)}
-                    onMove={() => setMovingNote(n)}
-                  />
+                    noteId={n.id}
+                    onDragStart={measureZones}
+                    onHoverAt={handleHoverAt}
+                    onDropAt={handleDropAt}
+                  >
+                    <NoteCard
+                      note={n}
+                      folder={null}
+                      onPress={() => openNote(n)}
+                      onMove={() => setMovingNote(n)}
+                    />
+                  </DraggableNote>
                 ))}
               </View>
             </View>
@@ -490,7 +674,7 @@ function NoteCard({
   onMove: () => void;
 }): React.JSX.Element {
   return (
-    <PressableScale onPress={onPress} onLongPress={onMove}>
+    <PressableScale onPress={onPress}>
       <Card
         accent={CATEGORY_COLOR[note.category]}
         style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
