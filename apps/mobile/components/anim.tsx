@@ -320,6 +320,7 @@ export function LevelUpOverlay({
           backgroundColor: colors.bgElevated,
           borderWidth: 1,
           borderColor: colors.accent,
+          borderRadius: 16,
         }}
       >
         <Text variant="micro" style={{ color: colors.accent, letterSpacing: 3 }}>
@@ -363,6 +364,7 @@ export function LevelUpOverlay({
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: colors.accent,
+            borderRadius: 10,
           }}
         >
           <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>

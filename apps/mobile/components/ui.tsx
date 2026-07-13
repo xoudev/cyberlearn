@@ -61,7 +61,7 @@ export function Text({
 
 // ── Surfaces ──────────────────────────────────────────────────────────────────
 
-/** Square-cornered elevated card, matching the mockup. */
+/** Rounded elevated card; `accent` draws an inner colored strip on the left. */
 export function Card({
   style,
   accent,
@@ -76,8 +76,6 @@ export function Card({
           backgroundColor: colors.bgElevated,
           borderWidth: 1,
           borderColor: colors.borderDefault,
-          borderLeftWidth: accent ? 3 : 1,
-          borderLeftColor: accent ?? colors.borderDefault,
           borderRadius: radius.lg,
           padding: space.lg,
           shadowColor: accent ?? "#000",
@@ -89,6 +87,22 @@ export function Card({
         style,
       ]}
     >
+      {accent ? (
+        // Inner strip instead of a thicker left border: a non-uniform border
+        // would bend and taper around the rounded corners.
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 12,
+            bottom: 12,
+            width: 3,
+            borderRadius: 2,
+            backgroundColor: accent,
+          }}
+        />
+      ) : null}
       {children}
     </View>
   );

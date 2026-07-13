@@ -31,6 +31,8 @@ export function Screen({
 }): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const padTop = insets.top + 10;
+  // Floating dock: 62px tall, offset max(insets.bottom, 12) from the bottom.
+  const dockClearance = 62 + Math.max(insets.bottom, 12) + 18;
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async (): Promise<void> => {
@@ -53,7 +55,7 @@ export function Screen({
             paddingTop: padTop,
             paddingHorizontal: 18,
             // Footer buttons (lesson reader) must clear the gesture/nav bar.
-            paddingBottom: Math.max(insets.bottom, 10),
+            paddingBottom: padForTabBar ? dockClearance : Math.max(insets.bottom, 10),
           }}
         >
           {children}
@@ -69,7 +71,7 @@ export function Screen({
         contentContainerStyle={{
           paddingTop: padTop,
           paddingHorizontal: 18,
-          paddingBottom: padForTabBar ? 118 : 44,
+          paddingBottom: padForTabBar ? dockClearance + 16 : 44,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={

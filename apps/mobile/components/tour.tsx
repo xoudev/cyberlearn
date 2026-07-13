@@ -322,6 +322,7 @@ function TourOverlayView({
           borderWidth: 1,
           borderColor: pressed ? colors.accent : colors.borderDefault,
           backgroundColor: "rgba(5,4,26,0.7)",
+          borderRadius: 999,
         })}
         hitSlop={8}
         accessibilityRole="button"
@@ -345,6 +346,7 @@ function TourOverlayView({
               borderWidth: 1,
               borderColor: colors.accent,
               padding: 18,
+              borderRadius: 14,
               gap: 10,
             },
             clampedHole
@@ -388,6 +390,7 @@ function TourOverlayView({
                   justifyContent: "center",
                   borderWidth: 1,
                   borderColor: colors.borderDefault,
+                  borderRadius: 10,
                 }}
               >
                 <Text variant="micro">←</Text>
@@ -401,6 +404,7 @@ function TourOverlayView({
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: colors.accent,
+                borderRadius: 10,
               }}
             >
               <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>

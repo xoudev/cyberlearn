@@ -147,27 +147,31 @@ export function GradientButton({
       style={({ pressed }) => [
         {
           borderRadius: radius.md,
-          overflow: "hidden",
+          // Shadow lives here (no overflow) so iOS renders the glow; the inner
+          // wrapper clips the gradient to the rounded shape.
           opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
           shadowColor: colors.accent,
           shadowOpacity: 0.45,
           shadowRadius: 14,
           shadowOffset: { width: 0, height: 4 },
           elevation: 6,
+          backgroundColor: colors.bgElevated,
         },
         style,
       ]}
     >
-      <LinearGradient
-        colors={[colors.brandBlue, "#0C7FE8", colors.accent]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ height: 48, alignItems: "center", justifyContent: "center" }}
-      >
-        <Text variant="micro" style={{ color: "#02010E", letterSpacing: 1.5, fontSize: 11 }}>
-          {loading ? "…" : label}
-        </Text>
-      </LinearGradient>
+      <View style={{ borderRadius: radius.md, overflow: "hidden" }}>
+        <LinearGradient
+          colors={[colors.brandBlue, "#0C7FE8", colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ height: 48, alignItems: "center", justifyContent: "center" }}
+        >
+          <Text variant="micro" style={{ color: "#02010E", letterSpacing: 1.5, fontSize: 11 }}>
+            {loading ? "…" : label}
+          </Text>
+        </LinearGradient>
+      </View>
     </Pressable>
   );
 }

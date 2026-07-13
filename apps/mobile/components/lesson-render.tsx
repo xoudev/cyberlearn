@@ -105,6 +105,8 @@ export function BlockView({
             backgroundColor: "rgba(2,1,14,0.9)",
             borderWidth: 1,
             borderColor: colors.borderSubtle,
+            borderRadius: 10,
+            overflow: "hidden",
           }}
         >
           {block.lang ? (
@@ -144,6 +146,7 @@ export function BlockView({
           style={{
             borderLeftWidth: 3,
             borderLeftColor: c.color,
+            borderRadius: 8,
             backgroundColor: `${c.color}12`,
             padding: 12,
             gap: 4,
@@ -165,6 +168,8 @@ export function BlockView({
             borderWidth: 1,
             borderColor: colors.accent,
             backgroundColor: "rgba(2,1,14,0.9)",
+            borderRadius: 10,
+            overflow: "hidden",
           }}
         >
           <View
@@ -207,6 +212,8 @@ export function BlockView({
             borderWidth: 1,
             borderColor: colors.borderDefault,
             backgroundColor: "rgba(2,1,14,0.92)",
+            borderRadius: 10,
+            overflow: "hidden",
           }}
         >
           <View
@@ -282,6 +289,7 @@ export function BlockView({
             borderWidth: 1,
             borderColor: colors.borderDefault,
             borderStyle: "dashed",
+            borderRadius: 10,
             padding: 16,
             alignItems: "center",
             gap: 4,

@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
-import { ActionChip } from "@/components/buttons";
+import { ActionChip, GradientButton } from "@/components/buttons";
 import { Text } from "@/components/ui";
 import { Screen } from "@/components/screen";
 import { requestLoginCode } from "@/lib/api";
@@ -64,7 +64,7 @@ export default function VerifyOtp(): React.JSX.Element {
           maxLength={8}
           style={{
             height: 56,
-            borderRadius: 12,
+            borderRadius: 10,
             borderWidth: 1,
             borderColor: colors.borderDefault,
             backgroundColor: "rgba(5,4,26,0.6)",
@@ -82,35 +82,16 @@ export default function VerifyOtp(): React.JSX.Element {
           </Text>
         ) : null}
 
-        <Pressable
-          onPress={verify}
+        <GradientButton
+          label="Valider"
+          onPress={() => void verify()}
           disabled={busy}
-          style={{
-            height: 48,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.accent,
-            opacity: busy ? 0.7 : 1,
-          }}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.bgBase} />
-          ) : (
-            <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-              Valider
-            </Text>
-          )}
-        </Pressable>
+          loading={busy}
+        />
 
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Pressable onPress={() => router.back()}>
-            <Text variant="micro">← Changer d&apos;e-mail</Text>
-          </Pressable>
-          <Pressable onPress={resend}>
-            <Text variant="micro" style={{ color: colors.accent }}>
-              Renvoyer le code
-            </Text>
-          </Pressable>
+          <ActionChip label="← Changer d'e-mail" tone="neutral" onPress={() => router.back()} />
+          <ActionChip label="Renvoyer le code" onPress={() => void resend()} />
         </View>
       </View>
     </Screen>

@@ -130,7 +130,7 @@ export default function Parcours(): React.JSX.Element {
 }
 
 export const searchStyle = {
-  borderRadius: 12,
+  borderRadius: 10,
   height: 44,
   borderWidth: 1,
   borderColor: colors.borderDefault,

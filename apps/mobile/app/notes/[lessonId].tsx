@@ -96,6 +96,7 @@ export default function NoteEditor(): React.JSX.Element {
                 borderWidth: 1,
                 borderColor: colors.borderDefault,
                 backgroundColor: "rgba(5,4,26,0.6)",
+                borderRadius: 10,
                 color: colors.textPrimary,
                 fontFamily: `${fonts.mono}_400Regular`,
                 fontSize: 13,
@@ -112,6 +113,7 @@ export default function NoteEditor(): React.JSX.Element {
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: colors.accent,
+                borderRadius: 10,
               }}
             >
               {saving ? (

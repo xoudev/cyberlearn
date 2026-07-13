@@ -831,21 +831,27 @@ export async function createNoteFolder(
   icon: string,
   position: number,
 ): Promise<void> {
-  await supabase.from("note_folders").insert({ userId, name, color, icon, position });
+  const { error } = await supabase
+    .from("note_folders")
+    .insert({ userId, name, color, icon, position });
+  if (error) throw new Error(error.message);
 }
 
 export async function updateNoteFolder(
   folderId: string,
   patch: { name?: string; color?: string; icon?: string },
 ): Promise<void> {
-  await supabase.from("note_folders").update(patch).eq("id", folderId);
+  const { error } = await supabase.from("note_folders").update(patch).eq("id", folderId);
+  if (error) throw new Error(error.message);
 }
 
 /** Delete a folder; its notes fall back to "unfiled" (FK ON DELETE SET NULL). */
 export async function deleteNoteFolder(folderId: string): Promise<void> {
-  await supabase.from("note_folders").delete().eq("id", folderId);
+  const { error } = await supabase.from("note_folders").delete().eq("id", folderId);
+  if (error) throw new Error(error.message);
 }
 
 export async function moveNoteToFolder(noteId: string, folderId: string | null): Promise<void> {
-  await supabase.from("notes").update({ folderId }).eq("id", noteId);
+  const { error } = await supabase.from("notes").update({ folderId }).eq("id", noteId);
+  if (error) throw new Error(error.message);
 }

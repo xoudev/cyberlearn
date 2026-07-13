@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Modal, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { ActionChip, BackButton } from "@/components/buttons";
@@ -55,6 +55,7 @@ export default function Notes(): React.JSX.Element {
   const [draft, setDraft] = useState<FolderDraft | null>(null);
   const [movingNote, setMovingNote] = useState<NoteItem | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<NoteFolderItem | null>(null);
+  const [mutError, setMutError] = useState<string | null>(null);
 
   const folders = data?.folders ?? [];
   const notes = data?.notes ?? [];
@@ -72,21 +73,33 @@ export default function Notes(): React.JSX.Element {
 
   async function saveDraft(): Promise<void> {
     if (!userId || !draft || draft.name.trim() === "") return;
-    if (draft.id === null) {
-      await createNoteFolder(userId, draft.name.trim(), draft.color, draft.icon, folders.length);
-    } else {
-      await updateNoteFolder(draft.id, {
-        name: draft.name.trim(),
-        color: draft.color,
-        icon: draft.icon,
-      });
+    try {
+      if (draft.id === null) {
+        await createNoteFolder(userId, draft.name.trim(), draft.color, draft.icon, folders.length);
+      } else {
+        await updateNoteFolder(draft.id, {
+          name: draft.name.trim(),
+          color: draft.color,
+          icon: draft.icon,
+        });
+      }
+    } catch {
+      setMutError("Enregistrement impossible. Vérifie ta connexion.");
+      return;
     }
+    setMutError(null);
     setDraft(null);
     await invalidate();
   }
 
   async function removeFolder(folder: NoteFolderItem): Promise<void> {
-    await deleteNoteFolder(folder.id);
+    try {
+      await deleteNoteFolder(folder.id);
+    } catch {
+      setMutError("Suppression impossible. Vérifie ta connexion.");
+      return;
+    }
+    setMutError(null);
     setConfirmDelete(null);
     setDraft(null);
     await invalidate();
@@ -94,7 +107,13 @@ export default function Notes(): React.JSX.Element {
 
   async function moveTo(folderId: string | null): Promise<void> {
     if (!movingNote) return;
-    await moveNoteToFolder(movingNote.id, folderId);
+    try {
+      await moveNoteToFolder(movingNote.id, folderId);
+    } catch {
+      setMutError("Déplacement impossible. Vérifie ta connexion.");
+      return;
+    }
+    setMutError(null);
     setMovingNote(null);
     await invalidate();
   }
@@ -223,12 +242,28 @@ export default function Notes(): React.JSX.Element {
       )}
 
       {/* Folder create / edit modal */}
-      <Modal visible={draft !== null} transparent animationType="fade">
-        <View style={modalBackdrop}>
+      <Modal
+        visible={draft !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setConfirmDelete(null);
+          setDraft(null);
+        }}
+      >
+        <KeyboardAvoidingView
+          style={modalBackdrop}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
           <View style={modalCard}>
             <Text variant="h2" style={{ marginBottom: 4 }}>
               {draft?.id ? "Modifier le dossier" : "Nouveau dossier"}
             </Text>
+            {mutError ? (
+              <Text variant="bodySm" style={{ color: colors.danger }}>
+                {mutError}
+              </Text>
+            ) : null}
             <TextInput
               value={draft?.name ?? ""}
               onChangeText={(t) => setDraft((d) => (d ? { ...d, name: t } : d))}
@@ -365,18 +400,28 @@ export default function Notes(): React.JSX.Element {
               </View>
             ) : null}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Move-note modal */}
-      <Modal visible={movingNote !== null} transparent animationType="fade">
+      <Modal
+        visible={movingNote !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMovingNote(null)}
+      >
         <View style={modalBackdrop}>
           <View style={modalCard}>
             <Text variant="h2">Ranger la note</Text>
+            {mutError ? (
+              <Text variant="bodySm" style={{ color: colors.danger }}>
+                {mutError}
+              </Text>
+            ) : null}
             <Text variant="bodySm" numberOfLines={1} style={{ marginBottom: 6 }}>
               {movingNote?.lessonTitle}
             </Text>
-            <View style={{ gap: 8 }}>
+            <ScrollView style={{ maxHeight: 340 }} contentContainerStyle={{ gap: 8 }}>
               {folders.map((f) => (
                 <PressableScale
                   key={f.id}
@@ -427,7 +472,7 @@ export default function Notes(): React.JSX.Element {
                 </Text>
                 {movingNote?.folderId === null ? <Text variant="micro">actuel</Text> : null}
               </PressableScale>
-            </View>
+            </ScrollView>
             <View style={{ alignItems: "flex-end", marginTop: 12 }}>
               <ActionChip label="Fermer" tone="neutral" onPress={() => setMovingNote(null)} />
             </View>

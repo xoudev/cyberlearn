@@ -111,7 +111,8 @@ function PathBody({
             <View
               style={{
                 marginTop: 6,
-                height: 46,
+                height: 48,
+                borderRadius: 10,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,
