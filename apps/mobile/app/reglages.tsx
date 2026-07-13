@@ -9,6 +9,7 @@ import { Screen } from "@/components/screen";
 import { GuidedTour } from "@/components/tour";
 import { Card, Divider, SectionLabel, Text } from "@/components/ui";
 import {
+  deviceNotificationsSupported,
   isDeviceNotificationsEnabled,
   setDeviceNotificationsEnabled,
 } from "@/lib/device-notifications";
@@ -93,11 +94,14 @@ export default function Reglages(): React.JSX.Element {
             <View style={{ flex: 1 }}>
               <Text variant="h3">Sur cet appareil</Text>
               <Text variant="micro" style={{ color: colors.textMuted }}>
-                Badges, niveaux et certifs dans la barre de notifications
+                {deviceNotificationsSupported()
+                  ? "Badges, niveaux et certifs dans la barre de notifications"
+                  : "Indisponible dans Expo Go · nécessite un build de l'app"}
               </Text>
             </View>
             <Switch
-              value={deviceNotifs}
+              value={deviceNotifs && deviceNotificationsSupported()}
+              disabled={!deviceNotificationsSupported()}
               onValueChange={(v) => void toggleDeviceNotifs(v)}
               trackColor={{ false: colors.bgOverlay, true: "rgba(10,255,212,0.35)" }}
               thumbColor={deviceNotifs ? colors.accent : colors.textMuted}
