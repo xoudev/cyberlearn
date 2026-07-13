@@ -12,6 +12,7 @@ import {
   Rise,
   SparkBurst,
 } from "@/components/anim";
+import { ActionChip, BackButton } from "@/components/buttons";
 import { CheckIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
@@ -57,9 +58,9 @@ export default function LessonReader(): React.JSX.Element {
   if (isLoading || !data || !parsed) {
     return (
       <Screen>
-        <Pressable onPress={() => router.back()} style={{ marginBottom: 16 }}>
-          <Text variant="micro">← Retour</Text>
-        </Pressable>
+        <View style={{ marginBottom: 16 }}>
+          <BackButton />
+        </View>
         {error ? (
           <ErrorState onRetry={() => void refetch()} code="LESSON_LOAD" />
         ) : (
@@ -90,26 +91,21 @@ export default function LessonReader(): React.JSX.Element {
         <View
           style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
         >
-          <Pressable onPress={() => router.back()}>
-            <Text variant="micro">← Quitter</Text>
-          </Pressable>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-            <Pressable
+          <BackButton label="Quitter" />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <ActionChip
+              label="✎ Notes"
+              tone="neutral"
               onPress={() =>
                 router.push({
                   pathname: "/notes/[lessonId]",
                   params: { lessonId: data.id, title: data.title },
                 })
               }
-              hitSlop={8}
-            >
-              <Text variant="micro" style={{ color: colors.textSecondary }}>
-                ✎ Notes
-              </Text>
-            </Pressable>
+            />
             <Text variant="micro" style={{ color: colors.accent }}>
               {step.mode === "read"
-                ? `Section ${String(step.section + 1)} / ${String(sections.length)}`
+                ? `${String(step.section + 1)} / ${String(sections.length)}`
                 : step.mode === "quiz"
                   ? `Quiz ${String(step.qIndex + 1)} / ${String(quizzes.length)}`
                   : "Résultat"}

@@ -99,7 +99,7 @@ export default function Profil(): React.JSX.Element {
       {/* Sub-tabs */}
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
         {SUB_TABS.map((s) => (
-          <Pressable key={s} onPress={() => setSub(s)} style={{ flex: 1 }}>
+          <PressableScale key={s} onPress={() => setSub(s)} style={{ flex: 1 }}>
             <View
               style={{
                 borderWidth: 1,
@@ -116,7 +116,7 @@ export default function Profil(): React.JSX.Element {
                 {s}
               </Text>
             </View>
-          </Pressable>
+          </PressableScale>
         ))}
       </View>
 
@@ -197,7 +197,7 @@ export default function Profil(): React.JSX.Element {
           {HUB_LINKS.map((link, i) => (
             <View key={link.label}>
               {i > 0 ? <Divider /> : null}
-              <Pressable
+              <PressableScale
                 onPress={() => {
                   if (link.route) {
                     // SAFETY: typed routes are disabled; expo-router accepts any
@@ -223,7 +223,7 @@ export default function Profil(): React.JSX.Element {
                 ) : (
                   <ChevronRight color={colors.accent} size={16} />
                 )}
-              </Pressable>
+              </PressableScale>
             </View>
           ))}
         </Card>

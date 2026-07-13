@@ -312,8 +312,19 @@ function TourOverlayView({
       {/* Skip */}
       <Pressable
         onPress={onSkip}
-        style={{ position: "absolute", top: 54, right: 22, padding: 8 }}
+        style={({ pressed }) => ({
+          position: "absolute",
+          top: 54,
+          right: 22,
+          minHeight: 34,
+          paddingHorizontal: 12,
+          justifyContent: "center",
+          borderWidth: 1,
+          borderColor: pressed ? colors.accent : colors.borderDefault,
+          backgroundColor: "rgba(5,4,26,0.7)",
+        })}
         hitSlop={8}
+        accessibilityRole="button"
       >
         <Text variant="micro" style={{ color: colors.textMuted }}>
           Passer le tuto

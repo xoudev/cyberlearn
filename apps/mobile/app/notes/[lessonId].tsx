@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
+import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { Text } from "@/components/ui";
 import { fetchNoteForLesson, saveNoteForLesson } from "@/lib/queries";

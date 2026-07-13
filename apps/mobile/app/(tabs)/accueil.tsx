@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import { Pressable, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
+import { IconButton } from "@/components/buttons";
 import { PathCardView } from "@/components/cards";
 import { BellIcon, ChevronRight } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
@@ -68,33 +69,31 @@ export default function Accueil(): React.JSX.Element {
           </View>
         </View>
         <View ref={bellAnchor} collapsable={false}>
-          <Pressable
+          <IconButton
             onPress={() => router.push("/notifications")}
-            hitSlop={8}
-            style={{ padding: 6 }}
+            accessibilityLabel={`Notifications${unread ? `, ${String(unread)} non lues` : ""}`}
+            badge={
+              (unread ?? 0) > 0 ? (
+                <View
+                  style={{
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: colors.danger,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingHorizontal: 3,
+                  }}
+                >
+                  <Text style={{ fontFamily: `${fonts.mono}_700Bold`, fontSize: 9, color: "#fff" }}>
+                    {unread}
+                  </Text>
+                </View>
+              ) : undefined
+            }
           >
-            <BellIcon color={colors.textSecondary} size={22} />
-            {(unread ?? 0) > 0 ? (
-              <View
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  backgroundColor: colors.danger,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 3,
-                }}
-              >
-                <Text style={{ fontFamily: `${fonts.mono}_700Bold`, fontSize: 9, color: "#fff" }}>
-                  {unread}
-                </Text>
-              </View>
-            ) : null}
-          </Pressable>
+            <BellIcon color={colors.textSecondary} size={20} />
+          </IconButton>
         </View>
       </View>
 

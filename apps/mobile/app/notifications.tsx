@@ -1,13 +1,18 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
 import React from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
-import { Pulse, Rise } from "@/components/anim";
+import { PressableScale, Pulse, Rise } from "@/components/anim";
+import { ActionChip, BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, SectionLabel, Text } from "@/components/ui";
-import { markAllNotificationsRead, useNotifications, type NotificationItem } from "@/lib/queries";
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+  useNotifications,
+  type NotificationItem,
+} from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 const TYPE_META: Record<string, { icon: string; color: string }> = {
@@ -31,7 +36,6 @@ function timeAgo(iso: string): string {
 }
 
 export default function Notifications(): React.JSX.Element {
-  const router = useRouter();
   const { session } = useSession();
   const userId = session?.user.id;
   const queryClient = useQueryClient();
@@ -56,16 +60,8 @@ export default function Notifications(): React.JSX.Element {
           marginBottom: 16,
         }}
       >
-        <Pressable onPress={() => router.back()}>
-          <Text variant="micro">← Retour</Text>
-        </Pressable>
-        {unread > 0 ? (
-          <Pressable onPress={() => void readAll()}>
-            <Text variant="micro" style={{ color: colors.accent }}>
-              Tout lire
-            </Text>
-          </Pressable>
-        ) : null}
+        <BackButton />
+        {unread > 0 ? <ActionChip label="Tout marquer lu" onPress={() => void readAll()} /> : null}
       </View>
 
       <SectionLabel
@@ -96,50 +92,64 @@ export default function Notifications(): React.JSX.Element {
             const isUnread = n.readAt === null;
             return (
               <Rise key={n.id} index={Math.min(i, 8)}>
-                <Card
-                  accent={isUnread ? colors.accent : undefined}
-                  style={{ flexDirection: "row", gap: 12, opacity: isUnread ? 1 : 0.75 }}
+                <PressableScale
+                  disabled={!isUnread}
+                  accessibilityLabel={`Marquer « ${n.title} » comme lue`}
+                  onPress={() => {
+                    void markNotificationRead(n.id).then(async () => {
+                      await queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
+                      await queryClient.invalidateQueries({
+                        queryKey: ["notifications-unread", userId],
+                      });
+                    });
+                  }}
                 >
-                  <View
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      borderColor: meta.color,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: `${meta.color}14`,
-                    }}
+                  <Card
+                    accent={isUnread ? colors.accent : undefined}
+                    style={{ flexDirection: "row", gap: 12, opacity: isUnread ? 1 : 0.75 }}
                   >
-                    <Text style={{ color: meta.color, fontSize: 13 }}>{meta.icon}</Text>
-                  </View>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Text variant="h3" numberOfLines={1} style={{ flex: 1 }}>
-                        {n.title}
-                      </Text>
-                      {isUnread ? (
-                        <Pulse>
-                          <View
-                            style={{
-                              width: 7,
-                              height: 7,
-                              borderRadius: 4,
-                              backgroundColor: colors.accent,
-                            }}
-                          />
-                        </Pulse>
-                      ) : null}
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: meta.color,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: `${meta.color}14`,
+                      }}
+                    >
+                      <Text style={{ color: meta.color, fontSize: 13 }}>{meta.icon}</Text>
                     </View>
-                    <Text variant="bodySm" numberOfLines={2}>
-                      {n.body}
-                    </Text>
-                    <Text variant="micro" style={{ color: colors.textDisabled, marginTop: 2 }}>
-                      {timeAgo(n.createdAt)}
-                    </Text>
-                  </View>
-                </Card>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Text variant="h3" numberOfLines={1} style={{ flex: 1 }}>
+                          {n.title}
+                        </Text>
+                        {isUnread ? (
+                          <Pulse>
+                            <View
+                              style={{
+                                width: 7,
+                                height: 7,
+                                borderRadius: 4,
+                                backgroundColor: colors.accent,
+                              }}
+                            />
+                          </Pulse>
+                        ) : null}
+                      </View>
+                      <Text variant="bodySm" numberOfLines={2}>
+                        {n.body}
+                      </Text>
+                      <Text variant="micro" style={{ color: colors.textDisabled, marginTop: 2 }}>
+                        {timeAgo(n.createdAt)}
+                        {isUnread ? " · toucher pour marquer lu" : ""}
+                      </Text>
+                    </View>
+                  </Card>
+                </PressableScale>
               </Rise>
             );
           })}
