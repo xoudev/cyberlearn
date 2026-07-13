@@ -1,5 +1,5 @@
-import React from "react";
-import { ScrollView, View } from "react-native";
+import React, { useState } from "react";
+import { RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
 
@@ -7,12 +7,26 @@ import { colors } from "@cyberlearn/tokens";
 export function Screen({
   children,
   scroll = true,
+  onRefresh,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
+  /** Enables pull-to-refresh; should return a promise that settles when done. */
+  onRefresh?: () => Promise<unknown>;
 }): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const padTop = insets.top + 10;
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async (): Promise<void> => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   if (!scroll) {
     return (
@@ -33,6 +47,17 @@ export function Screen({
       style={{ flex: 1, backgroundColor: colors.bgBase }}
       contentContainerStyle={{ paddingTop: padTop, paddingHorizontal: 18, paddingBottom: 44 }}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void handleRefresh()}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.bgElevated}
+          />
+        ) : undefined
+      }
     >
       {children}
     </ScrollView>

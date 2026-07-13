@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
+import { Logo } from "@/components/logo";
 import { Screen } from "@/components/screen";
 import { requestLoginCode } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -73,21 +74,10 @@ export default function Login(): React.JSX.Element {
   return (
     <Screen scroll={false}>
       <View style={{ flex: 1, justifyContent: "center", gap: 22 }}>
-        <View style={{ alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <Text variant="display" style={{ letterSpacing: 2 }}>
-            CYBER
-            <Text
-              style={{
-                color: colors.accent,
-                fontFamily: `${fonts.sans}_800ExtraBold`,
-                fontSize: 32,
-              }}
-            >
-              LEARN
-            </Text>
-          </Text>
+        <View style={{ alignItems: "center", gap: 14, marginBottom: 8 }}>
+          <Logo size={72} layout="column" />
           <Text variant="micro" style={{ color: colors.accent }}>
-            Bon retour
+            Apprends. Progresse. Domine.
           </Text>
         </View>
 

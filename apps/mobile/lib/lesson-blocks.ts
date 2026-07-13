@@ -17,6 +17,8 @@ export type Block =
   | { kind: "paragraph"; text: string }
   | { kind: "list"; ordered: boolean; items: string[] }
   | { kind: "code"; lang: string; code: string }
+  | { kind: "playground"; lang: string; code: string }
+  | { kind: "terminal"; title: string | null; commands: string[]; hints: string[] }
   | { kind: "callout"; type: "info" | "warning" | "danger" | "success"; text: string }
   | { kind: "placeholder"; label: string }
   | QuizBlock;
@@ -31,11 +33,25 @@ export interface ParsedLesson {
   quizzes: QuizBlock[];
 }
 
-const PLACEHOLDER_LABEL: Record<string, string> = {
-  SimulatedTerminal: "Terminal interactif",
-  CodePlayground: "Sandbox de code",
-  Diagram: "Diagramme",
-};
+const EXPECTED_CMDS_RE = /expectedCommands\s*=\s*\{(\[[\s\S]*?\])\}/;
+const HINTS_RE = /hints\s*=\s*\{(\[[\s\S]*?\])\}/;
+
+/** Extract a `prop={["a","b"]}` string array from a JSX tag's attributes. */
+function extractStringArray(tag: string, re: RegExp): string[] {
+  const raw = re.exec(tag)?.[1];
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map((o) => String(o));
+  } catch {
+    return raw
+      .replace(/^\[|\]$/g, "")
+      .split(/",\s*"/)
+      .map((s) => s.replace(/^\s*"|"\s*$/g, "").trim())
+      .filter(Boolean);
+  }
+  return [];
+}
 
 function extractQuiz(tag: string): QuizBlock | null {
   const question = /question\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1];
@@ -158,11 +174,30 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
       return put({ kind: "callout", type: valid, text: body.trim() });
     },
   );
-  // Web-only interactive components → placeholders (paired or self-closing)
-  for (const name of Object.keys(PLACEHOLDER_LABEL)) {
-    const label = PLACEHOLDER_LABEL[name] ?? name;
+  // CodePlayground → a runnable-code block (the source is shown natively so the
+  // lesson reads in full; execution stays on the web sandbox).
+  text = text.replace(
+    /<CodePlayground([^>]*)>([\s\S]*?)<\/CodePlayground>/g,
+    (_m, attrs: string, body: string) => {
+      const lang = /language\s*=\s*"(\w+)"/.exec(attrs)?.[1] ?? "code";
+      return put({ kind: "playground", lang, code: body.replace(/^\n+|\n+$/g, "") });
+    },
+  );
+  // SimulatedTerminal → a native exercise card (commands to try + hints).
+  const terminalToBlock = (tag: string): string =>
+    put({
+      kind: "terminal",
+      title: /title\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1] ?? null,
+      commands: extractStringArray(tag, EXPECTED_CMDS_RE),
+      hints: extractStringArray(tag, HINTS_RE),
+    });
+  text = text.replace(/<SimulatedTerminal[\s\S]*?\/>/g, terminalToBlock);
+  text = text.replace(/<SimulatedTerminal[\s\S]*?<\/SimulatedTerminal>/g, terminalToBlock);
+  // Remaining web-only components (Diagram, media) → labelled placeholder.
+  for (const name of ["Diagram", "LessonVideo", "LessonImage"]) {
     const paired = new RegExp(`<${name}[\\s\\S]*?<\\/${name}>`, "g");
     const selfClosing = new RegExp(`<${name}[\\s\\S]*?\\/>`, "g");
+    const label = name === "Diagram" ? "Diagramme" : name === "LessonVideo" ? "Vidéo" : "Image";
     text = text.replace(paired, () => put({ kind: "placeholder", label }));
     text = text.replace(selfClosing, () => put({ kind: "placeholder", label }));
   }

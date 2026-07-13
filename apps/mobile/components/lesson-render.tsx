@@ -158,6 +158,123 @@ export function BlockView({
         </View>
       );
     }
+    case "playground":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: colors.accent,
+            backgroundColor: "rgba(2,1,14,0.9)",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <Text variant="micro" style={{ color: colors.accent }}>
+              ▶ Sandbox {block.lang}
+            </Text>
+            <Text variant="micro" style={{ color: colors.textDisabled }}>
+              exécute sur le web
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <Text
+              style={{
+                fontFamily: `${fonts.mono}_400Regular`,
+                fontSize: 12,
+                lineHeight: 19,
+                color: "#B8FBEB",
+                padding: 12,
+              }}
+            >
+              {block.code}
+            </Text>
+          </ScrollView>
+        </View>
+      );
+    case "terminal":
+      return (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: colors.borderDefault,
+            backgroundColor: "rgba(2,1,14,0.92)",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderSubtle,
+            }}
+          >
+            <View
+              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger }}
+            />
+            <View
+              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.warning }}
+            />
+            <View
+              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }}
+            />
+            <Text variant="micro" style={{ marginLeft: 6, color: colors.textMuted }}>
+              {block.title ?? "Terminal"}
+            </Text>
+          </View>
+          <View style={{ padding: 12, gap: 6 }}>
+            {block.commands.length > 0 ? (
+              <>
+                <Text variant="micro" style={{ color: colors.textMuted }}>
+                  Commandes à essayer
+                </Text>
+                {block.commands.map((c, i) => (
+                  <Text
+                    key={i}
+                    style={{
+                      fontFamily: `${fonts.mono}_500Medium`,
+                      fontSize: 12.5,
+                      color: colors.accent,
+                    }}
+                  >
+                    $ {c}
+                  </Text>
+                ))}
+              </>
+            ) : (
+              <Text
+                style={{
+                  fontFamily: `${fonts.mono}_400Regular`,
+                  fontSize: 12.5,
+                  color: colors.textMuted,
+                }}
+              >
+                $ _ terminal interactif (sur le web)
+              </Text>
+            )}
+            {block.hints.length > 0 ? (
+              <View style={{ marginTop: 4, gap: 3 }}>
+                {block.hints.map((h, i) => (
+                  <Text key={i} variant="bodySm" style={{ color: colors.textMuted }}>
+                    › {h}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        </View>
+      );
     case "placeholder":
       return (
         <View
