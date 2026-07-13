@@ -22,7 +22,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
 import { BrandedLoader } from "@/components/loader";
-import { ensureUserRow } from "@/lib/queries";
+import { mirrorInboxToDevice } from "@/lib/device-notifications";
+import { ensureUserRow, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -31,6 +32,16 @@ void SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: false } },
 });
+
+/** Mirrors fresh inbox items to the device notification tray (60s polling). */
+function NotificationMirror(): null {
+  const { session } = useSession();
+  const { data } = useNotifications(session?.user.id);
+  useEffect(() => {
+    if (data && data.length > 0) void mirrorInboxToDevice(data);
+  }, [data]);
+  return null;
+}
 
 function RootNavigator(): React.JSX.Element {
   const { session, initializing } = useSession();
@@ -102,6 +113,7 @@ export default function RootLayout(): React.JSX.Element | null {
         <QueryClientProvider client={queryClient}>
           <SessionProvider>
             <StatusBar style="light" />
+            <NotificationMirror />
             <RootNavigator />
           </SessionProvider>
         </QueryClientProvider>

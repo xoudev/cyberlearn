@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors, division as divisionColors, fonts } from "@cyberlearn/tokens";
-import { Rise } from "@/components/anim";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
@@ -62,10 +61,16 @@ export default function Classement(): React.JSX.Element {
       ) : error || !data ? (
         <ErrorState onRetry={() => void refetch()} code="RANK_LOAD" />
       ) : (
-        <View style={{ gap: 22 }}>
+        <View style={{ gap: 24 }}>
+          {/* My position */}
+          <MyRankCard data={data} />
+
+          {/* Podium top 3 */}
+          {data.entries.length >= 3 ? <Podium entries={data.entries.slice(0, 3)} /> : null}
+
           {/* League pod */}
           {data.league ? (
-            <Rise index={0}>
+            <View>
               <SectionLabel
                 eyebrow="Saison en cours"
                 title={`Division ${DIVISION_LABEL[data.league.division] ?? data.league.division}`}
@@ -75,30 +80,37 @@ export default function Classement(): React.JSX.Element {
                   </Text>
                 }
               />
-              <Card style={{ padding: 0 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.borderSubtle,
-                  }}
-                >
-                  <Text variant="micro" style={{ color: divisionColor(data.league.division) }}>
-                    ◆ Poule de {data.league.ladder.length}
-                  </Text>
-                  <Text variant="micro">XP de saison</Text>
-                </View>
-                {data.league.ladder.map((m: PodEntry, i) => (
-                  <LadderRow
-                    key={`${String(m.rank)}-${m.username ?? String(i)}`}
-                    member={m}
-                    index={i}
-                  />
-                ))}
-              </Card>
+              <View
+                style={{
+                  borderTopWidth: 2,
+                  borderTopColor: divisionColor(data.league.division),
+                }}
+              >
+                <Card style={{ padding: 0 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.borderSubtle,
+                    }}
+                  >
+                    <Text variant="micro" style={{ color: divisionColor(data.league.division) }}>
+                      ◆ Poule de {data.league.ladder.length}
+                    </Text>
+                    <Text variant="micro">XP de saison</Text>
+                  </View>
+                  {data.league.ladder.map((m: PodEntry, i) => (
+                    <LadderRow
+                      key={`${String(m.rank)}-${m.username ?? String(i)}`}
+                      member={m}
+                      index={i}
+                    />
+                  ))}
+                </Card>
+              </View>
               <View style={{ flexDirection: "row", gap: 14, marginTop: 8 }}>
                 <Text variant="micro" style={{ color: colors.promote }}>
                   ▲ Zone de promotion
@@ -107,27 +119,150 @@ export default function Classement(): React.JSX.Element {
                   ▼ Zone de relégation
                 </Text>
               </View>
-            </Rise>
+            </View>
           ) : null}
 
           {/* Global top */}
-          <Rise index={1}>
-            <SectionLabel
-              eyebrow="Général"
-              title="Top classement"
-              right={
-                <Pill label={`Toi · ${String(data.userRank)}e`} color={colors.accent} active />
-              }
-            />
+          <View>
+            <SectionLabel eyebrow="Général" title="Top classement" />
             <Card style={{ padding: 0 }}>
-              {data.entries.slice(0, 25).map((e: ClassementEntry, i) => (
+              {data.entries.slice(3, 25).map((e: ClassementEntry, i) => (
                 <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
               ))}
             </Card>
-          </Rise>
+          </View>
         </View>
       )}
     </Screen>
+  );
+}
+
+// ── My position card ──────────────────────────────────────────────────────────
+
+function MyRankCard({
+  data,
+}: {
+  data: { userRank: number; entries: ClassementEntry[]; league: { division: string } | null };
+}): React.JSX.Element {
+  const me = data.entries.find((e) => e.isCurrentUser) ?? null;
+  return (
+    <Card
+      accent={colors.accent}
+      style={{ flexDirection: "row", alignItems: "center", gap: 16, paddingVertical: 18 }}
+    >
+      <View style={{ alignItems: "center", minWidth: 76 }}>
+        <Text
+          style={{
+            fontFamily: `${fonts.sans}_800ExtraBold`,
+            fontSize: 34,
+            lineHeight: 42,
+            color: colors.accent,
+          }}
+        >
+          {data.userRank}
+          <Text style={{ fontSize: 16, color: colors.accent }}>e</Text>
+        </Text>
+        <Text variant="micro">place</Text>
+      </View>
+      <View style={{ flex: 1, gap: 4 }}>
+        <Text variant="h3">Ta position</Text>
+        <Text variant="bodySm">
+          {me
+            ? `NV.${String(me.level)} · ${String(me.xpTotal)} XP · série ${String(me.streakDays)} j`
+            : "Continue à gagner de l'XP pour grimper."}
+        </Text>
+        {data.league ? (
+          <Pill
+            label={`Ligue ${DIVISION_LABEL[data.league.division] ?? data.league.division}`}
+            color={divisionColor(data.league.division)}
+          />
+        ) : null}
+      </View>
+    </Card>
+  );
+}
+
+// ── Podium ────────────────────────────────────────────────────────────────────
+
+const MEDAL = ["#FFD34D", "#C9D1E5", "#D08A4E"] as const; // or, argent, bronze
+
+function PodiumStep({
+  entry,
+  place,
+}: {
+  entry: ClassementEntry;
+  place: 1 | 2 | 3;
+}): React.JSX.Element {
+  const medal = MEDAL[place - 1] ?? colors.accent;
+  const height = place === 1 ? 86 : place === 2 ? 64 : 50;
+  return (
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          borderWidth: 2,
+          borderColor: medal,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: `${medal}14`,
+        }}
+      >
+        <Text style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize: 16, color: medal }}>
+          {place}
+        </Text>
+      </View>
+      <Text
+        variant="micro"
+        numberOfLines={1}
+        style={{ color: entry.isCurrentUser ? colors.accent : colors.textSecondary, maxWidth: 100 }}
+      >
+        {displayName(entry)}
+      </Text>
+      <View
+        style={{
+          alignSelf: "stretch",
+          height,
+          borderWidth: 1,
+          borderColor: medal,
+          borderBottomWidth: 0,
+          backgroundColor: `${medal}10`,
+          alignItems: "center",
+          paddingTop: 8,
+        }}
+      >
+        <Text variant="mono" style={{ fontSize: 11, color: medal }}>
+          {entry.xpTotal} XP
+        </Text>
+        <Text variant="micro" style={{ color: colors.textMuted, marginTop: 2 }}>
+          NV.{entry.level}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function Podium({ entries }: { entries: ClassementEntry[] }): React.JSX.Element {
+  const [first, second, third] = entries;
+  if (!first || !second || !third) return <View />;
+  return (
+    <View>
+      <SectionLabel eyebrow="Hall of fame" title="Podium" />
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-end",
+          gap: 8,
+          borderBottomWidth: 2,
+          borderBottomColor: colors.borderDefault,
+        }}
+      >
+        <PodiumStep entry={second} place={2} />
+        <PodiumStep entry={first} place={1} />
+        <PodiumStep entry={third} place={3} />
+      </View>
+    </View>
   );
 }
 

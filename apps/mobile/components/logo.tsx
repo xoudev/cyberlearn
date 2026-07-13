@@ -1,27 +1,14 @@
 import React from "react";
-import { View, type ViewStyle } from "react-native";
-import Svg, { Defs, LinearGradient, Path, Stop } from "react-native-svg";
+import { Image, View, type ViewStyle } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 
-/** The CyberLearn mark: an ascending "A" chevron, brandBlue -> accent gradient. */
+// The real CyberLearn mark: shield + keyhole + mesh (same asset as the web).
+// SAFETY: Metro types require() of images as number (asset module id).
+const MARK = require("../assets/logo.png") as number;
+
 export function LogoMark({ size = 40 }: { size?: number }): React.JSX.Element {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <Defs>
-        <LinearGradient id="clmark" x1="0" y1="48" x2="48" y2="0">
-          <Stop offset="0" stopColor={colors.brandBlue} />
-          <Stop offset="1" stopColor={colors.accent} />
-        </LinearGradient>
-      </Defs>
-      {/* Left leg */}
-      <Path d="M7 40 L24 8" stroke="url(#clmark)" strokeWidth={6.5} strokeLinecap="round" />
-      {/* Right leg */}
-      <Path d="M41 40 L24 8" stroke="url(#clmark)" strokeWidth={6.5} strokeLinecap="round" />
-      {/* Crossbar */}
-      <Path d="M15.5 25 L32.5 25" stroke={colors.accent} strokeWidth={5} strokeLinecap="round" />
-    </Svg>
-  );
+  return <Image source={MARK} style={{ width: size, height: size }} resizeMode="contain" />;
 }
 
 /** Mark + "CYBER LEARN" wordmark, stacked or inline. */
@@ -42,7 +29,7 @@ export function Logo({
         {
           flexDirection: layout === "row" ? "row" : "column",
           alignItems: "center",
-          gap: layout === "row" ? 10 : 12,
+          gap: layout === "row" ? 10 : 14,
         },
         style,
       ]}
@@ -52,12 +39,21 @@ export function Logo({
         <Text
           style={{
             fontFamily: `${fonts.sans}_800ExtraBold`,
-            fontSize: size * 0.4,
-            letterSpacing: size * 0.06,
+            fontSize: Math.max(14, size * 0.32),
+            letterSpacing: size * 0.05,
             color: colors.textPrimary,
           }}
         >
-          CYBER LEARN
+          CYBER
+          <Text
+            style={{
+              color: colors.accent,
+              fontFamily: `${fonts.sans}_800ExtraBold`,
+              fontSize: Math.max(14, size * 0.32),
+            }}
+          >
+            LEARN
+          </Text>
         </Text>
       ) : null}
     </View>

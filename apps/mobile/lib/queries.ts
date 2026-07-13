@@ -562,6 +562,7 @@ export function useNotifications(userId: string | undefined) {
   return useQuery({
     queryKey: ["notifications", userId],
     enabled: Boolean(userId),
+    refetchInterval: 60_000,
     queryFn: async (): Promise<NotificationItem[]> => {
       const { data } = await supabase
         .from("notifications")
@@ -638,4 +639,176 @@ export async function updatePreference(
   await supabase
     .from("user_preferences")
     .upsert({ userId, [key]: value }, { onConflict: "userId" });
+}
+
+// ── Notes (bloc-notes) ────────────────────────────────────────────────────────
+
+export interface NoteFolderItem {
+  id: string;
+  name: string;
+  color: string | null;
+  icon: string | null;
+  position: number;
+}
+
+export interface NoteItem {
+  id: string;
+  lessonId: string;
+  folderId: string | null;
+  content: string;
+  wordCount: number;
+  updatedAt: string;
+  lessonTitle: string;
+  lessonSlug: string;
+  category: Category;
+}
+
+export function useNotes(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["notes", userId],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<{ folders: NoteFolderItem[]; notes: NoteItem[] }> => {
+      const [foldersRes, notesRes] = await Promise.all([
+        supabase
+          .from("note_folders")
+          .select("id,name,color,icon,position")
+          .eq("userId", userId as string) // gated by `enabled`
+          .order("position"),
+        supabase
+          .from("notes")
+          .select("id,lessonId,folderId,content,wordCount,updatedAt, lessons(title,slug,category)")
+          .eq("userId", userId as string) // gated by `enabled`
+          .order("updatedAt", { ascending: false }),
+      ]);
+      const folders = (foldersRes.data ?? []) as NoteFolderItem[];
+      const rawNotes = (notesRes.data ?? []) as unknown as (Omit<
+        NoteItem,
+        "lessonTitle" | "lessonSlug" | "category"
+      > & {
+        lessons: Embed<{ title: string; slug: string; category: Category }>;
+      })[];
+      const notes = rawNotes
+        .map((n) => {
+          const lesson = one(n.lessons);
+          if (!lesson) return null;
+          return {
+            id: n.id,
+            lessonId: n.lessonId,
+            folderId: n.folderId,
+            content: n.content,
+            wordCount: n.wordCount,
+            updatedAt: n.updatedAt,
+            lessonTitle: lesson.title,
+            lessonSlug: lesson.slug,
+            category: lesson.category,
+          };
+        })
+        .filter((n): n is NoteItem => n !== null);
+      return { folders, notes };
+    },
+  });
+}
+
+/** Fetch my note for one lesson (editor). */
+export async function fetchNoteForLesson(
+  userId: string,
+  lessonId: string,
+): Promise<{ id: string; content: string } | null> {
+  const { data } = await supabase
+    .from("notes")
+    .select("id,content")
+    .eq("userId", userId)
+    .eq("lessonId", lessonId)
+    .maybeSingle();
+  return data as { id: string; content: string } | null;
+}
+
+/** Create/update my note for a lesson (notes_self_insert/update RLS). */
+export async function saveNoteForLesson(
+  userId: string,
+  lessonId: string,
+  content: string,
+): Promise<void> {
+  const wordCount = content.trim() === "" ? 0 : content.trim().split(/\s+/).length;
+  await supabase
+    .from("notes")
+    .upsert({ userId, lessonId, content, wordCount }, { onConflict: "userId,lessonId" });
+}
+
+export async function deleteNote(noteId: string): Promise<void> {
+  await supabase.from("notes").delete().eq("id", noteId);
+}
+
+// ── Casier (cosmetics) ────────────────────────────────────────────────────────
+
+export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
+
+export interface CosmeticItem {
+  id: string;
+  code: string;
+  type: CosmeticType;
+  label: string;
+  description: string | null;
+  rarity: Rarity;
+  owned: boolean;
+  equipped: boolean;
+}
+
+export interface CasierData {
+  items: CosmeticItem[];
+  loadout: Record<string, string | null>;
+}
+
+const LOADOUT_BY_TYPE: Record<CosmeticType, string> = {
+  TERMINAL_THEME: "terminalTheme",
+  HEXAGON_STYLE: "hexagonStyle",
+  PROFILE_FRAME: "profileFrame",
+  ACCENT_COLOR: "accentColor",
+};
+
+export function useCasier(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["casier", userId],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<CasierData> => {
+      const uid = userId as string; // gated by `enabled`
+      const [cosmeticsRes, ownedRes, loadoutRes] = await Promise.all([
+        supabase
+          .from("cosmetics")
+          .select("id,code,type,label,description,rarity,orderIndex")
+          .eq("isActive", true)
+          .order("orderIndex"),
+        supabase.from("user_cosmetics").select("cosmeticId").eq("userId", uid),
+        supabase
+          .from("user_cosmetic_loadouts")
+          .select("terminalTheme,hexagonStyle,profileFrame,accentColor")
+          .eq("userId", uid)
+          .maybeSingle(),
+      ]);
+      const ownedIds = new Set(
+        ((ownedRes.data ?? []) as { cosmeticId: string }[]).map((r) => r.cosmeticId),
+      );
+      const loadout = (loadoutRes.data ?? {
+        terminalTheme: null,
+        hexagonStyle: null,
+        profileFrame: null,
+        accentColor: null,
+      }) as Record<string, string | null>;
+      const items = (
+        (cosmeticsRes.data ?? []) as {
+          id: string;
+          code: string;
+          type: CosmeticType;
+          label: string;
+          description: string | null;
+          rarity: Rarity;
+        }[]
+      ).map((c) => ({
+        ...c,
+        owned: ownedIds.has(c.id),
+        equipped: loadout[LOADOUT_BY_TYPE[c.type]] === c.code,
+      }));
+      return { items, loadout };
+    },
+  });
 }

@@ -1,12 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, Switch, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { Rise } from "@/components/anim";
 import { Screen } from "@/components/screen";
+import { GuidedTour } from "@/components/tour";
 import { Card, Divider, SectionLabel, Text } from "@/components/ui";
+import {
+  isDeviceNotificationsEnabled,
+  setDeviceNotificationsEnabled,
+} from "@/lib/device-notifications";
 import { updatePreference, usePreferences, useProfile, type Preferences } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -25,6 +30,17 @@ export default function Reglages(): React.JSX.Element {
   const queryClient = useQueryClient();
   const { data: profile } = useProfile(userId);
   const { data: prefs } = usePreferences(userId);
+  const [deviceNotifs, setDeviceNotifs] = useState(true);
+  const [showTour, setShowTour] = useState(false);
+
+  useEffect(() => {
+    void isDeviceNotificationsEnabled().then(setDeviceNotifs);
+  }, []);
+
+  async function toggleDeviceNotifs(value: boolean): Promise<void> {
+    setDeviceNotifs(value);
+    await setDeviceNotificationsEnabled(value);
+  }
 
   async function toggle(key: keyof Preferences, value: boolean): Promise<void> {
     if (!userId) return;
@@ -72,6 +88,22 @@ export default function Reglages(): React.JSX.Element {
           <Text variant="micro" style={{ color: colors.accent, marginBottom: 6 }}>
             Notifications
           </Text>
+          {/* Device tray mirror (local to this phone) */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text variant="h3">Sur cet appareil</Text>
+              <Text variant="micro" style={{ color: colors.textMuted }}>
+                Badges, niveaux et certifs dans la barre de notifications
+              </Text>
+            </View>
+            <Switch
+              value={deviceNotifs}
+              onValueChange={(v) => void toggleDeviceNotifs(v)}
+              trackColor={{ false: colors.bgOverlay, true: "rgba(10,255,212,0.35)" }}
+              thumbColor={deviceNotifs ? colors.accent : colors.textMuted}
+            />
+          </View>
+          <Divider style={{ marginVertical: 6 }} />
           {PREF_ROWS.map((row, i) => (
             <View key={row.key}>
               {i > 0 ? <Divider style={{ marginVertical: 6 }} /> : null}
@@ -119,8 +151,20 @@ export default function Reglages(): React.JSX.Element {
               </Pressable>
             </View>
           ))}
+          <Divider />
+          <Pressable
+            onPress={() => setShowTour(true)}
+            style={{ flexDirection: "row", justifyContent: "space-between", padding: 14 }}
+          >
+            <Text variant="h3">Revoir la visite guidée</Text>
+            <Text variant="micro" style={{ color: colors.accent }}>
+              ▶
+            </Text>
+          </Pressable>
         </Card>
       </Rise>
+
+      {showTour ? <GuidedTour onDone={() => setShowTour(false)} /> : null}
 
       {/* Sign out */}
       <Rise index={3}>

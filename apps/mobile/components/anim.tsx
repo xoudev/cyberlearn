@@ -14,6 +14,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import Svg, { Polygon } from "react-native-svg";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 
@@ -141,7 +142,15 @@ export function CountUp({
     },
   );
   return (
-    <Text style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize, color }}>
+    <Text
+      style={{
+        fontFamily: `${fonts.sans}_800ExtraBold`,
+        fontSize,
+        // Explicit line height: RN clips large glyph ascenders otherwise.
+        lineHeight: Math.round(fontSize * 1.25),
+        color,
+      }}
+    >
       {prefix}
       {display}
       {suffix}
@@ -244,7 +253,41 @@ export function SparkBurst({ count = 10 }: { count?: number }): React.JSX.Elemen
   );
 }
 
-/** Full-screen level-up celebration overlay. */
+/** Discreet pulsing ring drawn BEHIND the level badge. */
+function PulseRing({ size }: { size: number }): React.JSX.Element {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+    );
+  }, [t]);
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.14 + t.value * 0.12,
+    transform: [{ scale: 1 + t.value * 0.06 }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: "absolute",
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 1.5,
+          borderColor: colors.accent,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+/** Full-screen level-up celebration overlay (clean card + hexagon badge). */
 export function LevelUpOverlay({
   level,
   onClose,
@@ -252,73 +295,79 @@ export function LevelUpOverlay({
   level: number;
   onClose: () => void;
 }): React.JSX.Element {
-  const glow = useSharedValue(0.4);
-  useEffect(() => {
-    glow.value = withRepeat(
-      withSequence(withTiming(1, { duration: 800 }), withTiming(0.4, { duration: 800 })),
-      -1,
-    );
-  }, [glow]);
-  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
   return (
     <Animated.View
-      entering={FadeIn.duration(250)}
+      entering={FadeIn.duration(220)}
       style={{
         position: "absolute",
         inset: 0,
         zIndex: 60,
-        backgroundColor: "rgba(2,1,14,0.94)",
+        backgroundColor: "rgba(2,1,14,0.9)",
         alignItems: "center",
         justifyContent: "center",
-        gap: 18,
+        padding: 28,
       }}
     >
-      <Animated.View
-        style={[
-          {
-            position: "absolute",
-            width: 260,
-            height: 260,
-            borderRadius: 130,
-            backgroundColor: colors.accent,
-            opacity: 0.4,
-            transform: [{ scale: 1 }],
-            shadowColor: colors.accent,
-            shadowRadius: 60,
-            shadowOpacity: 0.9,
-          },
-          glowStyle,
-          { opacity: 0.12 },
-        ]}
-      />
-      <Text variant="micro" style={{ color: colors.accent, letterSpacing: 3 }}>
-        Niveau supérieur
-      </Text>
-      <PopIn delay={150}>
-        <Text
-          style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize: 88, color: colors.accent }}
-        >
-          {level}
-        </Text>
-      </PopIn>
-      <Text variant="body" style={{ textAlign: "center", maxWidth: 240 }}>
-        Continue comme ça, la machine est lancée.
-      </Text>
-      <PressableScale
-        onPress={onClose}
+      <View
         style={{
-          marginTop: 10,
-          paddingHorizontal: 28,
-          height: 46,
+          alignSelf: "stretch",
           alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: colors.accent,
+          gap: 16,
+          paddingVertical: 34,
+          paddingHorizontal: 24,
+          backgroundColor: colors.bgElevated,
+          borderWidth: 1,
+          borderColor: colors.accent,
         }}
       >
-        <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-          Continuer
+        <Text variant="micro" style={{ color: colors.accent, letterSpacing: 3 }}>
+          Niveau supérieur
         </Text>
-      </PressableScale>
+
+        {/* Hexagon badge with the new level */}
+        <View style={{ width: 150, height: 150, alignItems: "center", justifyContent: "center" }}>
+          <PulseRing size={148} />
+          <Svg width={120} height={120} viewBox="0 0 100 100" style={{ position: "absolute" }}>
+            <Polygon
+              points="50,4 89,27 89,73 50,96 11,73 11,27"
+              fill="rgba(10,255,212,0.07)"
+              stroke={colors.accent}
+              strokeWidth={2.5}
+            />
+          </Svg>
+          <PopIn delay={120}>
+            <Text
+              style={{
+                fontFamily: `${fonts.sans}_800ExtraBold`,
+                fontSize: 44,
+                lineHeight: 54,
+                color: colors.accent,
+              }}
+            >
+              {level}
+            </Text>
+          </PopIn>
+        </View>
+
+        <Text variant="body" style={{ textAlign: "center", maxWidth: 240 }}>
+          Continue comme ça, la machine est lancée.
+        </Text>
+        <PressableScale
+          onPress={onClose}
+          style={{
+            marginTop: 4,
+            alignSelf: "stretch",
+            height: 46,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: colors.accent,
+          }}
+        >
+          <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
+            Continuer
+          </Text>
+        </PressableScale>
+      </View>
     </Animated.View>
   );
 }

@@ -91,3 +91,12 @@ export function CheckIcon(p: IconProps): React.JSX.Element {
     </Base>
   );
 }
+
+export function LockIcon(p: IconProps): React.JSX.Element {
+  return (
+    <Base {...p}>
+      <Path d="M4.5 7.5 V5.5 a3.5 3.5 0 0 1 7 0 V7.5" />
+      <Path d="M3.5 7.5 h9 v6 h-9 z" />
+    </Base>
+  );
+}

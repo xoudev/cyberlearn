@@ -93,13 +93,28 @@ export default function LessonReader(): React.JSX.Element {
           <Pressable onPress={() => router.back()}>
             <Text variant="micro">← Quitter</Text>
           </Pressable>
-          <Text variant="micro" style={{ color: colors.accent }}>
-            {step.mode === "read"
-              ? `Section ${String(step.section + 1)} / ${String(sections.length)}`
-              : step.mode === "quiz"
-                ? `Quiz ${String(step.qIndex + 1)} / ${String(quizzes.length)}`
-                : "Résultat"}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/notes/[lessonId]",
+                  params: { lessonId: data.id, title: data.title },
+                })
+              }
+              hitSlop={8}
+            >
+              <Text variant="micro" style={{ color: colors.textSecondary }}>
+                ✎ Notes
+              </Text>
+            </Pressable>
+            <Text variant="micro" style={{ color: colors.accent }}>
+              {step.mode === "read"
+                ? `Section ${String(step.section + 1)} / ${String(sections.length)}`
+                : step.mode === "quiz"
+                  ? `Quiz ${String(step.qIndex + 1)} / ${String(quizzes.length)}`
+                  : "Résultat"}
+            </Text>
+          </View>
         </View>
         <Text variant="micro" style={{ color: cat }}>
           {CATEGORY_LABEL[data.category]} · {DIFFICULTY_LABEL[data.difficulty]}
@@ -444,7 +459,7 @@ function ResultView({
         ) : null}
 
         {/* XP reward */}
-        <View style={{ alignItems: "center", marginTop: 16, minHeight: 70 }}>
+        <View style={{ alignItems: "center", marginTop: 16, minHeight: 96, paddingTop: 4 }}>
           {saving ? (
             <ActivityIndicator color={colors.accent} />
           ) : reward ? (
