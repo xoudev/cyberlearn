@@ -27,6 +27,7 @@ export default function NoteEditor(): React.JSX.Element {
   const [content, setContent] = useState<string | null>(null); // null = loading
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const dirty = useRef(false);
 
   useEffect(() => {
@@ -39,7 +40,14 @@ export default function NoteEditor(): React.JSX.Element {
   async function save(): Promise<void> {
     if (!userId || !lessonId || content === null) return;
     setSaving(true);
-    await saveNoteForLesson(userId, lessonId, content);
+    setSaveError(null);
+    try {
+      await saveNoteForLesson(userId, lessonId, content);
+    } catch {
+      setSaving(false);
+      setSaveError("Enregistrement impossible. Réessaie.");
+      return;
+    }
     setSaving(false);
     setSavedAt(Date.now());
     dirty.current = false;
@@ -65,8 +73,9 @@ export default function NoteEditor(): React.JSX.Element {
           <Pressable onPress={() => router.back()}>
             <Text variant="micro">← Retour</Text>
           </Pressable>
-          <Text variant="micro" style={{ color: colors.textMuted }}>
-            {words} mots{savedAt && !dirty.current ? " · enregistré ✓" : ""}
+          <Text variant="micro" style={{ color: saveError ? colors.danger : colors.textMuted }}>
+            {saveError ??
+              `${String(words)} mots${savedAt && !dirty.current ? " · enregistré ✓" : ""}`}
           </Text>
         </View>
 

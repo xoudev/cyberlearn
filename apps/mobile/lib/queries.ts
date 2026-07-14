@@ -1,8 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
 import { supabase } from "@/lib/supabase";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
+
+// Prisma's @default(uuid()) generates ids CLIENT-side, so these tables have
+// `id UUID NOT NULL` with no database default. Direct PostgREST inserts must
+// therefore provide the id themselves (server writes go through Prisma).
 
 // We do not ship generated Supabase types, so raw query rows are cast to these
 // hand-written shapes (documented `as` casts). Tables snake_case, columns camelCase.
@@ -489,7 +494,7 @@ export async function markLessonOpened(userId: string, lessonId: string): Promis
   if (!existing) {
     await supabase
       .from("user_lesson_progress")
-      .insert({ userId, lessonId, status: "IN_PROGRESS", lastAccessedAt: now });
+      .insert({ id: randomUUID(), userId, lessonId, status: "IN_PROGRESS", lastAccessedAt: now });
   } else if (existing.status !== "COMPLETED") {
     await supabase
       .from("user_lesson_progress")
@@ -733,12 +738,22 @@ export async function saveNoteForLesson(
   content: string,
 ): Promise<void> {
   const wordCount = content.trim() === "" ? 0 : content.trim().split(/\s+/).length;
-  await supabase
-    .from("notes")
-    .upsert(
-      { userId, lessonId, content, wordCount, updatedAt: new Date().toISOString() },
-      { onConflict: "userId,lessonId" },
-    );
+  const now = new Date().toISOString();
+  // Select-then-insert/update rather than upsert: the insert must carry a
+  // client id (no DB default), but an upsert would overwrite it on conflict.
+  const existing = await fetchNoteForLesson(userId, lessonId);
+  if (existing) {
+    const { error } = await supabase
+      .from("notes")
+      .update({ content, wordCount, updatedAt: now })
+      .eq("id", existing.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase
+      .from("notes")
+      .insert({ id: randomUUID(), userId, lessonId, content, wordCount, updatedAt: now });
+    if (error) throw new Error(error.message);
+  }
 }
 
 export async function deleteNote(noteId: string): Promise<void> {
@@ -837,9 +852,15 @@ export async function createNoteFolder(
   icon: string,
   position: number,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("note_folders")
-    .insert({ userId, name, color, icon, position, updatedAt: new Date().toISOString() });
+  const { error } = await supabase.from("note_folders").insert({
+    id: randomUUID(),
+    userId,
+    name,
+    color,
+    icon,
+    position,
+    updatedAt: new Date().toISOString(),
+  });
   if (error) throw new Error(error.message);
 }
 
