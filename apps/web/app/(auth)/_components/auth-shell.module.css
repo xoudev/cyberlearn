@@ -219,6 +219,56 @@
   opacity: 0.55;
 }
 
+.divider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  color: #575378;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.divider span {
+  height: 1px;
+  background: #2a2560;
+}
+
+.divider b {
+  font-weight: 600;
+}
+
+.oauthButton {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid #2a2560;
+  border-radius: 0;
+  background: #080622;
+  color: #f5f5fa;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.oauthButton:hover,
+.oauthButton:focus-visible {
+  border-color: #6f6b99;
+  background: #0a0828;
+}
+
+.oauthButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .message {
   margin: 0;
   padding: 13px 14px;

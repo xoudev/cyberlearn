@@ -1,16 +1,22 @@
 import { passwordSignInSchema } from "@cyberlearn/types";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React, { useState } from "react";
-import { View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { colors } from "@cyberlearn/tokens";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
+import { Text } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
+
+void WebBrowser.maybeCompleteAuthSession();
 
 export default function Login(): React.JSX.Element {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"password" | "github" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function signIn(): Promise<void> {
@@ -20,16 +26,65 @@ export default function Login(): React.JSX.Element {
       return;
     }
 
-    setBusy(true);
+    setBusy("password");
     setError(null);
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: result.data.email,
       password: result.data.password,
     });
-    setBusy(false);
+    setBusy(null);
 
     if (signInError) {
       setError("Adresse e-mail ou mot de passe incorrect.");
+    }
+  }
+
+  async function signInWithGitHub(): Promise<void> {
+    setError(null);
+    setBusy("github");
+
+    try {
+      const redirectTo = Linking.createURL("auth-callback", { scheme: "cyberlearn" });
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          scopes: "read:user user:email",
+        },
+      });
+      if (oauthError || !data.url) {
+        setError("Connexion GitHub indisponible.");
+        return;
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type !== "success" || !result.url) return;
+
+      const callbackUrl = new URL(result.url);
+      const code = callbackUrl.searchParams.get("code");
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) setError("La session GitHub n’a pas pu être ouverte.");
+        return;
+      }
+
+      const fragment = new URLSearchParams(callbackUrl.hash.replace(/^#/, ""));
+      const accessToken = fragment.get("access_token");
+      const refreshToken = fragment.get("refresh_token");
+      if (!accessToken || !refreshToken) {
+        setError("La réponse GitHub est incomplète.");
+        return;
+      }
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (sessionError) setError("La session GitHub n’a pas pu être ouverte.");
+    } catch {
+      setError("Connexion GitHub interrompue.");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -66,7 +121,38 @@ export default function Login(): React.JSX.Element {
       </View>
 
       <AuthError message={error} />
-      <GradientButton label="Se connecter" onPress={() => void signIn()} loading={busy} />
+      <GradientButton
+        label="Se connecter"
+        onPress={() => void signIn()}
+        disabled={busy !== null}
+        loading={busy === "password"}
+      />
+
+      <View style={styles.divider} accessibilityElementsHidden>
+        <View style={styles.dividerLine} />
+        <Text variant="micro">ou</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Continuer avec GitHub"
+        disabled={busy !== null}
+        onPress={() => void signInWithGitHub()}
+        style={({ pressed }) => [
+          styles.githubButton,
+          pressed && styles.githubButtonPressed,
+          busy !== null && styles.githubButtonDisabled,
+        ]}
+      >
+        {busy === "github" ? (
+          <ActivityIndicator color={colors.textPrimary} />
+        ) : (
+          <Text variant="micro" style={styles.githubLabel}>
+            Continuer avec GitHub
+          </Text>
+        )}
+      </Pressable>
 
       <View style={{ gap: 2 }}>
         <AuthTextLink
@@ -78,3 +164,19 @@ export default function Login(): React.JSX.Element {
     </AuthFormScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  divider: { flexDirection: "row", alignItems: "center", gap: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.borderSubtle },
+  githubButton: {
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.bgElevated,
+  },
+  githubButtonPressed: { borderColor: colors.textSecondary, opacity: 0.85 },
+  githubButtonDisabled: { opacity: 0.5 },
+  githubLabel: { color: colors.textPrimary, letterSpacing: 1 },
+});

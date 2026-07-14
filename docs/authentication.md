@@ -7,6 +7,8 @@ portal, and the native mobile application.
 
 - Registration uses email and password. The password must contain 12 to 128
   characters, at least one letter, and at least one number.
+- GitHub OAuth remains available as an alternative sign-in method on the public
+  website and the native mobile application.
 - The email address must be verified before the first authenticated session.
 - Password recovery always returns to `cyberlearn.fr/reset-password`.
 - TOTP MFA is optional for students. Once a verified factor exists, both the web
@@ -76,7 +78,17 @@ In **Authentication > URL Configuration**:
 
 - set the site URL to `https://cyberlearn.fr`;
 - allow `https://cyberlearn.fr/auth/callback`;
+- allow `https://www.cyberlearn.fr/auth/callback` during the `www` to apex
+  domain transition;
+- allow `cyberlearn://**` for installed iOS and Android builds;
 - add the local callback URLs only to non-production projects.
+
+In **Authentication > Providers > GitHub**:
+
+- enable the GitHub provider with the OAuth application client ID and secret;
+- configure the GitHub OAuth application callback with the Supabase callback
+  URL shown by the provider panel;
+- keep the website and mobile redirect URLs above in Supabase's allow list.
 
 The custom email hook at `/api/auth/send-email` must remain configured with its
 webhook signing secret so signup confirmation and recovery messages are sent

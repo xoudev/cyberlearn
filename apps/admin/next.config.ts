@@ -81,6 +81,9 @@ export default withSentryConfig(nextConfig, {
   },
   // Remove Sentry logger statements from the production bundle
   disableLogger: true,
+  // Keep browser telemetry same-origin so privacy filters and Cloudflare's
+  // ingest cookies cannot block or pollute client-side error reporting.
+  tunnelRoute: "/monitoring",
   // Don't auto-create Vercel Cron monitors (we manage cron separately)
   automaticVercelMonitors: false,
 });

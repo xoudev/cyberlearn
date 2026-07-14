@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { headers } from "next/headers";
 import {
   passwordResetRequestSchema,
@@ -68,9 +69,23 @@ export async function signInWithPassword(
     };
   }
 
-  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  const redirectTo = await resolveUserPostSignInRoute(assurance, data.user, parsed.data.redirectTo);
-  return { status: "success", message: null, redirectTo };
+  try {
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const redirectTo = await resolveUserPostSignInRoute(
+      assurance,
+      data.user,
+      parsed.data.redirectTo,
+    );
+    return { status: "success", message: null, redirectTo };
+  } catch (profileError) {
+    Sentry.captureException(profileError, { tags: { area: "auth.profile-sync" } });
+    await supabase.auth.signOut({ scope: "local" });
+    return {
+      status: "error",
+      message: "La session n’a pas pu être initialisée. Réessaie dans un instant.",
+      redirectTo: null,
+    };
+  }
 }
 
 export async function signUpWithPassword(
