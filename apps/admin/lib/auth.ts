@@ -1,17 +1,8 @@
 import { notFound, redirect } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-/**
- * Auth guard for admin Server Actions.
- *
- * In production the Supabase Auth Hook injects `user_role` into the JWT, so
- * the role is read from app_metadata without hitting the DB.
- * In dev the hook may not be running, so we fall back to a direct DB lookup,
- * the same pattern used in the (admin) layout.
- *
- * Returns 404 (not 403) to avoid revealing the route to non-admins.
- */
+/** Requires an ADMIN session that has completed the mandatory TOTP challenge. */
 export async function requireAdminAction(): Promise<{
   id: string;
   email: string | undefined;
@@ -21,21 +12,15 @@ export async function requireAdminAction(): Promise<{
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role: string | undefined = jwtRole;
+  const dbUser = await userRepository.findRoleById(user.id);
+  if (dbUser?.role !== "ADMIN") notFound();
 
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { role: true },
-    });
-    role = dbUser?.role ?? undefined;
-  }
-
-  if (role !== "ADMIN") notFound();
+  const factors = await supabase.auth.mfa.listFactors();
+  if (factors.error || factors.data.totp.length === 0) redirect("/mfa/setup");
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error || assurance.data.currentLevel !== "aal2") redirect("/mfa");
 
   return { id: user.id, email: user.email, role: "ADMIN" };
 }

@@ -114,11 +114,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     return NextResponse.json({});
-  } catch (err) {
-    console.error(
-      "[send-email] Unhandled error:",
-      err instanceof Error ? err.message : String(err),
-    );
+  } catch {
     return NextResponse.json({}, { status: 500 });
   }
 }
