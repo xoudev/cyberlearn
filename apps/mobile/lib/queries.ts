@@ -852,17 +852,15 @@ export async function createNoteFolder(
   icon: string,
   position: number,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("note_folders")
-    .insert({
-      id: randomUUID(),
-      userId,
-      name,
-      color,
-      icon,
-      position,
-      updatedAt: new Date().toISOString(),
-    });
+  const { error } = await supabase.from("note_folders").insert({
+    id: randomUUID(),
+    userId,
+    name,
+    color,
+    icon,
+    position,
+    updatedAt: new Date().toISOString(),
+  });
   if (error) throw new Error(error.message);
 }
 
