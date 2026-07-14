@@ -135,12 +135,12 @@ export default function Reglages(): React.JSX.Element {
       <Rise index={2}>
         <Card style={{ padding: 0, marginBottom: 18 }}>
           {[
-            { label: "Modifier mon profil", url: "https://www.cyberlearn.fr/profile/edit" },
-            { label: "Confidentialité", url: "https://www.cyberlearn.fr/privacy" },
-            { label: "CGU", url: "https://www.cyberlearn.fr/terms" },
+            { label: "Modifier mon profil", url: "https://cyberlearn.fr/profile/edit" },
+            { label: "Confidentialité", url: "https://cyberlearn.fr/privacy" },
+            { label: "CGU", url: "https://cyberlearn.fr/terms" },
             {
               label: "Exporter / supprimer mes données (RGPD)",
-              url: "https://www.cyberlearn.fr/settings/data",
+              url: "https://cyberlearn.fr/settings/data",
             },
           ].map((l, i) => (
             <View key={l.label}>

@@ -2,12 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  KeyboardAvoidingView,
   type LayoutChangeEvent,
-  Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  Platform,
   RefreshControl,
   ScrollView as NativeScrollView,
   TextInput,
@@ -24,11 +21,10 @@ import Animated, {
   type SharedValue,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
-  withTiming,
 } from "react-native-reanimated";
 import { colors, fonts, radius } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
+import { AppModal } from "@/components/app-modal";
 import { ActionChip, BackButton } from "@/components/buttons";
 import { FOLDER_ICON_NAMES, FolderGlyph } from "@/components/folder-icons";
 import { ChevronRight } from "@/components/icons";
@@ -79,6 +75,11 @@ interface NotesData {
   notes: NoteItem[];
 }
 
+interface NoteDragGestures {
+  card: PanGesture;
+  handle: PanGesture;
+}
+
 /**
  * Long-press then drag a note card; the card follows the finger and the parent
  * is told where it hovers/drops (window coordinates, like measureInWindow).
@@ -104,68 +105,74 @@ function DraggableNote({
   onHoverAt: (y: number) => void;
   onDropAt: (noteId: string, y: number) => void;
   onDragFinish: (noteId: string) => void;
-  children: (dragGesture: PanGesture) => React.ReactNode;
+  children: (dragGestures: NoteDragGestures) => React.ReactNode;
 }): React.JSX.Element {
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const active = useSharedValue(0);
 
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
+  const dragGestures = useMemo(() => {
+    const configure = (gesture: PanGesture): PanGesture =>
+      gesture
         .enabled(!disabled)
         .maxPointers(1)
-        .activateAfterLongPress(250)
         .shouldCancelWhenOutside(false)
         .blocksExternalGesture(scrollGesture)
         .onBegin(() => {
+          "worklet";
           runOnJS(onDragPrepare)();
         })
         .onStart(() => {
-          active.value = withTiming(1, { duration: 120 });
+          "worklet";
+          active.value = 1;
           runOnJS(onDragStart)(noteId);
         })
         .onUpdate((event) => {
+          "worklet";
           tx.value = event.translationX;
           ty.value = event.translationY;
           runOnJS(onHoverAt)(event.absoluteY);
         })
         .onEnd((event, success) => {
+          "worklet";
           if (success) runOnJS(onDropAt)(noteId, event.absoluteY);
           runOnJS(onDragFinish)(noteId);
         })
         .onFinalize(() => {
-          active.value = withTiming(0, { duration: 150 });
-          tx.value = withSpring(0, { damping: 16 });
-          ty.value = withSpring(0, { damping: 16 });
-        }),
-    [
-      active,
-      disabled,
-      noteId,
-      onDragFinish,
-      onDragPrepare,
-      onDragStart,
-      onDropAt,
-      onHoverAt,
-      scrollGesture,
-      tx,
-      ty,
-    ],
-  );
+          "worklet";
+          active.value = 0;
+          tx.value = 0;
+          ty.value = 0;
+        });
+
+    return {
+      card: configure(Gesture.Pan().activateAfterLongPress(250)),
+      handle: configure(Gesture.Pan().minDistance(1)),
+    };
+  }, [
+    active,
+    disabled,
+    noteId,
+    onDragFinish,
+    onDragPrepare,
+    onDragStart,
+    onDropAt,
+    onHoverAt,
+    scrollGesture,
+    tx,
+    ty,
+  ]);
 
   const style = useAnimatedStyle(() => ({
     transform: [
       { translateX: tx.value },
       { translateY: ty.value + scrollCompensation.value * active.value },
-      { scale: 1 + active.value * 0.03 },
     ],
-    opacity: 1 - active.value * 0.1,
     zIndex: active.value > 0 ? 100 : 0,
     elevation: active.value > 0 ? 10 : 0,
   }));
 
-  return <Animated.View style={style}>{children(pan)}</Animated.View>;
+  return <Animated.View style={style}>{children(dragGestures)}</Animated.View>;
 }
 
 export default function Notes(): React.JSX.Element {
@@ -609,7 +616,7 @@ export default function Notes(): React.JSX.Element {
             <View style={{ gap: 22 }}>
               {notes.length > 0 && folders.length > 0 ? (
                 <Text variant="micro" style={{ color: colors.textDisabled }}>
-                  Astuce : reste appuyé sur une note et glisse-la sur un dossier.
+                  Astuce : attrape la poignée à six points pour déplacer une note.
                 </Text>
               ) : null}
               {folders.map((f) => {
@@ -682,11 +689,12 @@ export default function Notes(): React.JSX.Element {
                             onDropAt={handleDropAt}
                             onDragFinish={handleDragFinish}
                           >
-                            {(dragGesture) => (
+                            {(dragGestures) => (
                               <NoteCard
                                 note={n}
                                 folder={f}
-                                dragGesture={dragGesture}
+                                cardDragGesture={dragGestures.card}
+                                handleDragGesture={dragGestures.handle}
                                 moveDisabled={pendingMoveId !== null}
                                 movePending={pendingMoveId === n.id}
                                 onPress={() => openNote(n)}
@@ -748,11 +756,12 @@ export default function Notes(): React.JSX.Element {
                         onDropAt={handleDropAt}
                         onDragFinish={handleDragFinish}
                       >
-                        {(dragGesture) => (
+                        {(dragGestures) => (
                           <NoteCard
                             note={n}
                             folder={null}
-                            dragGesture={dragGesture}
+                            cardDragGesture={dragGestures.card}
+                            handleDragGesture={dragGestures.handle}
                             moveDisabled={pendingMoveId !== null}
                             movePending={pendingMoveId === n.id}
                             onPress={() => openNote(n)}
@@ -805,286 +814,280 @@ export default function Notes(): React.JSX.Element {
       ) : null}
 
       {/* Folder create / edit modal */}
-      <Modal
+      <AppModal
         visible={draft !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
+        scroll
+        onClose={() => {
           setConfirmDelete(null);
           setDraft(null);
         }}
       >
-        <KeyboardAvoidingView
-          style={modalBackdrop}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <View style={modalCard}>
-            <Text variant="h2" style={{ marginBottom: 4 }}>
-              {draft?.id ? "Modifier le dossier" : "Nouveau dossier"}
-            </Text>
-            {mutError ? (
-              <Text
-                variant="bodySm"
-                accessibilityRole="alert"
-                accessibilityLiveRegion="polite"
-                style={{ color: colors.danger }}
-              >
-                {mutError}
-              </Text>
-            ) : null}
-            <TextInput
-              value={draft?.name ?? ""}
-              onChangeText={(t) => setDraft((d) => (d ? { ...d, name: t } : d))}
-              placeholder="Nom du dossier…"
-              placeholderTextColor={colors.textDisabled}
-              maxLength={40}
+        <Text variant="h2" style={{ marginBottom: 4 }}>
+          {draft?.id ? "Modifier le dossier" : "Nouveau dossier"}
+        </Text>
+        {mutError ? (
+          <Text
+            variant="bodySm"
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            style={{ color: colors.danger }}
+          >
+            {mutError}
+          </Text>
+        ) : null}
+        <TextInput
+          value={draft?.name ?? ""}
+          onChangeText={(t) => setDraft((d) => (d ? { ...d, name: t } : d))}
+          placeholder="Nom du dossier…"
+          placeholderTextColor={colors.textDisabled}
+          maxLength={40}
+          style={{
+            height: 48,
+            borderRadius: radius.sm,
+            backgroundColor: colors.bgOverlay,
+            color: colors.textPrimary,
+            fontFamily: `${fonts.mono}_400Regular`,
+            fontSize: 13,
+            paddingHorizontal: 14,
+          }}
+        />
+
+        <Text variant="micro" style={{ marginTop: 4 }}>
+          Couleur
+        </Text>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {FOLDER_COLORS.map((c) => (
+            <PressableScale
+              key={c}
+              accessibilityLabel={`Couleur ${c}`}
+              accessibilityState={{ selected: draft?.color === c }}
+              onPress={() => setDraft((d) => (d ? { ...d, color: c } : d))}
               style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                backgroundColor: draft?.color === c ? `${c}30` : colors.bgOverlay,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: c }} />
+            </PressableScale>
+          ))}
+        </View>
+
+        <Text variant="micro" style={{ marginTop: 4 }}>
+          Icône
+        </Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {FOLDER_ICON_NAMES.map((name) => (
+            <PressableScale
+              key={name}
+              accessibilityLabel={`Icône ${name}`}
+              accessibilityState={{ selected: draft?.icon === name }}
+              onPress={() => setDraft((d) => (d ? { ...d, icon: name } : d))}
+              style={{
+                width: 44,
                 height: 44,
-                borderWidth: 1,
-                borderColor: colors.borderDefault,
-                backgroundColor: "rgba(5,4,26,0.6)",
-                color: colors.textPrimary,
-                fontFamily: `${fonts.mono}_400Regular`,
-                fontSize: 13,
-                paddingHorizontal: 12,
+                borderRadius: radius.sm,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: draft?.icon === name ? `${draft.color}18` : colors.bgOverlay,
+              }}
+            >
+              <FolderGlyph name={name} color={draft?.color ?? colors.accent} size={18} />
+            </PressableScale>
+          ))}
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 10, alignItems: "center" }}>
+          <ActionChip label="Annuler" tone="neutral" onPress={() => setDraft(null)} />
+          {draft?.id ? (
+            <ActionChip
+              label="Supprimer"
+              tone="danger"
+              onPress={() => {
+                const folder = folders.find((item) => item.id === draft.id);
+                if (folder) setConfirmDelete(folder);
               }}
             />
+          ) : null}
+          <View style={{ flex: 1 }} />
+          <PressableScale
+            onPress={() => void saveDraft()}
+            disabled={!draft || draft.name.trim() === ""}
+            style={{
+              paddingHorizontal: 20,
+              minHeight: 44,
+              borderRadius: radius.sm,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: draft && draft.name.trim() !== "" ? colors.accent : colors.bgOverlay,
+            }}
+          >
+            <Text
+              variant="micro"
+              style={{
+                color: draft && draft.name.trim() !== "" ? colors.bgBase : colors.textMuted,
+              }}
+            >
+              {draft?.id ? "Enregistrer" : "Créer"}
+            </Text>
+          </PressableScale>
+        </View>
 
-            <Text variant="micro" style={{ marginTop: 6 }}>
-              Couleur
+        {confirmDelete ? (
+          <View
+            style={{
+              marginTop: 8,
+              borderRadius: radius.sm,
+              backgroundColor: "rgba(255,77,109,0.1)",
+              padding: 14,
+              gap: 12,
+            }}
+          >
+            <Text variant="bodySm">
+              Supprimer « {confirmDelete.name} » ? Les notes qu'il contient repassent en « Sans
+              dossier ».
             </Text>
             <View style={{ flexDirection: "row", gap: 10 }}>
-              {FOLDER_COLORS.map((c) => (
-                <PressableScale
-                  key={c}
-                  accessibilityLabel={`Couleur ${c}`}
-                  onPress={() => setDraft((d) => (d ? { ...d, color: c } : d))}
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
-                    backgroundColor: `${c}2A`,
-                    borderWidth: draft?.color === c ? 2 : 1,
-                    borderColor: draft?.color === c ? c : colors.borderDefault,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c }} />
-                </PressableScale>
-              ))}
-            </View>
-
-            <Text variant="micro" style={{ marginTop: 6 }}>
-              Icône
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {FOLDER_ICON_NAMES.map((name) => (
-                <PressableScale
-                  key={name}
-                  accessibilityLabel={`Icône ${name}`}
-                  onPress={() => setDraft((d) => (d ? { ...d, icon: name } : d))}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: radius.sm,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 1.5,
-                    borderColor: draft?.icon === name ? draft.color : colors.borderDefault,
-                    backgroundColor: draft?.icon === name ? `${draft.color}14` : "rgba(5,4,26,0.5)",
-                  }}
-                >
-                  <FolderGlyph name={name} color={draft?.color ?? colors.accent} size={18} />
-                </PressableScale>
-              ))}
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 14, alignItems: "center" }}>
-              <ActionChip label="Annuler" tone="neutral" onPress={() => setDraft(null)} />
-              {draft?.id ? (
-                <ActionChip
-                  label="Supprimer"
-                  tone="danger"
-                  onPress={() => {
-                    const f = folders.find((x) => x.id === draft.id);
-                    if (f) setConfirmDelete(f);
-                  }}
-                />
-              ) : null}
-              <View style={{ flex: 1 }} />
-              <PressableScale
-                onPress={() => void saveDraft()}
-                disabled={!draft || draft.name.trim() === ""}
-                style={{
-                  paddingHorizontal: 20,
-                  height: 40,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor:
-                    draft && draft.name.trim() !== "" ? colors.accent : colors.bgOverlay,
-                }}
-              >
-                <Text
-                  variant="micro"
-                  style={{
-                    color: draft && draft.name.trim() !== "" ? colors.bgBase : colors.textMuted,
-                  }}
-                >
-                  {draft?.id ? "Enregistrer" : "Créer"}
-                </Text>
-              </PressableScale>
-            </View>
-
-            {confirmDelete ? (
-              <View
-                style={{
-                  marginTop: 12,
-                  borderWidth: 1,
-                  borderColor: "rgba(255,77,109,0.5)",
-                  padding: 12,
-                  gap: 10,
-                }}
-              >
-                <Text variant="bodySm">
-                  Supprimer « {confirmDelete.name} » ? Les notes qu'il contient repassent en « Sans
-                  dossier ».
-                </Text>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <ActionChip
-                    label="Annuler"
-                    tone="neutral"
-                    onPress={() => setConfirmDelete(null)}
-                  />
-                  <ActionChip
-                    label="Supprimer définitivement"
-                    tone="danger"
-                    onPress={() => void removeFolder(confirmDelete)}
-                  />
-                </View>
-              </View>
-            ) : null}
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* Move-note modal */}
-      <Modal
-        visible={movingNote !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          if (pendingMoveId === null) setMovingNote(null);
-        }}
-      >
-        <View style={modalBackdrop}>
-          <View style={modalCard}>
-            <Text variant="h2">Ranger la note</Text>
-            {mutError ? (
-              <Text
-                variant="bodySm"
-                accessibilityRole="alert"
-                accessibilityLiveRegion="polite"
-                style={{ color: colors.danger }}
-              >
-                {mutError}
-              </Text>
-            ) : null}
-            <Text variant="bodySm" numberOfLines={1} style={{ marginBottom: 6 }}>
-              {movingNote?.lessonTitle}
-            </Text>
-            {pendingMoveId !== null ? (
-              <Text
-                variant="micro"
-                accessibilityLiveRegion="polite"
-                style={{ color: colors.accent }}
-              >
-                Rangement en cours…
-              </Text>
-            ) : null}
-            <NativeScrollView style={{ maxHeight: 340 }} contentContainerStyle={{ gap: 8 }}>
-              {folders.map((f) => (
-                <PressableScale
-                  key={f.id}
-                  accessibilityLabel={`Déplacer vers ${f.name}`}
-                  accessibilityState={{
-                    selected: movingNote?.folderId === f.id,
-                    disabled: pendingMoveId !== null,
-                  }}
-                  onPress={() => void moveTo(f.id)}
-                  disabled={pendingMoveId !== null}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                    minHeight: 48,
-                    borderWidth: 1,
-                    borderColor:
-                      movingNote?.folderId === f.id
-                        ? (f.color ?? colors.accent)
-                        : colors.borderDefault,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    opacity: pendingMoveId !== null ? 0.55 : 1,
-                  }}
-                >
-                  <FolderGlyph name={f.icon} color={f.color ?? colors.accent} size={16} />
-                  <Text variant="h3" style={{ flex: 1, fontSize: 13.5 }}>
-                    {f.name}
-                  </Text>
-                  {movingNote?.folderId === f.id ? (
-                    <Text variant="micro" style={{ color: f.color ?? colors.accent }}>
-                      actuel
-                    </Text>
-                  ) : null}
-                </PressableScale>
-              ))}
-              <PressableScale
-                accessibilityLabel="Retirer du dossier"
-                accessibilityState={{
-                  selected: movingNote?.folderId === null,
-                  disabled: pendingMoveId !== null,
-                }}
-                onPress={() => void moveTo(null)}
-                disabled={pendingMoveId !== null}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  minHeight: 48,
-                  borderWidth: 1,
-                  borderStyle: "dashed",
-                  borderColor: colors.borderDefault,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  opacity: pendingMoveId !== null ? 0.55 : 1,
-                }}
-              >
-                <Text variant="h3" style={{ flex: 1, fontSize: 13.5, color: colors.textSecondary }}>
-                  Sans dossier
-                </Text>
-                {movingNote?.folderId === null ? <Text variant="micro">actuel</Text> : null}
-              </PressableScale>
-            </NativeScrollView>
-            <View style={{ alignItems: "flex-end", marginTop: 12 }}>
+              <ActionChip label="Annuler" tone="neutral" onPress={() => setConfirmDelete(null)} />
               <ActionChip
-                label="Fermer"
-                tone="neutral"
-                disabled={pendingMoveId !== null}
-                onPress={() => setMovingNote(null)}
+                label="Supprimer définitivement"
+                tone="danger"
+                onPress={() => void removeFolder(confirmDelete)}
               />
             </View>
           </View>
+        ) : null}
+      </AppModal>
+
+      {/* Move-note modal */}
+      <AppModal
+        visible={movingNote !== null}
+        closeDisabled={pendingMoveId !== null}
+        onClose={() => {
+          if (pendingMoveId === null) setMovingNote(null);
+        }}
+      >
+        <Text variant="h2">Ranger la note</Text>
+        {mutError ? (
+          <Text
+            variant="bodySm"
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            style={{ color: colors.danger }}
+          >
+            {mutError}
+          </Text>
+        ) : null}
+        <Text variant="bodySm" numberOfLines={1} style={{ marginBottom: 6 }}>
+          {movingNote?.lessonTitle}
+        </Text>
+        {pendingMoveId !== null ? (
+          <Text variant="micro" accessibilityLiveRegion="polite" style={{ color: colors.accent }}>
+            Rangement en cours…
+          </Text>
+        ) : null}
+        <NativeScrollView style={{ maxHeight: 340 }} contentContainerStyle={{ gap: 8 }}>
+          {folders.map((folder) => (
+            <PressableScale
+              key={folder.id}
+              accessibilityLabel={`Déplacer vers ${folder.name}`}
+              accessibilityState={{
+                selected: movingNote?.folderId === folder.id,
+                disabled: pendingMoveId !== null,
+              }}
+              onPress={() => void moveTo(folder.id)}
+              disabled={pendingMoveId !== null}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                minHeight: 50,
+                borderRadius: radius.sm,
+                backgroundColor:
+                  movingNote?.folderId === folder.id
+                    ? `${folder.color ?? colors.accent}18`
+                    : colors.bgOverlay,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                opacity: pendingMoveId !== null ? 0.55 : 1,
+              }}
+            >
+              <FolderGlyph name={folder.icon} color={folder.color ?? colors.accent} size={16} />
+              <Text variant="h3" style={{ flex: 1, fontSize: 13.5 }}>
+                {folder.name}
+              </Text>
+              {movingNote?.folderId === folder.id ? (
+                <Text variant="micro" style={{ color: folder.color ?? colors.accent }}>
+                  actuel
+                </Text>
+              ) : null}
+            </PressableScale>
+          ))}
+          <PressableScale
+            accessibilityLabel="Retirer du dossier"
+            accessibilityState={{
+              selected: movingNote?.folderId === null,
+              disabled: pendingMoveId !== null,
+            }}
+            onPress={() => void moveTo(null)}
+            disabled={pendingMoveId !== null}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              minHeight: 50,
+              borderRadius: radius.sm,
+              backgroundColor:
+                movingNote?.folderId === null ? `${colors.accent}14` : colors.bgOverlay,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              opacity: pendingMoveId !== null ? 0.55 : 1,
+            }}
+          >
+            <Text variant="h3" style={{ flex: 1, fontSize: 13.5, color: colors.textSecondary }}>
+              Sans dossier
+            </Text>
+            {movingNote?.folderId === null ? <Text variant="micro">actuel</Text> : null}
+          </PressableScale>
+        </NativeScrollView>
+        <View style={{ alignItems: "flex-end", marginTop: 12 }}>
+          <ActionChip
+            label="Fermer"
+            tone="neutral"
+            disabled={pendingMoveId !== null}
+            onPress={() => setMovingNote(null)}
+          />
         </View>
-      </Modal>
+      </AppModal>
     </Screen>
+  );
+}
+
+function DragGrip(): React.JSX.Element {
+  return (
+    <View style={{ gap: 3 }}>
+      {[0, 1, 2].map((row) => (
+        <View key={row} style={{ flexDirection: "row", gap: 3 }}>
+          <View
+            style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textMuted }}
+          />
+          <View
+            style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textMuted }}
+          />
+        </View>
+      ))}
+    </View>
   );
 }
 
 function NoteCard({
   note,
   folder,
-  dragGesture,
+  cardDragGesture,
+  handleDragGesture,
   moveDisabled,
   movePending,
   onPress,
@@ -1092,52 +1095,67 @@ function NoteCard({
 }: {
   note: NoteItem;
   folder: NoteFolderItem | null;
-  dragGesture: PanGesture;
+  cardDragGesture: PanGesture;
+  handleDragGesture: PanGesture;
   moveDisabled: boolean;
   movePending: boolean;
   onPress: () => void;
   onMove: () => void;
 }): React.JSX.Element {
   return (
-    <Card accent={CATEGORY_COLOR[note.category]} style={{ gap: 12 }}>
-      <GestureDetector gesture={dragGesture}>
-        <PressableScale
-          accessibilityLabel={`Ouvrir la note ${note.lessonTitle}`}
-          accessibilityHint="Utilise le bouton Ranger pour déplacer la note"
-          onPress={onPress}
-          style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 58 }}
-        >
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="h3" numberOfLines={1}>
-              {note.lessonTitle}
-            </Text>
-            <Text variant="bodySm" numberOfLines={2}>
-              {excerpt(note.content)}
-            </Text>
+    <Card
+      accent={CATEGORY_COLOR[note.category]}
+      style={{ gap: 4, paddingHorizontal: 16, paddingVertical: 14 }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "stretch", gap: 4 }}>
+        <View style={{ flex: 1 }}>
+          <GestureDetector gesture={cardDragGesture}>
+            <PressableScale
+              accessibilityLabel={`Ouvrir la note ${note.lessonTitle}`}
+              accessibilityHint="Utilise le bouton Ranger pour déplacer la note"
+              onPress={onPress}
+              style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 48 }}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text variant="h3" numberOfLines={1}>
+                  {note.lessonTitle}
+                </Text>
+                <Text variant="bodySm" numberOfLines={1}>
+                  {excerpt(note.content)}
+                </Text>
+              </View>
+              <ChevronRight color={colors.textDisabled} size={13} />
+            </PressableScale>
+          </GestureDetector>
+        </View>
+
+        <GestureDetector gesture={handleDragGesture}>
+          <View
+            accessible={false}
+            style={{
+              width: 48,
+              minHeight: 48,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <DragGrip />
           </View>
-          <ChevronRight color={colors.textMuted} size={15} />
-        </PressableScale>
-      </GestureDetector>
+        </GestureDetector>
+      </View>
 
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 10,
+          gap: 6,
+          minHeight: 48,
         }}
       >
-        <View style={{ flex: 1, gap: 3 }}>
-          <Text
-            numberOfLines={1}
-            style={{
-              fontFamily: `${fonts.mono}_400Regular`,
-              fontSize: 10,
-              color: colors.textDisabled,
-            }}
-          >
-            {note.wordCount} mots · {fmtDate(note.updatedAt)}
-          </Text>
+        <View
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}
+        >
           {folder ? (
             <Text
               variant="micro"
@@ -1147,6 +1165,17 @@ function NoteCard({
               {folder.name}
             </Text>
           ) : null}
+          <Text
+            numberOfLines={1}
+            style={{
+              fontFamily: `${fonts.mono}_400Regular`,
+              fontSize: 9,
+              color: colors.textDisabled,
+              letterSpacing: 0.4,
+            }}
+          >
+            {note.wordCount} mots · {fmtDate(note.updatedAt)}
+          </Text>
         </View>
 
         <PressableScale
@@ -1158,29 +1187,18 @@ function NoteCard({
           disabled={moveDisabled}
           hitSlop={4}
           style={{
-            minWidth: 104,
+            minWidth: 96,
             minHeight: 48,
-            paddingHorizontal: 14,
+            paddingHorizontal: 10,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            gap: 7,
-            borderWidth: 1,
-            borderColor: folder ? `${folder.color ?? colors.accent}88` : colors.borderDefault,
-            borderRadius: radius.sm,
-            backgroundColor: folder ? `${folder.color ?? colors.accent}12` : "rgba(5,4,26,0.5)",
+            gap: 6,
             opacity: moveDisabled ? 0.55 : 1,
           }}
         >
-          <FolderGlyph
-            name={folder?.icon ?? "folder"}
-            color={folder?.color ?? colors.textSecondary}
-            size={16}
-          />
-          <Text
-            variant="micro"
-            style={{ color: folder?.color ?? colors.textSecondary, fontSize: 11 }}
-          >
+          <FolderGlyph name={folder?.icon ?? "folder"} color={colors.accent} size={14} />
+          <Text variant="micro" style={{ color: colors.accent, fontSize: 10.5 }}>
             {movePending ? "Rangement…" : "Ranger"}
           </Text>
         </PressableScale>
@@ -1188,19 +1206,3 @@ function NoteCard({
     </Card>
   );
 }
-
-const modalBackdrop = {
-  flex: 1,
-  backgroundColor: "rgba(2,1,14,0.85)",
-  justifyContent: "center" as const,
-  padding: 22,
-};
-
-const modalCard = {
-  backgroundColor: colors.bgElevated,
-  borderWidth: 1,
-  borderColor: colors.borderDefault,
-
-  padding: 18,
-  gap: 10,
-};

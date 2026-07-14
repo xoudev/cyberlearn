@@ -14,6 +14,9 @@ export function Footer(): React.JSX.Element {
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <span>© {new Date().getFullYear()} Cyber Learn</span>
         <nav aria-label="Liens de pied de page" className="flex gap-4">
+          <Link href="/telecharger" className="transition-colors hover:text-foreground">
+            Application mobile
+          </Link>
           <Link href="/contact" className="transition-colors hover:text-foreground">
             Contact
           </Link>

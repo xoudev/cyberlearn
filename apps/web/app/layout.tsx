@@ -25,6 +25,12 @@ export const metadata: Metadata = {
     template: "%s · Cyber Learn",
   },
   description: "Plateforme d'apprentissage interactif en cybersécurité, développement et réseaux.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Cyber Learn",
+  },
   icons: {
     icon: "/icon_app.png",
     shortcut: "/icon_app.png",

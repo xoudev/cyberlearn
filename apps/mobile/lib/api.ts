@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
 // NB: use the www host - the apex 307-redirects and some fetch stacks drop the
 // POST body when following it.
-const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://www.cyberlearn.fr";
+const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 
 interface SendOtpResponse {
   ok: boolean;

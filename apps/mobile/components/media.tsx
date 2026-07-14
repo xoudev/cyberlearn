@@ -4,7 +4,7 @@ import Svg, { Path, Polygon, SvgUri } from "react-native-svg";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 
-const WEB_ORIGIN = "https://www.cyberlearn.fr";
+const WEB_ORIGIN = "https://cyberlearn.fr";
 
 /** Resolve a stored asset path ("/badges/x.svg") to an absolute URL. */
 function absolute(url: string): string {
