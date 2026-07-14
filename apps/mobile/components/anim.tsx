@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { Pressable, type PressableProps, View, type ViewStyle } from "react-native";
 import Animated, {
   Easing,
-  FadeIn,
   runOnJS,
   useAnimatedReaction,
   useAnimatedStyle,
@@ -11,11 +10,10 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Polygon } from "react-native-svg";
-import { colors, fonts } from "@cyberlearn/tokens";
+import { colors, fonts, radius } from "@cyberlearn/tokens";
+import { AppModal } from "@/components/app-modal";
 import { Text } from "@/components/ui";
 
 // NOTE: content screens render statically (no entrance/press motion). Animation
@@ -52,14 +50,14 @@ export function PressableScale({
       accessibilityRole="button"
       {...rest}
       disabled={disabled}
-      style={({ pressed }) => [style, pressed && !disabled ? { opacity: 0.6 } : null]}
+      style={({ pressed }) => [style, pressed && !disabled ? { opacity: 0.82 } : null]}
     >
       {children}
     </Pressable>
   );
 }
 
-/** Spring pop-in for reward reveals (badges, result checkmark). */
+/** Short eased reveal for reward content, without overshoot or bounce. */
 export function PopIn({
   delay = 0,
   children,
@@ -69,21 +67,24 @@ export function PopIn({
   children: React.ReactNode;
   style?: ViewStyle;
 }): React.JSX.Element {
-  const scale = useSharedValue(0);
+  const progress = useSharedValue(0);
   useEffect(() => {
-    scale.value = withDelay(delay, withSpring(1, { damping: 11, stiffness: 160 }));
-  }, [scale, delay]);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  return (
-    <Animated.View entering={FadeIn.duration(150).delay(delay)} style={[animStyle, style]}>
-      {children}
-    </Animated.View>
-  );
+    progress.value = 0;
+    progress.value = withDelay(
+      delay,
+      withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [progress, delay]);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * 6 }],
+  }));
+  return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
 }
 
 // ── Loops ─────────────────────────────────────────────────────────────────────
 
-/** Soft infinite pulse (streak flame, live dots). */
+/** Soft opacity pulse for live indicators, without spatial movement. */
 export function Pulse({
   children,
   style,
@@ -93,17 +94,20 @@ export function Pulse({
   style?: ViewStyle;
   amplitude?: number;
 }): React.JSX.Element {
-  const scale = useSharedValue(1);
+  const progress = useSharedValue(0);
+  const minOpacity = Math.max(0.76, 1 - (amplitude - 1) * 3);
   useEffect(() => {
-    scale.value = withRepeat(
+    progress.value = withRepeat(
       withSequence(
-        withTiming(amplitude, { duration: 700, easing: Easing.inOut(Easing.quad) }),
-        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 1000, easing: Easing.inOut(Easing.quad) }),
       ),
       -1,
     );
-  }, [scale, amplitude]);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  }, [progress]);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: minOpacity + (1 - minOpacity) * progress.value,
+  }));
   return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
 }
 
@@ -112,7 +116,7 @@ export function Pulse({
 /** Animated count-up number (XP gains, ranks). */
 export function CountUp({
   to,
-  duration = 900,
+  duration = 650,
   prefix = "",
   suffix = "",
   fontSize = 30,
@@ -178,7 +182,7 @@ export function AnimatedXPBar({
   useEffect(() => {
     fill.value = withDelay(
       delay,
-      withTiming(pct, { duration: 900, easing: Easing.out(Easing.cubic) }),
+      withTiming(pct, { duration: 480, easing: Easing.out(Easing.cubic) }),
     );
   }, [fill, pct, delay]);
   const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
@@ -206,89 +210,7 @@ export function AnimatedXPBar({
 
 // ── Reward effects ────────────────────────────────────────────────────────────
 
-/** A single spark rising from the reward area. */
-function Spark({ index }: { index: number }): React.JSX.Element {
-  const progress = useSharedValue(0);
-  // Deterministic pseudo-random per index so re-renders stay stable.
-  const seed = (index * 9301 + 49297) % 233280;
-  const rand = seed / 233280;
-  const startX = 20 + rand * 200;
-  const drift = (rand - 0.5) * 60;
-  useEffect(() => {
-    progress.value = withDelay(index * 120, withTiming(1, { duration: 1400 }));
-  }, [progress, index]);
-  const style = useAnimatedStyle(() => ({
-    opacity: progress.value < 0.15 ? progress.value * 6 : 1 - progress.value,
-    transform: [
-      { translateX: startX + drift * progress.value },
-      { translateY: -110 * progress.value },
-      { scale: 0.6 + 0.5 * (1 - progress.value) },
-    ],
-  }));
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        {
-          position: "absolute",
-          bottom: 0,
-          width: 6,
-          height: 6,
-          borderRadius: 3,
-          backgroundColor: index % 3 === 0 ? colors.warning : colors.accent,
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-/** Burst of XP sparks behind a reward number. */
-export function SparkBurst({ count = 10 }: { count?: number }): React.JSX.Element {
-  return (
-    <View pointerEvents="none" style={{ position: "absolute", inset: 0 }}>
-      {Array.from({ length: count }, (_, i) => (
-        <Spark key={i} index={i} />
-      ))}
-    </View>
-  );
-}
-
-/** Discreet pulsing ring drawn BEHIND the level badge. */
-function PulseRing({ size }: { size: number }): React.JSX.Element {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    t.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
-      ),
-      -1,
-    );
-  }, [t]);
-  const style = useAnimatedStyle(() => ({
-    opacity: 0.14 + t.value * 0.12,
-    transform: [{ scale: 1 + t.value * 0.06 }],
-  }));
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        {
-          position: "absolute",
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: 1.5,
-          borderColor: colors.accent,
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-/** Full-screen level-up celebration overlay (clean card + hexagon badge). */
+/** Focused level-up dialog shown after the lesson result is saved. */
 export function LevelUpOverlay({
   level,
   onClose,
@@ -297,78 +219,81 @@ export function LevelUpOverlay({
   onClose: () => void;
 }): React.JSX.Element {
   return (
-    <Animated.View
-      entering={FadeIn.duration(220)}
-      style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: 60,
-        backgroundColor: "rgba(2,1,14,0.9)",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 28,
-      }}
-    >
-      <View
-        style={{
-          alignSelf: "stretch",
-          alignItems: "center",
-          gap: 16,
-          paddingVertical: 34,
-          paddingHorizontal: 24,
-          backgroundColor: colors.bgElevated,
-          borderWidth: 1,
-          borderColor: colors.accent,
-        }}
-      >
-        <Text variant="micro" style={{ color: colors.accent, letterSpacing: 3 }}>
-          Niveau supérieur
-        </Text>
-
-        {/* Hexagon badge with the new level */}
-        <View style={{ width: 150, height: 150, alignItems: "center", justifyContent: "center" }}>
-          <PulseRing size={148} />
-          <Svg width={120} height={120} viewBox="0 0 100 100" style={{ position: "absolute" }}>
-            <Polygon
-              points="50,4 89,27 89,73 50,96 11,73 11,27"
-              fill="rgba(10,255,212,0.07)"
-              stroke={colors.accent}
-              strokeWidth={2.5}
-            />
-          </Svg>
-          <PopIn delay={120}>
-            <Text
-              style={{
-                fontFamily: `${fonts.sans}_800ExtraBold`,
-                fontSize: 44,
-                lineHeight: 54,
-                color: colors.accent,
-              }}
-            >
-              {level}
-            </Text>
-          </PopIn>
-        </View>
-
-        <Text variant="body" style={{ textAlign: "center", maxWidth: 240 }}>
-          Continue comme ça, la machine est lancée.
-        </Text>
-        <PressableScale
-          onPress={onClose}
+    <AppModal visible onClose={onClose} closeDisabled>
+      <View style={{ alignItems: "center", gap: 12, paddingTop: 4 }}>
+        <View
           style={{
-            marginTop: 4,
-            alignSelf: "stretch",
-            height: 46,
+            width: 52,
+            height: 52,
+            borderRadius: radius.sm,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: colors.accent,
+            backgroundColor: `${colors.accent}16`,
           }}
         >
-          <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
-            Continuer
+          <Text
+            style={{
+              fontFamily: `${fonts.mono}_700Bold`,
+              fontSize: 24,
+              lineHeight: 30,
+              color: colors.accent,
+            }}
+          >
+            ↑
           </Text>
-        </PressableScale>
+        </View>
+        <View style={{ alignItems: "center", gap: 6 }}>
+          <Text variant="micro" style={{ color: colors.accent }}>
+            Nouveau palier
+          </Text>
+          <Text
+            style={{
+              fontFamily: `${fonts.sans}_800ExtraBold`,
+              fontSize: 30,
+              lineHeight: 38,
+              color: colors.textPrimary,
+            }}
+          >
+            Niveau {level}
+          </Text>
+          <Text variant="body" style={{ textAlign: "center", maxWidth: 280 }}>
+            Ton expérience a franchi un nouveau cap. Le prochain objectif est déjà en vue.
+          </Text>
+        </View>
       </View>
-    </Animated.View>
+
+      <View
+        style={{
+          marginTop: 4,
+          borderRadius: radius.sm,
+          backgroundColor: colors.bgOverlay,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          gap: 3,
+        }}
+      >
+        <Text variant="micro" style={{ color: colors.success }}>
+          Progression enregistrée
+        </Text>
+        <Text variant="bodySm">Ton nouveau niveau est actif sur ton profil.</Text>
+      </View>
+
+      <PressableScale
+        onPress={onClose}
+        style={{
+          marginTop: 6,
+          alignSelf: "stretch",
+          minHeight: 50,
+          borderRadius: radius.sm,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.accent,
+        }}
+      >
+        <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
+          Voir mon résultat
+        </Text>
+      </PressableScale>
+    </AppModal>
   );
 }

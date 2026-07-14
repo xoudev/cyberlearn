@@ -31,7 +31,15 @@ import { supabase } from "@/lib/supabase";
 void SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: false } },
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 120_000,
+      gcTime: 10 * 60_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+  },
 });
 
 /** Mirrors fresh inbox items to the device notification tray (60s polling). */

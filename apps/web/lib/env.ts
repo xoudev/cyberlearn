@@ -60,6 +60,11 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: z.string().url(),
     NEXT_PUBLIC_ADMIN_URL: z.string().url(),
 
+    // Mobile distribution links (the page stays usable while a channel is unavailable)
+    NEXT_PUBLIC_ANDROID_PLAY_URL: z.string().url().optional(),
+    NEXT_PUBLIC_ANDROID_APK_URL: z.string().url().optional(),
+    NEXT_PUBLIC_IOS_APP_STORE_URL: z.string().url().optional(),
+
     // Cloudflare Turnstile site key: optional until Phase implemented
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
 
@@ -94,6 +99,9 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_ADMIN_URL: process.env.NEXT_PUBLIC_ADMIN_URL,
+    NEXT_PUBLIC_ANDROID_PLAY_URL: process.env.NEXT_PUBLIC_ANDROID_PLAY_URL,
+    NEXT_PUBLIC_ANDROID_APK_URL: process.env.NEXT_PUBLIC_ANDROID_APK_URL,
+    NEXT_PUBLIC_IOS_APP_STORE_URL: process.env.NEXT_PUBLIC_IOS_APP_STORE_URL,
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
     NEXT_PUBLIC_SENTRY_CSP_REPORT_URI: process.env.NEXT_PUBLIC_SENTRY_CSP_REPORT_URI,

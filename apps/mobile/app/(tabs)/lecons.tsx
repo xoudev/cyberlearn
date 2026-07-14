@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { Rise, PressableScale } from "@/components/anim";
@@ -25,6 +25,7 @@ export default function Lecons(): React.JSX.Element {
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [difficulty, setDifficulty] = useState<Difficulty | "ALL">("ALL");
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const filtersAnchor = useTourAnchor("lessons-filters");
 
   // Category / difficulty go to the server (stable query key); free-text search
@@ -36,13 +37,13 @@ export default function Lecons(): React.JSX.Element {
   });
 
   const filtered = useMemo(() => {
-    const s = query.trim().toLowerCase();
+    const s = deferredQuery.trim().toLowerCase();
     const lessons = data ?? [];
     if (!s) return lessons;
     return lessons.filter(
       (l) => l.title.toLowerCase().includes(s) || l.description.toLowerCase().includes(s),
     );
-  }, [data, query]);
+  }, [data, deferredQuery]);
 
   function reset(): void {
     setCategory("ALL");

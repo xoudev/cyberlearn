@@ -23,9 +23,8 @@ The full app flow, gamified:
   prefs, RGPD links, sign out), **Certificat** detail (verification code +
   share + verify link).
 - **States**: skeletons, empty states, network-error retry everywhere.
-- **Animations** (reanimated): staggered rise-ins, animated XP bars, count-ups,
-  streak flame pulse, press scaling, badge pop-ins, XP spark burst, level-up
-  overlay.
+- **Motion** (reanimated): short eased feedback for progress and rewards, with
+  static content screens and no bounce/spring transitions.
 
 Auth: Supabase email OTP (code in our Resend email) + GitHub OAuth.
 
@@ -54,6 +53,58 @@ Guarded writes go through `apps/web/app/api/mobile/*` (Bearer JWT):
 The app talks to the **real production Supabase** (same URL/anon key as web).
 Sign in with a real, already-onboarded account. New sign-ups get routed to finish
 onboarding on cyberlearn.fr (Phase 1 does not include mobile onboarding).
+
+## Distribution
+
+`eas.json` defines two release artifacts:
+
+- `preview`: a signed Android APK for direct installation and testing.
+- `production`: an Android App Bundle (AAB) for Google Play. Store build numbers
+  are incremented remotely by EAS.
+
+The public app version is `2.2.0`. The existing Google Play listing was created
+for the former Flutter app and already contains Android version code `6`
+(`2.1.0`). Flutter and React Native builds can use the same listing as long as
+the Android package remains `fr.cyberlearn.app` and the existing Play upload
+key is imported into EAS. Initialize the EAS remote version at `6` before the
+first production build; the resulting build will use version code `7`.
+
+From `apps/mobile`:
+
+1. Sign in with `pnpm dlx eas-cli@latest login`.
+2. Link or create the EAS project with `pnpm dlx eas-cli@latest init`.
+3. Configure `EXPO_PUBLIC_SUPABASE_URL` and
+   `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the EAS preview and production
+   environments. These are public client values, but they must still be
+   supplied at build time.
+4. Run `pnpm dlx eas-cli@latest build:version:set`, select Android, choose the
+   remote version source, and enter `6` as the last Google Play version code.
+5. Build a direct APK with
+   `pnpm dlx eas-cli@latest build --platform android --profile preview`.
+6. Build the Play Store AAB with
+   `pnpm dlx eas-cli@latest build --platform android --profile production`.
+
+Keep the existing Google Play upload key when EAS asks for Android credentials.
+A newly generated upload key will not match the Play Console configuration
+unless the Play Console key is reset first.
+
+After publishing an artifact, configure the web deployment variables used by
+`/telecharger`:
+
+```text
+NEXT_PUBLIC_ANDROID_PLAY_URL=https://play.google.com/...
+NEXT_PUBLIC_ANDROID_APK_URL=https://.../cyberlearn-2.2.0.apk
+NEXT_PUBLIC_IOS_APP_STORE_URL=
+```
+
+Prefer Google Play for general Android distribution. A direct APK and a Play
+Store install may use different final signing keys, so users should stay on the
+same update channel instead of switching between them.
+
+Native public iOS distribution requires Apple Developer Program membership.
+Until that is funded, the download page explains how to install the web app
+from Safari. A free Apple account is suitable only for personal on-device tests,
+not public IPA distribution.
 
 ## Architecture
 

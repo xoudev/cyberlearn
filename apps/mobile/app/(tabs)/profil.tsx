@@ -24,9 +24,9 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Casier", route: "/casier" },
   { label: "Notifications", route: "/notifications" },
   { label: "Réglages", route: "/reglages" },
-  { label: "Révisions", url: "https://www.cyberlearn.fr/revisions" },
-  { label: "Défis", url: "https://www.cyberlearn.fr/challenges" },
-  { label: "Wrapped", url: "https://www.cyberlearn.fr/wrapped" },
+  { label: "Révisions", url: "https://cyberlearn.fr/revisions" },
+  { label: "Défis", url: "https://cyberlearn.fr/challenges" },
+  { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
 ];
 
 function fmtDate(iso: string): string {

@@ -9,7 +9,7 @@ import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { Card, Divider, Text } from "@/components/ui";
 
-const VERIFY_BASE = "https://www.cyberlearn.fr/verify";
+const VERIFY_BASE = "https://cyberlearn.fr/verify";
 
 export default function CertificateDetail(): React.JSX.Element {
   const router = useRouter();

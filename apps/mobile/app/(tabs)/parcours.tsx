@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
@@ -23,12 +23,13 @@ export default function Parcours(): React.JSX.Element {
   const { session } = useSession();
   const { data, isLoading, error, refetch } = usePaths(session?.user.id);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [difficulty, setDifficulty] = useState<Difficulty | "ALL">("ALL");
   const searchAnchor = useTourAnchor("paths-search");
 
   const filtered = useMemo(() => {
-    const s = query.trim().toLowerCase();
+    const s = deferredQuery.trim().toLowerCase();
     return (data ?? []).filter((p) => {
       if (category !== "ALL" && p.category !== category) return false;
       if (difficulty !== "ALL" && p.difficulty !== difficulty) return false;
@@ -36,7 +37,7 @@ export default function Parcours(): React.JSX.Element {
         return false;
       return true;
     });
-  }, [data, query, category, difficulty]);
+  }, [data, deferredQuery, category, difficulty]);
 
   const hasFilter = category !== "ALL" || difficulty !== "ALL" || query.length > 0;
   const reset = (): void => {

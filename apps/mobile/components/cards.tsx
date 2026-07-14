@@ -13,7 +13,11 @@ function pathCta(status: ProgressStatus | null): string {
   return "Commencer";
 }
 
-export function PathCardView({ path }: { path: PathCard }): React.JSX.Element {
+export const PathCardView = React.memo(function PathCardView({
+  path,
+}: {
+  path: PathCard;
+}): React.JSX.Element {
   const router = useRouter();
   const cat = CATEGORY_COLOR[path.category];
   return (
@@ -51,9 +55,13 @@ export function PathCardView({ path }: { path: PathCard }): React.JSX.Element {
       </Card>
     </PressableScale>
   );
-}
+});
 
-export function LessonCardView({ lesson }: { lesson: LessonCard }): React.JSX.Element {
+export const LessonCardView = React.memo(function LessonCardView({
+  lesson,
+}: {
+  lesson: LessonCard;
+}): React.JSX.Element {
   const router = useRouter();
   const cat = CATEGORY_COLOR[lesson.category];
   return (
@@ -91,4 +99,4 @@ export function LessonCardView({ lesson }: { lesson: LessonCard }): React.JSX.El
       </Card>
     </PressableScale>
   );
-}
+});

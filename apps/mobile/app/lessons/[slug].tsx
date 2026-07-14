@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import { colors, fonts } from "@cyberlearn/tokens";
+import { ActivityIndicator, ScrollView, View } from "react-native";
+import { colors, fonts, radius } from "@cyberlearn/tokens";
 import {
   AnimatedXPBar,
   CountUp,
@@ -10,14 +10,13 @@ import {
   PopIn,
   PressableScale,
   Rise,
-  SparkBurst,
 } from "@/components/anim";
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { CheckIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
-import { Card, Pill, Text } from "@/components/ui";
+import { Card, Text } from "@/components/ui";
 import { completeLessonApi, type CompleteLessonResult } from "@/lib/api";
 import {
   CATEGORY_COLOR,
@@ -179,6 +178,7 @@ export default function LessonReader(): React.JSX.Element {
         />
       ) : (
         <ResultView
+          lessonTitle={data.title}
           correctCount={step.correctCount}
           total={quizzes.length}
           reward={step.reward}
@@ -386,6 +386,7 @@ function QuizView({
 // ── Result view ───────────────────────────────────────────────────────────────
 
 function ResultView({
+  lessonTitle,
   correctCount,
   total,
   reward,
@@ -394,6 +395,7 @@ function ResultView({
   onContinue,
   hasQuiz,
 }: {
+  lessonTitle: string;
   correctCount: number;
   total: number;
   reward: CompleteLessonResult | null;
@@ -403,116 +405,247 @@ function ResultView({
   hasQuiz: boolean;
 }): React.JSX.Element {
   const xp = reward?.xpGained ?? 0;
+  const syncFailed = !saving && !reward;
+  const resultMessage = saving
+    ? "Synchronisation de ta progression…"
+    : reward?.alreadyCompleted
+      ? "Cette leçon était déjà validée. Ton meilleur résultat reste enregistré."
+      : reward
+        ? "Ta progression et tes récompenses sont enregistrées."
+        : "La leçon est validée sur cet appareil, mais la récompense n’a pas pu être synchronisée.";
+
   return (
     <ScrollView
       style={{ flex: 1 }}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 24 }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: "space-between",
+        gap: 24,
+        paddingBottom: 12,
+      }}
     >
-      <View style={{ alignItems: "center", paddingVertical: 26, gap: 8 }}>
-        <PopIn>
+      <View style={{ paddingTop: 10, gap: 20 }}>
+        <View style={{ gap: 14 }}>
           <View
             style={{
-              width: 74,
-              height: 74,
-              borderRadius: 37,
-              borderWidth: 2,
-              borderColor: colors.success,
+              width: 46,
+              height: 46,
+              borderRadius: radius.sm,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: "rgba(10,255,212,0.08)",
+              backgroundColor: `${colors.success}18`,
             }}
           >
-            <CheckIcon color={colors.success} size={30} strokeWidth={2} />
+            <CheckIcon color={colors.success} size={22} strokeWidth={2.2} />
           </View>
-        </PopIn>
-        <Text variant="h1" style={{ marginTop: 8 }}>
-          Leçon terminée !
-        </Text>
-        {hasQuiz ? (
-          <Text variant="bodySm">
-            {correctCount}/{total} bonnes réponses
-          </Text>
-        ) : null}
-
-        {/* XP reward */}
-        <View style={{ alignItems: "center", marginTop: 16, minHeight: 96, paddingTop: 4 }}>
-          {saving ? (
-            <ActivityIndicator color={colors.accent} />
-          ) : reward ? (
-            reward.alreadyCompleted ? (
-              <Pill label="Déjà complétée · pas de nouvel XP" color={colors.textMuted} />
-            ) : (
-              <View style={{ alignItems: "center" }}>
-                <SparkBurst count={12} />
-                <CountUp to={xp} prefix="+" suffix=" XP" fontSize={44} delay={200} />
-                <Text variant="micro" style={{ marginTop: 4 }}>
-                  XP gagnés
-                </Text>
-              </View>
-            )
-          ) : (
-            <Pill label="XP non synchronisés · réessaie depuis la leçon" color={colors.warning} />
-          )}
+          <View style={{ gap: 6 }}>
+            <Text variant="micro" style={{ color: colors.success }}>
+              Leçon validée
+            </Text>
+            <Text variant="h1">Mission accomplie</Text>
+            <Text variant="bodySm" numberOfLines={2} style={{ maxWidth: 340 }}>
+              {lessonTitle}
+            </Text>
+          </View>
         </View>
 
-        {/* New badges */}
-        {reward && reward.newBadges.length > 0 ? (
-          <View style={{ width: "100%", marginTop: 18, gap: 10 }}>
-            <Text variant="micro" style={{ textAlign: "center", color: colors.accent }}>
-              Badge{reward.newBadges.length > 1 ? "s" : ""} débloqué
-              {reward.newBadges.length > 1 ? "s" : ""} !
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {hasQuiz ? (
+            <View
+              style={{
+                flex: 1,
+                minHeight: 112,
+                borderRadius: radius.sm,
+                backgroundColor: colors.bgElevated,
+                padding: 16,
+                justifyContent: "space-between",
+              }}
+            >
+              <Text variant="micro">Score</Text>
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4 }}>
+                <Text
+                  style={{
+                    fontFamily: `${fonts.sans}_800ExtraBold`,
+                    fontSize: 34,
+                    lineHeight: 40,
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {correctCount}
+                </Text>
+                <Text variant="mono" style={{ color: colors.textMuted }}>
+                  / {total}
+                </Text>
+              </View>
+              <Text variant="bodySm">bonnes réponses</Text>
+            </View>
+          ) : null}
+
+          <View
+            style={{
+              flex: hasQuiz ? 1.35 : 1,
+              minHeight: 112,
+              borderRadius: radius.sm,
+              backgroundColor:
+                reward && !reward.alreadyCompleted ? `${colors.accent}0D` : colors.bgElevated,
+              padding: 16,
+              justifyContent: "space-between",
+            }}
+          >
+            <Text
+              variant="micro"
+              style={{
+                color: reward && !reward.alreadyCompleted ? colors.accent : colors.textMuted,
+              }}
+            >
+              Récompense
             </Text>
-            {reward.newBadges.map((b, i) => {
-              const rarityColor =
-                RARITY_COLOR[
-                  (b.rarity as Rarity) in RARITY_COLOR ? (b.rarity as Rarity) : "COMMON"
-                ];
+            {saving ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <ActivityIndicator color={colors.accent} size="small" />
+                <Text variant="bodySm">Calcul en cours</Text>
+              </View>
+            ) : reward?.alreadyCompleted ? (
+              <Text
+                style={{
+                  fontFamily: `${fonts.sans}_700Bold`,
+                  fontSize: 18,
+                  color: colors.textSecondary,
+                }}
+              >
+                Déjà acquise
+              </Text>
+            ) : reward ? (
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
+                <CountUp to={xp} prefix="+" fontSize={34} duration={480} />
+                <Text variant="mono" style={{ color: colors.accent }}>
+                  XP
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={{
+                  fontFamily: `${fonts.sans}_700Bold`,
+                  fontSize: 24,
+                  color: colors.warning,
+                }}
+              >
+                —
+              </Text>
+            )}
+            <Text variant="bodySm">
+              {reward
+                ? `Niveau ${reward.newLevel}`
+                : saving
+                  ? "Enregistrement"
+                  : "Non synchronisée"}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            borderRadius: radius.sm,
+            backgroundColor: syncFailed ? `${colors.warning}10` : colors.bgOverlay,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+          }}
+        >
+          <Text
+            variant="bodySm"
+            style={{ color: syncFailed ? colors.warning : colors.textSecondary }}
+          >
+            {resultMessage}
+          </Text>
+        </View>
+
+        {reward && reward.newBadges.length > 0 ? (
+          <View style={{ gap: 10 }}>
+            <Text variant="micro" style={{ color: colors.accent }}>
+              {reward.newBadges.length > 1 ? "Nouveaux badges" : "Nouveau badge"}
+            </Text>
+            {reward.newBadges.map((badge) => {
+              const rarity: Rarity = isRarity(badge.rarity) ? badge.rarity : "COMMON";
+              const rarityColor = RARITY_COLOR[rarity];
+
               return (
-                <PopIn key={b.name} delay={400 + i * 200}>
-                  <Card style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                    <View
+                <View
+                  key={badge.name}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    borderRadius: radius.sm,
+                    backgroundColor: colors.bgElevated,
+                    padding: 14,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: radius.sm,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: `${rarityColor}18`,
+                    }}
+                  >
+                    <Text
                       style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 17,
-                        borderWidth: 1.5,
-                        borderColor: rarityColor,
-                        backgroundColor: `${rarityColor}18`,
+                        fontFamily: `${fonts.mono}_700Bold`,
+                        fontSize: 16,
+                        color: rarityColor,
                       }}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text variant="h3">{b.name}</Text>
-                      <Text variant="micro" style={{ color: rarityColor }}>
-                        {b.rarity} · +{b.xpReward} XP
-                      </Text>
-                    </View>
-                  </Card>
-                </PopIn>
+                    >
+                      {badge.name.slice(0, 1).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Text variant="h3">{badge.name}</Text>
+                    <Text variant="micro" style={{ color: rarityColor }}>
+                      {rarity} · +{badge.xpReward} XP
+                    </Text>
+                  </View>
+                  <Text variant="micro" style={{ color: colors.success }}>
+                    Obtenu
+                  </Text>
+                </View>
               );
             })}
           </View>
         ) : null}
       </View>
 
-      <View style={{ flexDirection: "row", gap: 10 }}>
+      <View style={{ flexDirection: "row", gap: 10, paddingTop: 4 }}>
         {hasQuiz ? (
           <PressableScale
             onPress={onReplay}
+            disabled={saving}
             style={{
               flex: 1,
-              height: 48,
+              minHeight: 50,
+              borderRadius: radius.sm,
               alignItems: "center",
               justifyContent: "center",
-              borderWidth: 1,
-              borderColor: colors.borderDefault,
+              backgroundColor: colors.bgOverlay,
+              opacity: saving ? 0.5 : 1,
             }}
           >
             <Text variant="micro">Rejouer</Text>
           </PressableScale>
         ) : null}
-        <GradientButton label="Continuer →" onPress={onContinue} style={{ flex: 2 }} />
+        <GradientButton
+          label="Continuer"
+          onPress={onContinue}
+          disabled={saving}
+          style={{ flex: 2, height: 50 }}
+        />
       </View>
     </ScrollView>
   );
+}
+
+function isRarity(value: string): value is Rarity {
+  return value in RARITY_COLOR;
 }
