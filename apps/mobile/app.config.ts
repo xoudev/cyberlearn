@@ -18,7 +18,6 @@ const config: ExpoConfig = {
   },
   android: {
     package: "fr.cyberlearn.app",
-    // Google Play already contains version code 6 (2.1.0).
     versionCode: 7,
     adaptiveIcon: {
       foregroundImage: "./assets/android-icon-foreground.png",

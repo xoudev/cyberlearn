@@ -1,6 +1,35 @@
 import { prisma } from "../prisma.js";
 
 export const userRepository = {
+  /** Creates or refreshes the application profile associated with a Supabase identity. */
+  async upsertFromAuth(input: {
+    id: string;
+    email: string;
+    displayName: string;
+    avatarUrl: string | null;
+  }) {
+    return prisma.user.upsert({
+      where: { id: input.id },
+      create: input,
+      update: {
+        email: input.email,
+        lastActiveAt: new Date(),
+        ...(input.avatarUrl ? { avatarUrl: input.avatarUrl } : {}),
+      },
+      select: { username: true, role: true },
+    });
+  },
+
+  /** Role lookup used by authenticated server guards. */
+  async findRoleById(userId: string) {
+    return prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  },
+
+  /** Role lookup used before an admin password session is accepted. */
+  async findRoleByEmail(email: string) {
+    return prisma.user.findUnique({ where: { email }, select: { role: true } });
+  },
+
   /** Minimal user data needed for XP + streak computation on lesson completion. */
   async findForGamification(userId: string) {
     return prisma.user.findUnique({

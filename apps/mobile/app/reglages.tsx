@@ -134,6 +134,16 @@ export default function Reglages(): React.JSX.Element {
       {/* Legal + account management (web) */}
       <Rise index={2}>
         <Card style={{ padding: 0, marginBottom: 18 }}>
+          <PressableScale
+            onPress={() => router.push("/security")}
+            style={{ flexDirection: "row", justifyContent: "space-between", padding: 14 }}
+          >
+            <Text variant="h3">Sécurité du compte</Text>
+            <Text variant="micro" style={{ color: colors.accent }}>
+              Ouvrir →
+            </Text>
+          </PressableScale>
+          <Divider />
           {[
             { label: "Modifier mon profil", url: "https://cyberlearn.fr/profile/edit" },
             { label: "Confidentialité", url: "https://cyberlearn.fr/privacy" },

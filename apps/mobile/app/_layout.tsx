@@ -13,11 +13,11 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
@@ -55,47 +55,84 @@ function NotificationMirror(): null {
 function RootNavigator(): React.JSX.Element {
   const { session, initializing } = useSession();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
+  const [assessedAccessToken, setAssessedAccessToken] = useState<string | null>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const assuranceChecking = Boolean(session && assessedAccessToken !== session.access_token);
 
-  // Session gate: keep authed users inside the tabs, guests inside (auth).
   useEffect(() => {
-    if (initializing) return;
+    let active = true;
+    if (!session) {
+      setMfaRequired(false);
+      setAssessedAccessToken(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    const accessToken = session.access_token;
+    void supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data, error }) => {
+      if (!active) return;
+      setMfaRequired(error ? true : data.nextLevel === "aal2" && data.currentLevel !== "aal2");
+      setAssessedAccessToken(accessToken);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session?.access_token]);
+
+  // Session gate: authenticated users with an enrolled TOTP factor must reach
+  // AAL2 before any application screen or query is mounted.
+  useEffect(() => {
+    if (initializing || assuranceChecking) return;
     const inAuth = segments[0] === "(auth)";
+    const inMfaChallenge = pathname === "/mfa";
     if (!session && !inAuth) {
       router.replace("/login");
-    } else if (session && inAuth) {
+    } else if (session && mfaRequired && !inMfaChallenge) {
+      router.replace("/mfa");
+    } else if (session && !mfaRequired && inAuth) {
       router.replace("/accueil");
     }
-  }, [session, initializing, segments, router]);
+  }, [session, initializing, assuranceChecking, mfaRequired, segments, pathname, router]);
 
   // On first authentication: make sure a public.users row exists, and route
   // un-onboarded users (no username) to the web onboarding gate.
   useEffect(() => {
     const user = session?.user;
-    if (!user) return;
+    if (!user || assuranceChecking || mfaRequired) return;
     let active = true;
     void (async () => {
       await ensureUserRow(user.id, user.email ?? "", user.email?.split("@")[0] ?? "Apprenti");
       const { data } = await supabase.from("users").select("username").eq("id", user.id).single();
-      const username = (data as { username: string | null } | null)?.username ?? null;
+      const username = readUsername(data);
       if (active && !username) router.replace("/onboarding-required");
     })();
     return () => {
       active = false;
     };
-  }, [session?.user.id, router]);
+  }, [session?.user.id, assuranceChecking, mfaRequired, router]);
 
-  if (initializing) return <BrandedLoader label="Connexion" />;
+  if (initializing || assuranceChecking) return <BrandedLoader label="Connexion sécurisée" />;
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.bgBase },
-        animation: "fade",
-      }}
-    />
+    <>
+      {session && !mfaRequired ? <NotificationMirror /> : null}
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bgBase },
+          animation: "fade",
+        }}
+      />
+    </>
   );
+}
+
+function readUsername(value: unknown): string | null {
+  if (typeof value !== "object" || value === null || !("username" in value)) return null;
+  return typeof value.username === "string" && value.username.length > 0 ? value.username : null;
 }
 
 export default function RootLayout(): React.JSX.Element | null {
@@ -123,7 +160,6 @@ export default function RootLayout(): React.JSX.Element | null {
           <SessionProvider>
             <TourProvider>
               <StatusBar style="light" />
-              <NotificationMirror />
               <RootNavigator />
             </TourProvider>
           </SessionProvider>

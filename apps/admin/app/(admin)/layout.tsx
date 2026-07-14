@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { prisma } from "@cyberlearn/db";
+import { prisma, userRepository } from "@cyberlearn/db";
 import { AdminNavbar } from "./_components/admin-navbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
@@ -21,16 +21,13 @@ export default async function AdminLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // JWT role (set by Supabase Auth Hook in production).
-  // Falls back to the DB role in dev where the hook may not be running.
-  const jwtRole = user.app_metadata.user_role as string | undefined;
-  let role = jwtRole;
-  if (!role) {
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
-    role = dbUser?.role ?? undefined;
-  }
+  const dbUser = await userRepository.findRoleById(user.id);
+  if (dbUser?.role !== "ADMIN") notFound();
 
-  if (role !== "ADMIN") notFound();
+  const factors = await supabase.auth.mfa.listFactors();
+  if (factors.error || factors.data.totp.length === 0) redirect("/mfa/setup");
+  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (assurance.error || assurance.data.currentLevel !== "aal2") redirect("/mfa");
 
   const admin = { id: user.id, email: user.email, role: "ADMIN" as const };
 

@@ -70,6 +70,10 @@ function isPublicRoute(pathname: string): boolean {
   return (
     pathname === "/" ||
     pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/mfa") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/") ||
     pathname === "/verify" ||
@@ -168,6 +172,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       return redirectResponse;
     }
   } else {
+    const isMfaRoute = pathname.startsWith("/mfa");
+    if (!isMfaRoute && !pathname.startsWith("/auth/")) {
+      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (
+        assurance.error ||
+        (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")
+      ) {
+        const mfaUrl = new URL("/mfa", request.url);
+        mfaUrl.searchParams.set("next", pathname);
+        const redirectResponse = NextResponse.redirect(mfaUrl);
+        applySecurityHeaders(redirectResponse, nonce);
+        return redirectResponse;
+      }
+    }
+
     // Authenticated user - check onboarding completion
     // We use app_metadata.onboarding_complete set by the callback route
     // to avoid a DB query on every request.
@@ -185,7 +204,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const isPlacementResult = pathname === "/onboarding/placement-test/result";
     if (
       isOnboardingComplete &&
-      (pathname === "/login" || isOnboardingRoute(pathname)) &&
+      (["/login", "/register", "/forgot-password"].includes(pathname) ||
+        isOnboardingRoute(pathname)) &&
       !isPlacementResult
     ) {
       const dashboardUrl = new URL("/dashboard", request.url);

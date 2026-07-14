@@ -26,7 +26,9 @@ The full app flow, gamified:
 - **Motion** (reanimated): short eased feedback for progress and rewards, with
   static content screens and no bounce/spring transitions.
 
-Auth: Supabase email OTP (code in our Resend email) + GitHub OAuth.
+Auth: Supabase email/password with verified addresses. Users can enable TOTP
+MFA from the native security screen; once enabled, the challenge is enforced
+before application data is mounted.
 
 Guarded writes go through `apps/web/app/api/mobile/*` (Bearer JWT):
 - `POST /progress` - lesson completion via the same `completeLessonForUser`
@@ -39,6 +41,7 @@ Guarded writes go through `apps/web/app/api/mobile/*` (Bearer JWT):
    ```
    EXPO_PUBLIC_SUPABASE_URL=...
    EXPO_PUBLIC_SUPABASE_ANON_KEY=...
+   EXPO_PUBLIC_SITE_URL=https://cyberlearn.fr
    ```
    (See `.env.example`. Values are public / RLS-protected.)
 2. From the repo root: `pnpm install`.
@@ -46,8 +49,8 @@ Guarded writes go through `apps/web/app/api/mobile/*` (Bearer JWT):
 4. Open it:
    - **Android emulator** (Windows-friendly): press `a`.
    - **Your phone**: scan the QR with Expo Go, or build a **dev client**
-     (`npx expo run:android` / EAS) - recommended, since `expo-secure-store` and
-     the OAuth flow are more reliable than in Expo Go.
+     (`npx expo run:android` / EAS) - recommended for production-like secure
+     session storage.
    - **iOS** needs a Mac or an EAS cloud build.
 
 The app talks to the **real production Supabase** (same URL/anon key as web).
@@ -62,12 +65,9 @@ onboarding on cyberlearn.fr (Phase 1 does not include mobile onboarding).
 - `production`: an Android App Bundle (AAB) for Google Play. Store build numbers
   are incremented remotely by EAS.
 
-The public app version is `2.2.0`. The existing Google Play listing was created
-for the former Flutter app and already contains Android version code `6`
-(`2.1.0`). Flutter and React Native builds can use the same listing as long as
-the Android package remains `fr.cyberlearn.app` and the existing Play upload
-key is imported into EAS. Initialize the EAS remote version at `6` before the
-first production build; the resulting build will use version code `7`.
+The public app version is `2.2.0`. Publish it as a new Google Play application,
+separate from the former Flutter listing. Keep the old listing available until
+the new application has passed review and is installable from Google Play.
 
 From `apps/mobile`:
 
@@ -77,16 +77,15 @@ From `apps/mobile`:
    `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the EAS preview and production
    environments. These are public client values, but they must still be
    supplied at build time.
-4. Run `pnpm dlx eas-cli@latest build:version:set`, select Android, choose the
-   remote version source, and enter `6` as the last Google Play version code.
+4. Run `pnpm dlx eas-cli@latest build:version:set`, select Android, and initialize
+   the remote version from the Android version code in `app.config.ts`.
 5. Build a direct APK with
    `pnpm dlx eas-cli@latest build --platform android --profile preview`.
 6. Build the Play Store AAB with
    `pnpm dlx eas-cli@latest build --platform android --profile production`.
 
-Keep the existing Google Play upload key when EAS asks for Android credentials.
-A newly generated upload key will not match the Play Console configuration
-unless the Play Console key is reset first.
+Let EAS generate a new upload key for the new Google Play application, then keep
+that credential backed up. It is independent from the former Flutter listing.
 
 After publishing an artifact, configure the web deployment variables used by
 `/telecharger`:
