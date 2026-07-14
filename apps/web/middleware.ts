@@ -15,12 +15,11 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       // Dev: unsafe-eval (HMR) + unsafe-inline; Prod: nonce + strict-dynamic
       // strict-dynamic allows scripts transitively loaded by nonce-trusted scripts
       // (Next.js chunk loading, Monaco dynamic imports, etc.)
-      // cdn.jsdelivr.net kept as host fallback for browsers without strict-dynamic support
       // 'wasm-unsafe-eval' required for Pyodide WebAssembly compilation
       // (cdn.jsdelivr.net Monaco loader + local /runtimes/pyodide/* WASM).
       isDev
         ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net"
-        : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval' https://cdn.jsdelivr.net`,
+        : `script-src 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
       // unsafe-inline required for Tailwind v4 JIT; cdn.jsdelivr.net for Monaco CSS
       "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
       // blob: for the in-browser avatar cropper preview (URL.createObjectURL of
@@ -224,6 +223,6 @@ export const config = {
     // Exclude _next internals, favicon, common asset extensions,
     // AND /workers/* + /runtimes/* - these static script paths get
     // their own stricter CSP via next.config.ts headers().
-    "/((?!_next/static|_next/image|favicon.ico|workers|runtimes|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|monitoring|workers|runtimes|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

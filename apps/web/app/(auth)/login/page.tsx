@@ -7,6 +7,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   missing_code: "Le lien de connexion est incomplet.",
   auth_failed: "Le lien de connexion a expiré ou n’est plus valide.",
   no_user: "Aucun compte valide n’a été trouvé.",
+  profile_sync_failed: "La session n’a pas pu être initialisée. Réessaie dans un instant.",
 };
 
 export default async function LoginPage({

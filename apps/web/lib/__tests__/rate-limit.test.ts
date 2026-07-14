@@ -19,6 +19,7 @@ vi.stubEnv("IP_SALT", "a-test-salt-that-is-at-least-32-characters-long");
 // Simulate an in-memory sliding window counter per (prefix, identifier) key.
 // The limit is encoded in the Ratelimit constructor options.
 const counters = new Map<string, number>();
+let rejectNextLimit = false;
 
 vi.mock("@upstash/redis", () => ({
   Redis: vi.fn(() => ({})),
@@ -38,6 +39,10 @@ vi.mock("@upstash/ratelimit", () => {
     this: { limit_: number; prefix_: string },
     identifier: string,
   ): Promise<unknown> {
+    if (rejectNextLimit) {
+      rejectNextLimit = false;
+      return Promise.reject(new Error("Redis unavailable"));
+    }
     const key = `${this.prefix_}:${identifier}`;
     const count = (counters.get(key) ?? 0) + 1;
     counters.set(key, count);
@@ -71,12 +76,14 @@ const {
   checkQaSubmission,
   checkHintReveal,
   checkDataExport,
+  checkAuthRateLimit,
 } = await import("@/lib/rate-limit");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   counters.clear();
+  rejectNextLimit = false;
 });
 
 function uid(): string {
@@ -284,5 +291,17 @@ describe("fail-open - Upstash not configured", () => {
     expect(warnSpy).toHaveBeenCalledTimes(1);
 
     warnSpy.mockRestore();
+  });
+});
+
+describe("checkAuthRateLimit - Redis outage", () => {
+  it("allows authentication when the configured Redis request rejects", async () => {
+    rejectNextLimit = true;
+
+    const allowed = await checkAuthRateLimit({
+      headers: new Headers({ "x-forwarded-for": "203.0.113.8" }),
+    });
+
+    expect(allowed).toBe(true);
   });
 });

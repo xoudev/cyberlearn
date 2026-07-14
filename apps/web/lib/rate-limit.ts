@@ -22,17 +22,20 @@ export const authRateLimit = _legacyRedis
   : null;
 
 export async function checkAuthRateLimit(request: { headers: Headers }): Promise<boolean> {
-  // Fail-open: if Redis is unconfigured, allow the request rather than blocking all auth.
-  // The magic-link *generation* endpoint is fail-closed; the callback is not, because
-  // a Redis outage must not prevent legitimate users from completing their login.
+  // Authentication must remain available when Redis is missing or temporarily
+  // unreachable. The limiter is a defense-in-depth control; Supabase still
+  // validates credentials and applies its own abuse protections.
   if (!authRateLimit) return true;
 
   const forwarded = request.headers.get("x-forwarded-for");
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
-  const hashedIp = pseudonymize(rawIp);
-
-  const { success } = await authRateLimit.limit(hashedIp);
-  return success;
+  try {
+    const hashedIp = pseudonymize(rawIp);
+    const { success } = await authRateLimit.limit(hashedIp);
+    return success;
+  } catch {
+    return true;
+  }
 }
 
 // ── New per-action limiters (fail-open when Redis unconfigured) ──

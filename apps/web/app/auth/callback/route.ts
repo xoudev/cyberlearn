@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { authRedirectSchema } from "@cyberlearn/types";
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
@@ -41,7 +42,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/login?error=no_user", origin));
   }
 
-  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  const redirectTo = await resolveUserPostSignInRoute(assurance, user, requestedRoute);
-  return NextResponse.redirect(new URL(redirectTo, origin));
+  try {
+    const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const redirectTo = await resolveUserPostSignInRoute(assurance, user, requestedRoute);
+    return NextResponse.redirect(new URL(redirectTo, origin));
+  } catch (profileError) {
+    Sentry.captureException(profileError, { tags: { area: "auth.profile-sync" } });
+    await supabase.auth.signOut({ scope: "local" });
+    return NextResponse.redirect(new URL("/login?error=profile_sync_failed", origin));
+  }
 }

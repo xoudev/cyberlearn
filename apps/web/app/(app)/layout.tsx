@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { cookies } from "next/headers";
+import * as Sentry from "@sentry/nextjs";
 import { cosmeticRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { cosmeticAttrs } from "@/lib/cosmetics/attrs";
@@ -8,6 +9,16 @@ import { CosmeticsProvider } from "@/components/cosmetics-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+
+async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmeticAttrs>> {
+  try {
+    return cosmeticAttrs(await cosmeticRepository.findLoadout(userId));
+  } catch (cosmeticError) {
+    // Cosmetics are decorative and must never take the authenticated shell down.
+    Sentry.captureException(cosmeticError, { tags: { area: "app-shell.cosmetics" } });
+    return cosmeticAttrs(null);
+  }
+}
 
 export default async function AppLayout({
   children,
@@ -21,7 +32,7 @@ export default async function AppLayout({
   // drive var(--cosmetic-*) across the authenticated app without affecting
   // layout. (requireRequestUser + the loadout fetch are deduped per request.)
   const user = await requireRequestUser();
-  const cosmetics = cosmeticAttrs(await cosmeticRepository.findLoadout(user.id));
+  const cosmetics = await loadCosmetics(user.id);
 
   return (
     // Suspense boundaries let AppSidebar, Navbar and the page render
