@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import { initialAuthActionState, signInWithPassword } from "../_actions/password-auth";
+import { initialAuthActionState } from "../_actions/auth-action-state";
+import { signInWithPassword } from "../_actions/password-auth";
 import styles from "../_components/auth-shell.module.css";
 
 function GitHubIcon(): React.JSX.Element {

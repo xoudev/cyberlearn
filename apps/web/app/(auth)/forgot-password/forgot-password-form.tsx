@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { initialAuthActionState, requestPasswordReset } from "../_actions/password-auth";
+import { initialAuthActionState } from "../_actions/auth-action-state";
+import { requestPasswordReset } from "../_actions/password-auth";
 import styles from "../_components/auth-shell.module.css";
 
 export function ForgotPasswordForm(): React.JSX.Element {
