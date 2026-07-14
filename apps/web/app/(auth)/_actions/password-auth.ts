@@ -12,18 +12,7 @@ import { env } from "@/lib/env";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-
-export interface AuthActionState {
-  status: "idle" | "error" | "success" | "check_email";
-  message: string | null;
-  redirectTo: string | null;
-}
-
-export const initialAuthActionState: AuthActionState = {
-  status: "idle",
-  message: null,
-  redirectTo: null,
-};
+import type { AuthActionState } from "./auth-action-state";
 
 async function isRateLimited(): Promise<boolean> {
   const headerStore = await headers();
@@ -114,26 +103,30 @@ export async function signUpWithPassword(
     };
   }
 
-  const supabase = await getSupabaseServerClient();
-  const { error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      emailRedirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/onboarding`,
-    },
-  });
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { error } = await supabase.auth.signUp({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      options: {
+        emailRedirectTo: `${env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/onboarding`,
+      },
+    });
 
-  if (error) {
-    return {
-      status: "error",
-      message: "Impossible de créer le compte pour le moment. Réessaie dans quelques minutes.",
-      redirectTo: null,
-    };
+    if (!error) {
+      return {
+        status: "check_email",
+        message: "Un e-mail de vérification vient de partir. Ouvre-le pour activer ton compte.",
+        redirectTo: null,
+      };
+    }
+  } catch (signUpError) {
+    Sentry.captureException(signUpError, { tags: { area: "auth.sign-up" } });
   }
 
   return {
-    status: "check_email",
-    message: "Un e-mail de vérification vient de partir. Ouvre-le pour activer ton compte.",
+    status: "error",
+    message: "Impossible de créer le compte pour le moment. Réessaie dans quelques minutes.",
     redirectTo: null,
   };
 }

@@ -5,7 +5,8 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import { initialAuthActionState, updatePassword } from "@/app/(auth)/_actions/password-auth";
+import { initialAuthActionState } from "@/app/(auth)/_actions/auth-action-state";
+import { updatePassword } from "@/app/(auth)/_actions/password-auth";
 import { SettingsCard } from "../../_components/SettingsPrimitives";
 import { MONO, S } from "../../_components/tokens";
 

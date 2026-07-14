@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
-import { initialAuthActionState, updatePassword } from "../_actions/password-auth";
+import { initialAuthActionState } from "../_actions/auth-action-state";
+import { updatePassword } from "../_actions/password-auth";
 import styles from "../_components/auth-shell.module.css";
 
 export function ResetPasswordForm(): React.JSX.Element {
