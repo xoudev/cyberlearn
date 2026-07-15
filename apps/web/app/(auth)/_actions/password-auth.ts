@@ -10,9 +10,17 @@ import {
 } from "@cyberlearn/types";
 import { env } from "@/lib/env";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
+import { classifySignUpError, type SignUpFailure } from "@/lib/auth/sign-up-error";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { AuthActionState } from "./auth-action-state";
+
+const SIGN_UP_ERROR_MESSAGES: Record<SignUpFailure, string> = {
+  email_rate_limit:
+    "Le service d’e-mail est temporairement saturé. Réessaie dans quelques minutes.",
+  invalid_email: "Cette adresse e-mail ne peut pas être utilisée.",
+  unknown: "Impossible de créer le compte pour le moment. Réessaie dans quelques minutes.",
+};
 
 async function isRateLimited(): Promise<boolean> {
   const headerStore = await headers();
@@ -120,13 +128,28 @@ export async function signUpWithPassword(
         redirectTo: null,
       };
     }
+
+    const failure = classifySignUpError(error);
+    Sentry.captureException(error, {
+      tags: {
+        area: "auth.sign-up",
+        auth_code: error.code ?? "unknown",
+        failure,
+      },
+      extra: { status: error.status },
+    });
+    return {
+      status: "error",
+      message: SIGN_UP_ERROR_MESSAGES[failure],
+      redirectTo: null,
+    };
   } catch (signUpError) {
     Sentry.captureException(signUpError, { tags: { area: "auth.sign-up" } });
   }
 
   return {
     status: "error",
-    message: "Impossible de créer le compte pour le moment. Réessaie dans quelques minutes.",
+    message: SIGN_UP_ERROR_MESSAGES.unknown,
     redirectTo: null,
   };
 }
