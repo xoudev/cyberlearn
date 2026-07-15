@@ -7,7 +7,7 @@ import "./telecharger.css";
 export const metadata: Metadata = {
   title: "Télécharger l'application",
   description:
-    "Installe Cyber Learn sur Android ou ajoute la version web à l'écran d'accueil de ton iPhone.",
+    "Installe CyberLearn sur Android ou ajoute la version web à l'écran d'accueil de ton iPhone.",
   alternates: { canonical: "/telecharger" },
 };
 
@@ -35,6 +35,46 @@ function ArrowIcon(): React.JSX.Element {
   );
 }
 
+function BellIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8ZM10 21h4" />
+    </svg>
+  );
+}
+
+function HomeIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4Z" />
+    </svg>
+  );
+}
+
+function RouteIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM8 6h3a3 3 0 0 1 3 3v6a3 3 0 0 0 3 3h-1" />
+    </svg>
+  );
+}
+
+function BookIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5Zm16 0A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5Z" />
+    </svg>
+  );
+}
+
+function UserIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0" />
+    </svg>
+  );
+}
+
 function ExternalAction({
   href,
   label,
@@ -57,58 +97,91 @@ function ExternalAction({
   );
 }
 
-function PhonePreview(): React.JSX.Element {
+function MobileAppPreview(): React.JSX.Element {
   return (
-    <div className="download-phone" aria-label="Aperçu de l'application Cyber Learn">
-      <div className="download-phone__sensor" aria-hidden="true" />
-      <div className="download-phone__header">
-        <Image
-          src="/icon_app.png"
-          alt=""
-          width={30}
-          height={30}
-          priority
-          style={{ width: 30, height: 30 }}
-        />
-        <div>
-          <span>CYBER LEARN</span>
-          <strong>Salut, apprenti</strong>
+    <figure className="mobile-preview">
+      <div className="mobile-preview__device">
+        <div className="mobile-preview__screen">
+          <div className="mobile-preview__status" aria-hidden="true">
+            <span>9:41</span>
+            <span>● ◒</span>
+          </div>
+
+          <div className="mobile-preview__greeting">
+            <div className="mobile-preview__identity">
+              <Image src="/icon_app.png" alt="" width={28} height={28} priority />
+              <div>
+                <span>Bon retour</span>
+                <strong>@apprenti</strong>
+              </div>
+            </div>
+            <div className="mobile-preview__bell">
+              <BellIcon />
+            </div>
+          </div>
+
+          <div className="mobile-preview__level">
+            <div>
+              <strong>Niveau 7</strong>
+              <span>1 840 / 2 000 XP</span>
+            </div>
+            <div className="mobile-preview__xp">
+              <span />
+            </div>
+            <small>◆ Palier Argent</small>
+          </div>
+
+          <div className="mobile-preview__section-title">
+            <span>Progression</span>
+            <strong>Ta série</strong>
+          </div>
+          <div className="mobile-preview__streak">
+            <span aria-hidden="true">🔥</span>
+            <div>
+              <strong>12</strong>
+              <small>jours de série</small>
+            </div>
+            <p>
+              Record personnel
+              <br />
+              <b>18 jours</b>
+            </p>
+          </div>
+
+          <div className="mobile-preview__section-title mobile-preview__section-title--resume">
+            <strong>Reprends où tu t’es arrêté</strong>
+          </div>
+          <div className="mobile-preview__lesson">
+            <span>Cybersécurité</span>
+            <strong>Sécuriser une API</strong>
+            <small>Continuer →</small>
+          </div>
+
+          <div className="mobile-preview__nav" aria-hidden="true">
+            <span className="mobile-preview__nav-item mobile-preview__nav-item--active">
+              <HomeIcon />
+              Accueil
+            </span>
+            <span className="mobile-preview__nav-item">
+              <RouteIcon />
+              Parcours
+            </span>
+            <span className="mobile-preview__nav-item">
+              <BookIcon />
+              Leçons
+            </span>
+            <span className="mobile-preview__nav-item">
+              <UserIcon />
+              Profil
+            </span>
+          </div>
         </div>
       </div>
-      <div className="download-phone__progress">
-        <div>
-          <span>PROGRESSION</span>
-          <b>LVL · 7</b>
-        </div>
-        <strong>1 840 XP</strong>
-        <div className="download-phone__bar">
-          <span />
-        </div>
-      </div>
-      <div className="download-phone__label">À CONTINUER</div>
-      <div className="download-phone__lesson">
-        <i className="download-phone__dot download-phone__dot--cyan" />
-        <div>
-          <strong>Sécuriser une API</strong>
-          <span>Cybersécurité · 12 min</span>
-        </div>
-        <b>68%</b>
-      </div>
-      <div className="download-phone__lesson">
-        <i className="download-phone__dot download-phone__dot--blue" />
-        <div>
-          <strong>Réseaux TCP/IP</strong>
-          <span>Réseau · 18 min</span>
-        </div>
-        <b>24%</b>
-      </div>
-      <div className="download-phone__nav" aria-hidden="true">
-        <span className="download-phone__nav-item--active">⌂</span>
-        <span>⌁</span>
-        <span>◇</span>
-        <span>○</span>
-      </div>
-    </div>
+      <figcaption>
+        <span>Écran d’accueil</span>
+        <span>Application Android · v2.2</span>
+      </figcaption>
+    </figure>
   );
 }
 
@@ -122,15 +195,8 @@ export default function DownloadPage(): React.JSX.Element {
     <div className="download-page">
       <header className="download-header">
         <div className="download-header__inner">
-          <Link href="/" className="download-brand" aria-label="Cyber Learn · accueil">
-            <Image
-              src="/icon_app.png"
-              alt=""
-              width={32}
-              height={32}
-              priority
-              style={{ width: 32, height: 32 }}
-            />
+          <Link href="/" className="download-brand" aria-label="CyberLearn · accueil">
+            <Image src="/icon_app.png" alt="" width={32} height={32} priority />
             <span>
               cyber<b>learn</b>
             </span>
@@ -145,172 +211,167 @@ export default function DownloadPage(): React.JSX.Element {
       </header>
 
       <main>
-        <section className="download-hero">
+        <section className="download-hero" aria-labelledby="download-title">
           <div className="download-hero__copy">
-            <div className="download-kicker">
-              <span aria-hidden="true" />
-              APPLICATION MOBILE
-            </div>
-            <h1>
-              Apprends partout.
-              <br />
-              <em>Reprends exactement où tu t’es arrêté.</em>
-            </h1>
-            <p>
-              Tes leçons, tes notes, ton XP et ta progression restent synchronisés entre le site et
-              l’application mobile Cyber Learn.
+            <p className="download-kicker">Application mobile · version 2.2</p>
+            <h1 id="download-title">CyberLearn, maintenant dans ta poche.</h1>
+            <p className="download-hero__intro">
+              Continue une leçon, relis tes notes et garde ta progression à jour, même loin de ton
+              ordinateur. Ton compte est le même sur le web et sur mobile.
             </p>
             <div className="download-hero__actions">
-              <a href="#plateformes" className="download-action">
-                <span>Choisir ma version</span>
+              <a href="#installation" className="download-action">
+                <span>Installer l’application</span>
                 <ArrowIcon />
               </a>
               <Link href="/login" className="download-action download-action--secondary">
-                Continuer sur le web
+                Ouvrir sur le web
               </Link>
             </div>
-            <ul className="download-benefits" aria-label="Avantages de l'application">
-              <li>Progression synchronisée</li>
-              <li>Notes accessibles partout</li>
-              <li>Expérience pensée pour le mobile</li>
-            </ul>
+            <dl className="download-facts">
+              <div>
+                <dt>Compte</dt>
+                <dd>Unique</dd>
+              </div>
+              <div>
+                <dt>Progression</dt>
+                <dd>Synchronisée</dd>
+              </div>
+              <div>
+                <dt>Sécurité</dt>
+                <dd>MFA disponible</dd>
+              </div>
+            </dl>
           </div>
+
           <div className="download-hero__visual">
-            <div className="download-orbit download-orbit--one" aria-hidden="true" />
-            <div className="download-orbit download-orbit--two" aria-hidden="true" />
-            <PhonePreview />
-            <div className="download-float-card download-float-card--xp">
-              <span>SESSION TERMINÉE</span>
-              <strong>+120 XP</strong>
-            </div>
-            <div className="download-float-card download-float-card--sync">
-              <span className="download-float-card__status" aria-hidden="true" />
-              Progression à jour
+            <MobileAppPreview />
+          </div>
+        </section>
+
+        <section className="download-product" aria-labelledby="product-title">
+          <div className="download-product__inner">
+            <header className="download-product__heading">
+              <p className="download-kicker">Pas une version allégée</p>
+              <h2 id="product-title">L’essentiel de CyberLearn te suit partout.</h2>
+              <p>
+                L’interface a été reconstruite pour le téléphone, avec les mêmes données et le même
+                niveau de sécurité que le site.
+              </p>
+            </header>
+
+            <div className="download-feature-list">
+              <article>
+                <span>01</span>
+                <h3>Cours et parcours</h3>
+                <p>
+                  Reprends au bon endroit et avance dans tes parcours depuis un écran plus compact.
+                </p>
+              </article>
+              <article>
+                <span>02</span>
+                <h3>Notes de leçon</h3>
+                <p>Retrouve tes notes, classe-les et consulte-les quand tu en as besoin.</p>
+              </article>
+              <article>
+                <span>03</span>
+                <h3>XP et récompenses</h3>
+                <p>Ton niveau, tes séries, tes badges et ton classement restent synchronisés.</p>
+              </article>
             </div>
           </div>
         </section>
 
-        <section className="download-platforms" id="plateformes" aria-labelledby="platform-title">
-          <div className="download-section-heading">
-            <span>CHOISIS TON INSTALLATION</span>
-            <h2 id="platform-title">Deux plateformes, deux chemins clairs.</h2>
+        <section className="download-install" id="installation" aria-labelledby="install-title">
+          <div className="download-install__heading">
+            <p className="download-kicker">Téléchargement</p>
+            <h2 id="install-title">Choisis ton téléphone.</h2>
             <p>
-              Android peut être installé nativement dès que le canal est publié. Sur iPhone, la
-              version web installable reste gratuite.
+              Android dispose de son application native. Sur iPhone, CyberLearn s’installe depuis
+              Safari.
             </p>
           </div>
 
-          <div className="download-platform-grid">
-            <article className="download-platform-card download-platform-card--android">
-              <div className="download-platform-card__top">
-                <div className="download-platform-icon download-platform-icon--android">
+          <div className="download-install__layout">
+            <article className="download-install__platform download-install__platform--android">
+              <div className="download-install__platform-heading">
+                <span className="download-platform-icon download-platform-icon--android">
                   <AndroidIcon />
-                </div>
-                <span
-                  className={
-                    androidAvailable ? "download-status download-status--ready" : "download-status"
-                  }
-                >
-                  {androidAvailable ? "Disponible" : "Publication en cours"}
                 </span>
+                <div>
+                  <p>Android</p>
+                  <h3>L’application native</h3>
+                </div>
               </div>
-              <div>
-                <span className="download-platform-card__eyebrow">ANDROID</span>
-                <h3>L’application complète</h3>
-                <p>
-                  Google Play est le canal recommandé pour recevoir les mises à jour. L’APK direct
-                  reste disponible comme solution alternative lorsqu’il est publié.
-                </p>
-              </div>
-              <div className="download-platform-card__actions">
+              <p className="download-install__description">
+                Installe l’app depuis Google Play pour recevoir les mises à jour automatiquement. Un
+                APK officiel peut aussi être proposé pour une installation directe.
+              </p>
+              <div className="download-install__actions">
                 {androidPlayUrl ? (
-                  <ExternalAction href={androidPlayUrl} label="Ouvrir dans Google Play" />
+                  <ExternalAction href={androidPlayUrl} label="Ouvrir Google Play" />
                 ) : androidApkUrl ? (
-                  <ExternalAction href={androidApkUrl} label="Télécharger l'APK" />
+                  <ExternalAction href={androidApkUrl} label="Télécharger l’APK" />
                 ) : (
                   <div className="download-action download-action--disabled" aria-disabled="true">
-                    Version Android bientôt disponible
+                    Publication en cours
                   </div>
                 )}
                 {androidPlayUrl && androidApkUrl ? (
-                  <ExternalAction href={androidApkUrl} label="Télécharger l'APK" secondary />
+                  <ExternalAction href={androidApkUrl} label="Télécharger l’APK" secondary />
                 ) : null}
               </div>
-              <p className="download-platform-note">
-                Un APK installé hors Play Store peut déclencher un avertissement Android.
-                Télécharge-le uniquement depuis le lien officiel affiché ici.
+              <p className="download-install__note">
+                {androidAvailable
+                  ? "Télécharge toujours l’application depuis l’un des liens officiels affichés ici."
+                  : "La fiche Google Play sera ajoutée ici dès que la validation sera terminée."}
               </p>
             </article>
 
-            <article className="download-platform-card download-platform-card--ios">
-              <div className="download-platform-card__top">
-                <div className="download-platform-icon download-platform-icon--ios">
+            <article className="download-install__platform download-install__platform--ios">
+              <div className="download-install__platform-heading">
+                <span className="download-platform-icon download-platform-icon--ios">
                   <AppleIcon />
-                </div>
-                <span className="download-status download-status--web">
-                  {iosAppStoreUrl ? "App Store" : "Web app gratuite"}
                 </span>
+                <div>
+                  <p>iPhone et iPad</p>
+                  <h3>{iosAppStoreUrl ? "Disponible sur l’App Store" : "Installe la web app"}</h3>
+                </div>
               </div>
-              <div>
-                <span className="download-platform-card__eyebrow">IPHONE & IPAD</span>
-                <h3>
-                  {iosAppStoreUrl ? "Disponible sur l'App Store" : "Installe le site comme une app"}
-                </h3>
-                <p>
-                  {iosAppStoreUrl
-                    ? "Installe la version native depuis l'App Store, ou utilise la version web sans téléchargement."
-                    : "Sans abonnement développeur Apple, une application native ne peut pas être distribuée publiquement. Safari permet toutefois d'ajouter Cyber Learn à l'écran d'accueil gratuitement."}
-                </p>
-              </div>
-              <div className="download-platform-card__actions">
-                {iosAppStoreUrl ? (
-                  <ExternalAction href={iosAppStoreUrl} label="Ouvrir dans l'App Store" />
-                ) : (
+              <p className="download-install__description">
+                {iosAppStoreUrl
+                  ? "Télécharge l’application native depuis l’App Store et connecte-toi avec ton compte CyberLearn."
+                  : "La version native arrivera plus tard. En attendant, Safari permet d’ajouter CyberLearn à l’écran d’accueil gratuitement."}
+              </p>
+              {iosAppStoreUrl ? (
+                <div className="download-install__actions">
+                  <ExternalAction href={iosAppStoreUrl} label="Ouvrir l’App Store" />
+                </div>
+              ) : (
+                <ol className="download-ios-steps">
+                  <li>
+                    <span>1</span>
+                    Ouvre cyberlearn.fr dans Safari
+                  </li>
+                  <li>
+                    <span>2</span>
+                    Touche le bouton Partager
+                  </li>
+                  <li>
+                    <span>3</span>
+                    Choisis « Sur l’écran d’accueil »
+                  </li>
+                </ol>
+              )}
+              {!iosAppStoreUrl ? (
+                <div className="download-install__actions">
                   <Link href="/login" className="download-action">
-                    <span>Ouvrir la version web</span>
+                    <span>Ouvrir CyberLearn</span>
                     <ArrowIcon />
                   </Link>
-                )}
-              </div>
-              <ol className="download-ios-steps">
-                <li>
-                  <span>01</span>
-                  Ouvre cyberlearn.fr dans Safari
-                </li>
-                <li>
-                  <span>02</span>
-                  Touche Partager
-                </li>
-                <li>
-                  <span>03</span>
-                  Choisis « Ajouter à l’écran d’accueil »
-                </li>
-              </ol>
+                </div>
+              ) : null}
             </article>
-          </div>
-        </section>
-
-        <section className="download-explainer" aria-labelledby="distribution-title">
-          <div>
-            <span className="download-explainer__number">01</span>
-            <div>
-              <h2 id="distribution-title">Pourquoi l’iPhone est différent</h2>
-              <p>
-                Apple demande un abonnement développeur annuel pour signer et distribuer une app
-                native au public. Un fichier IPA posé sur un site ne serait pas installable
-                librement sur les iPhone des utilisateurs.
-              </p>
-            </div>
-          </div>
-          <div>
-            <span className="download-explainer__number">02</span>
-            <div>
-              <h2>La stratégie retenue</h2>
-              <p>
-                Publier Android maintenant, proposer la web app installable sur iOS, puis activer le
-                bouton App Store le jour où Cyber Learn rejoint le programme développeur Apple.
-              </p>
-            </div>
           </div>
         </section>
       </main>
@@ -318,13 +379,7 @@ export default function DownloadPage(): React.JSX.Element {
       <footer className="download-footer">
         <div>
           <Link href="/" className="download-brand">
-            <Image
-              src="/icon_app.png"
-              alt=""
-              width={26}
-              height={26}
-              style={{ width: 26, height: 26 }}
-            />
+            <Image src="/icon_app.png" alt="" width={26} height={26} />
             <span>
               cyber<b>learn</b>
             </span>
@@ -334,7 +389,7 @@ export default function DownloadPage(): React.JSX.Element {
             <Link href="/legal">Mentions légales</Link>
             <Link href="/contact">Contact</Link>
           </nav>
-          <span>© {new Date().getFullYear()} Cyber Learn</span>
+          <span>© {new Date().getFullYear()} CyberLearn</span>
         </div>
       </footer>
     </div>
