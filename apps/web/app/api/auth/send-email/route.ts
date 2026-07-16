@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { authRedirectSchema } from "@cyberlearn/types";
 import { sendMagicLinkEmail } from "@cyberlearn/email";
 import type { EmailActionType } from "@cyberlearn/email";
 import { env } from "@/lib/env";
@@ -15,6 +16,21 @@ const hookPayloadSchema = z.object({
     email_action_type: z.string(),
   }),
 });
+
+/**
+ * Extracts the local post-auth destination from the caller-supplied redirect.
+ * Callers pass `redirect_to` as `${SITE_URL}/auth/callback?next=/reset-password`
+ * (web + mobile reset, signup, ...); we forward only the validated `next` path
+ * to `/auth/confirm` so the server-side OTP verification can honour it.
+ */
+function resolveNextPath(redirectTo: string): string {
+  try {
+    const inner = new URL(redirectTo).searchParams.get("next");
+    return authRedirectSchema.safeParse(inner ?? "/dashboard").data ?? "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
+}
 
 async function verifyWebhookSignature(
   rawBody: string,
@@ -101,7 +117,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { user, email_data } = parsed.data;
     const { token, token_hash, redirect_to, email_action_type } = email_data;
 
-    const magicLink = `${env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
+    // Point straight at our server-side confirmation route rather than Supabase's
+    // /auth/v1/verify implicit-flow endpoint: that endpoint returns the session in
+    // a URL fragment a Route Handler can never read, so recovery/signup links died
+    // at /auth/callback. /auth/confirm verifies token_hash with verifyOtp instead.
+    const nextPath = resolveNextPath(redirect_to);
+    const confirmUrl = new URL(`${env.NEXT_PUBLIC_SITE_URL}/auth/confirm`);
+    confirmUrl.searchParams.set("token_hash", token_hash);
+    confirmUrl.searchParams.set("type", email_action_type);
+    confirmUrl.searchParams.set("next", nextPath);
+    const magicLink = confirmUrl.toString();
 
     await sendMagicLinkEmail({
       apiKey: env.RESEND_API_KEY,
