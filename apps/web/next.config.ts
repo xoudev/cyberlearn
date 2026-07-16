@@ -58,6 +58,12 @@ const nextConfig: NextConfig = {
     "@cyberlearn/types",
     "@cyberlearn/ui",
   ],
+  redirects() {
+    // The download page moved to /download (route directories are code and
+    // follow the English-only rule); keep the old French slug alive for
+    // links already shared in emails, store listings and bookmarks.
+    return Promise.resolve([{ source: "/telecharger", destination: "/download", permanent: true }]);
+  },
   headers() {
     // Defense-in-depth: stricter CSP on static script paths under our
     // control (workers and runtimes). These paths serve trusted code

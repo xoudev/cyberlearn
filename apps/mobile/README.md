@@ -88,7 +88,7 @@ Let EAS generate a new upload key for the new Google Play application, then keep
 that credential backed up. It is independent from the former Flutter listing.
 
 After publishing an artifact, configure the web deployment variables used by
-`/telecharger`:
+`/download`:
 
 ```text
 NEXT_PUBLIC_ANDROID_PLAY_URL=https://play.google.com/...

@@ -80,7 +80,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/auth/confirm" ||
     pathname.startsWith("/u/") ||
     pathname.startsWith("/contact") ||
-    pathname === "/telecharger" ||
+    pathname === "/download" ||
     pathname === "/legal" ||
     pathname.startsWith("/legal/") ||
     pathname === "/privacy" ||

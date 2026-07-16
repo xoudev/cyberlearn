@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { env } from "@/lib/env";
-import "./telecharger.css";
+import "./download.css";
 
 export const metadata: Metadata = {
   title: "Télécharger l'application",
   description:
     "Installe CyberLearn sur Android ou ajoute la version web à l'écran d'accueil de ton iPhone.",
-  alternates: { canonical: "/telecharger" },
+  alternates: { canonical: "/download" },
 };
 
 function AndroidIcon(): React.JSX.Element {
@@ -246,15 +246,7 @@ export default function DownloadPage(): React.JSX.Element {
             </p>
           </div>
 
-          <div className="download-hero__visual">
-            <div className="download-app-window__bar">
-              <div aria-hidden="true">
-                <span />
-                <span />
-              </div>
-              <code>~/cyberlearn/mobile/accueil</code>
-              <b>PREVIEW</b>
-            </div>
+          <div className="download-hero__stage">
             <MobileAppPreview />
           </div>
         </section>
