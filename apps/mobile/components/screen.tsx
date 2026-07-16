@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
+import { useCosmetics } from "@/lib/cosmetics";
 
 /** Dark full-height screen with safe-area top padding and standard gutters. */
 export function Screen({
@@ -14,6 +15,7 @@ export function Screen({
   /** Enables pull-to-refresh; should return a promise that settles when done. */
   onRefresh?: () => Promise<unknown>;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   const insets = useSafeAreaInsets();
   const padTop = insets.top + 10;
   const [refreshing, setRefreshing] = useState(false);
@@ -60,8 +62,8 @@ export function Screen({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => void handleRefresh()}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
+              tintColor={theme.accent}
+              colors={[theme.accent]}
               progressBackgroundColor={colors.bgElevated}
             />
           ) : undefined

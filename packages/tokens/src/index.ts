@@ -1,6 +1,20 @@
 // Shared design tokens - plain TS constants, zero deps, safe on web + React Native.
 // Derived from packages/ui/src/tokens.css (.dark theme). The app is dark-only.
 
+const defaultAccent = "#0affd4";
+let activeAccent = defaultAccent;
+
+/**
+ * Updates the runtime accent used by the native application.
+ *
+ * The mobile app has one active user and one render tree. Keeping the accent
+ * behind this getter lets existing token consumers react to an equipped
+ * cosmetic without duplicating the full palette in every screen.
+ */
+export function setActiveAccentColor(color: string | null): void {
+  activeAccent = color ?? defaultAccent;
+}
+
 export const colors = {
   // Surfaces
   bgBase: "#030219",
@@ -16,8 +30,10 @@ export const colors = {
   textDisabled: "#3f3d5c",
   // Brand + default cosmetic accent
   brandBlue: "#0024ff",
-  brandTurquoise: "#0affd4",
-  accent: "#0affd4",
+  brandTurquoise: defaultAccent,
+  get accent(): string {
+    return activeAccent;
+  },
   // Semantic
   success: "#0affd4",
   warning: "#ffb020",
@@ -52,7 +68,7 @@ export const category = {
 
 // Selectable cosmetic accents (data-accent overrides in tokens.css).
 export const accents = {
-  turquoise: "#0affd4",
+  turquoise: defaultAccent,
   blue: "#4d8bff",
   gold: "#ffb547",
   pink: "#ff4dd2",

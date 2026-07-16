@@ -3,6 +3,7 @@ import { Image, View } from "react-native";
 import Svg, { Path, Polygon, SvgUri } from "react-native-svg";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
+import { useCosmetics } from "@/lib/cosmetics";
 
 const WEB_ORIGIN = "https://cyberlearn.fr";
 
@@ -44,15 +45,17 @@ export function Avatar({
   avatarUrl,
   displayName,
   size = 96,
-  color = colors.accent,
+  color,
 }: {
   avatarUrl: string | null;
   displayName: string;
   size?: number;
   color?: string;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   const [failed, setFailed] = useState(false);
   const inner = size * 0.62;
+  const contentColor = color ?? theme.accent;
   const isGlyph = avatarUrl?.startsWith("__glyph:");
   const isSvg =
     !!avatarUrl && !isGlyph && (avatarUrl.endsWith(".svg") || avatarUrl.includes("/avatars/"));
@@ -62,12 +65,40 @@ export function Avatar({
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
       {/* Hex ring */}
       <Svg width={size} height={size} viewBox="0 0 100 100" style={{ position: "absolute" }}>
+        {theme.frame.strokeWidth > 0 ? (
+          <Polygon
+            points="50,1 94,25 94,75 50,99 6,75 6,25"
+            fill="none"
+            stroke={theme.frame.color}
+            strokeWidth={theme.frame.strokeWidth + 3}
+            opacity={theme.frame.glowOpacity}
+          />
+        ) : null}
+        {theme.hex.glowOpacity > 0 ? (
+          <Polygon
+            points="50,3 90,26 90,74 50,97 10,74 10,26"
+            fill="none"
+            stroke={theme.accent}
+            strokeWidth={8}
+            opacity={theme.hex.glowOpacity}
+          />
+        ) : null}
         <Polygon
           points="50,3 90,26 90,74 50,97 10,74 10,26"
-          fill="rgba(10,255,212,0.05)"
-          stroke={color}
-          strokeWidth={2.5}
+          fill={theme.accent}
+          fillOpacity={theme.hex.fillOpacity}
+          stroke={theme.accent}
+          strokeWidth={theme.hex.strokeWidth}
+          strokeDasharray={theme.hex.dash}
         />
+        {theme.frame.strokeWidth > 0 ? (
+          <Polygon
+            points="50,1 94,25 94,75 50,99 6,75 6,25"
+            fill="none"
+            stroke={theme.frame.color}
+            strokeWidth={theme.frame.strokeWidth}
+          />
+        ) : null}
       </Svg>
 
       {avatarUrl && isGlyph && GLYPH_PATHS[avatarUrl.slice(8)] ? (
@@ -76,7 +107,7 @@ export function Avatar({
           height={inner}
           viewBox="0 0 24 24"
           fill="none"
-          stroke={color}
+          stroke={contentColor}
           strokeWidth={1.3}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -98,7 +129,13 @@ export function Avatar({
           onError={() => setFailed(true)}
         />
       ) : (
-        <Text style={{ fontFamily: `${fonts.sans}_800ExtraBold`, fontSize: size * 0.3, color }}>
+        <Text
+          style={{
+            fontFamily: `${fonts.sans}_800ExtraBold`,
+            fontSize: size * 0.3,
+            color: contentColor,
+          }}
+        >
           {initialsOf(displayName)}
         </Text>
       )}

@@ -23,6 +23,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
 import { BrandedLoader } from "@/components/loader";
 import { TourProvider } from "@/components/tour";
+import { CosmeticsProvider } from "@/lib/cosmetics";
 import { mirrorInboxToDevice } from "@/lib/device-notifications";
 import { ensureUserRow, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
@@ -117,7 +118,7 @@ function RootNavigator(): React.JSX.Element {
   if (initializing || assuranceChecking) return <BrandedLoader label="Connexion sécurisée" />;
 
   return (
-    <>
+    <CosmeticsProvider userId={session && !mfaRequired ? session.user.id : undefined}>
       {session && !mfaRequired ? <NotificationMirror /> : null}
       <Stack
         screenOptions={{
@@ -126,7 +127,7 @@ function RootNavigator(): React.JSX.Element {
           animation: "fade",
         }}
       />
-    </>
+    </CosmeticsProvider>
   );
 }
 

@@ -2,11 +2,16 @@ import React from "react";
 import { ScrollView, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
+import { useCosmetics, type MobileCosmeticTheme } from "@/lib/cosmetics";
 import type { Block } from "@/lib/lesson-blocks";
 
 // ── Inline markdown (bold / italic / inline code) ────────────────────────────
 
-function renderInline(text: string, keyBase: string): React.ReactNode[] {
+function renderInline(
+  text: string,
+  keyBase: string,
+  theme: MobileCosmeticTheme,
+): React.ReactNode[] {
   const out: React.ReactNode[] = [];
   // Tokenize on **bold**, `code`, *italic* - longest markers first.
   const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
@@ -32,8 +37,8 @@ function renderInline(text: string, keyBase: string): React.ReactNode[] {
           style={{
             fontFamily: `${fonts.mono}_400Regular`,
             fontSize: 12.5,
-            color: "#B8FBEB",
-            backgroundColor: "rgba(10,255,212,0.08)",
+            color: theme.terminal.foreground,
+            backgroundColor: theme.terminal.background,
           }}
         >
           {` ${tok.slice(1, -1)} `}
@@ -70,6 +75,8 @@ export function BlockView({
   block,
   index,
 }: { block: Block; index: number }): React.JSX.Element | null {
+  const { theme } = useCosmetics();
+
   switch (block.kind) {
     case "h3":
       return (
@@ -80,7 +87,7 @@ export function BlockView({
     case "paragraph":
       return (
         <Text variant="body" style={{ lineHeight: 22 }}>
-          {renderInline(block.text, `p${String(index)}`)}
+          {renderInline(block.text, `p${String(index)}`, theme)}
         </Text>
       );
     case "list":
@@ -88,11 +95,11 @@ export function BlockView({
         <View style={{ gap: 6 }}>
           {block.items.map((item, i) => (
             <View key={i} style={{ flexDirection: "row", gap: 8 }}>
-              <Text style={{ color: colors.accent, fontSize: 13, lineHeight: 22 }}>
+              <Text style={{ color: theme.accent, fontSize: 13, lineHeight: 22 }}>
                 {block.ordered ? `${String(i + 1)}.` : "›"}
               </Text>
               <Text variant="body" style={{ flex: 1, lineHeight: 22 }}>
-                {renderInline(item, `l${String(index)}-${String(i)}`)}
+                {renderInline(item, `l${String(index)}-${String(i)}`, theme)}
               </Text>
             </View>
           ))}
@@ -102,7 +109,7 @@ export function BlockView({
       return (
         <View
           style={{
-            backgroundColor: "rgba(2,1,14,0.9)",
+            backgroundColor: theme.terminal.background,
             borderWidth: 1,
             borderColor: colors.borderSubtle,
             overflow: "hidden",
@@ -117,7 +124,7 @@ export function BlockView({
                 borderBottomColor: colors.borderSubtle,
               }}
             >
-              <Text variant="micro" style={{ color: colors.accent }}>
+              <Text variant="micro" style={{ color: theme.accent }}>
                 {block.lang}
               </Text>
             </View>
@@ -128,7 +135,7 @@ export function BlockView({
                 fontFamily: `${fonts.mono}_400Regular`,
                 fontSize: 12,
                 lineHeight: 19,
-                color: "#B8FBEB",
+                color: theme.terminal.foreground,
                 padding: 12,
               }}
             >
@@ -154,7 +161,7 @@ export function BlockView({
             {c.label}
           </Text>
           <Text variant="body" style={{ lineHeight: 21 }}>
-            {renderInline(block.text, `co${String(index)}`)}
+            {renderInline(block.text, `co${String(index)}`, theme)}
           </Text>
         </View>
       );
@@ -164,8 +171,8 @@ export function BlockView({
         <View
           style={{
             borderWidth: 1,
-            borderColor: colors.accent,
-            backgroundColor: "rgba(2,1,14,0.9)",
+            borderColor: theme.accent,
+            backgroundColor: theme.terminal.background,
             overflow: "hidden",
           }}
         >
@@ -180,7 +187,7 @@ export function BlockView({
               borderBottomColor: colors.borderSubtle,
             }}
           >
-            <Text variant="micro" style={{ color: colors.accent }}>
+            <Text variant="micro" style={{ color: theme.accent }}>
               ▶ Sandbox {block.lang}
             </Text>
             <Text variant="micro" style={{ color: colors.textDisabled }}>
@@ -193,7 +200,7 @@ export function BlockView({
                 fontFamily: `${fonts.mono}_400Regular`,
                 fontSize: 12,
                 lineHeight: 19,
-                color: "#B8FBEB",
+                color: theme.terminal.foreground,
                 padding: 12,
               }}
             >
@@ -208,7 +215,7 @@ export function BlockView({
           style={{
             borderWidth: 1,
             borderColor: colors.borderDefault,
-            backgroundColor: "rgba(2,1,14,0.92)",
+            backgroundColor: theme.terminal.background,
             overflow: "hidden",
           }}
         >
@@ -248,7 +255,7 @@ export function BlockView({
                     style={{
                       fontFamily: `${fonts.mono}_500Medium`,
                       fontSize: 12.5,
-                      color: colors.accent,
+                      color: theme.terminal.foreground,
                     }}
                   >
                     $ {c}
@@ -260,7 +267,7 @@ export function BlockView({
                 style={{
                   fontFamily: `${fonts.mono}_400Regular`,
                   fontSize: 12.5,
-                  color: colors.textMuted,
+                  color: theme.terminal.foreground,
                 }}
               >
                 $ _ terminal interactif (sur le web)

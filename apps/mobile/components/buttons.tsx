@@ -4,6 +4,7 @@ import { Pressable, View, type ViewStyle } from "react-native";
 import { colors, radius } from "@cyberlearn/tokens";
 import { ChevronLeft } from "@/components/icons";
 import { Text } from "@/components/ui";
+import { useCosmetics } from "@/lib/cosmetics";
 
 // Mobile affordance rule: anything tappable must LOOK tappable. These chips
 // give every inline action a visible bounding box, a pressed state, a >=36px
@@ -12,6 +13,7 @@ import { Text } from "@/components/ui";
 /** Bordered back chip used at the top of every pushed screen. */
 export function BackButton({ label = "Retour" }: { label?: string }): React.JSX.Element {
   const router = useRouter();
+  const { theme } = useCosmetics();
   return (
     <Pressable
       onPress={() => router.back()}
@@ -27,8 +29,8 @@ export function BackButton({ label = "Retour" }: { label?: string }): React.JSX.
         paddingHorizontal: 12,
         borderRadius: radius.sm,
         borderWidth: 1,
-        borderColor: pressed ? colors.accent : colors.borderDefault,
-        backgroundColor: pressed ? "rgba(10,255,212,0.08)" : "rgba(5,4,26,0.5)",
+        borderColor: pressed ? theme.accent : colors.borderDefault,
+        backgroundColor: pressed ? `${theme.accent}14` : "rgba(5,4,26,0.5)",
       })}
     >
       <ChevronLeft color={colors.textSecondary} size={13} strokeWidth={1.8} />
@@ -53,8 +55,9 @@ export function ActionChip({
   icon?: React.ReactNode;
   disabled?: boolean;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   const color =
-    tone === "accent" ? colors.accent : tone === "danger" ? colors.danger : colors.textSecondary;
+    tone === "accent" ? theme.accent : tone === "danger" ? colors.danger : colors.textSecondary;
   return (
     <Pressable
       onPress={onPress}
@@ -97,6 +100,7 @@ export function IconButton({
   badge?: React.ReactNode;
   style?: ViewStyle;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   return (
     <Pressable
       onPress={onPress}
@@ -111,8 +115,8 @@ export function IconButton({
           alignItems: "center",
           justifyContent: "center",
           borderWidth: 1,
-          borderColor: pressed ? colors.accent : colors.borderDefault,
-          backgroundColor: pressed ? "rgba(10,255,212,0.08)" : "rgba(5,4,26,0.5)",
+          borderColor: pressed ? theme.accent : colors.borderDefault,
+          backgroundColor: pressed ? `${theme.accent}14` : "rgba(5,4,26,0.5)",
         },
         style,
       ]}
@@ -137,6 +141,7 @@ export function GradientButton({
   loading?: boolean;
   style?: ViewStyle;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   return (
     <Pressable
       onPress={onPress}
@@ -148,7 +153,7 @@ export function GradientButton({
           height: 48,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: colors.accent,
+          backgroundColor: theme.accent,
           opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
         },
         style,
