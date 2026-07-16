@@ -8,7 +8,20 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const isDev = process.env.NODE_ENV === "development";
 
+// Vercel injects its Live toolbar (feedback + comments) into preview
+// deployments; it loads scripts, an iframe and websockets from vercel.live.
+// Allow those sources on previews only - production keeps the strict policy.
+const isVercelPreview = process.env.VERCEL_ENV === "preview";
+
 function buildSecurityHeaders(nonce: string): Record<string, string> {
+  const vercelLive = {
+    script: isVercelPreview ? " https://vercel.live" : "",
+    style: isVercelPreview ? " https://vercel.live" : "",
+    img: isVercelPreview ? " https://vercel.live https://vercel.com" : "",
+    font: isVercelPreview ? " https://vercel.live https://assets.vercel.com" : "",
+    connect: isVercelPreview ? " https://vercel.live wss://*.pusher.com" : "",
+  };
+
   return {
     "Content-Security-Policy": [
       "default-src 'self'",
@@ -18,18 +31,21 @@ function buildSecurityHeaders(nonce: string): Record<string, string> {
       // 'wasm-unsafe-eval' required for Pyodide WebAssembly compilation
       // (cdn.jsdelivr.net Monaco loader + local /runtimes/pyodide/* WASM).
       isDev
-        ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net"
-        : `script-src 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
+        ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net${vercelLive.script}`
+        : `script-src 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${vercelLive.script}`,
       // unsafe-inline required for Tailwind v4 JIT; cdn.jsdelivr.net for Monaco CSS
-      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      `style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net${vercelLive.style}`,
       // blob: for the in-browser avatar cropper preview (URL.createObjectURL of
       // the selected file before it is uploaded).
-      "img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com",
-      "font-src 'self' data:",
+      `img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com${vercelLive.img}`,
+      `font-src 'self' data:${vercelLive.font}`,
       // blob: for Monaco worker creation; cdn.jsdelivr.net for Pyodide + Monaco loader
       isDev
-        ? "connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io"
-        : "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io",
+        ? `connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://localhost:* http://localhost:* https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io${vercelLive.connect}`
+        : `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io${vercelLive.connect}`,
+      // No frame-src in production: default-src 'self' applies, nothing may
+      // be framed. Previews need the vercel.live feedback iframe.
+      ...(isVercelPreview ? ["frame-src 'self' https://vercel.live"] : []),
       // blob: required for Monaco editor web workers and Pyodide blob worker
       "worker-src 'self' blob:",
       "object-src 'none'",
