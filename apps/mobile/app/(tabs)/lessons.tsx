@@ -18,7 +18,7 @@ import {
 } from "@/lib/db";
 import { useLessons } from "@/lib/queries";
 import { useSession } from "@/lib/session";
-import { searchStyle } from "@/app/(tabs)/parcours";
+import { searchStyle } from "@/app/(tabs)/paths";
 
 export default function Lecons(): React.JSX.Element {
   const { session } = useSession();

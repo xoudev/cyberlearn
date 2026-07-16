@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { accents, colors, rarity, setActiveAccentColor } from "@cyberlearn/tokens";
-import { useCasier, type CosmeticType } from "@/lib/queries";
+import { useLocker, type CosmeticType } from "@/lib/queries";
 
 export interface CosmeticLoadout {
   terminalTheme: string | null;
@@ -175,7 +175,7 @@ export function CosmeticsProvider({
   userId: string | undefined;
   children: React.ReactNode;
 }): React.JSX.Element {
-  const { data } = useCasier(userId);
+  const { data } = useLocker(userId);
   const [loadout, setLoadout] = useState<CosmeticLoadout>(EMPTY_LOADOUT);
 
   useEffect(() => {

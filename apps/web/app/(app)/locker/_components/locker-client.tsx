@@ -10,7 +10,7 @@ import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
-export interface CasierItem {
+export interface LockerItem {
   id: string;
   code: string;
   type: CosmeticType;
@@ -24,7 +24,7 @@ export interface CasierItem {
   progressTotal: number;
 }
 
-export interface CasierProfile {
+export interface LockerProfile {
   username: string | null;
   displayName: string;
   initial: string;
@@ -63,7 +63,7 @@ const RARITY_COLOR: Record<string, string> = {
   LEGENDARY: "#FFB547",
 };
 
-function initialEquipped(items: CasierItem[]): Record<CosmeticType, string | null> {
+function initialEquipped(items: LockerItem[]): Record<CosmeticType, string | null> {
   const eq: Record<CosmeticType, string | null> = {
     TERMINAL_THEME: null,
     HEXAGON_STYLE: null,
@@ -153,8 +153,8 @@ function Card({
   onEquip,
   busy,
 }: {
-  item: CasierItem;
-  onEquip: (i: CasierItem) => void;
+  item: LockerItem;
+  onEquip: (i: LockerItem) => void;
   busy: boolean;
 }): React.ReactElement {
   const rarityColor = RARITY_COLOR[item.rarity] ?? "#B8B5D1";
@@ -321,12 +321,12 @@ function Card({
   );
 }
 
-export function CasierClient({
+export function LockerClient({
   items,
   profile,
 }: {
-  items: CasierItem[];
-  profile: CasierProfile;
+  items: LockerItem[];
+  profile: LockerProfile;
 }): React.ReactElement {
   const router = useRouter();
   const { setCosmetic } = useCosmetics();
@@ -336,7 +336,7 @@ export function CasierClient({
     initialEquipped(items),
   );
 
-  function equip(item: CasierItem): void {
+  function equip(item: LockerItem): void {
     if (!item.unlocked || busy || equipped[item.type] === item.code) return;
     const previous = equipped[item.type];
     // Optimistic: local state drives this page's cards + preview, and setCosmetic

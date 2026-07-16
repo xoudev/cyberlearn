@@ -7,7 +7,7 @@ import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
-import { fetchClassement, type ClassementEntry, type PodEntry } from "@/lib/api";
+import { fetchLeaderboard, type LeaderboardEntry, type PodEntry } from "@/lib/api";
 
 const DIVISION_LABEL: Record<string, string> = {
   BRONZE: "Bronze",
@@ -39,11 +39,11 @@ function displayName(e: {
   return e.isCurrentUser ? "Toi" : "Anonyme";
 }
 
-export default function Classement(): React.JSX.Element {
+export default function Leaderboard(): React.JSX.Element {
   const router = useRouter();
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["classement"],
-    queryFn: fetchClassement,
+    queryKey: ["leaderboard"],
+    queryFn: fetchLeaderboard,
   });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -127,7 +127,7 @@ export default function Classement(): React.JSX.Element {
           <View>
             <SectionLabel eyebrow="Général" title="Top classement" />
             <Card style={{ padding: 0 }}>
-              {data.entries.slice(3, 25).map((e: ClassementEntry, i) => (
+              {data.entries.slice(3, 25).map((e: LeaderboardEntry, i) => (
                 <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
               ))}
             </Card>
@@ -143,7 +143,7 @@ export default function Classement(): React.JSX.Element {
 function MyRankCard({
   data,
 }: {
-  data: { userRank: number; entries: ClassementEntry[]; league: { division: string } | null };
+  data: { userRank: number; entries: LeaderboardEntry[]; league: { division: string } | null };
 }): React.JSX.Element {
   const me = data.entries.find((e) => e.isCurrentUser) ?? null;
   return (
@@ -191,7 +191,7 @@ function PodiumStep({
   entry,
   place,
 }: {
-  entry: ClassementEntry;
+  entry: LeaderboardEntry;
   place: 1 | 2 | 3;
 }): React.JSX.Element {
   const medal = MEDAL[place - 1] ?? colors.accent;
@@ -244,7 +244,7 @@ function PodiumStep({
   );
 }
 
-function Podium({ entries }: { entries: ClassementEntry[] }): React.JSX.Element {
+function Podium({ entries }: { entries: LeaderboardEntry[] }): React.JSX.Element {
   const [first, second, third] = entries;
   if (!first || !second || !third) return <View />;
   return (
@@ -321,7 +321,7 @@ function LadderRow({ member, index }: { member: PodEntry; index: number }): Reac
   );
 }
 
-function GlobalRow({ entry }: { entry: ClassementEntry }): React.JSX.Element {
+function GlobalRow({ entry }: { entry: LeaderboardEntry }): React.JSX.Element {
   const top3 = entry.rank <= 3;
   return (
     <View

@@ -137,7 +137,7 @@ export function BossNode({
         </svg>
       </a>
     ) : (
-      <Link className="cp-boss__cta cp-boss__cta--teal" href="/certifs">
+      <Link className="cp-boss__cta cp-boss__cta--teal" href="/certificates">
         Voir mes certificats {ArrowIcon}
       </Link>
     );

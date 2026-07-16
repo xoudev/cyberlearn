@@ -19,11 +19,11 @@ type Sub = (typeof SUB_TABS)[number];
 
 // In-app screens first, then sections that still live on the web.
 const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
-  { label: "Classement", route: "/classement" },
+  { label: "Classement", route: "/leaderboard" },
   { label: "Bloc-notes", route: "/notes" },
-  { label: "Casier", route: "/casier" },
+  { label: "Casier", route: "/locker" },
   { label: "Notifications", route: "/notifications" },
-  { label: "Réglages", route: "/reglages" },
+  { label: "Réglages", route: "/settings" },
   { label: "Révisions", url: "https://cyberlearn.fr/revisions" },
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
   { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
@@ -150,7 +150,7 @@ export default function Profil(): React.JSX.Element {
                 key={c.publicId}
                 onPress={() =>
                   router.push({
-                    pathname: "/certificats/[publicId]",
+                    pathname: "/certificates/[publicId]",
                     params: {
                       publicId: c.publicId,
                       title: c.pathTitle,

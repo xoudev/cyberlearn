@@ -94,7 +94,7 @@ function RootNavigator(): React.JSX.Element {
     } else if (session && mfaRequired && !inMfaChallenge) {
       router.replace("/mfa");
     } else if (session && !mfaRequired && inAuth) {
-      router.replace("/accueil");
+      router.replace("/home");
     }
   }, [session, initializing, assuranceChecking, mfaRequired, segments, pathname, router]);
 

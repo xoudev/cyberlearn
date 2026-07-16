@@ -1,5 +1,4 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { View } from "react-native";
 import Svg, { Polygon } from "react-native-svg";
@@ -19,7 +18,7 @@ import {
   type CosmeticLoadout,
 } from "@/lib/cosmetics";
 import { RARITY_COLOR } from "@/lib/db";
-import { useCasier, type CosmeticItem, type CosmeticType } from "@/lib/queries";
+import { useLocker, type CosmeticItem, type CosmeticType } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 const TYPE_LABEL: Record<CosmeticType, string> = {
@@ -146,12 +145,11 @@ function CosmeticPreview({
   );
 }
 
-export default function Casier(): React.JSX.Element {
-  const router = useRouter();
+export default function Locker(): React.JSX.Element {
   const { session } = useSession();
   const userId = session?.user.id;
   const queryClient = useQueryClient();
-  const { data, isLoading, error, refetch } = useCasier(userId);
+  const { data, isLoading, error, refetch } = useLocker(userId);
   const { loadout, theme, setCosmetic } = useCosmetics();
   const [busyCode, setBusyCode] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -174,7 +172,7 @@ export default function Casier(): React.JSX.Element {
     }
     setBusyCode(null);
     setCosmetic(item.type, nextCode);
-    await queryClient.invalidateQueries({ queryKey: ["casier", userId] });
+    await queryClient.invalidateQueries({ queryKey: ["locker", userId] });
   }
 
   const items = data?.items ?? [];

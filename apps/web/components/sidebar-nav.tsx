@@ -177,7 +177,7 @@ function IconFlash() {
   );
 }
 
-function IconCasier() {
+function IconLocker() {
   return (
     <svg
       viewBox="0 0 16 16"
@@ -239,16 +239,16 @@ const LEARN_ITEMS = [
   { href: "/notes", label: "Bloc-notes", Icon: IconNote, badgeKey: null },
   { href: "/paths", label: "Parcours", Icon: IconRoute, badgeKey: null },
   { href: "/badges", label: "Badges", Icon: IconBadge, badgeKey: null },
-  { href: "/certifs", label: "Certificats", Icon: IconCert, badgeKey: null },
+  { href: "/certificates", label: "Certificats", Icon: IconCert, badgeKey: null },
 ] as const;
 
 const ACTIVITY_ITEMS = [
-  { href: "/classement", label: "Classement", Icon: IconTrophy, count: null, tag: undefined },
+  { href: "/leaderboard", label: "Classement", Icon: IconTrophy, count: null, tag: undefined },
   // WIP tag: the challenges catalog is being rebuilt (content reboot). Drop
   // the tag when the first active challenges ship again.
   { href: "/challenges", label: "Défis", Icon: IconFlash, count: null, tag: "WIP" },
   { href: "/profile", label: "Profil", Icon: IconUser, count: null, tag: undefined },
-  { href: "/casier", label: "Casier", Icon: IconCasier, count: null, tag: undefined },
+  { href: "/locker", label: "Casier", Icon: IconLocker, count: null, tag: undefined },
   { href: "/wrapped", label: "Wrapped", Icon: IconWrapped, count: null, tag: undefined },
 ] as const;
 

@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { env } from "@/lib/env";
-import "./telecharger.css";
+import "./download.css";
 
 export const metadata: Metadata = {
   title: "Télécharger l'application",
   description:
     "Installe CyberLearn sur Android ou ajoute la version web à l'écran d'accueil de ton iPhone.",
-  alternates: { canonical: "/telecharger" },
+  alternates: { canonical: "/download" },
 };
 
 function AndroidIcon(): React.JSX.Element {
@@ -203,8 +203,13 @@ export default function DownloadPage(): React.JSX.Element {
           </Link>
           <nav className="download-header__nav" aria-label="Navigation principale">
             <Link href="/">Accueil</Link>
-            <Link href="/login" className="download-header__login">
-              Se connecter
+            <Link href="/login" className="download-header__signin">
+              Connexion
+            </Link>
+            <Link href="/login" className="download-header__primary">
+              <span className="download-header__primary-long">Commencer gratuitement</span>
+              <span className="download-header__primary-short">Commencer</span>
+              <ArrowIcon />
             </Link>
           </nav>
         </div>
@@ -213,8 +218,15 @@ export default function DownloadPage(): React.JSX.Element {
       <main>
         <section className="download-hero" aria-labelledby="download-title">
           <div className="download-hero__copy">
-            <p className="download-kicker">Application mobile · version 2.2</p>
-            <h1 id="download-title">CyberLearn, maintenant dans ta poche.</h1>
+            <div className="download-kicker">
+              <span aria-hidden="true" />
+              <b>v2.2</b> · Application mobile · Android
+            </div>
+            <h1 id="download-title">
+              Tout CyberLearn,
+              <br />
+              <em>sur ton téléphone.</em>
+            </h1>
             <p className="download-hero__intro">
               Continue une leçon, relis tes notes et garde ta progression à jour, même loin de ton
               ordinateur. Ton compte est le même sur le web et sur mobile.
@@ -228,32 +240,48 @@ export default function DownloadPage(): React.JSX.Element {
                 Ouvrir sur le web
               </Link>
             </div>
-            <dl className="download-facts">
-              <div>
-                <dt>Compte</dt>
-                <dd>Unique</dd>
-              </div>
-              <div>
-                <dt>Progression</dt>
-                <dd>Synchronisée</dd>
-              </div>
-              <div>
-                <dt>Sécurité</dt>
-                <dd>MFA disponible</dd>
-              </div>
-            </dl>
+            <p className="download-hero__availability">
+              <span aria-hidden="true" />
+              Publication Android en cours · Web app disponible sur iPhone
+            </p>
           </div>
 
-          <div className="download-hero__visual">
+          <div className="download-hero__stage">
             <MobileAppPreview />
           </div>
         </section>
 
+        <dl className="download-stats" aria-label="Informations sur l’application">
+          <div>
+            <dt>Android</dt>
+            <dd>Application native</dd>
+          </div>
+          <div>
+            <dt>iPhone</dt>
+            <dd>Web app installable</dd>
+          </div>
+          <div>
+            <dt>Compte</dt>
+            <dd>Progression synchronisée</dd>
+          </div>
+          <div>
+            <dt>Sécurité</dt>
+            <dd>MFA disponible</dd>
+          </div>
+        </dl>
+
         <section className="download-product" aria-labelledby="product-title">
           <div className="download-product__inner">
             <header className="download-product__heading">
-              <p className="download-kicker">Pas une version allégée</p>
-              <h2 id="product-title">L’essentiel de CyberLearn te suit partout.</h2>
+              <p className="download-section-index">
+                <span aria-hidden="true" />
+                02 · Dans l’application
+              </p>
+              <h2 id="product-title">
+                Ton espace CyberLearn,
+                <br />
+                <em>adapté au mobile.</em>
+              </h2>
               <p>
                 L’interface a été reconstruite pour le téléphone, avec les mêmes données et le même
                 niveau de sécurité que le site.
@@ -262,21 +290,54 @@ export default function DownloadPage(): React.JSX.Element {
 
             <div className="download-feature-list">
               <article>
-                <span>01</span>
-                <h3>Cours et parcours</h3>
-                <p>
-                  Reprends au bon endroit et avance dans tes parcours depuis un écran plus compact.
-                </p>
+                <div
+                  className="download-feature-demo download-feature-demo--lesson"
+                  aria-hidden="true"
+                >
+                  <span>{"// LEÇON EN COURS"}</span>
+                  <strong>Sécuriser une API</strong>
+                  <div>
+                    <span />
+                  </div>
+                  <small>68% · SECTION 04/06</small>
+                </div>
+                <div className="download-feature-copy">
+                  <span>/ 01 · LEÇONS</span>
+                  <h3>Reprends au bon endroit</h3>
+                  <p>Continue tes cours et tes parcours sans perdre ta progression.</p>
+                </div>
               </article>
               <article>
-                <span>02</span>
-                <h3>Notes de leçon</h3>
-                <p>Retrouve tes notes, classe-les et consulte-les quand tu en as besoin.</p>
+                <div
+                  className="download-feature-demo download-feature-demo--notes"
+                  aria-hidden="true"
+                >
+                  <span>{"// BLOC-NOTES"}</span>
+                  <p>JWT · vérifier la signature avant de lire les claims.</p>
+                  <p>CORS · limiter les origines et méthodes autorisées.</p>
+                </div>
+                <div className="download-feature-copy">
+                  <span>/ 02 · NOTES</span>
+                  <h3>Ton bloc-notes te suit</h3>
+                  <p>Consulte et classe les notes enregistrées pendant tes leçons.</p>
+                </div>
               </article>
               <article>
-                <span>03</span>
-                <h3>XP et récompenses</h3>
-                <p>Ton niveau, tes séries, tes badges et ton classement restent synchronisés.</p>
+                <div className="download-feature-demo download-feature-demo--xp" aria-hidden="true">
+                  <div>
+                    <span>NIVEAU 7</span>
+                    <b>1 840 / 2 000 XP</b>
+                  </div>
+                  <div className="download-feature-demo__xp-bar">
+                    <span />
+                  </div>
+                  <small>◆ PALIER ARGENT · SÉRIE 12 JOURS</small>
+                </div>
+                <div className="download-feature-copy">
+                  <span>/ 03 · PROGRESSION</span>
+                  <h3>Tout reste synchronisé</h3>
+                  <p>XP, niveaux, séries, badges et classement utilisent les mêmes données.</p>
+                </div>
               </article>
             </div>
           </div>
@@ -284,7 +345,10 @@ export default function DownloadPage(): React.JSX.Element {
 
         <section className="download-install" id="installation" aria-labelledby="install-title">
           <div className="download-install__heading">
-            <p className="download-kicker">Téléchargement</p>
+            <p className="download-section-index">
+              <span aria-hidden="true" />
+              03 · Installation
+            </p>
             <h2 id="install-title">Choisis ton téléphone.</h2>
             <p>
               Android dispose de son application native. Sur iPhone, CyberLearn s’installe depuis

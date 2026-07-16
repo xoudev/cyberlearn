@@ -36,7 +36,7 @@ export default function TabsLayout(): React.JSX.Element {
         }}
       >
         <Tabs.Screen
-          name="accueil"
+          name="home"
           options={{
             title: "Accueil",
             tabBarIcon: ({ color, focused }) => (
@@ -45,7 +45,7 @@ export default function TabsLayout(): React.JSX.Element {
           }}
         />
         <Tabs.Screen
-          name="parcours"
+          name="paths"
           options={{
             title: "Parcours",
             tabBarIcon: ({ color, focused }) => (
@@ -54,7 +54,7 @@ export default function TabsLayout(): React.JSX.Element {
           }}
         />
         <Tabs.Screen
-          name="lecons"
+          name="lessons"
           options={{
             title: "Leçons",
             tabBarIcon: ({ color, focused }) => (
@@ -63,7 +63,7 @@ export default function TabsLayout(): React.JSX.Element {
           }}
         />
         <Tabs.Screen
-          name="profil"
+          name="profile"
           options={{
             title: "Profil",
             tabBarIcon: ({ color, focused }) => (
