@@ -21,14 +21,34 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
-    autoRefreshToken: true,
+    // SessionProvider validates the persisted session before enabling the
+    // foreground refresh loop. This avoids Supabase's startup recovery logging
+    // an invalid refresh token left by a revoked or deleted session.
+    autoRefreshToken: false,
     persistSession: true,
     detectSessionInUrl: false,
   },
 });
 
-// Refresh tokens only while the app is foregrounded (standard Supabase RN recipe).
+let authAutoRefreshEnabled = false;
+
+function syncAuthAutoRefresh(): void {
+  const operation =
+    authAutoRefreshEnabled && AppState.currentState === "active"
+      ? supabase.auth.startAutoRefresh()
+      : supabase.auth.stopAutoRefresh();
+  void operation.catch(() => undefined);
+}
+
+/** Enables refresh only after SessionProvider has restored a valid session. */
+export function setAuthAutoRefreshEnabled(enabled: boolean): void {
+  authAutoRefreshEnabled = enabled;
+  syncAuthAutoRefresh();
+}
+
+// Refresh tokens only while a validated session is foregrounded.
 AppState.addEventListener("change", (state) => {
-  if (state === "active") void supabase.auth.startAutoRefresh();
-  else void supabase.auth.stopAutoRefresh();
+  if (state === "active" || state === "background" || state === "inactive") {
+    syncAuthAutoRefresh();
+  }
 });

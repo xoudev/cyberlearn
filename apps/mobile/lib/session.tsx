@@ -1,6 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { setAuthAutoRefreshEnabled, supabase } from "@/lib/supabase";
 
 interface SessionState {
   session: Session | null;
@@ -16,17 +16,39 @@ export function SessionProvider({ children }: { children: React.ReactNode }): Re
 
   useEffect(() => {
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      setInitializing(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
-    });
+    let unsubscribe: (() => void) | undefined;
+
+    function subscribeToAuthChanges(): void {
+      if (!active || unsubscribe) return;
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+        setAuthAutoRefreshEnabled(Boolean(next));
+        setSession(next);
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
+    }
+
+    void (async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!active) return;
+        const restoredSession = error ? null : data.session;
+        subscribeToAuthChanges();
+        setAuthAutoRefreshEnabled(Boolean(restoredSession));
+        setSession(restoredSession);
+      } catch {
+        if (!active) return;
+        subscribeToAuthChanges();
+        setAuthAutoRefreshEnabled(false);
+        setSession(null);
+      } finally {
+        if (active) setInitializing(false);
+      }
+    })();
+
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      setAuthAutoRefreshEnabled(false);
+      unsubscribe?.();
     };
   }, []);
 

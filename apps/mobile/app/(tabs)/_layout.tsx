@@ -5,9 +5,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { BookIcon, HomeIcon, RouteIcon, UserIcon } from "@/components/icons";
 import { TourAutoStart } from "@/components/tour";
+import { useCosmetics } from "@/lib/cosmetics";
 
 export default function TabsLayout(): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const { theme } = useCosmetics();
   return (
     <View style={{ flex: 1 }}>
       <TourAutoStart />
@@ -15,7 +17,7 @@ export default function TabsLayout(): React.JSX.Element {
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: colors.bgBase },
-          tabBarActiveTintColor: colors.accent,
+          tabBarActiveTintColor: theme.accent,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {
             backgroundColor: "rgba(3,2,25,0.97)",

@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { colors, fonts, space } from "@cyberlearn/tokens";
+import { useCosmetics } from "@/lib/cosmetics";
 
 // ── Typography ────────────────────────────────────────────────────────────────
 
@@ -102,10 +103,12 @@ export function SectionLabel({
   title: string;
   right?: React.ReactNode;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
+
   return (
     <View style={{ marginBottom: space.md }}>
       {eyebrow ? (
-        <Text variant="micro" style={{ color: colors.accent, marginBottom: 4 }}>
+        <Text variant="micro" style={{ color: theme.accent, marginBottom: 4 }}>
           {`// ${eyebrow}`}
         </Text>
       ) : null}
@@ -120,7 +123,7 @@ export function SectionLabel({
 /** Small mono uppercase pill / chip. */
 export function Pill({
   label,
-  color = colors.textSecondary,
+  color,
   active = false,
   dot,
 }: {
@@ -129,6 +132,9 @@ export function Pill({
   active?: boolean;
   dot?: string;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
+  const resolvedColor = color ?? theme.accent;
+
   return (
     <View
       style={{
@@ -136,8 +142,8 @@ export function Pill({
         alignItems: "center",
         gap: 6,
         borderWidth: 1,
-        borderColor: active ? color : colors.borderDefault,
-        backgroundColor: active ? color : "transparent",
+        borderColor: active ? resolvedColor : colors.borderDefault,
+        backgroundColor: active ? resolvedColor : "transparent",
         paddingHorizontal: 10,
         paddingVertical: 6,
       }}
@@ -152,7 +158,10 @@ export function Pill({
           }}
         />
       ) : null}
-      <Text variant="micro" style={{ color: active ? colors.bgBase : color, letterSpacing: 0.8 }}>
+      <Text
+        variant="micro"
+        style={{ color: active ? colors.bgBase : resolvedColor, letterSpacing: 0.8 }}
+      >
         {label}
       </Text>
     </View>
@@ -200,6 +209,7 @@ export function XPBar({
   needed: number;
   height?: number;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   const pct = needed > 0 ? Math.max(0, Math.min(1, current / needed)) : 0;
   return (
     <View
@@ -212,7 +222,7 @@ export function XPBar({
       }}
     >
       <LinearGradient
-        colors={[colors.brandBlue, colors.accent]}
+        colors={[colors.brandBlue, theme.accent]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{ height: "100%", width: `${pct * 100}%` }}

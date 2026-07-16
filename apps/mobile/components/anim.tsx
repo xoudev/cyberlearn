@@ -15,6 +15,7 @@ import Animated, {
 import { colors, fonts, radius } from "@cyberlearn/tokens";
 import { AppModal } from "@/components/app-modal";
 import { Text } from "@/components/ui";
+import { useCosmetics } from "@/lib/cosmetics";
 
 // NOTE: content screens render statically (no entrance/press motion). Animation
 // is reserved for genuine *reward* moments - XP fill, count-up, level-up, badge
@@ -120,7 +121,7 @@ export function CountUp({
   prefix = "",
   suffix = "",
   fontSize = 30,
-  color = colors.accent,
+  color,
   delay = 0,
 }: {
   to: number;
@@ -131,6 +132,7 @@ export function CountUp({
   color?: string;
   delay?: number;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   const progress = useSharedValue(0);
   const [display, setDisplay] = useState(0);
   useEffect(() => {
@@ -153,7 +155,7 @@ export function CountUp({
         fontSize,
         // Explicit line height: RN clips large glyph ascenders otherwise.
         lineHeight: Math.round(fontSize * 1.25),
-        color,
+        color: color ?? theme.accent,
       }}
     >
       {prefix}
@@ -177,6 +179,7 @@ export function AnimatedXPBar({
   height?: number;
   delay?: number;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
   const pct = needed > 0 ? Math.max(0, Math.min(1, current / needed)) : 0;
   const fill = useSharedValue(0);
   useEffect(() => {
@@ -198,7 +201,7 @@ export function AnimatedXPBar({
     >
       <Animated.View style={[{ height: "100%" }, fillStyle]}>
         <LinearGradient
-          colors={[colors.brandBlue, colors.accent]}
+          colors={[colors.brandBlue, theme.accent]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={{ flex: 1 }}
@@ -218,6 +221,8 @@ export function LevelUpOverlay({
   level: number;
   onClose: () => void;
 }): React.JSX.Element {
+  const { theme } = useCosmetics();
+
   return (
     <AppModal visible onClose={onClose} closeDisabled>
       <View style={{ alignItems: "center", gap: 12, paddingTop: 4 }}>
@@ -228,7 +233,7 @@ export function LevelUpOverlay({
             borderRadius: radius.sm,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: `${colors.accent}16`,
+            backgroundColor: `${theme.accent}16`,
           }}
         >
           <Text
@@ -236,14 +241,14 @@ export function LevelUpOverlay({
               fontFamily: `${fonts.mono}_700Bold`,
               fontSize: 24,
               lineHeight: 30,
-              color: colors.accent,
+              color: theme.accent,
             }}
           >
             ↑
           </Text>
         </View>
         <View style={{ alignItems: "center", gap: 6 }}>
-          <Text variant="micro" style={{ color: colors.accent }}>
+          <Text variant="micro" style={{ color: theme.accent }}>
             Nouveau palier
           </Text>
           <Text
@@ -287,7 +292,7 @@ export function LevelUpOverlay({
           borderRadius: radius.sm,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: colors.accent,
+          backgroundColor: theme.accent,
         }}
       >
         <Text variant="micro" style={{ color: colors.bgBase, letterSpacing: 1 }}>
