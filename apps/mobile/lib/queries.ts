@@ -760,7 +760,7 @@ export async function deleteNote(noteId: string): Promise<void> {
   await supabase.from("notes").delete().eq("id", noteId);
 }
 
-// ── Casier (cosmetics) ────────────────────────────────────────────────────────
+// ── Locker (cosmetics) ────────────────────────────────────────────────────────
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 
@@ -775,7 +775,7 @@ export interface CosmeticItem {
   equipped: boolean;
 }
 
-export interface CasierData {
+export interface LockerData {
   items: CosmeticItem[];
   loadout: Record<string, string | null>;
 }
@@ -787,11 +787,11 @@ const LOADOUT_BY_TYPE: Record<CosmeticType, string> = {
   ACCENT_COLOR: "accentColor",
 };
 
-export function useCasier(userId: string | undefined) {
+export function useLocker(userId: string | undefined) {
   return useQuery({
-    queryKey: ["casier", userId],
+    queryKey: ["locker", userId],
     enabled: Boolean(userId),
-    queryFn: async (): Promise<CasierData> => {
+    queryFn: async (): Promise<LockerData> => {
       const uid = userId as string; // gated by `enabled`
       const [cosmeticsRes, ownedRes, loadoutRes] = await Promise.all([
         supabase

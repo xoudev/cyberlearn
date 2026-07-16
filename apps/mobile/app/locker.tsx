@@ -11,7 +11,7 @@ import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { equipCosmetic, unequipCosmetic, type CosmeticSlot } from "@/lib/api";
 import { RARITY_COLOR } from "@/lib/db";
-import { useCasier, type CosmeticItem, type CosmeticType } from "@/lib/queries";
+import { useLocker, type CosmeticItem, type CosmeticType } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 const TYPE_LABEL: Record<CosmeticType, string> = {
@@ -28,12 +28,12 @@ const TYPE_ORDER: CosmeticType[] = [
   "TERMINAL_THEME",
 ];
 
-export default function Casier(): React.JSX.Element {
+export default function Locker(): React.JSX.Element {
   const router = useRouter();
   const { session } = useSession();
   const userId = session?.user.id;
   const queryClient = useQueryClient();
-  const { data, isLoading, error, refetch } = useCasier(userId);
+  const { data, isLoading, error, refetch } = useLocker(userId);
   const [busyCode, setBusyCode] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -49,7 +49,7 @@ export default function Casier(): React.JSX.Element {
       setActionError(res.error ?? "Opération impossible.");
       return;
     }
-    await queryClient.invalidateQueries({ queryKey: ["casier", userId] });
+    await queryClient.invalidateQueries({ queryKey: ["locker", userId] });
   }
 
   const items = data?.items ?? [];

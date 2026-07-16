@@ -1,7 +1,7 @@
 import React from "react";
 
-// Presentational primitives shared by the Classement (global leaderboard) and
-// Ligue (season pod) views so both render with the same visual language.
+// Presentational primitives shared by the global leaderboard and the league
+// (season pod) views so both render with the same visual language.
 
 export const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 export const DISPLAY: React.CSSProperties = { fontFamily: "var(--font-sans)" };

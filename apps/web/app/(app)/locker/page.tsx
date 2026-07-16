@@ -4,7 +4,7 @@ import { badgeRepository, cosmeticRepository, prisma } from "@cyberlearn/db";
 import { buildBadgeCriterionStats, computeBadgeProgress, computeLevel } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
 import { evaluateAndUnlockCosmetics } from "@/lib/cosmetics/unlock";
-import { CasierClient, type CasierItem } from "./_components/casier-client";
+import { LockerClient, type LockerItem } from "./_components/locker-client";
 
 export const metadata: Metadata = { title: "Casier" };
 
@@ -19,7 +19,7 @@ function strField(data: unknown, key: string): string | null {
   return typeof v === "string" ? v : null;
 }
 
-export default async function CasierPage(): Promise<React.ReactElement> {
+export default async function LockerPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
   // Unlock anything newly eligible on visit (idempotent), then read state.
@@ -65,7 +65,7 @@ export default async function CasierPage(): Promise<React.ReactElement> {
     return "Condition spéciale";
   }
 
-  const items: CasierItem[] = catalog.map((c) => {
+  const items: LockerItem[] = catalog.map((c) => {
     const progress = c.unlocked
       ? null
       : computeBadgeProgress(c.criterionType, c.criterionData, stats);
@@ -87,7 +87,7 @@ export default async function CasierPage(): Promise<React.ReactElement> {
 
   const displayName = user?.displayName ?? "";
   return (
-    <CasierClient
+    <LockerClient
       items={items}
       profile={{
         username: user?.username ?? null,

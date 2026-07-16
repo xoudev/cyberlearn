@@ -59,10 +59,24 @@ const nextConfig: NextConfig = {
     "@cyberlearn/ui",
   ],
   redirects() {
-    // The download page moved to /download (route directories are code and
-    // follow the English-only rule); keep the old French slug alive for
-    // links already shared in emails, store listings and bookmarks.
-    return Promise.resolve([{ source: "/telecharger", destination: "/download", permanent: true }]);
+    // Pages moved off their French slugs (route directories are code and
+    // follow the English-only rule); keep the old URLs alive for links
+    // already shared in emails, store listings and bookmarks.
+    return Promise.resolve([
+      { source: "/telecharger", destination: "/download", permanent: true },
+      { source: "/classement", destination: "/leaderboard", permanent: true },
+      { source: "/defis", destination: "/challenges", permanent: true },
+      { source: "/casier", destination: "/locker", permanent: true },
+      { source: "/certifs", destination: "/certificates", permanent: true },
+      { source: "/legal/cgu", destination: "/legal/terms", permanent: true },
+    ]);
+  },
+  rewrites() {
+    // Mobile builds already installed still call the old endpoint name;
+    // serve the renamed handler transparently (no redirect round-trip).
+    return Promise.resolve([
+      { source: "/api/mobile/classement", destination: "/api/mobile/leaderboard" },
+    ]);
   },
   headers() {
     // Defense-in-depth: stricter CSP on static script paths under our

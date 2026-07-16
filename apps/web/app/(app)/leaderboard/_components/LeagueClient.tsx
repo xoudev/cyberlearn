@@ -302,7 +302,7 @@ interface Props {
   podMemberCount: number;
 }
 
-export function LigueClient({
+export function LeagueClient({
   season,
   membership,
   podLadder,
@@ -326,7 +326,7 @@ export function LigueClient({
   }
 
   return (
-    <LigueBoard
+    <LeagueBoard
       season={season}
       membership={membership}
       podLadder={podLadder}
@@ -335,7 +335,7 @@ export function LigueClient({
   );
 }
 
-function LigueBoard({
+function LeagueBoard({
   season,
   membership,
   podLadder,
