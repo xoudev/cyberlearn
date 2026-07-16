@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { env } from "@/lib/env";
-import "./telecharger.css";
+import "./download.css";
 
 export const metadata: Metadata = {
   title: "Télécharger l'application",
   description:
     "Installe CyberLearn sur Android ou ajoute la version web à l'écran d'accueil de ton iPhone.",
-  alternates: { canonical: "/telecharger" },
+  alternates: { canonical: "/download" },
 };
 
 function AndroidIcon(): React.JSX.Element {

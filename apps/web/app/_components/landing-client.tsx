@@ -130,7 +130,7 @@ export function LandingClient({ stats }: { stats: LandingStats }): React.ReactEl
             </span>
           </Link>
           <div className="landing-nav-actions">
-            <Link href="/telecharger" className="landing-nav-download">
+            <Link href="/download" className="landing-nav-download">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -1116,7 +1116,7 @@ export function LandingClient({ stats }: { stats: LandingStats }): React.ReactEl
               {(
                 [
                   { label: "Parcours", href: "#" },
-                  { label: "Application", href: "/telecharger" },
+                  { label: "Application", href: "/download" },
                   { label: "Tarifs", href: "#" },
                   { label: "Entreprises", href: "#" },
                   { label: "Communauté", href: "#" },
