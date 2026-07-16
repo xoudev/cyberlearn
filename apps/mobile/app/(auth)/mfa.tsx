@@ -48,7 +48,7 @@ export default function MfaChallenge(): React.JSX.Element {
       setError("Code incorrect ou expiré.");
       return;
     }
-    router.replace("/accueil");
+    router.replace("/home");
   }
 
   return (

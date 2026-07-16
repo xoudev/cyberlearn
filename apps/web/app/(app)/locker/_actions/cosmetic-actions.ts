@@ -19,7 +19,7 @@ export async function equipCosmeticAction(code: string): Promise<CosmeticActionR
 
   const result = await equipCosmeticForUser(authUser.id, parsed.data);
   if (result.ok) {
-    revalidatePath("/casier");
+    revalidatePath("/locker");
     revalidatePath("/profile");
   }
   return result;
@@ -30,7 +30,7 @@ export async function unequipCosmeticAction(type: CosmeticType): Promise<Cosmeti
   const authUser = await requireRequestUser();
   const result = await unequipCosmeticForUser(authUser.id, type);
   if (result.ok) {
-    revalidatePath("/casier");
+    revalidatePath("/locker");
     revalidatePath("/profile");
   }
   return result;

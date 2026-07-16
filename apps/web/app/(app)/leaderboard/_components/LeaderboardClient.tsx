@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import type { LeaderboardEntry, PodLadderEntry } from "@cyberlearn/db";
 import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
-import { LigueClient } from "./LigueClient";
+import { LeagueClient } from "./LeagueClient";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -688,7 +688,7 @@ interface Props {
   podMemberCount: number;
 }
 
-export function ClassementClient({
+export function LeaderboardClient({
   entries,
   userRank,
   currentEntry,
@@ -697,7 +697,7 @@ export function ClassementClient({
   podLadder,
   podMemberCount,
 }: Props): React.JSX.Element {
-  const [filter, setFilter] = useState<"global" | "mois" | "sem" | "ligue">("global");
+  const [filter, setFilter] = useState<"global" | "month" | "week" | "league">("global");
 
   // Podium order: silver (rank 2), gold (rank 1), bronze (rank 3)
   const podiumOrder = [
@@ -716,9 +716,9 @@ export function ClassementClient({
 
   const FILTERS = [
     { id: "global" as const, label: "Global" },
-    { id: "ligue" as const, label: "Ligue" },
-    { id: "mois" as const, label: "Ce mois" },
-    { id: "sem" as const, label: "Cette semaine" },
+    { id: "league" as const, label: "Ligue" },
+    { id: "month" as const, label: "Ce mois" },
+    { id: "week" as const, label: "Cette semaine" },
   ];
 
   return (
@@ -849,7 +849,7 @@ export function ClassementClient({
               >
                 Classement
               </em>{" "}
-              {filter === "ligue" ? "ligue." : "global."}
+              {filter === "league" ? "ligue." : "global."}
             </h1>
           </div>
 
@@ -945,8 +945,8 @@ export function ClassementClient({
           </span>
         </div>
 
-        {filter === "ligue" ? (
-          <LigueClient
+        {filter === "league" ? (
+          <LeagueClient
             season={season}
             membership={membership}
             podLadder={podLadder}

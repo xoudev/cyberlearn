@@ -23,7 +23,7 @@ export function Footer(): React.JSX.Element {
           <Link href="/verify" className="transition-colors hover:text-foreground">
             Vérifier un certificat
           </Link>
-          <Link href="/legal/cgu" className="transition-colors hover:text-foreground">
+          <Link href="/legal/terms" className="transition-colors hover:text-foreground">
             CGU
           </Link>
           <Link href="/privacy" className="transition-colors hover:text-foreground">

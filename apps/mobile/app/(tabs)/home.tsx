@@ -226,7 +226,7 @@ export default function Accueil(): React.JSX.Element {
         </Rise>
       ) : null}
 
-      {/* Classement mini */}
+      {/* Leaderboard mini */}
       <Rise index={5}>
         <SectionLabel
           title="Classement"
@@ -236,7 +236,7 @@ export default function Accueil(): React.JSX.Element {
             </Text>
           }
         />
-        <PressableScale onPress={() => router.push("/classement")}>
+        <PressableScale onPress={() => router.push("/leaderboard")}>
           <Card
             style={{
               marginBottom: 20,

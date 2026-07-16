@@ -225,7 +225,7 @@ export function DeleteAccountSection({
               . Téléchargez-les avant la suppression.
             </span>
             <Link
-              href="/certifs"
+              href="/certificates"
               onClick={() => {
                 setOpen(false);
               }}

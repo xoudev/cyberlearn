@@ -464,7 +464,7 @@ function IntroScreen(props: {
                 {pathCompleted ? (
                   <Link
                     className="exam-start"
-                    href={certPublicId ? `/verify/${certPublicId}` : "/certifs"}
+                    href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
                   >
                     Voir mon certificat
                     {IcoArrowRight}
@@ -940,7 +940,7 @@ function ResultsScreen(props: {
                 <div className="r-action">
                   <Link
                     className="r-btn r-btn--cert"
-                    href={certPublicId ? `/verify/${certPublicId}` : "/certifs"}
+                    href={certPublicId ? `/verify/${certPublicId}` : "/certificates"}
                   >
                     <span className="bk tl" />
                     <span className="bk tr" />

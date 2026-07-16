@@ -3,10 +3,10 @@ import { leaderboardRepository, leagueRepository } from "@cyberlearn/db";
 import { userFromBearer } from "../_lib/auth";
 
 /**
- * Leaderboard + league data for the mobile Classement screen. Served by the
+ * Leaderboard + league data for the mobile Leaderboard screen. Served by the
  * API (not direct Supabase) because league_memberships RLS is self-select only:
  * the pod ladder and the anonymization rules live in the repositories, exactly
- * as the web /classement page uses them.
+ * as the web /leaderboard page uses them.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const user = await userFromBearer(request);
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, entries, userRank, league });
   } catch (err) {
-    console.error("[mobile/classement] error:", err instanceof Error ? err.message : String(err));
+    console.error("[mobile/leaderboard] error:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, error: "Chargement impossible." }, { status: 500 });
   }
 }

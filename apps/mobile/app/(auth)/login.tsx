@@ -20,7 +20,7 @@ export default function Login(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
   async function signIn(): Promise<void> {
-    const result = passwordSignInSchema.safeParse({ email, password, redirectTo: "/accueil" });
+    const result = passwordSignInSchema.safeParse({ email, password, redirectTo: "/home" });
     if (!result.success) {
       setError("Vérifie ton adresse e-mail et ton mot de passe.");
       return;

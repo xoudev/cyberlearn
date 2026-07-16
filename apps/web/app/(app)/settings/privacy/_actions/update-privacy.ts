@@ -50,7 +50,6 @@ export async function updatePrivacyAction(
 
   // A visibility change must be reflected on the leaderboard right away.
   revalidatePath("/settings/privacy");
-  revalidatePath("/classement");
   revalidatePath("/leaderboard");
 
   return { success: true };

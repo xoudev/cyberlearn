@@ -81,7 +81,7 @@ function TableRowSkeleton(): React.ReactElement {
   );
 }
 
-export default function ClassementLoading(): React.ReactElement {
+export default function LeaderboardLoading(): React.ReactElement {
   const podium = [
     { id: "silver", tall: false },
     { id: "gold", tall: true },
@@ -119,7 +119,7 @@ export default function ClassementLoading(): React.ReactElement {
             padding: 3,
           }}
         >
-          {["global", "mois", "sem"].map((id) => (
+          {["global", "month", "week"].map((id) => (
             <Skeleton key={id} w={120} h={38} />
           ))}
         </div>

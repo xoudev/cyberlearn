@@ -42,9 +42,9 @@ export async function completeLessonApi(lessonId: string): Promise<CompleteLesso
   }
 }
 
-// ── Classement (leaderboard + league pod, anonymization applied server-side) ──
+// ── Leaderboard (leaderboard + league pod, anonymization applied server-side) ──
 
-export interface ClassementEntry {
+export interface LeaderboardEntry {
   rank: number;
   isCurrentUser: boolean;
   displayName: string | null;
@@ -65,8 +65,8 @@ export interface PodEntry {
   relegation: boolean;
 }
 
-export interface ClassementData {
-  entries: ClassementEntry[];
+export interface LeaderboardData {
+  entries: LeaderboardEntry[];
   userRank: number;
   league: {
     division: string;
@@ -76,14 +76,14 @@ export interface ClassementData {
   } | null;
 }
 
-export async function fetchClassement(): Promise<ClassementData> {
-  const res = await authedFetch("/api/mobile/classement");
-  const body = (await res.json()) as ({ ok: true } & ClassementData) | { ok: false };
+export async function fetchLeaderboard(): Promise<LeaderboardData> {
+  const res = await authedFetch("/api/mobile/leaderboard");
+  const body = (await res.json()) as ({ ok: true } & LeaderboardData) | { ok: false };
   if (!body.ok) throw new Error("Chargement impossible");
   return { entries: body.entries, userRank: body.userRank, league: body.league };
 }
 
-// ── Casier (cosmetics loadout - guarded ownership check server-side) ──────────
+// ── Locker (cosmetics loadout - guarded ownership check server-side) ──────────
 
 export type CosmeticSlot = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";
 

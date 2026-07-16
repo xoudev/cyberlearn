@@ -8,7 +8,7 @@ const EFFECTIVE_DATE = "1er janvier 2025";
 const COMPANY = "Cyber Learn";
 const EMAIL = "legal@cyberlearn.fr";
 
-export default function CguPage(): React.JSX.Element {
+export default function TermsPage(): React.JSX.Element {
   return (
     <article style={{ lineHeight: "1.7" }}>
       <h1
