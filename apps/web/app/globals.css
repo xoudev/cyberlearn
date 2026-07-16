@@ -1346,21 +1346,40 @@ article.lesson-content blockquote p code {
 }
 
 .landing-nav-download {
-  color: #8e8aaa;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  color: #0affd4;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-decoration: none;
   text-transform: uppercase;
+  background: color-mix(in srgb, #0affd4 9%, transparent);
+  border: 1px solid color-mix(in srgb, #0affd4 38%, transparent);
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.landing-nav-download svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
 }
 
 .landing-nav-download:hover {
-  color: #0affd4;
+  background: color-mix(in srgb, #0affd4 16%, transparent);
+  border-color: #0affd4;
 }
 
+/* Keep the app link reachable on phones - show the icon only to save space. */
 @media (max-width: 699px) {
   .landing-nav-download {
+    padding: 11px;
+  }
+
+  .landing-nav-download-label {
     display: none;
   }
 }

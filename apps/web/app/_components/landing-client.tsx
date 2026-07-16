@@ -131,7 +131,19 @@ export function LandingClient({ stats }: { stats: LandingStats }): React.ReactEl
           </Link>
           <div className="landing-nav-actions">
             <Link href="/telecharger" className="landing-nav-download">
-              Application
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="7" y="3" width="10" height="18" rx="2" />
+                <path d="M11 18h2" />
+              </svg>
+              <span className="landing-nav-download-label">Application</span>
             </Link>
             <Link
               href="/login"

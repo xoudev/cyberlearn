@@ -246,15 +246,7 @@ export default function DownloadPage(): React.JSX.Element {
             </p>
           </div>
 
-          <div className="download-hero__visual">
-            <div className="download-app-window__bar">
-              <div aria-hidden="true">
-                <span />
-                <span />
-              </div>
-              <code>~/cyberlearn/mobile/accueil</code>
-              <b>PREVIEW</b>
-            </div>
+          <div className="download-hero__stage">
             <MobileAppPreview />
           </div>
         </section>
