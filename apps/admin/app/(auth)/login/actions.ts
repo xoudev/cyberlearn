@@ -6,18 +6,7 @@ import { passwordSignInSchema } from "@cyberlearn/types";
 import { userRepository } from "@cyberlearn/db";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-
-export interface AdminAuthState {
-  status: "idle" | "error" | "success";
-  message: string | null;
-  redirectTo: string | null;
-}
-
-export const initialAdminAuthState: AdminAuthState = {
-  status: "idle",
-  message: null,
-  redirectTo: null,
-};
+import type { AdminAuthState } from "./auth-state";
 
 export async function signInAdminWithPassword(
   _previousState: AdminAuthState,

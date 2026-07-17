@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { AdminAuthShell } from "../auth-shell";
-import { initialAdminAuthState, signInAdminWithPassword } from "./actions";
+import { signInAdminWithPassword } from "./actions";
+import { initialAdminAuthState } from "./auth-state";
 
 export default function AdminLoginPage(): React.JSX.Element {
   const router = useRouter();
