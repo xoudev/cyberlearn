@@ -14,12 +14,18 @@ export async function requireAdminAction(): Promise<{
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const dbUser = await userRepository.findRoleById(user.id);
-  if (dbUser?.role !== "ADMIN") notFound();
+  // The verified TOTP factors ride on the user object already fetched above -
+  // calling mfa.listFactors() would trigger a second network roundtrip.
+  const hasVerifiedTotp =
+    user.factors?.some((factor) => factor.factor_type === "totp" && factor.status === "verified") ??
+    false;
+  if (!hasVerifiedTotp) redirect("/mfa/setup");
 
-  const factors = await supabase.auth.mfa.listFactors();
-  if (factors.error || factors.data.totp.length === 0) redirect("/mfa/setup");
-  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const [dbUser, assurance] = await Promise.all([
+    userRepository.findRoleById(user.id),
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+  ]);
+  if (dbUser?.role !== "ADMIN") notFound();
   if (assurance.error || assurance.data.currentLevel !== "aal2") redirect("/mfa");
 
   return { id: user.id, email: user.email, role: "ADMIN" };
