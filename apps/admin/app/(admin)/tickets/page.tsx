@@ -1,53 +1,36 @@
 import React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
+import { KpiCard, PageHeader, Tag, UI, type Tone } from "../_components/admin-ui";
+import { DataGrid, type GridRow } from "../_components/data-grid";
 import { TicketStatusSelect } from "./_components/TicketStatusSelect";
 
 export const metadata: Metadata = { title: "Tickets" };
 
-const BORDER = "#1F1B47";
-const DANGER = "#FF4D6D";
-
-const THEME_LABEL: Record<string, { label: string; color: string }> = {
-  BUG: { label: "Bug", color: "#FF4757" },
-  QUESTION: { label: "Question", color: "#4D8BFF" },
-  FEATURE_REQUEST: { label: "Feature Request", color: "#B14DFF" },
-  SECURITY: { label: "Sécurité", color: DANGER },
-  CONTENT_ERROR: { label: "Erreur de contenu", color: "#FFB020" },
-  OTHER: { label: "Autre", color: "#6B6890" },
+const THEME_META: Record<string, { label: string; tone: Tone }> = {
+  BUG: { label: "Bug", tone: "danger" },
+  QUESTION: { label: "Question", tone: "info" },
+  FEATURE_REQUEST: { label: "Feature request", tone: "purple" },
+  SECURITY: { label: "Sécurité", tone: "danger" },
+  CONTENT_ERROR: { label: "Erreur de contenu", tone: "warning" },
+  OTHER: { label: "Autre", tone: "neutral" },
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  OPEN: "#FF4757",
-  IN_PROGRESS: "#FFB020",
-  RESOLVED: "#0AFFD4",
-  CLOSED: "#44406B",
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  OPEN: { label: "Ouvert", color: UI.danger },
+  IN_PROGRESS: { label: "En cours", color: UI.warning },
+  RESOLVED: { label: "Résolu", color: UI.turquoise },
+  CLOSED: { label: "Fermé", color: UI.faint },
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  OPEN: "Ouvert",
-  IN_PROGRESS: "En cours",
-  RESOLVED: "Résolu",
-  CLOSED: "Fermé",
-};
-
-const thStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: "#44406B",
-  padding: "12px 16px",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "13px 16px",
-  borderBottom: "1px solid rgba(31,27,71,0.4)",
-  verticalAlign: "middle",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono)",
-  fontSize: 12,
-};
+function formatDate(d: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
 
 export default async function AdminTicketsPage(): Promise<React.ReactElement> {
   const tickets = await prisma.contactTicket.findMany({
@@ -67,246 +50,175 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
 
   const openCount = tickets.filter((t) => t.status === "OPEN").length;
   const inProgressCount = tickets.filter((t) => t.status === "IN_PROGRESS").length;
-  const resolvedCount = tickets.filter(
-    (t) => t.status === "RESOLVED" || t.status === "CLOSED",
+  const resolvedCount = tickets.length - openCount - inProgressCount;
+  const criticalCount = tickets.filter(
+    (t) =>
+      (t.status === "OPEN" || t.status === "IN_PROGRESS") &&
+      (t.theme === "BUG" || t.theme === "SECURITY"),
   ).length;
 
-  function formatDate(d: Date): string {
-    return new Intl.DateTimeFormat("fr-FR", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(d);
-  }
+  const rows: GridRow[] = tickets.map((t) => {
+    const theme = THEME_META[t.theme] ?? { label: t.theme, tone: "neutral" as Tone };
+    const isActive = t.status === "OPEN" || t.status === "IN_PROGRESS";
+    const userLabel = t.user?.username
+      ? `@${t.user.username}`
+      : (t.user?.displayName ?? t.email ?? "anonyme");
+    const status = STATUS_META[t.status] ?? { label: t.status, color: UI.muted };
+
+    return {
+      id: t.id,
+      search: `${t.subject} ${userLabel} ${theme.label} ${status.label}`.toLowerCase(),
+      facets: [t.status, t.theme],
+      sort: [
+        t.subject.toLowerCase(),
+        t.theme,
+        userLabel.toLowerCase(),
+        0,
+        t.createdAt.getTime(),
+        t.status,
+      ],
+      cells: [
+        <span key="s" style={{ display: "block", maxWidth: 340 }}>
+          <span
+            style={{
+              display: "block",
+              fontWeight: 600,
+              color: UI.fg,
+              fontSize: 13,
+              marginBottom: 3,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {t.subject}
+          </span>
+          <span className="mono" style={{ fontSize: 10, color: UI.faint }}>
+            {t.id.slice(0, 8)}
+          </span>
+        </span>,
+        <Tag key="th" tone={isActive ? theme.tone : "neutral"}>
+          {theme.label}
+        </Tag>,
+        <span key="u" className="mono" style={{ color: UI.muted }}>
+          {userLabel}
+        </span>,
+        t.jiraIssueKey && t.jiraIssueUrl ? (
+          <a
+            key="j"
+            href={t.jiraIssueUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mono"
+            style={{ color: UI.blueSoft, fontWeight: 600 }}
+          >
+            {t.jiraIssueKey} ↗
+          </a>
+        ) : (
+          <span key="j" style={{ color: UI.faint }}>
+            —
+          </span>
+        ),
+        <span key="d" className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
+          {formatDate(t.createdAt)}
+        </span>,
+        isActive ? (
+          <TicketStatusSelect
+            key="st"
+            ticketId={t.id}
+            currentStatus={t.status as "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"}
+          />
+        ) : (
+          <span
+            key="st"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontFamily: UI.mono,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: status.color,
+            }}
+          >
+            <span
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: status.color,
+                flexShrink: 0,
+              }}
+              aria-hidden="true"
+            />
+            {status.label}
+          </span>
+        ),
+      ],
+    };
+  });
 
   return (
-    <div className="admin-page-content">
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#6B6890",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ width: 14, height: 1, background: DANGER, display: "inline-block" }} />
-            Admin / Tickets
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: 0,
-            }}
-          >
-            Tickets ({String(tickets.length)})
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#6B6890",
-              margin: "6px 0 0",
-            }}
-          >
-            <span style={{ color: "#FF4757" }}>{String(openCount)} ouverts</span>
-            {" · "}
-            <span style={{ color: "#FFB020" }}>{String(inProgressCount)} en cours</span>
-            {" · "}
-            {String(resolvedCount)} résolus
-          </p>
-        </div>
+    <main className="a-page">
+      <PageHeader
+        eyebrow="Support"
+        title="Tickets"
+        description="Signalements du formulaire de contact. Les bugs et alertes sécurité encore ouverts sont considérés critiques."
+      />
+
+      <div className="a-kpi-grid">
+        <KpiCard
+          label="Ouverts"
+          value={String(openCount)}
+          tone={openCount > 0 ? "danger" : "accent"}
+        />
+        <KpiCard
+          label="En cours"
+          value={String(inProgressCount)}
+          tone={inProgressCount > 0 ? "warning" : "accent"}
+        />
+        <KpiCard label="Résolus / fermés" value={String(resolvedCount)} />
+        <KpiCard
+          label="Critiques actifs"
+          value={String(criticalCount)}
+          tone={criticalCount > 0 ? "danger" : "accent"}
+        />
       </div>
 
-      {/* Alert: open critical tickets */}
-      {tickets.some(
-        (t) =>
-          (t.status === "OPEN" || t.status === "IN_PROGRESS") &&
-          (t.theme === "BUG" || t.theme === "SECURITY"),
-      ) && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "14px 18px",
-            background: "rgba(255,77,109,0.07)",
-            border: "1px solid rgba(255,77,109,0.35)",
-            borderLeft: `3px solid ${DANGER}`,
-            marginBottom: 24,
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "#B8B5D1",
-          }}
-        >
-          <span style={{ color: DANGER, fontWeight: 700, letterSpacing: "0.1em" }}>⚠ ALERTE</span>
-          Tickets critiques (Bug / Sécurité) en attente de traitement.
-        </div>
-      )}
-
-      {tickets.length === 0 ? (
-        <div
-          style={{
-            padding: "80px 24px",
-            textAlign: "center",
-            border: `1px dashed ${BORDER}`,
-            background: "rgba(5,4,26,0.4)",
-          }}
-        >
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-            {"// aucun ticket pour l'instant"}
-          </p>
-        </div>
-      ) : (
-        <div
-          className="admin-table-wrap"
-          style={{ background: "rgba(5,4,26,0.4)", border: `1px solid ${BORDER}` }}
-        >
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <th style={{ ...thStyle, textAlign: "left" }}>Sujet</th>
-                <th style={{ ...thStyle, textAlign: "left" }}>Thème</th>
-                <th style={{ ...thStyle, textAlign: "left" }}>Utilisateur</th>
-                <th style={{ ...thStyle, textAlign: "left" }}>Jira</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Date</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.map((t) => {
-                const themeInfo = THEME_LABEL[t.theme] ?? { label: t.theme, color: "#6B6890" };
-                const isCritical = t.theme === "BUG" || t.theme === "SECURITY";
-                const userLabel = t.user?.username
-                  ? `@${t.user.username}`
-                  : (t.user?.displayName ?? t.email);
-                const statusColor = STATUS_COLORS[t.status] ?? "#6B6890";
-                const statusLabel = STATUS_LABELS[t.status] ?? t.status;
-
-                return (
-                  <tr
-                    key={t.id}
-                    style={{
-                      background:
-                        isCritical && t.status === "OPEN" ? "rgba(255,77,109,0.03)" : "transparent",
-                    }}
-                  >
-                    <td style={{ ...tdStyle, maxWidth: 300 }}>
-                      <div
-                        style={{
-                          fontWeight: 600,
-                          color: "#F5F5FA",
-                          fontSize: 13,
-                          marginBottom: 2,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {isCritical && <span style={{ color: DANGER, marginRight: 6 }}>!</span>}
-                        {t.subject}
-                      </div>
-                      <div style={{ fontSize: 10, color: "#44406B" }}>{t.id.slice(0, 8)}</div>
-                    </td>
-                    <td style={tdStyle}>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          padding: "3px 10px",
-                          background: `${themeInfo.color}14`,
-                          border: `1px solid ${themeInfo.color}30`,
-                          color: themeInfo.color,
-                          borderRadius: 999,
-                          fontSize: 10,
-                          fontWeight: 600,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.06em",
-                        }}
-                      >
-                        {themeInfo.label}
-                      </span>
-                    </td>
-                    <td style={{ ...tdStyle, color: "#6B6890", fontSize: 11 }}>{userLabel}</td>
-                    <td style={tdStyle}>
-                      {t.jiraIssueKey && t.jiraIssueUrl ? (
-                        <a
-                          href={t.jiraIssueUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: "#4D8BFF",
-                            textDecoration: "none",
-                            fontWeight: 600,
-                            fontSize: 11,
-                          }}
-                        >
-                          {t.jiraIssueKey} ↗
-                        </a>
-                      ) : (
-                        <span style={{ color: "#44406B" }}>-</span>
-                      )}
-                    </td>
-                    <td
-                      style={{
-                        ...tdStyle,
-                        textAlign: "right",
-                        fontSize: 11,
-                        color: "#44406B",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {formatDate(t.createdAt)}
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>
-                      {t.status === "RESOLVED" || t.status === "CLOSED" ? (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            color: statusColor,
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 5,
-                              height: 5,
-                              borderRadius: "50%",
-                              background: statusColor,
-                              flexShrink: 0,
-                            }}
-                          />
-                          {statusLabel}
-                        </span>
-                      ) : (
-                        <TicketStatusSelect
-                          ticketId={t.id}
-                          currentStatus={t.status as "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"}
-                        />
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+      <DataGrid
+        columns={[
+          { label: "Sujet", sortable: true },
+          { label: "Thème", sortable: true },
+          { label: "Utilisateur", sortable: true },
+          { label: "Jira" },
+          { label: "Date", sortable: true },
+          { label: "Statut", sortable: true },
+        ]}
+        rows={rows}
+        facets={[
+          {
+            label: "Statut",
+            options: [
+              { value: "OPEN", label: "Ouvert" },
+              { value: "IN_PROGRESS", label: "En cours" },
+              { value: "RESOLVED", label: "Résolu" },
+              { value: "CLOSED", label: "Fermé" },
+            ],
+          },
+          {
+            label: "Thème",
+            options: Object.entries(THEME_META).map(([value, meta]) => ({
+              value,
+              label: meta.label,
+            })),
+          },
+        ]}
+        searchPlaceholder="Rechercher un sujet, un utilisateur…"
+        emptyTitle="Aucun ticket"
+        emptyText="Aucun signalement ne correspond aux filtres actuels."
+      />
+    </main>
   );
 }

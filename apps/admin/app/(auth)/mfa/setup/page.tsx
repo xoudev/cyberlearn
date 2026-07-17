@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { AdminAuthShell } from "../../auth-shell";
 import { AdminMfaSetup } from "./admin-mfa-setup";
-import styles from "../../auth.module.css";
 
 export default async function AdminMfaSetupPage(): Promise<React.JSX.Element> {
   const supabase = await getSupabaseServerClient();
@@ -17,16 +17,12 @@ export default async function AdminMfaSetupPage(): Promise<React.JSX.Element> {
   if (!factors.error && factors.data.totp.length > 0) redirect("/mfa");
 
   return (
-    <main className={styles.page}>
-      <section className={styles.card}>
-        <span className={styles.eyebrow}>{"// protection obligatoire"}</span>
-        <h1 className={styles.title}>Activer le MFA</h1>
-        <p className={styles.description}>
-          Scanne le QR code avec une application TOTP. Aucun accès administrateur n’est possible
-          sans ce facteur.
-        </p>
-        <AdminMfaSetup />
-      </section>
-    </main>
+    <AdminAuthShell
+      eyebrow="Protection obligatoire"
+      title="Activer le MFA"
+      description="Scanne le QR code avec une application TOTP. Aucun accès administrateur n'est possible sans ce facteur."
+    >
+      <AdminMfaSetup />
+    </AdminAuthShell>
   );
 }

@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import styles from "../auth.module.css";
 
 export function AdminMfaChallenge(): React.JSX.Element {
   const router = useRouter();
@@ -42,9 +41,9 @@ export function AdminMfaChallenge(): React.JSX.Element {
   }
 
   return (
-    <div className={styles.form}>
+    <div className="a-auth-form">
       <input
-        className={[styles.input, styles.code].join(" ")}
+        className="a-input a-input--code"
         value={code}
         onChange={(event) => {
           setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
@@ -54,9 +53,9 @@ export function AdminMfaChallenge(): React.JSX.Element {
         maxLength={6}
         autoFocus
       />
-      {error ? <p className={styles.error}>{error}</p> : null}
+      {error ? <p className="a-form-error">{error}</p> : null}
       <button
-        className={styles.button}
+        className="a-btn a-btn--primary"
         type="button"
         disabled={pending}
         onClick={() => {
