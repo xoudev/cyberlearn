@@ -127,6 +127,27 @@ export default function GlobalError({
             >
               Retour à l&apos;aperçu
             </a>
+            <a
+              href={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr"}/contact${error.digest ? `?ref=${error.digest}` : ""}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                minHeight: 42,
+                padding: "0 20px",
+                border: "1px solid color-mix(in srgb, #0AFFD4 40%, transparent)",
+                color: "#0AFFD4",
+                fontFamily: "monospace",
+                fontWeight: 700,
+                fontSize: 10.5,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                textDecoration: "none",
+              }}
+            >
+              Signaler le problème
+            </a>
           </div>
         </div>
       </body>

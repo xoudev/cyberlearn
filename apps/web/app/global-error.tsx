@@ -111,7 +111,7 @@ export default function GlobalError({
             </p>
           )}
 
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={reset}
@@ -148,6 +148,25 @@ export default function GlobalError({
               }}
             >
               Accueil
+            </Link>
+            <Link
+              href={`/contact${error.digest ? `?ref=${error.digest}` : ""}`}
+              style={{
+                padding: "8px 20px",
+                fontFamily: "monospace",
+                fontWeight: 600,
+                fontSize: 12,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                background: "transparent",
+                border: "1px solid #2A2560",
+                color: "#B8B5D1",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              Signaler le problème
             </Link>
           </div>
         </div>
