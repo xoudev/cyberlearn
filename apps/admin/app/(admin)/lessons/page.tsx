@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
+import { GhostLink, PageHeader, PrimaryLink } from "../_components/admin-ui";
 import { LessonsTable, type LessonRow } from "./_components/lessons-table";
 
 export const metadata: Metadata = { title: "Leçons" };
@@ -47,100 +47,20 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
   }));
 
   return (
-    <div className="admin-page-content">
-      {/* Header */}
-      <div className="admin-page-header">
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#6B6890",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span
-              style={{ width: 14, height: 1, background: "#FF4D6D", display: "inline-block" }}
-            />
-            Admin / Leçons
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: 0,
-            }}
-          >
-            Leçons ({String(lessons.length)})
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#6B6890",
-              margin: "6px 0 0",
-            }}
-          >
-            {String(publishedCount)} publiées · {String(draftCount)} brouillons
-          </p>
-        </div>
-
-        <Link
-          href="/lessons/import"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 20px",
-            background: "#0024FF",
-            border: "1px solid #0024FF",
-            color: "#fff",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            textDecoration: "none",
-          }}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <path d="M8 3v10M3 8h10" />
-          </svg>
-          Importer MDX
-        </Link>
-      </div>
+    <main className="admin-page-content">
+      <PageHeader
+        eyebrow="Contenu"
+        title={`Leçons (${String(lessons.length)})`}
+        description={`${String(publishedCount)} publiée${publishedCount !== 1 ? "s" : ""} · ${String(draftCount)} brouillon${draftCount !== 1 ? "s" : ""}.`}
+        actions={
+          <>
+            <GhostLink href="/lessons/import">Importer MDX</GhostLink>
+            <PrimaryLink href="/lessons/new">Nouvelle leçon</PrimaryLink>
+          </>
+        }
+      />
 
       <LessonsTable lessons={rows} />
-
-      {lessons.length > 0 && (
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "#44406B",
-            marginTop: 12,
-            textAlign: "right",
-          }}
-        >
-          Dernière mise à jour:{" "}
-          {new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-        </p>
-      )}
-    </div>
+    </main>
   );
 }

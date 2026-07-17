@@ -2,26 +2,17 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
+import { PageHeader, PrimaryLink, Tag, UI, type Tone } from "../_components/admin-ui";
+import { DataGrid, type GridRow } from "../_components/data-grid";
 
 export const metadata: Metadata = { title: "Badges" };
 
-interface RarityStyle {
-  color: string;
-  bg: string;
-  label: string;
-}
-
-const RARITY_DEFAULT: RarityStyle = {
-  color: "#6B6890",
-  bg: "rgba(42,37,96,0.3)",
-  label: "Inconnu",
-};
-const RARITY_COLORS: Record<string, RarityStyle> = {
-  COMMON: { color: "#B8B5D1", bg: "rgba(184,181,209,0.08)", label: "Commun" },
-  UNCOMMON: { color: "#0AFFD4", bg: "rgba(10,255,212,0.1)", label: "Peu commun" },
-  RARE: { color: "#4D8BFF", bg: "rgba(77,139,255,0.1)", label: "Rare" },
-  EPIC: { color: "#B14DFF", bg: "rgba(177,77,255,0.1)", label: "Épique" },
-  LEGENDARY: { color: "#FFB020", bg: "rgba(255,176,32,0.1)", label: "Légendaire" },
+const RARITY_META: Record<string, { tone: Tone; label: string }> = {
+  COMMON: { tone: "neutral", label: "Commun" },
+  UNCOMMON: { tone: "accent", label: "Peu commun" },
+  RARE: { tone: "info", label: "Rare" },
+  EPIC: { tone: "purple", label: "Épique" },
+  LEGENDARY: { tone: "warning", label: "Légendaire" },
 };
 
 const CRITERION_LABEL: Record<string, string> = {
@@ -33,27 +24,6 @@ const CRITERION_LABEL: Record<string, string> = {
   LESSON_SPECIFIC: "Leçon spécifique",
   PERFECT_QUIZ: "Quiz parfait",
   CUSTOM: "Personnalisé",
-};
-
-const BORDER = "#1F1B47";
-const DANGER = "#FF4D6D";
-
-const thStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 9,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: "#44406B",
-  padding: "12px 16px",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "14px 16px",
-  borderBottom: `1px solid ${BORDER}`,
-  verticalAlign: "middle",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono)",
-  fontSize: 12,
 };
 
 export default async function AdminBadgesPage(): Promise<React.ReactElement> {
@@ -74,267 +44,107 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
   });
 
   const activeCount = badges.filter((b) => b.isActive).length;
-  const inactiveCount = badges.filter((b) => !b.isActive).length;
+
+  const rows: GridRow[] = badges.map((b) => {
+    const rarity = RARITY_META[b.rarity] ?? { tone: "neutral" as Tone, label: b.rarity };
+    const criterion = CRITERION_LABEL[b.criterionType] ?? b.criterionType;
+
+    return {
+      id: b.id,
+      search: `${b.name} ${b.description} ${b.refCode} ${rarity.label} ${criterion}`.toLowerCase(),
+      facets: [b.rarity, b.isActive ? "active" : "inactive"],
+      sort: [
+        b.refCode,
+        b.name.toLowerCase(),
+        b.rarity,
+        criterion,
+        b.xpReward,
+        b._count.userBadges,
+        b.isActive ? 0 : 1,
+        0,
+      ],
+      cells: [
+        <span key="r" className="mono" style={{ color: UI.faint }}>
+          {b.refCode}
+        </span>,
+        <span key="n" style={{ display: "block", maxWidth: 260 }}>
+          <span style={{ display: "block", fontWeight: 600, color: UI.fg, fontSize: 13 }}>
+            {b.name}
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontSize: 11,
+              color: UI.muted,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {b.description}
+          </span>
+        </span>,
+        <Tag key="ra" tone={rarity.tone}>
+          {rarity.label}
+        </Tag>,
+        <span key="c" style={{ fontSize: 11.5, color: UI.muted }}>
+          {criterion}
+        </span>,
+        <b key="x" style={{ color: UI.turquoise }}>
+          +{String(b.xpReward)}
+        </b>,
+        String(b._count.userBadges),
+        <Tag key="s" tone={b.isActive ? "accent" : "neutral"}>
+          {b.isActive ? "Actif" : "Inactif"}
+        </Tag>,
+        <Link key="e" href={`/badges/${b.id}/edit`} className="a-btn a-btn--ghost a-btn--sm">
+          Éditer
+        </Link>,
+      ],
+    };
+  });
 
   return (
-    <div className="admin-page-content">
-      {/* Header */}
-      <div className="admin-page-header">
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "#6B6890",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ width: 14, height: 1, background: DANGER, display: "inline-block" }} />
-            Admin / Badges
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: 0,
-            }}
-          >
-            Badges ({String(badges.length)})
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#6B6890",
-              margin: "6px 0 0",
-            }}
-          >
-            {String(activeCount)} actifs · {String(inactiveCount)} inactifs
-          </p>
-        </div>
-        <Link
-          href="/badges/new"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "11px 20px",
-            background: "#0024FF",
-            border: "1px solid #0024FF",
-            color: "#fff",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            textDecoration: "none",
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-          Nouveau badge
-        </Link>
-      </div>
+    <main className="a-page">
+      <PageHeader
+        eyebrow="Gamification"
+        title="Badges"
+        description={`${String(badges.length)} badge${badges.length !== 1 ? "s" : ""} · ${String(activeCount)} actif${activeCount !== 1 ? "s" : ""}. Les critères d'attribution sont évalués automatiquement.`}
+        actions={<PrimaryLink href="/badges/new">Nouveau badge</PrimaryLink>}
+      />
 
-      {badges.length === 0 ? (
-        <div
-          style={{
-            padding: "80px 24px",
-            textAlign: "center",
-            border: `1px dashed ${BORDER}`,
-            background: "rgba(5,4,26,0.4)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
-            {"// aucun badge défini"}
-          </p>
-          <Link
-            href="/badges/new"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 18px",
-              background: "#0024FF",
-              border: "1px solid #0024FF",
-              color: "#fff",
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              textDecoration: "none",
-            }}
-          >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-            Créer le premier badge
-          </Link>
-        </div>
-      ) : (
-        <div
-          className="admin-table-wrap"
-          style={{ background: "rgba(5,4,26,0.4)", border: `1px solid ${BORDER}` }}
-        >
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <th style={{ ...thStyle, textAlign: "left" }}>Ref</th>
-                <th style={{ ...thStyle, textAlign: "left" }}>Nom</th>
-                <th style={{ ...thStyle, textAlign: "left" }}>Rareté</th>
-                <th style={{ ...thStyle, textAlign: "left" }}>Critère</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>XP</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Obtenus</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Statut</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {badges.map((b) => {
-                const rarity = RARITY_COLORS[b.rarity] ?? RARITY_DEFAULT;
-                const crit = CRITERION_LABEL[b.criterionType] ?? b.criterionType;
-
-                return (
-                  <tr key={b.id} style={{ borderBottom: `1px solid rgba(31,27,71,0.4)` }}>
-                    <td style={tdStyle}>
-                      <span style={{ color: "#44406B" }}>{b.refCode}</span>
-                    </td>
-                    <td style={{ ...tdStyle, maxWidth: 240 }}>
-                      <div
-                        style={{ fontWeight: 600, color: "#F5F5FA", fontSize: 13, marginBottom: 2 }}
-                      >
-                        {b.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: "#44406B",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          maxWidth: 220,
-                        }}
-                      >
-                        {b.description}
-                      </div>
-                    </td>
-                    <td style={tdStyle}>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          padding: "3px 10px",
-                          background: rarity.bg,
-                          border: `1px solid ${rarity.color}30`,
-                          color: rarity.color,
-                          borderRadius: 999,
-                          fontSize: 10,
-                          fontWeight: 600,
-                          letterSpacing: "0.08em",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {rarity.label}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{ fontSize: 11, color: "#6B6890" }}>{crit}</span>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>
-                      <span style={{ fontWeight: 700, color: "#0AFFD4" }}>
-                        +{String(b.xpReward)}
-                      </span>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>
-                      <span style={{ fontWeight: 700, color: "#B8B5D1" }}>
-                        {String(b._count.userBadges)}
-                      </span>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>
-                      {b.isActive ? (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            color: "#0AFFD4",
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 5,
-                              height: 5,
-                              borderRadius: "50%",
-                              background: "#0AFFD4",
-                              flexShrink: 0,
-                            }}
-                          />
-                          Actif
-                        </span>
-                      ) : (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            color: "#44406B",
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 5,
-                              height: 5,
-                              borderRadius: "50%",
-                              background: "#44406B",
-                              flexShrink: 0,
-                            }}
-                          />
-                          Inactif
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>
-                      <Link
-                        href={`/badges/${b.id}/edit`}
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          color: "#4D8BFF",
-                          textDecoration: "none",
-                          border: "1px solid rgba(77,139,255,0.25)",
-                          padding: "5px 12px",
-                          display: "inline-block",
-                        }}
-                      >
-                        Éditer
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+      <DataGrid
+        columns={[
+          { label: "Ref", sortable: true },
+          { label: "Nom", sortable: true },
+          { label: "Rareté", sortable: true },
+          { label: "Critère", sortable: true },
+          { label: "XP", align: "right", sortable: true },
+          { label: "Obtenus", align: "right", sortable: true },
+          { label: "Statut", sortable: true },
+          { label: "Actions" },
+        ]}
+        rows={rows}
+        facets={[
+          {
+            label: "Rareté",
+            options: Object.entries(RARITY_META).map(([value, meta]) => ({
+              value,
+              label: meta.label,
+            })),
+          },
+          {
+            label: "Statut",
+            options: [
+              { value: "active", label: "Actif" },
+              { value: "inactive", label: "Inactif" },
+            ],
+          },
+        ]}
+        searchPlaceholder="Rechercher un badge…"
+        emptyTitle="Aucun badge"
+        emptyText="Crée le premier badge pour lancer la gamification."
+      />
+    </main>
   );
 }

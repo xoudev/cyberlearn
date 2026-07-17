@@ -22,7 +22,9 @@ interface AdminSidebarProps {
   counts: SidebarCounts;
 }
 
-const DANGER = "#FF4D6D";
+const BORDER = "#1F1B47";
+const MUTED = "#6B6890";
+const TURQUOISE = "#0AFFD4";
 
 function NavIcon({ name }: { name: string }): React.ReactElement | null {
   const s: React.SVGProps<SVGSVGElement> = {
@@ -109,6 +111,32 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
   }
 }
 
+function SectionLabel({ text }: { text: string }): React.ReactElement {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "0 18px",
+        marginBottom: 8,
+        fontFamily: "var(--font-mono)",
+        fontSize: 9.5,
+        fontWeight: 600,
+        letterSpacing: "0.16em",
+        textTransform: "uppercase",
+        color: MUTED,
+      }}
+    >
+      <span
+        style={{ width: 8, height: 1, background: "#44406B", flexShrink: 0 }}
+        aria-hidden="true"
+      />
+      {text}
+    </div>
+  );
+}
+
 export function AdminSidebar({
   initials,
   handle,
@@ -119,40 +147,48 @@ export function AdminSidebar({
   const { open, close } = useAdminMobileSidebar();
 
   const mainItems = [
-    {
-      label: "Aperçu",
-      href: "/dashboard",
-      icon: "dash",
-      count: null as number | null,
-      danger: false,
-    },
-    { label: "Leçons", href: "/lessons", icon: "book", count: counts.lessons, danger: false },
-    { label: "Parcours", href: "/paths", icon: "route", count: counts.paths, danger: false },
-    { label: "Badges", href: "/badges", icon: "badge", count: counts.badges, danger: false },
-    {
-      label: "Challenges",
-      href: "/challenges",
-      icon: "target",
-      count: counts.challenges,
-      danger: false,
-    },
-    { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users, danger: false },
-    { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets, danger: true },
+    { label: "Aperçu", href: "/dashboard", icon: "dash", count: null as number | null },
+    { label: "Leçons", href: "/lessons", icon: "book", count: counts.lessons },
+    { label: "Parcours", href: "/paths", icon: "route", count: counts.paths },
+    { label: "Badges", href: "/badges", icon: "badge", count: counts.badges },
+    { label: "Challenges", href: "/challenges", icon: "target", count: counts.challenges },
+    { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users },
+    { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },
   ];
 
   const sysItems = [
-    { label: "Audit Log", href: "/audit", icon: "log" },
+    { label: "Audit log", href: "/audit", icon: "log" },
     { label: "Paramètres", href: "/settings", icon: "cog" },
   ];
 
-  const sectionLabel: React.CSSProperties = {
-    fontFamily: "var(--font-mono)",
-    fontSize: 9.5,
-    fontWeight: 700,
-    letterSpacing: "0.2em",
-    textTransform: "uppercase",
-    color: DANGER,
-    padding: "0 18px 10px",
+  const renderItem = (item: {
+    label: string;
+    href: string;
+    icon: string;
+    count?: number | null;
+  }): React.ReactElement => {
+    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+    const isAlert = item.href === "/tickets" && (item.count ?? 0) > 0;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={close}
+        className="a-side-item"
+        data-active={isActive}
+        aria-current={isActive ? "page" : undefined}
+      >
+        <span className="a-side-icon">
+          <NavIcon name={item.icon} />
+        </span>
+        <span style={{ flex: 1 }}>{item.label}</span>
+        {item.count !== null && item.count !== undefined && (
+          <span className="a-side-count" data-alert={isAlert}>
+            {item.count}
+          </span>
+        )}
+      </Link>
+    );
   };
 
   return (
@@ -166,202 +202,121 @@ export function AdminSidebar({
         width: 240,
         zIndex: 30,
         background: "#030219",
-        borderRight: "1px solid rgba(255,77,109,0.15)",
+        borderRight: `1px solid ${BORDER}`,
         display: "flex",
         flexDirection: "column",
         overflowY: "auto",
       }}
     >
-      {/* Main nav */}
-      <div style={{ padding: "18px 0 0" }}>
-        <div style={sectionLabel}>{"// ADMIN"}</div>
-        <nav>
-          {mainItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-            const accentColor = item.danger ? DANGER : "#0AFFD4";
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={close}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "9px 14px 9px 18px",
-                  fontSize: 13,
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? accentColor : "#6B6890",
-                  background: isActive
-                    ? item.danger
-                      ? "rgba(255,77,109,0.08)"
-                      : "rgba(10,255,212,0.06)"
-                    : "transparent",
-                  borderLeft: isActive ? `3px solid ${accentColor}` : "3px solid transparent",
-                  transition: "all 150ms ease",
-                }}
-              >
-                <NavIcon name={item.icon} />
-                <span style={{ flex: 1 }}>{item.label}</span>
-                {item.count !== null && (
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: "2px 6px",
-                      background: item.danger && item.count > 0 ? DANGER : "rgba(42,37,96,0.6)",
-                      color: item.danger && item.count > 0 ? "#fff" : "#6B6890",
-                      boxShadow:
-                        item.danger && item.count > 0 ? "0 0 8px rgba(255,77,109,0.4)" : "none",
-                    }}
-                  >
-                    {item.count}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+      <div style={{ padding: "20px 0 0" }}>
+        <SectionLabel text="Gestion" />
+        <nav style={{ display: "grid", gap: 1 }}>{mainItems.map(renderItem)}</nav>
       </div>
 
-      {/* System nav */}
-      <div style={{ padding: "18px 0 0" }}>
-        <div style={sectionLabel}>{"// SYSTÈME"}</div>
-        <nav>
-          {sysItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={close}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "9px 14px 9px 18px",
-                  fontSize: 13,
-                  color: isActive ? "#0AFFD4" : "#6B6890",
-                  background: isActive ? "rgba(10,255,212,0.06)" : "transparent",
-                  borderLeft: isActive ? "3px solid #0AFFD4" : "3px solid transparent",
-                  transition: "all 150ms ease",
-                }}
-              >
-                <NavIcon name={item.icon} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+      <div style={{ padding: "22px 0 0" }}>
+        <SectionLabel text="Système" />
+        <nav style={{ display: "grid", gap: 1 }}>{sysItems.map(renderItem)}</nav>
       </div>
 
       <div style={{ flex: 1 }} />
 
-      {/* Footer */}
-      <div
-        style={{
-          padding: "18px 14px 16px",
-          borderTop: "1px solid rgba(255,77,109,0.15)",
-        }}
-      >
-        {/* Admin identity card */}
+      {/* Identity + sign out */}
+      <div style={{ padding: "16px 14px", borderTop: `1px solid ${BORDER}` }}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "32px minmax(0, 1fr) auto",
+            gridTemplateColumns: "30px minmax(0, 1fr) auto",
             gap: 10,
             alignItems: "center",
-            padding: "10px 12px",
-            background: "rgba(255,77,109,0.05)",
-            border: "1px solid rgba(255,77,109,0.2)",
+            padding: "10px 11px",
+            background: "#0A0826",
+            border: `1px solid ${BORDER}`,
             marginBottom: 10,
           }}
         >
-          <div
+          <span
             style={{
-              width: 32,
-              height: 32,
-              background: `linear-gradient(135deg, ${DANGER}, #8B1A2E)`,
+              width: 30,
+              height: 30,
               display: "grid",
               placeItems: "center",
+              background: "#110F33",
+              border: "1px solid #2A2560",
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 11,
-              color: "#fff",
+              fontSize: 10.5,
+              color: "#B8B5D1",
             }}
           >
             {initials}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div
+          </span>
+          <span style={{ minWidth: 0 }}>
+            <span
               style={{
+                display: "block",
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
-                fontSize: 12,
+                fontSize: 11.5,
                 color: "#F5F5FA",
-                letterSpacing: "0.02em",
               }}
             >
               {handle}
-            </div>
-            <div
+            </span>
+            <span
               style={{
+                display: "block",
                 fontFamily: "var(--font-mono)",
                 fontSize: 9.5,
-                color: "#6B6890",
-                letterSpacing: "0.02em",
+                color: MUTED,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               }}
             >
               {email}
-            </div>
-          </div>
+            </span>
+          </span>
           <span
             style={{
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
-              fontSize: 9,
-              letterSpacing: "0.2em",
+              fontSize: 8.5,
+              letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#fff",
-              background: DANGER,
-              padding: "3px 7px",
-              boxShadow: "0 0 8px rgba(255,77,109,0.4)",
+              color: TURQUOISE,
+              border: "1px solid color-mix(in srgb, #0AFFD4 40%, transparent)",
+              padding: "2px 6px",
             }}
           >
-            ADMIN
+            Admin
           </span>
         </div>
 
-        {/* Logout */}
         <form action={signOut}>
           <button
             type="submit"
+            className="admin-signout"
             style={{
               width: "100%",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 8,
+              gap: 9,
               padding: "9px 12px",
               background: "transparent",
-              border: "1px solid #2A2560",
-              color: "#6B6890",
+              border: `1px solid ${BORDER}`,
+              color: MUTED,
               fontFamily: "var(--font-mono)",
               fontWeight: 600,
               fontSize: 10,
-              letterSpacing: "0.16em",
+              letterSpacing: "0.14em",
               textTransform: "uppercase",
               cursor: "pointer",
-              transition: "all 150ms ease",
             }}
           >
             <svg
-              width="11"
-              height="11"
+              width="12"
+              height="12"
               viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"

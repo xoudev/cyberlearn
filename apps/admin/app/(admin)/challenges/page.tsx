@@ -2,34 +2,29 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
+import { PageHeader, PrimaryLink, Tag, UI, type Tone } from "../_components/admin-ui";
+import { DataGrid, type GridRow } from "../_components/data-grid";
 import { ActiveToggle } from "./_components/active-toggle";
 
 export const metadata: Metadata = { title: "Challenges" };
 
-const DIFF_LABEL: Record<string, string> = {
-  BEGINNER: "FACILE",
-  INTERMEDIATE: "INTER",
-  ADVANCED: "AVANCÉ",
-  EXPERT: "EXPERT",
+const DIFF_META: Record<string, { tone: Tone; label: string }> = {
+  BEGINNER: { tone: "accent", label: "Facile" },
+  INTERMEDIATE: { tone: "info", label: "Inter" },
+  ADVANCED: { tone: "purple", label: "Avancé" },
+  EXPERT: { tone: "warning", label: "Expert" },
 };
 
-const DIFF_COLOR: Record<string, string> = {
-  BEGINNER: "#0AFFD4",
-  INTERMEDIATE: "#4D8BFF",
-  ADVANCED: "#B14DFF",
-  EXPERT: "#FFB020",
+const TYPE_TONE: Record<string, Tone> = {
+  CTF: "danger",
+  PUZZLE: "info",
+  LAB: "accent",
 };
 
-const TYPE_COLOR: Record<string, string> = {
-  CTF: "#FF4D6D",
-  PUZZLE: "#4D8BFF",
-  LAB: "#0AFFD4",
-};
-
-const CAT_COLOR: Record<string, string> = {
-  CYBERSEC: "#FF4D6D",
-  DEV: "#4D8BFF",
-  NETWORK: "#0AFFD4",
+const CAT_LABEL: Record<string, string> = {
+  DEV: "Développement",
+  CYBERSEC: "Cybersécurité",
+  NETWORK: "Réseau",
 };
 
 export default async function AdminChallengesPage(): Promise<React.ReactElement> {
@@ -50,239 +45,125 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
     },
   });
 
-  const cell: React.CSSProperties = {
-    padding: "11px 16px",
-    fontSize: 12,
-    color: "#B8B5D1",
-    borderBottom: "1px solid rgba(31,27,71,0.6)",
-    verticalAlign: "middle",
-    fontFamily: "var(--font-mono)",
-  };
+  const activeCount = challenges.filter((c) => c.isActive).length;
 
-  const headerCell: React.CSSProperties = {
-    ...cell,
-    color: "#6B6890",
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-    borderBottom: "1px solid #1F1B47",
-    padding: "8px 16px",
-  };
+  const rows: GridRow[] = challenges.map((c) => {
+    const diff = DIFF_META[c.difficulty] ?? { tone: "neutral" as Tone, label: c.difficulty };
 
-  function Pill({ label, color }: { label: string; color: string }): React.ReactElement {
-    return (
-      <span
-        style={{
-          display: "inline-block",
-          padding: "2px 8px",
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          fontFamily: "var(--font-mono)",
-          border: `1px solid ${color}40`,
-          background: `${color}12`,
-          color,
-        }}
-      >
-        {label}
-      </span>
-    );
-  }
-
-  return (
-    <div style={{ padding: "32px 40px" }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: 32,
-        }}
-      >
-        <div>
-          <div
+    return {
+      id: c.id,
+      search: `${c.title} ${c.refCode} ${c.slug} ${c.type} ${diff.label}`.toLowerCase(),
+      facets: [c.category, c.type, c.isActive ? "active" : "inactive"],
+      sort: [
+        c.refCode,
+        c.title.toLowerCase(),
+        c.category,
+        c.difficulty,
+        c.type,
+        c.xpReward,
+        c._count.progress,
+        c.isActive ? 0 : 1,
+        0,
+      ],
+      cells: [
+        <span key="r" className="mono" style={{ color: UI.faint }}>
+          {c.refCode}
+        </span>,
+        <span key="t" style={{ display: "block", maxWidth: 280 }}>
+          <span
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "#FF4D6D",
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              marginBottom: 6,
+              display: "block",
+              fontWeight: 600,
+              color: UI.fg,
+              fontSize: 13,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
-            {"// ADMIN › CHALLENGES"}
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#F5F5FA",
-              margin: 0,
-            }}
-          >
-            Challenges
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color: "#6B6890",
-              margin: "6px 0 0",
-            }}
-          >
-            {challenges.length} challenge{challenges.length !== 1 ? "s" : ""} au total
-          </p>
-        </div>
-        <Link
-          href="/challenges/new"
+            {c.title}
+          </span>
+          <span className="mono" style={{ fontSize: 10, color: UI.faint }}>
+            {c.slug}
+          </span>
+        </span>,
+        <span
+          key="c"
+          className="mono"
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "9px 18px",
-            background: "#FF4D6D",
-            color: "#fff",
-            fontFamily: "var(--font-mono)",
-            fontWeight: 700,
-            fontSize: 11,
-            letterSpacing: "0.12em",
-            textDecoration: "none",
+            fontSize: 10.5,
+            letterSpacing: "0.06em",
             textTransform: "uppercase",
+            color: UI.muted,
           }}
         >
-          + Nouveau challenge
-        </Link>
-      </div>
+          {CAT_LABEL[c.category] ?? c.category}
+        </span>,
+        <Tag key="d" tone={diff.tone}>
+          {diff.label}
+        </Tag>,
+        <Tag key="ty" tone={TYPE_TONE[c.type] ?? "neutral"}>
+          {c.type}
+        </Tag>,
+        <b key="x" style={{ color: UI.turquoise }}>
+          +{String(c.xpReward)}
+        </b>,
+        String(c._count.progress),
+        <ActiveToggle key="a" challengeId={c.id} isActive={c.isActive} />,
+        <Link key="e" href={`/challenges/${c.id}/edit`} className="a-btn a-btn--ghost a-btn--sm">
+          Éditer
+        </Link>,
+      ],
+    };
+  });
 
-      {/* Table */}
-      <div
-        style={{
-          background: "#0A0826",
-          border: "1px solid #1F1B47",
-          overflow: "hidden",
-        }}
-      >
-        {challenges.length === 0 ? (
-          <div style={{ padding: "80px 40px", textAlign: "center" }}>
-            <p
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 600,
-                fontSize: 16,
-                color: "#F5F5FA",
-                margin: "0 0 8px",
-              }}
-            >
-              Aucun challenge
-            </p>
-            <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                color: "#6B6890",
-                margin: "0 0 24px",
-              }}
-            >
-              Crée le premier challenge pour commencer.
-            </p>
-            <Link
-              href="/challenges/new"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "9px 18px",
-                background: "#FF4D6D",
-                color: "#fff",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: "0.12em",
-                textDecoration: "none",
-                textTransform: "uppercase",
-              }}
-            >
-              + Créer le premier challenge
-            </Link>
-          </div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={headerCell}>Ref / Titre</th>
-                <th style={{ ...headerCell, width: 90 }}>Catégorie</th>
-                <th style={{ ...headerCell, width: 100 }}>Difficulté</th>
-                <th style={{ ...headerCell, width: 80 }}>Type</th>
-                <th style={{ ...headerCell, width: 80 }}>XP</th>
-                <th style={{ ...headerCell, width: 80 }}>Résolus</th>
-                <th style={{ ...headerCell, width: 80 }}>Statut</th>
-                <th style={{ ...headerCell, width: 100 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {challenges.map((c) => (
-                <tr key={c.id} style={{ transition: "background 150ms ease" }}>
-                  <td style={cell}>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 10,
-                        color: "#6B6890",
-                        marginBottom: 3,
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {c.refCode}
-                    </div>
-                    <div style={{ color: "#F5F5FA", fontSize: 13, fontFamily: "var(--font-sans)" }}>
-                      {c.title}
-                    </div>
-                  </td>
-                  <td style={cell}>
-                    <Pill label={c.category} color={CAT_COLOR[c.category] ?? "#6B6890"} />
-                  </td>
-                  <td style={cell}>
-                    <Pill
-                      label={DIFF_LABEL[c.difficulty] ?? c.difficulty}
-                      color={DIFF_COLOR[c.difficulty] ?? "#6B6890"}
-                    />
-                  </td>
-                  <td style={cell}>
-                    <Pill label={c.type} color={TYPE_COLOR[c.type] ?? "#6B6890"} />
-                  </td>
-                  <td style={{ ...cell, color: "#0AFFD4", fontWeight: 700 }}>{c.xpReward}</td>
-                  <td style={cell}>{c._count.progress}</td>
-                  <td style={cell}>
-                    <ActiveToggle challengeId={c.id} isActive={c.isActive} />
-                  </td>
-                  <td style={cell}>
-                    <Link
-                      href={`/challenges/${c.id}/edit`}
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.1em",
-                        color: "#4D8BFF",
-                        textDecoration: "none",
-                        padding: "4px 10px",
-                        border: "1px solid rgba(77,139,255,0.3)",
-                        background: "rgba(77,139,255,0.06)",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Éditer
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+  return (
+    <main className="a-page">
+      <PageHeader
+        eyebrow="Gamification"
+        title="Challenges"
+        description={`${String(challenges.length)} challenge${challenges.length !== 1 ? "s" : ""} · ${String(activeCount)} actif${activeCount !== 1 ? "s" : ""}. CTF, puzzles et labs proposés dans la section Défis.`}
+        actions={<PrimaryLink href="/challenges/new">Nouveau challenge</PrimaryLink>}
+      />
+
+      <DataGrid
+        columns={[
+          { label: "Ref", sortable: true },
+          { label: "Titre", sortable: true },
+          { label: "Catégorie", sortable: true },
+          { label: "Difficulté", sortable: true },
+          { label: "Type", sortable: true },
+          { label: "XP", align: "right", sortable: true },
+          { label: "Résolus", align: "right", sortable: true },
+          { label: "Statut", sortable: true },
+          { label: "Actions" },
+        ]}
+        rows={rows}
+        facets={[
+          {
+            label: "Catégorie",
+            options: Object.entries(CAT_LABEL).map(([value, label]) => ({ value, label })),
+          },
+          {
+            label: "Type",
+            options: [
+              { value: "CTF", label: "CTF" },
+              { value: "PUZZLE", label: "Puzzle" },
+              { value: "LAB", label: "Lab" },
+            ],
+          },
+          {
+            label: "Statut",
+            options: [
+              { value: "active", label: "Actif" },
+              { value: "inactive", label: "Inactif" },
+            ],
+          },
+        ]}
+        searchPlaceholder="Rechercher un challenge…"
+        emptyTitle="Aucun challenge"
+        emptyText="Crée le premier challenge pour alimenter la section Défis."
+      />
+    </main>
   );
 }

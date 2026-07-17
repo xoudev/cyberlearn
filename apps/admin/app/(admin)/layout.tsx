@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma, userRepository } from "@cyberlearn/db";
-import { AdminNavbar } from "./_components/admin-navbar";
+import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
 
@@ -46,9 +46,9 @@ export default async function AdminLayout({
     ]);
 
   return (
-    <div style={{ background: "#030219", minHeight: "100vh" }}>
+    <div className="admin-console" style={{ background: "#030219", minHeight: "100vh" }}>
       <AdminShellClient>
-        <AdminNavbar initials={initials} handle={handle} />
+        <AdminTopbar initials={initials} handle={handle} />
         <AdminSidebar
           initials={initials}
           handle={handle}

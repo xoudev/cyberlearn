@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import styles from "../../auth.module.css";
 
 interface Enrollment {
   factorId: string;
@@ -69,12 +68,12 @@ export function AdminMfaSetup(): React.JSX.Element {
   }
 
   return (
-    <div className={styles.form}>
+    <div className="a-auth-form">
       {enrollment ? (
-        <div className={styles.qr}>
+        <div className="a-qr">
           {/* Scanners need dark modules on a light backdrop plus a quiet
               zone; the Supabase SVG has neither on our dark panel. */}
-          <span className={styles.qrCanvas}>
+          <span className="a-qr-canvas">
             <Image
               src={enrollment.qrCode}
               alt="QR code MFA administrateur"
@@ -83,11 +82,11 @@ export function AdminMfaSetup(): React.JSX.Element {
               unoptimized
             />
           </span>
-          <span className={styles.secret}>{enrollment.secret}</span>
+          <span className="a-qr-secret">{enrollment.secret}</span>
         </div>
       ) : null}
       <input
-        className={[styles.input, styles.code].join(" ")}
+        className="a-input a-input--code"
         value={code}
         onChange={(event) => {
           setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
@@ -97,9 +96,9 @@ export function AdminMfaSetup(): React.JSX.Element {
         maxLength={6}
         placeholder="000000"
       />
-      {error ? <p className={styles.error}>{error}</p> : null}
+      {error ? <p className="a-form-error">{error}</p> : null}
       <button
-        className={styles.button}
+        className="a-btn a-btn--primary"
         type="button"
         disabled={pending || !enrollment}
         onClick={() => {

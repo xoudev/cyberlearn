@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { userRepository } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { AdminAuthShell } from "../auth-shell";
 import { AdminMfaChallenge } from "./admin-mfa-challenge";
-import styles from "../auth.module.css";
 
 export default async function AdminMfaPage(): Promise<React.JSX.Element> {
   const supabase = await getSupabaseServerClient();
@@ -19,15 +19,12 @@ export default async function AdminMfaPage(): Promise<React.JSX.Element> {
   if (!assurance.error && assurance.data.currentLevel === "aal2") redirect("/dashboard");
 
   return (
-    <main className={styles.page}>
-      <section className={styles.card}>
-        <span className={styles.eyebrow}>{"// second facteur"}</span>
-        <h1 className={styles.title}>Code MFA</h1>
-        <p className={styles.description}>
-          Entre le code à six chiffres de ton application d’authentification.
-        </p>
-        <AdminMfaChallenge />
-      </section>
-    </main>
+    <AdminAuthShell
+      eyebrow="Second facteur"
+      title="Code MFA"
+      description="Entre le code à six chiffres de ton application d'authentification."
+    >
+      <AdminMfaChallenge />
+    </AdminAuthShell>
   );
 }

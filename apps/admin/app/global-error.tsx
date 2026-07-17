@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
@@ -21,134 +20,113 @@ export default function GlobalError({
         style={{
           margin: 0,
           minHeight: "100vh",
-          background: "#030219",
+          background:
+            "radial-gradient(ellipse 70% 45% at 50% 0%, rgba(0,36,255,0.14), transparent 60%), #030219",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "monospace",
+          fontFamily: "system-ui, sans-serif",
+          padding: 24,
         }}
       >
         <div
           style={{
-            position: "relative",
-            maxWidth: 480,
-            width: "calc(100vw - 48px)",
+            maxWidth: 460,
+            width: "100%",
             background: "#0A0826",
-            border: "1px solid #2A1B1B",
-            padding: "32px 28px",
+            border: "1px solid #2A2560",
+            borderTop: "2px solid #FF4D6D",
+            padding: "30px 28px",
           }}
         >
-          {/* Bracket corners */}
-          {[
-            { top: -1, left: -1, borderTop: "2px solid #FF4757", borderLeft: "2px solid #FF4757" },
-            {
-              top: -1,
-              right: -1,
-              borderTop: "2px solid #FF4757",
-              borderRight: "2px solid #FF4757",
-            },
-            {
-              bottom: -1,
-              left: -1,
-              borderBottom: "2px solid #FF4757",
-              borderLeft: "2px solid #FF4757",
-            },
-            {
-              bottom: -1,
-              right: -1,
-              borderBottom: "2px solid #FF4757",
-              borderRight: "2px solid #FF4757",
-            },
-          ].map((style, i) => (
-            <span
-              key={i}
-              aria-hidden="true"
-              style={{ position: "absolute", width: 20, height: 20, ...style }}
-            />
-          ))}
-
-          {/* Eyebrow */}
           <div
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 18,
+              fontFamily: "monospace",
               fontSize: 10,
-              letterSpacing: "0.18em",
-              color: "#3F3D5C",
-              marginBottom: 20,
+              fontWeight: 600,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#FF4D6D",
             }}
           >
-            {"// RUNTIME · UNHANDLED ERROR"}
+            <span style={{ width: 22, height: 1, background: "#FF4D6D" }} aria-hidden="true" />
+            Erreur d&apos;exécution
           </div>
 
-          {/* Title */}
           <h1
             style={{
-              fontFamily: "system-ui, sans-serif",
-              fontWeight: 700,
-              fontSize: 22,
-              letterSpacing: "-0.02em",
+              fontWeight: 800,
+              fontSize: 24,
+              letterSpacing: "-0.03em",
               color: "#F5F5FA",
-              margin: "0 0 12px",
+              margin: "0 0 10px",
             }}
           >
-            Erreur inattendue
+            Une erreur est survenue
           </h1>
 
-          <p style={{ fontSize: 14, color: "#B8B5D1", lineHeight: "1.6", margin: "0 0 24px" }}>
-            Une erreur critique s&apos;est produite. L&apos;incident a été signalé automatiquement.
+          <p style={{ fontSize: 14, color: "#B8B5D1", lineHeight: 1.65, margin: "0 0 18px" }}>
+            L&apos;incident a été signalé automatiquement à l&apos;équipe. Tu peux réessayer,
+            l&apos;action est sans risque.
           </p>
 
           {error.digest && (
             <p
               style={{
                 fontSize: 11,
-                color: "#3F3D5C",
+                color: "#6B6890",
                 fontFamily: "monospace",
                 letterSpacing: "0.06em",
-                margin: "0 0 20px",
+                margin: "0 0 22px",
               }}
             >
-              ID : {error.digest}
+              Référence : {error.digest}
             </p>
           )}
 
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={reset}
               style={{
-                padding: "8px 20px",
+                minHeight: 42,
+                padding: "0 20px",
+                background: "#0024FF",
+                border: "1px solid #0024FF",
+                color: "#fff",
                 fontFamily: "monospace",
-                fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: "0.08em",
+                fontWeight: 700,
+                fontSize: 10.5,
+                letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                background: "transparent",
-                border: "1px solid #0AFFD4",
-                color: "#0AFFD4",
                 cursor: "pointer",
               }}
             >
-              &#9656; Réessayer
+              Réessayer
             </button>
-            <Link
-              href="/"
+            <a
+              href="/dashboard"
               style={{
-                padding: "8px 20px",
-                fontFamily: "monospace",
-                fontWeight: 600,
-                fontSize: 12,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                background: "transparent",
-                border: "1px solid #2A2560",
-                color: "#6B6890",
-                textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
+                minHeight: 42,
+                padding: "0 20px",
+                border: "1px solid #2A2560",
+                color: "#B8B5D1",
+                fontFamily: "monospace",
+                fontWeight: 700,
+                fontSize: 10.5,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                textDecoration: "none",
               }}
             >
-              Accueil
-            </Link>
+              Retour à l&apos;aperçu
+            </a>
           </div>
         </div>
       </body>
