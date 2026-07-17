@@ -742,11 +742,13 @@
   gap: 6px;
 }
 .a-meter-track {
+  display: block;
   height: 4px;
   background: var(--a-border);
   overflow: hidden;
 }
 .a-meter-fill {
+  display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--a-blue), var(--a-accent));
 }
