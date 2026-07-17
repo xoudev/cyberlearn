@@ -3,15 +3,12 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
-const SESSION_KEY = "cl-splash-shown";
-const ENTER_MS = 950;
-const FADE_MS = 420;
+const SESSION_KEY = "cl-admin-splash-shown";
+const ENTER_MS = 850;
+const FADE_MS = 380;
 
-/**
- * Brand splash shown on the first page load of a browser session. Subsequent
- * navigations and reloads skip it entirely so it never gets in the way.
- */
-export function SplashScreen(): React.ReactElement | null {
+/** Console splash shown on the first load of a browser session only. */
+export function AdminSplashScreen(): React.ReactElement | null {
   const [phase, setPhase] = useState<"idle" | "visible" | "fading" | "done">("idle");
   const [progress, setProgress] = useState(0);
 
@@ -31,7 +28,6 @@ export function SplashScreen(): React.ReactElement | null {
     const start = performance.now();
     const tick = (now: number): void => {
       const t = Math.min((now - start) / ENTER_MS, 1);
-      // Ease-out curve keeps the bar lively at the start, settled at the end.
       setProgress(Math.round((1 - (1 - t) ** 3) * 100));
       if (t < 1) {
         raf = requestAnimationFrame(tick);
@@ -62,7 +58,7 @@ export function SplashScreen(): React.ReactElement | null {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 26,
+        gap: 24,
         background:
           "radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0,36,255,0.16), transparent 65%), #030219",
         opacity: phase === "fading" ? 0 : 1,
@@ -71,72 +67,34 @@ export function SplashScreen(): React.ReactElement | null {
       }}
     >
       <style>{`
-        @keyframes cl-splash-ring { to { transform: rotate(360deg); } }
         @keyframes cl-splash-in {
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @media (prefers-reduced-motion: reduce) {
-          .cl-splash-ring { animation: none !important; }
-        }
       `}</style>
 
-      {/* Logo inside a rotating accent arc */}
-      <div
-        style={{
-          position: "relative",
-          width: 96,
-          height: 96,
-          display: "grid",
-          placeItems: "center",
-          animation: "cl-splash-in 400ms ease both",
-        }}
-      >
-        <span
-          className="cl-splash-ring"
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "50%",
-            border: "1px solid rgba(42,37,96,0.9)",
-            borderTopColor: "#0AFFD4",
-            animation: "cl-splash-ring 1.1s linear infinite",
-          }}
-        />
+      <div style={{ animation: "cl-splash-in 380ms ease both" }}>
         <Image
-          src="/Logo_principal.png"
+          src="/Admin_logo.png"
           alt=""
-          width={52}
-          height={52}
+          width={190}
+          height={42}
           priority
-          style={{ objectFit: "contain" }}
+          style={{ width: "auto", height: 42, objectFit: "contain" }}
         />
       </div>
 
-      <div style={{ textAlign: "center", animation: "cl-splash-in 400ms ease 80ms both" }}>
-        <div
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 17,
-            letterSpacing: "-0.02em",
-            color: "#F5F5FA",
-          }}
-        >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
-        </div>
-        <div
-          style={{
-            marginTop: 6,
-            fontFamily: "var(--font-mono)",
-            fontSize: 9.5,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#6B6890",
-          }}
-        >
-          Chargement sécurisé
-        </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 9.5,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "#6B6890",
+          animation: "cl-splash-in 380ms ease 70ms both",
+        }}
+      >
+        Console d&apos;administration
       </div>
 
       <div
@@ -145,7 +103,7 @@ export function SplashScreen(): React.ReactElement | null {
           height: 3,
           background: "#1F1B47",
           overflow: "hidden",
-          animation: "cl-splash-in 400ms ease 140ms both",
+          animation: "cl-splash-in 380ms ease 130ms both",
         }}
       >
         <div

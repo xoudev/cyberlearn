@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useActionState } from "react";
+import React, { useActionState, useEffect, useState } from "react";
 import { submitContactAction, type ContactFormState } from "./_actions/contact-actions";
 
 const THEMES = [
@@ -28,6 +28,11 @@ const initialState: ContactFormState = {};
 
 export default function ContactPage(): React.ReactElement {
   const [state, action, isPending] = useActionState(submitContactAction, initialState);
+  // Error screens link here with ?ref=<incident digest>; prefill the report.
+  const [incidentRef, setIncidentRef] = useState<string | null>(null);
+  useEffect(() => {
+    setIncidentRef(new URLSearchParams(window.location.search).get("ref"));
+  }, []);
 
   if (state.success) {
     return (
@@ -224,11 +229,13 @@ export default function ContactPage(): React.ReactElement {
             Sujet *
           </label>
           <input
+            key={incidentRef ?? "subject"}
             name="subject"
             type="text"
             required
             minLength={5}
             maxLength={200}
+            defaultValue={incidentRef ? `Incident ${incidentRef}` : undefined}
             placeholder="Résume ton problème en quelques mots"
             style={INPUT_STYLE}
           />

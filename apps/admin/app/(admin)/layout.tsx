@@ -1,8 +1,9 @@
 import React from "react";
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { prisma, userRepository } from "@cyberlearn/db";
+import { prisma } from "@cyberlearn/db";
 import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
 import { AdminShellClient } from "./_components/admin-shell-client";
@@ -10,6 +11,24 @@ import { AdminShellClient } from "./_components/admin-shell-client";
 export const metadata: Metadata = {
   title: { default: "Admin · Cyber Learn", template: "%s · Admin" },
 };
+
+// Sidebar counts are informative badges - a 30s cache keeps every navigation
+// from paying six count queries while staying fresh enough for admin work.
+const getSidebarCounts = unstable_cache(
+  async () => {
+    const [lessons, paths, badges, challenges, users, tickets] = await Promise.all([
+      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
+      prisma.path.count({ where: { status: "PUBLISHED" } }),
+      prisma.badge.count(),
+      prisma.challenge.count({ where: { isActive: true } }),
+      prisma.user.count(),
+      prisma.contactTicket.count({ where: { status: "OPEN" } }),
+    ]);
+    return { lessons, paths, badges, challenges, users, tickets };
+  },
+  ["admin-sidebar-counts"],
+  { revalidate: 30 },
+);
 
 export default async function AdminLayout({
   children,
@@ -21,29 +40,29 @@ export default async function AdminLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const dbUser = await userRepository.findRoleById(user.id);
-  if (dbUser?.role !== "ADMIN") notFound();
+  // The verified TOTP factors ride on the user object already fetched above -
+  // calling mfa.listFactors() would trigger a second network roundtrip.
+  const hasVerifiedTotp =
+    user.factors?.some((factor) => factor.factor_type === "totp" && factor.status === "verified") ??
+    false;
+  if (!hasVerifiedTotp) redirect("/mfa/setup");
 
-  const factors = await supabase.auth.mfa.listFactors();
-  if (factors.error || factors.data.totp.length === 0) redirect("/mfa/setup");
-  const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const [dbUser, assurance, counts] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true, username: true },
+    }),
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+    getSidebarCounts(),
+  ]);
+
+  if (dbUser?.role !== "ADMIN") notFound();
   if (assurance.error || assurance.data.currentLevel !== "aal2") redirect("/mfa");
 
-  const admin = { id: user.id, email: user.email, role: "ADMIN" as const };
-
-  const emailPrefix = (admin.email ?? "admin").split("@")[0] ?? "admin";
-  const initials = emailPrefix.slice(0, 2).toUpperCase();
-  const handle = "@" + emailPrefix;
-
-  const [lessonCount, pathCount, badgeCount, challengeCount, userCount, ticketCount] =
-    await Promise.all([
-      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
-      prisma.path.count({ where: { status: "PUBLISHED" } }),
-      prisma.badge.count(),
-      prisma.challenge.count({ where: { isActive: true } }),
-      prisma.user.count(),
-      prisma.contactTicket.count({ where: { status: "OPEN" } }),
-    ]);
+  const emailPrefix = (user.email ?? "admin").split("@")[0] ?? "admin";
+  const displayHandle = dbUser.username ?? emailPrefix;
+  const initials = displayHandle.slice(0, 2).toUpperCase();
+  const handle = `@${displayHandle}`;
 
   return (
     <div className="admin-console" style={{ background: "#030219", minHeight: "100vh" }}>
@@ -52,15 +71,8 @@ export default async function AdminLayout({
         <AdminSidebar
           initials={initials}
           handle={handle}
-          email={admin.email ?? ""}
-          counts={{
-            lessons: lessonCount,
-            paths: pathCount,
-            badges: badgeCount,
-            challenges: challengeCount,
-            users: userCount,
-            tickets: ticketCount,
-          }}
+          email={user.email ?? ""}
+          counts={counts}
         />
         <div className="admin-content-area">{children}</div>
       </AdminShellClient>

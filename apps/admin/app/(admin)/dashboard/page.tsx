@@ -311,8 +311,10 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                   { label: "Archivées", value: statusCount("ARCHIVED"), tone: "neutral" },
                 ] as const
               ).map((row) => (
-                <div key={row.label} className="a-meter">
-                  <div
+                // Each meter links to the lessons list, where the status facet
+                // lets the admin locate the exact lessons behind the number.
+                <Link key={row.label} href="/lessons" className="a-meter">
+                  <span
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -325,16 +327,16 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                   >
                     <span>{row.label}</span>
                     <b style={{ color: toneColor(row.tone) }}>{row.value}</b>
-                  </div>
-                  <div className="a-meter-track">
-                    <div
+                  </span>
+                  <span className="a-meter-track">
+                    <span
                       className="a-meter-fill"
                       style={{
                         width: `${String(lessonTotal > 0 ? Math.round((row.value / lessonTotal) * 100) : 0)}%`,
                       }}
                     />
-                  </div>
-                </div>
+                  </span>
+                </Link>
               ))}
               <div
                 style={{
