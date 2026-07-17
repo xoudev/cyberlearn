@@ -1,6 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { AdminSplashScreen } from "@/components/splash-screen";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -21,7 +22,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
   return (
     <html lang="fr" className={`dark ${jakarta.variable} ${jetbrains.variable}`}>
-      <body>{children}</body>
+      <body>
+        <AdminSplashScreen />
+        {children}
+      </body>
     </html>
   );
 }
