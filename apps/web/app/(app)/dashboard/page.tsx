@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import Link from "next/link";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
+import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel } from "@cyberlearn/lib";
 import {
   BadgeMedallion,
@@ -39,9 +40,12 @@ function getNextRankName(level: number): string {
 
 export default function DashboardPage(): React.ReactElement {
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent />
-    </Suspense>
+    <>
+      <WelcomeModal />
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent />
+      </Suspense>
+    </>
   );
 }
 
