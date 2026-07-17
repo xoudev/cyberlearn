@@ -72,13 +72,17 @@ export function AdminMfaSetup(): React.JSX.Element {
     <div className={styles.form}>
       {enrollment ? (
         <div className={styles.qr}>
-          <Image
-            src={enrollment.qrCode}
-            alt="QR code MFA administrateur"
-            width={196}
-            height={196}
-            unoptimized
-          />
+          {/* Scanners need dark modules on a light backdrop plus a quiet
+              zone; the Supabase SVG has neither on our dark panel. */}
+          <span className={styles.qrCanvas}>
+            <Image
+              src={enrollment.qrCode}
+              alt="QR code MFA administrateur"
+              width={196}
+              height={196}
+              unoptimized
+            />
+          </span>
           <span className={styles.secret}>{enrollment.secret}</span>
         </div>
       ) : null}

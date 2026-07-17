@@ -146,6 +146,12 @@
   background: #030219;
 }
 
+.qrCanvas {
+  width: fit-content;
+  padding: 14px;
+  background: #ffffff;
+}
+
 .secret {
   color: #b8b5d1;
   font-family: var(--font-mono);
