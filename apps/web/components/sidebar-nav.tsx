@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
+import { CHANGELOG_SEEN_KEY, LATEST_VERSION } from "@/lib/changelog/entries";
 
 interface SidebarNavProps {
   inProgressCount?: number;
@@ -230,6 +231,25 @@ function IconNote() {
   );
 }
 
+function IconNews() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={15}
+      height={15}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2.5 6.5 L9 4 V12 L2.5 9.5 Z" />
+      <path d="M9 4 L13 2.5 V13.5 L9 12" />
+      <path d="M4 9.5 V12.5 H6" />
+    </svg>
+  );
+}
+
 // ── Nav sections ──────────────────────────────────────────────────────────────
 
 const LEARN_ITEMS = [
@@ -250,6 +270,7 @@ const ACTIVITY_ITEMS = [
   { href: "/profile", label: "Profil", Icon: IconUser, count: null, tag: undefined },
   { href: "/locker", label: "Casier", Icon: IconLocker, count: null, tag: undefined },
   { href: "/wrapped", label: "Wrapped", Icon: IconWrapped, count: null, tag: undefined },
+  { href: "/changelog", label: "Nouveautés", Icon: IconNews, count: null, tag: undefined },
 ] as const;
 
 // ── Section label ─────────────────────────────────────────────────────────────
@@ -295,6 +316,29 @@ export function SidebarNav({
   const { state, isMobile } = useSidebar();
   // On mobile the sidebar is always shown expanded inside the Sheet drawer
   const collapsed = !isMobile && state === "collapsed";
+
+  // "New" dot on the changelog item: shown until the user has read the latest
+  // release. The custom event lets the dot clear the moment /changelog mounts.
+  const [hasUnseenChangelog, setHasUnseenChangelog] = useState(false);
+  useEffect(() => {
+    const check = (): void => {
+      try {
+        setHasUnseenChangelog(localStorage.getItem(CHANGELOG_SEEN_KEY) !== LATEST_VERSION);
+      } catch {
+        setHasUnseenChangelog(false);
+      }
+    };
+    check();
+    const clear = (): void => {
+      setHasUnseenChangelog(false);
+    };
+    window.addEventListener("cl-changelog-seen", clear);
+    window.addEventListener("storage", check);
+    return () => {
+      window.removeEventListener("cl-changelog-seen", clear);
+      window.removeEventListener("storage", check);
+    };
+  }, []);
   async function handleSignOut() {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
@@ -309,12 +353,14 @@ export function SidebarNav({
     Icon,
     count,
     tag,
+    dot,
   }: {
     href: string;
     label: string;
     Icon: React.ComponentType;
     count?: number | null | undefined;
     tag?: string | undefined;
+    dot?: boolean | undefined;
   }) {
     const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
@@ -343,6 +389,22 @@ export function SidebarNav({
 
         {count != null && count > 0 && (
           <span className="sidebar-label sidebar-nav-badge">{count}</span>
+        )}
+
+        {dot && (
+          <span
+            className="sidebar-label"
+            aria-label="Nouveautés non lues"
+            style={{
+              marginLeft: "auto",
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: "#0AFFD4",
+              boxShadow: "0 0 6px #0AFFD4",
+              flexShrink: 0,
+            }}
+          />
         )}
 
         {tag !== undefined && (
@@ -449,7 +511,15 @@ export function SidebarNav({
         aria-label="Navigation Activité"
       >
         {ACTIVITY_ITEMS.map(({ href, label, Icon, count, tag }) => (
-          <NavItem key={href} href={href} label={label} Icon={Icon} count={count} tag={tag} />
+          <NavItem
+            key={href}
+            href={href}
+            label={label}
+            Icon={Icon}
+            count={count}
+            tag={tag}
+            dot={href === "/changelog" && hasUnseenChangelog}
+          />
         ))}
       </nav>
 
