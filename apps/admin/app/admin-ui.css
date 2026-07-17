@@ -327,6 +327,18 @@
   padding: 18px;
 }
 
+/* Row cell that opens a detail page - the title lights up on hover. */
+.a-row-link {
+  text-decoration: none;
+}
+.a-row-link .a-row-link-title {
+  color: var(--a-fg);
+  transition: color 140ms ease;
+}
+.a-row-link:hover .a-row-link-title {
+  color: var(--a-accent);
+}
+
 .a-kpi-grid {
   display: grid;
   grid-template-columns: 1fr;

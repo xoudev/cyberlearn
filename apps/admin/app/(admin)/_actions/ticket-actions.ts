@@ -39,5 +39,6 @@ export async function updateTicketStatusAction(
   });
 
   revalidatePath("/tickets");
+  revalidatePath(`/tickets/${input.data.ticketId}`);
   return { ok: true };
 }

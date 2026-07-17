@@ -1,27 +1,13 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { KpiCard, PageHeader, Tag, UI, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 import { TicketStatusSelect } from "./_components/TicketStatusSelect";
+import { STATUS_META, THEME_META } from "./ticket-meta";
 
 export const metadata: Metadata = { title: "Tickets" };
-
-const THEME_META: Record<string, { label: string; tone: Tone }> = {
-  BUG: { label: "Bug", tone: "danger" },
-  QUESTION: { label: "Question", tone: "info" },
-  FEATURE_REQUEST: { label: "Feature request", tone: "purple" },
-  SECURITY: { label: "Sécurité", tone: "danger" },
-  CONTENT_ERROR: { label: "Erreur de contenu", tone: "warning" },
-  OTHER: { label: "Autre", tone: "neutral" },
-};
-
-const STATUS_META: Record<string, { label: string; color: string }> = {
-  OPEN: { label: "Ouvert", color: UI.danger },
-  IN_PROGRESS: { label: "En cours", color: UI.warning },
-  RESOLVED: { label: "Résolu", color: UI.turquoise },
-  CLOSED: { label: "Fermé", color: UI.faint },
-};
 
 function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -78,12 +64,17 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
         t.status,
       ],
       cells: [
-        <span key="s" style={{ display: "block", maxWidth: 340 }}>
+        <Link
+          key="s"
+          href={`/tickets/${t.id}`}
+          className="a-row-link"
+          style={{ display: "block", maxWidth: 340 }}
+        >
           <span
+            className="a-row-link-title"
             style={{
               display: "block",
               fontWeight: 600,
-              color: UI.fg,
               fontSize: 13,
               marginBottom: 3,
               whiteSpace: "nowrap",
@@ -94,9 +85,9 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
             {t.subject}
           </span>
           <span className="mono" style={{ fontSize: 10, color: UI.faint }}>
-            {t.id.slice(0, 8)}
+            {t.id.slice(0, 8)} · lire le message →
           </span>
-        </span>,
+        </Link>,
         <Tag key="th" tone={isActive ? theme.tone : "neutral"}>
           {theme.label}
         </Tag>,
