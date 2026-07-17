@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LandingStats } from "@cyberlearn/db";
+import { VideoModal } from "@/components/video-modal";
 import { LandingTerminal } from "./landing-terminal";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -50,8 +51,42 @@ function PathIcon({ kind }: { kind: "cyber" | "dev" | "net" }) {
 // (terminal animation, hover states, decorative canvases). Data fetching
 // lives in the RSC page (app/page.tsx), which passes the stats down.
 export function LandingClient({ stats }: { stats: LandingStats }): React.ReactElement {
+  const [demoOpen, setDemoOpen] = useState(false);
   return (
     <div style={{ background: "#030219", color: "#F5F5FA", position: "relative" }}>
+      <VideoModal
+        open={demoOpen}
+        onClose={() => {
+          setDemoOpen(false);
+        }}
+        src="/videos/launch.mp4"
+        poster="/videos/launch-poster.jpg"
+        eyebrow="La démo"
+        title="CyberLearn en 30 secondes"
+        actions={
+          <Link
+            href="/register"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "13px 22px",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              background: "#0024FF",
+              border: "1px solid #0024FF",
+              color: "#fff",
+              textDecoration: "none",
+              boxShadow: "0 0 24px rgba(0,36,255,0.4)",
+            }}
+          >
+            Commencer gratuitement →
+          </Link>
+        }
+      />
       {/* Ambient glows */}
       <div
         aria-hidden="true"
@@ -320,6 +355,39 @@ export function LandingClient({ stats }: { stats: LandingStats }): React.ReactEl
                   <path d="M3 8 H13 M9 4 L13 8 L9 12" />
                 </svg>
               </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setDemoOpen(true);
+                }}
+                className="btn-ghost"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "15px 28px",
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  background: "transparent",
+                  border: "1px solid #1F1B47",
+                  color: "#B8B5D1",
+                  cursor: "pointer",
+                }}
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M4 3 L13 8 L4 13 Z" />
+                </svg>
+                Voir la démo
+              </button>
               <Link
                 href="/paths"
                 className="btn-ghost"
