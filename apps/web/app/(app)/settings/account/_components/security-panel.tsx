@@ -253,13 +253,17 @@ export function SecurityPanel(): React.JSX.Element {
                 border: `1px solid ${S.border}`,
               }}
             >
-              <Image
-                src={enrollment.qrCode}
-                alt="QR code MFA"
-                width={196}
-                height={196}
-                unoptimized
-              />
+              {/* Scanners need dark modules on a light backdrop plus a quiet
+                  zone; the Supabase SVG has neither on our dark panel. */}
+              <div style={{ width: "fit-content", padding: 14, background: "#ffffff" }}>
+                <Image
+                  src={enrollment.qrCode}
+                  alt="QR code MFA"
+                  width={196}
+                  height={196}
+                  unoptimized
+                />
+              </div>
               <div>
                 <div style={{ color: S.muted, fontFamily: MONO, fontSize: 10, marginBottom: 7 }}>
                   CLÉ MANUELLE

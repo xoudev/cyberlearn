@@ -526,48 +526,85 @@ export function SidebarNav({
           {level + 1}
         </div>
 
-        {/* ── Sign out ───────────────────────────────────────────────── */}
-        <button
-          type="button"
-          onClick={() => {
-            void handleSignOut();
-          }}
-          title={collapsed ? "Déconnexion" : undefined}
-          className="sidebar-signout"
+        {/* ── Sign out + settings ────────────────────────────────────── */}
+        <div
           style={{
             display: "flex",
+            flexDirection: collapsed ? "column" : "row",
             alignItems: "center",
-            justifyContent: collapsed ? "center" : "flex-start",
-            gap: 10,
-            width: "100%",
+            gap: collapsed ? 2 : 8,
             marginTop: 12,
-            padding: collapsed ? "8px 0" : "8px 8px",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
           }}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ flexShrink: 0 }}
+          <button
+            type="button"
+            onClick={() => {
+              void handleSignOut();
+            }}
+            title={collapsed ? "Déconnexion" : undefined}
+            className="sidebar-signout"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: collapsed ? "center" : "flex-start",
+              gap: 10,
+              flex: collapsed ? undefined : 1,
+              width: collapsed ? "100%" : undefined,
+              padding: collapsed ? "8px 0" : "8px 8px",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
           >
-            <path d="M6 3 H3 V13 H6" />
-            <path d="M10 5 L13 8 L10 11" />
-            <path d="M13 8 H6" />
-          </svg>
-          {!collapsed && <span>Déconnexion</span>}
-        </button>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ flexShrink: 0 }}
+            >
+              <path d="M6 3 H3 V13 H6" />
+              <path d="M10 5 L13 8 L10 11" />
+              <path d="M13 8 H6" />
+            </svg>
+            {!collapsed && <span>Déconnexion</span>}
+          </button>
+          <Link
+            href="/settings"
+            title="Paramètres"
+            aria-label="Paramètres"
+            className="sidebar-settings"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 8,
+              flexShrink: 0,
+            }}
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="8" cy="8" r="2.4" />
+              <path d="M8 1.2v2.1M8 12.7v2.1M1.2 8h2.1M12.7 8h2.1M3.2 3.2l1.5 1.5M11.3 11.3l1.5 1.5M12.8 3.2l-1.5 1.5M4.7 11.3l-1.5 1.5" />
+            </svg>
+          </Link>
+        </div>
       </div>
     </div>
   );

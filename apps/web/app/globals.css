@@ -865,6 +865,15 @@ article.lesson-content blockquote p code {
   color: #ff4757;
 }
 
+/* Settings shortcut next to the sign-out button */
+.sidebar-settings {
+  color: #6f6b99;
+  transition: color 180ms ease;
+}
+.sidebar-settings:hover {
+  color: #0affd4;
+}
+
 /* Sidebar trigger (hamburger) */
 [data-sidebar="trigger"] {
   color: #6f6b99;
