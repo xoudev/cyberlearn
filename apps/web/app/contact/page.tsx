@@ -30,8 +30,11 @@ export default function ContactPage(): React.ReactElement {
   const [state, action, isPending] = useActionState(submitContactAction, initialState);
   // Error screens link here with ?ref=<incident digest>; prefill the report.
   const [incidentRef, setIncidentRef] = useState<string | null>(null);
+  // Anti-spam time trap: stamped on mount, checked server-side on submit.
+  const [loadedAt, setLoadedAt] = useState("");
   useEffect(() => {
     setIncidentRef(new URLSearchParams(window.location.search).get("ref"));
+    setLoadedAt(String(Date.now()));
   }, []);
 
   if (state.success) {
@@ -132,6 +135,18 @@ export default function ContactPage(): React.ReactElement {
       </div>
 
       <form action={action} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {/* Anti-spam (invisible to users): submission timestamp + honeypot. */}
+        <input type="hidden" name="loaded_at" value={loadedAt} readOnly />
+        <div
+          aria-hidden="true"
+          style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}
+        >
+          <label>
+            Ne pas remplir
+            <input name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+          </label>
+        </div>
+
         {/* Email */}
         <div>
           <label
