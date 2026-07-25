@@ -24,7 +24,7 @@ vi.mock("@cyberlearn/db", () => ({
   quizRepository: { findActiveQuizByPathId: m.findActiveQuizByPathId },
 }));
 
-import { checkAndIssueCertificates } from "../generate-certificate";
+import { checkAndIssueCertificates } from "@/lib/certificates/check-and-issue";
 
 const PATH = { id: "path-1", slug: "p1", title: "P1" };
 

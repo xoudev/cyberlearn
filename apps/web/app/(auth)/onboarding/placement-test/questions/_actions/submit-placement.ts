@@ -13,7 +13,7 @@ import {
   getMasteredCategories,
 } from "@cyberlearn/lib";
 import { evaluateAndAwardBadges } from "@/lib/badges/award";
-import { setOnboardingComplete } from "../../../_actions/finalize-onboarding";
+import { setOnboardingComplete } from "@/lib/onboarding/finalize";
 import { redirect } from "next/navigation";
 
 export interface PlacementActionState {

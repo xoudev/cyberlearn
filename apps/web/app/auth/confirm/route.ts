@@ -5,6 +5,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { authRedirectSchema } from "@cyberlearn/types";
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
+import { RECOVERY_GRANT_COOKIE, RECOVERY_GRANT_MAX_AGE_SECONDS } from "@/lib/auth/recovery-grant";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
 
 const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
@@ -70,7 +71,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Password recovery always lands on the reset form regardless of onboarding
   // state - the recovery session only unlocks a single password update.
   if (type === "recovery") {
-    return NextResponse.redirect(new URL("/reset-password", origin));
+    const response = NextResponse.redirect(new URL("/reset-password", origin));
+    // Marks this session as "arrived through an emailed recovery link", which
+    // is the one case where a new password may be set without knowing the old
+    // one. updatePassword requires either this grant or the current password,
+    // so a stolen session alone can no longer take over the account.
+    response.cookies.set(RECOVERY_GRANT_COOKIE, "1", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: RECOVERY_GRANT_MAX_AGE_SECONDS,
+    });
+    return response;
   }
 
   try {

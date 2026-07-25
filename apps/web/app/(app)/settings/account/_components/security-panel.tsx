@@ -154,6 +154,20 @@ export function SecurityPanel(): React.JSX.Element {
     <>
       <SettingsCard title="Mot de passe">
         <form action={passwordAction} style={{ display: "grid", gap: 14 }}>
+          {/* Re-authentication: without it a stolen session could change the
+              password and lock the owner out permanently. */}
+          <label style={{ display: "grid", gap: 7 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: S.muted }}>
+              MOT DE PASSE ACTUEL
+            </span>
+            <input
+              style={inputStyle}
+              type="password"
+              name="currentPassword"
+              autoComplete="current-password"
+              required
+            />
+          </label>
           <label style={{ display: "grid", gap: 7 }}>
             <span style={{ fontFamily: MONO, fontSize: 10, color: S.muted }}>
               NOUVEAU MOT DE PASSE

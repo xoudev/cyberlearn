@@ -1,7 +1,7 @@
 "use server";
 
 import * as Sentry from "@sentry/nextjs";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import {
   passwordResetRequestSchema,
   passwordSignInSchema,
@@ -11,6 +11,8 @@ import {
 import { env } from "@/lib/env";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
 import { classifySignUpError, type SignUpFailure } from "@/lib/auth/sign-up-error";
+import { RECOVERY_GRANT_COOKIE } from "@/lib/auth/recovery-grant";
+import { verifyCurrentPassword } from "@/lib/auth/verify-password";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { AuthActionState } from "./auth-action-state";
@@ -223,6 +225,30 @@ export async function updatePassword(
     };
   }
 
+  // Re-authentication. Skipping the current password is legitimate only right
+  // after an emailed recovery link (marked by /auth/confirm); otherwise a
+  // stolen session would be enough to lock the owner out for good.
+  const cookieStore = await cookies();
+  const hasRecoveryGrant = cookieStore.get(RECOVERY_GRANT_COOKIE)?.value === "1";
+
+  if (!hasRecoveryGrant) {
+    const currentPassword = formData.get("currentPassword");
+    if (typeof currentPassword !== "string" || currentPassword.length === 0) {
+      return {
+        status: "error",
+        message: "Saisis ton mot de passe actuel pour confirmer le changement.",
+        redirectTo: null,
+      };
+    }
+    if (!user.email || !(await verifyCurrentPassword(user.email, currentPassword))) {
+      return {
+        status: "error",
+        message: "Le mot de passe actuel est incorrect.",
+        redirectTo: null,
+      };
+    }
+  }
+
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) {
     return {
@@ -231,6 +257,9 @@ export async function updatePassword(
       redirectTo: null,
     };
   }
+
+  // The grant unlocks a single password update.
+  if (hasRecoveryGrant) cookieStore.delete(RECOVERY_GRANT_COOKIE);
 
   return {
     status: "success",
