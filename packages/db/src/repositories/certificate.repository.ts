@@ -1,8 +1,13 @@
 import { prisma } from "../prisma.js";
 
 export interface CreateCertificateInput {
+  /** Caller-supplied so the storage key can be built before the row exists. */
+  id?: string;
+  /** Caller-supplied so the QR code can be rendered before the row exists. */
+  publicId?: string;
   userId: string;
   pathId: string;
+  issuedAt?: Date;
   sha256Hash: string;
   pdfStorageKey: string;
   expiresAt?: Date;

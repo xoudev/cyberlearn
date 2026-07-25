@@ -8,6 +8,18 @@ import { LeaderboardClient } from "./_components/LeaderboardClient";
 
 export const metadata: Metadata = { title: "Classement · CyberLearn" };
 export const dynamic = "force-dynamic";
+// The lazy fallback below runs the same transaction as the cron, which is
+// allowed 60s. Without a matching budget the render would be killed mid-flight,
+// rolling the claim back so the next visitor retries - and times out too.
+export const maxDuration = 60;
+
+/**
+ * How long after a season ends the cron gets to do its job before a page view
+ * takes over. The rollover walks every member of the season, so making a
+ * visitor pay for it on the normal path is pure latency; this keeps the
+ * fallback for what it is meant to cover - a cron that did not run at all.
+ */
+const LAZY_ROLLOVER_GRACE_MS = 15 * 60 * 1000;
 
 export default async function LeaderboardPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
@@ -15,7 +27,7 @@ export default async function LeaderboardPage(): Promise<React.ReactElement> {
   // Lazy fallback for the weekly season rollover (the cron is the primary
   // driver). Idempotent + concurrency-safe; must never block the page render.
   try {
-    await rolloverDueSeasons(new Date());
+    await rolloverDueSeasons(new Date(Date.now() - LAZY_ROLLOVER_GRACE_MS));
   } catch (error) {
     console.error("[leaderboard] lazy season rollover failed:", error);
   }

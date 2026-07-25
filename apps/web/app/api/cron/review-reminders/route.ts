@@ -14,21 +14,25 @@ export async function GET(request: Request): Promise<NextResponse> {
   const now = new Date();
   const endOfDay = new Date(now);
   endOfDay.setUTCHours(23, 59, 59, 999);
+  const startOfDay = new Date(now);
+  startOfDay.setUTCHours(0, 0, 0, 0);
 
-  // Find all review schedules due by end of today, with user preferences
+  // Find all review schedules due by end of today, for users who want them.
+  // The preference was previously read but never applied, so opting out of
+  // review reminders in the settings had no effect. A user with no preferences
+  // row keeps the schema default (reviewReminders = true), which is what the
+  // settings page shows them.
   const dueSchedules = await prisma.reviewSchedule.findMany({
     where: {
       nextReviewAt: { lte: endOfDay },
+      user: {
+        OR: [{ preferences: { is: null } }, { preferences: { is: { reviewReminders: true } } }],
+      },
     },
     select: {
       userId: true,
       lessonId: true,
       lesson: { select: { title: true, slug: true } },
-      user: {
-        select: {
-          preferences: { select: { emailNotifications: true } },
-        },
-      },
     },
   });
 
@@ -48,9 +52,30 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
+  // A schedule stays due until the lesson is actually reviewed, so a user who
+  // ignores a reminder was being notified again every single day. One reminder
+  // per user per day is enough.
+  const alreadyNotified = new Set(
+    (
+      await prisma.notification.findMany({
+        where: {
+          userId: { in: [...byUser.keys()] },
+          type: "REVIEW_REMINDER",
+          createdAt: { gte: startOfDay },
+        },
+        select: { userId: true },
+      })
+    ).map((n) => n.userId),
+  );
+
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
   for (const [userId, { count, titles }] of byUser) {
+    if (alreadyNotified.has(userId)) {
+      skipped++;
+      continue;
+    }
     const firstTitle = titles[0] ?? "";
     const body =
       count === 1
@@ -74,5 +99,5 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, failed });
+  return NextResponse.json({ ok: true, sent, failed, skipped });
 }

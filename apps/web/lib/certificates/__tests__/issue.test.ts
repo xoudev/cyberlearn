@@ -6,6 +6,7 @@ const m = vi.hoisted(() => ({
   linkCertificate: vi.fn(),
   upsertProgress: vi.fn(),
   create: vi.fn(),
+  upload: vi.fn(),
   notify: vi.fn(),
   pathFindUnique: vi.fn(),
   userFindUnique: vi.fn(),
@@ -55,7 +56,7 @@ vi.mock("@cyberlearn/db", () => ({
 }));
 vi.mock("@cyberlearn/db/supabase/admin", () => ({
   createSupabaseAdminClient: () => ({
-    storage: { from: () => ({ upload: vi.fn().mockResolvedValue({ data: {}, error: null }) }) },
+    storage: { from: () => ({ upload: m.upload }) },
   }),
 }));
 vi.mock("@react-pdf/renderer", () => ({
@@ -87,7 +88,10 @@ import { issueCertificate } from "../issue";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  m.create.mockResolvedValue({ id: "cert-1", publicId: "pub-1" });
+  // The row is written once, already complete: the id and publicId now come
+  // from the caller, so the mock echoes whatever it is handed.
+  m.create.mockImplementation((data: Record<string, unknown>) => Promise.resolve(data));
+  m.upload.mockResolvedValue({ data: { path: "key" }, error: null });
   m.pathFindUnique.mockResolvedValue({ title: "Path", slug: "path", _count: { lessons: 2 } });
   m.userFindUnique.mockResolvedValue({ displayName: "Alice" });
   m.certCount.mockResolvedValue(0);
@@ -128,12 +132,63 @@ describe("issueCertificate - gate + idempotence guards", () => {
 
     const res = await issueCertificate("u1", "p1", { score: 85, passThreshold: 70 });
 
-    expect(res).toEqual({ issued: true, certId: "cert-1" });
+    const created = m.create.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(res).toEqual({ issued: true, certId: created.id });
     expect(m.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "u1", pathId: "p1", score: 85, passThreshold: 70 }),
     );
-    expect(m.linkCertificate).toHaveBeenCalledWith("u1", "p1", "cert-1");
+    expect(m.linkCertificate).toHaveBeenCalledWith("u1", "p1", created.id);
     expect(m.upsertProgress).not.toHaveBeenCalled();
+  });
+
+  it("writes the real hash and storage key on the very first insert", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+
+    await issueCertificate("u1", "p1", { score: 85 });
+
+    const created = m.create.mock.calls[0]?.[0] as Record<string, unknown>;
+    // sha256Hash is globally UNIQUE: a shared placeholder made concurrent
+    // issuances collide and could wedge every future one.
+    expect(created.sha256Hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(created.pdfStorageKey).toBe(`u1/${String(created.id)}.pdf`);
+    // The QR code must point at the publicId that actually lands in the row.
+    expect(m.upload).toHaveBeenCalledWith(
+      created.pdfStorageKey,
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(created.publicId).toEqual(expect.any(String));
+  });
+
+  it("mints a distinct hash and identifiers per certificate", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+
+    await issueCertificate("u1", "p1");
+    await issueCertificate("u2", "p2");
+
+    const first = m.create.mock.calls[0]?.[0] as Record<string, unknown>;
+    const second = m.create.mock.calls[1]?.[0] as Record<string, unknown>;
+    expect(first.id).not.toBe(second.id);
+    expect(first.publicId).not.toBe(second.publicId);
+    expect(first.pdfStorageKey).not.toBe(second.pdfStorageKey);
+  });
+
+  it("persists nothing when the PDF upload fails", async () => {
+    m.areLessonsComplete.mockResolvedValue(true);
+    m.findProgress.mockResolvedValue(null);
+    // The Supabase client reports failures in `error` rather than throwing.
+    m.upload.mockResolvedValue({ data: null, error: { message: "bucket offline" } });
+
+    const res = await issueCertificate("u1", "p1", { score: 80 });
+
+    expect(m.create).not.toHaveBeenCalled();
+    expect(m.linkCertificate).not.toHaveBeenCalled();
+    expect(res.issued).toBe(true);
+    expect(m.upsertProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1", pathId: "p1", status: "COMPLETED" }),
+    );
   });
 
   it("quiz-less issuance carries no score (stays null)", async () => {
