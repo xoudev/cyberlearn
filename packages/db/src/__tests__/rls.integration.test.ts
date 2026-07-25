@@ -384,30 +384,45 @@ describe("RLS policies (integration)", () => {
     // The honeypot, the minimum fill time, the rate limit and the Zod schema
     // all live in the contact server action. A client able to POST straight to
     // /rest/v1/contact_tickets walks past every one of them.
+    // Every payload below is COMPLETE - updatedAt included. It is @updatedAt in
+    // the schema, so Prisma fills it and the database has no default: omitting
+    // it would make the insert fail on a NOT NULL violation and the test would
+    // pass even with the grant wide open. Each case also asserts the row is
+    // absent afterwards, which holds whatever the error turns out to be.
     it("anon cannot open a ticket through the Data API", async () => {
       if (!configured) return;
+      const id = randomUUID();
       const { error } = await anonClient.from("contact_tickets").insert({
-        id: randomUUID(),
+        id,
         email: "spam@example.com",
         subject: "spam",
         theme: "OTHER",
         message: "spam",
+        updatedAt: new Date().toISOString(),
       });
       expect(error).not.toBeNull();
+
+      const { data } = await adminClient.from("contact_tickets").select("id").eq("id", id);
+      expect(data).toEqual([]);
     });
 
     it("an authenticated user cannot open a ticket through the Data API either", async () => {
       if (!configured) return;
       const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const id = randomUUID();
       const { error } = await clientA.from("contact_tickets").insert({
-        id: randomUUID(),
+        id,
         userId: userAId,
         email: "spam@example.com",
         subject: "spam",
         theme: "OTHER",
         message: "spam",
+        updatedAt: new Date().toISOString(),
       });
       expect(error).not.toBeNull();
+
+      const { data } = await adminClient.from("contact_tickets").select("id").eq("id", id);
+      expect(data).toEqual([]);
     });
   });
 
@@ -415,33 +430,46 @@ describe("RLS policies (integration)", () => {
     it("a client cannot post a question through the Data API", async () => {
       if (!configured) return;
       const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const id = randomUUID();
       const { error } = await clientA.from("lesson_questions").insert({
-        id: randomUUID(),
+        id,
         userId: userAId,
         lessonId: publishedLessonId,
         title: "direct",
         content: "posted straight to PostgREST",
+        updatedAt: new Date().toISOString(),
       });
       expect(error).not.toBeNull();
+
+      const { data } = await adminClient.from("lesson_questions").select("id").eq("id", id);
+      expect(data).toEqual([]);
     });
 
     it("a client cannot accept its own answer or inflate its upvotes", async () => {
       if (!configured) return;
       const questionId = randomUUID();
       const answerId = randomUUID();
-      await adminClient.from("lesson_questions").insert({
+      // updatedAt is @updatedAt: Prisma fills it, the database has no default,
+      // so a Data API insert must supply it (same as the users fixture above).
+      const now = new Date().toISOString();
+      const { error: questionFixtureError } = await adminClient.from("lesson_questions").insert({
         id: questionId,
         userId: userAId,
         lessonId: publishedLessonId,
         title: "rls fixture",
         content: "rls fixture",
+        updatedAt: now,
       });
-      await adminClient.from("lesson_answers").insert({
+      const { error: answerFixtureError } = await adminClient.from("lesson_answers").insert({
         id: answerId,
         userId: userAId,
         questionId,
         content: "rls fixture",
+        updatedAt: now,
       });
+      // A silently failed fixture would make every assertion below vacuous.
+      expect(questionFixtureError).toBeNull();
+      expect(answerFixtureError).toBeNull();
 
       const clientA = await signInAs(TEST_USER_A_EMAIL);
       const { error } = await clientA
