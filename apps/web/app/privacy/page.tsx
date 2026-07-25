@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: "Politique de confidentialité",
 };
 
-const UPDATE_DATE = "23/05/2026";
-const VERSION = "1.0";
+const UPDATE_DATE = "25/07/2026";
+const VERSION = "1.1";
 const CONTACT_EMAIL = "privacy@cyberlearn.fr";
 
 export default function PrivacyPage(): React.JSX.Element {
@@ -62,7 +62,10 @@ export default function PrivacyPage(): React.JSX.Element {
             <li>Adresse email (authentification, communication transactionnelle)</li>
             <li>Nom d’utilisateur (identifiant public)</li>
             <li>Nom d’affichage (optionnel)</li>
-            <li>URL d’avatar (depuis votre compte OAuth GitHub ou avatar généré)</li>
+            <li>
+              Avatar : image téléversée par vos soins, avatar généré, ou photo issue de votre compte
+              OAuth GitHub
+            </li>
             <li>Biographie (optionnelle, fournie volontairement par vous)</li>
           </ul>
         </Subsection>
@@ -84,6 +87,10 @@ export default function PrivacyPage(): React.JSX.Element {
             <li>Réponses aux exercices et code soumis</li>
             <li>Points d’expérience (XP), badges obtenus, niveau</li>
             <li>Certificats émis</li>
+            <li>
+              Notes personnelles que vous rédigez dans le bloc-notes, ainsi que vos questions et
+              réponses publiées sur les leçons
+            </li>
           </ul>
         </Subsection>
 
@@ -100,7 +107,12 @@ export default function PrivacyPage(): React.JSX.Element {
         <Subsection title="2.5 Données techniques">
           <ul style={ulStyle}>
             <li>
-              Cookies strictement nécessaires (session d’authentification, consentement, thème)
+              Cookies strictement nécessaires (session d’authentification, consentement, thème) et
+              informations conservées dans le stockage local du navigateur (voir §8)
+            </li>
+            <li>
+              En cas d’erreur applicative uniquement : rapport technique et enregistrement de
+              session dont tous les textes et médias sont masqués avant l’envoi
             </li>
           </ul>
         </Subsection>
@@ -207,7 +219,11 @@ export default function PrivacyPage(): React.JSX.Element {
               "États-Unis (DPF + clauses contractuelles types)",
             ],
             ["Upstash", "Cache Redis (rate limiting, sessions volatiles)", "Europe"],
-            ["Cloudflare", "Protection anti-bot Turnstile", "Réseau mondial"],
+            [
+              "Sentry",
+              "Détection des erreurs techniques (rapport d’erreur et enregistrement de session masqué, uniquement lorsqu’une erreur survient)",
+              "États-Unis (DPF + clauses contractuelles types)",
+            ],
             [
               "Atlassian (Jira)",
               "Suivi interne des tickets de support",
@@ -223,7 +239,7 @@ export default function PrivacyPage(): React.JSX.Element {
 
       <Section title="6. Transferts hors UE">
         <p>
-          Certains sous-traitants (Vercel, Resend, Atlassian) sont basés aux États-Unis. Les
+          Certains sous-traitants (Vercel, Resend, Atlassian, Sentry) sont basés aux États-Unis. Les
           transferts sont encadrés par :
         </p>
         <ul style={{ ...ulStyle, marginTop: "12px" }}>
@@ -336,7 +352,7 @@ export default function PrivacyPage(): React.JSX.Element {
         </Subsection>
       </Section>
 
-      <Section title="8. Cookies" id="cookies">
+      <Section title="8. Cookies et stockage local" id="cookies">
         <p style={{ marginBottom: "16px" }}>
           Cyber Learn utilise uniquement des{" "}
           <strong style={{ color: "#B8B5D1" }}>cookies strictement nécessaires</strong> au
@@ -351,7 +367,6 @@ export default function PrivacyPage(): React.JSX.Element {
               "Mémorisation de la prise de connaissance des conditions d’utilisation",
               "365 jours",
             ],
-            ["__cf_bm", "Protection anti-bot Cloudflare Turnstile", "30 minutes"],
             [
               "Cookies de préférence (thème, sidebar)",
               "Personnalisation de l’interface",
@@ -359,12 +374,40 @@ export default function PrivacyPage(): React.JSX.Element {
             ],
           ]}
         />
+        <p style={{ marginTop: "24px", marginBottom: "16px" }}>
+          Le service inscrit également des informations dans le stockage local de votre navigateur (
+          <code style={codeStyle}>localStorage</code> et{" "}
+          <code style={codeStyle}>sessionStorage</code>). Ces informations ne sont jamais transmises
+          à un serveur, à l’exception de l’identifiant technique de diagnostic décrit ci-dessous :
+        </p>
+        <LegalTable
+          headers={["Entrée", "Finalité", "Durée"]}
+          rows={[
+            [
+              "cl-welcome-seen",
+              "Ne rejouer qu’une fois la vidéo de bienvenue",
+              "Jusqu’à effacement",
+            ],
+            [
+              "cl-changelog-seen",
+              "Signaler les notes de version non encore consultées",
+              "Jusqu’à effacement",
+            ],
+            ["cl-splash-shown", "Ne pas rejouer l’animation d’accueil", "Fermeture de l’onglet"],
+            [
+              "sentryReplaySession",
+              "Identifiant technique associant les événements d’une même session à un rapport d’erreur",
+              "Fermeture de l’onglet",
+            ],
+          ]}
+        />
         <p style={{ marginTop: "16px" }}>
           <strong style={{ color: "#B8B5D1" }}>
-            Aucun cookie publicitaire, analytique ou de tracking comportemental n’est utilisé.
+            Aucun cookie ni traceur publicitaire, analytique ou de tracking comportemental n’est
+            utilisé.
           </strong>{" "}
-          Conformément à l’article 82 de la loi Informatique et Libertés, ces cookies strictement
-          nécessaires sont exemptés de consentement.
+          Conformément à l’article 82 de la loi Informatique et Libertés, ces traceurs strictement
+          nécessaires au fonctionnement et à la sécurité du service sont exemptés de consentement.
         </p>
       </Section>
 
@@ -397,6 +440,12 @@ const ulStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: "8px",
+};
+
+const codeStyle: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: "13px",
+  color: "#F5F5FA",
 };
 
 function Section({

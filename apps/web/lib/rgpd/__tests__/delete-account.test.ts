@@ -15,48 +15,72 @@ vi.stubEnv("IP_SALT", "delete-account-test-salt-that-is-at-least-32-chars");
 
 // ── Hoisted mocks - must be created before vi.mock factories run ──────────
 
-const { mockTx, mockPrisma } = vi.hoisted(() => {
-  const mockTx = {
-    user: {
-      findUnique: vi.fn(),
-      delete: vi.fn(),
-    },
-    certificate: {
-      count: vi.fn(),
-      updateMany: vi.fn(),
-    },
-    lessonQuestion: {
-      count: vi.fn(),
-      updateMany: vi.fn(),
-    },
-    lessonAnswer: {
-      count: vi.fn(),
-      updateMany: vi.fn(),
-    },
-    rating: {
-      count: vi.fn(),
-      updateMany: vi.fn(),
-    },
-    contactTicket: {
-      count: vi.fn(),
-      updateMany: vi.fn(),
-    },
-    auditLog: {
-      count: vi.fn(),
-      updateMany: vi.fn(),
-      create: vi.fn(),
-    },
-  };
+const { mockTx, mockPrisma, mockDeleteAvatar, mockStorageRemove, mockCaptureException } =
+  vi.hoisted(() => {
+    const mockTx = {
+      user: {
+        findUnique: vi.fn(),
+        delete: vi.fn(),
+      },
+      certificate: {
+        count: vi.fn(),
+        findMany: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      lessonQuestion: {
+        count: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      lessonAnswer: {
+        count: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      rating: {
+        count: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      contactTicket: {
+        count: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      auditLog: {
+        count: vi.fn(),
+        updateMany: vi.fn(),
+        create: vi.fn(),
+      },
+    };
 
-  const mockPrisma = {
-    $transaction: vi.fn(),
-  };
+    const mockPrisma = {
+      $transaction: vi.fn(),
+    };
 
-  return { mockTx, mockPrisma };
-});
+    return {
+      mockTx,
+      mockPrisma,
+      mockDeleteAvatar: vi.fn(),
+      mockStorageRemove: vi.fn(),
+      mockCaptureException: vi.fn(),
+    };
+  });
 
 vi.mock("@cyberlearn/db", () => ({
   prisma: mockPrisma,
+}));
+
+// Storage clients reach for the service_role key at import time; stubbing them
+// keeps this suite free of env requirements and lets us assert the erasure.
+vi.mock("@/lib/avatar/storage", () => ({
+  deleteUploadedAvatar: mockDeleteAvatar,
+}));
+
+vi.mock("@cyberlearn/db/supabase/admin", () => ({
+  createSupabaseAdminClient: () => ({
+    storage: { from: () => ({ remove: mockStorageRemove }) },
+  }),
+}));
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: mockCaptureException,
 }));
 
 // ── Import after mocks are registered ────────────────────────────────────
@@ -77,7 +101,14 @@ function containing<T extends Record<string, unknown>>(sample: T): T {
 const MOCK_USER_ID = randomUUID();
 const MOCK_METADATA = { ip: "192.168.1.1", userAgent: "Mozilla/5.0 (test)" };
 
-const MOCK_USER = { id: MOCK_USER_ID, email: "user@example.com", displayName: "Test User" };
+const MOCK_USER = {
+  id: MOCK_USER_ID,
+  email: "user@example.com",
+  displayName: "Test User",
+  avatarUrl: "__upload:avatars/abc.png",
+};
+
+const MOCK_CERTIFICATE_KEYS = [`${MOCK_USER_ID}/cert-1.pdf`, `${MOCK_USER_ID}/cert-2.pdf`];
 
 // ── Setup ─────────────────────────────────────────────────────────────────
 
@@ -99,6 +130,13 @@ beforeEach(() => {
   mockTx.rating.count.mockResolvedValue(1);
   mockTx.contactTicket.count.mockResolvedValue(1);
   mockTx.auditLog.count.mockResolvedValue(3);
+  mockTx.certificate.findMany.mockResolvedValue(
+    MOCK_CERTIFICATE_KEYS.map((pdfStorageKey) => ({ pdfStorageKey })),
+  );
+
+  // Object storage erasure succeeds by default
+  mockDeleteAvatar.mockResolvedValue(undefined);
+  mockStorageRemove.mockResolvedValue({ data: [], error: null });
 
   // Default mutations resolve successfully
   mockTx.certificate.updateMany.mockResolvedValue({ count: 2 });
@@ -139,7 +177,7 @@ describe("happy path", () => {
 
     expect(mockTx.certificate.updateMany).toHaveBeenCalledWith({
       where: { userId: MOCK_USER_ID },
-      data: { userId: null, holderName: "Utilisateur supprimé" },
+      data: { userId: null, holderName: "Utilisateur supprimé", pdfStorageKey: "__erased__" },
     });
   });
 
@@ -317,5 +355,63 @@ describe("performance - single transaction, updateMany only", () => {
     expect(mockTx.rating.count).toHaveBeenCalledOnce();
     expect(mockTx.contactTicket.count).toHaveBeenCalledOnce();
     expect(mockTx.auditLog.count).toHaveBeenCalledOnce();
+  });
+});
+
+describe("object storage erasure (Art. 17)", () => {
+  it("removes the uploaded avatar", async () => {
+    await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
+
+    expect(mockDeleteAvatar).toHaveBeenCalledWith(MOCK_USER.avatarUrl);
+  });
+
+  it("removes every certificate PDF, whose file name embeds the user id", async () => {
+    await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
+
+    expect(mockStorageRemove).toHaveBeenCalledWith(MOCK_CERTIFICATE_KEYS);
+  });
+
+  it("skips placeholder storage keys that point at no object", async () => {
+    mockTx.certificate.findMany.mockResolvedValue([
+      { pdfStorageKey: "pending" },
+      { pdfStorageKey: "__erased__" },
+      { pdfStorageKey: "" },
+    ]);
+
+    await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
+
+    expect(mockStorageRemove).not.toHaveBeenCalled();
+  });
+
+  it("erases files only after the transaction commits", async () => {
+    mockPrisma.$transaction.mockRejectedValue(new Error("rollback"));
+
+    await expect(deleteAccount(MOCK_USER_ID, MOCK_METADATA)).rejects.toThrow("rollback");
+
+    // A rollback leaves the rows in place, so the files must survive too.
+    expect(mockDeleteAvatar).not.toHaveBeenCalled();
+    expect(mockStorageRemove).not.toHaveBeenCalled();
+  });
+
+  it("reports a storage failure without failing the deletion", async () => {
+    mockStorageRemove.mockResolvedValue({ data: null, error: { message: "bucket offline" } });
+
+    const summary = await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
+
+    expect(summary.certificatesAnonymized).toBe(2);
+    expect(mockCaptureException).toHaveBeenCalledOnce();
+  });
+
+  it("never surfaces the raw user id to Sentry", async () => {
+    mockDeleteAvatar.mockRejectedValue(new Error("storage down"));
+
+    await deleteAccount(MOCK_USER_ID, MOCK_METADATA);
+
+    const [, context] = mockCaptureException.mock.calls[0] as [
+      unknown,
+      { extra: { hashedUserId: string } },
+    ];
+    expect(context.extra.hashedUserId).toBe(pseudonymize(MOCK_USER_ID));
+    expect(context.extra.hashedUserId).not.toBe(MOCK_USER_ID);
   });
 });

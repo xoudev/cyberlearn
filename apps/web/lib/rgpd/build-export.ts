@@ -139,6 +139,50 @@ export interface ExportPayload {
     grantedAt: Date;
     grantReason: string;
   }[];
+  // Art. 15 covers every personal datum, not just the ones the product
+  // surfaces. Notes in particular are free text written by the account holder.
+  notes: {
+    lessonTitle: string | null;
+    folderName: string | null;
+    content: string;
+    wordCount: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
+  noteFolders: { name: string; color: string | null; createdAt: Date }[];
+  quizAttempts: {
+    pathTitle: string | null;
+    score: number;
+    passed: boolean;
+    answers: unknown;
+    startedAt: Date;
+    submittedAt: Date | null;
+  }[];
+  activityDays: { day: Date; count: number }[];
+  questProgress: {
+    weekKey: string;
+    progress: number;
+    completed: boolean;
+    claimed: boolean;
+    completedAt: Date | null;
+  }[];
+  leagueMemberships: {
+    division: string;
+    seasonXp: number;
+    finalRank: number | null;
+    globalRank: number | null;
+    joinedAt: Date;
+  }[];
+  xpLedger: { amount: number; source: string; createdAt: Date }[];
+  wrappedSnapshots: { period: string; periodKey: string; payload: unknown; createdAt: Date }[];
+  cosmeticsUnlocked: { cosmeticId: string; unlockedAt: Date }[];
+  cosmeticLoadout: {
+    terminalTheme: string | null;
+    hexagonStyle: string | null;
+    profileFrame: string | null;
+    accentColor: string | null;
+  } | null;
+  answerUpvotes: { answerId: string; createdAt: Date }[];
 }
 
 export async function buildExportPayload(userId: string): Promise<ExportPayload> {
@@ -159,6 +203,17 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     tickets,
     notifications,
     skipWaivers,
+    notes,
+    noteFolders,
+    quizAttempts,
+    activityDays,
+    questProgress,
+    leagueMemberships,
+    xpLedger,
+    wrappedSnapshots,
+    cosmeticsUnlocked,
+    cosmeticLoadout,
+    answerUpvotes,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -321,6 +376,83 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         lesson: { select: { title: true, slug: true } },
       },
     }),
+    prisma.note.findMany({
+      where: { userId },
+      select: {
+        content: true,
+        wordCount: true,
+        createdAt: true,
+        updatedAt: true,
+        lesson: { select: { title: true } },
+        folder: { select: { name: true } },
+      },
+    }),
+    prisma.noteFolder.findMany({
+      where: { userId },
+      select: { name: true, color: true, createdAt: true },
+    }),
+    prisma.quizAttempt.findMany({
+      where: { userId },
+      select: {
+        score: true,
+        passed: true,
+        answers: true,
+        startedAt: true,
+        submittedAt: true,
+        quiz: { select: { path: { select: { title: true } } } },
+      },
+    }),
+    prisma.userActivityDay.findMany({
+      where: { userId },
+      select: { day: true, count: true },
+      orderBy: { day: "desc" },
+    }),
+    prisma.userQuestProgress.findMany({
+      where: { userId },
+      select: {
+        weekKey: true,
+        progress: true,
+        completed: true,
+        claimed: true,
+        completedAt: true,
+      },
+    }),
+    prisma.leagueMembership.findMany({
+      where: { userId },
+      select: {
+        division: true,
+        seasonXp: true,
+        finalRank: true,
+        globalRank: true,
+        joinedAt: true,
+      },
+    }),
+    prisma.xpLedger.findMany({
+      where: { userId },
+      select: { amount: true, source: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.wrappedSnapshot.findMany({
+      where: { userId },
+      select: { period: true, periodKey: true, payload: true, createdAt: true },
+    }),
+    prisma.userCosmetic.findMany({
+      where: { userId },
+      select: { cosmeticId: true, unlockedAt: true },
+    }),
+    prisma.userCosmeticLoadout.findUnique({
+      where: { userId },
+      select: {
+        terminalTheme: true,
+        hexagonStyle: true,
+        profileFrame: true,
+        accentColor: true,
+      },
+    }),
+    prisma.lessonAnswerUpvote.findMany({
+      where: { userId },
+      select: { answerId: true, createdAt: true },
+    }),
   ]);
 
   return {
@@ -424,5 +556,30 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       grantedAt: w.grantedAt,
       grantReason: w.grantReason,
     })),
+    notes: notes.map((n) => ({
+      lessonTitle: n.lesson.title,
+      folderName: n.folder?.name ?? null,
+      content: n.content,
+      wordCount: n.wordCount,
+      createdAt: n.createdAt,
+      updatedAt: n.updatedAt,
+    })),
+    noteFolders,
+    quizAttempts: quizAttempts.map((a) => ({
+      pathTitle: a.quiz.path.title,
+      score: a.score,
+      passed: a.passed,
+      answers: a.answers,
+      startedAt: a.startedAt,
+      submittedAt: a.submittedAt,
+    })),
+    activityDays,
+    questProgress,
+    leagueMemberships,
+    xpLedger,
+    wrappedSnapshots,
+    cosmeticsUnlocked,
+    cosmeticLoadout,
+    answerUpvotes,
   };
 }

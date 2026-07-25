@@ -1,5 +1,13 @@
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@cyberlearn/db";
+import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
+import { deleteUploadedAvatar } from "@/lib/avatar/storage";
 import { pseudonymize } from "@/lib/pseudonymize";
+
+const CERTIFICATE_BUCKET = "certificates";
+
+/** pdfStorageKey is NOT NULL, so an erased certificate gets an explicit marker. */
+const ERASED_STORAGE_KEY = "__erased__";
 
 export interface DeletionSummary {
   hashedUserId: string; // pseudonymized - safe to surface to callers
@@ -40,12 +48,19 @@ export async function deleteAccount(
   const safeUserAgent = metadata.userAgent.slice(0, 500);
   const deletedAt = new Date();
 
+  // Collected inside the transaction, erased from Storage once it commits:
+  // object storage is not transactional, so removing files first would leave
+  // them gone after a rollback.
+  let avatarUrl: string | null = null;
+  let certificateStorageKeys: string[] = [];
+
   const summary = await prisma.$transaction(async (tx) => {
     // ── 1. Verify user exists ─────────────────────────────────────────────
     const user = await tx.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new Error(`deleteAccount: user not found (hash=${hashedUserId})`);
     }
+    avatarUrl = user.avatarUrl;
 
     // ── 2. Snapshot counts BEFORE modification ────────────────────────────
     const [
@@ -65,9 +80,24 @@ export async function deleteAccount(
     ]);
 
     // ── 3a. Anonymise Certificate ─────────────────────────────────────────
+    // The storage key embeds the user's UUID and the PDF behind it carries
+    // their real name, so neither may survive the erasure. The objects
+    // themselves are removed after the transaction commits.
+    const issuedCertificates = await tx.certificate.findMany({
+      where: { userId },
+      select: { pdfStorageKey: true },
+    });
+    certificateStorageKeys = issuedCertificates
+      .map((c) => c.pdfStorageKey)
+      .filter((key) => key !== "" && key !== ERASED_STORAGE_KEY && key !== "pending");
+
     await tx.certificate.updateMany({
       where: { userId },
-      data: { userId: null, holderName: "Utilisateur supprimé" },
+      data: {
+        userId: null,
+        holderName: "Utilisateur supprimé",
+        pdfStorageKey: ERASED_STORAGE_KEY,
+      },
     });
 
     // ── 3b. Anonymise LessonQuestion ──────────────────────────────────────
@@ -138,6 +168,32 @@ export async function deleteAccount(
       auditLogsAnonymized,
     } satisfies DeletionSummary;
   });
+
+  // ── 6. Erase uploaded files (post-commit, best effort) ──────────────────
+  // The database rows are already gone, which is what Art. 17 turns on. A
+  // storage hiccup must not resurrect them, so failures are reported to
+  // Sentry for follow-up rather than thrown.
+  try {
+    await deleteUploadedAvatar(avatarUrl);
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "rgpd.delete.avatar" },
+      extra: { hashedUserId },
+    });
+  }
+
+  if (certificateStorageKeys.length > 0) {
+    try {
+      const admin = createSupabaseAdminClient();
+      const { error } = await admin.storage.from(CERTIFICATE_BUCKET).remove(certificateStorageKeys);
+      if (error) throw new Error(error.message);
+    } catch (error) {
+      Sentry.captureException(error, {
+        tags: { area: "rgpd.delete.certificates" },
+        extra: { hashedUserId, objectCount: certificateStorageKeys.length },
+      });
+    }
+  }
 
   return summary;
 }
