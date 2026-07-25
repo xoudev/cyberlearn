@@ -12,7 +12,7 @@ const m = vi.hoisted(() => ({
   findCriterionFacts: vi.fn(),
   transaction: vi.fn(),
   tx: {
-    userLessonProgress: { upsert: vi.fn() },
+    userLessonProgress: { updateMany: vi.fn(), createMany: vi.fn() },
     user: { update: vi.fn(), findUniqueOrThrow: vi.fn() },
     userBadge: { createManyAndReturn: vi.fn() },
     notification: { create: vi.fn(), createMany: vi.fn() },
@@ -83,6 +83,10 @@ beforeEach(() => {
     placementScores: null,
   });
   m.transaction.mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(m.tx));
+  // The in-transaction claim decides whether this is the first completion:
+  // one row flipped means this caller won it.
+  m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 1 });
+  m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 0 });
   m.tx.userBadge.createManyAndReturn.mockResolvedValue([{ badgeId: "b1" }]);
   m.tx.season.findFirst.mockResolvedValue(null);
   m.tx.xpLedger.create.mockResolvedValue({});
@@ -159,6 +163,9 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
 
   it("does not re-credit anything on an already-completed lesson", async () => {
     m.findProgress.mockResolvedValue({ status: "COMPLETED" });
+    // Nothing left to flip, and the insert conflicts with the existing row.
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 0 });
 
     const result = await completeLesson(LESSON_ID);
 
@@ -166,6 +173,36 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
     expect(result.xpGained).toBe(0);
     expect(result.newBadges).toHaveLength(0);
     expect(m.tx.userBadge.createManyAndReturn).not.toHaveBeenCalled();
+  });
+
+  it("credits nothing when a concurrent submission won the completion claim", async () => {
+    // The pre-transaction read said IN_PROGRESS, but by the time the
+    // transaction ran another request had already flipped the row.
+    m.findProgress.mockResolvedValue(null);
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 0 });
+
+    const result = await completeLesson(LESSON_ID);
+
+    expect(result.alreadyCompleted).toBe(true);
+    expect(result.xpGained).toBe(0);
+    expect(m.tx.xpLedger.create).not.toHaveBeenCalled();
+    expect(m.tx.userBadge.createManyAndReturn).not.toHaveBeenCalled();
+    expect(m.tx.reviewSchedule.upsert).not.toHaveBeenCalled();
+    expect(m.tx.userActivityDay.upsert).not.toHaveBeenCalled();
+  });
+
+  it("treats a fresh insert as the first completion", async () => {
+    // No progress row existed, so the conditional update matched nothing and
+    // the insert is what claims the completion.
+    m.findProgress.mockResolvedValue(null);
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 1 });
+
+    const result = await completeLesson(LESSON_ID);
+
+    expect(result.alreadyCompleted).toBe(false);
+    expect(result.xpGained).toBe(70);
   });
 
   it("writes the LEVEL_UP notification with the badge-inclusive totals", async () => {

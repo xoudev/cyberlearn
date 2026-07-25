@@ -52,6 +52,10 @@ export async function completeLessonForUser(
 
   if (!lesson || !user) return EMPTY_COMPLETE_RESULT;
 
+  // Optimistic hint, read outside any transaction: it decides whether the
+  // (expensive) badge evaluation below is worth running. The authoritative
+  // answer is `firstCompletion`, claimed atomically inside the transaction, and
+  // nothing is credited unless that claim succeeds.
   const isFirstCompletion = existing?.status !== "COMPLETED";
   const now = new Date();
 
@@ -93,24 +97,31 @@ export async function completeLessonForUser(
   //    userBadge rows actually get inserted) ─────────────────────────────────
   const earnedBadges = allBadges.filter((b) => newBadgeIds.includes(b.id));
 
-  const { award, finalLevel } = await prisma.$transaction(async (tx) => {
-    await tx.userLessonProgress.upsert({
-      where: { userId_lessonId: { userId, lessonId } },
-      create: {
-        userId,
-        lessonId,
-        status: "COMPLETED",
-        attempts: 1,
-        completedAt: now,
-      },
-      update: {
-        status: "COMPLETED",
-        completedAt: now,
-      },
+  const { award, finalLevel, firstCompletion } = await prisma.$transaction(async (tx) => {
+    // Claim the completion atomically. `isFirstCompletion` above was read
+    // outside the transaction, so two concurrent submissions both saw
+    // IN_PROGRESS and both credited the XP. The conditional update is
+    // row-locked: the loser re-evaluates the predicate after the winner commits
+    // and matches nothing, and the ON CONFLICT DO NOTHING insert (createMany +
+    // skipDuplicates) settles the case where no row exists yet. Exactly one
+    // caller ends up with a non-zero count, so the reward is credited once.
+    const claimed = await tx.userLessonProgress.updateMany({
+      where: { userId, lessonId, status: { not: "COMPLETED" } },
+      data: { status: "COMPLETED", completedAt: now },
     });
 
+    let firstCompletion = claimed.count > 0;
+    if (claimed.count === 0) {
+      // Either the row is already COMPLETED, or the user has no row at all.
+      const created = await tx.userLessonProgress.createMany({
+        data: { userId, lessonId, status: "COMPLETED", attempts: 1, completedAt: now },
+        skipDuplicates: true,
+      });
+      firstCompletion = created.count > 0;
+    }
+
     // A brand-new completion advances the streak and logs today's activity day.
-    if (isFirstCompletion) {
+    if (firstCompletion) {
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -130,13 +141,15 @@ export async function completeLessonForUser(
 
     // Credit the lesson reward through the single XP source of truth (level-up
     // notification suppressed: one combined LEVEL_UP is emitted below).
-    const lessonCredit = isFirstCompletion
+    const lessonCredit = firstCompletion
       ? await creditXp(tx, userId, lesson.xpReward, "LESSON", { notifyLevelUp: false })
       : null;
 
     // Insert userBadge rows and credit their xpReward (also via creditXp) -
     // only for rows actually inserted (idempotent re-awards).
-    const awardResult = await awardBadges(tx, userId, earnedBadges, { lessonId });
+    const awardResult = await awardBadges(tx, userId, firstCompletion ? earnedBadges : [], {
+      lessonId,
+    });
 
     const txXpTotal = awardResult.newXpTotal ?? lessonCredit?.newXpTotal ?? user.xpTotal;
     const txLevel = awardResult.newLevel ?? lessonCredit?.newLevel ?? user.level;
@@ -156,7 +169,7 @@ export async function completeLessonForUser(
     }
 
     // Schedule first review for tomorrow - SM-2 starts here
-    if (isFirstCompletion) {
+    if (firstCompletion) {
       await tx.reviewSchedule.upsert({
         where: { userId_lessonId: { userId, lessonId } },
         create: {
@@ -171,7 +184,7 @@ export async function completeLessonForUser(
       });
     }
 
-    return { award: awardResult, finalLevel: txLevel };
+    return { award: awardResult, finalLevel: txLevel, firstCompletion };
   });
 
   revalidatePath(`/lessons/${lesson.slug}`);
@@ -180,7 +193,7 @@ export async function completeLessonForUser(
   revalidatePath("/profile");
 
   // Check if completing this lesson finishes any path → issue certificate
-  if (isFirstCompletion) {
+  if (firstCompletion) {
     await checkAndIssueCertificates(userId, lessonId);
     revalidatePath("/paths");
 
@@ -190,8 +203,8 @@ export async function completeLessonForUser(
   }
 
   return {
-    alreadyCompleted: !isFirstCompletion,
-    xpGained: isFirstCompletion ? lesson.xpReward + award.xpGained : 0,
+    alreadyCompleted: !firstCompletion,
+    xpGained: firstCompletion ? lesson.xpReward + award.xpGained : 0,
     leveledUp: finalLevel > user.level,
     newLevel: finalLevel,
     newBadges: award.awarded.map((b) => ({

@@ -27,7 +27,18 @@ export interface IssueOptions {
   passThreshold?: number;
 }
 
-/** Generate → hash → upload → create the certificate row (with score). */
+/**
+ * Generate → hash → upload → create the certificate row (with score).
+ *
+ * The id and publicId are minted here rather than by the database so the QR
+ * code and the storage key are known before anything is persisted. That lets
+ * the row be written once, already complete: a crash or a failed upload leaves
+ * no certificate at all instead of a half-written one.
+ *
+ * This matters because sha256Hash is globally UNIQUE. Seeding it with a
+ * placeholder made two concurrent issuances collide, and a single row stuck on
+ * that placeholder would have blocked every future issuance platform-wide.
+ */
 async function generateCertificatePdf(
   userId: string,
   pathId: string,
@@ -46,17 +57,10 @@ async function generateCertificatePdf(
   if (!user || !path) return null;
 
   const issuedAt = new Date();
-  const certRecord = await certificateRepository.create({
-    userId,
-    pathId,
-    sha256Hash: "pending", // filled after PDF generation
-    pdfStorageKey: "pending",
-    // Omit when absent (exactOptionalPropertyTypes): quiz-less certs keep score null.
-    ...(opts.score !== undefined ? { score: opts.score } : {}),
-    ...(opts.passThreshold !== undefined ? { passThreshold: opts.passThreshold } : {}),
-  });
+  const certId = crypto.randomUUID();
+  const publicId = crypto.randomUUID();
 
-  const verifyUrl = `${APP_URL}/verify/${certRecord.publicId}`;
+  const verifyUrl = `${APP_URL}/verify/${publicId}`;
   const qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { width: 200, margin: 1 });
 
   const pdfBuffer = await renderToBuffer(
@@ -65,7 +69,7 @@ async function generateCertificatePdf(
       username={user.username}
       pathTitle={path.title}
       issuedAt={issuedAt}
-      publicId={certRecord.publicId}
+      publicId={publicId}
       score={opts.score ?? null}
       lessonCount={path._count.lessons}
       qrCodeDataUrl={qrCodeDataUrl}
@@ -74,21 +78,35 @@ async function generateCertificatePdf(
   );
 
   const sha256Hash = crypto.createHash("sha256").update(pdfBuffer).digest("hex");
-  const storageKey = `${userId}/${certRecord.id}.pdf`;
+  const storageKey = `${userId}/${certId}.pdf`;
 
+  // The Supabase client reports storage failures in `error` instead of
+  // throwing, so an unchecked call would persist a key pointing at nothing.
   const supabase = createSupabaseAdminClient();
-  await supabase.storage.from(BUCKET).upload(storageKey, pdfBuffer, {
+  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storageKey, pdfBuffer, {
     contentType: "application/pdf",
     cacheControl: "public, max-age=31536000, immutable",
     upsert: false,
   });
+  if (uploadError) {
+    console.error("[certificates] PDF upload failed:", uploadError.message);
+    return null;
+  }
 
-  await prisma.certificate.update({
-    where: { id: certRecord.id },
-    data: { sha256Hash, pdfStorageKey: storageKey },
+  await certificateRepository.create({
+    id: certId,
+    publicId,
+    userId,
+    pathId,
+    issuedAt,
+    sha256Hash,
+    pdfStorageKey: storageKey,
+    // Omit when absent (exactOptionalPropertyTypes): quiz-less certs keep score null.
+    ...(opts.score !== undefined ? { score: opts.score } : {}),
+    ...(opts.passThreshold !== undefined ? { passThreshold: opts.passThreshold } : {}),
   });
 
-  return certRecord.id;
+  return certId;
 }
 
 /**
