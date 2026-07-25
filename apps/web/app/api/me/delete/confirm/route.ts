@@ -15,18 +15,56 @@ const tokenParamSchema = z
   .max(200)
   .regex(/^[A-Za-z0-9_-]+$/);
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+/**
+ * Showing the confirmation page is the only thing a link click may do.
+ * Deleting an account is irreversible, so it must not ride on a GET: mail
+ * clients, security scanners and link prefetchers follow links on their own,
+ * which silently destroyed accounts. The destructive step is POST below,
+ * reached from a form the account holder actually submits.
+ */
+export function GET(request: NextRequest): NextResponse {
   const origin = new URL(request.url).origin;
   const rawToken = request.nextUrl.searchParams.get("token");
 
-  // ── 1. Validate query param ──────────────────────────────────────────────
   if (!rawToken) {
     return NextResponse.redirect(new URL("/account/delete/error?reason=missing", origin));
+  }
+  if (!tokenParamSchema.safeParse(rawToken).success) {
+    return NextResponse.redirect(new URL("/account/delete/error?reason=invalid", origin));
+  }
+
+  const confirmPage = new URL("/account/delete/confirm", origin);
+  confirmPage.searchParams.set("token", rawToken);
+  return NextResponse.redirect(confirmPage);
+}
+
+/** The confirmation page submits a form; the query string stays supported. */
+async function readToken(request: NextRequest): Promise<string | undefined> {
+  const fromQuery = request.nextUrl.searchParams.get("token");
+  if (fromQuery) return fromQuery;
+  // formData() throws outright on a non-form content type.
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!/form-data|x-www-form-urlencoded/.test(contentType)) return undefined;
+  try {
+    const value = (await request.formData()).get("token");
+    return typeof value === "string" ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const origin = new URL(request.url).origin;
+  const rawToken = await readToken(request);
+
+  // ── 1. Validate query param ──────────────────────────────────────────────
+  if (!rawToken) {
+    return NextResponse.redirect(new URL("/account/delete/error?reason=missing", origin), 303);
   }
 
   const parsed = tokenParamSchema.safeParse(rawToken);
   if (!parsed.success) {
-    return NextResponse.redirect(new URL("/account/delete/error?reason=invalid", origin));
+    return NextResponse.redirect(new URL("/account/delete/error?reason=invalid", origin), 303);
   }
 
   // ── 2. Hash and look up ──────────────────────────────────────────────────
@@ -38,13 +76,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   });
 
   if (!record) {
-    return NextResponse.redirect(new URL("/account/delete/error?reason=invalid", origin));
+    return NextResponse.redirect(new URL("/account/delete/error?reason=invalid", origin), 303);
   }
   if (record.expiresAt < new Date()) {
-    return NextResponse.redirect(new URL("/account/delete/error?reason=expired", origin));
+    return NextResponse.redirect(new URL("/account/delete/error?reason=expired", origin), 303);
   }
   if (record.usedAt !== null) {
-    return NextResponse.redirect(new URL("/account/delete/error?reason=used", origin));
+    return NextResponse.redirect(new URL("/account/delete/error?reason=used", origin), 303);
   }
 
   // ── 3. Consume token before deletion - prevents double-fire on retried requests ──
@@ -63,7 +101,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     await deleteAccount(record.userId, { ip: rawIp, userAgent: rawUserAgent });
   } catch (err) {
     console.error("[delete/confirm] deleteAccount failed:", err);
-    return NextResponse.redirect(new URL("/account/delete/error?reason=internal", origin));
+    return NextResponse.redirect(new URL("/account/delete/error?reason=internal", origin), 303);
   }
 
   // ── 6. Delete Supabase Auth identity (RGPD Art. 17 - full erasure) ───────
@@ -91,6 +129,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
     return NextResponse.redirect(
       new URL("/account/delete/error?reason=auth_cleanup_failed", origin),
+      303,
     );
   }
 
@@ -106,5 +145,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   });
   await supabase.auth.signOut();
 
-  return NextResponse.redirect(new URL("/account/delete/success", origin));
+  return NextResponse.redirect(new URL("/account/delete/success", origin), 303);
 }

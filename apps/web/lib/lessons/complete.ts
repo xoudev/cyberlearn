@@ -8,7 +8,7 @@ import {
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
 import { awardBadges } from "@/lib/badges/award";
 import { creditXp } from "@/lib/xp/credit";
-import { checkAndIssueCertificates } from "@/app/(app)/paths/[slug]/_actions/generate-certificate";
+import { checkAndIssueCertificates } from "@/lib/certificates/check-and-issue";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
 export interface CompleteLessonResult {

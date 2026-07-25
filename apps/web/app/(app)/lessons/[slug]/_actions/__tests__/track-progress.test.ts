@@ -27,7 +27,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/auth", () => ({
   requireRequestUser: vi.fn().mockResolvedValue({ id: "u1" }),
 }));
-vi.mock("@/app/(app)/paths/[slug]/_actions/generate-certificate", () => ({
+vi.mock("@/lib/certificates/check-and-issue", () => ({
   checkAndIssueCertificates: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@cyberlearn/db", () => ({

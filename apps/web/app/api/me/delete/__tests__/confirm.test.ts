@@ -1,5 +1,6 @@
 /**
- * Unit tests for GET /api/me/delete/confirm.
+ * Unit tests for /api/me/delete/confirm (GET shows the confirmation page,
+ * POST performs the irreversible deletion).
  *
  * All external I/O (Prisma, deleteAccount, Supabase admin, Supabase signOut) is mocked.
  * Response assertions use the Location header since the handler redirects.
@@ -43,7 +44,7 @@ vi.mock("next/headers", () => ({ cookies: vi.fn().mockResolvedValue(mockCookieSt
 // ── Import after mocks ────────────────────────────────────────────────────────
 
 const { NextRequest } = await import("next/server");
-const { GET } = await import("../confirm/route");
+const { GET, POST } = await import("../confirm/route");
 
 // ── Typed matcher helpers ─────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ function makeRequest(token?: string): InstanceType<typeof NextRequest> {
   const url = token
     ? `http://localhost/api/me/delete/confirm?token=${token}`
     : "http://localhost/api/me/delete/confirm";
-  return new NextRequest(url, { method: "GET" });
+  return new NextRequest(url, { method: "POST" });
 }
 
 function redirectLocation(res: Response): string {
@@ -105,56 +106,56 @@ afterEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("GET /api/me/delete/confirm - missing token", () => {
+describe("POST /api/me/delete/confirm - missing token", () => {
   it("redirects to error?reason=missing when no token param", async () => {
-    const res = await GET(makeRequest());
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=missing");
   });
 });
 
-describe("GET /api/me/delete/confirm - invalid token", () => {
+describe("POST /api/me/delete/confirm - invalid token", () => {
   it("redirects to error?reason=invalid when token has invalid chars", async () => {
-    const res = await GET(makeRequest("../../etc/passwd"));
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest("../../etc/passwd"));
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=invalid");
   });
 
   it("redirects to error?reason=invalid when token not found in DB", async () => {
     mockPrisma.accountDeletionToken.findUnique.mockResolvedValueOnce(null);
-    const res = await GET(makeRequest(VALID_PLAIN_TOKEN));
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=invalid");
   });
 });
 
-describe("GET /api/me/delete/confirm - expired token", () => {
+describe("POST /api/me/delete/confirm - expired token", () => {
   it("redirects to error?reason=expired when token is past expiresAt", async () => {
     mockPrisma.accountDeletionToken.findUnique.mockResolvedValueOnce({
       ...VALID_RECORD,
       expiresAt: PAST,
     });
-    const res = await GET(makeRequest(VALID_PLAIN_TOKEN));
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=expired");
   });
 });
 
-describe("GET /api/me/delete/confirm - already used token", () => {
+describe("POST /api/me/delete/confirm - already used token", () => {
   it("redirects to error?reason=used when token has usedAt set", async () => {
     mockPrisma.accountDeletionToken.findUnique.mockResolvedValueOnce({
       ...VALID_RECORD,
       usedAt: new Date(Date.now() - 60_000),
     });
-    const res = await GET(makeRequest(VALID_PLAIN_TOKEN));
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=used");
   });
 });
 
-describe("GET /api/me/delete/confirm - happy path", () => {
+describe("POST /api/me/delete/confirm - happy path", () => {
   it("marks the token as used before calling deleteAccount", async () => {
-    await GET(makeRequest(VALID_PLAIN_TOKEN));
+    await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(mockPrisma.accountDeletionToken.update).toHaveBeenCalledWith(
       containing({
         where: { id: "tok-1" },
@@ -168,7 +169,7 @@ describe("GET /api/me/delete/confirm - happy path", () => {
   });
 
   it("calls deleteAccount with the userId from the token", async () => {
-    await GET(makeRequest(VALID_PLAIN_TOKEN));
+    await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(mockDeleteAccount).toHaveBeenCalledOnce();
     expect(mockDeleteAccount).toHaveBeenCalledWith(
       MOCK_USER_ID,
@@ -177,7 +178,7 @@ describe("GET /api/me/delete/confirm - happy path", () => {
   });
 
   it("calls supabaseAdmin.auth.admin.deleteUser after deleteAccount", async () => {
-    await GET(makeRequest(VALID_PLAIN_TOKEN));
+    await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(mockAuthDeleteUser).toHaveBeenCalledOnce();
     expect(mockAuthDeleteUser).toHaveBeenCalledWith(MOCK_USER_ID);
     // deleteAccount must fire before auth delete
@@ -187,24 +188,24 @@ describe("GET /api/me/delete/confirm - happy path", () => {
   });
 
   it("calls signOut to clear the session", async () => {
-    await GET(makeRequest(VALID_PLAIN_TOKEN));
+    await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(mockSignOut).toHaveBeenCalledOnce();
   });
 
   it("redirects to /account/delete/success", async () => {
-    const res = await GET(makeRequest(VALID_PLAIN_TOKEN));
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("/account/delete/success");
   });
 });
 
-describe("GET /api/me/delete/confirm - deleteAccount failure", () => {
+describe("POST /api/me/delete/confirm - deleteAccount failure", () => {
   it("redirects to error?reason=internal when deleteAccount throws", async () => {
     mockDeleteAccount.mockRejectedValueOnce(new Error("DB exploded"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
-    const res = await GET(makeRequest(VALID_PLAIN_TOKEN));
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=internal");
     expect(consoleSpy).toHaveBeenCalledWith(
       "[delete/confirm] deleteAccount failed:",
@@ -215,15 +216,15 @@ describe("GET /api/me/delete/confirm - deleteAccount failure", () => {
   });
 });
 
-describe("GET /api/me/delete/confirm - auth deletion failure", () => {
+describe("POST /api/me/delete/confirm - auth deletion failure", () => {
   it("redirects to error?reason=auth_cleanup_failed when Supabase Auth delete fails", async () => {
     mockAuthDeleteUser.mockResolvedValueOnce({
       error: { message: "user not found in auth", status: 404 },
     });
     const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
-    const res = await GET(makeRequest(VALID_PLAIN_TOKEN));
-    expect(res.status).toBe(307);
+    const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
+    expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=auth_cleanup_failed");
 
     consoleSpy.mockRestore();
@@ -235,7 +236,7 @@ describe("GET /api/me/delete/confirm - auth deletion failure", () => {
     });
     const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
-    await GET(makeRequest(VALID_PLAIN_TOKEN));
+    await POST(makeRequest(VALID_PLAIN_TOKEN));
 
     expect(mockPrisma.auditLog.create).toHaveBeenCalledOnce();
     expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
@@ -257,9 +258,23 @@ describe("GET /api/me/delete/confirm - auth deletion failure", () => {
     });
     const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
-    await GET(makeRequest(VALID_PLAIN_TOKEN));
+    await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(mockSignOut).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
+  });
+});
+
+// A link click must never delete: mail scanners and prefetchers follow links.
+describe("GET /api/me/delete/confirm - never destructive", () => {
+  it("redirects to the confirmation page without touching the account", () => {
+    const req = new NextRequest(
+      `http://localhost/api/me/delete/confirm?token=${VALID_PLAIN_TOKEN}`,
+      { method: "GET" },
+    );
+    const res = GET(req);
+    expect(redirectLocation(res)).toContain("/account/delete/confirm");
+    expect(mockPrisma.accountDeletionToken.update).not.toHaveBeenCalled();
+    expect(mockDeleteAccount).not.toHaveBeenCalled();
   });
 });
