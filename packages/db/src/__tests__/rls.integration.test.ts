@@ -216,11 +216,25 @@ describe("RLS policies (integration)", () => {
   // ── user_lesson_progress ─────────────────────────────────────────────────
 
   describe("user_lesson_progress", () => {
+    // anon is denied at the privilege level now, so it errors instead of
+    // returning an empty set. Either way it must never obtain a row.
     it("anon cannot read any progress", async () => {
       if (!configured) return;
       const { data, error } = await anonClient.from("user_lesson_progress").select("*");
-      expect(error).toBeNull();
-      expect(data).toEqual([]);
+      expect(data ?? []).toEqual([]);
+      if (error === null) expect(data).toEqual([]);
+    });
+
+    // Completions are what mint certificates, so they are awarded server-side
+    // only: the client may declare that it opened a lesson, nothing more.
+    it("user cannot declare a lesson COMPLETED", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { error } = await clientB
+        .from("user_lesson_progress")
+        .update({ status: "COMPLETED" })
+        .eq("userId", userBId);
+      expect(error).not.toBeNull();
     });
 
     it("user A cannot read user B's progress", async () => {
@@ -296,6 +310,27 @@ describe("RLS policies (integration)", () => {
       const { error } = await clientA.from("users").update({ role: "ADMIN" }).eq("id", userAId);
       expect(error).not.toBeNull();
     });
+
+    // A row policy cannot hide a column: only column privileges keep email and
+    // role off the Data API. Without them the anon key dumps the whole roster.
+    it("anon cannot read emails", async () => {
+      if (!configured) return;
+      const { error } = await anonClient.from("users").select("email").eq("id", userAId);
+      expect(error).not.toBeNull();
+    });
+
+    it("anon cannot read roles", async () => {
+      if (!configured) return;
+      const { error } = await anonClient.from("users").select("role");
+      expect(error).not.toBeNull();
+    });
+
+    it("user cannot rewrite their own XP or level", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("users").update({ xpTotal: 999999 }).eq("id", userAId);
+      expect(error).not.toBeNull();
+    });
   });
 
   // ── placement_questions ───────────────────────────────────────────────────
@@ -309,6 +344,14 @@ describe("RLS policies (integration)", () => {
         .eq("isActive", true);
       expect(error).toBeNull();
       expect(data?.length).toBeGreaterThan(0);
+    });
+
+    // The answer key must never travel over the Data API - a row policy cannot
+    // hide a column, so this is enforced by column privileges.
+    it("the answer key is not readable", async () => {
+      if (!configured) return;
+      const { error } = await anonClient.from("placement_questions").select("correctOptionId");
+      expect(error).not.toBeNull();
     });
   });
 
