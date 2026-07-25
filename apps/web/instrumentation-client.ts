@@ -16,10 +16,15 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
 
   integrations: [
+    // A replay records the DOM, so anything left unmasked - the account's own
+    // email in the navbar, a note, a free-text answer - is personal data sent
+    // to a processor outside the EU. Masking everything keeps the replay
+    // useful for diagnosing an error (layout, clicks, navigation) without
+    // exfiltrating content, which is what makes it defensible under GDPR.
     Sentry.replayIntegration({
       maskAllInputs: true,
-      maskAllText: false,
-      blockAllMedia: false,
+      maskAllText: true,
+      blockAllMedia: true,
       networkDetailAllowUrls: [],
     }),
   ],
