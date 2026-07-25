@@ -25,19 +25,31 @@ function scrubObject(obj: unknown): unknown {
   return obj;
 }
 
+/**
+ * Query parameters redacted by name. `token_hash` matters most: it is the
+ * one-time credential in /auth/confirm?token_hash=...&type=recovery, so an
+ * error thrown on that route used to ship a live password-reset token to a
+ * processor outside the EU. Matching is prefix-insensitive to `_hash`, `_id`
+ * and friends so a renamed parameter does not silently reopen the hole.
+ */
+const SENSITIVE_PARAM = /(token|code|secret|password|key|email|otp|signature|state)/i;
+
 export function scrubEvent(event: ErrorEvent): ErrorEvent {
   // Redact PII query params from request URL
   if (event.request?.url) {
     try {
       const url = new URL(event.request.url);
-      ["token", "code", "email", "key"].forEach((k) => {
-        if (url.searchParams.has(k)) {
-          url.searchParams.set(k, "[REDACTED]");
+      for (const name of [...url.searchParams.keys()]) {
+        if (SENSITIVE_PARAM.test(name)) {
+          url.searchParams.set(name, "[REDACTED]");
         }
-      });
-      event.request.url = url.toString();
+      }
+      // Backstop for anything not caught by name - a token in the path, or a
+      // parameter nobody thought of. TOKEN_REGEX matches 32+ char base64url.
+      event.request.url = scrubString(url.toString());
     } catch {
-      // Invalid URL - leave as-is rather than drop the event
+      // Invalid URL - scrub it as a plain string rather than drop the event.
+      event.request.url = scrubString(event.request.url);
     }
   }
 

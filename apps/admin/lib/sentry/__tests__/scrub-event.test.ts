@@ -34,6 +34,42 @@ describe("scrubEvent - URL scrubbing", () => {
     expect(url.searchParams.get("code")).toBe("[REDACTED]");
     expect(url.searchParams.get("email")).toBe("[REDACTED]");
   });
+
+  it("redacts ?token_hash=, the live credential in the recovery link", () => {
+    // /auth/confirm?token_hash=...&type=recovery is what a password-reset
+    // email carries. The old name list was exact-match, so this one went
+    // through untouched.
+    const event = makeEvent({
+      request: {
+        url: "https://admin.cyberlearn.fr/auth/confirm?token_hash=pkce_9f2c4b1a8d3e7f06&type=recovery",
+      },
+    });
+    const result = scrubEvent(event);
+    const url = new URL(result.request!.url!);
+    expect(url.searchParams.get("token_hash")).toBe("[REDACTED]");
+    expect(result.request?.url).not.toContain("pkce_9f2c4b1a8d3e7f06");
+    // Non-sensitive params survive, so the URL stays useful for debugging.
+    expect(url.searchParams.get("type")).toBe("recovery");
+  });
+
+  it("redacts a token carried in the path, not just the query string", () => {
+    const event = makeEvent({
+      request: {
+        url: "https://admin.cyberlearn.fr/api/me/delete/confirm/abc123def456ghi789jkl012mno345pq",
+      },
+    });
+    const result = scrubEvent(event);
+    expect(result.request?.url).not.toContain("abc123def456ghi789jkl012mno345pq");
+    expect(result.request?.url).toContain("[TOKEN]");
+  });
+
+  it("still scrubs a malformed URL instead of passing it through", () => {
+    const event = makeEvent({
+      request: { url: "not a url ?token_hash=abc123def456ghi789jkl012mno345pq" },
+    });
+    const result = scrubEvent(event);
+    expect(result.request?.url).not.toContain("abc123def456ghi789jkl012mno345pq");
+  });
 });
 
 describe("scrubEvent - header scrubbing", () => {
