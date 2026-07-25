@@ -58,6 +58,29 @@ describe("authRedirectSchema", () => {
     expect(authRedirectSchema.safeParse("https://example.com").success).toBe(false);
     expect(authRedirectSchema.safeParse("//example.com").success).toBe(false);
   });
+
+  it("rejects the control characters the URL parser strips", () => {
+    // Sent as %09 / %0A / %0D and decoded by searchParams.get(). Each of these
+    // passed the "starts with a single slash" test and then resolved
+    // off-origin once handed to the URL constructor.
+    for (const control of ["\t", "\n", "\r"]) {
+      const candidate = `/${control}/example.com`;
+      expect(new URL(candidate, "https://cyberlearn.fr").origin).toBe("https://example.com");
+      expect(authRedirectSchema.safeParse(candidate).success).toBe(false);
+    }
+  });
+
+  it("rejects the rest of the C0 range and DEL", () => {
+    for (const control of ["\u0000", "\u000B", "\u001F", "\u007F"]) {
+      expect(authRedirectSchema.safeParse(`/${control}/example.com`).success).toBe(false);
+    }
+  });
+
+  it("still accepts ordinary in-site paths", () => {
+    expect(authRedirectSchema.safeParse("/dashboard").success).toBe(true);
+    expect(authRedirectSchema.safeParse("/lessons/sql-injection?tab=qa").success).toBe(true);
+    expect(authRedirectSchema.parse(undefined)).toBe("/dashboard");
+  });
 });
 
 describe("mfaCodeSchema", () => {

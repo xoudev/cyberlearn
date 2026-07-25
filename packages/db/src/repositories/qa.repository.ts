@@ -11,11 +11,21 @@ const QUESTION_USER_SELECT = {
   level: true,
 } as const;
 
+/**
+ * Caps on the lesson Q&A read. It had none: every question of a lesson, and
+ * every answer of each of them, came back with the full `content` of each row.
+ * A popular lesson - or anyone willing to post - grows that payload without
+ * bound, and it is rendered into the server component on every page view.
+ */
+const MAX_QUESTIONS_PER_LESSON = 50;
+const MAX_ANSWERS_PER_QUESTION = 20;
+
 export const qaRepository = {
   async findQuestionsByLesson(lessonId: string) {
     return prisma.lessonQuestion.findMany({
       where: { lessonId, isHidden: false },
       orderBy: [{ isResolved: "asc" }, { createdAt: "desc" }],
+      take: MAX_QUESTIONS_PER_LESSON,
       select: {
         id: true,
         title: true,
@@ -26,6 +36,7 @@ export const qaRepository = {
         answers: {
           where: { isHidden: false },
           orderBy: [{ isAccepted: "desc" }, { upvotes: "desc" }, { createdAt: "asc" }],
+          take: MAX_ANSWERS_PER_QUESTION,
           select: {
             id: true,
             content: true,

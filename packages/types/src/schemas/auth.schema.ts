@@ -14,11 +14,34 @@ export const newPasswordSchema = z
   .regex(/[A-Za-z]/, "Password must contain at least one letter")
   .regex(/[0-9]/, "Password must contain at least one number");
 
+/** C0 controls and DEL: the URL parser strips some of them, so none are allowed. */
+function hasControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return true;
+  }
+  return false;
+}
+
+/**
+ * Post-authentication redirect target. Must stay inside the site.
+ *
+ * The "starts with a single slash" test is not enough on its own: the URL
+ * parser strips leading tab, CR and LF from a path before resolving it, so
+ * `/\t/evil.com` passes the check and then resolves to `https://evil.com/`.
+ * Percent-encoded (%09, %0A, %0D) they survive `searchParams.get()` decoding
+ * and land in the value verbatim. Rejecting every C0 control character - and
+ * the backslash, which Windows-style parsers treat as a separator - closes it.
+ */
 export const authRedirectSchema = z
   .string()
   .max(500)
   .refine(
-    (value) => value.startsWith("/") && !value.startsWith("//") && !value.includes("\\"),
+    (value) =>
+      value.startsWith("/") &&
+      !value.startsWith("//") &&
+      !value.includes("\\") &&
+      !hasControlCharacter(value),
     "Redirect must be a local path",
   )
   .default("/dashboard");

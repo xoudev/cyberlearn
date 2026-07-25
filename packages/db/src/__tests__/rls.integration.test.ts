@@ -379,4 +379,87 @@ describe("RLS policies (integration)", () => {
       expect(error).not.toBeNull(); // RLS denies: no client INSERT policy exists
     });
   });
+
+  describe("contact_tickets", () => {
+    // The honeypot, the minimum fill time, the rate limit and the Zod schema
+    // all live in the contact server action. A client able to POST straight to
+    // /rest/v1/contact_tickets walks past every one of them.
+    it("anon cannot open a ticket through the Data API", async () => {
+      if (!configured) return;
+      const { error } = await anonClient.from("contact_tickets").insert({
+        id: randomUUID(),
+        email: "spam@example.com",
+        subject: "spam",
+        theme: "OTHER",
+        message: "spam",
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("an authenticated user cannot open a ticket through the Data API either", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("contact_tickets").insert({
+        id: randomUUID(),
+        userId: userAId,
+        email: "spam@example.com",
+        subject: "spam",
+        theme: "OTHER",
+        message: "spam",
+      });
+      expect(error).not.toBeNull();
+    });
+  });
+
+  describe("lesson Q&A", () => {
+    it("a client cannot post a question through the Data API", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("lesson_questions").insert({
+        id: randomUUID(),
+        userId: userAId,
+        lessonId: publishedLessonId,
+        title: "direct",
+        content: "posted straight to PostgREST",
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot accept its own answer or inflate its upvotes", async () => {
+      if (!configured) return;
+      const questionId = randomUUID();
+      const answerId = randomUUID();
+      await adminClient.from("lesson_questions").insert({
+        id: questionId,
+        userId: userAId,
+        lessonId: publishedLessonId,
+        title: "rls fixture",
+        content: "rls fixture",
+      });
+      await adminClient.from("lesson_answers").insert({
+        id: answerId,
+        userId: userAId,
+        questionId,
+        content: "rls fixture",
+      });
+
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA
+        .from("lesson_answers")
+        .update({ isAccepted: true, upvotes: 9999 })
+        .eq("id", answerId);
+      expect(error).not.toBeNull();
+
+      // The row must be untouched, whatever the client got back.
+      const { data } = await adminClient
+        .from("lesson_answers")
+        .select("isAccepted, upvotes")
+        .eq("id", answerId)
+        .single();
+      expect(data).toMatchObject({ isAccepted: false, upvotes: 0 });
+
+      await adminClient.from("lesson_answers").delete().eq("id", answerId);
+      await adminClient.from("lesson_questions").delete().eq("id", questionId);
+    });
+  });
 });
