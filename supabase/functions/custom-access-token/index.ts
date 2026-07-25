@@ -28,7 +28,10 @@
  * Docs: https://supabase.com/docs/guides/auth/auth-hooks#custom-access-token-hook
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Pinned to an exact version: "@2" resolves to whatever the newest 2.x release
+// happens to be at cold start, so the code running inside the auth hook could
+// change without a single commit here. 2.110.8 is what "@2" resolves to today.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.110.8";
 import { type HookDeps, handleHookRequest } from "./handler.ts";
 
 const supabase = createClient(
