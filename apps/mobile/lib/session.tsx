@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { setAuthAutoRefreshEnabled, supabase } from "@/lib/supabase";
 
 interface SessionState {
@@ -29,10 +30,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }): Re
 
     void (async () => {
       try {
+        subscribeToAuthChanges();
         const { data, error } = await supabase.auth.getSession();
         if (!active) return;
-        const restoredSession = error ? null : data.session;
-        subscribeToAuthChanges();
+
+        let restoredSession = error ? null : data.session;
+        if (error && isInvalidRefreshTokenError(error)) {
+          await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        } else if (restoredSession) {
+          const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession({
+            refresh_token: restoredSession.refresh_token,
+          });
+          if (!active) return;
+
+          if (refreshError && isInvalidRefreshTokenError(refreshError)) {
+            await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+            restoredSession = null;
+          } else if (refreshed.session) {
+            restoredSession = refreshed.session;
+          }
+        }
+
         setAuthAutoRefreshEnabled(Boolean(restoredSession));
         setSession(restoredSession);
       } catch {

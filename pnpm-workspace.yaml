@@ -38,6 +38,8 @@ catalog:
 
   # Animation
   "framer-motion": "^12.9.2"
+  remotion: "4.0.496"
+  "@remotion/cli": "4.0.496"
 
   # State & forms
   "@tanstack/react-query": "^5.74.4"

@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingHorizontal: 14,
   },
-  textLink: { minHeight: 38, alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
+  textLink: { minHeight: 44, alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
   textLinkPressed: { opacity: 0.7 },
   textLinkLabel: { color: colors.accent, textAlign: "center" },
   errorBox: {

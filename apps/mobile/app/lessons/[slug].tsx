@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, useWindowDimensions, View } from "react-native";
 import { colors, fonts, radius } from "@cyberlearn/tokens";
 import {
   AnimatedXPBar,
@@ -186,6 +186,7 @@ export default function LessonReader(): React.JSX.Element {
           onReplay={() =>
             setStep({ mode: "quiz", qIndex: 0, correctCount: 0, picked: null, revealed: false })
           }
+          onRetrySync={() => void finishLesson(step.correctCount)}
           onContinue={() => router.back()}
           hasQuiz={quizzes.length > 0}
         />
@@ -392,6 +393,7 @@ function ResultView({
   reward,
   saving,
   onReplay,
+  onRetrySync,
   onContinue,
   hasQuiz,
 }: {
@@ -401,9 +403,12 @@ function ResultView({
   reward: CompleteLessonResult | null;
   saving: boolean;
   onReplay: () => void;
+  onRetrySync: () => void;
   onContinue: () => void;
   hasQuiz: boolean;
 }): React.JSX.Element {
+  const { width } = useWindowDimensions();
+  const compactLayout = width < 380;
   const xp = reward?.xpGained ?? 0;
   const syncFailed = !saving && !reward;
   const resultMessage = saving
@@ -412,7 +417,7 @@ function ResultView({
       ? "Cette leçon était déjà validée. Ton meilleur résultat reste enregistré."
       : reward
         ? "Ta progression et tes récompenses sont enregistrées."
-        : "La leçon est validée sur cet appareil, mais la récompense n’a pas pu être synchronisée.";
+        : "Le contenu est terminé, mais la progression n’a pas encore été synchronisée.";
 
   return (
     <ScrollView
@@ -450,11 +455,12 @@ function ResultView({
           </View>
         </View>
 
-        <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flexDirection: compactLayout ? "column" : "row", gap: 10 }}>
           {hasQuiz ? (
             <View
               style={{
-                flex: 1,
+                flex: compactLayout ? undefined : 1,
+                width: compactLayout ? "100%" : undefined,
                 minHeight: 112,
                 borderRadius: radius.sm,
                 backgroundColor: colors.bgElevated,
@@ -484,7 +490,8 @@ function ResultView({
 
           <View
             style={{
-              flex: hasQuiz ? 1.35 : 1,
+              flex: compactLayout ? undefined : hasQuiz ? 1.35 : 1,
+              width: compactLayout ? "100%" : undefined,
               minHeight: 112,
               borderRadius: radius.sm,
               backgroundColor:
@@ -554,6 +561,7 @@ function ResultView({
         >
           <Text
             variant="bodySm"
+            accessibilityLiveRegion="polite"
             style={{ color: syncFailed ? colors.warning : colors.textSecondary }}
           >
             {resultMessage}
@@ -617,30 +625,35 @@ function ResultView({
         ) : null}
       </View>
 
-      <View style={{ flexDirection: "row", gap: 10, paddingTop: 4 }}>
-        {hasQuiz ? (
-          <PressableScale
-            onPress={onReplay}
-            disabled={saving}
-            style={{
-              flex: 1,
-              minHeight: 50,
-              borderRadius: radius.sm,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: colors.bgOverlay,
-              opacity: saving ? 0.5 : 1,
-            }}
-          >
-            <Text variant="micro">Rejouer</Text>
-          </PressableScale>
+      <View style={{ gap: 10, paddingTop: 4 }}>
+        {syncFailed ? (
+          <GradientButton label="Réessayer la synchronisation" onPress={onRetrySync} />
         ) : null}
-        <GradientButton
-          label="Continuer"
-          onPress={onContinue}
-          disabled={saving}
-          style={{ flex: 2, height: 50 }}
-        />
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {hasQuiz ? (
+            <PressableScale
+              onPress={onReplay}
+              disabled={saving}
+              style={{
+                flex: 1,
+                minHeight: 50,
+                borderRadius: radius.sm,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.bgOverlay,
+                opacity: saving ? 0.5 : 1,
+              }}
+            >
+              <Text variant="micro">Rejouer</Text>
+            </PressableScale>
+          ) : null}
+          <GradientButton
+            label="Continuer"
+            onPress={onContinue}
+            disabled={saving}
+            style={{ flex: 2, height: 50 }}
+          />
+        </View>
       </View>
     </ScrollView>
   );

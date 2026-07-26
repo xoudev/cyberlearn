@@ -15,6 +15,7 @@ import Animated, {
 import { colors, fonts, radius } from "@cyberlearn/tokens";
 import { AppModal } from "@/components/app-modal";
 import { Text } from "@/components/ui";
+import { useReducedMotionPreference } from "@/lib/accessibility";
 import { useCosmetics } from "@/lib/cosmetics";
 
 // NOTE: content screens render statically (no entrance/press motion). Animation
@@ -68,14 +69,19 @@ export function PopIn({
   children: React.ReactNode;
   style?: ViewStyle;
 }): React.JSX.Element {
+  const reducedMotion = useReducedMotionPreference();
   const progress = useSharedValue(0);
   useEffect(() => {
+    if (reducedMotion) {
+      progress.value = 1;
+      return;
+    }
     progress.value = 0;
     progress.value = withDelay(
       delay,
       withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) }),
     );
-  }, [progress, delay]);
+  }, [progress, delay, reducedMotion]);
   const animStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [{ translateY: (1 - progress.value) * 6 }],
@@ -95,9 +101,14 @@ export function Pulse({
   style?: ViewStyle;
   amplitude?: number;
 }): React.JSX.Element {
+  const reducedMotion = useReducedMotionPreference();
   const progress = useSharedValue(0);
   const minOpacity = Math.max(0.76, 1 - (amplitude - 1) * 3);
   useEffect(() => {
+    if (reducedMotion) {
+      progress.value = 1;
+      return;
+    }
     progress.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.quad) }),
@@ -105,7 +116,7 @@ export function Pulse({
       ),
       -1,
     );
-  }, [progress]);
+  }, [progress, reducedMotion]);
   const animStyle = useAnimatedStyle(() => ({
     opacity: minOpacity + (1 - minOpacity) * progress.value,
   }));
@@ -133,15 +144,21 @@ export function CountUp({
   delay?: number;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
+  const reducedMotion = useReducedMotionPreference();
   const progress = useSharedValue(0);
   const [display, setDisplay] = useState(0);
   useEffect(() => {
+    if (reducedMotion) {
+      progress.value = to;
+      setDisplay(to);
+      return;
+    }
     progress.value = 0;
     progress.value = withDelay(
       delay,
       withTiming(to, { duration, easing: Easing.out(Easing.cubic) }),
     );
-  }, [progress, to, duration, delay]);
+  }, [progress, to, duration, delay, reducedMotion]);
   useAnimatedReaction(
     () => Math.round(progress.value),
     (v, prev) => {
@@ -180,14 +197,19 @@ export function AnimatedXPBar({
   delay?: number;
 }): React.JSX.Element {
   const { theme } = useCosmetics();
+  const reducedMotion = useReducedMotionPreference();
   const pct = needed > 0 ? Math.max(0, Math.min(1, current / needed)) : 0;
   const fill = useSharedValue(0);
   useEffect(() => {
+    if (reducedMotion) {
+      fill.value = pct;
+      return;
+    }
     fill.value = withDelay(
       delay,
       withTiming(pct, { duration: 480, easing: Easing.out(Easing.cubic) }),
     );
-  }, [fill, pct, delay]);
+  }, [fill, pct, delay, reducedMotion]);
   const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
   return (
     <View

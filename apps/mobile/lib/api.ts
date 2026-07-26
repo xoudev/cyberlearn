@@ -1,14 +1,11 @@
+import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 
-/** Authenticated fetch against the mobile API (Supabase access token as Bearer). */
-async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Non authentifié");
+function requestWithToken(path: string, token: string, init?: RequestInit): Promise<Response> {
   return fetch(`${SITE_URL}${path}`, {
     ...init,
     headers: {
@@ -17,6 +14,25 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
       ...(init?.headers ?? {}),
     },
   });
+}
+
+/** Authenticated fetch that refreshes and retries once after an expired JWT. */
+async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Non authentifié");
+
+  const response = await requestWithToken(path, token, init);
+  if (response.status !== 401) return response;
+
+  const { data: refreshed, error } = await supabase.auth.refreshSession();
+  if (error && isInvalidRefreshTokenError(error)) {
+    await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+  }
+  const refreshedToken = refreshed.session?.access_token;
+  if (error || !refreshedToken) throw new Error("Session expirée");
+
+  return requestWithToken(path, refreshedToken, init);
 }
 
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────

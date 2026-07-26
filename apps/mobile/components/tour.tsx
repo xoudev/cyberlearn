@@ -24,6 +24,7 @@ import { colors } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { LogoMark } from "@/components/logo";
 import { Text } from "@/components/ui";
+import { useReducedMotionPreference } from "@/lib/accessibility";
 
 const TOUR_KEY = "cl.tour.done";
 
@@ -126,8 +127,13 @@ interface Hole {
 }
 
 function PulseBorder({ hole }: { hole: Hole }): React.JSX.Element {
+  const reducedMotion = useReducedMotionPreference();
   const t = useSharedValue(0);
   useEffect(() => {
+    if (reducedMotion) {
+      t.value = 1;
+      return;
+    }
     t.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 900, easing: Easing.inOut(Easing.quad) }),
@@ -135,7 +141,7 @@ function PulseBorder({ hole }: { hole: Hole }): React.JSX.Element {
       ),
       -1,
     );
-  }, [t]);
+  }, [reducedMotion, t]);
   const style = useAnimatedStyle(() => ({ opacity: 0.45 + t.value * 0.55 }));
   return (
     <Animated.View
@@ -170,6 +176,7 @@ function TourOverlayView({
   onSkip: () => void;
   measure: (anchor: string) => Promise<Hole | null>;
 }): React.JSX.Element | null {
+  const reducedMotion = useReducedMotionPreference();
   const { width, height } = useWindowDimensions();
   const [hole, setHole] = useState<Hole | null>(null);
   const [ready, setReady] = useState(false);
@@ -316,7 +323,7 @@ function TourOverlayView({
           position: "absolute",
           top: 54,
           right: 22,
-          minHeight: 34,
+          minHeight: 44,
           paddingHorizontal: 12,
           justifyContent: "center",
           borderWidth: 1,
@@ -335,7 +342,7 @@ function TourOverlayView({
       {ready ? (
         <Animated.View
           key={stepIndex}
-          entering={FadeIn.duration(200)}
+          entering={reducedMotion ? undefined : FadeIn.duration(200)}
           style={[
             {
               position: "absolute",

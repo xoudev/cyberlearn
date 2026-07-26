@@ -12,17 +12,18 @@ import {
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "@cyberlearn/tokens";
 import { BrandedLoader } from "@/components/loader";
 import { TourProvider } from "@/components/tour";
+import { useReducedMotionPreference } from "@/lib/accessibility";
 import { CosmeticsProvider } from "@/lib/cosmetics";
 import { mirrorInboxToDevice } from "@/lib/device-notifications";
 import { ensureUserRow, useNotifications } from "@/lib/queries";
@@ -53,7 +54,30 @@ function NotificationMirror(): null {
   return null;
 }
 
+/** Prevents one signed-in account from seeing another account's cached data. */
+function SessionCacheBoundary(): null {
+  const { session, initializing } = useSession();
+  const queryClient = useQueryClient();
+  const previousUserId = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (initializing) return;
+    const userId = session?.user.id ?? null;
+    if (previousUserId.current === undefined) {
+      previousUserId.current = userId;
+      return;
+    }
+    if (previousUserId.current !== userId) {
+      queryClient.clear();
+      previousUserId.current = userId;
+    }
+  }, [initializing, queryClient, session?.user.id]);
+
+  return null;
+}
+
 function RootNavigator(): React.JSX.Element {
+  const reducedMotion = useReducedMotionPreference();
   const { session, initializing } = useSession();
   const segments = useSegments();
   const pathname = usePathname();
@@ -124,7 +148,7 @@ function RootNavigator(): React.JSX.Element {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.bgBase },
-          animation: "fade",
+          animation: reducedMotion ? "none" : "fade",
         }}
       />
     </CosmeticsProvider>
@@ -159,6 +183,7 @@ export default function RootLayout(): React.JSX.Element | null {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <SessionProvider>
+            <SessionCacheBoundary />
             <TourProvider>
               <StatusBar style="light" />
               <RootNavigator />
