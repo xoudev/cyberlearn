@@ -5,9 +5,9 @@ export interface KeyValueStorage {
 }
 
 /**
- * Reads existing values from a legacy store once, then keeps new values in the
- * primary store. If the primary store is temporarily unavailable, persistence
- * falls back to the legacy store instead of losing the session.
+ * Migrates existing values from a legacy store once, then persists only in the
+ * primary secure store. Secure-store failures are propagated so auth tokens
+ * are never written back to unencrypted storage.
  */
 export function createMigratingStorage(
   primary: KeyValueStorage,
@@ -15,32 +15,20 @@ export function createMigratingStorage(
 ): KeyValueStorage {
   return {
     async getItem(key): Promise<string | null> {
-      try {
-        const primaryValue = await primary.getItem(key);
-        if (primaryValue !== null) return primaryValue;
-      } catch {
-        // The legacy read below keeps authentication usable on unsupported devices.
-      }
+      const primaryValue = await primary.getItem(key);
+      if (primaryValue !== null) return primaryValue;
 
       const legacyValue = await legacy.getItem(key);
       if (legacyValue === null) return null;
 
-      try {
-        await primary.setItem(key, legacyValue);
-        await legacy.removeItem(key).catch(() => undefined);
-      } catch {
-        // Keep the legacy value in place when secure persistence is unavailable.
-      }
+      await primary.setItem(key, legacyValue);
+      await legacy.removeItem(key).catch(() => undefined);
       return legacyValue;
     },
 
     async setItem(key, value): Promise<void> {
-      try {
-        await primary.setItem(key, value);
-        await legacy.removeItem(key).catch(() => undefined);
-      } catch {
-        await legacy.setItem(key, value);
-      }
+      await primary.setItem(key, value);
+      await legacy.removeItem(key).catch(() => undefined);
     },
 
     async removeItem(key): Promise<void> {

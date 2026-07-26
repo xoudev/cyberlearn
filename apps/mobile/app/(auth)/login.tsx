@@ -1,5 +1,4 @@
 import { passwordSignInSchema } from "@cyberlearn/types";
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useState } from "react";
@@ -8,6 +7,7 @@ import { colors } from "@cyberlearn/tokens";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
 import { Text } from "@/components/ui";
+import { MOBILE_AUTH_CALLBACK_URL, parseMobileOAuthCallback } from "@/lib/oauth";
 import { supabase } from "@/lib/supabase";
 
 void WebBrowser.maybeCompleteAuthSession();
@@ -44,11 +44,10 @@ export default function Login(): React.JSX.Element {
     setBusy("github");
 
     try {
-      const redirectTo = Linking.createURL("auth-callback", { scheme: "cyberlearn" });
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          redirectTo,
+          redirectTo: MOBILE_AUTH_CALLBACK_URL,
           skipBrowserRedirect: true,
           scopes: "read:user user:email",
         },
@@ -58,29 +57,21 @@ export default function Login(): React.JSX.Element {
         return;
       }
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      const result = await WebBrowser.openAuthSessionAsync(data.url, MOBILE_AUTH_CALLBACK_URL);
       if (result.type !== "success" || !result.url) return;
 
-      const callbackUrl = new URL(result.url);
-      const code = callbackUrl.searchParams.get("code");
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) setError("La session GitHub n’a pas pu être ouverte.");
+      const callback = parseMobileOAuthCallback(result.url);
+      if (callback.status === "provider_error") {
+        setError("Connexion GitHub annulée ou refusée.");
+        return;
+      }
+      if (callback.status !== "success") {
+        setError("La réponse GitHub n’est pas valide.");
         return;
       }
 
-      const fragment = new URLSearchParams(callbackUrl.hash.replace(/^#/, ""));
-      const accessToken = fragment.get("access_token");
-      const refreshToken = fragment.get("refresh_token");
-      if (!accessToken || !refreshToken) {
-        setError("La réponse GitHub est incomplète.");
-        return;
-      }
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-      if (sessionError) setError("La session GitHub n’a pas pu être ouverte.");
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(callback.code);
+      if (exchangeError) setError("La session GitHub n’a pas pu être ouverte.");
     } catch {
       setError("Connexion GitHub interrompue.");
     } finally {
