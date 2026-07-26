@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import type mermaidLib from "mermaid";
+import { extractDiagramSource } from "@/lib/mdx/extract-diagram-source";
 type MermaidAPI = typeof mermaidLib;
 
 // Mermaid is imported dynamically inside useEffect so it is never evaluated
@@ -51,20 +52,6 @@ function getMermaid(): Promise<MermaidAPI> {
   return mermaidPromise;
 }
 
-// MDX wraps text between JSX tags in <p> elements rather than passing raw
-// strings. This helper recursively collects all text leaf nodes from any
-// React child tree so both `children="..."` and MDX prose children work.
-function extractText(node: React.ReactNode): string {
-  if (typeof node === "string") return node;
-  if (typeof node === "number") return String(node);
-  if (!node) return "";
-  if (Array.isArray(node)) return node.map(extractText).join("\n");
-  if (React.isValidElement(node)) {
-    return extractText((node.props as { children?: React.ReactNode }).children);
-  }
-  return "";
-}
-
 interface DiagramProps {
   children: React.ReactNode;
   caption?: string;
@@ -72,21 +59,25 @@ interface DiagramProps {
 
 export function Diagram({ children, caption }: DiagramProps): React.JSX.Element {
   const rawId = useId();
-  const diagramId = `mermaid-${rawId.replace(/:/g, "")}`;
+  const diagramId = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [rendered, setRendered] = useState(false);
+
+  // `children` is a fresh object on every render, so keying the effect on it
+  // re-ran mermaid.render() with the same id on every parent update. The source
+  // string is what actually decides whether a re-render is needed.
+  const source = useMemo(() => extractDiagramSource(children).trim(), [children]);
 
   useEffect(() => {
     let cancelled = false;
-    setError(null);
+    setFailed(false);
     setRendered(false);
+    if (!source) return;
 
-    async function render() {
+    async function render(): Promise<void> {
       try {
         const mermaid = await getMermaid();
-        const source = extractText(children).trim();
-        if (!source) return;
         const { svg } = await mermaid.render(diagramId, source);
         if (cancelled || !containerRef.current) return;
         // SAFETY: SVG produced by mermaid from admin-authored diagram syntax only.
@@ -103,7 +94,11 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
         }
         setRendered(true);
       } catch {
-        if (!cancelled) setError("Syntaxe de diagramme invalide");
+        // A failed render leaves mermaid's own detached probe element in the
+        // document; without this it piles up and can stay visible.
+        document.getElementById(diagramId)?.remove();
+        document.getElementById(`d${diagramId}`)?.remove();
+        if (!cancelled) setFailed(true);
       }
     }
 
@@ -112,7 +107,7 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
     return () => {
       cancelled = true;
     };
-  }, [children, diagramId]);
+  }, [source, diagramId]);
 
   return (
     <figure
@@ -131,7 +126,7 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
         overflowX: "auto",
       }}
     >
-      {!rendered && error === null && (
+      {!rendered && !failed && (
         <div
           style={{
             fontFamily: "var(--font-mono, monospace)",
@@ -143,17 +138,24 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
           Chargement du diagramme…
         </div>
       )}
-      {error !== null && (
-        <div
+      {/* A diagram that will not draw used to leave a bare red error line in the
+          middle of the lesson, which taught the reader nothing. Showing the
+          description it was built from at least keeps the content readable. */}
+      {failed && (
+        <pre
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 12,
-            color: "#FF4757",
-            padding: "4px 0",
+            lineHeight: 1.7,
+            color: "#B8B5D1",
+            margin: 0,
+            padding: 0,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
           }}
         >
-          ✗ {error}
-        </div>
+          {source}
+        </pre>
       )}
       <div
         ref={containerRef}
