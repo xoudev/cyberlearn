@@ -7,22 +7,25 @@ import { AuthError, AuthField, AuthNotice } from "@/components/auth-form";
 import { BackButton, GradientButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { Card, SectionLabel, Text } from "@/components/ui";
+import { updatePasswordApi } from "@/lib/api";
+import { readTotpQrSvg } from "@/lib/mfa";
 import { supabase } from "@/lib/supabase";
 
 interface PendingTotp {
   factorId: string;
-  qrCode: string;
+  qrSvg: string;
   secret: string;
 }
 
 export default function Security(): React.JSX.Element {
-  const [factorId, setFactorId] = useState<string | null>(null);
+  const [factorIds, setFactorIds] = useState<string[]>([]);
   const [factorLoading, setFactorLoading] = useState(true);
   const [pendingTotp, setPendingTotp] = useState<PendingTotp | null>(null);
   const [code, setCode] = useState("");
   const [mfaBusy, setMfaBusy] = useState(false);
   const [mfaError, setMfaError] = useState<string | null>(null);
   const [mfaNotice, setMfaNotice] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [passwordBusy, setPasswordBusy] = useState(false);
@@ -31,8 +34,13 @@ export default function Security(): React.JSX.Element {
 
   const loadFactor = useCallback(async (): Promise<void> => {
     setFactorLoading(true);
-    const { data } = await supabase.auth.mfa.listFactors();
-    setFactorId(data?.totp[0]?.id ?? null);
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error) {
+      setMfaError("Impossible de vérifier l’état de la double authentification.");
+      setFactorLoading(false);
+      return;
+    }
+    setFactorIds(data.totp.map((factor) => factor.id));
     setFactorLoading(false);
   }, []);
 
@@ -45,12 +53,22 @@ export default function Security(): React.JSX.Element {
     setMfaError(null);
     setMfaNotice(null);
 
-    const { data: factors } = await supabase.auth.mfa.listFactors();
+    const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+    if (factorsError) {
+      setMfaBusy(false);
+      setMfaError("Impossible de vérifier les facteurs existants.");
+      return;
+    }
     const staleFactors = factors?.all.filter(
       (factor) => factor.factor_type === "totp" && factor.status === "unverified",
     );
     for (const factor of staleFactors ?? []) {
-      await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      if (error) {
+        setMfaBusy(false);
+        setMfaError("Impossible de nettoyer une configuration MFA incomplète.");
+        return;
+      }
     }
 
     const { data, error } = await supabase.auth.mfa.enroll({
@@ -63,7 +81,13 @@ export default function Security(): React.JSX.Element {
       setMfaError("Impossible de préparer la double authentification.");
       return;
     }
-    setPendingTotp({ factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
+    const qrSvg = readTotpQrSvg(data.totp.qr_code);
+    if (!qrSvg) {
+      await supabase.auth.mfa.unenroll({ factorId: data.id });
+      setMfaError("Le QR code de double authentification est invalide.");
+      return;
+    }
+    setPendingTotp({ factorId: data.id, qrSvg, secret: data.totp.secret });
   }
 
   async function verifyEnrollment(): Promise<void> {
@@ -93,16 +117,20 @@ export default function Security(): React.JSX.Element {
   }
 
   async function disableMfa(): Promise<void> {
-    if (!factorId) return;
+    if (factorIds.length === 0) return;
     setMfaBusy(true);
     setMfaError(null);
-    const { error } = await supabase.auth.mfa.unenroll({ factorId });
-    setMfaBusy(false);
-    if (error) {
-      setMfaError("Impossible de désactiver la double authentification.");
-      return;
+    for (const factorId of factorIds) {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId });
+      if (error) {
+        setMfaBusy(false);
+        setMfaError("Impossible de désactiver la double authentification.");
+        await loadFactor();
+        return;
+      }
     }
-    setFactorId(null);
+    setMfaBusy(false);
+    setFactorIds([]);
     setMfaNotice("Double authentification désactivée.");
   }
 
@@ -118,12 +146,17 @@ export default function Security(): React.JSX.Element {
     setPasswordBusy(true);
     setPasswordError(null);
     setPasswordNotice(null);
-    const { error } = await supabase.auth.updateUser({ password: result.data.password });
+    const response = await updatePasswordApi({
+      currentPassword,
+      password: result.data.password,
+      passwordConfirmation: result.data.passwordConfirmation,
+    });
     setPasswordBusy(false);
-    if (error) {
-      setPasswordError("Impossible de modifier le mot de passe.");
+    if (!response.ok) {
+      setPasswordError(response.error ?? "Impossible de modifier le mot de passe.");
       return;
     }
+    setCurrentPassword("");
     setPassword("");
     setPasswordConfirmation("");
     setPasswordNotice("Mot de passe mis à jour.");
@@ -139,8 +172,11 @@ export default function Security(): React.JSX.Element {
       <Card style={styles.card}>
         <View style={styles.sectionHeading}>
           <Text variant="h3">Double authentification</Text>
-          <Text variant="micro" style={{ color: factorId ? colors.accent : colors.textMuted }}>
-            {factorLoading ? "Vérification" : factorId ? "Activée" : "Désactivée"}
+          <Text
+            variant="micro"
+            style={{ color: factorIds.length > 0 ? colors.accent : colors.textMuted }}
+          >
+            {factorLoading ? "Vérification" : factorIds.length > 0 ? "Activée" : "Désactivée"}
           </Text>
         </View>
         <Text variant="bodySm">
@@ -150,7 +186,7 @@ export default function Security(): React.JSX.Element {
         {pendingTotp ? (
           <View style={styles.enrollment}>
             <View style={styles.qrSurface}>
-              <SvgXml xml={pendingTotp.qrCode} width={190} height={190} />
+              <SvgXml xml={pendingTotp.qrSvg} width={190} height={190} />
             </View>
             <Text variant="bodySm" style={styles.centeredText}>
               Scanne ce QR code avec Aegis, 2FAS, Google Authenticator ou une application
@@ -188,7 +224,7 @@ export default function Security(): React.JSX.Element {
               <Text variant="micro">Annuler</Text>
             </Pressable>
           </View>
-        ) : factorId ? (
+        ) : factorIds.length > 0 ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => void disableMfa()}
@@ -216,6 +252,15 @@ export default function Security(): React.JSX.Element {
           <Text variant="h3">Mot de passe</Text>
           <Text variant="micro">12+ caractères</Text>
         </View>
+        <AuthField
+          label="Mot de passe actuel"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          placeholder="Confirme ton identité"
+          autoCapitalize="none"
+          autoComplete="current-password"
+          secure
+        />
         <AuthField
           label="Nouveau mot de passe"
           value={password}
