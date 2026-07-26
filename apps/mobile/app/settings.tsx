@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
@@ -199,7 +200,7 @@ export default function Reglages(): React.JSX.Element {
           variant="micro"
           style={{ textAlign: "center", marginTop: 14, color: colors.textDisabled }}
         >
-          CyberLearn Mobile · v0.1.0
+          CyberLearn Mobile · v{Constants.expoConfig?.version ?? "2.3.0"}
         </Text>
       </Rise>
     </Screen>

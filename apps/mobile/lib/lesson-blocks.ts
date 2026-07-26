@@ -218,9 +218,7 @@ export function parseLesson(mdx: string): ParsedLesson {
   const flush = (): void => {
     const raw = buffer.join("\n").trim();
     buffer = [];
-    if (!raw && sections.length > 0) {
-      return;
-    }
+    if (!raw) return;
     const blocks: Block[] = [];
     // Resolve sentinels segment by segment so block order is preserved.
     const parts = raw.split(/(@@BLOCK_\d+@@)/);
@@ -229,7 +227,7 @@ export function parseLesson(mdx: string): ParsedLesson {
       if (stored) blocks.push(stored);
       else if (part.trim()) parseBody(part, blocks);
     }
-    if (blocks.length > 0 || sections.length === 0) {
+    if (blocks.length > 0) {
       sections.push({ title: currentTitle, blocks });
     }
   };
@@ -244,6 +242,9 @@ export function parseLesson(mdx: string): ParsedLesson {
     }
   }
   flush();
+  if (sections.length === 0) {
+    sections.push({ title: currentTitle, blocks: [] });
+  }
 
   const quizzes = sections.flatMap((s) =>
     s.blocks.filter((b): b is QuizBlock => b.kind === "quiz"),

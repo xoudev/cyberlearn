@@ -231,71 +231,82 @@ export default function Locker(): React.JSX.Element {
                       <PressableScale
                         key={item.code}
                         disabled={!item.owned || busyCode !== null}
+                        accessibilityLabel={`${item.label}, ${
+                          equipped ? "équipé" : item.owned ? "disponible" : "verrouillé"
+                        }`}
+                        accessibilityState={{
+                          disabled: !item.owned || busyCode !== null,
+                          selected: equipped,
+                          busy: busyCode === item.code,
+                        }}
                         onPress={() => void toggleEquip(item)}
                       >
                         <Card
                           accent={equipped ? theme.accent : undefined}
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 12,
-                            opacity: item.owned ? 1 : 0.55,
-                          }}
+                          style={{ gap: 12, opacity: item.owned ? 1 : 0.55 }}
                         >
-                          <View style={{ position: "relative" }}>
-                            <CosmeticPreview item={item} loadout={loadout} />
-                            {!item.owned ? (
-                              <View
-                                style={{
-                                  position: "absolute",
-                                  inset: 0,
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                              >
-                                <LockIcon color={colors.textDisabled} size={14} strokeWidth={1.4} />
-                              </View>
-                            ) : equipped ? (
-                              <View
-                                style={{
-                                  position: "absolute",
-                                  right: -3,
-                                  bottom: -3,
-                                  width: 20,
-                                  height: 20,
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  backgroundColor: colors.bgBase,
-                                  borderWidth: 1,
-                                  borderColor: theme.accent,
-                                }}
-                              >
-                                <CheckIcon color={theme.accent} size={12} strokeWidth={2} />
-                              </View>
-                            ) : null}
-                          </View>
-                          <View style={{ flex: 1, gap: 2 }}>
-                            <Text variant="h3">{item.label}</Text>
-                            {item.description ? (
-                              <Text variant="bodySm" numberOfLines={2}>
-                                {item.description}
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                            <View style={{ position: "relative" }}>
+                              <CosmeticPreview item={item} loadout={loadout} />
+                              {!item.owned ? (
+                                <View
+                                  style={{
+                                    position: "absolute",
+                                    inset: 0,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  <LockIcon
+                                    color={colors.textDisabled}
+                                    size={14}
+                                    strokeWidth={1.4}
+                                  />
+                                </View>
+                              ) : equipped ? (
+                                <View
+                                  style={{
+                                    position: "absolute",
+                                    right: -3,
+                                    bottom: -3,
+                                    width: 20,
+                                    height: 20,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    backgroundColor: colors.bgBase,
+                                    borderWidth: 1,
+                                    borderColor: theme.accent,
+                                  }}
+                                >
+                                  <CheckIcon color={theme.accent} size={12} strokeWidth={2} />
+                                </View>
+                              ) : null}
+                            </View>
+                            <View style={{ flex: 1, gap: 2 }}>
+                              <Text variant="h3">{item.label}</Text>
+                              {item.description ? (
+                                <Text variant="bodySm" numberOfLines={2}>
+                                  {item.description}
+                                </Text>
+                              ) : null}
+                              <Text variant="micro" style={{ color: RARITY_COLOR[item.rarity] }}>
+                                {item.rarity}
                               </Text>
-                            ) : null}
-                            <Text variant="micro" style={{ color: RARITY_COLOR[item.rarity] }}>
-                              {item.rarity}
-                            </Text>
+                            </View>
                           </View>
-                          {busyCode === item.code ? (
-                            <Text variant="micro" style={{ color: colors.textMuted }}>
-                              …
-                            </Text>
-                          ) : equipped ? (
-                            <Pill label="Équipé" color={theme.accent} active />
-                          ) : item.owned ? (
-                            <Pill label="Équiper" color={theme.accent} />
-                          ) : (
-                            <Pill label="Verrouillé" color={colors.textDisabled} />
-                          )}
+                          <View style={{ alignSelf: "flex-end" }}>
+                            {busyCode === item.code ? (
+                              <Text variant="micro" style={{ color: colors.textMuted }}>
+                                Application…
+                              </Text>
+                            ) : equipped ? (
+                              <Pill label="Équipé" color={theme.accent} active />
+                            ) : item.owned ? (
+                              <Pill label="Équiper" color={theme.accent} />
+                            ) : (
+                              <Pill label="Verrouillé" color={colors.textDisabled} />
+                            )}
+                          </View>
                         </Card>
                       </PressableScale>
                     );

@@ -65,9 +65,9 @@ onboarding on cyberlearn.fr (Phase 1 does not include mobile onboarding).
 - `production`: an Android App Bundle (AAB) for Google Play. Store build numbers
   are incremented remotely by EAS.
 
-The public app version is `2.2.0`. Publish it as a new Google Play application,
-separate from the former Flutter listing. Keep the old listing available until
-the new application has passed review and is installable from Google Play.
+The public app version is `2.3.0`. Publish it through the
+`fr.cyberlearn.mobile` Google Play application, separate from the former Flutter
+listing and its incompatible package identity.
 
 From `apps/mobile`:
 
@@ -92,7 +92,7 @@ After publishing an artifact, configure the web deployment variables used by
 
 ```text
 NEXT_PUBLIC_ANDROID_PLAY_URL=https://play.google.com/...
-NEXT_PUBLIC_ANDROID_APK_URL=https://.../cyberlearn-2.2.0.apk
+NEXT_PUBLIC_ANDROID_APK_URL=https://.../cyberlearn-2.3.0.apk
 NEXT_PUBLIC_IOS_APP_STORE_URL=
 ```
 

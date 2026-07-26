@@ -12,13 +12,19 @@ import Svg, { Circle, Path } from "react-native-svg";
 import { colors } from "@cyberlearn/tokens";
 import { PressableScale } from "@/components/anim";
 import { Text } from "@/components/ui";
+import { useReducedMotionPreference } from "@/lib/accessibility";
 
 // ── Skeleton (loading) ────────────────────────────────────────────────────────
 
 /** One pulsing placeholder block. */
 export function Bone({ style }: { style?: ViewStyle }): React.JSX.Element {
+  const reducedMotion = useReducedMotionPreference();
   const opacity = useSharedValue(0.45);
   useEffect(() => {
+    if (reducedMotion) {
+      opacity.value = 1;
+      return;
+    }
     opacity.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
@@ -26,7 +32,7 @@ export function Bone({ style }: { style?: ViewStyle }): React.JSX.Element {
       ),
       -1,
     );
-  }, [opacity]);
+  }, [opacity, reducedMotion]);
   const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
     <Animated.View

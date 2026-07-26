@@ -69,11 +69,18 @@ export default function Parcours(): React.JSX.Element {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8, paddingVertical: 12 }}
       >
-        <PressableScale onPress={() => setCategory("ALL")}>
+        <PressableScale
+          onPress={() => setCategory("ALL")}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
           <Pill label="Tous" color={colors.accent} active={category === "ALL"} />
         </PressableScale>
         {CATEGORY_ORDER.map((c) => (
-          <PressableScale key={c} onPress={() => setCategory(c)}>
+          <PressableScale
+            key={c}
+            onPress={() => setCategory(c)}
+            style={{ minHeight: 44, justifyContent: "center" }}
+          >
             <Pill
               label={CATEGORY_LABEL[c]}
               color={CATEGORY_COLOR[c]}
@@ -90,11 +97,18 @@ export default function Parcours(): React.JSX.Element {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8, paddingBottom: 14 }}
       >
-        <PressableScale onPress={() => setDifficulty("ALL")}>
+        <PressableScale
+          onPress={() => setDifficulty("ALL")}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
           <Pill label="Tous niveaux" color={colors.textSecondary} active={difficulty === "ALL"} />
         </PressableScale>
         {DIFFICULTY_ORDER.map((d) => (
-          <PressableScale key={d} onPress={() => setDifficulty(d)}>
+          <PressableScale
+            key={d}
+            onPress={() => setDifficulty(d)}
+            style={{ minHeight: 44, justifyContent: "center" }}
+          >
             <Pill
               label={DIFFICULTY_LABEL[d]}
               color={colors.textSecondary}

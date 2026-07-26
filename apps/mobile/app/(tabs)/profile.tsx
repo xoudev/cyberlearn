@@ -97,16 +97,21 @@ export default function Profil(): React.JSX.Element {
       </Rise>
 
       {/* Sub-tabs */}
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
         {SUB_TABS.map((s) => (
-          <PressableScale key={s} onPress={() => setSub(s)} style={{ flex: 1 }}>
+          <PressableScale
+            key={s}
+            onPress={() => setSub(s)}
+            style={{ flexGrow: 1, flexBasis: "47%", minWidth: 132 }}
+          >
             <View
               style={{
                 borderWidth: 1,
                 borderColor: sub === s ? colors.accent : colors.borderDefault,
                 backgroundColor: sub === s ? colors.accent : "transparent",
-                paddingVertical: 8,
+                minHeight: 44,
                 alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <Text

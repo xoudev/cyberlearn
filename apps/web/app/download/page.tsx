@@ -179,7 +179,7 @@ function MobileAppPreview(): React.JSX.Element {
       </div>
       <figcaption>
         <span>Écran d’accueil</span>
-        <span>Application Android · v2.2</span>
+        <span>Application Android · v2.3</span>
       </figcaption>
     </figure>
   );
@@ -220,7 +220,7 @@ export default function DownloadPage(): React.JSX.Element {
           <div className="download-hero__copy">
             <div className="download-kicker">
               <span aria-hidden="true" />
-              <b>v2.2</b> · Application mobile · Android
+              <b>v2.3</b> · Application mobile · Android
             </div>
             <h1 id="download-title">
               Tout CyberLearn,

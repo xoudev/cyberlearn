@@ -6,7 +6,7 @@ const config: ExpoConfig = {
   name: "CyberLearn",
   slug: "cyberlearn-mobile",
   scheme: "cyberlearn",
-  version: "2.2.0",
+  version: "2.3.0",
   orientation: "portrait",
   userInterfaceStyle: "dark",
   backgroundColor: "#030219",
@@ -14,11 +14,11 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: false,
     bundleIdentifier: "fr.cyberlearn.app",
-    buildNumber: "1",
+    buildNumber: "2",
   },
   android: {
-    package: "fr.cyberlearn.app",
-    versionCode: 7,
+    package: "fr.cyberlearn.mobile",
+    versionCode: 8,
     adaptiveIcon: {
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundColor: "#030219",

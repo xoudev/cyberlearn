@@ -2,6 +2,7 @@ import React from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radius } from "@cyberlearn/tokens";
+import { useReducedMotionPreference } from "@/lib/accessibility";
 
 export function AppModal({
   visible,
@@ -17,12 +18,13 @@ export function AppModal({
   children: React.ReactNode;
 }): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotionPreference();
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType={reducedMotion ? "none" : "fade"}
       hardwareAccelerated
       statusBarTranslucent
       onRequestClose={() => {

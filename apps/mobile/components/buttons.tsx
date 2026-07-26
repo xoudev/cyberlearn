@@ -25,7 +25,7 @@ export function BackButton({ label = "Retour" }: { label?: string }): React.JSX.
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
-        minHeight: 36,
+        minHeight: 44,
         paddingHorizontal: 12,
         borderRadius: radius.sm,
         borderWidth: 1,
@@ -69,7 +69,7 @@ export function ActionChip({
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
-        minHeight: 34,
+        minHeight: 44,
         paddingHorizontal: 12,
         borderRadius: radius.sm,
         borderWidth: 1,
@@ -109,8 +109,8 @@ export function IconButton({
       hitSlop={6}
       style={({ pressed }) => [
         {
-          width: 42,
-          height: 42,
+          width: 44,
+          height: 44,
           borderRadius: radius.sm,
           alignItems: "center",
           justifyContent: "center",
