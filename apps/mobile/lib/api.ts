@@ -35,6 +35,32 @@ async function authedFetch(path: string, init?: RequestInit): Promise<Response> 
   return requestWithToken(path, refreshedToken, init);
 }
 
+function readActionResponse(value: unknown): { ok: boolean; error?: string } {
+  if (typeof value !== "object" || value === null || !("ok" in value)) {
+    return { ok: false, error: "Réponse serveur invalide." };
+  }
+
+  const ok = value.ok === true;
+  const error = "error" in value && typeof value.error === "string" ? value.error : undefined;
+  return error ? { ok, error } : { ok };
+}
+
+export async function updatePasswordApi(input: {
+  currentPassword: string;
+  password: string;
+  passwordConfirmation: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const response = await authedFetch("/api/mobile/password", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    return readActionResponse(await response.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────
 
 export interface CompleteLessonResult {
@@ -109,7 +135,7 @@ export async function equipCosmetic(code: string): Promise<{ ok: boolean; error?
       method: "POST",
       body: JSON.stringify({ action: "equip", code }),
     });
-    return (await res.json()) as { ok: boolean; error?: string };
+    return readActionResponse(await res.json());
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }
@@ -123,7 +149,7 @@ export async function unequipCosmetic(
       method: "POST",
       body: JSON.stringify({ action: "unequip", type }),
     });
-    return (await res.json()) as { ok: boolean; error?: string };
+    return readActionResponse(await res.json());
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }

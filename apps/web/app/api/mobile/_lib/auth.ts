@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
+import { sessionMeetsMfaRequirement } from "./bearer-token";
 
 export interface BearerUser {
   id: string;
@@ -26,5 +27,6 @@ export async function userFromBearer(request: Request): Promise<BearerUser | nul
     error,
   } = await supabase.auth.getUser(token);
   if (error || !user) return null;
+  if (!sessionMeetsMfaRequirement(token, user.factors)) return null;
   return { id: user.id, email: user.email ?? null };
 }

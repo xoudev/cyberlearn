@@ -47,15 +47,24 @@ describe("createMigratingStorage", () => {
     expect(legacy.values.has("session")).toBe(false);
   });
 
-  it("falls back to legacy persistence when primary writes fail", async () => {
+  it("never falls back to unencrypted persistence when primary writes fail", async () => {
     const primary = createFakeStorage();
     primary.failWrites = true;
     const legacy = createFakeStorage();
     const storage = createMigratingStorage(primary, legacy);
 
-    await storage.setItem("session", "fallback");
+    await expect(storage.setItem("session", "secret")).rejects.toThrow("write failed");
 
-    expect(legacy.values.get("session")).toBe("fallback");
+    expect(legacy.values.has("session")).toBe(false);
+  });
+
+  it("does not read legacy tokens when the secure store is unavailable", async () => {
+    const primary = createFakeStorage();
+    primary.failReads = true;
+    const legacy = createFakeStorage({ session: "legacy" });
+    const storage = createMigratingStorage(primary, legacy);
+
+    await expect(storage.getItem("session")).rejects.toThrow("read failed");
   });
 
   it("removes values from both stores", async () => {

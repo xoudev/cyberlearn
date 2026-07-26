@@ -80,7 +80,8 @@ In **Authentication > URL Configuration**:
 - allow `https://cyberlearn.fr/auth/callback`;
 - allow `https://www.cyberlearn.fr/auth/callback` during the `www` to apex
   domain transition;
-- allow `cyberlearn://**` for installed iOS and Android builds;
+- allow the exact `cyberlearn://auth-callback` PKCE return URL for installed
+  iOS and Android builds;
 - add the local callback URLs only to non-production projects.
 
 In **Authentication > Providers > GitHub**:
