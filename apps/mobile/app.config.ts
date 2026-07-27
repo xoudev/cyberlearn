@@ -5,6 +5,7 @@ import type { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "CyberLearn",
   slug: "cyberlearn-mobile",
+  owner: "xoudark",
   scheme: "cyberlearn",
   version: "2.3.1",
   orientation: "portrait",
@@ -41,6 +42,9 @@ const config: ExpoConfig = {
     ],
   ],
   extra: {
+    // EAS project link (eas.json uses appVersionSource: remote, so the build
+    // number lives on EAS - never bump versionCode by hand).
+    eas: { projectId: "24922f83-b503-41fc-9e97-f271f2974062" },
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
   },
