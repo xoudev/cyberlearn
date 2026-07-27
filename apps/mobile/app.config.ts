@@ -6,7 +6,7 @@ const config: ExpoConfig = {
   name: "CyberLearn",
   slug: "cyberlearn-mobile",
   scheme: "cyberlearn",
-  version: "2.3.0",
+  version: "2.3.1",
   orientation: "portrait",
   userInterfaceStyle: "dark",
   backgroundColor: "#030219",
