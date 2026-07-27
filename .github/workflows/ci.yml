@@ -199,6 +199,31 @@ jobs:
       - name: Verify Pyodide runtime integrity (SHA-256)
         run: bash scripts/verify-runtimes.sh
 
+  # ─── 6b. Lesson diagrams survive the MDX pipeline ─────────────────────────
+  # The children of <Diagram> are parsed as markdown before mermaid ever sees
+  # them, so a label written [x](y) arrives as a link and *mot* as an <em>. The
+  # diagram then draws wrong, or not at all, with nothing in the logs. This
+  # replays the lesson page's own remark/rehype chain over every diagram in
+  # content/lessons and fails on any that does not round-trip.
+  lesson-diagrams:
+    name: Lesson diagrams
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check lesson diagrams
+        run: pnpm --filter @cyberlearn/web content:diagrams
+
   # ─── 7. Auth hook signature verification (Deno unit test) ─────────────────
   # Synthetic proof that the custom-access-token hook authenticates GoTrue's
   # Standard Webhooks signature: valid -> accepted, invalid/absent/expired ->

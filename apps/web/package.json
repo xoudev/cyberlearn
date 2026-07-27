@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "content:diagrams": "node scripts/check-lesson-diagrams.mjs"
   },
   "dependencies": {
     "@cyberlearn/db": "workspace:*",
@@ -63,6 +64,7 @@
   },
   "devDependencies": {
     "@cyberlearn/config": "workspace:*",
+    "@mdx-js/mdx": "catalog:",
     "@next/eslint-plugin-next": "catalog:",
     "@tailwindcss/postcss": "catalog:",
     "@tailwindcss/typography": "catalog:",
@@ -70,11 +72,11 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
-    "vitest": "catalog:",
-    "@vitest/coverage-v8": "catalog:"
+    "vitest": "catalog:"
   }
 }
