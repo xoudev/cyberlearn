@@ -15,6 +15,8 @@ const updatePathSchema = z.object({
   title: z.string().trim().min(3).max(200),
   description: z.string().trim().min(10).max(1000),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
+  // Orthogonal to category: what the path is for, not what it covers.
+  track: z.enum(["SKILL", "CAREER"]).default("SKILL"),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedHours: z.coerce.number().int().positive().max(500),
   coverImageUrl: z.string().url().optional().or(z.literal("")),

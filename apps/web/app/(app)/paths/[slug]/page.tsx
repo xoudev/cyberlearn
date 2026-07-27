@@ -217,6 +217,7 @@ export default async function PathDetailPage({
 
   const cat = CAT_META[path.category] ?? CAT_DEFAULT;
   const diff = DIFF_META[path.difficulty] ?? DIFF_DEFAULT;
+  const trackLabel = path.track === "CAREER" ? "Métier" : "Compétence";
 
   // Fetch user's completed lessons for this path
   const completedLessonIds = new Set(
@@ -318,6 +319,7 @@ export default async function PathDetailPage({
               <span className="dom-dot" />
               {cat.label}
             </span>
+            <span className="pd2-tag pd2-tag--track">{trackLabel}</span>
             <span className="pd2-tag pd2-tag--diff">
               <span className={`diff-bars lv${String(diff.level)}`}>
                 <span />

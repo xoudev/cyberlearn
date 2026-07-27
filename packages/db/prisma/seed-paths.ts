@@ -21,6 +21,8 @@ interface PathManifest {
   title: string;
   description: string;
   category: "DEV" | "CYBERSEC" | "NETWORK";
+  /** SKILL = one competence, CAREER = the job itself. Defaults to SKILL. */
+  track?: "SKILL" | "CAREER";
   difficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
   estimatedHours: number;
   /** Lesson refCodes in study order. */
@@ -251,6 +253,7 @@ const PATHS: PathManifest[] = [
     description:
       "Apprenez le métier de testeur d'intrusion dans un cadre légal : méthodologie et règles d'engagement, reconnaissance passive et active, scan nmap, énumération, recherche de vulnérabilités, exploitation, attaques de mots de passe, exploitation web, post-exploitation et élévation de privilèges, mouvement latéral, et rédaction du rapport. Conclu par la compromission guidée d'une machine d'entraînement.",
     category: "CYBERSEC",
+    track: "CAREER",
     difficulty: "ADVANCED",
     estimatedHours: 9,
     lessons: [
@@ -275,6 +278,7 @@ const PATHS: PathManifest[] = [
     description:
       "Le versant organisationnel de la sécurité : gouvernance et pilotage du risque, politiques et standards, cadres ISO 27001, NIST et CIS, conformité par secteur et RGPD, classification des actifs, continuité d'activité, risque des tiers, facteur humain et audit. Conclu par une analyse de risque guidée pour une PME.",
     category: "CYBERSEC",
+    track: "CAREER",
     difficulty: "INTERMEDIATE",
     estimatedHours: 7,
     lessons: [
@@ -299,6 +303,7 @@ const PATHS: PathManifest[] = [
     description:
       "Le métier de la défense au quotidien : posture blue team et SOC, journaux et SIEM, détection par signatures et anomalies, MITRE ATT and CK, chasse aux menaces, réponse à incident, analyse de logs, durcissement, renseignement sur les menaces et investigation numérique. Conclu par l'analyse guidée d'un incident de bout en bout.",
     category: "CYBERSEC",
+    track: "CAREER",
     difficulty: "INTERMEDIATE",
     estimatedHours: 8,
     lessons: [
@@ -323,6 +328,7 @@ const PATHS: PathManifest[] = [
     description:
       "Enquêter à partir d'informations publiques, de façon responsable et défensive : méthode et hygiène de l'enquêteur, recherche avancée et dorks, OSINT sur les personnes, les domaines et les organisations, réseaux sociaux, géolocalisation d'images, métadonnées, fuites de données et réduction de sa propre empreinte. Conclu par une enquête guidée et éthique.",
     category: "CYBERSEC",
+    track: "CAREER",
     difficulty: "INTERMEDIATE",
     estimatedHours: 7,
     lessons: [
@@ -395,6 +401,7 @@ const PATHS: PathManifest[] = [
     description:
       "Administrer un vrai serveur Linux : utilisateurs et permissions avancées, services avec systemd, gestion des paquets, système de fichiers et stockage, configuration réseau et pare-feu, journaux, automatisation par cron, durcissement, sauvegardes et dépannage. Conclu par la mise en service d'un serveur web sécurisé.",
     category: "DEV",
+    track: "CAREER",
     difficulty: "INTERMEDIATE",
     estimatedHours: 9,
     lessons: [
@@ -424,6 +431,7 @@ async function main(): Promise<void> {
         title: m.title,
         description: m.description,
         category: m.category,
+        track: m.track ?? "SKILL",
         difficulty: m.difficulty,
         estimatedHours: m.estimatedHours,
         status: "DRAFT",
@@ -432,6 +440,7 @@ async function main(): Promise<void> {
         title: m.title,
         description: m.description,
         category: m.category,
+        track: m.track ?? "SKILL",
         difficulty: m.difficulty,
         estimatedHours: m.estimatedHours,
       },

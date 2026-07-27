@@ -89,6 +89,7 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       title: path.title,
       description: path.description,
       category: path.category,
+      track: path.track,
       difficulty: path.difficulty,
       estimatedHours: path.estimatedHours,
       xpTotal,
