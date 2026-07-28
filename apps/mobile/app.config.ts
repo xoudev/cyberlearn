@@ -19,7 +19,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: "fr.cyberlearn.mobile",
-    versionCode: 8,
+    versionCode: 9,
     adaptiveIcon: {
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundColor: "#030219",
@@ -42,8 +42,8 @@ const config: ExpoConfig = {
     ],
   ],
   extra: {
-    // EAS project link (eas.json uses appVersionSource: remote, so the build
-    // number lives on EAS - never bump versionCode by hand).
+    // EAS project link. Remote EAS builds manage their own version code;
+    // versionCode above remains the source of truth for local release builds.
     eas: { projectId: "24922f83-b503-41fc-9e97-f271f2974062" },
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
