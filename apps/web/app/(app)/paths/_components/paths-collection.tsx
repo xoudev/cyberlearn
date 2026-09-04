@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ export interface SerializedPath {
   title: string;
   description: string;
   category: string;
+  track: string;
   difficulty: string;
   estimatedHours: number;
   xpTotal: number;
@@ -56,10 +58,23 @@ const DIFF_META: Record<string, { label: string; level: 1 | 2 | 3 }> = {
   EXPERT: { label: "Expert", level: 3 },
 };
 
+// A path is either a competence or a job. Kept separate from the domain chip:
+// they answer different questions and a learner filters on one or the other.
+const TRACK_META: Record<string, { label: string; short: string }> = {
+  SKILL: { label: "Compétence", short: "Compétence" },
+  CAREER: { label: "Métier", short: "Métier" },
+};
+const TRACK_DEFAULT = { label: "Compétence", short: "Compétence" };
+
 const CATEGORY_DEFAULT = { label: "?", kind: "cyber" as Kind };
 const DIFF_DEFAULT = { label: "?", level: 1 as const };
 
-type Filter = "all" | "CYBERSEC" | "DEV" | "NETWORK";
+type Filter = DomainFilter;
+const TRACK_PILLS: { id: TrackFilter; label: string }[] = [
+  { id: "all", label: "Tous" },
+  { id: "SKILL", label: "Compétence" },
+  { id: "CAREER", label: "Métier" },
+];
 const PILLS: { id: Filter; cls: string; label: string }[] = [
   { id: "all", cls: "all", label: "Tous" },
   { id: "CYBERSEC", cls: "cyber", label: "Cybersec" },
@@ -193,6 +208,7 @@ function HeroPath({ path }: { path: SerializedPath }): React.JSX.Element {
             <span className="dom-tag__dot" />
             {cat.label}
           </span>
+          <span className="track-tag">{TRACK_META[path.track]?.short ?? TRACK_DEFAULT.short}</span>
           <span className="diff-tag">
             <DiffBars level={diff.level} />
             {diff.label}
@@ -405,6 +421,9 @@ function GameCard({ path }: { path: SerializedPath }): React.JSX.Element {
       <Brackets />
       <div className="game-card__cover">
         <span className="game-card__cat">{cat.label}</span>
+        <span className="game-card__track">
+          {TRACK_META[path.track]?.short ?? TRACK_DEFAULT.short}
+        </span>
         <span className="game-card__diff">
           <DiffBars level={diff.level} />
           {diff.label}
@@ -483,18 +502,13 @@ export function PathsCollection({
   totalHours,
 }: Props): React.ReactElement {
   const [filter, setFilter] = useState<Filter>("all");
+  const [trackFilter, setTrackFilter] = useState<TrackFilter>("all");
   const [search, setSearch] = useState("");
 
-  const filtered = useMemo(() => {
-    let result = filter === "all" ? paths : paths.filter((p) => p.category === filter);
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter(
-        (p) => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q),
-      );
-    }
-    return result;
-  }, [paths, filter, search]);
+  const filtered = useMemo(
+    () => filterPaths(paths, { domain: filter, track: trackFilter, search }),
+    [paths, filter, trackFilter, search],
+  );
 
   const idleCount = paths.length - inProgCount - doneCount;
   const filterLabel = PILLS.find((p) => p.id === filter)?.label ?? "Tous";
@@ -575,6 +589,23 @@ export function PathsCollection({
               >
                 <span className="pc2-pill__dot" />
                 <span>{p.label}</span>
+              </button>
+            ))}
+          </div>
+          <span className="pc2-filters__sep" />
+          <span className="pc2-filters__label">› TYPE</span>
+          <div className="pc2-filters__group">
+            {TRACK_PILLS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`pc2-pill pc2-pill--track${trackFilter === t.id ? " is-active" : ""}`}
+                onClick={() => {
+                  setTrackFilter(t.id);
+                }}
+              >
+                <span className="pc2-pill__dot" />
+                <span>{t.label}</span>
               </button>
             ))}
           </div>

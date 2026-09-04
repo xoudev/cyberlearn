@@ -268,6 +268,16 @@ model LessonPrerequisite {
 // PATHS (PARCOURS)
 // ============================================================
 
+// What a path is meant to be, orthogonal to Category (which says *what domain*
+// it covers). SKILL is a single competence - a language, a tool, a body of
+// theory. CAREER is a job: the description usually says so outright ("le métier
+// de testeur d'intrusion"). A learner browses the two differently, so they are
+// filtered apart rather than mixed into one list.
+enum PathTrack {
+  SKILL
+  CAREER
+}
+
 model Path {
   id                  String        @id @default(uuid()) @db.Uuid
   refCode             String        @unique // Format: CL-PATH-001-V01
@@ -275,6 +285,7 @@ model Path {
   title               String        @db.VarChar(200)
   description         String        @db.VarChar(1000)
   category            Category
+  track               PathTrack     @default(SKILL)
   difficulty          Difficulty
   estimatedHours      Int
   coverImageUrl       String?
@@ -295,6 +306,7 @@ model Path {
   quiz         Quiz?
 
   @@index([category, status])
+  @@index([track, status])
   @@map("paths")
 }
 

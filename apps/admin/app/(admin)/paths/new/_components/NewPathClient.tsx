@@ -941,6 +941,48 @@ export function NewPathClient({
             <FieldErr msg={state.fieldErrors?.description} />
           </div>
 
+          {/* Track: what the path is for, orthogonal to the domain it covers. */}
+          <div className="admin-form-grid-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <Label req>Type de parcours</Label>
+              <div style={{ position: "relative" }}>
+                <select
+                  name="track"
+                  required
+                  defaultValue={"SKILL"}
+                  className="le-select"
+                  style={{
+                    ...BASE_INPUT,
+                    paddingRight: 38,
+                    cursor: "pointer",
+                    appearance: "none" as const,
+                  }}
+                >
+                  <option value="SKILL" style={{ background: "#0A0826" }}>
+                    Compétence — un langage, un outil, un socle
+                  </option>
+                  <option value="CAREER" style={{ background: "#0A0826" }}>
+                    Métier — un rôle complet
+                  </option>
+                </select>
+                <span
+                  style={{
+                    position: "absolute",
+                    right: 14,
+                    top: "50%",
+                    width: 7,
+                    height: 7,
+                    borderRight: `1.5px solid #6B6890`,
+                    borderBottom: `1.5px solid #6B6890`,
+                    transform: "translateY(-70%) rotate(45deg)",
+                    pointerEvents: "none",
+                  }}
+                />
+              </div>
+              <FieldErr msg={state.fieldErrors?.track} />
+            </div>
+          </div>
+
           {/* Category + Difficulty */}
           <div className="admin-form-grid-2">
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
