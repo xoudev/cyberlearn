@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { LandingStats } from "@cyberlearn/db";
+import type { FeaturedPath, LandingStats } from "@cyberlearn/db";
 import { VideoModal } from "@/components/video-modal";
 import { LandingTerminal } from "./landing-terminal";
 
@@ -50,7 +50,28 @@ function PathIcon({ kind }: { kind: "cyber" | "dev" | "net" }) {
 // "use client" justification: the landing is animation/interaction heavy
 // (terminal animation, hover states, decorative canvases). Data fetching
 // lives in the RSC page (app/page.tsx), which passes the stats down.
-export function LandingClient({ stats }: { stats: LandingStats }): React.ReactElement {
+/** Category and difficulty come from the database as enums; the landing's
+ *  colour system and French labels are presentation, so they map here. */
+const CATEGORY_STYLE = {
+  CYBERSEC: { kind: "cyber", tag: "CYBERSEC", color: "#FF4757" },
+  DEV: { kind: "dev", tag: "DEV", color: "#6E8BFF" },
+  NETWORK: { kind: "net", tag: "RÉSEAU", color: "#0AFFD4" },
+} as const;
+
+const DIFFICULTY_LABEL = {
+  BEGINNER: "DÉBUTANT",
+  INTERMEDIATE: "INTERMÉDIAIRE",
+  ADVANCED: "AVANCÉ",
+  EXPERT: "EXPERT",
+} as const;
+
+export function LandingClient({
+  stats,
+  featuredPaths,
+}: {
+  stats: LandingStats;
+  featuredPaths: FeaturedPath[];
+}): React.ReactElement {
   const [demoOpen, setDemoOpen] = useState(false);
   return (
     <div style={{ background: "#030219", color: "#F5F5FA", position: "relative" }}>
@@ -431,9 +452,16 @@ export function LandingClient({ stats }: { stats: LandingStats }): React.ReactEl
                   display: "inline-block",
                 }}
               />
-              <span>+ 12 400 apprenant·es actifs</span>
-              <span style={{ color: "#44406B" }}>·</span>
-              <span>4.8 / 5 sur 1 240 avis</span>
+              <span>{stats.activeLearners} apprenant·es actif·ves sur 30 jours</span>
+              {stats.ratingAvg !== null && (
+                <>
+                  <span style={{ color: "#44406B" }}>·</span>
+                  <span>
+                    {stats.ratingAvg.toFixed(1).replace(".", ",")} / 5 sur {stats.ratingsCount}{" "}
+                    {stats.ratingsCount > 1 ? "avis" : "avis"}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -871,163 +899,140 @@ export function LandingClient({ stats }: { stats: LandingStats }): React.ReactEl
                 margin: 0,
               }}
             >
-              12 parcours structurés. Chacun te mène d&apos;une compétence brute à un certificat
-              vérifiable.
+              {stats.publishedPaths} parcours structurés. Chacun te mène d&apos;une compétence brute
+              à un certificat vérifiable.
             </p>
           </div>
 
           <div className="grid-3-col">
-            {(
-              [
-                {
-                  kind: "cyber",
-                  tag: "CYBERSEC",
-                  color: "#FF4757",
-                  title: "Pentester débutant",
-                  desc: "Recon, scan, exploit, post-exploitation. Le cycle complet d'un test d'intrusion réaliste.",
-                  lvl: "DÉBUTANT → INTERM.",
-                  lessons: 18,
-                  xp: "4 200",
-                },
-                {
-                  kind: "dev",
-                  tag: "DEV",
-                  color: "#6E8BFF",
-                  title: "Sécurité applicative",
-                  desc: "OWASP Top 10, auth, sessions, JWT. Apprends à écrire du code qui ne se fait pas pwn.",
-                  lvl: "INTERMÉDIAIRE",
-                  lessons: 14,
-                  xp: "3 600",
-                },
-                {
-                  kind: "net",
-                  tag: "RÉSEAU",
-                  color: "#0AFFD4",
-                  title: "Réseaux & TLS",
-                  desc: "OSI, TCP/IP, captures Wireshark, TLS 1.3. Comprends ce qui circule sur le câble.",
-                  lvl: "DÉBUTANT",
-                  lessons: 12,
-                  xp: "2 800",
-                },
-              ] as const
-            ).map(({ kind, tag, color, title, desc, lvl, lessons, xp }) => (
-              <Link
-                key={title}
-                href="/paths"
-                style={{
-                  position: "relative",
-                  background: "#0A0826",
-                  border: `1px solid ${color}33`,
-                  padding: "24px 24px 22px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 16,
-                  textDecoration: "none",
-                  color: "inherit",
-                  overflow: "hidden",
-                  transition: "border-color 200ms ease, transform 200ms ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = `${color}66`;
-                  (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-3px)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = `${color}33`;
-                  (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)";
-                }}
-              >
-                <span
-                  aria-hidden="true"
+            {featuredPaths
+              .map((p) => ({
+                path: p,
+                ...CATEGORY_STYLE[p.category],
+                lvl: DIFFICULTY_LABEL[p.difficulty],
+              }))
+              .map(({ path, kind, tag, color, lvl }) => (
+                <Link
+                  key={path.slug}
+                  href={`/paths/${path.slug}`}
                   style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: `radial-gradient(ellipse 100% 70% at 50% 120%, ${color}18, transparent 70%)`,
-                    pointerEvents: "none",
-                  }}
-                />
-                <div
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontWeight: 700,
-                      fontSize: 9.5,
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      color: color,
-                      background: `${color}14`,
-                      border: `1px solid ${color}44`,
-                      padding: "4px 10px",
-                    }}
-                  >
-                    {tag}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: "#6B6890",
-                    }}
-                  >
-                    {lvl}
-                  </span>
-                </div>
-                <div style={{ color: color, filter: `drop-shadow(0 0 12px ${color})` }}>
-                  <PathIcon kind={kind} />
-                </div>
-                <div>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontWeight: 700,
-                      fontSize: 20,
-                      letterSpacing: "-0.02em",
-                      color: "#F5F5FA",
-                      margin: "0 0 10px",
-                    }}
-                  >
-                    {title}
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: 13.5,
-                      lineHeight: 1.55,
-                      color: "#B8B5D1",
-                      margin: 0,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {desc}
-                  </p>
-                </div>
-                <div
-                  style={{
+                    position: "relative",
+                    background: "#0A0826",
+                    border: `1px solid ${color}33`,
+                    padding: "24px 24px 22px",
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    paddingTop: 8,
-                    borderTop: "1px solid #1F1B47",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    color: "#6B6890",
-                    letterSpacing: "0.06em",
+                    flexDirection: "column",
+                    gap: 16,
+                    textDecoration: "none",
+                    color: "inherit",
+                    overflow: "hidden",
+                    transition: "border-color 200ms ease, transform 200ms ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.borderColor = `${color}66`;
+                    (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-3px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.borderColor = `${color}33`;
+                    (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)";
                   }}
                 >
-                  <span>
-                    <b style={{ color: "#F5F5FA" }}>{lessons}</b> leçons ·{" "}
-                    <b style={{ color: "#0AFFD4" }}>{xp}</b> XP
-                  </span>
-                  <span style={{ color: "#0AFFD4", fontWeight: 700 }}>→</span>
-                </div>
-              </Link>
-            ))}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: `radial-gradient(ellipse 100% 70% at 50% 120%, ${color}18, transparent 70%)`,
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 700,
+                        fontSize: 9.5,
+                        letterSpacing: "0.2em",
+                        textTransform: "uppercase",
+                        color: color,
+                        background: `${color}14`,
+                        border: `1px solid ${color}44`,
+                        padding: "4px 10px",
+                      }}
+                    >
+                      {tag}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 9,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "#6B6890",
+                      }}
+                    >
+                      {lvl}
+                    </span>
+                  </div>
+                  <div style={{ color: color, filter: `drop-shadow(0 0 12px ${color})` }}>
+                    <PathIcon kind={kind} />
+                  </div>
+                  <div>
+                    <h3
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontWeight: 700,
+                        fontSize: 20,
+                        letterSpacing: "-0.02em",
+                        color: "#F5F5FA",
+                        margin: "0 0 10px",
+                      }}
+                    >
+                      {path.title}
+                    </h3>
+                    <p
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: 13.5,
+                        lineHeight: 1.55,
+                        color: "#B8B5D1",
+                        margin: 0,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {path.description}
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingTop: 8,
+                      borderTop: "1px solid #1F1B47",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "#6B6890",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    <span>
+                      <b style={{ color: "#F5F5FA" }}>{path.lessons}</b> leçons ·{" "}
+                      <b style={{ color: "#0AFFD4" }}>{path.xp.toLocaleString("fr-FR")}</b> XP
+                    </span>
+                    <span style={{ color: "#0AFFD4", fontWeight: 700 }}>→</span>
+                  </div>
+                </Link>
+              ))}
           </div>
         </section>
 
