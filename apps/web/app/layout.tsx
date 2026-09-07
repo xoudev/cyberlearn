@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   // discarded it and rewrote the snippet from the hero paragraph instead. This
   // one names what the platform concretely offers.
   description:
-    "Plateforme française d'apprentissage : cybersécurité, développement et réseaux. Leçons interactives en sandbox isolé, parcours progressifs, certificats vérifiables.",
+    "Plateforme française d'apprentissage : cybersécurité, développement et réseaux. Exercices de code exécutés directement dans le navigateur, parcours progressifs, certificat vérifiable en fin de parcours.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -42,13 +42,13 @@ export const metadata: Metadata = {
     siteName: "CyberLearn",
     title: "CyberLearn — Apprendre la cybersécurité en pratique",
     description:
-      "Leçons interactives en sandbox isolé, parcours progressifs et certificats vérifiables, en cybersécurité, développement et réseaux.",
+      "Exercices de code exécutés dans le navigateur, parcours progressifs et certificat vérifiable, en cybersécurité, développement et réseaux.",
   },
   twitter: {
     card: "summary",
     title: "CyberLearn — Apprendre la cybersécurité en pratique",
     description:
-      "Leçons interactives en sandbox isolé, parcours progressifs et certificats vérifiables.",
+      "Exercices de code exécutés dans le navigateur, parcours progressifs et certificat vérifiable.",
   },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
