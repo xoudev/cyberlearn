@@ -297,7 +297,8 @@ export function LandingClient({
                 }}
               />
               <span>
-                <b style={{ color: "#B8B5D1" }}>v2.4</b> · Plateforme FR · 100% en ligne
+                <b style={{ color: "#B8B5D1" }}>Plateforme FR</b> · 100% en ligne · sans
+                installation
               </span>
             </div>
 
@@ -337,8 +338,8 @@ export function LandingClient({
                 maxWidth: 520,
               }}
             >
-              Apprends en piratant, en codant et en cassant des systèmes, dans un sandbox dédié,
-              accompagné·e de mentors et d&apos;une communauté FR.
+              Tu écris et exécutes ton code directement dans le navigateur, tu valides étape par
+              étape, et chaque parcours terminé délivre un certificat vérifiable. Rien à installer.
             </p>
 
             <div className="landing-cta-row" style={{ marginBottom: 32 }}>
@@ -429,39 +430,6 @@ export function LandingClient({
               >
                 Voir les parcours
               </Link>
-            </div>
-
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 12,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "#6B6890",
-                letterSpacing: "0.06em",
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 6px #0AFFD4",
-                  display: "inline-block",
-                }}
-              />
-              <span>{stats.activeLearners} apprenant·es actif·ves sur 30 jours</span>
-              {stats.ratingAvg !== null && (
-                <>
-                  <span style={{ color: "#44406B" }}>·</span>
-                  <span>
-                    {stats.ratingAvg.toFixed(1).replace(".", ",")} / 5 sur {stats.ratingsCount}{" "}
-                    {stats.ratingsCount > 1 ? "avis" : "avis"}
-                  </span>
-                </>
-              )}
             </div>
           </div>
 
@@ -588,7 +556,7 @@ export function LandingClient({
                 num: "/ 01 ·",
                 label: "PRATIQUE",
                 title: "Leçons interactives",
-                desc: "Code dans un éditeur intégré, exécute dans un sandbox isolé, valide étape par étape. Chaque leçon est un mini-CTF.",
+                desc: "Code dans un éditeur intégré, exécute dans ton navigateur, valide étape par étape. Aucune installation, aucun compte à configurer.",
                 visual: (
                   <div
                     style={{
@@ -709,7 +677,7 @@ export function LandingClient({
                 num: "/ 03 ·",
                 label: "PREUVE",
                 title: "Certifications signées",
-                desc: "Chaque parcours validé délivre un certificat signé SHA-256, vérifiable publiquement. Affichable sur LinkedIn.",
+                desc: "Chaque parcours validé délivre un certificat avec son empreinte SHA-256, vérifiable publiquement sur le site. Affichable sur LinkedIn.",
                 visual: (
                   <div
                     style={{
@@ -1188,11 +1156,9 @@ export function LandingClient({
             <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 28px" }}>
               {(
                 [
-                  { label: "Parcours", href: "#" },
                   { label: "Application", href: "/download" },
-                  { label: "Tarifs", href: "#" },
-                  { label: "Entreprises", href: "#" },
-                  { label: "Communauté", href: "#" },
+                  { label: "Vérifier un certificat", href: "/verify" },
+                  { label: "Contact", href: "/contact" },
                   { label: "Confidentialité", href: "/privacy" },
                   { label: "Mentions légales", href: "/legal" },
                 ] as { label: string; href: string }[]
