@@ -102,7 +102,15 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/privacy" ||
     pathname.startsWith("/account/delete/") ||
     pathname.startsWith("/_next/") ||
-    pathname.startsWith("/favicon")
+    pathname.startsWith("/favicon") ||
+    // Crawler and PWA files. Without these the middleware answered /robots.txt
+    // and /sitemap.xml with the login page, so search engines received HTML
+    // where they expected rules, and /manifest.webmanifest never resolved.
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/icon.png" ||
+    pathname === "/apple-icon.png"
   );
 }
 

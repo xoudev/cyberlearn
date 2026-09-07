@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import { SplashScreen } from "@/components/splash-screen";
 import { CookieBanner } from "@/components/cookie-banner";
 import { Toaster } from "@/components/ui/sonner";
+import { SITE_URL } from "./site-url";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -20,22 +21,45 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Without a base, every relative canonical and Open Graph URL resolved
+  // against nothing, so none of them were emitted.
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Cyber Learn",
-    template: "%s · Cyber Learn",
+    default: "CyberLearn — Apprendre la cybersécurité en pratique",
+    template: "%s · CyberLearn",
   },
-  description: "Plateforme d'apprentissage interactif en cybersécurité, développement et réseaux.",
+  // The previous description ("Plateforme d'apprentissage interactif en
+  // cybersécurité, développement et réseaux") was generic enough that Google
+  // discarded it and rewrote the snippet from the hero paragraph instead. This
+  // one names what the platform concretely offers.
+  description:
+    "Plateforme française d'apprentissage : cybersécurité, développement et réseaux. Leçons interactives en sandbox isolé, parcours progressifs, certificats vérifiables.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: SITE_URL,
+    siteName: "CyberLearn",
+    title: "CyberLearn — Apprendre la cybersécurité en pratique",
+    description:
+      "Leçons interactives en sandbox isolé, parcours progressifs et certificats vérifiables, en cybersécurité, développement et réseaux.",
+  },
+  twitter: {
+    card: "summary",
+    title: "CyberLearn — Apprendre la cybersécurité en pratique",
+    description:
+      "Leçons interactives en sandbox isolé, parcours progressifs et certificats vérifiables.",
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Cyber Learn",
+    title: "CyberLearn",
   },
-  icons: {
-    icon: "/icon_app.png",
-    shortcut: "/icon_app.png",
-    apple: "/icon_app.png",
-  },
+  // No `icons` block on purpose: it used to point every icon at
+  // /icon_app.png, which is 1565x1537. Google requires a square favicon and
+  // showed the generic globe instead. Next now picks up app/icon.png,
+  // app/apple-icon.png and app/favicon.ico, which are square.
 };
 
 export default async function RootLayout({
