@@ -5,11 +5,6 @@ export interface LandingStats {
   domains: number;
   publishedLessons: number;
   publishedPaths: number;
-  /** Distinct accounts seen in the last 30 days. */
-  activeLearners: number;
-  /** Mean of every rating left on a lesson or a path, or null when there are none. */
-  ratingAvg: number | null;
-  ratingsCount: number;
 }
 
 /** A published path, summarised for the public landing page. */
@@ -24,42 +19,30 @@ export interface FeaturedPath {
   xp: number;
 }
 
-const ACTIVE_WINDOW_DAYS = 30;
-
 export const statsRepository = {
   /**
    * Public counters for the landing page. Read-only aggregates over published
-   * content and real activity; callers cache the result (ISR revalidation).
+   * content; callers cache the result (ISR revalidation).
    *
    * Every number here must come from the database. The landing used to print a
    * hardcoded "12 400 apprenant·es actifs" and "4.8 / 5 sur 1 240 avis", which
-   * no query backed. Social proof that cannot be traced to a row is worse than
-   * no social proof at all.
+   * no query backed. Both lines are gone rather than rewired: with a young
+   * catalogue there is no social proof to show, and a truthful "0 apprenant·es
+   * actif·ves" reads worse than no line at all. The honest signal is the size
+   * of the catalogue, which the stats strip already carries.
    */
   async findLandingStats(): Promise<LandingStats> {
-    const activeSince = new Date(Date.now() - ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const [categories, publishedLessons, publishedPaths] = await Promise.all([
+      prisma.lesson.findMany({
+        where: { status: "PUBLISHED" },
+        distinct: ["category"],
+        select: { category: true },
+      }),
+      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
+      prisma.path.count({ where: { status: "PUBLISHED" } }),
+    ]);
 
-    const [categories, publishedLessons, publishedPaths, activeLearners, ratings] =
-      await Promise.all([
-        prisma.lesson.findMany({
-          where: { status: "PUBLISHED" },
-          distinct: ["category"],
-          select: { category: true },
-        }),
-        prisma.lesson.count({ where: { status: "PUBLISHED" } }),
-        prisma.path.count({ where: { status: "PUBLISHED" } }),
-        prisma.user.count({ where: { lastActiveAt: { gte: activeSince } } }),
-        prisma.rating.aggregate({ _avg: { score: true }, _count: { _all: true } }),
-      ]);
-
-    return {
-      domains: categories.length,
-      publishedLessons,
-      publishedPaths,
-      activeLearners,
-      ratingAvg: ratings._count._all > 0 ? (ratings._avg.score ?? null) : null,
-      ratingsCount: ratings._count._all,
-    };
+    return { domains: categories.length, publishedLessons, publishedPaths };
   },
 
   /**
