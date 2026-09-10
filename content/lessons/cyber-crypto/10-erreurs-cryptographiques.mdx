@@ -108,5 +108,3 @@ Relance le code plus haut et observe les deux lignes identiques : c'est exacteme
 - Les secrets (clés, jetons) viennent d'un générateur cryptographique (`secrets`, `os.urandom`, `crypto.randomBytes`), jamais du module aléatoire ordinaire, qui est reproductible.
 - On compare les secrets en temps constant (`hmac.compare_digest`, `crypto.timingSafeEqual`) pour ne pas fuir par le temps de réponse, en particulier pour vérifier un HMAC.
 - On migre hors de MD5, SHA-1, DES et RC4. Pour les mots de passe : bcrypt, scrypt ou Argon2, jamais un simple hash.
-
-OK 10 écrit

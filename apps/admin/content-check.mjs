@@ -26,6 +26,12 @@ const INJECTION = [
   /\bon[A-Z][a-zA-Z]*\s*=/,
   /dangerouslySetInnerHTML/i,
 ];
+// A note the author leaves at the end of a lesson while writing it - "OK 03
+// écrit", "OK 07-csrf-sessions.mdx écrit". It is ordinary markdown, so nothing
+// downstream objects: the import pipeline stores it and the lesson page renders
+// it as the closing paragraph. 133 lessons shipped with one.
+const MARKER = /\n[ \t]*OK [^\n]*crit[ \t]*$/;
+
 const REFCODE = /^CL-LSN-\d{3}-V\d{2}$/;
 const SLUG = /^[a-z0-9-]+$/;
 
@@ -62,6 +68,14 @@ function fixCodePlayground(txt) {
   return parts.map((p, i) => (i % 2 === 1 ? p : p.replaceAll('\\"', "'"))).join("");
 }
 
+function stripAuthoringMarker(txt) {
+  const trimmed = txt.replace(/\s+$/, "");
+  if (!MARKER.test(trimmed)) return txt;
+  // Second trim: the marker usually sits after a blank line, which would
+  // otherwise be left dangling at the end of the file.
+  return `${trimmed.replace(MARKER, "").replace(/\s+$/, "")}\n`;
+}
+
 const dirs = sub ? [sub] : readdirSync(ROOT);
 const files = [];
 for (const d of dirs) {
@@ -78,7 +92,7 @@ for (const file of files) {
   let raw = readFileSync(file, "utf8");
   const name = `${path.basename(path.dirname(file))}/${path.basename(file)}`;
   if (FIX) {
-    const fixed = fixCodePlayground(quoteFrontmatter(raw));
+    const fixed = stripAuthoringMarker(fixCodePlayground(quoteFrontmatter(raw)));
     if (fixed !== raw) {
       writeFileSync(file, fixed);
       raw = fixed;
@@ -104,6 +118,7 @@ for (const file of files) {
   for (const p of INJECTION) if (p.test(stripped)) errs.push(`injection ${p}`);
   if (body.split(/\s+/).filter(Boolean).length < 300) errs.push("<300 mots");
   if (!/<Quiz[\s>]/.test(body)) errs.push("aucun Quiz");
+  if (MARKER.test(body)) errs.push("marqueur de rédaction en fin de leçon");
   try {
     await compile(body, { outputFormat: "function-body", development: false });
   } catch (e) {

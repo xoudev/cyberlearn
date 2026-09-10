@@ -88,5 +88,3 @@ Reprends les commandes et observe ce que chaque filtre te montre. Note comment `
 - Dans `/var/log` : `auth.log` (connexions), `syslog` (système), les logs applicatifs comme `nginx/access.log`. `tail -f` suit un fichier en direct.
 - Sans rotation, un log grossit jusqu'à remplir le disque et faire tomber le serveur. `logrotate` archive, compresse et purge.
 - Centraliser les logs ailleurs les met hors de portée d'un attaquant qui efface ses traces (logique du SOC). Surveiller les métriques (charge, mémoire, disque) permet de réagir avant la panne.
-
-OK 07 écrit

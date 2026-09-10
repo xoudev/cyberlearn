@@ -108,5 +108,3 @@ La bonne pratique combine les couches : un jeton anti-CSRF sur les actions sensi
 - L'attaquant ne lit ni ne vole le cookie : il fait simplement envoyer la requête par le navigateur de la victime.
 - À ne pas confondre avec le XSS : le CSRF n'exécute pas de code sur le site cible, il abuse de la session existante en aveugle.
 - Les défenses : un jeton anti-CSRF imprévisible lié à la session et vérifié côté serveur, l'attribut `SameSite` sur le cookie, et la vérification de l'`Origin`. On les combine.
-
-OK 07-csrf-sessions.mdx écrit

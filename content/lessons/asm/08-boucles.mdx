@@ -177,5 +177,3 @@ pairs:
 - Une boucle qui descend vers zéro profite du couple `dec` et `jnz`, sans `cmp` séparé, car `dec` positionne lui-même le drapeau de zéro.
 - Pour accumuler, on met un registre à zéro, ou à 1 pour un produit, avant la boucle, puis on l'enrichit à chaque tour.
 - Le piège à éviter : si le compteur n'évolue pas vers sa sortie à chaque passage, le saut est toujours pris et la boucle ne s'arrête jamais.
-
-OK 08 réécrit

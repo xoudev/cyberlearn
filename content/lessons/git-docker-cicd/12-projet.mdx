@@ -212,5 +212,3 @@ Mets tout ça sur GitHub au fur et à mesure. Un dépôt public avec un pipeline
 ## à retenir
 
 Sur l'ensemble de ce parcours, tu as relié trois outils en une seule chaîne de travail. Git garde l'historique et sert de source unique pour tout le reste. Le `.gitignore` empêche les fichiers lourds et les secrets de partir dans cet historique. Le `Dockerfile` rend l'application reproductible, et l'ordre de ses instructions n'est pas cosmétique : il décide de ce que Docker peut mettre en cache. Compose décrit plusieurs services d'un coup et, avec un volume, garde les données entre deux redémarrages. Le workflow GitHub Actions exécute install, tests et build à chaque push, dans un ordre où un test cassé bloque le build. Et tu sais lire un run dans l'onglet Actions pour diagnostiquer un échec. À partir de là, déploiement réel, cache, badges et préprod ne sont que des couches que tu ajoutes sur cette base.
-
-OK 12-projet.mdx écrit

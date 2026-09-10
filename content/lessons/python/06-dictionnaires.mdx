@@ -133,5 +133,3 @@ Le test `in` sur un set est nettement plus rapide que sur une liste quand il y a
 ## à retenir
 
 Un dictionnaire associe des clés à des valeurs ; tu accèdes par clé, pas par position. Ajouter ou modifier passe par la même syntaxe `d[cle] = valeur`. Demander une clé absente avec les crochets lève une `KeyError` ; `get(cle, defaut)` rend une valeur par défaut à la place et ne plante pas. `keys()`, `values()` et `items()` servent à parcourir, et `items()` te donne clé et valeur ensemble. Un dictionnaire garde l'ordre d'insertion, mais ne trie pas par valeur. Le set ne contient que des valeurs uniques : il déduplique une liste en une ligne et répond vite à un test d'appartenance avec `in`.
-
-OK 06 réécrit

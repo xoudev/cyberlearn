@@ -130,5 +130,3 @@ Inspecte une planification existante, vérifie dans les logs qu'elle s'est bien 
 - « Ma tâche cron ne s'exécute pas » vient presque toujours d'un PATH réduit, d'un chemin relatif, ou d'une sortie perdue, pas de cron lui-même.
 - Les timers systemd sont l'alternative moderne : deux fichiers (`.service` et `.timer`), des logs unifiés via journalctl, et le rattrapage des tâches manquées.
 - Un script de maintenance doit vérifier ses erreurs (`set -euo pipefail`), journaliser avec l'heure, et être idempotent pour pouvoir tourner sans surveillance.
-
-OK 08 écrit

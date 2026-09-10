@@ -87,5 +87,3 @@ Une commande `ip` ne survit pas au redémarrage. La config durable vit dans des 
 Côté résolution, `/etc/resolv.conf` liste les serveurs DNS interrogés, souvent généré par l'outil réseau plutôt qu'édité à la main. `/etc/hosts` définit des correspondances locales qui court-circuitent le DNS, utile en test et pour des noms internes, mais à surveiller quand un nom résout bizarrement.
 
 Le pare-feu local ferme tout en entrée par défaut et ne rouvre que l'utile : SSH et le port du service. `ufw` est une surcouche simple au-dessus de nftables ou iptables. On autorise SSH avant d'activer, sinon on se verrouille dehors. Filtrer réduit la surface d'attaque et applique le moindre privilège au réseau, en complément des autres mesures de durcissement.
-
-OK 06 écrit

@@ -143,5 +143,3 @@ Voici une session typique : on lance la stack, on vérifie, on regarde les logs 
 - Sur le réseau créé par Compose, les conteneurs se joignent par leur **nom de service**, pas par `localhost`. Le `localhost` d'un conteneur, c'est lui-même.
 - Sans **volume**, les données d'une base disparaissent à la recréation du conteneur. Un volume nommé monté sur le dossier de données les fait survivre.
 - Les secrets vont dans un fichier `.env` (ignoré par Git), référencés dans le YAML avec `${VARIABLE}`.
-
-OK 09-docker-compose.mdx écrit
