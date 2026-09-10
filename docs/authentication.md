@@ -97,6 +97,21 @@ through the CyberLearn Resend template.
 
 ## Compatibility window
 
+### OAuth returns to the homepage without signing in
+
+If GitHub returns to `https://cyberlearn.fr/?code=...`, the PKCE code has reached
+the Site URL instead of `/auth/callback`. Check the deployed client's `redirectTo`
+and the production Supabase redirect allow list above. Keep the canonical host
+consistent so the browser's PKCE verifier cookie is available to the callback.
+
+The web middleware forwards root URLs containing a `code` to `/auth/callback`
+before rendering the homepage or checking a session. The callback still performs
+the normal PKCE exchange, MFA checks, and profile synchronization. The redirect
+is not cached and suppresses the referrer. Start a new GitHub sign-in after
+deploying; an old or already-used code cannot be reused.
+
+### Legacy mobile builds
+
 `/api/mobile/send-otp` and the web implicit-token confirmation route remain
 temporarily available for already-installed mobile builds. New clients do not
 link to them. Remove both after the supported legacy build window has ended.
