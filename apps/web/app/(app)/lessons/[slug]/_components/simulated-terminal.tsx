@@ -402,6 +402,103 @@ export interface SimulatedTerminalProps {
   onComplete?: () => void;
 }
 
+// ── Command discovery ─────────────────────────────────────────────────────────
+
+/** Commands every block answers, listed apart so the real ones stand out. */
+const UTILITY_COMMANDS = new Set(["help", "clear", "cls", "exit", "pwd", "whoami", "date"]);
+
+/**
+ * The list of commands this block accepts, drawn from the block's own map.
+ *
+ * Long argument strings are what make these scenarios hard to guess -
+ * `curl http://target.ctf/?id=1+OR+1=1--` is not something a reader types by
+ * accident. They are printed in full: a truncated hint is no hint.
+ */
+function buildHelpText(commands: string[]): string {
+  const real = commands.filter((c) => !UTILITY_COMMANDS.has(c)).sort((a, b) => a.localeCompare(b));
+  const utility = commands
+    .filter((c) => UTILITY_COMMANDS.has(c))
+    .sort((a, b) => a.localeCompare(b));
+
+  const lines = ["\x1b[1;36mCommandes disponibles dans cet exercice\x1b[0m", ""];
+  if (real.length > 0) {
+    for (const c of real) lines.push(`  \x1b[1;32m${c}\x1b[0m`);
+  } else {
+    lines.push("\x1b[38;5;60m  (aucune commande propre à cet exercice)\x1b[0m");
+  }
+  if (utility.length > 0) {
+    lines.push("", `\x1b[38;5;60mUtilitaires : ${utility.join(", ")}\x1b[0m`);
+  }
+  lines.push(
+    "",
+    "\x1b[38;5;60mTab complète une commande. Tape \x1b[37mhelp\x1b[38;5;60m à tout moment.\x1b[0m",
+  );
+  return lines.join("\r\n");
+}
+
+/**
+ * The accepted command closest to what was typed, or null when nothing is
+ * close. Levenshtein over the whole string, capped at a quarter of its length
+ * so "ls -la" does not get "cat robots.txt" suggested at it.
+ */
+function closestCommand(input: string, commands: string[]): string | null {
+  let best: string | null = null;
+  let bestDistance = Infinity;
+  const budget = Math.max(2, Math.floor(input.length / 4));
+
+  for (const candidate of commands) {
+    if (Math.abs(candidate.length - input.length) > budget) continue;
+    const d = editDistance(input, candidate, budget);
+    if (d < bestDistance) {
+      bestDistance = d;
+      best = candidate;
+    }
+  }
+  return bestDistance <= budget ? best : null;
+}
+
+/** Levenshtein distance, abandoned as soon as it exceeds `budget`. */
+function editDistance(a: string, b: string, budget: number): number {
+  let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const current = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      const value = Math.min(
+        (current[j - 1] ?? 0) + 1,
+        (previous[j] ?? 0) + 1,
+        (previous[j - 1] ?? 0) + cost,
+      );
+      current.push(value);
+      if (value < rowMin) rowMin = value;
+    }
+    if (rowMin > budget) return budget + 1;
+    previous = current;
+  }
+  return previous[b.length] ?? budget + 1;
+}
+
+/**
+ * What Tab should do with a partial command: the longest prefix every match
+ * shares, plus the matches themselves when that prefix does not settle it.
+ */
+export function completePrefix(
+  input: string,
+  commands: string[],
+): { completion: string; matches: string[] } {
+  const matches = commands.filter((c) => c.startsWith(input)).sort((a, b) => a.localeCompare(b));
+  if (matches.length === 0) return { completion: input, matches: [] };
+
+  let prefix = matches[0] ?? input;
+  for (const m of matches) {
+    let i = 0;
+    while (i < prefix.length && i < m.length && prefix[i] === m[i]) i++;
+    prefix = prefix.slice(0, i);
+  }
+  return { completion: prefix, matches };
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.ReactElement {
@@ -450,6 +547,20 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     ...(libScenario?.commands ?? {}),
     ...(extraCommands ?? {}),
   };
+
+  // `help` used to answer, in all 172 terminal blocks, with the same frozen
+  // line: "Commandes disponibles : ls, pwd, whoami, cat, clear". The banner
+  // tells the reader to type it, so in a CTF block they typed it and were told
+  // to use `cat` while the exercise wanted
+  // `curl http://target.ctf/?id=1+OR+1=1--`. That is worse than saying
+  // nothing - it points the wrong way.
+  //
+  // The map already holds the truth, so help is built from it. Only a scenario
+  // that writes its own help keeps it; the generic one from COMMON_COMMANDS is
+  // overridden, which is the whole point. 9 of those 172 blocks declare
+  // expectedCommands and 8 declare hints, so nothing else was guiding anyone.
+  const authoredHelp = inlineScenario.help ?? libScenario?.commands.help ?? extraCommands?.help;
+  commandMap.help = authoredHelp ?? buildHelpText(Object.keys(commandMap));
 
   const defaultTitle = isPs ? "Windows PowerShell" : "bash - etudiant@cyberlearn";
   const resolvedTitle = title ?? defaultTitle;
@@ -549,6 +660,16 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         } else {
           term.writeln(`\x1b[31mbash: ${cmd}: commande introuvable\x1b[0m`);
         }
+        // Both shells now offer a way out. The bash branch used to stop at
+        // "commande introuvable", which is where the reader got stuck.
+        const near = closestCommand(cmd, Object.keys(commandMap));
+        if (near !== null && near !== "help") {
+          term.writeln(`\x1b[33mVouliez-vous dire : \x1b[37m${near}\x1b[33m ?\x1b[0m`);
+        } else if (!isPs) {
+          term.writeln(
+            "\x1b[33mAstuce : tape \x1b[37mhelp\x1b[33m pour voir les commandes.\x1b[0m",
+          );
+        }
       };
 
       // Welcome message
@@ -615,6 +736,27 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
           } else {
             notFound(cmd);
             prompt();
+          }
+        } else if (code === 9) {
+          // Tab - the shortest path from "I don't know what to type" to a
+          // command that works, and the reflex anyone who has used a shell
+          // already has.
+          const partial = inputRef.current;
+          if (partial.length > 0) {
+            const { completion, matches } = completePrefix(partial, Object.keys(commandMap));
+            if (matches.length === 1 && completion.length > partial.length) {
+              term.write(completion.slice(partial.length));
+              inputRef.current = completion;
+            } else if (matches.length > 1) {
+              if (completion.length > partial.length) {
+                term.write(completion.slice(partial.length));
+                inputRef.current = completion;
+              }
+              term.writeln("");
+              for (const m of matches) term.writeln(`  \x1b[1;32m${m}\x1b[0m`);
+              prompt();
+              term.write(inputRef.current);
+            }
           }
         } else if (code === 127 || code === 8) {
           // Backspace
