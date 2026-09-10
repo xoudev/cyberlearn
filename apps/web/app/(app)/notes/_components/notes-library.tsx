@@ -24,6 +24,7 @@ import {
 } from "./notes-shared";
 import { AllNotesGlyph, FolderGlyph } from "./folder-icons";
 import { NoteReader } from "./note-reader";
+import styles from "./notes-library.module.css";
 import { downloadMarkdown, notesToMarkdown } from "@/lib/notes/export";
 
 // Payload key for the native drag-and-drop of note cards onto folders.
@@ -78,6 +79,7 @@ export function NotesLibrary({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"ALL" | Category>("ALL");
   const [selectedFolder, setSelectedFolder] = useState<string>(ALL);
+  const [focusedFolder, setFocusedFolder] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [readerId, setReaderId] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
@@ -124,32 +126,29 @@ export function NotesLibrary({
     });
   }, [notes, query, filter, selectedFolder]);
 
-  // In the "Toutes" view, group by folder (folder order, then "Sans dossier").
-  // In a specific-folder view, a single flat group.
+  // At the root, folders contain their notes. Search spans all folders.
   const groups = useMemo(() => {
-    if (selectedFolder !== ALL) {
-      return filtered.length > 0 ? [{ id: selectedFolder, title: null, notes: filtered }] : [];
-    }
-    const out: {
-      id: string;
-      title: string | null;
-      color: string | null;
-      notes: SerializedNote[];
-    }[] = [];
-    for (const f of folders) {
-      const fn = filtered.filter((n) => n.folderId === f.id);
-      if (fn.length > 0) out.push({ id: f.id, title: f.name, color: f.color, notes: fn });
-    }
-    // "Sans dossier" also catches notes whose folder is not in the loaded list
-    // (e.g. the folders query fell back to [] during the pre-migration deploy
-    // window) so a note is never rendered in no group at all.
-    const knownIds = new Set(folders.map((f) => f.id));
-    const loose = filtered.filter((n) => n.folderId === null || !knownIds.has(n.folderId));
-    if (loose.length > 0) {
-      out.push({ id: NONE, title: "Sans dossier", color: null, notes: loose });
-    }
-    return out;
-  }, [filtered, folders, selectedFolder]);
+    const knownIds = new Set(folders.map((folder) => folder.id));
+    const visible =
+      selectedFolder !== ALL || query.trim()
+        ? filtered
+        : filtered.filter((note) => note.folderId === null || !knownIds.has(note.folderId));
+    return visible.length ? [{ id: selectedFolder, title: null, notes: visible }] : [];
+  }, [filtered, folders, query, selectedFolder]);
+
+  const visibleFolders =
+    selectedFolder === ALL
+      ? folders.filter((folder) => {
+          const matchingNotes = filtered.some((note) => note.folderId === folder.id);
+          const matchesName = folder.name.toLowerCase().includes(query.trim().toLowerCase());
+          return (filter === "ALL" && matchesName) || matchingNotes;
+        })
+      : [];
+
+  const openFolder = (id: string): void => {
+    setSelectedFolder(id);
+    setFocusedFolder(null);
+  };
 
   const readerNote = readerId ? (notes.find((n) => n.id === readerId) ?? null) : null;
 
@@ -486,8 +485,8 @@ export function NotesLibrary({
         }}
       >
         <FolderPill
-          label="Toutes"
-          count={notes.length}
+          label="Mes dossiers"
+          count={folders.length}
           icon={
             <AllNotesGlyph color={selectedFolder === ALL ? "#05041A" : "var(--cosmetic-accent)"} />
           }
@@ -514,27 +513,11 @@ export function NotesLibrary({
           dragOver={dragOverKey === NONE}
           dropHandlers={dropProps(NONE, null)}
         />
-        {folders.map((f) => (
-          <FolderPill
-            key={f.id}
-            label={f.name}
-            count={countFor(f.id)}
-            icon={
-              <FolderGlyph
-                name={f.icon}
-                color={selectedFolder === f.id ? "#05041A" : (f.color ?? FOLDER_DEFAULT_COLOR)}
-              />
-            }
-            active={selectedFolder === f.id}
-            onClick={() => {
-              setSelectedFolder(f.id);
-            }}
-            droppable
-            dragActive={draggingId !== null}
-            dragOver={dragOverKey === f.id}
-            dropHandlers={dropProps(f.id, f.id)}
-          />
-        ))}
+        {selectedFolder !== ALL && selectedFolder !== NONE ? (
+          <span className={styles.breadcrumb} aria-current="page">
+            / {folders.find((folder) => folder.id === selectedFolder)?.name}
+          </span>
+        ) : null}
         <button
           type="button"
           onClick={() => {
@@ -741,8 +724,64 @@ export function NotesLibrary({
         </div>
       )}
 
+      {selectedFolder === ALL && visibleFolders.length > 0 ? (
+        <section className={styles.folderSection} aria-label="Dossiers">
+          <div className={styles.folderHeading}>
+            <h2>Dossiers</h2>
+            <span>Double-clique pour ouvrir</span>
+          </div>
+          <div className={styles.folderGrid}>
+            {visibleFolders.map((folder) => (
+              <button
+                key={folder.id}
+                type="button"
+                className={styles.folderTile}
+                aria-label={"Ouvrir le dossier " + folder.name}
+                aria-pressed={focusedFolder === folder.id}
+                data-drop-active={dragOverKey === folder.id}
+                onClick={(event) => {
+                  if (event.detail === 0) openFolder(folder.id);
+                  else setFocusedFolder(folder.id);
+                }}
+                onDoubleClick={() => {
+                  openFolder(folder.id);
+                }}
+                onPointerUp={(event) => {
+                  if (event.pointerType === "touch") openFolder(folder.id);
+                }}
+                {...dropProps(folder.id, folder.id)}
+              >
+                <span
+                  className={styles.folderArtwork}
+                  style={{ color: folder.color ?? FOLDER_DEFAULT_COLOR }}
+                >
+                  <svg viewBox="0 0 100 80" width="100" height="80" fill="none" aria-hidden="true">
+                    <path
+                      d="M6 18a8 8 0 0 1 8-8h24l10 11h38a8 8 0 0 1 8 8v35a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8Z"
+                      fill="currentColor"
+                      opacity=".4"
+                    />
+                    <path
+                      d="M6 32a7 7 0 0 1 7-7h74a7 7 0 0 1 7 7v32a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span className={styles.folderBadge}>
+                    <FolderGlyph name={folder.icon} color="#05041A" size={22} />
+                  </span>
+                </span>
+                <strong>{folder.name}</strong>
+                <span>
+                  {countFor(folder.id)} note{countFor(folder.id) > 1 ? "s" : ""}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {/* Groups */}
-      {groups.length === 0 ? (
+      {groups.length === 0 && visibleFolders.length > 0 ? null : groups.length === 0 ? (
         <div
           style={{
             border: "1px dashed #2A2560",
@@ -755,71 +794,19 @@ export function NotesLibrary({
         >
           {notes.length === 0
             ? "Aucune note pour l'instant. Ouvre une leçon et note ce qui compte, ça apparaîtra ici."
-            : "Aucune note ne correspond à ta recherche."}
+            : selectedFolder !== ALL && !query.trim() && filter === "ALL"
+              ? "Ce dossier est vide. Déplace une note ici depuis son menu."
+              : "Aucune note ne correspond à ta recherche."}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {groups.map((g) => {
-            const gFolder = g.id === NONE ? null : folders.find((f) => f.id === g.id);
-            // Distinct key from the folder pill so hovering the header highlights
-            // only the header, not also the pill for the same folder.
-            const headerKey = `hdr:${g.id}`;
-            const headerDragOver = dragOverKey === headerKey;
             return (
               <section key={g.id}>
-                {g.title !== null && (
-                  <div
-                    {...dropProps(headerKey, g.id === NONE ? null : g.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 9,
-                      marginBottom: 14,
-                      marginLeft: -8,
-                      padding: "5px 8px",
-                      borderRadius: 4,
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: "#B8B5D1",
-                      border: `1px ${draggingId && !headerDragOver ? "dashed" : "solid"} ${
-                        headerDragOver
-                          ? "var(--cosmetic-accent)"
-                          : draggingId
-                            ? "#3A3568"
-                            : "transparent"
-                      }`,
-                      background: headerDragOver
-                        ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
-                        : "transparent",
-                    }}
-                  >
-                    <FolderGlyph
-                      name={gFolder?.icon ?? "folder"}
-                      color={
-                        gFolder?.color ??
-                        (g.id === NONE ? FOLDER_DEFAULT_COLOR : "var(--cosmetic-accent)")
-                      }
-                    />
-                    {g.title}
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "#6F6B99",
-                        border: "1px solid #2A2560",
-                        padding: "2px 7px",
-                      }}
-                    >
-                      {g.notes.length} note{g.notes.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                )}
-
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
                     gap: 16,
                   }}
                 >

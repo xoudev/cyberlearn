@@ -9,6 +9,8 @@ export interface LessonFilters {
   search?: string;
   page?: number;
   pageSize?: number;
+  /** Fetch the matching catalogue before applying user-specific availability ordering. */
+  paginate?: boolean;
 }
 
 export const lessonRepository = {
@@ -64,9 +66,8 @@ export const lessonRepository = {
       prisma.lesson.count({ where }),
       prisma.lesson.findMany({
         where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { publishedAt: "desc" },
+        ...(filters.paginate === false ? {} : { skip: (page - 1) * pageSize, take: pageSize }),
+        orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
         select: {
           id: true,
           refCode: true,
