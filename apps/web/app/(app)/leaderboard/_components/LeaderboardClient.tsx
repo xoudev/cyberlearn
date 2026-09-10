@@ -284,6 +284,21 @@ function PodiumCard({
 
 // ── You banner ────────────────────────────────────────────────────────────────
 
+/**
+ * The "Top X%" line, or null when a percentage would say less than the rank.
+ *
+ * It read wrong at both ends: first of 300 rounded down to "Top 0%", last of 50
+ * announced "Top 100%", and on a board of three the leader was "Top 33%". Ceil
+ * rather than round, floored at 1 - being first is top 1%, not top nothing -
+ * and withheld entirely on a small board, where one point of percentage is
+ * worth more than a whole rank and the rank already says it better.
+ */
+export function topPercentile(userRank: number, totalPlayers: number): number | null {
+  const PERCENTILE_FLOOR = 20;
+  if (totalPlayers < PERCENTILE_FLOOR || userRank < 1) return null;
+  return Math.min(100, Math.max(1, Math.ceil((userRank / totalPlayers) * 100)));
+}
+
 function YouBanner({
   entry,
   userRank,
@@ -291,7 +306,8 @@ function YouBanner({
 }: { entry: LeaderboardEntry | null; userRank: number; totalPlayers: number }) {
   const handle = entry?.username ?? entry?.displayName ?? "moi";
   const tier = entry ? getTier(entry.level) : "-";
-  const topPct = totalPlayers > 0 ? Math.round((userRank / totalPlayers) * 100) : 0;
+
+  const topPct = topPercentile(userRank, totalPlayers);
 
   return (
     <section
@@ -304,43 +320,29 @@ function YouBanner({
         gap: 32,
         padding: "24px 32px 24px 36px",
         marginBottom: 56,
-        background:
-          "linear-gradient(90deg, rgba(10,255,212,0.07) 0%, transparent 50%), rgba(5,4,26,0.6)",
+        // One accent, not six. This card used to carry a cyan gradient wash, a
+        // full border, a cyan left rule, an outer cyan glow, an inset cyan
+        // ring and a cyan scanline overlay - six decorative treatments
+        // competing on one element, before any text. The left rule is kept as
+        // the single accent and everything else goes.
+        background: "rgba(5,4,26,0.6)",
         border: "1px solid #2A2560",
         borderLeft: "3px solid #0AFFD4",
-        boxShadow: "-1px 0 24px rgba(10,255,212,0.25), inset 0 0 0 1px rgba(10,255,212,0.04)",
         overflow: "hidden",
       }}
     >
-      {/* scanline texture */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "repeating-linear-gradient(0deg, rgba(10,255,212,0.03) 0, rgba(10,255,212,0.03) 1px, transparent 1px, transparent 4px)",
-          pointerEvents: "none",
-        }}
-      />
-
       {/* eyebrow */}
       <div
         style={{
           ...MONO,
           fontWeight: 700,
           fontSize: 10,
-          letterSpacing: "0.22em",
+          letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#0AFFD4",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
+          color: "#6B6890",
         }}
       >
-        <span>
-          <span style={{ color: "#0AFFD4" }}>&gt; </span>TA POSITION
-        </span>
-        <span style={{ color: "#6B6890", letterSpacing: "0.14em" }}>SESSION · LIVE</span>
+        Ta position
       </div>
 
       {/* big rank */}
@@ -356,17 +358,8 @@ function YouBanner({
           gap: 4,
         }}
       >
-        <span style={{ color: "#6B6890", fontSize: 32, fontWeight: 600 }}>#</span>
-        <span
-          style={{
-            background: "linear-gradient(180deg, #F5F5FA, #0AFFD4)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-          }}
-        >
-          {userRank}
-        </span>
+        <span style={{ color: "#44406B", fontSize: 28, fontWeight: 600 }}>#</span>
+        <span style={{ color: "#F5F5FA" }}>{userRank}</span>
       </div>
 
       {/* handle + delta */}
@@ -381,7 +374,7 @@ function YouBanner({
             margin: 0,
           }}
         >
-          <span style={{ color: "#0AFFD4", ...MONO, fontWeight: 500 }}>@</span>
+          <span style={{ color: "#44406B", ...MONO, fontWeight: 500 }}>@</span>
           {handle}
         </h2>
         <span
@@ -393,8 +386,12 @@ function YouBanner({
             color: "#6B6890",
           }}
         >
-          Top <b style={{ color: "#0AFFD4", fontWeight: 700 }}>{topPct}%</b>
-          <span style={{ color: "#44406B", margin: "0 8px" }}>/</span>
+          {topPct !== null && (
+            <>
+              Top <b style={{ color: "#B8B5D1", fontWeight: 700 }}>{topPct}%</b>
+              <span style={{ color: "#44406B", margin: "0 8px" }}>/</span>
+            </>
+          )}
           {totalPlayers.toLocaleString("fr-FR")} joueurs
         </span>
       </div>
@@ -427,10 +424,7 @@ function YouBanner({
             fontWeight: 800,
             fontSize: 28,
             letterSpacing: "-0.02em",
-            background: "linear-gradient(180deg, #F5F5FA, #0AFFD4)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
+            color: "#F5F5FA",
           }}
         >
           {entry ? fmtXp(entry.xpTotal) : "-"}
