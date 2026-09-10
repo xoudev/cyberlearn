@@ -142,8 +142,10 @@ async function withTimeout<T>(promise: PromiseLike<T>, label: string): Promise<T
       }),
     ]);
   } catch (error) {
-    // Logged, not thrown: the request still has to be answered.
-    console.error(`[middleware] ${label} failed:`, error);
+    // Logged, not thrown: the request still has to be answered. The label is
+    // an argument rather than part of the string so the format string stays
+    // constant and cannot be forged by what is interpolated into it.
+    console.error("[middleware] auth call failed:", label, error);
     return null;
   } finally {
     if (timer !== undefined) clearTimeout(timer);
