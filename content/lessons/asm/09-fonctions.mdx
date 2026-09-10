@@ -196,5 +196,3 @@ main:
 - Les arguments passent par les registres dans l'ordre `rdi`, `rsi`, `rdx`... ; le résultat revient dans `rax`.
 - Une même fonction se réutilise autant de fois qu'on veut, avec des arguments différents.
 - Une fonction peut écraser des registres : protégez les valeurs sensibles par `push` avant le `call` et `pop` après, et équilibrez toujours push et pop, sinon `ret` dépile la mauvaise adresse.
-
-OK 09-fonctions.mdx écrit

@@ -165,5 +165,3 @@ def solution(titre):
 Ce projet a rassemblé tout le parcours. Une tâche est un dictionnaire avec un titre et un drapeau `fait` ; l'ensemble des tâches est une liste de ces dictionnaires, ce qui garde l'ordre et se parcourt à la boucle. Chaque action vit dans sa propre fonction : `ajouter`, `lister`, `marquer_faite`, `supprimer`. Découper ainsi met chaque règle à un seul endroit et rend le code lisible.
 
 La gestion d'erreurs avec `try` / `except IndexError` protège l'outil des entrées invalides sans masquer les vrais bugs. Une boucle de menu joue le chef d'orchestre : elle lit un choix et appelle la bonne fonction tant qu'on ne quitte pas. Et pour passer du jouet à l'outil, il reste à sauvegarder les tâches dans un fichier JSON. Vous avez maintenant les briques pour le faire seul.
-
-OK 12 réécrit

@@ -224,6 +224,24 @@ jobs:
       - name: Check lesson diagrams
         run: pnpm --filter @cyberlearn/web content:diagrams
 
+  # ─── 6b. Authoring markers ─────────────────────────────────────────────────
+  # 133 of the 192 lessons ended on a note the author left themselves - "OK 03
+  # écrit" - which the import pipeline carried into the database and the lesson
+  # page rendered as the last paragraph of the lesson. Nothing flagged it: it is
+  # valid markdown. A grep costs nothing and is the only thing that would have.
+  lesson-markers:
+    name: Lesson authoring markers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: No authoring marker left in a lesson
+        run: |
+          if grep -rnE '^[[:space:]]*OK .*crit[[:space:]]*$' content/lessons --include='*.mdx'; then
+            echo "::error::A lesson ends on an authoring marker ("OK 03 écrit"). It renders to the reader. Run: node content-check.mjs --fix from apps/admin"
+            exit 1
+          fi
+
   # ─── 7. Auth hook signature verification (Deno unit test) ─────────────────
   # Synthetic proof that the custom-access-token hook authenticates GoTrue's
   # Standard Webhooks signature: valid -> accepted, invalid/absent/expired ->
