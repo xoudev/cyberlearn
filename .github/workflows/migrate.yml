@@ -1,0 +1,80 @@
+name: Migrate database
+
+# The Vercel build command is `next build` alone, so a merge ships code to
+# production without touching the schema. That is how `paths.track` came to be
+# referenced by a deployed query on a database that had no such column: every
+# request to /paths answered 500 with P2022 until the migration was applied by
+# hand. This workflow closes that gap - a migration lands as soon as it reaches
+# main, from the cloud, with no checkout on anyone's machine.
+#
+# It races the Vercel build rather than gating it: both start from the same
+# push. `migrate deploy` takes seconds and a Next.js build takes minutes, so in
+# practice the schema is ready first, but that is a timing property, not a
+# guarantee. Gating properly means turning off Vercel's git integration and
+# deploying from here after this job - a larger change, worth it only if the
+# race ever actually bites.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/db/prisma/migrations/**"
+      - ".github/workflows/migrate.yml"
+  workflow_dispatch:
+
+# Never let two deploys apply migrations at once: `migrate deploy` is not
+# safe to run concurrently against the same database, and unlike CI a queued
+# run must not be cancelled - it may carry a migration the newer run does not.
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: prisma migrate deploy
+    runs-on: ubuntu-latest
+    # Lets the repository require a manual approval before production is
+    # touched, under Settings -> Environments -> production.
+    environment: production
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Fail here rather than three steps later with a Prisma connection error
+      # that reads like the database is down.
+      - name: Check the connection secrets are set
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: |
+          if [ -z "$DIRECT_URL" ]; then
+            echo "::error::DIRECT_URL is not set. Add it under Settings -> Secrets and variables -> Actions, using the Supabase direct connection string (port 5432), not the pooler."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Migrations open one short-lived session and issue DDL, which the
+      # transaction pooler cannot carry - both variables point at the direct
+      # connection. Prisma reads directUrl for migrate and url for everything
+      # else, and this job never runs a query outside migrate.
+      - name: Apply pending migrations
+        env:
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: pnpm --filter @cyberlearn/db db:migrate:prod
+
+      - name: Show what the database now has
+        env:
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: pnpm --filter @cyberlearn/db exec prisma migrate status
