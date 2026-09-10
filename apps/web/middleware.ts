@@ -118,6 +118,38 @@ function isOnboardingRoute(pathname: string): boolean {
   return pathname.startsWith("/onboarding");
 }
 
+// ─── Auth calls, bounded ───────────────────────────────────────────────────
+// The middleware runs on every request, and getSession() refreshes an expired
+// token over the network. When the auth host is unreachable the GoTrue client
+// retries with backoff instead of failing fast, so a single outage kept the
+// middleware alive past Vercel's 25s budget and turned *every* route - the
+// landing page and /login included - into a 504 MIDDLEWARE_INVOCATION_TIMEOUT.
+//
+// A dependency being down should cost the session, not the whole site: the
+// call is capped, and a visitor whose session cannot be verified is treated as
+// logged out, so public pages keep being served.
+const AUTH_CALL_TIMEOUT_MS = 3_000;
+
+async function withTimeout<T>(promise: PromiseLike<T>, label: string): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${String(AUTH_CALL_TIMEOUT_MS)}ms`));
+        }, AUTH_CALL_TIMEOUT_MS);
+      }),
+    ]);
+  } catch (error) {
+    // Logged, not thrown: the request still has to be answered.
+    console.error(`[middleware] ${label} failed:`, error);
+    return null;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 // ─── Middleware ────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
@@ -176,12 +208,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     cookies: cookieMethods,
   });
 
-  // getSession() reads the JWT from cookies without a network round-trip - fast
-  // enough for routing decisions. Server components use getUser() for security.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  // getSession() reads the JWT from cookies and refreshes it when it has
+  // expired, which is a network call - hence the cap. Server components use
+  // getUser() for security.
+  const sessionResult = await withTimeout(supabase.auth.getSession(), "getSession");
+  const user = sessionResult?.data.session?.user ?? null;
 
   // ── Routing logic ──────────────────────────────────────────────────────
 
@@ -197,8 +228,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   } else {
     const isMfaRoute = pathname.startsWith("/mfa");
     if (!isMfaRoute && !pathname.startsWith("/auth/")) {
-      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const assurance = await withTimeout(
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        "getAuthenticatorAssuranceLevel",
+      );
+      // Unreachable auth is treated like a failed check: send the user to the
+      // MFA gate rather than letting them through unverified.
       if (
+        assurance === null ||
         assurance.error ||
         (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")
       ) {
