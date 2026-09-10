@@ -22,7 +22,7 @@ import {
   type SerializedFolder,
   type SerializedNote,
 } from "./notes-shared";
-import { AllNotesGlyph, FolderGlyph } from "./folder-icons";
+import { FolderGlyph } from "./folder-icons";
 import { NoteReader } from "./note-reader";
 import { downloadMarkdown, notesToMarkdown } from "@/lib/notes/export";
 
@@ -124,11 +124,22 @@ export function NotesLibrary({
     });
   }, [notes, query, filter, selectedFolder]);
 
+  // A search reaches inside folders. Browsing does not: at the root a foldered
+  // note is represented by its folder card, the way a file in a Drive folder is
+  // not also loose on the drive - but a reader who typed a query is looking for
+  // a note, not for where it lives, so the results stay flat and complete.
+  const searching = query.trim().length > 0 || filter !== "ALL";
+
   // In the "Toutes" view, group by folder (folder order, then "Sans dossier").
   // In a specific-folder view, a single flat group.
   const groups = useMemo(() => {
     if (selectedFolder !== ALL) {
       return filtered.length > 0 ? [{ id: selectedFolder, title: null, notes: filtered }] : [];
+    }
+    if (!searching) {
+      const knownRoot = new Set(folders.map((f) => f.id));
+      const rootNotes = filtered.filter((n) => n.folderId === null || !knownRoot.has(n.folderId));
+      return rootNotes.length > 0 ? [{ id: NONE, title: null, color: null, notes: rootNotes }] : [];
     }
     const out: {
       id: string;
@@ -149,7 +160,12 @@ export function NotesLibrary({
       out.push({ id: NONE, title: "Sans dossier", color: null, notes: loose });
     }
     return out;
-  }, [filtered, folders, selectedFolder]);
+  }, [filtered, folders, selectedFolder, searching]);
+
+  const currentFolder =
+    selectedFolder === ALL || selectedFolder === NONE
+      ? null
+      : (folders.find((f) => f.id === selectedFolder) ?? null);
 
   const readerNote = readerId ? (notes.find((n) => n.id === readerId) ?? null) : null;
 
@@ -473,74 +489,82 @@ export function NotesLibrary({
         </div>
       </div>
 
-      {/* Folder bar */}
+      {/* Breadcrumb + actions. The folder row used to be a strip of filter
+          pills: a folder read as a tag you toggled, not as a place notes live
+          in. It is a grid of folder cards below, and this bar only says where
+          you are and how to get back. */}
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
-          gap: 8,
+          gap: 10,
           paddingBottom: 16,
           marginBottom: 22,
           borderBottom: "1px solid #1F1B47",
         }}
       >
-        <FolderPill
-          label="Toutes"
-          count={notes.length}
-          icon={
-            <AllNotesGlyph color={selectedFolder === ALL ? "#05041A" : "var(--cosmetic-accent)"} />
-          }
-          active={selectedFolder === ALL}
+        <button
+          type="button"
           onClick={() => {
             setSelectedFolder(ALL);
           }}
-        />
-        <FolderPill
-          label="Sans dossier"
-          count={countFor(null)}
-          icon={
-            <FolderGlyph
-              name="folder"
-              color={selectedFolder === NONE ? "#05041A" : FOLDER_DEFAULT_COLOR}
-            />
-          }
-          active={selectedFolder === NONE}
-          onClick={() => {
-            setSelectedFolder(NONE);
+          disabled={selectedFolder === ALL}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: selectedFolder === ALL ? "#F5F5FA" : "#8B88A8",
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: selectedFolder === ALL ? "default" : "pointer",
           }}
-          droppable
-          dragActive={draggingId !== null}
-          dragOver={dragOverKey === NONE}
-          dropHandlers={dropProps(NONE, null)}
-        />
-        {folders.map((f) => (
-          <FolderPill
-            key={f.id}
-            label={f.name}
-            count={countFor(f.id)}
-            icon={
+          {...(selectedFolder !== ALL ? dropProps("__root__", null) : {})}
+        >
+          Mes notes
+        </button>
+
+        {selectedFolder !== ALL && (
+          <>
+            <span style={{ color: "#44406B", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+              /
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#F5F5FA",
+              }}
+            >
               <FolderGlyph
-                name={f.icon}
-                color={selectedFolder === f.id ? "#05041A" : (f.color ?? FOLDER_DEFAULT_COLOR)}
+                name={selectedFolder === NONE ? "folder" : (currentFolder?.icon ?? null)}
+                color={
+                  selectedFolder === NONE
+                    ? FOLDER_DEFAULT_COLOR
+                    : (currentFolder?.color ?? FOLDER_DEFAULT_COLOR)
+                }
               />
-            }
-            active={selectedFolder === f.id}
-            onClick={() => {
-              setSelectedFolder(f.id);
-            }}
-            droppable
-            dragActive={draggingId !== null}
-            dragOver={dragOverKey === f.id}
-            dropHandlers={dropProps(f.id, f.id)}
-          />
-        ))}
+              {selectedFolder === NONE ? "Sans dossier" : (currentFolder?.name ?? "Dossier")}
+            </span>
+          </>
+        )}
+
         <button
           type="button"
           onClick={() => {
             setManageOpen((v) => !v);
           }}
           style={{
+            marginLeft: "auto",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             fontWeight: 700,
@@ -559,7 +583,6 @@ export function NotesLibrary({
           type="button"
           onClick={exportAll}
           style={{
-            marginLeft: "auto",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             fontWeight: 700,
@@ -575,6 +598,55 @@ export function NotesLibrary({
           ↧ Exporter tout
         </button>
       </div>
+
+      {/* Folder grid - only at the root, and only while browsing. A search is
+          answered with notes, not with the drawers they sit in. */}
+      {selectedFolder === ALL && !searching && (folders.length > 0 || countFor(null) > 0) && (
+        <>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: "#6B6890",
+              marginBottom: 12,
+            }}
+          >
+            Dossiers
+          </div>
+          <div className="notes-folder-grid">
+            {folders.map((f) => (
+              <FolderCard
+                key={f.id}
+                name={f.name}
+                count={countFor(f.id)}
+                icon={f.icon}
+                color={f.color ?? FOLDER_DEFAULT_COLOR}
+                dragActive={draggingId !== null}
+                dragOver={dragOverKey === f.id}
+                dropHandlers={dropProps(f.id, f.id)}
+                onOpen={() => {
+                  setSelectedFolder(f.id);
+                }}
+              />
+            ))}
+            <FolderCard
+              name="Sans dossier"
+              count={countFor(null)}
+              icon={null}
+              color={FOLDER_DEFAULT_COLOR}
+              dragActive={draggingId !== null}
+              dragOver={dragOverKey === NONE}
+              dropHandlers={dropProps(NONE, null)}
+              onOpen={() => {
+                setSelectedFolder(NONE);
+              }}
+            />
+          </div>
+        </>
+      )}
 
       {/* Manage folders panel */}
       {manageOpen && (
@@ -761,8 +833,8 @@ export function NotesLibrary({
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {groups.map((g) => {
             const gFolder = g.id === NONE ? null : folders.find((f) => f.id === g.id);
-            // Distinct key from the folder pill so hovering the header highlights
-            // only the header, not also the pill for the same folder.
+            // Distinct key from the folder card so dragging over the header
+            // highlights only the header, not also the card for that folder.
             const headerKey = `hdr:${g.id}`;
             const headerDragOver = dragOverKey === headerKey;
             return (
@@ -951,60 +1023,109 @@ interface DropHandlers {
   onDrop: (e: React.DragEvent) => void;
 }
 
-function FolderPill({
-  label,
+/**
+ * A folder as a place, not as a tag.
+ *
+ * The row of filter pills said "SOC/BlueTeam 1" the way a category chip does,
+ * so nothing about it suggested you could put a note inside. This is the drawer:
+ * a large glyph, the count of what is in it, and a body that lights up when a
+ * dragged note is over it.
+ *
+ * Double-click opens it, single click does not - the Drive convention, and the
+ * one that leaves single click free to be a miss rather than a navigation. The
+ * card is a button all the same, so Enter and Space open it for anyone not
+ * using a mouse, and the double-click is never the only way in.
+ */
+function FolderCard({
+  name,
   count,
   icon,
-  active,
-  onClick,
-  droppable = false,
-  dragActive = false,
-  dragOver = false,
+  color,
+  dragActive,
+  dragOver,
   dropHandlers,
+  onOpen,
 }: {
-  label: string;
+  name: string;
   count: number;
-  icon: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-  droppable?: boolean;
-  dragActive?: boolean;
-  dragOver?: boolean;
-  dropHandlers?: DropHandlers;
-}): React.JSX.Element {
-  const borderColor = active || dragOver ? "var(--cosmetic-accent)" : "#2A2560";
-  const borderStyle = droppable && dragActive && !active ? "dashed" : "solid";
-  const background = active
-    ? "var(--cosmetic-accent)"
-    : dragOver
-      ? "color-mix(in srgb, var(--cosmetic-accent) 16%, transparent)"
-      : "transparent";
+  icon: string | null;
+  color: string;
+  dragActive: boolean;
+  dragOver: boolean;
+  dropHandlers: DropHandlers;
+  onOpen: () => void;
+}): React.ReactElement {
   return (
     <button
       type="button"
-      onClick={onClick}
-      {...(droppable && dropHandlers ? dropHandlers : {})}
+      onDoubleClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      aria-label={`${name}, ${String(count)} note${count > 1 ? "s" : ""} - ouvrir`}
+      {...dropHandlers}
       style={{
-        display: "inline-flex",
+        display: "flex",
         alignItems: "center",
-        gap: 8,
-        fontFamily: "var(--font-mono)",
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: "0.06em",
-        color: active ? "#05041A" : "#B8B5D1",
-        background,
-        border: `1px ${borderStyle} ${borderColor}`,
-        padding: "8px 12px",
+        gap: 14,
+        width: "100%",
+        minWidth: 0,
+        padding: "16px 18px",
+        textAlign: "left",
         cursor: "pointer",
-        maxWidth: 220,
+        background: dragOver ? `color-mix(in srgb, ${color} 14%, #05041A)` : "rgba(5,4,26,0.6)",
+        border: `1px solid ${dragOver ? color : "#2A2560"}`,
+        // A dashed edge on every card while a note is in the air says where it
+        // can go, before the reader has hovered anything.
+        borderStyle: dragActive && !dragOver ? "dashed" : "solid",
+        transition: "background 140ms ease, border-color 140ms ease",
       }}
     >
-      {icon}
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {label}
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 42,
+          height: 42,
+          background: `color-mix(in srgb, ${color} 12%, transparent)`,
+          border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
+        }}
+      >
+        <FolderGlyph name={icon} color={color} size={22} />
       </span>
-      <span style={{ opacity: 0.7 }}>{count}</span>
+
+      <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-display, sans-serif)",
+            fontWeight: 600,
+            fontSize: 14,
+            color: "#F5F5FA",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {name}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "#6B6890",
+          }}
+        >
+          {count === 0 ? "vide" : `${String(count)} note${count > 1 ? "s" : ""}`}
+        </span>
+      </span>
     </button>
   );
 }
