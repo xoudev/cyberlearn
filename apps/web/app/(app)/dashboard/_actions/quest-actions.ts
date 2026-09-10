@@ -10,6 +10,9 @@ import { creditXp } from "@/lib/xp/credit";
 export interface ClaimQuestResult {
   ok: boolean;
   xpGained?: number;
+  /** True when this claim carried the user over a level boundary. */
+  leveledUp?: boolean;
+  newLevel?: number;
   error?: string;
 }
 
@@ -33,20 +36,24 @@ export async function claimQuestAction(questId: string): Promise<ClaimQuestResul
 
   const now = new Date();
 
-  // The transaction returns whether it actually credited (false on a race / double-claim).
+  // The transaction returns the credit result, or null on a race / double-claim.
+  // creditXp has always reported whether the user crossed a level boundary -
+  // the lesson flow reads it to raise its modal. This action threw it away, so
+  // levelling up by claiming a quest happened in silence: the notification was
+  // written, but nothing on screen said so.
   const credited = await prisma.$transaction(async (tx) => {
     // Re-check inside the transaction to prevent a double-claim race.
     const fresh = await tx.userQuestProgress.findUnique({
       where: { id: row.id },
       select: { claimed: true },
     });
-    if (fresh?.claimed !== false) return false;
+    if (fresh?.claimed !== false) return null;
 
     await tx.userQuestProgress.update({
       where: { id: row.id },
       data: { claimed: true, claimedAt: now },
     });
-    await creditXp(tx, authUser.id, row.quest.xpReward, "QUEST", {
+    const credit = await creditXp(tx, authUser.id, row.quest.xpReward, "QUEST", {
       notifyXp: row.quest.xpReward,
       metadata: { questCode: row.quest.code },
     });
@@ -60,12 +67,17 @@ export async function claimQuestAction(questId: string): Promise<ClaimQuestResul
         data: { streakFreezes: Math.min(MAX_FREEZES, u.streakFreezes + row.quest.freezeReward) },
       });
     }
-    return true;
+    return credit;
   });
 
   if (!credited) return { ok: false, error: "Récompense déjà réclamée." };
 
   revalidatePath("/dashboard");
   revalidatePath("/profile");
-  return { ok: true, xpGained: row.quest.xpReward };
+  return {
+    ok: true,
+    xpGained: credited.xpGained,
+    leveledUp: credited.leveledUp,
+    newLevel: credited.newLevel,
+  };
 }
