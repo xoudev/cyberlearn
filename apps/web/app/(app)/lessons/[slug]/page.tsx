@@ -1,5 +1,5 @@
 import React, { Suspense, type ReactNode } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
@@ -30,14 +30,9 @@ function stripNode(node: { type?: string; children?: unknown[] }): void {
   }
 }
 import { requireRequestUser } from "@/lib/auth";
+import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
-import {
-  lessonRepository,
-  ratingRepository,
-  qaRepository,
-  noteRepository,
-  prisma,
-} from "@cyberlearn/db";
+import { lessonRepository, ratingRepository, qaRepository, noteRepository } from "@cyberlearn/db";
 import { NoteDrawer } from "./_components/note-drawer";
 import { LessonRating } from "./_components/lesson-rating";
 import { LessonQA } from "./_components/lesson-qa";
@@ -127,20 +122,14 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const lesson = await lessonRepository.findBySlug(slug);
   if (!lesson) notFound();
 
-  const [existing, nextLesson, ratingData, userRating, questions, note] = await Promise.all([
+  const [existing, pathContexts, ratingData, userRating, questions, note] = await Promise.all([
     lessonRepository.findProgress(authUser.id, lesson.id),
-    prisma.lesson.findFirst({
-      where: { status: "PUBLISHED", publishedAt: { gt: lesson.publishedAt ?? new Date(0) } },
-      select: {
-        slug: true,
-        title: true,
-        difficulty: true,
-        category: true,
-        xpReward: true,
-        estimatedMinutes: true,
-      },
-      orderBy: { publishedAt: "asc" },
-    }),
+    // "Next" used to mean the next lesson published anywhere in the catalogue,
+    // by publishedAt. Finishing lesson 3 of the network path could therefore
+    // hand the reader a Python lesson that happened to ship the same week, and
+    // the path they were working through simply stopped being mentioned. It is
+    // the next lesson of *this* path now.
+    lessonRepository.findPathContexts(authUser.id, [lesson.id]),
     ratingRepository.findLessonStats(lesson.id),
     ratingRepository.findUserLessonRating(authUser.id, lesson.id),
     qaRepository.findQuestionsByLesson(lesson.id),
@@ -150,6 +139,19 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       .findForLesson(authUser.id, lesson.id)
       .catch(() => null),
   ]);
+
+  const placement = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds).get(
+    lesson.id,
+  );
+
+  // The gate is here, before any progress is written: hiding the card on the
+  // catalogue would leave the lesson one guessed URL away, and starting it
+  // would mark a locked lesson IN_PROGRESS on the way out.
+  if (!isReadable(placement) && placement !== undefined) {
+    redirect(`/paths/${placement.path.slug}`);
+  }
+
+  const nextLesson = placement?.next ?? null;
 
   if (!existing) {
     await lessonRepository.upsertProgress({
@@ -462,16 +464,20 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         ))}
       </LessonStepper>
 
-      {/* ── Next bar ─────────────────────────────────────────────────────── */}
-      {nextLesson != null && (
-        <NextBar
-          next={nextLesson}
-          lessonId={lesson.id}
-          lessonTitle={lesson.title}
-          xpReward={lesson.xpReward}
-          isCompleted={isCompleted}
-        />
-      )}
+      {/* ── Next bar ─────────────────────────────────────────────────────────
+          Rendered even with no next lesson: the bar carries the "terminer"
+          button, so gating it on a successor left the last lesson of a path
+          with no way to complete it. */}
+      <NextBar
+        next={nextLesson}
+        placement={
+          placement ? { path: placement.path, rank: placement.rank, total: placement.total } : null
+        }
+        lessonId={lesson.id}
+        lessonTitle={lesson.title}
+        xpReward={lesson.xpReward}
+        isCompleted={isCompleted}
+      />
 
       {/* ── Rating + Q&A ─────────────────────────────────────────────────── */}
       <div className="lesson-rating-qa-grid">

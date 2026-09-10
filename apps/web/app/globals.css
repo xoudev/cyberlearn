@@ -1241,6 +1241,58 @@ article.lesson-content blockquote p code {
   }
 }
 
+/* A lesson whose predecessor in the path is unfinished. Kept in the grid
+   rather than hidden: the catalogue is also how someone sizes up what is
+   there. Dimmed, capped by a lock chip, and its link goes to the path that
+   opens it instead of to the lesson. */
+.lesson-locked {
+  position: relative;
+  display: block;
+  height: 100%;
+  text-decoration: none;
+}
+.lesson-locked > *:first-child {
+  opacity: 0.38;
+  filter: saturate(0.35);
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+.lesson-locked:hover > *:first-child,
+.lesson-locked:focus-visible > *:first-child {
+  opacity: 0.55;
+  filter: saturate(0.5);
+}
+.lesson-locked__chip {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100% - 28px);
+  padding: 5px 10px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8b5d1;
+  background: rgba(5, 4, 26, 0.92);
+  border: 1px solid #2a2560;
+}
+.lesson-locked__chip svg {
+  flex: none;
+}
+.lesson-locked__path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: #6b6890;
+}
+
 /* Lessons/paths catalog header: stacked → side-by-side */
 .catalog-header-grid {
   display: grid;

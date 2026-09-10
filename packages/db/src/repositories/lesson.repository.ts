@@ -121,6 +121,64 @@ export const lessonRepository = {
     });
   },
 
+  /**
+   * The published paths these lessons belong to, each with its full ordered
+   * lesson list, plus which of those lessons the reader has completed.
+   *
+   * Whole paths rather than just the lessons asked about: the sequential rule
+   * needs each lesson's neighbours, and a catalogue page asks about nine
+   * lessons scattered across as many paths. Three queries whatever the page
+   * size, instead of one per card.
+   */
+  async findPathContexts(userId: string, lessonIds: string[]) {
+    if (lessonIds.length === 0) return { paths: [], completedLessonIds: [] };
+
+    const links = await prisma.pathLesson.findMany({
+      where: { lessonId: { in: lessonIds }, path: { status: "PUBLISHED" } },
+      select: { pathId: true },
+    });
+    if (links.length === 0) return { paths: [], completedLessonIds: [] };
+
+    const paths = await prisma.path.findMany({
+      where: { id: { in: [...new Set(links.map((l) => l.pathId))] } },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        lessons: {
+          // Order matters: the rule reads adjacency off this array.
+          orderBy: { position: "asc" },
+          where: { lesson: { status: "PUBLISHED" } },
+          select: {
+            position: true,
+            lesson: {
+              select: {
+                id: true,
+                slug: true,
+                title: true,
+                difficulty: true,
+                category: true,
+                xpReward: true,
+                estimatedMinutes: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const completed = await prisma.userLessonProgress.findMany({
+      where: {
+        userId,
+        status: "COMPLETED",
+        lessonId: { in: paths.flatMap((p) => p.lessons.map((pl) => pl.lesson.id)) },
+      },
+      select: { lessonId: true },
+    });
+
+    return { paths, completedLessonIds: completed.map((c) => c.lessonId) };
+  },
+
   /** First 3 users who completed a lesson (ordered by completedAt asc). Respects publicProfile. */
   async findFirstBlood(lessonId: string) {
     return prisma.userLessonProgress.findMany({
