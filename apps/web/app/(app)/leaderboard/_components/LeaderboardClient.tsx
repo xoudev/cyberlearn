@@ -5,6 +5,7 @@ import type { LeaderboardEntry, PodLadderEntry } from "@cyberlearn/db";
 import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
 import { LeagueClient } from "./LeagueClient";
+import styles from "./leaderboard.module.css";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -15,21 +16,7 @@ function getTier(level: number): string {
   return "Novice";
 }
 
-function getTierClass(level: number): "master" | "expert" | "adept" | "novice" {
-  if (level >= 28) return "master";
-  if (level >= 20) return "expert";
-  if (level >= 10) return "adept";
-  return "novice";
-}
-
 // ── Style constants ────────────────────────────────────────────────────────────
-
-const TIER_COLORS: Record<string, { color: string; border: string }> = {
-  master: { color: "#FFB547", border: "rgba(255,181,71,0.4)" },
-  expert: { color: "#0AFFD4", border: "rgba(10,255,212,0.4)" },
-  adept: { color: "#6E8BFF", border: "rgba(110,139,255,0.4)" },
-  novice: { color: "#6B6890", border: "rgba(107,104,144,0.4)" },
-};
 
 const RK_COLORS: Record<number, { color: string; grad: string }> = {
   1: { color: "#FFB547", grad: "linear-gradient(135deg, #FFE08A 0%, #FFB547 50%, #FF8E1F 100%)" },
@@ -303,383 +290,60 @@ function YouBanner({
   entry,
   userRank,
   totalPlayers,
-}: { entry: LeaderboardEntry | null; userRank: number; totalPlayers: number }) {
-  const handle = entry?.username ?? entry?.displayName ?? "moi";
-  const tier = entry ? getTier(entry.level) : "-";
-
-  const topPct = topPercentile(userRank, totalPlayers);
-
+}: {
+  entry: LeaderboardEntry | null;
+  userRank: number;
+  totalPlayers: number;
+}) {
+  if (!entry || userRank < 1) return null;
   return (
-    <section
-      className="cl-you-banner"
-      style={{
-        position: "relative",
-        display: "grid",
-        // Six children - eyebrow, rank, handle, separator, XP, level - and this
-        // declared five tracks, so the level metric wrapped onto a second row
-        // and came to rest under the eyebrow, which is what "NIVEAU · ADEPTE 13
-        // floating bottom-left" was.
-        gridTemplateColumns: "auto auto 1fr auto auto auto",
-        alignItems: "center",
-        gap: 32,
-        padding: "24px 32px 24px 36px",
-        marginBottom: 56,
-        // One accent, not six. This card used to carry a cyan gradient wash, a
-        // full border, a cyan left rule, an outer cyan glow, an inset cyan
-        // ring and a cyan scanline overlay - six decorative treatments
-        // competing on one element, before any text. The left rule is kept as
-        // the single accent and everything else goes.
-        background: "rgba(5,4,26,0.6)",
-        border: "1px solid #2A2560",
-        borderLeft: "3px solid #0AFFD4",
-        overflow: "hidden",
-      }}
-    >
-      {/* eyebrow */}
-      <div
-        style={{
-          ...MONO,
-          fontWeight: 700,
-          fontSize: 10,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "#6B6890",
-        }}
-      >
-        Ta position
-      </div>
-
-      {/* big rank */}
-      <div
-        style={{
-          ...DISPLAY,
-          fontWeight: 800,
-          fontSize: 64,
-          lineHeight: 0.9,
-          letterSpacing: "-0.045em",
-          display: "inline-flex",
-          alignItems: "baseline",
-          gap: 4,
-        }}
-      >
-        <span style={{ color: "#44406B", fontSize: 28, fontWeight: 600 }}>#</span>
-        <span style={{ color: "#F5F5FA" }}>{userRank}</span>
-      </div>
-
-      {/* handle + delta */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-        <h2
-          style={{
-            ...DISPLAY,
-            fontWeight: 700,
-            fontSize: 24,
-            letterSpacing: "-0.01em",
-            color: "#F5F5FA",
-            margin: 0,
-          }}
-        >
-          <span style={{ color: "#44406B", ...MONO, fontWeight: 500 }}>@</span>
-          {handle}
-        </h2>
-        <span
-          style={{
-            ...MONO,
-            fontSize: 11,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#6B6890",
-          }}
-        >
-          {topPct !== null && (
-            <>
-              Top <b style={{ color: "#B8B5D1", fontWeight: 700 }}>{topPct}%</b>
-              <span style={{ color: "#44406B", margin: "0 8px" }}>/</span>
-            </>
-          )}
-          {totalPlayers.toLocaleString("fr-FR")} joueurs
+    <aside className={styles.position} aria-label="Ton classement">
+      <span className={styles.positionRank}>#{userRank}</span>
+      <div className={styles.identity}>
+        <strong>Ta place dans le classement</strong>
+        <span>
+          {totalPlayers.toLocaleString("fr-FR")} joueurs · Niveau {entry.level}
         </span>
       </div>
-
-      {/* separator */}
-      <span
-        className="cl-you-sep"
-        style={{ width: 1, alignSelf: "stretch", background: "#2A2560" }}
-      />
-
-      {/* XP metric */}
-      <div
-        className="cl-you-metric"
-        style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "right" }}
-      >
-        <span
-          style={{
-            ...MONO,
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#6B6890",
-          }}
-        >
-          XP TOTAL
-        </span>
-        <span
-          style={{
-            ...DISPLAY,
-            fontWeight: 800,
-            fontSize: 28,
-            letterSpacing: "-0.02em",
-            color: "#F5F5FA",
-          }}
-        >
-          {entry ? fmtXp(entry.xpTotal) : "-"}
-        </span>
-      </div>
-
-      {/* level metric */}
-      <div
-        className="cl-you-metric"
-        style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "right" }}
-      >
-        <span
-          style={{
-            ...MONO,
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#6B6890",
-          }}
-        >
-          NIVEAU · {tier.toUpperCase()}
-        </span>
-        <span
-          style={{
-            ...DISPLAY,
-            fontWeight: 800,
-            fontSize: 28,
-            letterSpacing: "-0.02em",
-            color: "#F5F5FA",
-          }}
-        >
-          {entry?.level ?? "-"}
-        </span>
-      </div>
-    </section>
+      <strong className={styles.score}>
+        {fmtXp(entry.xpTotal)} <small>XP</small>
+      </strong>
+    </aside>
   );
 }
 
-// ── Table row ─────────────────────────────────────────────────────────────────
-
-function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
-  const mono = getMonogram(entry.displayName, entry.username);
-  const tier = getTier(entry.level);
-  const tc = getTierClass(entry.level);
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const tierStyle = TIER_COLORS[tc] ?? TIER_COLORS.novice!;
-
-  const rkColors = RK_COLORS[entry.rank];
-  const rankGrad = isMe
-    ? "linear-gradient(135deg, #0AFFD4, #0024FF)"
-    : rkColors
-      ? rkColors.grad
-      : "linear-gradient(135deg, #0AFFD4, #0024FF)";
-
-  const rankColor = isMe ? "#0AFFD4" : rkColors?.color;
-
+function PlayerCard({ entry }: { entry: LeaderboardEntry }) {
+  const handle = entry.username ?? entry.displayName ?? "Anonyme";
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
-        alignItems: "center",
-        // 16 left the right-aligned "XP TOTAL" head touching the left-aligned
-        // "NIVEAU" one, and at 0.18em tracking they read as a single word.
-        gap: 24,
-        padding: isMe ? "14px 24px 14px 21px" : "14px 24px",
-        borderBottom: "1px solid rgba(31,27,71,0.5)",
-        borderLeft: isMe ? "3px solid #0AFFD4" : undefined,
-        background: isMe
-          ? "linear-gradient(90deg, rgba(10,255,212,0.10) 0%, rgba(10,255,212,0.02) 60%, transparent 100%)"
-          : undefined,
-        transition: "background 150ms ease",
-        position: "relative",
-      }}
-    >
-      {/* rank */}
-      <div
-        style={{
-          ...DISPLAY,
-          fontWeight: 800,
-          fontSize: 22,
-          letterSpacing: "-0.02em",
-          color: rankColor ?? "#6B6890",
-        }}
-      >
-        <span style={{ color: "#44406B", fontSize: 14, fontWeight: 600, marginRight: 2 }}>#</span>
-        {entry.rank}
+    <li className={[styles.player, entry.isCurrentUser ? styles.currentPlayer : ""].join(" ")}>
+      <div className={styles.playerTop}>
+        <span className={styles.rank} style={{ color: RK_COLORS[entry.rank]?.color }}>
+          #{entry.rank}
+        </span>
+        {entry.isCurrentUser ? <span className={styles.you}>Toi</span> : null}
       </div>
-
-      {/* player */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-        <HexAvatar mono={mono} grad={rankGrad} size={28} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-          <span
-            style={{
-              ...DISPLAY,
-              fontWeight: 600,
-              fontSize: 14,
-              color: "#F5F5FA",
-              letterSpacing: "-0.005em",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              minWidth: 0,
-            }}
-          >
-            <span
-              style={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                minWidth: 0,
-              }}
-            >
-              <span style={{ color: "#44406B", ...MONO, fontWeight: 500 }}>@</span>
-              {entry.username ?? entry.displayName ?? "Anonyme"}
-            </span>
-            {/* Was absolutely positioned at right:24, which put it on top of
-                the streak column - the flame and the day count read through
-                it. It belongs beside the name it marks, in flow. */}
-            {isMe && (
-              <span
-                style={{
-                  flex: "none",
-                  ...MONO,
-                  fontWeight: 700,
-                  fontSize: 9,
-                  letterSpacing: "0.18em",
-                  color: "#0AFFD4",
-                  border: "1px solid rgba(10,255,212,0.4)",
-                  padding: "2px 7px",
-                }}
-              >
-                TOI
-              </span>
-            )}
-          </span>
-          <span
-            style={{
-              ...MONO,
-              fontSize: 11,
-              color: "#6B6890",
-              letterSpacing: "0.04em",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {entry.displayName ?? ""}
+      <div className={styles.playerIdentity}>
+        <HexAvatar
+          mono={getMonogram(entry.displayName, entry.username)}
+          grad={RK_COLORS[entry.rank]?.grad ?? "linear-gradient(135deg, #6e8bff, #0affd4)"}
+          size={44}
+        />
+        <div className={styles.identity}>
+          <strong title={handle}>@{handle}</strong>
+          <span>
+            Niveau {entry.level} · {getTier(entry.level)}
           </span>
         </div>
       </div>
-
-      {/* XP */}
-      <div
-        style={{
-          ...DISPLAY,
-          fontWeight: 700,
-          fontSize: 18,
-          letterSpacing: "-0.01em",
-          color: "#F5F5FA",
-          textAlign: "right",
-        }}
-      >
-        {fmtXp(entry.xpTotal)}
-        <span
-          style={{
-            ...MONO,
-            fontSize: 10,
-            color: "#6B6890",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-            marginLeft: 4,
-          }}
-        >
-          XP
+      <div className={styles.playerBottom}>
+        <strong className={styles.score}>
+          {fmtXp(entry.xpTotal)} <small>XP</small>
+        </strong>
+        <span className={styles.streak}>
+          <FlameIcon /> {entry.streakDays} j
         </span>
       </div>
-
-      {/* level */}
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          ...MONO,
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "#6B6890",
-        }}
-      >
-        <span
-          style={{
-            ...DISPLAY,
-            fontWeight: 800,
-            fontSize: 18,
-            letterSpacing: "-0.02em",
-            color: "#F5F5FA",
-          }}
-        >
-          {entry.level}
-        </span>
-        <span
-          style={{
-            padding: "3px 8px",
-            border: `1px solid ${tierStyle.border}`,
-            color: tierStyle.color,
-            fontSize: 9.5,
-            letterSpacing: "0.18em",
-          }}
-        >
-          {tier}
-        </span>
-      </div>
-
-      {/* streak */}
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          ...MONO,
-          fontSize: 12,
-          color: "#B8B5D1",
-          justifySelf: "end",
-        }}
-      >
-        <span
-          style={{
-            color: entry.streakDays > 0 ? "#FFB547" : "#44406B",
-            filter: entry.streakDays > 0 ? "drop-shadow(0 0 8px rgba(255,181,71,0.5))" : "none",
-          }}
-        >
-          <FlameIcon size={14} />
-        </span>
-        <span
-          style={{
-            ...DISPLAY,
-            fontWeight: 700,
-            fontSize: 16,
-            color: entry.streakDays > 0 ? "#FFB547" : "#6B6890",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {entry.streakDays}
-        </span>
-        <span>j</span>
-      </div>
-    </div>
+    </li>
   );
 }
 
@@ -757,19 +421,6 @@ export function LeaderboardClient({
           .cl-podium > :nth-child(3) { order: 3; }
         }
 
-        /* "Ta position" banner: collapse the multi-track grid to a single
-           column below 1024px (where content is the full, narrower viewport)
-           so the username and the XP/level metrics stop overlapping. */
-        @media (max-width: 1023px) {
-          .cl-you-banner {
-            grid-template-columns: 1fr !important;
-            gap: 14px !important;
-            padding: 20px 18px !important;
-          }
-          .cl-you-banner > * { min-width: 0; }
-          .cl-you-sep { display: none !important; }
-          .cl-you-metric { text-align: left !important; }
-        }
       `}</style>
 
       <div className="page-container">
@@ -864,6 +515,8 @@ export function LeaderboardClient({
           <div
             style={{
               display: "inline-flex",
+              flexWrap: "wrap",
+              maxWidth: "100%",
               border: "1px solid #2A2560",
               background: "rgba(5,4,26,0.5)",
               padding: 3,
@@ -914,6 +567,7 @@ export function LeaderboardClient({
         <div
           style={{
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             gap: 16,
             ...MONO,
@@ -987,133 +641,31 @@ export function LeaderboardClient({
             {/* Your position banner */}
             <YouBanner entry={currentEntry} userRank={userRank} totalPlayers={entries.length} />
 
-            {/* Table */}
-            <div style={{ minWidth: 0, maxWidth: "100%" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "space-between",
-                  marginBottom: 16,
-                }}
-              >
-                <h3
-                  style={{
-                    ...MONO,
-                    fontWeight: 600,
-                    fontSize: 12,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "#B8B5D1",
-                    margin: 0,
-                  }}
-                >
-                  <span style={{ color: "#6B6890" }}>{"// "}</span>JOUEURS · TOP MONDIAL
-                </h3>
-                <span
-                  style={{
-                    ...MONO,
-                    fontSize: 11,
-                    letterSpacing: "0.1em",
-                    color: "#6B6890",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  <b style={{ color: "#F5F5FA" }}>1–{Math.min(12, entries.length)}</b> sur{" "}
-                  {entries.length.toLocaleString("fr-FR")}
-                </span>
+            <section aria-label="Classement des joueurs">
+              <div className={styles.sectionHeading}>
+                <h2>Les joueurs</h2>
+                <span>Top {Math.min(12, entries.length)}</span>
               </div>
-
-              {/* Horizontal scroll wrapper: below ~800px the fixed columns no
-                  longer fit, so the table scrolls sideways instead of silently
-                  dropping the STREAK column. The inner track carries the panel
-                  border/background and a min-width so rows keep their full width
-                  (and the highlighted row stays intact) while scrolling. */}
-              <div
-                style={{ position: "relative", overflowX: "auto", maxWidth: "100%", minWidth: 0 }}
-              >
-                <div
-                  style={{
-                    minWidth: 800,
-                    border: "1px solid #2A2560",
-                    background: "rgba(5,4,26,0.5)",
-                  }}
-                >
-                  {/* Header */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
-                      alignItems: "center",
-                      gap: 24,
-                      padding: "12px 24px",
-                      borderBottom: "1px solid #2A2560",
-                      background: "rgba(0,0,0,0.25)",
-                      ...MONO,
-                      fontSize: 10,
-                      letterSpacing: "0.18em",
-                      textTransform: "uppercase",
-                      color: "#6B6890",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <span>#</span>
-                    <span>JOUEUR</span>
-                    <span style={{ textAlign: "right" }}>XP TOTAL</span>
-                    <span>NIVEAU</span>
-                    <span style={{ justifySelf: "end" }}>STREAK</span>
-                  </div>
-
-                  {/* Top rows */}
+              {top12.length === 0 ? (
+                <p>Aucun joueur dans le classement pour le moment.</p>
+              ) : (
+                <ol className={styles.players}>
                   {top12.map((entry) => (
-                    <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
+                    <PlayerCard key={entry.rank} entry={entry} />
                   ))}
-
-                  {/* Ellipsis */}
-                  {userRank > 15 && contextRows.length > 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 14,
-                        padding: "14px 24px",
-                        borderBottom: "1px solid rgba(31,27,71,0.5)",
-                        ...MONO,
-                        fontSize: 11,
-                        letterSpacing: "0.2em",
-                        textTransform: "uppercase",
-                        color: "#6B6890",
-                      }}
-                    >
-                      <span
-                        style={{
-                          flex: 1,
-                          height: 1,
-                          background:
-                            "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
-                        }}
-                      />
-                      ··· {Math.max(0, userRank - 14)} joueurs ···
-                      <span
-                        style={{
-                          flex: 1,
-                          height: 1,
-                          background:
-                            "repeating-linear-gradient(90deg, #2A2560 0, #2A2560 4px, transparent 4px, transparent 8px)",
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Context rows around current user */}
-                  {userRank > 15 &&
-                    contextRows.map((entry) => (
-                      <TableRow key={entry.rank} entry={entry} isMe={entry.isCurrentUser} />
+                </ol>
+              )}
+              {contextRows.length > 0 ? (
+                <>
+                  <h2 className={styles.contextHeading}>Autour de toi</h2>
+                  <ol className={styles.players} start={contextRows[0]?.rank}>
+                    {contextRows.map((entry) => (
+                      <PlayerCard key={entry.rank} entry={entry} />
                     ))}
-                </div>
-              </div>
-            </div>
+                  </ol>
+                </>
+              ) : null}
+            </section>
           </>
         )}
       </div>

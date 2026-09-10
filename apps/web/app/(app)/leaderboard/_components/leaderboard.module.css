@@ -1,0 +1,128 @@
+.position {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 24px;
+  margin-bottom: 36px;
+  border: 1px solid #264c51;
+  border-radius: 16px;
+  background: #091a24;
+  color: #f5f5fa;
+  flex-wrap: wrap;
+}
+.positionRank {
+  font: 800 32px var(--font-display);
+  color: #0affd4;
+}
+.identity {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.identity strong {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.identity span {
+  font-size: 12px;
+  color: #a5a1bd;
+}
+.sectionHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.sectionHeading h2,
+.contextHeading {
+  font: 700 22px var(--font-display);
+  color: #f5f5fa;
+}
+.sectionHeading span {
+  color: #a5a1bd;
+  font: 12px var(--font-mono);
+}
+.players {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.player {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #292540;
+  border-radius: 16px;
+  background: #0b0a21;
+}
+.currentPlayer {
+  border-color: #0affd4;
+  background: #0b2029;
+}
+.playerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.rank {
+  font: 800 24px var(--font-display);
+  color: #a5a1bd;
+}
+.you {
+  color: #0affd4;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: #123b3b;
+  font: 12px var(--font-mono);
+}
+.playerIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.playerBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 18px;
+  margin-top: 20px;
+  border-top: 1px solid #292540;
+}
+.score {
+  color: #f5f5fa;
+  font: 700 23px var(--font-display);
+  white-space: nowrap;
+}
+.score small {
+  color: #a5a1bd;
+  font: 11px var(--font-mono);
+}
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffb547;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.contextHeading {
+  margin-top: 32px;
+}
+@media (max-width: 480px) {
+  .position {
+    padding: 18px;
+    gap: 12px;
+  }
+  .position > .score {
+    margin-left: 0;
+  }
+}

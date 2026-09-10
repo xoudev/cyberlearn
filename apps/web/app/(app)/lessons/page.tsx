@@ -6,6 +6,7 @@ import type { Category, Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements } from "@/lib/lessons/unlock";
+import { availableFirst } from "@/lib/lessons/catalog-order";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
 
@@ -125,30 +126,29 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
 
   const authUser = await requireRequestUser();
 
-  const [{ total, lessons }, categoryCounts] = await Promise.all([
+  const [{ total, lessons: matchingLessons }, categoryCounts] = await Promise.all([
     lessonRepository.findManyWithProgress(authUser.id, {
       ...(activeCategory !== undefined ? { category: activeCategory } : {}),
       ...(activeDifficulty !== undefined ? { difficulty: activeDifficulty } : {}),
       ...(activeStatus !== undefined ? { progressStatus: activeStatus } : {}),
       ...(rawSearch.length > 0 ? { search: rawSearch } : {}),
-      page,
-      pageSize: PAGE_SIZE,
+      paginate: false,
     }),
     lessonRepository.countByCategory(),
   ]);
 
-  // Resolve any uploaded cover markers to short-lived signed URLs (one batch
-  // round-trip). Lessons without a cover keep the seeded circuit backdrop.
-  // Alongside it, where each listed lesson sits in its path, so the ones the
-  // reader has not reached yet are shown as such instead of being offered.
-  const [coverSrcs, pathContexts] = await Promise.all([
-    resolveLessonCoverSrcMany(lessons.map((l) => l.coverImageUrl)),
-    lessonRepository.findPathContexts(
-      authUser.id,
-      lessons.map((l) => l.id),
-    ),
-  ]);
+  // Resolve availability across the matching catalogue before paginating.
+  // Sign cover URLs only for the cards on the resulting page.
+  const pathContexts = await lessonRepository.findPathContexts(
+    authUser.id,
+    matchingLessons.map((l) => l.id),
+  );
   const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds);
+  const lessons = availableFirst(matchingLessons, placements).slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
+  const coverSrcs = await resolveLessonCoverSrcMany(lessons.map((l) => l.coverImageUrl));
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const startIdx = (page - 1) * PAGE_SIZE + 1;
@@ -242,7 +242,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
               textTransform: "uppercase",
             }}
           >
-            <span>TRIER · RÉCENTES</span>
+            <span>TRIER · ACCESSIBLES D’ABORD</span>
             <span style={{ color: "#2A2560" }}>/</span>
             <span>VUE · GRILLE</span>
           </div>
