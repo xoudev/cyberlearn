@@ -315,7 +315,11 @@ function YouBanner({
       style={{
         position: "relative",
         display: "grid",
-        gridTemplateColumns: "auto auto 1fr auto auto",
+        // Six children - eyebrow, rank, handle, separator, XP, level - and this
+        // declared five tracks, so the level metric wrapped onto a second row
+        // and came to rest under the eyebrow, which is what "NIVEAU · ADEPTE 13
+        // floating bottom-left" was.
+        gridTemplateColumns: "auto auto 1fr auto auto auto",
         alignItems: "center",
         gap: 32,
         padding: "24px 32px 24px 36px",
@@ -487,7 +491,9 @@ function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
         display: "grid",
         gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
         alignItems: "center",
-        gap: 16,
+        // 16 left the right-aligned "XP TOTAL" head touching the left-aligned
+        // "NIVEAU" one, and at 0.18em tracking they read as a single word.
+        gap: 24,
         padding: isMe ? "14px 24px 14px 21px" : "14px 24px",
         borderBottom: "1px solid rgba(31,27,71,0.5)",
         borderLeft: isMe ? "3px solid #0AFFD4" : undefined,
@@ -523,13 +529,42 @@ function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
               fontSize: 14,
               color: "#F5F5FA",
               letterSpacing: "-0.005em",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              minWidth: 0,
             }}
           >
-            <span style={{ color: "#0AFFD4", ...MONO, fontWeight: 500 }}>@</span>
-            {entry.username ?? entry.displayName ?? "Anonyme"}
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                minWidth: 0,
+              }}
+            >
+              <span style={{ color: "#44406B", ...MONO, fontWeight: 500 }}>@</span>
+              {entry.username ?? entry.displayName ?? "Anonyme"}
+            </span>
+            {/* Was absolutely positioned at right:24, which put it on top of
+                the streak column - the flame and the day count read through
+                it. It belongs beside the name it marks, in flow. */}
+            {isMe && (
+              <span
+                style={{
+                  flex: "none",
+                  ...MONO,
+                  fontWeight: 700,
+                  fontSize: 9,
+                  letterSpacing: "0.18em",
+                  color: "#0AFFD4",
+                  border: "1px solid rgba(10,255,212,0.4)",
+                  padding: "2px 7px",
+                }}
+              >
+                TOI
+              </span>
+            )}
           </span>
           <span
             style={{
@@ -644,28 +679,6 @@ function TableRow({ entry, isMe }: { entry: LeaderboardEntry; isMe: boolean }) {
         </span>
         <span>j</span>
       </div>
-
-      {/* TOI label */}
-      {isMe && (
-        <span
-          style={{
-            position: "absolute",
-            right: 24,
-            top: "50%",
-            transform: "translateY(-50%)",
-            ...MONO,
-            fontWeight: 700,
-            fontSize: 9,
-            letterSpacing: "0.22em",
-            color: "#0AFFD4",
-            background: "rgba(10,255,212,0.12)",
-            border: "1px solid rgba(10,255,212,0.4)",
-            padding: "3px 8px",
-          }}
-        >
-          › TOI
-        </span>
-      )}
     </div>
   );
 }
@@ -1032,7 +1045,7 @@ export function LeaderboardClient({
                       display: "grid",
                       gridTemplateColumns: "80px minmax(0,1fr) 160px 130px 120px",
                       alignItems: "center",
-                      gap: 16,
+                      gap: 24,
                       padding: "12px 24px",
                       borderBottom: "1px solid #2A2560",
                       background: "rgba(0,0,0,0.25)",
