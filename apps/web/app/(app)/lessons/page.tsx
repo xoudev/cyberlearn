@@ -5,6 +5,7 @@ import { LessonCard } from "@cyberlearn/ui";
 import type { Category, Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
 import { requireRequestUser } from "@/lib/auth";
+import { indexPlacements } from "@/lib/lessons/unlock";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
 
@@ -138,7 +139,16 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
 
   // Resolve any uploaded cover markers to short-lived signed URLs (one batch
   // round-trip). Lessons without a cover keep the seeded circuit backdrop.
-  const coverSrcs = await resolveLessonCoverSrcMany(lessons.map((l) => l.coverImageUrl));
+  // Alongside it, where each listed lesson sits in its path, so the ones the
+  // reader has not reached yet are shown as such instead of being offered.
+  const [coverSrcs, pathContexts] = await Promise.all([
+    resolveLessonCoverSrcMany(lessons.map((l) => l.coverImageUrl)),
+    lessonRepository.findPathContexts(
+      authUser.id,
+      lessons.map((l) => l.id),
+    ),
+  ]);
+  const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const startIdx = (page - 1) * PAGE_SIZE + 1;
@@ -288,34 +298,70 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
         <EmptyState />
       ) : (
         <div className="lessons-catalog-grid">
-          {lessons.map((lesson, i) => (
-            <Link
-              key={lesson.id}
-              href={`/lessons/${lesson.slug}`}
-              style={{ display: "block", height: "100%", textDecoration: "none" }}
-            >
-              <LessonCard
-                title={lesson.title}
-                slug={lesson.slug}
-                description={lesson.description}
-                difficulty={
-                  lesson.difficulty as "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT"
+          {lessons.map((lesson, i) => {
+            const placement = placements.get(lesson.id);
+            const locked = placement?.state === "locked";
+            return (
+              <Link
+                key={lesson.id}
+                // A locked card leads to the path that opens it, not to a page
+                // that would only bounce back here.
+                href={locked ? `/paths/${placement.path.slug}` : `/lessons/${lesson.slug}`}
+                className={locked ? "lesson-locked" : undefined}
+                aria-label={
+                  locked
+                    ? `${lesson.title} — verrouillé, à débloquer dans le parcours ${placement.path.title}`
+                    : undefined
                 }
-                category={lesson.category as "CYBERSEC" | "DEV" | "NETWORK"}
-                durationMinutes={lesson.estimatedMinutes}
-                xpReward={lesson.xpReward}
-                status={
-                  (lesson.progressStatus ?? "NOT_STARTED") as
-                    | "NOT_STARTED"
-                    | "IN_PROGRESS"
-                    | "COMPLETED"
+                style={
+                  locked ? undefined : { display: "block", height: "100%", textDecoration: "none" }
                 }
-                refCode={lesson.refCode}
-                coverSrc={coverSrcs[i] ?? null}
-                variant="catalog"
-              />
-            </Link>
-          ))}
+              >
+                <LessonCard
+                  title={lesson.title}
+                  slug={lesson.slug}
+                  description={lesson.description}
+                  difficulty={
+                    lesson.difficulty as "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT"
+                  }
+                  category={lesson.category as "CYBERSEC" | "DEV" | "NETWORK"}
+                  durationMinutes={lesson.estimatedMinutes}
+                  xpReward={lesson.xpReward}
+                  status={
+                    (lesson.progressStatus ?? "NOT_STARTED") as
+                      | "NOT_STARTED"
+                      | "IN_PROGRESS"
+                      | "COMPLETED"
+                  }
+                  refCode={lesson.refCode}
+                  coverSrc={coverSrcs[i] ?? null}
+                  variant="catalog"
+                />
+                {locked && (
+                  <span className="lesson-locked__chip">
+                    <svg viewBox="0 0 12 14" width={10} height={11} fill="none" aria-hidden="true">
+                      <rect
+                        x="1"
+                        y="6"
+                        width="10"
+                        height="7"
+                        rx="1"
+                        stroke="currentColor"
+                        strokeWidth="1.3"
+                      />
+                      <path
+                        d="M3.5 6V4a2.5 2.5 0 0 1 5 0v2"
+                        stroke="currentColor"
+                        strokeWidth="1.3"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className="lesson-locked__path">{placement.path.title}</span>
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       )}
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { indexPlacements, type LockState } from "@/lib/lessons/unlock";
 import { requireUser } from "@cyberlearn/lib";
 import { prisma } from "@cyberlearn/db";
 import { BossNode } from "./_components/boss-node";
@@ -253,13 +254,17 @@ export default async function PathDetailPage({
     select: { id: true },
   });
 
-  // Sequential unlock: lesson is unlocked if all previous are completed (or first)
-  type NodeState = "completed" | "unlocked" | "locked";
-  const nodeStates: NodeState[] = path.lessons.map((pl, i) => {
-    if (completedLessonIds.has(pl.lessonId)) return "completed";
-    const prevCompleted = i === 0 || completedLessonIds.has(path.lessons[i - 1]?.lessonId ?? "");
-    return prevCompleted ? "unlocked" : "locked";
-  });
+  // The same rule the catalogue and the lesson page apply, from the same
+  // module. It used to live here alone, as a drawing of a rule nothing
+  // enforced - two copies would have drifted the moment one of them changed.
+  type NodeState = LockState;
+  const placements = indexPlacements(
+    [{ id: path.id, slug: path.slug, title: path.title, lessons: path.lessons }],
+    completedLessonIds,
+  );
+  const nodeStates: NodeState[] = path.lessons.map(
+    (pl) => placements.get(pl.lesson.id)?.state ?? "locked",
+  );
 
   // Group lessons into modules (every 6 lessons)
   const MODULE_SIZE = 6;

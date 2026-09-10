@@ -26,6 +26,7 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 interface NextBarProps {
+  /** The next lesson of the same path. Null on the lesson that closes it. */
   next: {
     slug: string;
     title: string;
@@ -33,7 +34,9 @@ interface NextBarProps {
     category: string;
     xpReward: number;
     estimatedMinutes: number;
-  };
+  } | null;
+  /** Where this lesson sits, so the reader can see the path they are walking. */
+  placement: { path: { slug: string; title: string }; rank: number; total: number } | null;
   lessonId: string;
   lessonTitle: string;
   xpReward: number;
@@ -42,14 +45,15 @@ interface NextBarProps {
 
 export function NextBar({
   next,
+  placement,
   lessonId,
   lessonTitle,
   xpReward,
   isCompleted,
 }: NextBarProps): React.ReactElement {
-  const catColor = CAT_COLORS[next.category] ?? "#6E8BFF";
-  const diffLabel = DIFF_LABELS[next.difficulty] ?? next.difficulty;
-  const diffColor = DIFF_COLORS[next.difficulty] ?? "#6E8BFF";
+  const catColor = next ? (CAT_COLORS[next.category] ?? "#6E8BFF") : "#0AFFD4";
+  const diffLabel = next ? (DIFF_LABELS[next.difficulty] ?? next.difficulty) : "";
+  const diffColor = next ? (DIFF_COLORS[next.difficulty] ?? "#6E8BFF") : "#6E8BFF";
 
   // Modal state lives here - NextBar stays mounted even after isCompleted flips to true
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
@@ -110,46 +114,65 @@ export function NextBar({
             }}
           >
             <span style={{ fontWeight: 700 }}>›</span>
-            Prochaine leçon
+            {next ? "Prochaine leçon" : "Dernière leçon du parcours"}
           </span>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span
+          {/* Which path this is, and how far along - the reader is walking a
+              path, not a list, and the bar is where that used to go unsaid. */}
+          {placement !== null && (
+            <Link
+              href={`/paths/${placement.path.slug}`}
               style={{
-                padding: "2px 8px",
                 fontFamily: "var(--font-mono, monospace)",
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                color: catColor,
-                background: `color-mix(in srgb, ${catColor} 10%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${catColor} 25%, transparent)`,
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                color: "#6B6890",
+                textDecoration: "none",
               }}
             >
-              {next.category}
-            </span>
-            <span
-              style={{
-                padding: "2px 8px",
-                fontFamily: "var(--font-mono, monospace)",
-                fontSize: 9,
-                fontWeight: 600,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                color: diffColor,
-                background: `color-mix(in srgb, ${diffColor} 10%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${diffColor} 25%, transparent)`,
-              }}
-            >
-              {diffLabel}
-            </span>
-            <span
-              style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 9, color: "#3F3D5C" }}
-            >
-              {next.estimatedMinutes} min · +{next.xpReward} XP
-            </span>
-          </div>
+              {placement.path.title} · {placement.rank}/{placement.total}
+            </Link>
+          )}
+
+          {next && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span
+                style={{
+                  padding: "2px 8px",
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: catColor,
+                  background: `color-mix(in srgb, ${catColor} 10%, transparent)`,
+                  border: `1px solid color-mix(in srgb, ${catColor} 25%, transparent)`,
+                }}
+              >
+                {next.category}
+              </span>
+              <span
+                style={{
+                  padding: "2px 8px",
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 9,
+                  fontWeight: 600,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: diffColor,
+                  background: `color-mix(in srgb, ${diffColor} 10%, transparent)`,
+                  border: `1px solid color-mix(in srgb, ${diffColor} 25%, transparent)`,
+                }}
+              >
+                {diffLabel}
+              </span>
+              <span
+                style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 9, color: "#3F3D5C" }}
+              >
+                {next.estimatedMinutes} min · +{next.xpReward} XP
+              </span>
+            </div>
+          )}
 
           <h3
             style={{
@@ -162,7 +185,7 @@ export function NextBar({
               lineHeight: 1.2,
             }}
           >
-            {next.title}
+            {next ? next.title : (placement?.path.title ?? "Parcours terminé")}
           </h3>
         </div>
 
@@ -188,7 +211,7 @@ export function NextBar({
           )}
 
           <Link
-            href={`/lessons/${next.slug}`}
+            href={next ? `/lessons/${next.slug}` : `/paths/${placement?.path.slug ?? ""}`}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -214,7 +237,7 @@ export function NextBar({
               e.currentTarget.style.background = "#0024FF";
             }}
           >
-            Leçon suivante
+            {next ? "Leçon suivante" : "Retour au parcours"}
             <svg viewBox="0 0 14 14" width={12} height={12} fill="none">
               <path
                 d="M3 7 H11 M8 4 L11 7 L8 10"
