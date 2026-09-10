@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
 import { resolveUserPostSignInRoute } from "@/lib/auth/password-flow";
 import { checkAuthRateLimit } from "@/lib/rate-limit";
 
-/** Exchanges Supabase PKCE codes from signup, recovery and legacy OAuth links. */
+/** Exchanges Supabase PKCE codes from signup, recovery and GitHub OAuth links. */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");

@@ -161,6 +161,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // server components via x-nonce so Next.js stamps it on inline scripts.
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
+  // Supabase can fall back to the Site URL when an OAuth redirect is not
+  // allow-listed. Exchange the PKCE code before rendering the landing page
+  // or checking an existing session, using the regular callback safeguards.
+  if (pathname === "/" && request.nextUrl.searchParams.has("code")) {
+    const callbackUrl = request.nextUrl.clone();
+    callbackUrl.pathname = "/auth/callback";
+    const callbackResponse = NextResponse.redirect(callbackUrl);
+    callbackResponse.headers.set("Cache-Control", "no-store");
+    applySecurityHeaders(callbackResponse, nonce);
+    callbackResponse.headers.set("Referrer-Policy", "no-referrer");
+    return callbackResponse;
+  }
+
   // Build request headers that include the nonce so layout.tsx can read it.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
