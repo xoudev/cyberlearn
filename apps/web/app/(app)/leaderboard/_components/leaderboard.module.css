@@ -4,15 +4,16 @@
   gap: 18px;
   padding: 20px 24px;
   margin-bottom: 36px;
-  border: 1px solid #264c51;
-  border-radius: 16px;
-  background: #091a24;
-  color: #f5f5fa;
+  border: 1px solid var(--color-border-default);
+  border-left: 3px solid var(--cosmetic-accent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-bg-base) 60%, transparent);
+  color: var(--color-text-primary);
   flex-wrap: wrap;
 }
 .positionRank {
-  font: 800 32px var(--font-display);
-  color: #0affd4;
+  font: 800 32px var(--font-sans);
+  color: var(--cosmetic-accent);
 }
 .identity {
   display: flex;
@@ -22,14 +23,17 @@
   min-width: 0;
 }
 .identity strong {
+  font-family: var(--font-sans);
   font-size: 15px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .identity span {
-  font-size: 12px;
-  color: #a5a1bd;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
 }
 .sectionHeading {
   display: flex;
@@ -40,11 +44,18 @@
 }
 .sectionHeading h2,
 .contextHeading {
-  font: 700 22px var(--font-display);
-  color: #f5f5fa;
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.sectionHeading h2::before,
+.contextHeading::before {
+  content: "// ";
+  color: var(--color-text-muted);
 }
 .sectionHeading span {
-  color: #a5a1bd;
+  color: var(--color-text-secondary);
   font: 12px var(--font-mono);
 }
 .players {
@@ -56,15 +67,16 @@
   margin: 0;
 }
 .player {
+  position: relative;
   min-width: 0;
   padding: 20px;
-  border: 1px solid #292540;
-  border-radius: 16px;
-  background: #0b0a21;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-bg-base) 50%, transparent);
 }
 .currentPlayer {
-  border-color: #0affd4;
-  background: #0b2029;
+  border-color: var(--cosmetic-accent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 5%, transparent);
 }
 .playerTop {
   display: flex;
@@ -73,15 +85,18 @@
   margin-bottom: 18px;
 }
 .rank {
-  font: 800 24px var(--font-display);
-  color: #a5a1bd;
+  font: 800 24px var(--font-sans);
+  color: var(--color-text-secondary);
 }
 .you {
-  color: #0affd4;
+  color: var(--cosmetic-accent);
   padding: 4px 9px;
-  border-radius: 6px;
-  background: #123b3b;
-  font: 12px var(--font-mono);
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+  font: 700 9px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
 }
 .playerIdentity {
   display: flex;
@@ -95,24 +110,29 @@
   gap: 12px;
   padding-top: 18px;
   margin-top: 20px;
-  border-top: 1px solid #292540;
+  border-top: 1px solid var(--color-border-subtle);
 }
 .score {
-  color: #f5f5fa;
-  font: 700 23px var(--font-display);
+  color: var(--color-text-primary);
+  font: 700 23px var(--font-sans);
   white-space: nowrap;
 }
 .score small {
-  color: #a5a1bd;
+  color: var(--color-text-secondary);
   font: 11px var(--font-mono);
 }
 .streak {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #ffb547;
-  font-size: 13px;
+  color: var(--color-rarity-legendary);
+  font: 11px var(--font-mono);
   white-space: nowrap;
+}
+.position .identity strong {
+  font: 600 10px var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 .contextHeading {
   margin-top: 32px;

@@ -757,17 +757,20 @@ export function NotesLibrary({
                 >
                   <svg viewBox="0 0 100 80" width="100" height="80" fill="none" aria-hidden="true">
                     <path
-                      d="M6 18a8 8 0 0 1 8-8h24l10 11h38a8 8 0 0 1 8 8v35a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8Z"
+                      d="M6 25V10h32l11 11h45v51H6Z"
                       fill="currentColor"
-                      opacity=".4"
+                      fillOpacity=".06"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
                     />
                     <path
-                      d="M6 32a7 7 0 0 1 7-7h74a7 7 0 0 1 7 7v32a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8Z"
-                      fill="currentColor"
+                      d="M6 29h88M6 64v8h8M86 72h8v-8"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
                     />
                   </svg>
                   <span className={styles.folderBadge}>
-                    <FolderGlyph name={folder.icon} color="#05041A" size={22} />
+                    <FolderGlyph name={folder.icon} color="currentColor" size={22} />
                   </span>
                 </span>
                 <strong>{folder.name}</strong>
