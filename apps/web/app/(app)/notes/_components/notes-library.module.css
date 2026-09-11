@@ -11,12 +11,19 @@
 }
 .folderHeading h2 {
   margin: 0;
-  font: 700 20px var(--font-display);
-  color: #f5f5fa;
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.folderHeading h2::before {
+  content: "// ";
+  color: var(--color-text-muted);
 }
 .folderHeading span {
-  font-size: 12px;
-  color: #a5a1bd;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
 }
 .folderGrid {
   display: grid;
@@ -29,10 +36,10 @@
   align-items: flex-start;
   gap: 8px;
   padding: 22px;
-  border: 1px solid #292540;
-  border-radius: 14px;
-  background: #0c0b23;
-  color: #f5f5fa;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-bg-base) 50%, transparent);
+  color: var(--color-text-primary);
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -40,19 +47,20 @@
   transition: background 150ms, border-color 150ms;
 }
 .folderTile:hover {
-  background: #15132e;
-  border-color: #625b88;
+  background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
+  border-color: var(--color-border-default);
 }
 .folderTile[aria-pressed="true"],
 .folderTile[data-drop-active="true"] {
-  background: #102833;
-  border-color: var(--cosmetic-accent, #0affd4);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+  border-color: var(--cosmetic-accent);
 }
 .folderTile:focus-visible {
-  outline: 2px solid var(--cosmetic-accent, #0affd4);
+  outline: 2px solid var(--cosmetic-accent);
   outline-offset: 4px;
 }
 .folderTile strong {
+  font-family: var(--font-sans);
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -60,8 +68,10 @@
   font-size: 15px;
 }
 .folderTile > span:last-child {
-  color: #a5a1bd;
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font: 10px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 .folderArtwork {
   position: relative;
@@ -74,8 +84,9 @@
   top: 39px;
 }
 .breadcrumb {
-  color: #f5f5fa;
-  font-size: 14px;
+  color: var(--color-text-primary);
+  font: 11px var(--font-mono);
+  letter-spacing: 0.08em;
   overflow-wrap: anywhere;
 }
 @media (pointer: coarse) {
