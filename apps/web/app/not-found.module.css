@@ -1,0 +1,106 @@
+.page {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  color: var(--fg-primary);
+  background: radial-gradient(
+      ellipse 700px 420px at 50% 45%,
+      rgba(0, 36, 255, 0.18),
+      transparent 70%
+    ), var(--bg-primary);
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 37, 96, 0.22) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 78%);
+}
+
+.card {
+  position: relative;
+  width: min(620px, 100%);
+  padding: clamp(30px, 6vw, 58px);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid var(--brand-turquoise);
+  background: rgba(10, 8, 38, 0.84);
+  box-shadow: 0 28px 80px -50px rgba(10, 255, 212, 0.8);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 54px;
+  color: var(--fg-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.brand b,
+.code {
+  color: var(--brand-turquoise);
+}
+
+.code {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.card h1 {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 7vw, 64px);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.description {
+  max-width: 480px;
+  margin: 0;
+  color: var(--fg-secondary);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 36px;
+}
+
+.actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.primary {
+  border: 1px solid var(--brand-blue);
+  color: #fff;
+  background: var(--brand-blue);
+}
+
+.secondary {
+  border: 1px solid var(--border-strong);
+  color: var(--fg-secondary);
+  background: transparent;
+}

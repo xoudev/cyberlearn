@@ -11,14 +11,13 @@
  * breath, and would split certificates issued before and after the change
  * across two hosts.
  *
- * Meanwhile the apex answers 307 and redirects to www, so www is what visitors
- * and crawlers actually land on. Declaring a canonical that redirects somewhere
- * else leaves the search engine to guess, which is how one page ends up indexed
- * twice. The SEO host and the application host are two different concerns that
- * happened to share one variable; they no longer do.
+ * Production serves the apex domain and redirects www to it. Keep every
+ * canonical, sitemap entry and robots host on that final destination so search
+ * engines never have to canonicalise through a redirect.
  *
  * Set NEXT_PUBLIC_CANONICAL_URL if the primary domain ever moves.
  */
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_CANONICAL_URL ?? "https://www.cyberlearn.fr"
-).replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_CANONICAL_URL ?? "https://cyberlearn.fr").replace(
+  /\/$/,
+  "",
+);

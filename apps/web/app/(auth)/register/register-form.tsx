@@ -72,7 +72,8 @@ export function RegisterForm(): React.JSX.Element {
         {pending ? "Création…" : "Créer mon compte"}
       </button>
       <p className={styles.finePrint}>
-        En créant ton compte, tu acceptes les CGU et la politique de confidentialité.
+        En créant ton compte, tu acceptes les <Link href="/legal/terms">CGU</Link> et la{" "}
+        <Link href="/privacy">politique de confidentialité</Link>.
       </p>
       <Link className={styles.link} href="/login">
         J’ai déjà un compte

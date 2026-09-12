@@ -190,6 +190,8 @@ export default function DownloadPage(): React.JSX.Element {
   const androidApkUrl = env.NEXT_PUBLIC_ANDROID_APK_URL;
   const iosAppStoreUrl = env.NEXT_PUBLIC_IOS_APP_STORE_URL;
   const androidAvailable = Boolean(androidPlayUrl ?? androidApkUrl);
+  const androidNotifyUrl =
+    "/contact?theme=FEATURE_REQUEST&subject=Disponibilit%C3%A9%20de%20l%27application%20Android";
 
   return (
     <div className="download-page">
@@ -206,7 +208,7 @@ export default function DownloadPage(): React.JSX.Element {
             <Link href="/login" className="download-header__signin">
               Connexion
             </Link>
-            <Link href="/login" className="download-header__primary">
+            <Link href="/register" className="download-header__primary">
               <span className="download-header__primary-long">Commencer gratuitement</span>
               <span className="download-header__primary-short">Commencer</span>
               <ArrowIcon />
@@ -220,7 +222,7 @@ export default function DownloadPage(): React.JSX.Element {
           <div className="download-hero__copy">
             <div className="download-kicker">
               <span aria-hidden="true" />
-              <b>v2.3</b> · Application mobile · Android
+              <b>{androidAvailable ? "v2.3" : "Aperçu"}</b> · Application mobile · Android
             </div>
             <h1 id="download-title">
               Tout CyberLearn,
@@ -232,10 +234,17 @@ export default function DownloadPage(): React.JSX.Element {
               ordinateur. Ton compte est le même sur le web et sur mobile.
             </p>
             <div className="download-hero__actions">
-              <a href="#installation" className="download-action">
-                <span>Installer l’application</span>
-                <ArrowIcon />
-              </a>
+              {androidAvailable ? (
+                <a href="#installation" className="download-action">
+                  <span>Installer l’application</span>
+                  <ArrowIcon />
+                </a>
+              ) : (
+                <Link href={androidNotifyUrl} className="download-action">
+                  <span>Être prévenu du lancement</span>
+                  <ArrowIcon />
+                </Link>
+              )}
               <Link href="/login" className="download-action download-action--secondary">
                 Ouvrir sur le web
               </Link>
@@ -364,12 +373,13 @@ export default function DownloadPage(): React.JSX.Element {
                 </span>
                 <div>
                   <p>Android</p>
-                  <h3>L’application native</h3>
+                  <h3>{androidAvailable ? "L’application native" : "Publication en cours"}</h3>
                 </div>
               </div>
               <p className="download-install__description">
-                Installe l’app depuis Google Play pour recevoir les mises à jour automatiquement. Un
-                APK officiel peut aussi être proposé pour une installation directe.
+                {androidAvailable
+                  ? "Installe l’app depuis Google Play pour recevoir les mises à jour automatiquement. Un APK officiel peut aussi être proposé pour une installation directe."
+                  : "L’application Android est en cours de publication. Laisse-nous un message pour être prévenu dès que le lien officiel sera disponible."}
               </p>
               <div className="download-install__actions">
                 {androidPlayUrl ? (
@@ -377,9 +387,9 @@ export default function DownloadPage(): React.JSX.Element {
                 ) : androidApkUrl ? (
                   <ExternalAction href={androidApkUrl} label="Télécharger l’APK" />
                 ) : (
-                  <div className="download-action download-action--disabled" aria-disabled="true">
-                    Publication en cours
-                  </div>
+                  <Link href={androidNotifyUrl} className="download-action">
+                    Être prévenu
+                  </Link>
                 )}
                 {androidPlayUrl && androidApkUrl ? (
                   <ExternalAction href={androidApkUrl} label="Télécharger l’APK" secondary />

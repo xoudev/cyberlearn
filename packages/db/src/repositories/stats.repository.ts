@@ -19,6 +19,13 @@ export interface FeaturedPath {
   xp: number;
 }
 
+export interface PublicCatalogPath extends FeaturedPath {
+  refCode: string;
+  track: "SKILL" | "CAREER";
+  estimatedHours: number;
+  hasCertificate: boolean;
+}
+
 export const statsRepository = {
   /**
    * Public counters for the landing page. Read-only aggregates over published
@@ -73,6 +80,39 @@ export const statsRepository = {
       difficulty: p.difficulty,
       lessons: p.lessons.length,
       xp: p.lessons.reduce((sum, l) => sum + l.lesson.xpReward, 0),
+    }));
+  },
+
+  async findPublicCatalog(): Promise<PublicCatalogPath[]> {
+    const paths = await prisma.path.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: [{ publishedAt: "desc" }, { title: "asc" }],
+      select: {
+        slug: true,
+        refCode: true,
+        title: true,
+        description: true,
+        category: true,
+        track: true,
+        difficulty: true,
+        estimatedHours: true,
+        certificateTemplate: true,
+        lessons: { select: { lesson: { select: { xpReward: true } } } },
+      },
+    });
+
+    return paths.map((path) => ({
+      slug: path.slug,
+      refCode: path.refCode,
+      title: path.title,
+      description: path.description,
+      category: path.category,
+      track: path.track,
+      difficulty: path.difficulty,
+      estimatedHours: path.estimatedHours,
+      lessons: path.lessons.length,
+      xp: path.lessons.reduce((sum, item) => sum + item.lesson.xpReward, 0),
+      hasCertificate: path.certificateTemplate !== null,
     }));
   },
 };

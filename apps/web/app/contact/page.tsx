@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { submitContactAction, type ContactFormState } from "./_actions/contact-actions";
 
 const THEMES = [
@@ -30,10 +31,18 @@ export default function ContactPage(): React.ReactElement {
   const [state, action, isPending] = useActionState(submitContactAction, initialState);
   // Error screens link here with ?ref=<incident digest>; prefill the report.
   const [incidentRef, setIncidentRef] = useState<string | null>(null);
+  const [initialSubject, setInitialSubject] = useState<string | null>(null);
+  const [initialTheme, setInitialTheme] = useState("");
   // Anti-spam time trap: stamped on mount, checked server-side on submit.
   const [loadedAt, setLoadedAt] = useState("");
   useEffect(() => {
-    setIncidentRef(new URLSearchParams(window.location.search).get("ref"));
+    const params = new URLSearchParams(window.location.search);
+    setIncidentRef(params.get("ref"));
+    setInitialSubject(params.get("subject"));
+    const requestedTheme = params.get("theme");
+    setInitialTheme(
+      THEMES.some((theme) => theme.value === requestedTheme) ? (requestedTheme ?? "") : "",
+    );
     setLoadedAt(String(Date.now()));
   }, []);
 
@@ -99,8 +108,11 @@ export default function ContactPage(): React.ReactElement {
       style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 80px" }}
       className="contact-wrapper"
     >
+      <Link href="/" className="legal-back-link">
+        ← Retour à l’accueil
+      </Link>
       {/* Header */}
-      <div style={{ marginBottom: 36 }}>
+      <div style={{ marginTop: 28, marginBottom: 36 }}>
         <div
           style={{
             fontFamily: "var(--font-mono)",
@@ -150,6 +162,7 @@ export default function ContactPage(): React.ReactElement {
         {/* Email */}
         <div>
           <label
+            htmlFor="contact-email"
             style={{
               display: "block",
               fontFamily: "var(--font-mono)",
@@ -163,15 +176,19 @@ export default function ContactPage(): React.ReactElement {
             Email *
           </label>
           <input
+            id="contact-email"
             name="email"
             type="email"
             required
             autoComplete="email"
             placeholder="ton@email.com"
             style={INPUT_STYLE}
+            aria-describedby={state.fieldErrors?.email ? "contact-email-error" : undefined}
           />
           {state.fieldErrors?.email && (
             <p
+              id="contact-email-error"
+              role="alert"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
@@ -187,6 +204,7 @@ export default function ContactPage(): React.ReactElement {
         {/* Theme */}
         <div>
           <label
+            htmlFor="contact-theme"
             style={{
               display: "block",
               fontFamily: "var(--font-mono)",
@@ -200,10 +218,13 @@ export default function ContactPage(): React.ReactElement {
             Thème *
           </label>
           <select
+            id="contact-theme"
+            key={initialTheme || "theme"}
             name="theme"
             required
-            defaultValue=""
+            defaultValue={initialTheme}
             style={{ ...INPUT_STYLE, appearance: "none" }}
+            aria-describedby={state.fieldErrors?.theme ? "contact-theme-error" : undefined}
           >
             <option value="" disabled>
               Choisir un thème…
@@ -216,6 +237,8 @@ export default function ContactPage(): React.ReactElement {
           </select>
           {state.fieldErrors?.theme && (
             <p
+              id="contact-theme-error"
+              role="alert"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
@@ -231,6 +254,7 @@ export default function ContactPage(): React.ReactElement {
         {/* Subject */}
         <div>
           <label
+            htmlFor="contact-subject"
             style={{
               display: "block",
               fontFamily: "var(--font-mono)",
@@ -244,18 +268,22 @@ export default function ContactPage(): React.ReactElement {
             Sujet *
           </label>
           <input
-            key={incidentRef ?? "subject"}
+            id="contact-subject"
+            key={incidentRef ?? initialSubject ?? "subject"}
             name="subject"
             type="text"
             required
             minLength={5}
             maxLength={200}
-            defaultValue={incidentRef ? `Incident ${incidentRef}` : undefined}
+            defaultValue={incidentRef ? `Incident ${incidentRef}` : (initialSubject ?? undefined)}
             placeholder="Résume ton problème en quelques mots"
             style={INPUT_STYLE}
+            aria-describedby={state.fieldErrors?.subject ? "contact-subject-error" : undefined}
           />
           {state.fieldErrors?.subject && (
             <p
+              id="contact-subject-error"
+              role="alert"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
@@ -271,6 +299,7 @@ export default function ContactPage(): React.ReactElement {
         {/* Message */}
         <div>
           <label
+            htmlFor="contact-message"
             style={{
               display: "block",
               fontFamily: "var(--font-mono)",
@@ -284,6 +313,7 @@ export default function ContactPage(): React.ReactElement {
             Message *
           </label>
           <textarea
+            id="contact-message"
             name="message"
             required
             minLength={20}
@@ -291,9 +321,12 @@ export default function ContactPage(): React.ReactElement {
             rows={7}
             placeholder="Décris ta demande en détail…"
             style={{ ...INPUT_STYLE, resize: "vertical" }}
+            aria-describedby={state.fieldErrors?.message ? "contact-message-error" : undefined}
           />
           {state.fieldErrors?.message && (
             <p
+              id="contact-message-error"
+              role="alert"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
@@ -308,6 +341,7 @@ export default function ContactPage(): React.ReactElement {
 
         {state.error && (
           <p
+            role="alert"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
@@ -343,6 +377,9 @@ export default function ContactPage(): React.ReactElement {
         >
           {isPending ? "Envoi en cours…" : "Envoyer le message"}
         </button>
+        <span className="sr-only" aria-live="polite">
+          {isPending ? "Envoi du message en cours" : ""}
+        </span>
       </form>
     </div>
   );

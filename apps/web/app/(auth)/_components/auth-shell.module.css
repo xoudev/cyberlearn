@@ -201,6 +201,11 @@
   line-height: 1.55;
 }
 
+.finePrint a {
+  color: var(--brand-turquoise);
+  text-underline-offset: 3px;
+}
+
 .submit {
   min-height: 52px;
   border: 1px solid #0affd4;

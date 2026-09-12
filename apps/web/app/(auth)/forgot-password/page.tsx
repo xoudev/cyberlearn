@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { AuthShell } from "../_components/auth-shell";
 import { ForgotPasswordForm } from "./forgot-password-form";
+
+export const metadata: Metadata = {
+  title: "Mot de passe oublié",
+  description: "Reçois un lien sécurisé pour réinitialiser ton mot de passe CyberLearn.",
+  alternates: { canonical: "/forgot-password" },
+};
 
 export default function ForgotPasswordPage(): React.JSX.Element {
   return (
