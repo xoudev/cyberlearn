@@ -1,25 +1,13 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { PublicCatalogPath } from "@cyberlearn/db";
+import { PathCatalogCard } from "@/app/_components/path-catalog-card";
+import { PublicNavbar } from "@/app/_components/public-navbar";
+import "@/app/(app)/paths/_components/paths-catalog-v2.css";
 import "./catalogue.css";
 
-const CATEGORY_LABELS = {
-  CYBERSEC: "Cybersec",
-  DEV: "Dev",
-  NETWORK: "Réseau",
-} as const;
-
-const DIFFICULTY_LABELS = {
-  BEGINNER: "Débutant",
-  INTERMEDIATE: "Intermédiaire",
-  ADVANCED: "Avancé",
-  EXPERT: "Expert",
-} as const;
-
-type Category = "ALL" | keyof typeof CATEGORY_LABELS;
+type Category = "ALL" | "CYBERSEC" | "DEV" | "NETWORK";
 
 export function PublicCatalogue({ paths }: { paths: PublicCatalogPath[] }): React.JSX.Element {
   const [category, setCategory] = useState<Category>("ALL");
@@ -38,21 +26,7 @@ export function PublicCatalogue({ paths }: { paths: PublicCatalogPath[] }): Reac
 
   return (
     <div className="public-catalogue">
-      <header className="public-catalogue__nav">
-        <Link href="/" className="public-catalogue__brand" aria-label="CyberLearn · accueil">
-          <Image src="/icon_app.png" alt="" width={32} height={32} priority />
-          <span>
-            cyber<b>learn</b>
-          </span>
-        </Link>
-        <nav aria-label="Navigation principale">
-          <Link href="/">Accueil</Link>
-          <Link href="/login">Connexion</Link>
-          <Link href="/register" className="public-catalogue__signup">
-            Commencer gratuitement
-          </Link>
-        </nav>
-      </header>
+      <PublicNavbar />
 
       <main className="public-catalogue__main">
         <div className="public-catalogue__crumb" aria-hidden="true">
@@ -122,40 +96,22 @@ export function PublicCatalogue({ paths }: { paths: PublicCatalogPath[] }): Reac
         </p>
 
         {visiblePaths.length > 0 ? (
-          <section className="public-catalogue__grid" aria-label="Parcours disponibles">
-            {visiblePaths.map((path) => (
-              <article
-                key={path.slug}
-                id={path.slug}
-                className={`public-path-card public-path-card--${path.category.toLowerCase()}`}
-              >
-                <div className="public-path-card__topline">
-                  <span>{CATEGORY_LABELS[path.category]}</span>
-                  <span>{DIFFICULTY_LABELS[path.difficulty]}</span>
-                </div>
-                <p className="public-path-card__ref">{"// " + path.refCode}</p>
-                <h2>{path.title}</h2>
-                <p className="public-path-card__description">{path.description}</p>
-                <dl>
-                  <div>
-                    <dt>Missions</dt>
-                    <dd>{path.lessons}</dd>
-                  </div>
-                  <div>
-                    <dt>Durée</dt>
-                    <dd>~{path.estimatedHours} h</dd>
-                  </div>
-                  <div>
-                    <dt>XP</dt>
-                    <dd>{path.xp.toLocaleString("fr-FR")}</dd>
-                  </div>
-                </dl>
-                <div className="public-path-card__footer">
-                  <span>{path.hasCertificate ? "Certificat inclus" : "Parcours pratique"}</span>
-                  <Link href="/register">Commencer →</Link>
-                </div>
-              </article>
-            ))}
+          <section className="public-catalogue__paths pc2-root" aria-label="Parcours disponibles">
+            <div className="pc2-discover">
+              {visiblePaths.map((path) => (
+                <PathCatalogCard
+                  key={path.slug}
+                  id={path.slug}
+                  href="/register"
+                  path={{
+                    ...path,
+                    lessonCount: path.lessons,
+                    xpTotal: path.xp,
+                    hasCert: path.hasCertificate,
+                  }}
+                />
+              ))}
+            </div>
           </section>
         ) : (
           <div className="public-catalogue__empty">

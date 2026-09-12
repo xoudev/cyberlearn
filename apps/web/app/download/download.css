@@ -5,7 +5,6 @@
   color: var(--color-text-primary);
 }
 
-.download-header__inner,
 .download-hero,
 .download-stats,
 .download-product__inner,
@@ -13,22 +12,6 @@
 .download-footer > div {
   width: min(1320px, calc(100% - 112px));
   margin-inline: auto;
-}
-
-.download-header {
-  position: sticky;
-  z-index: 20;
-  top: 0;
-  background: var(--color-bg-base);
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.download-header__inner {
-  min-height: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 28px;
 }
 
 .download-brand {
@@ -53,66 +36,6 @@
   font-weight: inherit;
 }
 
-.download-header__nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.download-header__nav a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
-  text-decoration: none;
-}
-
-.download-header__nav > a:first-child {
-  padding-inline: 12px;
-}
-
-.download-header__nav > a:first-child:hover {
-  color: var(--color-text-primary);
-}
-
-.download-header__signin {
-  padding-inline: 18px;
-  border: 1px solid var(--color-border-default);
-}
-
-.download-header__signin:hover {
-  background: var(--color-bg-elevated);
-  color: var(--color-text-primary);
-}
-
-.download-header__primary {
-  gap: 16px;
-  padding-inline: 19px;
-  background: var(--color-brand-blue);
-  color: var(--color-text-primary) !important;
-}
-
-.download-header__primary svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.download-header__primary-short {
-  display: none;
-}
-
-.download-header__nav a:focus-visible,
 .download-action:focus-visible,
 .download-footer a:focus-visible,
 .download-brand:focus-visible {
@@ -938,7 +861,6 @@
 }
 
 @media (max-width: 1080px) {
-  .download-header__inner,
   .download-hero,
   .download-stats,
   .download-product__inner,
@@ -1017,7 +939,6 @@
 }
 
 @media (max-width: 680px) {
-  .download-header__inner,
   .download-hero,
   .download-stats,
   .download-product__inner,
@@ -1026,39 +947,12 @@
     width: min(100% - 28px, 1320px);
   }
 
-  .download-header__inner {
-    min-height: 68px;
-  }
-
   .download-brand {
     font-size: 14px;
   }
 
   .download-brand img {
     height: 29px;
-  }
-
-  .download-header__nav {
-    gap: 8px;
-  }
-
-  .download-header__nav > a:first-child,
-  .download-header__signin {
-    display: none;
-  }
-
-  .download-header__primary {
-    min-height: 46px !important;
-    gap: 11px;
-    padding-inline: 14px;
-  }
-
-  .download-header__primary-long {
-    display: none;
-  }
-
-  .download-header__primary-short {
-    display: inline;
   }
 
   .download-hero {
