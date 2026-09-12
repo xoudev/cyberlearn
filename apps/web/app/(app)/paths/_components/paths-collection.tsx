@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { PathCatalogCard } from "@/app/_components/path-catalog-card";
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
 
@@ -413,57 +414,6 @@ function TrophyCard({ path }: { path: SerializedPath }): React.JSX.Element {
   );
 }
 
-function GameCard({ path }: { path: SerializedPath }): React.JSX.Element {
-  const cat = CATEGORY_META[path.category] ?? CATEGORY_DEFAULT;
-  const diff = DIFF_META[path.difficulty] ?? DIFF_DEFAULT;
-  return (
-    <Link href={`/paths/${path.slug}`} className={`game-card game-card--${cat.kind}`}>
-      <Brackets />
-      <div className="game-card__cover">
-        <span className="game-card__cat">{cat.label}</span>
-        <span className="game-card__track">
-          {TRACK_META[path.track]?.short ?? TRACK_DEFAULT.short}
-        </span>
-        <span className="game-card__diff">
-          <DiffBars level={diff.level} />
-          {diff.label}
-        </span>
-        <span className="game-card__glyph">
-          <KindGlyph kind={cat.kind} size={64} />
-        </span>
-        <span className="game-card__id">
-          {"// "}
-          <b>{path.refCode}</b>
-        </span>
-      </div>
-      <div className="game-card__body">
-        <h3 className="game-card__title">{path.title}</h3>
-        <p className="game-card__desc">{path.description}</p>
-        <div className="game-card__stats">
-          <span>
-            <b>{path.lessonCount}</b> miss.
-          </span>
-          <span className="sep">·</span>
-          <span>
-            <b>~{path.estimatedHours}H</b>
-          </span>
-          <span className="sep">·</span>
-          <span className="xp">+{fmtXp(path.xpTotal)} XP</span>
-          {path.hasCert && (
-            <>
-              <span className="sep">·</span>
-              <span className="cert-mini">{CERT_ICON}</span>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="game-card__foot">
-        <span className="btn-start">Commencer {ARROW}</span>
-      </div>
-    </Link>
-  );
-}
-
 function EmptyState({ filterLabel }: { filterLabel: string }): React.JSX.Element {
   return (
     <div className="pc2-empty">
@@ -663,7 +613,7 @@ export function PathsCollection({
             <SectionLabel tag="À découvrir" count={`// ${String(idle.length)} parcours`} />
             <div className="pc2-discover">
               {idle.map((p) => (
-                <GameCard key={p.id} path={p} />
+                <PathCatalogCard key={p.id} path={p} />
               ))}
             </div>
           </>

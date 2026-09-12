@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { PublicNavbar } from "@/app/_components/public-navbar";
 import { env } from "@/lib/env";
 import "./download.css";
 
@@ -195,27 +196,7 @@ export default function DownloadPage(): React.JSX.Element {
 
   return (
     <div className="download-page">
-      <header className="download-header">
-        <div className="download-header__inner">
-          <Link href="/" className="download-brand" aria-label="CyberLearn · accueil">
-            <Image src="/icon_app.png" alt="" width={32} height={32} priority />
-            <span>
-              cyber<b>learn</b>
-            </span>
-          </Link>
-          <nav className="download-header__nav" aria-label="Navigation principale">
-            <Link href="/">Accueil</Link>
-            <Link href="/login" className="download-header__signin">
-              Connexion
-            </Link>
-            <Link href="/register" className="download-header__primary">
-              <span className="download-header__primary-long">Commencer gratuitement</span>
-              <span className="download-header__primary-short">Commencer</span>
-              <ArrowIcon />
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <PublicNavbar />
 
       <main>
         <section className="download-hero" aria-labelledby="download-title">
