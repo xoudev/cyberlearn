@@ -838,7 +838,7 @@ export function EditPathClient({
                 />
               </div>
               <Help>
-                cyberlearn.fr/parcours/<b style={{ color: TURQ }}>votre-slug</b>
+                cyberlearn.fr/paths/<b style={{ color: TURQ }}>votre-slug</b>
               </Help>
               <FieldErr msg={state.fieldErrors?.slug} />
             </div>
