@@ -52,9 +52,9 @@ export default function TermsPage(): React.JSX.Element {
           mineurs de moins de 16 ans doivent obtenir le consentement de leur représentant légal.
         </p>
         <p style={{ marginTop: "12px" }}>
-          L’inscription s’effectue via une adresse e-mail (lien magique) ou via un compte GitHub
-          (OAuth). Vous êtes responsable de la confidentialité de vos identifiants et de toute
-          activité effectuée depuis votre compte.
+          L’inscription s’effectue via une adresse e-mail et un mot de passe. La connexion peut
+          également utiliser un compte GitHub (OAuth). Vous êtes responsable de la confidentialité
+          de vos identifiants et de toute activité effectuée depuis votre compte.
         </p>
         <p style={{ marginTop: "12px" }}>
           Nous nous réservons le droit de suspendre ou de résilier tout compte en cas de violation
@@ -137,8 +137,8 @@ export default function TermsPage(): React.JSX.Element {
         </p>
         <p style={{ marginTop: "12px" }}>
           <strong style={{ color: "#B8B5D1" }}>Durée de conservation :</strong> données de compte
-          conservées jusqu’à suppression du compte ou 3 ans d’inactivité. Journaux d’audit conservés
-          12 mois.
+          conservées jusqu’à suppression du compte ou 24 mois d’inactivité. Journaux d’audit
+          conservés 12 mois.
         </p>
         <p style={{ marginTop: "12px" }}>
           <strong style={{ color: "#B8B5D1" }}>Vos droits :</strong> vous disposez d’un droit

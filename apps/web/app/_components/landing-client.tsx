@@ -222,7 +222,7 @@ export function LandingClient({
               Connexion
             </Link>
             <Link
-              href="/login"
+              href="/register"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -303,6 +303,7 @@ export function LandingClient({
             </div>
 
             <h1
+              aria-label="Maîtrise la cybersécurité, le dev et les réseaux."
               style={{
                 fontFamily: "var(--font-sans)",
                 fontWeight: 800,
@@ -344,7 +345,7 @@ export function LandingClient({
 
             <div className="landing-cta-row" style={{ marginBottom: 32 }}>
               <Link
-                href="/login"
+                href="/register"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -411,7 +412,7 @@ export function LandingClient({
                 Voir la démo
               </button>
               <Link
-                href="/paths"
+                href="/catalogue"
                 className="btn-ghost"
                 style={{
                   display: "inline-flex",
@@ -511,6 +512,7 @@ export function LandingClient({
               02 · LE SYSTÈME
             </div>
             <h2
+              aria-label="Une plateforme pensée pour les hackers en herbe."
               style={{
                 fontFamily: "var(--font-sans)",
                 fontWeight: 800,
@@ -834,6 +836,7 @@ export function LandingClient({
               03 · LES PARCOURS
             </div>
             <h2
+              aria-label="Choisis ta spécialité."
               style={{
                 fontFamily: "var(--font-sans)",
                 fontWeight: 800,
@@ -882,7 +885,7 @@ export function LandingClient({
               .map(({ path, kind, tag, color, lvl }) => (
                 <Link
                   key={path.slug}
-                  href={`/paths/${path.slug}`}
+                  href={`/catalogue#${path.slug}`}
                   style={{
                     position: "relative",
                     background: "#0A0826",
@@ -1050,6 +1053,7 @@ export function LandingClient({
               {"// READY · PLAYER · ONE"}
             </div>
             <h2
+              aria-label="Prêt à commencer ta mission ?"
               style={{
                 fontFamily: "var(--font-sans)",
                 fontWeight: 800,
@@ -1075,7 +1079,7 @@ export function LandingClient({
               ?
             </h2>
             <Link
-              href="/login"
+              href="/register"
               style={{
                 display: "inline-flex",
                 alignItems: "center",

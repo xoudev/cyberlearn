@@ -96,6 +96,7 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/auth/confirm" ||
     pathname.startsWith("/u/") ||
     pathname.startsWith("/contact") ||
+    pathname === "/catalogue" ||
     pathname === "/download" ||
     pathname === "/legal" ||
     pathname.startsWith("/legal/") ||
@@ -111,6 +112,31 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/manifest.webmanifest" ||
     pathname === "/icon.png" ||
     pathname === "/apple-icon.png"
+  );
+}
+
+const PROTECTED_ROUTE_PREFIXES = [
+  "/dashboard",
+  "/lessons",
+  "/paths",
+  "/challenges",
+  "/review",
+  "/revisions",
+  "/notes",
+  "/badges",
+  "/certificates",
+  "/leaderboard",
+  "/locker",
+  "/profile",
+  "/settings",
+  "/wrapped",
+  "/changelog",
+  "/onboarding",
+] as const;
+
+export function isProtectedRoute(pathname: string): boolean {
+  return PROTECTED_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
 
@@ -233,7 +259,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (!user) {
     // Unauthenticated user trying to access a protected route
-    if (!isPublicRoute(pathname)) {
+    if (isProtectedRoute(pathname)) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirectTo", pathname);
       const redirectResponse = NextResponse.redirect(loginUrl);

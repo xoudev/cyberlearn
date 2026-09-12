@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { middleware } from "./middleware";
+import { isProtectedRoute, middleware } from "./middleware";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -35,6 +35,22 @@ describe("OAuth Site URL fallback", () => {
       vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "");
       const response = await middleware(new NextRequest(`https://cyberlearn.fr${path}`));
       expect(response.headers.get("location")).toBeNull();
+    },
+  );
+});
+
+describe("protected route classification", () => {
+  it.each(["/dashboard", "/lessons/python", "/paths/linux", "/settings/account"])(
+    "protects known application route %s",
+    (path) => {
+      expect(isProtectedRoute(path)).toBe(true);
+    },
+  );
+
+  it.each(["/catalogue", "/contact", "/page-inconnue", "/u/introuvable"])(
+    "lets Next render public and unknown route %s",
+    (path) => {
+      expect(isProtectedRoute(path)).toBe(false);
     },
   );
 });

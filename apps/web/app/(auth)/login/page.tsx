@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { authRedirectSchema } from "@cyberlearn/types";
 import { AuthShell } from "../_components/auth-shell";
 import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = {
+  title: "Connexion",
+  description: "Connecte-toi à ton espace CyberLearn et reprends ta progression.",
+  alternates: { canonical: "/login" },
+};
 
 const ERROR_MESSAGES: Record<string, string> = {
   rate_limited: "Trop de tentatives. Réessaie dans 15 minutes.",
