@@ -148,7 +148,7 @@ export default function Reglages(): React.JSX.Element {
           {[
             { label: "Modifier mon profil", url: "https://cyberlearn.fr/profile/edit" },
             { label: "Confidentialité", url: "https://cyberlearn.fr/privacy" },
-            { label: "CGU", url: "https://cyberlearn.fr/terms" },
+            { label: "CGU", url: "https://cyberlearn.fr/legal/terms" },
             {
               label: "Exporter / supprimer mes données (RGPD)",
               url: "https://cyberlearn.fr/settings/data",

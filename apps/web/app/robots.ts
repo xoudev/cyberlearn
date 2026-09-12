@@ -32,6 +32,8 @@ const PRIVATE = [
 ];
 
 export default function robots(): MetadataRoute.Robots {
+  // SITE_URL is the canonical apex origin, so both directives match the final
+  // URL served in production instead of pointing crawlers through www.
   return {
     rules: [
       {

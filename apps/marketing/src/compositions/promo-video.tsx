@@ -242,7 +242,7 @@ function FinalCard(): React.JSX.Element {
             textTransform: "uppercase",
           }}
         >
-          cyberlearn.fr/telecharger
+          cyberlearn.fr/download
         </div>
       </div>
     </AbsoluteFill>
