@@ -9,8 +9,8 @@ import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { CHANGELOG_SEEN_KEY, LATEST_VERSION } from "@/lib/changelog/entries";
 
 interface SidebarNavProps {
-  /** Only a teacher gets the class-following entry; nobody else has one to follow. */
-  isTeacher?: boolean;
+  /** Shown only when there is at least one class to follow - not merely a role. */
+  hasClasses?: boolean;
   inProgressCount?: number;
   level?: number;
   xpCurrent?: number;
@@ -307,7 +307,7 @@ function SectionLabel({ text }: { text: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function SidebarNav({
-  isTeacher = false,
+  hasClasses = false,
   inProgressCount = 0,
   level = 1,
   xpCurrent = 0,
@@ -513,9 +513,9 @@ export function SidebarNav({
         }}
         aria-label="Navigation Activité"
       >
-        {/* Only a teacher has classes to follow, so nobody else is shown a
-            door that would 404 on them. */}
-        {isTeacher && (
+        {/* Keyed on having a class, not on the role: an entry that leads to a
+            page saying "rien ici" is worse than no entry. */}
+        {hasClasses && (
           <NavItem
             href="/ma-classe"
             label="Mes classes"
