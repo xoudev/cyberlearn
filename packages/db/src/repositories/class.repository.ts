@@ -24,6 +24,14 @@ export const classRepository = {
             slug: true,
             description: true,
             teacher: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+            promotion: {
+              select: {
+                id: true,
+                name: true,
+                startYear: true,
+                establishment: { select: { id: true, name: true, city: true } },
+              },
+            },
             _count: { select: { members: true } },
           },
         },
@@ -32,19 +40,94 @@ export const classRepository = {
     return rows.map((r) => ({ ...r.class, joinedAt: r.joinedAt }));
   },
 
-  /** The classes a teacher follows. */
+  /**
+   * The classes a teacher follows, grouped establishment by establishment and
+   * then promotion by promotion.
+   *
+   * A flat list is fine for one class and useless for twelve across three
+   * schools, which is the case this shape exists for. Grouping happens here
+   * rather than in the page so the teacher dashboard and any later view agree
+   * on the order: establishment by name, most recent intake first, then class.
+   */
   async findForTeacher(teacherId: string) {
-    return prisma.class.findMany({
-      where: { teacherId, archivedAt: null },
-      orderBy: { name: "asc" },
+    const classes = await prisma.class.findMany({
+      where: { teacherId, archivedAt: null, promotion: { archivedAt: null } },
+      orderBy: [
+        { promotion: { establishment: { name: "asc" } } },
+        { promotion: { startYear: "desc" } },
+        { promotion: { name: "asc" } },
+        { name: "asc" },
+      ],
       select: {
         id: true,
         name: true,
         slug: true,
         description: true,
         _count: { select: { members: true } },
+        promotion: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            startYear: true,
+            establishment: { select: { id: true, name: true, slug: true, city: true } },
+          },
+        },
       },
     });
+
+    const establishments = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        slug: string;
+        city: string | null;
+        promotions: Map<
+          string,
+          {
+            id: string;
+            name: string;
+            startYear: number | null;
+            classes: { id: string; name: string; slug: string; memberCount: number }[];
+          }
+        >;
+      }
+    >();
+
+    for (const c of classes) {
+      const est = c.promotion.establishment;
+      let estEntry = establishments.get(est.id);
+      if (!estEntry) {
+        estEntry = { ...est, promotions: new Map() };
+        establishments.set(est.id, estEntry);
+      }
+      let promoEntry = estEntry.promotions.get(c.promotion.id);
+      if (!promoEntry) {
+        promoEntry = {
+          id: c.promotion.id,
+          name: c.promotion.name,
+          startYear: c.promotion.startYear,
+          classes: [],
+        };
+        estEntry.promotions.set(c.promotion.id, promoEntry);
+      }
+      promoEntry.classes.push({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        memberCount: c._count.members,
+      });
+    }
+
+    // Maps preserve insertion order, and insertion followed the query order.
+    return [...establishments.values()].map((e) => ({
+      id: e.id,
+      name: e.name,
+      slug: e.slug,
+      city: e.city,
+      promotions: [...e.promotions.values()],
+    }));
   },
 
   /**
@@ -94,9 +177,39 @@ export const classRepository = {
   // Callers below are reached only from the admin app, which gates on
   // role === "ADMIN" plus a completed TOTP challenge.
 
+  /** The establishment / promotion tree, for composing and for pickers. */
+  async listHierarchy() {
+    return prisma.establishment.findMany({
+      where: { archivedAt: null },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        promotions: {
+          where: { archivedAt: null },
+          orderBy: [{ startYear: "desc" }, { name: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            startYear: true,
+            _count: { select: { classes: true } },
+          },
+        },
+      },
+    });
+  },
+
   async listAll() {
     return prisma.class.findMany({
-      orderBy: [{ archivedAt: "asc" }, { name: "asc" }],
+      orderBy: [
+        { archivedAt: "asc" },
+        { promotion: { establishment: { name: "asc" } } },
+        { promotion: { startYear: "desc" } },
+        { name: "asc" },
+      ],
       select: {
         id: true,
         name: true,
@@ -105,6 +218,14 @@ export const classRepository = {
         archivedAt: true,
         createdAt: true,
         teacher: { select: { id: true, username: true, displayName: true } },
+        promotion: {
+          select: {
+            id: true,
+            name: true,
+            startYear: true,
+            establishment: { select: { id: true, name: true } },
+          },
+        },
         _count: { select: { members: true } },
       },
     });
@@ -121,6 +242,13 @@ export const classRepository = {
         archivedAt: true,
         teacherId: true,
         teacher: { select: { id: true, username: true, displayName: true } },
+        promotion: {
+          select: {
+            id: true,
+            name: true,
+            establishment: { select: { id: true, name: true } },
+          },
+        },
         members: {
           orderBy: { joinedAt: "asc" },
           select: {
@@ -135,6 +263,7 @@ export const classRepository = {
   },
 
   async create(input: {
+    promotionId: string;
     name: string;
     slug: string;
     description: string | null;

@@ -12,8 +12,38 @@
 
 ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'TEACHER' BEFORE 'ADMIN';
 
+-- A class reaches its establishment through its promotion and only through it.
+-- An establishmentId on classes as well would be a second path to the same
+-- answer, and two paths can disagree - a class filed under campus A inside a
+-- promotion belonging to campus B. One chain, no contradiction to reconcile.
+CREATE TABLE "establishments" (
+    "id" UUID NOT NULL,
+    "name" VARCHAR(160) NOT NULL,
+    "slug" TEXT NOT NULL,
+    "city" VARCHAR(120),
+    "archivedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "establishments_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "promotions" (
+    "id" UUID NOT NULL,
+    "establishmentId" UUID NOT NULL,
+    "name" VARCHAR(160) NOT NULL,
+    "slug" TEXT NOT NULL,
+    "startYear" INTEGER,
+    "archivedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "promotions_pkey" PRIMARY KEY ("id")
+);
+
 CREATE TABLE "classes" (
     "id" UUID NOT NULL,
+    "promotionId" UUID NOT NULL,
     "name" VARCHAR(120) NOT NULL,
     "slug" TEXT NOT NULL,
     "description" VARCHAR(500),
@@ -33,10 +63,19 @@ CREATE TABLE "class_members" (
     CONSTRAINT "class_members_pkey" PRIMARY KEY ("classId","userId")
 );
 
-CREATE UNIQUE INDEX "classes_slug_key" ON "classes"("slug");
+CREATE UNIQUE INDEX "establishments_slug_key" ON "establishments"("slug");
+-- Scoped, not global: two establishments may each run a "2025-2026", and
+-- "SIO1-A" exists in more than one school.
+CREATE UNIQUE INDEX "promotions_establishmentId_slug_key" ON "promotions"("establishmentId", "slug");
+CREATE INDEX "promotions_establishmentId_startYear_idx" ON "promotions"("establishmentId", "startYear");
+CREATE UNIQUE INDEX "classes_promotionId_slug_key" ON "classes"("promotionId", "slug");
 CREATE INDEX "classes_teacherId_idx" ON "classes"("teacherId");
 CREATE INDEX "class_members_userId_idx" ON "class_members"("userId");
 
+ALTER TABLE "promotions" ADD CONSTRAINT "promotions_establishmentId_fkey"
+  FOREIGN KEY ("establishmentId") REFERENCES "establishments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "classes" ADD CONSTRAINT "classes_promotionId_fkey"
+  FOREIGN KEY ("promotionId") REFERENCES "promotions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "classes" ADD CONSTRAINT "classes_teacherId_fkey"
   FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "class_members" ADD CONSTRAINT "class_members_classId_fkey"
@@ -95,6 +134,8 @@ BEGIN
   END IF;
 END $$;
 
+ALTER TABLE "establishments" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "promotions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "classes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "class_members" ENABLE ROW LEVEL SECURITY;
 
@@ -115,6 +156,31 @@ CREATE POLICY "class_members_select_classmates" ON public.class_members FOR SELE
     OR public.current_user_role() = 'ADMIN'
   );
 
+-- An establishment and a promotion are readable by whoever can reach a class
+-- under them - so a student sees the school and the intake printed on their own
+-- profile, and a teacher sees the ones their classes hang from, without either
+-- being handed the whole directory.
+CREATE POLICY "promotions_select_reachable" ON public.promotions FOR SELECT
+  USING (
+    public.current_user_role() = 'ADMIN'
+    OR EXISTS (
+      SELECT 1 FROM public.classes c
+      WHERE c."promotionId" = promotions.id
+        AND (public.is_class_member(c.id) OR public.is_class_teacher(c.id))
+    )
+  );
+
+CREATE POLICY "establishments_select_reachable" ON public.establishments FOR SELECT
+  USING (
+    public.current_user_role() = 'ADMIN'
+    OR EXISTS (
+      SELECT 1 FROM public.promotions p
+      JOIN public.classes c ON c."promotionId" = p.id
+      WHERE p."establishmentId" = establishments.id
+        AND (public.is_class_member(c.id) OR public.is_class_teacher(c.id))
+    )
+  );
+
 -- No INSERT/UPDATE/DELETE policy at all: composing a class is an admin action
 -- and goes through Prisma, which connects as the table owner. A client holding
 -- the anon key has no write path to reach for.
@@ -129,6 +195,8 @@ BEGIN
   -- the Data API. The anon key ships in the web bundle and in the Expo app, and
   -- no client reads a class directly - the web app loads it server-side through
   -- Prisma - so nothing needs this table exposed over PostgREST.
+  EXECUTE 'REVOKE ALL ON public.establishments FROM anon, authenticated';
+  EXECUTE 'REVOKE ALL ON public.promotions FROM anon, authenticated';
   EXECUTE 'REVOKE ALL ON public.classes FROM anon, authenticated';
   EXECUTE 'REVOKE ALL ON public.class_members FROM anon, authenticated';
 END $$;
