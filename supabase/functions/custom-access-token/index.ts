@@ -28,27 +28,50 @@
  * Docs: https://supabase.com/docs/guides/auth/auth-hooks#custom-access-token-hook
  */
 
-// Pinned to an exact version: "@2" resolves to whatever the newest 2.x release
-// happens to be at cold start, so the code running inside the auth hook could
-// change without a single commit here. 2.110.8 is what "@2" resolves to today.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.110.8";
 import { type HookDeps, handleHookRequest } from "./handler.ts";
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL") ?? "",
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-  { auth: { persistSession: false } },
-);
+// This function sits on the JWT issuance path: it runs on every login and every
+// token refresh. It used to import the whole supabase-js client from esm.sh at
+// module scope, which on a cold start means fetching that module and its
+// dependency graph over the network before a single line runs - seconds, paid
+// by whoever happens to log in first after a quiet period.
+//
+// It exists to answer one question: what is this user's role. That is one row,
+// one column, and PostgREST answers it over plain fetch with no dependency at
+// all. Nothing to download, nothing to compile, no version to pin.
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+/** Past this, issue the token without the claim rather than hold up the login. */
+const ROLE_LOOKUP_TIMEOUT_MS = 2_000;
 
 const prodDeps: HookDeps = {
   getEnv: (key) => Deno.env.get(key),
   lookupRole: async (userId) => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", userId)
-      .single<{ role: string }>();
-    return error || !data ? null : data.role;
+    if (!SUPABASE_URL || !SERVICE_KEY) return null;
+
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/users?id=eq.${encodeURIComponent(userId)}&select=role`;
+      const response = await fetch(url, {
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          // Ask PostgREST for the object rather than a one-element array, the
+          // equivalent of .single() - and a 406 when there is no such user.
+          Accept: "application/vnd.pgrst.object+json",
+        },
+        signal: AbortSignal.timeout(ROLE_LOOKUP_TIMEOUT_MS),
+      });
+      if (!response.ok) return null;
+
+      const row: unknown = await response.json();
+      const role = (row as { role?: unknown } | null)?.role;
+      return typeof role === "string" ? role : null;
+    } catch {
+      // A failed lookup returns the claims unchanged (see handler.ts), so the
+      // worst case is a token without user_role - never a login that hangs.
+      return null;
+    }
   },
 };
 
