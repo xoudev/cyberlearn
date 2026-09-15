@@ -22,6 +22,10 @@ export default async function TeacherClassesPage(): Promise<React.ReactElement> 
   if (dbUser?.role !== "TEACHER" && dbUser?.role !== "ADMIN") notFound();
 
   const establishments = await classRepository.findForTeacher(authUser.id);
+  // No class, no page. A teacher with nothing assigned was shown an empty shell
+  // telling them so, which is a page that exists only to say it has nothing -
+  // and the sidebar entry leading to it said the same thing twice.
+  if (establishments.length === 0) notFound();
 
   const classIds = establishments.flatMap((e) =>
     e.promotions.flatMap((p) => p.classes.map((c) => c.id)),
@@ -66,144 +70,130 @@ export default async function TeacherClassesPage(): Promise<React.ReactElement> 
         l&apos;administration.
       </p>
 
-      {establishments.length === 0 ? (
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: "#6B6890",
-            border: "1px solid #2A2560",
-            padding: "18px 20px",
-          }}
-        >
-          Aucune classe ne t&apos;est assignée pour l&apos;instant.
-        </p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
-          {establishments.map((est) => (
-            <section key={est.id}>
-              <h2
+      <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+        {establishments.map((est) => (
+          <section key={est.id}>
+            <h2
+              style={{
+                fontFamily: "var(--font-display, sans-serif)",
+                fontWeight: 700,
+                fontSize: 20,
+                color: "#F5F5FA",
+                margin: "0 0 2px",
+              }}
+            >
+              {est.name}
+            </h2>
+            {est.city !== null && (
+              <div
                 style={{
-                  fontFamily: "var(--font-display, sans-serif)",
-                  fontWeight: 700,
-                  fontSize: 20,
-                  color: "#F5F5FA",
-                  margin: "0 0 2px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "#6B6890",
+                  marginBottom: 16,
                 }}
               >
-                {est.name}
-              </h2>
-              {est.city !== null && (
+                {est.city}
+              </div>
+            )}
+
+            {est.promotions.map((promo) => (
+              <div key={promo.id} style={{ marginBottom: 22 }}>
                 <div
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
-                    letterSpacing: "0.14em",
+                    letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    color: "#6B6890",
-                    marginBottom: 16,
+                    color: "#44406B",
+                    marginBottom: 12,
                   }}
                 >
-                  {est.city}
+                  {promo.name}
+                  {promo.startYear !== null && ` · ${String(promo.startYear)}`}
                 </div>
-              )}
 
-              {est.promotions.map((promo) => (
-                <div key={promo.id} style={{ marginBottom: 22 }}>
-                  <div
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      letterSpacing: "0.16em",
-                      textTransform: "uppercase",
-                      color: "#44406B",
-                      marginBottom: 12,
-                    }}
-                  >
-                    {promo.name}
-                    {promo.startYear !== null && ` · ${String(promo.startYear)}`}
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {promo.classes.map((c) => {
-                      const roster = rosters.get(c.id);
-                      const members = roster?.members ?? [];
-                      return (
-                        <section
-                          key={c.id}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {promo.classes.map((c) => {
+                    const roster = rosters.get(c.id);
+                    const members = roster?.members ?? [];
+                    return (
+                      <section
+                        key={c.id}
+                        style={{
+                          border: "1px solid #2A2560",
+                          borderLeft: "3px solid #0AFFD4",
+                          background: "rgba(5,4,26,0.6)",
+                          padding: "18px 20px",
+                        }}
+                      >
+                        <h3
                           style={{
-                            border: "1px solid #2A2560",
-                            borderLeft: "3px solid #0AFFD4",
-                            background: "rgba(5,4,26,0.6)",
-                            padding: "18px 20px",
+                            fontFamily: "var(--font-display, sans-serif)",
+                            fontWeight: 700,
+                            fontSize: 17,
+                            color: "#F5F5FA",
+                            margin: "0 0 12px",
                           }}
                         >
-                          <h3
+                          {c.name}
+                          <span
                             style={{
-                              fontFamily: "var(--font-display, sans-serif)",
-                              fontWeight: 700,
-                              fontSize: 17,
-                              color: "#F5F5FA",
-                              margin: "0 0 12px",
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 10,
+                              letterSpacing: "0.14em",
+                              textTransform: "uppercase",
+                              color: "#6B6890",
+                              fontWeight: 400,
+                              marginLeft: 10,
                             }}
                           >
-                            {c.name}
-                            <span
-                              style={{
-                                fontFamily: "var(--font-mono)",
-                                fontSize: 10,
-                                letterSpacing: "0.14em",
-                                textTransform: "uppercase",
-                                color: "#6B6890",
-                                fontWeight: 400,
-                                marginLeft: 10,
-                              }}
-                            >
-                              {c.memberCount} élève{c.memberCount > 1 ? "s" : ""}
-                            </span>
-                          </h3>
+                            {c.memberCount} élève{c.memberCount > 1 ? "s" : ""}
+                          </span>
+                        </h3>
 
-                          {members.length === 0 ? (
-                            <p
-                              style={{
-                                fontFamily: "var(--font-mono)",
-                                fontSize: 11,
-                                color: "#6B6890",
-                                margin: 0,
-                              }}
-                            >
-                              Aucun élève dans cette classe.
-                            </p>
-                          ) : (
-                            <ul className="class-roster">
-                              {members.map((m) => (
-                                <li key={m.user.id} className="class-roster__item">
-                                  {/* A teacher sees their own students by name:
+                        {members.length === 0 ? (
+                          <p
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 11,
+                              color: "#6B6890",
+                              margin: 0,
+                            }}
+                          >
+                            Aucun élève dans cette classe.
+                          </p>
+                        ) : (
+                          <ul className="class-roster">
+                            {members.map((m) => (
+                              <li key={m.user.id} className="class-roster__item">
+                                {/* A teacher sees their own students by name:
                                       publicProfile hides a learner from strangers
                                       on the leaderboard, not from the person
                                       responsible for following them. */}
-                                  <span className="class-roster__name">
-                                    {m.user.displayName || (m.user.username ?? "—")}
-                                  </span>
-                                  <span className="class-roster__meta">
-                                    LVL·{m.user.level} · {completedByUser.get(m.user.id) ?? 0} leçon
-                                    {(completedByUser.get(m.user.id) ?? 0) > 1 ? "s" : ""} ·{" "}
-                                    {m.user.streakDays} j
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </section>
-                      );
-                    })}
-                  </div>
+                                <span className="class-roster__name">
+                                  {m.user.displayName || (m.user.username ?? "—")}
+                                </span>
+                                <span className="class-roster__meta">
+                                  LVL·{m.user.level} · {completedByUser.get(m.user.id) ?? 0} leçon
+                                  {(completedByUser.get(m.user.id) ?? 0) > 1 ? "s" : ""} ·{" "}
+                                  {m.user.streakDays} j
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </section>
+                    );
+                  })}
                 </div>
-              ))}
-            </section>
-          ))}
-        </div>
-      )}
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   let xpNeeded = 100;
   let xpPercent = 0;
   let inProgressCount = 0;
-  let isTeacher = false;
+  let hasClasses = false;
 
   try {
     const [authUser, dbUser] = await Promise.all([getRequestUser(), getSharedUserProfile()]);
@@ -23,9 +23,14 @@ export async function AppSidebar(): Promise<React.ReactElement> {
       inProgressCount = ipCount;
     }
 
-    // From the database, not the session claim: a teacher whose role was just
-    // removed loses the entry on their next request rather than at token expiry.
-    isTeacher = dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN";
+    // The entry follows the classes, not the role: a teacher with none assigned
+    // was shown a door to a page that existed only to say it had nothing behind
+    // it. The count runs for teachers only, so a learner pays nothing for it.
+    // Read from the database rather than the session claim, so a removed role
+    // closes the door on the next request instead of at token expiry.
+    if (authUser && (dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN")) {
+      hasClasses = (await prisma.classTeacher.count({ where: { teacherId: authUser.id } })) > 0;
+    }
 
     const computed = computeLevel(dbUser?.xpTotal ?? 0);
     level = computed.level;
@@ -39,7 +44,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   return (
     <SidebarWrapper>
       <SidebarNav
-        isTeacher={isTeacher}
+        hasClasses={hasClasses}
         inProgressCount={inProgressCount}
         level={level}
         xpCurrent={xpCurrent}
