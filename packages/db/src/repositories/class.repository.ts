@@ -23,7 +23,15 @@ export const classRepository = {
             name: true,
             slug: true,
             description: true,
-            teacher: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+            teachers: {
+              orderBy: { assignedAt: "asc" },
+              select: {
+                subject: true,
+                teacher: {
+                  select: { id: true, username: true, displayName: true, avatarUrl: true },
+                },
+              },
+            },
             promotion: {
               select: {
                 id: true,
@@ -51,7 +59,11 @@ export const classRepository = {
    */
   async findForTeacher(teacherId: string) {
     const classes = await prisma.class.findMany({
-      where: { teacherId, archivedAt: null, promotion: { archivedAt: null } },
+      where: {
+        teachers: { some: { teacherId } },
+        archivedAt: null,
+        promotion: { archivedAt: null },
+      },
       orderBy: [
         { promotion: { establishment: { name: "asc" } } },
         { promotion: { startYear: "desc" } },
@@ -142,14 +154,23 @@ export const classRepository = {
       where: {
         id: classId,
         archivedAt: null,
-        OR: [{ members: { some: { userId: viewerId } } }, { teacherId: viewerId }],
+        OR: [
+          { members: { some: { userId: viewerId } } },
+          { teachers: { some: { teacherId: viewerId } } },
+        ],
       },
       select: {
         id: true,
         name: true,
         slug: true,
         description: true,
-        teacher: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+        teachers: {
+          orderBy: { assignedAt: "asc" },
+          select: {
+            subject: true,
+            teacher: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+          },
+        },
         members: {
           orderBy: [{ user: { xpTotal: "desc" } }, { joinedAt: "asc" }],
           select: {
@@ -217,7 +238,10 @@ export const classRepository = {
         description: true,
         archivedAt: true,
         createdAt: true,
-        teacher: { select: { id: true, username: true, displayName: true } },
+        teachers: {
+          orderBy: { assignedAt: "asc" },
+          select: { subject: true, teacher: { select: { id: true, displayName: true } } },
+        },
         promotion: {
           select: {
             id: true,
@@ -240,8 +264,13 @@ export const classRepository = {
         slug: true,
         description: true,
         archivedAt: true,
-        teacherId: true,
-        teacher: { select: { id: true, username: true, displayName: true } },
+        teachers: {
+          orderBy: { assignedAt: "asc" },
+          select: {
+            subject: true,
+            teacher: { select: { id: true, username: true, displayName: true } },
+          },
+        },
         promotion: {
           select: {
             id: true,
@@ -267,7 +296,6 @@ export const classRepository = {
     name: string;
     slug: string;
     description: string | null;
-    teacherId: string | null;
   }) {
     return prisma.class.create({
       data: input,
@@ -275,10 +303,7 @@ export const classRepository = {
     });
   },
 
-  async update(
-    classId: string,
-    data: { name?: string; description?: string | null; teacherId?: string | null },
-  ) {
+  async update(classId: string, data: { name?: string; description?: string | null }) {
     await prisma.class.update({ where: { id: classId }, data });
   },
 
@@ -298,6 +323,19 @@ export const classRepository = {
       skipDuplicates: true,
     });
     return created.count;
+  },
+
+  /** Idempotent: assigning a teacher already on the class only updates the subject. */
+  async assignTeacher(classId: string, teacherId: string, subject: string | null) {
+    await prisma.classTeacher.upsert({
+      where: { classId_teacherId: { classId, teacherId } },
+      create: { classId, teacherId, subject },
+      update: { subject },
+    });
+  },
+
+  async unassignTeacher(classId: string, teacherId: string) {
+    await prisma.classTeacher.deleteMany({ where: { classId, teacherId } });
   },
 
   async removeMember(classId: string, userId: string) {

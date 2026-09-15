@@ -47,12 +47,23 @@ CREATE TABLE "classes" (
     "name" VARCHAR(120) NOT NULL,
     "slug" TEXT NOT NULL,
     "description" VARCHAR(500),
-    "teacherId" UUID,
     "archivedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "classes_pkey" PRIMARY KEY ("id")
+);
+
+-- A class carries several teachers, because in a real school it does - one per
+-- subject more often than not. A single teacherId column could only ever hold
+-- the first, and the second would have had nowhere to go.
+CREATE TABLE "class_teachers" (
+    "classId" UUID NOT NULL,
+    "teacherId" UUID NOT NULL,
+    "subject" VARCHAR(120),
+    "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "class_teachers_pkey" PRIMARY KEY ("classId","teacherId")
 );
 
 CREATE TABLE "class_members" (
@@ -69,15 +80,17 @@ CREATE UNIQUE INDEX "establishments_slug_key" ON "establishments"("slug");
 CREATE UNIQUE INDEX "promotions_establishmentId_slug_key" ON "promotions"("establishmentId", "slug");
 CREATE INDEX "promotions_establishmentId_startYear_idx" ON "promotions"("establishmentId", "startYear");
 CREATE UNIQUE INDEX "classes_promotionId_slug_key" ON "classes"("promotionId", "slug");
-CREATE INDEX "classes_teacherId_idx" ON "classes"("teacherId");
+CREATE INDEX "class_teachers_teacherId_idx" ON "class_teachers"("teacherId");
 CREATE INDEX "class_members_userId_idx" ON "class_members"("userId");
 
 ALTER TABLE "promotions" ADD CONSTRAINT "promotions_establishmentId_fkey"
   FOREIGN KEY ("establishmentId") REFERENCES "establishments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "classes" ADD CONSTRAINT "classes_promotionId_fkey"
   FOREIGN KEY ("promotionId") REFERENCES "promotions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "classes" ADD CONSTRAINT "classes_teacherId_fkey"
-  FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "class_teachers" ADD CONSTRAINT "class_teachers_classId_fkey"
+  FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "class_teachers" ADD CONSTRAINT "class_teachers_teacherId_fkey"
+  FOREIGN KEY ("teacherId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "class_members" ADD CONSTRAINT "class_members_classId_fkey"
   FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "class_members" ADD CONSTRAINT "class_members_userId_fkey"
@@ -114,8 +127,8 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.classes c
-    WHERE c.id = target_class AND c."teacherId" = auth.uid()
+    SELECT 1 FROM public.class_teachers ct
+    WHERE ct."classId" = target_class AND ct."teacherId" = auth.uid()
   );
 $$;
 
@@ -137,6 +150,7 @@ END $$;
 ALTER TABLE "establishments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "promotions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "classes" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "class_teachers" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "class_members" ENABLE ROW LEVEL SECURITY;
 
 -- A class is not public. Who is in one is the thing worth protecting here, so
@@ -146,6 +160,14 @@ CREATE POLICY "classes_select_members" ON public.classes FOR SELECT
   USING (
     public.is_class_member(id)
     OR public.is_class_teacher(id)
+    OR public.current_user_role() = 'ADMIN'
+  );
+
+-- Who teaches a class is readable by the same people who may read the class.
+CREATE POLICY "class_teachers_select_classmates" ON public.class_teachers FOR SELECT
+  USING (
+    public.is_class_member("classId")
+    OR public.is_class_teacher("classId")
     OR public.current_user_role() = 'ADMIN'
   );
 
@@ -198,5 +220,6 @@ BEGIN
   EXECUTE 'REVOKE ALL ON public.establishments FROM anon, authenticated';
   EXECUTE 'REVOKE ALL ON public.promotions FROM anon, authenticated';
   EXECUTE 'REVOKE ALL ON public.classes FROM anon, authenticated';
+  EXECUTE 'REVOKE ALL ON public.class_teachers FROM anon, authenticated';
   EXECUTE 'REVOKE ALL ON public.class_members FROM anon, authenticated';
 END $$;

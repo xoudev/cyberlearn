@@ -75,7 +75,7 @@ model User {
   notes             Note[]
   noteFolders       NoteFolder[]
   classMemberships  ClassMember[]
-  taughtClasses     Class[]                 @relation("ClassTeacher")
+  taughtClasses     ClassTeacher[]          @relation("ClassTeacher")
 
   @@index([username])
   @@index([role])
@@ -136,21 +136,39 @@ model Class {
   name        String    @db.VarChar(120)
   slug        String
   description String?   @db.VarChar(500)
-  /// The teacher who follows this class. Nullable: a class can outlive the
-  /// teacher's account, and SetNull keeps the class and its members intact.
-  teacherId   String?   @db.Uuid
   archivedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  promotion Promotion     @relation(fields: [promotionId], references: [id], onDelete: Cascade)
-  teacher   User?         @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  promotion Promotion      @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  teachers  ClassTeacher[]
   members   ClassMember[]
 
   /// Scoped to the promotion: "SIO1-A" exists in more than one school.
   @@unique([promotionId, slug])
-  @@index([teacherId])
   @@map("classes")
+}
+
+/// A teacher assigned to a class.
+///
+/// A class carries several, because in a real school it does - one per subject
+/// more often than not. A single teacherId column could only ever hold the
+/// first one, and the second would have had nowhere to go.
+model ClassTeacher {
+  classId    String   @db.Uuid
+  teacherId  String   @db.Uuid
+  /// What they teach this class. Optional, and the reason several teachers
+  /// share a class in the first place, so a roster reads as names with subjects
+  /// rather than an undifferentiated list.
+  subject    String?  @db.VarChar(120)
+  assignedAt DateTime @default(now())
+
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher User  @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@id([classId, teacherId])
+  @@index([teacherId])
+  @@map("class_teachers")
 }
 
 model ClassMember {
