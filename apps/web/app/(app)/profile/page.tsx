@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { computeLevel, computeTier } from "@cyberlearn/lib";
 import { userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { ClassPanel } from "./_components/class-panel";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StreakPanel } from "@/components/streak-panel";
@@ -1078,6 +1079,11 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
         </h2>
         <StreakPanel userId={authUser.id} />
       </div>
+
+      {/* ── Ma classe ───────────────────────────────────────────────────────
+          Renders nothing for a learner who belongs to no class, which is most
+          of them - an empty heading would read as something missing. */}
+      <ClassPanel userId={authUser.id} />
 
       {/* ── Interactive tabs + content ──────────────────────────────────────── */}
       <ProfileContent

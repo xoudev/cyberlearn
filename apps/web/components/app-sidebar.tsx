@@ -11,6 +11,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   let xpNeeded = 100;
   let xpPercent = 0;
   let inProgressCount = 0;
+  let isTeacher = false;
 
   try {
     const [authUser, dbUser] = await Promise.all([getRequestUser(), getSharedUserProfile()]);
@@ -21,6 +22,10 @@ export async function AppSidebar(): Promise<React.ReactElement> {
       });
       inProgressCount = ipCount;
     }
+
+    // From the database, not the session claim: a teacher whose role was just
+    // removed loses the entry on their next request rather than at token expiry.
+    isTeacher = dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN";
 
     const computed = computeLevel(dbUser?.xpTotal ?? 0);
     level = computed.level;
@@ -34,6 +39,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   return (
     <SidebarWrapper>
       <SidebarNav
+        isTeacher={isTeacher}
         inProgressCount={inProgressCount}
         level={level}
         xpCurrent={xpCurrent}
