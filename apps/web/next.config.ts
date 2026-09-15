@@ -19,6 +19,20 @@ const nextConfig: NextConfig = {
       "../../packages/db/node_modules/.prisma/client/libquery_engine*",
     ],
   },
+  // Server source maps are uploaded to Sentry at build time and then left on
+  // disk: @sentry/nextjs deletes the client ones only, deliberately, because
+  // deleting the server ones broke Vercel builds (getsentry/sentry-javascript
+  // #13099). Next.js then traces the .js.map sitting next to a chunk into
+  // every function that uses that chunk.
+  //
+  // In .next/server they are 51 MB of 73 MB, and a route drags in most of the
+  // shared chunks, so the same maps are copied into each function - two thirds
+  // of what a deployment stores as function code, kept forever alongside every
+  // deployment Vercel retains. Nothing reads them there: Sentry symbolicates
+  // from the copy it already holds, matched by debug id, not from the file.
+  outputFileTracingExcludes: {
+    "/*": ["**/*.js.map", "**/*.mjs.map", "**/*.cjs.map"],
+  },
   // @react-pdf/renderer uses native canvas - must not be bundled by webpack
   serverExternalPackages: ["@react-pdf/renderer", "canvas"],
   // Validate env at build time (fail fast if required vars are missing)
