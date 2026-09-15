@@ -17,6 +17,7 @@ datasource db {
 
 enum UserRole {
   STUDENT
+  TEACHER
   ADMIN
 }
 
@@ -73,10 +74,50 @@ model User {
   answerUpvotes     LessonAnswerUpvote[]
   notes             Note[]
   noteFolders       NoteFolder[]
+  classMemberships  ClassMember[]
+  taughtClasses     Class[]                 @relation("ClassTeacher")
 
   @@index([username])
   @@index([role])
   @@map("users")
+}
+
+/// A group of students an admin creates and a teacher follows.
+///
+/// Membership is the fact, not the role: a learner with no class is simply a
+/// STUDENT whose membership list is empty. Keeping "is in a class" out of
+/// UserRole means there is no second copy of that state to drift - leaving a
+/// class cannot leave a stale role behind.
+model Class {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(120)
+  slug        String    @unique
+  description String?   @db.VarChar(500)
+  /// The teacher who follows this class. Nullable: a class can outlive the
+  /// teacher's account, and SetNull keeps the class and its members intact.
+  teacherId   String?   @db.Uuid
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  teacher User?         @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  members ClassMember[]
+
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model ClassMember {
+  classId  String   @db.Uuid
+  userId   String   @db.Uuid
+  joinedAt DateTime @default(now())
+
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([classId, userId])
+  @@index([userId])
+  @@map("class_members")
 }
 
 model UserPreferences {

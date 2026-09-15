@@ -23,6 +23,12 @@ function relativeDate(d: Date): string {
   return formatDate(d);
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  STUDENT: "Étudiant",
+  TEACHER: "Professeur",
+  ADMIN: "Admin",
+};
+
 export default async function AdminUsersPage(): Promise<React.ReactElement> {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
@@ -87,8 +93,8 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         <span key="e" className="mono" style={{ color: UI.muted }}>
           {u.email}
         </span>,
-        <Tag key="r" tone={isAdmin ? "accent" : "neutral"}>
-          {u.role}
+        <Tag key="r" tone={isAdmin ? "accent" : u.role === "TEACHER" ? "info" : "neutral"}>
+          {ROLE_LABEL[u.role] ?? u.role}
         </Tag>,
         <span key="l">
           <span style={{ color: UI.faint }}>LVL·</span>
@@ -155,6 +161,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
             label: "Rôle",
             options: [
               { value: "ADMIN", label: "Admin" },
+              { value: "TEACHER", label: "Professeur" },
               { value: "STUDENT", label: "Étudiant" },
             ],
           },

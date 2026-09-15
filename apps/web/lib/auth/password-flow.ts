@@ -16,7 +16,7 @@ function metadataString(metadata: unknown, keys: readonly string[]): string | un
 
 export async function syncAuthenticatedUser(user: User): Promise<{
   username: string | null;
-  role: "STUDENT" | "ADMIN";
+  role: "STUDENT" | "TEACHER" | "ADMIN";
 }> {
   const email = user.email ?? "";
   const [rawEmailPrefix] = email.split("@");
