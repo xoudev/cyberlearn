@@ -3238,3 +3238,44 @@ article.lesson-content blockquote p code {
 .legal-back-link:hover {
   color: #b8b5d1;
 }
+
+/* Classmates. Two columns on a wide screen, one when the names would otherwise
+   be squeezed against the level - a roster is read by name, so the name gets
+   the room and the meta takes the ellipsis. */
+.class-roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px 24px;
+}
+@media (min-width: 720px) {
+  .class-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.class-roster__item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+}
+.class-roster__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #f5f5fa;
+}
+.class-roster__meta {
+  flex: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: #6b6890;
+}

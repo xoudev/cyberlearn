@@ -7,12 +7,12 @@ import { requireAdminAction } from "@/lib/auth";
 
 const updateRoleSchema = z.object({
   userId: z.string().uuid(),
-  newRole: z.enum(["STUDENT", "ADMIN"]),
+  newRole: z.enum(["STUDENT", "TEACHER", "ADMIN"]),
 });
 
 export async function updateUserRoleAction(
   userId: string,
-  newRole: "STUDENT" | "ADMIN",
+  newRole: "STUDENT" | "TEACHER" | "ADMIN",
 ): Promise<{ ok: boolean; error?: string }> {
   const admin = await requireAdminAction();
 

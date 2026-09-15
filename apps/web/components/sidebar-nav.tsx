@@ -9,6 +9,8 @@ import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { CHANGELOG_SEEN_KEY, LATEST_VERSION } from "@/lib/changelog/entries";
 
 interface SidebarNavProps {
+  /** Only a teacher gets the class-following entry; nobody else has one to follow. */
+  isTeacher?: boolean;
   inProgressCount?: number;
   level?: number;
   xpCurrent?: number;
@@ -305,6 +307,7 @@ function SectionLabel({ text }: { text: string }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function SidebarNav({
+  isTeacher = false,
   inProgressCount = 0,
   level = 1,
   xpCurrent = 0,
@@ -510,6 +513,17 @@ export function SidebarNav({
         }}
         aria-label="Navigation Activité"
       >
+        {/* Only a teacher has classes to follow, so nobody else is shown a
+            door that would 404 on them. */}
+        {isTeacher && (
+          <NavItem
+            href="/ma-classe"
+            label="Mes classes"
+            Icon={IconUser}
+            count={null}
+            tag={undefined}
+          />
+        )}
         {ACTIVITY_ITEMS.map(({ href, label, Icon, count, tag }) => (
           <NavItem
             key={href}

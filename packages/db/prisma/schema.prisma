@@ -17,6 +17,7 @@ datasource db {
 
 enum UserRole {
   STUDENT
+  TEACHER
   ADMIN
 }
 
@@ -73,10 +74,114 @@ model User {
   answerUpvotes     LessonAnswerUpvote[]
   notes             Note[]
   noteFolders       NoteFolder[]
+  classMemberships  ClassMember[]
+  taughtClasses     ClassTeacher[]          @relation("ClassTeacher")
 
   @@index([username])
   @@index([role])
   @@map("users")
+}
+
+/// A school, a campus, a training centre - whatever owns the promotions.
+model Establishment {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String    @db.VarChar(160)
+  slug       String    @unique
+  city       String?   @db.VarChar(120)
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  promotions Promotion[]
+
+  @@map("establishments")
+}
+
+/// An intake within an establishment - "2025-2026", "BTS SIO 1re annee".
+///
+/// A class reaches its establishment through its promotion and only through it.
+/// Hanging an establishmentId on Class as well would create a second path to
+/// the same answer, and two paths can disagree: a class filed under campus A
+/// inside a promotion belonging to campus B. One chain, no contradiction
+/// possible.
+model Promotion {
+  id              String    @id @default(uuid()) @db.Uuid
+  establishmentId String    @db.Uuid
+  name            String    @db.VarChar(160)
+  slug            String
+  /// Academic year the intake starts, for sorting current promotions first.
+  startYear       Int?
+  archivedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  establishment Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  classes       Class[]
+
+  /// Scoped, not global: two establishments may each run a "2025-2026".
+  @@unique([establishmentId, slug])
+  @@index([establishmentId, startYear])
+  @@map("promotions")
+}
+
+/// A group of students an admin creates and a teacher follows.
+///
+/// Membership is the fact, not the role: a learner with no class is simply a
+/// STUDENT whose membership list is empty. Keeping "is in a class" out of
+/// UserRole means there is no second copy of that state to drift - leaving a
+/// class cannot leave a stale role behind.
+model Class {
+  id          String    @id @default(uuid()) @db.Uuid
+  promotionId String    @db.Uuid
+  name        String    @db.VarChar(120)
+  slug        String
+  description String?   @db.VarChar(500)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  promotion Promotion      @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  teachers  ClassTeacher[]
+  members   ClassMember[]
+
+  /// Scoped to the promotion: "SIO1-A" exists in more than one school.
+  @@unique([promotionId, slug])
+  @@map("classes")
+}
+
+/// A teacher assigned to a class.
+///
+/// A class carries several, because in a real school it does - one per subject
+/// more often than not. A single teacherId column could only ever hold the
+/// first one, and the second would have had nowhere to go.
+model ClassTeacher {
+  classId    String   @db.Uuid
+  teacherId  String   @db.Uuid
+  /// What they teach this class. Optional, and the reason several teachers
+  /// share a class in the first place, so a roster reads as names with subjects
+  /// rather than an undifferentiated list.
+  subject    String?  @db.VarChar(120)
+  assignedAt DateTime @default(now())
+
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher User  @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@id([classId, teacherId])
+  @@index([teacherId])
+  @@map("class_teachers")
+}
+
+model ClassMember {
+  classId  String   @db.Uuid
+  userId   String   @db.Uuid
+  joinedAt DateTime @default(now())
+
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([classId, userId])
+  @@index([userId])
+  @@map("class_members")
 }
 
 model UserPreferences {

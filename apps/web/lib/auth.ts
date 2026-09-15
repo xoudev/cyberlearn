@@ -34,6 +34,9 @@ export const getSharedUserProfile = cache(async () => {
   if (!user) return null;
   return prisma.user.findUnique({
     where: { id: user.id },
-    select: { xpTotal: true, displayName: true, avatarUrl: true },
+    // role rides along on the query the sidebar already makes, so showing a
+    // teacher their classes costs no extra round trip - and reads the database
+    // rather than the session claim, so a removed role disappears at once.
+    select: { xpTotal: true, displayName: true, avatarUrl: true, role: true },
   });
 });

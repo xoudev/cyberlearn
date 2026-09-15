@@ -151,6 +151,7 @@ export function AdminSidebar({
     { label: "Leçons", href: "/lessons", icon: "book", count: counts.lessons },
     { label: "Parcours", href: "/paths", icon: "route", count: counts.paths },
     { label: "Badges", href: "/badges", icon: "badge", count: counts.badges },
+    { label: "Classes", href: "/classes", icon: "users" },
     { label: "Challenges", href: "/challenges", icon: "target", count: counts.challenges },
     { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users },
     { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },

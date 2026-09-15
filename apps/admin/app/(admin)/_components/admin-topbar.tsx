@@ -37,6 +37,7 @@ const DESTINATIONS: Destination[] = [
   { label: "Leçons", href: "/lessons", hint: "page" },
   { label: "Parcours", href: "/paths", hint: "page" },
   { label: "Badges", href: "/badges", hint: "page" },
+  { label: "Classes", href: "/classes", hint: "page" },
   { label: "Challenges", href: "/challenges", hint: "page" },
   { label: "Utilisateurs", href: "/users", hint: "page" },
   { label: "Tickets", href: "/tickets", hint: "page" },
