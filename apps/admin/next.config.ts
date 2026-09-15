@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
       "../../packages/db/node_modules/.prisma/client/libquery_engine*",
     ],
   },
+  // Same as apps/web: Sentry uploads the server source maps and then leaves
+  // them on disk - it deletes the client ones only, deliberately - and Next.js
+  // traces the .js.map next to a chunk into every function using that chunk.
+  // Nothing reads them there; Sentry symbolicates from its own copy by debug
+  // id. See the longer note in apps/web/next.config.ts.
+  outputFileTracingExcludes: {
+    "/*": ["**/*.js.map", "**/*.mjs.map", "**/*.cjs.map"],
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
