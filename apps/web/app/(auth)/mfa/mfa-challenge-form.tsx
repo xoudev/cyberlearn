@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { mfaCodeSchema } from "@cyberlearn/types";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import styles from "../_components/auth-shell.module.css";
@@ -12,7 +12,12 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function verify(): Promise<void> {
+  // The code that was last sent for verification. Guards the auto-submit below
+  // against firing twice on the same six digits - which would otherwise loop
+  // the moment a code is refused, since the input still holds it.
+  const lastSubmitted = useRef<string | null>(null);
+
+  const verify = useCallback(async (): Promise<void> => {
     const parsed = mfaCodeSchema.safeParse(code);
     if (!parsed.success) {
       setError("Entre le code à six chiffres affiché dans ton application.");
@@ -42,7 +47,18 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
 
     router.replace(next);
     router.refresh();
-  }
+  }, [code, next, router]);
+
+  // A TOTP code is always six digits, so asking for a click afterwards is a
+  // step that carries no decision. It matters most where autocomplete fills the
+  // whole field at once from a text message or a password manager, and the
+  // button that was the only way in is suddenly the only thing left to do.
+  useEffect(() => {
+    if (code.length !== 6 || pending) return;
+    if (lastSubmitted.current === code) return;
+    lastSubmitted.current = code;
+    void verify();
+  }, [code, pending, verify]);
 
   async function cancel(): Promise<void> {
     const supabase = createSupabaseBrowserClient();
@@ -73,6 +89,9 @@ export function MfaChallengeForm({ next }: { next: string }): React.JSX.Element 
         type="button"
         disabled={pending}
         onClick={() => {
+          // Retyping the same refused code will not auto-submit; the button
+          // stays the way to insist on it.
+          lastSubmitted.current = code;
           void verify();
         }}
       >
