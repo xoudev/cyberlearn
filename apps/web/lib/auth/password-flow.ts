@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { userRepository } from "@cyberlearn/db";
+import { userRepository, type UserRole } from "@cyberlearn/db";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -14,9 +14,15 @@ function metadataString(metadata: unknown, keys: readonly string[]): string | un
   return undefined;
 }
 
+// The role comes straight out of the users table, so it is typed from the
+// schema rather than spelled out again here. A hand-written union is a second
+// copy of the enum that nothing keeps in step: TEACHER had to be added to it by
+// hand, and the next role would have to be too - silently, because a value the
+// database can return and this type cannot name is a type error at the call
+// site, not here.
 export async function syncAuthenticatedUser(user: User): Promise<{
   username: string | null;
-  role: "STUDENT" | "TEACHER" | "ADMIN";
+  role: UserRole;
 }> {
   const email = user.email ?? "";
   const [rawEmailPrefix] = email.split("@");

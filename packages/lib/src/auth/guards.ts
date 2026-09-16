@@ -1,4 +1,4 @@
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
 // These imports are provided by the Next.js app at runtime via transpilePackages.
 // Keeping them here avoids duplicating auth logic across both apps.
@@ -8,7 +8,6 @@ import { redirect, notFound } from "next/navigation";
 export interface AuthUser {
   id: string;
   email: string | undefined;
-  role: string | undefined;
 }
 
 /**
@@ -16,16 +15,25 @@ export interface AuthUser {
  * Redirects to /login if not authenticated.
  * To be called at the top of Server Actions and Server Components in protected routes.
  *
+ * Identity only. The role is deliberately absent: it lives in public.users and
+ * is read from there by the guards that need it - requireAdminAction() in the
+ * admin app, userRepository.findRoleById() in the web app. It used to be read
+ * here from the `user_role` access-token claim, which is stamped once when the
+ * token is issued, so a role removed mid-session survived until the token
+ * expired. 20260915130000_role_revocation_is_immediate moved the RLS side off
+ * that claim for exactly that reason; this is the same move, for the
+ * application side.
+ *
  * @param supabase - A Supabase server client instance (created by the calling app)
  * @returns The authenticated Supabase user
  */
 export async function requireUser(supabase: {
   auth: {
     getUser: () => Promise<{
-      data: { user: { id: string; email?: string; app_metadata?: Record<string, unknown> } | null };
+      data: { user: { id: string; email?: string } | null };
     }>;
   };
-}): Promise<{ id: string; email: string | undefined; role: string | undefined }> {
+}): Promise<AuthUser> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -37,31 +45,5 @@ export async function requireUser(supabase: {
   return {
     id: user.id,
     email: user.email,
-    role: user.app_metadata?.user_role as string | undefined,
   };
-}
-
-/**
- * Asserts that the authenticated user has the ADMIN role.
- * Returns 404 (not 403) to avoid revealing that the route exists.
- * To be called at the top of every admin Server Action.
- *
- * @param supabase - A Supabase server client instance (created by the calling app)
- * @returns The authenticated admin user
- */
-export async function requireAdmin(supabase: {
-  auth: {
-    getUser: () => Promise<{
-      data: { user: { id: string; email?: string; app_metadata?: Record<string, unknown> } | null };
-    }>;
-  };
-}): Promise<{ id: string; email: string | undefined; role: string }> {
-  const user = await requireUser(supabase);
-
-  if (user.role !== "ADMIN") {
-    // 404 instead of 403 - do not reveal that this route exists to non-admins
-    notFound();
-  }
-
-  return { ...user, role: "ADMIN" };
 }

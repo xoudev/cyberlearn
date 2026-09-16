@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
+import { roleLabel, roleTone } from "@/lib/roles";
 import {
   Card,
   CardLink,
@@ -273,16 +274,12 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                       <tr key={u.id}>
                         <td>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-                            <Monogram
-                              text={uname}
-                              size={22}
-                              tone={u.role === "ADMIN" ? "accent" : "neutral"}
-                            />
+                            <Monogram text={uname} size={22} tone={roleTone(u.role)} />
                             <span className="mono">@{uname}</span>
                           </span>
                         </td>
                         <td>
-                          <Tag tone={u.role === "ADMIN" ? "accent" : "neutral"}>{u.role}</Tag>
+                          <Tag tone={roleTone(u.role)}>{roleLabel(u.role)}</Tag>
                         </td>
                         <td className="num">
                           <span style={{ color: UI.faint }}>LVL·</span>

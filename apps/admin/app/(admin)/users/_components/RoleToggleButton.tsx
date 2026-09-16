@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useTransition } from "react";
+import type { UserRole } from "@cyberlearn/db";
+import { ROLE_LABEL, ROLE_TONE, isUserRole } from "@/lib/roles";
+import { UI, toneColor } from "../../_components/admin-ui";
 import { updateUserRoleAction } from "../../_actions/user-actions";
-
-const DANGER = "#FF4D6D";
-const TEACHER = "#6E8BFF";
 
 /**
  * Three roles no longer fit a toggle.
@@ -17,11 +17,18 @@ const TEACHER = "#6E8BFF";
  * A select also states the whole ladder at a glance, which a button reading
  * "↑ Admin" never did.
  */
-const ROLES = [
-  { value: "STUDENT" as const, label: "Étudiant", color: "#6B6890" },
-  { value: "TEACHER" as const, label: "Professeur", color: TEACHER },
-  { value: "ADMIN" as const, label: "Admin", color: DANGER },
-];
+
+// Least privileged first: a select reads as a ladder, and the ladder should
+// climb.
+const ROLE_ORDER: readonly UserRole[] = ["STUDENT", "TEACHER", "ADMIN"];
+
+// The colour comes from the same tone the role wears everywhere else. This
+// control used to hold its own three hex values, so an admin was red here and
+// turquoise in the list beside it - one role, two colours, and nothing saying
+// which was right.
+function colorFor(role: string): string {
+  return isUserRole(role) ? toneColor(ROLE_TONE[role]) : UI.muted;
+}
 
 interface RoleToggleButtonProps {
   userId: string;
@@ -33,7 +40,7 @@ export function RoleToggleButton({
   currentRole,
 }: RoleToggleButtonProps): React.ReactElement {
   const [isPending, startTransition] = useTransition();
-  const current = ROLES.find((r) => r.value === currentRole) ?? ROLES[0];
+  const currentColor = colorFor(currentRole);
 
   return (
     <select
@@ -44,10 +51,9 @@ export function RoleToggleButton({
         const next = e.target.value;
         // Guard rather than cast: the option list is ours, but the value comes
         // back off the DOM as a plain string.
-        const role = ROLES.find((r) => r.value === next);
-        if (!role || role.value === currentRole) return;
+        if (!isUserRole(next) || next === currentRole) return;
         startTransition(async () => {
-          await updateUserRoleAction(userId, role.value);
+          await updateUserRoleAction(userId, next);
         });
       }}
       style={{
@@ -58,17 +64,17 @@ export function RoleToggleButton({
         letterSpacing: "0.16em",
         textTransform: "uppercase",
         background: "transparent",
-        border: `1px solid ${current?.color === "#6B6890" ? "#2A2560" : (current?.color ?? "#2A2560")}`,
-        color: current?.color ?? "#6B6890",
+        border: `1px solid ${currentColor === UI.muted ? "#2A2560" : currentColor}`,
+        color: currentColor,
         cursor: isPending ? "not-allowed" : "pointer",
         opacity: isPending ? 0.5 : 1,
         transition: "all 150ms ease",
         whiteSpace: "nowrap",
       }}
     >
-      {ROLES.map((r) => (
-        <option key={r.value} value={r.value} style={{ background: "#0A0826", color: "#F5F5FA" }}>
-          {r.label}
+      {ROLE_ORDER.map((r) => (
+        <option key={r} value={r} style={{ background: "#0A0826", color: "#F5F5FA" }}>
+          {ROLE_LABEL[r]}
         </option>
       ))}
     </select>

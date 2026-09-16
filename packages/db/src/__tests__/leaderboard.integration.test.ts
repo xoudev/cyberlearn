@@ -19,7 +19,8 @@ import { leaderboardRepository } from "../repositories/leaderboard.repository.js
 
 // Marker XP band no real user can reach (level 100 ≈ 1.5M); fits INT4 (max ~2.147e9).
 const XP_MARKER = 2_000_000_000;
-const XP_HID = 2_000_000_003; // highest - if its exclusion failed, it would steal rank 1
+const XP_TEACH = 2_000_000_004; // highest of all - same trap as XP_HID, for the role filter
+const XP_HID = 2_000_000_003;
 const XP_PUB = 2_000_000_002;
 const XP_ANON = 2_000_000_001;
 
@@ -42,7 +43,13 @@ const hid = {
   displayName: "LB Hidden",
   username: `lbhid${suffix}`,
 };
-const ALL_IDS = [pub.id, anon.id, hid.id];
+const teach = {
+  id: randomUUID(),
+  email: `lb-teach-${suffix}@test.cyberlearn.internal`,
+  displayName: "LB Teacher",
+  username: `lbteach${suffix}`,
+};
+const ALL_IDS = [pub.id, anon.id, hid.id, teach.id];
 
 let configured = false;
 
@@ -93,6 +100,24 @@ describe("leaderboardRepository (integration, real DB)", () => {
       },
     });
 
+    // A teacher with more XP than anyone. PUBLIC visibility on purpose: only the
+    // role should keep them off the board, so nothing else can be credited with
+    // the exclusion.
+    await prisma.user.create({
+      data: {
+        id: teach.id,
+        email: teach.email,
+        displayName: teach.displayName,
+        username: teach.username,
+        avatarUrl: "/avatars/av-4.svg",
+        role: "TEACHER",
+        xpTotal: XP_TEACH,
+        level: 99,
+        streakDays: 1,
+        preferences: { create: { leaderboardVisibility: "PUBLIC", publicProfile: true } },
+      },
+    });
+
     configured = true;
   });
 
@@ -111,6 +136,9 @@ describe("leaderboardRepository (integration, real DB)", () => {
 
     // HIDDEN excluded entirely - not present in the payload at all.
     expect(hidEntry).toBeUndefined();
+
+    // So is the teacher, despite PUBLIC visibility and the highest XP of all.
+    expect(entries.find((e) => e.xpTotal === XP_TEACH)).toBeUndefined();
 
     // PUBLIC user (also the current user) keeps full identity at rank 1.
     // rank 1 proves the higher-XP HIDDEN user did not occupy a ghost rank.
@@ -154,5 +182,17 @@ describe("leaderboardRepository (integration, real DB)", () => {
     const pos = await leaderboardRepository.findCurrentUserPosition(hid.id);
     expect(pos?.visibility).toBe("HIDDEN");
     expect(pos?.rank).toBeNull();
+  });
+
+  it("a teacher is not ranked: no board position, no dashboard rank", async () => {
+    if (!configured) return;
+
+    // Both answers have to agree with the list the teacher is absent from - a
+    // rank among people one is not listed beside is a number about nothing.
+    const pos = await leaderboardRepository.findCurrentUserPosition(teach.id);
+    expect(pos?.rank).toBeNull();
+
+    const rank = await leaderboardRepository.findUserRank(teach.id);
+    expect(rank).toBe(0);
   });
 });

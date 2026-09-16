@@ -517,7 +517,7 @@ export function SidebarNav({
             page saying "rien ici" is worse than no entry. */}
         {hasClasses && (
           <NavItem
-            href="/ma-classe"
+            href="/my-class"
             label="Mes classes"
             Icon={IconUser}
             count={null}
