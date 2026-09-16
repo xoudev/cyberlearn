@@ -20,6 +20,7 @@ vi.stubEnv("IP_SALT", "a-test-salt-that-is-at-least-32-characters-long");
 // The limit is encoded in the Ratelimit constructor options.
 const counters = new Map<string, number>();
 let rejectNextLimit = false;
+let hangNextLimit = false;
 
 vi.mock("@upstash/redis", () => ({
   Redis: vi.fn(() => ({})),
@@ -42,6 +43,12 @@ vi.mock("@upstash/ratelimit", () => {
     if (rejectNextLimit) {
       rejectNextLimit = false;
       return Promise.reject(new Error("Redis unavailable"));
+    }
+    // An endpoint that accepts the connection and then answers nothing - the
+    // shape a rejection never takes and a timeout is the only cure for.
+    if (hangNextLimit) {
+      hangNextLimit = false;
+      return new Promise(() => undefined);
     }
     const key = `${this.prefix_}:${identifier}`;
     const count = (counters.get(key) ?? 0) + 1;
@@ -84,6 +91,7 @@ const {
 beforeEach(() => {
   counters.clear();
   rejectNextLimit = false;
+  hangNextLimit = false;
 });
 
 function uid(): string {
@@ -297,11 +305,33 @@ describe("fail-open - Upstash not configured", () => {
 describe("checkAuthRateLimit - Redis outage", () => {
   it("allows authentication when the configured Redis request rejects", async () => {
     rejectNextLimit = true;
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const allowed = await checkAuthRateLimit({
       headers: new Headers({ "x-forwarded-for": "203.0.113.8" }),
     });
 
     expect(allowed).toBe(true);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("gives up rather than holding the sign-in when Redis never answers", async () => {
+    // The failure that matters is not a rejection - that comes back at once -
+    // but a request that hangs. Without a cap the password check waits behind
+    // it, so this asserts the wait is bounded, not merely that it ends.
+    hangNextLimit = true;
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const startedAt = Date.now();
+    const allowed = await checkAuthRateLimit({
+      headers: new Headers({ "x-forwarded-for": "203.0.113.9" }),
+    });
+    const elapsed = Date.now() - startedAt;
+
+    expect(allowed).toBe(true);
+    expect(elapsed).toBeLessThan(2_000);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });
