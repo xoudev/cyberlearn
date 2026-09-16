@@ -28,8 +28,18 @@ export async function AppSidebar(): Promise<React.ReactElement> {
     // it. The count runs for teachers only, so a learner pays nothing for it.
     // Read from the database rather than the session claim, so a removed role
     // closes the door on the next request instead of at token expiry.
+    // Archived classes are excluded here for the same reason the page excludes
+    // them: classRepository.findForTeacher filters on archivedAt, so a teacher
+    // whose only class had been archived saw the entry and got a 404 behind it
+    // - the door and the empty room again, by a different route.
     if (authUser && (dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN")) {
-      hasClasses = (await prisma.classTeacher.count({ where: { teacherId: authUser.id } })) > 0;
+      hasClasses =
+        (await prisma.classTeacher.count({
+          where: {
+            teacherId: authUser.id,
+            class: { archivedAt: null, promotion: { archivedAt: null } },
+          },
+        })) > 0;
     }
 
     const computed = computeLevel(dbUser?.xpTotal ?? 0);

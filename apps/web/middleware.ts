@@ -127,6 +127,7 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/certificates",
   "/leaderboard",
   "/locker",
+  "/my-class",
   "/profile",
   "/settings",
   "/wrapped",

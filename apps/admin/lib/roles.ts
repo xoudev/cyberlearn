@@ -1,0 +1,43 @@
+import type { UserRole } from "@cyberlearn/db";
+import type { Tone } from "../app/(admin)/_components/admin-ui";
+
+/**
+ * How a role is named and coloured in the console, in one place.
+ *
+ * It was in four: a label map on the users list, a second label list inside the
+ * role select, a third in the filter facet, and a two-branch ternary on the
+ * dashboard that predated TEACHER and therefore painted a teacher exactly like
+ * a student and printed the raw enum next to them. Nothing connected them, so
+ * adding a role updated three of the four and left the fourth quietly wrong.
+ *
+ * Typing the records on UserRole is what makes that impossible to repeat: a new
+ * value in the Prisma enum stops the build here until it is named and toned,
+ * rather than showing up in the interface as "STUDENT" in grey.
+ */
+export const ROLE_LABEL: Record<UserRole, string> = {
+  STUDENT: "Étudiant",
+  TEACHER: "Professeur",
+  ADMIN: "Admin",
+};
+
+export const ROLE_TONE: Record<UserRole, Tone> = {
+  STUDENT: "neutral",
+  TEACHER: "info",
+  ADMIN: "accent",
+};
+
+/** Most privileged first - the order every role list in the console uses. */
+export const ROLES: readonly UserRole[] = ["ADMIN", "TEACHER", "STUDENT"];
+
+/** A role read back off the DOM or out of a query string is a plain string. */
+export function isUserRole(value: string): value is UserRole {
+  return value in ROLE_LABEL;
+}
+
+export function roleLabel(role: string): string {
+  return isUserRole(role) ? ROLE_LABEL[role] : role;
+}
+
+export function roleTone(role: string): Tone {
+  return isUserRole(role) ? ROLE_TONE[role] : "neutral";
+}

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
 import { KpiCard, Monogram, PageHeader, Tag, UI } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
+import { ROLE_LABEL, ROLES, roleTone } from "@/lib/roles";
 import { RoleToggleButton } from "./_components/RoleToggleButton";
 
 export const metadata: Metadata = { title: "Utilisateurs" };
@@ -22,12 +23,6 @@ function relativeDate(d: Date): string {
   if (diffDays < 7) return `il y a ${String(diffDays)} j`;
   return formatDate(d);
 }
-
-const ROLE_LABEL: Record<string, string> = {
-  STUDENT: "Étudiant",
-  TEACHER: "Professeur",
-  ADMIN: "Admin",
-};
 
 export default async function AdminUsersPage(): Promise<React.ReactElement> {
   const users = await prisma.user.findMany({
@@ -93,8 +88,8 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         <span key="e" className="mono" style={{ color: UI.muted }}>
           {u.email}
         </span>,
-        <Tag key="r" tone={isAdmin ? "accent" : u.role === "TEACHER" ? "info" : "neutral"}>
-          {ROLE_LABEL[u.role] ?? u.role}
+        <Tag key="r" tone={roleTone(u.role)}>
+          {ROLE_LABEL[u.role]}
         </Tag>,
         <span key="l">
           <span style={{ color: UI.faint }}>LVL·</span>
@@ -159,11 +154,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         facets={[
           {
             label: "Rôle",
-            options: [
-              { value: "ADMIN", label: "Admin" },
-              { value: "TEACHER", label: "Professeur" },
-              { value: "STUDENT", label: "Étudiant" },
-            ],
+            options: ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] })),
           },
         ]}
         searchPlaceholder="Rechercher un utilisateur, un email…"

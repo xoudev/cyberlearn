@@ -83,6 +83,7 @@ const nextConfig: NextConfig = {
       { source: "/casier", destination: "/locker", permanent: true },
       { source: "/certifs", destination: "/certificates", permanent: true },
       { source: "/legal/cgu", destination: "/legal/terms", permanent: true },
+      { source: "/ma-classe", destination: "/my-class", permanent: true },
     ]);
   },
   rewrites() {
