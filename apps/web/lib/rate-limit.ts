@@ -2,13 +2,25 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { pseudonymize } from "./pseudonymize";
 
+// ── Shared client settings ──────────────────────────────────────────────────
+
+// @upstash/redis retries five times by default, sleeping 50, 136, 369, 1004
+// and 2730ms between attempts - `Math.exp(retryCount) * 50`. An endpoint that
+// is unreachable therefore takes about 4.2 seconds to give up, and every
+// limiter in this file sits in front of something a person is waiting for.
+//
+// One retry covers a dropped packet, which is what a retry is for. It does not
+// cover an outage, and pretending otherwise is what turns a broken limiter into
+// a slow site.
+const REDIS_RETRY = { retries: 1, backoff: () => 100 };
+
 // ── Legacy auth limiter (fail-open, keeps auth/confirm + auth/callback working) ──
 
 function buildRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token || !url.startsWith("https://")) return null;
-  return new Redis({ url, token });
+  return new Redis({ url, token, retry: REDIS_RETRY });
 }
 
 const _legacyRedis = buildRedis();
@@ -21,6 +33,11 @@ export const authRateLimit = _legacyRedis
     })
   : null;
 
+// This check runs before the password is verified, so whatever it costs is
+// paid by every sign-in attempt - the refused ones as much as the accepted
+// ones. A second spent here is a second on the login screen.
+const AUTH_LIMIT_TIMEOUT_MS = 1_000;
+
 export async function checkAuthRateLimit(request: { headers: Headers }): Promise<boolean> {
   // Authentication must remain available when Redis is missing or temporarily
   // unreachable. The limiter is a defense-in-depth control; Supabase still
@@ -29,12 +46,30 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
 
   const forwarded = request.headers.get("x-forwarded-for");
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const hashedIp = pseudonymize(rawIp);
-    const { success } = await authRateLimit.limit(hashedIp);
+    // Capped as well as retry-bounded: a request that neither resolves nor
+    // rejects would hang the sign-in indefinitely, and the answer we would
+    // eventually get is one we are prepared to do without.
+    const { success } = await Promise.race([
+      authRateLimit.limit(hashedIp),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`auth rate limit timed out after ${String(AUTH_LIMIT_TIMEOUT_MS)}ms`));
+        }, AUTH_LIMIT_TIMEOUT_MS);
+      }),
+    ]);
     return success;
-  } catch {
+  } catch (error) {
+    // Still fail-open - but say so. Swallowing this in silence is how a
+    // limiter that answers nobody went unnoticed: it never blocked anyone, it
+    // never raised anything, it only made signing in slow.
+    console.error("[rate-limit] auth check failed open:", error);
     return true;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
   }
 }
 
@@ -78,7 +113,7 @@ function getRedis(): Redis | null {
     }
     return null;
   }
-  _redis = new Redis({ url, token });
+  _redis = new Redis({ url, token, retry: REDIS_RETRY });
   return _redis;
 }
 
