@@ -17,7 +17,9 @@
  * enforce once the logs confirm 100% of real calls verify.
  *
  * Setup:
- * 1. Deploy: `supabase functions deploy custom-access-token --no-verify-jwt`
+ * 1. Deploying is the job of .github/workflows/deploy-functions.yml, which runs
+ *    on every merge to main that touches this directory. By hand, from a linked
+ *    checkout: `supabase functions deploy custom-access-token --no-verify-jwt`
  *    (config.toml also pins `verify_jwt = false`.)
  * 2. Dashboard → Authentication → Hooks → enable "Customize Access Token (JWT)"
  *    → HTTPS → point to this function.
