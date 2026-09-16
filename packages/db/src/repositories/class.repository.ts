@@ -13,7 +13,11 @@ export const classRepository = {
   /** The classes a user belongs to, most recently joined first. */
   async findForMember(userId: string) {
     const rows = await prisma.classMember.findMany({
-      where: { userId, class: { archivedAt: null } },
+      // The promotion's archivedAt counts as much as the class's: archiving an
+      // intake is how a whole year is put away, and a class whose promotion is
+      // gone is as retired as one archived by name. findForTeacher already
+      // reads it this way, and the sidebar counts on both agreeing.
+      where: { userId, class: { archivedAt: null, promotion: { archivedAt: null } } },
       orderBy: { joinedAt: "desc" },
       select: {
         joinedAt: true,

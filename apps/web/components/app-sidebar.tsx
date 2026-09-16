@@ -23,21 +23,24 @@ export async function AppSidebar(): Promise<React.ReactElement> {
       inProgressCount = ipCount;
     }
 
-    // The entry follows the classes, not the role: a teacher with none assigned
-    // was shown a door to a page that existed only to say it had nothing behind
-    // it. The count runs for teachers only, so a learner pays nothing for it.
-    // Read from the database rather than the session claim, so a removed role
-    // closes the door on the next request instead of at token expiry.
+    // The entry follows the classes, not the role. Teaching one and being in one
+    // both count: a student put in a class had nowhere to see their classmates
+    // except their own profile, while the page listing them existed and was
+    // closed to them.
+    //
     // Archived classes are excluded here for the same reason the page excludes
-    // them: classRepository.findForTeacher filters on archivedAt, so a teacher
-    // whose only class had been archived saw the entry and got a 404 behind it
-    // - the door and the empty room again, by a different route.
-    if (authUser && (dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN")) {
+    // them - findForTeacher and findForMember both filter on archivedAt, and a
+    // count that did not would put back the door with an empty room behind it.
+    if (authUser) {
       hasClasses =
-        (await prisma.classTeacher.count({
+        (await prisma.class.count({
           where: {
-            teacherId: authUser.id,
-            class: { archivedAt: null, promotion: { archivedAt: null } },
+            archivedAt: null,
+            promotion: { archivedAt: null },
+            OR: [
+              { teachers: { some: { teacherId: authUser.id } } },
+              { members: { some: { userId: authUser.id } } },
+            ],
           },
         })) > 0;
     }

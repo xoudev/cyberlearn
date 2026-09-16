@@ -4,9 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { computeLevel, computeTier } from "@cyberlearn/lib";
-import { userRepository, prisma } from "@cyberlearn/db";
+import { classRepository, userRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
-import { ClassPanel } from "./_components/class-panel";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { StreakPanel } from "@/components/streak-panel";
@@ -217,7 +216,7 @@ function HexAvatar({
 export default async function ProfilePage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
-  const [user, certs] = await Promise.all([
+  const [user, certs, classes] = await Promise.all([
     userRepository.findProfile(authUser.id),
     prisma.certificate.findMany({
       where: { userId: authUser.id, revokedAt: null },
@@ -225,6 +224,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
       orderBy: { issuedAt: "desc" },
       take: 10,
     }),
+    classRepository.findForMember(authUser.id),
   ]);
 
   if (!user) notFound();
@@ -233,6 +233,9 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
   // reaches the avatar component. Built-in paths, "__glyph:" markers and null
   // pass through unchanged.
   const resolvedAvatarUrl = await resolveAvatarSrc(user.avatarUrl ?? null);
+
+  // Most recently joined first, so the one shown is the current one.
+  const primaryClass = classes[0];
 
   const { level, current: xpCurrent, needed: xpNeeded } = computeLevel(user.xpTotal);
   const tier = computeTier(level);
@@ -403,6 +406,44 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               >
                 Niveau {level}
               </span>
+
+              {/* The class belongs beside the level, not in a panel further
+                  down: which class someone is in is part of who they are here,
+                  read in the same glance as their rank. The roster lives on
+                  /my-class, which this links to - a line of identity rather
+                  than a block of content. */}
+              {primaryClass && (
+                <Link
+                  href="/my-class"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "#6F6B99",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 1,
+                      height: 11,
+                      background: "#2A2560",
+                      display: "inline-block",
+                    }}
+                  />
+                  Classe <b style={{ color: "#B8B5D1", fontWeight: 600 }}>{primaryClass.name}</b>
+                  <span style={{ color: "#3F3D5C" }}>
+                    {primaryClass.promotion.establishment.name} · {primaryClass.promotion.name}
+                  </span>
+                  {classes.length > 1 && (
+                    <span style={{ color: "#3F3D5C" }}>+{classes.length - 1}</span>
+                  )}
+                </Link>
+              )}
             </div>
 
             <p
@@ -1083,7 +1124,6 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
       {/* ── Ma classe ───────────────────────────────────────────────────────
           Renders nothing for a learner who belongs to no class, which is most
           of them - an empty heading would read as something missing. */}
-      <ClassPanel userId={authUser.id} />
 
       {/* ── Interactive tabs + content ──────────────────────────────────────── */}
       <ProfileContent

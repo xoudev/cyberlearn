@@ -1,31 +1,40 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { classRepository, userRepository, prisma } from "@cyberlearn/db";
+import { classRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { ClassPanel } from "./_components/class-panel";
 
-export const metadata: Metadata = { title: "Mes classes" };
+export const metadata: Metadata = { title: "Ma classe" };
 export const dynamic = "force-dynamic";
 
 /**
- * What a teacher sees: their classes, grouped the way they are filed, and how
- * far each student has got. Read-only by design - a teacher follows a class,
- * they do not compose it, so there is nothing here that writes.
+ * The class page, for both sides of a class.
  *
- * The role is read from the database rather than the session claim. A teacher
- * whose role was just removed loses this page on their next request, without
- * waiting for a token to expire.
+ * A student sees theirs and who else is in it. A teacher sees the ones they
+ * follow, grouped the way they are filed, and how far each student has got.
+ * Someone who is both - a teacher enrolled in a class of their own - sees both
+ * sections.
+ *
+ * There is no role check. Teaching a class and being in one are facts about the
+ * class tables, and both queries are scoped by the caller's own id, so the role
+ * would only ever be a second, less reliable way of asking the same question -
+ * and it was the thing keeping students off a page that lists their classmates.
+ *
+ * Read-only by design: a class is composed in the admin console, not here.
  */
-export default async function TeacherClassesPage(): Promise<React.ReactElement> {
+export default async function MyClassPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
-  const dbUser = await userRepository.findRoleById(authUser.id);
-  if (dbUser?.role !== "TEACHER" && dbUser?.role !== "ADMIN") notFound();
 
-  const establishments = await classRepository.findForTeacher(authUser.id);
-  // No class, no page. A teacher with nothing assigned was shown an empty shell
-  // telling them so, which is a page that exists only to say it has nothing -
-  // and the sidebar entry leading to it said the same thing twice.
-  if (establishments.length === 0) notFound();
+  const [establishments, memberships] = await Promise.all([
+    classRepository.findForTeacher(authUser.id),
+    classRepository.findForMember(authUser.id),
+  ]);
+
+  // No class either way, no page. An empty shell saying so is a page that
+  // exists only to say it has nothing, and the sidebar entry leading to it
+  // would say the same thing twice.
+  if (establishments.length === 0 && memberships.length === 0) notFound();
 
   const classIds = establishments.flatMap((e) =>
     e.promotions.flatMap((p) => p.classes.map((c) => c.id)),
@@ -63,12 +72,18 @@ export default async function TeacherClassesPage(): Promise<React.ReactElement> 
           margin: "0 0 10px",
         }}
       >
-        Mes classes
+        {establishments.length > 0 ? "Mes classes" : "Ma classe"}
       </h1>
       <p style={{ color: "#B8B5D1", fontSize: 15, margin: "0 0 40px", maxWidth: 560 }}>
-        La progression de tes élèves, en lecture seule. La composition des classes est gérée par
-        l&apos;administration.
+        {establishments.length > 0
+          ? "La progression de tes élèves, en lecture seule. La composition des classes est gérée par l'administration."
+          : "Ta classe et les personnes qui la composent. La composition est gérée par l'administration."}
       </p>
+
+      {/* The student's own class first: someone who is both a teacher and a
+          member is a teacher taking a course, and their own enrolment is the
+          part that concerns them rather than their pupils. */}
+      {memberships.length > 0 && <ClassPanel userId={authUser.id} />}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
         {establishments.map((est) => (
