@@ -45,3 +45,14 @@ export function roleLabel(role: string): string {
 export function roleTone(role: string): Tone {
   return isUserRole(role) ? ROLE_TONE[role] : "neutral";
 }
+
+/**
+ * Sort key for a role column: most privileged first, not alphabetical.
+ *
+ * Sorting on the raw enum gives ADMIN, STUDENT, TEACHER - which is neither the
+ * ladder nor anything a reader expects, and it changes meaning the day a role
+ * is renamed. The rank follows ROLES, so the order is stated once.
+ */
+export function roleRank(role: string): number {
+  return isUserRole(role) ? ROLES.indexOf(role) : ROLES.length;
+}

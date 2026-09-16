@@ -1,10 +1,10 @@
 import React from "react";
 import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
-import { KpiCard, Monogram, PageHeader, Tag, UI } from "../_components/admin-ui";
+import { KpiCard, Monogram, PageHeader, UI } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
-import { ROLE_LABEL, ROLES, roleTone } from "@/lib/roles";
-import { RoleToggleButton } from "./_components/RoleToggleButton";
+import { ROLE_LABEL, ROLES, roleRank } from "@/lib/roles";
+import { RoleSelect } from "./_components/role-select";
 
 export const metadata: Metadata = { title: "Utilisateurs" };
 
@@ -64,7 +64,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
       sort: [
         handle.toLowerCase(),
         u.email,
-        u.role,
+        roleRank(u.role),
         u.level,
         u.xpTotal,
         u.streakDays,
@@ -72,7 +72,6 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         u._count.certificates,
         u.createdAt.getTime(),
         u.lastActiveAt.getTime(),
-        0,
       ],
       cells: [
         <span key="u" style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
@@ -88,9 +87,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         <span key="e" className="mono" style={{ color: UI.muted }}>
           {u.email}
         </span>,
-        <Tag key="r" tone={roleTone(u.role)}>
-          {ROLE_LABEL[u.role]}
-        </Tag>,
+        <RoleSelect key="r" userId={u.id} currentRole={u.role} />,
         <span key="l">
           <span style={{ color: UI.faint }}>LVL·</span>
           <b style={{ color: UI.turquoise }}>{String(u.level).padStart(2, "0")}</b>
@@ -110,7 +107,6 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         >
           {relativeDate(u.lastActiveAt)}
         </span>,
-        <RoleToggleButton key="t" userId={u.id} currentRole={u.role} />,
       ],
     };
   });
@@ -148,7 +144,6 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
           { label: "Certifs", align: "right", sortable: true },
           { label: "Inscrit", align: "right", sortable: true },
           { label: "Actif", align: "right", sortable: true },
-          { label: "Action" },
         ]}
         rows={rows}
         facets={[
