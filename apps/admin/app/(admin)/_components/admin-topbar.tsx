@@ -41,6 +41,7 @@ const DESTINATIONS: Destination[] = [
   { label: "Challenges", href: "/challenges", hint: "page" },
   { label: "Utilisateurs", href: "/users", hint: "page" },
   { label: "Tickets", href: "/tickets", hint: "page" },
+  { label: "Modération", href: "/moderation", hint: "page" },
   { label: "Audit log", href: "/audit", hint: "page" },
   { label: "Paramètres", href: "/settings", hint: "page" },
   { label: "Nouvelle leçon", href: "/lessons/new", hint: "action" },

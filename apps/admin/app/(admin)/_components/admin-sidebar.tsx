@@ -92,6 +92,13 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
           <path d="M6 5 V12 M10 5 V12" strokeDasharray="1.5 1.5" />
         </svg>
       );
+    case "shield":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M8 1.5 L13.5 3.5 V8 C13.5 11 11 13.5 8 14.5 C5 13.5 2.5 11 2.5 8 V3.5 Z" />
+          <path d="M5.8 8 L7.4 9.6 L10.4 6.4" />
+        </svg>
+      );
     case "log":
       return (
         <svg viewBox="0 0 16 16" {...s}>
@@ -155,6 +162,7 @@ export function AdminSidebar({
     { label: "Challenges", href: "/challenges", icon: "target", count: counts.challenges },
     { label: "Utilisateurs", href: "/users", icon: "users", count: counts.users },
     { label: "Tickets", href: "/tickets", icon: "ticket", count: counts.tickets },
+    { label: "Modération", href: "/moderation", icon: "shield" },
   ];
 
   const sysItems = [

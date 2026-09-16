@@ -3,6 +3,11 @@
 
 export { prisma } from "./prisma.js";
 export {
+  moderationRepository,
+  type ScreenInput,
+  type ScreenResult,
+} from "./repositories/moderation.repository.js";
+export {
   lessonRepository,
   CATALOGUE_LESSON,
   lessonsVisibleTo,
