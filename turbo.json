@@ -29,16 +29,16 @@
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "@cyberlearn/db#build"],
       "outputs": []
     },
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "@cyberlearn/db#build"],
       "outputs": ["coverage/**"],
       "inputs": ["src/**", "test/**", "*.test.ts", "*.test.tsx", "vitest.config.*"]
     },
     "test:coverage": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "@cyberlearn/db#build"],
       "outputs": ["coverage/**"]
     },
     "clean": {
