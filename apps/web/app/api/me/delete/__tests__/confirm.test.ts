@@ -2,8 +2,13 @@
  * Unit tests for /api/me/delete/confirm (GET shows the confirmation page,
  * POST performs the irreversible deletion).
  *
- * All external I/O (Prisma, deleteAccount, Supabase admin, Supabase signOut) is mocked.
- * Response assertions use the Location header since the handler redirects.
+ * All external I/O (Prisma, deleteAccount, Supabase signOut) is mocked. Response
+ * assertions use the Location header since the handler redirects.
+ *
+ * deleteAccount moved to @cyberlearn/db and took the Supabase Auth deletion
+ * with it, so the console can erase an account through the same code. What is
+ * left for this route to decide is what the person is shown, and that is what
+ * is tested here; the erasure itself is covered in packages/db.
  */
 
 import { randomUUID } from "node:crypto";
@@ -13,32 +18,23 @@ vi.stubEnv("IP_SALT", "delete-confirm-test-salt-that-is-at-least-32-chars");
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const { mockPrisma, mockDeleteAccount, mockAuthDeleteUser, mockSignOut, mockCookieStore } =
-  vi.hoisted(() => {
-    const mockPrisma = {
-      accountDeletionToken: {
-        findUnique: vi.fn(),
-        update: vi.fn(),
-      },
+const { mockPrisma, mockDeleteAccount, mockSignOut, mockCookieStore, mockCaptureException } =
+  vi.hoisted(() => ({
+    mockPrisma: {
+      accountDeletionToken: { findUnique: vi.fn(), update: vi.fn() },
       auditLog: { create: vi.fn() },
-    };
-    const mockDeleteAccount = vi.fn();
-    const mockAuthDeleteUser = vi.fn();
-    const mockSignOut = vi.fn();
-    const mockCookieStore = { getAll: vi.fn().mockReturnValue([]), set: vi.fn() };
-    return { mockPrisma, mockDeleteAccount, mockAuthDeleteUser, mockSignOut, mockCookieStore };
-  });
+    },
+    mockDeleteAccount: vi.fn(),
+    mockSignOut: vi.fn(),
+    mockCookieStore: { getAll: vi.fn().mockReturnValue([]), set: vi.fn() },
+    mockCaptureException: vi.fn(),
+  }));
 
-vi.mock("@cyberlearn/db", () => ({ prisma: mockPrisma }));
+vi.mock("@cyberlearn/db", () => ({ prisma: mockPrisma, deleteAccount: mockDeleteAccount }));
 vi.mock("@cyberlearn/db/supabase/server", () => ({
   createSupabaseServerClient: vi.fn().mockReturnValue({ auth: { signOut: mockSignOut } }),
 }));
-vi.mock("@/lib/supabase/admin", () => ({
-  createSupabaseAdminClient: vi.fn().mockReturnValue({
-    auth: { admin: { deleteUser: mockAuthDeleteUser } },
-  }),
-}));
-vi.mock("@/lib/rgpd/delete-account", () => ({ deleteAccount: mockDeleteAccount }));
+vi.mock("@sentry/nextjs", () => ({ captureException: mockCaptureException }));
 vi.mock("next/headers", () => ({ cookies: vi.fn().mockResolvedValue(mockCookieStore) }));
 
 // ── Import after mocks ────────────────────────────────────────────────────────
@@ -95,8 +91,8 @@ beforeEach(() => {
     ratingsAnonymized: 0,
     contactTicketsAnonymized: 0,
     auditLogsAnonymized: 0,
+    authIdentityDeleted: true,
   });
-  mockAuthDeleteUser.mockResolvedValue({ error: null });
   mockSignOut.mockResolvedValue({ error: null });
 });
 
@@ -177,14 +173,16 @@ describe("POST /api/me/delete/confirm - happy path", () => {
     );
   });
 
-  it("calls supabaseAdmin.auth.admin.deleteUser after deleteAccount", async () => {
+  it("reports cleanup failures to Sentry rather than swallowing them", async () => {
+    // The reporter is injected, so this route keeps the Sentry wiring that
+    // packages/db deliberately does not have.
     await POST(makeRequest(VALID_PLAIN_TOKEN));
-    expect(mockAuthDeleteUser).toHaveBeenCalledOnce();
-    expect(mockAuthDeleteUser).toHaveBeenCalledWith(MOCK_USER_ID);
-    // deleteAccount must fire before auth delete
-    const appDeleteOrder = mockDeleteAccount.mock.invocationCallOrder[0] ?? 0;
-    const authDeleteOrder = mockAuthDeleteUser.mock.invocationCallOrder[0] ?? 0;
-    expect(appDeleteOrder).toBeLessThan(authDeleteOrder);
+    const [, options] = mockDeleteAccount.mock.calls[0] as [
+      string,
+      { onCleanupError: (area: string, error: unknown, ctx: Record<string, unknown>) => void },
+    ];
+    options.onCleanupError("rgpd.delete.avatar", new Error("boom"), { hashedUserId: "abc" });
+    expect(mockCaptureException).toHaveBeenCalledOnce();
   });
 
   it("calls signOut to clear the session", async () => {
@@ -216,52 +214,44 @@ describe("POST /api/me/delete/confirm - deleteAccount failure", () => {
   });
 });
 
-describe("POST /api/me/delete/confirm - auth deletion failure", () => {
-  it("redirects to error?reason=auth_cleanup_failed when Supabase Auth delete fails", async () => {
-    mockAuthDeleteUser.mockResolvedValueOnce({
-      error: { message: "user not found in auth", status: 404 },
+// The auth identity now goes with the data inside deleteAccount, which audits
+// its own failure. What is left here is what the person is told: an identity
+// that survived is something they would want to know about, so they are not
+// shown the success page.
+describe("POST /api/me/delete/confirm - the auth identity survived", () => {
+  it("redirects to error?reason=auth_cleanup_failed", async () => {
+    mockDeleteAccount.mockResolvedValueOnce({
+      hashedUserId: "abc",
+      deletedAt: new Date(),
+      certificatesAnonymized: 0,
+      questionsAnonymized: 0,
+      answersAnonymized: 0,
+      ratingsAnonymized: 0,
+      contactTicketsAnonymized: 0,
+      auditLogsAnonymized: 0,
+      authIdentityDeleted: false,
     });
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
     const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=auth_cleanup_failed");
-
-    consoleSpy.mockRestore();
   });
 
-  it("creates an audit log entry when auth delete fails", async () => {
-    mockAuthDeleteUser.mockResolvedValueOnce({
-      error: { message: "upstream timeout", status: 503 },
+  it("does not call signOut: there is still an identity holding the session", async () => {
+    mockDeleteAccount.mockResolvedValueOnce({
+      hashedUserId: "abc",
+      deletedAt: new Date(),
+      certificatesAnonymized: 0,
+      questionsAnonymized: 0,
+      answersAnonymized: 0,
+      ratingsAnonymized: 0,
+      contactTicketsAnonymized: 0,
+      auditLogsAnonymized: 0,
+      authIdentityDeleted: false,
     });
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
-
-    await POST(makeRequest(VALID_PLAIN_TOKEN));
-
-    expect(mockPrisma.auditLog.create).toHaveBeenCalledOnce();
-    expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
-      containing({
-        data: containing({
-          action: "user.account.auth_delete_failed",
-          anonymized: true,
-          actorId: null,
-        }),
-      }),
-    );
-
-    consoleSpy.mockRestore();
-  });
-
-  it("does not call signOut when auth delete fails (session already invalidated)", async () => {
-    mockAuthDeleteUser.mockResolvedValueOnce({
-      error: { message: "auth error", status: 500 },
-    });
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
     await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(mockSignOut).not.toHaveBeenCalled();
-
-    consoleSpy.mockRestore();
   });
 });
 

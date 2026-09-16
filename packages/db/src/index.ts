@@ -13,6 +13,11 @@ export type { LessonFilters } from "./repositories/lesson.repository.js";
 export { badgeRepository } from "./repositories/badge.repository.js";
 export { userRepository } from "./repositories/user.repository.js";
 export { classRepository, LIVE_CLASS_FILTER } from "./repositories/class.repository.js";
+export {
+  deleteAccount,
+  type DeleteAccountOptions,
+  type DeletionSummary,
+} from "./rgpd/delete-account.js";
 export { pathRepository } from "./repositories/path.repository.js";
 export { certificateRepository } from "./repositories/certificate.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";

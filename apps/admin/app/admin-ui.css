@@ -327,12 +327,18 @@
   padding: 18px;
 }
 
-/* Row cell that opens a detail page - the title lights up on hover. */
+/* Row cell that opens a detail page - the title lights up on hover. Laid out
+   as a row because the cell often carries a monogram next to the name, and
+   that pairing was written inline on the one list that had it. */
 .a-row-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   text-decoration: none;
 }
 .a-row-link .a-row-link-title {
   color: var(--a-fg);
+  font-weight: 600;
   transition: color 140ms ease;
 }
 .a-row-link:hover .a-row-link-title {

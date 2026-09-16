@@ -1,15 +1,6 @@
-import crypto from "node:crypto";
-
-export function getSalt(): string {
-  const salt = process.env.IP_SALT;
-  if (!salt || salt.length < 32) {
-    throw new Error(
-      "[pseudonymize] IP_SALT must be set (>= 32 chars). Generate with: openssl rand -hex 32",
-    );
-  }
-  return salt;
-}
-
-export function pseudonymize(value: string): string {
-  return crypto.createHmac("sha256", getSalt()).update(value).digest("hex");
-}
+// Moved to @cyberlearn/lib, where the admin app can reach it too: the console
+// had a second copy of this HMAC written inline in its rate limiter, with a
+// comment pointing at this file. Re-exported rather than deleted because a
+// dozen call sites here read it by this path, and the import path is not the
+// interesting part of any of them.
+export { getSalt, pseudonymize } from "@cyberlearn/lib/pseudonymize";

@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { KpiCard, Monogram, PageHeader, UI } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
@@ -74,16 +75,19 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         u.lastActiveAt.getTime(),
       ],
       cells: [
-        <span key="u" style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+        // The row opens the account. Deleting one lives there rather than
+        // here: a misclick in a sorted table is cheap, and that action is not
+        // undoable.
+        <Link key="u" href={`/users/${u.id}`} className="a-row-link">
           <Monogram
             text={handle.replace("@", "")}
             size={26}
             tone={isAdmin ? "accent" : "neutral"}
           />
-          <span style={{ fontWeight: 600, color: UI.fg, fontSize: 12.5, whiteSpace: "nowrap" }}>
+          <span className="a-row-link-title" style={{ whiteSpace: "nowrap" }}>
             {handle}
           </span>
-        </span>,
+        </Link>,
         <span key="e" className="mono" style={{ color: UI.muted }}>
           {u.email}
         </span>,
