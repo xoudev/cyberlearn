@@ -20,10 +20,14 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   ADMIN: "Admin",
 };
 
+// Admin is danger, not accent. The role select had it red and the tag beside it
+// turquoise; red is the one that says something - a control that grants the
+// keys to the console should look like it - so the tags follow the select
+// rather than the other way round.
 export const ROLE_TONE: Record<UserRole, Tone> = {
   STUDENT: "neutral",
   TEACHER: "info",
-  ADMIN: "accent",
+  ADMIN: "danger",
 };
 
 /** Most privileged first - the order every role list in the console uses. */
