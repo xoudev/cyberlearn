@@ -315,14 +315,35 @@ export const classRepository = {
     });
   },
 
-  /** Idempotent: re-adding a member already in the class is a no-op, not an error. */
-  async addMembers(classId: string, userIds: string[]) {
-    if (userIds.length === 0) return 0;
-    const created = await prisma.classMember.createMany({
-      data: userIds.map((userId) => ({ classId, userId })),
+  /**
+   * Idempotent: re-adding a member already in the class is a no-op, not an error.
+   *
+   * Returns the ids actually added rather than how many, because the caller
+   * tells each of them they have been enrolled - and someone who was already in
+   * the class should not be told again every time an administrator re-pastes the
+   * roster. createMany reports a count and not which rows it wrote, so the
+   * membership is read first and the difference is what gets inserted.
+   *
+   * Two administrators pasting the same list at the same moment could both see
+   * the same difference and both notify; skipDuplicates keeps the table right,
+   * and a duplicate notification is a better failure than a missing one.
+   */
+  async addMembers(classId: string, userIds: string[]): Promise<string[]> {
+    if (userIds.length === 0) return [];
+
+    const existing = await prisma.classMember.findMany({
+      where: { classId, userId: { in: userIds } },
+      select: { userId: true },
+    });
+    const already = new Set(existing.map((m) => m.userId));
+    const toAdd = userIds.filter((id) => !already.has(id));
+    if (toAdd.length === 0) return [];
+
+    await prisma.classMember.createMany({
+      data: toAdd.map((userId) => ({ classId, userId })),
       skipDuplicates: true,
     });
-    return created.count;
+    return toAdd;
   },
 
   /** Idempotent: assigning a teacher already on the class only updates the subject. */

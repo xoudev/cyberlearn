@@ -1,0 +1,14 @@
+-- Being put in a class is something the student should hear about.
+--
+-- Until now enrolment happened entirely in the admin console: an administrator
+-- pasted a list of addresses, the rows appeared in class_members, and the
+-- learner found out the next time they happened to open their profile. The
+-- class panel was already there waiting for them, with their classmates and
+-- their teacher on it, and nothing had said so.
+--
+-- ANNOUNCEMENT would have carried the message, but it is the type for things
+-- the platform says to everyone. This one is addressed to one person, about
+-- their own account, and the notification panel keys its icon on the type - so
+-- borrowing a neighbour's would have meant a megaphone next to "you have been
+-- added to SIO1-A".
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'CLASS_ENROLLED';

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { classRepository, prisma } from "@cyberlearn/db";
 import type { Prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
+import { notifyEnrolledInClass } from "@/lib/class-enrolment-notice";
 
 /**
  * Composing the school tree: establishments, promotions, classes, and who is in
@@ -162,14 +163,23 @@ export async function addMembersAction(
   // and silently adding nineteen of twenty is how it goes unnoticed.
   const unknown = emails.filter((e) => !found.has(e));
 
-  const added = await classRepository.addMembers(
+  const addedIds = await classRepository.addMembers(
     parsed.data.classId,
     users.map((u) => u.id),
   );
-  await audit(admin.id, "class.members.add", parsed.data.classId, { added, unknown });
+  await audit(admin.id, "class.members.add", parsed.data.classId, {
+    added: addedIds.length,
+    unknown,
+  });
+
+  // After the audit, and never in front of it: the enrolment is what happened,
+  // the notice is a courtesy, and a mail provider having a bad minute must not
+  // decide whether a student is in a class. notifyEnrolledInClass swallows its
+  // own failures for the same reason.
+  await notifyEnrolledInClass(parsed.data.classId, addedIds);
 
   revalidatePath(`/classes/${parsed.data.classId}`);
-  return { added, unknown };
+  return { added: addedIds.length, unknown };
 }
 
 export async function removeMemberAction(
