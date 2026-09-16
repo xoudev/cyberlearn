@@ -9,6 +9,19 @@ import { ClassRoster } from "../_components/class-roster";
 export const metadata: Metadata = { title: "Classe" };
 export const dynamic = "force-dynamic";
 
+function formatDay(d: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(d);
+}
+
+/**
+ * An invitation outlives the administrator who sent it: invitedById is SET NULL
+ * on delete, so the place stays held even once that account is gone.
+ */
+function senderLabel(sender: { displayName: string; email: string } | null): string {
+  if (sender === null) return "un administrateur";
+  return sender.displayName.trim() || sender.email;
+}
+
 export default async function AdminClassPage({
   params,
 }: {
@@ -16,7 +29,7 @@ export default async function AdminClassPage({
 }): Promise<React.ReactElement> {
   const { id } = await params;
 
-  const [klass, teacherPool] = await Promise.all([
+  const [klass, teacherPool, directory, invitations] = await Promise.all([
     classRepository.findById(id),
     // Only accounts that can actually follow a class. Assigning a student here
     // would hand them their classmates' progress, so they are not offered.
@@ -25,11 +38,21 @@ export default async function AdminClassPage({
       orderBy: { displayName: "asc" },
       select: { id: true, displayName: true, email: true, role: true },
     }),
+    // The picker filters in the browser, so the directory arrives with the
+    // page. A school is hundreds of people, not millions; the day that stops
+    // being true this becomes a server search, and the component's own comment
+    // says so.
+    prisma.user.findMany({
+      orderBy: { displayName: "asc" },
+      select: { id: true, displayName: true, username: true, email: true, role: true },
+    }),
+    classRepository.listPendingInvitations(id),
   ]);
 
   if (!klass) notFound();
 
   const archived = klass.archivedAt !== null;
+  const memberIds = new Set(klass.members.map((m) => m.user.id));
 
   return (
     <main className="a-page">
@@ -78,6 +101,22 @@ export default async function AdminClassPage({
         teacherPool={teacherPool.map((u) => ({
           id: u.id,
           label: `${u.displayName || u.email}${u.role === "ADMIN" ? " (admin)" : ""}`,
+        }))}
+        candidates={directory
+          .filter((u) => !memberIds.has(u.id))
+          .map((u) => ({
+            id: u.id,
+            label: u.displayName || (u.username ?? u.email),
+            email: u.email,
+            role: u.role,
+            search: `${u.displayName} ${u.username ?? ""} ${u.email}`.toLowerCase(),
+          }))}
+        invitations={invitations.map((i) => ({
+          id: i.id,
+          email: i.email,
+          invitedBy: senderLabel(i.invitedBy),
+          expiresAt: formatDay(i.expiresAt),
+          expired: i.expiresAt.getTime() < Date.now(),
         }))}
       />
     </main>

@@ -69,7 +69,9 @@ export async function notifyEnrolledInClass(classId: string, userIds: string[]):
         type: "CLASS_ENROLLED" as const,
         title: `Tu as rejoint ${klass.name}`,
         body,
-        actionUrl: "/profile",
+        // /my-class, not /profile: the panel moved there, and the profile
+        // now carries only the one-line mention beside the level.
+        actionUrl: "/my-class",
       })),
     });
   } catch (error) {
