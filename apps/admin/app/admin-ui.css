@@ -873,6 +873,30 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+
+/* Stacks fields at the same rhythm .a-auth-form gives the sign-in screen,
+   without its top margin - a form inside a card starts where the card does. */
+.a-form {
+  display: grid;
+  gap: 15px;
+}
+
+/* "optionnel" belongs on the label, not in the placeholder: a placeholder is
+   gone the moment someone types, which is exactly when they are wondering
+   whether they had to. */
+.a-label-optional {
+  color: var(--a-faint);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.a-field-hint {
+  color: var(--a-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
 .a-input {
   width: 100%;
   height: 46px;
@@ -888,6 +912,24 @@
 .a-input:focus {
   border-color: var(--a-accent);
 }
+/* Same skin as .a-input, without the fixed height an input needs. */
+.a-textarea {
+  width: 100%;
+  border: 1px solid var(--a-border-2);
+  background: var(--a-surface-2);
+  color: var(--a-fg);
+  padding: 11px 13px;
+  outline: none;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  transition: border-color 140ms ease;
+}
+.a-textarea:focus {
+  border-color: var(--a-accent);
+}
+
 .a-input--code {
   height: 58px;
   text-align: center;

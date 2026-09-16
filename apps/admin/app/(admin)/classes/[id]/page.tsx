@@ -1,10 +1,9 @@
 import React from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { classRepository, prisma } from "@cyberlearn/db";
-import { PageHeader, Tag, UI } from "../../_components/admin-ui";
-import { ClassRoster } from "../_components/ClassRoster";
+import { GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
+import { ClassRoster } from "../_components/class-roster";
 
 export const metadata: Metadata = { title: "Classe" };
 export const dynamic = "force-dynamic";
@@ -29,29 +28,29 @@ export default async function AdminClassPage({
 
   if (!klass) notFound();
 
+  const archived = klass.archivedAt !== null;
+
   return (
-    <main>
-      <div className="mono" style={{ fontSize: 11, color: UI.faint, marginBottom: 10 }}>
-        <Link href="/classes" style={{ color: "inherit" }}>
-          Classes
-        </Link>
-        {" / "}
-        {klass.promotion.establishment.name}
-        {" / "}
-        {klass.promotion.name}
-      </div>
-
+    <main className="a-page">
       <PageHeader
-        eyebrow="Classe"
-        title={klass.name}
+        // Where the class sits is the eyebrow's job - it is the line above the
+        // name on every other page of the console, and it answers "which
+        // SIO1-A?" without a separate breadcrumb row.
+        eyebrow={`${klass.promotion.establishment.name} · ${klass.promotion.name}`}
+        title={
+          <>
+            {klass.name}
+            {archived && (
+              <>
+                {" "}
+                <Tag tone="warning">Archivée</Tag>
+              </>
+            )}
+          </>
+        }
         description={klass.description ?? "Aucune description."}
+        actions={<GhostLink href="/classes">Retour aux classes</GhostLink>}
       />
-
-      {klass.archivedAt !== null && (
-        <div style={{ marginTop: 8 }}>
-          <Tag tone="warning">Archivée</Tag>
-        </div>
-      )}
 
       <ClassRoster
         classId={klass.id}
@@ -69,7 +68,7 @@ export default async function AdminClassPage({
         }))}
         teacherPool={teacherPool.map((u) => ({
           id: u.id,
-          label: `${u.displayName || u.email} ${u.role === "ADMIN" ? "(admin)" : ""}`.trim(),
+          label: `${u.displayName || u.email}${u.role === "ADMIN" ? " (admin)" : ""}`,
         }))}
       />
     </main>
