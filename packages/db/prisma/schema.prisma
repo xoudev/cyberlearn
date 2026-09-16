@@ -77,6 +77,7 @@ model User {
   classMemberships  ClassMember[]
   taughtClasses     ClassTeacher[]          @relation("ClassTeacher")
   sentInvitations   ClassInvitation[]       @relation("ClassInvitationSender")
+  setAssignments    ClassAssignment[]       @relation("ClassAssignmentAuthor")
 
   @@index([username])
   @@index([role])
@@ -145,6 +146,7 @@ model Class {
   teachers    ClassTeacher[]
   members     ClassMember[]
   invitations ClassInvitation[]
+  assignments ClassAssignment[]
 
   /// Scoped to the promotion: "SIO1-A" exists in more than one school.
   @@unique([promotionId, slug])
@@ -203,6 +205,35 @@ model ClassInvitation {
   /// The sign-in lookup: pending invitations for this address.
   @@index([email, acceptedAt])
   @@map("class_invitations")
+}
+
+/// A lesson a class has been told to do, and by when.
+///
+/// Assigned to the class rather than to each student, because that is how a
+/// teacher thinks about it and what they would otherwise do twenty-eight times.
+/// Who has done it is not stored here at all - UserLessonProgress already
+/// records that, and a second copy of it would be a second answer to the same
+/// question, free to disagree with the first.
+model ClassAssignment {
+  id           String    @id @default(uuid()) @db.Uuid
+  classId      String    @db.Uuid
+  lessonId     String    @db.Uuid
+  assignedById String?   @db.Uuid
+  /// What the teacher wants said alongside it. Shown to the class as written.
+  instructions String?   @db.VarChar(1000)
+  /// No date means "do this", not "do this by never" - both are ordinary.
+  dueAt        DateTime?
+  createdAt    DateTime  @default(now())
+
+  class      Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  lesson     Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  /// Nullable so deleting a teacher's account does not delete the work they set.
+  assignedBy User?  @relation("ClassAssignmentAuthor", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  /// One standing assignment per lesson per class: re-assigning moves the date.
+  @@unique([classId, lessonId])
+  @@index([classId, dueAt])
+  @@map("class_assignments")
 }
 
 model ClassMember {
@@ -331,15 +362,16 @@ model Lesson {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  pathLessons     PathLesson[]
-  progress        UserLessonProgress[]
-  reviewSchedules ReviewSchedule[]
-  ratings         Rating[]
-  questions       LessonQuestion[]
-  prerequisites   LessonPrerequisite[] @relation("LessonPrerequisites")
-  prerequisiteOf  LessonPrerequisite[] @relation("PrerequisiteOf")
-  skipWaivers     UserSkipWaiver[]
-  notes           Note[]
+  pathLessons      PathLesson[]
+  progress         UserLessonProgress[]
+  reviewSchedules  ReviewSchedule[]
+  ratings          Rating[]
+  questions        LessonQuestion[]
+  prerequisites    LessonPrerequisite[] @relation("LessonPrerequisites")
+  prerequisiteOf   LessonPrerequisite[] @relation("PrerequisiteOf")
+  skipWaivers      UserSkipWaiver[]
+  notes            Note[]
+  classAssignments ClassAssignment[]
 
   @@index([category, difficulty, status])
   @@index([slug])
@@ -1019,6 +1051,7 @@ enum NotificationType {
   ANNOUNCEMENT
   TICKET_UPDATE
   CLASS_ENROLLED
+  LESSON_ASSIGNED
 }
 
 model Notification {

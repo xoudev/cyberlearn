@@ -583,6 +583,109 @@ export const classRepository = {
     return notified.map((i) => i.classId);
   },
 
+  // ─── Assignments ──────────────────────────────────────────────────────────
+
+  /**
+   * Whether this account may set work for this class.
+   *
+   * The web app has no admin gate - a teacher is an ordinary signed-in user
+   * there - so every write below is checked against the class tables rather
+   * than against a role. A teacher of one class must not be able to set work
+   * for another by knowing its id, and an ADMIN is included because the console
+   * and the site are the same product to the person using them.
+   */
+  async canSetWorkFor(userId: string, classId: string): Promise<boolean> {
+    const [teaches, user] = await Promise.all([
+      prisma.classTeacher.count({ where: { classId, teacherId: userId } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    ]);
+    return teaches > 0 || user?.role === "ADMIN";
+  },
+
+  /** The work set for these classes, soonest deadline first. */
+  async listAssignments(classIds: string[]) {
+    if (classIds.length === 0) return [];
+    return prisma.classAssignment.findMany({
+      where: { classId: { in: classIds } },
+      // Nulls last: an assignment with no deadline is not overdue and not
+      // urgent, so it belongs under the ones that are.
+      orderBy: [{ dueAt: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        classId: true,
+        lessonId: true,
+        instructions: true,
+        dueAt: true,
+        createdAt: true,
+        lesson: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            category: true,
+            difficulty: true,
+            estimatedMinutes: true,
+          },
+        },
+        assignedBy: { select: { displayName: true, username: true } },
+      },
+    });
+  },
+
+  /**
+   * Sets a lesson for a class, or moves the deadline of one already set.
+   *
+   * Upsert rather than insert: a teacher re-assigning a lesson is changing the
+   * date, and a second row for the same lesson would show the class the same
+   * work twice with two different deadlines. Returns whether it was new, so the
+   * caller can tell the class about work they have not seen before and stay
+   * quiet about a date being moved by a day.
+   */
+  async assignLesson(input: {
+    classId: string;
+    lessonId: string;
+    assignedById: string;
+    dueAt: Date | null;
+    instructions: string | null;
+  }): Promise<{ created: boolean }> {
+    const existing = await prisma.classAssignment.findUnique({
+      where: { classId_lessonId: { classId: input.classId, lessonId: input.lessonId } },
+      select: { id: true },
+    });
+
+    await prisma.classAssignment.upsert({
+      where: { classId_lessonId: { classId: input.classId, lessonId: input.lessonId } },
+      create: input,
+      update: {
+        dueAt: input.dueAt,
+        instructions: input.instructions,
+        assignedById: input.assignedById,
+      },
+    });
+    return { created: existing === null };
+  },
+
+  async unassignLesson(classId: string, lessonId: string): Promise<void> {
+    await prisma.classAssignment.deleteMany({ where: { classId, lessonId } });
+  },
+
+  /**
+   * Which of these people have finished which of these lessons.
+   *
+   * One query for the whole page rather than one per assignment. Completion is
+   * read from UserLessonProgress and not stored on the assignment: a second
+   * record of the same fact is a second answer free to disagree with the first,
+   * and a student who finished a lesson before it was ever set has done it.
+   */
+  async findCompletions(userIds: string[], lessonIds: string[]): Promise<Set<string>> {
+    if (userIds.length === 0 || lessonIds.length === 0) return new Set();
+    const rows = await prisma.userLessonProgress.findMany({
+      where: { status: "COMPLETED", userId: { in: userIds }, lessonId: { in: lessonIds } },
+      select: { userId: true, lessonId: true },
+    });
+    return new Set(rows.map((r) => `${r.userId}:${r.lessonId}`));
+  },
+
   /** Idempotent: assigning a teacher already on the class only updates the subject. */
   async assignTeacher(classId: string, teacherId: string, subject: string | null) {
     await prisma.classTeacher.upsert({
