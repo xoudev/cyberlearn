@@ -64,7 +64,10 @@ export interface LeaderboardEntry {
 /** The signed-in user's own standing. Always their real data - it is their own. */
 export interface CurrentUserPosition {
   visibility: LeaderboardVisibility;
-  /** Null when HIDDEN - a hidden user has no position on the public board. */
+  /**
+   * Null when the user is not on the public board at all - hidden by their own
+   * preference, or not a student and therefore never ranked.
+   */
   rank: number | null;
   level: number;
   xpTotal: number;
@@ -130,12 +133,14 @@ export function buildLeaderboard(
  */
 export function buildCurrentUserPosition(
   user: RawLeaderboardUser,
-  rankAmongVisible: number,
+  // Null for a caller the board does not rank at all. Passing 0 does not mean
+  // that: 0 is a number, and it reached the interface as a position.
+  rankAmongRanked: number | null,
 ): CurrentUserPosition {
   const visibility = resolveVisibility(user.preferences);
   return {
     visibility,
-    rank: visibility === LeaderboardVisibility.HIDDEN ? null : rankAmongVisible,
+    rank: visibility === LeaderboardVisibility.HIDDEN ? null : rankAmongRanked,
     level: user.level,
     xpTotal: user.xpTotal,
     streakDays: user.streakDays,

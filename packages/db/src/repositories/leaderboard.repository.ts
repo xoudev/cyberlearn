@@ -77,7 +77,7 @@ export const leaderboardRepository = {
       user.role !== UserRole.STUDENT ||
       resolveVisibility(user.preferences) === LeaderboardVisibility.HIDDEN
     ) {
-      return buildCurrentUserPosition(user, 0); // rank coerced to null inside
+      return buildCurrentUserPosition(user, null);
     }
 
     const higher = await prisma.user.count({
