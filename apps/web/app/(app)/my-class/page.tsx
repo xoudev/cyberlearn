@@ -1,13 +1,14 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { classRepository, prisma } from "@cyberlearn/db";
+import { classRepository, lessonsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { StudentClass } from "./_components/student-class";
 import { StudentWork, type StudentWorkItem } from "./_components/student-work";
 import { TeacherClasses, type TaughtEstablishment } from "./_components/teacher-classes";
 import type { ClassWorkItem } from "./_components/class-work";
+import type { ClassLessonRow } from "./_components/class-lessons";
 
 export const metadata: Metadata = { title: "Ma classe" };
 export const dynamic = "force-dynamic";
@@ -104,16 +105,15 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
     workByClass.set(a.classId, list);
   }
 
-  const establishments = buildTaught(taught, rosters, completedByUser, workByClass);
-
-  // The published catalogue, for the picker. Titles and categories only - the
-  // form needs to name a lesson, not to render one.
+  // What a teacher may assign: the catalogue, plus the lessons written for the
+  // classes they follow. Titles and categories only - the form needs to name a
+  // lesson, not to render one.
   const lessons =
     taughtClassIds.length === 0
       ? []
       : (
           await prisma.lesson.findMany({
-            where: { status: "PUBLISHED" },
+            where: lessonsVisibleTo(authUser.id),
             orderBy: { title: "asc" },
             select: { id: true, title: true, category: true },
           })
@@ -123,6 +123,27 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
           category: l.category,
           search: `${l.title} ${l.category}`.toLowerCase(),
         }));
+
+  // The lessons each class has of its own.
+  const classLessons = await classRepository.listClassLessons(taughtClassIds);
+  const ownByClass = new Map<string, ClassLessonRow[]>();
+  for (const l of classLessons) {
+    const list = ownByClass.get(l.classId) ?? [];
+    list.push({
+      id: l.id,
+      slug: l.slug,
+      title: l.title,
+      description: l.description,
+      category: l.category,
+      difficulty: l.difficulty,
+      estimatedMinutes: l.estimatedMinutes,
+      xpReward: l.xpReward,
+      createdLabel: dayFormat.format(l.createdAt),
+    });
+    ownByClass.set(l.classId, list);
+  }
+
+  const establishments = buildTaught(taught, rosters, completedByUser, workByClass, ownByClass);
 
   const myWork: StudentWorkItem[] = assignments
     .filter((a) => memberships.some((m) => m.id === a.classId))
@@ -223,6 +244,7 @@ function buildTaught(
   rosters: Map<string, Awaited<ReturnType<typeof classRepository.findMembersVisibleTo>>>,
   completedByUser: Map<string, number>,
   workByClass: Map<string, ClassWorkItem[]>,
+  ownByClass: Map<string, ClassLessonRow[]>,
 ): TaughtEstablishment[] {
   const activeSince = Date.now() - WEEK_MS;
 
@@ -238,6 +260,7 @@ function buildTaught(
         id: c.id,
         name: c.name,
         work: workByClass.get(c.id) ?? [],
+        ownLessons: ownByClass.get(c.id) ?? [],
         students: (rosters.get(c.id)?.members ?? []).map((m) => ({
           id: m.user.id,
           name: m.user.displayName || (m.user.username ?? "—"),

@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { EditPathClient } from "./_components/EditPathClient";
 
 export const metadata: Metadata = { title: "Éditer le parcours" };
@@ -48,7 +48,10 @@ export default async function EditPathPage({
       },
     }),
     prisma.lesson.findMany({
-      where: { status: "PUBLISHED" },
+      // CATALOGUE_LESSON, not just published: a lesson a teacher wrote for one
+      // class is published, and putting it behind a badge or inside a path
+      // would promise it to people who cannot open it.
+      where: CATALOGUE_LESSON,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

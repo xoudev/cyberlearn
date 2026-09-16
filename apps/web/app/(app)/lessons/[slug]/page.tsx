@@ -119,7 +119,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
 
   const authUser = await requireRequestUser();
 
-  const lesson = await lessonRepository.findBySlug(slug);
+  // Scoped to the reader: a lesson written for a class is published, so
+  // looking it up by slug alone would hand it to anyone who guessed one.
+  const lesson = await lessonRepository.findBySlug(slug, authUser.id);
   if (!lesson) notFound();
 
   const [existing, pathContexts, ratingData, userRating, questions, note] = await Promise.all([

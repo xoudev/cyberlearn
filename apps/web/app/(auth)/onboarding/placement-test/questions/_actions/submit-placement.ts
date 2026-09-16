@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@cyberlearn/db";
+import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   placementSubmissionSchema,
@@ -113,7 +113,11 @@ export async function submitPlacementTest(
           where: {
             category: { in: categoriesToWaive },
             difficulty: { in: WAIVED_DIFFICULTIES as unknown as ("BEGINNER" | "INTERMEDIATE")[] },
-            status: "PUBLISHED",
+            // The catalogue only. A placement test waives lessons someone has
+            // shown they do not need; a class's own material is not something
+            // the platform can decide they already know, and this runs at
+            // onboarding, before they are in any class.
+            ...CATALOGUE_LESSON,
           },
           select: { id: true },
         })

@@ -134,7 +134,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
       ...(rawSearch.length > 0 ? { search: rawSearch } : {}),
       paginate: false,
     }),
-    lessonRepository.countByCategory(),
+    lessonRepository.countByCategory(authUser.id),
   ]);
 
   // Resolve availability across the matching catalogue before paginating.
