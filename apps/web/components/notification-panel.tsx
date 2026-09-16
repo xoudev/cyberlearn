@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
-import type { NotificationItem } from "@cyberlearn/db";
+import type { NotificationItem, NotificationType } from "@cyberlearn/db";
 import { BadgeMedallion, toBadgeRarity, type BadgeRarity } from "@cyberlearn/ui";
 import {
   getNotificationsAction,
@@ -10,7 +10,10 @@ import {
   markAllNotificationsReadAction,
 } from "@/app/(app)/_actions/notification-actions";
 
-const TYPE_ICON: Record<string, string> = {
+// Keyed on the enum rather than on string: a new NotificationType now fails to
+// compile until it has an icon, instead of reaching the panel with a blank
+// where the glyph goes.
+const TYPE_ICON: Record<NotificationType, string> = {
   LEVEL_UP: "⬆",
   BADGE_EARNED: "🏅",
   PATH_COMPLETED: "✓",
@@ -18,6 +21,7 @@ const TYPE_ICON: Record<string, string> = {
   REVIEW_REMINDER: "⏰",
   ANNOUNCEMENT: "📣",
   TICKET_UPDATE: "🎫",
+  CLASS_ENROLLED: "🎓",
 };
 
 // BADGE_EARNED notifications carry the badge rarity in their metadata JSON.
@@ -350,7 +354,9 @@ function NotificationRow({
   isPending: boolean;
 }) {
   const isUnread = !item.readAt;
-  const icon = TYPE_ICON[item.type] ?? "•";
+  // No fallback: the record is exhaustive over the enum, so there is no type
+  // that can arrive here without an icon.
+  const icon = TYPE_ICON[item.type];
   const dateStr = new Intl.RelativeTimeFormat("fr", { numeric: "auto" }).format(
     Math.round((item.createdAt.getTime() - Date.now()) / (1000 * 60)),
     "minutes",

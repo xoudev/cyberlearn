@@ -4,3 +4,4 @@ export {
   AccountDeletionConfirmEmail,
   sendDeletionConfirmEmail,
 } from "./templates/account-deletion-confirm";
+export { ClassEnrolledEmail, sendClassEnrolledEmail } from "./templates/class-enrolled";

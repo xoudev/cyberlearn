@@ -984,6 +984,7 @@ enum NotificationType {
   CERTIFICATE_ISSUED
   ANNOUNCEMENT
   TICKET_UPDATE
+  CLASS_ENROLLED
 }
 
 model Notification {
