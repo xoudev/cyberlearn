@@ -9,6 +9,8 @@ import { StudentWork, type StudentWorkItem } from "./_components/student-work";
 import { TeacherClasses, type TaughtEstablishment } from "./_components/teacher-classes";
 import type { ClassWorkItem } from "./_components/class-work";
 import type { ClassLessonRow } from "./_components/class-lessons";
+import type { ResourceAssignmentOption, TeacherResourceRow } from "./_components/class-resources";
+import { StudentResources, type StudentResourceItem } from "./_components/student-resources";
 
 export const metadata: Metadata = { title: "Ma classe" };
 export const dynamic = "force-dynamic";
@@ -143,7 +145,58 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
     ownByClass.set(l.classId, list);
   }
 
-  const establishments = buildTaught(taught, rosters, completedByUser, workByClass, ownByClass);
+  // ── Corrigés and other material ─────────────────────────────────────────
+  // Two reads, not one with a flag: a teacher sees everything they prepared,
+  // a student only what has been released, and the two rules live apart so
+  // neither can be handed the other's.
+  const teacherResources = await classRepository.listResourcesForTeacher(taughtClassIds);
+  const resourcesByClass = new Map<string, TeacherResourceRow[]>();
+  for (const r of teacherResources) {
+    const list = resourcesByClass.get(r.classId) ?? [];
+    list.push({
+      id: r.id,
+      title: r.title,
+      url: r.url,
+      hasBody: r.body !== null && r.body.length > 0,
+      releaseLabel: r.releasedAt === null ? null : dayFormat.format(r.releasedAt),
+      released: r.releasedAt === null || r.releasedAt.getTime() <= now,
+      afterCompletion: r.afterCompletion,
+      assignmentTitle: r.assignment?.lesson.title ?? null,
+    });
+    resourcesByClass.set(r.classId, list);
+  }
+
+  const assignmentOptionsByClass = new Map<string, ResourceAssignmentOption[]>();
+  for (const a of assignments) {
+    if (!taughtClassIds.includes(a.classId)) continue;
+    const list = assignmentOptionsByClass.get(a.classId) ?? [];
+    list.push({ id: a.id, title: a.lesson.title });
+    assignmentOptionsByClass.set(a.classId, list);
+  }
+
+  const myResources: StudentResourceItem[] = (
+    await classRepository.listResourcesForStudent(
+      authUser.id,
+      memberships.map((m) => m.id),
+    )
+  ).map((r) => ({
+    id: r.id,
+    title: r.title,
+    body: r.body,
+    url: r.url,
+    assignmentTitle: r.assignment?.lesson.title ?? null,
+    createdLabel: dayFormat.format(r.createdAt),
+  }));
+
+  const establishments = buildTaught(
+    taught,
+    rosters,
+    completedByUser,
+    workByClass,
+    ownByClass,
+    resourcesByClass,
+    assignmentOptionsByClass,
+  );
 
   const myWork: StudentWorkItem[] = assignments
     .filter((a) => memberships.some((m) => m.id === a.classId))
@@ -185,6 +238,10 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
       {/* What they have been told to do, before who else is in the class:
           a deadline is the thing on this page that can be missed. */}
       <StudentWork items={myWork} />
+
+      {/* After the work: a corrigé is read once the thing it corrects is
+          understood to exist. */}
+      <StudentResources items={myResources} />
 
       {/* Their own enrolment first. Someone who is both is a teacher taking a
           course, and their own class is the part that concerns them rather
@@ -245,6 +302,8 @@ function buildTaught(
   completedByUser: Map<string, number>,
   workByClass: Map<string, ClassWorkItem[]>,
   ownByClass: Map<string, ClassLessonRow[]>,
+  resourcesByClass: Map<string, TeacherResourceRow[]>,
+  assignmentOptionsByClass: Map<string, ResourceAssignmentOption[]>,
 ): TaughtEstablishment[] {
   const activeSince = Date.now() - WEEK_MS;
 
@@ -261,6 +320,8 @@ function buildTaught(
         name: c.name,
         work: workByClass.get(c.id) ?? [],
         ownLessons: ownByClass.get(c.id) ?? [],
+        resources: resourcesByClass.get(c.id) ?? [],
+        assignmentOptions: assignmentOptionsByClass.get(c.id) ?? [],
         students: (rosters.get(c.id)?.members ?? []).map((m) => ({
           id: m.user.id,
           name: m.user.displayName || (m.user.username ?? "—"),
