@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { classRepository } from "@cyberlearn/db";
-import { KpiCard, PageHeader, PrimaryLink, Tag, UI } from "../_components/admin-ui";
+import { GhostLink, KpiCard, PageHeader, PrimaryLink, Tag, UI } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 
 export const metadata: Metadata = { title: "Classes" };
@@ -80,7 +80,12 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
         eyebrow="Structure"
         title="Classes"
         description="Une classe appartient à une promo, qui appartient à un établissement. Ouvre une classe pour gérer ses élèves et ses professeurs."
-        actions={<PrimaryLink href="/classes/new">Créer</PrimaryLink>}
+        actions={
+          <>
+            <GhostLink href="/classes/structure">Structure</GhostLink>
+            <PrimaryLink href="/classes/new">Créer</PrimaryLink>
+          </>
+        }
       />
 
       <div className="a-kpi-grid">

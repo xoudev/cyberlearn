@@ -2,7 +2,7 @@ import React from "react";
 import { SidebarWrapper } from "@/components/sidebar-wrapper";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { computeLevel } from "@cyberlearn/lib";
-import { prisma } from "@cyberlearn/db";
+import { LIVE_CLASS_FILTER, prisma } from "@cyberlearn/db";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 
 export async function AppSidebar(): Promise<React.ReactElement> {
@@ -28,15 +28,16 @@ export async function AppSidebar(): Promise<React.ReactElement> {
     // except their own profile, while the page listing them existed and was
     // closed to them.
     //
-    // Archived classes are excluded here for the same reason the page excludes
-    // them - findForTeacher and findForMember both filter on archivedAt, and a
-    // count that did not would put back the door with an empty room behind it.
+    // Archived classes are excluded here for the same reason the pages exclude
+    // them - a count that did not would put back the door with an empty room
+    // behind it. LIVE_CLASS_FILTER is the repository's own rule, imported
+    // rather than restated, because this count and findForTeacher/findForMember
+    // disagreeing is exactly how that bug happens.
     if (authUser) {
       hasClasses =
         (await prisma.class.count({
           where: {
-            archivedAt: null,
-            promotion: { archivedAt: null },
+            ...LIVE_CLASS_FILTER,
             OR: [
               { teachers: { some: { teacherId: authUser.id } } },
               { members: { some: { userId: authUser.id } } },
