@@ -2,7 +2,8 @@
 
 import React, { useTransition } from "react";
 import type { UserRole } from "@cyberlearn/db";
-import { ROLE_LABEL, isUserRole } from "@/lib/roles";
+import { ROLE_LABEL, ROLE_TONE, isUserRole } from "@/lib/roles";
+import { UI, toneColor } from "../../_components/admin-ui";
 import { updateUserRoleAction } from "../../_actions/user-actions";
 
 /**
@@ -18,16 +19,16 @@ import { updateUserRoleAction } from "../../_actions/user-actions";
  */
 
 // Least privileged first: a select reads as a ladder, and the ladder should
-// climb. Labels come from lib/roles so this is not a second place to name a
-// role; the colours are the control's own, keyed on the enum so a new value
-// cannot be added without being given one.
+// climb.
 const ROLE_ORDER: readonly UserRole[] = ["STUDENT", "TEACHER", "ADMIN"];
 
-const ROLE_COLOR: Record<UserRole, string> = {
-  STUDENT: "#6B6890",
-  TEACHER: "#6E8BFF",
-  ADMIN: "#FF4D6D",
-};
+// The colour comes from the same tone the role wears everywhere else. This
+// control used to hold its own three hex values, so an admin was red here and
+// turquoise in the list beside it - one role, two colours, and nothing saying
+// which was right.
+function colorFor(role: string): string {
+  return isUserRole(role) ? toneColor(ROLE_TONE[role]) : UI.muted;
+}
 
 interface RoleToggleButtonProps {
   userId: string;
@@ -39,7 +40,7 @@ export function RoleToggleButton({
   currentRole,
 }: RoleToggleButtonProps): React.ReactElement {
   const [isPending, startTransition] = useTransition();
-  const currentColor = isUserRole(currentRole) ? ROLE_COLOR[currentRole] : ROLE_COLOR.STUDENT;
+  const currentColor = colorFor(currentRole);
 
   return (
     <select
@@ -63,7 +64,7 @@ export function RoleToggleButton({
         letterSpacing: "0.16em",
         textTransform: "uppercase",
         background: "transparent",
-        border: `1px solid ${currentColor === ROLE_COLOR.STUDENT ? "#2A2560" : currentColor}`,
+        border: `1px solid ${currentColor === UI.muted ? "#2A2560" : currentColor}`,
         color: currentColor,
         cursor: isPending ? "not-allowed" : "pointer",
         opacity: isPending ? 0.5 : 1,
