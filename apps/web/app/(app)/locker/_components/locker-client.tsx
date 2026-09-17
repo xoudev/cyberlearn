@@ -33,8 +33,6 @@ export interface LockerProfile {
   streakDays: number;
 }
 
-const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
-
 const SLOTS: { type: CosmeticType; label: string }[] = [
   { type: "TERMINAL_THEME", label: "Thèmes" },
   { type: "HEXAGON_STYLE", label: "Hexagones" },
@@ -72,6 +70,53 @@ function initialEquipped(items: LockerItem[]): Record<CosmeticType, string | nul
   };
   for (const i of items) if (i.equipped) eq[i.type] = i.code;
   return eq;
+}
+
+/**
+ * The equipped hexagon, drawn as itself.
+ *
+ * It used to be a clip-path over a coloured box. A clip-path has no stroke, so
+ * every style came out as the same solid shape and only the glow told them
+ * apart - which at swatch size told nobody anything. As an outline, Contour is
+ * hollow, Circuit and Glitch are broken lines and Prisme is thick and bright.
+ *
+ * The values are read from the --cosmetic-hex-* custom properties, so this
+ * follows whichever hexagon is scoped above it: the loadout on the app shell,
+ * or one card's own data-hex in the locker.
+ */
+function CosmeticHexagon({
+  width,
+  height,
+  glowPx,
+}: {
+  width: number;
+  height: number;
+  /** Blur radius at full glow, tuned to the size it is drawn at. */
+  glowPx: number;
+}): React.ReactElement {
+  return (
+    <svg
+      viewBox="-5 -5 110 110"
+      width={width}
+      height={height}
+      aria-hidden="true"
+      style={{
+        filter: `drop-shadow(0 0 calc(var(--cosmetic-hex-glow) * ${String(glowPx)}px) color-mix(in srgb, var(--cosmetic-hex-accent, var(--cosmetic-accent)) 70%, transparent))`,
+      }}
+    >
+      <polygon
+        points="50,0 100,25 100,75 50,100 0,75 0,25"
+        style={{
+          fill: "var(--cosmetic-hex-accent, var(--cosmetic-accent))",
+          fillOpacity: "var(--cosmetic-hex-fill)",
+          stroke: "var(--cosmetic-hex-accent, var(--cosmetic-accent))",
+          strokeWidth: "var(--cosmetic-hex-stroke)",
+          strokeDasharray: "var(--cosmetic-hex-dash)",
+          strokeLinejoin: "round",
+        }}
+      />
+    </svg>
+  );
 }
 
 /** Mini preview of a single cosmetic, scoped with its own data-attribute so the
@@ -120,18 +165,7 @@ function Swatch({ type, code }: { type: CosmeticType; code: string }): React.Rea
           <span style={{ opacity: 0.7 }}>ok ✓</span>
         </div>
       )}
-      {type === "HEXAGON_STYLE" && (
-        <span
-          style={{
-            width: 30,
-            height: 34,
-            clipPath: HEX,
-            background: "var(--cosmetic-hex-accent)",
-            boxShadow:
-              "0 0 14px color-mix(in srgb, var(--cosmetic-hex-accent) calc(var(--cosmetic-hex-glow) * 100%), transparent)",
-          }}
-        />
-      )}
+      {type === "HEXAGON_STYLE" && <CosmeticHexagon width={32} height={36} glowPx={12} />}
       {type === "PROFILE_FRAME" && (
         <div
           style={{
@@ -526,20 +560,9 @@ export function LockerClient({
                 ...cosmeticAvatarFilter(1),
               }}
             >
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  clipPath: HEX,
-                  background: "var(--cosmetic-hex-accent)",
-                  opacity: 0.9,
-                }}
-              />
-              <span
-                aria-hidden="true"
-                style={{ position: "absolute", inset: 3, clipPath: HEX, background: "#05041A" }}
-              />
+              <span aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
+                <CosmeticHexagon width={84} height={94} glowPx={26} />
+              </span>
               <span
                 style={{
                   position: "relative",

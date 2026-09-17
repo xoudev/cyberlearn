@@ -142,18 +142,33 @@
 :root {
   /* Accent: brand turquoise by default; overridden by the equipped accent. */
   --cosmetic-accent: var(--color-brand-turquoise);
-  /* Hexagon motif accent + glow strength. */
-  --cosmetic-hex-accent: var(--cosmetic-accent);
+  /* Hexagon motif. A style is more than a glow: how solid the shape is, how
+   * thick its outline, and whether that outline is broken are what tell Contour
+   * from Circuit from Prisme at a glance. Named to match apps/mobile's
+   * HEX_BY_CODE, so the two platforms describe one cosmetic the same way. */
+  /* Deliberately not aliased to --cosmetic-accent here: a custom property is
+   * computed where it is declared, so an alias written on :root would freeze
+   * the brand turquoise and follow no accent the person later equips. Callers
+   * read it as var(--cosmetic-hex-accent, var(--cosmetic-accent)) instead, and
+   * a hexagon that one day wants its own colour can still set it. */
+  --cosmetic-hex-fill: 0.16;
+  --cosmetic-hex-stroke: 2.5;
+  /* A dash pattern for the outline; 0 draws it unbroken. */
+  --cosmetic-hex-dash: 0;
   --cosmetic-hex-glow: 0.35;
   /* Profile frame accent + glow (around the avatar). */
-  --cosmetic-frame-accent: var(--color-rarity-legendary);
+  --cosmetic-frame-accent: var(--color-border-default);
   --cosmetic-frame-glow: 0;
   /* Terminal theme (lesson code blocks / simulated terminal). */
   --cosmetic-terminal-bg: var(--color-bg-elevated);
   --cosmetic-terminal-fg: var(--color-text-secondary);
 }
 
-/* Accent color cosmetics (accent-turquoise = default, no override needed). */
+/* Accent color cosmetics. Turquoise restates the brand value rather than
+ * leaving it to inherit - see the note on the hexagons. */
+[data-accent="accent-turquoise"] {
+  --cosmetic-accent: var(--color-brand-turquoise);
+}
 [data-accent="accent-blue"] {
   --cosmetic-accent: #4d8bff;
 }
@@ -170,21 +185,56 @@
   --cosmetic-accent: #39ff14;
 }
 
-/* Hexagon style cosmetics (hex-solid = default). */
+/* Hexagon style cosmetics.
+ *
+ * Every code gets a rule, the default included. Without one, a surface that
+ * scopes itself with data-hex="hex-solid" - the locker's swatches do exactly
+ * that - inherits the values from whatever is equipped further up the tree, so
+ * the default rendered as a copy of the equipped cosmetic instead of itself. */
+[data-hex="hex-solid"] {
+  --cosmetic-hex-fill: 0.16;
+  --cosmetic-hex-stroke: 2.5;
+  --cosmetic-hex-dash: 0;
+  --cosmetic-hex-glow: 0.35;
+}
 [data-hex="hex-outline"] {
+  --cosmetic-hex-fill: 0;
+  --cosmetic-hex-stroke: 2.5;
+  --cosmetic-hex-dash: 0;
   --cosmetic-hex-glow: 0;
 }
 [data-hex="hex-neon"] {
+  --cosmetic-hex-fill: 0.08;
+  --cosmetic-hex-stroke: 3.2;
+  --cosmetic-hex-dash: 0;
   --cosmetic-hex-glow: 0.7;
 }
+[data-hex="hex-circuit"] {
+  --cosmetic-hex-fill: 0.1;
+  --cosmetic-hex-stroke: 2.4;
+  --cosmetic-hex-dash: 5 3;
+  --cosmetic-hex-glow: 0.12;
+}
 [data-hex="hex-glitch"] {
+  --cosmetic-hex-fill: 0.08;
+  --cosmetic-hex-stroke: 3;
+  --cosmetic-hex-dash: 9 2;
   --cosmetic-hex-glow: 0.5;
 }
 [data-hex="hex-prisme"] {
+  --cosmetic-hex-fill: 0.18;
+  --cosmetic-hex-stroke: 3.4;
+  --cosmetic-hex-dash: 0;
   --cosmetic-hex-glow: 0.6;
 }
 
-/* Profile frame cosmetics (frame-standard = default). */
+/* Profile frame cosmetics. Standard is the plain border: it needs its own rule
+ * for the same reason the default hexagon does, and it was showing up wearing
+ * the equipped frame's colour. */
+[data-frame="frame-standard"] {
+  --cosmetic-frame-accent: var(--color-border-default);
+  --cosmetic-frame-glow: 0;
+}
 [data-frame="frame-carbon"] {
   --cosmetic-frame-accent: #8892a0;
   --cosmetic-frame-glow: 0.15;
@@ -202,7 +252,11 @@
   --cosmetic-frame-glow: 0.5;
 }
 
-/* Terminal theme cosmetics (theme-midnight-ops = default). */
+/* Terminal theme cosmetics. Midnight Ops is the default, stated explicitly. */
+[data-terminal="theme-midnight-ops"] {
+  --cosmetic-terminal-bg: var(--color-bg-elevated);
+  --cosmetic-terminal-fg: var(--color-text-secondary);
+}
 [data-terminal="theme-acid"] {
   --cosmetic-terminal-bg: #001b00;
   --cosmetic-terminal-fg: #39ff14;
