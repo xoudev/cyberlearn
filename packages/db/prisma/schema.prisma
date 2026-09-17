@@ -83,6 +83,7 @@ model User {
   moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
   authoredLessons   Lesson[]                @relation("LessonAuthor")
+  authoredPaths     Path[]                  @relation("PathAuthor")
   forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
   forumPosts        ForumPost[]             @relation("ForumPostAuthor")
 
@@ -155,6 +156,7 @@ model Class {
   invitations ClassInvitation[]
   assignments ClassAssignment[]
   lessonLinks LessonClass[]
+  pathLinks   PathClass[]
   resources   ClassResource[]
 
   /// Scoped to the promotion: "SIO1-A" exists in more than one school.
@@ -252,6 +254,22 @@ model ClassAssignment {
 /// following two sections of the same year writes the material once and shows
 /// it to both. Deleting a class takes its links and leaves the lesson, which is
 /// the author's to keep or to point at another class.
+/// Which classes a CLASS path is shown to. The same shape as LessonClass, and
+/// for the same reason: a path a teacher builds belongs to the classes they
+/// teach, not to whoever guesses its slug.
+model PathClass {
+  pathId   String   @db.Uuid
+  classId  String   @db.Uuid
+  linkedAt DateTime @default(now())
+
+  path  Path  @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([pathId, classId])
+  @@index([classId])
+  @@map("path_classes")
+}
+
 model LessonClass {
   lessonId String   @db.Uuid
   classId  String   @db.Uuid
@@ -424,7 +442,7 @@ model Lesson {
   status           ContentStatus  @default(DRAFT)
   /// CATALOGUE unless a teacher wrote it for their classes. Defaulted so every
   /// lesson that existed before this column is what it always was.
-  audience         LessonAudience @default(CATALOGUE)
+  audience         ContentAudience @default(CATALOGUE)
   version          Int            @default(1)
   /// Nullable so deleting an account does not take the lesson with it: the
   /// lesson stays and the byline says the account is gone. Same treatment as a
@@ -563,6 +581,14 @@ model Path {
   certificateTemplate String? // Reference to PDF template
   certificateBadgeId  String?       @db.Uuid
   status              ContentStatus @default(DRAFT)
+  /// Who this path is for. A CLASS path is PUBLISHED - the class has to be able
+  /// to open it - so "published" stopped being the same question as "in the
+  /// catalogue" the day a teacher could build one. Everything that counts,
+  /// ranks or recommends paths reads the catalogue rule, not the status.
+  audience            ContentAudience @default(CATALOGUE)
+  /// Who built it. Nullable so erasing an account leaves the path standing for
+  /// the class working through it, exactly as a lesson's author is.
+  authorId            String?       @db.Uuid
   version             Int           @default(1)
   avgRating           Float? // Recomputed in transaction on each Rating mutation
   ratingsCount        Int           @default(0)
@@ -570,14 +596,17 @@ model Path {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
+  author       User?              @relation("PathAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   lessons      PathLesson[]
   progress     UserPathProgress[]
   certificates Certificate[]
   ratings      Rating[]
   quiz         Quiz?
+  classLinks   PathClass[]
 
   @@index([category, status])
   @@index([track, status])
+  @@index([authorId])
   @@map("paths")
 }
 
@@ -1142,13 +1171,17 @@ model QuizAttempt {
 // NOTIFICATIONS & SPACED REPETITION
 // ============================================================
 
-/// Who a lesson is for.
+/// Who a piece of content is for.
 ///
-/// CATALOGUE is the platform's own content: anyone signed in may open it, it
-/// can sit in a path, and it counts in the platform's figures. CLASS is a
-/// lesson a teacher wrote for their own classes - readable only by the people
-/// in them, and invisible to the catalogue, to paths, and to the stats.
-enum LessonAudience {
+/// CATALOGUE is the platform's own: anyone signed in may open it, it can sit in
+/// a path, and it counts in the platform's figures. CLASS is something a
+/// teacher made for their own classes - readable only by the people in them,
+/// and invisible to the catalogue, to the open paths, and to the stats.
+///
+/// Named for content rather than for lessons because paths carry it too. The
+/// rule is the same for both, and two enums saying the same thing is how they
+/// come to disagree.
+enum ContentAudience {
   CATALOGUE
   CLASS
 }

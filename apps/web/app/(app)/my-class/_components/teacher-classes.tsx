@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ClassWork, type AssignableLesson, type ClassWorkItem } from "./class-work";
 import { ClassLessons, type ClassLessonRow } from "./class-lessons";
+import { ClassPaths, type ClassPathRow } from "./class-paths";
 import {
   ClassResources,
   type ResourceAssignmentOption,
@@ -39,6 +40,7 @@ export interface TaughtClass {
   students: TaughtStudent[];
   work: ClassWorkItem[];
   ownLessons: ClassLessonRow[];
+  ownPaths: ClassPathRow[];
   resources: TeacherResourceRow[];
   assignmentOptions: ResourceAssignmentOption[];
 }
@@ -145,6 +147,11 @@ function ClassCard({
       {/* The work before the roster: a teacher opens this to check on what they
           set, and the names are how they check. */}
       <ClassWork classId={klass.id} items={klass.work} lessons={lessons} />
+
+      {/* Paths before the loose lessons: a path is the shape the platform puts
+          in front of people first, and a teacher handing their class one beats
+          handing them a pile with deadlines on it. */}
+      <ClassPaths classId={klass.id} paths={klass.ownPaths} />
 
       {/* After the work, because a lesson written here is material rather than
           an instruction - the class is told to do it by assigning it above. */}

@@ -8,7 +8,7 @@ import { updateLessonStatusAction, bulkUpdateLessonStatusAction } from "../_acti
 import { DeleteLessonButton } from "./delete-lesson-button";
 
 type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
-type LessonAudience = "CATALOGUE" | "CLASS";
+type ContentAudience = "CATALOGUE" | "CLASS";
 
 export interface LessonRow {
   id: string;
@@ -23,7 +23,7 @@ export interface LessonRow {
   completions: number;
   pathLessonsCount: number;
   /** CLASS when a teacher wrote it for their own classes rather than for the catalogue. */
-  audience: LessonAudience;
+  audience: ContentAudience;
 }
 
 interface DiffColor {

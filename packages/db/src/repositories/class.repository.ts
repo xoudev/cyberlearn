@@ -971,6 +971,180 @@ export const classRepository = {
     await prisma.lesson.deleteMany({ where: { id: lessonId, audience: "CLASS" } });
   },
 
+  // ─── Paths a teacher builds for their classes ─────────────────────────────
+  // The same rules as the class lessons above, for the same reasons. A path is
+  // an ordered set of lessons, so what differs is that the order is the point:
+  // the lesson list is replaced wholesale on save rather than patched, because
+  // a path with a gap in its positions is a path the reader cannot walk.
+
+  /** The paths these classes have of their own, with how many lessons each holds. */
+  async listClassPaths(classIds: string[]) {
+    if (classIds.length === 0) return [];
+    const rows = await prisma.pathClass.findMany({
+      where: { classId: { in: classIds } },
+      orderBy: { path: { createdAt: "desc" } },
+      select: {
+        classId: true,
+        path: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            description: true,
+            category: true,
+            difficulty: true,
+            estimatedHours: true,
+            authorId: true,
+            createdAt: true,
+            _count: { select: { lessons: true } },
+          },
+        },
+      },
+    });
+    return rows.map((r) => ({
+      classId: r.classId,
+      ...r.path,
+      lessonCount: r.path._count.lessons,
+    }));
+  },
+
+  /**
+   * Builds a path for one class, from lessons given in order.
+   *
+   * refCode marks the origin at a glance in the admin list, and cannot collide
+   * with the CL-PATH-000-V00 series the catalogue uses. Published immediately,
+   * like a class lesson: a draft would be a path the class cannot open, and the
+   * teacher has no console to publish it from later.
+   */
+  async createClassPath(input: {
+    classId: string;
+    authorId: string;
+    title: string;
+    description: string;
+    category: "DEV" | "CYBERSEC" | "NETWORK";
+    difficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+    estimatedHours: number;
+    lessonIds: string[];
+  }): Promise<{ id: string; slug: string }> {
+    const { classId, lessonIds, ...path } = input;
+    const token = randomUUID().slice(0, 8);
+    const slugBase = path.title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/gu, "")
+      .replace(/[^a-z0-9]+/gu, "-")
+      .replace(/^-+|-+$/gu, "")
+      .slice(0, 60);
+
+    return prisma.path.create({
+      data: {
+        ...path,
+        refCode: `CL-CPATH-${token}-V01`,
+        slug: `${slugBase === "" ? "parcours" : slugBase}-${token}`,
+        audience: "CLASS",
+        status: "PUBLISHED",
+        publishedAt: new Date(),
+        classLinks: { create: { classId } },
+        lessons: {
+          create: lessonIds.map((lessonId, i) => ({ lessonId, position: i + 1 })),
+        },
+      },
+      select: { id: true, slug: true },
+    });
+  },
+
+  /**
+   * Rewrites a class path, lessons included.
+   *
+   * The lessons are deleted and recreated rather than diffed: positions are
+   * unique per path, so moving one lesson up means moving every lesson below it
+   * too, and a patch that does it row by row collides with itself halfway
+   * through. In one transaction, so a failed save leaves the old order intact
+   * rather than half of each.
+   */
+  async updateClassPath(
+    pathId: string,
+    data: {
+      title: string;
+      description: string;
+      category: "DEV" | "CYBERSEC" | "NETWORK";
+      difficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+      estimatedHours: number;
+      lessonIds: string[];
+    },
+  ): Promise<void> {
+    const { lessonIds, ...fields } = data;
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.path.updateMany({
+        where: { id: pathId, audience: "CLASS" },
+        data: fields,
+      });
+      // A stray id must not be able to reorder a catalogue path, which is why
+      // the lesson rewrite below only runs when the guarded update matched.
+      if (updated.count === 0) return;
+      await tx.pathLesson.deleteMany({ where: { pathId } });
+      await tx.pathLesson.createMany({
+        data: lessonIds.map((lessonId, i) => ({ pathId, lessonId, position: i + 1 })),
+      });
+    });
+  },
+
+  /**
+   * Whether this account may edit or delete this class path.
+   *
+   * Its author, or a teacher of a class it is shown to - the same rule as a
+   * class lesson, so co-teachers share what they build and a teacher who leaves
+   * does not take the term with them.
+   */
+  async canEditClassPath(userId: string, pathId: string): Promise<boolean> {
+    const path = await prisma.path.findFirst({
+      where: {
+        id: pathId,
+        audience: "CLASS",
+        OR: [
+          { authorId: userId },
+          { classLinks: { some: { class: { teachers: { some: { teacherId: userId } } } } } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (path !== null) return true;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    return user?.role === "ADMIN";
+  },
+
+  /** One class path with its ordered lessons, for reopening it in the builder. */
+  async findClassPathForEdit(pathId: string) {
+    return prisma.path.findFirst({
+      where: { id: pathId, audience: "CLASS" },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        category: true,
+        difficulty: true,
+        estimatedHours: true,
+        lessons: {
+          orderBy: { position: "asc" },
+          select: { lessonId: true, position: true },
+        },
+        classLinks: { select: { class: { select: { id: true, name: true } } }, take: 1 },
+      },
+    });
+  },
+
+  /**
+   * Deletes a class path outright.
+   *
+   * The lessons in it survive: a path is an ordering over material that exists
+   * on its own, and removing the ordering must not remove the material or the
+   * progress anyone made on it. Refuses anything that is not a CLASS path.
+   */
+  async deleteClassPath(pathId: string): Promise<void> {
+    await prisma.path.deleteMany({ where: { id: pathId, audience: "CLASS" } });
+  },
+
   /** Idempotent: assigning a teacher already on the class only updates the subject. */
   async assignTeacher(classId: string, teacherId: string, subject: string | null) {
     await prisma.classTeacher.upsert({

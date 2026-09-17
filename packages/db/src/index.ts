@@ -38,7 +38,11 @@ export {
   type ForumTopicView,
   type ForumPostView,
 } from "./repositories/forum.repository.js";
-export { pathRepository } from "./repositories/path.repository.js";
+export {
+  pathRepository,
+  CATALOGUE_PATH,
+  pathsVisibleTo,
+} from "./repositories/path.repository.js";
 export { certificateRepository } from "./repositories/certificate.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
 export { ratingRepository } from "./repositories/rating.repository.js";
@@ -134,7 +138,7 @@ export {
   Category,
   Difficulty,
   ContentStatus,
-  LessonAudience,
+  ContentAudience,
   BadgeRarity,
   BadgeCriterionType,
   ProgressStatus,

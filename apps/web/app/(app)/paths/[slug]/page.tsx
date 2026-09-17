@@ -6,7 +6,7 @@ import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { indexPlacements, type LockState } from "@/lib/lessons/unlock";
 import { requireUser } from "@cyberlearn/lib";
-import { prisma } from "@cyberlearn/db";
+import { pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { BossNode } from "./_components/boss-node";
 
 export async function generateMetadata({
@@ -192,8 +192,11 @@ export default async function PathDetailPage({
   const supabase = await getSupabaseServerClient();
   const authUser = await requireUser(supabase);
 
-  const path = await prisma.path.findUnique({
-    where: { slug, status: "PUBLISHED" },
+  const path = await prisma.path.findFirst({
+    // Not findUnique on the slug: a CLASS path is published, so the reader is
+    // part of the question. findUnique takes only unique fields, which is how
+    // the entitlement would have been left out.
+    where: { slug, ...pathsVisibleTo(authUser.id) },
     include: {
       lessons: {
         orderBy: { position: "asc" },

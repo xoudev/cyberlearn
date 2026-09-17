@@ -9,6 +9,7 @@ import { StudentWork, type StudentWorkItem } from "./_components/student-work";
 import { TeacherClasses, type TaughtEstablishment } from "./_components/teacher-classes";
 import type { ClassWorkItem } from "./_components/class-work";
 import type { ClassLessonRow } from "./_components/class-lessons";
+import type { ClassPathRow } from "./_components/class-paths";
 import type { ResourceAssignmentOption, TeacherResourceRow } from "./_components/class-resources";
 import { StudentResources, type StudentResourceItem } from "./_components/student-resources";
 
@@ -145,6 +146,23 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
     ownByClass.set(l.classId, list);
   }
 
+  // The paths each class has of its own, built by a teacher rather than the
+  // platform. Same shape as the lessons above and read the same way.
+  const classPaths = await classRepository.listClassPaths(taughtClassIds);
+  const pathsByClass = new Map<string, ClassPathRow[]>();
+  for (const p of classPaths) {
+    const list = pathsByClass.get(p.classId) ?? [];
+    list.push({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      lessonCount: p.lessonCount,
+      estimatedHours: p.estimatedHours,
+      createdLabel: dayFormat.format(p.createdAt),
+    });
+    pathsByClass.set(p.classId, list);
+  }
+
   // ── Corrigés and other material ─────────────────────────────────────────
   // Two reads, not one with a flag: a teacher sees everything they prepared,
   // a student only what has been released, and the two rules live apart so
@@ -194,6 +212,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
     completedByUser,
     workByClass,
     ownByClass,
+    pathsByClass,
     resourcesByClass,
     assignmentOptionsByClass,
   );
@@ -302,6 +321,7 @@ function buildTaught(
   completedByUser: Map<string, number>,
   workByClass: Map<string, ClassWorkItem[]>,
   ownByClass: Map<string, ClassLessonRow[]>,
+  pathsByClass: Map<string, ClassPathRow[]>,
   resourcesByClass: Map<string, TeacherResourceRow[]>,
   assignmentOptionsByClass: Map<string, ResourceAssignmentOption[]>,
 ): TaughtEstablishment[] {
@@ -320,6 +340,7 @@ function buildTaught(
         name: c.name,
         work: workByClass.get(c.id) ?? [],
         ownLessons: ownByClass.get(c.id) ?? [],
+        ownPaths: pathsByClass.get(c.id) ?? [],
         resources: resourcesByClass.get(c.id) ?? [],
         assignmentOptions: assignmentOptionsByClass.get(c.id) ?? [],
         students: (rosters.get(c.id)?.members ?? []).map((m) => ({
