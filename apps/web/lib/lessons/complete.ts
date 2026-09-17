@@ -6,6 +6,7 @@ import {
   registerActivity,
 } from "@cyberlearn/lib";
 import { prisma, lessonRepository, badgeRepository, userRepository } from "@cyberlearn/db";
+import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { awardBadges } from "@/lib/badges/award";
 import { creditXp } from "@/lib/xp/credit";
 import { checkAndIssueCertificates } from "@/lib/certificates/check-and-issue";
@@ -39,8 +40,9 @@ export async function completeLessonForUser(
   userId: string,
   lessonId: string,
 ): Promise<CompleteLessonResult> {
-  // Parallel fetch - lesson, user gamification state, existing progress, all active badges
-  const [lesson, user, existing, allBadges] = await Promise.all([
+  // Parallel fetch - lesson, user gamification state, existing progress, all
+  // active badges, and whether this account still wants a revision queue.
+  const [lesson, user, existing, allBadges, wantsRevisions] = await Promise.all([
     prisma.lesson.findUnique({
       where: { id: lessonId },
       select: { xpReward: true, slug: true, category: true },
@@ -48,6 +50,7 @@ export async function completeLessonForUser(
     userRepository.findForGamification(userId),
     lessonRepository.findProgress(userId, lessonId),
     badgeRepository.findAllActive(),
+    revisionsEnabled(userId),
   ]);
 
   if (!lesson || !user) return EMPTY_COMPLETE_RESULT;
@@ -168,8 +171,13 @@ export async function completeLessonForUser(
       });
     }
 
-    // Schedule first review for tomorrow - SM-2 starts here
-    if (firstCompletion) {
+    // Schedule first review for tomorrow - SM-2 starts here.
+    //
+    // Skipped entirely when the reader has turned revisions off: a queue that
+    // keeps filling behind a switch that says it is off is the switch lying.
+    // Their existing schedules are left alone, so turning it back on resumes
+    // where it stopped rather than starting from nothing.
+    if (firstCompletion && wantsRevisions) {
       await tx.reviewSchedule.upsert({
         where: { userId_lessonId: { userId, lessonId } },
         create: {

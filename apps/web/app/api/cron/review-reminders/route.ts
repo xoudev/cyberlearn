@@ -25,8 +25,15 @@ export async function GET(request: Request): Promise<NextResponse> {
   const dueSchedules = await prisma.reviewSchedule.findMany({
     where: {
       nextReviewAt: { lte: endOfDay },
+      // Two switches, and both have to be on. spacedRepetition turns the
+      // feature off; reviewReminders turns off only this e-mail. Reading the
+      // second alone would keep mailing about a queue the reader has said they
+      // do not want to have.
       user: {
-        OR: [{ preferences: { is: null } }, { preferences: { is: { reviewReminders: true } } }],
+        OR: [
+          { preferences: { is: null } },
+          { preferences: { is: { spacedRepetition: true, reviewReminders: true } } },
+        ],
       },
     },
     select: {

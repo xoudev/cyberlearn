@@ -10,7 +10,22 @@ const THEMES = [
   { value: "FEATURE_REQUEST", label: "Suggestion" },
   { value: "SECURITY", label: "Sécurité" },
   { value: "CONTENT_ERROR", label: "Erreur de contenu" },
+  { value: "ESTABLISHMENT_REQUEST", label: "Ajouter mon établissement" },
   { value: "OTHER", label: "Autre" },
+] as const;
+
+/**
+ * What an establishment request has to contain to be actionable.
+ *
+ * It is the one theme with a shape. Without these four, the first reply is
+ * always the same four questions and the request waits a round trip for
+ * nothing, so they are asked here instead of after.
+ */
+const ESTABLISHMENT_CHECKLIST = [
+  "Le nom exact de l'établissement et sa ville",
+  "Les formations ou promotions concernées (BTS SIO 1re année, etc.)",
+  "Le nombre d'élèves et de professeurs attendus",
+  "Une adresse de contact officielle (direction, référent numérique)",
 ] as const;
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -33,6 +48,7 @@ export default function ContactPage(): React.ReactElement {
   const [incidentRef, setIncidentRef] = useState<string | null>(null);
   const [initialSubject, setInitialSubject] = useState<string | null>(null);
   const [initialTheme, setInitialTheme] = useState("");
+  const [theme, setTheme] = useState("");
   // Anti-spam time trap: stamped on mount, checked server-side on submit.
   const [loadedAt, setLoadedAt] = useState("");
   useEffect(() => {
@@ -40,9 +56,9 @@ export default function ContactPage(): React.ReactElement {
     setIncidentRef(params.get("ref"));
     setInitialSubject(params.get("subject"));
     const requestedTheme = params.get("theme");
-    setInitialTheme(
-      THEMES.some((theme) => theme.value === requestedTheme) ? (requestedTheme ?? "") : "",
-    );
+    const known = THEMES.some((t) => t.value === requestedTheme) ? (requestedTheme ?? "") : "";
+    setInitialTheme(known);
+    setTheme(known);
     setLoadedAt(String(Date.now()));
   }, []);
 
@@ -223,6 +239,9 @@ export default function ContactPage(): React.ReactElement {
             name="theme"
             required
             defaultValue={initialTheme}
+            onChange={(e) => {
+              setTheme(e.target.value);
+            }}
             style={{ ...INPUT_STYLE, appearance: "none" }}
             aria-describedby={state.fieldErrors?.theme ? "contact-theme-error" : undefined}
           >
@@ -235,6 +254,46 @@ export default function ContactPage(): React.ReactElement {
               </option>
             ))}
           </select>
+          {/* The one theme that needs saying what to put in it, said before the
+              message box rather than in a reply a day later. */}
+          {theme === "ESTABLISHMENT_REQUEST" && (
+            <div
+              style={{
+                marginTop: 10,
+                padding: "12px 14px",
+                background: "rgba(10,255,212,0.05)",
+                border: "1px solid rgba(10,255,212,0.25)",
+                borderLeft: "3px solid var(--cosmetic-accent, #0AFFD4)",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 8px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--cosmetic-accent, #0AFFD4)",
+                }}
+              >
+                À mettre dans ton message
+              </p>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: 18,
+                  fontSize: 13,
+                  lineHeight: 1.7,
+                  color: "#B8B5D1",
+                }}
+              >
+                {ESTABLISHMENT_CHECKLIST.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {state.fieldErrors?.theme && (
             <p
               id="contact-theme-error"

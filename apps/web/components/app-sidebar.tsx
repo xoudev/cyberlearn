@@ -4,6 +4,7 @@ import { SidebarNav } from "@/components/sidebar-nav";
 import { computeLevel } from "@cyberlearn/lib";
 import { LIVE_CLASS_FILTER, prisma } from "@cyberlearn/db";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
+import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 
 export async function AppSidebar(): Promise<React.ReactElement> {
   let level = 1;
@@ -12,15 +13,20 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   let xpPercent = 0;
   let inProgressCount = 0;
   let hasClasses = false;
+  let showRevisions = true;
 
   try {
     const [authUser, dbUser] = await Promise.all([getRequestUser(), getSharedUserProfile()]);
 
     if (authUser) {
-      const ipCount = await prisma.userLessonProgress.count({
-        where: { userId: authUser.id, status: "IN_PROGRESS" },
-      });
+      const [ipCount, wantsRevisions] = await Promise.all([
+        prisma.userLessonProgress.count({
+          where: { userId: authUser.id, status: "IN_PROGRESS" },
+        }),
+        revisionsEnabled(authUser.id),
+      ]);
       inProgressCount = ipCount;
+      showRevisions = wantsRevisions;
     }
 
     // The entry follows the classes, not the role. Teaching one and being in one
@@ -59,6 +65,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
     <SidebarWrapper>
       <SidebarNav
         hasClasses={hasClasses}
+        showRevisions={showRevisions}
         inProgressCount={inProgressCount}
         level={level}
         xpCurrent={xpCurrent}

@@ -4,6 +4,9 @@ import { computeLevel } from "@cyberlearn/lib";
 const LESSON_ID = "11111111-1111-4111-8111-111111111111";
 
 const m = vi.hoisted(() => ({
+  preferencesFindUnique: vi.fn<() => Promise<{ spacedRepetition: boolean } | null>>(() =>
+    Promise.resolve(null),
+  ),
   lessonFindUnique: vi.fn(),
   findForGamification: vi.fn(),
   findProgress: vi.fn(),
@@ -33,6 +36,10 @@ vi.mock("@/lib/certificates/check-and-issue", () => ({
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
     lesson: { findUnique: m.lessonFindUnique },
+    // Read by revisionsEnabled, which decides whether completing a lesson also
+    // schedules its first review. Null is an account that has expressed no
+    // preference, which the helper treats as the schema default: on.
+    userPreferences: { findUnique: m.preferencesFindUnique },
     $transaction: m.transaction,
   },
   lessonRepository: { findProgress: m.findProgress },
@@ -190,6 +197,31 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
     expect(m.tx.userBadge.createManyAndReturn).not.toHaveBeenCalled();
     expect(m.tx.reviewSchedule.upsert).not.toHaveBeenCalled();
     expect(m.tx.userActivityDay.upsert).not.toHaveBeenCalled();
+  });
+
+  it("schedules the first review on a first completion", async () => {
+    m.findProgress.mockResolvedValue(null);
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 1 });
+
+    await completeLesson(LESSON_ID);
+
+    expect(m.tx.reviewSchedule.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("schedules nothing when the learner has switched revisions off", async () => {
+    // The point of the switch: the queue stops being fed. Everything else about
+    // finishing a lesson - the XP, the badges, the streak - is untouched, which
+    // is why the credit is asserted alongside the absence.
+    m.preferencesFindUnique.mockResolvedValueOnce({ spacedRepetition: false });
+    m.findProgress.mockResolvedValue(null);
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 1 });
+
+    const result = await completeLesson(LESSON_ID);
+
+    expect(m.tx.reviewSchedule.upsert).not.toHaveBeenCalled();
+    expect(result.xpGained).toBeGreaterThan(0);
   });
 
   it("treats a fresh insert as the first completion", async () => {

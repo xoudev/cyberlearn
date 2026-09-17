@@ -12,3 +12,4 @@ export {
   sendWorkAssignedEmail,
   type AssignedWorkKind,
 } from "./templates/work-assigned";
+export { TicketReplyEmail, sendTicketReplyEmail } from "./templates/ticket-reply";
