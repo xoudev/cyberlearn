@@ -3461,6 +3461,10 @@ a:hover > .lesson-author-card {
 .cls-stat__value[data-tone="warning"] {
   color: #ffb020;
 }
+.cls-stat__of {
+  font-size: 12px;
+  color: #6b6890;
+}
 .cls-stat__label {
   margin-top: 4px;
   font-family: var(--font-mono);
@@ -3470,13 +3474,20 @@ a:hover > .lesson-author-card {
   color: #6b6890;
 }
 
+/* A section label. It carries its own top margin only when something precedes
+   it: right under the class title it is part of the heading, further down it
+   opens a new section and needs the air. */
 .cls-subhead {
-  margin: 0 0 10px;
+  margin: 18px 0 10px;
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #6b6890;
+}
+
+.cls-card__title + .cls-subhead {
+  margin-top: 12px;
 }
 
 .cls-people {
@@ -3931,6 +3942,172 @@ a:hover > .lesson-author-card {
 .cls-btn--link {
   text-decoration: none;
   line-height: 1;
+}
+
+/* ─── Class card: header bar, chips, tabs ─────────────────────────────────── */
+
+.cls-card__bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+/* Figures as a row of chips rather than a block of tiles: on the teacher's
+   card they are context for the tabs under them, not the subject of the card. */
+.cls-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cls-chip {
+  padding: 3px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #6b6890;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  white-space: nowrap;
+}
+.cls-chip b {
+  color: #b8b5d1;
+  font-weight: 700;
+}
+.cls-chip[data-tone="accent"] {
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
+}
+.cls-chip[data-tone="accent"] b {
+  color: var(--cosmetic-accent);
+}
+.cls-chip[data-tone="warning"] {
+  border-color: rgba(255, 176, 32, 0.4);
+}
+.cls-chip[data-tone="warning"] b {
+  color: #ffb020;
+}
+
+.cls-tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(42, 37, 96, 0.8);
+  margin-bottom: 16px;
+}
+.cls-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b6890;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cls-tab:hover {
+  color: #b8b5d1;
+}
+.cls-tab[data-active="true"] {
+  color: var(--cosmetic-accent);
+  border-bottom-color: var(--cosmetic-accent);
+}
+.cls-tab__count {
+  padding: 0 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #6b6890;
+  border: 1px solid rgba(42, 37, 96, 0.9);
+}
+.cls-tab[data-active="true"] .cls-tab__count {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
+}
+
+/* ─── Student class: teachers, ranked roster ──────────────────────────────── */
+
+.cls-teachers {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cls-teacher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  background: rgba(5, 4, 26, 0.5);
+}
+.cls-teacher__mark {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: color-mix(in srgb, var(--cosmetic-accent) 22%, #110f33);
+  font: 700 12px var(--font-mono);
+  color: var(--cosmetic-accent);
+}
+.cls-teacher__body {
+  display: grid;
+  line-height: 1.35;
+}
+.cls-teacher__body b {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 13px;
+  color: #f5f5fa;
+}
+.cls-teacher__body span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #6b6890;
+}
+
+/* The roster becomes an ordered list on the student's side, so a place in it
+   is printed rather than counted down to. One track wider than the base row,
+   and the last two keep their fixed lengths for the reason spelled out there:
+   every bar has to start and end at the same x down the column. */
+.cls-people--ranked .cls-person {
+  grid-template-columns: 26px minmax(0, 1fr) minmax(90px, 260px) 200px;
+}
+.cls-person__rank {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #44406b;
+}
+.cls-person[data-self="true"] .cls-person__rank {
+  color: var(--cosmetic-accent);
+}
+.cls-person__you {
+  margin-left: 8px;
+  padding: 1px 5px;
+  font: 700 8.5px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
+}
+@media (max-width: 560px) {
+  .cls-people--ranked .cls-person {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+  .cls-people--ranked .cls-person .cls-person__bar,
+  .cls-people--ranked .cls-person .cls-person__meta {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ─── Path builder ────────────────────────────────────────────────────────── */

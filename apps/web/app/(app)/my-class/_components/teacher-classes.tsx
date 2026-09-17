@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import { ClassWork, type AssignableLesson, type ClassWorkItem } from "./class-work";
 import { ClassLessons, type ClassLessonRow } from "./class-lessons";
@@ -94,6 +96,16 @@ export function TeacherClasses({
   );
 }
 
+type TabKey = "students" | "work" | "paths" | "lessons" | "resources";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "students", label: "Élèves" },
+  { key: "work", label: "Travail donné" },
+  { key: "paths", label: "Parcours" },
+  { key: "lessons", label: "Leçons" },
+  { key: "resources", label: "Ressources" },
+];
+
 function ClassCard({
   klass,
   lessons,
@@ -112,82 +124,124 @@ function ClassCard({
   // in a random order between two page loads.
   const byNeed = [...students].sort((a, b) => a.completed - b.completed || a.level - b.level);
 
+  // Work whose deadline has passed and which somebody has still not finished.
+  // It is the one figure on this card that asks the teacher to do something.
+  const lateCount = klass.work.filter((w) => w.overdue && w.doneCount < w.totalCount).length;
+
+  const [tab, setTab] = useState<TabKey>("students");
+  const counts: Record<TabKey, number> = {
+    students: total,
+    work: klass.work.length,
+    paths: klass.ownPaths.length,
+    lessons: klass.ownLessons.length,
+    resources: klass.resources.length,
+  };
+
   return (
     <section className="cls-card cls-card--taught">
-      <h3 className="cls-card__title">{klass.name}</h3>
+      <div className="cls-card__bar">
+        <h3 className="cls-card__title">{klass.name}</h3>
 
-      {/* No students, no figures: "0 élèves · 0 leçons en moyenne · 0/0 actifs"
-          is three ways of saying the same nothing, and it fills the card that
-          the one sentence below says is empty. */}
-      {total > 0 && (
-        <div className="cls-stats">
-          <div className="cls-stat">
-            <div className="cls-stat__value">{total}</div>
-            <div className="cls-stat__label">Élèves</div>
-          </div>
-          <div className="cls-stat">
-            <div className="cls-stat__value">{average}</div>
-            <div className="cls-stat__label">Leçons en moyenne</div>
-          </div>
-          <div className="cls-stat">
-            <div
-              className="cls-stat__value"
+        {/* No students, no figures: "0 élèves · 0 leçons en moyenne · 0/0
+            actifs" is three ways of saying the same nothing, and it fills the
+            card that the one sentence below says is empty. */}
+        {total > 0 && (
+          <div className="cls-chips">
+            <span className="cls-chip">
+              <b>{total}</b> élève{total > 1 ? "s" : ""}
+            </span>
+            <span className="cls-chip">
+              <b>{average}</b> leçons en moyenne
+            </span>
+            <span
+              className="cls-chip"
               data-tone={
                 activeCount === total ? "accent" : activeCount * 2 < total ? "warning" : undefined
               }
             >
-              {activeCount}
-              <span style={{ fontSize: 12, color: "#6B6890" }}>/{total}</span>
-            </div>
-            <div className="cls-stat__label">Actifs sur 7 j</div>
+              <b>{activeCount}</b>/{total} actifs sur 7 j
+            </span>
+            {lateCount > 0 && (
+              <span className="cls-chip" data-tone="warning">
+                <b>{lateCount}</b> en retard
+              </span>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* The work before the roster: a teacher opens this to check on what they
-          set, and the names are how they check. */}
-      <ClassWork classId={klass.id} items={klass.work} lessons={lessons} />
+      {/* One class used to print five stacked blocks and a roster, all open at
+          once; three classes were a page nobody scrolled to the bottom of.
+          They are the same five things, one at a time, and the roster opens
+          first because "who has stalled" is the daily question. */}
+      <div className="cls-tabs" role="tablist" aria-label={`Sections de ${klass.name}`}>
+        {TABS.map((t) => {
+          const count = counts[t.key];
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.key}
+              className="cls-tab"
+              data-active={tab === t.key}
+              onClick={() => {
+                setTab(t.key);
+              }}
+            >
+              {t.label}
+              {count > 0 && <b className="cls-tab__count">{count}</b>}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Paths before the loose lessons: a path is the shape the platform puts
-          in front of people first, and a teacher handing their class one beats
-          handing them a pile with deadlines on it. */}
-      <ClassPaths classId={klass.id} paths={klass.ownPaths} />
+      <div className="cls-tabpanel" role="tabpanel">
+        {tab === "students" &&
+          (total === 0 ? (
+            <p className="cls-empty">Aucun élève dans cette classe.</p>
+          ) : (
+            <>
+              <p className="cls-subhead">Du moins avancé au plus avancé</p>
+              <ul className="cls-people">
+                {byNeed.map((s) => (
+                  <li key={s.id} className="cls-person">
+                    <span className="cls-person__name">
+                      {s.username !== null ? (
+                        <Link href={`/u/${s.username}`}>{s.name}</Link>
+                      ) : (
+                        s.name
+                      )}
+                    </span>
+                    <span className="cls-person__bar">
+                      <span
+                        style={{ width: `${String(best === 0 ? 0 : (s.completed / best) * 100)}%` }}
+                      />
+                    </span>
+                    <span className="cls-person__meta">
+                      LVL·{s.level} · {s.completed} leçon{s.completed > 1 ? "s" : ""}
+                      {!s.activeThisWeek && " · inactif"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ))}
 
-      {/* After the work, because a lesson written here is material rather than
-          an instruction - the class is told to do it by assigning it above. */}
-      <ClassLessons classId={klass.id} lessons={klass.ownLessons} />
+        {tab === "work" && <ClassWork classId={klass.id} items={klass.work} lessons={lessons} />}
 
-      <ClassResources
-        classId={klass.id}
-        resources={klass.resources}
-        assignments={klass.assignmentOptions}
-      />
+        {tab === "paths" && <ClassPaths classId={klass.id} paths={klass.ownPaths} />}
 
-      {total === 0 ? (
-        <p className="cls-empty">Aucun élève dans cette classe.</p>
-      ) : (
-        <>
-          <p className="cls-subhead">Du moins avancé au plus avancé</p>
-          <ul className="cls-people">
-            {byNeed.map((s) => (
-              <li key={s.id} className="cls-person">
-                <span className="cls-person__name">
-                  {s.username !== null ? <Link href={`/u/${s.username}`}>{s.name}</Link> : s.name}
-                </span>
-                <span className="cls-person__bar">
-                  <span
-                    style={{ width: `${String(best === 0 ? 0 : (s.completed / best) * 100)}%` }}
-                  />
-                </span>
-                <span className="cls-person__meta">
-                  LVL·{s.level} · {s.completed} leçon{s.completed > 1 ? "s" : ""}
-                  {!s.activeThisWeek && " · inactif"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+        {tab === "lessons" && <ClassLessons classId={klass.id} lessons={klass.ownLessons} />}
+
+        {tab === "resources" && (
+          <ClassResources
+            classId={klass.id}
+            resources={klass.resources}
+            assignments={klass.assignmentOptions}
+          />
+        )}
+      </div>
     </section>
   );
 }

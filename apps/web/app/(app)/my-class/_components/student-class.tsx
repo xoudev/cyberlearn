@@ -77,16 +77,27 @@ export function StudentClass({
       </div>
       <h2 className="cls-card__title">{heading.name}</h2>
 
+      {/* The teachers are who a stuck student asks, so they are people with
+          names and subjects rather than a run-on line under the title. */}
       {teachers.length > 0 && (
-        <p className="cls-card__teachers">
-          {teachers.map((t, i) => (
-            <React.Fragment key={t.id}>
-              {i > 0 && " · "}
-              <b>{t.name}</b>
-              {t.subject !== null && ` (${t.subject})`}
-            </React.Fragment>
-          ))}
-        </p>
+        <>
+          <p className="cls-subhead">
+            {teachers.length > 1 ? "Tes professeurs" : "Ton professeur"}
+          </p>
+          <ul className="cls-teachers">
+            {teachers.map((t) => (
+              <li key={t.id} className="cls-teacher">
+                <span className="cls-teacher__mark" aria-hidden="true">
+                  {t.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="cls-teacher__body">
+                  <b>{t.name}</b>
+                  {t.subject !== null && <span>{t.subject}</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {/* Their own standing, before the list of everyone else's. A rank is only
@@ -97,7 +108,7 @@ export function StudentClass({
           <div className="cls-stat">
             <div className="cls-stat__value" data-tone="accent">
               {myRank}
-              <span style={{ fontSize: 12, color: "#6B6890" }}>/{people.length}</span>
+              <span className="cls-stat__of">/{people.length}</span>
             </div>
             <div className="cls-stat__label">Ton rang</div>
           </div>
@@ -125,15 +136,20 @@ export function StudentClass({
       {people.length <= 1 ? (
         <p className="cls-empty">Les autres élèves apparaîtront ici dès qu&apos;ils rejoindront.</p>
       ) : (
-        <ul className="cls-people">
-          {ranked.map((p) => (
+        <ol className="cls-people cls-people--ranked">
+          {ranked.map((p, i) => (
             <li key={p.id} className="cls-person" data-self={p.id === userId}>
+              {/* The rank is printed rather than left to be counted: the row a
+                  student looks for is their own, and finding it by counting
+                  down a list of thirty is the part that made this a table. */}
+              <span className="cls-person__rank">{String(i + 1).padStart(2, "0")}</span>
               <span className="cls-person__name">
                 {p.visible && p.username !== null ? (
                   <Link href={`/u/${p.username}`}>{p.name}</Link>
                 ) : (
                   p.name
                 )}
+                {p.id === userId && <b className="cls-person__you">toi</b>}
               </span>
               <span className="cls-person__bar">
                 <span
@@ -145,7 +161,7 @@ export function StudentClass({
               </span>
             </li>
           ))}
-        </ul>
+        </ol>
       )}
     </section>
   );
