@@ -341,6 +341,16 @@ model UserPreferences {
   theme              String  @default("dark") // "dark" | "light" | "system"
   locale             String  @default("fr")
   emailNotifications Boolean @default(true)
+  /// The spaced-repetition feature as a whole, not just its reminders.
+  ///
+  /// Off means the queue stops being fed, the entry leaves the sidebar and the
+  /// dashboard, and nothing about it is sent. Existing schedules are kept
+  /// rather than deleted: turning it back on should restore the queue, and a
+  /// switch that silently destroys months of scheduling is a switch nobody
+  /// dares touch.
+  spacedRepetition   Boolean @default(true)
+  /// The e-mail reminder specifically. Subordinate to spacedRepetition: with
+  /// the feature off, this one has nothing to remind anybody about.
   reviewReminders    Boolean @default(true)
   weeklyDigest       Boolean @default(true)
   streakReminder     Boolean @default(true) // Email before a daily streak is lost (toggle UI pending)

@@ -11,6 +11,7 @@ import {
 } from "@cyberlearn/ui";
 import { prisma, leaderboardRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { StreakPanel } from "@/components/streak-panel";
 import { QuestsPanel } from "@/components/quests-panel";
 
@@ -64,6 +65,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
     allPaths,
     placementResult,
     recentLessons,
+    wantsRevisions,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
@@ -143,6 +145,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
       orderBy: { completedAt: "desc" },
       take: 20,
     }),
+    revisionsEnabled(authUser.id),
   ]);
 
   const { level, current, needed } = computeLevel(dbUser?.xpTotal ?? 0);
@@ -361,58 +364,63 @@ async function DashboardContent(): Promise<React.ReactElement> {
       </section>
 
       {/* ── 02. À réviser ────────────────────────────────────────────────── */}
-      <section className="animate-fade-up-delay-1 s-section">
-        <SectionLabel
-          eyebrow="02 · à réviser"
-          title={
-            dueReviews.length > 0
-              ? `${String(dueReviews.length)} leçon${dueReviews.length > 1 ? "s" : ""} demande${dueReviews.length > 1 ? "nt" : ""} ton attention.`
-              : "Rien à réviser pour l'instant."
-          }
-          ctaLabel={dueReviews.length > 0 ? "Tout réviser →" : undefined}
-          ctaHref="/revisions"
-        />
+      {/* Absent entirely when the reader has turned revisions off, rather than
+          shown empty: a section saying "rien à réviser" about a feature they
+          switched off is the switch failing to take. */}
+      {wantsRevisions && (
+        <section className="animate-fade-up-delay-1 s-section">
+          <SectionLabel
+            eyebrow="02 · à réviser"
+            title={
+              dueReviews.length > 0
+                ? `${String(dueReviews.length)} leçon${dueReviews.length > 1 ? "s" : ""} demande${dueReviews.length > 1 ? "nt" : ""} ton attention.`
+                : "Rien à réviser pour l'instant."
+            }
+            ctaLabel={dueReviews.length > 0 ? "Tout réviser →" : undefined}
+            ctaHref="/revisions"
+          />
 
-        {dueReviews.length > 0 ? (
-          <ReviewsBlock rows={dueReviews} />
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 16,
-              padding: "64px 24px",
-              border: "1px solid #2A2560",
-              background: "rgba(10,8,38,0.4)",
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#B8B5D1" }}>
-              Commence par compléter des leçons
-            </p>
-            <Link
-              href="/lessons"
-              className="btn-teal"
+          {dueReviews.length > 0 ? (
+            <ReviewsBlock rows={dueReviews} />
+          ) : (
+            <div
               style={{
-                padding: "12px 24px",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                background: "var(--cosmetic-accent)",
-                color: "#030219",
-                border: "1px solid var(--cosmetic-accent)",
-                textDecoration: "none",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 16,
+                padding: "64px 24px",
+                border: "1px solid #2A2560",
+                background: "rgba(10,8,38,0.4)",
+                textAlign: "center",
               }}
             >
-              Explorer les leçons
-            </Link>
-          </div>
-        )}
-      </section>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#B8B5D1" }}>
+                Commence par compléter des leçons
+              </p>
+              <Link
+                href="/lessons"
+                className="btn-teal"
+                style={{
+                  padding: "12px 24px",
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  fontSize: 11,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  background: "var(--cosmetic-accent)",
+                  color: "#030219",
+                  border: "1px solid var(--cosmetic-accent)",
+                  textDecoration: "none",
+                }}
+              >
+                Explorer les leçons
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── 03. Trophées ─────────────────────────────────────────────────── */}
       <section className="animate-fade-up-delay-2 s-section">
