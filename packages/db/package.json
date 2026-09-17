@@ -38,9 +38,10 @@
   },
   "dependencies": {
     "@cyberlearn/lib": "workspace:*",
+    "@cyberlearn/types": "workspace:*",
     "@prisma/client": "catalog:",
-    "@supabase/supabase-js": "catalog:",
-    "@supabase/ssr": "catalog:"
+    "@supabase/ssr": "catalog:",
+    "@supabase/supabase-js": "catalog:"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

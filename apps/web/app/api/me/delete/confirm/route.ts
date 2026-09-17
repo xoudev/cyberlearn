@@ -1,12 +1,10 @@
 import { createHash } from "node:crypto";
+import * as Sentry from "@sentry/nextjs";
 import { createSupabaseServerClient } from "@cyberlearn/db/supabase/server";
-import { prisma } from "@cyberlearn/db";
+import { deleteAccount, prisma } from "@cyberlearn/db";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { pseudonymize } from "@/lib/pseudonymize";
-import { deleteAccount } from "@/lib/rgpd/delete-account";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 // base64url alphabet only - rejects any value that can't be a valid token
 const tokenParamSchema = z
@@ -96,37 +94,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
   const rawUserAgent = request.headers.get("user-agent") ?? "";
 
-  // ── 5. Delete app data (Prisma atomic transaction) ───────────────────────
+  // ── 5. Erase the account (app data, files, and the auth identity) ────────
+  // deleteAccount owns all three now, so the console's delete button cannot
+  // erase a different amount than this route does.
+  let summary;
   try {
-    await deleteAccount(record.userId, { ip: rawIp, userAgent: rawUserAgent });
+    summary = await deleteAccount(record.userId, {
+      ip: rawIp,
+      userAgent: rawUserAgent,
+      onCleanupError: (area, error, context) => {
+        Sentry.captureException(error, { tags: { area }, extra: context });
+      },
+    });
   } catch (err) {
     console.error("[delete/confirm] deleteAccount failed:", err);
     return NextResponse.redirect(new URL("/account/delete/error?reason=internal", origin), 303);
   }
 
-  // ── 6. Delete Supabase Auth identity (RGPD Art. 17 - full erasure) ───────
-  // deleteAccount() removes the row from public.users; this removes auth.users.
-  // Both must succeed for a complete RGPD deletion.
-  const supabaseAdmin = createSupabaseAdminClient();
-  const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(record.userId);
-
-  if (authDeleteError) {
-    const hashedId = pseudonymize(record.userId);
-    console.error("[rgpd] Supabase Auth deletion failed", {
-      hashedUserId: hashedId,
-      error: authDeleteError.message,
-    });
-    await prisma.auditLog.create({
-      data: {
-        actorId: null,
-        actorHashedId: hashedId,
-        action: "user.account.auth_delete_failed",
-        targetType: "user",
-        targetId: hashedId,
-        anonymized: true,
-        metadata: { error: authDeleteError.message },
-      },
-    });
+  // ── 6. The data is gone either way; a surviving identity is a loose end ──
+  // deleteAccount has already written the audit row and reported it. What is
+  // left to decide here is what the person is shown, and they are told, because
+  // an identity that can still sign in is something they would want to know.
+  if (!summary.authIdentityDeleted) {
     return NextResponse.redirect(
       new URL("/account/delete/error?reason=auth_cleanup_failed", origin),
       303,

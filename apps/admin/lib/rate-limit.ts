@@ -1,16 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import crypto from "node:crypto";
-
-function getIpSalt(): string {
-  const salt = process.env.IP_SALT;
-  if (!salt || salt.length < 32) {
-    throw new Error(
-      "[rate-limit] IP_SALT must be set (>= 32 chars). Generate with: openssl rand -hex 32",
-    );
-  }
-  return salt;
-}
+import { pseudonymize } from "@cyberlearn/lib/pseudonymize";
 
 // @upstash/redis retries five times by default, sleeping `Math.exp(n) * 50`
 // between attempts - 50, 136, 369, 1004, 2730ms, about 4.2s before it gives
@@ -51,11 +41,10 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
 
   const forwarded = request.headers.get("x-forwarded-for");
   const rawIp = forwarded ? (forwarded.split(",")[0]?.trim() ?? "unknown") : "unknown";
-  // RGPD pseudonymization: never store raw IPs. A hardcoded fallback salt
-  // would be public knowledge, so the hash would be trivially reversible for
-  // any IPv4 - that is not pseudonymization. Fail closed instead, like the web
-  // app does (see apps/web/lib/pseudonymize.ts).
-  const hashedIp = crypto.createHmac("sha256", getIpSalt()).update(rawIp).digest("hex");
+  // RGPD pseudonymization: never store raw IPs. This used to be the same HMAC
+  // written out here, under a salt read by a second getter - one primitive, two
+  // implementations, and nothing to stop them drifting apart.
+  const hashedIp = pseudonymize(rawIp);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
