@@ -25,6 +25,10 @@ import { createSupabaseAdminClient } from "../supabase/admin.js";
  *   Rating          userId → null (aggregates stay honest)
  *   ContactTicket   userId → null, email → null
  *   AuditLog        actorId → null, actorHashedId → HMAC, anonymized → true
+ *   Lesson          authorId → null, by the foreign key's ON DELETE SET NULL
+ *                   rather than by a statement here: a lesson someone else is
+ *                   part-way through must not go with its author, and the
+ *                   byline then says the account is gone.
  *
  * Hard-deleted by Prisma cascade: profile, preferences, placement test, lesson
  * and path and challenge progress, hint reveals, badges, review schedule,

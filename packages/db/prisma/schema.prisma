@@ -82,6 +82,7 @@ model User {
   notesSharedWithMe NoteShare[]             @relation("NoteRecipient")
   moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
+  authoredLessons   Lesson[]                @relation("LessonAuthor")
   forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
   forumPosts        ForumPost[]             @relation("ForumPostAuthor")
 
@@ -324,7 +325,7 @@ model UserPreferences {
   reviewReminders    Boolean @default(true)
   weeklyDigest       Boolean @default(true)
   streakReminder     Boolean @default(true) // Email before a daily streak is lost (toggle UI pending)
-  publicProfile      Boolean @default(true) // Controls First Blood & public profile visibility
+  publicProfile      Boolean @default(true) // Public profile, lesson byline, challenge first blood
 
   // Defaults to ANONYMOUS (privacy-first). Absence of a row is also treated as
   // ANONYMOUS by the leaderboard repository (pre-onboarding users have no row).
@@ -425,12 +426,17 @@ model Lesson {
   /// lesson that existed before this column is what it always was.
   audience         LessonAudience @default(CATALOGUE)
   version          Int            @default(1)
-  authorId         String         @db.Uuid
+  /// Nullable so deleting an account does not take the lesson with it: the
+  /// lesson stays and the byline says the account is gone. Same treatment as a
+  /// lesson question's userId.
+  authorId         String?        @db.Uuid
   avgRating        Float? // Recomputed in transaction on each Rating mutation
   ratingsCount     Int            @default(0)
   publishedAt      DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+
+  author User? @relation("LessonAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   pathLessons      PathLesson[]
   progress         UserLessonProgress[]
@@ -446,6 +452,10 @@ model Lesson {
 
   @@index([category, difficulty, status])
   @@index([slug])
+  /// Erasing an account sets this to null on every lesson it wrote, and a
+  /// teacher's own lessons are looked up by it - both seq-scan the table
+  /// without this index.
+  @@index([authorId])
   @@map("lessons")
 }
 

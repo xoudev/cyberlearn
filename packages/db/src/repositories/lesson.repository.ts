@@ -239,20 +239,26 @@ export const lessonRepository = {
     return { paths, completedLessonIds: completed.map((c) => c.lessonId) };
   },
 
-  /** First 3 users who completed a lesson (ordered by completedAt asc). Respects publicProfile. */
-  async findFirstBlood(lessonId: string) {
-    return prisma.userLessonProgress.findMany({
-      where: { lessonId, status: "COMPLETED" },
-      orderBy: { completedAt: "asc" },
-      take: 3,
+  /**
+   * Who wrote a lesson, for the byline in the rail.
+   *
+   * The author is null once that account is erased: the lesson survives them,
+   * the credit does not. It is never null for a lesson that simply has no
+   * author, since every path that writes one sets it.
+   */
+  async findAuthor(lessonId: string) {
+    return prisma.lesson.findUnique({
+      where: { id: lessonId },
       select: {
-        completedAt: true,
-        user: {
+        publishedAt: true,
+        createdAt: true,
+        author: {
           select: {
             id: true,
             username: true,
             displayName: true,
             avatarUrl: true,
+            role: true,
             preferences: { select: { publicProfile: true } },
           },
         },

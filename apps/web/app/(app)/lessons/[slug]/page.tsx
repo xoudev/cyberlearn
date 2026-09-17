@@ -37,7 +37,7 @@ import { NoteDrawer } from "./_components/note-drawer";
 import { LessonRating } from "./_components/lesson-rating";
 import { LessonQA } from "./_components/lesson-qa";
 import { NextBar } from "./_components/next-bar";
-import { FirstBlood } from "./_components/first-blood";
+import { LessonAuthor } from "./_components/lesson-author";
 import { CodeBlock } from "./_components/code-block";
 import { LessonStepper } from "./_components/lesson-stepper";
 import { SectionPane } from "./_components/section-pane";
@@ -421,7 +421,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         sections={sections}
         railExtra={
           <Suspense fallback={null}>
-            <FirstBlood lessonId={lesson.id} variant="rail" />
+            <LessonAuthor lessonId={lesson.id} />
           </Suspense>
         }
       >

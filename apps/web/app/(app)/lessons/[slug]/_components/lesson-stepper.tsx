@@ -535,7 +535,7 @@ function StepperRail({
         </nav>
       </div>
 
-      {/* Extra rail sections (FirstBlood + LessonRating) */}
+      {/* Extra rail sections (lesson author + rating) */}
       {railExtra}
     </div>
   );
