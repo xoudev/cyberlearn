@@ -20,6 +20,7 @@ import {
   FOLDER_PALETTE,
   type FolderIconName,
   type SerializedFolder,
+  type SerializedIncomingNote,
   type SerializedNote,
 } from "./notes-shared";
 import { AllNotesGlyph, FolderGlyph } from "./folder-icons";
@@ -70,12 +71,16 @@ function timeAgo(iso: string, now: number | null): string {
 export function NotesLibrary({
   notes: initialNotes,
   folders: initialFolders,
+  incoming,
 }: {
   notes: SerializedNote[];
   folders: SerializedFolder[];
+  /** Notes classmates have handed over. Read-only, and not filed anywhere. */
+  incoming: SerializedIncomingNote[];
 }): React.JSX.Element {
   const [notes, setNotes] = useState<SerializedNote[]>(initialNotes);
   const [folders, setFolders] = useState<SerializedFolder[]>(initialFolders);
+  const [incomingId, setIncomingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"ALL" | Category>("ALL");
   const [selectedFolder, setSelectedFolder] = useState<string>(ALL);
@@ -151,6 +156,10 @@ export function NotesLibrary({
   };
 
   const readerNote = readerId ? (notes.find((n) => n.id === readerId) ?? null) : null;
+  const incomingNote = incomingId ? (incoming.find((n) => n.id === incomingId) ?? null) : null;
+  // Notes from classmates belong to the library's front page, not to a folder
+  // view or a search over the author's own notes.
+  const showIncoming = incoming.length > 0 && selectedFolder === ALL && query.trim() === "";
 
   // ── Folder mutations (optimistic, revert on failure) ──────────────────────
 
@@ -724,6 +733,122 @@ export function NotesLibrary({
         </div>
       )}
 
+      {/* Notes handed over by classmates. Only shown when there are any: an
+          empty "reçues" block on every student's page would be furniture. */}
+      {showIncoming ? (
+        <section className={styles.folderSection} aria-label="Notes reçues">
+          <div className={styles.folderHeading}>
+            <h2>Reçues</h2>
+            <span>
+              {incoming.length} note{incoming.length > 1 ? "s" : ""} partagée
+              {incoming.length > 1 ? "s" : ""} avec toi
+            </span>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
+              gap: 16,
+            }}
+          >
+            {incoming.map((n) => {
+              const cat = CAT[n.lessonCategory];
+              return (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => {
+                    setIncomingId(n.id);
+                  }}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                    padding: 18,
+                    textAlign: "left",
+                    background: "rgba(5,4,26,0.5)",
+                    border: "1px solid #1F1B47",
+                    borderLeft: `3px solid ${cat.color}`,
+                    cursor: "pointer",
+                    minHeight: 150,
+                    font: "inherit",
+                    color: "inherit",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 7,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9.5,
+                      fontWeight: 700,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: cat.color,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
+                    />
+                    {cat.label}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: "#F5F5FA",
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {n.lessonTitle}
+                  </span>
+                  <span
+                    style={{
+                      flex: 1,
+                      fontFamily: "var(--font-body)",
+                      fontSize: 13,
+                      color: "#8B88A8",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {excerpt(n.content) || "Note vide"}
+                  </span>
+                  <span
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10.5,
+                      color: "#6F6B99",
+                      borderTop: "1px solid #1F1B47",
+                      paddingTop: 10,
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "var(--cosmetic-accent)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {n.authorName}
+                    </span>
+                    <span suppressHydrationWarning style={{ flexShrink: 0 }}>
+                      {timeAgo(n.sharedAt, now)}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       {selectedFolder === ALL && visibleFolders.length > 0 ? (
         <section className={styles.folderSection} aria-label="Dossiers">
           <div className={styles.folderHeading}>
@@ -803,6 +928,11 @@ export function NotesLibrary({
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          {showIncoming && (
+            <div className={styles.folderHeading} style={{ marginBottom: -12 }}>
+              <h2>Mes notes</h2>
+            </div>
+          )}
           {groups.map((g) => {
             return (
               <section key={g.id}>
@@ -929,6 +1059,21 @@ export function NotesLibrary({
             handleMove(readerNote.id, folderId);
           }}
           onSaveContent={(content) => handleSaveContent(readerNote.id, content)}
+        />
+      )}
+
+      {incomingNote && (
+        <NoteReader
+          note={incomingNote}
+          folders={[]}
+          sharedBy={incomingNote.authorName}
+          onClose={() => {
+            setIncomingId(null);
+          }}
+          // Neither is reachable in read-only mode; the reader asks for them
+          // because an owner's copy needs them.
+          onMove={() => undefined}
+          onSaveContent={() => Promise.resolve(false)}
         />
       )}
     </div>

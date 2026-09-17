@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { downloadMarkdown, noteToMarkdown } from "@/lib/notes/export";
+import { ShareDialog } from "./share-dialog";
 import { CAT, type SerializedFolder, type SerializedNote } from "./notes-shared";
 
 interface NoteReaderProps {
@@ -14,6 +15,12 @@ interface NoteReaderProps {
   onMove: (folderId: string | null) => void;
   /** Persist edited content. Resolves true on success; parent updates the note. */
   onSaveContent: (content: string) => Promise<boolean>;
+  /**
+   * Set when somebody else wrote this note and handed it over. It is then read
+   * only: a recipient holds a copy to read, not a copy to edit, and none of
+   * editing, filing or re-sharing is theirs to do.
+   */
+  sharedBy?: string;
 }
 
 export function NoteReader({
@@ -22,8 +29,11 @@ export function NoteReader({
   onClose,
   onMove,
   onSaveContent,
+  sharedBy,
 }: NoteReaderProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const mine = sharedBy === undefined;
   const [draft, setDraft] = useState(note.content);
   const [pending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -50,6 +60,10 @@ export function NoteReader({
   // the dialog so keyboard focus cannot wander to the covered background.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      // The share dialog is a modal of its own: while it is up it owns both
+      // Escape and the focus ring, and a trap still running here would pull
+      // the caret straight back out of it.
+      if (sharing) return;
       if (e.key === "Escape" && !editing) {
         onClose();
         return;
@@ -78,7 +92,7 @@ export function NoteReader({
     return () => {
       window.removeEventListener("keydown", onKey);
     };
-  }, [editing, onClose]);
+  }, [editing, sharing, onClose]);
 
   const save = (): void => {
     startTransition(() => {
@@ -109,241 +123,276 @@ export function NoteReader({
   });
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Note : ${note.lessonTitle}`}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 60,
-        display: "grid",
-        placeItems: "center",
-        padding: "clamp(12px,4vw,40px)",
-        background: "rgba(2,1,14,0.72)",
-        backdropFilter: "blur(4px)",
-      }}
-      onClick={() => {
-        // Match the Escape behaviour: do not discard an in-progress edit on a
-        // stray backdrop click.
-        if (!editing) onClose();
-      }}
-    >
-      <style>{READER_CSS}</style>
+    <>
       <div
-        ref={panelRef}
-        tabIndex={-1}
-        className="note-reader"
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Note : ${note.lessonTitle}`}
         style={{
-          display: "flex",
-          flexDirection: "column",
-          width: "min(760px, 100%)",
-          maxHeight: "100%",
-          background: "#08061c",
-          border: `1px solid ${cat.color}44`,
-          borderTop: `3px solid ${cat.color}`,
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          position: "fixed",
+          inset: 0,
+          zIndex: 60,
+          display: "grid",
+          placeItems: "center",
+          padding: "clamp(12px,4vw,40px)",
+          background: "rgba(2,1,14,0.72)",
+          backdropFilter: "blur(4px)",
+        }}
+        onClick={() => {
+          // Match the Escape behaviour: do not discard an in-progress edit on a
+          // stray backdrop click.
+          if (!editing) onClose();
         }}
       >
-        {/* Header */}
+        <style>{READER_CSS}</style>
         <div
+          ref={panelRef}
+          tabIndex={-1}
+          className="note-reader"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
           style={{
             display: "flex",
-            alignItems: "flex-start",
-            gap: 14,
-            padding: "20px 22px 16px",
-            borderBottom: "1px solid #1F1B47",
+            flexDirection: "column",
+            width: "min(760px, 100%)",
+            maxHeight: "100%",
+            background: "#08061c",
+            border: `1px solid ${cat.color}44`,
+            borderTop: `3px solid ${cat.color}`,
+            boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
           }}
         >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: cat.color,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
-              />
-              {cat.label}
-              {note.pathTitle ? <span style={{ color: "#6F6B99" }}>· {note.pathTitle}</span> : null}
-            </span>
-            <h2
-              style={{
-                margin: "8px 0 0",
-                fontFamily: "var(--font-sans)",
-                fontWeight: 800,
-                fontSize: "clamp(20px,3vw,26px)",
-                letterSpacing: "-0.02em",
-                color: "#F5F5FA",
-                lineHeight: 1.2,
-              }}
-            >
-              {note.lessonTitle}
-            </h2>
-            <div
-              style={{
-                marginTop: 6,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "#6F6B99",
-              }}
-            >
-              maj {dateLabel} · {note.wordCount} mot{note.wordCount > 1 ? "s" : ""}
-            </div>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" style={iconBtn}>
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.6}
-              aria-hidden="true"
-            >
-              <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Toolbar */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 8,
-            padding: "12px 22px",
-            borderBottom: "1px solid #1F1B47",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              if (editing) {
-                setDraft(note.content);
-                setEditing(false);
-              } else {
-                setEditing(true);
-              }
-            }}
-            style={toolBtn(editing)}
-          >
-            {editing ? "Annuler" : "Modifier"}
-          </button>
-          {editing && (
-            <button type="button" onClick={save} disabled={pending} style={primaryBtn(pending)}>
-              {pending ? "Enregistrement…" : "Enregistrer"}
-            </button>
-          )}
-          <button type="button" onClick={exportMd} style={toolBtn(false)}>
-            Exporter .md
-          </button>
-          <label
+          {/* Header */}
+          <div
             style={{
-              display: "inline-flex",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 14,
+              padding: "20px 22px 16px",
+              borderBottom: "1px solid #1F1B47",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: cat.color,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{ width: 6, height: 6, borderRadius: "50%", background: cat.color }}
+                />
+                {cat.label}
+                {note.pathTitle ? (
+                  <span style={{ color: "#6F6B99" }}>· {note.pathTitle}</span>
+                ) : null}
+              </span>
+              <h2
+                style={{
+                  margin: "8px 0 0",
+                  fontFamily: "var(--font-sans)",
+                  fontWeight: 800,
+                  fontSize: "clamp(20px,3vw,26px)",
+                  letterSpacing: "-0.02em",
+                  color: "#F5F5FA",
+                  lineHeight: 1.2,
+                }}
+              >
+                {note.lessonTitle}
+              </h2>
+              <div
+                style={{
+                  marginTop: 6,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "#6F6B99",
+                }}
+              >
+                maj {dateLabel} · {note.wordCount} mot{note.wordCount > 1 ? "s" : ""}
+                {sharedBy !== undefined ? (
+                  <>
+                    {" · "}
+                    <span style={{ color: "var(--cosmetic-accent)" }}>partagée par {sharedBy}</span>
+                  </>
+                ) : null}
+              </div>
+            </div>
+            <button type="button" onClick={onClose} aria-label="Fermer" style={iconBtn}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.6}
+                aria-hidden="true"
+              >
+                <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Toolbar */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
               alignItems: "center",
               gap: 8,
-              marginLeft: "auto",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "#6F6B99",
+              padding: "12px 22px",
+              borderBottom: "1px solid #1F1B47",
             }}
           >
-            Dossier
-            <select
-              value={note.folderId ?? ""}
-              onChange={(e) => {
-                onMove(e.target.value === "" ? null : e.target.value);
-              }}
-              style={{
-                background: "rgba(5,4,26,0.6)",
-                border: "1px solid #2A2560",
-                color: "#F5F5FA",
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                padding: "6px 8px",
-                maxWidth: 180,
-              }}
-            >
-              <option value="">Sans dossier</option>
-              {folders.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+            {mine && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (editing) {
+                    setDraft(note.content);
+                    setEditing(false);
+                  } else {
+                    setEditing(true);
+                  }
+                }}
+                style={toolBtn(editing)}
+              >
+                {editing ? "Annuler" : "Modifier"}
+              </button>
+            )}
+            {editing && (
+              <button type="button" onClick={save} disabled={pending} style={primaryBtn(pending)}>
+                {pending ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            )}
+            {mine && !editing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSharing(true);
+                }}
+                style={toolBtn(false)}
+              >
+                Partager
+              </button>
+            )}
+            <button type="button" onClick={exportMd} style={toolBtn(false)}>
+              Exporter .md
+            </button>
+            {mine ? (
+              <label
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginLeft: "auto",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "#6F6B99",
+                }}
+              >
+                Dossier
+                <select
+                  value={note.folderId ?? ""}
+                  onChange={(e) => {
+                    onMove(e.target.value === "" ? null : e.target.value);
+                  }}
+                  style={{
+                    background: "rgba(5,4,26,0.6)",
+                    border: "1px solid #2A2560",
+                    color: "#F5F5FA",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    padding: "6px 8px",
+                    maxWidth: 180,
+                  }}
+                >
+                  <option value="">Sans dossier</option>
+                  {folders.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </div>
 
-        {/* Body */}
-        <div style={{ overflowY: "auto", padding: "20px 22px", flex: 1 }}>
-          {editing ? (
-            <textarea
-              value={draft}
-              onChange={(e) => {
-                setDraft(e.target.value);
-              }}
-              spellCheck={false}
-              autoFocus
-              // Lock input while the save round-trip is in flight so no keystroke
-              // is lost when the saved content flows back through props.
-              disabled={pending}
-              style={{
-                width: "100%",
-                minHeight: 320,
-                resize: "vertical",
-                background: "rgba(5,4,26,0.5)",
-                border: "1px solid #2A2560",
-                color: "#E6E4F0",
-                fontFamily: "var(--font-mono)",
-                fontSize: 13.5,
-                lineHeight: 1.65,
-                padding: 14,
-                outline: "none",
-                opacity: pending ? 0.6 : 1,
-              }}
-            />
-          ) : note.content.trim() === "" ? (
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#6F6B99" }}>
-              Note vide.
-            </p>
-          ) : (
-            <div className="note-md">{renderNoteMarkdown(note.content)}</div>
-          )}
-        </div>
+          {/* Body */}
+          <div style={{ overflowY: "auto", padding: "20px 22px", flex: 1 }}>
+            {editing ? (
+              <textarea
+                value={draft}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                }}
+                spellCheck={false}
+                autoFocus
+                // Lock input while the save round-trip is in flight so no keystroke
+                // is lost when the saved content flows back through props.
+                disabled={pending}
+                style={{
+                  width: "100%",
+                  minHeight: 320,
+                  resize: "vertical",
+                  background: "rgba(5,4,26,0.5)",
+                  border: "1px solid #2A2560",
+                  color: "#E6E4F0",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13.5,
+                  lineHeight: 1.65,
+                  padding: 14,
+                  outline: "none",
+                  opacity: pending ? 0.6 : 1,
+                }}
+              />
+            ) : note.content.trim() === "" ? (
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#6F6B99" }}>
+                Note vide.
+              </p>
+            ) : (
+              <div className="note-md">{renderNoteMarkdown(note.content)}</div>
+            )}
+          </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 10,
-            padding: "14px 22px",
-            borderTop: "1px solid #1F1B47",
-          }}
-        >
-          <Link
-            href={`/lessons/${note.lessonSlug}`}
-            style={{ ...toolBtn(false), textDecoration: "none" }}
+          {/* Footer */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 10,
+              padding: "14px 22px",
+              borderTop: "1px solid #1F1B47",
+            }}
           >
-            Ouvrir la leçon →
-          </Link>
+            <Link
+              href={`/lessons/${note.lessonSlug}`}
+              style={{ ...toolBtn(false), textDecoration: "none" }}
+            >
+              Ouvrir la leçon →
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+
+      {sharing && (
+        <ShareDialog
+          noteId={note.id}
+          lessonTitle={note.lessonTitle}
+          onClose={() => {
+            setSharing(false);
+          }}
+        />
+      )}
+    </>
   );
 }
 
