@@ -1,23 +1,36 @@
 import { prisma } from "../prisma.js";
 
+// Classes and who is in them.
+//
+// Every read here is scoped by the caller's own membership or teaching, not by
+// a role: Prisma connects as the table owner and therefore bypasses RLS, so the
+// policies in 20260915120000_classes_and_teacher_role are a second line of
+// defence over the Data API rather than the one enforcing these queries. The
+// scoping has to be in the where clause.
+
 /**
- * Classes and who is in them.
+ * What "a live class" means, in one place.
  *
- * Every read here is scoped by the caller's own membership or teaching, not by
- * a role: Prisma connects as the table owner and therefore bypasses RLS, so the
- * policies in 20260915120000_classes_and_teacher_role are a second line of
- * defence over the Data API rather than the one enforcing these queries. The
- * scoping has to be in the where clause.
+ * Three levels can each retire a class and they all count: archiving a school
+ * puts away its intakes, archiving an intake puts away its classes. Spelling
+ * the condition out at each call site is what let them disagree - the sidebar
+ * once counted archived classes and showed a door to a 404, and
+ * findMembersVisibleTo read only the class's own flag, so it still served the
+ * roster of a class whose whole intake had been put away.
+ *
+ * Exported because the web sidebar counts the same thing from its own query:
+ * the door and the room behind it have to be deciding on the same rule.
  */
+export const LIVE_CLASS_FILTER = {
+  archivedAt: null,
+  promotion: { archivedAt: null, establishment: { archivedAt: null } },
+} as const;
+
 export const classRepository = {
   /** The classes a user belongs to, most recently joined first. */
   async findForMember(userId: string) {
     const rows = await prisma.classMember.findMany({
-      // The promotion's archivedAt counts as much as the class's: archiving an
-      // intake is how a whole year is put away, and a class whose promotion is
-      // gone is as retired as one archived by name. findForTeacher already
-      // reads it this way, and the sidebar counts on both agreeing.
-      where: { userId, class: { archivedAt: null, promotion: { archivedAt: null } } },
+      where: { userId, class: LIVE_CLASS_FILTER },
       orderBy: { joinedAt: "desc" },
       select: {
         joinedAt: true,
@@ -65,8 +78,7 @@ export const classRepository = {
     const classes = await prisma.class.findMany({
       where: {
         teachers: { some: { teacherId } },
-        archivedAt: null,
-        promotion: { archivedAt: null },
+        ...LIVE_CLASS_FILTER,
       },
       orderBy: [
         { promotion: { establishment: { name: "asc" } } },
@@ -157,7 +169,7 @@ export const classRepository = {
     const klass = await prisma.class.findFirst({
       where: {
         id: classId,
-        archivedAt: null,
+        ...LIVE_CLASS_FILTER,
         OR: [
           { members: { some: { userId: viewerId } } },
           { teachers: { some: { teacherId: viewerId } } },
@@ -220,6 +232,38 @@ export const classRepository = {
             name: true,
             slug: true,
             startYear: true,
+            _count: { select: { classes: true } },
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * The same tree as listHierarchy, archived rows included.
+   *
+   * listHierarchy feeds the pickers, where an archived school must not be
+   * offered. This one feeds the screen that edits and un-archives them, which
+   * cannot show what it is meant to bring back if it filters it out. Two
+   * readers, two rules - the difference is the whole reason both exist.
+   */
+  async listStructure() {
+    return prisma.establishment.findMany({
+      orderBy: [{ archivedAt: "asc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        archivedAt: true,
+        promotions: {
+          orderBy: [{ archivedAt: "asc" }, { startYear: "desc" }, { name: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            startYear: true,
+            archivedAt: true,
             _count: { select: { classes: true } },
           },
         },
@@ -307,7 +351,10 @@ export const classRepository = {
     });
   },
 
-  async update(classId: string, data: { name?: string; description?: string | null }) {
+  async update(
+    classId: string,
+    data: { name?: string; slug?: string; description?: string | null },
+  ) {
     await prisma.class.update({ where: { id: classId }, data });
   },
 
@@ -315,6 +362,42 @@ export const classRepository = {
   async setArchived(classId: string, archived: boolean) {
     await prisma.class.update({
       where: { id: classId },
+      data: { archivedAt: archived ? new Date() : null },
+    });
+  },
+
+  async updateEstablishment(
+    establishmentId: string,
+    data: { name?: string; slug?: string; city?: string | null },
+  ) {
+    await prisma.establishment.update({ where: { id: establishmentId }, data });
+  },
+
+  /**
+   * Archiving a school reaches its classes without touching a row of theirs.
+   *
+   * The intakes and classes underneath keep their own archivedAt, so bringing
+   * the school back brings back exactly what was live when it went away -
+   * a cascade of writes would have flattened that and could not be undone.
+   * LIVE_CLASS_FILTER is what makes the reach work, by reading all three flags.
+   */
+  async setEstablishmentArchived(establishmentId: string, archived: boolean) {
+    await prisma.establishment.update({
+      where: { id: establishmentId },
+      data: { archivedAt: archived ? new Date() : null },
+    });
+  },
+
+  async updatePromotion(
+    promotionId: string,
+    data: { name?: string; slug?: string; startYear?: number | null },
+  ) {
+    await prisma.promotion.update({ where: { id: promotionId }, data });
+  },
+
+  async setPromotionArchived(promotionId: string, archived: boolean) {
+    await prisma.promotion.update({
+      where: { id: promotionId },
       data: { archivedAt: archived ? new Date() : null },
     });
   },

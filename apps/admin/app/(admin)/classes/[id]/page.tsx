@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { classRepository, prisma } from "@cyberlearn/db";
 import { GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
+import { ClassDetailsForm } from "../_components/class-details-form";
 import { ClassRoster } from "../_components/class-roster";
 
 export const metadata: Metadata = { title: "Classe" };
@@ -50,6 +51,14 @@ export default async function AdminClassPage({
         }
         description={klass.description ?? "Aucune description."}
         actions={<GhostLink href="/classes">Retour aux classes</GhostLink>}
+      />
+
+      <ClassDetailsForm
+        classId={klass.id}
+        name={klass.name}
+        slug={klass.slug}
+        description={klass.description}
+        archived={archived}
       />
 
       <ClassRoster

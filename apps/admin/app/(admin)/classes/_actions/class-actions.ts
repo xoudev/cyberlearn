@@ -40,6 +40,15 @@ const classSchema = z.object({
   description: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
+// Editing is the same shape as creating, plus which row. Extending the create
+// schemas rather than restating the fields is what keeps a rule like the slug
+// pattern from applying on the way in and not on the way back.
+const establishmentEditSchema = establishmentSchema.extend({ id: z.string().uuid() });
+const promotionEditSchema = promotionSchema
+  .omit({ establishmentId: true })
+  .extend({ id: z.string().uuid() });
+const classEditSchema = classSchema.omit({ promotionId: true }).extend({ id: z.string().uuid() });
+
 export interface ActionState {
   error?: string;
   ok?: boolean;
@@ -255,6 +264,130 @@ export async function setClassArchivedAction(
 
   await classRepository.setArchived(classId, archived);
   await audit(admin.id, archived ? "class.archive" : "class.unarchive", classId, {});
+  revalidatePath("/classes");
+  return { ok: true };
+}
+
+// ─── Editing what was created ───────────────────────────────────────────────
+// A school changes its name, an intake was typed with a typo, a class is
+// renamed between two years. Until now the only way to correct any of it was
+// to create a second row and leave the first one there.
+
+export async function updateEstablishmentAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const admin = await requireAdminAction();
+  const parsed = establishmentEditSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Champs invalides." };
+
+  try {
+    await classRepository.updateEstablishment(parsed.data.id, {
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      city: parsed.data.city === "" ? null : (parsed.data.city ?? null),
+    });
+    await audit(admin.id, "class.establishment.update", parsed.data.id, { name: parsed.data.name });
+  } catch {
+    return { error: "Un établissement porte déjà ce slug." };
+  }
+  revalidatePath("/classes/structure");
+  revalidatePath("/classes");
+  return { ok: true };
+}
+
+export async function updatePromotionAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const admin = await requireAdminAction();
+  const raw = Object.fromEntries(formData.entries());
+  const parsed = promotionEditSchema.safeParse({
+    ...raw,
+    startYear: raw.startYear === "" ? undefined : raw.startYear,
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Champs invalides." };
+
+  try {
+    await classRepository.updatePromotion(parsed.data.id, {
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      startYear: parsed.data.startYear ?? null,
+    });
+    await audit(admin.id, "class.promotion.update", parsed.data.id, { name: parsed.data.name });
+  } catch {
+    return { error: "Cet établissement a déjà une promo avec ce slug." };
+  }
+  revalidatePath("/classes/structure");
+  revalidatePath("/classes");
+  return { ok: true };
+}
+
+export async function updateClassAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const admin = await requireAdminAction();
+  const parsed = classEditSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Champs invalides." };
+
+  try {
+    await classRepository.update(parsed.data.id, {
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      description: parsed.data.description === "" ? null : (parsed.data.description ?? null),
+    });
+    await audit(admin.id, "class.update", parsed.data.id, { name: parsed.data.name });
+  } catch {
+    return { error: "Cette promo a déjà une classe avec ce slug." };
+  }
+  revalidatePath(`/classes/${parsed.data.id}`);
+  revalidatePath("/classes");
+  return { ok: true };
+}
+
+/**
+ * Archiving a school or an intake puts away everything under it.
+ *
+ * Nothing is written to the classes themselves: they keep their own flag, so
+ * bringing the school back brings back exactly what was live when it went away.
+ * LIVE_CLASS_FILTER in the repository is what makes the reach work, by reading
+ * all three levels on every query that answers "is this class still running".
+ */
+export async function setEstablishmentArchivedAction(
+  establishmentId: string,
+  archived: boolean,
+): Promise<{ ok: boolean }> {
+  const admin = await requireAdminAction();
+  if (!z.string().uuid().safeParse(establishmentId).success) return { ok: false };
+
+  await classRepository.setEstablishmentArchived(establishmentId, archived);
+  await audit(
+    admin.id,
+    archived ? "class.establishment.archive" : "class.establishment.unarchive",
+    establishmentId,
+    {},
+  );
+  revalidatePath("/classes/structure");
+  revalidatePath("/classes");
+  return { ok: true };
+}
+
+export async function setPromotionArchivedAction(
+  promotionId: string,
+  archived: boolean,
+): Promise<{ ok: boolean }> {
+  const admin = await requireAdminAction();
+  if (!z.string().uuid().safeParse(promotionId).success) return { ok: false };
+
+  await classRepository.setPromotionArchived(promotionId, archived);
+  await audit(
+    admin.id,
+    archived ? "class.promotion.archive" : "class.promotion.unarchive",
+    promotionId,
+    {},
+  );
+  revalidatePath("/classes/structure");
   revalidatePath("/classes");
   return { ok: true };
 }
