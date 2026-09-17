@@ -7,3 +7,8 @@ export {
 export { ClassEnrolledEmail, sendClassEnrolledEmail } from "./templates/class-enrolled";
 export { AccountDeletedEmail, sendAccountDeletedEmail } from "./templates/account-deleted";
 export { ClassInvitationEmail, sendClassInvitationEmail } from "./templates/class-invitation";
+export {
+  WorkAssignedEmail,
+  sendWorkAssignedEmail,
+  type AssignedWorkKind,
+} from "./templates/work-assigned";
