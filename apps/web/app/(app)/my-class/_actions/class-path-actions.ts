@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { classRepository, lessonsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { announceAssignedWork } from "@/lib/classes/work-assigned-notice";
 
 /**
  * A teacher building a path for their own class.
@@ -100,6 +101,24 @@ export async function createClassPathAction(
       targetId: created.id,
       metadata: { classId, title: parsed.data.title, lessons: lessonIds.length },
     },
+  });
+
+  // A path published to a class is work being handed to them, so it is told the
+  // same way an assigned lesson is. No deadline: a path is a route rather than
+  // a task with a date, and the lessons inside it can still be set one by one.
+  const [klass, teacher] = await Promise.all([
+    prisma.class.findUnique({ where: { id: classId }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: user.id }, select: { displayName: true } }),
+  ]);
+  await announceAssignedWork({
+    classId,
+    className: klass?.name ?? "ta classe",
+    kind: "path",
+    workTitle: parsed.data.title,
+    workPath: `/paths/${created.slug}`,
+    teacherName: teacher?.displayName ?? "Ton professeur",
+    dueAt: null,
+    instructions: null,
   });
 
   revalidatePath("/my-class");

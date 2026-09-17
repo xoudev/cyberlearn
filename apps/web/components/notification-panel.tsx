@@ -23,6 +23,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
   TICKET_UPDATE: "🎫",
   CLASS_ENROLLED: "🎓",
   LESSON_ASSIGNED: "📌",
+  PATH_ASSIGNED: "⌁",
   NOTE_SHARED: "📝",
   MODERATION_ALERT: "🛡",
   FORUM_REPLY: "💬",

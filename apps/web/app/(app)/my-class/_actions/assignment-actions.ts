@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { classRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { announceAssignedWork } from "@/lib/classes/work-assigned-notice";
 
 /**
  * Setting work for a class, from the site rather than from the console.
@@ -75,29 +76,22 @@ export async function assignLessonAction(
   // twenty-eight bells for nothing.
   let notified = 0;
   if (created) {
-    try {
-      const members = await prisma.classMember.findMany({
-        where: { classId: parsed.data.classId },
-        select: { userId: true },
-      });
-      const dueLabel =
-        dueAt === null
-          ? ""
-          : ` · à rendre avant le ${new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(dueAt)}`;
-      await prisma.notification.createMany({
-        data: members.map((m) => ({
-          userId: m.userId,
-          type: "LESSON_ASSIGNED" as const,
-          title: `Nouvelle leçon à faire : ${lesson.title}`,
-          body: `Ton professeur t'a assigné cette leçon${dueLabel}.`,
-          actionUrl: `/lessons/${lesson.slug}`,
-        })),
-      });
-      notified = members.length;
-    } catch (error) {
-      // The work is set either way; what failed is the telling.
-      console.error("[assignments] notification failed:", error);
-    }
+    // The auth user carries an id, not a name; the e-mail says who set the
+    // work, so the name comes from the row rather than from the session.
+    const [klass, teacher] = await Promise.all([
+      prisma.class.findUnique({ where: { id: parsed.data.classId }, select: { name: true } }),
+      prisma.user.findUnique({ where: { id: user.id }, select: { displayName: true } }),
+    ]);
+    notified = await announceAssignedWork({
+      classId: parsed.data.classId,
+      className: klass?.name ?? "ta classe",
+      kind: "lesson",
+      workTitle: lesson.title,
+      workPath: `/lessons/${lesson.slug}`,
+      teacherName: teacher?.displayName ?? "Ton professeur",
+      dueAt,
+      instructions: parsed.data.instructions === "" ? null : (parsed.data.instructions ?? null),
+    });
   }
 
   revalidatePath("/my-class");
