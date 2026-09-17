@@ -13,6 +13,16 @@ export function monthKey(date: Date): string {
   return dayKey(date).slice(0, 7);
 }
 
+/** The Europe/Paris year a moment falls in, as "YYYY". */
+export function yearKey(date: Date): string {
+  return dayKey(date).slice(0, 4);
+}
+
+/** Shift a "YYYY" key by `delta` years (e.g. "2026" - 1 = "2025"). */
+export function shiftYear(key: string, delta: number): string {
+  return String(Number(key) + delta);
+}
+
 /** Shift a "YYYY-MM" key by `delta` months (e.g. "2026-03" - 1 = "2026-02"). */
 export function shiftMonth(key: string, delta: number): string {
   const [year, month] = key.split("-").map(Number);
@@ -32,13 +42,21 @@ export interface WrappedSeasonResult {
 
 /** Raw, per-user inputs the repository gathers before assembly. */
 export interface WrappedInputs {
-  /** The month being recapped, "YYYY-MM". */
+  /**
+   * The year being recapped, "YYYY".
+   *
+   * It used to be a month, from when this page was open all year round and had
+   * to say something about the last thirty days. A Wrapped that opens in
+   * December recaps the year, so the window widened and the payload's field
+   * names widened with it - a field called thisMonth holding a year's total is
+   * the kind of small lie that survives for years.
+   */
   periodKey: string;
   /** Every XP credit (all-time), to bucket by month for this/last/best. */
   xpEntries: readonly { amount: number; createdAt: Date }[];
-  /** Completed lessons (all-time), to count this month + split by domain. */
+  /** Completed lessons (all-time), to count this year + split by domain. */
   lessons: readonly { completedAt: Date; category: DomainCode }[];
-  /** Earned badges (all-time), to count this month + group by rarity. */
+  /** Earned badges (all-time), to count this year + group by rarity. */
   badges: readonly { earnedAt: Date; rarity: string; name: string }[];
   totalBadges: number;
   longestStreak: number;
@@ -57,16 +75,16 @@ export interface WrappedPayload {
     topDomainPct: number;
   };
   xp: {
-    thisMonth: number;
-    lastMonth: number;
-    /** Month-over-month percentage, null when last month was zero. */
+    thisYear: number;
+    lastYear: number;
+    /** Year-over-year percentage, null when last year was zero. */
     deltaPct: number | null;
-    isBestMonth: boolean;
+    /** The strongest month inside the year, which is the headline worth having. */
     bestMonthKey: string | null;
     bestMonthXp: number;
   };
   badges: {
-    thisMonth: number;
+    thisYear: number;
     byRarity: Record<string, number>;
     recent: { name: string; rarity: string }[];
     total: number;
@@ -82,19 +100,26 @@ const DOMAINS: readonly DomainCode[] = ["DEV", "CYBERSEC", "NETWORK"];
 export function assembleWrapped(inputs: WrappedInputs): WrappedPayload {
   const { periodKey } = inputs;
 
-  // ── XP: sum per month, then this / last / best ─────────────────────────────
+  // ── XP: this year against last, plus the best month inside this one ────────
   const xpByMonth = new Map<string, number>();
+  const xpByYear = new Map<string, number>();
   for (const entry of inputs.xpEntries) {
-    const key = monthKey(entry.createdAt);
-    xpByMonth.set(key, (xpByMonth.get(key) ?? 0) + entry.amount);
+    const month = monthKey(entry.createdAt);
+    xpByMonth.set(month, (xpByMonth.get(month) ?? 0) + entry.amount);
+    const year = yearKey(entry.createdAt);
+    xpByYear.set(year, (xpByYear.get(year) ?? 0) + entry.amount);
   }
-  const thisMonthXp = xpByMonth.get(periodKey) ?? 0;
-  const lastMonthXp = xpByMonth.get(shiftMonth(periodKey, -1)) ?? 0;
+  const thisYearXp = xpByYear.get(periodKey) ?? 0;
+  const lastYearXp = xpByYear.get(shiftYear(periodKey, -1)) ?? 0;
   const deltaPct =
-    lastMonthXp > 0 ? Math.round(((thisMonthXp - lastMonthXp) / lastMonthXp) * 100) : null;
+    lastYearXp > 0 ? Math.round(((thisYearXp - lastYearXp) / lastYearXp) * 100) : null;
+
+  // The best month is scoped to the year being recapped, not all time: "ton
+  // meilleur mois" in a 2026 recap must not name a month in 2024.
   let bestMonthKey: string | null = null;
   let bestMonthXp = 0;
   for (const [key, value] of xpByMonth) {
+    if (!key.startsWith(`${periodKey}-`)) continue;
     if (value > bestMonthXp) {
       bestMonthXp = value;
       bestMonthKey = key;
@@ -105,7 +130,7 @@ export function assembleWrapped(inputs: WrappedInputs): WrappedPayload {
   const byDomain: Record<DomainCode, number> = { DEV: 0, CYBERSEC: 0, NETWORK: 0 };
   let lessonTotal = 0;
   for (const lesson of inputs.lessons) {
-    if (monthKey(lesson.completedAt) !== periodKey) continue;
+    if (yearKey(lesson.completedAt) !== periodKey) continue;
     byDomain[lesson.category] += 1;
     lessonTotal += 1;
   }
@@ -120,29 +145,28 @@ export function assembleWrapped(inputs: WrappedInputs): WrappedPayload {
   const topDomainPct =
     lessonTotal > 0 && topDomain ? Math.round((byDomain[topDomain] / lessonTotal) * 100) : 0;
 
-  // ── Badges this month ──────────────────────────────────────────────────────
-  const monthBadges = inputs.badges
-    .filter((b) => monthKey(b.earnedAt) === periodKey)
+  // ── Badges earned this year ────────────────────────────────────────────────
+  const yearBadges = inputs.badges
+    .filter((b) => yearKey(b.earnedAt) === periodKey)
     .sort((a, b) => b.earnedAt.getTime() - a.earnedAt.getTime());
   const byRarity: Record<string, number> = {};
-  for (const badge of monthBadges) {
+  for (const badge of yearBadges) {
     byRarity[badge.rarity] = (byRarity[badge.rarity] ?? 0) + 1;
   }
-  const recent = monthBadges.slice(0, 3).map((b) => ({ name: b.name, rarity: b.rarity }));
+  const recent = yearBadges.slice(0, 3).map((b) => ({ name: b.name, rarity: b.rarity }));
 
   return {
     periodKey,
     lessons: { total: lessonTotal, byDomain, topDomain, topDomainPct },
     xp: {
-      thisMonth: thisMonthXp,
-      lastMonth: lastMonthXp,
+      thisYear: thisYearXp,
+      lastYear: lastYearXp,
       deltaPct,
-      isBestMonth: bestMonthKey === periodKey && thisMonthXp > 0,
       bestMonthKey,
       bestMonthXp,
     },
     badges: {
-      thisMonth: monthBadges.length,
+      thisYear: yearBadges.length,
       byRarity,
       recent,
       total: inputs.totalBadges,

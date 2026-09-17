@@ -71,21 +71,15 @@ function fmtCompact(n: number): string {
   return String(n);
 }
 
-/** "Mars 2026" (withYear) or "février" from a "YYYY-MM" key. */
-function monthLabel(periodKey: string, withYear: boolean): string {
-  const date = new Date(`${periodKey}-01T12:00:00Z`);
+/** "Mars 2026" from a "YYYY-MM" key, for naming the year's strongest month. */
+function monthLabel(monthKeyValue: string): string {
+  const date = new Date(`${monthKeyValue}-01T12:00:00Z`);
   const label = new Intl.DateTimeFormat("fr-FR", {
     month: "long",
-    ...(withYear ? { year: "numeric" } : {}),
+    year: "numeric",
     timeZone: "UTC",
   }).format(date);
-  return withYear ? label.charAt(0).toUpperCase() + label.slice(1) : label;
-}
-
-function prevMonthKey(periodKey: string): string {
-  const [y, m] = periodKey.split("-").map(Number);
-  const d = new Date(Date.UTC(y ?? 0, (m ?? 1) - 2, 1));
-  return `${String(d.getUTCFullYear())}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function topPercent(rank: number, total: number): number {
@@ -254,7 +248,7 @@ function buildCards(payload: WrappedPayload): CardDef[] {
   // 1 - Lessons + XP for the month.
   const deltaText =
     payload.xp.deltaPct !== null
-      ? `, ${payload.xp.deltaPct >= 0 ? "+" : ""}${String(payload.xp.deltaPct)}% vs ${monthLabel(prevMonthKey(payload.periodKey), false)}`
+      ? `, ${payload.xp.deltaPct >= 0 ? "+" : ""}${String(payload.xp.deltaPct)}% vs ${String(Number(payload.periodKey) - 1)}`
       : "";
   cards.push({
     accent: a[0],
@@ -263,13 +257,16 @@ function buildCards(payload: WrappedPayload): CardDef[] {
       <>
         <BigStat value={String(payload.lessons.total)} unit="leçons" accent={a[0]} />
         <Lead>
-          Tu as engrangé <b style={{ color: "#F5F5FA" }}>{fmtXp(payload.xp.thisMonth)} XP</b> ce
-          mois{payload.xp.isBestMonth ? ", ton meilleur mois" : ""}
+          Tu as engrangé <b style={{ color: "#F5F5FA" }}>{fmtXp(payload.xp.thisYear)} XP</b> cette
+          année
+          {payload.xp.bestMonthKey !== null
+            ? `, avec ${monthLabel(payload.xp.bestMonthKey)} en meilleur mois`
+            : ""}
           {deltaText}.
         </Lead>
       </>
     ),
-    footer: `${monthLabel(payload.periodKey, true)} · récap`,
+    footer: `${payload.periodKey} · récap`,
   });
 
   // 2 - Top domain.
@@ -303,13 +300,13 @@ function buildCards(payload: WrappedPayload): CardDef[] {
   });
 
   // 3 - Badges.
-  const others = Math.max(0, payload.badges.thisMonth - payload.badges.recent.length);
+  const others = Math.max(0, payload.badges.thisYear - payload.badges.recent.length);
   cards.push({
     accent: a[2],
     eyebrow: "Tes badges du mois",
     body: (
       <>
-        <BigStat value={String(payload.badges.thisMonth)} unit="badges" accent={a[2]} />
+        <BigStat value={String(payload.badges.thisYear)} unit="badges" accent={a[2]} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
           {payload.badges.recent.map((b) => (
             <div key={b.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -447,7 +444,7 @@ function FinalCard({
         <span>
           <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>cyber</b> learn
         </span>
-        <span>{monthLabel(payload.periodKey, true).toUpperCase()}</span>
+        <span>{payload.periodKey}</span>
       </div>
 
       <h2
@@ -478,9 +475,9 @@ function FinalCard({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "20px 0 0" }}>
         <MiniStat value={String(payload.lessons.total)} label="leçons" />
-        <MiniStat value={fmtCompact(payload.xp.thisMonth)} label="XP gagnés" />
+        <MiniStat value={fmtCompact(payload.xp.thisYear)} label="XP gagnés" />
         <MiniStat value={`${String(payload.streak.longest)}j`} label="plus longue série" />
-        <MiniStat value={String(payload.badges.thisMonth)} label="badges" />
+        <MiniStat value={String(payload.badges.thisYear)} label="badges" />
       </div>
 
       {top || season?.globalRank != null ? (
@@ -562,8 +559,113 @@ function FinalCard({
 
 // ── Export panel ──────────────────────────────────────────────────────────────
 
-function ExportPanel(): React.JSX.Element {
+/**
+ * Drawing the shareable card, at story size.
+ *
+ * Canvas rather than a screenshot library: the card is a dozen strings and a
+ * few rules, drawing them costs nothing and adds no dependency, and the output
+ * is 1080x1920 regardless of the screen it was exported from - which is the
+ * whole point of a story image. A DOM screenshot would have inherited whatever
+ * width the reader happened to have.
+ *
+ * Fonts are named rather than loaded: the page's own faces are already in the
+ * document by the time anyone reaches this button, and a canvas draws with what
+ * the document has. The fallbacks keep it legible if they are not.
+ */
+function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasElement {
+  const W = 1080;
+  const H = 1920;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue("--cosmetic-accent")
+    .trim();
+  const ACCENT = accent === "" ? "#0AFFD4" : accent;
+  const MONO_F = "'JetBrains Mono', ui-monospace, monospace";
+  const SANS_F = "'Plus Jakarta Sans', system-ui, sans-serif";
+
+  ctx.fillStyle = "#030219";
+  ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(W / 2, 420, 0, W / 2, 420, 900);
+  glow.addColorStop(0, "rgba(10,255,212,0.10)");
+  glow.addColorStop(1, "rgba(3,2,25,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = "center";
+
+  ctx.fillStyle = ACCENT;
+  ctx.font = `700 34px ${MONO_F}`;
+  ctx.fillText("CYBERLEARN WRAPPED", W / 2, 190);
+
+  ctx.fillStyle = "#F5F5FA";
+  ctx.font = `800 210px ${SANS_F}`;
+  ctx.fillText(payload.periodKey, W / 2, 400);
+
+  ctx.fillStyle = "#6B6890";
+  ctx.font = `28px ${MONO_F}`;
+  ctx.fillText(`@${handle}`, W / 2, 470);
+
+  // Four figures, two per row. Numbers first and labels under them, because the
+  // number is what somebody screenshots this for.
+  const stats: [string, string][] = [
+    [fmtCompact(payload.xp.thisYear), "XP gagnés"],
+    [String(payload.lessons.total), "leçons"],
+    [String(payload.badges.thisYear), "badges"],
+    [String(payload.streak.longest), "jours de série"],
+  ];
+  stats.forEach(([value, label], i) => {
+    const x = i % 2 === 0 ? W / 4 : (W / 4) * 3;
+    const y = 760 + Math.floor(i / 2) * 320;
+    ctx.fillStyle = ACCENT;
+    ctx.font = `800 120px ${SANS_F}`;
+    ctx.fillText(value, x, y);
+    ctx.fillStyle = "#6B6890";
+    ctx.font = `30px ${MONO_F}`;
+    ctx.fillText(label, x, y + 60);
+  });
+
+  const topDomain = payload.lessons.topDomain;
+  if (topDomain !== null) {
+    // DOMAIN_LABEL is keyed by string, so the lookup is optional as far as the
+    // compiler knows; the code itself is the honest fallback.
+    const domainLabel = DOMAIN_LABEL[topDomain] ?? topDomain;
+    ctx.fillStyle = "#B8B5D1";
+    ctx.font = `36px ${SANS_F}`;
+    ctx.fillText(`Domaine de l'année : ${domainLabel}`, W / 2, 1300);
+  }
+
+  // Everything stays above ~1550: the bottom of a story is where the app's own
+  // controls sit, and a wordmark under them is a wordmark nobody sees.
+  ctx.strokeStyle = "#1F1B47";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(140, 1440);
+  ctx.lineTo(W - 140, 1440);
+  ctx.stroke();
+
+  ctx.fillStyle = "#44406B";
+  ctx.font = `28px ${MONO_F}`;
+  ctx.fillText("cyberlearn.fr", W / 2, 1520);
+
+  return canvas;
+}
+
+function ExportPanel({
+  payload,
+  handle,
+}: {
+  payload: WrappedPayload;
+  handle: string;
+}): React.JSX.Element {
   const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   const copyLink = (): void => {
     if (typeof window === "undefined") return;
@@ -573,6 +675,73 @@ function ExportPanel(): React.JSX.Element {
         setCopied(false);
       }, 1800);
     });
+  };
+
+  const toBlob = async (): Promise<Blob | null> =>
+    new Promise((resolve) => {
+      drawStoryCard(payload, handle).toBlob((b) => {
+        resolve(b);
+      }, "image/png");
+    });
+
+  const download = (): void => {
+    setFailed(null);
+    setBusy(true);
+    void toBlob()
+      .then((blob) => {
+        if (!blob) {
+          setFailed("L'image n'a pas pu être générée.");
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `cyberlearn-wrapped-${payload.periodKey}.png`;
+        a.click();
+        // Revoked on the next tick: revoking synchronously can beat the click
+        // in some browsers and download an empty file.
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 0);
+      })
+      .finally(() => {
+        setBusy(false);
+      });
+  };
+
+  /**
+   * The share sheet, where the browser has one.
+   *
+   * navigator.share with files is missing on most desktops, so the button only
+   * appears when it is actually available rather than being shown and failing -
+   * a share button that errors is worse than no share button.
+   */
+  const canShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [new File([], "x.png", { type: "image/png" })] });
+
+  const share = (): void => {
+    setFailed(null);
+    setBusy(true);
+    void toBlob()
+      .then(async (blob) => {
+        if (!blob) {
+          setFailed("L'image n'a pas pu être générée.");
+          return;
+        }
+        const file = new File([blob], `cyberlearn-wrapped-${payload.periodKey}.png`, {
+          type: "image/png",
+        });
+        try {
+          await navigator.share({ files: [file], title: "Mon CyberLearn Wrapped" });
+        } catch {
+          // A cancelled share sheet throws too; nothing to report either way.
+        }
+      })
+      .finally(() => {
+        setBusy(false);
+      });
   };
 
   const btn = (
@@ -617,12 +786,18 @@ function ExportPanel(): React.JSX.Element {
       >
         Exporter
       </span>
-      {btn("⤓ Télécharger l'image · bientôt", null, false)}
-      {btn("⇆ Partager le lien · bientôt", null, false)}
-      {btn(copied ? "✓ Lien copié" : "⧉ Copier le lien", copyLink, true)}
-      <p style={{ ...MONO, fontSize: 10, color: "#44406B", letterSpacing: "0.06em", marginTop: 4 }}>
-        L’export image (story 9:16) et le partage public arrivent très vite.
-      </p>
+      {btn(busy ? "⤓ Génération…" : "⤓ Télécharger l'image", busy ? null : download, true)}
+      {canShare && btn("⇆ Partager l'image", busy ? null : share, false)}
+      {btn(copied ? "✓ Lien copié" : "⧉ Copier le lien", copyLink, false)}
+      {failed !== null ? (
+        <p style={{ ...MONO, fontSize: 10.5, color: "#FF4D6D", marginTop: 4 }}>{failed}</p>
+      ) : (
+        <p
+          style={{ ...MONO, fontSize: 10, color: "#44406B", letterSpacing: "0.06em", marginTop: 4 }}
+        >
+          Story 1080×1920, prête à poster.
+        </p>
+      )}
     </div>
   );
 }
@@ -751,7 +926,7 @@ export function WrappedClient({ payload, handle }: Props): React.JSX.Element {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 40, alignItems: "flex-start" }}>
         <FinalCard payload={payload} handle={handle} />
         <div style={{ flex: "1 1 280px", maxWidth: 360 }}>
-          <ExportPanel />
+          <ExportPanel payload={payload} handle={handle} />
         </div>
       </div>
     </div>

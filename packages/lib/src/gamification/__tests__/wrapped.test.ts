@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { assembleWrapped, monthKey, shiftMonth, type WrappedInputs } from "../wrapped";
+import {
+  assembleWrapped,
+  monthKey,
+  shiftMonth,
+  shiftYear,
+  yearKey,
+  type WrappedInputs,
+} from "../wrapped";
 
 // Midday UTC keeps the date inside the same Europe/Paris month (avoids the
 // tz-boundary case where a late-UTC date rolls into the next Paris day/month).
@@ -9,7 +16,7 @@ function at(iso: string): Date {
 
 function baseInputs(overrides: Partial<WrappedInputs> = {}): WrappedInputs {
   return {
-    periodKey: "2026-03",
+    periodKey: "2026",
     xpEntries: [],
     lessons: [],
     badges: [],
@@ -22,9 +29,14 @@ function baseInputs(overrides: Partial<WrappedInputs> = {}): WrappedInputs {
   };
 }
 
-describe("monthKey / shiftMonth", () => {
+describe("monthKey / shiftMonth / yearKey / shiftYear", () => {
   it("derives the Paris month key", () => {
     expect(monthKey(at("2026-03-15"))).toBe("2026-03");
+  });
+
+  it("derives the Paris year key", () => {
+    expect(yearKey(at("2026-03-15"))).toBe("2026");
+    expect(yearKey(at("2026-12-31"))).toBe("2026");
   });
 
   it("shifts months across year boundaries", () => {
@@ -32,52 +44,57 @@ describe("monthKey / shiftMonth", () => {
     expect(shiftMonth("2026-01", -1)).toBe("2025-12");
     expect(shiftMonth("2026-12", 1)).toBe("2027-01");
   });
+
+  it("shifts years", () => {
+    expect(shiftYear("2026", -1)).toBe("2025");
+    expect(shiftYear("2026", 1)).toBe("2027");
+  });
 });
 
 describe("assembleWrapped - XP buckets", () => {
-  it("computes this / last month XP and the MoM delta", () => {
+  it("computes this / last year XP and the YoY delta", () => {
     const out = assembleWrapped(
       baseInputs({
         xpEntries: [
-          { amount: 6000, createdAt: at("2026-02-10") },
-          { amount: 1000, createdAt: at("2026-02-20") }, // Feb total 7000
+          { amount: 6000, createdAt: at("2025-02-10") },
+          { amount: 1000, createdAt: at("2025-11-20") }, // 2025 total 7000
           { amount: 9000, createdAt: at("2026-03-05") },
-          { amount: 240, createdAt: at("2026-03-25") }, // Mar total 9240
+          { amount: 240, createdAt: at("2026-10-25") }, // 2026 total 9240
         ],
       }),
     );
-    expect(out.xp.thisMonth).toBe(9240);
-    expect(out.xp.lastMonth).toBe(7000);
+    expect(out.xp.thisYear).toBe(9240);
+    expect(out.xp.lastYear).toBe(7000);
     expect(out.xp.deltaPct).toBe(32); // (9240-7000)/7000 = 32%
-    expect(out.xp.isBestMonth).toBe(true);
-    expect(out.xp.bestMonthKey).toBe("2026-03");
-    expect(out.xp.bestMonthXp).toBe(9240);
   });
 
-  it("returns a null delta when last month had no XP", () => {
+  it("returns a null delta when last year had no XP", () => {
     const out = assembleWrapped(
       baseInputs({ xpEntries: [{ amount: 500, createdAt: at("2026-03-05") }] }),
     );
-    expect(out.xp.lastMonth).toBe(0);
+    expect(out.xp.lastYear).toBe(0);
     expect(out.xp.deltaPct).toBeNull();
   });
 
-  it("flags isBestMonth false when an earlier month was higher", () => {
+  it("names the best month inside the year, never one from another year", () => {
+    // The regression this guards: "ton meilleur mois" in a 2026 recap naming a
+    // month in 2024 because the search ran over every month on record.
     const out = assembleWrapped(
       baseInputs({
         xpEntries: [
+          { amount: 99000, createdAt: at("2024-07-10") },
           { amount: 12000, createdAt: at("2026-01-10") },
           { amount: 3000, createdAt: at("2026-03-10") },
         ],
       }),
     );
-    expect(out.xp.isBestMonth).toBe(false);
     expect(out.xp.bestMonthKey).toBe("2026-01");
+    expect(out.xp.bestMonthXp).toBe(12000);
   });
 });
 
 describe("assembleWrapped - lessons + domain", () => {
-  it("counts this-month lessons and finds the top domain", () => {
+  it("counts this-year lessons and finds the top domain", () => {
     const out = assembleWrapped(
       baseInputs({
         lessons: [
@@ -93,7 +110,9 @@ describe("assembleWrapped - lessons + domain", () => {
             completedAt: at("2026-03-10"),
             category: "NETWORK" as const,
           })),
-          { completedAt: at("2026-02-10"), category: "DEV" as const }, // prior month, excluded
+          // Prior year, excluded. It used to be a prior month, from when this
+          // recap covered thirty days; a month of the same year now counts.
+          { completedAt: at("2025-12-10"), category: "DEV" as const },
         ],
       }),
     );
@@ -103,9 +122,9 @@ describe("assembleWrapped - lessons + domain", () => {
     expect(out.lessons.topDomainPct).toBe(71); // 27/38
   });
 
-  it("has no top domain when no lessons were completed this month", () => {
+  it("has no top domain when no lessons were completed this year", () => {
     const out = assembleWrapped(
-      baseInputs({ lessons: [{ completedAt: at("2026-02-10"), category: "DEV" }] }),
+      baseInputs({ lessons: [{ completedAt: at("2025-02-10"), category: "DEV" }] }),
     );
     expect(out.lessons.total).toBe(0);
     expect(out.lessons.topDomain).toBeNull();
@@ -114,7 +133,7 @@ describe("assembleWrapped - lessons + domain", () => {
 });
 
 describe("assembleWrapped - badges", () => {
-  it("counts this-month badges, groups by rarity, lists the most recent first", () => {
+  it("counts this-year badges, groups by rarity, lists the most recent first", () => {
     const out = assembleWrapped(
       baseInputs({
         totalBadges: 27,
@@ -122,14 +141,14 @@ describe("assembleWrapped - badges", () => {
           { earnedAt: at("2026-03-01"), rarity: "LEGENDARY", name: "First Blood" },
           { earnedAt: at("2026-03-20"), rarity: "EPIC", name: "Recon Master" },
           { earnedAt: at("2026-03-10"), rarity: "RARE", name: "SQL Survivor" },
-          { earnedAt: at("2026-01-05"), rarity: "COMMON", name: "Old Badge" }, // excluded
+          { earnedAt: at("2025-01-05"), rarity: "COMMON", name: "Old Badge" }, // prior year, excluded
         ],
       }),
     );
-    expect(out.badges.thisMonth).toBe(3);
+    expect(out.badges.thisYear).toBe(3);
     expect(out.badges.total).toBe(27);
     expect(out.badges.byRarity).toEqual({ LEGENDARY: 1, EPIC: 1, RARE: 1 });
-    // Sorted earnedAt desc: Mar 20, Mar 10, Mar 01.
+    // Only the three most recent, sorted desc: Mar 20, Mar 10, Mar 01.
     expect(out.badges.recent.map((b) => b.name)).toEqual([
       "Recon Master",
       "SQL Survivor",
