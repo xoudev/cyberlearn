@@ -11,8 +11,15 @@ import type {
 
 export const metadata: Metadata = { title: "Bloc-notes" };
 
-export default async function NotesPage(): Promise<React.JSX.Element> {
+export default async function NotesPage({
+  searchParams,
+}: {
+  /** ?note=<id> opens that note straight away - how the navbar search lands here. */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<React.JSX.Element> {
   const user = await requireRequestUser();
+  const requested = (await searchParams).note;
+  const openNoteId = typeof requested === "string" ? requested : null;
   // Tolerate the window between deploy and the prod notes/folders migration: a
   // missing table yields an empty library rather than a crashed page.
   const [notes, folders, incoming] = await Promise.all([
@@ -66,6 +73,7 @@ export default async function NotesPage(): Promise<React.JSX.Element> {
       notes={serializedNotes}
       folders={serializedFolders}
       incoming={serializedIncoming}
+      openNoteId={openNoteId}
     />
   );
 }
