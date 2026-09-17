@@ -41,9 +41,12 @@ export const wrappedRepository = {
     ]);
 
     return assembleWrapped({
+      // A year, "YYYY", since Wrapped became a December event. The SQL above
+      // still groups XP by month, which is what the assembler wants: it needs
+      // the months to name the year's strongest one.
       periodKey,
       // One synthetic entry per month (mid-month noon UTC stays inside the same
-      // Paris month), so the pure assembler buckets them identically to before.
+      // Paris month and year), so the pure assembler buckets them identically.
       xpEntries: xpByMonth.map((r) => ({
         amount: Number(r.total),
         createdAt: new Date(`${r.month}-15T12:00:00Z`),

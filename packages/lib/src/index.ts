@@ -15,6 +15,7 @@ export * from "./gamification/quest.js";
 export * from "./gamification/tier.js";
 export * from "./gamification/league.js";
 export * from "./gamification/wrapped.js";
+export * from "./gamification/wrapped-window.js";
 export * from "./moderation/moderate.js";
 export * from "./moderation/lexicon.js";
 export * from "./sm2.js";

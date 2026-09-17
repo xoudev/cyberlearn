@@ -333,19 +333,37 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // to avoid a DB query on every request.
     const isOnboardingComplete = user.app_metadata.onboarding_complete === true;
 
-    if (!isOnboardingComplete && !isOnboardingRoute(pathname) && !isPublicRoute(pathname)) {
+    // The landing page exists to explain the site to somebody who has not
+    // signed up. For somebody who has, it is a dead end - and it is where a
+    // good number of links inside the app used to deposit them, starting with
+    // the logo. So "/" now goes wherever the rest of the application would
+    // have sent them: onboarding while that is unfinished, the dashboard once
+    // it is done. Signed-out visitors still get the landing page, untouched.
+    //
+    // Doing it here rather than in each link fixes the links nobody has
+    // enumerated yet, plus bookmarks and the address bar, and it is decided
+    // before the landing page renders at all - so the page component, its
+    // revalidation and its database reads are untouched.
+    const isLanding = pathname === "/";
+
+    if (
+      !isOnboardingComplete &&
+      (isLanding || (!isOnboardingRoute(pathname) && !isPublicRoute(pathname)))
+    ) {
       const onboardingUrl = new URL("/onboarding", request.url);
       const redirectResponse = NextResponse.redirect(onboardingUrl);
       applySecurityHeaders(redirectResponse, nonce);
       return redirectResponse;
     }
 
-    // Completed-onboarding user visiting /login or /onboarding → redirect to dashboard
-    // Exception: result page is shown once right after completing the placement test
+    // Completed-onboarding user visiting the landing, /login or /onboarding →
+    // redirect to dashboard. Exception: the result page is shown once right
+    // after completing the placement test.
     const isPlacementResult = pathname === "/onboarding/placement-test/result";
     if (
       isOnboardingComplete &&
-      (["/login", "/register", "/forgot-password"].includes(pathname) ||
+      (isLanding ||
+        ["/login", "/register", "/forgot-password"].includes(pathname) ||
         isOnboardingRoute(pathname)) &&
       !isPlacementResult
     ) {

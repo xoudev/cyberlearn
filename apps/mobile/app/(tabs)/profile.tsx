@@ -19,12 +19,20 @@ type Sub = (typeof SUB_TABS)[number];
 
 // In-app screens first, then sections that still live on the web.
 const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
+  // Ma classe leads: it is the only entry here that can carry a deadline, and
+  // the site now e-mails people about those.
+  { label: "Ma classe", route: "/my-class" },
   { label: "Classement", route: "/leaderboard" },
   { label: "Bloc-notes", route: "/notes" },
   { label: "Casier", route: "/locker" },
   { label: "Notifications", route: "/notifications" },
   { label: "Réglages", route: "/settings" },
+  // Still on the web. Each of these is listed in docs/MOBILE_PARITY.md with
+  // whether it is owed or deliberately web-only, so the gap is a decision on
+  // record rather than something that looks forgotten.
   { label: "Révisions", url: "https://cyberlearn.fr/revisions" },
+  { label: "Forum", url: "https://cyberlearn.fr/forum" },
+  { label: "Aide & demandes", url: "https://cyberlearn.fr/support" },
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
   { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
 ];

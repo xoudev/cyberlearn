@@ -4547,6 +4547,65 @@ a.cls-res__title:hover {
   color: #6f6b99;
 }
 
+/* ─── Wrapped, while it is shut ───────────────────────────────────────────── */
+/* A locked door with no sign on it reads as something broken, so the closed
+   page is a page rather than an error. */
+
+.wr-closed {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 14px;
+  padding-top: clamp(48px, 12vh, 140px);
+}
+.wr-closed__eyebrow {
+  margin: 0;
+  font: 700 11px var(--font-mono);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+}
+.wr-closed__year {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: clamp(64px, 18vw, 160px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #f5f5fa;
+}
+.wr-closed__lede {
+  margin: 0;
+  max-width: 44ch;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  color: #b8b5d1;
+}
+.wr-closed__when {
+  margin: 10px 0 0;
+  padding: 10px 18px;
+  font: 12px var(--font-mono);
+  letter-spacing: 0.08em;
+  color: #b8b5d1;
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 30%, transparent);
+}
+.wr-closed__when b {
+  color: var(--cosmetic-accent);
+}
+.wr-closed__hint {
+  margin: 0;
+  font: 11px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: #6b6890;
+}
+/* .cls-btn pins itself to the start of its grid track, which is right on a
+   form and wrong in the middle of a centred column. */
+.wr-closed .cls-btn {
+  justify-self: center;
+  margin-top: 10px;
+}
+
 /* ─── Tickets, as the person who opened one sees them ─────────────────────── */
 
 .tk-list {
