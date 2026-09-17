@@ -1148,3 +1148,42 @@
   color: var(--a-muted);
   overflow-wrap: anywhere;
 }
+/* ─── Moderation queue ─────────────────────────────────────── */
+
+.a-mod-queue {
+  display: grid;
+  gap: 10px;
+}
+
+.a-mod-row {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--a-border);
+  background: var(--a-surface-2);
+}
+.a-mod-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* The text as it was written. A reviewer cannot judge a refusal from a summary
+   of it, and pre-wrap keeps the line breaks that are sometimes the point. */
+.a-mod-excerpt {
+  margin: 0;
+  padding: 11px 13px;
+  background: var(--a-bg);
+  border-left: 2px solid var(--a-border-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--a-fg-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.a-mod-findings {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}

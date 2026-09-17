@@ -79,6 +79,8 @@ model User {
   sentInvitations   ClassInvitation[]       @relation("ClassInvitationSender")
   setAssignments    ClassAssignment[]       @relation("ClassAssignmentAuthor")
   classResources    ClassResource[]         @relation("ClassResourceAuthor")
+  moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
+  moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
 
   @@index([username])
   @@index([role])
@@ -1119,6 +1121,20 @@ enum LessonAudience {
   CLASS
 }
 
+/// What the screen decided.
+enum ModerationVerdict {
+  ALLOW
+  REVIEW
+  BLOCK
+}
+
+/// What a human decided afterwards.
+enum ModerationOutcome {
+  PENDING
+  UPHELD
+  OVERTURNED
+}
+
 enum NotificationType {
   REVIEW_REMINDER
   BADGE_EARNED
@@ -1129,6 +1145,44 @@ enum NotificationType {
   TICKET_UPDATE
   CLASS_ENROLLED
   LESSON_ASSIGNED
+}
+
+/// A decision the automatic screen made, kept so a person can disagree with it.
+///
+/// Only REVIEW and BLOCK are written. Recording every ALLOW would be a row per
+/// keystroke-worth of text on a platform where almost everything is fine, and
+/// it would bury the handful of rows that are the point of the table.
+///
+/// The excerpt is stored rather than a pointer to the content, because blocked
+/// content is not saved anywhere: refusing it and then keeping a copy of it is
+/// the worst of both, and a reviewer needs to see what was refused to say
+/// whether the refusal was right.
+model ModerationEvent {
+  id           String            @id @default(uuid()) @db.Uuid
+  /// Who wrote it. Nullable so deleting an account does not erase the record of
+  /// a decision that was made about the platform.
+  userId       String?           @db.Uuid
+  /// Where it happened: "lesson.question", "note.share", "forum.post".
+  surface      String            @db.VarChar(40)
+  /// The row it produced, when it produced one. A BLOCK produces none.
+  contentId    String?           @db.Uuid
+  verdict      ModerationVerdict
+  score        Int
+  /// The rules that fired, as the analyser reported them.
+  findings     Json
+  excerpt      String            @db.VarChar(500)
+  outcome      ModerationOutcome @default(PENDING)
+  reviewedById String?           @db.Uuid
+  reviewedAt   DateTime?
+  createdAt    DateTime          @default(now())
+
+  user       User? @relation("ModerationSubject", fields: [userId], references: [id], onDelete: SetNull)
+  reviewedBy User? @relation("ModerationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  /// The queue: what is still waiting, oldest first.
+  @@index([outcome, createdAt])
+  @@index([userId])
+  @@map("moderation_events")
 }
 
 model Notification {
