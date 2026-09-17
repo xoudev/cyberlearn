@@ -3870,22 +3870,29 @@ a:hover > .lesson-author-card {
 
 /* Four short fields on one line where there is room for them: they are four
    parts of one answer about the same lesson, not four questions. */
-.tle-grid4 {
+.tle-grid4,
+.tle-grid3 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 14px;
   /* Without this the fields stretch to the tallest of them, and the one
-     carrying a hint pushes its own input off the line the other three sit on. */
+     carrying a hint pushes its own input off the line the others sit on. */
   align-items: start;
 }
 @media (min-width: 620px) {
-  .tle-grid4 {
+  .tle-grid4,
+  .tle-grid3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1000px) {
   .tle-grid4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  /* A path asks three questions where a lesson asks four; a fourth column here
+     would just be a hole at the end of the row. */
+  .tle-grid3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -3924,6 +3931,155 @@ a:hover > .lesson-author-card {
 .cls-btn--link {
   text-decoration: none;
   line-height: 1;
+}
+
+/* ─── Path builder ────────────────────────────────────────────────────────── */
+/* Two panels side by side: what the path is, and everything that could go in
+   it. Stacked on a narrow screen, with the path first - it is the thing being
+   built, the catalogue is only the supply. */
+
+.pb-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .pb-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.pb-panel {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 16px;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  background: rgba(10, 8, 38, 0.4);
+}
+.pb-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pb-chosen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  counter-reset: none;
+}
+.pb-chosen__row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(42, 37, 96, 0.55);
+  background: rgba(5, 4, 26, 0.5);
+}
+.pb-chosen__rank {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cosmetic-accent);
+}
+.pb-chosen__title,
+.pb-pool__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: #f5f5fa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pb-chosen__tools {
+  display: flex;
+  gap: 4px;
+}
+
+/* A lesson written for one of the teacher's own classes, so a path made of
+   mixed material says which parts of it are theirs. */
+.pb-tag {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  font: 700 8.5px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
+}
+
+.pb-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #6b6890;
+  background: transparent;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  cursor: pointer;
+}
+.pb-icon:hover:not(:disabled) {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 45%, transparent);
+}
+.pb-icon[data-tone="bad"]:hover:not(:disabled) {
+  color: #ff4d6d;
+  border-color: rgba(255, 77, 109, 0.5);
+}
+.pb-icon:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Capped and scrolling: a full catalogue is hundreds of rows, and a panel that
+   grows with it pushes the path being built off the screen. */
+.pb-pool {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.pb-pool__row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.pb-pool__row:hover {
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 4%, transparent);
+}
+.pb-pool__plus {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--cosmetic-accent);
+}
+.pb-pool__cat {
+  flex-shrink: 0;
+  font: 9.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: #6b6890;
 }
 
 /* ─── Class resources (corrigés) ──────────────────────────────────────────── */

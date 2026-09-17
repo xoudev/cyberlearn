@@ -1,5 +1,6 @@
 import { prisma } from "../prisma.js";
 import { CATALOGUE_LESSON } from "./lesson.repository.js";
+import { CATALOGUE_PATH } from "./path.repository.js";
 
 export interface LandingStats {
   /** Categories with at least one published lesson. */
@@ -51,7 +52,7 @@ export const statsRepository = {
         select: { category: true },
       }),
       prisma.lesson.count({ where: CATALOGUE_LESSON }),
-      prisma.path.count({ where: { status: "PUBLISHED" } }),
+      prisma.path.count({ where: CATALOGUE_PATH }),
     ]);
 
     return { domains: categories.length, publishedLessons, publishedPaths };

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma, pathRepository, quizRepository } from "@cyberlearn/db";
+import { pathRepository, pathsVisibleTo, prisma, quizRepository } from "@cyberlearn/db";
 import { EXAM_TIME_LIMIT_MINUTES, QUIZ_COOLDOWN_MINUTES, requireUser } from "@cyberlearn/lib";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { ExamFlow } from "./_components/exam-flow";
@@ -25,7 +25,7 @@ export default async function ExamPage({
   const authUser = await requireUser(supabase);
 
   const path = await prisma.path.findFirst({
-    where: { slug, status: "PUBLISHED" },
+    where: { slug, ...pathsVisibleTo(authUser.id) },
     select: { id: true, slug: true, title: true, refCode: true },
   });
   if (!path) notFound();

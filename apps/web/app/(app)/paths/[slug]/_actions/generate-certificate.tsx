@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma, quizRepository } from "@cyberlearn/db";
+import { CATALOGUE_PATH, prisma, quizRepository } from "@cyberlearn/db";
 import { issueCertificate } from "@/lib/certificates/issue";
 import { requireRequestUser } from "@/lib/auth";
 
@@ -24,7 +24,9 @@ export async function claimCertificateAction(
   const user = await requireRequestUser();
 
   const path = await prisma.path.findFirst({
-    where: { slug: pathSlug, status: "PUBLISHED" },
+    // Catalogue only: a certificate carries the platform's name, and a path
+    // one teacher assembled for one class is not something it vouches for.
+    where: { slug: pathSlug, ...CATALOGUE_PATH },
     select: { id: true },
   });
   if (!path) return { ok: false, error: "Parcours introuvable." };

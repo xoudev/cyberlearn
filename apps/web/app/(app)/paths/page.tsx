@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { prisma } from "@cyberlearn/db";
+import { pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { PathsCollection } from "./_components/paths-collection";
 import type { SerializedPath } from "./_components/paths-collection";
 import { requireRequestUser } from "@/lib/auth";
@@ -12,7 +12,10 @@ export default async function PathsPage(): Promise<React.ReactElement> {
 
   const [paths, userProgress] = await Promise.all([
     prisma.path.findMany({
-      where: { status: "PUBLISHED" },
+      // The catalogue, plus the paths built for this reader's own classes: a
+      // CLASS path is published, so status alone would hand every class's
+      // work to everyone.
+      where: pathsVisibleTo(authUser.id),
       include: {
         lessons: {
           orderBy: { position: "asc" },
