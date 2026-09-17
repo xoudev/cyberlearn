@@ -66,8 +66,8 @@ export default function AppError({
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               background: "transparent",
-              border: "1px solid #0AFFD4",
-              color: "#0AFFD4",
+              border: "1px solid var(--cosmetic-accent)",
+              color: "var(--cosmetic-accent)",
               cursor: "pointer",
             }}
           >

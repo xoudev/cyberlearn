@@ -538,7 +538,7 @@ export function BadgesCollection({
           gap: 8,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>$</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
         <span>~/</span>
         <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
         <span style={{ color: "#44406B" }}>/</span>
@@ -548,8 +548,8 @@ export function BadgesCollection({
             display: "inline-block",
             width: 7,
             height: 13,
-            background: "#0AFFD4",
-            boxShadow: "0 0 8px #0AFFD4",
+            background: "var(--cosmetic-accent)",
+            boxShadow: "0 0 8px var(--cosmetic-accent)",
             marginLeft: 4,
             verticalAlign: "-2px",
             animation: "blink 1s step-end infinite",
@@ -576,7 +576,7 @@ export function BadgesCollection({
             <em
               style={{
                 fontStyle: "normal",
-                background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -595,7 +595,8 @@ export function BadgesCollection({
                 marginLeft: 14,
               }}
             >
-              <b style={{ color: "#0AFFD4", fontWeight: 700 }}>{earnedCount}</b> / {totalCount}
+              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>{earnedCount}</b> /{" "}
+              {totalCount}
             </span>
           </h1>
           <p
@@ -670,8 +671,8 @@ export function BadgesCollection({
               style={{
                 height: "100%",
                 width: `${pct.toFixed(1)}%`,
-                background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
-                boxShadow: "0 0 10px rgba(10,255,212,0.5)",
+                background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
+                boxShadow: "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
                 position: "relative",
               }}
             >
@@ -682,8 +683,8 @@ export function BadgesCollection({
                   top: -3,
                   bottom: -3,
                   width: 2,
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 10px #0AFFD4",
+                  background: "var(--cosmetic-accent)",
+                  boxShadow: "0 0 10px var(--cosmetic-accent)",
                 }}
                 aria-hidden="true"
               />

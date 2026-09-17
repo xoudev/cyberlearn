@@ -21,9 +21,9 @@ const ACCENTS: readonly [Accent, Accent, Accent, Accent, Accent] = [
     grad: "linear-gradient(135deg, #5FE6FF, #4D8BFF)",
   },
   {
-    main: "#0AFFD4",
-    soft: "rgba(10,255,212,0.14)",
-    grad: "linear-gradient(135deg, #5FFFE6, #0AFFD4)",
+    main: "var(--cosmetic-accent)",
+    soft: "color-mix(in srgb, var(--cosmetic-accent) 14%, transparent)",
+    grad: "linear-gradient(135deg, #5FFFE6, var(--cosmetic-accent))",
   },
   {
     main: "#FFB547",
@@ -142,7 +142,7 @@ function CardShell({
         }}
       >
         <span>
-          <b style={{ color: "#0AFFD4", fontWeight: 600 }}>cyber</b>{" "}
+          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>cyber</b>{" "}
           <span style={{ color: "#B8B5D1" }}>learn</span>
         </span>
         <span>
@@ -429,7 +429,7 @@ function FinalCard({
         position: "relative",
         width: 300,
         background:
-          "radial-gradient(ellipse 100% 40% at 50% 0%, rgba(10,255,212,0.06), transparent 55%), rgba(5,4,26,0.9)",
+          "radial-gradient(ellipse 100% 40% at 50% 0%, color-mix(in srgb, var(--cosmetic-accent) 6%, transparent), transparent 55%), rgba(5,4,26,0.9)",
         border: "1px solid #2A2560",
         padding: 22,
       }}
@@ -445,7 +445,7 @@ function FinalCard({
         }}
       >
         <span>
-          <b style={{ color: "#0AFFD4", fontWeight: 600 }}>cyber</b> learn
+          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>cyber</b> learn
         </span>
         <span>{monthLabel(payload.periodKey, true).toUpperCase()}</span>
       </div>
@@ -463,7 +463,7 @@ function FinalCard({
         Mon{" "}
         <span
           style={{
-            background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
+            background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -488,8 +488,8 @@ function FinalCard({
           {top ? (
             <div
               style={{
-                border: "1px solid rgba(10,255,212,0.3)",
-                background: "rgba(10,255,212,0.06)",
+                border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)",
+                background: "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)",
                 padding: "12px 16px",
               }}
             >
@@ -550,7 +550,7 @@ function FinalCard({
           color: "#B8B5D1",
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>@</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>@</span>
         {handle}
         <div style={{ fontSize: 9, color: "#44406B", letterSpacing: "0.1em", marginTop: 3 }}>
           CYBERLEARN.FR/WRAPPED
@@ -594,7 +594,7 @@ function ExportPanel(): React.JSX.Element {
         textTransform: "uppercase",
         cursor: onClick ? "pointer" : "not-allowed",
         border: primary ? "0" : "1px solid #2A2560",
-        background: primary ? "#0AFFD4" : "rgba(5,4,26,0.5)",
+        background: primary ? "var(--cosmetic-accent)" : "rgba(5,4,26,0.5)",
         color: primary ? "#030219" : onClick ? "#B8B5D1" : "#44406B",
         fontWeight: primary ? 700 : 500,
       }}
@@ -658,7 +658,7 @@ export function WrappedClient({ payload, handle }: Props): React.JSX.Element {
           marginBottom: 14,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>{"//"}</span> Cyber Learn · Récap
+        <span style={{ color: "var(--cosmetic-accent)" }}>{"//"}</span> Cyber Learn · Récap
       </div>
       <h1
         style={{
@@ -674,7 +674,7 @@ export function WrappedClient({ payload, handle }: Props): React.JSX.Element {
         Ton{" "}
         <span
           style={{
-            background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
+            background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -698,7 +698,13 @@ export function WrappedClient({ payload, handle }: Props): React.JSX.Element {
         }}
       >
         Séquence{" "}
-        <span style={{ color: "#0AFFD4", border: "1px solid #2A2560", padding: "3px 8px" }}>
+        <span
+          style={{
+            color: "var(--cosmetic-accent)",
+            border: "1px solid #2A2560",
+            padding: "3px 8px",
+          }}
+        >
           ← swipe →
         </span>{" "}
         · {String(cards.length)} cartes · une couleur par stat

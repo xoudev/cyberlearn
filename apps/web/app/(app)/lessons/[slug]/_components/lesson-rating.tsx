@@ -223,14 +223,14 @@ export function LessonRating({
                 gap: 6,
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#0AFFD4",
+                color: "var(--cosmetic-accent)",
                 letterSpacing: "0.08em",
               }}
             >
               <svg viewBox="0 0 12 12" width={8} height={8} fill="none">
                 <path
                   d="M2 6 L5 9 L10 3"
-                  stroke="#0AFFD4"
+                  stroke="var(--cosmetic-accent)"
                   strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -291,7 +291,12 @@ export function LessonRating({
             }}
           >
             <span
-              style={{ width: 16, height: 1, background: "#0AFFD4", display: "inline-block" }}
+              style={{
+                width: 16,
+                height: 1,
+                background: "var(--cosmetic-accent)",
+                display: "inline-block",
+              }}
             />
             Évaluation
           </div>

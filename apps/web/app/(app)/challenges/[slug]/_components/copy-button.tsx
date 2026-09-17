@@ -27,8 +27,8 @@ export function CopyButton({ text }: Props): React.ReactElement {
       style={{
         padding: "4px 10px",
         background: "transparent",
-        border: `1px solid ${copied ? "rgba(10,255,212,0.4)" : "rgba(10,255,212,0.2)"}`,
-        color: copied ? "#0AFFD4" : "#6B6890",
+        border: `1px solid ${copied ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)"}`,
+        color: copied ? "var(--cosmetic-accent)" : "#6B6890",
         fontFamily: "var(--font-mono)",
         fontWeight: 700,
         fontSize: 9,

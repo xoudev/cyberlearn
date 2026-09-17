@@ -135,10 +135,12 @@ export function PrivacyForm({
                 style={{
                   position: "relative",
                   textAlign: "left",
-                  background: selected ? "rgba(10,255,212,0.06)" : S.base,
-                  border: `1px solid ${selected ? S.turq : o.recommended ? "rgba(10,255,212,0.3)" : S.border}`,
+                  background: selected
+                    ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
+                    : S.base,
+                  border: `1px solid ${selected ? S.turq : o.recommended ? "color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)" : S.border}`,
                   boxShadow: selected
-                    ? "0 0 0 1px rgba(10,255,212,0.3), 0 0 24px rgba(10,255,212,0.18)"
+                    ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 24px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
                     : "none",
                   padding: "18px 16px 16px",
                   cursor: "pointer",

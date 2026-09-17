@@ -51,7 +51,14 @@ export function LessonQA({
             marginBottom: 6,
           }}
         >
-          <span style={{ width: 16, height: 1, background: "#0AFFD4", display: "inline-block" }} />
+          <span
+            style={{
+              width: 16,
+              height: 1,
+              background: "var(--cosmetic-accent)",
+              display: "inline-block",
+            }}
+          />
           Questions & Réponses
         </div>
         <h3
@@ -138,9 +145,9 @@ function QuestionCard({
     <div
       style={{
         background: question.isResolved
-          ? "linear-gradient(135deg, rgba(10,255,212,0.04), transparent 50%), rgba(5,4,26,0.5)"
+          ? "linear-gradient(135deg, color-mix(in srgb, var(--cosmetic-accent) 4%, transparent), transparent 50%), rgba(5,4,26,0.5)"
           : "rgba(5,4,26,0.5)",
-        border: `1px solid ${question.isResolved ? "rgba(10,255,212,0.2)" : "#1F1B47"}`,
+        border: `1px solid ${question.isResolved ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "#1F1B47"}`,
         overflow: "hidden",
       }}
     >
@@ -180,9 +187,9 @@ function QuestionCard({
                 fontSize: 9.5,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#0AFFD4",
-                background: "rgba(10,255,212,0.1)",
-                border: "1px solid rgba(10,255,212,0.25)",
+                color: "var(--cosmetic-accent)",
+                background: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
                 padding: "3px 8px",
                 flexShrink: 0,
               }}
@@ -273,7 +280,9 @@ function AnswerRow({
       style={{
         padding: "16px 22px 16px 38px",
         borderBottom: !isLast ? "1px solid #1A1640" : "none",
-        background: answer.isAccepted ? "rgba(10,255,212,0.03)" : "transparent",
+        background: answer.isAccepted
+          ? "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)"
+          : "transparent",
         position: "relative",
       }}
     >
@@ -286,8 +295,8 @@ function AnswerRow({
             top: 0,
             bottom: 0,
             width: 3,
-            background: "#0AFFD4",
-            boxShadow: "2px 0 8px rgba(10,255,212,0.3)",
+            background: "var(--cosmetic-accent)",
+            boxShadow: "2px 0 8px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)",
           }}
         />
       )}
@@ -348,7 +357,7 @@ function UserPill({
           width: 16,
           height: 16,
           background: user
-            ? "linear-gradient(135deg, #0024FF, #0AFFD4)"
+            ? "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))"
             : "linear-gradient(135deg, #3F3D5C, #2A2560)",
           clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
           display: "inline-flex",
@@ -363,7 +372,9 @@ function UserPill({
         {name.charAt(0).toUpperCase()}
       </span>
       <span style={{ color: user ? "#F5F5FA" : "#6B6890", fontWeight: 600 }}>{name}</span>
-      {user && <span style={{ color: "#0AFFD4", fontSize: 9 }}>LVL·{user.level}</span>}
+      {user && (
+        <span style={{ color: "var(--cosmetic-accent)", fontSize: 9 }}>LVL·{user.level}</span>
+      )}
     </span>
   );
 }

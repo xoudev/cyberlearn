@@ -41,7 +41,7 @@ export default function LessonDetailLoading(): React.ReactElement {
               justifyContent: "space-between",
               padding: "12px 18px",
               borderBottom: "1px solid #2A2560",
-              background: "rgba(10,255,212,0.04)",
+              background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
             }}
           >
             <Skeleton style={{ height: 10, width: 120 }} />
@@ -116,7 +116,7 @@ export default function LessonDetailLoading(): React.ReactElement {
             style={{
               background: "#0A0826",
               border: "1px solid #1F1B47",
-              borderLeft: "3px solid #0AFFD4",
+              borderLeft: "3px solid var(--cosmetic-accent)",
               borderRadius: 8,
             }}
           >

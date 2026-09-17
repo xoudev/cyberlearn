@@ -180,9 +180,9 @@ export function CodePlayground({
         "editor.foreground": "#E0DDFF",
         "editor.lineHighlightBackground": "#1A1838",
         "editorLineNumber.foreground": "#3F3D5C",
-        "editorLineNumber.activeForeground": "#0AFFD4",
+        "editorLineNumber.activeForeground": "var(--cosmetic-accent)",
         "editor.selectionBackground": "#2A2560",
-        "editorCursor.foreground": "#0AFFD4",
+        "editorCursor.foreground": "var(--cosmetic-accent)",
         "editor.inactiveSelectionBackground": "#1F1B47",
         "editorIndentGuide.background1": "#1F1B47",
         "editorWhitespace.foreground": "#2A2560",
@@ -214,7 +214,12 @@ export function CodePlayground({
 
   const LANG_META: Record<Language, { label: string; badge: string; ext: string; color: string }> =
     {
-      python: { label: "Python Sandbox", badge: "Pyodide · WASM", ext: "py", color: "#0AFFD4" },
+      python: {
+        label: "Python Sandbox",
+        badge: "Pyodide · WASM",
+        ext: "py",
+        color: "var(--cosmetic-accent)",
+      },
       javascript: {
         label: "JavaScript Sandbox",
         badge: "Web Worker · ES6",
@@ -246,9 +251,9 @@ export function CodePlayground({
     error: "ERREUR RUNTIME",
   };
   const STATUS_COLOR: Record<typeof runStatus, string> = {
-    ready: "#0AFFD4",
+    ready: "var(--cosmetic-accent)",
     loading: "#FFB020",
-    success: "#0AFFD4",
+    success: "var(--cosmetic-accent)",
     error: "#FF4757",
   };
   const statusColor = STATUS_COLOR[runStatus];
@@ -478,7 +483,7 @@ export function CodePlayground({
                   fontSize: 9,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#0AFFD4",
+                  color: "var(--cosmetic-accent)",
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
@@ -487,7 +492,7 @@ export function CodePlayground({
                 <svg viewBox="0 0 12 12" width={8} height={8} fill="none">
                   <path
                     d="M2 6 L5 9 L10 3"
-                    stroke="#0AFFD4"
+                    stroke="var(--cosmetic-accent)"
                     strokeWidth={2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -537,7 +542,9 @@ export function CodePlayground({
               .split("\n")
               .map((line, i) => (
                 <div key={i} style={{ display: "flex", gap: 8 }}>
-                  <span style={{ color: "#0AFFD4", flexShrink: 0, userSelect: "none" }}>
+                  <span
+                    style={{ color: "var(--cosmetic-accent)", flexShrink: 0, userSelect: "none" }}
+                  >
                     &gt;&gt;&gt;
                   </span>
                   <span style={{ color: "#E0DDFF" }}>{line}</span>
@@ -555,7 +562,7 @@ export function CodePlayground({
               ))}
           {!result.output.trim() && !result.error && (
             <div style={{ display: "flex", gap: 8 }}>
-              <span style={{ color: "#0AFFD4", flexShrink: 0, userSelect: "none" }}>
+              <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0, userSelect: "none" }}>
                 &gt;&gt;&gt;
               </span>
               <span style={{ color: "#3F3D5C", fontStyle: "italic" }}>(aucune sortie)</span>

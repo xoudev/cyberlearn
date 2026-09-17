@@ -280,7 +280,7 @@ function StepperTimeline({
           top: 0,
           height: 1,
           background:
-            "linear-gradient(90deg, transparent, rgba(10,255,212,0.5) 30%, rgba(0,36,255,0.5) 70%, transparent)",
+            "linear-gradient(90deg, transparent, color-mix(in srgb, var(--cosmetic-accent) 50%, transparent) 30%, rgba(0,36,255,0.5) 70%, transparent)",
           opacity: 0.5,
         }}
       />
@@ -353,7 +353,11 @@ function StepperTimeline({
                   maxWidth: 120,
                 }}
               >
-                <b style={{ color: isDone ? "#0AFFD4" : isCurrent ? "#F5F5FA" : "#3F3D5C" }}>
+                <b
+                  style={{
+                    color: isDone ? "var(--cosmetic-accent)" : isCurrent ? "#F5F5FA" : "#3F3D5C",
+                  }}
+                >
                   {String(i + 1).padStart(2, "0")} · {section.text}
                 </b>
               </div>
@@ -365,10 +369,11 @@ function StepperTimeline({
                     display: "inline-block",
                     width: 14,
                     height: 14,
-                    background: "#0AFFD4",
-                    border: "1.5px solid #0AFFD4",
+                    background: "var(--cosmetic-accent)",
+                    border: "1.5px solid var(--cosmetic-accent)",
                     transform: "rotate(45deg)",
-                    boxShadow: "0 0 8px rgba(10,255,212,0.6)",
+                    boxShadow:
+                      "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
                     flexShrink: 0,
                   }}
                 />
@@ -380,7 +385,7 @@ function StepperTimeline({
                     width: 18,
                     height: 18,
                     background: "#030219",
-                    border: "2px solid #0AFFD4",
+                    border: "2px solid var(--cosmetic-accent)",
                     transform: "rotate(45deg)",
                     flexShrink: 0,
                   }}
@@ -405,7 +410,7 @@ function StepperTimeline({
                   marginTop: 10,
                   fontFamily: "var(--font-mono, monospace)",
                   fontSize: 10,
-                  color: isDone ? "#0AFFD4" : isCurrent ? "#F5F5FA" : "#3F3D5C",
+                  color: isDone ? "var(--cosmetic-accent)" : isCurrent ? "#F5F5FA" : "#3F3D5C",
                   letterSpacing: "0.08em",
                 }}
               >
@@ -459,7 +464,7 @@ function StepperRail({
           }}
         >
           <span>Dans cette leçon</span>
-          <b style={{ color: "#0AFFD4", fontWeight: 700 }}>
+          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
             {completedCount}/{sections.length}
           </b>
         </div>
@@ -487,13 +492,15 @@ function StepperRail({
                   padding: "10px 12px 10px 14px",
                   marginLeft: -2,
                   background: isCurrent
-                    ? "linear-gradient(90deg, rgba(10,255,212,0.08), transparent 80%)"
+                    ? "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 8%, transparent), transparent 80%)"
                     : "transparent",
-                  boxShadow: isCurrent ? "-2px 0 12px rgba(10,255,212,0.25)" : "none",
+                  boxShadow: isCurrent
+                    ? "-2px 0 12px color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)"
+                    : "none",
                   color: isCurrent ? "#F5F5FA" : isDone ? "#B8B5D1" : "#44406B",
                   cursor: isClickable ? "pointer" : "default",
                   border: "none",
-                  borderLeft: `2px solid ${isCurrent ? "#0AFFD4" : "transparent"}`,
+                  borderLeft: `2px solid ${isCurrent ? "var(--cosmetic-accent)" : "transparent"}`,
                   textAlign: "left",
                   width: "100%",
                   fontFamily: "var(--font-body, sans-serif)",
@@ -505,7 +512,7 @@ function StepperRail({
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
-                    color: isDone || isCurrent ? "#0AFFD4" : "#3F3D5C",
+                    color: isDone || isCurrent ? "var(--cosmetic-accent)" : "#3F3D5C",
                     letterSpacing: "0.1em",
                   }}
                 >
@@ -516,7 +523,7 @@ function StepperRail({
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
-                    color: isDone || isCurrent ? "#0AFFD4" : "#3F3D5C",
+                    color: isDone || isCurrent ? "var(--cosmetic-accent)" : "#3F3D5C",
                     letterSpacing: "0.06em",
                   }}
                 >
@@ -632,7 +639,8 @@ function SectionNavBar({
           onMouseEnter={(e) => {
             if (currentStep > 0) {
               e.currentTarget.style.color = "#F5F5FA";
-              e.currentTarget.style.background = "rgba(10,255,212,0.03)";
+              e.currentTarget.style.background =
+                "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)";
             }
           }}
           onMouseLeave={(e) => {
@@ -674,7 +682,7 @@ function SectionNavBar({
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: "0.06em",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               marginTop: 4,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -769,8 +777,8 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
         alignItems: "center",
         gap: 16,
         padding: 20,
-        background: "rgba(10,255,212,0.05)",
-        border: "1px solid rgba(10,255,212,0.25)",
+        background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
       }}
     >
       <div
@@ -779,8 +787,8 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           height: 40,
           display: "grid",
           placeItems: "center",
-          background: "#0AFFD4",
-          boxShadow: "0 0 20px rgba(10,255,212,0.35)",
+          background: "var(--cosmetic-accent)",
+          boxShadow: "0 0 20px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
           flexShrink: 0,
         }}
       >
@@ -802,7 +810,7 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontWeight: 700,
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             margin: 0,
             marginBottom: 2,
           }}

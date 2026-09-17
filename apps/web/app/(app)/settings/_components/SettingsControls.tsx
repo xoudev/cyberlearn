@@ -27,13 +27,15 @@ export function Switch({
         width: 44,
         height: 24,
         flexShrink: 0,
-        background: on ? "rgba(10,255,212,0.12)" : S.base,
+        background: on ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)" : S.base,
         border: `1px solid ${on ? S.turq : S.border}`,
         position: "relative",
         cursor: disabled ? "not-allowed" : "pointer",
         padding: 0,
         opacity: disabled ? 0.45 : 1,
-        boxShadow: on ? "0 0 14px rgba(10,255,212,0.2)" : "none",
+        boxShadow: on
+          ? "0 0 14px color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)"
+          : "none",
         transition: `all 200ms ${EASE}`,
       }}
     >
@@ -46,7 +48,7 @@ export function Switch({
           width: 18,
           height: 18,
           background: on ? S.turq : S.muted,
-          boxShadow: on ? "0 0 10px #0AFFD4" : "none",
+          boxShadow: on ? "0 0 10px var(--cosmetic-accent)" : "none",
           transition: `all 200ms ${EASE}`,
         }}
       />

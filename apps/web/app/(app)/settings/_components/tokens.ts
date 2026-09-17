@@ -12,7 +12,7 @@ export const S = {
   muted: "#6B6890",
   blue: "#0024FF",
   blueHover: "#1F3BFF",
-  turq: "#0AFFD4",
+  turq: "var(--cosmetic-accent)",
   warning: "#FFB020",
   danger: "#FF4D6D",
   info: "#4D8BFF",

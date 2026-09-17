@@ -601,16 +601,16 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
         theme: {
           background: termBg,
           foreground: termFg,
-          cursor: isPs ? "#FFFF54" : "#0AFFD4",
+          cursor: isPs ? "#FFFF54" : "var(--cosmetic-accent)",
           cursorAccent: termBg,
           black: termBg,
-          green: "#0AFFD4",
+          green: "var(--cosmetic-accent)",
           cyan: "#4D8BFF",
           red: "#FF4757",
           yellow: "#FFB020",
           white: "#F5F5FA",
           brightBlack: "#3F3D5C",
-          brightGreen: "#0AFFD4",
+          brightGreen: "var(--cosmetic-accent)",
           brightCyan: "#4D8BFF",
           brightWhite: "#F5F5FA",
           brightRed: "#FF4757",
@@ -782,7 +782,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const accentColor = isPs ? "#4D8BFF" : "#0AFFD4";
+  const accentColor = isPs ? "#4D8BFF" : "var(--cosmetic-accent)";
   const badgeLabel = isPs ? "PowerShell · Win32" : "bash · GNU/Linux";
 
   return (
@@ -808,7 +808,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
       >
         {/* Traffic-light dots */}
         <div style={{ display: "inline-flex", gap: 7, flexShrink: 0 }}>
-          {(["#FF4757", "#FFB020", "#0AFFD4"] as const).map((c, i) => (
+          {(["#FF4757", "#FFB020", "var(--cosmetic-accent)"] as const).map((c, i) => (
             <span key={i} style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />
           ))}
         </div>
@@ -835,7 +835,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: completedCount === totalExpected ? "#0AFFD4" : "#44406B",
+              color: completedCount === totalExpected ? "var(--cosmetic-accent)" : "#44406B",
               flexShrink: 0,
             }}
           >
@@ -885,7 +885,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
             style={{
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 10,
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               fontWeight: 600,
@@ -916,7 +916,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
                   lineHeight: 1.55,
                 }}
               >
-                <span style={{ color: "#0AFFD4", flexShrink: 0 }}>
+                <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span>{hint}</span>

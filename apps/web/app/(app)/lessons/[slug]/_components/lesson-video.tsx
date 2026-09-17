@@ -61,14 +61,14 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
             padding: "6px 14px",
             background: "rgba(5,4,26,0.85)",
             border: "1px solid #2A2560",
-            borderLeft: "3px solid #0AFFD4",
+            borderLeft: "3px solid var(--cosmetic-accent)",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: "11px",
             color: "#B8B5D1",
             letterSpacing: "0.03em",
           }}
         >
-          <span style={{ color: "#0AFFD4", fontSize: "9px" }}>▶</span>
+          <span style={{ color: "var(--cosmetic-accent)", fontSize: "9px" }}>▶</span>
           {title}
         </div>
       )}

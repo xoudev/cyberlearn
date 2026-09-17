@@ -70,13 +70,13 @@ export function SettingsCard({
   const cornerColor = variant === "danger" ? S.danger : S.turq;
   const background =
     variant === "key"
-      ? `linear-gradient(180deg, rgba(10,255,212,0.05), transparent 30%), ${S.elev}`
+      ? `linear-gradient(180deg, color-mix(in srgb, var(--cosmetic-accent) 5%, transparent), transparent 30%), ${S.elev}`
       : variant === "danger"
         ? `linear-gradient(180deg, rgba(255,77,109,0.05), transparent 30%), ${S.elev}`
         : S.elev;
   const borderColor =
     variant === "key"
-      ? "rgba(10,255,212,0.28)"
+      ? "color-mix(in srgb, var(--cosmetic-accent) 28%, transparent)"
       : variant === "danger"
         ? "rgba(255,77,109,0.4)"
         : S.border;

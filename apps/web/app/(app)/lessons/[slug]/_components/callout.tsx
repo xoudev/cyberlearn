@@ -14,10 +14,10 @@ const VARIANTS: Record<
     icon: "ℹ",
   },
   tip: {
-    border: "#0AFFD4",
-    bg: "rgba(10,255,212,0.05)",
-    iconBg: "rgba(10,255,212,0.10)",
-    iconColor: "#0AFFD4",
+    border: "var(--cosmetic-accent)",
+    bg: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
+    iconBg: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
+    iconColor: "var(--cosmetic-accent)",
     icon: "✦",
   },
   warning: {

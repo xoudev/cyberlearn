@@ -64,7 +64,7 @@ export function ExportDataButton(): React.JSX.Element {
         transition: "color 150ms ease",
       }}
     >
-      <span style={{ color: loading ? "#44406B" : "#0AFFD4" }}>&#9656;</span>
+      <span style={{ color: loading ? "#44406B" : "var(--cosmetic-accent)" }}>&#9656;</span>
       {loading ? "Chargement…" : "Télécharger l'export"}
     </button>
   );

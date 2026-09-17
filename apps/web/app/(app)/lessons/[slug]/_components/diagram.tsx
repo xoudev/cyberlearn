@@ -32,9 +32,9 @@ const MERMAID_THEME = {
     actorBorder: "#2A2560",
     actorBkg: "#1F1B47",
     actorTextColor: "#F5F5FA",
-    activationBorderColor: "#0AFFD4",
-    activationBkgColor: "rgba(10,255,212,0.08)",
-    sequenceNumberColor: "#0AFFD4",
+    activationBorderColor: "var(--cosmetic-accent)",
+    activationBkgColor: "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)",
+    sequenceNumberColor: "var(--cosmetic-accent)",
     signalColor: "#6B6890",
     signalTextColor: "#B8B5D1",
   },
@@ -162,7 +162,7 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
         margin: "32px 0",
         background: "#0A0826",
         border: "1px solid #1F1B47",
-        borderLeft: "3px solid #0AFFD4",
+        borderLeft: "3px solid var(--cosmetic-accent)",
         padding: "24px",
         // min-width:0 lets the figure shrink below the diagram's intrinsic
         // width inside its flex/grid parent; width:100% keeps it filling the

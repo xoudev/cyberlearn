@@ -8,10 +8,10 @@
 .exam-root {
   /* design tokens (values from the mockup's colors_and_type.css) */
   --brand-blue: #0024ff;
-  --brand-turquoise: #0affd4;
+  --brand-turquoise: var(--cosmetic-accent);
   --brand-turquoise-hover: #3dffdd;
-  --brand-gradient: linear-gradient(135deg, #0024ff 0%, #0affd4 100%);
-  --teal: #0affd4;
+  --brand-gradient: linear-gradient(135deg, #0024ff 0%, var(--cosmetic-accent) 100%);
+  --teal: var(--cosmetic-accent);
   --red: #ff4d6d;
   --bg-base: #030219;
   --bg-card: #0a0826;
@@ -90,7 +90,11 @@
   right: -120px;
   width: 700px;
   height: 560px;
-  background: radial-gradient(ellipse at center, rgba(10, 255, 212, 0.12), transparent 66%);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--cosmetic-accent) 12%, transparent),
+    transparent 66%
+  );
 }
 
 .exam-root .exam-frame {
@@ -116,7 +120,7 @@
     var(--brand-blue) 70%,
     transparent
   );
-  box-shadow: 0 0 16px rgba(10, 255, 212, 0.4);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
   opacity: 0.85;
 }
 .exam-root .bk {
@@ -237,7 +241,7 @@
   width: 26px;
   height: 1.5px;
   background: var(--teal);
-  box-shadow: 0 0 8px rgba(10, 255, 212, 0.6);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .exam-root .exam-title {
   font-family: var(--font-display);
@@ -251,7 +255,7 @@
 }
 .exam-root .exam-title em {
   font-style: normal;
-  background: linear-gradient(135deg, #6ea8ff 0%, #0affd4 100%);
+  background: linear-gradient(135deg, #6ea8ff 0%, var(--cosmetic-accent) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -319,7 +323,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(10, 255, 212, 0.1);
+  background: color-mix(in srgb, var(--cosmetic-accent) 10%, transparent);
   clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
 }
 .exam-root .exam-stat__hex::after {
@@ -382,12 +386,13 @@
   color: var(--fg-inverse);
   background: var(--teal);
   border: 1px solid var(--teal);
-  box-shadow: 0 0 32px -6px rgba(10, 255, 212, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 32px -6px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent), inset 0 0 0
+    1px rgba(255, 255, 255, 0.12);
   transition: background var(--dur-base), box-shadow var(--dur-base), transform var(--dur-fast);
 }
 .exam-root .exam-start:hover:not(:disabled) {
   background: var(--brand-turquoise-hover);
-  box-shadow: 0 0 44px -4px rgba(10, 255, 212, 0.75);
+  box-shadow: 0 0 44px -4px color-mix(in srgb, var(--cosmetic-accent) 75%, transparent);
 }
 .exam-root .exam-start:active:not(:disabled) {
   transform: translateY(1px);
@@ -488,7 +493,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--ri-bg, rgba(10, 255, 212, 0.09));
+  background: var(--ri-bg, color-mix(in srgb, var(--cosmetic-accent) 9%, transparent));
   clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
 }
 .exam-root .rule__ico::after {
@@ -595,7 +600,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(10, 255, 212, 0.12);
+  background: color-mix(in srgb, var(--cosmetic-accent) 12%, transparent);
   clip-path: polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%);
 }
 .exam-root .q-exam__mark::after {
@@ -661,7 +666,7 @@
 .exam-root .q-progress__fill {
   height: 100%;
   background: linear-gradient(90deg, var(--brand-blue), var(--teal));
-  box-shadow: 0 0 10px rgba(10, 255, 212, 0.5);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
   transition: width var(--dur-slow) var(--ease-out);
 }
 .exam-root .q-timer {
@@ -733,7 +738,7 @@
   width: 22px;
   height: 1.5px;
   background: var(--teal);
-  box-shadow: 0 0 8px rgba(10, 255, 212, 0.6);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .exam-root .q-eyebrow .pts {
   color: var(--fg-tertiary);
@@ -825,14 +830,15 @@
 }
 .exam-root .q-opt.is-selected {
   border-color: var(--teal);
-  background: rgba(10, 255, 212, 0.06);
-  box-shadow: 0 0 0 1px rgba(10, 255, 212, 0.3), 0 0 26px -10px rgba(10, 255, 212, 0.6);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 26px -10px
+    color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .exam-root .q-opt.is-selected .q-opt__key::before {
   background: var(--teal);
 }
 .exam-root .q-opt.is-selected .q-opt__key::after {
-  background: rgba(10, 255, 212, 0.12);
+  background: color-mix(in srgb, var(--cosmetic-accent) 12%, transparent);
 }
 .exam-root .q-opt.is-selected .q-opt__key span {
   color: var(--teal);
@@ -900,11 +906,11 @@
   color: var(--fg-inverse);
   border: 1px solid var(--teal);
   justify-self: end;
-  box-shadow: 0 0 26px -6px rgba(10, 255, 212, 0.6);
+  box-shadow: 0 0 26px -6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .exam-root .q-btn--finish:hover:not(:disabled) {
   background: var(--brand-turquoise-hover);
-  box-shadow: 0 0 36px -4px rgba(10, 255, 212, 0.8);
+  box-shadow: 0 0 36px -4px color-mix(in srgb, var(--cosmetic-accent) 80%, transparent);
 }
 .exam-root .q-btn:disabled {
   opacity: 0.5;
@@ -957,17 +963,17 @@
   transition: color var(--dur-base);
 }
 .exam-root .q-dot.is-answered::before {
-  background: rgba(10, 255, 212, 0.5);
+  background: color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
 }
 .exam-root .q-dot.is-answered::after {
-  background: rgba(10, 255, 212, 0.1);
+  background: color-mix(in srgb, var(--cosmetic-accent) 10%, transparent);
 }
 .exam-root .q-dot.is-answered span {
   color: var(--teal);
 }
 .exam-root .q-dot.is-current::before {
   background: var(--teal);
-  box-shadow: 0 0 12px rgba(10, 255, 212, 0.6);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .exam-root .q-dot.is-current::after {
   background: var(--teal);
@@ -1237,11 +1243,11 @@
   background: var(--teal);
   color: var(--fg-inverse);
   border: 1px solid var(--teal);
-  box-shadow: 0 0 30px -6px rgba(10, 255, 212, 0.6);
+  box-shadow: 0 0 30px -6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .exam-root .r-btn--cert:hover {
   background: var(--brand-turquoise-hover);
-  box-shadow: 0 0 42px -4px rgba(10, 255, 212, 0.85);
+  box-shadow: 0 0 42px -4px color-mix(in srgb, var(--cosmetic-accent) 85%, transparent);
 }
 .exam-root .r-btn--ghost {
   background: transparent;
@@ -1287,8 +1293,12 @@
   gap: 14px;
   padding: 16px 22px;
   margin-bottom: 18px;
-  background: linear-gradient(135deg, rgba(10, 255, 212, 0.1), transparent 60%);
-  border: 1px solid rgba(10, 255, 212, 0.3);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--cosmetic-accent) 10%, transparent),
+    transparent 60%
+  );
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 30%, transparent);
   box-shadow: inset 3px 0 0 var(--teal);
 }
 .exam-root .r-congrats__ico {
@@ -1477,8 +1487,8 @@
   padding: 2px 8px;
 }
 .exam-root .r-ans--correct {
-  border-color: rgba(10, 255, 212, 0.45);
-  background: rgba(10, 255, 212, 0.06);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
   color: var(--fg-primary);
 }
 .exam-root .r-ans--correct .r-ans__key {
@@ -1486,7 +1496,7 @@
 }
 .exam-root .r-ans--correct .r-ans__tag {
   color: var(--teal);
-  border: 1px solid rgba(10, 255, 212, 0.4);
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
 }
 .exam-root .r-ans--chosen-wrong {
   border-color: rgba(255, 77, 109, 0.45);

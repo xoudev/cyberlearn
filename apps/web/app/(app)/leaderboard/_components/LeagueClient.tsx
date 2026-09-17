@@ -17,8 +17,8 @@ const DIVISION_VAR: Record<LeagueDivisionCode, string> = {
 
 const PROMOTE = "var(--color-promote)";
 const RELEGATE = "var(--color-relegate)";
-const CYAN = "#0AFFD4";
-const CYAN_GRAD = "linear-gradient(135deg, #0AFFD4, #0024FF)";
+const CYAN = "var(--cosmetic-accent)";
+const CYAN_GRAD = "linear-gradient(135deg, var(--cosmetic-accent), #0024FF)";
 const NEUTRAL_GRAD = "linear-gradient(135deg, #3a3668, #211d4d)";
 const ROW_COLS = "80px minmax(0,1fr) 160px 130px 120px";
 
@@ -124,7 +124,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
   const accent = isMe ? CYAN : entry.promotion ? PROMOTE : entry.relegation ? RELEGATE : null;
 
   const background = isMe
-    ? "linear-gradient(90deg, rgba(10,255,212,0.10) 0%, rgba(10,255,212,0.02) 60%, transparent 100%)"
+    ? "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 10%, transparent) 0%, color-mix(in srgb, var(--cosmetic-accent) 2%, transparent) 60%, transparent 100%)"
     : entry.promotion
       ? "linear-gradient(90deg, color-mix(in srgb, var(--color-promote) 9%, transparent), transparent 70%)"
       : entry.relegation
@@ -252,8 +252,8 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
             fontSize: 9,
             letterSpacing: "0.22em",
             color: CYAN,
-            background: "rgba(10,255,212,0.12)",
-            border: "1px solid rgba(10,255,212,0.4)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
             padding: "3px 8px",
           }}
         >
@@ -403,7 +403,7 @@ function LeagueBoard({
           padding: "24px 32px",
           marginBottom: 48,
           background:
-            "linear-gradient(90deg, rgba(10,255,212,0.07) 0%, transparent 50%), rgba(5,4,26,0.6)",
+            "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 7%, transparent) 0%, transparent 50%), rgba(5,4,26,0.6)",
           border: "1px solid #2A2560",
           borderLeft: `3px solid ${CYAN}`,
           overflow: "hidden",
@@ -444,7 +444,7 @@ function LeagueBoard({
           <span style={{ color: "#6B6890", fontSize: 28, fontWeight: 600 }}>#</span>
           <span
             style={{
-              background: "linear-gradient(180deg, #F5F5FA, #0AFFD4)",
+              background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",
@@ -476,7 +476,7 @@ function LeagueBoard({
               fontWeight: 800,
               fontSize: 28,
               letterSpacing: "-0.02em",
-              background: "linear-gradient(180deg, #F5F5FA, #0AFFD4)",
+              background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",

@@ -460,7 +460,7 @@ const READER_CSS = `
 .note-md li::marker { color: var(--cosmetic-accent); }
 .note-md a { color: var(--cosmetic-accent); text-decoration: underline; text-underline-offset: 2px; }
 .note-md code {
-  font-family: var(--font-mono); font-size: 0.88em; background: rgba(10,255,212,0.08);
+  font-family: var(--font-mono); font-size: 0.88em; background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
   border: 1px solid #2A2560; border-radius: 3px; padding: 1px 5px; color: #B8FBEB;
 }
 .note-md pre {
@@ -473,7 +473,7 @@ const READER_CSS = `
 }
 .note-md blockquote {
   margin: 0 0 12px; padding: 4px 14px; border-left: 3px solid var(--cosmetic-accent);
-  color: #B8B5D1; background: rgba(10,255,212,0.04);
+  color: #B8B5D1; background: color-mix(in srgb, var(--cosmetic-accent) 4%, transparent);
 }
 .note-md hr { border: none; border-top: 1px solid #2A2560; margin: 18px 0; }
 `;

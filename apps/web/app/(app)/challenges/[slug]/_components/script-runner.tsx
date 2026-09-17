@@ -142,7 +142,7 @@ const BUILTINS = new Set([
 const TOKEN_STYLE: Record<TokenType, React.CSSProperties> = {
   keyword: { color: "#4D8BFF", fontWeight: 600 },
   builtin: { color: "#B14DFF" },
-  string: { color: "#0AFFD4" },
+  string: { color: "var(--cosmetic-accent)" },
   comment: { color: "#6B6890", fontStyle: "italic" },
   number: { color: "#FFB020" },
   decorator: { color: "#FF4D6D" },
@@ -357,7 +357,7 @@ export function ScriptRunner({
   const attemptsExhausted = attemptsLeft === 0 && userAttempts >= maxAttempts;
 
   // Status dot color
-  const dotColor = isLoading ? "#FFB020" : isRunning ? "#4D8BFF" : "#0AFFD4";
+  const dotColor = isLoading ? "#FFB020" : isRunning ? "#4D8BFF" : "var(--cosmetic-accent)";
 
   const highlighted = useMemo(() => tokenizePython(code), [code]);
 
@@ -415,13 +415,13 @@ export function ScriptRunner({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 9,
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             letterSpacing: "0.18em",
             textTransform: "uppercase",
             fontWeight: 700,
             padding: "4px 8px",
-            border: "1px solid rgba(10,255,212,0.35)",
-            background: "rgba(10,255,212,0.05)",
+            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
           }}
         >
           Pyodide · WASM
@@ -640,10 +640,15 @@ export function ScriptRunner({
             style={{
               display: "flex",
               gap: 8,
-              color: line.kind === "good" ? "#0AFFD4" : line.kind === "err" ? "#FF4D6D" : "#B8B5D1",
+              color:
+                line.kind === "good"
+                  ? "var(--cosmetic-accent)"
+                  : line.kind === "err"
+                    ? "#FF4D6D"
+                    : "#B8B5D1",
             }}
           >
-            <span style={{ color: "#0AFFD4", flexShrink: 0 }}>{">>>"}</span>
+            <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>{">>>"}</span>
             <span>{line.text}</span>
           </div>
         ))}
@@ -653,8 +658,8 @@ export function ScriptRunner({
       {isCompleted ? (
         <div
           style={{
-            borderTop: "1px solid rgba(10,255,212,0.2)",
-            background: "rgba(10,255,212,0.04)",
+            borderTop: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
             padding: "16px 20px",
             display: "flex",
             alignItems: "center",
@@ -662,7 +667,7 @@ export function ScriptRunner({
             fontFamily: "var(--font-mono)",
             fontSize: 12,
             fontWeight: 700,
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}
@@ -672,8 +677,8 @@ export function ScriptRunner({
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 6px rgba(10,255,212,0.6)",
+              background: "var(--cosmetic-accent)",
+              boxShadow: "0 0 6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
               flexShrink: 0,
             }}
           />

@@ -61,7 +61,9 @@ function inputStyle(focused: boolean): React.CSSProperties {
     height: 46,
     outline: "none",
     boxSizing: "border-box",
-    boxShadow: focused ? "0 0 0 1px rgba(10,255,212,0.3), 0 0 14px rgba(10,255,212,0.12)" : "none",
+    boxShadow: focused
+      ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 14px color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
+      : "none",
     transition: `all 200ms ${EASE}`,
   };
 }
@@ -180,10 +182,12 @@ export function ProfileForm({
                 style={{
                   position: "relative",
                   aspectRatio: "1 / 1",
-                  background: selected ? "rgba(10,255,212,0.06)" : S.base,
+                  background: selected
+                    ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
+                    : S.base,
                   border: `1px solid ${selected ? S.turq : S.border}`,
                   boxShadow: selected
-                    ? "0 0 0 1px rgba(10,255,212,0.3), 0 0 20px rgba(10,255,212,0.18)"
+                    ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 20px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
                     : "none",
                   cursor: "pointer",
                   padding: 0,

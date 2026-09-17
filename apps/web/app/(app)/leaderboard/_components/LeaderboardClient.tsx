@@ -42,7 +42,10 @@ function PodiumCard({
   isMe,
 }: { entry: LeaderboardEntry; rank: number; isMe: boolean }) {
   const rk = isMe
-    ? { color: "#0AFFD4", grad: "linear-gradient(135deg, #5FFFE6 0%, #0AFFD4 50%, #0024FF 100%)" }
+    ? {
+        color: "var(--cosmetic-accent)",
+        grad: "linear-gradient(135deg, #5FFFE6 0%, var(--cosmetic-accent) 50%, #0024FF 100%)",
+      }
     : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       (RK_COLORS[rank] ?? RK_COLORS[3]!);
   const mono = getMonogram(entry.displayName, entry.username);
@@ -67,7 +70,7 @@ function PodiumCard({
         boxShadow: isGold
           ? "0 0 0 1px rgba(255,181,71,0.18) inset, 0 0 28px rgba(255,181,71,0.18)"
           : isMe
-            ? "0 0 0 1px rgba(10,255,212,0.4) inset, 0 0 28px rgba(10,255,212,0.3)"
+            ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 40%, transparent) inset, 0 0 28px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)"
             : undefined,
       }}
     >
@@ -107,9 +110,9 @@ function PodiumCard({
             fontWeight: 700,
             fontSize: 9,
             letterSpacing: "0.22em",
-            color: "#0AFFD4",
-            background: "rgba(10,255,212,0.1)",
-            border: "1px solid rgba(10,255,212,0.5)",
+            color: "var(--cosmetic-accent)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
             padding: "4px 8px",
           }}
         >
@@ -165,7 +168,14 @@ function PodiumCard({
           gap: 2,
         }}
       >
-        <span style={{ color: "#0AFFD4", ...MONO, fontWeight: 500, fontSize: isGold ? 20 : 16 }}>
+        <span
+          style={{
+            color: "var(--cosmetic-accent)",
+            ...MONO,
+            fontWeight: 500,
+            fontSize: isGold ? 20 : 16,
+          }}
+        >
           @
         </span>
         {entry.username ?? entry.displayName ?? "Anonyme"}
@@ -325,7 +335,10 @@ function PlayerCard({ entry }: { entry: LeaderboardEntry }) {
       <div className={styles.playerIdentity}>
         <HexAvatar
           mono={getMonogram(entry.displayName, entry.username)}
-          grad={RK_COLORS[entry.rank]?.grad ?? "linear-gradient(135deg, #6e8bff, #0affd4)"}
+          grad={
+            RK_COLORS[entry.rank]?.grad ??
+            "linear-gradient(135deg, #6e8bff, var(--cosmetic-accent))"
+          }
           size={44}
         />
         <div className={styles.identity}>
@@ -398,7 +411,7 @@ export function LeaderboardClient({
         @keyframes cl-blink { 0%,50%{opacity:1} 50.01%,100%{opacity:0} }
         @keyframes cl-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
         @media (prefers-reduced-motion:reduce){.cl-caret{animation:none!important}.cl-live-dot{animation:none!important}}
-        .cl-row:not(.cl-row-head):hover{background:rgba(10,255,212,0.03)!important}
+        .cl-row:not(.cl-row-head):hover{background:color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)!important}
 
         /* Podium: 3-across only on wide screens. Content width drops to
            viewport-240 once the sidebar reappears at 1024px, so the podium
@@ -437,7 +450,7 @@ export function LeaderboardClient({
             gap: 8,
           }}
         >
-          <span style={{ color: "#0AFFD4" }}>$</span>
+          <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
           <span>~/</span>
           <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
           <span style={{ color: "#44406B" }}>/</span>
@@ -448,8 +461,8 @@ export function LeaderboardClient({
               display: "inline-block",
               width: 7,
               height: 13,
-              background: "#0AFFD4",
-              boxShadow: "0 0 8px #0AFFD4",
+              background: "var(--cosmetic-accent)",
+              boxShadow: "0 0 8px var(--cosmetic-accent)",
               marginLeft: 4,
               verticalAlign: -2,
               animation: "cl-blink 1s step-end infinite",
@@ -483,7 +496,7 @@ export function LeaderboardClient({
             >
               <span style={{ color: "#44406B" }}>{"// "}</span>
               SAISON · {season ? String(season.index).padStart(2, "0") : "--"} ·{" "}
-              <b style={{ color: "#0AFFD4", fontWeight: 500 }}>LIVE</b>
+              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 500 }}>LIVE</b>
             </span>
             <h1
               style={{
@@ -499,7 +512,7 @@ export function LeaderboardClient({
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                  background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
@@ -529,7 +542,10 @@ export function LeaderboardClient({
                   setFilter(f.id);
                 }}
                 style={{
-                  background: filter === f.id ? "rgba(10,255,212,0.08)" : "transparent",
+                  background:
+                    filter === f.id
+                      ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
+                      : "transparent",
                   border: 0,
                   cursor: "pointer",
                   padding: "11px 20px",
@@ -538,8 +554,11 @@ export function LeaderboardClient({
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: filter === f.id ? "#0AFFD4" : "#6B6890",
-                  boxShadow: filter === f.id ? "inset 0 0 0 1px rgba(10,255,212,0.45)" : "none",
+                  color: filter === f.id ? "var(--cosmetic-accent)" : "#6B6890",
+                  boxShadow:
+                    filter === f.id
+                      ? "inset 0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 45%, transparent)"
+                      : "none",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
@@ -554,7 +573,7 @@ export function LeaderboardClient({
                     borderRadius: "50%",
                     background: "currentColor",
                     opacity: filter === f.id ? 1 : 0.55,
-                    boxShadow: filter === f.id ? "0 0 8px #0AFFD4" : "none",
+                    boxShadow: filter === f.id ? "0 0 8px var(--cosmetic-accent)" : "none",
                   }}
                 />
                 {f.label}
@@ -580,15 +599,22 @@ export function LeaderboardClient({
             borderBottom: "1px dashed #2A2560",
           }}
         >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#0AFFD4" }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              color: "var(--cosmetic-accent)",
+            }}
+          >
             <span
               className="cl-live-dot"
               style={{
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#0AFFD4",
-                boxShadow: "0 0 8px #0AFFD4",
+                background: "var(--cosmetic-accent)",
+                boxShadow: "0 0 8px var(--cosmetic-accent)",
                 animation: "cl-pulse 2s ease-in-out infinite",
               }}
             />

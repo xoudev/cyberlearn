@@ -53,7 +53,7 @@ export async function FirstBlood({
   // ── Rail variant: vertical list in right rail ────────────────────────────────
   if (variant === "rail") {
     const HEX_GRADIENTS = [
-      "linear-gradient(135deg, #0AFFD4, #08D4B0)",
+      "linear-gradient(135deg, var(--cosmetic-accent), #08D4B0)",
       "linear-gradient(135deg, #0024FF, #6E8BFF)",
       "linear-gradient(135deg, #FF4757, #FFB547)",
     ] as const;
@@ -77,7 +77,8 @@ export async function FirstBlood({
             borderBottom: "1px solid #1F1B47",
           }}
         >
-          First Blood · <b style={{ color: "#0AFFD4", fontWeight: 700 }}>top {entries.length}</b>
+          First Blood ·{" "}
+          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>top {entries.length}</b>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>

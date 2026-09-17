@@ -157,10 +157,12 @@ export function NotificationPanel({
           justifyContent: "center",
           width: 36,
           height: 36,
-          background: open ? "rgba(10,255,212,0.06)" : "transparent",
-          border: `1px solid ${open ? "rgba(10,255,212,0.2)" : "transparent"}`,
+          background: open
+            ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
+            : "transparent",
+          border: `1px solid ${open ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "transparent"}`,
           cursor: "pointer",
-          color: open ? "#0AFFD4" : "#6B6890",
+          color: open ? "var(--cosmetic-accent)" : "#6B6890",
           transition: "all 150ms ease",
         }}
       >
@@ -250,7 +252,12 @@ export function NotificationPanel({
                 }}
               >
                 <span
-                  style={{ width: 12, height: 1, background: "#0AFFD4", display: "inline-block" }}
+                  style={{
+                    width: 12,
+                    height: 1,
+                    background: "var(--cosmetic-accent)",
+                    display: "inline-block",
+                  }}
                 />
                 Notifications
               </span>
@@ -259,9 +266,9 @@ export function NotificationPanel({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 9,
-                    color: "#0AFFD4",
-                    background: "rgba(10,255,212,0.1)",
-                    border: "1px solid rgba(10,255,212,0.2)",
+                    color: "var(--cosmetic-accent)",
+                    background: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
                     padding: "2px 6px",
                   }}
                 >
@@ -374,7 +381,9 @@ function NotificationRow({
         gap: 12,
         padding: "14px 18px",
         borderBottom: "1px solid #1A1640",
-        background: isUnread ? "rgba(10,255,212,0.02)" : "transparent",
+        background: isUnread
+          ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"
+          : "transparent",
         cursor: item.actionUrl ? "pointer" : "default",
       }}
       onClick={() => {
@@ -390,8 +399,10 @@ function NotificationRow({
           style={{
             width: 32,
             height: 32,
-            background: isUnread ? "rgba(10,255,212,0.08)" : "rgba(42,37,96,0.3)",
-            border: `1px solid ${isUnread ? "rgba(10,255,212,0.2)" : "#1F1B47"}`,
+            background: isUnread
+              ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
+              : "rgba(42,37,96,0.3)",
+            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "#1F1B47"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -451,11 +462,11 @@ function NotificationRow({
           style={{
             width: 6,
             height: 6,
-            background: "#0AFFD4",
+            background: "var(--cosmetic-accent)",
             borderRadius: 999,
             marginTop: 6,
             flexShrink: 0,
-            boxShadow: "0 0 6px rgba(10,255,212,0.6)",
+            boxShadow: "0 0 6px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
           }}
         />
       )}

@@ -219,7 +219,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
         }}
       >
         <span>
-          SESSION · <b style={{ color: "#0AFFD4" }}>#{sessionId}</b>
+          SESSION · <b style={{ color: "var(--cosmetic-accent)" }}>#{sessionId}</b>
         </span>
         <span style={{ color: "#44406B" }}>/</span>
         <span>{dateStr}</span>
@@ -249,7 +249,12 @@ async function DashboardContent(): Promise<React.ReactElement> {
             }}
           >
             <span
-              style={{ width: 32, height: 1, background: "#0AFFD4", display: "inline-block" }}
+              style={{
+                width: 32,
+                height: 1,
+                background: "var(--cosmetic-accent)",
+                display: "inline-block",
+              }}
             />
             Bon retour
           </div>
@@ -270,7 +275,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
             <em
               style={{
                 fontStyle: "normal",
-                background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -397,9 +402,9 @@ async function DashboardContent(): Promise<React.ReactElement> {
                 fontSize: 11,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                background: "#0AFFD4",
+                background: "var(--cosmetic-accent)",
                 color: "#030219",
-                border: "1px solid #0AFFD4",
+                border: "1px solid var(--cosmetic-accent)",
                 textDecoration: "none",
               }}
             >
@@ -461,15 +466,22 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
 function StatusLive() {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#0AFFD4" }}>
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        color: "var(--cosmetic-accent)",
+      }}
+    >
       <span
         className="status-live-dot"
         style={{
           width: 6,
           height: 6,
           borderRadius: "50%",
-          background: "#0AFFD4",
-          boxShadow: "0 0 6px #0AFFD4",
+          background: "var(--cosmetic-accent)",
+          boxShadow: "0 0 6px var(--cosmetic-accent)",
           animation: "sidebar-pulse 2s ease-in-out infinite",
           display: "inline-block",
         }}
@@ -576,7 +588,7 @@ function XpHeroCard({
         position: "relative",
         padding: "28px 28px 24px",
         background:
-          "linear-gradient(135deg, rgba(0,36,255,0.12) 0%, rgba(10,255,212,0.06) 100%), rgba(10,8,38,0.7)",
+          "linear-gradient(135deg, rgba(0,36,255,0.12) 0%, color-mix(in srgb, var(--cosmetic-accent) 6%, transparent) 100%), rgba(10,8,38,0.7)",
         border: "1px solid #2A2560",
         overflow: "hidden",
       }}
@@ -589,8 +601,8 @@ function XpHeroCard({
           left: 8,
           width: 12,
           height: 12,
-          borderTop: "1.5px solid #0AFFD4",
-          borderLeft: "1.5px solid #0AFFD4",
+          borderTop: "1.5px solid var(--cosmetic-accent)",
+          borderLeft: "1.5px solid var(--cosmetic-accent)",
           pointerEvents: "none",
         }}
         aria-hidden="true"
@@ -602,8 +614,8 @@ function XpHeroCard({
           right: 8,
           width: 12,
           height: 12,
-          borderTop: "1.5px solid #0AFFD4",
-          borderRight: "1.5px solid #0AFFD4",
+          borderTop: "1.5px solid var(--cosmetic-accent)",
+          borderRight: "1.5px solid var(--cosmetic-accent)",
           pointerEvents: "none",
         }}
         aria-hidden="true"
@@ -615,8 +627,8 @@ function XpHeroCard({
           left: 8,
           width: 12,
           height: 12,
-          borderBottom: "1.5px solid #0AFFD4",
-          borderLeft: "1.5px solid #0AFFD4",
+          borderBottom: "1.5px solid var(--cosmetic-accent)",
+          borderLeft: "1.5px solid var(--cosmetic-accent)",
           pointerEvents: "none",
         }}
         aria-hidden="true"
@@ -628,8 +640,8 @@ function XpHeroCard({
           right: 8,
           width: 12,
           height: 12,
-          borderBottom: "1.5px solid #0AFFD4",
-          borderRight: "1.5px solid #0AFFD4",
+          borderBottom: "1.5px solid var(--cosmetic-accent)",
+          borderRight: "1.5px solid var(--cosmetic-accent)",
           pointerEvents: "none",
         }}
         aria-hidden="true"
@@ -653,7 +665,7 @@ function XpHeroCard({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
@@ -683,7 +695,8 @@ function XpHeroCard({
             textAlign: "right",
           }}
         >
-          RANG <b style={{ color: "#0AFFD4", fontWeight: 600 }}>#{String(userRank)}</b>
+          RANG{" "}
+          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>#{String(userRank)}</b>
           <br />
           Classe FR
         </div>
@@ -786,8 +799,9 @@ function XpHeroCard({
             style={{
               height: "100%",
               width: `${xpPercent.toFixed(1)}%`,
-              background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
-              boxShadow: "0 0 20px rgba(10,255,212,0.7), inset 0 0 8px rgba(255,255,255,0.3)",
+              background: "linear-gradient(90deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+              boxShadow:
+                "0 0 20px color-mix(in srgb, var(--cosmetic-accent) 70%, transparent), inset 0 0 8px rgba(255,255,255,0.3)",
               position: "relative",
               transition: "width 700ms ease-out",
             }}
@@ -808,7 +822,7 @@ function XpHeroCard({
             {Math.round(xpPercent)}% · palier {xpPercent >= 80 ? "presque atteint" : "en cours"}
           </span>
           <span>
-            <b style={{ color: "#0AFFD4", fontWeight: 600 }}>
+            <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>
               +{xpNeededToNext.toLocaleString("fr-FR")} XP
             </b>
           </span>
@@ -858,7 +872,7 @@ function TerminalCard({
           padding: "20px 28px 28px",
           // base surface follows the equipped terminal-theme cosmetic
           background:
-            "linear-gradient(180deg, rgba(10,255,212,0.04), transparent 40%), var(--cosmetic-terminal-bg)",
+            "linear-gradient(180deg, color-mix(in srgb, var(--cosmetic-accent) 4%, transparent), transparent 40%), var(--cosmetic-terminal-bg)",
           overflow: "hidden",
         }}
       >
@@ -898,8 +912,8 @@ function TerminalCard({
               width: 10,
               height: 10,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 8px rgba(10,255,212,0.5)",
+              background: "var(--cosmetic-accent)",
+              boxShadow: "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
               display: "inline-block",
             }}
           />
@@ -985,7 +999,7 @@ function TerminalCard({
                   <span>
                     {" "}
                     q <span style={{ color: "#6F6B99" }}>=</span>{" "}
-                    <span style={{ color: "#0AFFD4" }}>
+                    <span style={{ color: "var(--cosmetic-accent)" }}>
                       &quot;SELECT * FROM leçon WHERE actif=True&quot;
                     </span>
                   </span>
@@ -1038,8 +1052,8 @@ function TerminalCard({
                       display: "inline-block",
                       width: 8,
                       height: 14,
-                      background: "#0AFFD4",
-                      boxShadow: "0 0 8px #0AFFD4",
+                      background: "var(--cosmetic-accent)",
+                      boxShadow: "0 0 8px var(--cosmetic-accent)",
                       verticalAlign: "-2px",
                       animation: "blink 1s step-end infinite",
                     }}
@@ -1079,7 +1093,11 @@ function TerminalCard({
           <Tag color="#B8B5D1" bg="rgba(5,4,26,0.6)" borderColor="#2A2560">
             {lesson.estimatedMinutes} min
           </Tag>
-          <Tag color="#0AFFD4" bg="rgba(10,255,212,0.08)" borderColor="rgba(10,255,212,0.4)">
+          <Tag
+            color="var(--cosmetic-accent)"
+            bg="color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
+            borderColor="color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)"
+          >
             +{lesson.xpReward} XP
           </Tag>
         </div>
@@ -1094,7 +1112,8 @@ function TerminalCard({
             marginBottom: 12,
           }}
         >
-          Leçon · <b style={{ color: "#0AFFD4", fontWeight: 600 }}>en cours</b> · reprends
+          Leçon · <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>en cours</b> ·
+          reprends
         </div>
 
         <h3
@@ -1134,12 +1153,15 @@ function TerminalCard({
                 height: 3,
                 background:
                   i < 3
-                    ? "#0AFFD4"
+                    ? "var(--cosmetic-accent)"
                     : i === 3
-                      ? "linear-gradient(90deg, #0AFFD4 50%, #05041A 50%)"
+                      ? "linear-gradient(90deg, var(--cosmetic-accent) 50%, #05041A 50%)"
                       : "#05041A",
                 border: "1px solid #2A2560",
-                boxShadow: i < 4 ? "0 0 8px rgba(10,255,212,0.5)" : "none",
+                boxShadow:
+                  i < 4
+                    ? "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)"
+                    : "none",
               }}
             />
           ))}
@@ -1162,11 +1184,11 @@ function TerminalCard({
               fontSize: 12,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              background: "#0AFFD4",
+              background: "var(--cosmetic-accent)",
               color: "#030219",
-              border: "1px solid #0AFFD4",
+              border: "1px solid var(--cosmetic-accent)",
               textDecoration: "none",
-              boxShadow: "0 0 24px rgba(10,255,212,0.35)",
+              boxShadow: "0 0 24px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
             }}
           >
             Reprendre
@@ -1237,9 +1259,9 @@ function NoResumeCard() {
           fontSize: 11,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          background: "#0AFFD4",
+          background: "var(--cosmetic-accent)",
           color: "#030219",
-          border: "1px solid #0AFFD4",
+          border: "1px solid var(--cosmetic-accent)",
           textDecoration: "none",
         }}
       >
@@ -1635,7 +1657,7 @@ function StatsBig({
             position: "relative",
             overflow: "hidden",
             background: it.highlight
-              ? "linear-gradient(135deg, rgba(10,255,212,0.06), transparent 60%)"
+              ? "linear-gradient(135deg, color-mix(in srgb, var(--cosmetic-accent) 6%, transparent), transparent 60%)"
               : "transparent",
           }}
         >
@@ -1658,7 +1680,9 @@ function StatsBig({
             style={{
               fontFamily: "var(--font-sans)",
               fontWeight: 800,
-              background: it.highlight ? "linear-gradient(180deg, #F5F5FA, #0AFFD4)" : undefined,
+              background: it.highlight
+                ? "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))"
+                : undefined,
               WebkitBackgroundClip: it.highlight ? "text" : undefined,
               backgroundClip: it.highlight ? "text" : undefined,
               WebkitTextFillColor: it.highlight ? "transparent" : undefined,
@@ -1685,7 +1709,7 @@ function StatsBig({
               marginTop: 14,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: it.highlight ? "#0AFFD4" : "#6F6B99",
+              color: it.highlight ? "var(--cosmetic-accent)" : "#6F6B99",
               letterSpacing: "0.04em",
               display: "inline-flex",
               alignItems: "center",
@@ -1715,7 +1739,7 @@ interface FeaturedPath {
 }
 
 const DIFF_COLORS_DASH: Record<string, string> = {
-  BEGINNER: "#0AFFD4",
+  BEGINNER: "var(--cosmetic-accent)",
   INTERMEDIATE: "#4D8BFF",
   ADVANCED: "#B14DFF",
   EXPERT: "#FFB020",
@@ -1774,7 +1798,7 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               display: "inline-flex",
               alignItems: "center",
               gap: 10,
@@ -1785,8 +1809,8 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
               style={{
                 width: 18,
                 height: 1,
-                background: "#0AFFD4",
-                boxShadow: "0 0 6px #0AFFD4",
+                background: "var(--cosmetic-accent)",
+                boxShadow: "0 0 6px var(--cosmetic-accent)",
                 display: "inline-block",
               }}
             />
@@ -1875,11 +1899,11 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
               fontSize: 12,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              background: "#0AFFD4",
+              background: "var(--cosmetic-accent)",
               color: "#030219",
-              border: "1px solid #0AFFD4",
+              border: "1px solid var(--cosmetic-accent)",
               textDecoration: "none",
-              boxShadow: "0 0 24px rgba(10,255,212,0.35)",
+              boxShadow: "0 0 24px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
             }}
           >
             Commencer le parcours
@@ -2066,7 +2090,7 @@ function NetworkGraph() {
     >
       <defs>
         <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#0AFFD4" stopOpacity="0.9" />
+          <stop offset="0%" stopColor="var(--cosmetic-accent)" stopOpacity="0.9" />
           <stop offset="60%" stopColor="#0024FF" stopOpacity="0.5" />
           <stop offset="100%" stopColor="#0024FF" stopOpacity="0" />
         </radialGradient>
@@ -2086,7 +2110,11 @@ function NetworkGraph() {
             y1={A.y}
             x2={B.x}
             y2={B.y}
-            stroke={isDone ? "rgba(10,255,212,0.35)" : "rgba(42,37,96,0.5)"}
+            stroke={
+              isDone
+                ? "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"
+                : "rgba(42,37,96,0.5)"
+            }
             strokeWidth={isDone ? 1 : 0.6}
             strokeDasharray={isDone ? undefined : "2 3"}
           />
@@ -2096,8 +2124,8 @@ function NetworkGraph() {
       <circle cx={find("c").x} cy={find("c").y} r="80" fill="url(#coreGlow)" />
 
       {nodes.map((n) => {
-        const fill = n.kind !== "open" ? "#0AFFD4" : "#0A0826";
-        const stroke = n.kind === "open" ? "rgba(110,139,255,0.5)" : "#0AFFD4";
+        const fill = n.kind !== "open" ? "var(--cosmetic-accent)" : "#0A0826";
+        const stroke = n.kind === "open" ? "rgba(110,139,255,0.5)" : "var(--cosmetic-accent)";
         const glow = n.kind !== "open";
         return (
           <g key={n.id}>

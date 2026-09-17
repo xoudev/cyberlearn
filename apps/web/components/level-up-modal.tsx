@@ -84,7 +84,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
             fontSize: 72,
             lineHeight: 1,
             letterSpacing: "-0.04em",
-            background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+            background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -100,7 +100,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
             fontSize: 11,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             marginBottom: 24,
           }}
         >

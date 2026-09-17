@@ -197,7 +197,7 @@ export function DeleteAccountSection({
               alignItems: "flex-start",
             }}
           >
-            <span style={{ color: "#0AFFD4", flexShrink: 0 }}>·</span>
+            <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>·</span>
             Vos certificats restent vérifiables publiquement, mais ne portent plus votre nom
           </li>
         </ul>
@@ -206,11 +206,11 @@ export function DeleteAccountSection({
           <div
             style={{
               padding: "10px 14px",
-              background: "rgba(10,255,212,0.04)",
-              border: "1px solid rgba(10,255,212,0.15)",
+              background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 15%, transparent)",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               marginBottom: 16,
               display: "flex",
               flexDirection: "column",

@@ -31,9 +31,11 @@ function EntryCard({
           width: 11,
           height: 11,
           borderRadius: "50%",
-          background: isLatest ? "#0AFFD4" : "#0A0826",
-          border: `2px solid ${isLatest ? "#0AFFD4" : "#2A2560"}`,
-          boxShadow: isLatest ? "0 0 12px rgba(10,255,212,0.6)" : "none",
+          background: isLatest ? "var(--cosmetic-accent)" : "#0A0826",
+          border: `2px solid ${isLatest ? "var(--cosmetic-accent)" : "#2A2560"}`,
+          boxShadow: isLatest
+            ? "0 0 12px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)"
+            : "none",
         }}
       />
       <span
@@ -65,8 +67,10 @@ function EntryCard({
             letterSpacing: "0.08em",
             color: "#F5F5FA",
             padding: "4px 10px",
-            border: `1px solid ${isLatest ? "rgba(10,255,212,0.4)" : "#2A2560"}`,
-            background: isLatest ? "rgba(10,255,212,0.06)" : "rgba(10,8,38,0.6)",
+            border: `1px solid ${isLatest ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "#2A2560"}`,
+            background: isLatest
+              ? "color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)"
+              : "rgba(10,8,38,0.6)",
           }}
         >
           v{entry.version}
@@ -79,7 +83,7 @@ function EntryCard({
               fontSize: 9.5,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
             }}
           >
             Dernière version
@@ -166,7 +170,7 @@ export default function ChangelogPage(): React.ReactElement {
             fontWeight: 700,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             marginBottom: 14,
           }}
         >

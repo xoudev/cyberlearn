@@ -23,7 +23,7 @@
     90deg,
     transparent 0%,
     transparent 30%,
-    color-mix(in oklab, #0affd4 16%, transparent) 46%,
+    color-mix(in oklab, var(--cosmetic-accent) 16%, transparent) 46%,
     color-mix(in oklab, #6e8bff 18%, transparent) 54%,
     transparent 70%,
     transparent 100%

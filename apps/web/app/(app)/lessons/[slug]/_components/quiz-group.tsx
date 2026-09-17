@@ -45,7 +45,7 @@ export function QuizGroup({ children }: QuizGroupProps): React.ReactElement {
                 width: isDone ? 20 : isActive ? 8 : 6,
                 height: 6,
                 borderRadius: 999,
-                background: isDone ? "#0AFFD4" : isActive ? "#0024FF" : "#2A2560",
+                background: isDone ? "var(--cosmetic-accent)" : isActive ? "#0024FF" : "#2A2560",
                 boxShadow: isActive ? "0 0 8px rgba(0,36,255,0.6)" : "none",
                 transition: "all 300ms ease",
               }}
