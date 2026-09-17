@@ -1,23 +1,18 @@
 "use client";
 
-import React, { useActionState, useTransition } from "react";
+import React, { useTransition } from "react";
 import Link from "next/link";
-import {
-  createClassLessonAction,
-  deleteClassLessonAction,
-  type ClassLessonState,
-} from "../_actions/class-lesson-actions";
+import { deleteClassLessonAction } from "../_actions/class-lesson-actions";
 
 /**
- * The lessons a teacher wrote for this class, and the form that writes another.
+ * The lessons a teacher wrote for this class, and the way in to writing another.
  *
- * Deliberately a plain form over the same fields the catalogue's own lessons
- * have, rather than a second kind of content with a second kind of editor: what
- * comes out is an ordinary lesson, so it renders through the same MDX pipeline,
- * earns XP, enters the review schedule, and can be assigned with a deadline.
- *
- * Folded by default like the assign form beside it. Writing a lesson happens
- * now and then; checking on a class happens every day.
+ * What comes out is an ordinary lesson: it renders through the same MDX
+ * pipeline, earns XP, enters the review schedule, and can be given with a
+ * deadline. So it is written with the same editor as the catalogue's own,
+ * which needs a page of its own - a Monaco split preview does not belong in a
+ * details block beside a roster. This card keeps the list and the two doors:
+ * write one, or reopen one.
  */
 
 export interface ClassLessonRow {
@@ -32,19 +27,6 @@ export interface ClassLessonRow {
   createdLabel: string;
 }
 
-const CATEGORIES = [
-  { value: "CYBERSEC", label: "Cybersécurité" },
-  { value: "DEV", label: "Développement" },
-  { value: "NETWORK", label: "Réseaux" },
-] as const;
-
-const DIFFICULTIES = [
-  { value: "BEGINNER", label: "Débutant" },
-  { value: "INTERMEDIATE", label: "Intermédiaire" },
-  { value: "ADVANCED", label: "Avancé" },
-  { value: "EXPERT", label: "Expert" },
-] as const;
-
 export function ClassLessons({
   classId,
   lessons,
@@ -52,10 +34,6 @@ export function ClassLessons({
   classId: string;
   lessons: ClassLessonRow[];
 }): React.ReactElement {
-  const [state, formAction, pending] = useActionState<ClassLessonState, FormData>(
-    createClassLessonAction,
-    {},
-  );
   const [removing, startRemove] = useTransition();
 
   return (
@@ -83,137 +61,32 @@ export function ClassLessons({
                   {l.estimatedMinutes} min · {l.xpReward} XP · écrite le {l.createdLabel}
                 </span>
               </span>
-              <button
-                type="button"
-                disabled={removing}
-                onClick={() => {
-                  startRemove(async () => {
-                    await deleteClassLessonAction(l.id);
-                  });
-                }}
-                className="cls-work__remove"
-              >
-                Supprimer
-              </button>
+              <span className="cls-work__tools">
+                <Link href={`/my-class/lessons/${l.id}/edit`} className="cls-work__remove">
+                  Modifier
+                </Link>
+                <button
+                  type="button"
+                  disabled={removing}
+                  onClick={() => {
+                    startRemove(async () => {
+                      await deleteClassLessonAction(l.id);
+                    });
+                  }}
+                  className="cls-work__remove"
+                  data-tone="bad"
+                >
+                  Supprimer
+                </button>
+              </span>
             </li>
           ))}
         </ul>
       )}
 
-      <details className="cls-assign">
-        <summary className="cls-assign__head">Écrire une leçon pour cette classe</summary>
-
-        <form action={formAction} className="cls-assign__form">
-          <input type="hidden" name="classId" value={classId} />
-
-          <label className="cls-field">
-            <span className="cls-field__label">Titre</span>
-            <input name="title" required minLength={3} maxLength={200} className="cls-input" />
-          </label>
-
-          <label className="cls-field">
-            <span className="cls-field__label">Description</span>
-            <textarea
-              name="description"
-              required
-              minLength={10}
-              maxLength={500}
-              rows={2}
-              className="cls-input"
-            />
-            <span className="cls-field__hint">
-              La ligne qui s&apos;affiche sous le titre dans la liste des leçons.
-            </span>
-          </label>
-
-          <div className="cls-grid2">
-            <label className="cls-field">
-              <span className="cls-field__label">Catégorie</span>
-              <select name="category" required className="cls-input">
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="cls-field">
-              <span className="cls-field__label">Niveau</span>
-              <select name="difficulty" required className="cls-input">
-                {DIFFICULTIES.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="cls-field">
-              <span className="cls-field__label">Durée (min)</span>
-              <input
-                name="estimatedMinutes"
-                type="number"
-                min={1}
-                max={600}
-                defaultValue={20}
-                required
-                className="cls-input"
-              />
-            </label>
-
-            <label className="cls-field">
-              <span className="cls-field__label">XP</span>
-              <input
-                name="xpReward"
-                type="number"
-                min={0}
-                max={200}
-                defaultValue={30}
-                required
-                className="cls-input"
-              />
-              <span className="cls-field__hint">
-                Plafonné à 200 : tes élèves sont classés avec tout le monde.
-              </span>
-            </label>
-          </div>
-
-          <label className="cls-field">
-            <span className="cls-field__label">Contenu (Markdown)</span>
-            <textarea
-              name="contentMdx"
-              required
-              minLength={10}
-              rows={12}
-              placeholder={"## Introduction\n\nExplique ici…\n\n- un point\n- un autre"}
-              className="cls-input cls-input--code"
-            />
-            <span className="cls-field__hint">
-              Titres, listes, gras, blocs de code : la leçon est rendue par le même pipeline que
-              celles du catalogue.
-            </span>
-          </label>
-
-          <button type="submit" disabled={pending} className="cls-btn">
-            {pending ? "…" : "Publier pour cette classe"}
-          </button>
-
-          {state.error !== undefined && (
-            <p className="cls-alert" data-tone="bad">
-              {state.error}
-            </p>
-          )}
-          {state.ok === true && state.slug !== undefined && (
-            <p className="cls-alert">
-              Publiée.{" "}
-              <Link href={`/lessons/${state.slug}`} style={{ color: "var(--cosmetic-accent)" }}>
-                Voir la leçon
-              </Link>
-            </p>
-          )}
-        </form>
-      </details>
+      <Link href={`/my-class/lessons/new?classId=${classId}`} className="cls-btn cls-btn--link">
+        Écrire une leçon
+      </Link>
     </div>
   );
 }

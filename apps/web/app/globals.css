@@ -3685,13 +3685,28 @@ a:hover > .lesson-author-card {
   cursor: pointer;
   white-space: nowrap;
 }
+/* The row's own actions share one chrome; only the destructive one turns red,
+   so "Modifier" and "Supprimer" do not read as the same kind of button. */
+.cls-work__remove {
+  text-decoration: none;
+  display: inline-block;
+}
 .cls-work__remove:hover:not(:disabled) {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 45%, transparent);
+}
+.cls-work__remove[data-tone="bad"]:hover:not(:disabled) {
   color: #ff4d6d;
   border-color: rgba(255, 77, 109, 0.5);
 }
 .cls-work__remove:disabled {
   opacity: 0.4;
   cursor: default;
+}
+.cls-work__tools {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 /* Folded by default: setting work happens now and then, checking on it happens
@@ -3826,6 +3841,89 @@ a:hover > .lesson-author-card {
   line-height: 1.6;
   resize: vertical;
   tab-size: 2;
+}
+
+/* ─── Teacher lesson editor (its own page) ────────────────────────────────── */
+/* Wider than the reading pages: this one holds a code editor beside its own
+   preview, and squeezing that into a column of prose would leave neither half
+   usable. */
+
+.tle-page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px clamp(16px, 4vw, 40px) 80px;
+}
+
+.tle-form {
+  display: grid;
+  gap: 22px;
+  margin-top: 28px;
+}
+
+.tle-meta {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  background: rgba(10, 8, 38, 0.4);
+}
+
+/* Four short fields on one line where there is room for them: they are four
+   parts of one answer about the same lesson, not four questions. */
+.tle-grid4 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  /* Without this the fields stretch to the tallest of them, and the one
+     carrying a hint pushes its own input off the line the other three sit on. */
+  align-items: start;
+}
+@media (min-width: 620px) {
+  .tle-grid4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1000px) {
+  .tle-grid4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tle-editor {
+  display: grid;
+  gap: 8px;
+}
+.tle-editor__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tle-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.tle-back {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b6890;
+  text-decoration: none;
+}
+.tle-back:hover {
+  color: var(--cosmetic-accent);
+}
+
+/* The same button, as a link: it leaves for the editor rather than submitting,
+   and an anchor needs the line-height a button gets for free. */
+.cls-btn--link {
+  text-decoration: none;
+  line-height: 1;
 }
 
 /* ─── Class resources (corrigés) ──────────────────────────────────────────── */

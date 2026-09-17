@@ -7,7 +7,8 @@
   "types": "./src/index.d.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./tokens.css": "./src/tokens.css"
+    "./tokens.css": "./src/tokens.css",
+    "./mdx-editor": "./src/components/mdx-editor-panel.tsx"
   },
   "scripts": {
     "build": "tsc",
@@ -26,7 +27,9 @@
   },
   "peerDependencies": {
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "@monaco-editor/react": "catalog:",
+    "next": "catalog:"
   },
   "devDependencies": {
     "@cyberlearn/config": "workspace:*",
@@ -42,6 +45,8 @@
     "@testing-library/jest-dom": "catalog:",
     "jsdom": "catalog:",
     "eslint": "catalog:",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "@monaco-editor/react": "catalog:",
+    "next": "catalog:"
   }
 }
