@@ -54,6 +54,7 @@ packages/config → Shared ESLint, TSConfig, Biome configs
 8. **Repository pattern** : no direct Prisma calls from components. Services → Repositories → Prisma.
 9. **Conventional Commits** : `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `security:` (English).
 10. **Ask before adding unlisted deps** : if a dependency is not in the brief or pnpm catalog, stop and ask.
+11. **Mobile parity** : anything shipped on the site must reach the mobile app, unless it is written down as web-only in `docs/MOBILE_PARITY.md` with its reason. A PR touching a shared surface either changes both apps or updates that register — web-only is a decision on record, never an omission.
 
 ## Compact Instructions
 
@@ -64,6 +65,7 @@ When compacting, preserve: current phase number, list of completed phases, activ
 - `CyberLearn.md` : full project brief with all specs (repo root)
 - `CyberLearn_Patch_ImportLessons.md` : Import MDX feature spec (Phase 9, repo root)
 - `docs/adr/` : Architecture Decision Records
+- `docs/MOBILE_PARITY.md` : what the mobile app has, what it is still owed, and what is deliberately web-only
 
 ## Hardening
 
