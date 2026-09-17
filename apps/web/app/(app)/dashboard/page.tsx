@@ -12,6 +12,7 @@ import {
 import { CATALOGUE_PATH, leaderboardRepository, pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { planSections, sectionNumber } from "@/lib/dashboard/sections";
+import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { StreakPanel } from "@/components/streak-panel";
 import { QuestsPanel } from "@/components/quests-panel";
 
@@ -73,6 +74,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
     allPaths,
     placementResult,
     recentLessons,
+    wantsRevisions,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
@@ -177,6 +179,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
       orderBy: { completedAt: "desc" },
       take: 20,
     }),
+    revisionsEnabled(authUser.id),
   ]);
 
   const { level, current, needed } = computeLevel(dbUser?.xpTotal ?? 0);
@@ -272,7 +275,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
   const sections = planSections({
     hasResume: resumeLesson !== undefined,
-    dueReviews: dueReviews.length,
+    dueReviews: wantsRevisions ? dueReviews.length : 0,
   });
 
   // Stable session indicator from last chars of user UUID
@@ -457,7 +460,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
       )}
 
       {/* ── À réviser: only when something is actually due ────────────────── */}
-      {dueReviews.length > 0 && (
+      {wantsRevisions && dueReviews.length > 0 && (
         <section className="animate-fade-up-delay-2 s-section">
           <SectionLabel
             eyebrow={`${sectionNumber(sections, "reviews") ?? "03"} · à réviser`}

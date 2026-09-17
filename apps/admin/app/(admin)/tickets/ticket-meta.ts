@@ -6,6 +6,7 @@ export const THEME_META: Record<string, { label: string; tone: Tone }> = {
   FEATURE_REQUEST: { label: "Feature request", tone: "purple" },
   SECURITY: { label: "Sécurité", tone: "danger" },
   CONTENT_ERROR: { label: "Erreur de contenu", tone: "warning" },
+  ESTABLISHMENT_REQUEST: { label: "Demande d'ajout d'établissement", tone: "info" },
   OTHER: { label: "Autre", tone: "neutral" },
 };
 

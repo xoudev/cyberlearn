@@ -131,6 +131,7 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/my-class",
   "/profile",
   "/settings",
+  "/support",
   "/wrapped",
   "/changelog",
   "/onboarding",
