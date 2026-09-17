@@ -154,3 +154,44 @@ export async function unequipCosmetic(
     return { ok: false, error: "Connexion au serveur impossible." };
   }
 }
+
+// ── My class (work set for this learner, with deadlines) ─────────────────────
+
+export interface ClassSummary {
+  id: string;
+  name: string;
+  establishment: string;
+  promotion: string;
+  teachers: { name: string; subject: string | null }[];
+  memberCount: number;
+}
+
+export interface ClassWorkItem {
+  lessonId: string;
+  slug: string;
+  title: string;
+  estimatedMinutes: number;
+  instructions: string | null;
+  /** ISO string, or null for work with no deadline. */
+  dueAt: string | null;
+  done: boolean;
+}
+
+export interface MyClassData {
+  classes: ClassSummary[];
+  work: ClassWorkItem[];
+}
+
+/**
+ * The learner's classes and everything set for them.
+ *
+ * One call rather than one per class: a student is in one class, occasionally
+ * two, and three round trips on a phone network to answer "what do I owe" is
+ * three chances to show a spinner.
+ */
+export async function fetchMyClass(): Promise<MyClassData> {
+  const res = await authedFetch("/api/mobile/my-class");
+  const body = (await res.json()) as ({ ok: true } & MyClassData) | { ok: false };
+  if (!body.ok) throw new Error("Chargement impossible");
+  return { classes: body.classes, work: body.work };
+}

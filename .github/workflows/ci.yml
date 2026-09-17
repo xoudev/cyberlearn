@@ -164,7 +164,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-build-
 
-      - name: Create placeholder .env for web build
+      - name: Create placeholder .env files for app builds
         # Next.js loads .env files via @next/env before spawning page-data
         # workers. Shell env vars (step-level env:) do not reach those workers.
         # Writing a .env file is the only reliable way to feed placeholders
@@ -185,6 +185,7 @@ jobs:
           NEXT_PUBLIC_SITE_URL=https://cyberlearn.app
           NEXT_PUBLIC_ADMIN_URL=https://admin.cyberlearn.app
           ENVEOF
+          cp .env ../admin/.env
 
       - name: Build
         run: pnpm build

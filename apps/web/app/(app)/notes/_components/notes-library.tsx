@@ -72,11 +72,19 @@ export function NotesLibrary({
   notes: initialNotes,
   folders: initialFolders,
   incoming,
+  openNoteId = null,
 }: {
   notes: SerializedNote[];
   folders: SerializedFolder[];
   /** Notes classmates have handed over. Read-only, and not filed anywhere. */
   incoming: SerializedIncomingNote[];
+  /**
+   * A note to open on arrival, from ?note= - the navbar search links straight
+   * at the note it matched. An id that is not in this library opens nothing,
+   * which is the whole of the check that is needed: the library only ever holds
+   * the reader's own notes.
+   */
+  openNoteId?: string | null;
 }): React.JSX.Element {
   const [notes, setNotes] = useState<SerializedNote[]>(initialNotes);
   const [folders, setFolders] = useState<SerializedFolder[]>(initialFolders);
@@ -86,7 +94,7 @@ export function NotesLibrary({
   const [selectedFolder, setSelectedFolder] = useState<string>(ALL);
   const [focusedFolder, setFocusedFolder] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
-  const [readerId, setReaderId] = useState<string | null>(null);
+  const [readerId, setReaderId] = useState<string | null>(openNoteId);
   const [now, setNow] = useState<number | null>(null);
 
   // Folder create form + rename drafts.

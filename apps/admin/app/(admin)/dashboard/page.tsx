@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { roleLabel, roleTone } from "@/lib/roles";
+import { fetchSentryIssues } from "@/lib/sentry-issues";
+import { SentryCard } from "../_components/SentryCard";
 import {
   Card,
   CardLink,
@@ -88,6 +90,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     pathCount,
     recentLogs,
     recentUsers,
+    sentry,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { createdAt: { gte: oneWeekAgo } } }),
@@ -125,6 +128,9 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       orderBy: { createdAt: "desc" },
       select: { id: true, username: true, email: true, role: true, level: true, createdAt: true },
     }),
+    // Never fatal: it returns a state rather than throwing, so a Sentry
+    // outage cannot take the console's dashboard with it.
+    fetchSentryIssues(),
   ]);
 
   const statusCount = (status: string): number =>
@@ -209,6 +215,21 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           tone={criticalTickets > 0 ? "danger" : openTickets > 0 ? "warning" : "accent"}
         />
       </div>
+
+      {/* Errors before the activity feed: the audit log says what people did,
+          and this says what broke. One of the two is urgent. */}
+      <Card
+        title="Erreurs · 24 h"
+        action={
+          sentry.state === "ok" && sentry.issues.length > 0 ? (
+            <span style={{ fontFamily: UI.mono, fontSize: 11, color: UI.danger }}>
+              {sentry.issues.length} non résolue{sentry.issues.length > 1 ? "s" : ""}
+            </span>
+          ) : undefined
+        }
+      >
+        <SentryCard result={sentry} />
+      </Card>
 
       <div className="a-split">
         <Card title="Activité récente" action={<CardLink href="/audit">Audit log →</CardLink>}>

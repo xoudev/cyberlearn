@@ -49,6 +49,14 @@ export { ratingRepository } from "./repositories/rating.repository.js";
 export { qaRepository } from "./repositories/qa.repository.js";
 export { noteRepository, type NoteSummary } from "./repositories/note.repository.js";
 export {
+  searchRepository,
+  MIN_SEARCH_LENGTH,
+  type SearchRows,
+  type PathSearchRow,
+  type LessonSearchRow,
+  type NoteSearchRow,
+} from "./repositories/search.repository.js";
+export {
   noteShareRepository,
   type ShareCandidate,
   type ShareRecipient,
