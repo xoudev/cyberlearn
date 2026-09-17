@@ -4152,3 +4152,95 @@ a.cls-res__title:hover {
   accent-color: #0affd4;
   flex-shrink: 0;
 }
+
+/* ─── Assign form: browsing the whole catalogue ───────────────────────────── */
+/* This was a six-row <select> over a list silently cut to thirty entries, which
+   is how a teacher came to believe the rest of the catalogue did not exist. */
+
+.cw-count {
+  color: var(--cosmetic-accent);
+  font-weight: 700;
+}
+
+.cw-filters {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cw-cats {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.cw-cat {
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b6890;
+  background: transparent;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  cursor: pointer;
+}
+.cw-cat:hover {
+  color: #b8b5d1;
+}
+.cw-cat[data-active="true"] {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
+}
+
+.cw-pool {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid rgba(42, 37, 96, 0.9);
+  background: rgba(3, 2, 25, 0.6);
+}
+.cw-pool__row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.cw-pool__row:hover {
+  background: color-mix(in srgb, var(--cosmetic-accent) 5%, transparent);
+}
+.cw-pool__row[data-chosen="true"] {
+  background: color-mix(in srgb, var(--cosmetic-accent) 10%, transparent);
+}
+.cw-pool__mark {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #44406b;
+}
+.cw-pool__row[data-chosen="true"] .cw-pool__mark {
+  color: var(--cosmetic-accent);
+}
+.cw-pool__title {
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: #f5f5fa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cw-pool__cat {
+  flex-shrink: 0;
+  font: 9.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: #6b6890;
+}
