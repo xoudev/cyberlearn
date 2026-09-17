@@ -15,6 +15,19 @@ export interface SerializedNote {
   updatedAt: string; // ISO
 }
 
+/**
+ * A note somebody else wrote and handed over.
+ *
+ * Carries the same fields as a note of your own so the reader can open either,
+ * plus who it came from - which is the only thing the reader shows differently.
+ * folderId and the parcours are null: filing somebody else's note is not
+ * something a recipient does.
+ */
+export interface SerializedIncomingNote extends SerializedNote {
+  authorName: string;
+  sharedAt: string; // ISO
+}
+
 /** A user's note folder. */
 export interface SerializedFolder {
   id: string;

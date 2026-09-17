@@ -34,6 +34,13 @@ export { ratingRepository } from "./repositories/rating.repository.js";
 export { qaRepository } from "./repositories/qa.repository.js";
 export { noteRepository, type NoteSummary } from "./repositories/note.repository.js";
 export {
+  noteShareRepository,
+  type ShareCandidate,
+  type ShareRecipient,
+  type ShareResult,
+  type IncomingNote,
+} from "./repositories/note-share.repository.js";
+export {
   noteFolderRepository,
   type NoteFolderSummary,
 } from "./repositories/note-folder.repository.js";

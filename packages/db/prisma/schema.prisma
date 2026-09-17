@@ -79,6 +79,7 @@ model User {
   sentInvitations   ClassInvitation[]       @relation("ClassInvitationSender")
   setAssignments    ClassAssignment[]       @relation("ClassAssignmentAuthor")
   classResources    ClassResource[]         @relation("ClassResourceAuthor")
+  notesSharedWithMe NoteShare[]             @relation("NoteRecipient")
   moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
 
@@ -464,6 +465,7 @@ model Note {
   user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   folder NoteFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  shares NoteShare[]
 
   @@unique([userId, lessonId])
   @@index([userId])
@@ -475,6 +477,24 @@ model Note {
 // (single-membership, "dossier" model). A user fully owns their folders
 // (RLS: own rows only). position drives manual ordering; color and icon are
 // optional and picked from fixed client palettes (icon defaults to "folder").
+/// A note handed to a classmate.
+///
+/// A row per recipient rather than a flag on the note, because "shared" is not
+/// a property of the note - it is a relationship between the note and one
+/// person, and it is taken back one person at a time.
+model NoteShare {
+  noteId       String   @db.Uuid
+  sharedWithId String   @db.Uuid
+  sharedAt     DateTime @default(now())
+
+  note       Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  sharedWith User @relation("NoteRecipient", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, sharedWithId])
+  @@index([sharedWithId])
+  @@map("note_shares")
+}
+
 model NoteFolder {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
@@ -1145,6 +1165,8 @@ enum NotificationType {
   TICKET_UPDATE
   CLASS_ENROLLED
   LESSON_ASSIGNED
+  NOTE_SHARED
+  MODERATION_ALERT
 }
 
 /// A decision the automatic screen made, kept so a person can disagree with it.
