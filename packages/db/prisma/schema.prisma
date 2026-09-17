@@ -82,6 +82,8 @@ model User {
   notesSharedWithMe NoteShare[]             @relation("NoteRecipient")
   moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
+  forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
+  forumPosts        ForumPost[]             @relation("ForumPostAuthor")
 
   @@index([username])
   @@index([role])
@@ -1167,6 +1169,7 @@ enum NotificationType {
   LESSON_ASSIGNED
   NOTE_SHARED
   MODERATION_ALERT
+  FORUM_REPLY
 }
 
 /// A decision the automatic screen made, kept so a person can disagree with it.
@@ -1389,4 +1392,81 @@ model WrappedSnapshot {
   @@unique([userId, period, periodKey])
   @@index([userId])
   @@map("wrapped_snapshots")
+}
+
+// ============================================================
+// FORUM (forum.cyberlearn.fr - one place for everyone, not one per class)
+// ============================================================
+
+// The sections of the forum. A table rather than an enum because the list is
+// editorial - it changes when the site changes, and adding "Alternance" should
+// not be a migration and a deploy of every app that reads the enum.
+model ForumCategory {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String   @db.VarChar(80)
+  description String   @db.VarChar(240)
+  /// Hex accent, so a section reads like the rest of the platform's domains.
+  accent      String   @db.VarChar(16)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  topics ForumTopic[]
+
+  @@map("forum_categories")
+}
+
+// A thread. Its opening message is a ForumPost like any other, rather than a
+// body column here: editing, hiding and screening then have one code path
+// instead of two that drift, and the first post is simply the oldest one.
+model ForumTopic {
+  id         String    @id @default(uuid()) @db.Uuid
+  categoryId String    @db.Uuid
+  authorId   String?   @db.Uuid // null after RGPD anonymization
+  title      String    @db.VarChar(160)
+  slug       String
+  /// Held at the top of its section.
+  pinned     Boolean   @default(false)
+  /// Set when the thread is closed to new replies.
+  lockedAt   DateTime?
+  /// Soft-delete for moderation, like lesson questions.
+  isHidden   Boolean   @default(false)
+  /// Denormalised: the section list orders by it, and deriving it per row
+  /// costs a correlated subquery per topic on the busiest page of the forum.
+  lastPostAt DateTime  @default(now())
+  /// Replies only - the opening post is not one.
+  replyCount Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  category ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  author   User?         @relation("ForumTopicAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  posts    ForumPost[]
+
+  /// Scoped to the section: two sections may each have a "presentation".
+  @@unique([categoryId, slug])
+  @@index([categoryId, isHidden, pinned, lastPostAt])
+  @@index([authorId])
+  @@map("forum_topics")
+}
+
+model ForumPost {
+  id        String    @id @default(uuid()) @db.Uuid
+  topicId   String    @db.Uuid
+  authorId  String?   @db.Uuid // null after RGPD anonymization
+  content   String    @db.Text
+  isHidden  Boolean   @default(false)
+  /// Set on every edit after the first save, so a thread cannot be rewritten
+  /// under a reader without any trace.
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  topic  ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author User?      @relation("ForumPostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([topicId, isHidden, createdAt])
+  @@index([authorId])
+  @@map("forum_posts")
 }
