@@ -2,6 +2,7 @@
 
 import React, { useActionState, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { filterAssignable } from "@/lib/classes/assignable";
 import {
   assignLessonAction,
   unassignLessonAction,
@@ -42,6 +43,15 @@ export interface ClassWorkItem {
 
 const MARK = { done: "✓", late: "!", todo: "○" } as const;
 
+/* "" is every category rather than a fourth value: the filter is a narrowing,
+   and a teacher who has not narrowed anything should see the whole shelf. */
+const CATEGORY_FILTERS = [
+  { value: "", label: "Toutes" },
+  { value: "CYBERSEC", label: "Cybersécurité" },
+  { value: "DEV", label: "Développement" },
+  { value: "NETWORK", label: "Réseaux" },
+] as const;
+
 /**
  * The same three states the student sees, read from the class's side: done
  * when everyone has finished it, late when the date has passed and they have
@@ -69,14 +79,17 @@ export function ClassWork({
   const [removing, startRemove] = useTransition();
   const [query, setQuery] = useState("");
 
+  const [category, setCategory] = useState<string>("");
+  const [chosen, setChosen] = useState<string>("");
+
   const alreadySet = useMemo(() => new Set(items.map((i) => i.lessonId)), [items]);
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    // A lesson already set is not offered again: re-assigning it is changing
-    // its deadline, which is a different intent and a different control.
-    const pool = lessons.filter((l) => !alreadySet.has(l.id));
-    return (q.length === 0 ? pool : pool.filter((l) => l.search.includes(q))).slice(0, 30);
-  }, [lessons, alreadySet, query]);
+
+  // A lesson already set is not offered again: re-assigning it is changing its
+  // deadline, which is a different intent and a different control.
+  const matches = useMemo(
+    () => filterAssignable(lessons, { alreadySet, category, query }),
+    [lessons, alreadySet, category, query],
+  );
 
   return (
     <div className="cls-work-block">
@@ -124,34 +137,70 @@ export function ClassWork({
         <form action={formAction} className="cls-assign__form">
           <input type="hidden" name="classId" value={classId} />
 
-          <label className="cls-field">
-            <span className="cls-field__label">Filtrer le catalogue</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-              }}
-              placeholder="Titre ou catégorie…"
-              className="cls-input"
-            />
-          </label>
+          <input type="hidden" name="lessonId" value={chosen} />
 
-          <label className="cls-field">
-            <span className="cls-field__label">Leçon</span>
-            <select name="lessonId" required className="cls-input" size={6}>
-              {matches.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title} · {l.category}
-                </option>
-              ))}
-            </select>
-            {matches.length === 0 && (
-              <span className="cls-field__hint">
+          <div className="cls-field">
+            <span className="cls-field__label">
+              Leçon · <b className="cw-count">{matches.length}</b> au choix
+              {alreadySet.size > 0 &&
+                ` · ${String(alreadySet.size)} déjà assignée${alreadySet.size > 1 ? "s" : ""}`}
+            </span>
+
+            <div className="cw-filters">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
+                placeholder="Chercher une leçon…"
+                aria-label="Chercher une leçon"
+                className="cls-input"
+              />
+              <div className="cw-cats">
+                {CATEGORY_FILTERS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    className="cw-cat"
+                    data-active={category === c.value}
+                    onClick={() => {
+                      setCategory(c.value);
+                    }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {matches.length === 0 ? (
+              <p className="cls-empty">
                 Aucune leçon ne correspond, ou toutes sont déjà assignées.
-              </span>
+              </p>
+            ) : (
+              <ul className="cw-pool">
+                {matches.map((l) => (
+                  <li key={l.id}>
+                    <button
+                      type="button"
+                      className="cw-pool__row"
+                      data-chosen={chosen === l.id}
+                      onClick={() => {
+                        setChosen(l.id);
+                      }}
+                    >
+                      <span className="cw-pool__mark" aria-hidden="true">
+                        {chosen === l.id ? "●" : "○"}
+                      </span>
+                      <span className="cw-pool__title">{l.title}</span>
+                      <span className="cw-pool__cat">{l.category}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
-          </label>
+          </div>
 
           <label className="cls-field">
             <span className="cls-field__label">À rendre avant · optionnel</span>
@@ -173,7 +222,7 @@ export function ClassWork({
             />
           </label>
 
-          <button type="submit" disabled={pending || matches.length === 0} className="cls-btn">
+          <button type="submit" disabled={pending || chosen === ""} className="cls-btn">
             {pending ? "…" : "Assigner à la classe"}
           </button>
 
