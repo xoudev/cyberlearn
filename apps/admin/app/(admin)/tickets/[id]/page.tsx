@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@cyberlearn/db";
 import { Card, GhostLink, PageHeader, Tag, UI, type Tone } from "../../_components/admin-ui";
 import { TicketStatusSelect } from "../_components/TicketStatusSelect";
+import { TicketThread } from "../_components/TicketThread";
 import { STATUS_META, THEME_META } from "../ticket-meta";
 
 export const metadata: Metadata = { title: "Ticket" };
@@ -84,6 +85,16 @@ export default async function AdminTicketPage({
       createdAt: true,
       updatedAt: true,
       user: { select: { username: true, displayName: true, email: true } },
+      messages: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          body: true,
+          fromStaff: true,
+          createdAt: true,
+          author: { select: { displayName: true } },
+        },
+      },
     },
   });
 
@@ -95,6 +106,10 @@ export default async function AdminTicketPage({
     ? `@${ticket.user.username}`
     : (ticket.user?.displayName ?? "Visiteur non connecté");
   const contactEmail = ticket.email ?? ticket.user?.email ?? null;
+
+  // Formatted here: the server owns the locale, and a Date crossing to a client
+  // component renders differently on the two sides of the boundary.
+  const stamp = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
   return (
     <main className="a-page">
@@ -199,6 +214,22 @@ export default async function AdminTicketPage({
           </Card>
         </div>
       </div>
+
+      <Card title="Conversation">
+        <TicketThread
+          ticketId={ticket.id}
+          requesterName={requester}
+          openingMessage={ticket.message}
+          openingStamp={stamp.format(ticket.createdAt)}
+          messages={ticket.messages.map((m) => ({
+            id: m.id,
+            body: m.body,
+            fromStaff: m.fromStaff,
+            stamp: stamp.format(m.createdAt),
+            authorName: m.author?.displayName ?? null,
+          }))}
+        />
+      </Card>
     </main>
   );
 }

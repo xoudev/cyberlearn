@@ -84,6 +84,7 @@ model User {
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
   authoredLessons   Lesson[]                @relation("LessonAuthor")
   authoredPaths     Path[]                  @relation("PathAuthor")
+  ticketMessages    TicketMessage[]         @relation("TicketMessageAuthor")
   forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
   forumPosts        ForumPost[]             @relation("ForumPostAuthor")
 
@@ -1304,6 +1305,11 @@ enum TicketTheme {
   FEATURE_REQUEST
   SECURITY
   CONTENT_ERROR
+  /// A school asking to be added to the platform. It is the one theme with a
+  /// shape: without the establishment's name, its town and someone answerable
+  /// for it, the request cannot be acted on and the first reply is always the
+  /// same three questions. The form asks for them up front.
+  ESTABLISHMENT_REQUEST
   OTHER
 }
 
@@ -1329,11 +1335,39 @@ model ContactTicket {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages TicketMessage[]
 
   @@index([status])
   @@index([userId])
   @@map("contact_tickets")
+}
+
+/// One turn in the conversation on a ticket.
+///
+/// The original message stays on the ticket itself rather than becoming the
+/// first row here: it is what the ticket is, every ticket has exactly one, and
+/// moving it would have meant a migration that can half-fail on a table that
+/// already has rows in production.
+///
+/// fromStaff is stored rather than derived from the author's current role. A
+/// reply is a fact about who wrote it at the time; someone who was staff in
+/// March and is not in June must not turn their old replies into a learner's,
+/// and a reply whose author has been erased must still read as having come
+/// from the team.
+model TicketMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @db.Uuid
+  authorId  String?  @db.Uuid // null once that account is erased
+  fromStaff Boolean
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket ContactTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User?         @relation("TicketMessageAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_messages")
 }
 
 // ============================================================
