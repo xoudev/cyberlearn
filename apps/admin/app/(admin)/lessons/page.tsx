@@ -17,6 +17,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
       category: true,
       difficulty: true,
       status: true,
+      audience: true,
       xpReward: true,
       estimatedMinutes: true,
       createdAt: true,
@@ -42,6 +43,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
     status: l.status as LessonRow["status"],
     xpReward: l.xpReward,
     estimatedMinutes: l.estimatedMinutes,
+    audience: l.audience,
     completions: l._count.progress,
     pathLessonsCount: l._count.pathLessons,
   }));

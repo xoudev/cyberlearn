@@ -147,6 +147,7 @@ model Class {
   members     ClassMember[]
   invitations ClassInvitation[]
   assignments ClassAssignment[]
+  lessonLinks LessonClass[]
 
   /// Scoped to the promotion: "SIO1-A" exists in more than one school.
   @@unique([promotionId, slug])
@@ -234,6 +235,25 @@ model ClassAssignment {
   @@unique([classId, lessonId])
   @@index([classId, dueAt])
   @@map("class_assignments")
+}
+
+/// Which classes may see a CLASS lesson.
+///
+/// A join table rather than a classId column on the lesson, because a teacher
+/// following two sections of the same year writes the material once and shows
+/// it to both. Deleting a class takes its links and leaves the lesson, which is
+/// the author's to keep or to point at another class.
+model LessonClass {
+  lessonId String   @db.Uuid
+  classId  String   @db.Uuid
+  linkedAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  class  Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, classId])
+  @@index([classId])
+  @@map("lesson_classes")
 }
 
 model ClassMember {
@@ -342,25 +362,28 @@ enum ContentStatus {
 }
 
 model Lesson {
-  id               String        @id @default(uuid()) @db.Uuid
-  refCode          String        @unique // Format: CL-LSN-001-V01
-  slug             String        @unique
-  title            String        @db.VarChar(200)
-  description      String        @db.VarChar(500)
+  id               String         @id @default(uuid()) @db.Uuid
+  refCode          String         @unique // Format: CL-LSN-001-V01
+  slug             String         @unique
+  title            String         @db.VarChar(200)
+  description      String         @db.VarChar(500)
   category         Category
   difficulty       Difficulty
   estimatedMinutes Int
   xpReward         Int
-  contentMdx       String        @db.Text
+  contentMdx       String         @db.Text
   coverImageUrl    String?
-  status           ContentStatus @default(DRAFT)
-  version          Int           @default(1)
-  authorId         String        @db.Uuid
+  status           ContentStatus  @default(DRAFT)
+  /// CATALOGUE unless a teacher wrote it for their classes. Defaulted so every
+  /// lesson that existed before this column is what it always was.
+  audience         LessonAudience @default(CATALOGUE)
+  version          Int            @default(1)
+  authorId         String         @db.Uuid
   avgRating        Float? // Recomputed in transaction on each Rating mutation
-  ratingsCount     Int           @default(0)
+  ratingsCount     Int            @default(0)
   publishedAt      DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   pathLessons      PathLesson[]
   progress         UserLessonProgress[]
@@ -372,6 +395,7 @@ model Lesson {
   skipWaivers      UserSkipWaiver[]
   notes            Note[]
   classAssignments ClassAssignment[]
+  classLinks       LessonClass[]
 
   @@index([category, difficulty, status])
   @@index([slug])
@@ -1041,6 +1065,17 @@ model QuizAttempt {
 // ============================================================
 // NOTIFICATIONS & SPACED REPETITION
 // ============================================================
+
+/// Who a lesson is for.
+///
+/// CATALOGUE is the platform's own content: anyone signed in may open it, it
+/// can sit in a path, and it counts in the platform's figures. CLASS is a
+/// lesson a teacher wrote for their own classes - readable only by the people
+/// in them, and invisible to the catalogue, to paths, and to the stats.
+enum LessonAudience {
+  CATALOGUE
+  CLASS
+}
 
 enum NotificationType {
   REVIEW_REMINDER

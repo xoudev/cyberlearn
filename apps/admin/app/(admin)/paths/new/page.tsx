@@ -7,6 +7,9 @@ export const dynamic = "force-dynamic";
 export default async function NewPathPage(): Promise<React.ReactElement> {
   const [lessons, paths] = await Promise.all([
     prisma.lesson.findMany({
+      // Drafts are offered on purpose here - a path is staged before either is
+      // published - but a class's own lesson never belongs in one.
+      where: { audience: "CATALOGUE" },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

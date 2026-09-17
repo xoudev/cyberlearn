@@ -1,5 +1,50 @@
 import { prisma } from "../prisma.js";
-import type { Category, Difficulty, ProgressStatus } from "@prisma/client";
+import type { Category, Difficulty, Prisma, ProgressStatus } from "@prisma/client";
+
+/**
+ * What the open catalogue is, in one place.
+ *
+ * Published was the whole rule while every lesson belonged to everyone. It
+ * stopped being so the moment a teacher could write one for their own classes:
+ * a CLASS lesson is published - a class has to be able to open it - and it is
+ * not catalogue content. Anything that counts, ranks or recommends lessons to
+ * the platform at large reads this, so a private lesson cannot turn up in a
+ * path, in the placement recommendations, or in the figures on the dashboard.
+ */
+export const CATALOGUE_LESSON = {
+  status: "PUBLISHED",
+  audience: "CATALOGUE",
+} as const satisfies Prisma.LessonWhereInput;
+
+/**
+ * What one person may open: the catalogue, plus the lessons written for the
+ * classes they are in or teach.
+ *
+ * Scoped by the caller's own id rather than by a role, like every other class
+ * read: Prisma connects as the table owner and bypasses RLS, so the policy on
+ * public.lessons is a second line of defence over the Data API and this where
+ * clause is the one doing the work.
+ */
+export function lessonsVisibleTo(userId: string): Prisma.LessonWhereInput {
+  return {
+    status: "PUBLISHED",
+    OR: [
+      { audience: "CATALOGUE" },
+      {
+        classLinks: {
+          some: {
+            class: {
+              OR: [
+                { members: { some: { userId } } },
+                { teachers: { some: { teacherId: userId } } },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  };
+}
 
 export interface LessonFilters {
   category?: Category;
@@ -14,10 +59,15 @@ export interface LessonFilters {
 }
 
 export const lessonRepository = {
-  /** Find a single published lesson by slug. Returns null if not found or not published. */
-  async findBySlug(slug: string) {
+  /**
+   * A published lesson this reader may open, by slug.
+   *
+   * The reader is not decoration: a CLASS lesson is published, so "published"
+   * alone would hand it to anyone who guessed the slug.
+   */
+  async findBySlug(slug: string, viewerId: string) {
     return prisma.lesson.findFirst({
-      where: { slug, status: "PUBLISHED" },
+      where: { slug, ...lessonsVisibleTo(viewerId) },
       select: {
         id: true,
         refCode: true,
@@ -48,8 +98,12 @@ export const lessonRepository = {
             ? { progress: { none: { userId } } }
             : {};
 
-    const where = {
-      status: "PUBLISHED" as const,
+    const where: Prisma.LessonWhereInput = {
+      // Their class's own lessons sit in the catalogue beside the platform's,
+      // for them alone. A separate list would mean a second place to look, a
+      // second search box, and a lesson that is real work being filed as an
+      // annexe.
+      ...lessonsVisibleTo(userId),
       ...(category !== undefined && { category }),
       ...(difficulty !== undefined && { difficulty }),
       ...progressCondition,
@@ -105,11 +159,16 @@ export const lessonRepository = {
     };
   },
 
-  /** Count published lessons grouped by category. Used for filter badges. */
-  async countByCategory() {
+  /**
+   * Lessons per category, for the filter badges.
+   *
+   * Counted for the reader, because the list is: a badge saying 40 over a list
+   * of 41 is the kind of wrongness nobody reports and everybody notices.
+   */
+  async countByCategory(viewerId: string) {
     const rows = await prisma.lesson.groupBy({
       by: ["category"],
-      where: { status: "PUBLISHED" },
+      where: lessonsVisibleTo(viewerId),
       _count: { id: true },
     });
     return Object.fromEntries(rows.map((r) => [r.category, r._count.id]));

@@ -3796,3 +3796,25 @@ article.lesson-content blockquote p code {
   background: rgba(255, 77, 109, 0.07);
   color: #ff8aa0;
 }
+
+/* Two fields abreast where they are short enough to share a line - a category
+   and a level next to each other read as one choice about the same lesson. */
+.cls-grid2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 560px) {
+  .cls-grid2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Monospace and roomy: this one holds markdown, where the indentation of a
+   list and the alignment of a code fence are part of what is being written. */
+.cls-input--code {
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: vertical;
+  tab-size: 2;
+}

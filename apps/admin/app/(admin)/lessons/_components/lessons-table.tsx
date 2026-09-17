@@ -8,6 +8,7 @@ import { updateLessonStatusAction, bulkUpdateLessonStatusAction } from "../_acti
 import { DeleteLessonButton } from "./delete-lesson-button";
 
 type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+type LessonAudience = "CATALOGUE" | "CLASS";
 
 export interface LessonRow {
   id: string;
@@ -21,6 +22,8 @@ export interface LessonRow {
   estimatedMinutes: number;
   completions: number;
   pathLessonsCount: number;
+  /** CLASS when a teacher wrote it for their own classes rather than for the catalogue. */
+  audience: LessonAudience;
 }
 
 interface DiffColor {
@@ -493,6 +496,23 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                   >
                     {lesson.slug} · {String(lesson.estimatedMinutes)} min
                   </div>
+                  {/* Otherwise an admin scanning this list finds a lesson they
+                      did not commission, cannot see in the catalogue, and has
+                      no way to tell apart from one that has gone missing. */}
+                  {lesson.audience === "CLASS" && (
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 9.5,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: "#B14DFF",
+                        marginTop: 3,
+                      }}
+                    >
+                      Leçon de classe
+                    </div>
+                  )}
                 </div>
 
                 <span

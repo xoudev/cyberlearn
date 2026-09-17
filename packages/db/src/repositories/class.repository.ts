@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { prisma } from "../prisma.js";
 
 // Classes and who is in them.
@@ -684,6 +685,146 @@ export const classRepository = {
       select: { userId: true, lessonId: true },
     });
     return new Set(rows.map((r) => `${r.userId}:${r.lessonId}`));
+  },
+
+  // ─── Lessons a teacher wrote for their classes ────────────────────────────
+
+  /** The CLASS lessons shown to these classes, newest first. */
+  async listClassLessons(classIds: string[]) {
+    if (classIds.length === 0) return [];
+    const rows = await prisma.lessonClass.findMany({
+      where: { classId: { in: classIds } },
+      orderBy: { linkedAt: "desc" },
+      select: {
+        classId: true,
+        lesson: {
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            description: true,
+            category: true,
+            difficulty: true,
+            estimatedMinutes: true,
+            xpReward: true,
+            // Lesson.authorId is a plain column with no relation behind it -
+            // the catalogue never needed to join to one - so the id is what
+            // there is. The class already knows who its teachers are.
+            authorId: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+    return rows.map((r) => ({ classId: r.classId, ...r.lesson }));
+  },
+
+  /**
+   * Writes a lesson for one class.
+   *
+   * It is an ordinary Lesson row with audience CLASS, not a parallel kind of
+   * content. Everything the platform already does to a lesson - progress, XP,
+   * the review schedule, being assigned with a deadline - then works on it
+   * without a line of new code, and the only thing that differs is who may see
+   * it. A second content type would have needed all of that written again, and
+   * would have got some of it wrong.
+   *
+   * refCode and slug are generated rather than asked for: they are a
+   * cataloguing convention, and a teacher writing a lesson for their class is
+   * not filing it in the catalogue.
+   */
+  async createClassLesson(input: {
+    classId: string;
+    authorId: string;
+    title: string;
+    description: string;
+    category: "DEV" | "CYBERSEC" | "NETWORK";
+    difficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+    estimatedMinutes: number;
+    xpReward: number;
+    contentMdx: string;
+  }): Promise<{ id: string; slug: string }> {
+    const { classId, ...lesson } = input;
+    // CL-CLS marks the origin at a glance in the admin list and cannot collide
+    // with the CL-LSN-000-V00 series the catalogue uses.
+    const token = randomUUID().slice(0, 8);
+    const slugBase = lesson.title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/gu, "")
+      .replace(/[^a-z0-9]+/gu, "-")
+      .replace(/^-+|-+$/gu, "")
+      .slice(0, 60);
+
+    const created = await prisma.lesson.create({
+      data: {
+        ...lesson,
+        refCode: `CL-CLS-${token}-V01`,
+        // The token keeps it unique without asking the teacher to care: two
+        // classes may both have a "Révisions du chapitre 3".
+        slug: `${slugBase === "" ? "lecon" : slugBase}-${token}`,
+        audience: "CLASS",
+        // Published immediately: a draft would be a lesson the class cannot
+        // open, and the teacher has no console to publish it from later.
+        status: "PUBLISHED",
+        publishedAt: new Date(),
+        classLinks: { create: { classId } },
+      },
+      select: { id: true, slug: true },
+    });
+    return created;
+  },
+
+  async updateClassLesson(
+    lessonId: string,
+    data: {
+      title?: string;
+      description?: string;
+      category?: "DEV" | "CYBERSEC" | "NETWORK";
+      difficulty?: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+      estimatedMinutes?: number;
+      xpReward?: number;
+      contentMdx?: string;
+    },
+  ): Promise<void> {
+    await prisma.lesson.updateMany({ where: { id: lessonId, audience: "CLASS" }, data });
+  },
+
+  /**
+   * Whether this account may edit or delete this class lesson.
+   *
+   * Its author, or a teacher of a class it is shown to. Co-teachers of the same
+   * class share the material, and a teacher who leaves should not take the term
+   * with them.
+   */
+  async canEditClassLesson(userId: string, lessonId: string): Promise<boolean> {
+    const lesson = await prisma.lesson.findFirst({
+      where: {
+        id: lessonId,
+        audience: "CLASS",
+        OR: [
+          { authorId: userId },
+          { classLinks: { some: { class: { teachers: { some: { teacherId: userId } } } } } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (lesson !== null) return true;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    return user?.role === "ADMIN";
+  },
+
+  /**
+   * Deletes a class lesson outright.
+   *
+   * Archiving it would leave a lesson nobody can reach in a catalogue nobody
+   * can see it in. What is lost with it is the progress rows that hang off it,
+   * which is correct: they measure work on material that no longer exists.
+   * Refuses anything that is not a CLASS lesson, so a stray id cannot take a
+   * catalogue lesson with it.
+   */
+  async deleteClassLesson(lessonId: string): Promise<void> {
+    await prisma.lesson.deleteMany({ where: { id: lessonId, audience: "CLASS" } });
   },
 
   /** Idempotent: assigning a teacher already on the class only updates the subject. */

@@ -2,7 +2,11 @@
 // Prisma client, Supabase client factories, repositories, and database types.
 
 export { prisma } from "./prisma.js";
-export { lessonRepository } from "./repositories/lesson.repository.js";
+export {
+  lessonRepository,
+  CATALOGUE_LESSON,
+  lessonsVisibleTo,
+} from "./repositories/lesson.repository.js";
 export { statsRepository } from "./repositories/stats.repository.js";
 export type {
   LandingStats,
@@ -107,6 +111,7 @@ export {
   Category,
   Difficulty,
   ContentStatus,
+  LessonAudience,
   BadgeRarity,
   BadgeCriterionType,
   ProgressStatus,

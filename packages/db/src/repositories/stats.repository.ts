@@ -1,4 +1,5 @@
 import { prisma } from "../prisma.js";
+import { CATALOGUE_LESSON } from "./lesson.repository.js";
 
 export interface LandingStats {
   /** Categories with at least one published lesson. */
@@ -40,12 +41,16 @@ export const statsRepository = {
    */
   async findLandingStats(): Promise<LandingStats> {
     const [categories, publishedLessons, publishedPaths] = await Promise.all([
+      // CATALOGUE_LESSON rather than "published": a lesson a teacher wrote for
+      // one class is published - the class has to open it - and counting it
+      // here would advertise it as the platform's own content on a page seen
+      // by people who cannot see the lesson.
       prisma.lesson.findMany({
-        where: { status: "PUBLISHED" },
+        where: CATALOGUE_LESSON,
         distinct: ["category"],
         select: { category: true },
       }),
-      prisma.lesson.count({ where: { status: "PUBLISHED" } }),
+      prisma.lesson.count({ where: CATALOGUE_LESSON }),
       prisma.path.count({ where: { status: "PUBLISHED" } }),
     ]);
 

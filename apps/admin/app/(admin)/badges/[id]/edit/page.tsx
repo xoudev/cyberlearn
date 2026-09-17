@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { EditBadgeForm } from "./_components/edit-badge-form";
 import type { LessonOption, PathOption } from "../../new/_components/new-badge-form";
 
@@ -30,7 +30,10 @@ export default async function EditBadgePage({
       },
     }),
     prisma.lesson.findMany({
-      where: { status: "PUBLISHED" },
+      // CATALOGUE_LESSON, not just published: a lesson a teacher wrote for one
+      // class is published, and putting it behind a badge or inside a path
+      // would promise it to people who cannot open it.
+      where: CATALOGUE_LESSON,
       select: { id: true, title: true, slug: true, category: true },
       orderBy: [{ category: "asc" }, { title: "asc" }],
     }) satisfies Promise<LessonOption[]>,
