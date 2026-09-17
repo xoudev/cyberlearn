@@ -11,6 +11,8 @@ import { CHANGELOG_SEEN_KEY, LATEST_VERSION } from "@/lib/changelog/entries";
 interface SidebarNavProps {
   /** Shown only when there is at least one class to follow - not merely a role. */
   hasClasses?: boolean;
+  /** False once someone has switched spaced repetition off in their settings. */
+  showRevisions?: boolean;
   inProgressCount?: number;
   level?: number;
   xpCurrent?: number;
@@ -275,7 +277,6 @@ function IconNews() {
 const LEARN_ITEMS = [
   { href: "/dashboard", label: "Dashboard", Icon: IconDashboard, badgeKey: null },
   { href: "/lessons", label: "Leçons", Icon: IconBook, badgeKey: "lessons" },
-  { href: "/revisions", label: "Révisions", Icon: IconReview, badgeKey: null },
   { href: "/notes", label: "Bloc-notes", Icon: IconNote, badgeKey: null },
   { href: "/paths", label: "Parcours", Icon: IconRoute, badgeKey: null },
   { href: "/badges", label: "Badges", Icon: IconBadge, badgeKey: null },
@@ -327,6 +328,7 @@ function SectionLabel({ text }: { text: string }) {
 
 export function SidebarNav({
   hasClasses = false,
+  showRevisions = true,
   inProgressCount = 0,
   level = 1,
   xpCurrent = 0,
@@ -509,6 +511,11 @@ export function SidebarNav({
         }}
         aria-label="Navigation Apprendre"
       >
+        {/* Revisions sit inside the learning list rather than at its end, but
+            they are the one entry that can be switched off, so they are placed
+            here instead of living in the constant above. */}
+        {showRevisions && <NavItem href="/revisions" label="Révisions" Icon={IconReview} />}
+
         {LEARN_ITEMS.map(({ href, label, Icon, badgeKey }) => (
           <NavItem
             key={href}

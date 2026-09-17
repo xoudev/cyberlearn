@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
+import { PageHeader } from "@/components/page-header";
 import { RevisionsList, type ReviewRow } from "./_components/revisions-list";
 
 export const metadata: Metadata = { title: "Révisions · CyberLearn" };
@@ -62,6 +64,27 @@ function dueLabel(
 export default async function RevisionsPage(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
   const now = new Date();
+
+  // Switched off, but still reachable: a bookmark or an old link should explain
+  // itself and offer the way back rather than 404 at someone who once used this
+  // every day. Their schedules are still there, waiting.
+  if (!(await revisionsEnabled(authUser.id))) {
+    return (
+      <div className="page-container">
+        <PageHeader
+          crumb="revisions"
+          eyebrow="RÉVISIONS · DÉSACTIVÉES"
+          title="Les révisions sont coupées"
+          lede="Tu as désactivé la répétition espacée dans tes préférences. Rien n'est perdu : ce que tu avais à réviser t'attend si tu la réactives."
+        />
+        <p>
+          <Link href="/settings/preferences" className="cls-btn cls-btn--link">
+            Rouvrir les préférences
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   const [dueSchedules, upcomingSchedules] = await Promise.all([
     prisma.reviewSchedule.findMany({
