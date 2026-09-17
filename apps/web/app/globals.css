@@ -3279,3 +3279,309 @@ article.lesson-content blockquote p code {
   letter-spacing: 0.08em;
   color: #6b6890;
 }
+
+/* ─── Page chrome ─────────────────────────────────────────────────────────
+   The breadcrumb, eyebrow and title every page of the app opens with. It was
+   written inline on each of them, which is why the class page - written later
+   and without it - read as a different product. Extracted here so a new page
+   gets the pattern by using it rather than by remembering it. */
+
+.pg-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 26px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #6b6890;
+}
+.pg-crumb b {
+  color: #b8b5d1;
+  font-weight: 500;
+}
+.pg-crumb__sigil {
+  color: #0affd4;
+}
+.pg-crumb__sep {
+  color: #44406b;
+}
+.pg-crumb__leaf {
+  color: #f5f5fa;
+  font-weight: 500;
+}
+/* A caret that blinks, like the prompt the breadcrumb is imitating. Motion is
+   dropped for anyone who asked for less of it. */
+.pg-crumb__caret {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  margin-left: 4px;
+  vertical-align: -2px;
+  background: #0affd4;
+  box-shadow: 0 0 8px #0affd4;
+  animation: pg-blink 1s step-end infinite;
+}
+@keyframes pg-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-crumb__caret {
+    animation: none;
+  }
+}
+
+.pg-eyebrow {
+  margin-bottom: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+.pg-eyebrow::before {
+  content: "// ";
+  color: #44406b;
+}
+.pg-eyebrow b {
+  color: #0affd4;
+  font-weight: 500;
+}
+
+.pg-title {
+  margin: 0 0 18px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  color: #f5f5fa;
+}
+
+.pg-lede {
+  max-width: 62ch;
+  margin: 0 0 44px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #b8b5d1;
+}
+
+/* ─── Class page ──────────────────────────────────────────────────────────
+   Two readers, one shell. A student opens this to see their class and where
+   they stand in it; a teacher opens it to see how far a class has got. The
+   card is the same object either way - what changes is what is measured on it
+   and whose name is in the list. */
+
+.cls-stack {
+  display: grid;
+  gap: 22px;
+}
+
+.cls-card {
+  padding: 22px 24px;
+  border: 1px solid #2a2560;
+  border-left: 3px solid #0affd4;
+  background: rgba(5, 4, 26, 0.6);
+}
+/* A teacher's classes are filed under a school and an intake; a student has
+   one class and no filing to do. The rule tells them apart without a heading. */
+.cls-card--taught {
+  border-left-color: #6e8bff;
+}
+
+.cls-card__eyebrow {
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+.cls-card__title {
+  margin: 0 0 4px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: #f5f5fa;
+}
+.cls-card__teachers {
+  margin: 0 0 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  color: #6b6890;
+}
+.cls-card__teachers b {
+  color: #b8b5d1;
+  font-weight: 500;
+}
+
+/* A strip of figures about the class, or about your own standing in it.
+   Wraps rather than scrolls: four numbers on a phone are two rows, not a
+   horizontal gesture nobody discovers. */
+.cls-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.cls-stat {
+  flex: 1 1 116px;
+  padding: 10px 12px;
+  border: 1px solid rgba(42, 37, 96, 0.7);
+  background: rgba(10, 8, 38, 0.5);
+}
+.cls-stat__value {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #f5f5fa;
+}
+.cls-stat__value[data-tone="accent"] {
+  color: #0affd4;
+}
+.cls-stat__value[data-tone="warning"] {
+  color: #ffb020;
+}
+.cls-stat__label {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+
+.cls-subhead {
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+
+.cls-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+/* Name, measure, figure - in that order and on one line.
+   The bar ran the full width under the name at first, which put a bright
+   gradient rule directly beneath the text: it read as an underline rather than
+   a quantity, and on a wide screen it left the name and its numbers a thousand
+   pixels apart with nothing between them. Giving the bar the middle column
+   fixes both - it is the thing that ties the two ends of the row together, and
+   two bars in consecutive rows now start and end at the same x, which is what
+   makes them comparable at a glance. */
+.cls-person {
+  display: grid;
+  /* The last track is a fixed length, not auto. Each row is its own grid - a
+     <li> cannot share tracks with its siblings - so an auto column is sized to
+     that row's own text, and a student whose line reads "· inactif" got a wider
+     one. Every bar then started and ended at a different x, which is the one
+     thing a row of bars must not do. */
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 260px) 200px;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+}
+@media (max-width: 560px) {
+  /* Too narrow for three columns: the bar drops to its own line rather than
+     squeezing the name into an ellipsis. */
+  .cls-person {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .cls-person__bar {
+    grid-column: 1 / -1;
+  }
+}
+.cls-person:last-child {
+  border-bottom: none;
+}
+/* The signed-in reader's own row, so a roster of thirty has somewhere for the
+   eye to land. */
+.cls-person[data-self="true"] .cls-person__name {
+  color: #0affd4;
+}
+.cls-person__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #f5f5fa;
+}
+.cls-person__name a {
+  color: inherit;
+  text-decoration: none;
+}
+.cls-person__name a:hover {
+  color: #0affd4;
+}
+.cls-person__meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: #6b6890;
+  white-space: nowrap;
+  text-align: right;
+}
+.cls-person__bar {
+  height: 4px;
+  background: rgba(42, 37, 96, 0.55);
+  overflow: hidden;
+}
+.cls-person__bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #0024ff, #0affd4);
+}
+
+.cls-empty {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #6b6890;
+}
+
+/* A school, then its intakes: the filing a teacher already keeps. */
+.cls-group {
+  margin-bottom: 40px;
+}
+.cls-group__school {
+  margin: 0 0 2px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 20px;
+  color: #f5f5fa;
+}
+.cls-group__city {
+  margin-bottom: 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+.cls-group__intake {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #44406b;
+}

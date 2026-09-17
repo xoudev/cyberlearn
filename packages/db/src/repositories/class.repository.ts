@@ -200,6 +200,10 @@ export const classRepository = {
                 level: true,
                 xpTotal: true,
                 streakDays: true,
+                // Read by the teacher view, which leads on how many of a class
+                // have opened the site this week - the question a roster is
+                // scanned for. Nothing renders it to a classmate.
+                lastActiveAt: true,
                 preferences: { select: { publicProfile: true } },
               },
             },
