@@ -3818,3 +3818,74 @@ article.lesson-content blockquote p code {
   resize: vertical;
   tab-size: 2;
 }
+
+/* ─── Class resources (corrigés) ──────────────────────────────────────────── */
+
+.cls-card--resource {
+  border-left-color: #b14dff;
+}
+
+.cls-res {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.cls-res__item {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+}
+.cls-res__item:last-child {
+  border-bottom: none;
+}
+.cls-res__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.cls-res__title {
+  font-size: 14px;
+  color: #f5f5fa;
+  text-decoration: none;
+}
+a.cls-res__title:hover {
+  color: #b14dff;
+}
+.cls-res__meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #6b6890;
+  white-space: nowrap;
+}
+/* Rendered as written, not as markup: a corrigé is typed into a textarea by a
+   teacher, and interpreting it would mean interpreting whatever else lands
+   there. Wrapped so a long line is read rather than scrolled. */
+.cls-res__body {
+  margin: 10px 0 0;
+  padding: 11px 13px;
+  background: rgba(5, 4, 26, 0.75);
+  border-left: 2px solid rgba(177, 77, 255, 0.5);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b8b5d1;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* A checkbox that reads as a sentence rather than as a field. */
+.cls-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: #b8b5d1;
+  cursor: pointer;
+}
+.cls-check input {
+  accent-color: #0affd4;
+  flex-shrink: 0;
+}

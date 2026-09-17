@@ -78,6 +78,7 @@ model User {
   taughtClasses     ClassTeacher[]          @relation("ClassTeacher")
   sentInvitations   ClassInvitation[]       @relation("ClassInvitationSender")
   setAssignments    ClassAssignment[]       @relation("ClassAssignmentAuthor")
+  classResources    ClassResource[]         @relation("ClassResourceAuthor")
 
   @@index([username])
   @@index([role])
@@ -148,6 +149,7 @@ model Class {
   invitations ClassInvitation[]
   assignments ClassAssignment[]
   lessonLinks LessonClass[]
+  resources   ClassResource[]
 
   /// Scoped to the promotion: "SIO1-A" exists in more than one school.
   @@unique([promotionId, slug])
@@ -226,10 +228,11 @@ model ClassAssignment {
   dueAt        DateTime?
   createdAt    DateTime  @default(now())
 
-  class      Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
-  lesson     Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  class      Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  lesson     Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   /// Nullable so deleting a teacher's account does not delete the work they set.
-  assignedBy User?  @relation("ClassAssignmentAuthor", fields: [assignedById], references: [id], onDelete: SetNull)
+  assignedBy User?           @relation("ClassAssignmentAuthor", fields: [assignedById], references: [id], onDelete: SetNull)
+  resources  ClassResource[]
 
   /// One standing assignment per lesson per class: re-assigning moves the date.
   @@unique([classId, lessonId])
@@ -254,6 +257,45 @@ model LessonClass {
   @@id([lessonId, classId])
   @@index([classId])
   @@map("lesson_classes")
+}
+
+/// Something a teacher hands the class: a corrigé, a link, a set of notes.
+///
+/// Held back rather than hidden: the point of an answer key is that it appears
+/// once it can no longer do harm, so a resource carries the two conditions a
+/// teacher actually has in mind - a date, and "once they have done it". Both
+/// are optional and both are checked, so "after the deadline AND only if they
+/// finished" is expressible without a third mechanism.
+model ClassResource {
+  id              String    @id @default(uuid()) @db.Uuid
+  classId         String    @db.Uuid
+  /// The work it corrects, when it corrects work. A resource with no
+  /// assignment is course material rather than an answer key.
+  assignmentId    String?   @db.Uuid
+  title           String    @db.VarChar(200)
+  /// Markdown, rendered the way a lesson is.
+  body            String?   @db.Text
+  /// A link out, for the material that lives in a file somewhere else.
+  url             String?   @db.VarChar(2000)
+  /// Not shown to students before this. Null means "now".
+  releasedAt      DateTime?
+  /// Withheld from a student until they have finished the assigned lesson.
+  /// Meaningless without an assignment, and ignored when there is none.
+  afterCompletion Boolean   @default(false)
+  createdById     String?   @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  class      Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  /// Deleting the assignment keeps the resource and unhooks it - a corrigé is
+  /// still a corrigé once the work it went with has been taken down.
+  assignment ClassAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  /// Nullable so deleting a teacher's account does not take the material.
+  createdBy  User?            @relation("ClassResourceAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([classId, releasedAt])
+  @@index([assignmentId])
+  @@map("class_resources")
 }
 
 model ClassMember {

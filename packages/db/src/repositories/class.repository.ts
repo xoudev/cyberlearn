@@ -687,6 +687,126 @@ export const classRepository = {
     return new Set(rows.map((r) => `${r.userId}:${r.lessonId}`));
   },
 
+  // ─── Resources (corrigés and other material) ──────────────────────────────
+
+  /**
+   * What a teacher has prepared for these classes - released or not.
+   *
+   * A corrigé they cannot re-read before handing it out is a corrigé they
+   * cannot check, so nothing is filtered here. The student-facing read is a
+   * different method on purpose: two callers with two rules, rather than one
+   * with a flag that can be passed the wrong way round.
+   */
+  async listResourcesForTeacher(classIds: string[]) {
+    if (classIds.length === 0) return [];
+    return prisma.classResource.findMany({
+      where: { classId: { in: classIds } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        classId: true,
+        assignmentId: true,
+        title: true,
+        body: true,
+        url: true,
+        releasedAt: true,
+        afterCompletion: true,
+        createdAt: true,
+        assignment: { select: { lessonId: true, lesson: { select: { title: true } } } },
+      },
+    });
+  },
+
+  /**
+   * What a student may actually read, with both conditions applied.
+   *
+   * The date is a where clause; "only once they have done it" cannot be, since
+   * it depends on a row in another table per resource. It is resolved here
+   * against one completion lookup for the whole page rather than a query per
+   * resource - and it is resolved in one place, so no caller can forget the
+   * half of the rule that is harder to express.
+   */
+  async listResourcesForStudent(userId: string, classIds: string[]) {
+    if (classIds.length === 0) return [];
+
+    const rows = await prisma.classResource.findMany({
+      where: {
+        classId: { in: classIds },
+        OR: [{ releasedAt: null }, { releasedAt: { lte: new Date() } }],
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        classId: true,
+        assignmentId: true,
+        title: true,
+        body: true,
+        url: true,
+        createdAt: true,
+        afterCompletion: true,
+        assignment: { select: { lessonId: true, lesson: { select: { title: true } } } },
+      },
+    });
+
+    // afterCompletion is the reason this is not a single query: it depends on a
+    // row in another table, per resource. One lookup for the whole page.
+    const gated = rows.filter((r) => r.afterCompletion && r.assignment !== null);
+    const done = new Set<string>();
+    if (gated.length > 0) {
+      const completed = await prisma.userLessonProgress.findMany({
+        where: {
+          userId,
+          status: "COMPLETED",
+          lessonId: { in: gated.map((r) => r.assignment?.lessonId ?? "") },
+        },
+        select: { lessonId: true },
+      });
+      for (const c of completed) done.add(c.lessonId);
+    }
+
+    // Mapped explicitly rather than spread: afterCompletion is a rule the
+    // student side has already applied, and sending it on would invite a caller
+    // to apply it a second time or to show it.
+    return rows
+      .filter((r) => !r.afterCompletion || r.assignment === null || done.has(r.assignment.lessonId))
+      .map((r) => ({
+        id: r.id,
+        classId: r.classId,
+        assignmentId: r.assignmentId,
+        title: r.title,
+        body: r.body,
+        url: r.url,
+        createdAt: r.createdAt,
+        assignment: r.assignment,
+      }));
+  },
+
+  async createResource(input: {
+    classId: string;
+    assignmentId: string | null;
+    title: string;
+    body: string | null;
+    url: string | null;
+    releasedAt: Date | null;
+    afterCompletion: boolean;
+    createdById: string;
+  }): Promise<{ id: string }> {
+    return prisma.classResource.create({ data: input, select: { id: true } });
+  },
+
+  async deleteResource(resourceId: string): Promise<void> {
+    await prisma.classResource.deleteMany({ where: { id: resourceId } });
+  },
+
+  /** The class a resource belongs to, so the caller can authorise against it. */
+  async findResourceClass(resourceId: string): Promise<string | null> {
+    const row = await prisma.classResource.findUnique({
+      where: { id: resourceId },
+      select: { classId: true },
+    });
+    return row?.classId ?? null;
+  },
+
   // ─── Lessons a teacher wrote for their classes ────────────────────────────
 
   /** The CLASS lessons shown to these classes, newest first. */

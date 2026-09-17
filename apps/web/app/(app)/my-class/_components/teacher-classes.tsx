@@ -2,6 +2,11 @@ import React from "react";
 import Link from "next/link";
 import { ClassWork, type AssignableLesson, type ClassWorkItem } from "./class-work";
 import { ClassLessons, type ClassLessonRow } from "./class-lessons";
+import {
+  ClassResources,
+  type ResourceAssignmentOption,
+  type TeacherResourceRow,
+} from "./class-resources";
 
 /**
  * The classes a teacher follows, filed the way they already file them.
@@ -34,6 +39,8 @@ export interface TaughtClass {
   students: TaughtStudent[];
   work: ClassWorkItem[];
   ownLessons: ClassLessonRow[];
+  resources: TeacherResourceRow[];
+  assignmentOptions: ResourceAssignmentOption[];
 }
 
 export interface TaughtPromotion {
@@ -142,6 +149,12 @@ function ClassCard({
       {/* After the work, because a lesson written here is material rather than
           an instruction - the class is told to do it by assigning it above. */}
       <ClassLessons classId={klass.id} lessons={klass.ownLessons} />
+
+      <ClassResources
+        classId={klass.id}
+        resources={klass.resources}
+        assignments={klass.assignmentOptions}
+      />
 
       {total === 0 ? (
         <p className="cls-empty">Aucun élève dans cette classe.</p>
