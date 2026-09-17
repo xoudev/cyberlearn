@@ -4546,3 +4546,122 @@ a.cls-res__title:hover {
   letter-spacing: 0.06em;
   color: #6f6b99;
 }
+
+/* ─── Tickets, as the person who opened one sees them ─────────────────────── */
+
+.tk-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.tk-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  text-decoration: none;
+  background: rgba(5, 4, 26, 0.5);
+  border: 1px solid #1f1b47;
+  border-left: 3px solid var(--cosmetic-accent);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.tk-row:hover {
+  border-color: #2a2560;
+  border-left-color: var(--cosmetic-accent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
+}
+.tk-row__body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.tk-row__subject {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  color: #f5f5fa;
+  overflow-wrap: anywhere;
+}
+.tk-row__meta {
+  font: 10.5px var(--font-mono);
+  color: #6f6b99;
+}
+
+.tk-status {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  font: 700 9.5px var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid;
+}
+.tk-status[data-tone="accent"] {
+  color: var(--cosmetic-accent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+}
+.tk-status[data-tone="warning"] {
+  color: #ffb020;
+  border-color: rgba(255, 176, 32, 0.4);
+}
+.tk-status[data-tone="muted"] {
+  color: #6b6890;
+  border-color: rgba(42, 37, 96, 0.9);
+}
+
+.tk-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 18px 0 22px;
+}
+
+.tk-thread {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+/* The team's turns are tinted and carry the accent stripe; the requester's are
+   the plain ones. One glance has to answer "did they reply yet". */
+.tk-msg {
+  padding: 12px 15px;
+  background: rgba(5, 4, 26, 0.5);
+  border: 1px solid #1f1b47;
+  border-left: 3px solid #2a2560;
+}
+.tk-msg[data-staff="true"] {
+  background: color-mix(in srgb, var(--cosmetic-accent) 5%, transparent);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 25%, transparent);
+  border-left-color: var(--cosmetic-accent);
+}
+.tk-msg__who {
+  display: block;
+  margin-bottom: 6px;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+.tk-msg[data-staff="true"] .tk-msg__who {
+  color: var(--cosmetic-accent);
+}
+.tk-msg__body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.7;
+  color: #b8b5d1;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tk-reply {
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  background: rgba(10, 8, 38, 0.4);
+  padding: 16px;
+}

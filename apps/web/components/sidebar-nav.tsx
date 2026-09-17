@@ -11,6 +11,8 @@ import { CHANGELOG_SEEN_KEY, LATEST_VERSION } from "@/lib/changelog/entries";
 interface SidebarNavProps {
   /** Shown only when there is at least one class to follow - not merely a role. */
   hasClasses?: boolean;
+  /** False once someone has switched spaced repetition off in their settings. */
+  showRevisions?: boolean;
   inProgressCount?: number;
   level?: number;
   xpCurrent?: number;
@@ -251,6 +253,27 @@ function IconForum() {
   );
 }
 
+/* A life-buoy: help, rather than a speech bubble that would read as the forum. */
+function IconSupport() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <circle cx="8" cy="8" r="6.2" />
+      <circle cx="8" cy="8" r="2.4" />
+      <line x1="3.7" y1="3.7" x2="6.3" y2="6.3" />
+      <line x1="9.7" y1="9.7" x2="12.3" y2="12.3" />
+      <line x1="12.3" y1="3.7" x2="9.7" y2="6.3" />
+      <line x1="6.3" y1="9.7" x2="3.7" y2="12.3" />
+    </svg>
+  );
+}
+
 function IconNews() {
   return (
     <svg
@@ -275,7 +298,6 @@ function IconNews() {
 const LEARN_ITEMS = [
   { href: "/dashboard", label: "Dashboard", Icon: IconDashboard, badgeKey: null },
   { href: "/lessons", label: "Leçons", Icon: IconBook, badgeKey: "lessons" },
-  { href: "/revisions", label: "Révisions", Icon: IconReview, badgeKey: null },
   { href: "/notes", label: "Bloc-notes", Icon: IconNote, badgeKey: null },
   { href: "/paths", label: "Parcours", Icon: IconRoute, badgeKey: null },
   { href: "/badges", label: "Badges", Icon: IconBadge, badgeKey: null },
@@ -292,6 +314,10 @@ const ACTIVITY_ITEMS = [
   { href: "/locker", label: "Casier", Icon: IconLocker, count: null, tag: undefined },
   { href: "/wrapped", label: "Wrapped", Icon: IconWrapped, count: null, tag: undefined },
   { href: "/changelog", label: "Nouveautés", Icon: IconNews, count: null, tag: undefined },
+  // Filing a ticket used to live at the bottom of the footer, which is where
+  // someone looks last and only if they think to look at all. A person with a
+  // problem is the least patient reader on the site.
+  { href: "/support", label: "Aide & demandes", Icon: IconSupport, count: null, tag: undefined },
 ] as const;
 
 // ── Section label ─────────────────────────────────────────────────────────────
@@ -327,6 +353,7 @@ function SectionLabel({ text }: { text: string }) {
 
 export function SidebarNav({
   hasClasses = false,
+  showRevisions = true,
   inProgressCount = 0,
   level = 1,
   xpCurrent = 0,
@@ -509,6 +536,11 @@ export function SidebarNav({
         }}
         aria-label="Navigation Apprendre"
       >
+        {/* Revisions sit inside the learning list rather than at its end, but
+            they are the one entry that can be switched off, so they are placed
+            here instead of living in the constant above. */}
+        {showRevisions && <NavItem href="/revisions" label="Révisions" Icon={IconReview} />}
+
         {LEARN_ITEMS.map(({ href, label, Icon, badgeKey }) => (
           <NavItem
             key={href}

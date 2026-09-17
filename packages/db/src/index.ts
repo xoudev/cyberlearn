@@ -161,3 +161,4 @@ export {
   XpSource,
   WrappedPeriod,
 } from "@prisma/client";
+export { ticketRepository, OPEN_TICKET_STATUSES } from "./repositories/ticket.repository.js";
