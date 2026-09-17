@@ -4423,6 +4423,57 @@ a.cls-res__title:hover {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Dashboard: the parcours lead, and the progression band
+   The parcours used to be section 07 of 07, under the trophies and the raw
+   figures. They now lead, and the leading one carries the reader's own
+   progress through it rather than a poster's statistics. Quests and the streak
+   calendar, previously two stacked sections of their own, sit side by side.
+   ══════════════════════════════════════════════════════════════════════════ */
+.path-progress-track {
+  position: relative;
+  height: 6px;
+  width: 100%;
+  max-width: 420px;
+  background: rgba(42, 37, 96, 0.6);
+  border: 1px solid #2a2560;
+  overflow: hidden;
+}
+.path-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #0024ff, var(--cosmetic-accent));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cosmetic-accent) 45%, transparent);
+  transition: width 400ms ease;
+}
+.path-progress-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 10px;
+  max-width: 420px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #6f6b99;
+}
+.path-progress-foot b {
+  color: #f5f5fa;
+  font-weight: 700;
+}
+.dash-progress-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 28px;
+}
+@media (min-width: 1100px) {
+  .dash-progress-pair {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    Global search panel (navbar)
    The box used to be a GET form onto /lessons; it now opens a grouped result
    list. Hover and keyboard highlight share one class so the mouse and the
