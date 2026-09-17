@@ -4421,3 +4421,128 @@ a.cls-res__title:hover {
   letter-spacing: 0.1em;
   color: #6b6890;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Global search panel (navbar)
+   The box used to be a GET form onto /lessons; it now opens a grouped result
+   list. Hover and keyboard highlight share one class so the mouse and the
+   arrows cannot disagree about which row is selected.
+   ══════════════════════════════════════════════════════════════════════════ */
+.gs-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
+  padding: 4px 0;
+  background: rgba(5, 4, 26, 0.97);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid #2a2560;
+  border-radius: 2px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  z-index: 60;
+}
+.gs-group-label {
+  padding: 8px 12px 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6f6b99;
+}
+.gs-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.gs-row--active {
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
+  border-left-color: var(--cosmetic-accent);
+}
+.gs-row-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 1px solid #2a2560;
+  border-radius: 2px;
+}
+.gs-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.gs-row-title {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f5f5fa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gs-row-sub {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: #9a96c4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gs-row-meta {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: #6f6b99;
+}
+.gs-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #9a96c4;
+}
+.gs-empty-action {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid #2a2560;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--cosmetic-accent);
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+.gs-empty-action:hover {
+  border-color: var(--cosmetic-accent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 10%, transparent);
+}
+.gs-footer {
+  display: flex;
+  gap: 14px;
+  padding: 7px 12px;
+  margin-top: 4px;
+  border-top: 1px solid #2a2560;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: #6f6b99;
+}

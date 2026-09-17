@@ -7,6 +7,7 @@ import { computeLevel } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { notificationRepository } from "@cyberlearn/db";
+import { GlobalSearch } from "./global-search";
 import { NotificationPanel } from "./notification-panel";
 
 // ── Glyph avatar helper ────────────────────────────────────────────────────────
@@ -103,69 +104,7 @@ export async function Navbar(): Promise<React.ReactElement> {
       {/* ── Mobile logo - only shown when sidebar is hidden in drawer ────── */}
 
       {/* ── Search (hidden on mobile) ───────────────────────────────────── */}
-      <form
-        method="get"
-        action="/lessons"
-        className="hidden md:block"
-        style={{ flex: 1, maxWidth: 480, margin: "0 auto", position: "relative" }}
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 16 16"
-          fill="none"
-          style={{
-            position: "absolute",
-            left: 12,
-            top: "50%",
-            transform: "translateY(-50%)",
-            color: "#6F6B99",
-            pointerEvents: "none",
-          }}
-          aria-hidden="true"
-        >
-          <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M11 11 L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-
-        <input
-          type="search"
-          name="q"
-          placeholder="/ search lessons, paths, badges"
-          className="navbar-search-input"
-          style={{
-            width: "100%",
-            height: 34,
-            padding: "0 42px 0 36px",
-            background: "rgba(5,4,26,0.8)",
-            border: "1px solid #2A2560",
-            borderRadius: 2,
-            color: "#F5F5FA",
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            outline: "none",
-          }}
-          aria-label="Rechercher"
-        />
-
-        <span
-          style={{
-            position: "absolute",
-            right: 8,
-            top: "50%",
-            transform: "translateY(-50%)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "#6F6B99",
-            border: "1px solid #2A2560",
-            padding: "1px 5px",
-            borderRadius: 2,
-            pointerEvents: "none",
-          }}
-        >
-          ⌘K
-        </span>
-      </form>
+      <GlobalSearch />
 
       {/* ── Mobile spacer: push actions to the right ────────────────────── */}
       <div className="flex-1 md:hidden" />

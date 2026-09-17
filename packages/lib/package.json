@@ -9,7 +9,8 @@
     "./xp": "./src/xp.ts",
     "./sm2": "./src/sm2.ts",
     "./pseudonymize": "./src/pseudonymize.ts",
-    "./gamification/*": "./src/gamification/*.ts"
+    "./gamification/*": "./src/gamification/*.ts",
+    "./search/*": "./src/search/*.ts"
   },
   "scripts": {
     "build": "tsc",
