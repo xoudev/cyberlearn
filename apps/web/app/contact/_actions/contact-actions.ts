@@ -8,7 +8,15 @@ import { checkContactForm } from "@/lib/rate-limit";
 
 const contactSchema = z.object({
   subject: z.string().trim().min(5).max(200),
-  theme: z.enum(["BUG", "QUESTION", "FEATURE_REQUEST", "SECURITY", "CONTENT_ERROR", "OTHER"]),
+  theme: z.enum([
+    "BUG",
+    "QUESTION",
+    "FEATURE_REQUEST",
+    "SECURITY",
+    "CONTENT_ERROR",
+    "ESTABLISHMENT_REQUEST",
+    "OTHER",
+  ]),
   message: z.string().trim().min(20).max(5000),
   email: z.string().email(),
 });

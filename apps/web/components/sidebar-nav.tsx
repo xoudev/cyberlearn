@@ -251,6 +251,27 @@ function IconForum() {
   );
 }
 
+/* A life-buoy: help, rather than a speech bubble that would read as the forum. */
+function IconSupport() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <circle cx="8" cy="8" r="6.2" />
+      <circle cx="8" cy="8" r="2.4" />
+      <line x1="3.7" y1="3.7" x2="6.3" y2="6.3" />
+      <line x1="9.7" y1="9.7" x2="12.3" y2="12.3" />
+      <line x1="12.3" y1="3.7" x2="9.7" y2="6.3" />
+      <line x1="6.3" y1="9.7" x2="3.7" y2="12.3" />
+    </svg>
+  );
+}
+
 function IconNews() {
   return (
     <svg
@@ -292,6 +313,10 @@ const ACTIVITY_ITEMS = [
   { href: "/locker", label: "Casier", Icon: IconLocker, count: null, tag: undefined },
   { href: "/wrapped", label: "Wrapped", Icon: IconWrapped, count: null, tag: undefined },
   { href: "/changelog", label: "Nouveautés", Icon: IconNews, count: null, tag: undefined },
+  // Filing a ticket used to live at the bottom of the footer, which is where
+  // someone looks last and only if they think to look at all. A person with a
+  // problem is the least patient reader on the site.
+  { href: "/support", label: "Aide & demandes", Icon: IconSupport, count: null, tag: undefined },
 ] as const;
 
 // ── Section label ─────────────────────────────────────────────────────────────
