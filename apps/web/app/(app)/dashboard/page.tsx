@@ -9,8 +9,9 @@ import {
   BADGE_RARITY_VAR,
   toBadgeRarity,
 } from "@cyberlearn/ui";
-import { prisma, leaderboardRepository } from "@cyberlearn/db";
+import { CATALOGUE_PATH, leaderboardRepository, pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { planSections, sectionNumber } from "@/lib/dashboard/sections";
 import { StreakPanel } from "@/components/streak-panel";
 import { QuestsPanel } from "@/components/quests-panel";
 
@@ -53,13 +54,21 @@ async function DashboardContent(): Promise<React.ReactElement> {
   const authUser = await requireRequestUser();
 
   const now = new Date();
+  /** Midnight on the first of the current month, local time - "ce mois-ci". */
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const [
     dbUser,
     inProgressRows,
     dueReviews,
     completedTotal,
+    inProgressTotal,
     badgeRows,
+    badgeTotal,
+    badgesThisMonth,
+    completedThisMonth,
+    certificateCount,
+    certifiablePaths,
     userRank,
     allPaths,
     placementResult,
@@ -67,7 +76,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: authUser.id },
-      select: { displayName: true, xpTotal: true, streakDays: true },
+      select: { displayName: true, xpTotal: true, streakDays: true, longestStreak: true },
     }),
     prisma.userLessonProgress.findMany({
       where: { userId: authUser.id, status: "IN_PROGRESS" },
@@ -106,6 +115,11 @@ async function DashboardContent(): Promise<React.ReactElement> {
     prisma.userLessonProgress.count({
       where: { userId: authUser.id, status: "COMPLETED" },
     }),
+    // The strip said "N en cours" from the length of a list fetched with
+    // take: 1, so it could only ever say 0 or 1 however many were open.
+    prisma.userLessonProgress.count({
+      where: { userId: authUser.id, status: "IN_PROGRESS" },
+    }),
     prisma.userBadge.findMany({
       where: { userId: authUser.id },
       include: {
@@ -114,9 +128,29 @@ async function DashboardContent(): Promise<React.ReactElement> {
       orderBy: { earnedAt: "desc" },
       take: 3,
     }),
+    // The shelf shows three. The collection link and the figure below used to
+    // count that shelf, so somebody with twenty-seven badges was told they had
+    // three.
+    prisma.userBadge.count({ where: { userId: authUser.id } }),
+    prisma.userBadge.count({ where: { userId: authUser.id, earnedAt: { gte: monthStart } } }),
+    prisma.userLessonProgress.count({
+      where: { userId: authUser.id, status: "COMPLETED", completedAt: { gte: monthStart } },
+    }),
+    // "CERTIFICATS · 0 · sur 4 disponibles" was a literal zero and a literal
+    // four, on every account, for everybody.
+    prisma.certificate.count({ where: { userId: authUser.id, revokedAt: null } }),
+    // The denominator is the catalogue, because that is what issues
+    // certificates: checkAndIssueCertificates walks the catalogue paths a
+    // finished lesson belongs to. A class's own path is not one of them.
+    prisma.path.count({ where: CATALOGUE_PATH }),
     leaderboardRepository.findUserRank(authUser.id),
+    // Not { status: "PUBLISHED" }. A path a teacher builds for their class is
+    // published - the class has to be able to open it - so that filter
+    // recommended one class's private work to the whole site. pathsVisibleTo is
+    // the rule the catalogue and the slug lookup read: the catalogue, plus the
+    // paths built for the classes this reader is in or teaches.
     prisma.path.findMany({
-      where: { status: "PUBLISHED" },
+      where: pathsVisibleTo(authUser.id),
       select: {
         id: true,
         slug: true,
@@ -195,6 +229,52 @@ async function DashboardContent(): Promise<React.ReactElement> {
 
   const resumeLesson = inProgressRows[0];
 
+  // What turns the lead section from a poster into a place to start: how far
+  // into the featured path this reader already is, and which lesson is next.
+  // Only for the one path that leads - the alternative beside it is an offer,
+  // not a task.
+  const lead = featuredPaths[0];
+  let leadProgress: PathProgress | null = null;
+  if (lead) {
+    const [doneInPath, nextStep] = await Promise.all([
+      prisma.userLessonProgress.count({
+        where: {
+          userId: authUser.id,
+          status: "COMPLETED",
+          lesson: { pathLessons: { some: { pathId: lead.id } } },
+        },
+      }),
+      prisma.pathLesson.findFirst({
+        where: {
+          pathId: lead.id,
+          lesson: { progress: { none: { userId: authUser.id, status: "COMPLETED" } } },
+        },
+        orderBy: { position: "asc" },
+        select: {
+          position: true,
+          lesson: { select: { slug: true, title: true, estimatedMinutes: true } },
+        },
+      }),
+    ]);
+    leadProgress = {
+      completed: doneInPath,
+      total: lead._count.lessons,
+      next: nextStep
+        ? {
+            position: nextStep.position,
+            slug: nextStep.lesson.slug,
+            title: nextStep.lesson.title,
+            estimatedMinutes: nextStep.lesson.estimatedMinutes,
+          }
+        : null,
+    };
+  }
+
+  const sections = planSections({
+    hasResume: resumeLesson !== undefined,
+    dueReviews: dueReviews.length,
+  });
+
   // Stable session indicator from last chars of user UUID
   const sessionId = authUser.id.slice(-4).toUpperCase();
   const dateStr = now
@@ -227,7 +307,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
         <StatusLive />
         <span style={{ color: "#44406B" }}>/</span>
         <span>
-          {completedCount} leçons vues · {inProgressRows.length} en cours
+          {completedCount} leçons vues · {inProgressTotal} en cours
         </span>
       </div>
 
@@ -348,115 +428,80 @@ async function DashboardContent(): Promise<React.ReactElement> {
         />
       </section>
 
-      {/* ── 01. En cours: terminal card ──────────────────────────────────── */}
+      {/* ── Parcours: the lead ───────────────────────────────────────────── */}
       <section className="animate-fade-up s-section">
         <SectionLabel
-          eyebrow="01 · en cours"
-          title="Reprends l'exploit."
-          ctaLabel="Historique complet →"
-          ctaHref="/lessons"
-        />
-
-        {resumeLesson ? <TerminalCard lesson={resumeLesson.lesson} /> : <NoResumeCard />}
-      </section>
-
-      {/* ── 02. À réviser ────────────────────────────────────────────────── */}
-      <section className="animate-fade-up-delay-1 s-section">
-        <SectionLabel
-          eyebrow="02 · à réviser"
+          eyebrow={`${sectionNumber(sections, "paths") ?? "01"} · parcours`}
           title={
-            dueReviews.length > 0
-              ? `${String(dueReviews.length)} leçon${dueReviews.length > 1 ? "s" : ""} demande${dueReviews.length > 1 ? "nt" : ""} ton attention.`
-              : "Rien à réviser pour l'instant."
+            leadProgress && leadProgress.completed > 0
+              ? "Reprends ton parcours."
+              : "Ta prochaine mission."
           }
-          ctaLabel={dueReviews.length > 0 ? "Tout réviser →" : undefined}
-          ctaHref="/revisions"
-        />
-
-        {dueReviews.length > 0 ? (
-          <ReviewsBlock rows={dueReviews} />
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 16,
-              padding: "64px 24px",
-              border: "1px solid #2A2560",
-              background: "rgba(10,8,38,0.4)",
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#B8B5D1" }}>
-              Commence par compléter des leçons
-            </p>
-            <Link
-              href="/lessons"
-              className="btn-teal"
-              style={{
-                padding: "12px 24px",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                background: "var(--cosmetic-accent)",
-                color: "#030219",
-                border: "1px solid var(--cosmetic-accent)",
-                textDecoration: "none",
-              }}
-            >
-              Explorer les leçons
-            </Link>
-          </div>
-        )}
-      </section>
-
-      {/* ── 03. Trophées ─────────────────────────────────────────────────── */}
-      <section className="animate-fade-up-delay-2 s-section">
-        <SectionLabel
-          eyebrow="03 · trophées"
-          title="Ton butin récent."
-          ctaLabel={`Collection · ${String(badgeRows.length)} →`}
-          ctaHref="/badges"
-        />
-
-        {badgeRows.length > 0 ? <TrophyShelf badges={badgeRows} /> : <TrophyEmpty />}
-      </section>
-
-      {/* ── 04. Ce mois-ci ───────────────────────────────────────────────── */}
-      <section className="animate-fade-up-delay-3 s-section">
-        <SectionLabel eyebrow="04 · chiffres bruts" title="Ce mois-ci." />
-        <StatsBig
-          completedCount={completedCount}
-          streakDays={streakDays}
-          badgeCount={badgeRows.length}
-        />
-      </section>
-
-      {/* ── Quêtes hebdomadaires ─────────────────────────────────────────── */}
-      <section>
-        <SectionLabel eyebrow="05 · quêtes" title="Tes quêtes de la semaine." />
-        <QuestsPanel userId={authUser.id} />
-      </section>
-
-      {/* ── Série quotidienne ────────────────────────────────────────────── */}
-      <section>
-        <SectionLabel eyebrow="06 · série" title="Ta série quotidienne." />
-        <StreakPanel userId={authUser.id} />
-      </section>
-
-      {/* ── Parcours recommandés ─────────────────────────────────────────── */}
-      <section>
-        <SectionLabel
-          eyebrow="07 · parcours"
-          title="Tes prochaines missions."
           ctaLabel="Tous les parcours →"
           ctaHref="/paths"
         />
-        <PathsGrid paths={featuredPaths} />
+        <PathsGrid paths={featuredPaths} leadProgress={leadProgress} />
+      </section>
+
+      {/* ── En cours: the half-finished lesson, when there is one ─────────── */}
+      {resumeLesson && (
+        <section className="animate-fade-up-delay-1 s-section">
+          <SectionLabel
+            eyebrow={`${sectionNumber(sections, "resume") ?? "02"} · en cours`}
+            title="Reprends l'exploit."
+            ctaLabel="Historique complet →"
+            ctaHref="/lessons"
+          />
+          <TerminalCard lesson={resumeLesson.lesson} />
+        </section>
+      )}
+
+      {/* ── À réviser: only when something is actually due ────────────────── */}
+      {dueReviews.length > 0 && (
+        <section className="animate-fade-up-delay-2 s-section">
+          <SectionLabel
+            eyebrow={`${sectionNumber(sections, "reviews") ?? "03"} · à réviser`}
+            title={`${String(dueReviews.length)} leçon${dueReviews.length > 1 ? "s" : ""} demande${dueReviews.length > 1 ? "nt" : ""} ton attention.`}
+            ctaLabel="Tout réviser →"
+            ctaHref="/revisions"
+          />
+          <ReviewsBlock rows={dueReviews} />
+        </section>
+      )}
+
+      {/* ── Progression: one band, not four stacked sections ──────────────── */}
+      <section className="animate-fade-up-delay-3 s-section">
+        <SectionLabel
+          eyebrow={`${sectionNumber(sections, "progress") ?? "04"} · progression`}
+          title="Où tu en es."
+          ctaLabel={`Collection · ${String(badgeTotal)} →`}
+          ctaHref="/badges"
+        />
+
+        <StatsBig
+          completedThisMonth={completedThisMonth}
+          completedTotal={completedCount}
+          streakDays={streakDays}
+          longestStreak={dbUser?.longestStreak ?? 0}
+          badgesThisMonth={badgesThisMonth}
+          badgeTotal={badgeTotal}
+          certificateCount={certificateCount}
+          certifiablePaths={certifiablePaths}
+        />
+
+        {/* Quests and the streak calendar used to be sections 05 and 06, one
+            under the other, each with its own numbered heading. They are two
+            views of the same week, so they sit side by side under one. */}
+        <div className="dash-progress-pair">
+          <QuestsPanel userId={authUser.id} />
+          <StreakPanel userId={authUser.id} />
+        </div>
+
+        {badgeRows.length > 0 && (
+          <div style={{ marginTop: 28 }}>
+            <TrophyShelf badges={badgeRows} />
+          </div>
+        )}
       </section>
     </div>
   );
@@ -1226,53 +1271,6 @@ function TerminalCard({
   );
 }
 
-function NoResumeCard() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 16,
-        padding: "64px 24px",
-        border: "1px dashed #2A2560",
-        background: "rgba(10,8,38,0.4)",
-        textAlign: "center",
-      }}
-    >
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-        <rect x="6" y="10" width="36" height="28" stroke="#2A2560" strokeWidth="1.5" />
-        <line x1="6" y1="10" x2="6" y2="38" stroke="#0024FF" strokeWidth="2.5" />
-        <path d="M14 22h20M14 28h12" stroke="#3D3785" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#B8B5D1" }}>
-        Aucune leçon en cours
-      </p>
-      <Link
-        href="/lessons"
-        className="btn-teal"
-        style={{
-          padding: "12px 24px",
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          background: "var(--cosmetic-accent)",
-          color: "#030219",
-          border: "1px solid var(--cosmetic-accent)",
-          textDecoration: "none",
-        }}
-      >
-        Explorer les leçons
-      </Link>
-    </div>
-  );
-}
-
-// ── Reviews block ─────────────────────────────────────────────────────────────
-
 function ReviewsBlock({
   rows,
 }: {
@@ -1573,78 +1571,68 @@ function TrophyShelf({
   );
 }
 
-function TrophyEmpty() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        padding: "32px 24px",
-        border: "1px solid #2A2560",
-        background: "rgba(10,8,38,0.4)",
-      }}
-    >
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          clipPath: "polygon(50% 0, 100% 28%, 100% 72%, 50% 100%, 0 72%, 0 28%)",
-          background: "#2A2560",
-          display: "grid",
-          placeItems: "center",
-          flexShrink: 0,
-        }}
-        aria-hidden="true"
-      />
-      <div>
-        <p
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 600,
-            fontSize: 14,
-            color: "#B8B5D1",
-            margin: "0 0 4px",
-          }}
-        >
-          Aucun trophée pour l&apos;instant
-        </p>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "#6F6B99", margin: 0 }}>
-          Complète des leçons pour débloquer tes premiers badges.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ── Stats big grid ────────────────────────────────────────────────────────────
 
+/**
+ * The four figures, and what each of them is actually counting.
+ *
+ * They said "Ce mois-ci" over numbers that were nothing of the sort: the
+ * lessons figure was the all-time total with "+N au total" underneath it as if
+ * it were a gain, the badges figure counted the three on the shelf rather than
+ * the collection, the streak's second line was the word "Continuez !", and the
+ * certificates cell was a hard-coded 0 out of a hard-coded 4 on every account
+ * on the site. A dashboard whose numbers are decoration is worse than one with
+ * fewer numbers.
+ */
 function StatsBig({
-  completedCount,
+  completedThisMonth,
+  completedTotal,
   streakDays,
-  badgeCount,
+  longestStreak,
+  badgesThisMonth,
+  badgeTotal,
+  certificateCount,
+  certifiablePaths,
 }: {
-  completedCount: number;
+  completedThisMonth: number;
+  completedTotal: number;
   streakDays: number;
-  badgeCount: number;
+  longestStreak: number;
+  badgesThisMonth: number;
+  badgeTotal: number;
+  certificateCount: number;
+  certifiablePaths: number;
 }) {
   const items = [
     {
-      label: "LEÇONS COMPLÉTÉES",
-      n: completedCount,
+      label: "LEÇONS CE MOIS-CI",
+      n: completedThisMonth,
       unit: null,
-      delta: `+${String(completedCount)} au total`,
+      delta: `${String(completedTotal)} au total`,
       highlight: true,
     },
-    { label: "STREAK ACTUEL", n: streakDays, unit: "j", delta: "Continuez !", highlight: false },
     {
-      label: "BADGES OBTENUS",
-      n: badgeCount,
-      unit: null,
-      delta: `+${String(badgeCount)} obtenus`,
+      label: "STREAK ACTUEL",
+      n: streakDays,
+      unit: "j",
+      delta:
+        longestStreak > 0 ? `Record perso · ${String(longestStreak)} j` : "Pas encore de record",
       highlight: false,
     },
-    { label: "CERTIFICATS", n: 0, unit: null, delta: "sur 4 disponibles", highlight: false },
+    {
+      label: "BADGES",
+      n: badgeTotal,
+      unit: null,
+      delta: badgesThisMonth > 0 ? `+${String(badgesThisMonth)} ce mois-ci` : "aucun ce mois-ci",
+      highlight: false,
+    },
+    {
+      label: "CERTIFICATS",
+      n: certificateCount,
+      unit: null,
+      delta: `sur ${String(certifiablePaths)} disponible${certifiablePaths > 1 ? "s" : ""}`,
+      highlight: false,
+    },
   ] as const;
 
   return (
@@ -1738,6 +1726,19 @@ interface FeaturedPath {
   _count: { lessons: number; progress: number };
 }
 
+/**
+ * How far into the leading path the reader is, and what the next step in it is.
+ *
+ * This is the difference between a section that advertises parcours and a
+ * section that runs one. "24 leçons · ~18h · 2.4k complétions" is a poster;
+ * "7 sur 24 · prochaine étape : Injection SQL, 25 min" is somewhere to click.
+ */
+interface PathProgress {
+  completed: number;
+  total: number;
+  next: { position: number; slug: string; title: string; estimatedMinutes: number } | null;
+}
+
 const DIFF_COLORS_DASH: Record<string, string> = {
   BEGINNER: "var(--cosmetic-accent)",
   INTERMEDIATE: "#4D8BFF",
@@ -1750,7 +1751,13 @@ const CAT_LABELS_DASH: Record<string, string> = {
   NETWORK: "Réseau",
 };
 
-function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
+function PathsGrid({
+  paths,
+  leadProgress,
+}: {
+  paths: FeaturedPath[];
+  leadProgress: PathProgress | null;
+}) {
   if (paths.length === 0) {
     return (
       <div
@@ -1772,6 +1779,22 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
   if (!primary) return null;
 
   const primCat = CAT_LABELS_DASH[primary.category] ?? primary.category;
+
+  // Having started is a state with its own copy, not a variant of the poster:
+  // somebody seven lessons in should be offered the eighth, not invited to
+  // begin. Null unless there is progress to show, so one check narrows it.
+  const progress = leadProgress !== null && leadProgress.completed > 0 ? leadProgress : null;
+  const percent =
+    progress && progress.total > 0
+      ? Math.min(100, Math.round((progress.completed / progress.total) * 100))
+      : 0;
+  const nextStep = progress?.next ?? null;
+  const nextHref = nextStep ? `/lessons/${nextStep.slug}` : `/paths/${primary.slug}`;
+  const ctaLabel = progress
+    ? nextStep
+      ? "Reprendre le parcours"
+      : "Terminer le parcours"
+    : "Commencer le parcours";
 
   return (
     <div className={`paths-featured-grid${secondary ? " paths-featured-grid--two-col" : ""}`}>
@@ -1851,7 +1874,12 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
             }}
           >
             {[
-              { n: String(primary._count.lessons), l: "Leçons" },
+              progress
+                ? {
+                    n: `${String(progress.completed)}/${String(progress.total)}`,
+                    l: "Leçons faites",
+                  }
+                : { n: String(primary._count.lessons), l: "Leçons" },
               { n: `~${String(primary.estimatedHours)}h`, l: "Durée" },
               { n: String(primary._count.progress), l: "Complétions" },
             ].map(({ n, l }) => (
@@ -1884,10 +1912,34 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
               </div>
             ))}
           </div>
+
+          {progress && (
+            <div style={{ marginBottom: 28 }}>
+              <div
+                className="path-progress-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={progress.total}
+                aria-valuenow={progress.completed}
+                aria-label={`Progression du parcours ${primary.title}`}
+              >
+                <span className="path-progress-fill" style={{ width: `${String(percent)}%` }} />
+              </div>
+              <div className="path-progress-foot">
+                <span>{String(percent)}% du parcours</span>
+                {nextStep && (
+                  <span>
+                    Prochaine étape · <b>{nextStep.title}</b> · {String(nextStep.estimatedMinutes)}{" "}
+                    min
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 12, position: "relative", zIndex: 2 }}>
           <Link
-            href={`/paths/${primary.slug}`}
+            href={nextHref}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -1906,10 +1958,10 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
               boxShadow: "0 0 24px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
             }}
           >
-            Commencer le parcours
+            {ctaLabel}
           </Link>
           <Link
-            href="/paths"
+            href={progress ? `/paths/${primary.slug}` : "/paths"}
             style={{
               padding: "14px 24px",
               fontFamily: "var(--font-mono)",
@@ -1923,7 +1975,7 @@ function PathsGrid({ paths }: { paths: FeaturedPath[] }) {
               textDecoration: "none",
             }}
           >
-            Tous les parcours
+            {progress ? "Voir le parcours" : "Tous les parcours"}
           </Link>
         </div>
       </div>
@@ -2085,7 +2137,18 @@ function NetworkGraph() {
       viewBox="0 0 800 460"
       fill="none"
       preserveAspectRatio="xMidYMid slice"
-      style={{ position: "absolute", inset: 0, opacity: 0.9, pointerEvents: "none" }}
+      // Faded out over the left half, where the title and the description sit.
+      // The graph is decoration and this card is now the first thing on the
+      // page: a glowing node behind the word "Pentester" is noise on the one
+      // line that has to be read.
+      style={{
+        position: "absolute",
+        inset: 0,
+        opacity: 0.75,
+        pointerEvents: "none",
+        maskImage: "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.25) 52%, #000 82%)",
+        WebkitMaskImage: "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.25) 52%, #000 82%)",
+      }}
       aria-hidden="true"
     >
       <defs>
