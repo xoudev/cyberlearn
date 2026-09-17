@@ -827,9 +827,8 @@ export const classRepository = {
             difficulty: true,
             estimatedMinutes: true,
             xpReward: true,
-            // Lesson.authorId is a plain column with no relation behind it -
-            // the catalogue never needed to join to one - so the id is what
-            // there is. The class already knows who its teachers are.
+            // The id alone, not a join on the author: the class already knows
+            // who its teachers are, and the caller compares this against them.
             authorId: true,
             createdAt: true,
           },

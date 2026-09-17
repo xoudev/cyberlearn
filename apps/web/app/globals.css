@@ -1859,14 +1859,23 @@ article.lesson-content blockquote p code {
   }
 }
 
-/* ─── First Blood rail row hover ────────────────────────────────────────────── */
-.first-blood-row {
-  border: 1px solid transparent;
+/* ─── Lesson author byline, in the right rail ──────────────────────────────── */
+.lesson-author-card {
+  border: 1px solid #1f1b47;
+  background: rgba(5, 4, 26, 0.5);
   transition: border-color 150ms ease, background 150ms ease;
 }
-.first-blood-row:hover {
-  border-color: #1f1b47;
-  background: rgba(10, 255, 212, 0.02);
+/* Only the linked byline lights up: an erased or private author is not
+   clickable, so a hover state there would promise a profile that is not
+   coming. */
+a:hover > .lesson-author-card {
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lesson-author-card {
+    transition: none;
+  }
 }
 
 /* ─── Path detail page ───────────────────────────────────────────────────── */
