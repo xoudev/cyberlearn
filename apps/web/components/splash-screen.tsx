@@ -99,7 +99,7 @@ export function SplashScreen(): React.ReactElement | null {
             inset: 0,
             borderRadius: "50%",
             border: "1px solid rgba(42,37,96,0.9)",
-            borderTopColor: "#0AFFD4",
+            borderTopColor: "var(--cosmetic-accent)",
             animation: "cl-splash-ring 1.1s linear infinite",
           }}
         />
@@ -123,7 +123,7 @@ export function SplashScreen(): React.ReactElement | null {
             color: "#F5F5FA",
           }}
         >
-          cyber<span style={{ color: "#0AFFD4" }}>learn</span>
+          cyber<span style={{ color: "var(--cosmetic-accent)" }}>learn</span>
         </div>
         <div
           style={{
@@ -152,7 +152,7 @@ export function SplashScreen(): React.ReactElement | null {
           style={{
             width: `${String(progress)}%`,
             height: "100%",
-            background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
+            background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
           }}
         />
       </div>

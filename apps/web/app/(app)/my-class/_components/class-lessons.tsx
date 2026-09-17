@@ -207,7 +207,7 @@ export function ClassLessons({
           {state.ok === true && state.slug !== undefined && (
             <p className="cls-alert">
               Publiée.{" "}
-              <Link href={`/lessons/${state.slug}`} style={{ color: "#0AFFD4" }}>
+              <Link href={`/lessons/${state.slug}`} style={{ color: "var(--cosmetic-accent)" }}>
                 Voir la leçon
               </Link>
             </p>

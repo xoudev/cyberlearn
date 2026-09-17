@@ -167,7 +167,7 @@ export default function LeaderboardLoading(): React.ReactElement {
           marginBottom: 56,
           background: SURFACE_BG,
           border: SURFACE_BORDER,
-          borderLeft: "3px solid #0AFFD4",
+          borderLeft: "3px solid var(--cosmetic-accent)",
         }}
       >
         <Skeleton w={110} h={28} />

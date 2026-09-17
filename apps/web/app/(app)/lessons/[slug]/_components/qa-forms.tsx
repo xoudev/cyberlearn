@@ -93,7 +93,7 @@ export function PostQuestionForm({
           fontSize: 11,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#0AFFD4",
+          color: "var(--cosmetic-accent)",
           marginBottom: 4,
         }}
       >
@@ -253,9 +253,11 @@ export function AcceptAnswerButton({
         fontSize: 10,
         letterSpacing: "0.1em",
         textTransform: "uppercase",
-        background: isAccepted ? "rgba(10,255,212,0.12)" : "transparent",
-        border: `1px solid ${isAccepted ? "rgba(10,255,212,0.4)" : "#2A2560"}`,
-        color: isAccepted ? "#0AFFD4" : "#6B6890",
+        background: isAccepted
+          ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
+          : "transparent",
+        border: `1px solid ${isAccepted ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "#2A2560"}`,
+        color: isAccepted ? "var(--cosmetic-accent)" : "#6B6890",
         cursor: isAccepted ? "default" : "pointer",
       }}
     >

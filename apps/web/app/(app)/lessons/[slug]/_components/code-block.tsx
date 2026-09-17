@@ -122,7 +122,7 @@ export function CodeBlock({
             background: "none",
             border: "none",
             cursor: "pointer",
-            color: copied ? "#0AFFD4" : "#44406B",
+            color: copied ? "var(--cosmetic-accent)" : "#44406B",
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 9,
             fontWeight: 700,

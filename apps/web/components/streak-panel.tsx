@@ -2,11 +2,16 @@ import React from "react";
 import { dayKey, nextMilestone } from "@cyberlearn/lib";
 import { streakRepository } from "@cyberlearn/db";
 
-const TURQ = "#0AFFD4";
+const TURQ = "var(--cosmetic-accent)";
 const AMBER = "#FFB547";
 const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
 // Empty → low → mid → full activity, turquoise scale.
-const HEAT = ["rgba(42,37,96,0.45)", "rgba(10,255,212,0.28)", "rgba(10,255,212,0.55)", "#0AFFD4"];
+const HEAT = [
+  "rgba(42,37,96,0.45)",
+  "color-mix(in srgb, var(--cosmetic-accent) 28%, transparent)",
+  "color-mix(in srgb, var(--cosmetic-accent) 55%, transparent)",
+  "var(--cosmetic-accent)",
+];
 
 // GitHub-style calendar heatmap tokens.
 const HEAT_WEEKS = 53;
@@ -140,7 +145,9 @@ export async function StreakPanel({
                 position: "absolute",
                 inset: 0,
                 clipPath: HEX,
-                background: o.active ? "rgba(10,255,212,0.25)" : "rgba(42,37,96,0.5)",
+                background: o.active
+                  ? "color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)"
+                  : "rgba(42,37,96,0.5)",
               }}
             />
             <span
@@ -368,8 +375,8 @@ export async function StreakPanel({
           alignItems: "center",
           gap: 14,
           padding: "13px 16px",
-          border: "1px solid rgba(10,255,212,0.25)",
-          background: "rgba(10,255,212,0.04)",
+          border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
+          background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
         }}
       >
         <span
@@ -378,7 +385,7 @@ export async function StreakPanel({
             height: 38,
             flexShrink: 0,
             clipPath: HEX,
-            background: "rgba(10,255,212,0.12)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)",
             display: "grid",
             placeItems: "center",
             color: TURQ,

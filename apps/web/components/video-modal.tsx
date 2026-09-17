@@ -109,7 +109,7 @@ export function VideoModal({
                   fontWeight: 700,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#0AFFD4",
+                  color: "var(--cosmetic-accent)",
                   marginBottom: title ? 6 : 0,
                 }}
               >

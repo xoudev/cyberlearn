@@ -163,7 +163,7 @@ export function AvatarCropper({
             margin: "0 0 16px",
           }}
         >
-          <span style={{ color: "#0AFFD4" }}>›</span> Recadrer
+          <span style={{ color: "var(--cosmetic-accent)" }}>›</span> Recadrer
         </h2>
 
         {/* Crop viewport */}
@@ -213,7 +213,7 @@ export function AvatarCropper({
               inset: 0,
               borderRadius: "50%",
               boxShadow: "0 0 0 9999px rgba(2,1,12,0.55)",
-              border: "1px solid rgba(10,255,212,0.6)",
+              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
               pointerEvents: "none",
             }}
           />
@@ -243,7 +243,7 @@ export function AvatarCropper({
             onChange={(e) => {
               handleZoom(Number(e.target.value));
             }}
-            style={{ flex: 1, accentColor: "#0AFFD4" }}
+            style={{ flex: 1, accentColor: "var(--cosmetic-accent)" }}
           />
         </label>
 

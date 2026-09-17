@@ -107,8 +107,8 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
         alignItems: "center",
         gap: 16,
         padding: 20,
-        background: "rgba(10,255,212,0.05)",
-        border: "1px solid rgba(10,255,212,0.25)",
+        background: "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
       }}
     >
       <div
@@ -117,8 +117,8 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           height: 40,
           display: "grid",
           placeItems: "center",
-          background: "#0AFFD4",
-          boxShadow: "0 0 20px rgba(10,255,212,0.35)",
+          background: "var(--cosmetic-accent)",
+          boxShadow: "0 0 20px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
           flexShrink: 0,
         }}
       >
@@ -140,7 +140,7 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontWeight: 700,
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             margin: 0,
             marginBottom: 2,
           }}
@@ -214,7 +214,9 @@ function GatedCompleteButton({
         disabled={isPending || disabled}
         className="inline-flex w-full items-center justify-center gap-2 font-mono text-[12px] font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-40"
         style={{
-          background: disabled ? "rgba(30,27,71,0.8)" : "linear-gradient(135deg, #0024FF, #0AFFD4)",
+          background: disabled
+            ? "rgba(30,27,71,0.8)"
+            : "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
           color: disabled ? "#3F3D5C" : "#ffffff",
           borderRadius: 0,
           padding: "10px 16px",

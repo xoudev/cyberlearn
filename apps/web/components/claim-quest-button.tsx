@@ -54,7 +54,7 @@ export function ClaimQuestButton({
           height: 34,
           padding: "0 16px",
           border: "none",
-          background: "#0AFFD4",
+          background: "var(--cosmetic-accent)",
           color: "#03251F",
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -64,7 +64,7 @@ export function ClaimQuestButton({
           cursor: pending ? "not-allowed" : "pointer",
           opacity: pending ? 0.6 : 1,
           clipPath: "polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%)",
-          boxShadow: "0 0 16px rgba(10,255,212,0.35)",
+          boxShadow: "0 0 16px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
         }}
       >
         {pending ? "…" : `Réclamer +${String(xpReward)} XP`}

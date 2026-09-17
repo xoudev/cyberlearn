@@ -105,8 +105,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             left: -1,
             width: 14,
             height: 14,
-            borderTop: "2px solid #0AFFD4",
-            borderLeft: "2px solid #0AFFD4",
+            borderTop: "2px solid var(--cosmetic-accent)",
+            borderLeft: "2px solid var(--cosmetic-accent)",
           }}
         />
         <span
@@ -116,8 +116,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             right: -1,
             width: 14,
             height: 14,
-            borderTop: "2px solid #0AFFD4",
-            borderRight: "2px solid #0AFFD4",
+            borderTop: "2px solid var(--cosmetic-accent)",
+            borderRight: "2px solid var(--cosmetic-accent)",
           }}
         />
         <span
@@ -127,8 +127,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             left: -1,
             width: 14,
             height: 14,
-            borderBottom: "2px solid #0AFFD4",
-            borderLeft: "2px solid #0AFFD4",
+            borderBottom: "2px solid var(--cosmetic-accent)",
+            borderLeft: "2px solid var(--cosmetic-accent)",
           }}
         />
         <span
@@ -138,8 +138,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             right: -1,
             width: 14,
             height: 14,
-            borderBottom: "2px solid #0AFFD4",
-            borderRight: "2px solid #0AFFD4",
+            borderBottom: "2px solid var(--cosmetic-accent)",
+            borderRight: "2px solid var(--cosmetic-accent)",
           }}
         />
 
@@ -153,7 +153,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             fontSize: 10,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             marginBottom: 28,
           }}
         >
@@ -162,8 +162,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 8px #0AFFD4",
+              background: "var(--cosmetic-accent)",
+              boxShadow: "0 0 8px var(--cosmetic-accent)",
               flexShrink: 0,
             }}
           />
@@ -175,7 +175,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           {/* Hex medallion */}
           <div
             style={{
-              filter: "drop-shadow(0 0 10px #0AFFD4) drop-shadow(0 0 24px rgba(10,255,212,0.3))",
+              filter:
+                "drop-shadow(0 0 10px var(--cosmetic-accent)) drop-shadow(0 0 24px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent))",
               flexShrink: 0,
             }}
           >
@@ -193,7 +194,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(135deg, #0AFFD4, #0024FF)",
+                  background: "linear-gradient(135deg, var(--cosmetic-accent), #0024FF)",
                 }}
               />
               <div
@@ -212,7 +213,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 height="26"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#0AFFD4"
+                stroke="var(--cosmetic-accent)"
                 strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -255,8 +256,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
         {/* XP display */}
         <div
           style={{
-            background: "rgba(10,255,212,0.04)",
-            border: "1px solid rgba(10,255,212,0.12)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)",
             padding: "20px 24px",
             marginBottom: 16,
             display: "flex",
@@ -271,7 +272,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 fontWeight: 800,
                 fontSize: 52,
                 lineHeight: 1,
-                color: "#0AFFD4",
+                color: "var(--cosmetic-accent)",
                 animation: "xp-count-glow 1.2s ease-in-out",
                 letterSpacing: "-0.02em",
               }}
@@ -283,7 +284,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 fontFamily: "var(--font-mono)",
                 fontWeight: 700,
                 fontSize: 16,
-                color: "#0AFFD4",
+                color: "var(--cosmetic-accent)",
                 letterSpacing: "0.1em",
                 opacity: 0.7,
               }}
@@ -314,8 +315,8 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           <div
             style={{
               background:
-                "linear-gradient(90deg, rgba(0,36,255,0.15), rgba(10,255,212,0.12), rgba(0,36,255,0.15))",
-              border: "1px solid rgba(10,255,212,0.2)",
+                "linear-gradient(90deg, rgba(0,36,255,0.15), color-mix(in srgb, var(--cosmetic-accent) 12%, transparent), rgba(0,36,255,0.15))",
+              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
               padding: "10px 16px",
               marginBottom: 16,
               display: "flex",
@@ -326,7 +327,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               fontWeight: 700,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
             }}
           >
             <svg
@@ -397,7 +398,9 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                       {label}
                     </span>
                     {badge.xpReward > 0 && (
-                      <span style={{ color: "#0AFFD4", fontSize: 10, fontWeight: 700 }}>
+                      <span
+                        style={{ color: "var(--cosmetic-accent)", fontSize: 10, fontWeight: 700 }}
+                      >
                         +{badge.xpReward} XP
                       </span>
                     )}
@@ -436,7 +439,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             onClick={onClose}
             style={{
               padding: "9px 20px",
-              background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
+              background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
               border: "none",
               color: "#ffffff",
               fontFamily: "var(--font-mono)",

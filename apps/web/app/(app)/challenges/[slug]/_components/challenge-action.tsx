@@ -96,8 +96,8 @@ function FlagForm({
           alignItems: "center",
           gap: 16,
           padding: "40px 32px",
-          background: "rgba(10,255,212,0.04)",
-          border: "1px solid rgba(10,255,212,0.25)",
+          background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
           textAlign: "center",
         }}
       >
@@ -106,11 +106,11 @@ function FlagForm({
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: "rgba(10,255,212,0.12)",
+            background: "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)",
             display: "grid",
             placeItems: "center",
-            color: "#0AFFD4",
-            boxShadow: "0 0 24px rgba(10,255,212,0.2)",
+            color: "var(--cosmetic-accent)",
+            boxShadow: "0 0 24px color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
           }}
         >
           <IconCheck size={24} />
@@ -121,7 +121,7 @@ function FlagForm({
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 16,
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               marginBottom: 6,
             }}
           >
@@ -283,9 +283,11 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
           justifyContent: "center",
           gap: 10,
           padding: "14px 32px",
-          background: pending ? "#1F1B47" : "rgba(10,255,212,0.1)",
-          color: pending ? "#6B6890" : "#0AFFD4",
-          border: `1px solid ${pending ? "#2A2560" : "rgba(10,255,212,0.35)"}`,
+          background: pending
+            ? "#1F1B47"
+            : "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
+          color: pending ? "#6B6890" : "var(--cosmetic-accent)",
+          border: `1px solid ${pending ? "#2A2560" : "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"}`,
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
           fontSize: 12,
@@ -354,8 +356,8 @@ export function ChallengeAction({
         id="challenge-action"
         style={{
           ...panelStyle,
-          borderColor: "rgba(10,255,212,0.25)",
-          background: "rgba(10,255,212,0.03)",
+          borderColor: "color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)",
+          background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
         }}
       >
         <div
@@ -363,7 +365,7 @@ export function ChallengeAction({
             display: "flex",
             alignItems: "center",
             gap: 10,
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             fontFamily: "var(--font-mono)",
             fontWeight: 700,
             fontSize: 13,

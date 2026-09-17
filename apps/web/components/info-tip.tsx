@@ -66,9 +66,9 @@ export function InfoTip({ title, children }: InfoTipProps): React.JSX.Element {
           height: 16,
           flexShrink: 0,
           borderRadius: "50%",
-          border: `1px solid ${visible ? "#0AFFD4" : "#6B6890"}`,
+          border: `1px solid ${visible ? "var(--cosmetic-accent)" : "#6B6890"}`,
           background: "transparent",
-          color: visible ? "#0AFFD4" : "#6B6890",
+          color: visible ? "var(--cosmetic-accent)" : "#6B6890",
           fontFamily: MONO,
           fontWeight: 700,
           fontSize: 10,
@@ -77,7 +77,9 @@ export function InfoTip({ title, children }: InfoTipProps): React.JSX.Element {
           placeItems: "center",
           cursor: "pointer",
           padding: 0,
-          boxShadow: visible ? "0 0 0 3px rgba(10,255,212,0.12)" : "none",
+          boxShadow: visible
+            ? "0 0 0 3px color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
+            : "none",
           transition: "all 200ms ease",
         }}
       >
@@ -96,8 +98,9 @@ export function InfoTip({ title, children }: InfoTipProps): React.JSX.Element {
           // shrink to fit when the screen is narrower than that plus margin.
           maxWidth: "min(280px, calc(100vw - 2rem))",
           background: "#110F33",
-          border: "1px solid rgba(10,255,212,0.35)",
-          boxShadow: "0 12px 40px rgba(0,0,0,0.5), 0 0 24px rgba(10,255,212,0.1)",
+          border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
+          boxShadow:
+            "0 12px 40px rgba(0,0,0,0.5), 0 0 24px color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
           padding: "14px 16px",
           zIndex: 50,
           opacity: visible ? 1 : 0,
@@ -117,7 +120,7 @@ export function InfoTip({ title, children }: InfoTipProps): React.JSX.Element {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               marginBottom: 8,
             }}
           >

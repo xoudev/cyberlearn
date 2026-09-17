@@ -24,7 +24,7 @@ export interface ReviewRow {
 type Outcome = "forgot" | "hard" | "easy";
 
 const OUTCOME_DISPLAY: Record<Outcome, { icon: string; color: string }> = {
-  easy: { icon: "✓", color: "#0AFFD4" },
+  easy: { icon: "✓", color: "var(--cosmetic-accent)" },
   hard: { icon: "~", color: "#FFB020" },
   forgot: { icon: "↺", color: "#FF4757" },
 };
@@ -38,7 +38,7 @@ function outcomeText(outcome: Outcome, reviewXp: number): string {
 const GRADE_BUTTONS: { quality: 1 | 3 | 5; label: string; color: string }[] = [
   { quality: 1, label: "Oublié", color: "#FF4757" },
   { quality: 3, label: "Difficile", color: "#FFB020" },
-  { quality: 5, label: "Facile ✓", color: "#0AFFD4" },
+  { quality: 5, label: "Facile ✓", color: "var(--cosmetic-accent)" },
 ];
 
 function GradeRowBody({
@@ -310,7 +310,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#0AFFD4",
+                  color: "var(--cosmetic-accent)",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,

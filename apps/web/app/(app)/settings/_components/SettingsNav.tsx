@@ -51,8 +51,12 @@ export function SettingsNav(): React.JSX.Element {
         const active = pathname === s.href;
         const isHover = hovered === s.href && !active;
         const accent = s.danger ? S.danger : S.turq;
-        const activeBg = s.danger ? "rgba(255,77,109,0.12)" : "rgba(10,255,212,0.1)";
-        const activeShadow = s.danger ? "rgba(255,77,109,0.25)" : "rgba(10,255,212,0.25)";
+        const activeBg = s.danger
+          ? "rgba(255,77,109,0.12)"
+          : "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)";
+        const activeShadow = s.danger
+          ? "rgba(255,77,109,0.25)"
+          : "color-mix(in srgb, var(--cosmetic-accent) 25%, transparent)";
 
         return (
           <Link
@@ -80,7 +84,7 @@ export function SettingsNav(): React.JSX.Element {
               background: active
                 ? `linear-gradient(90deg, ${activeBg}, transparent)`
                 : isHover
-                  ? "rgba(10,255,212,0.04)"
+                  ? "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)"
                   : "transparent",
               borderLeft: `2px solid ${active ? accent : "transparent"}`,
               marginLeft: -2,

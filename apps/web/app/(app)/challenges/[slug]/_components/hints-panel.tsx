@@ -49,7 +49,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 11,
-          color: "#0AFFD4",
+          color: "var(--cosmetic-accent)",
           letterSpacing: "0.2em",
           textTransform: "uppercase",
           fontWeight: 600,
@@ -61,7 +61,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
           marginBottom: 20,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>{"// "}</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>{"// "}</span>
         <span>Indices</span>
         <span
           style={{
@@ -91,10 +91,10 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                 key={hint.id}
                 style={{
                   display: "block",
-                  borderLeft: "3px solid #0AFFD4",
-                  background: "rgba(10,255,212,0.04)",
+                  borderLeft: "3px solid var(--cosmetic-accent)",
+                  background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
                   border: "1px solid #1F1B47",
-                  borderLeftColor: "#0AFFD4",
+                  borderLeftColor: "var(--cosmetic-accent)",
                   borderLeftWidth: 3,
                   padding: "16px 18px",
                 }}
@@ -111,7 +111,9 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                     textTransform: "uppercase",
                   }}
                 >
-                  <span style={{ color: "#0AFFD4", fontWeight: 700 }}>› Indice {num} · révélé</span>
+                  <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
+                    › Indice {num} · révélé
+                  </span>
                   <span style={{ color: "#6B6890" }}>
                     {hint.xpCost === 0 ? "Gratuit" : `−${String(hint.xpCost)} XP`}
                   </span>
@@ -187,7 +189,12 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                     fontSize: 10,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: hint.xpCost === 0 ? "#0AFFD4" : canAfford ? "#FFB020" : "#FF4D6D",
+                    color:
+                      hint.xpCost === 0
+                        ? "var(--cosmetic-accent)"
+                        : canAfford
+                          ? "#FFB020"
+                          : "#FF4D6D",
                   }}
                 >
                   {hint.xpCost === 0

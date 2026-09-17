@@ -85,7 +85,7 @@ export default async function LessonsPage({
           gap: 8,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>$</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
         <span>~/</span>
         <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
         <span style={{ color: "#2A2560" }}>/</span>
@@ -96,8 +96,8 @@ export default async function LessonsPage({
             display: "inline-block",
             width: 7,
             height: 13,
-            background: "#0AFFD4",
-            boxShadow: "0 0 8px #0AFFD4",
+            background: "var(--cosmetic-accent)",
+            boxShadow: "0 0 8px var(--cosmetic-accent)",
             marginLeft: 4,
             verticalAlign: "-2px",
             animation: "blink 1s step-end infinite",
@@ -178,7 +178,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             <em
               style={{
                 fontStyle: "normal",
-                background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 color: "transparent",
@@ -220,15 +220,17 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             }}
           >
             <span>
-              <b style={{ color: "#0AFFD4", fontWeight: 600 }}>{total}</b> total
+              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{total}</b> total
             </span>
             <span style={{ color: "#2A2560" }}>/</span>
             <span>
-              <b style={{ color: "#0AFFD4", fontWeight: 600 }}>{inProgressCount}</b> en cours
+              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{inProgressCount}</b>{" "}
+              en cours
             </span>
             <span style={{ color: "#2A2560" }}>/</span>
             <span>
-              <b style={{ color: "#0AFFD4", fontWeight: 600 }}>{completedCount}</b> terminées
+              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>{completedCount}</b>{" "}
+              terminées
             </span>
           </div>
           <div
@@ -453,9 +455,11 @@ function CategoryPill({
         gap: 8,
         height: 34,
         padding: "0 14px",
-        background: active ? "rgba(10,255,212,0.05)" : "transparent",
-        border: active ? "1px solid #0AFFD4" : "1px solid #2A2560",
-        color: active ? "#0AFFD4" : "#B8B5D1",
+        background: active
+          ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
+          : "transparent",
+        border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
+        color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
         fontFamily: "var(--font-mono)",
         fontWeight: 600,
         fontSize: 11,
@@ -464,7 +468,7 @@ function CategoryPill({
         textDecoration: "none",
         borderRadius: 0,
         boxShadow: active
-          ? "0 0 0 1px rgba(10,255,212,0.25), 0 0 18px rgba(10,255,212,0.18)"
+          ? "0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--cosmetic-accent) 18%, transparent)"
           : "none",
         transition: "all 180ms ease",
         whiteSpace: "nowrap",
@@ -479,9 +483,9 @@ function CategoryPill({
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: active ? "#0AFFD4" : "#3F3D5C",
+          color: active ? "var(--cosmetic-accent)" : "#3F3D5C",
           padding: "1px 6px",
-          border: `1px solid ${active ? "rgba(10,255,212,0.35)" : "#2A2560"}`,
+          border: `1px solid ${active ? "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)" : "#2A2560"}`,
           letterSpacing: "0.04em",
         }}
       >
@@ -508,9 +512,11 @@ function SelectPill({
         alignItems: "center",
         height: 34,
         padding: "0 14px",
-        background: active ? "rgba(10,255,212,0.05)" : "#05041A",
-        border: active ? "1px solid #0AFFD4" : "1px solid #2A2560",
-        color: active ? "#0AFFD4" : "#B8B5D1",
+        background: active
+          ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
+          : "#05041A",
+        border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
+        color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
         fontFamily: "var(--font-mono)",
         fontWeight: 600,
         fontSize: 11,
@@ -581,9 +587,11 @@ function PageBtn({
         fontSize: 11,
         letterSpacing: "0.14em",
         textTransform: "uppercase",
-        color: active ? "#0AFFD4" : "#B8B5D1",
-        background: active ? "rgba(10,255,212,0.05)" : "transparent",
-        border: active ? "1px solid #0AFFD4" : "1px solid #2A2560",
+        color: active ? "var(--cosmetic-accent)" : "#B8B5D1",
+        background: active
+          ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
+          : "transparent",
+        border: active ? "1px solid var(--cosmetic-accent)" : "1px solid #2A2560",
         borderRadius: 0,
         textDecoration: "none",
         transition: "all 180ms ease",
@@ -631,7 +639,7 @@ function EmptyState(): React.ReactElement {
           fontWeight: 700,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
+          background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
           color: "#030219",
           borderRadius: 0,
           textDecoration: "none",

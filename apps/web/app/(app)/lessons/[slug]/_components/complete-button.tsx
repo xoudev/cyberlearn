@@ -54,7 +54,7 @@ export function CompleteButton({
                 transition: "color 180ms ease, background 180ms ease",
               }
             : {
-                background: "linear-gradient(135deg, #0024FF, #0AFFD4)",
+                background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
                 color: "#ffffff",
                 borderRadius: 0,
                 padding: fullWidth ? "10px 16px" : "10px 20px",

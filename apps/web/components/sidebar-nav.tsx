@@ -422,8 +422,8 @@ export function SidebarNav({
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: "#0AFFD4",
-              boxShadow: "0 0 6px #0AFFD4",
+              background: "var(--cosmetic-accent)",
+              boxShadow: "0 0 6px var(--cosmetic-accent)",
               flexShrink: 0,
             }}
           />

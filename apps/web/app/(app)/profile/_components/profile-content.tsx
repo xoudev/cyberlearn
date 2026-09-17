@@ -232,7 +232,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
                     fontFamily: "var(--font-mono)",
                     fontWeight: 600,
                     fontSize: 12,
-                    color: "#0AFFD4",
+                    color: "var(--cosmetic-accent)",
                   }}
                 >
                   +{lp.xpReward} XP
@@ -368,8 +368,8 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               left: -1,
               width: 16,
               height: 16,
-              borderTop: "2px solid #0AFFD4",
-              borderLeft: "2px solid #0AFFD4",
+              borderTop: "2px solid var(--cosmetic-accent)",
+              borderLeft: "2px solid var(--cosmetic-accent)",
             }}
           />
           <span
@@ -379,8 +379,8 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               right: -1,
               width: 16,
               height: 16,
-              borderTop: "2px solid #0AFFD4",
-              borderRight: "2px solid #0AFFD4",
+              borderTop: "2px solid var(--cosmetic-accent)",
+              borderRight: "2px solid var(--cosmetic-accent)",
             }}
           />
           <span
@@ -390,8 +390,8 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               left: -1,
               width: 16,
               height: 16,
-              borderBottom: "2px solid #0AFFD4",
-              borderLeft: "2px solid #0AFFD4",
+              borderBottom: "2px solid var(--cosmetic-accent)",
+              borderLeft: "2px solid var(--cosmetic-accent)",
             }}
           />
           <span
@@ -401,8 +401,8 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               right: -1,
               width: 16,
               height: 16,
-              borderBottom: "2px solid #0AFFD4",
-              borderRight: "2px solid #0AFFD4",
+              borderBottom: "2px solid var(--cosmetic-accent)",
+              borderRight: "2px solid var(--cosmetic-accent)",
             }}
           />
 
@@ -416,12 +416,12 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               height: 64,
               display: "grid",
               placeItems: "center",
-              border: "1px solid rgba(10,255,212,0.3)",
+              border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)",
               borderRadius: "50%",
               fontFamily: "var(--font-mono)",
               fontSize: 8.5,
               letterSpacing: "0.2em",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               opacity: 0.35,
               pointerEvents: "none",
             }}
@@ -438,7 +438,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 fontSize: 10,
                 letterSpacing: "0.2em",
                 textTransform: "uppercase",
-                color: "#0AFFD4",
+                color: "var(--cosmetic-accent)",
                 marginBottom: 12,
                 display: "inline-flex",
                 alignItems: "center",
@@ -449,7 +449,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 style={{
                   width: 18,
                   height: 1,
-                  background: "#0AFFD4",
+                  background: "var(--cosmetic-accent)",
                   display: "inline-block",
                   flexShrink: 0,
                 }}
@@ -507,7 +507,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 overflow: "hidden",
               }}
             >
-              <span style={{ color: "#0AFFD4", flexShrink: 0 }}>SHA-256</span>
+              <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0 }}>SHA-256</span>
               <span
                 style={{
                   color: "#B8B5D1",
@@ -544,11 +544,11 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 fontSize: 11,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                background: "#0AFFD4",
+                background: "var(--cosmetic-accent)",
                 color: "#030219",
-                border: "1px solid #0AFFD4",
+                border: "1px solid var(--cosmetic-accent)",
                 textDecoration: "none",
-                boxShadow: "0 0 18px rgba(10,255,212,0.35)",
+                boxShadow: "0 0 18px color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)",
               }}
             >
               <svg
@@ -638,7 +638,7 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
                 fontSize: 12,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: isActive ? "#0AFFD4" : "#3F3D5C",
+                color: isActive ? "var(--cosmetic-accent)" : "#3F3D5C",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
@@ -651,8 +651,8 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
                   fontSize: 10,
                   letterSpacing: "0.04em",
                   padding: "1px 6px",
-                  border: `1px solid ${isActive ? "rgba(10,255,212,0.4)" : "#2A2560"}`,
-                  color: isActive ? "#0AFFD4" : "#3F3D5C",
+                  border: `1px solid ${isActive ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "#2A2560"}`,
+                  color: isActive ? "var(--cosmetic-accent)" : "#3F3D5C",
                 }}
               >
                 {tab.count}
@@ -665,8 +665,9 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
                     right: 0,
                     bottom: -1,
                     height: 2,
-                    background: "#0AFFD4",
-                    boxShadow: "0 0 12px rgba(10,255,212,0.6)",
+                    background: "var(--cosmetic-accent)",
+                    boxShadow:
+                      "0 0 12px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
                   }}
                   aria-hidden="true"
                 />

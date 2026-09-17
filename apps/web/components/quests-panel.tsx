@@ -4,7 +4,7 @@ import { questRepository } from "@cyberlearn/db";
 import type { QuestType, QuestWithProgress } from "@cyberlearn/db";
 import { ClaimQuestButton } from "./claim-quest-button";
 
-const TURQ = "#0AFFD4";
+const TURQ = "var(--cosmetic-accent)";
 const AMBER = "#FFB547";
 const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
 
@@ -97,7 +97,9 @@ function QuestRow({ q }: { q: QuestWithProgress }): React.ReactElement {
             position: "absolute",
             inset: 0,
             clipPath: HEX,
-            background: q.completed ? "rgba(10,255,212,0.16)" : "rgba(42,37,96,0.45)",
+            background: q.completed
+              ? "color-mix(in srgb, var(--cosmetic-accent) 16%, transparent)"
+              : "rgba(42,37,96,0.45)",
           }}
         />
         <span
@@ -135,7 +137,7 @@ function QuestRow({ q }: { q: QuestWithProgress }): React.ReactElement {
                 position: "absolute",
                 inset: 0,
                 width: `${String(pct)}%`,
-                background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
+                background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
               }}
             />
           </span>
@@ -290,8 +292,8 @@ export async function QuestsPanel({
               position: "absolute",
               inset: 0,
               width: `${String(pct)}%`,
-              background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
-              boxShadow: "0 0 12px rgba(10,255,212,0.4)",
+              background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
+              boxShadow: "0 0 12px color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
             }}
           />
         </span>

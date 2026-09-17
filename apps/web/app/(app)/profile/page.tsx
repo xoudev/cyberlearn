@@ -28,14 +28,14 @@ type Rarity = (typeof RARITY_ORDER)[number];
 
 const RARITY_GRAD: Record<Rarity, string> = {
   LEGENDARY: "linear-gradient(135deg, #FFB547 0%, #FF4757 50%, #0024FF 100%)",
-  EPIC: "linear-gradient(135deg, #0AFFD4 0%, #0024FF 100%)",
+  EPIC: "linear-gradient(135deg, var(--cosmetic-accent) 0%, #0024FF 100%)",
   RARE: "linear-gradient(135deg, #6E8BFF 0%, #4A3FCC 100%)",
   COMMON: "linear-gradient(135deg, #B8B5D1 0%, #6F6B99 100%)",
 };
 
 const RARITY_COLOR: Record<Rarity, string> = {
   LEGENDARY: "#FFB547",
-  EPIC: "#0AFFD4",
+  EPIC: "var(--cosmetic-accent)",
   RARE: "#6E8BFF",
   COMMON: "#B8B5D1",
 };
@@ -312,7 +312,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           gap: 8,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>$</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
         <span>~/</span>
         <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
         <span style={{ color: "#44406B" }}>/</span>
@@ -326,8 +326,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             display: "inline-block",
             width: 7,
             height: 13,
-            background: "#0AFFD4",
-            boxShadow: "0 0 8px #0AFFD4",
+            background: "var(--cosmetic-accent)",
+            boxShadow: "0 0 8px var(--cosmetic-accent)",
             marginLeft: 4,
             verticalAlign: "-2px",
             animation: "blink 1s step-end infinite",
@@ -373,10 +373,11 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               {user.username && (
                 <span
                   style={{
-                    color: "#0AFFD4",
+                    color: "var(--cosmetic-accent)",
                     fontWeight: 600,
                     marginRight: 4,
-                    textShadow: "0 0 14px rgba(10,255,212,0.5)",
+                    textShadow:
+                      "0 0 14px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)",
                   }}
                 >
                   @
@@ -490,8 +491,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   width: 6,
                   height: 6,
                   transform: "rotate(45deg)",
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 6px #0AFFD4",
+                  background: "var(--cosmetic-accent)",
+                  boxShadow: "0 0 6px var(--cosmetic-accent)",
                   flexShrink: 0,
                 }}
               />
@@ -519,8 +520,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 left: -1,
                 width: 14,
                 height: 14,
-                borderTop: "2px solid #0AFFD4",
-                borderLeft: "2px solid #0AFFD4",
+                borderTop: "2px solid var(--cosmetic-accent)",
+                borderLeft: "2px solid var(--cosmetic-accent)",
               }}
             />
             <span
@@ -530,8 +531,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 right: -1,
                 width: 14,
                 height: 14,
-                borderTop: "2px solid #0AFFD4",
-                borderRight: "2px solid #0AFFD4",
+                borderTop: "2px solid var(--cosmetic-accent)",
+                borderRight: "2px solid var(--cosmetic-accent)",
               }}
             />
             <span
@@ -541,8 +542,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 left: -1,
                 width: 14,
                 height: 14,
-                borderBottom: "2px solid #0AFFD4",
-                borderLeft: "2px solid #0AFFD4",
+                borderBottom: "2px solid var(--cosmetic-accent)",
+                borderLeft: "2px solid var(--cosmetic-accent)",
               }}
             />
             <span
@@ -552,8 +553,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 right: -1,
                 width: 14,
                 height: 14,
-                borderBottom: "2px solid #0AFFD4",
-                borderRight: "2px solid #0AFFD4",
+                borderBottom: "2px solid var(--cosmetic-accent)",
+                borderRight: "2px solid var(--cosmetic-accent)",
               }}
             />
 
@@ -572,7 +573,12 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               }}
             >
               <span
-                style={{ width: 16, height: 1, background: "#0AFFD4", display: "inline-block" }}
+                style={{
+                  width: 16,
+                  height: 1,
+                  background: "var(--cosmetic-accent)",
+                  display: "inline-block",
+                }}
               />
               Récapitulatif
               <span
@@ -581,7 +587,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 5,
-                  color: "#0AFFD4",
+                  color: "var(--cosmetic-accent)",
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   letterSpacing: "0.18em",
@@ -593,8 +599,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                     width: 5,
                     height: 5,
                     borderRadius: "50%",
-                    background: "#0AFFD4",
-                    boxShadow: "0 0 6px #0AFFD4",
+                    background: "var(--cosmetic-accent)",
+                    boxShadow: "0 0 6px var(--cosmetic-accent)",
                     animation: "pulse 2s ease-in-out infinite",
                   }}
                   aria-hidden="true"
@@ -612,7 +618,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 lineHeight: 0.9,
                 letterSpacing: "-0.045em",
                 marginBottom: 14,
-                background: "linear-gradient(180deg, #F5F5FA, #0AFFD4)",
+                background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -638,11 +644,14 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               }}
             >
               <span>
-                Niv. <b style={{ color: "#0AFFD4", fontWeight: 700 }}>{level}</b>
+                Niv. <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>{level}</b>
               </span>
               <span style={{ color: "#1F1B47" }}>/</span>
               <span>
-                <b style={{ color: "#0AFFD4", fontWeight: 700 }}>{user.streakDays}j</b> streak
+                <b style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
+                  {user.streakDays}j
+                </b>{" "}
+                streak
               </span>
               {legendaryCount > 0 && (
                 <>
@@ -730,7 +739,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontSize: 96,
               lineHeight: 0.85,
               letterSpacing: "-0.05em",
-              background: "linear-gradient(180deg, #F5F5FA 30%, #0AFFD4)",
+              background: "linear-gradient(180deg, #F5F5FA 30%, var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -789,11 +798,13 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 textTransform: "none",
               }}
             >
-              <b style={{ color: "#0AFFD4" }}>{xpCurrent.toLocaleString("fr-FR")}</b> /{" "}
-              {xpNeeded.toLocaleString("fr-FR")} XP
+              <b style={{ color: "var(--cosmetic-accent)" }}>{xpCurrent.toLocaleString("fr-FR")}</b>{" "}
+              / {xpNeeded.toLocaleString("fr-FR")} XP
             </span>
             <span>→ Niv. {level + 1}</span>
-            <span style={{ color: "#0AFFD4", fontWeight: 700 }}>{Math.round(xpPct)}%</span>
+            <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
+              {Math.round(xpPct)}%
+            </span>
           </div>
 
           {/* Segmented bar (marginBottom reserves a row for the YOU marker,
@@ -827,8 +838,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 position: "relative",
                 height: "100%",
                 width: `${xpPct.toFixed(1)}%`,
-                background: "linear-gradient(90deg, #0024FF 0%, #0AFFD4 100%)",
-                boxShadow: "0 0 14px rgba(10,255,212,0.55)",
+                background: "linear-gradient(90deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
+                boxShadow: "0 0 14px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent)",
                 zIndex: 2,
               }}
             >
@@ -840,8 +851,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   top: -4,
                   bottom: -4,
                   width: 2,
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 12px #0AFFD4",
+                  background: "var(--cosmetic-accent)",
+                  boxShadow: "0 0 12px var(--cosmetic-accent)",
                 }}
                 aria-hidden="true"
               />
@@ -856,7 +867,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 transform: "translateX(-50%)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 9.5,
-                color: "#0AFFD4",
+                color: "var(--cosmetic-accent)",
                 letterSpacing: "0.1em",
                 whiteSpace: "nowrap",
                 zIndex: 3,
@@ -885,8 +896,8 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontWeight: 800,
               fontSize: 28,
               letterSpacing: "-0.02em",
-              color: "#0AFFD4",
-              textShadow: "0 0 14px rgba(10,255,212,0.45)",
+              color: "var(--cosmetic-accent)",
+              textShadow: "0 0 14px color-mix(in srgb, var(--cosmetic-accent) 45%, transparent)",
               marginBottom: 2,
             }}
           >
@@ -1048,7 +1059,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontSize: 52,
               lineHeight: 0.9,
               letterSpacing: "-0.04em",
-              background: "linear-gradient(180deg, #F5F5FA, #0AFFD4)",
+              background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               WebkitTextFillColor: "transparent",
@@ -1066,7 +1077,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               marginTop: 10,
             }}
           >
-            obtenus · <b style={{ color: "#0AFFD4" }}>{legendaryCount}</b> légendaire
+            obtenus · <b style={{ color: "var(--cosmetic-accent)" }}>{legendaryCount}</b> légendaire
             {legendaryCount > 1 ? "s" : ""}
           </sub>
         </StatCell>
@@ -1099,7 +1110,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             }}
           >
             délivré{certsCount > 1 ? "s" : ""} ·{" "}
-            <b style={{ color: "#0AFFD4" }}>vérifié{certsCount > 1 ? "s" : ""}</b>
+            <b style={{ color: "var(--cosmetic-accent)" }}>vérifié{certsCount > 1 ? "s" : ""}</b>
           </sub>
         </StatCell>
       </div>

@@ -57,9 +57,9 @@ import { PythonChallenge } from "./_components/python-challenge";
 const DIFF_META = {
   BEGINNER: {
     label: "Débutant",
-    color: "#0AFFD4",
-    bg: "rgba(10,255,212,0.1)",
-    border: "rgba(10,255,212,0.4)",
+    color: "var(--cosmetic-accent)",
+    bg: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
+    border: "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
   },
   INTERMEDIATE: {
     label: "Intermédiaire",
@@ -100,8 +100,8 @@ const CAT_META = {
     label: "Réseaux",
     slug: "network",
     color: "#0AFFD4",
-    bg: "rgba(10,255,212,0.1)",
-    border: "rgba(10,255,212,0.4)",
+    bg: "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
+    border: "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)",
   },
 } as const;
 
@@ -200,7 +200,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           marginBottom: 40,
         }}
       >
-        <span style={{ color: "#0AFFD4", fontWeight: 700 }}>$</span>
+        <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>$</span>
         <Link
           href="/lessons"
           className="breadcrumb-link"
@@ -217,7 +217,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           <b style={{ color: "#F5F5FA", fontWeight: 500 }}>{cat.slug}</b>
         </Link>
         <span style={{ color: "#1F1B47" }}>/</span>
-        <span style={{ color: "#0AFFD4" }}>{lesson.slug}.lesson</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>{lesson.slug}.lesson</span>
       </div>
 
       {/* ── Hero + Mission Briefing ───────────────────────────────────────── */}
@@ -270,10 +270,10 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               justifyContent: "space-between",
               padding: "12px 18px",
               borderBottom: "1px solid #2A2560",
-              background: "rgba(10,255,212,0.04)",
+              background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 10,
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
               letterSpacing: "0.18em",
               textTransform: "uppercase",
             }}
@@ -318,7 +318,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                   fontFamily: "var(--font-display, sans-serif)",
                   fontWeight: 700,
                   fontSize: 20,
-                  color: "#0AFFD4",
+                  color: "var(--cosmetic-accent)",
                   lineHeight: 1,
                 }}
               >
@@ -349,7 +349,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                   fontFamily: "var(--font-mono, monospace)",
                   fontWeight: 600,
                   fontSize: 11,
-                  color: isCompleted ? "#0AFFD4" : "#FFB547",
+                  color: isCompleted ? "var(--cosmetic-accent)" : "#FFB547",
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
                   lineHeight: 1,
@@ -384,7 +384,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                     marginBottom: 8,
                   }}
                 >
-                  <span style={{ color: "#0AFFD4" }}>›</span>
+                  <span style={{ color: "var(--cosmetic-accent)" }}>›</span>
                   Progression · {isCompleted ? sections.length : 0}/{sections.length} sections
                 </span>
                 <div
@@ -400,8 +400,9 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                       position: "absolute",
                       inset: 0,
                       width: isCompleted ? "100%" : "0%",
-                      background: "linear-gradient(90deg, #0024FF, #0AFFD4)",
-                      boxShadow: "0 0 10px rgba(10,255,212,0.6)",
+                      background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
+                      boxShadow:
+                        "0 0 10px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
                     }}
                   />
                 </div>
@@ -566,7 +567,7 @@ function BriefingRow({
           textTransform: "uppercase",
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>›</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>›</span>
         {label}
       </span>
       {children}
@@ -586,7 +587,7 @@ function TitleWithAccent({
         <em
           style={{
             fontStyle: "normal",
-            background: `linear-gradient(135deg, ${accentColor} 0%, #0AFFD4 100%)`,
+            background: `linear-gradient(135deg, ${accentColor} 0%, var(--cosmetic-accent) 100%)`,
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -627,7 +628,7 @@ function TitleWithAccent({
       <em
         style={{
           fontStyle: "normal",
-          background: `linear-gradient(135deg, ${accentColor} 0%, #0AFFD4 100%)`,
+          background: `linear-gradient(135deg, ${accentColor} 0%, var(--cosmetic-accent) 100%)`,
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           backgroundClip: "text",

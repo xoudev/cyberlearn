@@ -94,8 +94,8 @@ export function Quiz({
           alignItems: "center",
           gap: 12,
           padding: "12px 20px",
-          border: "1px solid rgba(10,255,212,0.15)",
-          background: "rgba(10,255,212,0.03)",
+          border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 15%, transparent)",
+          background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
           fontFamily: "var(--font-body, sans-serif)",
           fontSize: 13,
         }}
@@ -104,7 +104,7 @@ export function Quiz({
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 11,
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
             flexShrink: 0,
           }}
         >
@@ -169,7 +169,7 @@ export function Quiz({
             fontSize: 11,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#0AFFD4",
+            color: "var(--cosmetic-accent)",
           }}
         >
           › Vérification
@@ -188,7 +188,7 @@ export function Quiz({
             textTransform: "uppercase",
           }}
         >
-          {isCorrect && <span style={{ color: "#0AFFD4" }}>✓ Correct</span>}
+          {isCorrect && <span style={{ color: "var(--cosmetic-accent)" }}>✓ Correct</span>}
           {isWrong && <span style={{ color: "#FF4757" }}>✗ Incorrect · réessaye</span>}
           {!state.submitted && questionNumber !== undefined && questionCount !== undefined && (
             <span style={{ color: "#44406B" }}>
@@ -227,10 +227,11 @@ export function Quiz({
           let stateLabel = "-";
 
           if (isThisCorrect) {
-            borderLeftColor = "#0AFFD4";
-            bg = "linear-gradient(90deg, rgba(10,255,212,0.08), transparent 60%)";
+            borderLeftColor = "var(--cosmetic-accent)";
+            bg =
+              "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 8%, transparent), transparent 60%)";
             textColor = "#F5F5FA";
-            letterColor = "#0AFFD4";
+            letterColor = "var(--cosmetic-accent)";
             stateLabel = "Bonne réponse";
           } else if (isThisWrong) {
             borderLeftColor = "#FF4757";
@@ -269,7 +270,8 @@ export function Quiz({
               onMouseEnter={(e) => {
                 if (!state.submitted && !isSelected) {
                   e.currentTarget.style.borderColor = "#2A2560";
-                  e.currentTarget.style.background = "rgba(10,255,212,0.02)";
+                  e.currentTarget.style.background =
+                    "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)";
                   e.currentTarget.style.color = "#F5F5FA";
                 }
               }}
@@ -314,7 +316,7 @@ export function Quiz({
                   borderRadius: "50%",
                   display: "grid",
                   placeItems: "center",
-                  background: isThisCorrect ? "#0AFFD4" : "transparent",
+                  background: isThisCorrect ? "var(--cosmetic-accent)" : "transparent",
                   flexShrink: 0,
                 }}
               >
@@ -351,7 +353,11 @@ export function Quiz({
                     fontSize: 10,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: isThisCorrect ? "#0AFFD4" : isThisWrong ? "#FF4757" : "#3F3D5C",
+                    color: isThisCorrect
+                      ? "var(--cosmetic-accent)"
+                      : isThisWrong
+                        ? "#FF4757"
+                        : "#3F3D5C",
                     whiteSpace: "nowrap",
                   }}
                 >

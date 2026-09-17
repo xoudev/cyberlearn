@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Mes certificats · CyberLearn" };
 const GOLD = "#FFB547";
 
 const DIFF_COLORS: Record<string, { color: string; label: string }> = {
-  BEGINNER: { color: "#0AFFD4", label: "Débutant" },
+  BEGINNER: { color: "var(--cosmetic-accent)", label: "Débutant" },
   INTERMEDIATE: { color: "#4D8BFF", label: "Intermédiaire" },
   ADVANCED: { color: "#B14DFF", label: "Avancé" },
   EXPERT: { color: "#FFB020", label: "Expert" },
@@ -132,7 +132,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
           gap: 8,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>$</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
         <span>~/</span>
         <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
         <span style={{ color: "#44406B" }}>/</span>
@@ -143,8 +143,8 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             display: "inline-block",
             width: 7,
             height: 13,
-            background: "#0AFFD4",
-            boxShadow: "0 0 8px #0AFFD4",
+            background: "var(--cosmetic-accent)",
+            boxShadow: "0 0 8px var(--cosmetic-accent)",
             marginLeft: 4,
             verticalAlign: "-2px",
             animation: "blink 1s step-end infinite",
@@ -185,7 +185,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                 <em
                   style={{
                     fontStyle: "normal",
-                    background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                    background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -200,7 +200,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                 <em
                   style={{
                     fontStyle: "normal",
-                    background: "linear-gradient(135deg, #0024FF 0%, #0AFFD4 100%)",
+                    background: "linear-gradient(135deg, #0024FF 0%, var(--cosmetic-accent) 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -542,7 +542,12 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                     {cert.score !== null && (
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                         <span>Score examen</span>
-                        <b style={{ color: isRevoked ? "#6B6890" : "#0AFFD4", fontWeight: 600 }}>
+                        <b
+                          style={{
+                            color: isRevoked ? "#6B6890" : "var(--cosmetic-accent)",
+                            fontWeight: 600,
+                          }}
+                        >
                           {cert.score}%
                         </b>
                       </div>

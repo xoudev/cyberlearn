@@ -132,9 +132,9 @@ export function PythonChallenge({
         "editor.foreground": "#E0DDFF",
         "editor.lineHighlightBackground": "#1A1838",
         "editorLineNumber.foreground": "#3F3D5C",
-        "editorLineNumber.activeForeground": "#0AFFD4",
+        "editorLineNumber.activeForeground": "var(--cosmetic-accent)",
         "editor.selectionBackground": "#2A2560",
-        "editorCursor.foreground": "#0AFFD4",
+        "editorCursor.foreground": "var(--cosmetic-accent)",
         "editor.inactiveSelectionBackground": "#1F1B47",
         "editorIndentGuide.background1": "#1F1B47",
         "editorWhitespace.foreground": "#2A2560",
@@ -192,8 +192,8 @@ export function PythonChallenge({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: allPassed ? "#0AFFD4" : "#B14DFF",
-              boxShadow: allPassed ? "0 0 8px #0AFFD499" : "0 0 8px #B14DFF99",
+              background: allPassed ? "var(--cosmetic-accent)" : "#B14DFF",
+              boxShadow: allPassed ? "0 0 8px var(--cosmetic-accent)99" : "0 0 8px #B14DFF99",
               animation: "pulse 2s ease-in-out infinite",
             }}
           />
@@ -373,8 +373,8 @@ export function PythonChallenge({
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    background: allPassed ? "#0AFFD4" : "#FF4757",
-                    boxShadow: `0 0 6px ${allPassed ? "#0AFFD4" : "#FF4757"}`,
+                    background: allPassed ? "var(--cosmetic-accent)" : "#FF4757",
+                    boxShadow: `0 0 6px ${allPassed ? "var(--cosmetic-accent)" : "#FF4757"}`,
                     flexShrink: 0,
                   }}
                 />
@@ -384,7 +384,7 @@ export function PythonChallenge({
                     fontSize: 10,
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    color: allPassed ? "#0AFFD4" : "#FF4757",
+                    color: allPassed ? "var(--cosmetic-accent)" : "#FF4757",
                   }}
                 >
                   {passedCount}/{totalCount} · {allPassed ? "VALIDÉ" : "ÉCHEC"}
@@ -451,7 +451,9 @@ export function PythonChallenge({
                   gap: 12,
                   padding: "10px 18px",
                   borderBottom: i < testResults.length - 1 ? "1px solid #0F0D2B" : "none",
-                  background: result.passed ? "rgba(10,255,212,0.02)" : "rgba(255,71,87,0.02)",
+                  background: result.passed
+                    ? "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)"
+                    : "rgba(255,71,87,0.02)",
                 }}
               >
                 {/* Status icon */}
@@ -460,7 +462,7 @@ export function PythonChallenge({
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 11,
                     fontWeight: 700,
-                    color: result.passed ? "#0AFFD4" : "#FF4757",
+                    color: result.passed ? "var(--cosmetic-accent)" : "#FF4757",
                     paddingTop: 1,
                   }}
                 >
@@ -505,7 +507,7 @@ export function PythonChallenge({
                   }}
                 >
                   {result.passed ? (
-                    <span style={{ color: "#0AFFD4" }}>{result.actual}</span>
+                    <span style={{ color: "var(--cosmetic-accent)" }}>{result.actual}</span>
                   ) : (
                     <span>
                       <span style={{ color: "#44406B" }}>attendu : </span>
@@ -522,12 +524,12 @@ export function PythonChallenge({
             <div
               style={{
                 padding: "12px 18px",
-                background: "rgba(10,255,212,0.04)",
-                borderTop: "1px solid rgba(10,255,212,0.1)",
+                background: "color-mix(in srgb, var(--cosmetic-accent) 4%, transparent)",
+                borderTop: "1px solid color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
                 fontFamily: "var(--font-mono, monospace)",
                 fontSize: 11,
                 letterSpacing: "0.1em",
-                color: "#0AFFD4",
+                color: "var(--cosmetic-accent)",
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
@@ -536,7 +538,7 @@ export function PythonChallenge({
               <svg viewBox="0 0 12 12" width={10} height={10} fill="none">
                 <path
                   d="M2 6 L5 9 L10 3"
-                  stroke="#0AFFD4"
+                  stroke="var(--cosmetic-accent)"
                   strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"

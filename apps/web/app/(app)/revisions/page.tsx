@@ -138,7 +138,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             gap: 8,
           }}
         >
-          <span style={{ color: "#0AFFD4" }}>$</span>
+          <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
           <span>~/</span>
           <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
           <span style={{ color: "#44406B" }}>/</span>
@@ -149,8 +149,8 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               display: "inline-block",
               width: 7,
               height: 13,
-              background: "#0AFFD4",
-              boxShadow: "0 0 8px #0AFFD4",
+              background: "var(--cosmetic-accent)",
+              boxShadow: "0 0 8px var(--cosmetic-accent)",
               marginLeft: 4,
               verticalAlign: -2,
               animation: "rv-blink 1s step-end infinite",
@@ -170,7 +170,8 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
           }}
         >
           <span style={{ color: "#44406B" }}>{"// "}</span>
-          SESSION · <b style={{ color: "#0AFFD4", fontWeight: 500 }}>SM-2</b> · COURBE D&apos;OUBLI
+          SESSION · <b style={{ color: "var(--cosmetic-accent)", fontWeight: 500 }}>SM-2</b> ·
+          COURBE D&apos;OUBLI
         </div>
 
         {/* Title */}
@@ -192,7 +193,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               <em
                 style={{
                   fontStyle: "normal",
-                  background: "linear-gradient(180deg, #0AFFD4, #0024FF)",
+                  background: "linear-gradient(180deg, var(--cosmetic-accent), #0024FF)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   color: "transparent",
@@ -243,8 +244,8 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
               style={{
                 padding: "60px 40px",
                 textAlign: "center",
-                border: "1px solid rgba(10,255,212,0.2)",
-                background: "rgba(10,255,212,0.03)",
+                border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)",
+                background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
                 position: "relative",
               }}
             >
@@ -253,9 +254,10 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                   fontFamily: "var(--font-sans)",
                   fontSize: 48,
                   fontWeight: 800,
-                  color: "#0AFFD4",
+                  color: "var(--cosmetic-accent)",
                   marginBottom: 16,
-                  filter: "drop-shadow(0 0 20px rgba(10,255,212,0.4))",
+                  filter:
+                    "drop-shadow(0 0 20px color-mix(in srgb, var(--cosmetic-accent) 40%, transparent))",
                 }}
               >
                 ✓
@@ -300,7 +302,13 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                 }}
               >
                 Faire une leçon{" "}
-                <span style={{ color: "#0AFFD4", textShadow: "0 0 8px rgba(10,255,212,0.6)" }}>
+                <span
+                  style={{
+                    color: "var(--cosmetic-accent)",
+                    textShadow:
+                      "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
+                  }}
+                >
                   →
                 </span>
               </Link>

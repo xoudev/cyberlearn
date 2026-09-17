@@ -43,7 +43,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
             padding: "18px 20px",
           }}
         >
-          <BracketCorners color="#0AFFD4" />
+          <BracketCorners color="var(--cosmetic-accent)" />
 
           {/* Eyebrow */}
           <div
@@ -64,7 +64,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
               style={{
                 width: 16,
                 height: 1,
-                background: "#0AFFD4",
+                background: "var(--cosmetic-accent)",
                 display: "inline-block",
                 flexShrink: 0,
               }}
@@ -76,7 +76,7 @@ export default async function DataPage(): Promise<React.JSX.Element> {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 5,
-                color: "#0AFFD4",
+                color: "var(--cosmetic-accent)",
                 letterSpacing: "0.18em",
               }}
             >
@@ -86,8 +86,8 @@ export default async function DataPage(): Promise<React.JSX.Element> {
                   width: 5,
                   height: 5,
                   borderRadius: "50%",
-                  background: "#0AFFD4",
-                  boxShadow: "0 0 6px #0AFFD4",
+                  background: "var(--cosmetic-accent)",
+                  boxShadow: "0 0 6px var(--cosmetic-accent)",
                   animation: "pulse 2s ease-in-out infinite",
                 }}
               />

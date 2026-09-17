@@ -14,7 +14,7 @@ const DIFF_LABELS: Record<string, string> = {
   EXPERT: "Expert",
 };
 const DIFF_COLORS: Record<string, string> = {
-  BEGINNER: "#0AFFD4",
+  BEGINNER: "var(--cosmetic-accent)",
   INTERMEDIATE: "#6E8BFF",
   ADVANCED: "#FF4757",
   EXPERT: "#FFB020",
@@ -51,7 +51,7 @@ export function NextBar({
   xpReward,
   isCompleted,
 }: NextBarProps): React.ReactElement {
-  const catColor = next ? (CAT_COLORS[next.category] ?? "#6E8BFF") : "#0AFFD4";
+  const catColor = next ? (CAT_COLORS[next.category] ?? "#6E8BFF") : "var(--cosmetic-accent)";
   const diffLabel = next ? (DIFF_LABELS[next.difficulty] ?? next.difficulty) : "";
   const diffColor = next ? (DIFF_COLORS[next.difficulty] ?? "#6E8BFF") : "#6E8BFF";
 
@@ -83,7 +83,8 @@ export function NextBar({
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(135deg, transparent 40%, rgba(10,255,212,0.05) 100%)",
+            background:
+              "linear-gradient(135deg, transparent 40%, color-mix(in srgb, var(--cosmetic-accent) 5%, transparent) 100%)",
             pointerEvents: "none",
           }}
         />
@@ -110,7 +111,7 @@ export function NextBar({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#0AFFD4",
+              color: "var(--cosmetic-accent)",
             }}
           >
             <span style={{ fontWeight: 700 }}>›</span>

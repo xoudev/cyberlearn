@@ -36,7 +36,7 @@ function GlyphAvatar({ name, size }: { name: string; size: number }): React.Reac
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#0AFFD4"
+      stroke="var(--cosmetic-accent)"
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -203,10 +203,10 @@ export async function Navbar(): Promise<React.ReactElement> {
                   flexShrink: 0,
                   overflow: "hidden",
                   background: glyphName
-                    ? "rgba(10,255,212,0.08)"
+                    ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
                     : isRealUrl
                       ? "transparent"
-                      : "linear-gradient(135deg, #0024FF, #0AFFD4)",
+                      : "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
                   display: "grid",
                   placeItems: "center",
                   fontFamily: "var(--font-sans)",

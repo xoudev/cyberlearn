@@ -23,7 +23,7 @@ export function ChallengesWip(): React.ReactElement {
           gap: 8,
         }}
       >
-        <span style={{ color: "#0AFFD4" }}>$</span>
+        <span style={{ color: "var(--cosmetic-accent)" }}>$</span>
         <span>~/</span>
         <b style={{ color: "#B8B5D1", fontWeight: 500 }}>cyberlearn</b>
         <span style={{ color: "#44406B" }}>/</span>
@@ -133,7 +133,14 @@ export function ChallengesWip(): React.ReactElement {
           }}
         >
           Explorer les leçons{" "}
-          <span style={{ color: "#0AFFD4", textShadow: "0 0 8px rgba(10,255,212,0.6)" }}>→</span>
+          <span
+            style={{
+              color: "var(--cosmetic-accent)",
+              textShadow: "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent)",
+            }}
+          >
+            →
+          </span>
         </Link>
         <Link
           href="/dashboard"

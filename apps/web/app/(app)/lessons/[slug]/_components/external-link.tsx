@@ -118,7 +118,8 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
       onMouseEnter={(e) => {
         const el = e.currentTarget;
         el.style.borderColor = "#2A2560";
-        el.style.boxShadow = "0 0 0 1px #2A2560, 0 4px 24px rgba(10,255,212,0.06)";
+        el.style.boxShadow =
+          "0 0 0 1px #2A2560, 0 4px 24px color-mix(in srgb, var(--cosmetic-accent) 6%, transparent)";
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget;
