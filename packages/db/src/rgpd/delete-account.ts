@@ -82,7 +82,10 @@ function defaultCleanupReporter(
   error: unknown,
   context: Record<string, unknown>,
 ): void {
-  console.error(`[rgpd] ${area} cleanup failed:`, error, context);
+  // The format string stays constant and the area rides along as an argument:
+  // a value interpolated into it can forge the shape of a log line, and the
+  // SAST gate refuses it for that reason.
+  console.error("[rgpd] cleanup failed:", area, error, context);
 }
 
 export async function deleteAccount(
