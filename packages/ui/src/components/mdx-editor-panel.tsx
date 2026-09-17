@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * The lesson editor: Monaco, a toolbar, a live preview and a guide to every
+ * component the MDX pipeline understands.
+ *
+ * Shared rather than copied because both people who write lessons deserve the
+ * same tool - the admin writing the catalogue, and a teacher writing for their
+ * own class. Two copies would mean a component added to the pipeline gets a
+ * guide entry in one editor and not the other, and the teacher quietly ends up
+ * with the lesser half of the product.
+ *
+ * The preview here is a deliberate approximation, not the real renderer: it
+ * reads the MDX with regular expressions so it can run on every keystroke
+ * without the remark/rehype chain. What it shows is close enough to compose
+ * against; the lesson page remains the source of truth.
+ */
+
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { OnMount, BeforeMount } from "@monaco-editor/react";
@@ -29,6 +45,13 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
 const BORDER = "#2A2560";
+/* The editor chrome follows the accent the reader has equipped, like the rest
+ * of the app. Monaco's own theme is the exception below: its colours go through a
+ * JavaScript API that paints to a canvas, where a CSS custom property means
+ * nothing, so the cursor keeps a literal. Outside the app - in the admin
+ * console - tokens.css defines the accent as the brand turquoise, which is what
+ * this colour already was. */
+const ACCENT = "var(--cosmetic-accent)";
 const TURQ = "#0AFFD4";
 const MONO = "var(--font-mono)";
 const DANGER = "#FF4D6D";
@@ -57,7 +80,7 @@ function renderInline(text: string): React.ReactNode {
           style={{
             fontFamily: MONO,
             background: "#1A1740",
-            color: TURQ,
+            color: ACCENT,
             padding: "1px 5px",
             borderRadius: 3,
             fontSize: "0.88em",
@@ -105,7 +128,12 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
         label: "ATTENTION",
       },
       danger: { border: DANGER, bg: "rgba(255,77,109,0.08)", color: DANGER, label: "DANGER" },
-      success: { border: TURQ, bg: "rgba(10,255,212,0.08)", color: TURQ, label: "SUCCÈS" },
+      success: {
+        border: ACCENT,
+        bg: "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)",
+        color: ACCENT,
+        label: "SUCCÈS",
+      },
     };
     // SAFETY: fallback to info when type is unknown
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -182,7 +210,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           margin: "14px 0",
           background: "#060422",
           border: `1px solid #1F1B47`,
-          borderLeft: `3px solid ${TURQ}`,
+          borderLeft: `3px solid ${ACCENT}`,
           borderRadius: 6,
           overflow: "hidden",
         }}
@@ -200,7 +228,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
             style={{
               fontFamily: MONO,
               fontSize: 9,
-              color: TURQ,
+              color: ACCENT,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
             }}
@@ -328,7 +356,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             color: "#F5F5FA",
             margin: "24px 0 10px",
             paddingLeft: 14,
-            borderLeft: "3px solid #0AFFD4",
+            borderLeft: `3px solid ${ACCENT}`,
             letterSpacing: "-0.02em",
             lineHeight: 1.15,
           }}
@@ -399,7 +427,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             margin: "14px 0",
             background: "#060422",
             border: `1px solid #1F1B47`,
-            borderLeft: `3px solid ${TURQ}`,
+            borderLeft: `3px solid ${ACCENT}`,
             borderRadius: 6,
             overflow: "hidden",
           }}
@@ -409,7 +437,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
               style={{
                 fontFamily: MONO,
                 fontSize: 9,
-                color: TURQ,
+                color: ACCENT,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
               }}
@@ -456,7 +484,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
                 gap: 8,
               }}
             >
-              <span style={{ color: TURQ, flexShrink: 0, marginTop: 1 }}>›</span>
+              <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>›</span>
               <span>{renderInline(item)}</span>
             </li>
           ))}
@@ -563,7 +591,7 @@ function TBtn({
         background: active || hov ? "rgba(255,255,255,0.06)" : "transparent",
         border: active ? `1px solid ${BORDER}` : "1px solid transparent",
         borderRadius: 3,
-        color: active ? TURQ : hov ? "#F5F5FA" : "#6B6890",
+        color: active ? ACCENT : hov ? "#F5F5FA" : "#6B6890",
         fontFamily: mono ? MONO : "inherit",
         fontWeight: mono ? 700 : 400,
         fontSize: 12,
@@ -649,6 +677,10 @@ const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
   {
+    // The section accents are a fixed set identifying component families, the
+    // way the lesson categories are: Callout blue, Quiz amber, terminal violet.
+    // They are not the reader's accent and do not follow it, or two families
+    // would collide the moment someone equipped this colour.
     title: "CodePlayground",
     accent: "#0AFFD4",
     entries: [
@@ -767,9 +799,19 @@ function GuideRow({
             flexShrink: 0,
             height: 20,
             padding: "0 8px",
-            border: `1px solid ${done ? "rgba(10,255,212,0.4)" : hov ? `${accent}66` : "rgba(31,27,71,0.8)"}`,
-            background: done ? "rgba(10,255,212,0.1)" : hov ? `${accent}11` : "transparent",
-            color: done ? "#0AFFD4" : hov ? accent : "#6B6890",
+            border: `1px solid ${
+              done
+                ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)"
+                : hov
+                  ? `${accent}66`
+                  : "rgba(31,27,71,0.8)"
+            }`,
+            background: done
+              ? "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)"
+              : hov
+                ? `${accent}11`
+                : "transparent",
+            color: done ? ACCENT : hov ? accent : "#6B6890",
             fontFamily: MONO,
             fontSize: 9,
             fontWeight: 700,
@@ -824,9 +866,9 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
             width: 4,
             height: 4,
             borderRadius: "50%",
-            background: TURQ,
+            background: ACCENT,
             display: "inline-block",
-            boxShadow: `0 0 6px ${TURQ}`,
+            boxShadow: `0 0 6px ${ACCENT}`,
           }}
         />
         GUIDE MDX
@@ -1466,10 +1508,14 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
               gap: 5,
               height: 26,
               padding: "0 9px",
-              background: split ? "rgba(10,255,212,0.08)" : "transparent",
-              border: `1px solid ${split ? "rgba(10,255,212,0.3)" : BORDER}`,
+              background: split
+                ? "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)"
+                : "transparent",
+              border: `1px solid ${
+                split ? "color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)" : BORDER
+              }`,
               borderRadius: 3,
-              color: split ? TURQ : "#6B6890",
+              color: split ? ACCENT : "#6B6890",
               fontFamily: MONO,
               fontSize: 9,
               letterSpacing: "0.1em",
@@ -1585,9 +1631,9 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
                     width: 4,
                     height: 4,
                     borderRadius: "50%",
-                    background: TURQ,
+                    background: ACCENT,
                     display: "inline-block",
-                    boxShadow: `0 0 6px ${TURQ}`,
+                    boxShadow: `0 0 6px ${ACCENT}`,
                   }}
                 />
                 PREVIEW
@@ -1615,13 +1661,13 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
           flexShrink: 0,
         }}
       >
-        <span style={{ display: "flex", alignItems: "center", gap: 5, color: TURQ }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, color: ACCENT }}>
           <span
             style={{
               width: 4,
               height: 4,
               borderRadius: "50%",
-              background: TURQ,
+              background: ACCENT,
               display: "inline-block",
             }}
           />

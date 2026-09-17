@@ -2,7 +2,7 @@
 
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
-import { MdxEditorPanel } from "../../../new/_components/MdxEditorPanel";
+import { MdxEditorPanel } from "@cyberlearn/ui/mdx-editor";
 import { CoverUploadField } from "../../../_components/cover-upload-field";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
 

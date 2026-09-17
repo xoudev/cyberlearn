@@ -894,6 +894,31 @@ export const classRepository = {
     return created;
   },
 
+  /**
+   * One class lesson, with everything its editor needs to reopen it.
+   *
+   * Scoped to audience CLASS like every other read here, so a catalogue lesson
+   * cannot be loaded into the teacher's editor by guessing an id. Whether this
+   * teacher may edit it is a separate question, asked by canEditClassLesson.
+   */
+  async findClassLessonForEdit(lessonId: string) {
+    return prisma.lesson.findFirst({
+      where: { id: lessonId, audience: "CLASS" },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        category: true,
+        difficulty: true,
+        estimatedMinutes: true,
+        xpReward: true,
+        contentMdx: true,
+        classLinks: { select: { class: { select: { id: true, name: true } } }, take: 1 },
+      },
+    });
+  },
+
   async updateClassLesson(
     lessonId: string,
     data: {

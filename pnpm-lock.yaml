@@ -829,6 +829,9 @@ importers:
       '@cyberlearn/config':
         specifier: workspace:*
         version: link:../config
+      '@monaco-editor/react':
+        specifier: 'catalog:'
+        version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@testing-library/jest-dom':
         specifier: 'catalog:'
         version: 6.9.1
@@ -853,6 +856,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 26.1.0
+      next:
+        specifier: 'catalog:'
+        version: 15.5.15(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react:
         specifier: 'catalog:'
         version: 19.2.5

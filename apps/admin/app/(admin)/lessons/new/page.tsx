@@ -7,7 +7,7 @@ import {
   getNextRefCodeAction,
   type CreateLessonState,
 } from "../_actions/lesson-actions";
-import { MdxEditorPanel } from "./_components/MdxEditorPanel";
+import { MdxEditorPanel } from "@cyberlearn/ui/mdx-editor";
 import { CoverUploadField } from "../_components/cover-upload-field";
 
 export const dynamic = "force-dynamic";
