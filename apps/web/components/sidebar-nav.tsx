@@ -233,6 +233,24 @@ function IconNote() {
   );
 }
 
+function IconForum() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={15}
+      height={15}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1.5 3.5 H11 V10 H5 L2.5 12.2 V10 H1.5 Z" />
+      <path d="M13 6 H14.5 V12.5 H13.5 V14.2 L11.5 12.5 H7" />
+    </svg>
+  );
+}
+
 function IconNews() {
   return (
     <svg
@@ -265,6 +283,7 @@ const LEARN_ITEMS = [
 ] as const;
 
 const ACTIVITY_ITEMS = [
+  { href: "/forum", label: "Forum", Icon: IconForum, count: null, tag: undefined },
   { href: "/leaderboard", label: "Classement", Icon: IconTrophy, count: null, tag: undefined },
   // WIP tag: the challenges catalog is being rebuilt (content reboot). Drop
   // the tag when the first active challenges ship again.

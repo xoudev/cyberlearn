@@ -25,6 +25,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
   LESSON_ASSIGNED: "📌",
   NOTE_SHARED: "📝",
   MODERATION_ALERT: "🛡",
+  FORUM_REPLY: "💬",
 };
 
 // BADGE_EARNED notifications carry the badge rarity in their metadata JSON.

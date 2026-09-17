@@ -27,6 +27,17 @@ export {
   type DeleteAccountOptions,
   type DeletionSummary,
 } from "./rgpd/delete-account.js";
+export {
+  forumRepository,
+  slugify,
+  POSTS_PER_PAGE,
+  TOPICS_PER_PAGE,
+  type ForumAuthor,
+  type ForumCategorySummary,
+  type ForumTopicSummary,
+  type ForumTopicView,
+  type ForumPostView,
+} from "./repositories/forum.repository.js";
 export { pathRepository } from "./repositories/path.repository.js";
 export { certificateRepository } from "./repositories/certificate.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";

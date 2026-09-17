@@ -125,6 +125,7 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/notes",
   "/badges",
   "/certificates",
+  "/forum",
   "/leaderboard",
   "/locker",
   "/my-class",
@@ -179,6 +180,30 @@ async function withTimeout<T>(promise: PromiseLike<T>, label: string): Promise<T
   }
 }
 
+/**
+ * Where a request to forum.<site> should land, or null when it is not one.
+ *
+ * Built from NEXT_PUBLIC_SITE_URL rather than from the incoming host, so the
+ * scheme and the canonical hostname come from configuration instead of from a
+ * header the caller controls - a Host of "forum.evil.example" cannot turn this
+ * into an open redirect.
+ */
+function forumSubdomainTarget(request: NextRequest): URL | null {
+  const host = request.headers.get("host");
+  if (host?.startsWith("forum.") !== true) return null;
+
+  const site = process.env.NEXT_PUBLIC_SITE_URL;
+  if (site === undefined || site === "") return null;
+
+  const { pathname, search } = request.nextUrl;
+  // forum.<site>/general and forum.<site>/forum/general are the same place.
+  const suffix =
+    pathname === "/" ? "" : pathname.startsWith("/forum") ? pathname.slice(6) : pathname;
+  const target = new URL(`/forum${suffix}`, site);
+  target.search = search;
+  return target;
+}
+
 // ─── Middleware ────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
@@ -187,6 +212,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Generate a fresh nonce for every request - used in CSP and forwarded to
   // server components via x-nonce so Next.js stamps it on inline scripts.
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+
+  // ── forum.cyberlearn.fr ──────────────────────────────────────────────
+  // An address, not a second application. Serving the forum from the subdomain
+  // would need the session cookie to be readable there, and it is host-scoped:
+  // a signed-in person would arrive at a signed-out forum. So the subdomain
+  // sends them to the canonical origin, where they already have a session, and
+  // keeps the path and the query they asked for.
+  const forumRedirect = forumSubdomainTarget(request);
+  if (forumRedirect) {
+    const redirectResponse = NextResponse.redirect(forumRedirect, 308);
+    applySecurityHeaders(redirectResponse, nonce);
+    return redirectResponse;
+  }
 
   // Supabase can fall back to the Site URL when an OAuth redirect is not
   // allow-listed. Exchange the PKCE code before rendering the landing page
