@@ -433,6 +433,152 @@ export const classRepository = {
     return toAdd;
   },
 
+  // ─── Invitations ──────────────────────────────────────────────────────────
+
+  /**
+   * Holds a place in a class for an address with no account yet.
+   *
+   * Idempotent per address: re-pasting a roster renews the expiry rather than
+   * stacking a second row, and an address already invited is not counted as
+   * newly invited - the caller only mails the ones it actually created.
+   *
+   * Addresses that already have an account are not this function's business;
+   * the caller resolves those to ids and adds them as members.
+   */
+  async inviteToClass(
+    classId: string,
+    emails: string[],
+    invitedById: string,
+    expiresAt: Date,
+  ): Promise<{ created: string[]; renewed: string[] }> {
+    if (emails.length === 0) return { created: [], renewed: [] };
+
+    const existing = await prisma.classInvitation.findMany({
+      where: { classId, email: { in: emails } },
+      select: { email: true },
+    });
+    const already = new Set(existing.map((i) => i.email));
+    const created = emails.filter((e) => !already.has(e));
+    const renewed = emails.filter((e) => already.has(e));
+
+    if (created.length > 0) {
+      await prisma.classInvitation.createMany({
+        data: created.map((email) => ({ classId, email, invitedById, expiresAt })),
+        skipDuplicates: true,
+      });
+    }
+    if (renewed.length > 0) {
+      // A renewal un-expires and un-accepts: an administrator re-inviting
+      // someone is saying the place is open again.
+      await prisma.classInvitation.updateMany({
+        where: { classId, email: { in: renewed } },
+        data: { expiresAt, invitedById, acceptedAt: null },
+      });
+    }
+
+    return { created, renewed };
+  },
+
+  async listPendingInvitations(classId: string) {
+    return prisma.classInvitation.findMany({
+      where: { classId, acceptedAt: null },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+        expiresAt: true,
+        invitedBy: { select: { displayName: true, email: true } },
+      },
+    });
+  },
+
+  async revokeInvitation(invitationId: string): Promise<void> {
+    await prisma.classInvitation.deleteMany({ where: { id: invitationId } });
+  },
+
+  /**
+   * Turns every standing invitation for an address into a membership.
+   *
+   * Called on sign-in, from the one place that provisions a profile, because
+   * the alternative is each sign-in path remembering to - and a path that
+   * forgets leaves someone invited forever, looking at a product that never
+   * mentions the class they were told they were in.
+   *
+   * The address is the credential. Supabase has verified it by the time this
+   * runs, which is exactly what a token in a link could not promise: a link is
+   * forwardable, and whoever opened it would land in a stranger's class with
+   * their classmates' names in front of them.
+   *
+   * Expired rows are left alone rather than deleted - an expiry is a fact about
+   * an invitation, and an administrator looking at the class should see that it
+   * lapsed rather than find no trace of having sent it.
+   */
+  async redeemInvitationsForEmail(userId: string, email: string): Promise<string[]> {
+    const normalized = email.trim().toLowerCase();
+    if (normalized.length === 0) return [];
+
+    const pending = await prisma.classInvitation.findMany({
+      where: {
+        email: normalized,
+        acceptedAt: null,
+        expiresAt: { gt: new Date() },
+        // An invitation to a class that has since been archived - or whose
+        // intake or school has - is not a place to put anyone. The shared
+        // filter rather than a fourth copy of the rule: a copy is how this
+        // came to read two levels while everything else reads three.
+        class: LIVE_CLASS_FILTER,
+      },
+      select: {
+        id: true,
+        classId: true,
+        class: { select: { name: true } },
+      },
+    });
+    if (pending.length === 0) return [];
+
+    // The mirror of addMembers: one person, several classes. Same reason for
+    // reading first - skipDuplicates keeps the table right but reports a count,
+    // and what is needed here is which of them are new, so nobody is told twice
+    // about a class they were already in.
+    const alreadyIn = await prisma.classMember.findMany({
+      where: { userId, classId: { in: pending.map((i) => i.classId) } },
+      select: { classId: true },
+    });
+    const known = new Set(alreadyIn.map((m) => m.classId));
+    const joined = pending.map((i) => i.classId).filter((id) => !known.has(id));
+
+    if (joined.length > 0) {
+      await prisma.classMember.createMany({
+        data: joined.map((classId) => ({ classId, userId })),
+        skipDuplicates: true,
+      });
+    }
+
+    await prisma.classInvitation.updateMany({
+      where: { id: { in: pending.map((i) => i.id) } },
+      data: { acceptedAt: new Date() },
+    });
+
+    // The bell, and not an e-mail: the person is signing in as this runs, and
+    // the invitation mail already told them which class. A second message about
+    // the same fact, delivered while they are looking at the product, is noise.
+    const notified = pending.filter((i) => joined.includes(i.classId));
+    if (notified.length > 0) {
+      await prisma.notification.createMany({
+        data: notified.map((i) => ({
+          userId,
+          type: "CLASS_ENROLLED" as const,
+          title: `Tu as rejoint ${i.class.name}`,
+          body: "Ton invitation a été acceptée automatiquement à la connexion.",
+          actionUrl: "/my-class",
+        })),
+      });
+    }
+
+    return notified.map((i) => i.classId);
+  },
+
   /** Idempotent: assigning a teacher already on the class only updates the subject. */
   async assignTeacher(classId: string, teacherId: string, subject: string | null) {
     await prisma.classTeacher.upsert({

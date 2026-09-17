@@ -6,6 +6,7 @@ import { classRepository, prisma } from "@cyberlearn/db";
 import type { Prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 import { notifyEnrolledInClass } from "@/lib/class-enrolment-notice";
+import { inviteAndNotify } from "@/lib/class-invitation-notice";
 
 /**
  * Composing the school tree: establishments, promotions, classes, and who is in
@@ -143,7 +144,12 @@ const memberSchema = z.object({
 export interface AddMembersState {
   error?: string;
   added?: number;
-  unknown?: string[];
+  /** Addresses with no account, now holding a place until they sign up. */
+  invited?: string[];
+  /** Already invited; their expiry was pushed out and no second mail went out. */
+  renewed?: string[];
+  /** Invited, but the mail did not go out - the place is held, nobody was told. */
+  mailFailed?: string[];
 }
 
 export async function addMembersAction(
@@ -168,17 +174,22 @@ export async function addMembersAction(
     select: { id: true, email: true },
   });
   const found = new Set(users.map((u) => u.email.toLowerCase()));
-  // Reported rather than swallowed: a typo in a pasted list is the normal case,
-  // and silently adding nineteen of twenty is how it goes unnoticed.
+  // An address with no account used to come back as "Aucun compte pour :" and
+  // stop there, which left the administrator to chase the person by hand. It is
+  // an invitation now: the place is held, and signing up with that address
+  // takes it.
   const unknown = emails.filter((e) => !found.has(e));
 
   const addedIds = await classRepository.addMembers(
     parsed.data.classId,
     users.map((u) => u.id),
   );
+  const outcome = await inviteAndNotify(parsed.data.classId, unknown, admin.id);
+
   await audit(admin.id, "class.members.add", parsed.data.classId, {
     added: addedIds.length,
-    unknown,
+    invited: outcome.invited.length,
+    renewed: outcome.renewed.length,
   });
 
   // After the audit, and never in front of it: the enrolment is what happened,
@@ -188,7 +199,51 @@ export async function addMembersAction(
   await notifyEnrolledInClass(parsed.data.classId, addedIds);
 
   revalidatePath(`/classes/${parsed.data.classId}`);
-  return { added: addedIds.length, unknown };
+  return {
+    added: addedIds.length,
+    invited: outcome.invited,
+    renewed: outcome.renewed,
+    mailFailed: outcome.mailFailed,
+  };
+}
+
+/**
+ * Adds accounts picked from the directory, by id.
+ *
+ * The paste box resolves addresses; this one skips that step entirely. Picking
+ * from a list of people who exist cannot produce a typo, which is the failure
+ * the paste box spends its error message on.
+ */
+export async function addMembersByIdAction(
+  classId: string,
+  userIds: string[],
+): Promise<{ ok: boolean; added?: number; error?: string }> {
+  const admin = await requireAdminAction();
+  const parsed = z
+    .object({ classId: z.string().uuid(), userIds: z.array(z.string().uuid()).min(1).max(200) })
+    .safeParse({ classId, userIds });
+  if (!parsed.success) return { ok: false, error: "Sélection invalide." };
+
+  const addedIds = await classRepository.addMembers(parsed.data.classId, parsed.data.userIds);
+  await audit(admin.id, "class.members.add", parsed.data.classId, { added: addedIds.length });
+  await notifyEnrolledInClass(parsed.data.classId, addedIds);
+
+  revalidatePath(`/classes/${parsed.data.classId}`);
+  return { ok: true, added: addedIds.length };
+}
+
+export async function revokeInvitationAction(
+  classId: string,
+  invitationId: string,
+): Promise<{ ok: boolean }> {
+  const admin = await requireAdminAction();
+  if (!z.string().uuid().safeParse(classId).success) return { ok: false };
+  if (!z.string().uuid().safeParse(invitationId).success) return { ok: false };
+
+  await classRepository.revokeInvitation(invitationId);
+  await audit(admin.id, "class.invitation.revoke", classId, { invitationId });
+  revalidatePath(`/classes/${classId}`);
+  return { ok: true };
 }
 
 export async function removeMemberAction(

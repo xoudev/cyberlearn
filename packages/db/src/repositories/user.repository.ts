@@ -1,14 +1,28 @@
 import { prisma } from "../prisma.js";
+import { classRepository } from "./class.repository.js";
 
 export const userRepository = {
-  /** Creates or refreshes the application profile associated with a Supabase identity. */
+  /**
+   * Creates or refreshes the application profile associated with a Supabase
+   * identity, and takes up any class invitation waiting on the address.
+   *
+   * Redemption lives here rather than in a sign-in route because this is the
+   * one place a profile is provisioned, and a route that forgot to call it
+   * would leave someone invited forever - looking at a product that never
+   * mentions the class they were told they were in. It is a single indexed
+   * probe that returns nothing for almost everyone, and it is on the sign-in
+   * path, so it stays a probe: no mail, no second round trip.
+   *
+   * Its failure is swallowed. An invitation is a courtesy; being unable to
+   * redeem one is not a reason to refuse somebody their session.
+   */
   async upsertFromAuth(input: {
     id: string;
     email: string;
     displayName: string;
     avatarUrl: string | null;
   }) {
-    return prisma.user.upsert({
+    const profile = await prisma.user.upsert({
       where: { id: input.id },
       create: input,
       update: {
@@ -18,6 +32,14 @@ export const userRepository = {
       },
       select: { username: true, role: true },
     });
+
+    try {
+      await classRepository.redeemInvitationsForEmail(input.id, input.email);
+    } catch (error) {
+      console.error("[auth] class invitation redemption failed:", error);
+    }
+
+    return profile;
   },
 
   /** Role lookup used by authenticated server guards. */

@@ -76,6 +76,7 @@ model User {
   noteFolders       NoteFolder[]
   classMemberships  ClassMember[]
   taughtClasses     ClassTeacher[]          @relation("ClassTeacher")
+  sentInvitations   ClassInvitation[]       @relation("ClassInvitationSender")
 
   @@index([username])
   @@index([role])
@@ -140,9 +141,10 @@ model Class {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  promotion Promotion      @relation(fields: [promotionId], references: [id], onDelete: Cascade)
-  teachers  ClassTeacher[]
-  members   ClassMember[]
+  promotion   Promotion         @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  teachers    ClassTeacher[]
+  members     ClassMember[]
+  invitations ClassInvitation[]
 
   /// Scoped to the promotion: "SIO1-A" exists in more than one school.
   @@unique([promotionId, slug])
@@ -169,6 +171,38 @@ model ClassTeacher {
   @@id([classId, teacherId])
   @@index([teacherId])
   @@map("class_teachers")
+}
+
+/// A place held in a class for an address that has no account yet.
+///
+/// Bound to the e-mail rather than to a token in a link. A token can be
+/// forwarded, and whoever opens it lands in someone else's class with their
+/// classmates' names in front of them; an address is something Supabase has
+/// already verified by the time anyone signs in with it. So the invitation mail
+/// carries no secret at all - it says which class, and points at the ordinary
+/// sign-up page. Redemption happens on sign-in, by matching the address.
+model ClassInvitation {
+  id          String    @id @default(uuid()) @db.Uuid
+  classId     String    @db.Uuid
+  /// Lower-cased at the boundary - it is the identity this row is bound to.
+  email       String    @db.VarChar(255)
+  invitedById String?   @db.Uuid
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  /// Set when the address signed in and the membership was created.
+  acceptedAt  DateTime?
+
+  class     Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  /// The administrator who sent it. Nullable so deleting their account does not
+  /// take the invitation with it.
+  invitedBy User? @relation("ClassInvitationSender", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  /// One standing invitation per address per class: re-pasting a roster renews
+  /// rather than piling up.
+  @@unique([classId, email])
+  /// The sign-in lookup: pending invitations for this address.
+  @@index([email, acceptedAt])
+  @@map("class_invitations")
 }
 
 model ClassMember {
