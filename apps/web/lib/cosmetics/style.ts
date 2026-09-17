@@ -15,7 +15,7 @@ import type { CSSProperties } from "react";
  * (1 = large profile avatar, ~0.5 = small navbar avatar).
  */
 export function cosmeticAvatarFilter(scale = 1): CSSProperties {
-  const hex = `drop-shadow(0 0 calc(var(--cosmetic-hex-glow) * ${String(34 * scale)}px) color-mix(in srgb, var(--cosmetic-hex-accent) 70%, transparent))`;
+  const hex = `drop-shadow(0 0 calc(var(--cosmetic-hex-glow) * ${String(34 * scale)}px) color-mix(in srgb, var(--cosmetic-hex-accent, var(--cosmetic-accent)) 70%, transparent))`;
   const frame = `drop-shadow(0 0 calc(var(--cosmetic-frame-glow) * ${String(26 * scale)}px) color-mix(in srgb, var(--cosmetic-frame-accent) 80%, transparent))`;
   return { filter: `${hex} ${frame}` };
 }
