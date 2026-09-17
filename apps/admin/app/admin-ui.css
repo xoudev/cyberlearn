@@ -441,19 +441,29 @@
   background: var(--tag);
   flex-shrink: 0;
 }
-.a-tag[data-tone="accent"] {
+/* One tone scale, read by everything that wears a role or status colour. The
+   role select joined the tags here rather than carrying its own three hex
+   values, which is how an admin came to be red in one control and turquoise in
+   the tag next to it. Its base rule sits with .a-select further down, which it
+   has to override; these keep the upper hand on --tag by specificity. */
+.a-tag[data-tone="accent"],
+.a-select--role[data-tone="accent"] {
   --tag: var(--a-accent);
 }
-.a-tag[data-tone="info"] {
+.a-tag[data-tone="info"],
+.a-select--role[data-tone="info"] {
   --tag: var(--a-blue-2);
 }
-.a-tag[data-tone="warning"] {
+.a-tag[data-tone="warning"],
+.a-select--role[data-tone="warning"] {
   --tag: var(--a-warning);
 }
-.a-tag[data-tone="danger"] {
+.a-tag[data-tone="danger"],
+.a-select--role[data-tone="danger"] {
   --tag: var(--a-danger);
 }
-.a-tag[data-tone="purple"] {
+.a-tag[data-tone="purple"],
+.a-select--role[data-tone="purple"] {
   --tag: var(--a-purple);
 }
 
@@ -511,6 +521,33 @@
   font-family: var(--font-mono);
   font-size: 11px;
   cursor: pointer;
+}
+/* The popup list renders in the OS layer, not in the field, so it inherits
+   nothing from the surface behind it - without this the options come out dark
+   on dark. It was an inline style on one select; every select needs it. */
+.a-select option {
+  background: var(--a-surface);
+  color: var(--a-fg);
+}
+
+/* A select that is also a tag: it states the role and changes it, so it wears
+   the role's colour rather than the neutral field skin. Sizing follows .a-tag,
+   since it sits in a table cell where a tag used to. */
+.a-select--role {
+  height: 28px;
+  padding: 0 8px;
+  --tag: var(--a-muted);
+  background: color-mix(in srgb, var(--tag) 8%, transparent);
+  border-color: color-mix(in srgb, var(--tag) 40%, transparent);
+  color: var(--tag);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.a-select--role:disabled {
+  opacity: 0.45;
+  cursor: progress;
 }
 
 .a-table-wrap {
