@@ -22,6 +22,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
   ANNOUNCEMENT: "📣",
   TICKET_UPDATE: "🎫",
   CLASS_ENROLLED: "🎓",
+  LESSON_ASSIGNED: "📌",
 };
 
 // BADGE_EARNED notifications carry the badge rarity in their metadata JSON.

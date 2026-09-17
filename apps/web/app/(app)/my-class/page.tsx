@@ -5,7 +5,9 @@ import { classRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { StudentClass } from "./_components/student-class";
+import { StudentWork, type StudentWorkItem } from "./_components/student-work";
 import { TeacherClasses, type TaughtEstablishment } from "./_components/teacher-classes";
+import type { ClassWorkItem } from "./_components/class-work";
 
 export const metadata: Metadata = { title: "Ma classe" };
 export const dynamic = "force-dynamic";
@@ -68,7 +70,71 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
     ),
   );
 
-  const establishments = buildTaught(taught, rosters, completedByUser);
+  // ── The work set for every class in view ────────────────────────────────
+  const assignments = await classRepository.listAssignments(readableClassIds);
+  const rosterMemberIds = [
+    ...new Set(
+      readableClassIds.flatMap((id) => (rosters.get(id)?.members ?? []).map((m) => m.user.id)),
+    ),
+  ];
+  const completions = await classRepository.findCompletions(rosterMemberIds, [
+    ...new Set(assignments.map((a) => a.lessonId)),
+  ]);
+
+  const now = Date.now();
+  const dayFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+
+  const workByClass = new Map<string, ClassWorkItem[]>();
+  for (const a of assignments) {
+    const members = (rosters.get(a.classId)?.members ?? []).map((m) => m.user.id);
+    const list = workByClass.get(a.classId) ?? [];
+    list.push({
+      lessonId: a.lessonId,
+      slug: a.lesson.slug,
+      title: a.lesson.title,
+      instructions: a.instructions,
+      dueAt: a.dueAt?.toISOString() ?? null,
+      // Formatted here: the server owns the locale, and a date crossing the
+      // boundary as a string cannot be rendered differently on the two sides.
+      dueLabel: a.dueAt === null ? null : dayFormat.format(a.dueAt),
+      overdue: a.dueAt !== null && a.dueAt.getTime() < now,
+      doneCount: members.filter((id) => completions.has(`${id}:${a.lessonId}`)).length,
+      totalCount: members.length,
+    });
+    workByClass.set(a.classId, list);
+  }
+
+  const establishments = buildTaught(taught, rosters, completedByUser, workByClass);
+
+  // The published catalogue, for the picker. Titles and categories only - the
+  // form needs to name a lesson, not to render one.
+  const lessons =
+    taughtClassIds.length === 0
+      ? []
+      : (
+          await prisma.lesson.findMany({
+            where: { status: "PUBLISHED" },
+            orderBy: { title: "asc" },
+            select: { id: true, title: true, category: true },
+          })
+        ).map((l) => ({
+          id: l.id,
+          title: l.title,
+          category: l.category,
+          search: `${l.title} ${l.category}`.toLowerCase(),
+        }));
+
+  const myWork: StudentWorkItem[] = assignments
+    .filter((a) => memberships.some((m) => m.id === a.classId))
+    .map((a) => ({
+      lessonId: a.lessonId,
+      slug: a.lesson.slug,
+      title: a.lesson.title,
+      estimatedMinutes: a.lesson.estimatedMinutes,
+      instructions: a.instructions,
+      dueAt: a.dueAt,
+      done: completions.has(`${authUser.id}:${a.lessonId}`),
+    }));
   const isTeacher = taughtClassIds.length > 0;
   const classCount = taughtClassIds.length;
 
@@ -94,6 +160,10 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
             : "Ta classe, tes professeurs et où tu en es par rapport au reste du groupe."
         }
       />
+
+      {/* What they have been told to do, before who else is in the class:
+          a deadline is the thing on this page that can be missed. */}
+      <StudentWork items={myWork} />
 
       {/* Their own enrolment first. Someone who is both is a teacher taking a
           course, and their own class is the part that concerns them rather
@@ -136,7 +206,7 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
         </div>
       )}
 
-      {isTeacher && <TeacherClasses establishments={establishments} />}
+      {isTeacher && <TeacherClasses establishments={establishments} lessons={lessons} />}
     </div>
   );
 }
@@ -152,6 +222,7 @@ function buildTaught(
   taught: Awaited<ReturnType<typeof classRepository.findForTeacher>>,
   rosters: Map<string, Awaited<ReturnType<typeof classRepository.findMembersVisibleTo>>>,
   completedByUser: Map<string, number>,
+  workByClass: Map<string, ClassWorkItem[]>,
 ): TaughtEstablishment[] {
   const activeSince = Date.now() - WEEK_MS;
 
@@ -166,6 +237,7 @@ function buildTaught(
       classes: p.classes.map((c) => ({
         id: c.id,
         name: c.name,
+        work: workByClass.get(c.id) ?? [],
         students: (rosters.get(c.id)?.members ?? []).map((m) => ({
           id: m.user.id,
           name: m.user.displayName || (m.user.username ?? "—"),

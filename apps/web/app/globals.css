@@ -3585,3 +3585,214 @@ article.lesson-content blockquote p code {
   text-transform: uppercase;
   color: #44406b;
 }
+
+/* ─── Class work (assignments) ────────────────────────────────────────────
+   The same list read from two sides: a student sees what is left to do, a
+   teacher sees how much of the class has done it. One set of rules, because
+   they are the same rows and should not drift into looking like two things. */
+
+.cls-card--work {
+  border-left-color: #ffb020;
+}
+
+.cls-work-block {
+  margin: 4px 0 20px;
+}
+
+.cls-work {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cls-work__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(42, 37, 96, 0.5);
+}
+.cls-work__row:last-child {
+  border-bottom: none;
+}
+.cls-work__mark {
+  width: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #6b6890;
+  text-align: center;
+}
+.cls-work__row[data-state="done"] .cls-work__mark {
+  color: #0affd4;
+}
+.cls-work__row[data-state="late"] .cls-work__mark {
+  color: #ff4d6d;
+}
+/* Struck through rather than hidden: a student should be able to see that the
+   thing they were asked for is the thing they did. */
+.cls-work__row[data-state="done"] .cls-work__title {
+  color: #6b6890;
+  text-decoration: line-through;
+}
+.cls-work__body {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.cls-work__title {
+  font-size: 14px;
+  color: #f5f5fa;
+  text-decoration: none;
+}
+.cls-work__title:hover {
+  color: #0affd4;
+}
+.cls-work__note {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #6b6890;
+  overflow-wrap: anywhere;
+}
+.cls-work__due {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: #6b6890;
+  white-space: nowrap;
+}
+.cls-work__row[data-state="late"] .cls-work__due {
+  color: #ff4d6d;
+}
+.cls-work__remove {
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b6890;
+  background: transparent;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cls-work__remove:hover:not(:disabled) {
+  color: #ff4d6d;
+  border-color: rgba(255, 77, 109, 0.5);
+}
+.cls-work__remove:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Folded by default: setting work happens now and then, checking on it happens
+   every day, and the page belongs to the second. */
+.cls-assign {
+  margin-top: 14px;
+  border: 1px solid rgba(42, 37, 96, 0.8);
+  background: rgba(10, 8, 38, 0.4);
+}
+.cls-assign__head {
+  padding: 9px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8b5d1;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.cls-assign__head::-webkit-details-marker {
+  display: none;
+}
+.cls-assign__head::before {
+  content: "+ ";
+  color: #6b6890;
+}
+.cls-assign[open] > .cls-assign__head::before {
+  content: "− ";
+  color: #0affd4;
+}
+.cls-assign__head:hover {
+  color: #f5f5fa;
+}
+.cls-assign__form {
+  display: grid;
+  gap: 12px;
+  padding: 4px 12px 14px;
+  border-top: 1px solid rgba(42, 37, 96, 0.6);
+}
+
+.cls-field {
+  display: grid;
+  gap: 5px;
+}
+.cls-field__label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+.cls-field__hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  color: #44406b;
+}
+.cls-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(5, 4, 26, 0.8);
+  border: 1px solid rgba(42, 37, 96, 0.9);
+  color: #f5f5fa;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+}
+.cls-input:focus {
+  border-color: #0affd4;
+}
+.cls-input option {
+  background: #0a0826;
+  color: #f5f5fa;
+  padding: 3px 0;
+}
+
+.cls-btn {
+  justify-self: start;
+  padding: 9px 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #0024ff;
+  border: 1px solid #0024ff;
+  cursor: pointer;
+}
+.cls-btn:hover:not(:disabled) {
+  filter: brightness(1.25);
+}
+.cls-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.cls-alert {
+  margin: 0;
+  padding: 8px 11px;
+  border-left: 2px solid #0affd4;
+  background: rgba(10, 255, 212, 0.06);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: #b8b5d1;
+}
+.cls-alert[data-tone="bad"] {
+  border-left-color: #ff4d6d;
+  background: rgba(255, 77, 109, 0.07);
+  color: #ff8aa0;
+}

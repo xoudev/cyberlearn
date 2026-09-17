@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { ClassWork, type AssignableLesson, type ClassWorkItem } from "./class-work";
 
 /**
  * The classes a teacher follows, filed the way they already file them.
@@ -30,6 +31,7 @@ export interface TaughtClass {
   id: string;
   name: string;
   students: TaughtStudent[];
+  work: ClassWorkItem[];
 }
 
 export interface TaughtPromotion {
@@ -48,8 +50,11 @@ export interface TaughtEstablishment {
 
 export function TeacherClasses({
   establishments,
+  lessons,
 }: {
   establishments: TaughtEstablishment[];
+  /** The published catalogue, for the picker in each class's assign form. */
+  lessons: AssignableLesson[];
 }): React.ReactElement {
   return (
     <>
@@ -67,7 +72,7 @@ export function TeacherClasses({
 
               <div className="cls-stack">
                 {promo.classes.map((c) => (
-                  <ClassCard key={c.id} klass={c} />
+                  <ClassCard key={c.id} klass={c} lessons={lessons} />
                 ))}
               </div>
             </div>
@@ -78,7 +83,13 @@ export function TeacherClasses({
   );
 }
 
-function ClassCard({ klass }: { klass: TaughtClass }): React.ReactElement {
+function ClassCard({
+  klass,
+  lessons,
+}: {
+  klass: TaughtClass;
+  lessons: AssignableLesson[];
+}): React.ReactElement {
   const { students } = klass;
   const total = students.length;
   const average = total > 0 ? Math.round(students.reduce((n, s) => n + s.completed, 0) / total) : 0;
@@ -121,6 +132,10 @@ function ClassCard({ klass }: { klass: TaughtClass }): React.ReactElement {
           </div>
         </div>
       )}
+
+      {/* The work before the roster: a teacher opens this to check on what they
+          set, and the names are how they check. */}
+      <ClassWork classId={klass.id} items={klass.work} lessons={lessons} />
 
       {total === 0 ? (
         <p className="cls-empty">Aucun élève dans cette classe.</p>
