@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { NAVBAR_HEIGHT } from "@/lib/chrome";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { computeLevel } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
@@ -96,7 +97,7 @@ export async function Navbar(): Promise<React.ReactElement> {
       style={{
         display: "flex",
         alignItems: "center",
-        height: 56,
+        height: NAVBAR_HEIGHT,
         background: "rgba(3,2,25,0.85)",
         backdropFilter: "blur(24px) saturate(140%)",
         WebkitBackdropFilter: "blur(24px) saturate(140%)",

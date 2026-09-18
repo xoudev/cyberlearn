@@ -4970,3 +4970,92 @@ a.fp-name:hover {
   font-size: 10.5px;
   letter-spacing: 0.12em;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Toasts
+   Sonner ships its own look - rounded, near-black, a system sans - which was
+   tolerable in a bottom corner and is not at the top centre, where a toast now
+   lands in the middle of the page it belongs to. These rules give it the same
+   panel as every other floating surface here: square corners, the app's plum
+   background, a hairline border, and a coloured edge that says at a glance
+   which kind of message it is.
+
+   The selectors carry [data-styled] on purpose, and it is not decoration.
+   Sonner's own look is written as [data-sonner-toast][data-styled="true"] -
+   two attributes - so a rule with one attribute, or with two spread over the
+   container and the toast, ties on specificity and loses on source order. The
+   third attribute is what actually makes these rules apply.
+   ══════════════════════════════════════════════════════════════════════════ */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  /* Turquoise unless the type says otherwise. The Toaster is mounted in the
+     root layout, outside the wrapper that carries an equipped accent, so this
+     resolves to the :root default - and would follow the accent by itself if
+     it ever moved inside. */
+  --toast-edge: var(--cosmetic-accent);
+  gap: 12px;
+  padding: 14px 16px;
+  background: #0a0826;
+  border: 1px solid #2a2560;
+  border-left: 2px solid var(--toast-edge);
+  border-radius: 0;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-body), sans-serif;
+  color: #f5f5fa;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  --toast-edge: #ff6b7a;
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  --toast-edge: #ffb547;
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
+  --toast-edge: #6e8bff;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  margin: 0;
+  color: var(--toast-edge);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font: 500 13.5px / 1.45 var(--font-body);
+  color: #f5f5fa;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  margin-top: 4px;
+  font: 12px / 1.5 var(--font-body);
+  color: #8b88a8;
+}
+
+/* The buttons borrow the small controls used everywhere else: mono, uppercase,
+   square. */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-button] {
+  height: auto;
+  padding: 6px 10px;
+  font: 700 9.5px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 0;
+  border: 1px solid var(--toast-edge);
+  background: var(--toast-edge);
+  color: #030219;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-cancel] {
+  border-color: #2a2560;
+  background: transparent;
+  color: #b8b5d1;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  border-radius: 0;
+  border-color: #2a2560;
+  background: #0a0826;
+  color: #6f6b99;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
+  color: #f5f5fa;
+  border-color: var(--toast-edge);
+}
