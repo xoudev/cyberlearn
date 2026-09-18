@@ -7,6 +7,7 @@ export const THEME_META: Record<string, { label: string; tone: Tone }> = {
   SECURITY: { label: "Sécurité", tone: "danger" },
   CONTENT_ERROR: { label: "Erreur de contenu", tone: "warning" },
   ESTABLISHMENT_REQUEST: { label: "Demande d'ajout d'établissement", tone: "info" },
+  BAN_APPEAL: { label: "Appel d'un bannissement", tone: "danger" },
   OTHER: { label: "Autre", tone: "neutral" },
 };
 

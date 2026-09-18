@@ -16,6 +16,7 @@ export {
   CATALOGUE_LESSON,
   lessonsVisibleTo,
 } from "./repositories/lesson.repository.js";
+export { banRepository, activeBanFilter, type BanView } from "./repositories/ban.repository.js";
 export { statsRepository } from "./repositories/stats.repository.js";
 export type {
   LandingStats,

@@ -1,0 +1,240 @@
+/* The screen somebody sees instead of the site, and the notice on top of it.
+   Red rather than the platform's turquoise: this is the one page where the
+   accent should not feel like the rest of the product. */
+
+.page {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  color: var(--fg-primary);
+  background: radial-gradient(
+      ellipse 700px 420px at 50% 40%,
+      rgba(255, 71, 87, 0.13),
+      transparent 70%
+    ), var(--bg-primary);
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 37, 96, 0.22) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 78%);
+}
+
+.card {
+  position: relative;
+  width: min(660px, 100%);
+  padding: clamp(28px, 5vw, 48px);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid #ff4757;
+  background: rgba(10, 8, 38, 0.86);
+  box-shadow: 0 28px 80px -50px rgba(255, 71, 87, 0.7);
+}
+
+.code {
+  margin: 0 0 14px;
+  font: 11px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ff6b7a;
+}
+
+.title {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.lede {
+  margin: 0 0 26px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: #b8b5d1;
+}
+
+.facts {
+  display: grid;
+  gap: 1px;
+  margin-bottom: 26px;
+  background: var(--border-strong);
+  border: 1px solid var(--border-strong);
+}
+
+.fact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: rgba(5, 4, 26, 0.9);
+}
+
+.factLabel {
+  font: 10px var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6f6b99;
+}
+
+.factValue {
+  font: 12px var(--font-mono);
+  color: #f5f5fa;
+  text-align: right;
+}
+
+.reason {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 2px solid #ff4757;
+  background: rgba(255, 71, 87, 0.06);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #f5f5fa;
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.primary,
+.ghost {
+  padding: 12px 22px;
+  border: 1px solid var(--border-strong);
+  font: 700 11px var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.primary {
+  border-color: #ff4757;
+  background: #ff4757;
+  color: #030219;
+}
+.primary:hover {
+  background: #ff6b7a;
+  border-color: #ff6b7a;
+}
+.primary:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.ghost {
+  background: transparent;
+  color: #b8b5d1;
+}
+.ghost:hover {
+  border-color: #6f6b99;
+  background: rgba(111, 107, 153, 0.08);
+}
+
+/* ── The notice on arrival ───────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 2, 25, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.modal {
+  width: min(520px, 100%);
+  padding: clamp(24px, 4vw, 34px);
+  border: 1px solid var(--border-strong);
+  border-top: 2px solid #ff4757;
+  background: #0a0826;
+  box-shadow: 0 30px 90px -40px rgba(0, 0, 0, 0.9);
+}
+
+.modalTitle {
+  margin: 0 0 12px;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.modalText {
+  margin: 0 0 18px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #b8b5d1;
+}
+
+/* ── The appeal ─────────────────────────────────────────────────────────── */
+
+.field {
+  display: block;
+  margin-top: 18px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6f6b99;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  background: rgba(5, 4, 26, 0.9);
+  color: #f5f5fa;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.textarea:focus {
+  outline: none;
+  border-color: #ff6b7a;
+}
+
+.error {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 71, 87, 0.35);
+  background: rgba(255, 71, 87, 0.06);
+  font: 12px var(--font-mono);
+  line-height: 1.5;
+  color: #ff6b7a;
+}
+
+.sent {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(10, 255, 212, 0.3);
+  background: rgba(10, 255, 212, 0.05);
+  font: 12px var(--font-mono);
+  line-height: 1.55;
+  color: #0affd4;
+}

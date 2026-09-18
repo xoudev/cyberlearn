@@ -13,6 +13,9 @@ import {
   UI,
 } from "../../_components/admin-ui";
 import { ROLE_LABEL, roleTone } from "@/lib/roles";
+import { banRepository } from "@cyberlearn/db";
+import { banTimeLeft } from "@cyberlearn/lib";
+import { BanForm } from "./_components/ban-form";
 import { DeleteUserForm } from "./_components/delete-user-form";
 
 export const metadata: Metadata = { title: "Compte" };
@@ -86,6 +89,45 @@ export default async function AdminUserPage({
   });
 
   if (!user) notFound();
+
+  // The ban in force and the ones before it. The history is the point as much
+  // as the state: the second ban on an account is not the first one, and
+  // whoever is deciding what to do needs to see both.
+  const [active, history] = await Promise.all([
+    banRepository.findActive(user.id),
+    banRepository.history(user.id),
+  ]);
+
+  const stamp = (date: Date): string =>
+    new Intl.DateTimeFormat("fr-FR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "Europe/Paris",
+    }).format(date);
+
+  const activeBan = active
+    ? {
+        reason: active.reason,
+        endsLabel: banTimeLeft(active.expiresAt),
+        issuedOn: stamp(active.createdAt),
+        issuedBy: active.issuedBy?.displayName ?? null,
+        hasAppeal: active.appealTicketId !== null,
+      }
+    : null;
+
+  const banHistory = history
+    .filter((ban) => ban.id !== active?.id)
+    .map((ban) => ({
+      id: ban.id,
+      reason: ban.reason,
+      issuedOn: stamp(ban.createdAt),
+      outcome:
+        ban.liftedAt !== null
+          ? `Levé le ${stamp(ban.liftedAt)}`
+          : ban.expiresAt === null
+            ? "Définitif"
+            : `Expiré le ${stamp(ban.expiresAt)}`,
+    }));
 
   const handle = user.username ? `@${user.username}` : user.displayName || user.email;
 
@@ -184,6 +226,8 @@ export default async function AdminUserPage({
           </div>
         )}
       </Card>
+
+      <BanForm userId={user.id} active={activeBan} history={banHistory} />
 
       <DeleteUserForm
         userId={user.id}
