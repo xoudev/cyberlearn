@@ -286,6 +286,8 @@ export const forumRepository = {
     authorId: string;
     title: string;
     content: string;
+    /** The screen flagged it: the thread and its opening post go up hidden. */
+    isHidden?: boolean;
   }): Promise<{ id: string; slug: string } | null> {
     const category = await prisma.forumCategory.findUnique({
       where: { slug: input.categorySlug },
@@ -308,7 +310,14 @@ export const forumRepository = {
         authorId: input.authorId,
         title: input.title,
         slug,
-        posts: { create: { authorId: input.authorId, content: input.content } },
+        isHidden: input.isHidden ?? false,
+        posts: {
+          create: {
+            authorId: input.authorId,
+            content: input.content,
+            isHidden: input.isHidden ?? false,
+          },
+        },
       },
       select: { id: true, slug: true },
     });
@@ -326,6 +335,8 @@ export const forumRepository = {
     topicId: string;
     authorId: string;
     content: string;
+    /** The screen flagged it: the reply goes up hidden. */
+    isHidden?: boolean;
   }): Promise<{ postId: string; notify: string[]; topicTitle: string; url: string } | null> {
     const topic = await prisma.forumTopic.findFirst({
       where: { id: input.topicId, isHidden: false, lockedAt: null },
@@ -339,16 +350,27 @@ export const forumRepository = {
     });
     if (!topic) return null;
 
+    const hidden = input.isHidden ?? false;
     const now = new Date();
     const post = await prisma.$transaction(async (tx) => {
       const created = await tx.forumPost.create({
-        data: { topicId: topic.id, authorId: input.authorId, content: input.content },
+        data: {
+          topicId: topic.id,
+          authorId: input.authorId,
+          content: input.content,
+          isHidden: hidden,
+        },
         select: { id: true },
       });
-      await tx.forumTopic.update({
-        where: { id: topic.id },
-        data: { lastPostAt: now, replyCount: { increment: 1 } },
-      });
+      // A hidden reply does not move the thread. Bumping it would put the
+      // section's busiest-first list at the top of a message nobody can read,
+      // and the reply count would stop matching what is under it.
+      if (!hidden) {
+        await tx.forumTopic.update({
+          where: { id: topic.id },
+          data: { lastPostAt: now, replyCount: { increment: 1 } },
+        });
+      }
       return created;
     });
 
@@ -360,13 +382,17 @@ export const forumRepository = {
       select: { authorId: true },
       distinct: ["authorId"],
     });
-    const notify = [
-      ...new Set(
-        [...participants.map((p) => p.authorId), topic.authorId].filter(
-          (id): id is string => id !== null && id !== input.authorId,
-        ),
-      ),
-    ];
+    // Nobody is told about a reply nobody can see: a notification leading to a
+    // blank thread is the leak the hiding was for.
+    const notify = hidden
+      ? []
+      : [
+          ...new Set(
+            [...participants.map((p) => p.authorId), topic.authorId].filter(
+              (id): id is string => id !== null && id !== input.authorId,
+            ),
+          ),
+        ];
 
     return {
       postId: post.id,
@@ -377,10 +403,16 @@ export const forumRepository = {
   },
 
   /** Rewrites a post, and says so. Only its author may. */
-  async editPost(authorId: string, postId: string, content: string): Promise<boolean> {
+  async editPost(
+    authorId: string,
+    postId: string,
+    content: string,
+    /** The screen flagged the new text: keep the edit, take the post down. */
+    hide = false,
+  ): Promise<boolean> {
     const res = await prisma.forumPost.updateMany({
       where: { id: postId, authorId, isHidden: false },
-      data: { content, editedAt: new Date() },
+      data: { content, editedAt: new Date(), ...(hide ? { isHidden: true } : {}) },
     });
     return res.count > 0;
   },

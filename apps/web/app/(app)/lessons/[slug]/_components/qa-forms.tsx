@@ -7,6 +7,7 @@ import {
   acceptAnswerAction,
   upvoteAnswerAction,
 } from "../_actions/qa-actions";
+import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
 
 // ── Post question form ────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ export function PostQuestionForm({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [held, setHeld] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // eslint-disable-next-line @typescript-eslint/no-deprecated
@@ -33,45 +35,49 @@ export function PostQuestionForm({
       setTitle("");
       setContent("");
       setOpen(false);
+      setHeld(res.heldForReview === true);
     });
   }
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "10px 20px",
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          background: "transparent",
-          border: "1px solid #2A2560",
-          color: "#B8B5D1",
-          cursor: "pointer",
-        }}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
+      <>
+        {held && <HeldNotice />}
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(true);
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 20px",
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            background: "transparent",
+            border: "1px solid #2A2560",
+            color: "#B8B5D1",
+            cursor: "pointer",
+          }}
         >
-          <path d="M8 3v10M3 8h10" />
-        </svg>
-        Poser une question
-      </button>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M8 3v10M3 8h10" />
+          </svg>
+          Poser une question
+        </button>
+      </>
     );
   }
 
@@ -146,6 +152,27 @@ export function PostQuestionForm({
   );
 }
 
+/** The same sentence the forum shows, in the Q&A's own type. */
+function HeldNotice(): React.JSX.Element {
+  return (
+    <p
+      role="status"
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        lineHeight: 1.5,
+        color: "#FFB547",
+        border: "1px solid rgba(255,181,71,0.35)",
+        background: "rgba(255,181,71,0.07)",
+        padding: "10px 12px",
+        margin: "0 0 12px",
+      }}
+    >
+      {HELD_FOR_REVIEW}
+    </p>
+  );
+}
+
 // ── Post answer form ──────────────────────────────────────────────────────────
 
 export function PostAnswerForm({
@@ -155,6 +182,7 @@ export function PostAnswerForm({
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [held, setHeld] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // eslint-disable-next-line @typescript-eslint/no-deprecated
@@ -167,6 +195,7 @@ export function PostAnswerForm({
         setError(res.error ?? "Erreur.");
         return;
       }
+      setHeld(res.heldForReview === true);
       setContent("");
       setOpen(false);
     });
@@ -174,15 +203,18 @@ export function PostAnswerForm({
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-        style={{ ...BTN_GHOST, fontSize: 10, padding: "6px 12px" }}
-      >
-        Répondre
-      </button>
+      <>
+        {held && <HeldNotice />}
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(true);
+          }}
+          style={{ ...BTN_GHOST, fontSize: 10, padding: "6px 12px" }}
+        >
+          Répondre
+        </button>
+      </>
     );
   }
 

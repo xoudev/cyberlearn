@@ -3,7 +3,8 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 
 /**
- * The screen, and the record of what it decided.
+ * The screen, the record of what it decided, and what happens to the content
+ * afterwards.
  *
  * One entry point for every surface where a person publishes to another person.
  * It exists once because the alternative is each surface growing its own, and
@@ -13,22 +14,142 @@ import { prisma } from "../prisma.js";
  *
  * screen() decides and records in one call, so a caller cannot do the first and
  * forget the second - which would leave a refusal nobody can review.
+ *
+ * What changed: a flagged message used to be turned away at the door and never
+ * written. Nothing was blocked, because there was nothing to block - and when a
+ * reviewer decided the filter had been wrong there was nothing to put back
+ * either, so "faux positif" was a note in a log and the person's message was
+ * gone for good. Now anything the screen does not plainly allow is written
+ * hidden: out of sight the moment it is detected, in front of a reviewer, and
+ * either restored or destroyed by their decision. applyOutcome is the half that
+ * carries that decision through to the content.
  */
 
 export interface ScreenInput {
   text: string;
-  /** Where it happened: "lesson.question", "note.share", "forum.post". */
-  surface: string;
+  /** Where it happened. A member of the two sets below, never a loose string. */
+  surface: ScreenSurface;
   userId: string;
   /** True where links are ordinary - a forum post about a tool, say. */
   allowLinks?: boolean;
 }
 
 export interface ScreenResult extends ModerationResult {
-  /** Whether the caller may go ahead and write the content. */
-  allowed: boolean;
+  /**
+   * The screen flagged it: REVIEW or BLOCK, never ALLOW.
+   *
+   * Named for what the screen decided rather than for what the caller does
+   * about it, because that differs by surface. A surface that publishes writes
+   * the content hidden and a reviewer decides its fate. Sharing a note
+   * publishes nothing, so there is nothing to hide and the share is refused.
+   *
+   * It replaced `allowed`, which had every caller throwing the message away -
+   * which is why a false positive used to cost the person what they wrote.
+   */
+  flagged: boolean;
   /** The recorded decision, when one was recorded. */
   eventId: string | null;
+}
+
+/**
+ * The surfaces a decision can be carried through to, spelled once.
+ *
+ * Callers pass these rather than a string of their own, because a surface with
+ * a typo in it records perfectly and then cannot be acted on: the reviewer
+ * presses "supprimer" and nothing happens, with no error anywhere. The type on
+ * ScreenInput.surface makes that a compile error rather than a dead queue row.
+ */
+export const MODERATION_SURFACE = {
+  lessonQuestion: "lesson.question",
+  lessonAnswer: "lesson.answer",
+  forumTopic: "forum.topic",
+  forumPost: "forum.post",
+} as const;
+
+export type ModerationSurface = (typeof MODERATION_SURFACE)[keyof typeof MODERATION_SURFACE];
+
+/**
+ * Surfaces where flagged content is refused rather than hidden.
+ *
+ * Sharing a note publishes no row: the note is the author's own either way, so
+ * there is nothing for a reviewer's decision to reach. Kept apart from the
+ * others by name rather than by omission, so that adding a surface forces the
+ * question "which of these two is it?" instead of quietly landing in neither.
+ */
+export const UNACTIONED_SURFACE = {
+  noteShare: "note.share",
+} as const;
+
+export type ScreenSurface =
+  | ModerationSurface
+  | (typeof UNACTIONED_SURFACE)[keyof typeof UNACTIONED_SURFACE];
+
+/**
+ * How each surface hides, restores and destroys one row.
+ *
+ * A map rather than a switch so the test can walk it: every surface a caller
+ * can name has to have an entry here, and that is asserted rather than hoped
+ * for.
+ */
+interface SurfaceHandler {
+  /** Put it back in front of readers. The screen was wrong. */
+  restore: (id: string) => Promise<void>;
+  /** Destroy it. The screen was right, and a reviewer agreed. */
+  destroy: (id: string) => Promise<void>;
+}
+
+const SURFACE_HANDLERS: Record<ModerationSurface, SurfaceHandler> = {
+  [MODERATION_SURFACE.lessonQuestion]: {
+    restore: async (id) => {
+      await prisma.lessonQuestion.updateMany({ where: { id }, data: { isHidden: false } });
+    },
+    destroy: async (id) => {
+      // Its answers go with it, by the cascade on the foreign key: a thread of
+      // replies to a question that no longer exists is not a thread.
+      await prisma.lessonQuestion.deleteMany({ where: { id } });
+    },
+  },
+  [MODERATION_SURFACE.lessonAnswer]: {
+    restore: async (id) => {
+      await prisma.lessonAnswer.updateMany({ where: { id }, data: { isHidden: false } });
+    },
+    destroy: async (id) => {
+      await prisma.lessonAnswer.deleteMany({ where: { id } });
+    },
+  },
+  [MODERATION_SURFACE.forumTopic]: {
+    restore: async (id) => {
+      // The opening post is the thread's body: restoring one without the other
+      // leaves a title with nothing under it.
+      await prisma.$transaction([
+        prisma.forumTopic.updateMany({ where: { id }, data: { isHidden: false } }),
+        prisma.forumPost.updateMany({ where: { topicId: id }, data: { isHidden: false } }),
+      ]);
+    },
+    destroy: async (id) => {
+      await prisma.forumTopic.deleteMany({ where: { id } });
+    },
+  },
+  [MODERATION_SURFACE.forumPost]: {
+    restore: async (id) => {
+      await prisma.forumPost.updateMany({ where: { id }, data: { isHidden: false } });
+    },
+    destroy: async (id) => {
+      await prisma.forumPost.deleteMany({ where: { id } });
+    },
+  },
+};
+
+/**
+ * The handler for a surface read back out of the database.
+ *
+ * Takes a string rather than the union because the column is a string and old
+ * rows predate all of this: a surface nobody handles has to be survivable.
+ */
+function handlerFor(surface: string): SurfaceHandler | null {
+  return Object.hasOwn(SURFACE_HANDLERS, surface)
+    ? SURFACE_HANDLERS[surface as ModerationSurface]
+    : null;
 }
 
 export const moderationRepository = {
@@ -46,10 +167,14 @@ export const moderationRepository = {
    */
   async screen(input: ScreenInput): Promise<ScreenResult> {
     const result = moderate(input.text, { allowLinks: input.allowLinks ?? false });
-    const allowed = result.verdict !== "BLOCK";
+    // REVIEW and BLOCK are both acted on. The difference between them is how
+    // sure the analyser is, which is a reviewer's business and not a reader's:
+    // a message nobody is sure about should not be on the site while the
+    // question is open.
+    const flagged = result.verdict !== "ALLOW";
 
     if (result.verdict === "ALLOW") {
-      return { ...result, allowed, eventId: null };
+      return { ...result, flagged, eventId: null };
     }
 
     try {
@@ -67,10 +192,14 @@ export const moderationRepository = {
         },
         select: { id: true },
       });
-      return { ...result, allowed, eventId: event.id };
+      return { ...result, flagged, eventId: event.id };
     } catch (error) {
+      // The decision stands even when the record of it does not: content the
+      // screen flagged still goes out of sight. It is then hidden with nothing
+      // in the queue pointing at it, which is bad - and far better than
+      // publishing it because a log write timed out.
       console.error("[moderation] failed to record decision:", error);
-      return { ...result, allowed, eventId: null };
+      return { ...result, flagged, eventId: null };
     }
   },
 
@@ -126,10 +255,9 @@ export const moderationRepository = {
   /**
    * Records what a person decided about a machine's decision.
    *
-   * UPHELD and OVERTURNED both close the row; neither un-publishes or
-   * re-publishes anything on its own. What this is for is knowing whether the
-   * filter is any good - a column of OVERTURNED against one rule is the signal
-   * that the rule is wrong, and it is the only way this ever gets tuned.
+   * The record only. applyOutcome is what callers want: it does this and then
+   * carries the decision through to the content, which is the whole point of
+   * reviewing it.
    */
   async resolve(
     eventId: string,
@@ -140,6 +268,53 @@ export const moderationRepository = {
       where: { id: eventId, outcome: "PENDING" },
       data: { outcome, reviewedById, reviewedAt: new Date() },
     });
+  },
+
+  /**
+   * A person's decision, carried through to the content it was about.
+   *
+   * OVERTURNED - the screen was wrong - lifts the block and the message is
+   * back where its author put it. UPHELD - the screen was right - destroys it,
+   * because content held out of sight forever is a queue that only grows and a
+   * copy of the exact material nobody wanted kept.
+   *
+   * The event is claimed first, with the PENDING condition doing the work: two
+   * reviewers pressing opposite buttons at the same moment cannot both act, and
+   * the one that loses the claim changes nothing.
+   *
+   * Returns what actually happened, so the caller can say so rather than
+   * reporting a success it did not verify.
+   */
+  async applyOutcome(
+    eventId: string,
+    outcome: "UPHELD" | "OVERTURNED",
+    reviewedById: string,
+  ): Promise<{ claimed: boolean; contentTouched: boolean }> {
+    const claim = await prisma.moderationEvent.updateMany({
+      where: { id: eventId, outcome: "PENDING" },
+      data: { outcome, reviewedById, reviewedAt: new Date() },
+    });
+    if (claim.count === 0) return { claimed: false, contentTouched: false };
+
+    const event = await prisma.moderationEvent.findUnique({
+      where: { id: eventId },
+      select: { surface: true, contentId: true },
+    });
+    // No content id: an event recorded before flagged content was kept at all,
+    // or one whose write failed after the screen. The decision is recorded;
+    // there is simply nothing to carry it to.
+    if (!event?.contentId) return { claimed: true, contentTouched: false };
+
+    const handler = handlerFor(event.surface);
+    if (!handler) {
+      console.error("[moderation] no handler for surface:", event.surface);
+      return { claimed: true, contentTouched: false };
+    }
+
+    if (outcome === "OVERTURNED") await handler.restore(event.contentId);
+    else await handler.destroy(event.contentId);
+
+    return { claimed: true, contentTouched: true };
   },
 
   /** How the filter is doing, per rule - the numbers that say what to tune. */

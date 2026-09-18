@@ -4,6 +4,10 @@
 export { prisma } from "./prisma.js";
 export {
   moderationRepository,
+  MODERATION_SURFACE,
+  UNACTIONED_SURFACE,
+  type ModerationSurface,
+  type ScreenSurface,
   type ScreenInput,
   type ScreenResult,
 } from "./repositories/moderation.repository.js";

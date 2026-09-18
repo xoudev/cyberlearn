@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
+  MODERATION_SURFACE,
   forumRepository,
   moderationRepository,
   notificationRepository,
@@ -30,17 +31,13 @@ export interface ForumActionResult {
   error?: string;
   /** Where to go once it worked. */
   href?: string;
+  /**
+   * Written, and out of sight until a moderator has looked at it. Said
+   * plainly: a message that appears to post and then is not in the thread
+   * reads as a bug, and people post it again.
+   */
+  heldForReview?: boolean;
 }
-
-/**
- * The message a refusal shows - the same one the lesson Q&A uses.
- *
- * It says what happened and nothing about which rule fired: naming it turns
- * the filter into a puzzle, and people retry until they find the wording that
- * gets through.
- */
-const REFUSED =
-  "Ce message n'a pas été publié : il contient des propos que la modération refuse. Reformule-le.";
 const TOO_FAST = "Trop de messages. Réessaie dans une minute.";
 
 /**
@@ -79,28 +76,36 @@ export async function createTopicAction(input: {
   // only the longer field is the kind of gap that gets found immediately.
   const screen = await moderationRepository.screen({
     text: `${parsed.data.title}\n\n${parsed.data.content}`,
-    surface: "forum.topic",
+    surface: MODERATION_SURFACE.forumTopic,
     userId: user.id,
     ...FORUM_SCREEN,
   });
-  if (!screen.allowed) return { ok: false, error: REFUSED };
 
+  // Written either way, hidden when the screen flagged it: the author keeps
+  // their thread and can still see it, nobody else can, and a reviewer decides.
   const topic = await forumRepository.createTopic({
     categorySlug: parsed.data.categorySlug,
     authorId: user.id,
     title: parsed.data.title,
     content: parsed.data.content,
+    isHidden: screen.flagged,
   });
   if (!topic) return { ok: false, error: "Cette section n'existe pas." };
 
-  // A flagged-but-allowed thread exists and a reviewer has to be able to reach
-  // it, which is what the content id is for.
+  // The reviewer's decision is carried through to this row, so the id has to
+  // be on the event before anybody can act on it.
   if (screen.eventId !== null) await moderationRepository.attachContent(screen.eventId, topic.id);
-  await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  // No quest credit for a thread sitting in the queue: if a reviewer destroys
+  // it, the progress it earned would stay behind.
+  if (!screen.flagged) await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
 
   revalidatePath("/forum");
   revalidatePath(`/forum/${parsed.data.categorySlug}`);
-  return { ok: true, href: `/forum/${parsed.data.categorySlug}/${topic.slug}` };
+  return {
+    ok: true,
+    href: `/forum/${parsed.data.categorySlug}/${topic.slug}`,
+    heldForReview: screen.flagged,
+  };
 }
 
 export async function replyAction(input: {
@@ -117,27 +122,30 @@ export async function replyAction(input: {
 
   const screen = await moderationRepository.screen({
     text: parsed.data.content,
-    surface: "forum.post",
+    surface: MODERATION_SURFACE.forumPost,
     userId: user.id,
     ...FORUM_SCREEN,
   });
-  if (!screen.allowed) return { ok: false, error: REFUSED };
 
   const reply = await forumRepository.reply({
     topicId: parsed.data.topicId,
     authorId: user.id,
     content: parsed.data.content,
+    isHidden: screen.flagged,
   });
   if (!reply) return { ok: false, error: "Ce sujet est fermé ou n'existe plus." };
 
   if (screen.eventId !== null)
     await moderationRepository.attachContent(screen.eventId, reply.postId);
-  await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  if (!screen.flagged) await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  // reply.notify is empty for a hidden reply, so this tells nobody - but the
+  // call stays here rather than behind the flag, because which replies are
+  // worth announcing is the repository's decision to make, in one place.
   await notifyParticipants(reply.notify, user.id, reply.topicTitle, reply.url);
 
   revalidatePath(reply.url);
   revalidatePath("/forum");
-  return { ok: true, href: reply.url };
+  return { ok: true, href: reply.url, heldForReview: screen.flagged };
 }
 
 export async function editPostAction(input: {
@@ -151,20 +159,28 @@ export async function editPostAction(input: {
 
   const screen = await moderationRepository.screen({
     text: parsed.data.content,
-    surface: "forum.post",
+    surface: MODERATION_SURFACE.forumPost,
     userId: user.id,
     ...FORUM_SCREEN,
   });
-  if (!screen.allowed) return { ok: false, error: REFUSED };
 
-  const done = await forumRepository.editPost(user.id, parsed.data.postId, parsed.data.content);
+  // An edit that trips the screen takes the post down with it. Refusing the
+  // edit instead would leave the previous text standing, which is the version
+  // nobody complained about - but it also hands back a way to probe the filter
+  // for free, and the point is that flagged text is out of sight either way.
+  const done = await forumRepository.editPost(
+    user.id,
+    parsed.data.postId,
+    parsed.data.content,
+    screen.flagged,
+  );
   if (!done) return { ok: false, error: "Message introuvable." };
   if (screen.eventId !== null) {
     await moderationRepository.attachContent(screen.eventId, parsed.data.postId);
   }
 
   revalidatePath(input.path);
-  return { ok: true };
+  return { ok: true, heldForReview: screen.flagged };
 }
 
 export async function hidePostAction(input: {

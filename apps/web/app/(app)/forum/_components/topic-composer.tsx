@@ -24,6 +24,8 @@ export function TopicComposer({
     start(() => {
       void createTopicAction({ categorySlug, title, content }).then((res) => {
         if (res.ok && res.href !== undefined) {
+          // Straight to the thread either way. Its author can see it, marked as
+          // withdrawn, which is a truer answer than a banner on the form.
           router.push(res.href);
           return;
         }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRequestUser } from "@/lib/auth";
-import { moderationRepository, qaRepository } from "@cyberlearn/db";
+import { MODERATION_SURFACE, moderationRepository, qaRepository } from "@cyberlearn/db";
 import { checkQaSubmission } from "@/lib/rate-limit";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
@@ -21,17 +21,13 @@ const answerSchema = z.object({
 export interface QaActionResult {
   success: boolean;
   error?: string;
+  /**
+   * Written, but nobody else can see it yet: the screen flagged it and a
+   * moderator has to decide. Said plainly, because a message that appears to
+   * post and then is not there reads as a bug.
+   */
+  heldForReview?: boolean;
 }
-
-/**
- * The message a refusal shows.
- *
- * Deliberately says what was refused and nothing about how. Naming the rule
- * that fired turns the filter into a puzzle - people retry until they find the
- * wording that gets through, which is the opposite of what it is for.
- */
-const REFUSED =
-  "Ce message n'a pas été publié : il contient des propos que la modération refuse. Reformule-le.";
 
 export async function postQuestionAction(
   lessonId: string,
@@ -57,25 +53,29 @@ export async function postQuestionAction(
   // field is the kind of gap that gets found immediately.
   const screen = await moderationRepository.screen({
     text: `${title}\n\n${content}`,
-    surface: "lesson.question",
+    surface: MODERATION_SURFACE.lessonQuestion,
     userId: user.id,
   });
-  if (!screen.allowed) return { success: false, error: REFUSED };
 
+  // Written either way, hidden when the screen flagged it. Turning it away
+  // instead used to destroy the message on the spot, so a false positive cost
+  // the person what they had written and left a reviewer with an excerpt and
+  // nothing to put back.
   const question = await qaRepository.createQuestion({
     lessonId,
     userId: user.id,
     title,
     content,
+    isHidden: screen.flagged,
   });
-  // A flagged-but-allowed post exists and a reviewer needs to be able to reach
-  // it, which is what the content id is for.
+  // The reviewer's decision is carried through to this row, so the id has to
+  // be on the event before anybody can act on it.
   if (screen.eventId !== null) {
     await moderationRepository.attachContent(screen.eventId, question.id);
   }
   revalidatePath(`/lessons/${lessonSlug}`);
 
-  return { success: true };
+  return screen.flagged ? { success: true, heldForReview: true } : { success: true };
 }
 
 export async function postAnswerAction(
@@ -98,21 +98,28 @@ export async function postAnswerAction(
 
   const screen = await moderationRepository.screen({
     text: content,
-    surface: "lesson.answer",
+    surface: MODERATION_SURFACE.lessonAnswer,
     userId: user.id,
   });
-  if (!screen.allowed) return { success: false, error: REFUSED };
 
-  const answer = await qaRepository.createAnswer({ questionId, userId: user.id, content });
+  const answer = await qaRepository.createAnswer({
+    questionId,
+    userId: user.id,
+    content,
+    isHidden: screen.flagged,
+  });
   if (screen.eventId !== null) {
     await moderationRepository.attachContent(screen.eventId, answer.id);
   }
-  // Weekly quest: posting a write-up (Q&A answer) this week. After the screen,
-  // so a refused message cannot earn progress towards it.
-  await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  // Weekly quest: posting a write-up (Q&A answer) this week. Not for a message
+  // that is sitting in a moderation queue - if a reviewer destroys it, the
+  // progress it earned would stay.
+  if (!screen.flagged) {
+    await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  }
   revalidatePath(`/lessons/${lessonSlug}`);
 
-  return { success: true };
+  return screen.flagged ? { success: true, heldForReview: true } : { success: true };
 }
 
 export async function acceptAnswerAction(
