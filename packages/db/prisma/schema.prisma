@@ -87,6 +87,9 @@ model User {
   ticketMessages    TicketMessage[]         @relation("TicketMessageAuthor")
   forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
   forumPosts        ForumPost[]             @relation("ForumPostAuthor")
+  bans              UserBan[]               @relation("BanSubject")
+  bansIssued        UserBan[]               @relation("BanIssuer")
+  bansLifted        UserBan[]               @relation("BanLifter")
 
   @@index([username])
   @@index([role])
@@ -1265,6 +1268,61 @@ model ModerationEvent {
   @@map("moderation_events")
 }
 
+/// Somebody kept off the platform, and why.
+///
+/// A row rather than a flag on the account, for three reasons. A ban has an
+/// end, and "until when" is a value. A ban has a history: the second one is not
+/// the first one, and a moderator deciding what to do about somebody needs to
+/// see both. And a ban is appealed, which needs somewhere to hang the ticket.
+///
+/// A ban is never deleted, only lifted. The record of a decision that was made
+/// about a person is the only thing that makes the next decision fair.
+model UserBan {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  /// Why, in the person's own language, shown to them and quoted in the mail.
+  ///
+  /// Not optional and not empty. A ban whose reason is blank cannot be appealed
+  /// - there is nothing to answer - and it cannot be reviewed by whoever picks
+  /// the appeal up either.
+  reason    String    @db.VarChar(500)
+  /// When it ends. Null is permanent, which is why this is nullable rather than
+  /// a far-future date: "forever" and "in the year 3000" read the same to a
+  /// query and differently to a person.
+  expiresAt DateTime?
+
+  /// Who decided. Nullable so erasing an administrator's account does not erase
+  /// the bans they issued.
+  issuedById String? @db.Uuid
+  createdAt  DateTime @default(now())
+
+  /// Set when it is lifted early - by an administrator, or because an appeal
+  /// was upheld. A lifted ban stops applying and stays on the record.
+  liftedAt   DateTime?
+  liftedById String?   @db.Uuid
+  /// Why it was lifted, when somebody said.
+  liftReason String?   @db.VarChar(500)
+
+  /// Set the first time the person has seen and closed the notice, so it is
+  /// shown once rather than on every page they land on.
+  acknowledgedAt DateTime?
+
+  /// The appeal, when they filed one. One per ban: a second appeal on the same
+  /// decision is the same conversation, and it already has a thread.
+  appealTicketId String? @unique @db.Uuid
+
+  user         User           @relation("BanSubject", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy     User?          @relation("BanIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  liftedBy     User?          @relation("BanLifter", fields: [liftedById], references: [id], onDelete: SetNull)
+  appealTicket ContactTicket? @relation("BanAppeal", fields: [appealTicketId], references: [id], onDelete: SetNull)
+
+  /// The question asked on every authenticated request: is this account banned
+  /// right now. Ordered so the index answers it without reading the table.
+  @@index([userId, liftedAt, expiresAt])
+  @@index([issuedById])
+  @@map("user_bans")
+}
+
 model Notification {
   id           String           @id @default(uuid()) @db.Uuid
   userId       String           @db.Uuid
@@ -1320,6 +1378,11 @@ enum TicketTheme {
   /// for it, the request cannot be acted on and the first reply is always the
   /// same three questions. The form asks for them up front.
   ESTABLISHMENT_REQUEST
+  /// Somebody contesting a ban. Its own theme because it is the one kind of
+  /// ticket whose author cannot use the rest of the site while it is open, and
+  /// because a queue where appeals are mixed in with bug reports is a queue
+  /// where somebody waits a week to be told a mistake was made.
+  BAN_APPEAL
   OTHER
 }
 
@@ -1347,6 +1410,8 @@ model ContactTicket {
 
   user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages TicketMessage[]
+  /// Set when this ticket is somebody contesting a ban.
+  appealFor UserBan?       @relation("BanAppeal")
 
   @@index([status])
   @@index([userId])

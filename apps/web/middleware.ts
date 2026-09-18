@@ -101,6 +101,11 @@ function isPublicRoute(pathname: string): boolean {
     pathname === "/legal" ||
     pathname.startsWith("/legal/") ||
     pathname === "/privacy" ||
+    // A banned account has to be able to reach the page that tells it so, and
+    // to answer it. It is the one page the ban gate does not send people away
+    // from - and somebody banned before finishing onboarding must not be sent
+    // round to /onboarding instead.
+    pathname === "/banned" ||
     pathname.startsWith("/account/delete/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||

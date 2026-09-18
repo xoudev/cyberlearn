@@ -17,6 +17,7 @@ export const THEME_LABEL: Record<TicketTheme, string> = {
   SECURITY: "Sécurité",
   CONTENT_ERROR: "Erreur dans un contenu",
   ESTABLISHMENT_REQUEST: "Ajout d'un établissement",
+  BAN_APPEAL: "Appel d'un bannissement",
   OTHER: "Autre",
 };
 
