@@ -5,7 +5,7 @@ import { noteShareRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 
 /**
- * Handing a note to a classmate.
+ * Handing a note to a classmate or a friend.
  *
  * Thin on purpose: who may receive a note, what the screen says about it and
  * who gets told when it is refused all live in the repository, because a
@@ -25,22 +25,25 @@ export interface ShareAudienceEntry {
   id: string;
   name: string;
   avatarUrl: string | null;
-  kind: "PEER" | "TEACHER";
-  className: string;
+  kind: "PEER" | "TEACHER" | "FRIEND";
+  /** Stable key for the heading this person sits under. */
+  groupId: string;
+  /** What that heading reads. */
+  groupLabel: string;
   /** Already holds this note. */
   holds: boolean;
 }
 
 export interface ShareAudienceState {
   entries: ShareAudienceEntry[];
-  /** True when the author is in no live class at all. */
-  noClass: boolean;
+  /** True when the author has neither a live class nor a friend. */
+  noAudience: boolean;
 }
 
 /** Who this note can go to, and who already has it. */
 export async function loadShareAudienceAction(noteId: string): Promise<ShareAudienceState> {
   const user = await requireRequestUser();
-  if (!uuid.safeParse(noteId).success) return { entries: [], noClass: true };
+  if (!uuid.safeParse(noteId).success) return { entries: [], noAudience: true };
 
   const [audience, recipients] = await Promise.all([
     noteShareRepository.audienceFor(user.id),
@@ -54,10 +57,11 @@ export async function loadShareAudienceAction(noteId: string): Promise<ShareAudi
       name: p.displayName.trim() !== "" ? p.displayName : (p.username ?? "Sans nom"),
       avatarUrl: p.avatarUrl,
       kind: p.kind,
-      className: p.className,
+      groupId: p.groupId,
+      groupLabel: p.groupLabel,
       holds: holders.has(p.id),
     })),
-    noClass: audience.length === 0,
+    noAudience: audience.length === 0,
   };
 }
 
@@ -100,7 +104,7 @@ export async function shareNoteAction(input: {
     case "EMPTY":
       return { ok: false, error: "Cette note est vide." };
     case "NO_RECIPIENT":
-      return { ok: false, error: "Choisis au moins une personne de ta classe." };
+      return { ok: false, error: "Choisis au moins une personne." };
     case "NOT_FOUND":
       return { ok: false, error: "Note introuvable." };
   }

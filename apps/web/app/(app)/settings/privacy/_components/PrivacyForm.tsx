@@ -218,11 +218,13 @@ export function PrivacyForm({
       <SettingsCard title="Autres réglages">
         <ToggleRow
           name="Profil public"
-          desc="Rendre ta page profil accessible par lien."
+          desc="Rendre ta page profil accessible par lien. Tes amis y ont accès dans tous les cas."
           info={
             <InfoTip title="Profil public">
               Quand activé, ta page profil (badges, certificats, stats) est accessible via un lien
-              partageable. Sinon, elle reste privée. Indépendant du classement.
+              partageable. Sinon, elle reste privée - sauf pour les personnes que tu as acceptées
+              comme amis, qui y ont toujours accès : une demande d&apos;ami en attente, elle, ne
+              donne rien. Indépendant du classement.
             </InfoTip>
           }
           last

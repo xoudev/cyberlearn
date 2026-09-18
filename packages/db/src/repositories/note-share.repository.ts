@@ -1,16 +1,22 @@
 import type { FindingRule } from "@cyberlearn/lib";
 import type { Category } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import { friendshipRepository } from "./friendship.repository.js";
 import { UNACTIONED_SURFACE, moderationRepository } from "./moderation.repository.js";
 
 /**
  * Handing a note to someone, and what stands between the two.
  *
- * Sharing is deliberately not "with anyone on the platform". A note is written
- * for a lesson by a person who is in a class, and the people it is useful to
- * are the people in that class. Keeping it there is also what makes the rest of
- * item 9 mean anything: the teacher who gets told about a refused share is the
- * teacher of the class the share was aimed at.
+ * Sharing is deliberately not "with anyone on the platform". It reaches two
+ * groups of people, and both are ones the author is already tied to: the
+ * members of their live classes, and the people they have accepted as friends.
+ * Nobody else can be named, which is also what makes the rest of item 9 mean
+ * anything: the teacher who gets told about a refused share is the teacher of
+ * the class the author is in.
+ *
+ * A friendship is a two-sided agreement - one side asked, the other said yes -
+ * so it is a fair thing to hang a permission off. A pending request grants
+ * nothing; somebody who has only asked is a stranger until they are answered.
  *
  * The screen and the alert live here rather than in the server action because
  * they are not presentation. A second caller - an API route, a mobile client,
@@ -25,11 +31,23 @@ export interface ShareCandidate {
   username: string | null;
   displayName: string;
   avatarUrl: string | null;
-  /** Their standing in the class, so the picker can say so. */
-  kind: "PEER" | "TEACHER";
-  /** The class they are shared with, for grouping. */
-  className: string;
+  /** Why they are reachable, so the picker can say so. */
+  kind: "PEER" | "TEACHER" | "FRIEND";
+  /**
+   * The heading they sit under. The key is the class's id rather than its
+   * name: two establishments both calling a class "3A" are two classes, and
+   * grouping by the label would put their members under one heading.
+   */
+  groupId: string;
+  /** What that heading reads: the class name, or "Amis". */
+  groupLabel: string;
 }
+
+/**
+ * Where friends are listed. A class id is a uuid, so this cannot collide with
+ * one however a class is named.
+ */
+const FRIENDS_GROUP = { groupId: "friends", groupLabel: "Amis" } as const;
 
 export interface ShareRecipient {
   id: string;
@@ -96,32 +114,39 @@ function personName(p: { displayName: string; username: string | null }): string
 export const noteShareRepository = {
   /**
    * Everyone the author may hand a note to: the other members of their live
-   * classes, and the teachers who follow them.
+   * classes, the teachers who follow them, and their friends.
    *
    * The picker and the guard in share() read this same function on purpose. A
    * list built by one query and a check written from another is exactly how
-   * "you can only share inside your class" ends up true of the interface and
-   * false of the server.
+   * "you can only share with people you know" ends up true of the interface
+   * and false of the server.
    */
   async audienceFor(authorId: string): Promise<ShareCandidate[]> {
-    const classes = await prisma.class.findMany({
-      where: {
-        ...LIVE_CLASS,
-        OR: [
-          { members: { some: { userId: authorId } } },
-          { teachers: { some: { teacherId: authorId } } },
-        ],
-      },
-      orderBy: { name: "asc" },
-      select: {
-        name: true,
-        members: {
-          orderBy: { user: { displayName: "asc" } },
-          select: { user: { select: PERSON } },
+    const [classes, friends] = await Promise.all([
+      prisma.class.findMany({
+        where: {
+          ...LIVE_CLASS,
+          OR: [
+            { members: { some: { userId: authorId } } },
+            { teachers: { some: { teacherId: authorId } } },
+          ],
         },
-        teachers: { orderBy: { assignedAt: "asc" }, select: { teacher: { select: PERSON } } },
-      },
-    });
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          members: {
+            orderBy: { user: { displayName: "asc" } },
+            select: { user: { select: PERSON } },
+          },
+          teachers: { orderBy: { assignedAt: "asc" }, select: { teacher: { select: PERSON } } },
+        },
+      }),
+      // Read through the friendship repository rather than with a query of its
+      // own, so "accepted" is decided in one place. A PENDING row is not a
+      // friendship and this list does not contain one.
+      friendshipRepository.listFriends(authorId),
+    ]);
 
     // Two classes with the same teacher must not offer them twice; the first
     // class they appear in is the one they are listed under.
@@ -131,13 +156,31 @@ export const noteShareRepository = {
       for (const t of klass.teachers) {
         if (seen.has(t.teacher.id)) continue;
         seen.add(t.teacher.id);
-        out.push({ ...t.teacher, kind: "TEACHER", className: klass.name });
+        out.push({ ...t.teacher, kind: "TEACHER", groupId: klass.id, groupLabel: klass.name });
       }
       for (const m of klass.members) {
         if (seen.has(m.user.id)) continue;
         seen.add(m.user.id);
-        out.push({ ...m.user, kind: "PEER", className: klass.name });
+        out.push({ ...m.user, kind: "PEER", groupId: klass.id, groupLabel: klass.name });
       }
+    }
+
+    // Friends last, and only the ones the classes did not already offer. A
+    // classmate you are also friends with is one person and gets one row: the
+    // class is the more useful thing to say about them here, and two rows for
+    // the same name would read as two accounts.
+    for (const edge of friends) {
+      const person = edge.person;
+      if (seen.has(person.id)) continue;
+      seen.add(person.id);
+      out.push({
+        id: person.id,
+        username: person.username,
+        displayName: person.displayName,
+        avatarUrl: person.avatarUrl,
+        kind: "FRIEND",
+        ...FRIENDS_GROUP,
+      });
     }
     return out;
   },

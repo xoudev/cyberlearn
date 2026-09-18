@@ -125,14 +125,21 @@ function SectionLabel({ eyebrow, title }: { eyebrow: string; title: string }): R
 export default async function PublicProfilePage({ params }: Props): Promise<React.ReactElement> {
   const { username } = await params;
 
-  const user = await userRepository.findPublicProfile(username);
-  if (!user) notFound();
-
   // Signed out is an ordinary way to read a public profile, so the viewer is
   // optional here - getRequestUser rather than requireRequestUser - and the
-  // friend button simply does not appear.
+  // friend button simply does not appear. It is read before the profile
+  // because it also decides whether a private one opens at all: a friend gets
+  // in, everybody else gets the same 404 as a name that does not exist.
   const viewer = await getRequestUser();
   const viewerId = viewer?.id ?? null;
+
+  const user = await userRepository.findPublicProfile(username, viewerId);
+  if (!user) notFound();
+
+  // Reaching a private page means being let in, so the page says so. Telling
+  // the reader "profil public" about a page its owner closed would be the one
+  // wrong thing to write here.
+  const isPrivate = user.preferences?.publicProfile === false;
   const friendState =
     viewerId === null || viewerId === user.id
       ? "none"
@@ -196,7 +203,8 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               color: "#44406B",
             }}
           >
-            {"// "}profil public ·{" "}
+            {"// "}
+            {isPrivate ? "profil privé · visible par ses amis" : "profil public"} ·{" "}
             <b style={{ color: "#0AFFD4", fontWeight: 500 }}>@{user.username}</b>
           </span>
         </div>

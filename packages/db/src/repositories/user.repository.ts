@@ -1,5 +1,6 @@
 import { prisma } from "../prisma.js";
 import { classRepository } from "./class.repository.js";
+import { friendshipRepository } from "./friendship.repository.js";
 
 export const userRepository = {
   /**
@@ -91,8 +92,26 @@ export const userRepository = {
     });
   },
 
-  /** Public profile by username - returns null if not found or profile is private. */
-  async findPublicProfile(username: string) {
+  /**
+   * A profile as somebody else reads it.
+   *
+   * "Profil public" off closes the page to the platform - but a friend is not
+   * the platform. Everywhere else, a private profile means "the people I
+   * accepted, and nobody else"; here it used to mean "nobody", which turned
+   * every link the friends panel draws into a 404 and left a friendship with
+   * nothing behind it. A friendship is two-sided - one asked, the other said
+   * yes - so it is the one relation that can open this page without anybody
+   * being shown to someone they did not agree to.
+   *
+   * A pending request opens nothing. Asking is not being accepted, and a
+   * stranger who could read a private profile by pressing "ajouter" would have
+   * turned the setting off for everyone.
+   *
+   * Returns null when there is no such user, or when the viewer may not read
+   * it - the caller cannot tell the two apart, and should not: "this account
+   * is private" and "there is no such account" leak the same thing.
+   */
+  async findPublicProfile(username: string, viewerId: string | null = null) {
     const user = await prisma.user.findUnique({
       where: { username },
       include: {
@@ -112,7 +131,12 @@ export const userRepository = {
         },
       },
     });
-    if (!user || user.preferences?.publicProfile === false) return null;
-    return user;
+    if (!user) return null;
+    if (user.preferences?.publicProfile !== false) return user;
+    if (viewerId === null) return null;
+    if (viewerId === user.id) return user;
+
+    const friendship = await friendshipRepository.between(viewerId, user.id);
+    return friendship?.status === "ACCEPTED" ? user : null;
   },
 };
