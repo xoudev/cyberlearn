@@ -974,11 +974,27 @@ article.lesson-content blockquote p code {
 
 /* Responsive layout utilities (mobile-first) ──────────────────────────── */
 
+/* The gutter between a page and the edge of the screen, written once.
+   The app shell's <main> has no horizontal padding, so every page shell is
+   responsible for its own - and each one that spelled the number out was a
+   place it could be forgotten. It was: .pd2 and .pc2 (the two paths pages)
+   carried `padding: <v> 0 <v>`, so their only side space was whatever the
+   1760px max-width left over once centred. On a 1440px screen, or a 1920px one
+   with the sidebar open, that leftover is nothing and the content ran into both
+   edges. Reading the gutter from here is what keeps the next shell from
+   repeating it. */
+:root {
+  --page-gutter: 16px;
+}
+@media (min-width: 768px) {
+  :root {
+    --page-gutter: 24px;
+  }
+}
+
 /* Standard app page container (replaces per-page inline maxWidth/padding).
-   Matches the v2 paths containers (.pd2 / .pc2): wide max-width and a full-bleed
-   content column on desktop (the app shell <main> provides no horizontal
-   padding), so every page uses the available desktop width consistently. A
-   gutter is kept on mobile/tablet so content never touches the screen edges. */
+   Matches the v2 paths containers (.pd2 / .pc2): wide max-width and a content
+   column that uses the available desktop width, inside the shared gutter. */
 .page-container {
   max-width: 1760px;
   /* width:100% is REQUIRED: .page-container is a direct flex child of the app
@@ -989,20 +1005,17 @@ article.lesson-content blockquote p code {
      fills the column up to max-width, then the auto margins re-center it. */
   width: 100%;
   margin: 0 auto;
-  padding: 24px 16px 80px;
+  padding: 24px var(--page-gutter) 80px;
   position: relative;
 }
 @media (min-width: 768px) {
   .page-container {
-    padding: 32px 24px 100px;
+    padding: 32px var(--page-gutter) 100px;
   }
 }
 @media (min-width: 1280px) {
   .page-container {
-    /* Keep a horizontal gutter even on desktop: the content area (viewport
-       minus the sidebar) is often narrower than max-width, so a 0 gutter made
-       the content touch both edges. max-width still caps it on ultra-wide. */
-    padding: 40px 24px 120px;
+    padding: 40px var(--page-gutter) 120px;
   }
 }
 
@@ -2027,23 +2040,21 @@ a:hover > .lesson-author-card {
 
 /* Page container */
 .chx {
-  /* Mirror the shared .page-container standard (1760 full-bleed on desktop,
-     gutters on tablet/mobile) so the challenges pages match every other page. */
+  /* Mirrors .page-container so the challenges pages match every other page. */
   max-width: 1760px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 16px 80px;
+  padding: 24px var(--page-gutter) 80px;
   position: relative;
 }
 @media (min-width: 768px) {
   .chx {
-    padding: 32px 24px 100px;
+    padding: 32px var(--page-gutter) 100px;
   }
 }
 @media (min-width: 1280px) {
   .chx {
-    /* Keep a horizontal gutter on desktop too (see .page-container note). */
-    padding: 40px 24px 120px;
+    padding: 40px var(--page-gutter) 120px;
   }
 }
 

@@ -32,7 +32,10 @@
 .pc2-root .pc2 {
   max-width: 1760px;
   margin: 0 auto;
-  padding: 8px 0 90px;
+  /* See the note on --page-gutter: the centring leaves no side space until the
+     content column is wider than the max-width, which on a normal screen it
+     never is, so the cards ran into both edges. */
+  padding: 8px var(--page-gutter) 90px;
   position: relative;
 }
 

@@ -29,7 +29,11 @@
   max-width: 1760px;
   width: 100%;
   margin: 0 auto;
-  padding: 8px 0 60px;
+  /* The side gutter comes from the shared --page-gutter rather than from the
+     max-width being reached: below ~2000px of viewport the centring leaves
+     nothing over, and a zero here put the hero, the timeline and the aside
+     flush against both edges. */
+  padding: 8px var(--page-gutter) 60px;
   position: relative;
 }
 .pd2 * {
