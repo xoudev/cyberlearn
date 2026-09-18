@@ -84,6 +84,7 @@ export { leaderboardRepository } from "./repositories/leaderboard.repository.js"
 export type {
   LeaderboardEntry,
   CurrentUserPosition,
+  FriendsBoard,
 } from "./repositories/leaderboard.repository.js";
 export { challengeRepository } from "./repositories/challenge.repository.js";
 export type { ChallengeWithProgress } from "./repositories/challenge.repository.js";

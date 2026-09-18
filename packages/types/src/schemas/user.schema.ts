@@ -57,10 +57,13 @@ export const leaderboardVisibilitySchema = z.enum(["HIDDEN", "ANONYMOUS", "PUBLI
 
 export type LeaderboardVisibilityInput = z.infer<typeof leaderboardVisibilitySchema>;
 
-// Both fields required: the Privacy section submits its full state on save.
+// Every field required: the Privacy section submits its full state on save.
 export const updatePrivacySchema = z.object({
   leaderboardVisibility: leaderboardVisibilitySchema,
   publicProfile: z.boolean(),
+  // Separate from leaderboardVisibility on purpose: the public board and a
+  // friends board are two audiences, and one says nothing about the other.
+  friendsLeaderboard: z.boolean(),
 });
 
 export type UpdatePrivacyInput = z.infer<typeof updatePrivacySchema>;

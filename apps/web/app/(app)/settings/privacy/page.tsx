@@ -11,7 +11,7 @@ export default async function PrivacySettingsPage(): Promise<React.JSX.Element> 
   const authUser = await requireRequestUser();
   const prefs = await prisma.userPreferences.findUnique({
     where: { userId: authUser.id },
-    select: { leaderboardVisibility: true, publicProfile: true },
+    select: { leaderboardVisibility: true, publicProfile: true, friendsLeaderboard: true },
   });
 
   // Fallback to the privacy-first defaults when no preferences row exists yet.
@@ -21,6 +21,7 @@ export default async function PrivacySettingsPage(): Promise<React.JSX.Element> 
       <PrivacyForm
         initialVisibility={prefs?.leaderboardVisibility ?? "ANONYMOUS"}
         initialPublicProfile={prefs?.publicProfile ?? true}
+        initialFriendsLeaderboard={prefs?.friendsLeaderboard ?? false}
       />
     </div>
   );

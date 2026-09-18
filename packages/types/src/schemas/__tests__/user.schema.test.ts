@@ -189,32 +189,64 @@ describe("leaderboardVisibilitySchema", () => {
 // ─── updatePrivacySchema ──────────────────────────────────────────────────────
 
 describe("updatePrivacySchema", () => {
-  it("accepts a valid visibility + publicProfile pair", () => {
-    expect(
-      updatePrivacySchema.safeParse({ leaderboardVisibility: "ANONYMOUS", publicProfile: true })
-        .success,
-    ).toBe(true);
+  const VALID = {
+    leaderboardVisibility: "ANONYMOUS",
+    publicProfile: true,
+    friendsLeaderboard: false,
+  };
+
+  it("accepts a full, valid privacy state", () => {
+    expect(updatePrivacySchema.safeParse(VALID).success).toBe(true);
   });
 
   it("rejects an arbitrary visibility value", () => {
     expect(
-      updatePrivacySchema.safeParse({ leaderboardVisibility: "ADMIN", publicProfile: true })
-        .success,
+      updatePrivacySchema.safeParse({ ...VALID, leaderboardVisibility: "ADMIN" }).success,
     ).toBe(false);
     expect(
-      updatePrivacySchema.safeParse({ leaderboardVisibility: "EVERYONE", publicProfile: true })
-        .success,
+      updatePrivacySchema.safeParse({ ...VALID, leaderboardVisibility: "EVERYONE" }).success,
     ).toBe(false);
   });
 
-  it("rejects a missing publicProfile", () => {
-    expect(updatePrivacySchema.safeParse({ leaderboardVisibility: "PUBLIC" }).success).toBe(false);
+  it("rejects a partial submission: the form always sends its whole state", () => {
+    // Each field missing in turn. A schema that let one through would take the
+    // default for it and silently overwrite what the person had chosen.
+    const withoutOne = [
+      { publicProfile: VALID.publicProfile, friendsLeaderboard: VALID.friendsLeaderboard },
+      {
+        leaderboardVisibility: VALID.leaderboardVisibility,
+        friendsLeaderboard: VALID.friendsLeaderboard,
+      },
+      { leaderboardVisibility: VALID.leaderboardVisibility, publicProfile: VALID.publicProfile },
+    ];
+    for (const partial of withoutOne) {
+      expect(updatePrivacySchema.safeParse(partial).success).toBe(false);
+    }
   });
 
-  it("rejects a non-boolean publicProfile (e.g. the string 'true')", () => {
+  it("rejects a booleanish string rather than coercing it", () => {
+    expect(updatePrivacySchema.safeParse({ ...VALID, publicProfile: "true" }).success).toBe(false);
+    expect(updatePrivacySchema.safeParse({ ...VALID, friendsLeaderboard: "true" }).success).toBe(
+      false,
+    );
+  });
+
+  it("keeps the friends board independent of the public one", () => {
+    // Masked on the platform, named to five friends - and the other way round.
+    // Neither combination is a contradiction the schema should refuse.
     expect(
-      updatePrivacySchema.safeParse({ leaderboardVisibility: "PUBLIC", publicProfile: "true" })
-        .success,
-    ).toBe(false);
+      updatePrivacySchema.safeParse({
+        ...VALID,
+        leaderboardVisibility: "HIDDEN",
+        friendsLeaderboard: true,
+      }).success,
+    ).toBe(true);
+    expect(
+      updatePrivacySchema.safeParse({
+        ...VALID,
+        leaderboardVisibility: "PUBLIC",
+        friendsLeaderboard: false,
+      }).success,
+    ).toBe(true);
   });
 });
