@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import * as Sentry from "@sentry/nextjs";
 import { cosmeticRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { NAVBAR_HEIGHT } from "@/lib/chrome";
 import { cosmeticAttrs } from "@/lib/cosmetics/attrs";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CosmeticsProvider } from "@/components/cosmetics-provider";
@@ -61,7 +62,7 @@ export default async function AppLayout({
             fallback={
               <div
                 style={{
-                  height: 56,
+                  height: NAVBAR_HEIGHT,
                   background: "rgba(3,2,25,0.85)",
                   borderBottom: "1px solid #2A2560",
                   flexShrink: 0,

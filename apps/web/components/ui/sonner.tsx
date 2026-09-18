@@ -2,6 +2,7 @@
 
 import { CircleCheck, Info, LoaderCircle, OctagonX, TriangleAlert } from "lucide-react";
 import { Toaster as Sonner } from "sonner";
+import { TOAST_TOP_OFFSET } from "@/lib/chrome";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
@@ -11,22 +12,24 @@ const Toaster = ({ theme = "dark", ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme}
-      className="toaster group"
+      // Top centre, below the navbar. Sonner's own default is the bottom right
+      // corner, which on a wide screen is the furthest point from whatever the
+      // person just clicked - a confirmation nobody sees is a confirmation that
+      // did not happen. Only the top is moved; the side and bottom gaps keep
+      // sonner's defaults, on desktop and on mobile alike.
+      position="top-center"
+      offset={{ top: TOAST_TOP_OFFSET }}
+      mobileOffset={{ top: TOAST_TOP_OFFSET }}
+      // The look lives in globals.css, on sonner's own data attributes, rather
+      // than in shadcn utility classes: the toast is a floating panel like the
+      // others here and is styled from the same place they are.
+      className="toaster"
       icons={{
         success: <CircleCheck className="h-4 w-4" />,
         info: <Info className="h-4 w-4" />,
         warning: <TriangleAlert className="h-4 w-4" />,
         error: <OctagonX className="h-4 w-4" />,
         loading: <LoaderCircle className="h-4 w-4 animate-spin" />,
-      }}
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-        },
       }}
       {...props}
     />
