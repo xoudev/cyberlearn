@@ -57,11 +57,21 @@ describe("moderationNotice", () => {
     expect(notice.body).toContain("une sanction a été appliquée : bannissement de 7 jours");
   });
 
-  it("treats an empty sanction as no sanction", () => {
-    for (const sanctionLabel of [null, undefined, ""]) {
-      const notice = moderationNotice({ stage: "removed", surface: "forum.post", sanctionLabel });
+  it("treats an absent, null or empty sanction as no sanction", () => {
+    // Three ways of saying "none", because all three reach it: the field is
+    // optional, the database hands back null, and a form hands back "".
+    const base = { stage: "removed", surface: "forum.post" } as const;
+    const notices = [
+      moderationNotice(base),
+      moderationNotice({ ...base, sanctionLabel: null }),
+      moderationNotice({ ...base, sanctionLabel: "" }),
+    ];
+
+    for (const notice of notices) {
       expect(notice.body).not.toContain("sanction");
     }
+    // And they say the same thing, rather than three near-identical sentences.
+    expect(new Set(notices.map((n) => n.body)).size).toBe(1);
   });
 
   it("never names the rule that fired, at any stage", () => {
