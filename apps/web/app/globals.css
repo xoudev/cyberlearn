@@ -4775,3 +4775,198 @@ a.cls-res__title:hover {
   background: rgba(10, 8, 38, 0.4);
   padding: 16px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Friends panel (navbar), and the add button on a public profile
+   A page was the wrong shape: seeing who your friends are, answering a request
+   and dropping somebody are all glances. It sits next to the bell instead, and
+   the button on a profile borrows the same small controls.
+   ══════════════════════════════════════════════════════════════════════════ */
+.fp-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font: 700 9px var(--font-mono);
+  line-height: 16px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(135deg, #ff4757, #ff6b6b);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px #030219;
+}
+
+.fp-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 340px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: #0a0826;
+  border: 1px solid #2a2560;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px #2a2560;
+  z-index: 1000;
+}
+
+.fp-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #0a0826;
+  border-bottom: 1px solid #1f1b47;
+}
+
+.fp-head-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b6890;
+}
+
+.fp-head-rule {
+  display: inline-block;
+  width: 12px;
+  height: 1px;
+  background: var(--cosmetic-accent);
+}
+
+.fp-head-count {
+  font: 10px var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--cosmetic-accent);
+}
+
+.fp-note {
+  margin: 0;
+  padding: 22px 18px;
+  font: 11.5px var(--font-mono);
+  line-height: 1.55;
+  color: #6b6890;
+}
+
+.fp-section {
+  margin: 0;
+  padding: 12px 18px 6px;
+  font: 600 9.5px var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6f6b99;
+}
+
+.fp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  border-bottom: 1px solid #1a1640;
+}
+.fp-row:last-child {
+  border-bottom: 0;
+}
+
+.fp-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(135deg, #0024ff, var(--cosmetic-accent));
+  font: 700 10px var(--font-sans);
+  color: #030219;
+}
+
+.fp-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.fp-name {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f5f5fa;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.fp-name:hover {
+  color: var(--cosmetic-accent);
+}
+
+.fp-meta {
+  font: 9.5px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: #6f6b99;
+}
+
+.fp-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.fp-btn {
+  padding: 6px 10px;
+  border: 1px solid #2a2560;
+  background: transparent;
+  font: 700 9.5px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #b8b5d1;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+.fp-btn:hover:not(:disabled) {
+  border-color: #6f6b99;
+  color: #f5f5fa;
+}
+.fp-btn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.fp-btn--primary {
+  border-color: var(--cosmetic-accent);
+  background: var(--cosmetic-accent);
+  color: #030219;
+}
+.fp-btn--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cosmetic-accent) 80%, #ffffff);
+  border-color: color-mix(in srgb, var(--cosmetic-accent) 80%, #ffffff);
+}
+
+.fp-error {
+  font: 11px var(--font-mono);
+  color: #ff6b7a;
+}
+
+/* On a profile the controls stand alone rather than in a dense row, so they
+   get the size a page button wants. */
+.pub-friend-action .fp-btn {
+  padding: 11px 18px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+}

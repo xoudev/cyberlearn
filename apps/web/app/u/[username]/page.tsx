@@ -9,8 +9,7 @@ import { BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
 import type { Category } from "@cyberlearn/db";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { getRequestUser } from "@/lib/auth";
-import { AddFriendButton } from "@/app/(app)/friends/_components/friend-rows";
-import "@/app/(app)/friends/friends.css";
+import { AddFriendButton } from "@/components/add-friend-button";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -357,7 +356,10 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   Absent when signed out, and absent on your own profile - a
                   button that cannot work is worse than no button. */}
               {viewerId !== null && viewerId !== user.id && (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}>
+                <div
+                  className="pub-friend-action"
+                  style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}
+                >
                   <AddFriendButton targetId={user.id} initialState={friendState} />
                 </div>
               )}

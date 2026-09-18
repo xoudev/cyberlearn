@@ -2,11 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { friendshipRepository, notificationRepository, prisma } from "@cyberlearn/db";
+import {
+  friendshipRepository,
+  notificationRepository,
+  prisma,
+  type FriendEdge,
+} from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 
 /**
- * Asking, answering and undoing - the four buttons a friendship ever needs.
+ * Asking, answering and undoing - the four buttons a friendship ever needs -
+ * plus the read the navbar panel opens with.
  *
  * Every one of them takes the other person's id and derives the pair from the
  * caller's own, so none of them can act on a friendship the caller is not in.
@@ -21,18 +27,40 @@ export interface FriendActionResult {
   becameFriends?: boolean;
 }
 
+export interface FriendLists {
+  incoming: FriendEdge[];
+  friends: FriendEdge[];
+  outgoing: FriendEdge[];
+}
+
 const idSchema = z.string().uuid();
 
-/** The name to put in a notification, without leaking an e-mail address. */
-async function nameOf(userId: string): Promise<string> {
+/** Who somebody is, for a notification: a name to show and a page to point at. */
+async function subjectOf(userId: string): Promise<{ name: string; href: string | null }> {
   const person = await prisma.user.findUnique({
     where: { id: userId },
     select: { displayName: true, username: true },
   });
-  if (!person) return "Quelqu'un";
-  // displayName is a string that can be empty, so || is the operator that
-  // means what is wanted here: fall through an empty name to the handle.
-  return person.displayName || (person.username ?? "Quelqu'un");
+  if (!person) return { name: "Quelqu'un", href: null };
+  // displayName is a string that can be empty, so || is the operator that means
+  // what is wanted here: fall through an empty name to the handle.
+  return {
+    name: person.displayName || (person.username ?? "Quelqu'un"),
+    // Their profile, because that is where the button is. A notification that
+    // leads nowhere is a notification that has to be acted on somewhere else.
+    href: person.username === null ? null : `/u/${person.username}`,
+  };
+}
+
+/** The three lists, for the panel. Read on open rather than on every page load. */
+export async function getFriendsAction(): Promise<FriendLists> {
+  const user = await requireRequestUser();
+  const [incoming, friends, outgoing] = await Promise.all([
+    friendshipRepository.listIncoming(user.id, 30),
+    friendshipRepository.listFriends(user.id, 60),
+    friendshipRepository.listOutgoing(user.id, 30),
+  ]);
+  return { incoming, friends, outgoing };
 }
 
 export async function sendFriendRequestAction(targetId: string): Promise<FriendActionResult> {
@@ -50,7 +78,7 @@ export async function sendFriendRequestAction(targetId: string): Promise<FriendA
     };
   }
 
-  const asker = await nameOf(user.id);
+  const asker = await subjectOf(user.id);
   if (result.status === "ACCEPTED") {
     // They had already asked, so this was an answer. Both of them get the good
     // news rather than one of them getting a request they already sent.
@@ -58,20 +86,20 @@ export async function sendFriendRequestAction(targetId: string): Promise<FriendA
       userId: targetId,
       type: "FRIEND_ACCEPTED",
       title: "Nouvelle relation",
-      body: `${asker} et toi êtes maintenant amis.`,
-      actionUrl: "/friends",
+      body: `${asker.name} et toi êtes maintenant amis.`,
+      ...(asker.href !== null ? { actionUrl: asker.href } : {}),
     });
   } else {
     await notificationRepository.create({
       userId: targetId,
       type: "FRIEND_REQUEST",
       title: "Demande d'ami",
-      body: `${asker} souhaite t'ajouter.`,
-      actionUrl: "/friends",
+      body: `${asker.name} souhaite t'ajouter.`,
+      ...(asker.href !== null ? { actionUrl: asker.href } : {}),
     });
   }
 
-  revalidatePath("/friends");
+  revalidatePath("/", "layout");
   return { ok: true, becameFriends: result.status === "ACCEPTED" };
 }
 
@@ -81,21 +109,19 @@ export async function acceptFriendRequestAction(otherId: string): Promise<Friend
 
   const accepted = await friendshipRepository.accept(user.id, otherId);
   // Not an error worth showing: they cancelled, or it was already accepted in
-  // another tab. Either way the page is about to show the truth.
-  if (!accepted) {
-    revalidatePath("/friends");
-    return { ok: false, error: "Cette demande n'est plus en attente." };
-  }
+  // another tab. Either way the panel is about to show the truth.
+  if (!accepted) return { ok: false, error: "Cette demande n'est plus en attente." };
 
+  const accepter = await subjectOf(user.id);
   await notificationRepository.create({
     userId: otherId,
     type: "FRIEND_ACCEPTED",
     title: "Demande acceptée",
-    body: `${await nameOf(user.id)} a accepté ta demande.`,
-    actionUrl: "/friends",
+    body: `${accepter.name} a accepté ta demande.`,
+    ...(accepter.href !== null ? { actionUrl: accepter.href } : {}),
   });
 
-  revalidatePath("/friends");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -111,6 +137,6 @@ export async function removeFriendAction(otherId: string): Promise<FriendActionR
   if (!idSchema.safeParse(otherId).success) return { ok: false, error: "Compte introuvable." };
 
   await friendshipRepository.remove(user.id, otherId);
-  revalidatePath("/friends");
+  revalidatePath("/", "layout");
   return { ok: true };
 }

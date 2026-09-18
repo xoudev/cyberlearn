@@ -131,7 +131,6 @@ const PROTECTED_ROUTE_PREFIXES = [
   "/badges",
   "/certificates",
   "/forum",
-  "/friends",
   "/leaderboard",
   "/locker",
   "/my-class",

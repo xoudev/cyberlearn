@@ -6,7 +6,8 @@ import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { computeLevel } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
-import { notificationRepository } from "@cyberlearn/db";
+import { friendshipRepository, notificationRepository } from "@cyberlearn/db";
+import { FriendsPanel } from "./friends-panel";
 import { GlobalSearch } from "./global-search";
 import { NotificationPanel } from "./notification-panel";
 
@@ -53,6 +54,7 @@ export async function Navbar(): Promise<React.ReactElement> {
   let initials = "??";
   let avatarUrl: string | null = null;
   let unreadCount = 0;
+  let friendRequestCount = 0;
   let userId = "";
 
   try {
@@ -76,7 +78,13 @@ export async function Navbar(): Promise<React.ReactElement> {
     }
 
     if (userId) {
-      unreadCount = await notificationRepository.findUnreadCount(userId);
+      // Two counts, one round trip each, on the one component every signed-in
+      // page already renders. The lists themselves are read when the panel is
+      // opened - nobody pays for friends they are not looking at.
+      [unreadCount, friendRequestCount] = await Promise.all([
+        notificationRepository.findUnreadCount(userId),
+        friendshipRepository.countIncoming(userId),
+      ]);
     }
   } catch {
     // Unauthenticated or DB error - render with fallback values
@@ -112,6 +120,7 @@ export async function Navbar(): Promise<React.ReactElement> {
       {/* ── Actions ─────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         {/* Notification panel (client component with Realtime subscription) */}
+        {userId && <FriendsPanel initialRequestCount={friendRequestCount} />}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
 
         {/* Level pill → links to profile */}
