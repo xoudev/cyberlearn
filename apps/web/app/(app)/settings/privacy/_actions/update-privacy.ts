@@ -18,7 +18,8 @@ function readBoolean(value: FormDataEntryValue | null): boolean | undefined {
 }
 
 /**
- * Updates the signed-in user's leaderboard visibility and public-profile flag.
+ * Updates the signed-in user's leaderboard visibility, public-profile flag and
+ * friends-board opt-in.
  *
  * Auth-first (security rule #8), then Zod safeParse - never trust the form.
  * leaderboardVisibility drives server-side anonymization in leaderboardRepository,
@@ -33,19 +34,20 @@ export async function updatePrivacyAction(
   const parsed = updatePrivacySchema.safeParse({
     leaderboardVisibility: formData.get("leaderboardVisibility"),
     publicProfile: readBoolean(formData.get("publicProfile")),
+    friendsLeaderboard: readBoolean(formData.get("friendsLeaderboard")),
   });
   if (!parsed.success) {
     return { error: "Paramètres de confidentialité invalides." };
   }
 
-  const { leaderboardVisibility, publicProfile } = parsed.data;
+  const { leaderboardVisibility, publicProfile, friendsLeaderboard } = parsed.data;
 
   // Upsert: a user who reached settings has completed onboarding (so the row
   // exists), but upsert stays correct even if the preferences row is missing.
   await prisma.userPreferences.upsert({
     where: { userId: authUser.id },
-    create: { userId: authUser.id, leaderboardVisibility, publicProfile },
-    update: { leaderboardVisibility, publicProfile },
+    create: { userId: authUser.id, leaderboardVisibility, publicProfile, friendsLeaderboard },
+    update: { leaderboardVisibility, publicProfile, friendsLeaderboard },
   });
 
   // A visibility change must be reflected on the leaderboard right away.

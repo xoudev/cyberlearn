@@ -1,5 +1,7 @@
 import { type Prisma, LeaderboardVisibility, UserRole } from "@prisma/client";
 import { prisma } from "../prisma.js";
+import { friendshipRepository } from "./friendship.repository.js";
+import { buildFriendsBoard } from "./leaderboard.friends.js";
 import {
   buildCurrentUserPosition,
   buildLeaderboard,
@@ -8,6 +10,7 @@ import {
 import type { CurrentUserPosition, LeaderboardEntry } from "./leaderboard.visibility.js";
 
 export type { LeaderboardEntry, CurrentUserPosition } from "./leaderboard.visibility.js";
+export type { RawFriendsBoardUser } from "./leaderboard.friends.js";
 
 // Who appears on the board, and it is two conditions rather than one.
 //
@@ -37,6 +40,30 @@ const leaderboardSelect = {
   xpTotal: true,
   streakDays: true,
   preferences: { select: { leaderboardVisibility: true, publicProfile: true } },
+} satisfies Prisma.UserSelect;
+
+/**
+ * How many friends the board reads. Friendship is a list people curate by hand,
+ * so this is a seatbelt rather than a working limit.
+ */
+const FRIENDS_BOARD_LIMIT = 200;
+
+/** A friends board, and whether the reader is on their friends' boards in turn. */
+export interface FriendsBoard {
+  entries: LeaderboardEntry[];
+  listedForFriends: boolean;
+}
+
+const friendsBoardSelect = {
+  id: true,
+  displayName: true,
+  username: true,
+  avatarUrl: true,
+  level: true,
+  xpTotal: true,
+  streakDays: true,
+  role: true,
+  preferences: { select: { friendsLeaderboard: true } },
 } satisfies Prisma.UserSelect;
 
 export const leaderboardRepository = {
@@ -84,6 +111,43 @@ export const leaderboardRepository = {
       where: { AND: [RANKED_USER_FILTER, { xpTotal: { gt: user.xpTotal } }] },
     });
     return buildCurrentUserPosition(user, higher + 1);
+  },
+
+  /**
+   * The reader's friends, ranked, and only the ones who asked to be there.
+   *
+   * The query narrows to accepted friends who are students and who turned the
+   * switch on, plus the reader themselves; buildFriendsBoard applies the same
+   * rules again and is what actually decides. A pending request is not a
+   * friendship and never reaches this list.
+   *
+   * `listedForFriends` comes back with it because the two belong together: a
+   * board showing the reader among their friends, while the reader is absent
+   * from every one of those friends' own boards, is a thing the page has to be
+   * able to say out loud. It costs nothing - the reader's own row is already
+   * being read.
+   */
+  async findFriendsBoard(userId: string): Promise<FriendsBoard> {
+    const friends = await friendshipRepository.listFriends(userId, FRIENDS_BOARD_LIMIT);
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { id: userId },
+          {
+            id: { in: friends.map((edge) => edge.person.id) },
+            role: UserRole.STUDENT,
+            preferences: { is: { friendsLeaderboard: true } },
+          },
+        ],
+      },
+      orderBy: [{ xpTotal: "desc" }, { id: "asc" }],
+      select: friendsBoardSelect,
+    });
+    return {
+      entries: buildFriendsBoard(users, userId),
+      listedForFriends:
+        users.find((u) => u.id === userId)?.preferences?.friendsLeaderboard === true,
+    };
   },
 
   /**

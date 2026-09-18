@@ -32,10 +32,11 @@ export default async function LeaderboardPage(): Promise<React.ReactElement> {
     console.error("[leaderboard] lazy season rollover failed:", error);
   }
 
-  const [entries, userRank, season] = await Promise.all([
+  const [entries, userRank, season, friendsBoard] = await Promise.all([
     leaderboardRepository.findTopUsers(100, authUser.id),
     leaderboardRepository.findUserRank(authUser.id),
     leagueRepository.getActiveSeason(),
+    leaderboardRepository.findFriendsBoard(authUser.id),
   ]);
   const currentEntry = entries.find((e) => e.isCurrentUser) ?? null;
 
@@ -65,6 +66,7 @@ export default async function LeaderboardPage(): Promise<React.ReactElement> {
       membership={membership}
       podLadder={podLadder}
       podMemberCount={podLadder.length}
+      friendsBoard={friendsBoard}
     />
   );
 }

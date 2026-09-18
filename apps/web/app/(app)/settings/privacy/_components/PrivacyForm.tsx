@@ -13,6 +13,7 @@ type Visibility = "HIDDEN" | "ANONYMOUS" | "PUBLIC";
 interface PrivacyFormProps {
   initialVisibility: Visibility;
   initialPublicProfile: boolean;
+  initialFriendsLeaderboard: boolean;
 }
 
 const OPTIONS: { id: Visibility; name: string; desc: string; recommended?: boolean }[] = [
@@ -62,16 +63,22 @@ function VisibilityDetail(): React.JSX.Element {
 export function PrivacyForm({
   initialVisibility,
   initialPublicProfile,
+  initialFriendsLeaderboard,
 }: PrivacyFormProps): React.JSX.Element {
   const [pending, startTransition] = useTransition();
   const [visibility, setVisibility] = useState<Visibility>(initialVisibility);
   const [publicProfile, setPublicProfile] = useState(initialPublicProfile);
+  const [friendsBoard, setFriendsBoard] = useState(initialFriendsLeaderboard);
   const [saved, setSaved] = useState({
     visibility: initialVisibility,
     publicProfile: initialPublicProfile,
+    friendsBoard: initialFriendsLeaderboard,
   });
 
-  const dirty = visibility !== saved.visibility || publicProfile !== saved.publicProfile;
+  const dirty =
+    visibility !== saved.visibility ||
+    publicProfile !== saved.publicProfile ||
+    friendsBoard !== saved.friendsBoard;
 
   function handleSubmit(e: React.SyntheticEvent): void {
     e.preventDefault();
@@ -79,10 +86,11 @@ export function PrivacyForm({
     const fd = new FormData();
     fd.set("leaderboardVisibility", visibility);
     fd.set("publicProfile", String(publicProfile));
+    fd.set("friendsLeaderboard", String(friendsBoard));
     startTransition(async () => {
       const res = await updatePrivacyAction({}, fd);
       if (res.success) {
-        setSaved({ visibility, publicProfile });
+        setSaved({ visibility, publicProfile, friendsBoard });
         toast.success("Confidentialité enregistrée");
       } else {
         toast.error(res.error ?? "Erreur lors de l'enregistrement");
@@ -93,6 +101,7 @@ export function PrivacyForm({
   function handleCancel(): void {
     setVisibility(saved.visibility);
     setPublicProfile(saved.publicProfile);
+    setFriendsBoard(saved.friendsBoard);
   }
 
   return (
@@ -216,6 +225,28 @@ export function PrivacyForm({
       </SettingsCard>
 
       <SettingsCard title="Autres réglages">
+        <ToggleRow
+          name="Visible par mes amis"
+          desc="Apparaître, sous ton nom, dans le classement de tes amis."
+          info={
+            <InfoTip title="Classement entre amis">
+              Indépendant du réglage ci-dessus : le classement public, c&apos;est la plateforme
+              entière, tes amis sont des gens que tu as acceptés un par un. Tu peux être masqué sur
+              l&apos;un et visible sur l&apos;autre, dans les deux sens. Il n&apos;y a pas de mode
+              anonyme ici : sur une liste de cinq amis, « Anonyme » n&apos;anonymise personne — on
+              sait qui sont ses propres amis. Tu y figures sous ton nom, ou tu n&apos;y figures pas.
+            </InfoTip>
+          }
+        >
+          <Switch
+            on={friendsBoard}
+            label="Visible par mes amis"
+            onClick={() => {
+              setFriendsBoard((v) => !v);
+            }}
+          />
+        </ToggleRow>
+
         <ToggleRow
           name="Profil public"
           desc="Rendre ta page profil accessible par lien. Tes amis y ont accès dans tous les cas."

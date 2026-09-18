@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import type { LeaderboardEntry, PodLadderEntry } from "@cyberlearn/db";
+import Link from "next/link";
+import type { FriendsBoard, LeaderboardEntry, PodLadderEntry } from "@cyberlearn/db";
 import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
 import { LeagueClient } from "./LeagueClient";
@@ -362,6 +363,75 @@ function PlayerCard({ entry }: { entry: LeaderboardEntry }) {
 
 // ── Main client component ─────────────────────────────────────────────────────
 
+/**
+ * The friends board.
+ *
+ * Nobody is anonymised here and nobody is greyed out: on a list this short,
+ * "Anonyme" would be a name with one step missing - a reader knows who their own
+ * friends are. Somebody is listed under their name because they said so, or
+ * they are absent. The notice below says which of the two the reader is, since
+ * being on this board says nothing about being on their friends'.
+ */
+function FriendsSection({ board }: { board: FriendsBoard }): React.JSX.Element {
+  const others = board.entries.filter((e) => !e.isCurrentUser);
+
+  return (
+    <section aria-label="Classement entre amis">
+      <div className={styles.sectionHeading}>
+        <h2>Tes amis</h2>
+        <span>
+          {others.length === 0
+            ? "personne pour l'instant"
+            : `${String(others.length)} ami${others.length > 1 ? "s" : ""}`}
+        </span>
+      </div>
+
+      {board.entries.length === 0 ? (
+        <p style={{ ...DISPLAY, fontSize: 14, color: "#8B88A8", margin: "0 0 20px" }}>
+          Rien à classer pour l&apos;instant : ce tableau réunit les amis qui ont choisi d&apos;y
+          figurer.
+        </p>
+      ) : (
+        <ol className={styles.players}>
+          {board.entries.map((entry) => (
+            <PlayerCard key={entry.rank} entry={entry} />
+          ))}
+        </ol>
+      )}
+
+      <p
+        style={{
+          ...MONO,
+          fontSize: 11.5,
+          lineHeight: 1.6,
+          color: "#6B6890",
+          border: "1px solid #2A2560",
+          background: "rgba(5,4,26,0.5)",
+          padding: "14px 16px",
+          margin: "24px 0 0",
+        }}
+      >
+        {board.listedForFriends ? (
+          <>
+            Tes amis te voient dans leur propre classement.{" "}
+            <Link href="/settings/privacy" style={{ color: "var(--cosmetic-accent)" }}>
+              Changer
+            </Link>
+          </>
+        ) : (
+          <>
+            Tu n&apos;apparais pas dans le classement de tes amis — ce tableau est le tien, eux ne
+            t&apos;y voient pas.{" "}
+            <Link href="/settings/privacy" style={{ color: "var(--cosmetic-accent)" }}>
+              S&apos;y ajouter
+            </Link>
+          </>
+        )}
+      </p>
+    </section>
+  );
+}
+
 interface Props {
   entries: LeaderboardEntry[];
   userRank: number;
@@ -370,6 +440,7 @@ interface Props {
   membership: { division: LeagueDivisionCode; pod: number; seasonXp: number } | null;
   podLadder: PodLadderEntry[];
   podMemberCount: number;
+  friendsBoard: FriendsBoard;
 }
 
 export function LeaderboardClient({
@@ -380,8 +451,11 @@ export function LeaderboardClient({
   membership,
   podLadder,
   podMemberCount,
+  friendsBoard,
 }: Props): React.JSX.Element {
-  const [filter, setFilter] = useState<"global" | "month" | "week" | "league">("global");
+  const [filter, setFilter] = useState<"global" | "friends" | "month" | "week" | "league">(
+    "global",
+  );
 
   // Podium order: silver (rank 2), gold (rank 1), bronze (rank 3)
   const podiumOrder = [
@@ -400,6 +474,7 @@ export function LeaderboardClient({
 
   const FILTERS = [
     { id: "global" as const, label: "Global" },
+    { id: "friends" as const, label: "Amis" },
     { id: "league" as const, label: "Ligue" },
     { id: "month" as const, label: "Ce mois" },
     { id: "week" as const, label: "Cette semaine" },
@@ -520,7 +595,7 @@ export function LeaderboardClient({
               >
                 Classement
               </em>{" "}
-              {filter === "league" ? "ligue." : "global."}
+              {filter === "league" ? "ligue." : filter === "friends" ? "entre amis." : "global."}
             </h1>
           </div>
 
@@ -639,6 +714,8 @@ export function LeaderboardClient({
             podLadder={podLadder}
             podMemberCount={podMemberCount}
           />
+        ) : filter === "friends" ? (
+          <FriendsSection board={friendsBoard} />
         ) : (
           <>
             {/* Podium */}

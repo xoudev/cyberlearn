@@ -53,7 +53,11 @@ describe("updatePrivacyAction - rejects invalid input", () => {
   it("rejects an arbitrary leaderboardVisibility value and writes nothing", async () => {
     const result = await updatePrivacyAction(
       {},
-      makeFormData({ leaderboardVisibility: "ADMIN", publicProfile: "true" }),
+      makeFormData({
+        leaderboardVisibility: "ADMIN",
+        publicProfile: "true",
+        friendsLeaderboard: "false",
+      }),
     );
     expect(result.error).toBeDefined();
     expect(result.success).toBeUndefined();
@@ -63,7 +67,11 @@ describe("updatePrivacyAction - rejects invalid input", () => {
   it("rejects an empty leaderboardVisibility", async () => {
     const result = await updatePrivacyAction(
       {},
-      makeFormData({ leaderboardVisibility: "", publicProfile: "false" }),
+      makeFormData({
+        leaderboardVisibility: "",
+        publicProfile: "false",
+        friendsLeaderboard: "false",
+      }),
     );
     expect(result.error).toBeDefined();
     expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
@@ -72,7 +80,24 @@ describe("updatePrivacyAction - rejects invalid input", () => {
   it("rejects a malformed publicProfile (not 'true'/'false')", async () => {
     const result = await updatePrivacyAction(
       {},
-      makeFormData({ leaderboardVisibility: "PUBLIC", publicProfile: "yes" }),
+      makeFormData({
+        leaderboardVisibility: "PUBLIC",
+        publicProfile: "yes",
+        friendsLeaderboard: "false",
+      }),
+    );
+    expect(result.error).toBeDefined();
+    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("updatePrivacyAction - rejects a missing field", () => {
+  it("writes nothing when the friends-board flag is absent", async () => {
+    // The form submits its whole state. A missing field must be a refusal and
+    // not a default, or a save would quietly switch somebody off a board.
+    const result = await updatePrivacyAction(
+      {},
+      makeFormData({ leaderboardVisibility: "PUBLIC", publicProfile: "true" }),
     );
     expect(result.error).toBeDefined();
     expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
@@ -80,24 +105,43 @@ describe("updatePrivacyAction - rejects invalid input", () => {
 });
 
 describe("updatePrivacyAction - happy path", () => {
-  it("persists a valid HIDDEN + publicProfile=false via upsert", async () => {
+  it("persists the whole state via upsert", async () => {
     const result = await updatePrivacyAction(
       {},
-      makeFormData({ leaderboardVisibility: "HIDDEN", publicProfile: "false" }),
+      makeFormData({
+        leaderboardVisibility: "HIDDEN",
+        publicProfile: "false",
+        friendsLeaderboard: "true",
+      }),
     );
     expect(result.success).toBe(true);
     expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledOnce();
     expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
       where: { userId: MOCK_USER.id },
-      create: { userId: MOCK_USER.id, leaderboardVisibility: "HIDDEN", publicProfile: false },
-      update: { leaderboardVisibility: "HIDDEN", publicProfile: false },
+      create: {
+        userId: MOCK_USER.id,
+        leaderboardVisibility: "HIDDEN",
+        publicProfile: false,
+        // Masked on the public board and named to five friends is a coherent
+        // pair, not a contradiction: they are two audiences.
+        friendsLeaderboard: true,
+      },
+      update: {
+        leaderboardVisibility: "HIDDEN",
+        publicProfile: false,
+        friendsLeaderboard: true,
+      },
     });
   });
 
   it("calls requireRequestUser (auth-first)", async () => {
     await updatePrivacyAction(
       {},
-      makeFormData({ leaderboardVisibility: "ANONYMOUS", publicProfile: "true" }),
+      makeFormData({
+        leaderboardVisibility: "ANONYMOUS",
+        publicProfile: "true",
+        friendsLeaderboard: "false",
+      }),
     );
     expect(mockRequireRequestUser).toHaveBeenCalledOnce();
   });

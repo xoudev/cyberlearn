@@ -366,6 +366,20 @@ model UserPreferences {
   // ANONYMOUS by the leaderboard repository (pre-onboarding users have no row).
   leaderboardVisibility LeaderboardVisibility @default(ANONYMOUS)
 
+  /// Whether this person is listed, by name, on their friends' friends board.
+  ///
+  /// A separate switch rather than a fourth value of leaderboardVisibility,
+  /// because it answers a different question: the public board is the platform,
+  /// a friends board is a handful of people who were accepted one by one. The
+  /// two audiences are unrelated, so somebody can be masked on one and named on
+  /// the other, in either direction.
+  ///
+  /// Off by default, and deliberately not inferred from ANONYMOUS. On a list of
+  /// five friends an "Anonyme" row is not anonymous - a reader knows who their
+  /// own friends are, so naming four of them names the fifth. Nobody appears
+  /// here until they have said so.
+  friendsLeaderboard    Boolean               @default(false)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
