@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { Select } from "@cyberlearn/ui";
 import { EmptyState } from "./admin-ui";
 
 /**
@@ -117,23 +118,18 @@ export function DataGrid({
         </label>
 
         {facets.map((facet, index) => (
-          <select
+          <Select
             key={facet.label}
-            className="a-select"
+            block={false}
+            triggerStyle={{ height: 36, fontSize: 11, padding: "0 10px" }}
             aria-label={facet.label}
-            value={facetValues[index]}
-            onChange={(event) => {
-              setFacetValues((prev) => prev.map((v, i) => (i === index ? event.target.value : v)));
+            value={facetValues[index] ?? "all"}
+            options={[{ value: "all", label: `${facet.label} : tous` }, ...facet.options]}
+            onChange={(next) => {
+              setFacetValues((prev) => prev.map((v, i) => (i === index ? next : v)));
               setPage(0);
             }}
-          >
-            <option value="all">{facet.label} : tous</option>
-            {facet.options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          />
         ))}
 
         <span className="a-toolbar-count">

@@ -3,6 +3,7 @@
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { updatePathAction, type UpdatePathState } from "../actions";
+import { Select } from "@cyberlearn/ui";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -886,37 +887,14 @@ export function EditPathClient({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Label req>Type de parcours</Label>
               <div style={{ position: "relative" }}>
-                <select
+                <Select
                   name="track"
                   required
                   defaultValue={path.track}
-                  className="le-select"
-                  style={{
-                    ...BASE_INPUT,
-                    paddingRight: 38,
-                    cursor: "pointer",
-                    appearance: "none" as const,
-                  }}
-                >
-                  <option value="SKILL" style={{ background: "#0A0826" }}>
-                    Compétence — un langage, un outil, un socle
-                  </option>
-                  <option value="CAREER" style={{ background: "#0A0826" }}>
-                    Métier — un rôle complet
-                  </option>
-                </select>
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 14,
-                    top: "50%",
-                    width: 7,
-                    height: 7,
-                    borderRight: `1.5px solid #6B6890`,
-                    borderBottom: `1.5px solid #6B6890`,
-                    transform: "translateY(-70%) rotate(45deg)",
-                    pointerEvents: "none",
-                  }}
+                  options={[
+                    { value: "SKILL", label: "Compétence — un langage, un outil, un socle" },
+                    { value: "CAREER", label: "Métier — un rôle complet" },
+                  ]}
                 />
               </div>
               <FieldErr msg={state.fieldErrors?.track} />
@@ -928,40 +906,15 @@ export function EditPathClient({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Label req>Catégorie</Label>
               <div style={{ position: "relative" }}>
-                <select
+                <Select
                   name="category"
                   required
                   defaultValue={path.category}
-                  className="le-select"
-                  style={{
-                    ...BASE_INPUT,
-                    paddingRight: 38,
-                    cursor: "pointer",
-                    appearance: "none" as const,
-                  }}
-                >
-                  <option value="DEV" style={{ background: "#0A0826" }}>
-                    Développement
-                  </option>
-                  <option value="CYBERSEC" style={{ background: "#0A0826" }}>
-                    Cybersécurité
-                  </option>
-                  <option value="NETWORK" style={{ background: "#0A0826" }}>
-                    Réseau
-                  </option>
-                </select>
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 14,
-                    top: "50%",
-                    width: 7,
-                    height: 7,
-                    borderRight: `1.5px solid #6B6890`,
-                    borderBottom: `1.5px solid #6B6890`,
-                    transform: "translateY(-70%) rotate(45deg)",
-                    pointerEvents: "none",
-                  }}
+                  options={[
+                    { value: "DEV", label: "Développement" },
+                    { value: "CYBERSEC", label: "Cybersécurité" },
+                    { value: "NETWORK", label: "Réseau" },
+                  ]}
                 />
               </div>
               <FieldErr msg={state.fieldErrors?.category} />
@@ -969,43 +922,16 @@ export function EditPathClient({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Label req>Difficulté</Label>
               <div style={{ position: "relative" }}>
-                <select
+                <Select
                   name="difficulty"
                   required
                   defaultValue={path.difficulty}
-                  className="le-select"
-                  style={{
-                    ...BASE_INPUT,
-                    paddingRight: 38,
-                    cursor: "pointer",
-                    appearance: "none" as const,
-                  }}
-                >
-                  <option value="BEGINNER" style={{ background: "#0A0826" }}>
-                    ◆ ◇ ◇ ◇ Débutant
-                  </option>
-                  <option value="INTERMEDIATE" style={{ background: "#0A0826" }}>
-                    ◆ ◆ ◇ ◇ Intermédiaire
-                  </option>
-                  <option value="ADVANCED" style={{ background: "#0A0826" }}>
-                    ◆ ◆ ◆ ◇ Avancé
-                  </option>
-                  <option value="EXPERT" style={{ background: "#0A0826" }}>
-                    ◆ ◆ ◆ ◆ Expert
-                  </option>
-                </select>
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 14,
-                    top: "50%",
-                    width: 7,
-                    height: 7,
-                    borderRight: `1.5px solid #6B6890`,
-                    borderBottom: `1.5px solid #6B6890`,
-                    transform: "translateY(-70%) rotate(45deg)",
-                    pointerEvents: "none",
-                  }}
+                  options={[
+                    { value: "BEGINNER", label: "◆ ◇ ◇ ◇ Débutant" },
+                    { value: "INTERMEDIATE", label: "◆ ◆ ◇ ◇ Intermédiaire" },
+                    { value: "ADVANCED", label: "◆ ◆ ◆ ◇ Avancé" },
+                    { value: "EXPERT", label: "◆ ◆ ◆ ◆ Expert" },
+                  ]}
                 />
               </div>
               <FieldErr msg={state.fieldErrors?.difficulty} />
@@ -1063,37 +989,7 @@ export function EditPathClient({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Label req>Statut</Label>
               <div style={{ position: "relative" }}>
-                <select
-                  name="status"
-                  required
-                  defaultValue={path.status}
-                  className="le-select"
-                  style={{
-                    ...BASE_INPUT,
-                    paddingRight: 38,
-                    cursor: "pointer",
-                    appearance: "none" as const,
-                  }}
-                >
-                  {STATUS_OPTS.map((o) => (
-                    <option key={o.value} value={o.value} style={{ background: "#0A0826" }}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 14,
-                    top: "50%",
-                    width: 7,
-                    height: 7,
-                    borderRight: `1.5px solid #6B6890`,
-                    borderBottom: `1.5px solid #6B6890`,
-                    transform: "translateY(-70%) rotate(45deg)",
-                    pointerEvents: "none",
-                  }}
-                />
+                <Select name="status" required defaultValue={path.status} options={STATUS_OPTS} />
               </div>
               <Help>
                 <span style={{ color: TURQ }}>Publié</span> → visible par les apprenants ·{" "}

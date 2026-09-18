@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { Select } from "@cyberlearn/ui";
 
 // ── Serializable item type (passed from server) ───────────────────────────────
 
@@ -515,6 +516,14 @@ type TypeFilter = ChallengeItem["type"] | "TOUS";
 type DiffFilter = ChallengeItem["difficulty"] | "TOUS";
 type StatFilter = DisplayStatus | "TOUS";
 
+/** The filter row's type scale; the control brings the rest of its skin. */
+const FILTER_TRIGGER: React.CSSProperties = {
+  fontSize: 10.5,
+  letterSpacing: "0.1em",
+  textTransform: "uppercase",
+  padding: "8px 12px",
+};
+
 export function ChallengesClient({ items, featured, featuredEndMs }: Props): React.ReactElement {
   const [cat, setCat] = useState<CatFilter>("TOUS");
   const [type, setType] = useState<TypeFilter>("TOUS");
@@ -621,33 +630,39 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
           ))}
         </div>
 
-        <select
-          className="x-sel"
+        <Select
+          block={false}
+          aria-label="Difficulté"
+          triggerStyle={FILTER_TRIGGER}
           value={diff}
-          onChange={(e) => {
-            setDiff(e.target.value as DiffFilter);
+          options={[
+            { value: "TOUS", label: "DIFFICULTÉ · TOUTES" },
+            { value: "BEGINNER", label: "FACILE" },
+            { value: "INTERMEDIATE", label: "INTERMÉDIAIRE" },
+            { value: "ADVANCED", label: "AVANCÉ" },
+            { value: "EXPERT", label: "EXPERT" },
+          ]}
+          onChange={(next) => {
+            setDiff(next as DiffFilter);
           }}
-        >
-          <option value="TOUS">DIFFICULTÉ · TOUTES</option>
-          <option value="BEGINNER">FACILE</option>
-          <option value="INTERMEDIATE">INTERMÉDIAIRE</option>
-          <option value="ADVANCED">AVANCÉ</option>
-          <option value="EXPERT">EXPERT</option>
-        </select>
+        />
 
-        <select
-          className="x-sel"
+        <Select
+          block={false}
+          aria-label="Statut"
+          triggerStyle={FILTER_TRIGGER}
           value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as StatFilter);
+          options={[
+            { value: "TOUS", label: "STATUT · TOUS" },
+            { value: "AVAILABLE", label: "DISPONIBLE" },
+            { value: "IN_PROGRESS", label: "EN COURS" },
+            { value: "COMPLETED", label: "COMPLÉTÉ" },
+            { value: "LOCKED", label: "VERROUILLÉ" },
+          ]}
+          onChange={(next) => {
+            setStatus(next as StatFilter);
           }}
-        >
-          <option value="TOUS">STATUT · TOUS</option>
-          <option value="AVAILABLE">DISPONIBLE</option>
-          <option value="IN_PROGRESS">EN COURS</option>
-          <option value="COMPLETED">COMPLÉTÉ</option>
-          <option value="LOCKED">VERROUILLÉ</option>
-        </select>
+        />
       </div>
 
       {/* ── Featured ────────────────────────────────────────────────── */}

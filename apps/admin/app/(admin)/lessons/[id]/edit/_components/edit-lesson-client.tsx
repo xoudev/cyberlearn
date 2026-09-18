@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MdxEditorPanel } from "@cyberlearn/ui/mdx-editor";
 import { CoverUploadField } from "../../../_components/cover-upload-field";
 import { updateLessonAction, type UpdateLessonState } from "../actions";
+import { Select } from "@cyberlearn/ui";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 
@@ -353,40 +354,15 @@ export function EditLessonClient({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Label req>Catégorie</Label>
               <div style={{ position: "relative" }}>
-                <select
+                <Select
                   name="category"
                   required
                   defaultValue={lesson.category}
-                  className="le-select"
-                  style={{
-                    ...BASE_INPUT,
-                    paddingRight: 38,
-                    cursor: "pointer",
-                    appearance: "none" as const,
-                  }}
-                >
-                  <option value="CYBERSEC" style={{ background: "#0A0826" }}>
-                    Cybersécurité
-                  </option>
-                  <option value="NETWORK" style={{ background: "#0A0826" }}>
-                    Réseau
-                  </option>
-                  <option value="DEV" style={{ background: "#0A0826" }}>
-                    Développement
-                  </option>
-                </select>
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 14,
-                    top: "50%",
-                    width: 7,
-                    height: 7,
-                    borderRight: `1.5px solid #6B6890`,
-                    borderBottom: `1.5px solid #6B6890`,
-                    transform: "translateY(-70%) rotate(45deg)",
-                    pointerEvents: "none",
-                  }}
+                  options={[
+                    { value: "CYBERSEC", label: "Cybersécurité" },
+                    { value: "NETWORK", label: "Réseau" },
+                    { value: "DEV", label: "Développement" },
+                  ]}
                 />
               </div>
               <FieldErr msg={state.fieldErrors?.category} />
@@ -394,43 +370,16 @@ export function EditLessonClient({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <Label req>Difficulté</Label>
               <div style={{ position: "relative" }}>
-                <select
+                <Select
                   name="difficulty"
                   required
                   defaultValue={lesson.difficulty}
-                  className="le-select"
-                  style={{
-                    ...BASE_INPUT,
-                    paddingRight: 38,
-                    cursor: "pointer",
-                    appearance: "none" as const,
-                  }}
-                >
-                  <option value="BEGINNER" style={{ background: "#0A0826" }}>
-                    ◆ ◇ ◇ ◇ Débutant
-                  </option>
-                  <option value="INTERMEDIATE" style={{ background: "#0A0826" }}>
-                    ◆ ◆ ◇ ◇ Intermédiaire
-                  </option>
-                  <option value="ADVANCED" style={{ background: "#0A0826" }}>
-                    ◆ ◆ ◆ ◇ Avancé
-                  </option>
-                  <option value="EXPERT" style={{ background: "#0A0826" }}>
-                    ◆ ◆ ◆ ◆ Expert
-                  </option>
-                </select>
-                <span
-                  style={{
-                    position: "absolute",
-                    right: 14,
-                    top: "50%",
-                    width: 7,
-                    height: 7,
-                    borderRight: `1.5px solid #6B6890`,
-                    borderBottom: `1.5px solid #6B6890`,
-                    transform: "translateY(-70%) rotate(45deg)",
-                    pointerEvents: "none",
-                  }}
+                  options={[
+                    { value: "BEGINNER", label: "◆ ◇ ◇ ◇ Débutant" },
+                    { value: "INTERMEDIATE", label: "◆ ◆ ◇ ◇ Intermédiaire" },
+                    { value: "ADVANCED", label: "◆ ◆ ◆ ◇ Avancé" },
+                    { value: "EXPERT", label: "◆ ◆ ◆ ◆ Expert" },
+                  ]}
                 />
               </div>
               <FieldErr msg={state.fieldErrors?.difficulty} />
@@ -545,40 +494,15 @@ export function EditLessonClient({
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <Label req>Statut</Label>
             <div style={{ position: "relative", maxWidth: 280 }}>
-              <select
+              <Select
                 name="status"
                 required
                 defaultValue={lesson.status}
-                className="le-select"
-                style={{
-                  ...BASE_INPUT,
-                  paddingRight: 38,
-                  cursor: "pointer",
-                  appearance: "none" as const,
-                }}
-              >
-                <option value="DRAFT" style={{ background: "#0A0826" }}>
-                  Brouillon
-                </option>
-                <option value="PUBLISHED" style={{ background: "#0A0826" }}>
-                  Publié
-                </option>
-                <option value="ARCHIVED" style={{ background: "#0A0826" }}>
-                  Archivé
-                </option>
-              </select>
-              <span
-                style={{
-                  position: "absolute",
-                  right: 14,
-                  top: "50%",
-                  width: 7,
-                  height: 7,
-                  borderRight: `1.5px solid #6B6890`,
-                  borderBottom: `1.5px solid #6B6890`,
-                  transform: "translateY(-70%) rotate(45deg)",
-                  pointerEvents: "none",
-                }}
+                options={[
+                  { value: "DRAFT", label: "Brouillon" },
+                  { value: "PUBLISHED", label: "Publié" },
+                  { value: "ARCHIVED", label: "Archivé" },
+                ]}
               />
             </div>
             <Help>

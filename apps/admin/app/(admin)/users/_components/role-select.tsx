@@ -2,7 +2,9 @@
 
 import React, { useTransition } from "react";
 import type { UserRole } from "@cyberlearn/db";
+import { Select } from "@cyberlearn/ui";
 import { ROLE_LABEL, isUserRole, roleTone } from "@/lib/roles";
+import { toneColor } from "../../_components/admin-ui";
 import { updateUserRoleAction } from "../../_actions/user-actions";
 
 /**
@@ -33,27 +35,33 @@ export function RoleSelect({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <select
-      className="a-select a-select--role"
-      data-tone={roleTone(currentRole)}
+    <Select
+      block={false}
+      triggerStyle={{
+        height: 26,
+        padding: "0 9px",
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        background: `color-mix(in srgb, ${toneColor(roleTone(currentRole))} 8%, transparent)`,
+      }}
       value={currentRole}
       disabled={isPending}
       aria-label="Rôle de l'utilisateur"
-      onChange={(e) => {
-        const next = e.target.value;
+      options={ROLE_ORDER.map((r) => ({
+        value: r,
+        label: ROLE_LABEL[r],
+        tone: toneColor(roleTone(r)),
+      }))}
+      onChange={(next) => {
         // Guard rather than cast: the option list is ours, but the value comes
-        // back off the DOM as a plain string.
+        // back out of the control as a plain string.
         if (!isUserRole(next) || next === currentRole) return;
         startTransition(async () => {
           await updateUserRoleAction(userId, next);
         });
       }}
-    >
-      {ROLE_ORDER.map((r) => (
-        <option key={r} value={r}>
-          {ROLE_LABEL[r]}
-        </option>
-      ))}
-    </select>
+    />
   );
 }

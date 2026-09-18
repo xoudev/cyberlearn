@@ -8,6 +8,7 @@ import {
   updateClassPathAction,
   type ClassPathState,
 } from "../_actions/class-path-actions";
+import { Select } from "@cyberlearn/ui";
 
 /**
  * The builder a teacher assembles a class path with.
@@ -145,34 +146,22 @@ export function PathBuilder({
         <div className="tle-grid3">
           <label className="cls-field">
             <span className="cls-field__label">Catégorie</span>
-            <select
+            <Select
               name="category"
               required
               defaultValue={draft?.category ?? "CYBERSEC"}
-              className="cls-input"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+              options={CATEGORIES}
+            />
           </label>
 
           <label className="cls-field">
             <span className="cls-field__label">Niveau</span>
-            <select
+            <Select
               name="difficulty"
               required
               defaultValue={draft?.difficulty ?? "BEGINNER"}
-              className="cls-input"
-            >
-              {DIFFICULTIES.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
+              options={DIFFICULTIES}
+            />
           </label>
 
           <label className="cls-field">

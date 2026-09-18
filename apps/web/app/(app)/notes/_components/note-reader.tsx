@@ -6,6 +6,7 @@ import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { downloadMarkdown, noteToMarkdown } from "@/lib/notes/export";
 import { ShareDialog } from "./share-dialog";
 import { CAT, type SerializedFolder, type SerializedNote } from "./notes-shared";
+import { Select } from "@cyberlearn/ui";
 
 interface NoteReaderProps {
   note: SerializedNote;
@@ -300,28 +301,20 @@ export function NoteReader({
                 }}
               >
                 Dossier
-                <select
+                <Select
+                  block={false}
+                  aria-label="Dossier"
+                  style={{ maxWidth: 180 }}
+                  triggerStyle={{ fontSize: 12, padding: "6px 8px" }}
                   value={note.folderId ?? ""}
-                  onChange={(e) => {
-                    onMove(e.target.value === "" ? null : e.target.value);
+                  options={[
+                    { value: "", label: "Sans dossier" },
+                    ...folders.map((f) => ({ value: f.id, label: f.name })),
+                  ]}
+                  onChange={(next) => {
+                    onMove(next === "" ? null : next);
                   }}
-                  style={{
-                    background: "rgba(5,4,26,0.6)",
-                    border: "1px solid #2A2560",
-                    color: "#F5F5FA",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    padding: "6px 8px",
-                    maxWidth: 180,
-                  }}
-                >
-                  <option value="">Sans dossier</option>
-                  {folders.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
             ) : null}
           </div>

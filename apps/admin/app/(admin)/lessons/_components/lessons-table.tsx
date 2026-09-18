@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { StatusBadge } from "../../_components/status-badge";
 import { updateLessonStatusAction, bulkUpdateLessonStatusAction } from "../_actions/lesson-actions";
 import { DeleteLessonButton } from "./delete-lesson-button";
+import { Select } from "@cyberlearn/ui";
 
 type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type ContentAudience = "CATALOGUE" | "CLASS";
@@ -99,22 +100,19 @@ function SquareCheckbox({
   );
 }
 
-const selectStyle: React.CSSProperties = {
-  appearance: "none",
-  background: "rgba(5,4,26,0.6)",
-  border: "1px solid #2A2560",
-  color: "#B8B5D1",
-  fontFamily: "var(--font-mono)",
+/** The filter row's type scale; the control brings the rest of its skin. */
+const filterStyle: React.CSSProperties = {
   fontSize: 10,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  padding: "7px 26px 7px 10px",
-  cursor: "pointer",
-  borderRadius: 0,
-  backgroundImage:
-    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='5' viewBox='0 0 7 5'><path d='M1 1l2.5 3L6 1' stroke='%236B6890' stroke-width='1.2' fill='none' stroke-linecap='round'/></svg>\")",
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "right 9px center",
+  padding: "7px 10px",
+};
+
+const STATUS_LABEL: Record<(typeof STATUSES)[number], string> = {
+  ALL: "Statut : tous",
+  DRAFT: "Brouillon",
+  PUBLISHED: "Publié",
+  ARCHIVED: "Archivé",
 };
 
 export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.Element {
@@ -220,51 +218,42 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
             outline: "none",
           }}
         />
-        <select
+        <Select
+          block={false}
+          aria-label="Catégorie"
           value={category}
-          onChange={(e) => {
-            setCategory(e.target.value as (typeof CATEGORIES)[number]);
+          triggerStyle={filterStyle}
+          options={CATEGORIES.map((c) => ({
+            value: c,
+            label: c === "ALL" ? "Catégorie : toutes" : c,
+          }))}
+          onChange={(next) => {
+            setCategory(next as (typeof CATEGORIES)[number]);
           }}
-          style={selectStyle}
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c} style={{ background: "#0A0826" }}>
-              {c === "ALL" ? "Catégorie : toutes" : c}
-            </option>
-          ))}
-        </select>
-        <select
+        />
+        <Select
+          block={false}
+          aria-label="Difficulté"
           value={difficulty}
-          onChange={(e) => {
-            setDifficulty(e.target.value as (typeof DIFFICULTIES)[number]);
+          triggerStyle={filterStyle}
+          options={DIFFICULTIES.map((d) => ({
+            value: d,
+            label: d === "ALL" ? "Difficulté : toutes" : d,
+          }))}
+          onChange={(next) => {
+            setDifficulty(next as (typeof DIFFICULTIES)[number]);
           }}
-          style={selectStyle}
-        >
-          {DIFFICULTIES.map((d) => (
-            <option key={d} value={d} style={{ background: "#0A0826" }}>
-              {d === "ALL" ? "Difficulté : toutes" : d}
-            </option>
-          ))}
-        </select>
-        <select
+        />
+        <Select
+          block={false}
+          aria-label="Statut"
           value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as (typeof STATUSES)[number]);
+          triggerStyle={filterStyle}
+          options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+          onChange={(next) => {
+            setStatus(next as (typeof STATUSES)[number]);
           }}
-          style={selectStyle}
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s} style={{ background: "#0A0826" }}>
-              {s === "ALL"
-                ? "Statut : tous"
-                : s === "DRAFT"
-                  ? "Brouillon"
-                  : s === "PUBLISHED"
-                    ? "Publié"
-                    : "Archivé"}
-            </option>
-          ))}
-        </select>
+        />
         {filtersActive && (
           <button
             type="button"

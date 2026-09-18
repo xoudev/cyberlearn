@@ -5,6 +5,7 @@
 import React, { useActionState, useState } from "react";
 import { createChallengeAction } from "../../_actions/challenge-admin-actions";
 import type { ChallengeFormState } from "../../_actions/challenge-admin-actions";
+import { Select } from "@cyberlearn/ui";
 
 export interface ChallengeOption {
   id: string;
@@ -39,11 +40,6 @@ const labelStyle: React.CSSProperties = {
   textTransform: "uppercase",
   color: "#6B6890",
   marginBottom: 6,
-};
-
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  cursor: "pointer",
 };
 
 function Field({
@@ -187,36 +183,46 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
           <Field label="Catégorie *" name="category" error={fe.category}>
-            <select id="category" name="category" required style={selectStyle}>
-              <option value="CYBERSEC">CYBERSEC</option>
-              <option value="DEV">DEV</option>
-              <option value="NETWORK">RÉSEAU</option>
-            </select>
+            <Select
+              name="category"
+              required
+              id="category"
+              options={[
+                { value: "CYBERSEC", label: "CYBERSEC" },
+                { value: "DEV", label: "DEV" },
+                { value: "NETWORK", label: "RÉSEAU" },
+              ]}
+            />
           </Field>
           <Field label="Difficulté *" name="difficulty" error={fe.difficulty}>
-            <select id="difficulty" name="difficulty" required style={selectStyle}>
-              <option value="BEGINNER">Facile</option>
-              <option value="INTERMEDIATE">Intermédiaire</option>
-              <option value="ADVANCED">Avancé</option>
-              <option value="EXPERT">Expert</option>
-            </select>
+            <Select
+              name="difficulty"
+              required
+              id="difficulty"
+              options={[
+                { value: "BEGINNER", label: "Facile" },
+                { value: "INTERMEDIATE", label: "Intermédiaire" },
+                { value: "ADVANCED", label: "Avancé" },
+                { value: "EXPERT", label: "Expert" },
+              ]}
+            />
           </Field>
           <Field label="Type *" name="type" error={fe.type}>
-            <select
-              id="type"
+            <Select
               name="type"
               required
-              style={selectStyle}
               value={type}
-              onChange={(e) => {
-                setType(e.target.value as typeof type);
+              onChange={(next) => {
+                setType(next as typeof type);
               }}
-            >
-              <option value="CTF">CTF</option>
-              <option value="SCRIPT">SCRIPT (Python)</option>
-              <option value="PUZZLE">PUZZLE</option>
-              <option value="LAB">LAB</option>
-            </select>
+              id="type"
+              options={[
+                { value: "CTF", label: "CTF" },
+                { value: "SCRIPT", label: "SCRIPT (Python)" },
+                { value: "PUZZLE", label: "PUZZLE" },
+                { value: "LAB", label: "LAB" },
+              ]}
+            />
           </Field>
         </div>
       </section>
@@ -348,14 +354,19 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
         {/* Prerequisite */}
         <div style={{ marginTop: 16 }}>
           <Field label="Prérequis (optionnel)" name="prerequisiteId" error={fe.prerequisiteId}>
-            <select id="prerequisiteId" name="prerequisiteId" style={selectStyle}>
-              <option value="">Aucun prérequis</option>
-              {prerequisites.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.refCode} · {p.title}
-                </option>
-              ))}
-            </select>
+            <Select
+              id="prerequisiteId"
+              name="prerequisiteId"
+              defaultValue=""
+              options={[
+                { value: "", label: "Aucun prérequis" },
+                ...prerequisites.map((p) => ({
+                  value: p.id,
+                  label: p.title,
+                  hint: p.refCode,
+                })),
+              ]}
+            />
           </Field>
         </div>
       </section>

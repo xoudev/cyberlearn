@@ -2281,38 +2281,6 @@ a:hover > .lesson-author-card {
   background: rgba(255, 77, 109, 0.06);
 }
 
-.x-sel {
-  height: 34px;
-  min-width: 170px;
-  background: #05041a;
-  border: 1px solid #1f1b47;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #b8b5d1;
-  padding: 0 34px 0 14px;
-  cursor: pointer;
-  transition: all var(--dur-base);
-  appearance: none;
-  border-radius: 0;
-  background-image: linear-gradient(45deg, transparent 50%, #6b6890 50%),
-    linear-gradient(-45deg, transparent 50%, #6b6890 50%);
-  background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%;
-  background-size: 4px 4px, 4px 4px;
-  background-repeat: no-repeat;
-}
-.x-sel:hover {
-  color: #f5f5fa;
-  border-color: #2a2560;
-}
-.x-sel:focus {
-  outline: none;
-  border-color: var(--danger-red);
-  box-shadow: 0 0 0 1px rgba(255, 77, 109, 0.3);
-}
-
 /* ── Featured challenge ── */
 .feat {
   position: relative;
@@ -3146,7 +3114,6 @@ a:hover > .lesson-author-card {
   .cc,
   .cc__tick,
   .x-pill,
-  .x-sel,
   .cc__btn {
     transition: none;
   }

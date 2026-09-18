@@ -6,6 +6,7 @@ import {
   deleteResourceAction,
   type ResourceState,
 } from "../_actions/resource-actions";
+import { Select } from "@cyberlearn/ui";
 
 /**
  * The material a teacher has prepared for a class, and the form that adds more.
@@ -147,21 +148,16 @@ export function ClassResources({
           <div className="cls-grid2">
             <label className="cls-field">
               <span className="cls-field__label">Corrigé de · optionnel</span>
-              <select
+              <Select
                 name="assignmentId"
+                aria-label="Leçon liée"
                 value={linkedAssignment}
-                onChange={(e) => {
-                  setLinkedAssignment(e.target.value);
-                }}
-                className="cls-input"
-              >
-                <option value="">— aucune leçon —</option>
-                {assignments.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.title}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: "— aucune leçon —" },
+                  ...assignments.map((a) => ({ value: a.id, label: a.title })),
+                ]}
+                onChange={setLinkedAssignment}
+              />
             </label>
 
             <label className="cls-field">
