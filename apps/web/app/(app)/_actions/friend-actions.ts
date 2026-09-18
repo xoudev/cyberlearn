@@ -35,21 +35,35 @@ export interface FriendLists {
 
 const idSchema = z.string().uuid();
 
-/** Who somebody is, for a notification: a name to show and a page to point at. */
-async function subjectOf(userId: string): Promise<{ name: string; href: string | null }> {
+/**
+ * Who somebody is, for a notification: a name to show and a page to point at.
+ *
+ * The page is their profile, because that is where the button is. It is only
+ * offered when the person being told will be let into it: accepting each other
+ * opens a private profile, but somebody who has merely sent a request is still
+ * a stranger to one, and a notification whose link 404s is worse than a
+ * notification with no link.
+ */
+async function subjectOf(
+  userId: string,
+  readerIsFriend: boolean,
+): Promise<{ name: string; href: string | null }> {
   const person = await prisma.user.findUnique({
     where: { id: userId },
-    select: { displayName: true, username: true },
+    select: {
+      displayName: true,
+      username: true,
+      preferences: { select: { publicProfile: true } },
+    },
   });
   if (!person) return { name: "Quelqu'un", href: null };
+
   // displayName is a string that can be empty, so || is the operator that means
   // what is wanted here: fall through an empty name to the handle.
-  return {
-    name: person.displayName || (person.username ?? "Quelqu'un"),
-    // Their profile, because that is where the button is. A notification that
-    // leads nowhere is a notification that has to be acted on somewhere else.
-    href: person.username === null ? null : `/u/${person.username}`,
-  };
+  const name = person.displayName || (person.username ?? "Quelqu'un");
+  if (person.username === null) return { name, href: null };
+  if (!readerIsFriend && person.preferences?.publicProfile === false) return { name, href: null };
+  return { name, href: `/u/${person.username}` };
 }
 
 /** The three lists, for the panel. Read on open rather than on every page load. */
@@ -78,7 +92,9 @@ export async function sendFriendRequestAction(targetId: string): Promise<FriendA
     };
   }
 
-  const asker = await subjectOf(user.id);
+  // Asking turned into agreeing means the two are friends by the time this
+  // notification is read, so the profile it points at will open.
+  const asker = await subjectOf(user.id, result.status === "ACCEPTED");
   if (result.status === "ACCEPTED") {
     // They had already asked, so this was an answer. Both of them get the good
     // news rather than one of them getting a request they already sent.
@@ -112,7 +128,7 @@ export async function acceptFriendRequestAction(otherId: string): Promise<Friend
   // another tab. Either way the panel is about to show the truth.
   if (!accepted) return { ok: false, error: "Cette demande n'est plus en attente." };
 
-  const accepter = await subjectOf(user.id);
+  const accepter = await subjectOf(user.id, true);
   await notificationRepository.create({
     userId: otherId,
     type: "FRIEND_ACCEPTED",

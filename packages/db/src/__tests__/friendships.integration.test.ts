@@ -3,8 +3,12 @@
  *
  * The pair has no natural order and a row does, which is the whole difficulty.
  * The ids are stored smallest first and the unique constraint sits on that
- * ordered pair, so these tests are mostly about one question: does asking in
+ * ordered pair, so most of these tests are about one question: does asking in
  * either direction, at any moment, still produce exactly one friendship?
+ *
+ * The last block asks the other one. A friendship is not only a row - it opens
+ * a private profile - so it checks what an unanswered request opens, which is
+ * nothing.
  *
  * Skips gracefully when DATABASE_URL is absent, like the other integration
  * specs. Rows are namespaced by a run suffix and removed in afterAll.
@@ -14,12 +18,17 @@ import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "../prisma.js";
 import { friendshipRepository } from "../repositories/friendship.repository.js";
+import { userRepository } from "../repositories/user.repository.js";
 
 const suffix = randomUUID().slice(0, 8);
 const alice = randomUUID();
 const bob = randomUUID();
 const carol = randomUUID();
 const USER_IDS = [alice, bob, carol];
+
+/** Carol keeps her profile closed; Alice leaves hers open. */
+const carolHandle = `fc${suffix}`;
+const aliceHandle = `fa${suffix}`;
 
 let configured = false;
 
@@ -33,6 +42,7 @@ describe("friendships (integration, real DB)", () => {
         { id: carol, email: `fc-${suffix}@t.internal`, username: `fc${suffix}`, displayName: "C" },
       ],
     });
+    await prisma.userPreferences.create({ data: { userId: carol, publicProfile: false } });
     configured = true;
   });
 
@@ -45,6 +55,7 @@ describe("friendships (integration, real DB)", () => {
 
   afterAll(async () => {
     if (!configured) return;
+    await prisma.userPreferences.deleteMany({ where: { userId: { in: USER_IDS } } });
     await prisma.user.deleteMany({ where: { id: { in: USER_IDS } } });
   });
 
@@ -229,5 +240,47 @@ describe("friendships (integration, real DB)", () => {
 
     // A friendship with a deleted account is a row pointing at nobody.
     expect(await friendshipRepository.listOutgoing(alice)).toHaveLength(0);
+  });
+
+  // ─── What a friendship opens ─────────────────────────────────────────────
+  //
+  // Carol's profile is private. "Private" here means what it means everywhere
+  // else - the people she accepted, and nobody else - so these tests are as
+  // much about what stays shut as about what opens.
+
+  it("keeps a private profile shut to a stranger, signed in or not", async () => {
+    if (!configured) return;
+    expect(await userRepository.findPublicProfile(carolHandle, bob)).toBeNull();
+    expect(await userRepository.findPublicProfile(carolHandle)).toBeNull();
+  });
+
+  it("keeps a private profile shut to somebody who has only asked", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(bob, carol);
+    expect(await userRepository.findPublicProfile(carolHandle, bob)).toBeNull();
+
+    // Including when it is Carol who asked and Bob who has not answered: the
+    // request is hers, the profile is hers, and neither makes him a friend.
+    await friendshipRepository.remove(bob, carol);
+    await friendshipRepository.request(carol, bob);
+    expect(await userRepository.findPublicProfile(carolHandle, bob)).toBeNull();
+  });
+
+  it("opens a private profile to an accepted friend", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(bob, carol);
+    await friendshipRepository.accept(carol, bob);
+
+    expect(await userRepository.findPublicProfile(carolHandle, bob)).not.toBeNull();
+    // And shuts again when the friendship ends.
+    await friendshipRepository.remove(bob, carol);
+    expect(await userRepository.findPublicProfile(carolHandle, bob)).toBeNull();
+  });
+
+  it("opens a private profile to its owner, and leaves a public one open", async () => {
+    if (!configured) return;
+    expect(await userRepository.findPublicProfile(carolHandle, carol)).not.toBeNull();
+    expect(await userRepository.findPublicProfile(aliceHandle, bob)).not.toBeNull();
+    expect(await userRepository.findPublicProfile(aliceHandle)).not.toBeNull();
   });
 });

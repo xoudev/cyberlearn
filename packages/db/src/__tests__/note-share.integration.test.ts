@@ -2,11 +2,12 @@
  * Handing a note over - who may receive one, and what happens when the screen
  * says no - against the real DB.
  *
- * The two things this suite exists to hold down are the two that would be
- * quietly wrong otherwise: that the audience is the class and not the platform,
- * and that a refused share reaches the teacher. Both are invisible in an
- * interface that only ever offers classmates, which is exactly why they are
- * checked here against the server rather than there.
+ * The things this suite exists to hold down are the ones that would be quietly
+ * wrong otherwise: that the audience is the author's classes and friends and
+ * not the platform, that an unanswered friend request grants nothing, and that
+ * a refused share reaches the teacher. All of them are invisible in an
+ * interface that only ever offers the right people, which is exactly why they
+ * are checked here against the server rather than there.
  *
  * Skips gracefully when DATABASE_URL is absent, like the other integration
  * specs. Rows are namespaced by a run suffix and removed in afterAll.
@@ -15,6 +16,7 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "../prisma.js";
+import { friendshipRepository } from "../repositories/friendship.repository.js";
 import { noteShareRepository } from "../repositories/note-share.repository.js";
 
 const suffix = randomUUID().slice(0, 8);
@@ -139,6 +141,11 @@ describe("note sharing (integration, real DB)", () => {
 
   afterEach(async () => {
     if (!configured) return;
+    // Several tests assert an exact audience, so a friendship left behind by
+    // one of them would silently rewrite the next one's expectations.
+    await prisma.friendship.deleteMany({
+      where: { OR: [{ userAId: { in: everyone } }, { userBId: { in: everyone } }] },
+    });
     await prisma.noteShare.deleteMany({ where: { noteId } });
     await prisma.notification.deleteMany({ where: { userId: { in: everyone } } });
     await prisma.moderationEvent.deleteMany({ where: { userId: { in: everyone } } });
@@ -147,6 +154,9 @@ describe("note sharing (integration, real DB)", () => {
 
   afterAll(async () => {
     if (!configured) return;
+    await prisma.friendship.deleteMany({
+      where: { OR: [{ userAId: { in: everyone } }, { userBId: { in: everyone } }] },
+    });
     await prisma.noteShare.deleteMany({ where: { noteId } });
     await prisma.note.deleteMany({ where: { userId: { in: everyone } } });
     await prisma.lesson.deleteMany({ where: { id: lessonId } });
@@ -190,6 +200,84 @@ describe("note sharing (integration, real DB)", () => {
     const ids = (await noteShareRepository.audienceFor(T1)).map((p) => p.id).sort();
     // Class A only: T1 does not teach B, so S3 is not theirs to write to.
     expect(ids).toEqual([T2, S1, S2].sort());
+  });
+
+  it("groups people under the id of their class, not its name", async () => {
+    if (!configured) return;
+    const audience = await noteShareRepository.audienceFor(S1);
+    // S2 is only in A and S3 only in B, so their headings must differ - and be
+    // the classes' ids, which is what keeps two classes of the same name apart.
+    expect(audience.find((p) => p.id === S2)?.groupId).toBe(classA);
+    expect(audience.find((p) => p.id === S3)?.groupId).toBe(classB);
+    expect(audience.find((p) => p.id === S2)?.groupLabel).toBe("SIO1-A");
+  });
+
+  // ─── Friends, who are not classmates ─────────────────────────────────────
+
+  it("offers a friend who shares no live class with the author", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(S1, OUT);
+    await friendshipRepository.accept(OUT, S1);
+
+    const audience = await noteShareRepository.audienceFor(S1);
+    const friend = audience.find((p) => p.id === OUT);
+    expect(friend).toMatchObject({ kind: "FRIEND", groupId: "friends", groupLabel: "Amis" });
+
+    // And both ways round: OUT's only reachable person is now S1.
+    expect((await noteShareRepository.audienceFor(OUT)).map((p) => p.id)).toEqual([S1]);
+  });
+
+  it("offers nothing to somebody who has only been asked", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(S1, OUT);
+
+    // Asking is not being accepted. A pending row that granted anything would
+    // mean anyone could reach anyone by pressing a button.
+    expect((await noteShareRepository.audienceFor(S1)).map((p) => p.id)).not.toContain(OUT);
+    expect(await noteShareRepository.audienceFor(OUT)).toEqual([]);
+  });
+
+  it("lists a classmate who is also a friend once, under their class", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(S1, S2);
+    await friendshipRepository.accept(S2, S1);
+
+    const audience = await noteShareRepository.audienceFor(S1);
+    expect(audience.filter((p) => p.id === S2)).toHaveLength(1);
+    expect(audience.find((p) => p.id === S2)).toMatchObject({ kind: "PEER", groupId: classA });
+  });
+
+  it("stops offering somebody the moment the friendship ends", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(S1, OUT);
+    await friendshipRepository.accept(OUT, S1);
+    await friendshipRepository.remove(OUT, S1);
+
+    expect(await noteShareRepository.audienceFor(S1)).not.toContainEqual(
+      expect.objectContaining({ id: OUT }),
+    );
+  });
+
+  it("hands the note to a friend and tells them", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(S1, OUT);
+    await friendshipRepository.accept(OUT, S1);
+
+    const res = await noteShareRepository.share({ authorId: S1, noteId, recipientIds: [OUT] });
+
+    expect(res).toMatchObject({ ok: true, shared: 1, refused: [] });
+    expect(await prisma.noteShare.count({ where: { noteId, sharedWithId: OUT } })).toBe(1);
+    expect(await prisma.notification.count({ where: { userId: OUT } })).toBe(1);
+  });
+
+  it("refuses a note aimed at somebody who has only sent a request", async () => {
+    if (!configured) return;
+    await friendshipRepository.request(OUT, S1);
+
+    const res = await noteShareRepository.share({ authorId: S1, noteId, recipientIds: [OUT] });
+
+    expect(res).toEqual({ ok: false, reason: "NO_RECIPIENT" });
+    expect(await prisma.noteShare.count({ where: { noteId } })).toBe(0);
   });
 
   // ─── The share itself ────────────────────────────────────────────────────

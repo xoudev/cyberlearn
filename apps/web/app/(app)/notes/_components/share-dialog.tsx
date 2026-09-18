@@ -12,9 +12,10 @@ import {
  * Who gets the note.
  *
  * Deliberately a list of people rather than a link or an address field. The
- * note goes to a class, so the class is what is shown - grouped the way the
- * student thinks of it, with the teachers at the top of each group. There is
- * nothing to type, which is also why there is nothing to mistype.
+ * note goes to people the author is already tied to, so those ties are what is
+ * shown - a group per class with its teachers at the top, then one for the
+ * friends who are not already in one of them. There is nothing to type, which
+ * is also why there is nothing to mistype.
  */
 export function ShareDialog({
   noteId,
@@ -26,7 +27,7 @@ export function ShareDialog({
   onClose: () => void;
 }): React.JSX.Element {
   const [entries, setEntries] = useState<ShareAudienceEntry[] | null>(null);
-  const [noClass, setNoClass] = useState(false);
+  const [noAudience, setNoAudience] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export function ShareDialog({
     void loadShareAudienceAction(noteId).then((state) => {
       if (!live) return;
       setEntries(state.entries);
-      setNoClass(state.noClass);
+      setNoAudience(state.noAudience);
     });
     return () => {
       live = false;
@@ -54,14 +55,18 @@ export function ShareDialog({
     };
   }, [onClose]);
 
-  // Grouped by class, teachers first inside each group - the order the
-  // repository already returns them in, kept rather than re-sorted.
+  // Grouped by class then friends, teachers first inside each class - the
+  // order the repository already returns them in, kept rather than re-sorted.
+  //
+  // The key is the group's id and the heading is its label, because they are
+  // not the same thing: two classes can share a name, and grouping on the name
+  // would file both sets of people under one heading.
   const groups = useMemo(() => {
-    const map = new Map<string, ShareAudienceEntry[]>();
+    const map = new Map<string, { label: string; people: ShareAudienceEntry[] }>();
     for (const e of entries ?? []) {
-      const list = map.get(e.className);
-      if (list) list.push(e);
-      else map.set(e.className, [e]);
+      const group = map.get(e.groupId);
+      if (group) group.people.push(e);
+      else map.set(e.groupId, { label: e.groupLabel, people: [e] });
     }
     return [...map];
   }, [entries]);
@@ -189,15 +194,15 @@ export function ShareDialog({
         <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px" }}>
           {entries === null ? (
             <p style={mutedLine}>Chargement…</p>
-          ) : noClass ? (
+          ) : noAudience ? (
             <p style={mutedLine}>
               {
-                "Le partage se fait à l'intérieur d'une classe, et tu n'en as pas encore. Ton établissement peut t'y ajouter."
+                "Une note se partage avec les membres de ta classe et avec tes amis, et tu n'as encore ni l'un ni l'autre. Ton établissement peut t'ajouter à une classe, et tu peux ajouter quelqu'un en ami depuis son profil."
               }
             </p>
           ) : (
-            groups.map(([className, people]) => (
-              <div key={className} style={{ marginBottom: 18 }}>
+            groups.map(([groupId, group]) => (
+              <div key={groupId} style={{ marginBottom: 18 }}>
                 <div
                   style={{
                     fontFamily: "var(--font-mono)",
@@ -209,10 +214,10 @@ export function ShareDialog({
                     marginBottom: 8,
                   }}
                 >
-                  {className}
+                  {group.label}
                 </div>
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
-                  {people.map((p) => (
+                  {group.people.map((p) => (
                     <li key={p.id}>
                       <div
                         style={{
