@@ -51,7 +51,20 @@ export const qaRepository = {
     });
   },
 
-  async createQuestion(data: { lessonId: string; userId: string; title: string; content: string }) {
+  /**
+   * Writes a question, possibly out of sight.
+   *
+   * isHidden is the screen's answer, passed through rather than decided here: a
+   * flagged question is written so a reviewer can judge it and so its author
+   * keeps what they wrote, and hidden so nobody else reads it in the meantime.
+   */
+  async createQuestion(data: {
+    lessonId: string;
+    userId: string;
+    title: string;
+    content: string;
+    isHidden?: boolean;
+  }) {
     return prisma.lessonQuestion.create({
       data,
       select: {
@@ -67,7 +80,12 @@ export const qaRepository = {
     });
   },
 
-  async createAnswer(data: { questionId: string; userId: string; content: string }) {
+  async createAnswer(data: {
+    questionId: string;
+    userId: string;
+    content: string;
+    isHidden?: boolean;
+  }) {
     return prisma.lessonAnswer.create({
       data,
       select: {

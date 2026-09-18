@@ -6,13 +6,16 @@ import { moderationRepository, prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 
 /**
- * A person disagreeing, or not, with the machine.
+ * A person deciding what happens to content the screen took down.
  *
- * Neither outcome republishes or un-publishes anything on its own: a BLOCK
- * already refused the content and there is no copy of it to restore, and a
- * REVIEW already let it through. What this is for is knowing whether the filter
- * is any good - a column of OVERTURNED against one rule is the signal that the
- * rule is wrong, and it is the only way this ever gets tuned.
+ * Both outcomes now reach the content, which is the point of reviewing it:
+ * OVERTURNED - the screen was wrong - lifts the block and the message goes back
+ * where its author put it; UPHELD - the screen was right - destroys it, rather
+ * than leaving it hidden forever in a queue that only grows.
+ *
+ * The audit row records which it was and whether the content was actually
+ * touched, because "upheld" against a row whose content had already been
+ * deleted by its author is a different event from one that destroyed something.
  */
 export async function resolveModerationAction(
   eventId: string,
@@ -21,14 +24,18 @@ export async function resolveModerationAction(
   const admin = await requireAdminAction();
   if (!z.string().uuid().safeParse(eventId).success) return { ok: false };
 
-  await moderationRepository.resolve(eventId, outcome, admin.id);
+  const applied = await moderationRepository.applyOutcome(eventId, outcome, admin.id);
+  // Somebody else got there first. Nothing was changed and nothing is logged:
+  // the decision that counts is already recorded under their name.
+  if (!applied.claimed) return { ok: false };
+
   await prisma.auditLog.create({
     data: {
       actorId: admin.id,
       action: outcome === "UPHELD" ? "moderation.upheld" : "moderation.overturned",
       targetType: "ModerationEvent",
       targetId: eventId,
-      metadata: {},
+      metadata: { contentTouched: applied.contentTouched },
     },
   });
 

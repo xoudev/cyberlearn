@@ -6,6 +6,7 @@ import React, { useState, useTransition } from "react";
 // the notes rather than copied, since both render the same kind of text.
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { editPostAction, hidePostAction } from "../_actions/forum-actions";
+import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
 import { Monogram, authorName, formatDate } from "./forum-bits";
 import type { ForumPostView } from "@cyberlearn/db";
 
@@ -32,14 +33,19 @@ export function PostCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.content);
   const [error, setError] = useState<string | null>(null);
+  const [held, setHeld] = useState(false);
   const [pending, start] = useTransition();
 
   const save = (): void => {
     setError(null);
+    setHeld(false);
     start(() => {
       void editPostAction({ postId: post.id, content: draft, path }).then((res) => {
         if (res.ok) {
           setEditing(false);
+          // The edit was saved and the post went down with it, so say so here:
+          // the card is about to disappear from everyone else's thread.
+          setHeld(res.heldForReview === true);
           return;
         }
         setError(res.error ?? "Modification impossible.");
@@ -132,6 +138,12 @@ export function PostCard({
         {error !== null && (
           <p className="fo-error" role="alert" style={{ marginTop: 10 }}>
             {error}
+          </p>
+        )}
+
+        {held && (
+          <p className="fo-held" role="status" style={{ marginTop: 10 }}>
+            {HELD_FOR_REVIEW}
           </p>
         )}
       </div>

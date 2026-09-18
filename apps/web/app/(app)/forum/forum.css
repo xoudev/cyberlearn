@@ -397,6 +397,18 @@
   background: rgba(255, 71, 87, 0.06);
 }
 
+/* Somebody whose message the screen took down. Amber, not red: nothing has
+   gone wrong and nothing was refused - it is saved, and waiting for a person. */
+.fo-held {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  font: 11px var(--font-mono);
+  line-height: 1.5;
+  color: #ffb547;
+  border: 1px solid rgba(255, 181, 71, 0.35);
+  background: rgba(255, 181, 71, 0.07);
+}
+
 .fo-empty {
   padding: 40px 24px;
   text-align: center;

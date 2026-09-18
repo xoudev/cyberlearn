@@ -3,21 +3,25 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { replyAction } from "../_actions/forum-actions";
+import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
 
 /** The box at the bottom of a thread. Absent when the thread is closed. */
 export function ReplyBox({ topicId }: { topicId: string }): React.JSX.Element {
   const router = useRouter();
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [held, setHeld] = useState(false);
   const [pending, start] = useTransition();
 
   const submit = (e: React.SyntheticEvent): void => {
     e.preventDefault();
     setError(null);
+    setHeld(false);
     start(() => {
       void replyAction({ topicId, content }).then((res) => {
         if (res.ok) {
           setContent("");
+          setHeld(res.heldForReview === true);
           router.refresh();
           return;
         }
@@ -49,6 +53,12 @@ export function ReplyBox({ topicId }: { topicId: string }): React.JSX.Element {
       {error !== null && (
         <p className="fo-error" role="alert">
           {error}
+        </p>
+      )}
+
+      {held && (
+        <p className="fo-held" role="status">
+          {HELD_FOR_REVIEW}
         </p>
       )}
 

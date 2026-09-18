@@ -1,7 +1,7 @@
 import type { FindingRule } from "@cyberlearn/lib";
 import type { Category } from "@prisma/client";
 import { prisma } from "../prisma.js";
-import { moderationRepository } from "./moderation.repository.js";
+import { UNACTIONED_SURFACE, moderationRepository } from "./moderation.repository.js";
 
 /**
  * Handing a note to someone, and what stands between the two.
@@ -226,11 +226,19 @@ export const noteShareRepository = {
     // Links are not ordinary in a note handed to a classmate, so they count.
     const screen = await moderationRepository.screen({
       text: note.content,
-      surface: "note.share",
+      surface: UNACTIONED_SURFACE.noteShare,
       userId: input.authorId,
     });
 
-    if (!screen.allowed) {
+    // Refused rather than hidden, and only on an unambiguous BLOCK.
+    //
+    // Sharing publishes no row of its own: the note stays where it was,
+    // private and the author's. So there is nothing to take out of sight and
+    // nothing for a reviewer to give back - which is also why this surface
+    // keeps the old rule instead of the new one. Everywhere else a REVIEW is
+    // held out of sight and a person decides; here, refusing one would cost
+    // somebody a share on a maybe, with no way for anybody to undo it.
+    if (screen.verdict === "BLOCK") {
       const teachersNotified = await alertTeachersOf({
         studentId: input.authorId,
         studentName: personName(note.user),
