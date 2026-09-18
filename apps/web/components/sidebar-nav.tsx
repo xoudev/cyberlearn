@@ -14,6 +14,8 @@ interface SidebarNavProps {
   /** False once someone has switched spaced repetition off in their settings. */
   showRevisions?: boolean;
   inProgressCount?: number;
+  /** Friend requests waiting on an answer. A request nobody sees is a request refused by silence. */
+  friendRequestCount?: number;
   level?: number;
   xpCurrent?: number;
   xpNeeded?: number;
@@ -235,6 +237,26 @@ function IconNote() {
   );
 }
 
+function IconFriends() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={15}
+      height={15}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="6" cy="5.2" r="2.4" />
+      <path d="M1.6 13.2c0-2.4 2-3.7 4.4-3.7s4.4 1.3 4.4 3.7" />
+      <circle cx="11.6" cy="6" r="1.9" />
+      <path d="M10.4 9.7c2.4 0 4 1.2 4 3.5" />
+    </svg>
+  );
+}
+
 function IconForum() {
   return (
     <svg
@@ -305,6 +327,7 @@ const LEARN_ITEMS = [
 ] as const;
 
 const ACTIVITY_ITEMS = [
+  { href: "/friends", label: "Amis", Icon: IconFriends, count: null, tag: undefined },
   { href: "/forum", label: "Forum", Icon: IconForum, count: null, tag: undefined },
   { href: "/leaderboard", label: "Classement", Icon: IconTrophy, count: null, tag: undefined },
   // WIP tag: the challenges catalog is being rebuilt (content reboot). Drop
@@ -355,6 +378,7 @@ export function SidebarNav({
   hasClasses = false,
   showRevisions = true,
   inProgressCount = 0,
+  friendRequestCount = 0,
   level = 1,
   xpCurrent = 0,
   xpNeeded = 100,
@@ -581,7 +605,9 @@ export function SidebarNav({
             href={href}
             label={label}
             Icon={Icon}
-            count={count}
+            // Waiting requests are the one count in this list that is somebody
+            // else waiting on an answer, so it is the one worth a number.
+            count={href === "/friends" && friendRequestCount > 0 ? friendRequestCount : count}
             tag={tag}
             dot={href === "/changelog" && hasUnseenChangelog}
           />

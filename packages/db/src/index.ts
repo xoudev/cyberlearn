@@ -17,6 +17,12 @@ export {
   lessonsVisibleTo,
 } from "./repositories/lesson.repository.js";
 export { banRepository, activeBanFilter, type BanView } from "./repositories/ban.repository.js";
+export {
+  friendshipRepository,
+  type FriendEdge,
+  type FriendPerson,
+  type RequestResult,
+} from "./repositories/friendship.repository.js";
 export { statsRepository } from "./repositories/stats.repository.js";
 export type {
   LandingStats,

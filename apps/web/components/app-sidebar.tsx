@@ -2,7 +2,7 @@ import React from "react";
 import { SidebarWrapper } from "@/components/sidebar-wrapper";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { computeLevel } from "@cyberlearn/lib";
-import { LIVE_CLASS_FILTER, prisma } from "@cyberlearn/db";
+import { LIVE_CLASS_FILTER, friendshipRepository, prisma } from "@cyberlearn/db";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 
@@ -13,6 +13,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   let xpPercent = 0;
   let inProgressCount = 0;
   let hasClasses = false;
+  let friendRequestCount = 0;
   let showRevisions = true;
 
   try {
@@ -52,6 +53,12 @@ export async function AppSidebar(): Promise<React.ReactElement> {
         })) > 0;
     }
 
+    // A request nobody sees is a request refused by silence, so the number
+    // rides on the menu entry rather than waiting to be discovered.
+    if (authUser) {
+      friendRequestCount = await friendshipRepository.countIncoming(authUser.id);
+    }
+
     const computed = computeLevel(dbUser?.xpTotal ?? 0);
     level = computed.level;
     xpCurrent = computed.current;
@@ -64,6 +71,7 @@ export async function AppSidebar(): Promise<React.ReactElement> {
   return (
     <SidebarWrapper>
       <SidebarNav
+        friendRequestCount={friendRequestCount}
         hasClasses={hasClasses}
         showRevisions={showRevisions}
         inProgressCount={inProgressCount}

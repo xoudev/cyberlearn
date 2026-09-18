@@ -67,7 +67,7 @@ describe("OAuth Site URL fallback", () => {
 });
 
 describe("protected route classification", () => {
-  it.each(["/dashboard", "/lessons/python", "/paths/linux", "/settings/account"])(
+  it.each(["/dashboard", "/lessons/python", "/paths/linux", "/settings/account", "/friends"])(
     "protects known application route %s",
     (path) => {
       expect(isProtectedRoute(path)).toBe(true);

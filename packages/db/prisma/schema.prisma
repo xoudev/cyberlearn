@@ -87,6 +87,9 @@ model User {
   ticketMessages    TicketMessage[]         @relation("TicketMessageAuthor")
   forumTopics       ForumTopic[]            @relation("ForumTopicAuthor")
   forumPosts        ForumPost[]             @relation("ForumPostAuthor")
+  friendshipsA      Friendship[]            @relation("FriendshipUserA")
+  friendshipsB      Friendship[]            @relation("FriendshipUserB")
+  friendRequests    Friendship[]            @relation("FriendshipRequester")
   bans              UserBan[]               @relation("BanSubject")
   bansIssued        UserBan[]               @relation("BanIssuer")
   bansLifted        UserBan[]               @relation("BanLifter")
@@ -1228,6 +1231,8 @@ enum NotificationType {
   NOTE_SHARED
   MODERATION_ALERT
   FORUM_REPLY
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
 }
 
 /// A decision the automatic screen made, kept so a person can disagree with it.
@@ -1266,6 +1271,58 @@ model ModerationEvent {
   @@index([outcome, createdAt])
   @@index([userId])
   @@map("moderation_events")
+}
+
+/// Where a friendship stands.
+///
+/// Two states, not three. A declined request is deleted rather than kept as a
+/// tombstone: the alternative is a row that silently blocks the pair from ever
+/// asking again, and somebody who said no in March being unable to say yes in
+/// June is a bug nobody would ever find.
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+/// Two people, and whether they have agreed about it.
+///
+/// The pair is the identity, so the pair is what is unique - and a pair has no
+/// natural order. Storing it as (requester, addressee) would make A→B and B→A
+/// two different rows: two people looking at each other's profile at the same
+/// moment, which is exactly when this happens, would end up with two
+/// friendships and no way to tell which one accepting acts on.
+///
+/// So the two ids are stored in order, smallest first, and who asked is a
+/// separate column. The unique constraint on the ordered pair is then the whole
+/// rule, enforced by the database rather than by remembering to check both
+/// directions before every insert.
+model Friendship {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// The lower of the two ids, by plain string comparison. Not "the requester".
+  userAId String @db.Uuid
+  /// The higher of the two.
+  userBId String @db.Uuid
+  /// Who asked. Always one of userAId and userBId.
+  requestedById String @db.Uuid
+
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  /// When it was accepted. Null while it is still a request.
+  respondedAt DateTime?
+
+  userA       User @relation("FriendshipUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User @relation("FriendshipUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  requestedBy User @relation("FriendshipRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  /// One friendship per pair, in either direction.
+  @@unique([userAId, userBId])
+  /// "Who are my friends" and "who is waiting on me" both read one side at a
+  /// time, so each side gets its own index.
+  @@index([userAId, status])
+  @@index([userBId, status])
+  @@index([requestedById])
+  @@map("friendships")
 }
 
 /// Somebody kept off the platform, and why.

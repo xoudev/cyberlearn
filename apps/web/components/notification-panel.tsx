@@ -27,7 +27,45 @@ const TYPE_ICON: Record<NotificationType, string> = {
   NOTE_SHARED: "📝",
   MODERATION_ALERT: "🛡",
   FORUM_REPLY: "💬",
+  // Drawn rather than typed - see FriendGlyph below.
+  FRIEND_REQUEST: "",
+  FRIEND_ACCEPTED: "",
 };
+
+/** The two types that get a drawn mark instead of a character. */
+const FRIEND_TYPES = new Set<NotificationType>(["FRIEND_REQUEST", "FRIEND_ACCEPTED"]);
+
+/**
+ * The friends mark.
+ *
+ * An emoji would have done, and the rest of this list uses them - but the two
+ * friend types are the ones that arrive in a burst (a request, then the answer,
+ * then the next person), and a drawn mark in the accent colour is what lets
+ * somebody scanning the panel see at a glance which lines are about people.
+ *
+ * Accepted gets a filled second head, pending an outlined one: the same mark
+ * saying which of the two it is, without a second glyph to learn.
+ */
+function FriendGlyph({ accepted }: { accepted: boolean }): React.JSX.Element {
+  return (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="var(--cosmetic-accent)"
+      strokeWidth={1.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="7.5" cy="6.5" r="3" />
+      <path d="M2 16.5c0-3 2.5-4.6 5.5-4.6s5.5 1.6 5.5 4.6" />
+      <circle cx="14.5" cy="7.5" r="2.4" fill={accepted ? "var(--cosmetic-accent)" : "none"} />
+      <path d="M13 12.2c3 0 5 1.5 5 4.3" />
+    </svg>
+  );
+}
 
 // BADGE_EARNED notifications carry the badge rarity in their metadata JSON.
 function badgeRarityFromMeta(item: NotificationItem): BadgeRarity {
@@ -395,6 +433,23 @@ function NotificationRow({
       {/* Icon */}
       {item.type === "BADGE_EARNED" ? (
         <BadgeMedallion rarity={badgeRarityFromMeta(item)} size="xs" style={{ flexShrink: 0 }} />
+      ) : FRIEND_TYPES.has(item.type) ? (
+        <span
+          style={{
+            width: 32,
+            height: 32,
+            background: isUnread
+              ? "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)"
+              : "rgba(42,37,96,0.3)",
+            border: `1px solid ${isUnread ? "color-mix(in srgb, var(--cosmetic-accent) 26%, transparent)" : "#1F1B47"}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <FriendGlyph accepted={item.type === "FRIEND_ACCEPTED"} />
+        </span>
       ) : (
         <span
           style={{
