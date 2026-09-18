@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { userRepository } from "@cyberlearn/db";
-import { computeLevel } from "@cyberlearn/lib";
+import { friendshipRepository, userRepository } from "@cyberlearn/db";
+import { computeLevel, friendshipView } from "@cyberlearn/lib";
 import { BadgeMedallion, toBadgeRarity } from "@cyberlearn/ui";
 import type { Category } from "@cyberlearn/db";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { getRequestUser } from "@/lib/auth";
+import { AddFriendButton } from "@/components/add-friend-button";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -125,6 +127,16 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
 
   const user = await userRepository.findPublicProfile(username);
   if (!user) notFound();
+
+  // Signed out is an ordinary way to read a public profile, so the viewer is
+  // optional here - getRequestUser rather than requireRequestUser - and the
+  // friend button simply does not appear.
+  const viewer = await getRequestUser();
+  const viewerId = viewer?.id ?? null;
+  const friendState =
+    viewerId === null || viewerId === user.id
+      ? "none"
+      : friendshipView(await friendshipRepository.between(viewerId, user.id), viewerId);
 
   // Resolve "__upload:" markers to short-lived signed URLs before rendering;
   // built-in paths, "__glyph:" markers and null pass through unchanged.
@@ -338,6 +350,18 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                 >
                   {user.bio}
                 </p>
+              )}
+
+              {/* The one thing a visitor can do on somebody else's page.
+                  Absent when signed out, and absent on your own profile - a
+                  button that cannot work is worse than no button. */}
+              {viewerId !== null && viewerId !== user.id && (
+                <div
+                  className="pub-friend-action"
+                  style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16 }}
+                >
+                  <AddFriendButton targetId={user.id} initialState={friendState} />
+                </div>
               )}
             </div>
 
