@@ -1,0 +1,82 @@
+import { describe, expect, it } from "vitest";
+import { FLAG_BUDGET, moderationNotice, surfaceNoun } from "./notice.js";
+
+describe("surfaceNoun", () => {
+  it("calls each surface what it is", () => {
+    // "Ton message a été retiré" is wrong about a question, and being told the
+    // wrong thing about your own writing is how a notice stops being read.
+    expect(surfaceNoun("lesson.question")).toBe("ta question");
+    expect(surfaceNoun("lesson.answer")).toBe("ta réponse");
+    expect(surfaceNoun("forum.topic")).toBe("ton sujet");
+    expect(surfaceNoun("forum.post")).toBe("ton message");
+  });
+
+  it("falls back to something true rather than to the key", () => {
+    // Old rows carry surfaces this was never taught about. "ton message" is
+    // vague; "note.share" in the middle of a sentence is broken.
+    expect(surfaceNoun("note.share")).toBe("ton message");
+    expect(surfaceNoun("")).toBe("ton message");
+  });
+});
+
+describe("moderationNotice", () => {
+  it("says the held message exists and that somebody will look", () => {
+    const notice = moderationNotice({ stage: "held", surface: "forum.topic" });
+
+    expect(notice.title).toBe("Ton sujet est en attente de validation");
+    expect(notice.body).toContain("Personne d'autre ne la voit");
+    expect(notice.body).toContain("un modérateur va la relire");
+    // Not a verdict: nothing here says the message broke a rule.
+    expect(notice.body).not.toContain("enfreint");
+  });
+
+  it("calls a false alarm a false alarm", () => {
+    const notice = moderationNotice({ stage: "restored", surface: "lesson.answer" });
+
+    expect(notice.title).toBe("Ta réponse est de nouveau visible");
+    expect(notice.body).toContain("fausse alerte");
+  });
+
+  it("says plainly that the message is gone", () => {
+    const notice = moderationNotice({ stage: "removed", surface: "lesson.question" });
+
+    expect(notice.title).toBe("Ta question a été supprimée");
+    expect(notice.body).toContain("supprimée");
+    // No sanction mentioned when none was applied - inventing one would be a
+    // second punishment nobody decided on.
+    expect(notice.body).not.toContain("sanction");
+  });
+
+  it("names the sanction when there is one", () => {
+    const notice = moderationNotice({
+      stage: "removed",
+      surface: "forum.post",
+      sanctionLabel: "bannissement de 7 jours",
+    });
+
+    expect(notice.body).toContain("une sanction a été appliquée : bannissement de 7 jours");
+  });
+
+  it("treats an empty sanction as no sanction", () => {
+    for (const sanctionLabel of [null, undefined, ""]) {
+      const notice = moderationNotice({ stage: "removed", surface: "forum.post", sanctionLabel });
+      expect(notice.body).not.toContain("sanction");
+    }
+  });
+
+  it("never names the rule that fired, at any stage", () => {
+    // Naming it turns the filter into a puzzle people retry until they beat.
+    for (const stage of ["held", "restored", "removed"] as const) {
+      const notice = moderationNotice({ stage, surface: "forum.post" });
+      expect(`${notice.title} ${notice.body}`.toLowerCase()).not.toMatch(
+        /règle |mot-clé|lexique|score/u,
+      );
+    }
+  });
+
+  it("leaves room to rephrase before it stops anybody", () => {
+    // Somebody fixing an awkward sentence three times is not the case the
+    // budget exists for.
+    expect(FLAG_BUDGET).toBeGreaterThanOrEqual(3);
+  });
+});

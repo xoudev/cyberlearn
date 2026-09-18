@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRequestUser } from "@/lib/auth";
 import { MODERATION_SURFACE, moderationRepository, qaRepository } from "@cyberlearn/db";
+import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
+import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
@@ -57,6 +59,11 @@ export async function postQuestionAction(
     userId: user.id,
   });
 
+  // Over budget: nothing is written at all, hidden or otherwise. The screen
+  // already takes each flagged message out of sight, so this is not about the
+  // content - it is about one account filling the queue.
+  if (screen.throttled) return { success: false, error: FLAG_BUDGET_MESSAGE };
+
   // Written either way, hidden when the screen flagged it. Turning it away
   // instead used to destroy the message on the spot, so a false positive cost
   // the person what they had written and left a reviewer with an excerpt and
@@ -72,6 +79,17 @@ export async function postQuestionAction(
   // be on the event before anybody can act on it.
   if (screen.eventId !== null) {
     await moderationRepository.attachContent(screen.eventId, question.id);
+  }
+  // Said on the page and said again in their inbox. Somebody who posted and
+  // closed the tab is exactly the person who will otherwise come back
+  // tomorrow, find nothing where their question was, and post it again.
+  if (screen.flagged) {
+    await announceModeration({
+      userId: user.id,
+      surface: MODERATION_SURFACE.lessonQuestion,
+      stage: "held",
+      excerpt: excerpt(`${title}\n\n${content}`, 300),
+    });
   }
   revalidatePath(`/lessons/${lessonSlug}`);
 
@@ -102,6 +120,8 @@ export async function postAnswerAction(
     userId: user.id,
   });
 
+  if (screen.throttled) return { success: false, error: FLAG_BUDGET_MESSAGE };
+
   const answer = await qaRepository.createAnswer({
     questionId,
     userId: user.id,
@@ -116,6 +136,13 @@ export async function postAnswerAction(
   // progress it earned would stay.
   if (!screen.flagged) {
     await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  } else {
+    await announceModeration({
+      userId: user.id,
+      surface: MODERATION_SURFACE.lessonAnswer,
+      stage: "held",
+      excerpt: excerpt(content, 300),
+    });
   }
   revalidatePath(`/lessons/${lessonSlug}`);
 

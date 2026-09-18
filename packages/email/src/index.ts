@@ -14,3 +14,7 @@ export {
 } from "./templates/work-assigned";
 export { TicketReplyEmail, sendTicketReplyEmail } from "./templates/ticket-reply";
 export { BanNoticeEmail, sendBanNoticeEmail } from "./templates/ban-notice";
+export {
+  ModerationNoticeEmail,
+  sendModerationNoticeEmail,
+} from "./templates/moderation-notice";

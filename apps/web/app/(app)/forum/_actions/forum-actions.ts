@@ -9,6 +9,8 @@ import {
   notificationRepository,
   prisma,
 } from "@cyberlearn/db";
+import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
+import { announceModeration } from "@/lib/moderation/announce";
 import { requireRequestUser } from "@/lib/auth";
 import { checkQaSubmission } from "@/lib/rate-limit";
 import { recordQuestProgress } from "@/lib/quests/progress";
@@ -81,6 +83,11 @@ export async function createTopicAction(input: {
     ...FORUM_SCREEN,
   });
 
+  // Over budget: nothing is written at all. The screen already hides each
+  // flagged message, so this is not about the content - it is about one account
+  // taking up a morning's worth of queue.
+  if (screen.throttled) return { ok: false, error: FLAG_BUDGET_MESSAGE };
+
   // Written either way, hidden when the screen flagged it: the author keeps
   // their thread and can still see it, nobody else can, and a reviewer decides.
   const topic = await forumRepository.createTopic({
@@ -97,7 +104,16 @@ export async function createTopicAction(input: {
   if (screen.eventId !== null) await moderationRepository.attachContent(screen.eventId, topic.id);
   // No quest credit for a thread sitting in the queue: if a reviewer destroys
   // it, the progress it earned would stay behind.
-  if (!screen.flagged) await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  if (!screen.flagged) {
+    await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  } else {
+    await announceModeration({
+      userId: user.id,
+      surface: MODERATION_SURFACE.forumTopic,
+      stage: "held",
+      excerpt: excerpt(`${parsed.data.title}\n\n${parsed.data.content}`, 300),
+    });
+  }
 
   revalidatePath("/forum");
   revalidatePath(`/forum/${parsed.data.categorySlug}`);
@@ -127,6 +143,8 @@ export async function replyAction(input: {
     ...FORUM_SCREEN,
   });
 
+  if (screen.throttled) return { ok: false, error: FLAG_BUDGET_MESSAGE };
+
   const reply = await forumRepository.reply({
     topicId: parsed.data.topicId,
     authorId: user.id,
@@ -137,7 +155,16 @@ export async function replyAction(input: {
 
   if (screen.eventId !== null)
     await moderationRepository.attachContent(screen.eventId, reply.postId);
-  if (!screen.flagged) await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  if (!screen.flagged) {
+    await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
+  } else {
+    await announceModeration({
+      userId: user.id,
+      surface: MODERATION_SURFACE.forumPost,
+      stage: "held",
+      excerpt: excerpt(parsed.data.content, 300),
+    });
+  }
   // reply.notify is empty for a hidden reply, so this tells nobody - but the
   // call stays here rather than behind the flag, because which replies are
   // worth announcing is the repository's decision to make, in one place.
@@ -168,6 +195,8 @@ export async function editPostAction(input: {
   // edit instead would leave the previous text standing, which is the version
   // nobody complained about - but it also hands back a way to probe the filter
   // for free, and the point is that flagged text is out of sight either way.
+  if (screen.throttled) return { ok: false, error: FLAG_BUDGET_MESSAGE };
+
   const done = await forumRepository.editPost(
     user.id,
     parsed.data.postId,
@@ -177,6 +206,14 @@ export async function editPostAction(input: {
   if (!done) return { ok: false, error: "Message introuvable." };
   if (screen.eventId !== null) {
     await moderationRepository.attachContent(screen.eventId, parsed.data.postId);
+  }
+  if (screen.flagged) {
+    await announceModeration({
+      userId: user.id,
+      surface: MODERATION_SURFACE.forumPost,
+      stage: "held",
+      excerpt: excerpt(parsed.data.content, 300),
+    });
   }
 
   revalidatePath(input.path);
