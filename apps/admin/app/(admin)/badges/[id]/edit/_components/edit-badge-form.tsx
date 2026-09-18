@@ -9,6 +9,7 @@ import {
   type BadgeFormState,
 } from "../../../_actions/badge-actions";
 import type { LessonOption, PathOption } from "../../../new/_components/new-badge-form";
+import { Select } from "@cyberlearn/ui";
 
 interface BadgeData {
   id: string;
@@ -239,21 +240,13 @@ function CriterionFields({
       {type === "CATEGORY_MASTERY" && (
         <>
           <Field label="Catégorie *">
-            <select
+            <Select
               name="criterion_category"
               required
               defaultValue={(defaults.criterion_category as string) || ""}
-              style={{ ...INPUT_STYLE, appearance: "none" }}
-            >
-              <option value="" disabled style={{ background: "#0A0826" }}>
-                Choisir…
-              </option>
-              {CATEGORY_OPTIONS.map((cat) => (
-                <option key={cat} value={cat} style={{ background: "#0A0826" }}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              placeholder="Choisir…"
+              options={CATEGORY_OPTIONS.map((cat) => ({ value: cat, label: cat }))}
+            />
           </Field>
           <Field label="Nombre de leçons *">
             <input
@@ -272,21 +265,17 @@ function CriterionFields({
       {type === "LESSON_SPECIFIC" && (
         <Field label="Leçon *">
           {lessons.length > 0 ? (
-            <select
+            <Select
               name="criterion_lessonId"
               required
               defaultValue={(defaults.criterion_lessonId as string) || ""}
-              style={{ ...INPUT_STYLE, appearance: "none" }}
-            >
-              <option value="" disabled style={{ background: "#0A0826" }}>
-                Choisir une leçon…
-              </option>
-              {lessons.map((l) => (
-                <option key={l.id} value={l.id} style={{ background: "#0A0826" }}>
-                  [{l.category}] {l.title}
-                </option>
-              ))}
-            </select>
+              placeholder="Choisir une leçon…"
+              options={lessons.map((l) => ({
+                value: l.id,
+                label: l.title,
+                hint: l.category,
+              }))}
+            />
           ) : (
             <input
               name="criterion_lessonId"
@@ -489,25 +478,17 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
             </Field>
           </div>
           <Field label="Rareté *" {...fe(state.fieldErrors?.rarity)}>
-            <select
+            <Select
               name="rarity"
               required
               defaultValue={badge.rarity}
-              style={{ ...INPUT_STYLE, appearance: "none" }}
-            >
-              <option value="COMMON" style={{ background: "#0A0826" }}>
-                Commun
-              </option>
-              <option value="RARE" style={{ background: "#0A0826" }}>
-                Rare
-              </option>
-              <option value="EPIC" style={{ background: "#0A0826" }}>
-                Épique
-              </option>
-              <option value="LEGENDARY" style={{ background: "#0A0826" }}>
-                Légendaire
-              </option>
-            </select>
+              options={[
+                { value: "COMMON", label: "Commun" },
+                { value: "RARE", label: "Rare" },
+                { value: "EPIC", label: "Épique" },
+                { value: "LEGENDARY", label: "Légendaire" },
+              ]}
+            />
           </Field>
           <Field
             label="Récompense XP"
@@ -531,21 +512,16 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
                 error: state.fieldErrors.criterionType,
               })}
             >
-              <select
+              <Select
                 name="criterionType"
                 required
                 value={criterionType}
-                onChange={(e) => {
-                  setCriterionType(e.target.value);
-                }}
-                style={{ ...INPUT_STYLE, appearance: "none" }}
-              >
-                {Object.entries(CRITERION_LABELS).map(([val, label]) => (
-                  <option key={val} value={val} style={{ background: "#0A0826" }}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                onChange={setCriterionType}
+                options={Object.entries(CRITERION_LABELS).map(([val, label]) => ({
+                  value: val,
+                  label,
+                }))}
+              />
             </Field>
           </div>
           {criterionType && criterionType !== "PERFECT_QUIZ" && criterionType !== "CUSTOM" && (

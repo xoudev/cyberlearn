@@ -2,6 +2,7 @@
 
 import React, { useActionState } from "react";
 import { BAN_DURATIONS } from "@cyberlearn/lib";
+import { Select } from "@cyberlearn/ui";
 import { banUserAction, liftBanAction, type BanUserState } from "../../../_actions/user-actions";
 import { Card, Tag } from "../../../_components/admin-ui";
 
@@ -95,13 +96,15 @@ export function BanForm({
 
           <label className="a-field">
             <span className="a-label">Durée</span>
-            <select name="duration" className="a-input" defaultValue="7d">
-              {BAN_DURATIONS.map((duration) => (
-                <option key={duration.key} value={duration.key}>
-                  {duration.label}
-                </option>
-              ))}
-            </select>
+            <Select
+              name="duration"
+              defaultValue="7d"
+              aria-label="Durée du bannissement"
+              options={BAN_DURATIONS.map((duration) => ({
+                value: duration.key,
+                label: duration.label,
+              }))}
+            />
           </label>
 
           <label className="a-field">

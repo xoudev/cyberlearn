@@ -23,4 +23,5 @@ export {
 } from "./components/lesson-card.js";
 export { PathProgress } from "./components/path-progress.js";
 export { NotificationBell } from "./components/notification-bell.js";
+export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { cn } from "./lib/utils.js";

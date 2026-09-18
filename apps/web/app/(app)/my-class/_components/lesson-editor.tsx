@@ -9,6 +9,7 @@ import {
   updateClassLessonAction,
   type ClassLessonState,
 } from "../_actions/class-lesson-actions";
+import { Select } from "@cyberlearn/ui";
 
 /**
  * The editor a teacher writes a class lesson with.
@@ -147,34 +148,22 @@ export function LessonEditor({
         <div className="tle-grid4">
           <label className="cls-field">
             <span className="cls-field__label">Catégorie</span>
-            <select
+            <Select
               name="category"
               required
               defaultValue={draft?.category ?? "CYBERSEC"}
-              className="cls-input"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+              options={CATEGORIES}
+            />
           </label>
 
           <label className="cls-field">
             <span className="cls-field__label">Niveau</span>
-            <select
+            <Select
               name="difficulty"
               required
               defaultValue={draft?.difficulty ?? "BEGINNER"}
-              className="cls-input"
-            >
-              {DIFFICULTIES.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
+              options={DIFFICULTIES}
+            />
           </label>
 
           <label className="cls-field">

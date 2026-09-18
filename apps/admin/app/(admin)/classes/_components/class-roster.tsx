@@ -11,6 +11,7 @@ import {
 } from "../_actions/class-actions";
 import { Card, EmptyState } from "../../_components/admin-ui";
 import { MemberPicker, type PickableUser } from "./member-picker";
+import { Select } from "@cyberlearn/ui";
 
 // Who teaches the class and who is in it, with every way to change both.
 //
@@ -115,13 +116,12 @@ function Teachers({
 
           <label className="a-field">
             <span className="a-label">Professeur</span>
-            <select name="teacherId" required className="a-select">
-              {pool.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+            <Select
+              name="teacherId"
+              required
+              defaultValue={pool[0]?.id ?? ""}
+              options={pool.map((p) => ({ value: p.id, label: p.label }))}
+            />
           </label>
 
           <label className="a-field">

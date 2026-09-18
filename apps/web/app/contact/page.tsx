@@ -3,6 +3,7 @@
 import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { submitContactAction, type ContactFormState } from "./_actions/contact-actions";
+import { Select } from "@cyberlearn/ui";
 
 const THEMES = [
   { value: "BUG", label: "Bug" },
@@ -233,27 +234,16 @@ export default function ContactPage(): React.ReactElement {
           >
             Thème *
           </label>
-          <select
+          <Select
             id="contact-theme"
             key={initialTheme || "theme"}
             name="theme"
             required
             defaultValue={initialTheme}
-            onChange={(e) => {
-              setTheme(e.target.value);
-            }}
-            style={{ ...INPUT_STYLE, appearance: "none" }}
-            aria-describedby={state.fieldErrors?.theme ? "contact-theme-error" : undefined}
-          >
-            <option value="" disabled>
-              Choisir un thème…
-            </option>
-            {THEMES.map((t) => (
-              <option key={t.value} value={t.value} style={{ background: "#0A0826" }}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+            placeholder="Choisir un thème…"
+            options={THEMES}
+            onChange={setTheme}
+          />
           {/* The one theme that needs saying what to put in it, said before the
               message box rather than in a reply a day later. */}
           {theme === "ESTABLISHMENT_REQUEST" && (

@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { BAN_DURATIONS } from "@cyberlearn/lib";
+import { Select } from "@cyberlearn/ui";
 import { resolveModerationAction } from "../_actions/moderation-actions";
 
 /**
@@ -40,22 +41,20 @@ export function ReviewButtons({ eventId }: { eventId: string }): React.ReactElem
         Faux positif · rétablir
       </button>
 
-      <select
-        className="a-input a-input--sm"
+      <Select
+        block={false}
         value={sanction}
         disabled={pending}
         aria-label="Sanction à appliquer"
-        onChange={(event) => {
-          setSanction(event.target.value);
-        }}
-      >
-        <option value="none">Sans sanction</option>
-        {BAN_DURATIONS.map((duration) => (
-          <option key={duration.key} value={duration.key}>
-            Bannir · {duration.label.toLowerCase()}
-          </option>
-        ))}
-      </select>
+        options={[
+          { value: "none", label: "Sans sanction" },
+          ...BAN_DURATIONS.map((duration) => ({
+            value: duration.key,
+            label: `Bannir · ${duration.label.toLowerCase()}`,
+          })),
+        ]}
+        onChange={setSanction}
+      />
 
       <button
         type="button"

@@ -8,6 +8,7 @@ import {
   type ActionState,
 } from "../../_actions/class-actions";
 import { Card } from "../../../_components/admin-ui";
+import { Select } from "@cyberlearn/ui";
 
 /**
  * The three creation forms, built from the console's own kit.
@@ -147,13 +148,12 @@ function ComposeForm({
           {select && (
             <label className="a-field">
               <span className="a-label">{select.label}</span>
-              <select name={select.name} required className="a-select">
-                {select.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              <Select
+                name={select.name}
+                required
+                defaultValue={select.options[0]?.value ?? ""}
+                options={select.options}
+              />
             </label>
           )}
 
