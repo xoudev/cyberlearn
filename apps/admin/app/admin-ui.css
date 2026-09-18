@@ -955,6 +955,14 @@
 .a-input:focus {
   border-color: var(--a-accent);
 }
+/* The queue works in rows, and a 46px control in a row of small buttons pushes
+   everything else around. Same skin, sized for a row. */
+.a-input--sm {
+  width: auto;
+  height: 32px;
+  padding: 0 9px;
+  font-size: 12px;
+}
 /* Same skin as .a-input, without the fixed height an input needs. */
 .a-textarea {
   width: 100%;

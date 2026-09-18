@@ -13,6 +13,7 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "../prisma.js";
+import { FLAG_BUDGET } from "@cyberlearn/lib";
 import { MODERATION_SURFACE, moderationRepository } from "../repositories/moderation.repository.js";
 import { forumRepository } from "../repositories/forum.repository.js";
 
@@ -333,7 +334,11 @@ describe("moderation outcomes reach the content (integration, real DB)", () => {
       "OVERTURNED",
       reviewer,
     );
-    expect(applied).toEqual({ claimed: true, contentTouched: true });
+    expect(applied).toMatchObject({ claimed: true, contentTouched: true });
+    // Who to write to, and what to call it: the decision is told to the person
+    // it was about, and a notice that cannot name the surface is not one.
+    expect(applied.authorId).toBe(poster);
+    expect(applied.surface).toBe(MODERATION_SURFACE.forumTopic);
 
     const row = await prisma.forumTopic.findUniqueOrThrow({
       where: { id: topic?.id ?? "" },
@@ -358,7 +363,9 @@ describe("moderation outcomes reach the content (integration, real DB)", () => {
       "UPHELD",
       reviewer,
     );
-    expect(applied).toEqual({ claimed: true, contentTouched: true });
+    expect(applied).toMatchObject({ claimed: true, contentTouched: true });
+    // Read from the event, not from the content - which no longer exists.
+    expect(applied.authorId).toBe(poster);
 
     // Gone, with its posts - not hidden forever in a queue that only grows,
     // and not kept as a copy of the exact material nobody wanted kept.
@@ -385,7 +392,7 @@ describe("moderation outcomes reach the content (integration, real DB)", () => {
     );
 
     expect(first.claimed).toBe(true);
-    expect(second).toEqual({ claimed: false, contentTouched: false });
+    expect(second).toMatchObject({ claimed: false, contentTouched: false });
     // The second click must not delete a thread the first click restored.
     expect(await prisma.forumTopic.count({ where: { id: topic?.id ?? "" } })).toBe(1);
   });
@@ -405,11 +412,172 @@ describe("moderation outcomes reach the content (integration, real DB)", () => {
       "UPHELD",
       reviewer,
     );
-    expect(applied).toEqual({ claimed: true, contentTouched: false });
+    expect(applied).toMatchObject({ claimed: true, contentTouched: false });
 
     const event = await prisma.moderationEvent.findUniqueOrThrow({
       where: { id: screen.eventId ?? "" },
     });
     expect(event.outcome).toBe("UPHELD");
+  });
+});
+
+/**
+ * The budget, and the record somebody can read about themselves.
+ *
+ * The screen already takes each flagged message out of sight, so the budget is
+ * not about the content: it is about the queue. One account can otherwise fill
+ * a morning's moderation with a script, and the reports that matter end up
+ * behind it.
+ */
+describe("moderation flag budget and personal record (integration, real DB)", () => {
+  const noisy = randomUUID();
+  const quiet = randomUUID();
+  let ready = false;
+
+  beforeAll(async () => {
+    if (!process.env["DATABASE_URL"]) return;
+    await prisma.user.createMany({
+      data: [
+        {
+          id: noisy,
+          email: `fb-${suffix}@t.internal`,
+          username: `fb${suffix}`,
+          displayName: "Bruyant",
+        },
+        {
+          id: quiet,
+          email: `fq-${suffix}@t.internal`,
+          username: `fq${suffix}`,
+          displayName: "Calme",
+        },
+      ],
+    });
+    ready = true;
+  });
+
+  afterEach(async () => {
+    if (!ready) return;
+    await prisma.moderationEvent.deleteMany({ where: { userId: { in: [noisy, quiet] } } });
+  });
+
+  afterAll(async () => {
+    if (!ready) return;
+    await prisma.user.deleteMany({ where: { id: { in: [noisy, quiet] } } });
+  });
+
+  /** A flag recorded at a chosen moment, without going through the analyser. */
+  async function flagAt(userId: string, createdAt: Date): Promise<void> {
+    await prisma.moderationEvent.create({
+      data: {
+        userId,
+        surface: MODERATION_SURFACE.forumPost,
+        verdict: "BLOCK",
+        score: 90,
+        findings: [],
+        excerpt: "connard",
+        createdAt,
+      },
+    });
+  }
+
+  it("lets somebody rephrase without being stopped", async () => {
+    if (!ready) return;
+    const now = new Date();
+    await flagAt(noisy, now);
+    await flagAt(noisy, now);
+
+    // Somebody fixing an awkward sentence twice is not what this exists for.
+    expect(await moderationRepository.recentFlagCount(noisy, now)).toBe(2);
+    expect(await moderationRepository.recentFlagCount(noisy, now)).toBeLessThan(FLAG_BUDGET);
+  });
+
+  it("stops an account once it has spent the budget", async () => {
+    if (!ready) return;
+    const now = new Date();
+    for (let i = 0; i < FLAG_BUDGET; i += 1) await flagAt(noisy, now);
+
+    expect(await moderationRepository.recentFlagCount(noisy, now)).toBe(FLAG_BUDGET);
+
+    const screened = await moderationRepository.screen({
+      text: "connard",
+      surface: MODERATION_SURFACE.forumPost,
+      userId: noisy,
+    });
+    expect(screened.throttled).toBe(true);
+  });
+
+  it("forgets what happened more than an hour ago", async () => {
+    if (!ready) return;
+    const now = new Date();
+    const old = new Date(now.getTime() - 61 * 60_000);
+    for (let i = 0; i < FLAG_BUDGET + 3; i += 1) await flagAt(noisy, old);
+
+    // A budget that never resets is a permanent ban issued by a counter.
+    expect(await moderationRepository.recentFlagCount(noisy, now)).toBe(0);
+
+    const screened = await moderationRepository.screen({
+      text: "connard",
+      surface: MODERATION_SURFACE.forumPost,
+      userId: noisy,
+    });
+    expect(screened.throttled).toBe(false);
+  });
+
+  it("counts one account's flags against that account alone", async () => {
+    if (!ready) return;
+    const now = new Date();
+    for (let i = 0; i < FLAG_BUDGET + 2; i += 1) await flagAt(noisy, now);
+
+    expect(await moderationRepository.recentFlagCount(quiet, now)).toBe(0);
+    const screened = await moderationRepository.screen({
+      text: "connard",
+      surface: MODERATION_SURFACE.forumPost,
+      userId: quiet,
+    });
+    expect(screened.throttled).toBe(false);
+  });
+
+  it("does not stop anybody over an allowed message", async () => {
+    if (!ready) return;
+    const now = new Date();
+    for (let i = 0; i < FLAG_BUDGET + 2; i += 1) await flagAt(noisy, now);
+
+    // The budget is spent on flags. Ordinary text is not one, however much of
+    // it follows a bad morning.
+    const screened = await moderationRepository.screen({
+      text: "Le modèle OSI a sept couches.",
+      surface: MODERATION_SURFACE.forumPost,
+      userId: noisy,
+    });
+    expect(screened.verdict).toBe("ALLOW");
+    expect(screened.throttled).toBe(false);
+    expect(screened.eventId).toBeNull();
+  });
+
+  it("still records the attempt that was stopped", async () => {
+    if (!ready) return;
+    const now = new Date();
+    for (let i = 0; i < FLAG_BUDGET; i += 1) await flagAt(noisy, now);
+
+    await moderationRepository.screen({
+      text: "connard",
+      surface: MODERATION_SURFACE.forumPost,
+      userId: noisy,
+    });
+
+    // A moderator deciding whether somebody is worth a sanction wants to see
+    // all the tries, not the first five.
+    expect(await prisma.moderationEvent.count({ where: { userId: noisy } })).toBe(FLAG_BUDGET + 1);
+  });
+
+  it("shows somebody their own record and nobody else's", async () => {
+    if (!ready) return;
+    const now = new Date();
+    await flagAt(noisy, now);
+    await flagAt(quiet, now);
+
+    const mine = await moderationRepository.findForUser(noisy);
+    expect(mine).toHaveLength(1);
+    expect(await moderationRepository.findForUser(quiet)).toHaveLength(1);
   });
 });

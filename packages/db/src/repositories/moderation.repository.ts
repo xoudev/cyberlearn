@@ -1,4 +1,10 @@
-import { moderate, excerpt, type ModerationResult } from "@cyberlearn/lib";
+import {
+  FLAG_BUDGET,
+  FLAG_BUDGET_WINDOW_MS,
+  excerpt,
+  moderate,
+  type ModerationResult,
+} from "@cyberlearn/lib";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 
@@ -49,6 +55,16 @@ export interface ScreenResult extends ModerationResult {
   flagged: boolean;
   /** The recorded decision, when one was recorded. */
   eventId: string | null;
+  /**
+   * This account has tripped the screen too many times in the last hour and is
+   * stopped altogether: the caller writes nothing at all, hidden or otherwise.
+   *
+   * The screen already takes each flagged message out of sight, so this is not
+   * about the content. It is about the queue: one person can otherwise fill a
+   * morning's moderation with a script, and the reports that matter end up
+   * behind it.
+   */
+  throttled: boolean;
 }
 
 /**
@@ -174,8 +190,14 @@ export const moderationRepository = {
     const flagged = result.verdict !== "ALLOW";
 
     if (result.verdict === "ALLOW") {
-      return { ...result, flagged, eventId: null };
+      return { ...result, flagged, throttled: false, eventId: null };
     }
+
+    // Counted before this one is written, so the budget is the number already
+    // spent. The attempt itself is still recorded below: a moderator deciding
+    // whether somebody is worth a sanction wants to see all twelve tries, not
+    // the first five.
+    const throttled = (await this.recentFlagCount(input.userId)) >= FLAG_BUDGET;
 
     try {
       const event = await prisma.moderationEvent.create({
@@ -192,15 +214,75 @@ export const moderationRepository = {
         },
         select: { id: true },
       });
-      return { ...result, flagged, eventId: event.id };
+      return { ...result, flagged, throttled, eventId: event.id };
     } catch (error) {
       // The decision stands even when the record of it does not: content the
       // screen flagged still goes out of sight. It is then hidden with nothing
       // in the queue pointing at it, which is bad - and far better than
       // publishing it because a log write timed out.
       console.error("[moderation] failed to record decision:", error);
-      return { ...result, flagged, eventId: null };
+      return { ...result, flagged, throttled, eventId: null };
     }
+  },
+
+  /**
+   * How many times this account has been flagged in the last hour.
+   *
+   * From the events table rather than from Redis, deliberately. Every flag is
+   * already a row here, so the count is exact, it survives a cache being cold,
+   * and it cannot disagree with what the moderator is looking at. The other
+   * limiters in the application guard how fast somebody posts; this one guards
+   * how much of the queue one person can take up.
+   */
+  async recentFlagCount(userId: string, now: Date = new Date()): Promise<number> {
+    return prisma.moderationEvent.count({
+      where: { userId, createdAt: { gte: new Date(now.getTime() - FLAG_BUDGET_WINDOW_MS) } },
+    });
+  },
+
+  /** One event, with what is needed to write to the person it is about. */
+  async findSubject(eventId: string) {
+    return prisma.moderationEvent.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        surface: true,
+        excerpt: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            displayName: true,
+            username: true,
+            preferences: { select: { emailNotifications: true } },
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * Somebody's own moderation record, for the page that shows it to them.
+   *
+   * What they get to see about themselves: when, what was flagged, and how it
+   * ended. Not the score and not the rules that fired - the first means nothing
+   * to them and the second is the puzzle again.
+   */
+  async findForUser(userId: string, limit = 30) {
+    return prisma.moderationEvent.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        surface: true,
+        excerpt: true,
+        outcome: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+    });
   },
 
   /**
@@ -289,32 +371,42 @@ export const moderationRepository = {
     eventId: string,
     outcome: "UPHELD" | "OVERTURNED",
     reviewedById: string,
-  ): Promise<{ claimed: boolean; contentTouched: boolean }> {
+  ): Promise<{
+    claimed: boolean;
+    contentTouched: boolean;
+    /** Who wrote it, so the caller can tell them how it ended. Null after erasure. */
+    authorId: string | null;
+    /** Which surface, so the notice calls it by its name. */
+    surface: string | null;
+  }> {
     const claim = await prisma.moderationEvent.updateMany({
       where: { id: eventId, outcome: "PENDING" },
       data: { outcome, reviewedById, reviewedAt: new Date() },
     });
-    if (claim.count === 0) return { claimed: false, contentTouched: false };
+    if (claim.count === 0) {
+      return { claimed: false, contentTouched: false, authorId: null, surface: null };
+    }
 
     const event = await prisma.moderationEvent.findUnique({
       where: { id: eventId },
-      select: { surface: true, contentId: true },
+      select: { surface: true, contentId: true, userId: true },
     });
     // No content id: an event recorded before flagged content was kept at all,
     // or one whose write failed after the screen. The decision is recorded;
     // there is simply nothing to carry it to.
-    if (!event?.contentId) return { claimed: true, contentTouched: false };
+    const subject = { authorId: event?.userId ?? null, surface: event?.surface ?? null };
+    if (!event?.contentId) return { claimed: true, contentTouched: false, ...subject };
 
     const handler = handlerFor(event.surface);
     if (!handler) {
       console.error("[moderation] no handler for surface:", event.surface);
-      return { claimed: true, contentTouched: false };
+      return { claimed: true, contentTouched: false, ...subject };
     }
 
     if (outcome === "OVERTURNED") await handler.restore(event.contentId);
     else await handler.destroy(event.contentId);
 
-    return { claimed: true, contentTouched: true };
+    return { claimed: true, contentTouched: true, ...subject };
   },
 
   /** How the filter is doing, per rule - the numbers that say what to tune. */

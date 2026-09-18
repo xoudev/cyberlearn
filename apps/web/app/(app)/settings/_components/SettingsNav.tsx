@@ -16,6 +16,7 @@ const SECTIONS: NavSection[] = [
   { href: "/settings/privacy", label: "Confidentialité" },
   { href: "/settings/preferences", label: "Préférences" },
   { href: "/settings/notifications", label: "Notifications" },
+  { href: "/settings/moderation", label: "Modération" },
   { href: "/settings/account", label: "Compte" },
   { href: "/settings/data", label: "Données", danger: true },
 ];
