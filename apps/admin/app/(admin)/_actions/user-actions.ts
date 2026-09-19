@@ -8,6 +8,7 @@ import { banExpiryFor, banTimeLeft, isBanDurationKey } from "@cyberlearn/lib";
 import { sendAccountDeletedEmail, sendBanNoticeEmail } from "@cyberlearn/email";
 import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
 // nativeEnum rather than a spelled-out list: the accepted values are the ones
 // the column can hold, by construction. A hand-written enum here would be one
@@ -255,8 +256,8 @@ export async function banUserAction(
               timeStyle: "short",
               timeZone: "Europe/Paris",
             }).format(expiresAt),
-      appealUrl: `${env.NEXT_PUBLIC_SITE_URL}/banned`,
-      siteUrl: env.NEXT_PUBLIC_SITE_URL,
+      appealUrl: learnerUrl("/banned"),
+      siteUrl: learnerSiteUrl(),
     });
   } catch (error) {
     console.error("[admin] ban notice e-mail failed:", error);

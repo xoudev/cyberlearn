@@ -1,6 +1,7 @@
 import { classRepository, prisma } from "@cyberlearn/db";
 import { sendClassInvitationEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
+import { learnerUrl } from "./learner-url";
 
 /**
  * Invites addresses that have no account yet, and mails the ones it created.
@@ -51,7 +52,7 @@ export async function inviteAndNotify(
   if (!klass) return { invited: created, renewed, mailFailed: created };
 
   const expiryLabel = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(expiresAt);
-  const signUpUrl = `${env.NEXT_PUBLIC_SITE_URL}/register`;
+  const signUpUrl = learnerUrl("/register");
   const mailFailed: string[] = [];
 
   await Promise.all(
