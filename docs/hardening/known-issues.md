@@ -245,3 +245,31 @@ nomment plus Atlassian comme sous-traitant.
 Reste à faire : retirer les quatre entrées du schéma Zod et de `.env.example`.
 C'est une suppression de code, tracée ici plutôt que faite dans une PR de
 documentation.
+
+## `content/` était gitignoré alors que 210 fichiers y sont tracés
+
+Troisième exemplaire de la même forme que les deux précédents : une règle qui
+prétend décrire l'état du dépôt, et qui décrit l'état d'il y a un an.
+
+`.gitignore` portait `content/`, sous un commentaire disant que les leçons MDX
+sont écrites en local et « ne sont pas tracées dans le dépôt ». Elles le sont :
+210 fichiers, soit 192 leçons, 16 quiz d'examen final et deux README, dont
+`content/README.md` qui appelle le dossier la source de vérité du catalogue.
+
+Git n'ignore rien de ce qu'il trace déjà, donc la règle n'a jamais touché ces
+210 fichiers. Elle faisait exactement une chose : faire disparaître
+silencieusement toute leçon **nouvelle** d'un `git add`. Elle n'avait pas encore
+mordu parce qu'aucune leçon n'avait été ajoutée depuis — au moment de la
+découverte, `git status --ignored content` ne montrait rien de non tracé.
+
+Découvert de biais : `lint-staged` a échoué sur « The following paths are
+ignored by one of your .gitignore files: content » en réappliquant ses
+modifications de formatage.
+
+Le dépôt portait déjà la leçon, trois lignes au-dessus, dans le commentaire de
+garde laissé par la PR #66 après le même accident sur `/docs`. Fix : la règle
+est retirée, et le commentaire de garde couvre maintenant les deux dossiers.
+
+Règle générale : une règle `.gitignore` sur un dossier partiellement tracé est
+toujours un piège. Le symptôme n'est pas une erreur, c'est un fichier qui
+n'apparaît pas — et personne ne cherche ce qui ne s'affiche pas.
