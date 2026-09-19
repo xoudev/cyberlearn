@@ -1,7 +1,6 @@
 import {
   Body,
   Container,
-  Head,
   Heading,
   Hr,
   Html,
@@ -12,6 +11,8 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
+import { EmailHead } from "../shell.js";
+import { styles as shared } from "../theme.js";
 
 /**
  * Told after the fact, because there is nothing to confirm.
@@ -41,7 +42,7 @@ export function AccountDeletedEmail({
 }: AccountDeletedEmailProps): React.ReactElement {
   return (
     <Html>
-      <Head />
+      <EmailHead />
       <Preview>Ton compte CyberLearn a été supprimé</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
@@ -104,109 +105,7 @@ export function AccountDeletedEmail({
   );
 }
 
-const styles = {
-  main: {
-    backgroundColor: "#030219",
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    padding: "40px 0",
-  } satisfies React.CSSProperties,
-
-  container: {
-    maxWidth: "520px",
-    margin: "0 auto",
-  } satisfies React.CSSProperties,
-
-  logoSection: {
-    paddingBottom: "20px",
-    textAlign: "center" as const,
-  } satisfies React.CSSProperties,
-
-  logoText: {
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.25em",
-    color: "#0AFFD4",
-    margin: "0",
-  } satisfies React.CSSProperties,
-
-  card: {
-    backgroundColor: "#0A0826",
-    border: "1px solid #1F1B47",
-    borderRadius: "12px",
-    padding: "40px 36px",
-  } satisfies React.CSSProperties,
-
-  heading: {
-    fontSize: "24px",
-    fontWeight: "700",
-    color: "#F5F5FA",
-    margin: "0 0 16px",
-    letterSpacing: "-0.02em",
-  } satisfies React.CSSProperties,
-
-  paragraph: {
-    fontSize: "14px",
-    color: "#B8B5D1",
-    lineHeight: "1.65",
-    margin: "0 0 14px",
-  } satisfies React.CSSProperties,
-
-  listItem: {
-    fontSize: "13px",
-    color: "#B8B5D1",
-    lineHeight: "1.6",
-    margin: "0 0 4px",
-    paddingLeft: "4px",
-  } satisfies React.CSSProperties,
-
-  detail: {
-    borderLeft: "3px solid #FFB020",
-    paddingLeft: "14px",
-    margin: "22px 0",
-  } satisfies React.CSSProperties,
-
-  detailLine: {
-    fontSize: "14px",
-    color: "#F5F5FA",
-    margin: "0",
-  } satisfies React.CSSProperties,
-
-  detailMuted: {
-    fontSize: "11px",
-    color: "#6B6890",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase" as const,
-    margin: "0 0 4px",
-  } satisfies React.CSSProperties,
-
-  hr: {
-    borderColor: "#1F1B47",
-    margin: "24px 0",
-  } satisfies React.CSSProperties,
-
-  muted: {
-    fontSize: "12px",
-    color: "#6B6890",
-    lineHeight: "1.5",
-    margin: "0",
-  } satisfies React.CSSProperties,
-
-  footer: {
-    paddingTop: "20px",
-    textAlign: "center" as const,
-  } satisfies React.CSSProperties,
-
-  footerText: {
-    fontSize: "11px",
-    color: "#3F3D5C",
-    margin: "0 0 4px",
-  } satisfies React.CSSProperties,
-
-  footerLink: {
-    color: "#4D8BFF",
-    textDecoration: "none",
-  } satisfies React.CSSProperties,
-} as const;
+const styles = shared;
 
 interface SendAccountDeletedEmailOptions extends AccountDeletedEmailProps {
   apiKey: string;
