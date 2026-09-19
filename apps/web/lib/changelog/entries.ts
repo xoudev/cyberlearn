@@ -29,6 +29,131 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "2.8",
+    date: "2026-09-19",
+    title: "Le classement entre amis",
+    changes: [
+      {
+        type: "new",
+        text: "Un onglet Amis sur le classement, à côté de Global et Ligue. On y figure sous son nom ou on n'y figure pas : il n'y a pas de mode anonyme ici, parce que sur une liste de cinq amis « Anonyme » n'anonymise personne. C'est une case à cocher dans Confidentialité, éteinte au départ, et indépendante du classement public — tu peux être masqué sur l'un et visible sur l'autre.",
+      },
+      {
+        type: "improved",
+        text: "L'encadré du niveau, sur le tableau de bord, disait la même chose plusieurs fois. Il dit maintenant quatre choses : le rang atteint, le niveau, où tu en es dedans, et ce que coûte le suivant.",
+      },
+      {
+        type: "fixed",
+        text: "Le Dashboard est revenu en tête de la barre latérale. Les Révisions, qui peuvent être coupées, passaient devant lui quand elles étaient actives — donc seuls ceux qui les utilisent voyaient le problème.",
+      },
+      {
+        type: "fixed",
+        text: "Les liens que la console d'administration envoie par e-mail — appel d'un bannissement, réponse à une demande, invitation à une classe — ne peuvent plus pointer vers la console elle-même, où le destinataire n'a rien à faire.",
+      },
+    ],
+  },
+  {
+    version: "2.7",
+    date: "2026-09-18",
+    title: "Des amis, et ce qu'ils donnent",
+    changes: [
+      {
+        type: "new",
+        text: "Un système d'amis : demande, acceptation, refus. Il vit dans un petit panneau de la barre du haut, à côté de la cloche, plutôt que sur une page à lui — voir ses amis et répondre à une demande sont des coups d'œil.",
+      },
+      {
+        type: "new",
+        text: "Une amitié donne des droits. Tu peux partager une note avec un ami, pas seulement avec ta classe, et ton profil privé s'ouvre aux personnes que tu as acceptées — c'est ce que « privé » veut dire partout ailleurs. Une demande en attente ne donne rien.",
+      },
+      {
+        type: "new",
+        text: "Le contenu signalé par la modération automatique est masqué immédiatement, puis relu par une personne : faux positif, il revient ; confirmé, il part définitivement. L'auteur est prévenu dans les deux cas, par e-mail et par notification.",
+      },
+      {
+        type: "new",
+        text: "Un bannissement a une durée, un motif obligatoire et un moyen d'être contesté. Le motif est repris tel quel dans l'e-mail et sur l'écran que la personne voit en se connectant.",
+      },
+      {
+        type: "improved",
+        text: "Les messages de confirmation s'affichent en haut au centre de l'écran, et non plus dans le coin le plus éloigné de ce qu'on vient de cliquer. Ils ont pris l'habillage du site au passage.",
+      },
+      {
+        type: "improved",
+        text: "Les menus déroulants s'ouvrent enfin aux couleurs du site. Un menu natif est dessiné par le système d'exploitation, donc impossible à habiller ; ils ont été refaits, en gardant les flèches, la touche Échap et la saisie au clavier qui saute à l'option commençant par ce qu'on tape.",
+      },
+      {
+        type: "fixed",
+        text: "Sur les deux pages Parcours, le contenu touchait les bords de l'écran à presque toutes les tailles de fenêtre. La marge est revenue.",
+      },
+    ],
+  },
+  {
+    version: "2.6",
+    date: "2026-09-17",
+    title: "Les classes, le forum et la modération",
+    changes: [
+      {
+        type: "new",
+        text: "Les classes : un professeur suit un groupe d'élèves, leur donne du travail avec une date limite, et voit qui a rendu quoi. L'élève reçoit un e-mail quand du travail lui est assigné.",
+      },
+      {
+        type: "new",
+        text: "Un professeur peut écrire ses propres leçons et construire ses propres parcours, visibles uniquement par ses classes, avec le même éditeur que la console d'administration.",
+      },
+      {
+        type: "new",
+        text: "Un professeur peut distribuer un corrigé ou tout autre document à sa classe, et choisir le moment où il devient visible.",
+      },
+      {
+        type: "new",
+        text: "Un forum, pour poser une question à tout le monde plutôt qu'au seul professeur.",
+      },
+      {
+        type: "new",
+        text: "Une modération automatique lit tout ce qui est publié — questions, réponses, forum, notes partagées — avant que ça n'arrive à l'écran de quelqu'un d'autre.",
+      },
+      {
+        type: "new",
+        text: "Le partage de notes : une note écrite pour une leçon peut être remise aux gens de ta classe.",
+      },
+      {
+        type: "new",
+        text: "La recherche de la barre du haut cherche vraiment : parcours, leçons et tes propres notes, sans tenir compte des accents.",
+      },
+      {
+        type: "new",
+        text: "Une demande d'aide est devenue une conversation : l'équipe répond, tu réponds, le fil reste sur ta page. Et le bouton pour en ouvrir une se trouve, au lieu d'être en bas du pied de page.",
+      },
+      {
+        type: "improved",
+        text: "Le tableau de bord est réorganisé autour des parcours, et cesse de répéter trois fois la même information.",
+      },
+      {
+        type: "improved",
+        text: "Wrapped s'ouvre une fois par an, en décembre, et son export produit vraiment une image.",
+      },
+      {
+        type: "improved",
+        text: "Les révisions peuvent être coupées depuis les réglages — la fonctionnalité entière, pas seulement ses rappels. Les plannings existants sont conservés si tu la réactives.",
+      },
+      {
+        type: "improved",
+        text: "La couleur d'accent que tu équipes dans le casier atteint désormais toute l'application, et chaque cosmétique se dessine tel qu'il est plutôt qu'avec une vignette générique.",
+      },
+      {
+        type: "improved",
+        text: "Une leçon affiche qui l'a écrite, plutôt que qui l'a terminée le premier.",
+      },
+      {
+        type: "improved",
+        text: "L'application mobile a rattrapé le site, et ce qui lui reste dû est écrit noir sur blanc dans le dépôt.",
+      },
+      {
+        type: "fixed",
+        text: "Être connecté ne ramène plus à la page d'accueil publique.",
+      },
+    ],
+  },
+  {
     version: "2.5",
     date: "2026-09-15",
     title: "Parcours suivis de bout en bout",
