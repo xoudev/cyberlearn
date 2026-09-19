@@ -3,13 +3,23 @@ import { env } from "@/lib/env";
 /**
  * The unresolved Sentry issues, for the console's dashboard.
  *
- * It was worth asking whether this was feasible at all. It is: the three values
- * it needs - org, project and an auth token - are already in this app's env
- * schema, because the build uploads source maps with them. What it may need is
- * a wider scope on that token: uploading source maps wants project:releases,
- * reading issues wants project:read or event:read. The failure is reported
- * rather than swallowed, so a token missing the scope says so instead of
- * rendering an empty list that reads as "no errors".
+ * Reading issues and uploading source maps are two different permissions, and
+ * that is the whole difficulty. The build uploads source maps with an
+ * organisation token, whose set of scopes is fixed and cannot be widened -
+ * reading issues is not in it. So the token that got us this far is, by
+ * construction, the wrong one for this, and no amount of editing it in Sentry
+ * will help.
+ *
+ * SENTRY_ISSUES_TOKEN exists for that: a user token carrying event:read, kept
+ * apart from the build's. It falls back to SENTRY_AUTH_TOKEN, which is right
+ * whenever the one token happens to have both.
+ *
+ * The scope is event:read specifically. project:read alone is refused, which
+ * is worth stating because granting it and watching this keep failing is a
+ * long way to go for nothing.
+ *
+ * A failure is reported rather than swallowed: a token that cannot read says
+ * so, instead of rendering an empty list that reads as "no errors".
  *
  * Read-only, server-side, and never fatal. The console has work to do that has
  * nothing to do with Sentry, and an error monitor that can take the dashboard
@@ -58,8 +68,17 @@ function num(value: unknown): number {
   return 0;
 }
 
+/** What Sentry says about a refusal, when it bothers to say something. */
+function detailOf(body: unknown): string | null {
+  if (typeof body !== "object" || body === null || !("detail" in body)) return null;
+  const detail = (body as { detail: unknown }).detail;
+  return typeof detail === "string" && detail.trim() !== "" ? detail : null;
+}
+
 export async function fetchSentryIssues(limit = 8): Promise<SentryIssuesResult> {
-  const { SENTRY_ORG: org, SENTRY_PROJECT: project, SENTRY_AUTH_TOKEN: token } = env;
+  const { SENTRY_ORG: org, SENTRY_PROJECT: project } = env;
+  // The build's token is the fallback, not the intended one. See the note above.
+  const token = env.SENTRY_ISSUES_TOKEN ?? env.SENTRY_AUTH_TOKEN;
   if (!org || !project || !token) return { state: "unconfigured" };
 
   const url =
@@ -75,11 +94,19 @@ export async function fetchSentryIssues(limit = 8): Promise<SentryIssuesResult> 
       signal: AbortSignal.timeout(5000),
     });
 
+    // 401 and 403 are two different problems and used to share one message:
+    // one is "this token is not accepted", the other "it is, and it may not do
+    // that". Told the same thing, somebody widens a scope on a token that was
+    // never the issue.
     if (response.status === 401 || response.status === 403) {
+      const detail = detailOf(await response.json().catch(() => null));
+      const said = detail === null ? "" : ` Sentry dit : « ${detail} »`;
       return {
         state: "error",
         reason:
-          "Le jeton Sentry n'a pas la portée pour lire les issues (project:read ou event:read).",
+          response.status === 401
+            ? `Sentry n'accepte pas ce jeton (401). Renseigne SENTRY_ISSUES_TOKEN avec un jeton utilisateur.${said}`
+            : `Le jeton Sentry n'a pas la portée event:read. Un jeton d'organisation, celui qui téléverse les source maps, ne peut pas l'obtenir : sa portée est figée. Crée un jeton utilisateur et renseigne SENTRY_ISSUES_TOKEN.${said}`,
       };
     }
     if (!response.ok) {

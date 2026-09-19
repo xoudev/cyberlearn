@@ -16,6 +16,14 @@ export const env = createEnv({
     RESEND_FROM_EMAIL: z.string().email(),
     SENTRY_DSN: z.string().url().optional(),
     SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
+    /**
+     * A user token carrying event:read, for reading the issue list on the
+     * dashboard. Separate from SENTRY_AUTH_TOKEN because an organisation token
+     * uploads source maps and cannot be granted that scope. Optional: without
+     * it the build's token is tried, which works when it happens to be a user
+     * token with both.
+     */
+    SENTRY_ISSUES_TOKEN: z.string().min(1).optional(),
     SENTRY_ORG: z.string().min(1).optional(),
     SENTRY_PROJECT: z.string().min(1).optional(),
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
@@ -39,6 +47,7 @@ export const env = createEnv({
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
     SENTRY_DSN: process.env.SENTRY_DSN,
     SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+    SENTRY_ISSUES_TOKEN: process.env.SENTRY_ISSUES_TOKEN,
     SENTRY_ORG: process.env.SENTRY_ORG,
     SENTRY_PROJECT: process.env.SENTRY_PROJECT,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
