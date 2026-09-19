@@ -1,6 +1,13 @@
 {
   "extends": "@cyberlearn/config/tsconfig/library.json",
   "compilerOptions": {
+    // Consumed as TS source via the workspace alias (transpiled by Next /
+    // Vitest), exactly like packages/db - "main" and "exports" point at
+    // src/index.ts and nothing imports the compiled output. It must therefore
+    // NEVER emit JS: Vite resolves .js before .ts, so an emitted file sits in
+    // front of the source it was built from and every test reads the last
+    // build instead of the code. "build" is then a type-check, as it is there.
+    "noEmit": true,
     "paths": {
       "@cyberlearn/types": ["./src/index.ts"]
     }
