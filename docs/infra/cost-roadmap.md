@@ -23,8 +23,7 @@ Coût mensuel : ~0.58€/mois (domaine OVH, payé pour 3 ans).
 | Resend | Free | 100 emails/jour | Faible |
 | Upstash Redis | Free | 10k commands/jour | **Élevé à surveiller** |
 | Sentry | Developer | 5k errors/mois + 50 replays/mois | Faible (Spike Protection) |
-| Cloudflare Turnstile | Free | 1M req/mois | Aucun |
-| Jira | Free | 10 users | Aucun |
+| Cloudflare Turnstile | Free | 1M req/mois | Aucun (pas encore branché) |
 | cron-job.org | Free | 50 crons | Aucun |
 
 ## Pièges et alertes

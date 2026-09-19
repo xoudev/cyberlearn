@@ -333,3 +333,71 @@ Convention formalisee dans docs/security/logging.md.
 - Sentry : desinstaller ou configurer (RGPD-safe) : PR 3.
 - Gestion des cookies granulaire : uniquement si analytics ajoutes (pas de delai impose).
 - DPA sous-traitants (Resend, Atlassian, Upstash, Cloudflare) : a verifier + a jour Jordan.
+
+---
+
+## État au 19/09/2026 — ce que cet audit ne dit plus
+
+Ce document est un instantané du 23/05/2026 et il est gardé comme tel : il
+raconte ce qui a été trouvé et dans quel ordre les trous ont été bouchés.
+Quatre de ses conclusions sont désormais fausses, et l'une d'elles l'est dans le
+sens dangereux — lire « Sentry est catalogué mais inactif, aucune donnée n'est
+transmise » aujourd'hui mène à conclure qu'aucun DPA n'est nécessaire. D'où
+cette section.
+
+### Sentry est actif (section 2 périmée)
+
+Sentry est initialisé sur les deux apps depuis la PR 3 :
+`instrumentation-client.ts`, `sentry.server.config.ts`,
+`sentry.edge.config.ts`, plus `withSentryConfig`. Le fichier
+`sentry.client.config.ts` que cet audit cherchait n'existe pas — ce n'est plus
+le nom du point d'entrée navigateur. Des events partent donc réellement, avec
+`scrubEvent()` sur 100 % d'entre eux. Voir `docs/security/sentry-config.md`. Le
+DPA Sentry est à vérifier, et l'audit des Replays à 30 jours reste ouvert dans
+`docs/backlog/post-v1.md`.
+
+### L'authentification n'est plus un lien magique (section 4 périmée)
+
+La ligne `email — Identifiant de connexion (Magic Link)` décrit un flux
+remplacé : l'inscription et la connexion se font par e-mail et mot de passe
+(12 à 128 caractères), le GitHub OAuth reste une alternative, et un facteur TOTP
+est possible côté apprenant, obligatoire côté console. Le seul chemin à code à
+usage unique qui subsiste est `/api/mobile/send-otp`, maintenu pour les builds
+mobiles déjà installés. Détail dans `docs/authentication.md`.
+
+### Jira n'a jamais reçu de données (section 6 périmée)
+
+Atlassian figurait dans la liste des sous-traitants sur la seule foi des
+variables `JIRA_*` présentes dans `.env.example`. Aucun code ne les lit : une
+demande de contact crée un `ContactTicket` en base et la console y répond, avec
+une notification par Resend. Atlassian a été retiré du registre des traitements
+et de la roadmap des coûts ; le DPA Atlassian de la liste des gaps est sans
+objet. Les variables restent déclarées et inertes — suppression tracée dans
+`docs/hardening/known-issues.md`.
+
+### Turnstile toujours pas branché (section 6, note en bas)
+
+Inchangé depuis mai, et à dire explicitement parce que la note se lisait comme
+un chantier en cours : aucun widget Turnstile n'est rendu, aucune vérification
+serveur n'est appelée, Cloudflare ne reçoit rien. L'anti-abus effectif sur le
+formulaire de contact est le rate limiting plus un honeypot et un seuil de temps
+de remplissage. `ContactTicket.ipAddress` et `userAgent` ne sont toujours pas
+peuplés (gap 11 : encore ouvert).
+
+### Ce que l'audit ne couvrait pas encore
+
+L'audit précède les classes, le forum, le partage de notes, les amis, la
+modération avec sanctions, et l'application mobile. Ces surfaces traitent des
+données personnelles et sont documentées depuis dans
+`docs/rgpd/registre-traitements.md`, traitements 6 à 8 — l'app mobile n'ouvre
+pas de traitement à elle seule : c'est un second client sur la même identité
+Supabase et la même base.
+
+### Ce qui n'a pas bougé
+
+- Aucun analytics : la recherche de la section 1 ne trouve toujours aucune
+  dépendance de tracking dans les `package.json`.
+- Région Supabase : `eu-central-1`.
+- Les liens légaux : `/legal/cgu` redirige désormais (301) vers
+  `/legal/terms` ; la page existe, le footer y mène, ainsi qu'à `/privacy` et
+  `/legal`.

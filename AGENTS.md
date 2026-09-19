@@ -6,27 +6,33 @@
 - Apps: Next.js 15 (App Router, RSC) + TypeScript 5.x strict
 - Styling: Tailwind CSS v4 (CSS-first, no tailwind.config.js) + shadcn/ui
 - DB: Supabase Postgres + Prisma 6.x ORM
-- Auth: Supabase Auth (Magic Link + GitHub OAuth)
+- Auth: Supabase Auth (e-mail + password, GitHub OAuth, optional TOTP;
+  mandatory TOTP on the admin console). The only one-time-code path left is
+  the mobile sign-in route, `/api/mobile/send-otp`. See `docs/authentication.md`.
 - Storage: Supabase Storage
 - Realtime: Supabase Realtime (notifications in-app)
 - Email: Resend + React Email
 - Validation: Zod everywhere (client + server)
 - State: TanStack Query v5
 - Testing: Vitest (unit) + RLS/IDOR integration suite (ephemeral Supabase stack in CI)
-- CI: GitHub Actions (format, lint, typecheck, test, build, runtime integrity,
-  auth hook signature, integration RLS/IDOR, gitleaks, Semgrep)
+- CI: GitHub Actions, twelve jobs (format, lint, typecheck, test, build, runtime
+  integrity, lesson diagrams, lesson markers, auth hook signature, integration
+  RLS/IDOR, gitleaks, Semgrep)
 
 ## Architecture
 
 ```
 apps/web      → cyberlearn.fr (public + authenticated)
 apps/admin    → admin.cyberlearn.fr (ADMIN role only)
+apps/mobile   → Expo / React Native app, writes through /api/mobile/*
+apps/marketing → Remotion renders for the Play Store listing
 packages/db   → Prisma schema, migrations, repositories
 packages/ui   → Design tokens CSS + brand components (XPBar, LevelBadge, etc.)
 packages/types → Zod schemas, shared TS types
 packages/lib  → Business logic (XP calc, SM-2, badge evaluator, auth guards)
 packages/email → React Email templates
 packages/config → Shared ESLint, TSConfig, Biome configs
+content/      → MDX lessons and quizzes, versioned
 ```
 
 ## Commands
@@ -44,7 +50,7 @@ packages/config → Shared ESLint, TSConfig, Biome configs
 
 ## Critical Rules
 
-1. **ALL code in English** : variables, functions, types, comments, commits, tests, logs. French ONLY in UI strings (via next-intl `messages/fr.json`), MDX lesson content, and email templates.
+1. **ALL code in English** : variables, functions, types, comments, tests, logs. French ONLY in user-facing strings, MDX lesson content, and email templates. Those strings are written inline in the components today — `next-intl` is in the dependencies but nothing imports it and there is no `messages/fr.json`. Do not write against that file as though it existed.
 2. **Zero `any`** : use `unknown` + type narrowing if needed. `as` casts require a comment justifying them.
 3. **No secrets in code**, ever. Use env vars validated by `@t3-oss/env-nextjs` + Zod. Check `.env.example`.
 4. **Zod on ALL inputs** : every Server Action, every Route Handler, every form. `safeParse` always, never raw `parse`.
@@ -52,9 +58,34 @@ packages/config → Shared ESLint, TSConfig, Biome configs
 6. **No console.log in prod** : use Pino logger. Errors: never leak stack traces to client.
 7. **RLS enforced** : every Supabase table has Row Level Security. No exceptions.
 8. **Repository pattern** : no direct Prisma calls from components. Services → Repositories → Prisma.
-9. **Conventional Commits** : `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `security:` (English).
+9. **Conventional Commits** : `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `security:`. Type and scope in English, subject in French — it describes a change to a French-language product. Enforced by `commitlint` on `commit-msg`, header capped at 100 characters. See `docs/dev/commit-conventions.md`.
 10. **Ask before adding unlisted deps** : if a dependency is not in the brief or pnpm catalog, stop and ask.
 11. **Mobile parity** : anything shipped on the site must reach the mobile app, unless it is written down as web-only in `docs/MOBILE_PARITY.md` with its reason. A PR touching a shared surface either changes both apps or updates that register — web-only is a decision on record, never an omission.
+12. **Packages never emit JS next to their sources** : every package is consumed
+    as TS source (`main` and `exports` point at `src/index.ts`), so every
+    tsconfig sets `noEmit`. Vite resolves `.js` before `.ts`, so an emitted file
+    sits in front of the source it was built from and the tests read the last
+    build instead of the code. This happened: 348 stale files across email, lib,
+    types and ui. The `.gitignore` guards all five packages — do not relax it.
+13. **A turbo task's `inputs` must cover where the code actually lives** : the
+    `test` task once listed `src/**` and `test/**`, and neither `apps/web` nor
+    `apps/admin` has either directory. Their test hash therefore ignored every
+    source change, and CI — which restores `.turbo` across commits — could
+    replay an old run's logs as a pass. It is `$TURBO_DEFAULT$` now.
+14. **One e-mail, one subject** : a mail client groups by sender and subject, so
+    a repeated subject collapses several mails into one row where only the
+    newest is visible. A template either names the thing it is about (a lesson
+    title, a ticket subject) or stamps the moment via `stampedSubject`. The
+    exception is a reply on a ticket, which really is one conversation. Never
+    put a one-time code in a subject: it shows on a locked phone.
+15. **Mail styling lives in `packages/email/src/theme.ts`** : nine templates each
+    carried their own copy, which is how they drifted from the site. A template
+    imports the shared vocabulary and adds only what is its own. No
+    `border-radius` — the site is square.
+16. **A terminal state is terminal for everyone** : a RESOLVED or CLOSED ticket
+    takes no new message, from the requester or the console. The gate lives in
+    the repository, in the same statement that bumps the row, because a check
+    followed by an insert leaves a gap the status can change in.
 
 ## Compact Instructions
 
