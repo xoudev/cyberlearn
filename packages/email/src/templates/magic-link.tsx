@@ -13,6 +13,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
+import { stampedSubject } from "../subject.js";
 
 export type EmailActionType = "magiclink" | "signup" | "recovery" | "invite" | "email_change";
 
@@ -115,10 +116,15 @@ export function MagicLinkEmail({
   );
 }
 
-export function getMagicLinkSubject(type: string): string {
+export function getMagicLinkSubject(type: string, sentAt: Date = new Date()): string {
   // SAFETY: Supabase Auth may pass an unrecognized type string at runtime - cast
   // widens the Record type so the ?? fallback is type-valid for unknown keys.
-  return (SUBJECT as Record<string, string | undefined>)[type] ?? SUBJECT.magiclink;
+  const base = (SUBJECT as Record<string, string | undefined>)[type] ?? SUBJECT.magiclink;
+  // Stamped, because this is the one mail somebody receives over and over with
+  // nothing in it to tell one from another. Six identical "Ton lien de
+  // connexion" collapse into a single row where only the newest is visible -
+  // and the newest is exactly the one being looked for.
+  return stampedSubject(base, sentAt);
 }
 
 const styles = {

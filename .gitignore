@@ -22,6 +22,27 @@ packages/db/prisma/**/*.d.ts
 packages/db/prisma/**/*.js.map
 packages/db/prisma/**/*.d.ts.map
 
+# The same rule, for the same reason, in the four other packages that are also
+# consumed as TS source. They were left out of the guard above and had 348
+# emitted files sitting in front of their sources: Vite resolves .js before
+# .ts, so their test suites were reading the last build rather than the code.
+packages/email/src/**/*.js
+packages/email/src/**/*.d.ts
+packages/email/src/**/*.js.map
+packages/email/src/**/*.d.ts.map
+packages/lib/src/**/*.js
+packages/lib/src/**/*.d.ts
+packages/lib/src/**/*.js.map
+packages/lib/src/**/*.d.ts.map
+packages/types/src/**/*.js
+packages/types/src/**/*.d.ts
+packages/types/src/**/*.js.map
+packages/types/src/**/*.d.ts.map
+packages/ui/src/**/*.js
+packages/ui/src/**/*.d.ts
+packages/ui/src/**/*.js.map
+packages/ui/src/**/*.d.ts.map
+
 # Environment files: NEVER commit real env files
 .env
 .env.local
