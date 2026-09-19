@@ -25,11 +25,6 @@ export interface ModalShellProps {
   actions?: React.ReactNode;
   /** Defaults to the video's width, which is the widest thing shown so far. */
   maxWidth?: number;
-  /**
-   * The body sits directly against the header by default, which is what a
-   * video wants and what a page of content does not.
-   */
-  bodyPadding?: string;
   children: React.ReactNode;
 }
 
@@ -41,7 +36,6 @@ export function ModalShell({
   ariaLabel,
   actions,
   maxWidth = 1040,
-  bodyPadding,
   children,
 }: ModalShellProps): React.ReactElement | null {
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -182,7 +176,7 @@ export function ModalShell({
           </button>
         </div>
 
-        <div style={{ minHeight: 0, overflowY: "auto", padding: bodyPadding }}>{children}</div>
+        <div style={{ minHeight: 0, overflowY: "auto" }}>{children}</div>
 
         {actions !== undefined && (
           <div

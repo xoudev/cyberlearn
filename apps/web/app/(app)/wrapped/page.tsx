@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { prisma, wrappedRepository } from "@cyberlearn/db";
 import { wrappedWindow } from "@cyberlearn/lib";
 import { requireRequestUser } from "@/lib/auth";
-import { WrappedClient } from "./_components/WrappedClient";
+import { WrappedRoute } from "./_components/WrappedRoute";
 import { WrappedClosed } from "./_components/WrappedClosed";
 
 export const metadata: Metadata = { title: "Ton Wrapped · CyberLearn" };
@@ -35,5 +35,5 @@ export default async function WrappedPage(): Promise<React.ReactElement> {
   ]);
   const handle = profile?.username ?? profile?.displayName ?? "moi";
 
-  return <WrappedClient payload={payload} handle={handle} />;
+  return <WrappedRoute payload={payload} handle={handle} />;
 }

@@ -1,25 +1,24 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useCallback, useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import type { WrappedPayload } from "@cyberlearn/lib";
 import { getWrappedAction } from "@/app/(app)/_actions/wrapped-actions";
-import { ModalShell } from "@/components/modal-shell";
 
 /**
  * Fetched on the click, like the payload it renders.
  *
- * Imported plainly, the recap's cards landed in the signed-in layout's chunk -
- * 20 kB downloaded by every page, eleven months a year, to draw something
+ * Imported plainly, the recap landed in the signed-in layout's chunk - tens of
+ * kilobytes downloaded by every page, eleven months a year, to draw something
  * nobody can open. The build manifest is where that showed up, not the page
  * weights, which is why it is worth a line here.
  */
-const WrappedBody = dynamic(
+const WrappedExperience = dynamic(
   async () => {
-    const mod = await import("@/app/(app)/wrapped/_components/WrappedClient");
-    return mod.WrappedBody;
+    const mod = await import("@/app/(app)/wrapped/_components/WrappedExperience");
+    return mod.WrappedExperience;
   },
-  { ssr: false, loading: () => <p className="wr-modal-note">Ouverture du récap…</p> },
+  { ssr: false },
 );
 
 /**
@@ -91,6 +90,10 @@ export function WrappedChip({ periodKey }: { periodKey: string }): React.JSX.Ele
     }
   }, [periodKey]);
 
+  const close = useCallback(() => {
+    setOpen(false);
+  }, []);
+
   function openModal(): void {
     setOpen(true);
     setFailed(null);
@@ -132,30 +135,40 @@ export function WrappedChip({ periodKey }: { periodKey: string }): React.JSX.Ele
         <span className="wr-chip__year">{periodKey}</span>
       </button>
 
-      <ModalShell
-        open={open}
-        onClose={() => {
-          setOpen(false);
-        }}
-        eyebrow={`Cyber Learn · Récap ${periodKey}`}
-        title="Ton Wrapped"
-        bodyPadding="24px 20px"
-      >
-        {pending && data === null && failed === null && (
-          <p className="wr-modal-note">Calcul de ton année…</p>
-        )}
-        {failed === "closed" && (
-          <p className="wr-modal-note">
-            Ton récap n’est pas ouvert en ce moment. Il revient le 1er décembre.
-          </p>
-        )}
-        {failed === "error" && (
-          <p className="wr-modal-note">
-            Ton récap n’a pas pu être chargé. Recharge la page et réessaie.
-          </p>
-        )}
-        {data !== null && <WrappedBody payload={data.payload} handle={data.handle} />}
-      </ModalShell>
+      {open && (
+        <>
+          {/* Three states, one overlay: the year being counted, the two ways
+              that can fail, and the story itself. */}
+          {data === null && (
+            <div className="ws-root" role="dialog" aria-modal="true" aria-label="Ton Wrapped">
+              <div className="ws-frame">
+                <div className="ws-stage">
+                  <p className="ws-eyebrow">{`Cyber Learn · Récap ${periodKey}`}</p>
+                  {failed === null && <p className="ws-lead">Calcul de ton année…</p>}
+                  {failed === "closed" && (
+                    <p className="ws-lead">
+                      Ton récap n’est pas ouvert en ce moment. Il revient le 1er décembre.
+                    </p>
+                  )}
+                  {failed === "error" && (
+                    <p className="ws-lead">
+                      Ton récap n’a pas pu être chargé. Recharge la page et réessaie.
+                    </p>
+                  )}
+                  <div className="ws-steps" style={{ borderTop: "none", padding: "20px 0 0" }}>
+                    <button type="button" className="ws-step" onClick={close}>
+                      Fermer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {data !== null && (
+            <WrappedExperience payload={data.payload} handle={data.handle} onClose={close} />
+          )}
+        </>
+      )}
     </>
   );
 }
