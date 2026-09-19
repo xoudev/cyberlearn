@@ -1,6 +1,7 @@
 import { prisma } from "@cyberlearn/db";
 import { sendClassEnrolledEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
+import { learnerUrl } from "./learner-url";
 
 /**
  * Tells students they have been put in a class.
@@ -78,7 +79,7 @@ export async function notifyEnrolledInClass(classId: string, userIds: string[]):
     console.error("[class-enrolment] notifications failed:", error);
   }
 
-  const profileUrl = `${env.NEXT_PUBLIC_SITE_URL}/profile`;
+  const profileUrl = learnerUrl("/profile");
 
   await Promise.all(
     users.map(async (u) => {

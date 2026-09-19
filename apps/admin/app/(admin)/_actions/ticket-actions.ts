@@ -7,6 +7,7 @@ import { sendTicketReplyEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 import { STATUS_META } from "../tickets/ticket-meta";
 import { requireAdminAction } from "@/lib/auth";
+import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
 const updateStatusSchema = z.object({
   ticketId: z.string().uuid(),
@@ -126,8 +127,8 @@ export async function replyToTicketAction(
         subject: ticket.subject,
         reply: input.data.body,
         statusLabel: STATUS_META[status?.status ?? "IN_PROGRESS"]?.label ?? "En cours",
-        ticketUrl: `${env.NEXT_PUBLIC_SITE_URL}/support/${ticket.id}`,
-        siteUrl: env.NEXT_PUBLIC_SITE_URL,
+        ticketUrl: learnerUrl(`/support/${ticket.id}`),
+        siteUrl: learnerSiteUrl(),
       });
     } catch (error) {
       // The reply is written and visible on their page either way.

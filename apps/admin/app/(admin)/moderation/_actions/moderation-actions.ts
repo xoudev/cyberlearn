@@ -7,6 +7,7 @@ import { BAN_DURATIONS, banExpiryFor, isBanDurationKey, moderationNotice } from 
 import { sendBanNoticeEmail, sendModerationNoticeEmail } from "@cyberlearn/email";
 import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
+import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
 /**
  * A person deciding what happens to content the screen took down - and, when it
@@ -96,8 +97,8 @@ export async function resolveModerationAction(
                   timeStyle: "short",
                   timeZone: "Europe/Paris",
                 }).format(expiresAt),
-          appealUrl: `${env.NEXT_PUBLIC_SITE_URL}/banned`,
-          siteUrl: env.NEXT_PUBLIC_SITE_URL,
+          appealUrl: learnerUrl("/banned"),
+          siteUrl: learnerSiteUrl(),
         });
       } catch (error) {
         console.error("[moderation] ban notice e-mail failed:", error);
@@ -150,8 +151,8 @@ export async function resolveModerationAction(
           title: notice.title,
           body: notice.body,
           excerpt: subject?.excerpt ?? "",
-          recordUrl: `${env.NEXT_PUBLIC_SITE_URL}${RECORD_PATH}`,
-          siteUrl: env.NEXT_PUBLIC_SITE_URL,
+          recordUrl: learnerUrl(RECORD_PATH),
+          siteUrl: learnerSiteUrl(),
         });
       }
     } catch (error) {
