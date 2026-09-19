@@ -902,6 +902,9 @@
   font-size: 10.5px;
   line-height: 1.5;
 }
+/* One line, and sized for one: the fixed height and the zero vertical padding
+   are what an input wants and what flattens a textarea to a single squashed
+   row with its text against the top border. A textarea takes .a-textarea. */
 .a-input {
   width: 100%;
   height: 46px;
