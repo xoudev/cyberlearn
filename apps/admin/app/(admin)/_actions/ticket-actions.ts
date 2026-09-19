@@ -92,12 +92,24 @@ export async function replyToTicketAction(
   });
   if (!ticket) return { ok: false, error: "Ticket introuvable." };
 
-  await ticketRepository.addMessage({
+  // The console used to write into any ticket whatever its status, including
+  // ones the queue itself shows as finished. The gate is the repository's, so
+  // both sides of the conversation now close at the same moment.
+  const added = await ticketRepository.addMessage({
     ticketId: ticket.id,
     authorId: admin.id,
     fromStaff: true,
     body: input.data.body,
   });
+  if (!added.ok) {
+    return {
+      ok: false,
+      error:
+        added.reason === "TERMINAL"
+          ? "Ticket résolu ou clos : rouvre-le pour répondre."
+          : "Ticket introuvable.",
+    };
+  }
 
   await prisma.auditLog.create({
     data: {

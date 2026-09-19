@@ -173,4 +173,9 @@ export {
   XpSource,
   WrappedPeriod,
 } from "@prisma/client";
-export { ticketRepository, OPEN_TICKET_STATUSES } from "./repositories/ticket.repository.js";
+export {
+  ticketRepository,
+  OPEN_TICKET_STATUSES,
+  isTicketOpen,
+  type AddMessageResult,
+} from "./repositories/ticket.repository.js";

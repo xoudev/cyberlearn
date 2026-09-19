@@ -2,7 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ticketRepository } from "@cyberlearn/db";
+import { isTicketOpen, ticketRepository } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { STATUS_LABEL, STATUS_TONE, THEME_LABEL } from "@/lib/tickets/meta";
@@ -69,16 +69,20 @@ export default async function TicketPage({
         ))}
       </ol>
 
-      {ticket.status === "CLOSED" ? (
+      {/* Resolved counts as finished, not only closed. The box used to stay up
+          on a resolved ticket and the reply was accepted, so an answered
+          demand quietly became a second conversation nobody was watching. */}
+      {isTicketOpen(ticket.status) ? (
+        <TicketReply ticketId={ticket.id} />
+      ) : (
         <p className="cls-empty">
-          Cette demande est close. Si le problème revient, ouvre-en une nouvelle depuis{" "}
+          Cette demande est {ticket.status === "RESOLVED" ? "résolue" : "close"}. Si le problème
+          revient, ouvre-en une nouvelle depuis{" "}
           <Link href="/contact" style={{ color: "var(--cosmetic-accent)" }}>
             le formulaire de contact
           </Link>
           .
         </p>
-      ) : (
-        <TicketReply ticketId={ticket.id} />
       )}
     </div>
   );

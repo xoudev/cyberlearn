@@ -129,41 +129,117 @@ describe("tickets (integration, real DB)", () => {
       expect(row?.status).toBe("IN_PROGRESS");
     });
 
-    it("leaves a resolved ticket resolved, rather than reopening it on the team's behalf", async () => {
+    it("refuses a staff reply to a resolved ticket, and writes nothing", async () => {
       if (!configured) return;
-      // A reply to a resolved ticket is often the note that closes it. The
-      // console must not argue with the person using it.
-      await ticketRepository.addMessage({
+      const before = await prisma.ticketMessage.count({ where: { ticketId: resolvedTicketId } });
+
+      const result = await ticketRepository.addMessage({
         ticketId: resolvedTicketId,
         authorId: staff,
         fromStaff: true,
         body: "Pour information, c'est en ligne depuis ce matin.",
       });
 
-      const row = await prisma.contactTicket.findUnique({
-        where: { id: resolvedTicketId },
-        select: { status: true },
-      });
-      expect(row?.status).toBe("RESOLVED");
+      expect(result).toEqual({ ok: false, reason: "TERMINAL" });
+      // Refusing has to mean refusing: a message that lands anyway turns a
+      // finished ticket into one nobody is watching.
+      expect(await prisma.ticketMessage.count({ where: { ticketId: resolvedTicketId } })).toBe(
+        before,
+      );
     });
 
-    it("never moves the status on a reply from the requester", async () => {
+    it("refuses the requester the same way, on the same ticket", async () => {
       if (!configured) return;
-      const before = await prisma.contactTicket.findUnique({
-        where: { id: resolvedTicketId },
-        select: { status: true },
-      });
-      await ticketRepository.addMessage({
+      const result = await ticketRepository.addMessage({
         ticketId: resolvedTicketId,
         authorId: requester,
         fromStaff: false,
-        body: "Merci !",
+        body: "Toujours bloqué en fait.",
       });
+
+      expect(result).toEqual({ ok: false, reason: "TERMINAL" });
+    });
+
+    it("refuses a closed ticket too, from either side", async () => {
+      if (!configured) return;
+      const closed = await makeTicket(`Clos ${suffix}`, "OPEN");
+      await prisma.contactTicket.update({ where: { id: closed }, data: { status: "CLOSED" } });
+
+      expect(
+        await ticketRepository.addMessage({
+          ticketId: closed,
+          authorId: staff,
+          fromStaff: true,
+          body: "Un mot de plus.",
+        }),
+      ).toEqual({ ok: false, reason: "TERMINAL" });
+      expect(
+        await ticketRepository.addMessage({
+          ticketId: closed,
+          authorId: requester,
+          fromStaff: false,
+          body: "Et moi aussi.",
+        }),
+      ).toEqual({ ok: false, reason: "TERMINAL" });
+      expect(await prisma.ticketMessage.count({ where: { ticketId: closed } })).toBe(0);
+    });
+
+    it("leaves a refused ticket's status and timestamp alone", async () => {
+      if (!configured) return;
+      const before = await prisma.contactTicket.findUnique({
+        where: { id: resolvedTicketId },
+        select: { status: true, updatedAt: true },
+      });
+
+      await ticketRepository.addMessage({
+        ticketId: resolvedTicketId,
+        authorId: staff,
+        fromStaff: true,
+        body: "Encore une tentative.",
+      });
+
       const after = await prisma.contactTicket.findUnique({
         where: { id: resolvedTicketId },
+        select: { status: true, updatedAt: true },
+      });
+      expect(after?.status).toBe("RESOLVED");
+      // The bump is what orders both queues. A refused reply must not push a
+      // finished ticket back to the top of them.
+      expect(after?.updatedAt.getTime()).toBe(before?.updatedAt.getTime());
+    });
+
+    it("tells a missing ticket apart from a finished one", async () => {
+      if (!configured) return;
+      const result = await ticketRepository.addMessage({
+        ticketId: randomUUID(),
+        authorId: staff,
+        fromStaff: true,
+        body: "Dans le vide.",
+      });
+      expect(result).toEqual({ ok: false, reason: "NOT_FOUND" });
+    });
+
+    it("still takes a reply while the ticket is in progress, without moving it", async () => {
+      if (!configured) return;
+      const before = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
         select: { status: true },
       });
-      expect(after?.status).toBe(before?.status);
+      expect(before?.status).toBe("IN_PROGRESS");
+
+      const result = await ticketRepository.addMessage({
+        ticketId,
+        authorId: requester,
+        fromStaff: false,
+        body: "Merci, je regarde.",
+      });
+
+      expect(result).toEqual({ ok: true });
+      const after = await prisma.contactTicket.findUnique({
+        where: { id: ticketId },
+        select: { status: true },
+      });
+      expect(after?.status).toBe("IN_PROGRESS");
     });
 
     it("takes the thread with the ticket when the ticket goes", async () => {

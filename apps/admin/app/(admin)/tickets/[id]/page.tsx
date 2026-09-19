@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@cyberlearn/db";
+import { isTicketOpen, prisma } from "@cyberlearn/db";
 import { Card, GhostLink, PageHeader, Tag, UI, type Tone } from "../../_components/admin-ui";
 import { TicketStatusSelect } from "../_components/TicketStatusSelect";
 import { TicketThread } from "../_components/TicketThread";
@@ -218,6 +218,7 @@ export default async function AdminTicketPage({
       <Card title="Conversation">
         <TicketThread
           ticketId={ticket.id}
+          open={isTicketOpen(ticket.status)}
           requesterName={requester}
           openingMessage={ticket.message}
           openingStamp={stamp.format(ticket.createdAt)}
