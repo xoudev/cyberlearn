@@ -35,7 +35,7 @@
     "test": {
       "dependsOn": ["^build", "@cyberlearn/db#build"],
       "outputs": ["coverage/**"],
-      "inputs": ["src/**", "test/**", "*.test.ts", "*.test.tsx", "vitest.config.*"]
+      "inputs": ["$TURBO_DEFAULT$"]
     },
     "test:coverage": {
       "dependsOn": ["^build", "@cyberlearn/db#build"],
