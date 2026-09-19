@@ -3,13 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { lessonByline } from "@/lib/lessons/byline";
 
 const HEX_CLIP = "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)";
-
-const ROLE_LABEL: Record<string, string> = {
-  TEACHER: "Professeur",
-  ADMIN: "Équipe CyberLearn",
-};
 
 /**
  * Who wrote this lesson, in the right rail.
@@ -19,11 +15,9 @@ const ROLE_LABEL: Record<string, string> = {
  * read, while the byline says who they are reading and lets them open that
  * person's profile.
  *
- * A missing author means a deleted account rather than an unattributed lesson:
- * every path that writes a lesson sets the author, and the column only became
- * nullable so that erasing an account leaves the lesson standing. So the
- * section stays and says the credit is gone, instead of quietly disappearing
- * and making the lesson look like nobody's work.
+ * A missing author is not one situation but two, and the audience tells them
+ * apart - see lib/lessons/byline. Either way the section stays rather than
+ * quietly disappearing, which would make the lesson look like nobody's work.
  */
 export async function LessonAuthor({
   lessonId,
@@ -40,17 +34,16 @@ export async function LessonAuthor({
   // the monogram below, as everywhere else the avatar is shown small.
   const rawAvatar = author ? await resolveAvatarSrc(author.avatarUrl) : null;
 
-  const isPublic = author?.preferences?.publicProfile !== false;
-  const name = author
-    ? isPublic
-      ? // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-        author.displayName.trim() || author.username || "Sans nom"
-      : "Anonyme"
-    : "Compte supprimé";
+  const byline = lessonByline(author, lesson.audience);
+  const { name } = byline;
+  // Only a named person gets their picture and their profile: an anonymous
+  // author is anonymous, and neither the platform nor an erased account has a
+  // face to show.
+  const named = byline.kind === "person";
   const avatar =
-    isPublic && rawAvatar !== null && !rawAvatar.startsWith("__glyph:") ? rawAvatar : null;
-  const profileUrl = author && isPublic && author.username ? `/u/${author.username}` : null;
-  const roleLabel = author && isPublic ? ROLE_LABEL[author.role] : undefined;
+    named && rawAvatar !== null && !rawAvatar.startsWith("__glyph:") ? rawAvatar : null;
+  const profileUrl = byline.profilePath;
+  const roleLabel = byline.roleLabel ?? undefined;
 
   const date = lesson.publishedAt ?? lesson.createdAt;
   const dateStr = new Intl.DateTimeFormat("fr-FR", {
@@ -75,9 +68,10 @@ export async function LessonAuthor({
           width: 34,
           height: 34,
           clipPath: HEX_CLIP,
-          background: author
-            ? "color-mix(in srgb, var(--cosmetic-accent) 22%, #110F33)"
-            : "#110F33",
+          background:
+            byline.kind === "gone"
+              ? "#110F33"
+              : "color-mix(in srgb, var(--cosmetic-accent) 22%, #110F33)",
           display: "grid",
           placeItems: "center",
           position: "relative",
@@ -102,10 +96,10 @@ export async function LessonAuthor({
               fontSize: 12,
               // On the accent-tinted hexagon, which is dark: the accent itself
               // reads, near-black does not.
-              color: author ? "var(--cosmetic-accent)" : "#6B6890",
+              color: byline.kind === "gone" ? "#6B6890" : "var(--cosmetic-accent)",
             }}
           >
-            {author ? name.charAt(0).toUpperCase() : "?"}
+            {byline.kind === "gone" ? "?" : name.charAt(0).toUpperCase()}
           </span>
         )}
       </div>
@@ -117,7 +111,7 @@ export async function LessonAuthor({
             fontWeight: 700,
             fontSize: 13,
             lineHeight: 1.3,
-            color: author ? "#F5F5FA" : "#6B6890",
+            color: byline.kind === "gone" ? "#6B6890" : "#F5F5FA",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",

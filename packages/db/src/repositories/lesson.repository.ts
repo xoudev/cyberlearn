@@ -252,6 +252,9 @@ export const lessonRepository = {
       select: {
         publishedAt: true,
         createdAt: true,
+        // The byline reads this: a lesson with no author is the platform's own
+        // work on one side and an erased account on the other.
+        audience: true,
         author: {
           select: {
             id: true,
