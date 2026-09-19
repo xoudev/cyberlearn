@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { banRepository, deleteAccount, prisma, UserRole } from "@cyberlearn/db";
+import { banRepository, deleteAccount, prisma, resetProgress, UserRole } from "@cyberlearn/db";
 import { banExpiryFor, banTimeLeft, isBanDurationKey } from "@cyberlearn/lib";
 import { sendAccountDeletedEmail, sendBanNoticeEmail } from "@cyberlearn/email";
 import { requireAdminAction } from "@/lib/auth";
@@ -304,4 +304,80 @@ export async function liftBanAction(
 
   revalidatePath(`/users/${parsed.data.userId}`);
   return { ok: true };
+}
+
+// ─── Resetting progress ─────────────────────────────────────────────────────
+
+const resetProgressSchema = z.object({
+  userId: z.string().uuid(),
+  /**
+   * The account's own handle, typed back.
+   *
+   * The same reasoning as the deletion form: what separates resetting the right
+   * account from the one above it in a sorted list is having looked at which
+   * row you are on. Deliberately the handle and not the address, so a value
+   * pasted into the wrong form on this page arms neither.
+   */
+  confirmHandle: z.string().trim(),
+});
+
+export interface ResetProgressState {
+  error?: string;
+  ok?: boolean;
+  /** Filled on success, so the console can say what it cleared. */
+  summary?: {
+    xpCleared: number;
+    levelBefore: number;
+    lessonsCleared: number;
+    pathsCleared: number;
+    badgesCleared: number;
+    certificatesCleared: number;
+  };
+  /** True when the rows went but their PDFs did not. */
+  certificateFilesKept?: boolean;
+}
+
+export async function resetProgressAction(
+  _prev: ResetProgressState,
+  formData: FormData,
+): Promise<ResetProgressState> {
+  const admin = await requireAdminAction();
+  const parsed = resetProgressSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) return { error: "Paramètres invalides." };
+
+  const target = await prisma.user.findUnique({
+    where: { id: parsed.data.userId },
+    select: { id: true, username: true, email: true },
+  });
+  if (!target) return { error: "Ce compte n'existe plus." };
+
+  // Accounts that have not finished onboarding have no handle yet; the address
+  // is what identifies them, and it is what the form shows in that case.
+  const expected = target.username ?? target.email;
+  if (expected.toLowerCase() !== parsed.data.confirmHandle.toLowerCase()) {
+    return { error: "La saisie ne correspond pas à ce compte." };
+  }
+
+  let summary;
+  try {
+    summary = await resetProgress(target.id, { actorId: admin.id });
+  } catch (error) {
+    console.error("[admin] resetProgressAction failed:", error);
+    return { error: "La remise à zéro a échoué. Rien n'a été effacé." };
+  }
+
+  revalidatePath(`/users/${target.id}`);
+  revalidatePath("/users");
+  return {
+    ok: true,
+    summary: {
+      xpCleared: summary.xpCleared,
+      levelBefore: summary.levelBefore,
+      lessonsCleared: summary.lessonsCleared,
+      pathsCleared: summary.pathsCleared,
+      badgesCleared: summary.badgesCleared,
+      certificatesCleared: summary.certificatesCleared,
+    },
+    certificateFilesKept: !summary.certificateFilesRemoved,
+  };
 }

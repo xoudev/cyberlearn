@@ -17,6 +17,7 @@ import { banRepository } from "@cyberlearn/db";
 import { banTimeLeft } from "@cyberlearn/lib";
 import { BanForm } from "./_components/ban-form";
 import { DeleteUserForm } from "./_components/delete-user-form";
+import { ResetProgressForm } from "./_components/reset-progress-form";
 
 export const metadata: Metadata = { title: "Compte" };
 export const dynamic = "force-dynamic";
@@ -228,6 +229,14 @@ export default async function AdminUserPage({
       </Card>
 
       <BanForm userId={user.id} active={activeBan} history={banHistory} />
+
+      {/* Before the deletion, and with its own confirmation token: the one
+          that keeps the account is the one to reach for first. */}
+      <ResetProgressForm
+        userId={user.id}
+        handle={user.username ?? user.email}
+        displayName={user.displayName || handle}
+      />
 
       <DeleteUserForm
         userId={user.id}
