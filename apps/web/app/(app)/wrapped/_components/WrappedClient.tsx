@@ -252,7 +252,7 @@ function buildCards(payload: WrappedPayload): CardDef[] {
       : "";
   cards.push({
     accent: a[0],
-    eyebrow: "Ton mois en chiffres",
+    eyebrow: "Ton année en chiffres",
     body: (
       <>
         <BigStat value={String(payload.lessons.total)} unit="leçons" accent={a[0]} />
@@ -291,7 +291,7 @@ function buildCards(payload: WrappedPayload): CardDef[] {
         </p>
         <Lead>
           {top
-            ? "C'est là que tu passes le plus de temps ce mois-ci."
+            ? "C'est là que tu passes le plus de temps cette année."
             : "Termine des leçons pour révéler ton domaine de prédilection."}
         </Lead>
       </>
@@ -303,7 +303,7 @@ function buildCards(payload: WrappedPayload): CardDef[] {
   const others = Math.max(0, payload.badges.thisYear - payload.badges.recent.length);
   cards.push({
     accent: a[2],
-    eyebrow: "Tes badges du mois",
+    eyebrow: "Tes badges de l'année",
     body: (
       <>
         <BigStat value={String(payload.badges.thisYear)} unit="badges" accent={a[2]} />
@@ -329,7 +329,7 @@ function buildCards(payload: WrappedPayload): CardDef[] {
           ))}
           {payload.badges.recent.length === 0 ? (
             <span style={{ ...DISPLAY, fontSize: 13, color: "#6B6890" }}>
-              Aucun badge ce mois-ci. La prochaine série t’attend.
+              Aucun badge cette année. La prochaine série t’attend.
             </span>
           ) : null}
         </div>
@@ -470,7 +470,7 @@ function FinalCard({
         </span>
       </h2>
       <span style={{ ...MONO, fontSize: 10, letterSpacing: "0.14em", color: "#6B6890" }}>
-        {"// "}RÉCAP DU MOIS
+        {"// "}RÉCAP DE L’ANNÉE
       </span>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, margin: "20px 0 0" }}>
@@ -809,59 +809,22 @@ interface Props {
   handle: string;
 }
 
-export function WrappedClient({ payload, handle }: Props): React.JSX.Element {
+/**
+ * Everything below the title: the filmstrip, the shareable card and the export.
+ *
+ * Split out when the recap stopped being a page you navigate to and became a
+ * pop-up you open from the navbar. Both surfaces show the same recap; what
+ * differs is the chrome around it, so the chrome is what each one supplies.
+ */
+export function WrappedBody({ payload, handle }: Props): React.JSX.Element {
   if (!payload) {
-    return (
-      <div className="page-container">
-        <p style={{ ...DISPLAY, color: "#B8B5D1" }}>Ton récap n’est pas encore disponible.</p>
-      </div>
-    );
+    return <p style={{ ...DISPLAY, color: "#B8B5D1" }}>Ton récap n’est pas encore disponible.</p>;
   }
 
   const cards = buildCards(payload);
 
   return (
-    <div className="page-container">
-      {/* Header */}
-      <div
-        style={{
-          ...MONO,
-          fontSize: 11,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "#6B6890",
-          marginBottom: 14,
-        }}
-      >
-        <span style={{ color: "var(--cosmetic-accent)" }}>{"//"}</span> Cyber Learn · Récap
-      </div>
-      <h1
-        style={{
-          ...DISPLAY,
-          fontWeight: 800,
-          fontSize: "clamp(36px, 5vw, 56px)",
-          lineHeight: 1,
-          letterSpacing: "-0.03em",
-          color: "#F5F5FA",
-          margin: "0 0 12px",
-        }}
-      >
-        Ton{" "}
-        <span
-          style={{
-            background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-          }}
-        >
-          Wrapped
-        </span>
-      </h1>
-      <p style={{ ...DISPLAY, fontSize: 15, color: "#B8B5D1", margin: "0 0 24px", maxWidth: 460 }}>
-        Un bilan mensuel partageable. Parcours la séquence de cartes, puis exporte la carte finale.
-      </p>
-
+    <>
       <div
         style={{
           ...MONO,
@@ -929,6 +892,55 @@ export function WrappedClient({ payload, handle }: Props): React.JSX.Element {
           <ExportPanel payload={payload} handle={handle} />
         </div>
       </div>
+    </>
+  );
+}
+
+/** The recap as its own page, for a direct link to it. */
+export function WrappedClient({ payload, handle }: Props): React.JSX.Element {
+  return (
+    <div className="page-container">
+      {/* Header */}
+      <div
+        style={{
+          ...MONO,
+          fontSize: 11,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "#6B6890",
+          marginBottom: 14,
+        }}
+      >
+        <span style={{ color: "var(--cosmetic-accent)" }}>{"//"}</span> Cyber Learn · Récap
+      </div>
+      <h1
+        style={{
+          ...DISPLAY,
+          fontWeight: 800,
+          fontSize: "clamp(36px, 5vw, 56px)",
+          lineHeight: 1,
+          letterSpacing: "-0.03em",
+          color: "#F5F5FA",
+          margin: "0 0 12px",
+        }}
+      >
+        Ton{" "}
+        <span
+          style={{
+            background: "linear-gradient(135deg, #0024FF, var(--cosmetic-accent))",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
+        >
+          Wrapped
+        </span>
+      </h1>
+      <p style={{ ...DISPLAY, fontSize: 15, color: "#B8B5D1", margin: "0 0 24px", maxWidth: 460 }}>
+        Un bilan annuel partageable. Parcours la séquence de cartes, puis exporte la carte finale.
+      </p>
+
+      <WrappedBody payload={payload} handle={handle} />
     </div>
   );
 }

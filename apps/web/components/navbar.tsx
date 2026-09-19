@@ -4,13 +4,14 @@ import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NAVBAR_HEIGHT } from "@/lib/chrome";
 import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
-import { computeLevel } from "@cyberlearn/lib";
+import { computeLevel, wrappedWindow } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { friendshipRepository, notificationRepository } from "@cyberlearn/db";
 import { FriendsPanel } from "./friends-panel";
 import { GlobalSearch } from "./global-search";
 import { NotificationPanel } from "./notification-panel";
+import { WrappedChip } from "./wrapped-chip";
 
 // ── Glyph avatar helper ────────────────────────────────────────────────────────
 // avatarUrl stored as "__glyph:{name}" - never pass to next/image
@@ -91,6 +92,11 @@ export async function Navbar(): Promise<React.ReactElement> {
     // Unauthenticated or DB error - render with fallback values
   }
 
+  // A date, not a query: the chip is only drawn during the window, and deciding
+  // that costs nothing on a component every signed-in page renders. What the
+  // recap actually contains is read when somebody opens it.
+  const wrapped = wrappedWindow(new Date());
+
   return (
     <header
       className="shrink-0 navbar-header"
@@ -120,8 +126,10 @@ export async function Navbar(): Promise<React.ReactElement> {
 
       {/* ── Actions ─────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-        {/* Notification panel (client component with Realtime subscription) */}
+        {/* Wrapped turns up here in December and is gone again in January. */}
+        {userId && wrapped.open && <WrappedChip periodKey={wrapped.periodKey} />}
         {userId && <FriendsPanel initialRequestCount={friendRequestCount} />}
+        {/* Notification panel (client component with Realtime subscription) */}
         {userId && <NotificationPanel initialUnreadCount={unreadCount} userId={userId} />}
 
         {/* Level pill → links to profile */}

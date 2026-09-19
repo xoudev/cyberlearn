@@ -4776,6 +4776,76 @@ a.cls-res__title:hover {
   box-shadow: 0 0 0 2px #030219;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   The Wrapped chip (navbar)
+   Wrapped was a permanent sidebar tab, which is the shape of a place you can
+   always go - and for eleven months of the year going there got you a locked
+   door. It is an event, so it looks like one: a label that turns up next to
+   the bell in December and is gone again in January.
+   ══════════════════════════════════════════════════════════════════════════ */
+.wr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px;
+  font: 700 10px var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cosmetic-accent);
+  background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 34%, transparent);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.wr-chip:hover {
+  background: color-mix(in srgb, var(--cosmetic-accent) 16%, transparent);
+  border-color: var(--cosmetic-accent);
+}
+.wr-chip__year {
+  color: #b8b5d1;
+  letter-spacing: 0.08em;
+}
+/* The year is what makes the chip readable at a glance; below the navbar's
+   narrow breakpoint there is no room for both, and the word is the part that
+   says what it is. */
+@media (max-width: 560px) {
+  .wr-chip__year {
+    display: none;
+  }
+}
+/* Until it has been opened once this edition. Two seconds of breathing, not a
+   blink: it has a month to be noticed and nothing to interrupt. */
+.wr-chip--fresh {
+  animation: wr-chip-pulse 2.4s ease-in-out infinite;
+}
+@keyframes wr-chip-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--cosmetic-accent) 42%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wr-chip {
+    transition: none;
+  }
+  /* The pulse is how an unopened edition is told apart from a read one, so it
+     becomes a steady ring rather than nothing at all. */
+  .wr-chip--fresh {
+    animation: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--cosmetic-accent) 42%, transparent);
+  }
+}
+.wr-modal-note {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #8b88a8;
+}
+
 .fp-panel {
   position: absolute;
   top: calc(100% + 10px);

@@ -200,23 +200,6 @@ function IconLocker() {
   );
 }
 
-function IconWrapped() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width={15}
-      height={15}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M8 1.5 9.4 6.6 14.5 8 9.4 9.4 8 14.5 6.6 9.4 1.5 8 6.6 6.6z" />
-    </svg>
-  );
-}
-
 function IconNote() {
   return (
     <svg
@@ -330,7 +313,6 @@ const ACTIVITY_ITEMS = [
   { href: "/challenges", label: "Défis", Icon: IconFlash, count: null, tag: "WIP" },
   { href: "/profile", label: "Profil", Icon: IconUser, count: null, tag: undefined },
   { href: "/locker", label: "Casier", Icon: IconLocker, count: null, tag: undefined },
-  { href: "/wrapped", label: "Wrapped", Icon: IconWrapped, count: null, tag: undefined },
   { href: "/changelog", label: "Nouveautés", Icon: IconNews, count: null, tag: undefined },
   // Filing a ticket used to live at the bottom of the footer, which is where
   // someone looks last and only if they think to look at all. A person with a

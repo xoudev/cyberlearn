@@ -50,7 +50,7 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | **Badges** | Gagnés sur mobile, consultables seulement sur le web | — |
 | **Forum** | Poser une question quand on est bloqué est exactement ce qu'on fait depuis son téléphone | — |
 | **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré | — |
-| **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone | — |
+| **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone. Côté web ce n'est plus un onglet mais une étiquette qui apparaît dans la barre pendant la fenêtre d'ouverture et ouvre une pop-up ; l'app devra reprendre cette forme plutôt qu'un onglet permanent | — |
 | **Tableau de bord** | Aujourd'hui l'onglet Accueil ; à revoir quand le tableau de bord web sera refondu | — |
 
 ### Volontairement web-only
