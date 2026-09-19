@@ -115,7 +115,7 @@ export function BanForm({
               minLength={30}
               maxLength={500}
               rows={4}
-              className="a-input"
+              className="a-textarea"
               placeholder="Propos injurieux répétés dans le forum, malgré deux avertissements."
             />
             <span className="a-field-hint">
