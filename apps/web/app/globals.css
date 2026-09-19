@@ -4839,13 +4839,6 @@ a.cls-res__title:hover {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--cosmetic-accent) 42%, transparent);
   }
 }
-.wr-modal-note {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: #8b88a8;
-}
-
 .fp-panel {
   position: absolute;
   top: calc(100% + 10px);
