@@ -9,7 +9,7 @@ Init : PR 3 (`feat/sentry-init-csp-polish`)
 
 | Fichier | Runtime | Rôle |
 |---------|---------|------|
-| `apps/web/sentry.client.config.ts` | Browser | Init SDK + Replay |
+| `apps/web/instrumentation-client.ts` | Browser | Init SDK + Replay |
 | `apps/web/sentry.server.config.ts` | Node.js | Init SDK serveur |
 | `apps/web/sentry.edge.config.ts` | Edge | Init SDK middleware |
 | `apps/web/lib/sentry/scrub-event.ts` | All | PII scrubbing + breadcrumb filter |
@@ -122,5 +122,12 @@ Le header `Content-Security-Policy` dans `middleware.ts` autorise :
 ## apps/admin - statut
 
 Fait : Sentry est initialisé sur `apps/admin` selon le même pattern
-(`sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
+(`instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
 + `withSentryConfig` dans `next.config.ts`), avec le même helper `scrubEvent`.
+
+La console lit en plus la liste des issues non résolues sur son tableau de bord
+(`apps/admin/lib/sentry-issues.ts`). Cela demande un jeton **utilisateur** avec
+`event:read`, distinct de `SENTRY_AUTH_TOKEN` : un jeton d'organisation sait
+uploader des source maps mais ne peut pas recevoir ce scope. D'où
+`SENTRY_ISSUES_TOKEN`, optionnel — sans lui le jeton de build est essayé, ce qui
+marche seulement s'il se trouve être un jeton utilisateur portant les deux.

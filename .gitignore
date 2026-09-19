@@ -90,9 +90,15 @@ test-results/
 # file under docs/ (runbooks, design sources) while the already-tracked ones
 # stayed tracked (a trap). Nothing under docs/ is generated output; if a
 # generator ever lands, ignore its exact output subdirectory only.
-# Lesson content (MDX) is authored locally and imported via the admin UI;
-# it is not tracked in the repo.
-content/
+# NOTE: do NOT re-add a broad `content/` ignore either. It claimed the lesson
+# MDX was authored locally and untracked, which stopped being true: 210 files
+# live under content/ in git - 192 lessons, 16 final-exam quizzes and the two
+# READMEs - and content/README.md calls the folder the source of truth for the
+# catalogue. The rule matched none of them, because git ignores nothing it
+# already tracks, so it did exactly one thing: silently drop every NEW lesson
+# from `git add`. Same trap as the `/docs` rule above, and it had not bitten
+# only because no lesson had been added since. Nothing under content/ is
+# generated output.
 
 # design-sync: local design tooling workspace (kept on disk, never committed)
 .ds-sync/

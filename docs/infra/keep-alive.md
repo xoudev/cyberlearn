@@ -20,8 +20,10 @@ Each service status is `"ok"` | `"error"` | `"unknown"` (unknown = Redis not con
 ## Schedule
 
 Triggered every 6 hours by an external cron on cron-job.org (free tier, 50 crons max).
-This keeps the endpoint off the Vercel Cron budget (Hobby = 2 internal crons max, both
-already used by `streak-reset` and `review-reminders`).
+This keeps the endpoint off the Vercel Cron budget, which `apps/web/vercel.json`
+already spends on `streak-reset`, `review-reminders` and `season-rollover`. An
+external caller also keeps the ping working on the day a Vercel deploy is the
+thing that is broken.
 
 ## Setup cron externe
 

@@ -18,10 +18,13 @@ The full app flow, gamified:
   pager, native quiz (extracted from the MDX `<Quiz>` components), result
   screen with real +XP / badges / level-up through the guarded server flow.
 - **Classement**: league pod ladder (promotion/relegation zones, season
-  countdown) + global top, served by `/api/mobile/classement`.
+  countdown) + global top, served by `/api/mobile/leaderboard`.
 - **Notifications** inbox (mark all read), **Réglages** (account, notification
   prefs, RGPD links, sign out), **Certificat** detail (verification code +
   share + verify link).
+- **Bloc-notes** (list, editor, folders), **Casier** (equipping a cosmetic),
+  **Ma classe** side of a learner (the work set for them and its deadlines),
+  **Sécurité** (password, TOTP enrolment).
 - **States**: skeletons, empty states, network-error retry everywhere.
 - **Motion** (reanimated): short eased feedback for progress and rewards, with
   static content screens and no bounce/spring transitions.
@@ -30,10 +33,15 @@ Auth: Supabase email/password with verified addresses. Users can enable TOTP
 MFA from the native security screen; once enabled, the challenge is enforced
 before application data is mounted.
 
-Guarded writes go through `apps/web/app/api/mobile/*` (Bearer JWT):
+Everything server-side goes through `apps/web/app/api/mobile/*` (Bearer JWT):
 - `POST /progress` - lesson completion via the same `completeLessonForUser`
   flow as the web (XP ledger, streak, badges, quests, certificates).
-- `GET /classement` - leaderboard + pod ladder (RLS keeps pods server-side).
+- `GET /leaderboard` - leaderboard + pod ladder (RLS keeps pods server-side).
+- `GET /my-class` - the work a learner has been given.
+- `GET /loadout` - the cosmetics they have equipped.
+- `POST /password` - changing the password from the native security screen.
+- `POST /send-otp` - the sign-in code, sent through the platform's own template
+  rather than Supabase's default.
 
 ## Run it
 
@@ -65,9 +73,11 @@ onboarding on cyberlearn.fr (Phase 1 does not include mobile onboarding).
 - `production`: an Android App Bundle (AAB) for Google Play. Store build numbers
   are incremented remotely by EAS.
 
-The public app version is `2.3.0`. Publish it through the
-`fr.cyberlearn.mobile` Google Play application, separate from the former Flutter
-listing and its incompatible package identity.
+The public app version lives in `apps/mobile/app.config.ts` (`version`, plus
+`android.versionCode` for local release builds) and is mirrored in
+`apps/mobile/package.json`. Publish through the `fr.cyberlearn.mobile` Google
+Play application, separate from the former Flutter listing and its incompatible
+package identity.
 
 From `apps/mobile`:
 
@@ -92,7 +102,7 @@ After publishing an artifact, configure the web deployment variables used by
 
 ```text
 NEXT_PUBLIC_ANDROID_PLAY_URL=https://play.google.com/...
-NEXT_PUBLIC_ANDROID_APK_URL=https://.../cyberlearn-2.3.0.apk
+NEXT_PUBLIC_ANDROID_APK_URL=https://.../cyberlearn-<version>.apk
 NEXT_PUBLIC_IOS_APP_STORE_URL=
 ```
 
@@ -105,11 +115,18 @@ Until that is funded, the download page explains how to install the web app
 from Safari. A free Apple account is suitable only for personal on-device tests,
 not public IPA distribution.
 
+## What the app does not have yet
+
+The register is `docs/MOBILE_PARITY.md`, at the repo root of the docs. The rule
+it states: anything shipped on the site reaches this app, unless that file says
+otherwise and gives a reason. A PR touching a shared surface either changes both
+apps or updates that register.
+
 ## Architecture
 
 - **Reads**: directly from Supabase (PostgREST) with the user JWT; RLS authorizes.
   Tables are snake_case, columns camelCase (see `lib/queries.ts`).
-- **Writes** (progress/XP/badges): Phase 2, via thin `apps/web/app/api/mobile/*`
+- **Writes** (progress/XP/badges): through thin `apps/web/app/api/mobile/*`
   Route Handlers that reuse `packages/lib` - never reimplemented on the client.
 - **Shared code**: `@cyberlearn/tokens` (design tokens), `@cyberlearn/lib/xp` +
   `/gamification/tier` (pure logic). Never import `@cyberlearn/db` (Prisma) or

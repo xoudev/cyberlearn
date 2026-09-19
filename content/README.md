@@ -17,9 +17,10 @@ difficulté, XP, prérequis) + corps MDX. Le format complet est documenté dans
 ## Workflow d'import
 
 1. **Importer les leçons** : admin → `/lessons/import`, glisser tout le dossier
-   d'un parcours (import multi-fichiers, jusqu'à 30 d'un coup). Les prérequis
-   internes au lot sont gérés automatiquement (ordre topologique). Les leçons
-   arrivent en **DRAFT**.
+   d'un parcours. Le lot est plafonné à 30 fichiers (`BATCH_MAX_FILES` dans
+   `apps/admin/app/(admin)/lessons/import/actions.ts`), donc un parcours de 12
+   passe d'un coup. Les prérequis internes au lot sont gérés automatiquement
+   (ordre topologique). Les leçons arrivent en **DRAFT**.
 2. **Créer les parcours** : `pnpm --filter @cyberlearn/db db:seed-paths`. Le
    script crée chaque parcours et y rattache ses leçons par refCode, dans
    l'ordre. Idempotent : ré-exécutable après l'import de nouvelles leçons.
@@ -28,31 +29,65 @@ difficulté, XP, prérequis) + corps MDX. Le format complet est documenté dans
 
 ## Parcours disponibles
 
-### Python : des bases à la pratique (`content/lessons/python/`)
+Seize parcours, douze leçons chacun : **192 leçons**, `CL-LSN-001-V01` à
+`CL-LSN-192-V01`, sans trou et sans doublon. Les refCodes sont attribués par
+blocs de douze dans l'ordre des parcours, ce qui est la raison pour laquelle la
+plage suffit à savoir à quel parcours appartient une leçon.
 
-`CL-PATH-001-V01` - DEV, débutant → intermédiaire, ~6 h, 12 leçons.
+Le tableau est dérivé de `packages/db/prisma/seed-paths.ts`, qui reste la source
+de vérité pour l'ordre d'étude à l'intérieur d'un parcours.
 
-De zéro à un projet complet : variables et types, conditions, boucles,
-fonctions, listes/tuples, dictionnaires/ensembles, chaînes, compréhensions,
-gestion d'erreurs, modules, POO, et un projet final (gestionnaire de tâches CLI).
-Chaque leçon est exécutable dans le navigateur (CodePlayground, PythonChallenge
-à tests automatiques) ; le projet final propose aussi un travail personnel à
-pousser sur GitHub.
+| refCode | Dossier | Parcours | Domaine | Difficulté | Durée | Leçons | Plage | Quiz final |
+|---|---|---|---|---|---|:-:|---|:-:|
+| CL-PATH-001-V01 | `python/` | Python : des bases à la pratique | DEV | BEGINNER | ~6 h | 12 | CL-LSN-001–012 | ✅ |
+| CL-PATH-002-V01 | `javascript/` | JavaScript moderne : du navigateur à l'app | DEV | BEGINNER | ~6 h | 12 | CL-LSN-013–024 | ✅ |
+| CL-PATH-003-V01 | `c/` | C : programmation système et bas niveau | DEV | BEGINNER | ~7 h | 12 | CL-LSN-025–036 | ✅ |
+| CL-PATH-004-V01 | `asm/` | Assembleur x86-64 : au cœur du processeur | DEV | INTERMEDIATE | ~7 h | 12 | CL-LSN-037–048 | ✅ |
+| CL-PATH-005-V01 | `linux/` | Linux et la ligne de commande | DEV | BEGINNER | ~7 h | 12 | CL-LSN-049–060 | ✅ |
+| CL-PATH-006-V01 | `git-docker-cicd/` | Git, Docker et CI/CD | DEV | INTERMEDIATE | ~8 h | 12 | CL-LSN-061–072 | ✅ |
+| CL-PATH-007-V01 | `cyber-fondamentaux/` | Cybersécurité : les fondamentaux | CYBERSEC | BEGINNER | ~7 h | 12 | CL-LSN-073–084 | ✅ |
+| CL-PATH-008-V01 | `cyber-web/` | Sécurité web : le Top 10 OWASP en pratique | CYBERSEC | INTERMEDIATE | ~8 h | 12 | CL-LSN-085–096 | ✅ |
+| CL-PATH-009-V01 | `cyber-crypto/` | Cryptographie : de la théorie à la pratique | CYBERSEC | INTERMEDIATE | ~8 h | 12 | CL-LSN-097–108 | ✅ |
+| CL-PATH-010-V01 | `cyber-pentest/` | Test d'intrusion : la démarche offensive | CYBERSEC | ADVANCED | ~9 h | 12 | CL-LSN-109–120 | ✅ |
+| CL-PATH-011-V01 | `cyber-grc/` | Gouvernance, risque et conformité | CYBERSEC | INTERMEDIATE | ~7 h | 12 | CL-LSN-121–132 | ✅ |
+| CL-PATH-012-V01 | `cyber-blueteam/` | Blue team et SOC : défendre et détecter | CYBERSEC | INTERMEDIATE | ~8 h | 12 | CL-LSN-133–144 | ✅ |
+| CL-PATH-013-V01 | `cyber-osint/` | OSINT : renseignement en sources ouvertes | CYBERSEC | INTERMEDIATE | ~7 h | 12 | CL-LSN-145–156 | ✅ |
+| CL-PATH-014-V01 | `reseau/` | Réseaux : de la trame au web | NETWORK | INTERMEDIATE | ~8 h | 12 | CL-LSN-157–168 | ✅ |
+| CL-PATH-015-V01 | `cloud/` | Le cloud : concevoir et sécuriser | NETWORK | INTERMEDIATE | ~8 h | 12 | CL-LSN-169–180 | ✅ |
+| CL-PATH-016-V01 | `systeme/` | Administration système Linux | DEV | INTERMEDIATE | ~9 h | 12 | CL-LSN-181–192 | ✅ |
+
+Le nom du dossier n'est pas le slug du parcours : `cyber-web/` porte
+`cyber-web-owasp`, `systeme/` porte `admin-systeme-linux`. C'est le slug, pas le
+dossier, qui doit correspondre au nom du fichier de quiz — voir
+[content/quizzes/README.md](quizzes/README.md).
+
+### À quoi ressemble un parcours
+
+Exemple, `content/lessons/python/` — de zéro à un projet complet : variables et
+types, conditions, boucles, fonctions, listes/tuples, dictionnaires/ensembles,
+chaînes, compréhensions, gestion d'erreurs, modules, POO, et un projet final
+(gestionnaire de tâches CLI).
 
 | # | refCode | Leçon | Difficulté |
 |---|---------|-------|------------|
-| 1 | CL-LSN-001-V01 | Premiers pas : variables et types | BEGINNER |
-| 2 | CL-LSN-002-V01 | Conditions et logique booléenne | BEGINNER |
-| 3 | CL-LSN-003-V01 | Les boucles : for et while | BEGINNER |
-| 4 | CL-LSN-004-V01 | Écrire et utiliser des fonctions | BEGINNER |
-| 5 | CL-LSN-005-V01 | Listes et tuples | BEGINNER |
-| 6 | CL-LSN-006-V01 | Dictionnaires et ensembles | INTERMEDIATE |
-| 7 | CL-LSN-007-V01 | Manipuler les chaînes de caractères | INTERMEDIATE |
+| 1 | CL-LSN-001-V01 | Premiers pas en Python : variables et types | BEGINNER |
+| 2 | CL-LSN-002-V01 | Conditions et logique booléenne en Python | BEGINNER |
+| 3 | CL-LSN-003-V01 | Les boucles en Python : for et while | BEGINNER |
+| 4 | CL-LSN-004-V01 | Écrire et utiliser des fonctions en Python | BEGINNER |
+| 5 | CL-LSN-005-V01 | Listes et tuples en Python | BEGINNER |
+| 6 | CL-LSN-006-V01 | Dictionnaires et ensembles en Python | INTERMEDIATE |
+| 7 | CL-LSN-007-V01 | Manipuler les chaînes de caractères en Python | INTERMEDIATE |
 | 8 | CL-LSN-008-V01 | Compréhensions de listes et de dictionnaires | INTERMEDIATE |
-| 9 | CL-LSN-009-V01 | Gérer les erreurs avec try/except | INTERMEDIATE |
-| 10 | CL-LSN-010-V01 | Modules et bibliothèque standard | INTERMEDIATE |
-| 11 | CL-LSN-011-V01 | Introduction à la POO | INTERMEDIATE |
-| 12 | CL-LSN-012-V01 | Projet : gestionnaire de tâches CLI | INTERMEDIATE |
+| 9 | CL-LSN-009-V01 | Gérer les erreurs avec try et except | INTERMEDIATE |
+| 10 | CL-LSN-010-V01 | Modules et bibliothèque standard Python | INTERMEDIATE |
+| 11 | CL-LSN-011-V01 | Introduction à la programmation orientée objet | INTERMEDIATE |
+| 12 | CL-LSN-012-V01 | Projet : un gestionnaire de tâches en ligne de commande | INTERMEDIATE |
+
+Les quinze autres suivent la même forme : douze leçons en progression, chacune
+exécutable dans le navigateur quand le domaine le permet (CodePlayground,
+PythonChallenge à tests automatiques), la dernière étant un projet ou une mise
+en situation. Le titre exact de chaque leçon est dans son frontmatter — ne pas
+recopier les 192 ici, ils dériveraient.
 
 ## Convention MDX importante
 

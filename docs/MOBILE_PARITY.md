@@ -22,7 +22,7 @@ Une nouvelle surface mobile veut donc dire : une route API, une méthode dans
 `apps/mobile/lib/api.ts`, un écran. Les règles d'autorisation restent dans les
 dépôts (`packages/db`) — jamais réécrites côté app.
 
-## État au 17 septembre 2026
+## État au 19 septembre 2026
 
 ### Sur les deux
 
@@ -37,6 +37,7 @@ dépôts (`packages/db`) — jamais réécrites côté app.
 | Casier (cosmétiques) | ✅ | ✅ |
 | Notifications | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
+| Badges | ✅ | ✅ (sous-onglet de Profil) |
 | Réglages, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 
@@ -46,12 +47,13 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Révisions** | C'est la boucle d'apprentissage principale, et elle doit respecter l'interrupteur `spacedRepetition` — un interrupteur honoré d'un côté et ignoré de l'autre n'est pas un interrupteur | PR #227 (l'interrupteur) |
-| **Badges** | Gagnés sur mobile, consultables seulement sur le web | — |
+| **Révisions** | C'est la boucle d'apprentissage principale. Plus rien ne la bloque : l'interrupteur `spacedRepetition` existe depuis la PR #227 (`UserPreferences.spacedRepetition`, réglé dans `/settings/preferences`) et l'app devra le lire — un interrupteur honoré d'un côté et ignoré de l'autre n'est pas un interrupteur | — |
 | **Forum** | Poser une question quand on est bloqué est exactement ce qu'on fait depuis son téléphone | — |
-| **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré | — |
-| **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone. Côté web ce n'est plus un onglet mais une étiquette qui apparaît dans la barre pendant la fenêtre d'ouverture et ouvre une pop-up ; l'app devra reprendre cette forme plutôt qu'un onglet permanent | — |
-| **Tableau de bord** | Aujourd'hui l'onglet Accueil ; à revoir quand le tableau de bord web sera refondu | — |
+| **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré. Attention au statut : une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`), pas de l'écran — l'app affiche le refus, elle ne le décide pas | — |
+| **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
+| **Tableau de bord** | Aujourd'hui l'onglet Accueil. Le web a été refondu autour des parcours depuis (PR #233) ; l'onglet Accueil ne suit pas encore | — |
+| **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) et l'appel d'un bannissement n'existent que sur le web. Quelqu'un sanctionné sur son téléphone reçoit le motif sans pouvoir répondre | — |
+| **Amis** | Demandes, liste, et le classement entre amis sur option. Le compagnon social d'une app d'apprentissage, et il n'existe que sur le web | — |
 
 ### Volontairement web-only
 
@@ -63,6 +65,7 @@ Chacune de ces lignes est une décision, pas une dette.
 | **Console d'administration** (`admin.cyberlearn.fr`) | Application séparée, gate ADMIN + TOTP. Hors périmètre de l'app apprenant |
 | **Défis** | Le catalogue est en cours de reconstruction. À rouvrir quand les premiers défis réexistent |
 | **Export RGPD, suppression de compte** | Actions irréversibles qui demandent une confirmation lue posément. Elles restent sur le web, et l'app y renvoie |
+| **Remise à zéro d'une progression** | Action d'administration, sur le compte de quelqu'un d'autre. Elle vit dans la console, pas dans une app apprenant |
 
 ## Quand cette page a été écrite
 

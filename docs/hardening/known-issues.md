@@ -197,3 +197,79 @@ Surfacé lors du fix wasm-unsafe-eval (PR C.3).
 la CSP prod retourne maintenant `'nonce-...' 'strict-dynamic'` (branche
 prod du middleware). L'anomalie était probablement une stale config sur
 l'ancien deploy Vercel - résolue par effet de bord du redeploy de PR C.3.
+
+## Suites vertes qui ne testaient pas le code (2026-09)
+
+Deux défauts trouvés à quelques jours d'intervalle, de forme identique :
+`pnpm test` passait, et ce qu'il lisait n'était pas les sources. Ils sont
+corrigés tous les deux ; l'entrée existe parce que la forme se reproduira.
+
+### 1. Des `.js` compilés devant les `.ts` (PR #255)
+
+Symptôme : une modification du sujet des e-mails n'avait **aucun effet sur son
+propre test**. Cause : Vite résout `.js` avant `.ts`, et 348 artefacts compilés
+traînaient à côté des sources dans `packages/email`, `packages/lib`,
+`packages/types` et `packages/ui`. Chaque `import "./subject.js"` atteignait
+le dernier build, pas le fichier édité.
+
+`packages/db` documentait déjà exactement ce piège et s'en protégeait avec
+`"noEmit": true` plus une règle `.gitignore`. Les quatre autres packages ne
+l'avaient jamais eu. Fix : `noEmit` sur les quatre tsconfig, garde `.gitignore`
+étendue aux cinq packages, 348 fichiers supprimés.
+
+Détection : si un test ne réagit pas à l'édition de son sujet, chercher un
+`.js` à côté du `.ts` avant de soupçonner le test.
+
+### 2. `test.inputs` de turbo ne couvrait pas le code (PR #251)
+
+Symptôme : quatre fichiers modifiés et committés, et turbo servait le même hash
+(`6a8df5686bfc7531`) avec 261 tests au lieu de 268. Cause : la tâche `test` de
+`turbo.json` listait `src/**` et `test/**` en `inputs`, et ni `apps/web` ni
+`apps/admin` n'a l'un de ces dossiers — leurs tests vivent à côté du code, dans
+`app/**` et `lib/**`. Le hash de test ignorait donc toute modification de
+source, et la CI, qui restaure `.turbo` d'un commit au suivant, pouvait rejouer
+les logs d'un ancien run comme un succès.
+
+Fix : `"inputs": ["$TURBO_DEFAULT$"]`. Règle générale : ne restreindre les
+`inputs` d'une tâche que si on peut prouver que la liste couvre l'endroit où le
+code vit réellement, dans **chaque** workspace où la tâche tourne.
+
+## Variables Jira déclarées et inutilisées
+
+`JIRA_BASE_URL`, `JIRA_API_EMAIL`, `JIRA_API_TOKEN` et `JIRA_PROJECT_KEY` sont
+déclarées (optionnelles) dans `apps/web/lib/env.ts` et dans `.env.example`.
+Aucun code ne les lit : le formulaire de contact écrit un `ContactTicket` en
+base et la console y répond. Le registre RGPD et la roadmap des coûts ne
+nomment plus Atlassian comme sous-traitant.
+
+Reste à faire : retirer les quatre entrées du schéma Zod et de `.env.example`.
+C'est une suppression de code, tracée ici plutôt que faite dans une PR de
+documentation.
+
+## `content/` était gitignoré alors que 210 fichiers y sont tracés
+
+Troisième exemplaire de la même forme que les deux précédents : une règle qui
+prétend décrire l'état du dépôt, et qui décrit l'état d'il y a un an.
+
+`.gitignore` portait `content/`, sous un commentaire disant que les leçons MDX
+sont écrites en local et « ne sont pas tracées dans le dépôt ». Elles le sont :
+210 fichiers, soit 192 leçons, 16 quiz d'examen final et deux README, dont
+`content/README.md` qui appelle le dossier la source de vérité du catalogue.
+
+Git n'ignore rien de ce qu'il trace déjà, donc la règle n'a jamais touché ces
+210 fichiers. Elle faisait exactement une chose : faire disparaître
+silencieusement toute leçon **nouvelle** d'un `git add`. Elle n'avait pas encore
+mordu parce qu'aucune leçon n'avait été ajoutée depuis — au moment de la
+découverte, `git status --ignored content` ne montrait rien de non tracé.
+
+Découvert de biais : `lint-staged` a échoué sur « The following paths are
+ignored by one of your .gitignore files: content » en réappliquant ses
+modifications de formatage.
+
+Le dépôt portait déjà la leçon, trois lignes au-dessus, dans le commentaire de
+garde laissé par la PR #66 après le même accident sur `/docs`. Fix : la règle
+est retirée, et le commentaire de garde couvre maintenant les deux dossiers.
+
+Règle générale : une règle `.gitignore` sur un dossier partiellement tracé est
+toujours un piège. Le symptôme n'est pas une erreur, c'est un fichier qui
+n'apparaît pas — et personne ne cherche ce qui ne s'affiche pas.

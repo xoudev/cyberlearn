@@ -40,7 +40,7 @@
 
 **Tâches post-launch restantes :**
 
-- ~~**Init Sentry sur apps/admin**~~ - **fait** (`sentry.{client,server,edge}.config.ts` + `withSentryConfig`, scrubEvent partagé)
+- ~~**Init Sentry sur apps/admin**~~ - **fait** (`instrumentation-client.ts` + `sentry.{server,edge}.config.ts` + `withSentryConfig`, scrubEvent partagé)
 - **Audit Sentry events 30j post-launch** - vérifier qu'aucun PII ne leak malgré le scrubbing
   (inspecter les events Sentry dans le dashboard, chercher patterns email/UUID dans messages)
 
@@ -48,18 +48,12 @@
 
 ## Landing page (apps/web/app/page.tsx)
 
-### Liens placeholder dans le footer landing
+### Liens placeholder dans le footer landing - RÉSOLU
 
-Les liens suivants pointent actuellement vers href="#" (mocks de
-design phase 2) et seront à wirer quand les features
-correspondantes seront implémentées :
-
-- Parcours → /paths (PR future)
-- Tarifs → /pricing (uniquement si monétisation, PR future)
-- Entreprises → /business (uniquement si offre B2B, PR future)
-- Communauté → /community (uniquement si feature communauté
-  implémentée - Q&A par leçon est déjà rattachée au contenu
-  pédagogique, hors forum global)
+Il ne reste aucun `href="#"` dans `apps/web`. Les parcours ont leur page
+(`/paths`), et la communauté a le forum plus les Q&A de leçon. `/pricing` et
+`/business` n'existent pas et n'ont plus de lien qui les promette : ils ne
+reviendront que si la monétisation ou une offre B2B arrive.
 
 ### Données figées / fake sur la landing
 
@@ -96,22 +90,22 @@ Convention cible déjà dans docs/security/logging.md.
 Pas bloquant pour le launch - les call-sites actuels sont SAFE.
 Décision de l'outil exact à faire en temps voulu.
 
-### Design des emails - PR design dédiée plus tard
+### Design des emails - RÉSOLU par la PR #256
 
-Le template account-deletion-confirm.tsx est fonctionnel mais le design
-ne suit pas l'identité visuelle Cyber Learn.
+Les neuf templates portaient chacun sa copie des styles, ce qui est le
+mécanisme par lequel ils avaient dérivé du site : un coin arrondi introduit
+une fois doit être défait neuf fois, donc il ne l'est jamais.
 
-Faut un effort transverse pour repolish TOUS les emails ensemble :
-- Magic link
-- Account deletion confirm
-- Contact tickets
-- (autres à venir)
+Fait : `packages/email/src/theme.ts` porte les tokens, les deux familles et le
+vocabulaire partagé ; `shell.tsx` porte le `<head>` commun. Les templates
+importent, et n'ajoutent que ce qui leur est propre. Plus de `border-radius`
+nulle part — le site est carré — et Inter, qui n'est utilisée à aucun endroit
+du site, ne figure plus. 47 tests assertent sur le HTML produit, pas sur le
+JSX (`packages/email/src/__tests__/theme.test.ts`).
 
-Sinon incohérence entre emails. À faire en PR design email dédiée
-post-launch ou avant launch si temps. Pas critique pour le run.
-
-Reference : voir style Linear / Vercel pour emails dark mode +
-terminal aesthetic.
+La PR #255 avait réglé le sujet juste avant : un envoi, un sujet, sinon le
+client de messagerie empile les mails sur une seule ligne dont seule la plus
+récente est visible.
 
 
 ### Audit Replay Sentry 30j post-launch
