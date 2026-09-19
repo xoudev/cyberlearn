@@ -29,12 +29,18 @@ export function TicketThread({
   openingMessage,
   openingStamp,
   messages,
+  open,
 }: {
   ticketId: string;
   requesterName: string;
   openingMessage: string;
   openingStamp: string;
   messages: ThreadMessage[];
+  /**
+   * Whether the ticket still takes replies. Decided by the server from the
+   * status, so this component does not carry a second copy of that rule.
+   */
+  open: boolean;
 }): React.ReactElement {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
@@ -67,58 +73,79 @@ export function TicketThread({
         ))}
       </ol>
 
-      <form ref={formRef} action={send} style={{ display: "grid", gap: 8 }}>
-        <textarea
-          name="body"
-          required
-          minLength={2}
-          maxLength={5000}
-          rows={5}
-          placeholder="Répondre au demandeur…"
+      {/* A finished ticket keeps its thread and loses its box, on this side as
+          much as on the requester's. Replying into one that the queue shows as
+          resolved left the two screens disagreeing about whether it was over.
+          Reopening it is a deliberate act, one control away. */}
+      {!open ? (
+        <p
           style={{
-            width: "100%",
-            padding: "10px 12px",
-            background: "rgba(3,2,25,0.6)",
+            margin: 0,
+            padding: "12px 14px",
             border: `1px solid ${UI.border}`,
-            color: UI.fg,
+            background: "rgba(3,2,25,0.6)",
             fontFamily: UI.mono,
-            fontSize: 13,
+            fontSize: 11.5,
             lineHeight: 1.6,
-            outline: "none",
-            resize: "vertical",
+            color: UI.muted,
           }}
-        />
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            type="submit"
-            disabled={pending}
+        >
+          Ce ticket est terminé. Repasse-le en cours pour reprendre la conversation.
+        </p>
+      ) : (
+        <form ref={formRef} action={send} style={{ display: "grid", gap: 8 }}>
+          <textarea
+            name="body"
+            required
+            minLength={2}
+            maxLength={5000}
+            rows={5}
+            placeholder="Répondre au demandeur…"
             style={{
-              justifySelf: "start",
-              padding: "9px 16px",
+              width: "100%",
+              padding: "10px 12px",
+              background: "rgba(3,2,25,0.6)",
+              border: `1px solid ${UI.border}`,
+              color: UI.fg,
               fontFamily: UI.mono,
-              fontWeight: 700,
-              fontSize: 10,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "#fff",
-              background: UI.blue,
-              border: `1px solid ${UI.blue}`,
-              cursor: pending ? "default" : "pointer",
-              opacity: pending ? 0.5 : 1,
+              fontSize: 13,
+              lineHeight: 1.6,
+              outline: "none",
+              resize: "vertical",
             }}
-          >
-            {pending ? "…" : "Envoyer la réponse"}
-          </button>
-          <span style={{ fontFamily: UI.mono, fontSize: 10.5, color: UI.muted }}>
-            Part par e-mail et s&apos;affiche sur sa page. Un ticket ouvert passe en cours.
-          </span>
-        </div>
-        {error !== null && (
-          <p style={{ margin: 0, fontFamily: UI.mono, fontSize: 11.5, color: UI.danger }}>
-            {error}
-          </p>
-        )}
-      </form>
+          />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              type="submit"
+              disabled={pending}
+              style={{
+                justifySelf: "start",
+                padding: "9px 16px",
+                fontFamily: UI.mono,
+                fontWeight: 700,
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "#fff",
+                background: UI.blue,
+                border: `1px solid ${UI.blue}`,
+                cursor: pending ? "default" : "pointer",
+                opacity: pending ? 0.5 : 1,
+              }}
+            >
+              {pending ? "…" : "Envoyer la réponse"}
+            </button>
+            <span style={{ fontFamily: UI.mono, fontSize: 10.5, color: UI.muted }}>
+              Part par e-mail et s&apos;affiche sur sa page. Un ticket ouvert passe en cours.
+            </span>
+          </div>
+          {error !== null && (
+            <p style={{ margin: 0, fontFamily: UI.mono, fontSize: 11.5, color: UI.danger }}>
+              {error}
+            </p>
+          )}
+        </form>
+      )}
     </div>
   );
 }
