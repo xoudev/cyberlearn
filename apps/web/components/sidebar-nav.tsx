@@ -295,13 +295,31 @@ function IconNews() {
 
 // ── Nav sections ──────────────────────────────────────────────────────────────
 
+/**
+ * The learning section, in order, including the one entry that can be switched
+ * off.
+ *
+ * Revisions used to be rendered separately, above this list, because they are
+ * conditional. The order then lived in two places - a constant and a branch -
+ * and the branch took the first slot: somebody with revisions on opened the
+ * site to a sidebar whose first entry was not the dashboard. `optional` keeps
+ * the whole order here, where it can be read in one go.
+ */
 const LEARN_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", Icon: IconDashboard, badgeKey: null },
-  { href: "/lessons", label: "Leçons", Icon: IconBook, badgeKey: "lessons" },
-  { href: "/notes", label: "Bloc-notes", Icon: IconNote, badgeKey: null },
-  { href: "/paths", label: "Parcours", Icon: IconRoute, badgeKey: null },
-  { href: "/badges", label: "Badges", Icon: IconBadge, badgeKey: null },
-  { href: "/certificates", label: "Certificats", Icon: IconCert, badgeKey: null },
+  { href: "/dashboard", label: "Dashboard", Icon: IconDashboard, badgeKey: null, optional: false },
+  { href: "/lessons", label: "Leçons", Icon: IconBook, badgeKey: "lessons", optional: false },
+  // Next to the lessons, because that is what they revise.
+  { href: "/revisions", label: "Révisions", Icon: IconReview, badgeKey: null, optional: true },
+  { href: "/notes", label: "Bloc-notes", Icon: IconNote, badgeKey: null, optional: false },
+  { href: "/paths", label: "Parcours", Icon: IconRoute, badgeKey: null, optional: false },
+  { href: "/badges", label: "Badges", Icon: IconBadge, badgeKey: null, optional: false },
+  {
+    href: "/certificates",
+    label: "Certificats",
+    Icon: IconCert,
+    badgeKey: null,
+    optional: false,
+  },
 ] as const;
 
 const ACTIVITY_ITEMS = [
@@ -536,20 +554,17 @@ export function SidebarNav({
         }}
         aria-label="Navigation Apprendre"
       >
-        {/* Revisions sit inside the learning list rather than at its end, but
-            they are the one entry that can be switched off, so they are placed
-            here instead of living in the constant above. */}
-        {showRevisions && <NavItem href="/revisions" label="Révisions" Icon={IconReview} />}
-
-        {LEARN_ITEMS.map(({ href, label, Icon, badgeKey }) => (
-          <NavItem
-            key={href}
-            href={href}
-            label={label}
-            Icon={Icon}
-            count={badgeKey ? (badgeCounts[badgeKey] ?? 0) : undefined}
-          />
-        ))}
+        {LEARN_ITEMS.filter((item) => !item.optional || showRevisions).map(
+          ({ href, label, Icon, badgeKey }) => (
+            <NavItem
+              key={href}
+              href={href}
+              label={label}
+              Icon={Icon}
+              count={badgeKey ? (badgeCounts[badgeKey] ?? 0) : undefined}
+            />
+          ),
+        )}
       </nav>
 
       {/* ── Activité section ──────────────────────────────────────────────── */}
