@@ -13,6 +13,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
+import { stampedSubject } from "../subject.js";
 
 /**
  * What happened to something somebody wrote.
@@ -227,6 +228,15 @@ export async function sendModerationNoticeEmail({
 }: SendModerationNoticeEmailOptions): Promise<void> {
   const resend = new Resend(apiKey);
   const html = await render(ModerationNoticeEmail(props));
-  const { error } = await resend.emails.send({ from, to, subject: props.title, html });
+  // Stamped rather than named. The notice does have a thing to name - the
+  // excerpt of what was flagged - and it is exactly the string that must never
+  // reach a subject line: the flagged text is often the reason it was flagged,
+  // and an inbox is not where somebody should have to read it again.
+  const { error } = await resend.emails.send({
+    from,
+    to,
+    subject: stampedSubject(props.title, new Date()),
+    html,
+  });
   if (error) throw new Error(`Resend error: ${error.message}`);
 }

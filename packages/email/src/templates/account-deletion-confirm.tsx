@@ -13,6 +13,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
+import { stampedSubject } from "../subject.js";
 
 interface AccountDeletionConfirmEmailProps {
   displayName: string;
@@ -210,7 +211,10 @@ export async function sendDeletionConfirmEmail({
   const { error } = await resend.emails.send({
     from,
     to,
-    subject: "Confirmez la suppression de votre compte Cyber Learn",
+    // Each request sends its own link and each link expires. Grouped, the only
+    // one visible is the newest - which is right - but the older rows are then
+    // dead links somebody can still open from the thread.
+    subject: stampedSubject("Confirmez la suppression de votre compte Cyber Learn", new Date()),
     html,
   });
   if (error) throw new Error(`Resend error: ${error.message}`);

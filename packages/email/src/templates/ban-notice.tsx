@@ -13,6 +13,7 @@ import {
 } from "@react-email/components";
 import React from "react";
 import { Resend } from "resend";
+import { stampedSubject } from "../subject.js";
 
 /**
  * The notice that somebody's account has been banned.
@@ -239,7 +240,9 @@ export async function sendBanNoticeEmail({
   const { error } = await resend.emails.send({
     from,
     to,
-    subject: "Ton compte CyberLearn a été suspendu",
+    // A second suspension is a different event from the first, and reading it
+    // under the first one's heading hides that it happened at all.
+    subject: stampedSubject("Ton compte CyberLearn a été suspendu", new Date()),
     html,
   });
   if (error) throw new Error(`Resend error: ${error.message}`);
