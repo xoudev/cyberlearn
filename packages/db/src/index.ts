@@ -39,6 +39,11 @@ export {
   type DeletionSummary,
 } from "./rgpd/delete-account.js";
 export {
+  resetProgress,
+  type ResetProgressOptions,
+  type ResetProgressSummary,
+} from "./progress/reset-progress.js";
+export {
   forumRepository,
   slugify,
   POSTS_PER_PAGE,
