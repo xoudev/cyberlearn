@@ -22,7 +22,9 @@ export function ForumHeader({
   lede,
   actions,
 }: {
-  eyebrow: string;
+  /** A node rather than a string: a topic hangs its state tags here, where the
+      row is already a centred mono line, rather than inside the heading. */
+  eyebrow: React.ReactNode;
   title: React.ReactNode;
   accent?: string;
   lede?: string;

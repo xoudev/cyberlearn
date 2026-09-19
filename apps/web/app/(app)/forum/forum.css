@@ -16,7 +16,8 @@
 .fo-eyebrow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-bottom: 14px;
   font: 11px var(--font-mono);
   letter-spacing: 0.28em;
@@ -29,6 +30,13 @@
   height: 1px;
   background: #2a2560;
   flex-shrink: 0;
+}
+/* The basis, not the text, is what makes this drop below the tags: once the
+   room left beside them falls under it the whole sentence takes its own row,
+   instead of being milled into three narrow lines against their side. Wide
+   enough and it stays on the line, which is what happens on a desktop. */
+.fo-eyebrow-text {
+  flex: 1 1 260px;
 }
 
 .fo-title {

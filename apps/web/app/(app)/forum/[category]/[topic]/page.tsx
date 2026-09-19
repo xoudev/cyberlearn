@@ -54,13 +54,20 @@ export default async function ForumTopicPage({
         ]}
       />
       <ForumHeader
-        eyebrow={`Ouvert par ${authorName(view.author)} · ${formatDate(view.createdAt)}`}
-        title={
+        /* The state tags ride the eyebrow, not the heading. Inside a 48px h1
+           they sat on the text baseline and pushed the first line in by their
+           own width, so a pinned title started further right than its second
+           line - and they ended up read out as part of the heading. */
+        eyebrow={
           <>
-            {view.pinned && <span className="fo-tag fo-tag--pinned">Épinglé</span>}{" "}
-            {view.locked && <span className="fo-tag fo-tag--locked">Fermé</span>} {view.title}
+            {view.pinned && <span className="fo-tag fo-tag--pinned">Épinglé</span>}
+            {view.locked && <span className="fo-tag fo-tag--locked">Fermé</span>}
+            <span className="fo-eyebrow-text">
+              Ouvert par {authorName(view.author)} · {formatDate(view.createdAt)}
+            </span>
           </>
         }
+        title={view.title}
         accent={view.categoryAccent}
         actions={
           isAdmin ? (
