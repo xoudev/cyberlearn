@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { cookies, headers } from "next/headers";
 import { SplashScreen } from "@/components/splash-screen";
+import "@/components/splash-screen.css";
 import { CookieBanner } from "@/components/cookie-banner";
 import { Toaster } from "@/components/ui/sonner";
 import { SITE_URL } from "./site-url";
@@ -90,7 +91,10 @@ export default async function RootLayout({
           disableTransitionOnChange={false}
           nonce={nonce}
         >
-          <SplashScreen />
+          {/* Server-rendered, so it is in the first painted frame. The nonce is
+              for its own once-per-session script: production CSP is
+              nonce-based, and an inline script without one is dropped. */}
+          <SplashScreen nonce={nonce} />
           {children}
           <CookieBanner initialConsent={consentCookie?.value} />
           <Toaster />

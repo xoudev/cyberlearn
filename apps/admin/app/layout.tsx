@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { AdminSplashScreen } from "@/components/splash-screen";
+import "@/components/splash-screen.css";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });

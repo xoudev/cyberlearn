@@ -1,161 +1,101 @@
-"use client";
-
-import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import React from "react";
 
 const SESSION_KEY = "cl-splash-shown";
-const ENTER_MS = 950;
-const FADE_MS = 420;
 
 /**
- * Brand splash shown on the first page load of a browser session. Subsequent
- * navigations and reloads skip it entirely so it never gets in the way.
+ * Brand splash, shown on the first page load of a browser session.
+ *
+ * What was wrong with the previous one was not that it said "use client" - a
+ * client component's first render is server-rendered too. It was that it
+ * returned null until an effect had set its state, and effects do not run
+ * during that render. So the overlay was genuinely absent from the delivered
+ * HTML, and could not appear until React had hydrated: measured on a
+ * production build, first contentful paint at 1389 ms, splash at 1596 ms, and
+ * then 1369 ms sitting on top of a page the reader could already read.
+ *
+ * The cure is to stop deciding in JavaScript what has to be in the first
+ * frame. The markup below renders unconditionally, the animation is in
+ * splash-screen.css, and the only script is the once-per-session check - which
+ * runs before the overlay is parsed, so a return visit never sees a frame of
+ * it. Being a server component now simply follows from needing no hooks.
+ *
+ * splash-screen.css is imported by app/layout.tsx and not from here, which is
+ * load-bearing rather than tidy-minded. Imported from this file, Next split it
+ * into its own chunk that is not render-blocking, so the browser painted the
+ * overlay before its stylesheet arrived: a stack of unstyled text at the top
+ * of the page, shoving the real content down. Imported by the layout it joins
+ * the layout's stylesheet, which is in <head> and blocks the first paint - so
+ * the overlay is never drawn without its rules. If the import ever moves back
+ * here, that flash comes with it.
  */
-export function SplashScreen(): React.ReactElement | null {
-  const [phase, setPhase] = useState<"idle" | "visible" | "fading" | "done">("idle");
-  const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    let raf = 0;
-    try {
-      if (sessionStorage.getItem(SESSION_KEY)) {
-        setPhase("done");
-        return;
-      }
-      sessionStorage.setItem(SESSION_KEY, "1");
-    } catch {
-      // Storage unavailable (private mode): still show the splash once.
-    }
+/**
+ * Parser-blocking by design: no src, no async, no defer. It executes where it
+ * sits, which is above the overlay in the document, so the attribute is on
+ * <html> before the overlay exists and the CSS rule that hides it already
+ * applies. Deferring this would turn the skip into a visible flash.
+ *
+ * Not one character of it is computed. The key travels separately, on the
+ * tag's data-splash-key attribute, and the script reads it back off
+ * currentScript. Written the obvious way - interpolating the key into the
+ * source with JSON.stringify - this built a program out of a string, and
+ * CodeQL was right to say so (js/bad-code-sanitization, CWE-094): JSON.stringify
+ * escapes for JSON, not for JavaScript source, so the pattern is only ever as
+ * safe as the value that happens to be going through it today. An attribute is
+ * data, React escapes it as data, and there is no code construction left to
+ * get wrong if this key ever stops being a literal.
+ *
+ * The key and its lifetime are quoted in the privacy page's storage table; it
+ * dies with the tab, and it is the reason a reload does not replay the
+ * animation.
+ */
+const SKIP_SCRIPT =
+  "try{var k=document.currentScript&&document.currentScript.dataset.splashKey;" +
+  "if(k){if(sessionStorage.getItem(k)){" +
+  "document.documentElement.setAttribute('data-splash-seen','')" +
+  "}else{sessionStorage.setItem(k,'1')}}}catch(e){}";
 
-    setPhase("visible");
-    const start = performance.now();
-    const tick = (now: number): void => {
-      const t = Math.min((now - start) / ENTER_MS, 1);
-      // Ease-out curve keeps the bar lively at the start, settled at the end.
-      setProgress(Math.round((1 - (1 - t) ** 3) * 100));
-      if (t < 1) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        setPhase("fading");
-        setTimeout(() => {
-          setPhase("done");
-        }, FADE_MS);
-      }
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
-    };
-  }, []);
+/** Without scripting there is no session marker, so it would play on every page. */
+const NOSCRIPT_CSS = `[data-splash]{display:none}`;
 
-  if (phase === "idle" || phase === "done") return null;
-
+export function SplashScreen({ nonce }: { nonce?: string }): React.ReactElement {
   return (
-    <div
-      aria-hidden="true"
-      data-splash="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 26,
-        background:
-          "radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0,36,255,0.16), transparent 65%), #030219",
-        opacity: phase === "fading" ? 0 : 1,
-        transition: `opacity ${String(FADE_MS)}ms ease`,
-        pointerEvents: phase === "fading" ? "none" : "auto",
-      }}
-    >
-      <style>{`
-        @keyframes cl-splash-ring { to { transform: rotate(360deg); } }
-        @keyframes cl-splash-in {
-          from { opacity: 0; transform: translateY(6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .cl-splash-ring { animation: none !important; }
-        }
-      `}</style>
+    <>
+      {/* A fixed string, and the key beside it as data rather than as code. */}
+      <script
+        nonce={nonce}
+        data-splash-key={SESSION_KEY}
+        dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }}
+      />
+      <noscript>
+        <style dangerouslySetInnerHTML={{ __html: NOSCRIPT_CSS }} />
+      </noscript>
 
-      {/* Logo inside a rotating accent arc */}
-      <div
-        style={{
-          position: "relative",
-          width: 96,
-          height: 96,
-          display: "grid",
-          placeItems: "center",
-          animation: "cl-splash-in 400ms ease both",
-        }}
-      >
-        <span
-          className="cl-splash-ring"
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "50%",
-            border: "1px solid rgba(42,37,96,0.9)",
-            borderTopColor: "var(--cosmetic-accent)",
-            animation: "cl-splash-ring 1.1s linear infinite",
-          }}
-        />
-        <Image
-          src="/Logo_principal.png"
-          alt=""
-          width={52}
-          height={52}
-          priority
-          style={{ objectFit: "contain" }}
-        />
-      </div>
-
-      <div style={{ textAlign: "center", animation: "cl-splash-in 400ms ease 80ms both" }}>
-        <div
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 17,
-            letterSpacing: "-0.02em",
-            color: "#F5F5FA",
-          }}
-        >
-          cyber<span style={{ color: "var(--cosmetic-accent)" }}>learn</span>
+      <div aria-hidden="true" data-splash="true">
+        <div className="cl-splash-mark">
+          <span className="cl-splash-ring" />
+          <Image
+            src="/Logo_principal.png"
+            alt=""
+            width={52}
+            height={52}
+            priority
+            style={{ objectFit: "contain" }}
+          />
         </div>
-        <div
-          style={{
-            marginTop: 6,
-            fontFamily: "var(--font-mono)",
-            fontSize: 9.5,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "#6B6890",
-          }}
-        >
-          Chargement sécurisé
+
+        <div className="cl-splash-words">
+          <div className="cl-splash-wordmark">
+            cyber<em>learn</em>
+          </div>
+          <div className="cl-splash-caption">Chargement sécurisé</div>
+        </div>
+
+        <div className="cl-splash-bar">
+          <div className="cl-splash-bar-fill" />
         </div>
       </div>
-
-      <div
-        style={{
-          width: 180,
-          height: 3,
-          background: "#1F1B47",
-          overflow: "hidden",
-          animation: "cl-splash-in 400ms ease 140ms both",
-        }}
-      >
-        <div
-          style={{
-            width: `${String(progress)}%`,
-            height: "100%",
-            background: "linear-gradient(90deg, #0024FF, var(--cosmetic-accent))",
-          }}
-        />
-      </div>
-    </div>
+    </>
   );
 }
