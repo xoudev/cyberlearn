@@ -14,6 +14,31 @@ function html(): string {
   return renderToStaticMarkup(AdminSplashScreen());
 }
 
+/**
+ * The first <script> element, split into its opening tag and its body.
+ *
+ * Deliberately not a regular expression. CodeQL reported three different ways
+ * the obvious regex diverged from HTML (js/bad-tag-filter): it missed
+ * <SCRIPT>, and once that was fixed, it missed an end tag written
+ * `</script >`. Both reports were right, and a third would have been too -
+ * chasing them one at a time is the losing half of the game. A regex is not an
+ * HTML parser, which is the rule's actual point, so this walks indices
+ * instead: the search runs on a lower-cased copy so case never matters, and
+ * the end tag is found by its name rather than by a shape it has to match
+ * exactly.
+ */
+function scriptParts(rendered: string): { tag: string; body: string } {
+  const hay = rendered.toLowerCase();
+  const start = hay.indexOf("<script");
+  if (start < 0) return { tag: "", body: "" };
+  const tagEnd = hay.indexOf(">", start);
+  const close = hay.indexOf("</script", tagEnd);
+  return {
+    tag: rendered.slice(start, tagEnd + 1),
+    body: rendered.slice(tagEnd + 1, close < 0 ? undefined : close),
+  };
+}
+
 describe("the console splash is in the first frame", () => {
   it("renders the overlay unconditionally, with no effect to wait for", () => {
     expect(html()).toContain('data-splash="true"');
@@ -27,14 +52,7 @@ describe("the console splash is in the first frame", () => {
   });
 
   it("leaves the script parser-blocking", () => {
-    // Case-insensitive on purpose. A regular expression that picks out an HTML
-    // tag and only matches one case is the defect CodeQL reports as
-    // js/bad-tag-filter: <SCRIPT> is the same tag to a browser and a different
-    // string to /<script/. React only ever emits lower case, so nothing here
-    // was slipping through - but a tag filter that depends on who generated
-    // the markup is the wrong shape to leave lying around in a test whose
-    // whole job is to read markup.
-    expect(/<script[^>]*>/iu.exec(html())?.[0] ?? "").not.toMatch(/\b(?:src|async|defer)\b/u);
+    expect(scriptParts(html()).tag).not.toMatch(/\b(?:src|async|defer)\b/u);
   });
 
   it("keeps its own session key, so the two splashes do not silence each other", () => {
@@ -47,7 +65,7 @@ describe("the console splash is in the first frame", () => {
   it("keeps the key out of the script source", () => {
     // See the site's copy: interpolating it in built code from a string, which
     // CodeQL reports as js/bad-code-sanitization.
-    const body = /<script[^>]*>([\s\S]*?)<\/script>/iu.exec(html())?.[1] ?? "";
+    const { body } = scriptParts(html());
     expect(body).not.toContain("cl-admin-splash-shown");
     expect(body).toContain("dataset.splashKey");
   });

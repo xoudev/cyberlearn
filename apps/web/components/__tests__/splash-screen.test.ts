@@ -21,6 +21,31 @@ function html(nonce?: string): string {
   return renderToStaticMarkup(SplashScreen(nonce === undefined ? {} : { nonce }));
 }
 
+/**
+ * The first <script> element, split into its opening tag and its body.
+ *
+ * Deliberately not a regular expression. CodeQL reported three different ways
+ * the obvious regex diverged from HTML (js/bad-tag-filter): it missed
+ * <SCRIPT>, and once that was fixed, it missed an end tag written
+ * `</script >`. Both reports were right, and a third would have been too -
+ * chasing them one at a time is the losing half of the game. A regex is not an
+ * HTML parser, which is the rule's actual point, so this walks indices
+ * instead: the search runs on a lower-cased copy so case never matters, and
+ * the end tag is found by its name rather than by a shape it has to match
+ * exactly.
+ */
+function scriptParts(rendered: string): { tag: string; body: string } {
+  const hay = rendered.toLowerCase();
+  const start = hay.indexOf("<script");
+  if (start < 0) return { tag: "", body: "" };
+  const tagEnd = hay.indexOf(">", start);
+  const close = hay.indexOf("</script", tagEnd);
+  return {
+    tag: rendered.slice(start, tagEnd + 1),
+    body: rendered.slice(tagEnd + 1, close < 0 ? undefined : close),
+  };
+}
+
 describe("the splash is in the first frame", () => {
   it("renders the overlay unconditionally, with no effect to wait for", () => {
     // The regression, exactly: this used to be "" until React had hydrated.
@@ -44,15 +69,7 @@ describe("the splash is in the first frame", () => {
   it("leaves the script parser-blocking", () => {
     // src, async or defer would all postpone it past the overlay's parse and
     // reintroduce the flash this ordering exists to avoid.
-    // Case-insensitive on purpose. A regular expression that picks out an HTML
-    // tag and only matches one case is the defect CodeQL reports as
-    // js/bad-tag-filter: <SCRIPT> is the same tag to a browser and a different
-    // string to /<script/. React only ever emits lower case, so nothing here
-    // was slipping through - but a tag filter that depends on who generated
-    // the markup is the wrong shape to leave lying around in a test whose
-    // whole job is to read markup.
-    const tag = /<script[^>]*>/iu.exec(html())?.[0] ?? "";
-    expect(tag).not.toMatch(/\b(?:src|async|defer)\b/u);
+    expect(scriptParts(html()).tag).not.toMatch(/\b(?:src|async|defer)\b/u);
   });
 
   it("carries the nonce it is given, because production CSP is nonce-based", () => {
@@ -88,8 +105,7 @@ describe("the storage key stays the one the privacy page publishes", () => {
     // The value was a literal, so nothing was exploitable - but the pattern
     // builds a program out of a string, and the next value put through it
     // might not be a literal. The script is fixed text now.
-    const rendered = html();
-    const body = /<script[^>]*>([\s\S]*?)<\/script>/iu.exec(rendered)?.[1] ?? "";
+    const { body } = scriptParts(html());
     expect(body).not.toContain("cl-splash-shown");
     expect(body).toContain("dataset.splashKey");
   });
