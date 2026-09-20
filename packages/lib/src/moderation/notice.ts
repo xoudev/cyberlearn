@@ -11,8 +11,8 @@
  * the opposite of what it is for.
  */
 
-/** The three points at which somebody is told. */
-export type ModerationStage = "held" | "restored" | "removed";
+/** The points at which somebody is told. */
+export type ModerationStage = "held" | "restored" | "removed" | "refused";
 
 /**
  * How each surface is referred to, in the possessive.
@@ -26,6 +26,7 @@ const SURFACE_NOUN: Record<string, string> = {
   "lesson.answer": "ta réponse",
   "forum.topic": "ton sujet",
   "forum.post": "ton message",
+  "note.share": "ta note",
 };
 
 /** The neutral fall-back, for a surface this was not taught about. */
@@ -62,6 +63,17 @@ export interface ModerationNoticeInput {
 export function moderationNotice(input: ModerationNoticeInput): ModerationNotice {
   const noun = surfaceNoun(input.surface);
   const Noun = noun.charAt(0).toUpperCase() + noun.slice(1);
+
+  // Sharing a note publishes nothing, so there is no held state and no
+  // restoring: the share simply did not happen, and the note is still the
+  // author's to edit and send again. Saying "en attente de validation" here
+  // would promise a publication that is never coming.
+  if (input.stage === "refused") {
+    return {
+      title: `${Noun} n'a pas été partagée`,
+      body: `La modération automatique a signalé ${noun}, donc le partage n'a pas eu lieu. ${Noun} est toujours là, telle que tu l'as écrite : tu peux la modifier et la repartager.`,
+    };
+  }
 
   if (input.stage === "held") {
     return {

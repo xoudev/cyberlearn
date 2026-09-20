@@ -10,6 +10,7 @@ export {
   type ScreenSurface,
   type ScreenInput,
   type ScreenResult,
+  isActionableEvent,
 } from "./repositories/moderation.repository.js";
 export {
   lessonRepository,

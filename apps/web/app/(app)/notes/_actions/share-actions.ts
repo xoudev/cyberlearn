@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 import { noteShareRepository } from "@cyberlearn/db";
+import { labelRules } from "@cyberlearn/lib";
+import { announceModeration } from "@/lib/moderation/announce";
 import { requireRequestUser } from "@/lib/auth";
 
 /**
@@ -89,18 +91,38 @@ export async function shareNoteAction(input: {
 
   if (result.ok) return { ok: true, shared: result.shared };
 
+  if (result.reason === "BLOCKED") {
+    // The author is told, which is the half that was missing: their share
+    // simply did not happen, and without this the only sign was a red line
+    // under a form they may have already closed.
+    await announceModeration({
+      userId: user.id,
+      surface: "note.share",
+      stage: "refused",
+      excerpt: "",
+    });
+  }
+
   switch (result.reason) {
-    case "BLOCKED":
+    case "BLOCKED": {
       // Said plainly, and without pretending it went nowhere. A student who is
       // told their teacher now knows can go and talk to them, which is the
       // point; a vague "erreur" would only teach them to try again.
+      //
+      // The reason is named for the same purpose. The screen now refuses on a
+      // doubt as well as on a certainty, so "jugé inapproprié" is sometimes
+      // simply wrong - two source links are not an insult - and somebody who
+      // cannot tell which of the two happened cannot fix either.
+      const labels = labelRules(result.rules);
+      const reason = labels.length > 0 ? ` Motif : ${labels.join(", ")}.` : "";
+      const teacher = result.teachersNotified > 0 ? " Ton professeur en a été informé." : "";
       return {
         ok: false,
-        error:
-          result.teachersNotified > 0
-            ? "Partage bloqué : le contenu de cette note a été jugé inapproprié. Ton professeur en a été informé."
-            : "Partage bloqué : le contenu de cette note a été jugé inapproprié.",
+        // The note is untouched, and saying so is what makes the refusal
+        // affordable: there is something to do about it.
+        error: `Partage refusé : la modération a signalé cette note.${reason}${teacher} La note reste la tienne, tu peux la modifier et la repartager.`,
       };
+    }
     case "EMPTY":
       return { ok: false, error: "Cette note est vide." };
     case "NO_RECIPIENT":

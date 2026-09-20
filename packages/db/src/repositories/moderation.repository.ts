@@ -168,6 +168,19 @@ function handlerFor(surface: string): SurfaceHandler | null {
     : null;
 }
 
+/**
+ * Whether a decision on this event can reach anything.
+ *
+ * The console asked nobody this and offered "rétablir" and "supprimer" on
+ * every row. On a note share both did nothing - the surface publishes no row,
+ * so it has no handler - and the reviewer got no error either, just a queue
+ * entry that closed and a note still sitting where it was. A button that
+ * cannot work should not be drawn.
+ */
+export function isActionableEvent(surface: string, contentId: string | null): boolean {
+  return contentId !== null && handlerFor(surface) !== null;
+}
+
 export const moderationRepository = {
   /**
    * Screens a piece of text and records anything that was not plainly fine.

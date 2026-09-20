@@ -74,23 +74,54 @@ export function moderate(text: string, options: ModerateOptions = {}): Moderatio
   const views = [flat, joined, squeezed];
 
   const seen = new Set<string>();
+  /** Needles that matched, to drop the ones a longer phrase already covers. */
+  const matched: { needle: string; index: number }[] = [];
   for (const entry of LEXICON) {
     const needle = normalise(entry.term);
+    // A French tail, for the entries that asked for one: enculer, abrutie,
+    // débiles. Opt-in per entry, because the same tail turns "con" into "cone".
+    const tail = entry.inflect === true ? "(?:e|es|s|r|z|ee|ees|er)?" : "";
     // \b does not fire next to a space inside a multi-word term, so the pattern
     // is built around the whole phrase rather than per word.
-    const pattern = new RegExp(`(?<![a-z0-9])${escapeRegExp(needle)}(?![a-z0-9])`, "u");
+    const pattern = new RegExp(`(?<![a-z0-9])${escapeRegExp(needle)}${tail}(?![a-z0-9])`, "u");
     // The needle is squeezed too when tested against the squeezed view, or
     // "connard" would never match a text folded to "conard".
     const squeezedNeedle = new RegExp(
-      `(?<![a-z0-9])${escapeRegExp(squeezeRepeats(needle))}(?![a-z0-9])`,
+      `(?<![a-z0-9])${escapeRegExp(squeezeRepeats(needle))}${tail}(?![a-z0-9])`,
       "u",
     );
     const hit = views.some((view, i) => (i === 2 ? squeezedNeedle : pattern).test(view));
     if (!hit) continue;
-    if (seen.has(entry.term)) continue;
-    seen.add(entry.term);
+    // Keyed on the normalised needle, not on the term as written. "enculé" and
+    // "encule" are both on the list and fold to the same string, so keying on
+    // the term counted one word twice and scored it as two.
+    if (seen.has(needle)) continue;
+    seen.add(needle);
+    matched.push({ needle, index: findings.length });
     findings.push({ rule: entry.rule, severity: entry.severity, match: entry.term });
   }
+
+  // One utterance, counted once. "ferme ta gueule" matched both itself and
+  // "ta gueule" and scored 100 - a BLOCK produced by the list overlapping
+  // itself rather than by what was written, which makes the score depend on
+  // how the lexicon happens to be spelled. The longer phrase is the one that
+  // describes what was said, so the shorter needle inside it is dropped.
+  //
+  // Strictly longer, which is load-bearing: with `>=` two equal needles cover
+  // each other and both vanish, so a term on the list twice scored nothing at
+  // all instead of scoring twice.
+  const covered = new Set(
+    matched
+      .filter((m) =>
+        matched.some(
+          (other) => other.needle.length > m.needle.length && other.needle.includes(m.needle),
+        ),
+      )
+      .map((m) => m.index),
+  );
+  const kept = findings.filter((_, i) => !covered.has(i));
+  findings.length = 0;
+  findings.push(...kept);
 
   const emails = text.match(EMAIL) ?? [];
   const phones = text.match(PHONE_FR) ?? [];

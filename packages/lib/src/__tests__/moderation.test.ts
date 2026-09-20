@@ -168,3 +168,83 @@ describe("the record it leaves", () => {
     expect(moderate("")).toEqual({ verdict: "ALLOW", score: 0, findings: [] });
   });
 });
+
+describe("the French register, which is phrasal", () => {
+  it("catches the phrase reported from the forum", () => {
+    // Scored zero. Not one of its words was on a list written in single words,
+    // which is most of the way to useless in French.
+    const result = moderate("Tu est nul vas te faire foutre");
+    expect(result.verdict).not.toBe("ALLOW");
+    expect(result.findings.map((f) => f.match)).toContain("te faire foutre");
+  });
+
+  it("does not depend on which of va, vas or allez was typed", () => {
+    // The phrase is stored from the middle for exactly this reason.
+    for (const opening of ["va", "vas", "allez", "il peut aller"]) {
+      expect(moderate(`${opening} te faire foutre`).verdict).not.toBe("ALLOW");
+    }
+  });
+
+  it("reads an inflected form of a term it holds in the infinitive", () => {
+    // "encule" was on the list and "enculer" scored zero, because the pattern
+    // refused a letter after the needle.
+    for (const form of ["encule", "enculer", "enculee", "enculez"]) {
+      expect(moderate(`espece d'${form}`).verdict).not.toBe("ALLOW");
+    }
+    expect(moderate("bande d'abrutis").verdict).not.toBe("ALLOW");
+  });
+
+  it("keeps the inflection off words that are a prefix of ordinary ones", () => {
+    // The tail that rescues "enculer" is the tail that would turn "con" into
+    // "cone", so it is opt-in per entry and these must stay clean.
+    expect(moderate("le cone de signalisation").findings).toEqual([]);
+    expect(moderate("une bite de pare-battage").findings.some((f) => f.match === "bites")).toBe(
+      false,
+    );
+  });
+});
+
+describe("one utterance, counted once", () => {
+  it("does not add a phrase to the shorter phrase inside it", () => {
+    // "ferme ta gueule" matched itself and "ta gueule" and came to 100 - a
+    // BLOCK produced by the list overlapping itself rather than by what was
+    // written. The longer phrase is the one that describes what was said.
+    const result = moderate("ferme ta gueule");
+    expect(result.findings.map((f) => f.match)).toEqual(["ferme ta gueule"]);
+    expect(result.score).toBe(50);
+  });
+
+  it("still counts two genuinely different terms", () => {
+    // The overlap rule must not swallow a real pattern: neither needle is
+    // inside the other, so both stand and two insults block.
+    const result = moderate("connard de salope");
+    expect(result.findings).toHaveLength(2);
+    expect(result.verdict).toBe("BLOCK");
+  });
+
+  it("counts a word the list spells twice as the one word it is", () => {
+    // "enculé" and "encule" are both on the list, and they fold to the same
+    // string. Keying the already-seen set on the term as written counted one
+    // word twice and turned a single insult into a BLOCK - and the overlap
+    // rule cannot catch it, because equal-length needles never cover each
+    // other. The key is the normalised needle for exactly this reason.
+    const result = moderate("espece d'enculé");
+    expect(result.findings).toHaveLength(1);
+    expect(result.score).toBe(50);
+    expect(result.verdict).toBe("REVIEW");
+  });
+});
+
+describe("coarse but not aimed", () => {
+  it("lets one swear word through while still counting it", () => {
+    // A teenager typing this at a failing exercise is not the case any of this
+    // exists for, and a filter that stops them is one people write around.
+    const result = moderate("merde ça marche pas");
+    expect(result.verdict).toBe("ALLOW");
+    expect(result.findings.map((f) => f.rule)).toEqual(["vulgarity"]);
+  });
+
+  it("looks at two of them together", () => {
+    expect(moderate("merde ce bordel").verdict).toBe("REVIEW");
+  });
+});

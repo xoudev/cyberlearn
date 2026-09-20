@@ -20,6 +20,7 @@ export * from "./moderation/ban.js";
 export * from "./moderation/notice.js";
 export * from "./moderation/moderate.js";
 export * from "./moderation/lexicon.js";
+export * from "./moderation/labels.js";
 export * from "./sm2.js";
 export * from "./social/friendship.js";
 export * from "./terminal/scenarios.js";
