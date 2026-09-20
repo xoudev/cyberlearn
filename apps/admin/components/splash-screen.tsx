@@ -23,8 +23,17 @@ const SESSION_KEY = "cl-admin-splash-shown";
  * a return visit in the same tab never sees a frame of it. The console's CSP
  * allows inline scripts ('unsafe-inline' for Monaco), so there is no nonce to
  * thread through here - unlike the site, whose policy is nonce-based.
+ *
+ * Fixed text, with the key carried as data on the tag rather than interpolated
+ * into the source. The site's copy explains why; the short version is that
+ * JSON.stringify escapes for JSON and not for JavaScript, so using it to build
+ * a program is a habit worth not having.
  */
-const SKIP_SCRIPT = `try{if(sessionStorage.getItem(${JSON.stringify(SESSION_KEY)})){document.documentElement.setAttribute('data-splash-seen','')}else{sessionStorage.setItem(${JSON.stringify(SESSION_KEY)},'1')}}catch(e){}`;
+const SKIP_SCRIPT =
+  "try{var k=document.currentScript&&document.currentScript.dataset.splashKey;" +
+  "if(k){if(sessionStorage.getItem(k)){" +
+  "document.documentElement.setAttribute('data-splash-seen','')" +
+  "}else{sessionStorage.setItem(k,'1')}}}catch(e){}";
 
 /** Without scripting there is no session marker, so it would play on every page. */
 const NOSCRIPT_CSS = `[data-splash]{display:none}`;
@@ -32,8 +41,8 @@ const NOSCRIPT_CSS = `[data-splash]{display:none}`;
 export function AdminSplashScreen(): React.ReactElement {
   return (
     <>
-      {/* Constant string defined above, never built from a request. */}
-      <script dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }} />
+      {/* A fixed string, and the key beside it as data rather than as code. */}
+      <script data-splash-key={SESSION_KEY} dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }} />
       <noscript>
         <style dangerouslySetInnerHTML={{ __html: NOSCRIPT_CSS }} />
       </noscript>

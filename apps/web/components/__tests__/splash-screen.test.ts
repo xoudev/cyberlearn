@@ -68,11 +68,23 @@ describe("the storage key stays the one the privacy page publishes", () => {
     // l'onglet"). Renaming it in the component alone would leave the published
     // table describing something the site no longer stores.
     const privacy = readFileSync(join(__dirname, "..", "..", "app", "privacy", "page.tsx"), "utf8");
-    // Read out of the getItem call, not out of the document at large: the
-    // overlay's class names also start with `cl-`.
-    const key = /getItem\("(.+?)"\)/u.exec(html())?.[1];
+    // Read off the tag's data attribute, which is where the key now travels.
+    const key = /data-splash-key="(.+?)"/u.exec(html())?.[1];
     expect(key).toBe("cl-splash-shown");
     expect(privacy).toContain(`"${String(key)}"`);
+  });
+
+  it("keeps the key out of the script source", () => {
+    // CodeQL flagged the first version of this (js/bad-code-sanitization,
+    // CWE-094): the key was interpolated into the script body with
+    // JSON.stringify, which escapes for JSON and not for JavaScript source.
+    // The value was a literal, so nothing was exploitable - but the pattern
+    // builds a program out of a string, and the next value put through it
+    // might not be a literal. The script is fixed text now.
+    const rendered = html();
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/u.exec(rendered)?.[1] ?? "";
+    expect(body).not.toContain("cl-splash-shown");
+    expect(body).toContain("dataset.splashKey");
   });
 
   it("uses sessionStorage, which is what that published lifetime means", () => {

@@ -36,11 +36,25 @@ const SESSION_KEY = "cl-splash-shown";
  * <html> before the overlay exists and the CSS rule that hides it already
  * applies. Deferring this would turn the skip into a visible flash.
  *
+ * Not one character of it is computed. The key travels separately, on the
+ * tag's data-splash-key attribute, and the script reads it back off
+ * currentScript. Written the obvious way - interpolating the key into the
+ * source with JSON.stringify - this built a program out of a string, and
+ * CodeQL was right to say so (js/bad-code-sanitization, CWE-094): JSON.stringify
+ * escapes for JSON, not for JavaScript source, so the pattern is only ever as
+ * safe as the value that happens to be going through it today. An attribute is
+ * data, React escapes it as data, and there is no code construction left to
+ * get wrong if this key ever stops being a literal.
+ *
  * The key and its lifetime are quoted in the privacy page's storage table; it
  * dies with the tab, and it is the reason a reload does not replay the
  * animation.
  */
-const SKIP_SCRIPT = `try{if(sessionStorage.getItem(${JSON.stringify(SESSION_KEY)})){document.documentElement.setAttribute('data-splash-seen','')}else{sessionStorage.setItem(${JSON.stringify(SESSION_KEY)},'1')}}catch(e){}`;
+const SKIP_SCRIPT =
+  "try{var k=document.currentScript&&document.currentScript.dataset.splashKey;" +
+  "if(k){if(sessionStorage.getItem(k)){" +
+  "document.documentElement.setAttribute('data-splash-seen','')" +
+  "}else{sessionStorage.setItem(k,'1')}}}catch(e){}";
 
 /** Without scripting there is no session marker, so it would play on every page. */
 const NOSCRIPT_CSS = `[data-splash]{display:none}`;
@@ -48,8 +62,12 @@ const NOSCRIPT_CSS = `[data-splash]{display:none}`;
 export function SplashScreen({ nonce }: { nonce?: string }): React.ReactElement {
   return (
     <>
-      {/* Constant string defined above, never built from a request. */}
-      <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }} />
+      {/* A fixed string, and the key beside it as data rather than as code. */}
+      <script
+        nonce={nonce}
+        data-splash-key={SESSION_KEY}
+        dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }}
+      />
       <noscript>
         <style dangerouslySetInnerHTML={{ __html: NOSCRIPT_CSS }} />
       </noscript>

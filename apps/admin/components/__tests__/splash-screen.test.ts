@@ -37,6 +37,14 @@ describe("the console splash is in the first frame", () => {
     expect(html()).toContain("cl-admin-splash-shown");
   });
 
+  it("keeps the key out of the script source", () => {
+    // See the site's copy: interpolating it in built code from a string, which
+    // CodeQL reports as js/bad-code-sanitization.
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/u.exec(html())?.[1] ?? "";
+    expect(body).not.toContain("cl-admin-splash-shown");
+    expect(body).toContain("dataset.splashKey");
+  });
+
   it("uses sessionStorage, so the animation returns with a new tab", () => {
     const rendered = html();
     expect(rendered).toContain("sessionStorage");
