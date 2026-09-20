@@ -85,11 +85,6 @@ Obligatoire = l'app ne démarre pas sans.
 | `SENTRY_ISSUES_TOKEN` | — | ✅ | — | Jeton **utilisateur** avec `event:read`, pour la carte Sentry du dashboard admin |
 | `NEXT_PUBLIC_SENTRY_CSP_REPORT_URI` | ✅ | ✅ | — | Endpoint de report des violations CSP |
 
-`JIRA_BASE_URL`, `JIRA_API_EMAIL`, `JIRA_API_TOKEN` et `JIRA_PROJECT_KEY`
-figurent encore dans le schéma et dans `.env.example` mais **aucun code ne les
-lit** : les demandes de contact deviennent des `ContactTicket` en base. Ne rien
-renseigner. Suppression tracée dans `docs/hardening/known-issues.md`.
-
 ---
 
 ## 5. Deploy

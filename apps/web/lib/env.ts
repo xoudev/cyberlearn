@@ -22,12 +22,6 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().startsWith("re_"),
     RESEND_FROM_EMAIL: z.string().email(),
 
-    // Jira integration (contact form → tickets): optional until Phase implemented
-    JIRA_BASE_URL: z.string().url().optional(),
-    JIRA_API_EMAIL: z.string().email().optional(),
-    JIRA_API_TOKEN: z.string().min(1).optional(),
-    JIRA_PROJECT_KEY: z.string().min(1).optional(),
-
     // Rate limiting (Upstash Redis): optional, degrades gracefully without Redis
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
@@ -81,10 +75,6 @@ export const env = createEnv({
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
-    JIRA_BASE_URL: process.env.JIRA_BASE_URL,
-    JIRA_API_EMAIL: process.env.JIRA_API_EMAIL,
-    JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
-    JIRA_PROJECT_KEY: process.env.JIRA_PROJECT_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
