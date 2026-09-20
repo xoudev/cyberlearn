@@ -44,7 +44,14 @@ describe("the splash is in the first frame", () => {
   it("leaves the script parser-blocking", () => {
     // src, async or defer would all postpone it past the overlay's parse and
     // reintroduce the flash this ordering exists to avoid.
-    const tag = /<script[^>]*>/u.exec(html())?.[0] ?? "";
+    // Case-insensitive on purpose. A regular expression that picks out an HTML
+    // tag and only matches one case is the defect CodeQL reports as
+    // js/bad-tag-filter: <SCRIPT> is the same tag to a browser and a different
+    // string to /<script/. React only ever emits lower case, so nothing here
+    // was slipping through - but a tag filter that depends on who generated
+    // the markup is the wrong shape to leave lying around in a test whose
+    // whole job is to read markup.
+    const tag = /<script[^>]*>/iu.exec(html())?.[0] ?? "";
     expect(tag).not.toMatch(/\b(?:src|async|defer)\b/u);
   });
 
@@ -82,7 +89,7 @@ describe("the storage key stays the one the privacy page publishes", () => {
     // builds a program out of a string, and the next value put through it
     // might not be a literal. The script is fixed text now.
     const rendered = html();
-    const body = /<script[^>]*>([\s\S]*?)<\/script>/u.exec(rendered)?.[1] ?? "";
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/iu.exec(rendered)?.[1] ?? "";
     expect(body).not.toContain("cl-splash-shown");
     expect(body).toContain("dataset.splashKey");
   });

@@ -27,7 +27,14 @@ describe("the console splash is in the first frame", () => {
   });
 
   it("leaves the script parser-blocking", () => {
-    expect(/<script[^>]*>/u.exec(html())?.[0] ?? "").not.toMatch(/\b(?:src|async|defer)\b/u);
+    // Case-insensitive on purpose. A regular expression that picks out an HTML
+    // tag and only matches one case is the defect CodeQL reports as
+    // js/bad-tag-filter: <SCRIPT> is the same tag to a browser and a different
+    // string to /<script/. React only ever emits lower case, so nothing here
+    // was slipping through - but a tag filter that depends on who generated
+    // the markup is the wrong shape to leave lying around in a test whose
+    // whole job is to read markup.
+    expect(/<script[^>]*>/iu.exec(html())?.[0] ?? "").not.toMatch(/\b(?:src|async|defer)\b/u);
   });
 
   it("keeps its own session key, so the two splashes do not silence each other", () => {
@@ -40,7 +47,7 @@ describe("the console splash is in the first frame", () => {
   it("keeps the key out of the script source", () => {
     // See the site's copy: interpolating it in built code from a string, which
     // CodeQL reports as js/bad-code-sanitization.
-    const body = /<script[^>]*>([\s\S]*?)<\/script>/u.exec(html())?.[1] ?? "";
+    const body = /<script[^>]*>([\s\S]*?)<\/script>/iu.exec(html())?.[1] ?? "";
     expect(body).not.toContain("cl-admin-splash-shown");
     expect(body).toContain("dataset.splashKey");
   });
