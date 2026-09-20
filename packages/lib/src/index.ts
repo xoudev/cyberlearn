@@ -24,5 +24,6 @@ export * from "./sm2.js";
 export * from "./social/friendship.js";
 export * from "./terminal/scenarios.js";
 export * from "./quiz/quiz.js";
+export * from "./class/roster-input.js";
 export * from "./search/fold.js";
 export * from "./search/rank.js";

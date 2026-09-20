@@ -166,7 +166,7 @@ function Members({
       {members.length === 0 ? (
         <EmptyState
           title="Aucun élève"
-          text="Choisis des comptes existants, ou colle des adresses pour inviter."
+          text="Choisis des comptes existants, ou colle des adresses et des @pseudos."
         />
       ) : (
         <div className="a-table-wrap" style={{ maxHeight: 340, overflowY: "auto" }}>
@@ -208,17 +208,19 @@ function Members({
         <input type="hidden" name="classId" value={classId} />
 
         <label className="a-field">
-          <span className="a-label">Ou colle une liste d&apos;adresses</span>
+          <span className="a-label">Ou colle des adresses et des @pseudos</span>
           <textarea
             name="emails"
             rows={4}
             required
-            placeholder={"eleve1@ecole.fr\neleve2@ecole.fr"}
+            placeholder={"eleve1@ecole.fr\n@amelie\neleve2@ecole.fr"}
             className="a-textarea"
           />
           <span className="a-field-hint">
-            Une adresse par ligne. Celles qui ont un compte rejoignent la classe tout de suite ; les
-            autres reçoivent une invitation et prendront leur place à l&apos;inscription.
+            Une entrée par ligne. Une <strong>adresse</strong> qui a un compte rejoint la classe
+            tout de suite ; sinon elle reçoit une invitation et prendra sa place à
+            l&apos;inscription. Un <strong>@pseudo</strong> désigne un compte qui existe déjà — il
+            ne peut pas être invité, puisqu&apos;on ne réserve pas un pseudo en s&apos;inscrivant.
           </span>
         </label>
 
@@ -250,6 +252,20 @@ function Members({
         {state.mailFailed !== undefined && state.mailFailed.length > 0 && (
           <p className="a-form-error">
             Invitation enregistrée mais e-mail non envoyé : {state.mailFailed.join(", ")}
+          </p>
+        )}
+        {/* Said plainly rather than left to be inferred from a silence: a
+            handle is not a place that can be held, so nothing was held. */}
+        {state.unknownHandles !== undefined && state.unknownHandles.length > 0 && (
+          <p className="a-form-error">
+            Aucun compte pour {state.unknownHandles.map((h) => `@${h}`).join(", ")} — rien n&apos;a
+            été réservé. Vérifie le pseudo, ou ajoute la personne par son adresse.
+          </p>
+        )}
+        {/* These used to become pending invitations addressed to themselves. */}
+        {state.invalid !== undefined && state.invalid.length > 0 && (
+          <p className="a-form-error">
+            Ni une adresse ni un @pseudo, donc ignoré : {state.invalid.join(", ")}
           </p>
         )}
         {state.error !== undefined && <p className="a-form-error">{state.error}</p>}

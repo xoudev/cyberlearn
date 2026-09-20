@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { classRepository, prisma } from "@cyberlearn/db";
+import { parseRosterInput } from "@cyberlearn/lib";
 import type { Prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 import { notifyEnrolledInClass } from "@/lib/class-enrolment-notice";
@@ -136,8 +137,10 @@ export async function createClassAction(
 
 const memberSchema = z.object({
   classId: z.string().uuid(),
-  // One field, one address per line: pasting a class list should not mean
-  // adding twenty students one at a time.
+  // One field, one entry per line: pasting a class list should not mean adding
+  // twenty students one at a time. The field is still called `emails` because
+  // that is the form control's name; what it accepts is addresses and @handles,
+  // which parseRosterInput sorts out.
   emails: z.string().trim().min(3).max(5000),
 });
 
@@ -150,6 +153,10 @@ export interface AddMembersState {
   renewed?: string[];
   /** Invited, but the mail did not go out - the place is held, nobody was told. */
   mailFailed?: string[];
+  /** @handles that match no account. Nothing is held for them; see below. */
+  unknownHandles?: string[];
+  /** Neither an address nor a handle. These used to become invitations. */
+  invalid?: string[];
 }
 
 export async function addMembersAction(
@@ -160,36 +167,56 @@ export async function addMembersAction(
   const parsed = memberSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: "Liste invalide." };
 
-  const emails = [
-    ...new Set(
-      parsed.data.emails
-        .split(/[\s,;]+/)
-        .map((e) => e.trim().toLowerCase())
-        .filter((e) => e.length > 0),
-    ),
-  ].slice(0, 200);
+  const { emails, handles, invalid } = parseRosterInput(parsed.data.emails);
+  // Nothing resolvable: say which tokens were refused if there are any, rather
+  // than a generic error on top of a list the reader can already see.
+  if (emails.length === 0 && handles.length === 0) {
+    return invalid.length > 0 ? { invalid } : { error: "Rien à ajouter." };
+  }
 
-  const users = await prisma.user.findMany({
-    where: { email: { in: emails } },
-    select: { id: true, email: true },
-  });
-  const found = new Set(users.map((u) => u.email.toLowerCase()));
+  // Two lookups rather than one: an address and a handle are different columns,
+  // and a token is only ever one of the two by this point.
+  const [byEmail, byHandle] = await Promise.all([
+    emails.length > 0
+      ? prisma.user.findMany({
+          where: { email: { in: emails } },
+          select: { id: true, email: true },
+        })
+      : Promise.resolve([]),
+    handles.length > 0
+      ? prisma.user.findMany({
+          where: { username: { in: handles } },
+          select: { id: true, username: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const found = new Set(byEmail.map((u) => u.email.toLowerCase()));
   // An address with no account used to come back as "Aucun compte pour :" and
   // stop there, which left the administrator to chase the person by hand. It is
   // an invitation now: the place is held, and signing up with that address
   // takes it.
   const unknown = emails.filter((e) => !found.has(e));
 
-  const addedIds = await classRepository.addMembers(
-    parsed.data.classId,
-    users.map((u) => u.id),
-  );
+  // A handle is not invitable, and this is the reason the two are kept apart.
+  // An invitation is claimed by signing up with the address it names; nothing
+  // about signing up claims a username, which is chosen later at onboarding. So
+  // a handle nobody answers to is reported, and no place is held.
+  const foundHandles = new Set(byHandle.map((u) => u.username?.toLowerCase() ?? ""));
+  const unknownHandles = handles.filter((h) => !foundHandles.has(h));
+
+  // One call, so somebody named twice - once by address and once by handle -
+  // is added once. addMembers skips the ids already in the class.
+  const userIds = [...new Set([...byEmail.map((u) => u.id), ...byHandle.map((u) => u.id)])];
+  const addedIds = await classRepository.addMembers(parsed.data.classId, userIds);
   const outcome = await inviteAndNotify(parsed.data.classId, unknown, admin.id);
 
   await audit(admin.id, "class.members.add", parsed.data.classId, {
     added: addedIds.length,
     invited: outcome.invited.length,
     renewed: outcome.renewed.length,
+    byHandle: byHandle.length,
+    rejected: invalid.length + unknownHandles.length,
   });
 
   // After the audit, and never in front of it: the enrolment is what happened,
@@ -204,6 +231,8 @@ export async function addMembersAction(
     invited: outcome.invited,
     renewed: outcome.renewed,
     mailFailed: outcome.mailFailed,
+    unknownHandles,
+    invalid,
   };
 }
 

@@ -284,6 +284,9 @@
 #### Classes et établissements
 - Établissements et promotions, création et édition
 - Classes : composition, enseignants, membres, invitations par e-mail
+- Un élève s'ajoute par adresse ou par @pseudo ; une adresse inconnue devient
+  une invitation, un @pseudo inconnu est refusé (un pseudo ne se réserve pas
+  en s'inscrivant)
 
 #### Tickets de support
 - Liste avec filtres par statut et thème

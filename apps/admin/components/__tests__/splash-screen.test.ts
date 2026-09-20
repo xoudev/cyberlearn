@@ -63,8 +63,10 @@ describe("the console splash is in the first frame", () => {
   });
 
   it("keeps the key out of the script source", () => {
-    // See the site's copy: interpolating it in built code from a string, which
-    // CodeQL reports as js/bad-code-sanitization.
+    // See the site's copy: interpolating the key into the script body builds a
+    // program out of a string. (This was not what CodeQL reported on that PR -
+    // that was js/bad-tag-filter, in this file's own regexes - but the habit is
+    // worth not having either way.)
     const { body } = scriptParts(html());
     expect(body).not.toContain("cl-admin-splash-shown");
     expect(body).toContain("dataset.splashKey");
