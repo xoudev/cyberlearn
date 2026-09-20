@@ -59,7 +59,7 @@
 | Transferts hors UE | Resend US (CCT) |
 | Durée de conservation | 3 mois après résolution / 12 mois si non résolu |
 | Mesures de sécurité | TLS 1.3, rate limiting, honeypot et seuil de temps de remplissage, RLS sur le fil |
-| Note | Aucune donnée ne part chez Atlassian : les demandes vivent en base et la console y répond. Les variables `JIRA_*` restent déclarées mais inertes (voir `docs/hardening/known-issues.md`). |
+| Note | Aucune donnée ne part chez Atlassian, et plus aucune variable ne le suggère : les demandes vivent en base et la console y répond. |
 
 ## Traitement 5 - Logs de sécurité et audit
 

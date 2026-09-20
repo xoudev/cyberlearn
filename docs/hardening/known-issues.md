@@ -242,9 +242,12 @@ Aucun code ne les lit : le formulaire de contact écrit un `ContactTicket` en
 base et la console y répond. Le registre RGPD et la roadmap des coûts ne
 nomment plus Atlassian comme sous-traitant.
 
-Reste à faire : retirer les quatre entrées du schéma Zod et de `.env.example`.
-C'est une suppression de code, tracée ici plutôt que faite dans une PR de
-documentation.
+**RESOLVED** (PR #260 - chore/drop-dead-jira-config)
+Les quatre entrées sont retirées du schéma Zod, de son `runtimeEnv`, de
+`.env.example` et de `DEPLOY.md`. Rien ne casse si elles restent définies côté
+Vercel : `@t3-oss/env-nextjs` ne valide que ce qui est déclaré et ignore le
+reste de l'environnement — vérifié en buildant l'app avec les quatre variables
+posées dans le `.env`.
 
 ## `content/` était gitignoré alors que 210 fichiers y sont tracés
 
