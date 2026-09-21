@@ -15,6 +15,7 @@
     "render:profile": "remotion still src/index.tsx StoreProfile dist/phone-04-profile.png",
     "render:locker": "remotion still src/index.tsx StoreLocker dist/phone-05-locker.png",
     "render:video": "remotion render src/index.tsx PromoVideo dist/cyberlearn-promo.mp4 --codec=h264 --crf=18",
+    "render:linkedin": "remotion render src/index.tsx LinkedInVideo dist/cyberlearn-linkedin.mp4 --codec=h264 --crf=18",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

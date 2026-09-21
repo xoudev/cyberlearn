@@ -257,7 +257,7 @@ export function PromoVideo(): React.JSX.Element {
         name="Original CyberLearn soundtrack"
         src={staticFile("audio/cyberlearn-promo.wav")}
         volume={(frame) =>
-          interpolate(frame, [0, 24, 690, 719], [0, 0.56, 0.56, 0], {
+          interpolate(frame, [0, 24, 825, 854], [0, 0.56, 0.56, 0], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           })
@@ -290,25 +290,35 @@ export function PromoVideo(): React.JSX.Element {
       <Sequence from={360} durationInFrames={135}>
         <ProductScene
           duration={135}
-          screen="lesson"
+          screen="class"
           count="03"
-          eyebrow="Pratique"
-          title="Passe de la théorie au geste."
-          body="Lis, expérimente dans le terminal et valide ce que tu viens d’apprendre."
+          eyebrow="En classe"
+          title="Le travail donné arrive ici."
+          body="Ton professeur assigne une leçon avec une date : tu vois ce qui reste et ce qui est en retard."
         />
       </Sequence>
       <Sequence from={495} durationInFrames={135}>
         <ProductScene
           duration={135}
-          screen="locker"
+          screen="lesson"
           count="04"
-          eyebrow="Identité"
-          title="Fais évoluer ton profil."
-          body="Badges, certificats et cosmétiques récompensent le travail accompli."
+          eyebrow="Pratique"
+          title="Passe de la théorie au geste."
+          body="Lis, expérimente dans le terminal et valide ce que tu viens d’apprendre."
           reverse
         />
       </Sequence>
-      <Sequence from={630} durationInFrames={90}>
+      <Sequence from={630} durationInFrames={135}>
+        <ProductScene
+          duration={135}
+          screen="locker"
+          count="05"
+          eyebrow="Identité"
+          title="Fais évoluer ton profil."
+          body="Badges, certificats et cosmétiques récompensent le travail accompli."
+        />
+      </Sequence>
+      <Sequence from={765} durationInFrames={90}>
         <FinalCard />
       </Sequence>
     </AbsoluteFill>
