@@ -9,7 +9,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { GridBackdrop } from "../components/brand";
-import { BrowserMock, type WebScreenName } from "../components/web-screens";
+import { BrowserMock, type ShotName } from "../components/browser";
 import { fonts, palette } from "../theme";
 import { useFontsReady } from "../use-fonts-ready";
 
@@ -31,6 +31,12 @@ import { useFontsReady } from "../use-fonts-ready";
  * two doors somebody can actually walk through - an account on the site, and
  * the Android test channel - because a post that recruits testers and does
  * not say where to go recruits nobody.
+ *
+ * The screens are photographs of the real thing, not drawings of it. The first
+ * cut of this used hand-drawn approximations and that was the wrong call: a
+ * video recruiting testers has to show what they will actually get, and a
+ * drawing drifts from the product the moment somebody moves a button. See the
+ * README for how the captures are produced.
  */
 
 const ease = Easing.out(Easing.cubic);
@@ -105,7 +111,7 @@ function Beat({
   body,
 }: {
   duration: number;
-  screen: WebScreenName;
+  screen: ShotName;
   count: string;
   title: string;
   body: string;
@@ -178,7 +184,7 @@ function Beat({
               position: "absolute",
               top: 0,
               left: "50%",
-              transform: `translate(-50%, ${String(shift)}px) scale(0.79)`,
+              transform: `translate(-50%, ${String(shift)}px) scale(0.6444)`,
               transformOrigin: "top center",
             }}
           >
@@ -285,7 +291,7 @@ export function LinkedInVideo(): React.JSX.Element {
       <Sequence from={105} durationInFrames={135}>
         <Beat
           duration={135}
-          screen="dashboard"
+          screen="paths"
           count="01 · apprendre"
           title="Des parcours, pas une pile de vidéos."
           body="Cyber, réseau et développement. Tu sais toujours où tu en es et ce qui vient après."
@@ -294,16 +300,16 @@ export function LinkedInVideo(): React.JSX.Element {
       <Sequence from={240} durationInFrames={135}>
         <Beat
           duration={135}
-          screen="lesson"
+          screen="quiz"
           count="02 · pratiquer"
-          title="Un terminal dans la leçon."
-          body="Tu lis, tu tapes la commande, tu vois la réponse. Puis le quiz vérifie que ça a tenu."
+          title="Et on vérifie que ça a tenu."
+          body="Chaque leçon se termine par des questions qui portent sur ce que tu viens de lire, pas sur des définitions."
         />
       </Sequence>
       <Sequence from={375} durationInFrames={135}>
         <Beat
           duration={135}
-          screen="teacher"
+          screen="class"
           count="03 · en classe"
           title="Et côté prof, qui a fait quoi."
           body="Un enseignant donne du travail avec une date et suit l'avancement de sa classe, élève par élève."

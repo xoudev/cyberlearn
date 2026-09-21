@@ -39,11 +39,33 @@ bytes. And it asks for testers rather than installs, so it ends on the two doors
 somebody can walk through — an account on the site, and the Android test
 channel.
 
-It shows the web platform, drawn in `src/components/web-screens.tsx` the same
-way the phone screens are drawn in `src/components/screens.tsx`. Screenshotting
-the real site would need a signed-in session and a seeded database inside the
-render. The rule for both files is the same: the words on screen are the
-product's own words, so the video sells the thing that exists.
+It shows the web platform through **screenshots of the real components**, in
+`public/screens/`. The first version drew them by hand; that was wrong. A video
+recruiting testers has to show what they will actually get, and a drawing stops
+matching the product the moment somebody moves a button — with nobody to notice.
+
+## Regenerating the screenshots
+
+The captures come from `apps/web/app/shotcapture/page.tsx`, a development-only
+route that mounts the product's own components with the product's own CSS
+against sample data. It refuses to render in a production build.
+
+```bash
+pnpm --filter @cyberlearn/web dev            # then open /shotcapture
+```
+
+Capture the three elements `#cap-paths`, `#cap-quiz` and `#cap-class` at
+1440 px wide and `deviceScaleFactor: 2`, dismiss the cookie banner first, and
+hide the dev overlay (`nextjs-portal { display: none }`) — it floats over the
+bottom-left of every clip. Write them to `apps/marketing/public/screens/` and
+update the pixel sizes in `src/components/browser.tsx`, which uses them so
+nothing is stretched.
+
+The sample data uses invented names on purpose: a real class roster on a public
+video publishes real students' names, and most of them are minors.
+
+Recapture when a screen changes enough that the video misrepresents it. That is
+a smaller job than noticing a drawing has drifted, which never happens.
 
 ## Rendering behind a restricted network
 
