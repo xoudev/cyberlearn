@@ -17,12 +17,23 @@ Concrètement, pour toute PR qui ajoute ou modifie une surface du site :
 3. une PR qui touche une surface partagée sans faire l'un des deux est
    incomplète.
 
-L'app mobile lit le site par `apps/web/app/api/mobile/*` avec un jeton bearer.
-Une nouvelle surface mobile veut donc dire : une route API, une méthode dans
-`apps/mobile/lib/api.ts`, un écran. Les règles d'autorisation restent dans les
-dépôts (`packages/db`) — jamais réécrites côté app.
+Comment l'app lit et écrit, parce que ce paragraphe disait autre chose et que
+c'est lui qu'on relit avant de commencer une surface :
 
-## État au 19 septembre 2026
+- **Les lectures vont directement à Supabase**, sous RLS, depuis
+  `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
+- **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
+  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a sept :
+  `avatar`, `leaderboard`, `loadout`, `my-class`, `password`, `progress`,
+  `send-otp`.
+- Une route API n'est donc nécessaire que pour ce que la RLS ne peut pas
+  servir : une écriture à valider, ou quelque chose qui réclame la clé
+  `service_role` — signer un avatar privé, par exemple.
+
+Les règles d'autorisation restent dans les dépôts (`packages/db`) et dans la
+RLS — jamais réécrites côté app.
+
+## État au 21 septembre 2026
 
 ### Sur les deux
 
@@ -40,6 +51,7 @@ dépôts (`packages/db`) — jamais réécrites côté app.
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
 | Réglages, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
+| Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
 
 ### Encore dû
 
@@ -54,6 +66,7 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | **Tableau de bord** | Aujourd'hui l'onglet Accueil. Le web a été refondu autour des parcours depuis (PR #233) ; l'onglet Accueil ne suit pas encore | — |
 | **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) et l'appel d'un bannissement n'existent que sur le web. Quelqu'un sanctionné sur son téléphone reçoit le motif sans pouvoir répondre | — |
 | **Amis** | Demandes, liste, et le classement entre amis sur option. Le compagnon social d'une app d'apprentissage, et il n'existe que sur le web | — |
+| **Partage de note** | Le bloc-notes est des deux côtés, le partage non — ni l'envoi, ni la réception. Il manquait à ce tableau : « Bloc-notes ✅ ✅ » était vrai du carnet et faux de la fonctionnalité. Le filtre qui refuse un partage vit dans le dépôt (`note-share.repository`), donc l'app l'hériterait sans le réécrire | — |
 
 ### Volontairement web-only
 
