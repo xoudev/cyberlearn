@@ -2,13 +2,14 @@
 
 import React, { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import type { FriendEdge } from "@cyberlearn/db";
 import {
   acceptFriendRequestAction,
   getFriendsAction,
   removeFriendAction,
+  type FriendEntry,
   type FriendLists,
 } from "@/app/(app)/_actions/friend-actions";
+import { AvatarView } from "@/components/avatar-view";
 
 /**
  * Friends, in the navbar rather than on a page of their own.
@@ -25,14 +26,6 @@ import {
  */
 
 const EMPTY: FriendLists = { incoming: [], friends: [], outgoing: [] };
-
-/** Initials, the same way the navbar's own avatar builds them. */
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/u).filter(Boolean);
-  const [first, second] = parts;
-  if (first && second) return (first.charAt(0) + second.charAt(0)).toUpperCase();
-  return (first ?? "?").slice(0, 2).toUpperCase();
-}
 
 function FriendsGlyph(): React.JSX.Element {
   return (
@@ -66,7 +59,7 @@ function Row({
   onDone,
   onClose,
 }: {
-  edge: FriendEdge;
+  edge: FriendEntry;
   kind: RowKind;
   onDone: (personId: string, outcome: RowOutcome) => void;
   onClose: () => void;
@@ -84,9 +77,9 @@ function Row({
 
   return (
     <li className="fp-row">
-      <span className="fp-avatar" aria-hidden="true">
-        {initials(name)}
-      </span>
+      {/* The panel used to draw initials and nothing else, so somebody who had
+          set a picture had one everywhere but in their own friends list. */}
+      <AvatarView src={edge.avatarSrc} name={name} className="fp-avatar" glyphSize={16} />
 
       <span className="fp-identity">
         {person.username !== null ? (
@@ -205,7 +198,7 @@ export function FriendsPanel({
   }, []);
 
   const hasWaiting = waiting > 0;
-  const sections: { kind: RowKind; label: string; edges: FriendEdge[] }[] = [
+  const sections: { kind: RowKind; label: string; edges: FriendEntry[] }[] = [
     { kind: "incoming", label: "Demandes reçues", edges: lists.incoming },
     { kind: "friends", label: "Amis", edges: lists.friends },
     { kind: "outgoing", label: "Demandes envoyées", edges: lists.outgoing },

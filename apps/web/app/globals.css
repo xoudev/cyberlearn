@@ -4932,6 +4932,9 @@ a.cls-res__title:hover {
   background: linear-gradient(135deg, #0024ff, var(--cosmetic-accent));
   font: 700 10px var(--font-sans);
   color: #030219;
+  /* The class now lands on an <img> as well as on a span of initials, and a
+     picture that is not square would otherwise be stretched into the hexagon. */
+  object-fit: cover;
 }
 
 .fp-identity {
