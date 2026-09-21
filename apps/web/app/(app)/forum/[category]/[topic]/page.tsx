@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { POSTS_PER_PAGE, forumRepository } from "@cyberlearn/db";
 import { getSharedUserProfile, requireRequestUser } from "@/lib/auth";
+import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 import { Crumbs, ForumHeader, authorName, formatDate } from "../../_components/forum-bits";
 import { PostCard } from "../../_components/post-card";
 import { ReplyBox } from "../../_components/reply-box";
@@ -39,6 +40,12 @@ export default async function ForumTopicPage({
     getSharedUserProfile(),
   ]);
   if (!view) notFound();
+
+  // Every author on the page in one round-trip. The post card is a Client
+  // Component and signing an uploaded avatar needs the service_role key, so
+  // the value has to be resolved before it crosses the boundary - and one
+  // call per post would be one network round-trip per post.
+  const avatars = await resolveAvatarSrcMany(view.posts.map((p) => p.author?.avatarUrl ?? null));
 
   const isAdmin = profile?.role === "ADMIN";
   const path = `/forum/${category}/${topic}`;
@@ -76,10 +83,11 @@ export default async function ForumTopicPage({
         }
       />
 
-      {view.posts.map((post) => (
+      {view.posts.map((post, i) => (
         <PostCard
           key={post.id}
           post={post}
+          avatarSrc={avatars[i] ?? null}
           path={path}
           hidden={post.isHidden}
           canEdit={post.author?.id === user.id}

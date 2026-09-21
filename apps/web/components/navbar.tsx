@@ -7,6 +7,7 @@ import { cosmeticAvatarFilter } from "@/lib/cosmetics/style";
 import { computeLevel, wrappedWindow } from "@cyberlearn/lib";
 import { getRequestUser, getSharedUserProfile } from "@/lib/auth";
 import { resolveAvatarSrc } from "@/lib/avatar/storage";
+import { glyphPath } from "@/lib/avatar/glyphs";
 import { friendshipRepository, notificationRepository } from "@cyberlearn/db";
 import { FriendsPanel } from "./friends-panel";
 import { GlobalSearch } from "./global-search";
@@ -14,26 +15,11 @@ import { NotificationPanel } from "./notification-panel";
 import { WrappedChip } from "./wrapped-chip";
 
 // ── Glyph avatar helper ────────────────────────────────────────────────────────
-// avatarUrl stored as "__glyph:{name}" - never pass to next/image
-
-const GLYPH_PATHS: Record<string, string> = {
-  skull:
-    "M12 4a6 6 0 0 0-6 6c0 2.1 1 4 2.6 5.2V17h6.8v-1.8A6 6 0 0 0 12 4zm-1.5 13v1.5a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5V17h-3zM9 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zm4 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0z",
-  ghost:
-    "M12 3a7 7 0 0 0-7 7v9l2-2 2 2 2-2 2 2 2-2 2 2v-9a7 7 0 0 0-7-7zm-2 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm4 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z",
-  matrix:
-    "M4 4h2v2H4zm4 0h2v2H8zm4 0h2v2h-2zm4 0h2v2h-2zM4 8h2v2H4zm8 0h2v2h-2zM4 12h2v2H4zm4 0h2v2H8zm4 0h2v2h-2zM8 16h2v2H8zm4 0h2v2h-2zm4 0h2v2h-2z",
-  circuit:
-    "M2 12h3M19 12h3M12 2v3M12 19v3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
-  bug: "M9 3h6l-1 3H10zm3 4a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0v-1a5 5 0 0 0-5-5zM4 10H2m20 0h-2M4 7l2 2m12-2-2 2M4 17l2-2m12 2-2-2",
-  key: "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4",
-  shield:
-    "M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4zm0 4l5 2.5v4.5c0 3-2 5.8-5 6.75-3-.95-5-3.75-5-6.75V8.5L12 6z",
-  wire: "M4 12h4l3-8 4 16 3-8h2",
-};
+// avatarUrl stored as "__glyph:{name}" - never pass to next/image. The paths
+// themselves live in lib/avatar/glyphs, which is the one copy of them.
 
 function GlyphAvatar({ name, size }: { name: string; size: number }): React.ReactElement {
-  const d = GLYPH_PATHS[name];
+  const d = glyphPath(name);
   return (
     <svg
       width={size}
@@ -46,7 +32,7 @@ function GlyphAvatar({ name, size }: { name: string; size: number }): React.Reac
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {d ? <path d={d} /> : <circle cx="12" cy="12" r="8" />}
+      {d !== null ? <path d={d} /> : <circle cx="12" cy="12" r="8" />}
     </svg>
   );
 }

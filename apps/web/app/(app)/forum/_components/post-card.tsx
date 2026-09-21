@@ -19,12 +19,15 @@ import type { ForumPostView } from "@cyberlearn/db";
  */
 export function PostCard({
   post,
+  avatarSrc,
   canEdit,
   canRemove,
   path,
   hidden = false,
 }: {
   post: ForumPostView;
+  /** Resolved on the server: an uploaded avatar's URL is signed and expires. */
+  avatarSrc: string | null;
   canEdit: boolean;
   canRemove: boolean;
   path: string;
@@ -65,7 +68,7 @@ export function PostCard({
   return (
     <article className="fo-post" data-hidden={hidden}>
       <div className="fo-post-author">
-        <Monogram author={post.author} />
+        <Monogram author={post.author} src={avatarSrc} />
         <span className="fo-post-name">{authorName(post.author)}</span>
         {post.author?.role === "TEACHER" && <span className="fo-post-role">Professeur</span>}
         {post.author?.role === "ADMIN" && <span className="fo-post-role">Équipe</span>}

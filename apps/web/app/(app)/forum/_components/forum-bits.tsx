@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import type { ForumAuthor, ForumTopicSummary } from "@cyberlearn/db";
+import { AvatarView } from "@/components/avatar-view";
 
 /** Shared pieces of the forum's chrome, so four pages cannot drift apart. */
 
@@ -80,16 +81,28 @@ export function authorName(author: ForumAuthor | null): string {
   return author.displayName.trim() !== "" ? author.displayName : (author.username ?? "Sans nom");
 }
 
-export function Monogram({ author }: { author: ForumAuthor | null }): React.JSX.Element {
-  const name = authorName(author);
-  if (author?.avatarUrl != null && author.avatarUrl !== "") {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={author.avatarUrl} alt="" width={46} height={46} />;
-  }
+/**
+ * The poster's avatar, or their initials.
+ *
+ * avatarUrl is a stored value, not a URL. This put it straight into an
+ * `<img src>`, so anybody who had uploaded a picture showed as a broken image
+ * and anybody who had picked a glyph showed as the text `__glyph:skull` - and
+ * the image it did produce carried no class, so it rendered as a raw 46px
+ * square next to a column of circles.
+ *
+ * `src` arrives already resolved because the post card around this is a Client
+ * Component and signing needs the service_role key. The page signs every
+ * author on the page in one round-trip and hands the results down.
+ */
+export function Monogram({
+  author,
+  src,
+}: {
+  author: ForumAuthor | null;
+  src: string | null;
+}): React.JSX.Element {
   return (
-    <span className="fo-post-monogram" aria-hidden="true">
-      {name.slice(0, 2).toUpperCase()}
-    </span>
+    <AvatarView src={src} name={authorName(author)} className="fo-post-monogram" glyphSize={24} />
   );
 }
 

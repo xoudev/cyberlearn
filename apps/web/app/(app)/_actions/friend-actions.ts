@@ -9,6 +9,7 @@ import {
   type FriendEdge,
 } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 
 /**
  * Asking, answering and undoing - the four buttons a friendship ever needs -
@@ -27,10 +28,23 @@ export interface FriendActionResult {
   becameFriends?: boolean;
 }
 
+/**
+ * A friendship, plus the one thing the panel cannot work out for itself.
+ *
+ * `person.avatarUrl` is a stored value, and turning an upload marker into a
+ * URL needs the service_role key - which cannot cross into the browser. The
+ * panel is a Client Component, so the resolving happens here, on the server
+ * side of the call it already makes.
+ */
+export interface FriendEntry extends FriendEdge {
+  /** Ready for an `<img src>`, or a glyph marker, or null. */
+  avatarSrc: string | null;
+}
+
 export interface FriendLists {
-  incoming: FriendEdge[];
-  friends: FriendEdge[];
-  outgoing: FriendEdge[];
+  incoming: FriendEntry[];
+  friends: FriendEntry[];
+  outgoing: FriendEntry[];
 }
 
 const idSchema = z.string().uuid();
@@ -74,7 +88,18 @@ export async function getFriendsAction(): Promise<FriendLists> {
     friendshipRepository.listFriends(user.id, 60),
     friendshipRepository.listOutgoing(user.id, 30),
   ]);
-  return { incoming, friends, outgoing };
+
+  // All three lists in one round-trip, rather than three or - worse - one per
+  // row. The panel can hold a hundred and twenty people.
+  const all = [...incoming, ...friends, ...outgoing];
+  const resolved = await resolveAvatarSrcMany(all.map((e) => e.person.avatarUrl));
+  const entries = all.map((edge, i) => ({ ...edge, avatarSrc: resolved[i] ?? null }));
+
+  return {
+    incoming: entries.slice(0, incoming.length),
+    friends: entries.slice(incoming.length, incoming.length + friends.length),
+    outgoing: entries.slice(incoming.length + friends.length),
+  };
 }
 
 export async function sendFriendRequestAction(targetId: string): Promise<FriendActionResult> {
