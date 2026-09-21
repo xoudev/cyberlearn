@@ -195,3 +195,17 @@ export async function fetchMyClass(): Promise<MyClassData> {
   if (!body.ok) throw new Error("Chargement impossible");
   return { classes: body.classes, work: body.work };
 }
+
+/**
+ * The signed URL for the caller's own uploaded avatar, or null.
+ *
+ * Only worth calling when the stored value is an upload marker: a glyph, a
+ * built-in preset and an empty avatar are all things the app can already draw
+ * from the row it read itself.
+ */
+export async function fetchMyAvatarUrl(): Promise<string | null> {
+  const res = await authedFetch("/api/mobile/avatar");
+  const body = (await res.json()) as { ok: true; avatarUrl: string | null } | { ok: false };
+  if (!body.ok) return null;
+  return body.avatarUrl;
+}

@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
@@ -10,6 +10,7 @@ import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
+import { fetchMyAvatarUrl } from "@/lib/api";
 import { RARITY_COLOR } from "@/lib/db";
 import { useProfile } from "@/lib/queries";
 import { useSession } from "@/lib/session";
@@ -34,8 +35,13 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Forum", url: "https://cyberlearn.fr/forum" },
   { label: "Aide & demandes", url: "https://cyberlearn.fr/support" },
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
+  { label: "Amis", url: "https://cyberlearn.fr/friends" },
+  { label: "Ma modération", url: "https://cyberlearn.fr/settings/moderation" },
   { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
 ];
+
+/** The stored form that needs the server to turn it into something drawable. */
+const UPLOAD_PREFIX = "__upload:";
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -47,6 +53,31 @@ export default function Profil(): React.JSX.Element {
   const { session } = useSession();
   const { data, isLoading, error, refetch } = useProfile(session?.user.id);
   const [sub, setSub] = useState<Sub>("Badges");
+  // An uploaded avatar lives in a private bucket, so the row the app read
+  // itself holds a marker rather than a URL and only the server can sign it.
+  // Everything else - a glyph, a preset, nothing at all - Avatar draws from
+  // the marker directly, so this call is skipped.
+  const stored = data?.me.avatarUrl ?? null;
+  const needsSigning = stored?.startsWith(UPLOAD_PREFIX) === true;
+  const [signedAvatar, setSignedAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!needsSigning) {
+      setSignedAvatar(null);
+      return;
+    }
+    let live = true;
+    void fetchMyAvatarUrl()
+      .then((url) => {
+        if (live) setSignedAvatar(url);
+      })
+      // Nothing to say: Avatar falls back to initials, which is what it did
+      // before this call existed.
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [needsSigning, stored]);
   const idAnchor = useTourAnchor("profil-id");
 
   if (isLoading || !data) {
@@ -72,7 +103,7 @@ export default function Profil(): React.JSX.Element {
         style={{ alignItems: "center", gap: 10, marginBottom: 20 }}
       >
         <Avatar
-          avatarUrl={me.avatarUrl}
+          avatarUrl={needsSigning ? signedAvatar : me.avatarUrl}
           displayName={me.displayName}
           size={104}
           color={tier.tier.color}
