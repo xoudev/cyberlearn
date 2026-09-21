@@ -99,6 +99,13 @@ function NavIcon({ name }: { name: string }): React.ReactElement | null {
           <path d="M5.8 8 L7.4 9.6 L10.4 6.4" />
         </svg>
       );
+    case "flask":
+      return (
+        <svg viewBox="0 0 16 16" {...s}>
+          <path d="M6.5 1.5 H9.5 M7 1.5 V6 L3.2 12.4 A1 1 0 0 0 4.1 14 H11.9 A1 1 0 0 0 12.8 12.4 L9 6 V1.5" />
+          <path d="M5 10.5 H11" />
+        </svg>
+      );
     case "log":
       return (
         <svg viewBox="0 0 16 16" {...s}>
@@ -166,6 +173,7 @@ export function AdminSidebar({
   ];
 
   const sysItems = [
+    { label: "Banc d'essai", href: "/lab", icon: "flask" },
     { label: "Audit log", href: "/audit", icon: "log" },
     { label: "Paramètres", href: "/settings", icon: "cog" },
   ];
