@@ -20,8 +20,21 @@ import { resolveModerationAction } from "../_actions/moderation-actions";
  *
  * Deleting asks first: it cannot be undone, the queue is worked through
  * quickly, and the two buttons sit next to each other.
+ *
+ * `actionable` is false where the decision reaches no content - a refused note
+ * share publishes nothing, so there is nothing to put back and nothing to
+ * destroy. The row is still worth closing: the decision is the record, and it
+ * is what the author is told and what a sanction hangs off. It just must not
+ * be drawn as "rétablir" and "supprimer", which is what it was, and which did
+ * nothing at all on that surface while reporting success.
  */
-export function ReviewButtons({ eventId }: { eventId: string }): React.ReactElement {
+export function ReviewButtons({
+  eventId,
+  actionable,
+}: {
+  eventId: string;
+  actionable: boolean;
+}): React.ReactElement {
   const [pending, start] = useTransition();
   const [sanction, setSanction] = useState("none");
   const [failed, setFailed] = useState(false);
@@ -38,7 +51,7 @@ export function ReviewButtons({ eventId }: { eventId: string }): React.ReactElem
         }}
         className="a-btn a-btn--ghost a-btn--sm"
       >
-        Faux positif · rétablir
+        {actionable ? "Faux positif · rétablir" : "Faux positif"}
       </button>
 
       <Select
@@ -60,11 +73,21 @@ export function ReviewButtons({ eventId }: { eventId: string }): React.ReactElem
         type="button"
         disabled={pending}
         onClick={() => {
-          const warning =
-            sanction === "none"
-              ? "Supprimer définitivement ce contenu ? C'est irréversible."
-              : "Supprimer définitivement ce contenu et bannir son auteur ? C'est irréversible.";
-          if (!window.confirm(warning)) return;
+          // Only the destroying decision asks. Confirming a refusal destroys
+          // nothing, so a warning about something irreversible would be a lie
+          // and would train people to click through the real one.
+          if (actionable) {
+            const warning =
+              sanction === "none"
+                ? "Supprimer définitivement ce contenu ? C'est irréversible."
+                : "Supprimer définitivement ce contenu et bannir son auteur ? C'est irréversible.";
+            if (!window.confirm(warning)) return;
+          } else if (
+            sanction !== "none" &&
+            !window.confirm("Bannir l'auteur ? C'est une sanction.")
+          ) {
+            return;
+          }
           start(async () => {
             const result = await resolveModerationAction(eventId, "UPHELD", sanction);
             setFailed(result.sanctionFailed === true);
@@ -72,8 +95,15 @@ export function ReviewButtons({ eventId }: { eventId: string }): React.ReactElem
         }}
         className="a-btn a-btn--danger a-btn--sm"
       >
-        Confirmer · supprimer
+        {actionable ? "Confirmer · supprimer" : "Confirmer"}
       </button>
+
+      {!actionable && (
+        <span className="a-field-hint">
+          Rien n&apos;a été publié : le partage a été refusé et la note est restée chez son auteur.
+          La décision est enregistrée et lui est communiquée.
+        </span>
+      )}
 
       {failed && (
         <span className="a-field-hint" style={{ color: "#FFB547" }}>

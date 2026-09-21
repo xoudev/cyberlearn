@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import { moderationRepository } from "@cyberlearn/db";
+import { isActionableEvent, moderationRepository } from "@cyberlearn/db";
 import { Card, EmptyState, KpiCard, PageHeader, Tag, UI } from "../_components/admin-ui";
 import { ReviewButtons } from "./_components/review-buttons";
 
@@ -11,6 +11,7 @@ const SURFACE_LABEL: Record<string, string> = {
   "lesson.question": "Question sous une leçon",
   "lesson.answer": "Réponse sous une leçon",
   "note.share": "Note partagée",
+  "forum.topic": "Sujet du forum",
   "forum.post": "Message du forum",
 };
 
@@ -20,6 +21,7 @@ const RULE_LABEL: Record<string, string> = {
   threat: "Menace",
   sexual: "Contenu sexuel",
   "self-harm": "Détresse",
+  vulgarity: "Grossièreté",
   "contact-details": "Coordonnées",
   "link-spam": "Liens",
   shouting: "Majuscules",
@@ -131,7 +133,10 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
                     ))}
                   </div>
 
-                  <ReviewButtons eventId={event.id} />
+                  <ReviewButtons
+                    eventId={event.id}
+                    actionable={isActionableEvent(event.surface, event.contentId)}
+                  />
                 </div>
               );
             })}

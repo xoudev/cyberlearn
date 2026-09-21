@@ -9,12 +9,13 @@ describe("surfaceNoun", () => {
     expect(surfaceNoun("lesson.answer")).toBe("ta réponse");
     expect(surfaceNoun("forum.topic")).toBe("ton sujet");
     expect(surfaceNoun("forum.post")).toBe("ton message");
+    expect(surfaceNoun("note.share")).toBe("ta note");
   });
 
   it("falls back to something true rather than to the key", () => {
     // Old rows carry surfaces this was never taught about. "ton message" is
-    // vague; "note.share" in the middle of a sentence is broken.
-    expect(surfaceNoun("note.share")).toBe("ton message");
+    // vague; the key itself in the middle of a sentence is broken.
+    expect(surfaceNoun("lesson.rating")).toBe("ton message");
     expect(surfaceNoun("")).toBe("ton message");
   });
 });
@@ -88,5 +89,23 @@ describe("moderationNotice", () => {
     // Somebody fixing an awkward sentence three times is not the case the
     // budget exists for.
     expect(FLAG_BUDGET).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("a share that did not happen", () => {
+  it("does not promise a publication that is never coming", () => {
+    // "en attente de validation" is true of a forum post, which exists hidden
+    // and may come back. A refused share published nothing and never will.
+    const notice = moderationNotice({ stage: "refused", surface: "note.share" });
+
+    expect(notice.title).toBe("Ta note n'a pas été partagée");
+    expect(notice.body).not.toContain("en attente");
+    expect(notice.body).not.toContain("va la relire");
+  });
+
+  it("says the note is still theirs, which is the part that matters", () => {
+    const notice = moderationNotice({ stage: "refused", surface: "note.share" });
+    expect(notice.body).toContain("toujours là");
+    expect(notice.body).toContain("repartager");
   });
 });

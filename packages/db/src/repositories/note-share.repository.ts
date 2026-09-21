@@ -1,4 +1,4 @@
-import type { FindingRule } from "@cyberlearn/lib";
+import { concernsAPerson, labelRules, type FindingRule } from "@cyberlearn/lib";
 import type { Category } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { friendshipRepository } from "./friendship.repository.js";
@@ -76,7 +76,14 @@ export type ShareResult =
   /** Went out. `shared` counts the people newly given the note. */
   | { ok: true; shared: number; alreadyShared: number; refused: string[] }
   /** The screen refused it; nothing was written and the teachers were told. */
-  | { ok: false; reason: "BLOCKED"; teachersNotified: number; rules: FindingRule[] }
+  | {
+      ok: false;
+      reason: "BLOCKED";
+      teachersNotified: number;
+      rules: FindingRule[];
+      /** The recorded decision, so the caller can tell the author about it. */
+      eventId: string | null;
+    }
   | { ok: false; reason: "NOT_FOUND" }
   | { ok: false; reason: "EMPTY" }
   | { ok: false; reason: "NO_RECIPIENT" };
@@ -94,18 +101,6 @@ const PERSON = {
  * classmates for anything, including this.
  */
 const LIVE_CLASS = { archivedAt: null, promotion: { archivedAt: null } } as const;
-
-/** What a rule is called when a teacher, not a moderator, is reading it. */
-const RULE_LABEL: Record<FindingRule, string> = {
-  slur: "propos haineux",
-  insult: "insultes",
-  threat: "menaces",
-  sexual: "contenu sexuel",
-  "self-harm": "allusions au mal-être",
-  "contact-details": "coordonnées personnelles",
-  "link-spam": "liens suspects",
-  shouting: "écriture en majuscules",
-};
 
 function personName(p: { displayName: string; username: string | null }): string {
   return p.displayName.trim() !== "" ? p.displayName : (p.username ?? "Un élève");
@@ -273,28 +268,31 @@ export const noteShareRepository = {
       userId: input.authorId,
     });
 
-    // Refused rather than hidden, and only on an unambiguous BLOCK.
+    // Refused on anything the screen did not plainly allow, REVIEW included.
     //
-    // Sharing publishes no row of its own: the note stays where it was,
-    // private and the author's. So there is nothing to take out of sight and
-    // nothing for a reviewer to give back - which is also why this surface
-    // keeps the old rule instead of the new one. Everywhere else a REVIEW is
-    // held out of sight and a person decides; here, refusing one would cost
-    // somebody a share on a maybe, with no way for anybody to undo it.
-    if (screen.verdict === "BLOCK") {
-      const teachersNotified = await alertTeachersOf({
-        studentId: input.authorId,
-        studentName: personName(note.user),
-        lessonTitle: note.lesson.title,
-        noteId: note.id,
-        rules: screen.findings.map((f) => f.rule),
-      });
-      return {
-        ok: false,
-        reason: "BLOCKED",
-        teachersNotified,
-        rules: [...new Set(screen.findings.map((f) => f.rule))],
-      };
+    // It used to refuse only on BLOCK, on the reasoning that refusing a maybe
+    // costs somebody a share with no way to undo it. What that reasoning
+    // missed is that the note is never destroyed: it stays where it was,
+    // private and the author's, and they can edit it and share again. The cost
+    // of being wrong is a retry. The cost of being right and letting it
+    // through is a classmate reading it, which nothing afterwards can undo -
+    // the share is the publication, so there is no hidden state to hold and no
+    // reviewer decision that could reach it.
+    if (screen.flagged) {
+      const rules = [...new Set(screen.findings.map((f) => f.rule))];
+      // The refusal is unconditional; the alert is not. Refusing costs the
+      // author a retry, and telling a teacher costs them their word - so the
+      // second happens only when the refusal is about a person.
+      const teachersNotified = concernsAPerson(rules)
+        ? await alertTeachersOf({
+            studentId: input.authorId,
+            studentName: personName(note.user),
+            lessonTitle: note.lesson.title,
+            noteId: note.id,
+            rules,
+          })
+        : 0;
+      return { ok: false, reason: "BLOCKED", teachersNotified, rules, eventId: screen.eventId };
     }
 
     // Who already holds it is read before the insert, not inferred from the
@@ -317,9 +315,12 @@ export const noteShareRepository = {
       });
     }
 
-    if (screen.eventId !== null) {
-      await moderationRepository.attachContent(screen.eventId, note.id);
-    }
+    // No attachContent here, deliberately. Reaching this line means the screen
+    // allowed the text, and an allowed screen records no event - so there was
+    // never anything to attach. It used to be called anyway, which is how a
+    // note ended up in the review queue carrying its own id: the console then
+    // offered "restaurer" and "supprimer" on a surface that has no handler for
+    // either, and both buttons did nothing at all.
 
     // Only the people who did not already have it are told, or every re-share
     // would ping the whole class again.
@@ -379,7 +380,7 @@ async function alertTeachersOf(input: {
 
     // Named in plain French rather than as rule ids: the reader is a teacher,
     // not a moderator, and "slur, insult" means nothing to them.
-    const labels = [...new Set(input.rules)].map((r) => RULE_LABEL[r]);
+    const labels = labelRules(input.rules);
     const detail = labels.length > 0 ? ` Motif : ${labels.join(", ")}.` : "";
 
     await prisma.notification.createMany({

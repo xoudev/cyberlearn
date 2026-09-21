@@ -412,19 +412,26 @@ describe("note sharing (integration, real DB)", () => {
     await prisma.note.delete({ where: { id: teacherNote.id } });
   });
 
-  it("lets a note that only warrants a look through, and ties the record to it", async () => {
+  it("holds back a note that only warrants a look, without telling a teacher", async () => {
     if (!configured) return;
-    // Two links on a surface where links are not expected: enough to review,
-    // not enough to refuse.
+    // Two links on a surface where links are not expected: a doubt, not a
+    // certainty. This used to go out and be reviewed afterwards, which is a
+    // review of something a classmate has already read - sharing publishes,
+    // so there is no hidden copy for a decision to reach. It is held back now.
     await resetNote("Mes sources : https://exemple.fr/osi et https://exemple.fr/tcp");
 
     const res = await noteShareRepository.share({ authorId: S1, noteId, recipientIds: [S2] });
-    expect(res).toMatchObject({ ok: true, shared: 1 });
+    expect(res).toMatchObject({ ok: false, reason: "BLOCKED" });
+    expect(await prisma.noteShare.count({ where: { noteId } })).toBe(0);
 
     const event = await prisma.moderationEvent.findFirst({ where: { userId: S1 } });
     expect(event?.verdict).toBe("REVIEW");
-    // Without this a reviewer reads an excerpt with no way back to the note.
-    expect(event?.contentId).toBe(noteId);
+    // No content is attached: nothing was published, so the console has no
+    // "rétablir" or "supprimer" to offer and must not draw them.
+    expect(event?.contentId).toBeNull();
+    // And no teacher is told. Refusing costs a retry; telling a teacher their
+    // student wrote something inappropriate over two source links is a false
+    // accusation, and enough of those and nobody reads the alerts at all.
     expect(await prisma.notification.count({ where: { type: "MODERATION_ALERT" } })).toBe(0);
   });
 
