@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Composition, Img, Still, staticFile } from "remotion";
 import { FeatureGraphic } from "./compositions/feature-graphic";
+import { LinkedInVideo } from "./compositions/linkedin-video";
 import { PromoVideo } from "./compositions/promo-video";
 import { StoreScreenshot } from "./compositions/store-screenshot";
 import { YouTubeBanner, YouTubeThumbnail } from "./compositions/youtube-assets";
@@ -86,7 +87,15 @@ export function MarketingRoot(): React.JSX.Element {
         width={1920}
         height={1080}
         fps={30}
-        durationInFrames={720}
+        durationInFrames={855}
+      />
+      <Composition
+        id="LinkedInVideo"
+        component={LinkedInVideo}
+        width={1080}
+        height={1080}
+        fps={30}
+        durationInFrames={645}
       />
     </>
   );

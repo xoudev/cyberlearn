@@ -2,7 +2,7 @@ import React from "react";
 import { Img, staticFile } from "remotion";
 import { fonts, palette } from "../theme";
 
-export type ScreenName = "home" | "paths" | "lesson" | "profile" | "locker";
+export type ScreenName = "home" | "paths" | "lesson" | "profile" | "locker" | "class";
 
 const ui = {
   body: {
@@ -630,8 +630,85 @@ function LockerItem({
   );
 }
 
+/**
+ * Ma classe, côté élève.
+ *
+ * The trailer had four beats and none of them said the product is used in
+ * schools, which is the thing that decides who it is for. A teacher gives work
+ * with a deadline, it lands here, and it says plainly what is late.
+ *
+ * Built from what the real screen shows (apps/mobile/app/my-class.tsx): the
+ * class and its teacher, then the work sorted with the overdue first, each row
+ * carrying its state. The wording is the app's own - "avant le", "échue le",
+ * "Fait", "En retard" - because a trailer that invents its own words sells a
+ * product that does not exist.
+ */
+function ClassScreen(): React.JSX.Element {
+  const work: { title: string; meta: string; state: "late" | "todo" | "done" }[] = [
+    { title: "Sécuriser une API REST", meta: "Leçon · échue le 18 sept.", state: "late" },
+    { title: "Le modèle OSI, couche par couche", meta: "Leçon · avant le 26 sept.", state: "todo" },
+    { title: "Parcours Réseau — 6 leçons", meta: "Parcours · avant le 3 oct.", state: "todo" },
+    { title: "Les bases du chiffrement", meta: "Leçon · rendue le 12 sept.", state: "done" },
+  ];
+
+  return (
+    <Shell active="home">
+      <SectionTitle eyebrow="Ma classe" title="SIO1-A · Cyber" right="28 élèves" />
+      <Card accent={palette.brandBlue}>
+        <div style={{ ...ui.micro, color: palette.brandTurquoise }}>
+          Lycée Jean-Moulin · 2025-2026
+        </div>
+        <div style={{ ...ui.body, color: palette.textMuted, fontSize: 11.5, marginTop: 7 }}>
+          Claire Fontaine, Marc Olivier
+        </div>
+      </Card>
+
+      <SectionTitle title="Travail donné" right="3 en cours" />
+      <div style={{ display: "grid", gap: 9 }}>
+        {work.map((item) => {
+          const color =
+            item.state === "late"
+              ? palette.danger
+              : item.state === "done"
+                ? palette.brandTurquoise
+                : palette.borderDefault;
+          return (
+            <Card key={item.title} accent={color}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 8,
+                }}
+              >
+                <div
+                  style={{
+                    ...ui.title,
+                    fontSize: 13.5,
+                    opacity: item.state === "done" ? 0.55 : 1,
+                  }}
+                >
+                  {item.title}
+                </div>
+                {item.state === "late" ? <Pill label="En retard" color={palette.danger} /> : null}
+                {item.state === "done" ? (
+                  <Pill label="Fait" color={palette.brandTurquoise} />
+                ) : null}
+              </div>
+              <div style={{ ...ui.micro, fontSize: 7.5, marginTop: 7 }}>{item.meta}</div>
+            </Card>
+          );
+        })}
+      </div>
+    </Shell>
+  );
+}
+
 export function AppScreen({ screen }: { screen: ScreenName }): React.JSX.Element {
   switch (screen) {
+    case "class":
+      return <ClassScreen />;
     case "home":
       return <HomeScreen />;
     case "paths":
