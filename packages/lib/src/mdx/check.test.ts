@@ -98,3 +98,14 @@ describe("what does not - everything else", () => {
     expect(r.section).toBe("A");
   });
 });
+
+describe("a hostile heading", () => {
+  it("names a section quickly however much whitespace follows its ##", async () => {
+    // The input CodeQL flagged: a regex took polynomial time on it.
+    const start = performance.now();
+    const r = await checkLessonMdx(`## ${"\t".repeat(50_000)}titre\n\n<Quiz correct={True} />`);
+    expect(performance.now() - start).toBeLessThan(2_000);
+    if (r.ok) throw new Error("accepted True");
+    expect(r.section).toBe("titre");
+  });
+});

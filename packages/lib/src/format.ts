@@ -24,6 +24,12 @@ export function formatNumberFr(value: number): string {
   if (!Number.isFinite(value)) return String(value);
   const rounded = Math.round(value);
   const digits = String(Math.abs(rounded));
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/gu, NARROW_NO_BREAK_SPACE);
+  // Groups of three from the right, by slicing rather than with the usual
+  // lookahead regex, which re-scans the rest of the string at every position.
+  const groups: string[] = [];
+  for (let end = digits.length; end > 0; end -= 3) {
+    groups.unshift(digits.slice(Math.max(0, end - 3), end));
+  }
+  const grouped = groups.join(NARROW_NO_BREAK_SPACE);
   return rounded < 0 ? `-${grouped}` : grouped;
 }

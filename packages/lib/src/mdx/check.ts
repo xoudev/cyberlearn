@@ -141,9 +141,18 @@ async function problemIn(source: string): Promise<string | null> {
   }
 }
 
+/**
+ * The section's heading. A line scan, not a regex: `^##\s+(.+)$` lets `\s+`
+ * and `.+` compete for the same whitespace, and the source is whatever an
+ * author typed - a heading followed by a few thousand tabs made it backtrack
+ * polynomially (CodeQL js/polynomial-redos). `## ` with a literal space is
+ * also exactly what splitMdxSections splits on.
+ */
 function headingOf(source: string): string {
-  const match = /^##\s+(.+)$/m.exec(source);
-  return match?.[1]?.trim() ?? "introduction";
+  for (const line of source.split("\n")) {
+    if (line.startsWith("## ")) return line.slice(3).trim() || "introduction";
+  }
+  return "introduction";
 }
 
 /** The text before a section's heading, when there is any. */
