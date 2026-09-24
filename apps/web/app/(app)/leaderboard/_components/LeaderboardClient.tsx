@@ -421,7 +421,7 @@ function FriendsSection({ board }: { board: FriendsBoard }): React.JSX.Element {
           </>
         ) : (
           <>
-            Tu n&apos;apparais pas dans le classement de tes amis — ce tableau est le tien, eux ne
+            Tu n&apos;apparais pas dans le classement de tes amis : ce tableau est le tien, eux ne
             t&apos;y voient pas.{" "}
             <Link href="/settings/privacy" style={{ color: "var(--cosmetic-accent)" }}>
               S&apos;y ajouter

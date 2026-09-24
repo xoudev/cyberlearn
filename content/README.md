@@ -58,12 +58,12 @@ de vérité pour l'ordre d'étude à l'intérieur d'un parcours.
 
 Le nom du dossier n'est pas le slug du parcours : `cyber-web/` porte
 `cyber-web-owasp`, `systeme/` porte `admin-systeme-linux`. C'est le slug, pas le
-dossier, qui doit correspondre au nom du fichier de quiz — voir
+dossier, qui doit correspondre au nom du fichier de quiz : voir
 [content/quizzes/README.md](quizzes/README.md).
 
 ### À quoi ressemble un parcours
 
-Exemple, `content/lessons/python/` — de zéro à un projet complet : variables et
+Exemple, `content/lessons/python/`, de zéro à un projet complet : variables et
 types, conditions, boucles, fonctions, listes/tuples, dictionnaires/ensembles,
 chaînes, compréhensions, gestion d'erreurs, modules, POO, et un projet final
 (gestionnaire de tâches CLI).
@@ -86,7 +86,7 @@ chaînes, compréhensions, gestion d'erreurs, modules, POO, et un projet final
 Les quinze autres suivent la même forme : douze leçons en progression, chacune
 exécutable dans le navigateur quand le domaine le permet (CodePlayground,
 PythonChallenge à tests automatiques), la dernière étant un projet ou une mise
-en situation. Le titre exact de chaque leçon est dans son frontmatter — ne pas
+en situation. Le titre exact de chaque leçon est dans son frontmatter : ne pas
 recopier les 192 ici, ils dériveraient.
 
 ## Convention MDX importante

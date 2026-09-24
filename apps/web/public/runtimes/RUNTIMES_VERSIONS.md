@@ -26,7 +26,7 @@ a version bump.
 ### Upgrade procedure
 
 1. Update `PYODIDE_VERSION` in `scripts/download-runtimes.sh`
-2. Run `bash scripts/download-runtimes.sh` — this will fail on hash mismatch
+2. Run `bash scripts/download-runtimes.sh`: this will fail on hash mismatch
 3. Copy the new hashes from the sha256sum output into:
    - `scripts/download-runtimes.sh` (EXPECTED_HASHES)
    - `scripts/verify-runtimes.sh` (EXPECTED)
@@ -37,7 +37,7 @@ a version bump.
 
 ## JSCPP 2.0.9 (browser IIFE bundle)
 
-**Source**: npm registry — `JSCPP@2.0.9` (package `lib/commonjs.js`, bundled with esbuild)
+**Source**: npm registry, `JSCPP@2.0.9` (package `lib/commonjs.js`, bundled with esbuild)
 **Date captured**: 2026-05-09
 **Served at**: `/runtimes/jscpp/`
 **Tarball SHA-256**: `fa83b3ef9eefb1ee496eb06a70bbb96012d9004bf4529313001fd2ab07d629f6`
@@ -52,7 +52,7 @@ a version bump.
 
 JSCPP exists on npm as `JSCPP` (uppercase), max version `2.0.9`. The CDN URL
 previously referenced in `code-playground.tsx` (`jscpp@2.3.1/browser/bundle.js`)
-points to a version and path that do not exist — that URL has always been a 404.
+points to a version and path that do not exist; that URL has always been a 404.
 
 The npm package ships only `lib/commonjs.js` (Node.js CommonJS). To run in a
 Web Worker via `importScripts`, it must be bundled as a browser IIFE that exposes
@@ -67,7 +67,7 @@ stubbed with empty shims in `scripts/build-jscpp/build.sh`.
 ```js
 // Synchronous. Called from inside a Web Worker.
 JSCPP.run(
-  code,           // C++ source string (requires "using namespace std;" — std:: prefix unsupported)
+  code,           // C++ source string (requires "using namespace std;", std:: prefix unsupported)
   input,          // stdin string, e.g. ""
   {
     maxTimeout: 10000,           // ms, throws "Time limit exceeded." on breach

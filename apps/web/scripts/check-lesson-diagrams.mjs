@@ -151,7 +151,7 @@ for (const file of walk(ROOT)) {
 
 if (failures.length > 0) {
   for (const f of failures) {
-    console.error(`\n✗ ${f.file}:${f.line} — ${f.reason}`);
+    console.error(`\n✗ ${f.file}:${f.line}: ${f.reason}`);
     if (f.expected !== undefined) {
       console.error("  written:");
       for (const l of f.expected.split("\n")) console.error(`    ${l}`);

@@ -312,7 +312,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
                 className={locked ? "lesson-locked" : undefined}
                 aria-label={
                   locked
-                    ? `${lesson.title} — verrouillé, à débloquer dans le parcours ${placement.path.title}`
+                    ? `${lesson.title}. Leçon verrouillée, à débloquer dans le parcours ${placement.path.title}`
                     : undefined
                 }
                 style={

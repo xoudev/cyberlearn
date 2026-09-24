@@ -35,7 +35,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     changes: [
       {
         type: "new",
-        text: "Un onglet Amis sur le classement, à côté de Global et Ligue. On y figure sous son nom ou on n'y figure pas : il n'y a pas de mode anonyme ici, parce que sur une liste de cinq amis « Anonyme » n'anonymise personne. C'est une case à cocher dans Confidentialité, éteinte au départ, et indépendante du classement public — tu peux être masqué sur l'un et visible sur l'autre.",
+        text: "Un onglet Amis sur le classement, à côté de Global et Ligue. On y figure sous son nom ou on n'y figure pas : il n'y a pas de mode anonyme ici, parce que sur une liste de cinq amis « Anonyme » n'anonymise personne. C'est une case à cocher dans Confidentialité, éteinte au départ, et indépendante du classement public : tu peux être masqué sur l'un et visible sur l'autre.",
       },
       {
         type: "improved",
@@ -43,11 +43,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "fixed",
-        text: "Le Dashboard est revenu en tête de la barre latérale. Les Révisions, qui peuvent être coupées, passaient devant lui quand elles étaient actives — donc seuls ceux qui les utilisent voyaient le problème.",
+        text: "Le Dashboard est revenu en tête de la barre latérale. Les Révisions, qui peuvent être coupées, passaient devant lui quand elles étaient actives, donc seuls ceux qui les utilisent voyaient le problème.",
       },
       {
         type: "fixed",
-        text: "Les liens que la console d'administration envoie par e-mail — appel d'un bannissement, réponse à une demande, invitation à une classe — ne peuvent plus pointer vers la console elle-même, où le destinataire n'a rien à faire.",
+        text: "Les liens que la console d'administration envoie par e-mail (appel d'un bannissement, réponse à une demande, invitation à une classe) ne peuvent plus pointer vers la console elle-même, où le destinataire n'a rien à faire.",
       },
     ],
   },
@@ -58,11 +58,11 @@ export const CHANGELOG: ChangelogEntry[] = [
     changes: [
       {
         type: "new",
-        text: "Un système d'amis : demande, acceptation, refus. Il vit dans un petit panneau de la barre du haut, à côté de la cloche, plutôt que sur une page à lui — voir ses amis et répondre à une demande sont des coups d'œil.",
+        text: "Un système d'amis : demande, acceptation, refus. Il vit dans un petit panneau de la barre du haut, à côté de la cloche, plutôt que sur une page à lui : voir ses amis et répondre à une demande sont des coups d'œil.",
       },
       {
         type: "new",
-        text: "Une amitié donne des droits. Tu peux partager une note avec un ami, pas seulement avec ta classe, et ton profil privé s'ouvre aux personnes que tu as acceptées — c'est ce que « privé » veut dire partout ailleurs. Une demande en attente ne donne rien.",
+        text: "Une amitié donne des droits. Tu peux partager une note avec un ami, pas seulement avec ta classe, et ton profil privé s'ouvre aux personnes que tu as acceptées. C'est ce que « privé » veut dire partout ailleurs. Une demande en attente ne donne rien.",
       },
       {
         type: "new",
@@ -109,7 +109,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "new",
-        text: "Une modération automatique lit tout ce qui est publié — questions, réponses, forum, notes partagées — avant que ça n'arrive à l'écran de quelqu'un d'autre.",
+        text: "Une modération automatique lit tout ce qui est publié (questions, réponses, forum, notes partagées) avant que ça n'arrive à l'écran de quelqu'un d'autre.",
       },
       {
         type: "new",
@@ -133,7 +133,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improved",
-        text: "Les révisions peuvent être coupées depuis les réglages — la fonctionnalité entière, pas seulement ses rappels. Les plannings existants sont conservés si tu la réactives.",
+        text: "Les révisions peuvent être coupées depuis les réglages : la fonctionnalité entière, pas seulement ses rappels. Les plannings existants sont conservés si tu la réactives.",
       },
       {
         type: "improved",
@@ -192,7 +192,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "fixed",
-        text: "Les schémas des leçons s'affichent à leur taille, avec des libellés entiers — ils étaient tantôt illisibles, tantôt rognés.",
+        text: "Les schémas des leçons s'affichent à leur taille, avec des libellés entiers. Ils étaient tantôt illisibles, tantôt rognés.",
       },
       {
         type: "fixed",
@@ -200,7 +200,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "fixed",
-        text: "Sur le classement, le bloc « Ta position » ne se chevauche plus, et le pourcentage annoncé est juste — être premier affichait « Top 0 % ».",
+        text: "Sur le classement, le bloc « Ta position » ne se chevauche plus, et le pourcentage annoncé est juste : être premier affichait « Top 0 % ».",
       },
       {
         type: "fixed",

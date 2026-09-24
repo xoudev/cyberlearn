@@ -81,7 +81,7 @@ function Teachers({
               {teachers.map((t) => (
                 <tr key={t.id}>
                   <td>{t.name}</td>
-                  <td className="mono">{t.subject ?? "—"}</td>
+                  <td className="mono">{t.subject ?? "Non précisée"}</td>
                   <td align="right">
                     <button
                       type="button"
@@ -219,7 +219,7 @@ function Members({
           <span className="a-field-hint">
             Une entrée par ligne. Une <strong>adresse</strong> qui a un compte rejoint la classe
             tout de suite ; sinon elle reçoit une invitation et prendra sa place à
-            l&apos;inscription. Un <strong>@pseudo</strong> désigne un compte qui existe déjà — il
+            l&apos;inscription. Un <strong>@pseudo</strong> désigne un compte qui existe déjà : il
             ne peut pas être invité, puisqu&apos;on ne réserve pas un pseudo en s&apos;inscrivant.
           </span>
         </label>
@@ -258,7 +258,7 @@ function Members({
             handle is not a place that can be held, so nothing was held. */}
         {state.unknownHandles !== undefined && state.unknownHandles.length > 0 && (
           <p className="a-form-error">
-            Aucun compte pour {state.unknownHandles.map((h) => `@${h}`).join(", ")} — rien n&apos;a
+            Aucun compte pour {state.unknownHandles.map((h) => `@${h}`).join(", ")}. Rien n&apos;a
             été réservé. Vérifie le pseudo, ou ajoute la personne par son adresse.
           </p>
         )}

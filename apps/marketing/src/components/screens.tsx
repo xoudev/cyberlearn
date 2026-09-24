@@ -647,7 +647,7 @@ function ClassScreen(): React.JSX.Element {
   const work: { title: string; meta: string; state: "late" | "todo" | "done" }[] = [
     { title: "Sécuriser une API REST", meta: "Leçon · échue le 18 sept.", state: "late" },
     { title: "Le modèle OSI, couche par couche", meta: "Leçon · avant le 26 sept.", state: "todo" },
-    { title: "Parcours Réseau — 6 leçons", meta: "Parcours · avant le 3 oct.", state: "todo" },
+    { title: "Parcours Réseau · 6 leçons", meta: "Parcours · avant le 3 oct.", state: "todo" },
     { title: "Les bases du chiffrement", meta: "Leçon · rendue le 12 sept.", state: "done" },
   ];
 

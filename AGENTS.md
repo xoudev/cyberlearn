@@ -15,9 +15,9 @@
 - Validation: Zod everywhere (client + server)
 - State: TanStack Query v5
 - Testing: Vitest (unit) + RLS/IDOR integration suite (ephemeral Supabase stack in CI)
-- CI: GitHub Actions, twelve jobs (format, lint, typecheck, test, build, runtime
-  integrity, lesson diagrams, lesson markers, auth hook signature, integration
-  RLS/IDOR, gitleaks, Semgrep)
+- CI: GitHub Actions, thirteen jobs (format, lint, typecheck, test, build, runtime
+  integrity, lesson diagrams, lesson markers, typography, auth hook signature,
+  integration RLS/IDOR, gitleaks, Semgrep)
 
 ## Architecture
 

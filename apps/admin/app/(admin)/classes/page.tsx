@@ -65,7 +65,7 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
         </span>,
         String(c._count.members),
         <span key="t" style={{ color: teachers.length === 0 ? UI.faint : UI.fg2 }}>
-          {teachers.length === 0 ? "—" : teachers.join(", ")}
+          {teachers.length === 0 ? "Aucun professeur" : teachers.join(", ")}
         </span>,
         <Tag key="s" tone={isArchived ? "neutral" : "accent"}>
           {isArchived ? "Archivée" : "Active"}

@@ -47,7 +47,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         establishment: m.promotion.establishment.name,
         promotion: m.promotion.name,
         teachers: m.teachers.map((t) => ({
-          name: t.teacher.displayName || (t.teacher.username ?? "—"),
+          name: t.teacher.displayName || (t.teacher.username ?? "Sans nom"),
           subject: t.subject,
         })),
         memberCount: m._count.members,

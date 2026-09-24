@@ -126,7 +126,7 @@ function validate(slug: string, raw: unknown): { errors: string[]; data?: QuizFi
       push(`${at}: 'explanation' invalide (max 2000 caractères)`);
     }
     const blob = `${String(q.question)} ${q.options.map((o) => (isObject(o) ? String(o.text) : "")).join(" ")} ${String(q.explanation ?? "")}`;
-    if (blob.includes("—")) push(`${at}: contient un tiret cadratin "—" (interdit)`);
+    if (blob.includes("\u2014")) push(`${at}: contient un tiret cadratin (U+2014, interdit)`);
   });
 
   if (errors.length > 0) return { errors };

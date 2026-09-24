@@ -106,7 +106,8 @@ function validate(raw: unknown): { errors: string[]; data: CosmeticEntry[] } {
       errors.push(`${at}: 'orderIndex' doit être un entier >= 0`);
     }
     const blob = `${String(code)} ${String(label)} ${String(description ?? "")}`;
-    if (blob.includes("—")) errors.push(`${at}: contient un tiret cadratin "—" (interdit)`);
+    if (blob.includes("\u2014"))
+      errors.push(`${at}: contient un tiret cadratin (U+2014, interdit)`);
 
     if (
       typeof code === "string" &&

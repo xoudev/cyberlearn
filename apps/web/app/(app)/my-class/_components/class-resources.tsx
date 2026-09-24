@@ -153,7 +153,7 @@ export function ClassResources({
                 aria-label="Leçon liée"
                 value={linkedAssignment}
                 options={[
-                  { value: "", label: "— aucune leçon —" },
+                  { value: "", label: "Aucune leçon" },
                   ...assignments.map((a) => ({ value: a.id, label: a.title })),
                 ]}
                 onChange={setLinkedAssignment}

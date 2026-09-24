@@ -130,7 +130,9 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         <KpiCard
           label="Taux d'activité"
           value={
-            users.length > 0 ? `${String(Math.round((activeThisWeek / users.length) * 100))}%` : "—"
+            users.length > 0
+              ? `${String(Math.round((activeThisWeek / users.length) * 100))}%`
+              : "n.d."
           }
           tone="purple"
         />

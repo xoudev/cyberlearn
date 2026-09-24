@@ -76,8 +76,8 @@ export function ClassInvitationEmail({
             </Section>
 
             <Text style={styles.paragraph}>
-              Crée ton compte avec cette adresse —{" "}
-              <strong style={styles.detailStrong}>{email}</strong> — et tu rejoindras la classe
+              Crée ton compte avec cette adresse,{" "}
+              <strong style={styles.detailStrong}>{email}</strong>, et tu rejoindras la classe
               automatiquement à ta première connexion.
             </Text>
 

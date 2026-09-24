@@ -52,7 +52,7 @@ export default async function ForumCategoryPage({
 
       {data.topics.length === 0 ? (
         <div className="fo-empty">
-          Cette section est vide. Le premier sujet est souvent le plus lu — ouvre-le.
+          Cette section est vide. Le premier sujet est souvent le plus lu : ouvre-le.
         </div>
       ) : (
         <ul className="fo-list">

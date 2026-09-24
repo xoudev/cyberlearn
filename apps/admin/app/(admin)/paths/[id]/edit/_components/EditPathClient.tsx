@@ -892,8 +892,8 @@ export function EditPathClient({
                   required
                   defaultValue={path.track}
                   options={[
-                    { value: "SKILL", label: "Compétence — un langage, un outil, un socle" },
-                    { value: "CAREER", label: "Métier — un rôle complet" },
+                    { value: "SKILL", label: "Compétence : un langage, un outil, un socle" },
+                    { value: "CAREER", label: "Métier : un rôle complet" },
                   ]}
                 />
               </div>

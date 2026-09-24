@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   // against nothing, so none of them were emitted.
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "CyberLearn — Apprendre la cybersécurité en pratique",
+    default: "CyberLearn · Apprendre la cybersécurité en pratique",
     template: "%s · CyberLearn",
   },
   // The previous description ("Plateforme d'apprentissage interactif en
@@ -41,13 +41,13 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     url: SITE_URL,
     siteName: "CyberLearn",
-    title: "CyberLearn — Apprendre la cybersécurité en pratique",
+    title: "CyberLearn · Apprendre la cybersécurité en pratique",
     description:
       "Exercices de code exécutés dans le navigateur, parcours progressifs et certificat vérifiable, en cybersécurité, développement et réseaux.",
   },
   twitter: {
     card: "summary",
-    title: "CyberLearn — Apprendre la cybersécurité en pratique",
+    title: "CyberLearn · Apprendre la cybersécurité en pratique",
     description:
       "Exercices de code exécutés dans le navigateur, parcours progressifs et certificat vérifiable.",
   },

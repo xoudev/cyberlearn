@@ -534,11 +534,11 @@ function ResultView({
               <Text
                 style={{
                   fontFamily: `${fonts.sans}_700Bold`,
-                  fontSize: 24,
+                  fontSize: 18,
                   color: colors.warning,
                 }}
               >
-                —
+                En attente
               </Text>
             )}
             <Text variant="bodySm">

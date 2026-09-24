@@ -40,7 +40,7 @@ export function WrappedClosed({
       <h1 className="wr-closed__year">{periodKey}</h1>
       <p className="wr-closed__lede">
         Ton récap de l&apos;année n&apos;est pas encore ouvert. Il arrive en décembre, une fois par
-        an — le temps que l&apos;année ait quelque chose à raconter.
+        an, le temps que l&apos;année ait quelque chose à raconter.
       </p>
 
       {opensLabel !== null && (
