@@ -1,3 +1,5 @@
+import { quizOptionOrder, quizOrderSeed } from "@cyberlearn/lib/quiz/option-order";
+
 /**
  * A lesson's quiz, as the app scores it: the first answer is the only one,
  * and it is the server that says whether it is right (see
@@ -47,4 +49,24 @@ export function progressScore(row: {
   if (row.status !== "COMPLETED") return null;
   if (row.quizTotal === null || row.quizTotal === 0 || row.quizCorrect === null) return null;
   return { correct: row.quizCorrect, total: row.quizTotal };
+}
+
+/**
+ * The written indices of a quiz's options in the order this learner sees them:
+ * the site's order, from the same function and seed. The index sent to the
+ * server stays the written one. Without a signed-in user, the written order.
+ */
+export function optionOrderFor(
+  userId: string | undefined,
+  lessonId: string,
+  quiz: { id: string; options: readonly string[] },
+): number[] {
+  if (userId === undefined) return quiz.options.map((_, i) => i);
+  return quizOptionOrder(quiz.options, quizOrderSeed(userId, lessonId, quiz.id));
+}
+
+/** The letter an option is shown under, from its written index. */
+export function letterOf(order: readonly number[], written: number): string {
+  const position = order.indexOf(written);
+  return position < 0 ? "?" : String.fromCharCode(65 + position);
 }

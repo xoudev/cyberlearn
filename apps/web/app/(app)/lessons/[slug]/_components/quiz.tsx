@@ -19,6 +19,12 @@ import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
  *
  * Outside a lesson page (an editor preview) there is no record to write to,
  * and the quiz scores itself locally.
+ *
+ * On a lesson page the options are shown in an order of the learner's own
+ * (see quizOptionOrder): authors put the right answer second in most quizzes.
+ * Only the display moves. The index sent, stored and compared is the option's
+ * written index; the letters follow the display. A preview keeps the written
+ * order, which is what its author is checking.
  */
 
 interface QuizProps {
@@ -59,6 +65,12 @@ export function Quiz({
   const [error, setError] = useState<string | null>(null);
 
   const answer = lessonQuiz ? (lessonQuiz.answers[id] ?? null) : localAnswer;
+  // order[position] = written index of the option shown at that position.
+  const order = lessonQuiz ? lessonQuiz.optionOrder(id, items) : items.map((_, i) => i);
+  const letterOf = (written: number): string => {
+    const position = order.indexOf(written);
+    return LETTER[position] ?? String(position + 1);
+  };
   const answered = answer !== null;
 
   const completion = useLessonCompletion();
@@ -102,7 +114,7 @@ export function Quiz({
   const verdictText = explanation?.trim()
     ? explanation.trim()
     : !isCorrect && rightOption !== undefined
-      ? `La bonne réponse était ${LETTER[correct] ?? String(correct + 1)} : ${rightOption}.`
+      ? `La bonne réponse était ${letterOf(correct)} : ${rightOption}.`
       : null;
 
   return (
@@ -196,7 +208,8 @@ export function Quiz({
         aria-label={question}
         style={{ display: "flex", flexDirection: "column", gap: 0 }}
       >
-        {items.map((choice, i) => {
+        {order.map((i, position) => {
+          const choice = items[i] ?? "";
           const isChosen = chosen === i;
           const isThisCorrect = answered && i === correct;
           const isThisWrong = answered && isChosen && i !== correct;
@@ -289,7 +302,7 @@ export function Quiz({
                   letterSpacing: "0.1em",
                 }}
               >
-                {LETTER[i]}
+                {LETTER[position]}
               </span>
               {/* Radio indicator */}
               <span

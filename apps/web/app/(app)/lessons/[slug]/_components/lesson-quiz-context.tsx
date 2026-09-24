@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { quizOptionOrder, quizOrderSeed } from "@cyberlearn/lib/quiz/option-order";
 import { answerQuiz } from "../_actions/answer-quiz";
 
 /**
@@ -22,6 +23,11 @@ export type SubmitResult = { ok: true; answer: QuizAnswer } | { ok: false; error
 export interface LessonQuizContextValue {
   answers: Readonly<Record<string, QuizAnswer>>;
   submit: (quizId: string, selected: number) => Promise<SubmitResult>;
+  /**
+   * The written indices of a quiz's options, in the order this learner sees
+   * them. The same on every visit and in the mobile app; see quizOptionOrder.
+   */
+  optionOrder: (quizId: string, options: readonly string[]) => number[];
 }
 
 const LessonQuizContext = createContext<LessonQuizContextValue | null>(null);
@@ -33,10 +39,13 @@ export function useLessonQuiz(): LessonQuizContextValue | null {
 
 export function LessonQuizProvider({
   lessonId,
+  userId,
   initialAnswers,
   children,
 }: {
   lessonId: string;
+  /** Seeds the order of the options, per learner. */
+  userId: string;
   initialAnswers: Record<string, QuizAnswer>;
   children: React.ReactNode;
 }): React.ReactElement {
@@ -59,6 +68,12 @@ export function LessonQuizProvider({
     [lessonId],
   );
 
-  const value = useMemo(() => ({ answers, submit }), [answers, submit]);
+  const optionOrder = useCallback(
+    (quizId: string, options: readonly string[]) =>
+      quizOptionOrder(options, quizOrderSeed(userId, lessonId, quizId)),
+    [userId, lessonId],
+  );
+
+  const value = useMemo(() => ({ answers, submit, optionOrder }), [answers, submit, optionOrder]);
   return <LessonQuizContext.Provider value={value}>{children}</LessonQuizContext.Provider>;
 }

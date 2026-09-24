@@ -416,7 +416,11 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       </div>
 
       {/* ── Stepper: timeline + MDX sections + rail + nav ─────────────────── */}
-      <LessonQuizProvider lessonId={lesson.id} initialAnswers={initialQuizAnswers}>
+      <LessonQuizProvider
+        lessonId={lesson.id}
+        userId={authUser.id}
+        initialAnswers={initialQuizAnswers}
+      >
         <LessonStepper
           lessonId={lesson.id}
           lessonTitle={lesson.title}
