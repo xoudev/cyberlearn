@@ -50,6 +50,7 @@ RLS — jamais réécrites côté app.
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
+| Tableau de bord autour des parcours : le parcours en tête (même classement, `@cyberlearn/lib/dashboard/featured-paths`) avec sa progression et la prochaine mission, la leçon en cours, les révisions dues, puis les quatre chiffres (mêmes libellés, `dashboard/stats`) ; sections numérotées qui se referment quand l'une est vide (`dashboard/sections`) | ✅ | ✅ (onglet Accueil) |
 | Parcours + page d'un parcours | ✅ | ✅ |
 | Examen final d'un parcours : règles, 30 minutes chronométrées, reprise d'une tentative en cours, délai de 48 h, correction détaillée, certificat à la réussite ; certificat réclamé sur un parcours sans examen (même service, `apps/web/lib/exam/exam-service.ts` et `lib/certificates/claim.ts`) | ✅ | ✅ |
 | Révisions (SM-2) : file du jour, notation Oublié / Difficile / Facile, XP ; l'interrupteur `spacedRepetition` se règle et s'applique des deux côtés | ✅ | ✅ |
@@ -75,7 +76,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | **Forum** | Poser une question quand on est bloqué est exactement ce qu'on fait depuis son téléphone | — |
 | **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré. Attention au statut : une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`), pas de l'écran — l'app affiche le refus, elle ne le décide pas | — |
 | **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
-| **Tableau de bord** | Aujourd'hui l'onglet Accueil. Le web a été refondu autour des parcours depuis (PR #233) ; l'onglet Accueil ne suit pas encore | — |
 | **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) n'existe que sur le web. Le bannissement et son appel, eux, sont dans l'app | — |
 | **Amis** | Demandes, liste, et le classement entre amis sur option. Le compagnon social d'une app d'apprentissage, et il n'existe que sur le web | — |
 | **Fin d'inscription** (pseudo, avatar, objectif) | L'app renvoie au site pour les trois étapes (`onboarding-required.tsx`). Le questionnaire de la troisième étape est déjà dans l'onglet Parcours ; ce qui manque, c'est de pouvoir finir son inscription sans quitter l'app | Rien |

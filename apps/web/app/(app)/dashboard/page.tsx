@@ -4,6 +4,10 @@ import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import { XpHeroCard } from "./_components/xp-hero-card";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel } from "@cyberlearn/lib";
+import { rankFeaturedPaths } from "@cyberlearn/lib/dashboard/featured-paths";
+import { nextRankName, rankName } from "@cyberlearn/lib/dashboard/rank-name";
+import { planSections, sectionNumber } from "@cyberlearn/lib/dashboard/sections";
+import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
 import {
   BadgeMedallion,
   BADGE_RARITY_LABELS,
@@ -12,32 +16,9 @@ import {
 } from "@cyberlearn/ui";
 import { CATALOGUE_PATH, leaderboardRepository, pathsVisibleTo, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
-import { planSections, sectionNumber } from "@/lib/dashboard/sections";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { StreakPanel } from "@/components/streak-panel";
 import { QuestsPanel } from "@/components/quests-panel";
-
-// ── Rank helpers ──────────────────────────────────────────────────────────────
-
-function getRankName(level: number): string {
-  if (level < 5) return "Novice";
-  if (level < 10) return "Apprenti confirmé";
-  if (level < 20) return "Technicien";
-  if (level < 35) return "Analyste";
-  if (level < 50) return "Expert";
-  if (level < 70) return "Architecte";
-  return "Maître Cyber";
-}
-
-function getNextRankName(level: number): string {
-  if (level < 5) return "Apprenti confirmé";
-  if (level < 10) return "Technicien";
-  if (level < 20) return "Analyste";
-  if (level < 35) return "Expert";
-  if (level < 50) return "Architecte";
-  if (level < 70) return "Maître Cyber";
-  return "Légendaire";
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -189,47 +170,33 @@ async function DashboardContent(): Promise<React.ReactElement> {
   const firstName = (dbUser?.displayName ?? "Opérateur").split(" ")[0] ?? "Opérateur";
   const streakDays = dbUser?.streakDays ?? 0;
   const completedCount = completedTotal;
-  const rankName = getRankName(level);
-  const nextRank = getNextRankName(level);
+  const rank = rankName(level);
+  const nextRank = nextRankName(level);
 
-  // ── Path recommendation scoring ───────────────────────────────────────────
-  const preferredDifficulty =
-    level <= 5 ? "BEGINNER" : level <= 12 ? "INTERMEDIATE" : level <= 20 ? "ADVANCED" : "EXPERT";
-
-  const placementScores: Record<string, number> = {
-    DEV: placementResult?.devScore ?? 50,
-    CYBERSEC: placementResult?.cybersecScore ?? 50,
-    NETWORK: placementResult?.networkScore ?? 50,
-  };
-
-  const categoryMomentum: Record<string, number> = {};
-  for (const row of recentLessons) {
-    const cat = row.lesson.category;
-    categoryMomentum[cat] = (categoryMomentum[cat] ?? 0) + 1;
-  }
-
-  const featuredPaths: FeaturedPath[] = allPaths
-    .filter((p) => p.progress[0]?.status !== "COMPLETED")
-    .map((p) => {
-      let score = 0;
-      if (p.progress[0]?.status === "IN_PROGRESS") score += 50;
-      if (p.difficulty === preferredDifficulty) score += 15;
-      score += ((placementScores[p.category] ?? 50) / 100) * 25;
-      score += Math.min((categoryMomentum[p.category] ?? 0) * 3, 15);
-      return { score, path: p };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 2)
-    .map(({ path }) => ({
-      id: path.id,
-      slug: path.slug,
-      title: path.title,
-      description: path.description,
-      category: path.category,
-      difficulty: path.difficulty,
-      estimatedHours: path.estimatedHours,
-      _count: { lessons: path._count.lessons, progress: path._count.progress },
-    }));
+  // ── Path recommendation: the same ranking as the app's home tab ──────────
+  const featuredPaths: FeaturedPath[] = rankFeaturedPaths(
+    allPaths.map((p) => ({ ...p, status: p.progress[0]?.status ?? null })),
+    {
+      level,
+      placement: placementResult
+        ? {
+            DEV: placementResult.devScore,
+            CYBERSEC: placementResult.cybersecScore,
+            NETWORK: placementResult.networkScore,
+          }
+        : null,
+      recentCategories: recentLessons.map((row) => row.lesson.category),
+    },
+  ).map((path) => ({
+    id: path.id,
+    slug: path.slug,
+    title: path.title,
+    description: path.description,
+    category: path.category,
+    difficulty: path.difficulty,
+    estimatedHours: path.estimatedHours,
+    _count: { lessons: path._count.lessons, progress: path._count.progress },
+  }));
 
   const resumeLesson = inProgressRows[0];
 
@@ -422,7 +389,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
         {/* Right: XP hero card */}
         <XpHeroCard
           level={level}
-          rankName={rankName}
+          rankName={rank}
           nextRank={nextRank}
           xpCurrent={current}
           xpNeeded={needed}
@@ -1306,17 +1273,7 @@ function TrophyShelf({
 
 // ── Stats big grid ────────────────────────────────────────────────────────────
 
-/**
- * The four figures, and what each of them is actually counting.
- *
- * They said "Ce mois-ci" over numbers that were nothing of the sort: the
- * lessons figure was the all-time total with "+N au total" underneath it as if
- * it were a gain, the badges figure counted the three on the shelf rather than
- * the collection, the streak's second line was the word "Continuez !", and the
- * certificates cell was a hard-coded 0 out of a hard-coded 4 on every account
- * on the site. A dashboard whose numbers are decoration is worse than one with
- * fewer numbers.
- */
+/** The four figures (see @cyberlearn/lib/dashboard/stats for what each counts). */
 function StatsBig({
   completedThisMonth,
   completedTotal,
@@ -1336,37 +1293,23 @@ function StatsBig({
   certificateCount: number;
   certifiablePaths: number;
 }) {
-  const items = [
-    {
-      label: "LEÇONS CE MOIS-CI",
-      n: completedThisMonth,
-      unit: null,
-      delta: `${String(completedTotal)} au total`,
-      highlight: true,
-    },
-    {
-      label: "STREAK ACTUEL",
-      n: streakDays,
-      unit: "j",
-      delta:
-        longestStreak > 0 ? `Record perso · ${String(longestStreak)} j` : "Pas encore de record",
-      highlight: false,
-    },
-    {
-      label: "BADGES",
-      n: badgeTotal,
-      unit: null,
-      delta: badgesThisMonth > 0 ? `+${String(badgesThisMonth)} ce mois-ci` : "aucun ce mois-ci",
-      highlight: false,
-    },
-    {
-      label: "CERTIFICATS",
-      n: certificateCount,
-      unit: null,
-      delta: `sur ${String(certifiablePaths)} disponible${certifiablePaths > 1 ? "s" : ""}`,
-      highlight: false,
-    },
-  ] as const;
+  // The figures and their words are shared with the app's home tab.
+  const items = dashboardStats({
+    completedThisMonth,
+    completedTotal,
+    streakDays,
+    longestStreak,
+    badgesThisMonth,
+    badgeTotal,
+    certificateCount,
+    certifiablePaths,
+  }).map((stat) => ({
+    label: stat.label.toUpperCase(),
+    n: stat.value,
+    unit: stat.unit,
+    delta: stat.detail,
+    highlight: stat.highlight,
+  }));
 
   return (
     <div className="dash-stats-grid">
