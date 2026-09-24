@@ -196,6 +196,16 @@ describe("RLS policies (integration)", () => {
     });
     if (lqaErr) throw new Error(`Failed to insert lesson_quiz_answer: ${lqaErr.message}`);
 
+    // A review of User B's, due in a week: the date a client would want to
+    // move back, to grade it again for XP.
+    const { error: rsErr } = await adminClient.from("review_schedules").insert({
+      id: randomUUID(),
+      userId: userBId,
+      lessonId: publishedLessonId,
+      nextReviewAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+    });
+    if (rsErr) throw new Error(`Failed to insert review_schedule: ${rsErr.message}`);
+
     // User B's report on a quiz, with a comment written for the team.
     const { error: qrErr } = await adminClient.from("quiz_reports").insert({
       id: randomUUID(),
@@ -527,6 +537,89 @@ describe("RLS policies (integration)", () => {
         .select("quizCorrect, quizTotal")
         .eq("userId", userBId);
       expect(data).toEqual([{ quizCorrect: null, quizTotal: null }]);
+    });
+  });
+
+  describe("tables the server writes (reviews, waivers, placement, path progress)", () => {
+    // Written only by the server, where grading, placement and completion are
+    // decided. The baseline let a client write its own rows: move a review
+    // back to farm XP, waive any prerequisite, forge a placement or a path.
+    async function bReviewDate(): Promise<string | undefined> {
+      const { data } = await adminClient
+        .from("review_schedules")
+        .select("nextReviewAt")
+        .eq("userId", userBId)
+        .eq("lessonId", publishedLessonId);
+      return (data as { nextReviewAt: string }[] | null)?.[0]?.nextReviewAt;
+    }
+
+    it("user B can read their own reviews", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { data, error } = await clientB
+        .from("review_schedules")
+        .select("lessonId")
+        .eq("userId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([{ lessonId: publishedLessonId }]);
+    });
+
+    it("a client cannot move a review back to grade it again", async () => {
+      if (!configured) return;
+      const before = await bReviewDate();
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB
+        .from("review_schedules")
+        .update({ nextReviewAt: new Date(Date.now() - 86_400_000).toISOString() })
+        .eq("userId", userBId);
+      expect(await bReviewDate()).toBe(before);
+    });
+
+    it("a client cannot schedule a review of its own", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("review_schedules").insert({
+        id: randomUUID(),
+        userId: userAId,
+        lessonId: publishedLessonId,
+        nextReviewAt: new Date().toISOString(),
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot waive a lesson's prerequisites", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA
+        .from("user_skip_waivers")
+        .insert({ userId: userAId, lessonId: publishedLessonId });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot write its own placement scores", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("user_placement_results").insert({
+        id: randomUUID(),
+        userId: userAId,
+        devScore: 100,
+        cybersecScore: 100,
+        networkScore: 100,
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot mark a path completed", async () => {
+      if (!configured) return;
+      const { data: anyPath } = await adminClient.from("paths").select("id").limit(1).single();
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("user_path_progress").insert({
+        id: randomUUID(),
+        userId: userAId,
+        pathId: (anyPath as { id: string } | null)?.id ?? randomUUID(),
+        status: "COMPLETED",
+      });
+      expect(error).not.toBeNull();
     });
   });
 

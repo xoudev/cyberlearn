@@ -17,6 +17,7 @@ import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
 import { CATEGORY_LABEL, RARITY_COLOR } from "@/lib/db";
 import { useDashboard, useQuests, useUnreadCount } from "@/lib/queries";
 import { useSession } from "@/lib/session";
+import { RevisionsCard } from "@/components/revisions-card";
 
 export default function Accueil(): React.JSX.Element {
   const router = useRouter();
@@ -225,6 +226,11 @@ export default function Accueil(): React.JSX.Element {
           </PressableScale>
         </Rise>
       ) : null}
+
+      {/* Revisions: nothing when spaced repetition is off or the queue is empty */}
+      <Rise index={4}>
+        <RevisionsCard userId={userId} style={{ marginBottom: 20 }} />
+      </Rise>
 
       {/* Leaderboard mini */}
       <Rise index={5}>

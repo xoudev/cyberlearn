@@ -14,7 +14,8 @@
     "./mdx-check": "./src/mdx/check.ts",
     "./mdx-quizzes": "./src/mdx/quizzes.ts",
     "./paths/*": "./src/paths/*.ts",
-    "./quiz/*": "./src/quiz/*.ts"
+    "./quiz/*": "./src/quiz/*.ts",
+    "./revisions/*": "./src/revisions/*.ts"
   },
   "scripts": {
     "build": "tsc",

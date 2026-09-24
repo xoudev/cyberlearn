@@ -99,5 +99,5 @@ describe("reportQuiz", () => {
     // against the Prisma enum when packages/db typechecks.
     const db = await vi.importActual<typeof Db>("@cyberlearn/db");
     expect([...QUIZ_REPORT_REASON_KEYS]).toEqual([...db.QUIZ_REPORT_REASONS]);
-  });
+  }, 30_000); // Loads the real Prisma client: slow when the whole suite runs at once.
 });

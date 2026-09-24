@@ -162,6 +162,26 @@ export async function reportQuizApi(
   }
 }
 
+export type GradeReviewReply =
+  | { ok: true; reviewXp: number; nextReviewAt: string }
+  | { ok: false; error: string };
+
+/** Grades a due review through the site's service (SM-2 step, XP, no double grading). */
+export async function gradeReviewApi(
+  scheduleId: string,
+  quality: 1 | 3 | 5,
+): Promise<GradeReviewReply> {
+  try {
+    const res = await authedFetch("/api/mobile/review", {
+      method: "POST",
+      body: JSON.stringify({ scheduleId, quality }),
+    });
+    return (await res.json()) as GradeReviewReply;
+  } catch {
+    return { ok: false, error: "La révision n'a pas pu être enregistrée. Réessaie." };
+  }
+}
+
 export async function completeLessonApi(lessonId: string): Promise<CompleteLessonResult | null> {
   try {
     const res = await authedFetch("/api/mobile/progress", {
