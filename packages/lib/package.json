@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./xp": "./src/xp.ts",
     "./sm2": "./src/sm2.ts",
+    "./dashboard/*": "./src/dashboard/*.ts",
     "./pseudonymize": "./src/pseudonymize.ts",
     "./gamification/*": "./src/gamification/*.ts",
     "./moderation/*": "./src/moderation/*.ts",

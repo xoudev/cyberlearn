@@ -10,6 +10,8 @@ import {
   fetchForumThreadApi,
 } from "@/lib/api";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
+import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
+import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
 import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
@@ -125,15 +127,33 @@ function toPathCards(rows: RawPath[], statuses: Map<string, ProgressStatus>): Pa
 }
 
 // ── Accueil (dashboard) ───────────────────────────────────────────────────────
+// The site's dashboard, read under RLS: the paths the reader may see (the
+// policy on `paths` keeps a class's own to its class), their progress, and the
+// figures the shared stats module words.
 
 export interface DashboardData {
   me: MeRow;
   level: LevelInfo;
   rank: number;
-  completed: number;
   resume: { slug: string; title: string; category: Category } | null;
+  inProgressTotal: number;
   badges: BadgeItem[];
-  suggestedPaths: PathCard[];
+  paths: HomePaths;
+  stats: DashboardStatsInput;
+}
+
+interface RawHomePath {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  category: Category;
+  difficulty: Difficulty;
+  estimatedHours: number;
+  path_lessons: {
+    position: number;
+    lessons: Embed<{ id: string; slug: string; title: string; estimatedMinutes: number }>;
+  }[];
 }
 
 export function useDashboard(userId: string | undefined) {
@@ -142,13 +162,28 @@ export function useDashboard(userId: string | undefined) {
     enabled: Boolean(userId),
     queryFn: async (): Promise<DashboardData> => {
       const uid = userId as string; // gated by `enabled`
-      const [meRes, completedRes, resumeRes, badgesRes, pathsRes, statuses] = await Promise.all([
+      const since = monthStart(new Date()).toISOString();
+      const [
+        meRes,
+        completedRes,
+        resumeRes,
+        inProgressRes,
+        badgesRes,
+        badgeTotalRes,
+        badgesMonthRes,
+        certificatesRes,
+        certifiableRes,
+        pathsRes,
+        statuses,
+        placementRes,
+      ] = await Promise.all([
         supabase.from("users").select(ME_COLUMNS).eq("id", uid).single(),
         supabase
           .from("user_lesson_progress")
-          .select("id", { count: "exact", head: true })
+          .select("lessonId,completedAt,lessons(category)")
           .eq("userId", uid)
-          .eq("status", "COMPLETED"),
+          .eq("status", "COMPLETED")
+          .order("completedAt", { ascending: false }),
         supabase
           .from("user_lesson_progress")
           .select("lastAccessedAt, lessons(slug,title,category)")
@@ -157,18 +192,45 @@ export function useDashboard(userId: string | undefined) {
           .order("lastAccessedAt", { ascending: false })
           .limit(1),
         supabase
+          .from("user_lesson_progress")
+          .select("id", { count: "exact", head: true })
+          .eq("userId", uid)
+          .eq("status", "IN_PROGRESS"),
+        supabase
           .from("user_badges")
           .select("earnedAt, badges(name,iconUrl,rarity)")
           .eq("userId", uid)
           .order("earnedAt", { ascending: false })
           .limit(3),
+        supabase.from("user_badges").select("id", { count: "exact", head: true }).eq("userId", uid),
+        supabase
+          .from("user_badges")
+          .select("id", { count: "exact", head: true })
+          .eq("userId", uid)
+          .gte("earnedAt", since),
+        supabase
+          .from("certificates")
+          .select("id", { count: "exact", head: true })
+          .eq("userId", uid)
+          .is("revokedAt", null),
+        // The catalogue issues certificates; a class's own path does not.
         supabase
           .from("paths")
-          .select("id,slug,title,description,category,difficulty,path_lessons(lessonId)")
+          .select("id", { count: "exact", head: true })
           .eq("status", "PUBLISHED")
-          .order("createdAt", { ascending: false })
-          .limit(6),
+          .eq("audience", "CATALOGUE"),
+        supabase
+          .from("paths")
+          .select(
+            "id,slug,title,description,category,difficulty,estimatedHours,path_lessons(position,lessons(id,slug,title,estimatedMinutes))",
+          )
+          .eq("status", "PUBLISHED"),
         fetchPathStatuses(uid),
+        supabase
+          .from("user_placement_results")
+          .select("devScore,cybersecScore,networkScore")
+          .eq("userId", uid)
+          .maybeSingle(),
       ]);
 
       const me = meRes.data as MeRow | null;
@@ -188,14 +250,73 @@ export function useDashboard(userId: string | undefined) {
       const badgeRows = (badgesRes.data ?? []) as unknown as { badges: Embed<BadgeItem> }[];
       const badges = badgeRows.map((b) => one(b.badges)).filter((b): b is BadgeItem => b !== null);
 
+      // SAFETY: the columns selected above; the embed is normalised by one().
+      const completedRows = (completedRes.data ?? []) as unknown as {
+        lessonId: string;
+        completedAt: string | null;
+        lessons: Embed<{ category: Category }>;
+      }[];
+      const completedIds = new Set(completedRows.map((row) => row.lessonId));
+      const completedThisMonth = countSince(
+        completedRows.map((row) => row.completedAt),
+        monthStart(new Date()),
+      );
+
+      // SAFETY: the columns selected above; embeds are normalised by one().
+      const rawPaths = (pathsRes.data ?? []) as unknown as RawHomePath[];
+      const homeRows: HomePath[] = rawPaths.map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        description: p.description,
+        category: p.category,
+        difficulty: p.difficulty,
+        estimatedHours: p.estimatedHours,
+        status: statuses.get(p.id) ?? null,
+        lessons: p.path_lessons.flatMap((pl) => {
+          const lesson = one(pl.lessons);
+          return lesson ? [{ ...lesson, position: pl.position }] : [];
+        }),
+      }));
+      const placement = placementRes.data as {
+        devScore: number;
+        cybersecScore: number;
+        networkScore: number;
+      } | null;
+      const level = computeLevel(me.xpTotal);
+
       return {
         me,
-        level: computeLevel(me.xpTotal),
+        level,
         rank: (rankRes.count ?? 0) + 1,
-        completed: completedRes.count ?? 0,
         resume,
+        inProgressTotal: inProgressRes.count ?? 0,
         badges,
-        suggestedPaths: toPathCards((pathsRes.data ?? []) as RawPath[], statuses),
+        paths: homePaths(homeRows, completedIds, {
+          level: level.level,
+          placement: placement
+            ? {
+                DEV: placement.devScore,
+                CYBERSEC: placement.cybersecScore,
+                NETWORK: placement.networkScore,
+              }
+            : null,
+          // The site weighs the last twenty lessons' domains.
+          recentCategories: completedRows
+            .slice(0, 20)
+            .map((row) => one(row.lessons)?.category)
+            .filter((c): c is Category => c !== undefined),
+        }),
+        stats: {
+          completedThisMonth,
+          completedTotal: completedRows.length,
+          streakDays: me.streakDays,
+          longestStreak: me.longestStreak,
+          badgesThisMonth: badgesMonthRes.count ?? 0,
+          badgeTotal: badgeTotalRes.count ?? 0,
+          certificateCount: certificatesRes.count ?? 0,
+          certifiablePaths: certifiableRes.count ?? 0,
+        },
       };
     },
   });
