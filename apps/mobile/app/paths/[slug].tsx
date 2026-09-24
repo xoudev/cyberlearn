@@ -10,6 +10,7 @@ import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL } from "@/lib/db";
 import { usePathDetail, type PathMission } from "@/lib/queries";
+import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@/lib/rating";
 import { useSession } from "@/lib/session";
@@ -47,6 +48,7 @@ export default function PathDetail(): React.JSX.Element {
       ) : (
         <PathBody
           data={data}
+          userId={session?.user.id}
           onOpenLesson={(s) => router.push({ pathname: "/lessons/[slug]", params: { slug: s } })}
           onRated={() => void refetch()}
         />
@@ -57,10 +59,12 @@ export default function PathDetail(): React.JSX.Element {
 
 function PathBody({
   data,
+  userId,
   onOpenLesson,
   onRated,
 }: {
   data: NonNullable<ReturnType<typeof usePathDetail>["data"]>;
+  userId: string | undefined;
   onOpenLesson: (slug: string) => void;
   onRated: () => void;
 }): React.JSX.Element {
@@ -237,7 +241,13 @@ function PathBody({
         </View>
       </Rise>
 
-      <Rise index={3}>
+      {total > 0 ? (
+        <Rise index={3}>
+          <PathFinalCard userId={userId} slug={data.slug} missionCount={total} />
+        </Rise>
+      ) : null}
+
+      <Rise index={4}>
         <PathRatingCard pathId={data.id} canRate={data.completedCount > 0} onRated={onRated} />
       </Rise>
     </View>
