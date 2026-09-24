@@ -25,49 +25,6 @@ export async function generateMetadata({
   return { title: `Certificat · ${holderDisplay} · ${cert.path.title}` };
 }
 
-// ── QR placeholder ────────────────────────────────────────────────────────────
-
-function QrPlaceholder({ size = 80 }: { size?: number }) {
-  const cells = Array.from({ length: 100 }, (_, i) => {
-    const x = i % 10;
-    const y = Math.floor(i / 10);
-    // SAFETY: deterministic visual pattern, not a real QR code
-    const inFinder = (cx: number, cy: number) => x >= cx && x < cx + 3 && y >= cy && y < cy + 3;
-    const isFinder = inFinder(0, 0) || inFinder(7, 0) || inFinder(0, 7);
-    if (isFinder) {
-      const lx = x % 7;
-      const ly = y % 7;
-      return lx === 0 || lx === 2 || ly === 0 || ly === 2 || (lx === 1 && ly === 1);
-    }
-    return (x * 7 + y * 11 + x * y * 3) % 5 < 2;
-  });
-
-  const cellSize = size / 10;
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(10, ${String(cellSize)}px)`,
-        gap: 0,
-        width: size,
-        height: size,
-      }}
-      aria-hidden="true"
-    >
-      {cells.map((on, i) => (
-        <span
-          key={i}
-          style={{
-            width: cellSize,
-            height: cellSize,
-            background: on ? "#0AFFD4" : "transparent",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 // ── Corner brackets ───────────────────────────────────────────────────────────
 
 function CornerBrackets({ color = "#0AFFD4", size = 14 }: { color?: string; size?: number }) {
@@ -139,10 +96,9 @@ export default async function CertVerifyPage({
       }).format(cert.revokedAt)
     : null;
   const lessonCount = cert.path.lessons.length;
-  const hashShort = cert.sha256Hash
-    .replace(/(.{16})/g, "$1 · ")
-    .trim()
-    .slice(0, 79);
+  // The whole hash, in groups of 16 so it can be compared by eye. The old
+  // formatting left a separator dangling after the last group.
+  const hashGrouped = (cert.sha256Hash.match(/.{1,16}/g) ?? []).join(" · ");
   const certCode = `CYL-${String(cert.issuedAt.getFullYear())}-${String(cert.issuedAt.getMonth() + 1).padStart(2, "0")}-${cert.id.slice(0, 4).toUpperCase()}`;
   // Canonical issuer host: same source as the verify URL (no hardcoded .app).
   const issuerHost = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://cyberlearn.fr").replace(
@@ -681,22 +637,7 @@ export default async function CertVerifyPage({
               >
                 <b style={{ color: "#B8B5D1" }}>SHA-256</b>
                 <br />
-                <span style={{ color: "#3F3D5C" }}>{hashShort}</span>
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <QrPlaceholder size={80} />
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "#3F3D5C",
-                  marginTop: 6,
-                }}
-              >
-                Scanner pour vérifier
+                <span style={{ color: "#3F3D5C" }}>{hashGrouped}</span>
               </div>
             </div>
           </div>
