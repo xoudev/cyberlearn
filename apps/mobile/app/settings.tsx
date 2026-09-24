@@ -21,6 +21,11 @@ import { supabase } from "@/lib/supabase";
 
 const PREF_ROWS: { key: keyof Preferences; label: string; hint: string }[] = [
   { key: "emailNotifications", label: "E-mails", hint: "Notifications par e-mail" },
+  {
+    key: "spacedRepetition",
+    label: "Révisions",
+    hint: "Les leçons terminées reviennent au bon moment pour être retenues",
+  },
   { key: "reviewReminders", label: "Rappels de révision", hint: "Quand une révision SM-2 est due" },
   { key: "weeklyDigest", label: "Digest hebdo", hint: "Résumé de ta semaine" },
   { key: "streakReminder", label: "Rappel de série", hint: "Avant de perdre ta série" },
@@ -54,10 +59,15 @@ export default function Reglages(): React.JSX.Element {
         reviewReminders: true,
         weeklyDigest: true,
         streakReminder: true,
+        spacedRepetition: true,
       }),
       [key]: value,
     }));
     await updatePreference(userId, key, value);
+    // The revisions screen and the home card read the same switch.
+    if (key === "spacedRepetition") {
+      await queryClient.invalidateQueries({ queryKey: ["revisions", userId] });
+    }
   }
 
   return (
