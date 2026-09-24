@@ -2,6 +2,45 @@
 
 ---
 
+## 2026-09-24 - Quatre tables d'apprentissage écrites par les clients
+
+### Constat
+
+Relevé en portant les révisions dans l'app mobile. La baseline RLS
+(`20260610200000_rls_baseline`) donnait à quatre tables une policy `FOR ALL`
+sur les lignes du lecteur, et aucune migration n'avait repris les droits
+d'écriture. Via l'API de données, avec la clé publique et sa propre session,
+un apprenant pouvait :
+
+- `review_schedules` : remettre une révision dans le passé puis la noter à
+  nouveau, un dixième de l'XP de la leçon à chaque fois ; ou créer une révision
+  pour une leçon jamais étudiée ;
+- `user_skip_waivers` : lever les prérequis de n'importe quelle leçon et ouvrir
+  ce qu'un parcours garde verrouillé ;
+- `user_placement_results` : écrire ses propres scores de positionnement ;
+- `user_path_progress` : marquer un parcours commencé ou terminé.
+
+Aucun client n'écrit dans ces tables : le site et l'app passent par le serveur
+(Prisma). Aucune trace d'exploitation n'a été cherchée ; les XP de type REVIEW
+anormalement élevées seraient le premier signe.
+
+### Correctif
+
+Migration `20260924190000_server_written_learning_tables` : chaque table garde
+la lecture de ses propres lignes (policy `FOR SELECT`), perd toute écriture, et
+les droits de colonne sont réduits à `SELECT` pour `authenticated`, comme les
+tables durcies par `20260725000000_rls_column_hardening`. Vérifié sur une base
+locale avec les droits par défaut de Supabase : `UPDATE 1` avant, `permission
+denied` après. Tests ajoutés à `rls.integration.test.ts`.
+
+### Règle
+
+Une table écrite seulement par le serveur n'a pas de policy d'écriture, et
+`authenticated` n'y a que `SELECT`. `notifications` (marquer comme lu) et
+`user_preferences` restent écrites par l'app, et le sont légitimement.
+
+---
+
 ## 2026-05-23 - Incident cascade login après merge PR 2.4.A
 
 ### Symptôme initial
