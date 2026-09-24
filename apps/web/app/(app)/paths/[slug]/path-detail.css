@@ -22,7 +22,9 @@
   --red: #ff4d6d;
   --font-display: var(--font-sans, "Geist", system-ui, sans-serif);
   --font-body: var(--font-sans, "Inter", system-ui, sans-serif);
-  --font-mono: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  /* No --font-mono here: the layout sets it (next/font), and redeclaring it as
+     var(--font-mono, ...) is a cycle, which CSS resolves to nothing. Every
+     mono label under this root fell back to the sans font. */
   --dur-base: 180ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
