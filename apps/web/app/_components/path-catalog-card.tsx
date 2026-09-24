@@ -13,6 +13,8 @@ export interface PathCatalogCardData {
   xpTotal: number;
   lessonCount: number;
   hasCert: boolean;
+  /** Learners' average, shown once somebody has rated the path. */
+  rating?: { avg: number; count: number } | null;
 }
 
 type Kind = "cyber" | "dev" | "net";
@@ -144,6 +146,19 @@ export function PathCatalogCard({
           </span>
           <span className="sep">·</span>
           <span className="xp">+{formatNumberFr(path.xpTotal)} XP</span>
+          {path.rating && path.rating.count > 0 && (
+            <>
+              <span className="sep">·</span>
+              <span
+                title={`Note moyenne : ${path.rating.avg.toFixed(1).replace(".", ",")} sur 5, ${String(path.rating.count)} avis`}
+              >
+                <span aria-hidden="true" style={{ color: "#FFB020" }}>
+                  ★
+                </span>{" "}
+                <b>{path.rating.avg.toFixed(1).replace(".", ",")}</b>
+              </span>
+            </>
+          )}
           {path.hasCert && (
             <>
               <span className="sep">·</span>

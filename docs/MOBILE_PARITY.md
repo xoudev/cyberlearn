@@ -23,9 +23,9 @@ c'est lui qu'on relit avant de commencer une surface :
 - **Les lectures vont directement à Supabase**, sous RLS, depuis
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
-  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a huit :
+  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a neuf :
   `avatar`, `leaderboard`, `loadout`, `my-class`, `password`, `progress`,
-  `quiz-answer`, `send-otp`.
+  `quiz-answer`, `rating`, `send-otp`.
 - Une route API n'est donc nécessaire que pour ce que la RLS ne peut pas
   servir : une écriture à valider, ou quelque chose qui réclame la clé
   `service_role` — signer un avatar privé, par exemple.
@@ -42,6 +42,7 @@ RLS — jamais réécrites côté app.
 | Connexion, inscription, MFA, mot de passe oublié | ✅ | ✅ |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`) | ✅ | ✅ |
+| Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
 | Parcours + page d'un parcours | ✅ | ✅ |
 | Profil, progression, XP, niveau | ✅ | ✅ |
 | Classement + ligue | ✅ | ✅ |
@@ -68,6 +69,7 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) et l'appel d'un bannissement n'existent que sur le web. Quelqu'un sanctionné sur son téléphone reçoit le motif sans pouvoir répondre | — |
 | **Amis** | Demandes, liste, et le classement entre amis sur option. Le compagnon social d'une app d'apprentissage, et il n'existe que sur le web | — |
 | **Partage de note** | Le bloc-notes est des deux côtés, le partage non — ni l'envoi, ni la réception. Il manquait à ce tableau : « Bloc-notes ✅ ✅ » était vrai du carnet et faux de la fonctionnalité. Le filtre qui refuse un partage vit dans le dépôt (`note-share.repository`), donc l'app l'hériterait sans le réécrire | — |
+| **Noter une leçon** | Le site demande une note à la fin de chaque leçon, l'app non : les avis ne viennent que de ceux qui lisent sur ordinateur. La route `rating` existe déjà pour les parcours, et le service `rateLessonAction` vérifie la leçon terminée ; il reste l'écran | — |
 
 ### Volontairement web-only
 

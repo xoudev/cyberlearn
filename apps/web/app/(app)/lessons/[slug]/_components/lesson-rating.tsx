@@ -1,16 +1,35 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { rateLessonAction } from "../_actions/rate-lesson";
+import { rateLessonAction, type RateLessonResult } from "../_actions/rate-lesson";
+
+/** The words that change between rating a lesson and rating a path. */
+export interface RatingCopy {
+  title: string;
+  locked: string;
+  railLocked: string;
+  placeholder: string;
+}
+
+const LESSON_COPY: RatingCopy = {
+  title: "Note cette leçon",
+  locked: "Complète la leçon pour noter",
+  railLocked: "Termine la leçon pour noter et commenter.",
+  placeholder: "Commentaire optionnel (500 car. max)",
+};
 
 interface LessonRatingProps {
   lessonId: string;
+  /** Whether the reader may rate yet: the lesson completed, or for a path one of its lessons. */
   isCompleted: boolean;
   initialScore: number | null;
   initialFeedback: string | null;
   avgRating: number | null;
   ratingsCount: number;
   variant?: "full" | "rail";
+  /** Where the rating goes. Defaults to the lesson's own action. */
+  submit?: (score: number, feedback: string | undefined) => Promise<RateLessonResult>;
+  copy?: RatingCopy;
 }
 
 export function LessonRating({
@@ -21,6 +40,8 @@ export function LessonRating({
   avgRating,
   ratingsCount,
   variant = "full",
+  submit = (score, feedback) => rateLessonAction(lessonId, score, feedback),
+  copy = LESSON_COPY,
 }: LessonRatingProps): React.ReactElement {
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number>(initialScore ?? 0);
@@ -37,7 +58,7 @@ export function LessonRating({
     if (!selected || !isCompleted) return;
     setError(null);
     startTransition(async () => {
-      const res = await rateLessonAction(lessonId, selected, feedback || undefined);
+      const res = await submit(selected, feedback || undefined);
       if (!res.success) {
         setError(res.error ?? "Erreur lors de l'envoi.");
         return;
@@ -142,7 +163,7 @@ export function LessonRating({
                 lineHeight: 1.5,
               }}
             >
-              Termine la leçon pour noter et commenter.
+              {copy.railLocked}
             </p>
           </div>
         </div>
@@ -310,7 +331,7 @@ export function LessonRating({
               letterSpacing: "-0.01em",
             }}
           >
-            {submitted ? "Ta note a été enregistrée" : "Note cette leçon"}
+            {submitted ? "Ta note a été enregistrée" : copy.title}
           </h3>
         </div>
 
@@ -377,7 +398,7 @@ export function LessonRating({
               letterSpacing: "0.04em",
             }}
           >
-            Complète la leçon pour noter
+            {copy.locked}
           </span>
         </div>
       ) : (
@@ -441,7 +462,7 @@ export function LessonRating({
                 setFeedback(e.target.value);
               }}
               maxLength={500}
-              placeholder="Commentaire optionnel (500 car. max)"
+              placeholder={copy.placeholder}
               rows={3}
               style={{
                 width: "100%",

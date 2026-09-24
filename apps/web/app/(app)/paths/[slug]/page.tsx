@@ -6,8 +6,9 @@ import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { indexPlacements, type LockState } from "@/lib/lessons/unlock";
 import { requireUser } from "@cyberlearn/lib";
-import { pathsVisibleTo, prisma } from "@cyberlearn/db";
+import { pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
 import { BossNode } from "./_components/boss-node";
+import { PathRating } from "./_components/path-rating";
 
 export async function generateMetadata({
   params,
@@ -244,6 +245,8 @@ export default async function PathDetailPage({
     select: { status: true, certificateId: true },
   });
 
+  const myRating = await ratingRepository.findUserPathRating(authUser.id, path.id);
+
   const xpTotal = path.lessons.reduce((sum, pl) => sum + pl.lesson.xpReward, 0);
   const doneLessons = completedLessonIds.size;
   const totalLessons = path.lessons.length;
@@ -328,6 +331,17 @@ export default async function PathDetailPage({
               {cat.label}
             </span>
             <span className="pd2-tag pd2-tag--track">{trackLabel}</span>
+            {path.avgRating !== null && path.ratingsCount > 0 && (
+              <span
+                className="pd2-tag"
+                title={`Note moyenne des apprenants : ${path.avgRating.toFixed(1).replace(".", ",")} sur 5`}
+              >
+                <span aria-hidden="true" style={{ color: "#FFB020" }}>
+                  ★
+                </span>{" "}
+                {path.avgRating.toFixed(1).replace(".", ",")} · {path.ratingsCount} avis
+              </span>
+            )}
             <span className="pd2-tag pd2-tag--diff">
               <span className={`diff-bars lv${String(diff.level)}`}>
                 <span />
@@ -502,6 +516,19 @@ export default async function PathDetailPage({
                 <li key={pl.lesson.id}>{pl.lesson.description}</li>
               ))}
             </ul>
+          </div>
+          <div className="ablock">
+            <div className="ablock__eyebrow">
+              - <b>02</b> · TON AVIS
+            </div>
+            <PathRating
+              pathId={path.id}
+              canRate={doneLessons > 0}
+              initialScore={myRating?.score ?? null}
+              initialFeedback={myRating?.feedback ?? null}
+              avgRating={path.avgRating}
+              ratingsCount={path.ratingsCount}
+            />
           </div>
         </aside>
       </div>

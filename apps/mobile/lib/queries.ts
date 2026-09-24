@@ -366,6 +366,8 @@ export interface PathDetail {
   estimatedHours: number;
   missions: PathMission[];
   completedCount: number;
+  avgRating: number | null;
+  ratingsCount: number;
 }
 
 export function usePathDetail(userId: string | undefined, slug: string | undefined) {
@@ -376,7 +378,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
       const pathRes = await supabase
         .from("paths")
         .select(
-          "id,slug,title,description,category,difficulty,estimatedHours, path_lessons(position, lessons(id,slug,title,estimatedMinutes,xpReward))",
+          "id,slug,title,description,category,difficulty,estimatedHours,avgRating,ratingsCount, path_lessons(position, lessons(id,slug,title,estimatedMinutes,xpReward))",
         )
         .eq("slug", slug as string) // gated by `enabled`
         .eq("status", "PUBLISHED")
@@ -389,6 +391,8 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         category: Category;
         difficulty: Difficulty;
         estimatedHours: number;
+        avgRating: number | null;
+        ratingsCount: number;
         path_lessons: {
           position: number;
           lessons: Embed<{
@@ -441,6 +445,8 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         category: raw.category,
         difficulty: raw.difficulty,
         estimatedHours: raw.estimatedHours,
+        avgRating: raw.avgRating,
+        ratingsCount: raw.ratingsCount,
         missions,
         completedCount: missions.filter((m) => m.status === "COMPLETED").length,
       };

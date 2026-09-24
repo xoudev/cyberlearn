@@ -25,6 +25,7 @@ export interface SerializedPath {
   status: "idle" | "inprog" | "done";
   progressDone: number;
   progressTotal: number;
+  rating: { avg: number; count: number } | null;
   /** Next not-yet-completed lesson (in-progress paths only) - drives the hero panel. */
   nextLesson: {
     n: string;
