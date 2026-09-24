@@ -525,6 +525,17 @@ export function useLessonDetail(userId: string | undefined, slug: string | undef
  * answered question is shown answered, and is never asked twice. Read under
  * RLS, which only returns the reader's own answers.
  */
+/** The questions of a lesson this learner reported, still open (RLS: own rows). */
+export async function fetchOpenQuizReports(userId: string, lessonId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("quiz_reports")
+    .select("quizId")
+    .eq("userId", userId)
+    .eq("lessonId", lessonId)
+    .eq("status", "OPEN");
+  return ((data ?? []) as { quizId: string }[]).map((r) => r.quizId);
+}
+
 export async function fetchLessonQuizAnswers(
   userId: string,
   lessonId: string,

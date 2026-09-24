@@ -17,7 +17,12 @@ import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
-import { answerQuizApi, completeLessonApi, type CompleteLessonResult } from "@/lib/api";
+import {
+  answerQuizApi,
+  completeLessonApi,
+  reportQuizApi,
+  type CompleteLessonResult,
+} from "@/lib/api";
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,
@@ -26,7 +31,13 @@ import {
   type Rarity,
 } from "@/lib/db";
 import { parseLesson } from "@/lib/lesson-blocks";
-import { fetchLessonQuizAnswers, markLessonOpened, useLessonDetail } from "@/lib/queries";
+import {
+  fetchLessonQuizAnswers,
+  fetchOpenQuizReports,
+  markLessonOpened,
+  useLessonDetail,
+} from "@/lib/queries";
+import { QuizReportControl } from "@/components/quiz-report";
 import { letterOf, optionOrderFor, scoreOf, type RecordedAnswer } from "@/lib/quiz";
 import { useSession } from "@/lib/session";
 
@@ -57,6 +68,8 @@ export default function LessonReader(): React.JSX.Element {
   // a question answered here or on the site is shown answered, never asked
   // again, and it is the server that says whether it was right.
   const [answers, setAnswers] = useState<Record<string, RecordedAnswer>>({});
+  // Questions this learner reported that the team has not closed yet.
+  const [reported, setReported] = useState<ReadonlySet<string>>(new Set());
 
   const parsed = useMemo(() => (data ? parseLesson(data.contentMdx) : null), [data]);
 
@@ -73,6 +86,9 @@ export default function LessonReader(): React.JSX.Element {
     let cancelled = false;
     void fetchLessonQuizAnswers(userId, lessonId).then((recorded) => {
       if (!cancelled) setAnswers((prev) => ({ ...recorded, ...prev }));
+    });
+    void fetchOpenQuizReports(userId, lessonId).then((ids) => {
+      if (!cancelled) setReported((prev) => new Set([...prev, ...ids]));
     });
     return () => {
       cancelled = true;
@@ -183,6 +199,13 @@ export default function LessonReader(): React.JSX.Element {
           key={step.qIndex}
           quiz={quizzes[step.qIndex] ?? null}
           order={currentOrder}
+          reported={currentQuiz ? reported.has(currentQuiz.id) : false}
+          onReport={async (reason, comment) => {
+            if (!currentQuiz) return { ok: false, error: "Question introuvable." };
+            const reply = await reportQuizApi(data.id, currentQuiz.id, reason, comment);
+            if (reply.ok) setReported((prev) => new Set(prev).add(currentQuiz.id));
+            return reply;
+          }}
           picked={step.picked}
           answer={answers[quizzes[step.qIndex]?.id ?? ""] ?? null}
           sending={step.sending}
@@ -310,6 +333,8 @@ function ReadView({
 function QuizView({
   quiz,
   order,
+  reported,
+  onReport,
   picked,
   answer,
   sending,
@@ -322,6 +347,8 @@ function QuizView({
   quiz: { question: string; options: string[]; correct: number; explanation: string | null } | null;
   /** Written indices in display order (optionOrderFor): the site's order for this learner. */
   order: number[];
+  reported: boolean;
+  onReport: React.ComponentProps<typeof QuizReportControl>["onSend"];
   picked: number | null;
   /** The answer on record: once there is one, the question is closed. */
   answer: RecordedAnswer | null;
@@ -423,6 +450,7 @@ function QuizView({
             {error ?? "Une seule réponse par question : elle compte dans ta note de la leçon."}
           </Text>
         )}
+        <QuizReportControl reported={reported} onSend={onReport} />
       </ScrollView>
       <View style={{ paddingVertical: 10 }}>
         <GradientButton

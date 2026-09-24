@@ -56,6 +56,7 @@ model User {
   contactTickets    ContactTicket[]
   ratings           Rating[]
   lessonQuizAnswers LessonQuizAnswer[]
+  quizReports       QuizReport[]
   questions         LessonQuestion[]
   answers           LessonAnswer[]
   auditLogs         AuditLog[]              @relation("ActorLogs")
@@ -498,6 +499,7 @@ model Lesson {
   pathLessons      PathLesson[]
   progress         UserLessonProgress[]
   quizAnswers      LessonQuizAnswer[]
+  quizReports      QuizReport[]
   reviewSchedules  ReviewSchedule[]
   ratings          Rating[]
   questions        LessonQuestion[]
@@ -1058,6 +1060,46 @@ model LessonQuizAnswer {
   @@unique([userId, lessonId, quizId])
   @@index([lessonId])
   @@map("lesson_quiz_answers")
+}
+
+enum QuizReportReason {
+  AMBIGUOUS
+  WRONG_ANSWER
+  TYPO
+  OTHER
+}
+
+enum QuizReportStatus {
+  OPEN
+  RESOLVED
+}
+
+/// A learner saying a lesson quiz is wrong: ambiguous, a doubtful answer key,
+/// a typo. One per learner and quiz; reporting again updates it and reopens
+/// it. The console groups them by quiz, so five people tripping on the same
+/// question read as one question to fix, not five tickets.
+///
+/// Kept when the account is erased (userId set null): the question still
+/// needs fixing whoever pointed it out.
+model QuizReport {
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String?          @db.Uuid
+  lessonId   String           @db.Uuid
+  quizId     String           @db.VarChar(100)
+  reason     QuizReportReason
+  comment    String?          @db.VarChar(500)
+  status     QuizReportStatus @default(OPEN)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  resolvedAt DateTime?
+
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, quizId])
+  @@index([lessonId, quizId])
+  @@index([status])
+  @@map("quiz_reports")
 }
 
 // ============================================================

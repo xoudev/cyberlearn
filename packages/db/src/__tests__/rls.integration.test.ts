@@ -196,11 +196,25 @@ describe("RLS policies (integration)", () => {
     });
     if (lqaErr) throw new Error(`Failed to insert lesson_quiz_answer: ${lqaErr.message}`);
 
+    // User B's report on a quiz, with a comment written for the team.
+    const { error: qrErr } = await adminClient.from("quiz_reports").insert({
+      id: randomUUID(),
+      userId: userBId,
+      lessonId: publishedLessonId,
+      quizId: "rls-report-q",
+      reason: "AMBIGUOUS",
+      comment: "Deux réponses se défendent.",
+      updatedAt: new Date().toISOString(),
+    });
+    if (qrErr) throw new Error(`Failed to insert quiz_report: ${qrErr.message}`);
+
     configured = true;
   });
 
   afterAll(async () => {
     if (!configured) return;
+    // Kept on account erasure (userId set null), so removed by quiz id.
+    await adminClient.from("quiz_reports").delete().like("quizId", "rls-report-%");
     await adminClient.from("user_lesson_progress").delete().in("userId", [userAId, userBId]);
     if (quizId) {
       // Cascades to quiz_questions + quiz_attempts.
@@ -513,6 +527,64 @@ describe("RLS policies (integration)", () => {
         .select("quizCorrect, quizTotal")
         .eq("userId", userBId);
       expect(data).toEqual([{ quizCorrect: null, quizTotal: null }]);
+    });
+  });
+
+  describe("quiz_reports", () => {
+    // Written by the server, which checks the lesson and the question. A
+    // client reads its own reports (the app shows a question as reported) and
+    // nothing else: another learner's comment is for the team.
+    async function bReport(): Promise<{ reason: string; status: string } | undefined> {
+      const { data } = await adminClient
+        .from("quiz_reports")
+        .select("reason, status")
+        .eq("userId", userBId)
+        .eq("quizId", "rls-report-q");
+      return (data as { reason: string; status: string }[] | null)?.[0];
+    }
+
+    it("user B can read their own reports", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { data, error } = await clientB
+        .from("quiz_reports")
+        .select("quizId, reason")
+        .eq("userId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([{ quizId: "rls-report-q", reason: "AMBIGUOUS" }]);
+    });
+
+    it("user A cannot read user B's reports or comments", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA.from("quiz_reports").select("*").eq("userId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("a client cannot file a report without the server's checks", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("quiz_reports").insert({
+        id: randomUUID(),
+        userId: userAId,
+        lessonId: publishedLessonId,
+        quizId: "rls-report-forged",
+        reason: "TYPO",
+        updatedAt: new Date().toISOString(),
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot change or erase a report", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB
+        .from("quiz_reports")
+        .update({ status: "RESOLVED" })
+        .eq("quizId", "rls-report-q");
+      await clientB.from("quiz_reports").delete().eq("quizId", "rls-report-q");
+      expect(await bReport()).toEqual({ reason: "AMBIGUOUS", status: "OPEN" });
     });
   });
 

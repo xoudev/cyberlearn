@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { quizOptionOrder, quizOrderSeed } from "@cyberlearn/lib/quiz/option-order";
 import { answerQuiz } from "../_actions/answer-quiz";
+import { reportQuizAction } from "../_actions/report-quiz";
 
 /**
  * The lesson's quiz answers, shared by every quiz on the page.
@@ -28,7 +29,12 @@ export interface LessonQuizContextValue {
    * them. The same on every visit and in the mobile app; see quizOptionOrder.
    */
   optionOrder: (quizId: string, options: readonly string[]) => number[];
+  /** Questions of this lesson the learner reported, not yet closed by the team. */
+  reported: ReadonlySet<string>;
+  report: (quizId: string, reason: string, comment: string) => Promise<ReportResult>;
 }
+
+export type ReportResult = { ok: true } | { ok: false; error: string };
 
 const LessonQuizContext = createContext<LessonQuizContextValue | null>(null);
 
@@ -41,12 +47,15 @@ export function LessonQuizProvider({
   lessonId,
   userId,
   initialAnswers,
+  initialReported = [],
   children,
 }: {
   lessonId: string;
   /** Seeds the order of the options, per learner. */
   userId: string;
   initialAnswers: Record<string, QuizAnswer>;
+  /** Questions the learner already reported (open reports). */
+  initialReported?: readonly string[];
   children: React.ReactNode;
 }): React.ReactElement {
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>(initialAnswers);
@@ -74,6 +83,24 @@ export function LessonQuizProvider({
     [userId, lessonId],
   );
 
-  const value = useMemo(() => ({ answers, submit, optionOrder }), [answers, submit, optionOrder]);
+  const [reported, setReported] = useState<ReadonlySet<string>>(() => new Set(initialReported));
+
+  const report = useCallback(
+    async (quizId: string, reason: string, comment: string): Promise<ReportResult> => {
+      try {
+        const result = await reportQuizAction({ lessonId, quizId, reason, comment });
+        if (result.ok) setReported((prev) => new Set(prev).add(quizId));
+        return result;
+      } catch {
+        return { ok: false, error: "Le signalement n'a pas pu être envoyé. Réessaie." };
+      }
+    },
+    [lessonId],
+  );
+
+  const value = useMemo(
+    () => ({ answers, submit, optionOrder, reported, report }),
+    [answers, submit, optionOrder, reported, report],
+  );
   return <LessonQuizContext.Provider value={value}>{children}</LessonQuizContext.Provider>;
 }

@@ -23,9 +23,9 @@ c'est lui qu'on relit avant de commencer une surface :
 - **Les lectures vont directement à Supabase**, sous RLS, depuis
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
-  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a neuf :
+  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a dix :
   `avatar`, `leaderboard`, `loadout`, `my-class`, `password`, `progress`,
-  `quiz-answer`, `rating`, `send-otp`.
+  `quiz-answer`, `quiz-report`, `rating`, `send-otp`.
 - Une route API n'est donc nécessaire que pour ce que la RLS ne peut pas
   servir : une écriture à valider, ou quelque chose qui réclame la clé
   `service_role` — signer un avatar privé, par exemple.
@@ -41,7 +41,7 @@ RLS — jamais réécrites côté app.
 | --- | --- | --- |
 | Connexion, inscription, MFA, mot de passe oublié | ✅ | ✅ |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
-| Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux) | ✅ | ✅ |
+| Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
 | Parcours + page d'un parcours | ✅ | ✅ |
 | Trouver mon parcours : deux questions, deux ou trois parcours suggérés avec leur raison (`/paths/guide`, `app/paths/guide.tsx`, même classement `@cyberlearn/lib/paths/suggest`) | ✅ | ✅ |

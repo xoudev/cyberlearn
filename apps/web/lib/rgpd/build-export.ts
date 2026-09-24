@@ -61,6 +61,15 @@ export interface ExportPayload {
     correct: boolean;
     answeredAt: Date;
   }[];
+  /** Every report on a lesson quiz, with the comment written for the team. */
+  quizReports: {
+    lessonTitle: string;
+    quizId: string;
+    reason: string;
+    comment: string | null;
+    status: string;
+    createdAt: Date;
+  }[];
   pathsProgress: {
     pathTitle: string;
     pathSlug: string;
@@ -228,6 +237,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     cosmeticLoadout,
     answerUpvotes,
     lessonQuizAnswers,
+    quizReports,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -482,6 +492,18 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       },
       orderBy: { answeredAt: "asc" },
     }),
+    prisma.quizReport.findMany({
+      where: { userId },
+      select: {
+        quizId: true,
+        reason: true,
+        comment: true,
+        status: true,
+        createdAt: true,
+        lesson: { select: { title: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   return {
@@ -517,6 +539,14 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       selected: a.selected,
       correct: a.correct,
       answeredAt: a.answeredAt,
+    })),
+    quizReports: quizReports.map((r) => ({
+      lessonTitle: r.lesson.title,
+      quizId: r.quizId,
+      reason: r.reason,
+      comment: r.comment,
+      status: r.status,
+      createdAt: r.createdAt,
     })),
     pathsProgress: pathProgress.map((p) => ({
       pathTitle: p.path.title,
