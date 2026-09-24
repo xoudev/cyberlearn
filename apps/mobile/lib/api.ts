@@ -141,6 +141,26 @@ export async function answerQuizApi(
   }
 }
 
+export type QuizReportReply = { ok: true } | { ok: false; error: string };
+
+/** Reports a lesson quiz, through the site's service (checks, rate limit). */
+export async function reportQuizApi(
+  lessonId: string,
+  quizId: string,
+  reason: string,
+  comment: string,
+): Promise<QuizReportReply> {
+  try {
+    const res = await authedFetch("/api/mobile/quiz-report", {
+      method: "POST",
+      body: JSON.stringify({ lessonId, quizId, reason, comment }),
+    });
+    return (await res.json()) as QuizReportReply;
+  } catch {
+    return { ok: false, error: "Le signalement n'a pas pu être envoyé. Réessaie." };
+  }
+}
+
 export async function completeLessonApi(lessonId: string): Promise<CompleteLessonResult | null> {
   try {
     const res = await authedFetch("/api/mobile/progress", {

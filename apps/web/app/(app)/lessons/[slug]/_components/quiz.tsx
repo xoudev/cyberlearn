@@ -3,6 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLessonCompletion } from "./lesson-completion-context";
 import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
+import { QuizReport } from "./quiz-report";
+import "./quiz.css";
 
 /**
  * One question, one answer.
@@ -119,10 +121,10 @@ export function Quiz({
 
   return (
     <section
+      className="cl-quiz"
       aria-label={questionNumber !== undefined ? `Question ${String(questionNumber)}` : "Question"}
       style={{
         margin: questionNumber !== undefined ? "0" : "56px 0 0",
-        padding: "32px 32px 28px",
         border: "1px solid #1F1B47",
         background: "rgba(10,8,38,0.5)",
         position: "relative",
@@ -189,10 +191,10 @@ export function Quiz({
 
       {/* Question */}
       <h3
+        className="cl-quiz-question"
         style={{
           fontFamily: "var(--font-display, sans-serif)",
           fontWeight: 700,
-          fontSize: 24,
           lineHeight: 1.25,
           letterSpacing: "-0.015em",
           color: "#F5F5FA",
@@ -246,12 +248,8 @@ export function Quiz({
           return (
             <label
               key={i}
+              className="cl-quiz-option"
               style={{
-                display: "grid",
-                gridTemplateColumns: "40px 24px 1fr auto",
-                alignItems: "center",
-                gap: 16,
-                padding: "16px 20px",
                 border: "1px solid #1F1B47",
                 borderLeft: `3px solid ${borderLeftColor}`,
                 background: bg,
@@ -346,6 +344,7 @@ export function Quiz({
               {/* State label */}
               {stateLabel !== "" && (
                 <span
+                  className="cl-quiz-state"
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
@@ -445,6 +444,7 @@ export function Quiz({
           </div>
         </>
       )}
+      <QuizReport quizId={id} />
     </section>
   );
 }

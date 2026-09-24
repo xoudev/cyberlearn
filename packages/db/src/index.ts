@@ -67,6 +67,12 @@ export {
   lessonQuizRepository,
   type RecordedQuizAnswer,
 } from "./repositories/lesson-quiz.repository.js";
+export {
+  quizReportRepository,
+  QUIZ_REPORT_REASONS,
+  type QuizReportReasonValue,
+  type ReportedQuiz,
+} from "./repositories/quiz-report.repository.js";
 export { qaRepository } from "./repositories/qa.repository.js";
 export { noteRepository, type NoteSummary } from "./repositories/note.repository.js";
 export {

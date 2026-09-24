@@ -230,6 +230,7 @@ Question à choix multiple intégrée dans la leçon. **Une seule réponse par q
   - ne jamais citer une option par sa lettre ou sa place, ni dans l'`explanation` (« la réponse B », « la deuxième ») ni dans une autre option ;
   - une option qui renvoie aux autres (« Aucune des trois », « Toutes les réponses ci-dessus ») garde sa place écrite : la mettre en dernier ;
   - `correct` reste l'index de l'option **telle qu'écrite** : c'est lui qui est envoyé et enregistré, quel que soit l'ordre affiché.
+- **Les apprenants peuvent signaler une question** (ambiguë, réponse douteuse, faute, autre) sous chaque quiz. Les signalements arrivent dans la console, regroupés par question : Leçons → « Questions signalées » (`/lessons/reports`). Une fois la leçon corrigée, marquer la question comme traitée.
 
 ---
 
