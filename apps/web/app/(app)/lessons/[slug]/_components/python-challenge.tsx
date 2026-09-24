@@ -3,64 +3,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
 import { parseChallengeTests, type ChallengeTestCase } from "@cyberlearn/types";
+import { getPythonRuntime, type PythonTestResult } from "@/lib/python/runtime";
+import { useCodeDraft } from "@/lib/lessons/code-draft";
 import { useLessonCompletion } from "./lesson-completion-context";
-
-const CHALLENGE_WORKER_TIMEOUT_MS = 15_000;
+import {
+  DraftControls,
+  ErrorHint,
+  PythonStatusNotice,
+  usePythonRuntimeState,
+} from "./python-status";
 
 /** A test once it has been through parseChallengeTests: both fields are text. */
 export type TestCase = ChallengeTestCase;
-
-interface TestResult {
-  input: string;
-  expected: string;
-  actual: string;
-  passed: boolean;
-  isError?: boolean;
-}
-
-interface WorkerTestMessage {
-  id: string;
-  results?: TestResult[];
-}
-
-// Separate worker singleton - never shared with CodePlayground
-let challengeWorker: Worker | null = null;
-
-function runTestsInWorker(code: string, tests: TestCase[]): Promise<TestResult[]> {
-  return new Promise((resolve) => {
-    const id = Math.random().toString(36).slice(2);
-    challengeWorker ??= new Worker("/workers/py-runner.js");
-    const worker = challengeWorker;
-    let timedOut = false;
-
-    const handler = (e: MessageEvent<WorkerTestMessage>) => {
-      if (e.data.id !== id) return;
-      if (timedOut) return;
-      clearTimeout(timer);
-      worker.removeEventListener("message", handler);
-      resolve(e.data.results ?? []);
-    };
-
-    const timer = setTimeout(() => {
-      timedOut = true;
-      worker.removeEventListener("message", handler);
-      worker.terminate();
-      challengeWorker = null;
-      resolve(
-        tests.map((t) => ({
-          input: t.input,
-          expected: t.expected,
-          actual: "Timeout (>15s)",
-          passed: false,
-          isError: true,
-        })),
-      );
-    }, CHALLENGE_WORKER_TIMEOUT_MS);
-
-    worker.addEventListener("message", handler);
-    worker.postMessage({ id, code, tests });
-  });
-}
 
 export interface PythonChallengeProps {
   id: string;
@@ -151,9 +105,10 @@ function PythonChallengeBody({
 }: Omit<PythonChallengeProps, "tests"> & { tests: TestCase[] }): React.ReactElement {
   const itemId = id;
   const initialCode = starterCode.trim();
-  const [code, setCode] = useState(initialCode);
+  const { code, setCode, reset, restored, revision } = useCodeDraft(itemId, initialCode);
+  const runtimeState = usePythonRuntimeState();
   const [running, setRunning] = useState(false);
-  const [testResults, setTestResults] = useState<TestResult[] | null>(null);
+  const [testResults, setTestResults] = useState<PythonTestResult[] | null>(null);
   const [editorLoaded, setEditorLoaded] = useState(false);
   const EditorRef = useRef<typeof MonacoEditorComp | null>(null);
 
@@ -215,7 +170,7 @@ function PythonChallengeBody({
   async function handleRunTests() {
     setRunning(true);
     setTestResults(null);
-    const results = await runTestsInWorker(code, tests);
+    const results = await getPythonRuntime().runTests(code, tests);
     setTestResults(results);
     setRunning(false);
   }
@@ -312,9 +267,12 @@ function PythonChallengeBody({
       {/* Monaco editor or textarea fallback */}
       {editorLoaded && MonacoEditor ? (
         <MonacoEditor
+          // Remounted when a draft is restored or reset: the editor is
+          // uncontrolled, and only reads its value when it mounts.
+          key={revision}
           height="240px"
           language="python"
-          defaultValue={initialCode}
+          defaultValue={code}
           onChange={(v) => {
             setCode(v ?? "");
           }}
@@ -423,7 +381,11 @@ function PythonChallengeBody({
           ) : (
             <span style={{ fontSize: 9, lineHeight: 1 }}>▶</span>
           )}
-          {running ? "TESTS EN COURS..." : "LANCER LES TESTS"}
+          {running
+            ? runtimeState === "loading"
+              ? "DÉMARRAGE..."
+              : "TESTS EN COURS..."
+            : "LANCER LES TESTS"}
         </button>
 
         <div
@@ -488,18 +450,29 @@ function PythonChallengeBody({
               </span>
             )}
           </div>
-          <span
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
-              letterSpacing: "0.1em",
-              color: "#44406B",
-            }}
-          >
-            challenge.py · python 3.11
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+            <DraftControls
+              restored={restored}
+              onReset={() => {
+                reset();
+                setTestResults(null);
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                color: "#44406B",
+              }}
+            >
+              challenge.py · python 3.12
+            </span>
           </span>
         </div>
       </div>
+
+      <PythonStatusNotice state={runtimeState} busy={running} />
 
       {/* Test results panel */}
       {testResults !== null && (
@@ -511,6 +484,11 @@ function PythonChallengeBody({
         >
           {testResults.map((result, i) => {
             const label = tests[i]?.label ?? `Test ${String(i + 1)}`;
+            // Three tests failing on the same line would say the same hint
+            // three times: it is given once, under the first.
+            const firstWithHint =
+              result.hint != null &&
+              testResults.findIndex((r) => !r.passed && r.hint === result.hint) === i;
             return (
               <div
                 key={i}
@@ -563,6 +541,23 @@ function PythonChallengeBody({
                       }}
                     >
                       {result.isError ? result.actual : `obtenu : ${result.actual}`}
+                    </div>
+                  )}
+                  {!result.passed && firstWithHint && <ErrorHint hint={result.hint} />}
+                  {result.output !== undefined && result.output.trim() !== "" && (
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono, monospace)",
+                        fontSize: 11,
+                        lineHeight: 1.5,
+                        color: "#6B6890",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        marginTop: 4,
+                      }}
+                    >
+                      <span style={{ color: "#44406B" }}>affiché : </span>
+                      {result.output.trimEnd()}
                     </div>
                   )}
                 </div>

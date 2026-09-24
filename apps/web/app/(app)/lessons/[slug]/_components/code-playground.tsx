@@ -2,29 +2,38 @@
 
 import React, { useEffect, useId, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
+import { getPythonRuntime } from "@/lib/python/runtime";
+import { useCodeDraft } from "@/lib/lessons/code-draft";
 import { useLessonCompletion } from "./lesson-completion-context";
+import {
+  DraftControls,
+  ErrorHint,
+  PythonStatusNotice,
+  usePythonRuntimeState,
+} from "./python-status";
 
 const WORKER_TIMEOUT_MS = 10_000;
 
 interface RunResult {
   output: string;
   error: string | null;
+  hint?: string | null;
 }
 
 // ── Worker singleton cache per language ────────────────────────────────────────
+// Python is not here: it goes through the page's Python runtime
+// (lib/python/runtime.ts), shared with the challenges, which knows when
+// Python is still starting and can restart it.
 
-let pyWorker: Worker | null = null;
 let jsWorker: Worker | null = null;
 let cWorker: Worker | null = null;
 let asmWorker: Worker | null = null;
 
 type Language = "python" | "javascript" | "c" | "asm";
+type WorkerLanguage = Exclude<Language, "python">;
 
-function getWorker(language: Language): Worker {
+function getWorker(language: WorkerLanguage): Worker {
   switch (language) {
-    case "python":
-      pyWorker ??= new Worker("/workers/py-runner.js");
-      return pyWorker;
     case "javascript":
       jsWorker ??= new Worker("/workers/js-runner.js");
       return jsWorker;
@@ -42,11 +51,8 @@ function getWorker(language: Language): Worker {
   }
 }
 
-function invalidateWorker(language: Language): void {
+function invalidateWorker(language: WorkerLanguage): void {
   switch (language) {
-    case "python":
-      pyWorker = null;
-      break;
     case "javascript":
       jsWorker = null;
       break;
@@ -66,7 +72,7 @@ function invalidateWorker(language: Language): void {
 
 // ── Execution ──────────────────────────────────────────────────────────────────
 
-function runInWorker(language: Language, code: string): Promise<RunResult> {
+function runInWorker(language: WorkerLanguage, code: string): Promise<RunResult> {
   return new Promise((resolve) => {
     const id = Math.random().toString(36).slice(2);
     const worker = getWorker(language);
@@ -132,7 +138,8 @@ export function CodePlayground({
   const itemId = id ?? autoId;
 
   const initialCode = (starterCode ?? extractCodeText(children)).trim();
-  const [code, setCode] = useState(initialCode);
+  const { code, setCode, reset, restored, revision } = useCodeDraft(itemId, initialCode);
+  const runtimeState = usePythonRuntimeState();
   const [result, setResult] = useState<RunResult | null>(null);
   const [running, setRunning] = useState(false);
   const [editorLoaded, setEditorLoaded] = useState(false);
@@ -205,7 +212,10 @@ export function CodePlayground({
   async function handleRun() {
     setRunning(true);
     setResult(null);
-    const r = await runInWorker(language, code);
+    const r =
+      language === "python"
+        ? await getPythonRuntime().runScript(code)
+        : await runInWorker(language, code);
     setResult(r);
     setRunning(false);
   }
@@ -246,7 +256,7 @@ export function CodePlayground({
 
   const STATUS_LABEL: Record<typeof runStatus, string> = {
     ready: "PRÊT",
-    loading: "COMPILATION...",
+    loading: language === "python" && runtimeState === "loading" ? "DÉMARRAGE..." : "EXÉCUTION...",
     success: "OK",
     error: "ERREUR RUNTIME",
   };
@@ -323,6 +333,9 @@ export function CodePlayground({
       {/* Monaco or textarea fallback */}
       {editorLoaded && MonacoEditor ? (
         <MonacoEditor
+          // Remounted when a draft is restored or reset: the editor is
+          // uncontrolled, and only reads its value when it mounts.
+          key={revision}
           height="220px"
           language={
             language === "python"
@@ -333,7 +346,7 @@ export function CodePlayground({
                   ? "plaintext"
                   : "javascript"
           }
-          defaultValue={initialCode}
+          defaultValue={code}
           onChange={(v) => {
             setCode(v ?? "");
           }}
@@ -502,25 +515,36 @@ export function CodePlayground({
               </span>
             )}
           </div>
-          <span
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 10,
-              letterSpacing: "0.1em",
-              color: "#44406B",
-            }}
-          >
-            main.{langExt} ·{" "}
-            {language === "python"
-              ? "python 3.11"
-              : language === "javascript"
-                ? "es2022"
-                : language === "c"
-                  ? "C11 · jscpp"
-                  : "x86-64 · NASM"}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+            <DraftControls
+              restored={restored}
+              onReset={() => {
+                reset();
+                setResult(null);
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 10,
+                letterSpacing: "0.1em",
+                color: "#44406B",
+              }}
+            >
+              main.{langExt} ·{" "}
+              {language === "python"
+                ? "python 3.12"
+                : language === "javascript"
+                  ? "es2022"
+                  : language === "c"
+                    ? "C11 · jscpp"
+                    : "x86-64 · NASM"}
+            </span>
           </span>
         </div>
       </div>
+
+      {language === "python" && <PythonStatusNotice state={runtimeState} busy={running} />}
 
       {/* Output area */}
       {result !== null && (
@@ -560,6 +584,7 @@ export function CodePlayground({
                   <span style={{ color: "#FF4757" }}>{line}</span>
                 </div>
               ))}
+          {result.error && <ErrorHint hint={result.hint} />}
           {!result.output.trim() && !result.error && (
             <div style={{ display: "flex", gap: 8 }}>
               <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0, userSelect: "none" }}>
@@ -600,25 +625,13 @@ function normalizeOutput(s: string): string {
 }
 
 /**
- * Strips internal Pyodide/Node call stack frames so learners only see
- * the relevant error lines from their own code.
+ * Strips internal call stack frames so learners only see their own lines.
  *
- * Python: keeps from the last `File "<exec>"` line onwards.
- * JS: drops `at eval` / `at <anonymous>` internal frames.
+ * Python arrives clean: the harness (public/workers/py-harness.js) keeps the
+ * learner's frames only. JS: drops `at eval` / `at <anonymous>` frames.
  */
 function cleanError(error: string, lang: Language): string {
-  if (lang === "python") {
-    const execIdx = error.lastIndexOf('  File "<exec>"');
-    if (execIdx !== -1) return error.slice(execIdx).trim();
-    // Fallback: drop lines that reference Pyodide internals
-    const cleaned = error
-      .split("\n")
-      .filter((l) => !l.includes("/lib/python") && !l.includes("_pyodide"))
-      .join("\n")
-      .trim();
-    return cleaned || error;
-  }
-  // JavaScript: drop V8 internal frames
+  if (lang === "python") return error.trim();
   const cleaned = error
     .split("\n")
     .filter((l) => !/^\s+at (eval|<anonymous>|Function)/.test(l))
