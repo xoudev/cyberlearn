@@ -23,6 +23,9 @@ const nextConfig: NextConfig = {
       "../../node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client/libquery_engine*",
       "../../packages/db/node_modules/.prisma/client/libquery_engine*",
     ],
+    // "Mettre à jour depuis le dépôt" reads the lesson files at run time. They
+    // ship with that route only, not with every function of the console.
+    "/lessons/sync": ["../../content/lessons/**/*.mdx"],
   },
   // Same as apps/web: Sentry uploads the server source maps and then leaves
   // them on disk - it deletes the client ones only, deliberately - and Next.js

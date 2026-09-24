@@ -56,6 +56,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
         description={`${String(publishedCount)} publiée${publishedCount !== 1 ? "s" : ""} · ${String(draftCount)} brouillon${draftCount !== 1 ? "s" : ""}.`}
         actions={
           <>
+            <GhostLink href="/lessons/sync">Mettre à jour depuis le dépôt</GhostLink>
             <GhostLink href="/lessons/import">Importer MDX</GhostLink>
             <PrimaryLink href="/lessons/new">Nouvelle leçon</PrimaryLink>
           </>
