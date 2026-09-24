@@ -5,6 +5,7 @@ import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 import { revisionsEnabled } from "@/lib/lessons/revisions-enabled";
 import { PageHeader } from "@/components/page-header";
+import { reviewDueLabel, reviewMinutes, reviewXpFor } from "@cyberlearn/lib";
 import { RevisionsList, type ReviewRow } from "./_components/revisions-list";
 
 export const metadata: Metadata = { title: "Révisions · CyberLearn" };
@@ -13,33 +14,7 @@ export const dynamic = "force-dynamic";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function timeEst(difficulty: string): string {
-  switch (difficulty) {
-    case "BEGINNER":
-      return "2 min";
-    case "INTERMEDIATE":
-      return "3 min";
-    case "ADVANCED":
-      return "5 min";
-    case "EXPERT":
-      return "8 min";
-    default:
-      return "3 min";
-  }
-}
-
-function timeMinutes(difficulty: string): number {
-  switch (difficulty) {
-    case "BEGINNER":
-      return 2;
-    case "INTERMEDIATE":
-      return 3;
-    case "ADVANCED":
-      return 5;
-    case "EXPERT":
-      return 8;
-    default:
-      return 3;
-  }
+  return `${String(reviewMinutes(difficulty))} min`;
 }
 
 const CAT_LABELS: Record<string, { label: string; color: string; border: string }> = {
@@ -47,17 +22,6 @@ const CAT_LABELS: Record<string, { label: string; color: string; border: string 
   DEV: { label: "Développement", color: "#0AFFD4", border: "rgba(10,255,212,0.35)" },
   NETWORK: { label: "Réseaux", color: "#6E8BFF", border: "rgba(110,139,255,0.35)" },
 };
-
-function dueLabel(
-  nextReviewAt: Date,
-  now: Date,
-): { text: string; kind: "today" | "tomorrow" | "soon" } {
-  const diffMs = nextReviewAt.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / 86_400_000);
-  if (diffDays <= 0) return { text: "Dû aujourd'hui", kind: "today" };
-  if (diffDays === 1) return { text: "Dû demain", kind: "tomorrow" };
-  return { text: `Dans ${String(diffDays)} jours`, kind: "soon" };
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -111,12 +75,12 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
     }),
   ]);
 
-  const totalMinutes = dueSchedules.reduce((sum, s) => sum + timeMinutes(s.lesson.difficulty), 0);
+  const totalMinutes = dueSchedules.reduce((sum, s) => sum + reviewMinutes(s.lesson.difficulty), 0);
   const isEmpty = dueSchedules.length === 0;
   const count = dueSchedules.length;
 
   const rows: ReviewRow[] = dueSchedules.map((s) => {
-    const due = dueLabel(s.nextReviewAt, now);
+    const due = reviewDueLabel(s.nextReviewAt, now);
     const cat = CAT_LABELS[s.lesson.category] ?? {
       label: s.lesson.category,
       color: "#6B6890",
@@ -132,7 +96,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
       dueText: due.text,
       dueToday: due.kind === "today",
       est: timeEst(s.lesson.difficulty),
-      reviewXp: Math.floor(s.lesson.xpReward * 0.1),
+      reviewXp: reviewXpFor(s.lesson.xpReward),
     };
   });
 

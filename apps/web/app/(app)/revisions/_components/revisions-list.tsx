@@ -6,6 +6,11 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
+import {
+  outcomeOf,
+  reviewOutcomeText,
+  type ReviewOutcome,
+} from "@cyberlearn/lib/revisions/review-display";
 import { submitReviewAction } from "../_actions/review-actions";
 
 export interface ReviewRow {
@@ -21,7 +26,7 @@ export interface ReviewRow {
   reviewXp: number;
 }
 
-type Outcome = "forgot" | "hard" | "easy";
+type Outcome = ReviewOutcome;
 
 const OUTCOME_DISPLAY: Record<Outcome, { icon: string; color: string }> = {
   easy: { icon: "✓", color: "var(--cosmetic-accent)" },
@@ -29,11 +34,7 @@ const OUTCOME_DISPLAY: Record<Outcome, { icon: string; color: string }> = {
   forgot: { icon: "↺", color: "#FF4757" },
 };
 
-function outcomeText(outcome: Outcome, reviewXp: number): string {
-  if (outcome === "easy") return `Bien mémorisé · +${String(reviewXp)} XP`;
-  if (outcome === "hard") return `Encore fragile · +${String(reviewXp)} XP · à revoir demain`;
-  return "Oublié · retour en révision demain";
-}
+const outcomeText = reviewOutcomeText;
 
 const GRADE_BUTTONS: { quality: 1 | 3 | 5; label: string; color: string }[] = [
   { quality: 1, label: "Oublié", color: "#FF4757" },
@@ -54,7 +55,7 @@ function GradeRowBody({
     startTransition(async () => {
       const res = await submitReviewAction(row.scheduleId, quality);
       if (res.success) {
-        onDone(quality === 1 ? "forgot" : quality === 3 ? "hard" : "easy", res.reviewXp ?? 0);
+        onDone(outcomeOf(quality), res.reviewXp ?? 0);
       }
     });
   }

@@ -3,8 +3,11 @@ import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
 import { supabase } from "@/lib/supabase";
+import { fetchExamStatusApi } from "@/lib/api";
+import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
+import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
 import {
   GUIDE_PATH_COLUMNS,
   toGuidePaths,
@@ -687,6 +690,8 @@ export interface Preferences {
   reviewReminders: boolean;
   weeklyDigest: boolean;
   streakReminder: boolean;
+  /** Spaced repetition itself: off hides the revisions, as on the site. */
+  spacedRepetition: boolean;
 }
 
 const DEFAULT_PREFS: Preferences = {
@@ -694,6 +699,7 @@ const DEFAULT_PREFS: Preferences = {
   reviewReminders: true,
   weeklyDigest: true,
   streakReminder: true,
+  spacedRepetition: true,
 };
 
 export function usePreferences(userId: string | undefined) {
@@ -703,7 +709,7 @@ export function usePreferences(userId: string | undefined) {
     queryFn: async (): Promise<Preferences> => {
       const { data } = await supabase
         .from("user_preferences")
-        .select("emailNotifications,reviewReminders,weeklyDigest,streakReminder")
+        .select("emailNotifications,reviewReminders,weeklyDigest,streakReminder,spacedRepetition")
         .eq("userId", userId as string) // gated by `enabled`
         .maybeSingle();
       return (data as Preferences | null) ?? DEFAULT_PREFS;
@@ -720,6 +726,43 @@ export async function updatePreference(
   await supabase
     .from("user_preferences")
     .upsert({ userId, [key]: value }, { onConflict: "userId" });
+}
+
+// ── Révisions (SM-2) ──────────────────────────────────────────────────────────
+
+export interface RevisionsData {
+  /** UserPreferences.spacedRepetition: an absent row means on, as on the site. */
+  enabled: boolean;
+  items: ReviewItem[];
+}
+
+export function useRevisions(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["revisions", userId],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<RevisionsData> => {
+      const uid = userId as string; // gated by `enabled`
+      const [prefs, schedules] = await Promise.all([
+        supabase
+          .from("user_preferences")
+          .select("spacedRepetition")
+          .eq("userId", uid)
+          .maybeSingle(),
+        supabase
+          .from("review_schedules")
+          .select(REVIEW_COLUMNS)
+          .eq("userId", uid)
+          .order("nextReviewAt", { ascending: true }),
+      ]);
+      if (schedules.error) throw new Error(schedules.error.message);
+      const pref = prefs.data as { spacedRepetition: boolean } | null;
+      return {
+        enabled: pref?.spacedRepetition !== false,
+        // SAFETY: the columns selected above, in RawReviewRow's shape.
+        items: toReviewItems((schedules.data ?? []) as unknown as RawReviewRow[]),
+      };
+    },
+  });
 }
 
 // ── Notes (bloc-notes) ────────────────────────────────────────────────────────
@@ -960,4 +1003,23 @@ export async function moveNoteToFolder(noteId: string, folderId: string | null):
     .update({ folderId, updatedAt: new Date().toISOString() })
     .eq("id", noteId);
   if (error) throw new Error(error.message);
+}
+
+// ── Examen final d'un parcours ────────────────────────────────────────────────
+
+/**
+ * Where a path's final exam stands, from the site (GET /api/mobile/exam): the
+ * answer combines the quiz, the attempts and the 48-hour rule, which the app
+ * must not rewrite.
+ */
+export function useExamStatus(userId: string | undefined, slug: string | undefined) {
+  return useQuery({
+    queryKey: ["exam", slug, userId],
+    enabled: Boolean(userId && slug),
+    queryFn: async (): Promise<{ path: ExamPath; status: ExamStatusDto }> => {
+      const reply = await fetchExamStatusApi(slug as string); // gated by `enabled`
+      if (!reply.ok) throw new Error(reply.error);
+      return { path: reply.path, status: reply.status };
+    },
+  });
 }

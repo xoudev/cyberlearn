@@ -23,15 +23,9 @@ c'est lui qu'on relit avant de commencer une surface :
 - **Les lectures vont directement à Supabase**, sous RLS, depuis
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
-  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a douze :
-  `avatar`, `ban/acknowledge`, `ban/appeal`, `leaderboard`, `loadout`,
-  `my-class`, `password`, `progress`, `quiz-answer`, `quiz-report`, `rating`,
-  `send-otp`.
-- **Un compte banni ne passe pas** : `userFromBearer` fait la vérification que
-  `requireRequestUser` fait sur le site, et toute route qui l'appelle refuse un
-  compte banni. Seules `ban/acknowledge` et `ban/appeal` passent par
-  `identityFromBearer`, qui ne la fait pas : ce sont les deux choses qu'un
-  compte banni peut encore faire, comme sur `/banned`.
+  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a onze :
+  `avatar`, `leaderboard`, `loadout`, `my-class`, `password`, `progress`,
+  `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`.
 - Une route API n'est donc nécessaire que pour ce que la RLS ne peut pas
   servir : une écriture à valider, ou quelque chose qui réclame la clé
   `service_role` — signer un avatar privé, par exemple.
@@ -50,6 +44,7 @@ RLS — jamais réécrites côté app.
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
 | Parcours + page d'un parcours | ✅ | ✅ |
+| Révisions (SM-2) : file du jour, notation Oublié / Difficile / Facile, XP ; l'interrupteur `spacedRepetition` se règle et s'applique des deux côtés | ✅ | ✅ |
 | Trouver mon parcours : deux questions, deux ou trois parcours suggérés avec leur raison (`/paths/guide`, `app/paths/guide.tsx`, même classement `@cyberlearn/lib/paths/suggest`) | ✅ | ✅ |
 | Profil, progression, XP, niveau | ✅ | ✅ |
 | Classement + ligue | ✅ | ✅ |
@@ -69,7 +64,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Révisions** | C'est la boucle d'apprentissage principale. Plus rien ne la bloque : l'interrupteur `spacedRepetition` existe depuis la PR #227 (`UserPreferences.spacedRepetition`, réglé dans `/settings/preferences`) et l'app devra le lire — un interrupteur honoré d'un côté et ignoré de l'autre n'est pas un interrupteur | — |
 | **Forum** | Poser une question quand on est bloqué est exactement ce qu'on fait depuis son téléphone | — |
 | **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré. Attention au statut : une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`), pas de l'écran — l'app affiche le refus, elle ne le décide pas | — |
 | **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |

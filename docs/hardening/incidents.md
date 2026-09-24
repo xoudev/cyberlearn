@@ -2,41 +2,42 @@
 
 ---
 
-## 2026-09-24 - Un compte banni restait actif dans l'app mobile
+## 2026-09-24 - Quatre tables d'apprentissage écrites par les clients
 
-### Symptôme
+### Constat
 
-Aucun signalement : trouvé en préparant le forum dans l'app. Sur le site,
-`requireRequestUser` renvoie un compte banni vers `/banned`, et toutes les
-actions passent par lui. Les routes `/api/mobile/*` authentifient avec
-`userFromBearer`, qui vérifiait le jeton (signature, expiration, MFA) mais pas
-le bannissement.
+Relevé en portant les révisions dans l'app mobile. La baseline RLS
+(`20260610200000_rls_baseline`) donnait à quatre tables une policy `FOR ALL`
+sur les lignes du lecteur, et aucune migration n'avait repris les droits
+d'écriture. Via l'API de données, avec la clé publique et sa propre session,
+un apprenant pouvait :
 
-### Conséquence
+- `review_schedules` : remettre une révision dans le passé puis la noter à
+  nouveau, un dixième de l'XP de la leçon à chaque fois ; ou créer une révision
+  pour une leçon jamais étudiée ;
+- `user_skip_waivers` : lever les prérequis de n'importe quelle leçon et ouvrir
+  ce qu'un parcours garde verrouillé ;
+- `user_placement_results` : écrire ses propres scores de positionnement ;
+- `user_path_progress` : marquer un parcours commencé ou terminé.
 
-Un compte banni gardait l'usage complet de l'app : terminer des leçons et
-gagner de l'XP (`progress`), répondre aux quiz, noter un parcours, signaler une
-question, changer son équipement. L'app ne lisait pas `user_bans` et
-n'affichait rien. Le forum et les demandes d'aide, prévus dans l'app, auraient
-hérité du même trou, alors qu'un bannissement vise d'abord ce qu'on publie.
+Aucun client n'écrit dans ces tables : le site et l'app passent par le serveur
+(Prisma). Aucune trace d'exploitation n'a été cherchée ; les XP de type REVIEW
+anormalement élevées seraient le premier signe.
 
 ### Correctif
 
-- `userFromBearer` refuse un compte banni (`banRepository.findActive`, la
-  même requête que le site). La vérification vit dans la fonction que toutes
-  les routes appellent déjà : une route nouvelle ne peut pas l'oublier.
-- `identityFromBearer` garde l'ancien comportement, pour les deux seules routes
-  qu'un compte banni doit atteindre : `ban/acknowledge` et `ban/appeal`
-  (service partagé avec `/banned`, `apps/web/lib/moderation/ban-appeal.ts`).
-- L'app lit son propre bannissement (`user_bans_select_own`) au démarrage, au
-  retour au premier plan et toutes les cinq minutes, et n'ouvre plus que
-  `app/banned.tsx` tant qu'il est en vigueur.
+Migration `20260924190000_server_written_learning_tables` : chaque table garde
+la lecture de ses propres lignes (policy `FOR SELECT`), perd toute écriture, et
+les droits de colonne sont réduits à `SELECT` pour `authenticated`, comme les
+tables durcies par `20260725000000_rls_column_hardening`. Vérifié sur une base
+locale avec les droits par défaut de Supabase : `UPDATE 1` avant, `permission
+denied` après. Tests ajoutés à `rls.integration.test.ts`.
 
-### Reste
+### Règle
 
-Les écritures directes sous RLS (bloc-notes, préférences, « leçon ouverte »)
-ne vérifient pas le bannissement : elles ne touchent que les données du compte
-lui-même, et l'app ne les propose plus une fois bannie.
+Une table écrite seulement par le serveur n'a pas de policy d'écriture, et
+`authenticated` n'y a que `SELECT`. `notifications` (marquer comme lu) et
+`user_preferences` restent écrites par l'app, et le sont légitimement.
 
 ---
 
