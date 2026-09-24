@@ -23,9 +23,15 @@ c'est lui qu'on relit avant de commencer une surface :
 - **Les lectures vont directement à Supabase**, sous RLS, depuis
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
-  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a dix :
-  `avatar`, `leaderboard`, `loadout`, `my-class`, `password`, `progress`,
-  `quiz-answer`, `quiz-report`, `rating`, `send-otp`.
+  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a douze :
+  `avatar`, `ban/acknowledge`, `ban/appeal`, `leaderboard`, `loadout`,
+  `my-class`, `password`, `progress`, `quiz-answer`, `quiz-report`, `rating`,
+  `send-otp`.
+- **Un compte banni ne passe pas** : `userFromBearer` fait la vérification que
+  `requireRequestUser` fait sur le site, et toute route qui l'appelle refuse un
+  compte banni. Seules `ban/acknowledge` et `ban/appeal` passent par
+  `identityFromBearer`, qui ne la fait pas : ce sont les deux choses qu'un
+  compte banni peut encore faire, comme sur `/banned`.
 - Une route API n'est donc nécessaire que pour ce que la RLS ne peut pas
   servir : une écriture à valider, ou quelque chose qui réclame la clé
   `service_role` — signer un avatar privé, par exemple.
@@ -55,6 +61,7 @@ RLS — jamais réécrites côté app.
 | Réglages, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 | Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
+| Compte banni : un seul écran (motif, date, durée), l'avis marqué comme vu, l'appel | ✅ (`/banned`) | ✅ (`app/banned.tsx`) |
 
 ### Encore dû
 
@@ -67,7 +74,7 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré. Attention au statut : une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`), pas de l'écran — l'app affiche le refus, elle ne le décide pas | — |
 | **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
 | **Tableau de bord** | Aujourd'hui l'onglet Accueil. Le web a été refondu autour des parcours depuis (PR #233) ; l'onglet Accueil ne suit pas encore | — |
-| **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) et l'appel d'un bannissement n'existent que sur le web. Quelqu'un sanctionné sur son téléphone reçoit le motif sans pouvoir répondre | — |
+| **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) n'existe que sur le web. Le bannissement et son appel, eux, sont dans l'app | — |
 | **Amis** | Demandes, liste, et le classement entre amis sur option. Le compagnon social d'une app d'apprentissage, et il n'existe que sur le web | — |
 | **Fin d'inscription** (pseudo, avatar, objectif) | L'app renvoie au site pour les trois étapes (`onboarding-required.tsx`). Le questionnaire de la troisième étape est déjà dans l'onglet Parcours ; ce qui manque, c'est de pouvoir finir son inscription sans quitter l'app | Rien |
 | **Partage de note** | Le bloc-notes est des deux côtés, le partage non — ni l'envoi, ni la réception. Il manquait à ce tableau : « Bloc-notes ✅ ✅ » était vrai du carnet et faux de la fonctionnalité. Le filtre qui refuse un partage vit dans le dépôt (`note-share.repository`), donc l'app l'hériterait sans le réécrire | — |

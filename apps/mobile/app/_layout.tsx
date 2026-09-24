@@ -29,6 +29,7 @@ import { mirrorInboxToDevice } from "@/lib/device-notifications";
 import { ensureUserRow, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
+import { useActiveBan } from "@/lib/use-active-ban";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -139,7 +140,22 @@ function RootNavigator(): React.JSX.Element {
     };
   }, [session?.user.id, assuranceChecking, mfaRequired, router]);
 
-  if (initializing || assuranceChecking) return <BrandedLoader label="Connexion sécurisée" />;
+  // Ban gate: a banned account sees one screen, /banned, as on the site. The
+  // server refuses it anyway; this is so the app says why. Read after MFA, like
+  // everything else the account owns.
+  const signedIn = Boolean(session && !mfaRequired && !assuranceChecking);
+  const banQuery = useActiveBan(signedIn ? session?.user.id : undefined);
+  const ban = banQuery.data;
+  useEffect(() => {
+    if (!signedIn || ban === undefined) return;
+    const onBanned = pathname === "/banned";
+    if (ban && !onBanned) router.replace("/banned");
+    else if (!ban && onBanned) router.replace("/home");
+  }, [signedIn, ban, pathname, router]);
+
+  if (initializing || assuranceChecking || (signedIn && banQuery.isLoading)) {
+    return <BrandedLoader label="Connexion sécurisée" />;
+  }
 
   return (
     <CosmeticsProvider userId={session && !mfaRequired ? session.user.id : undefined}>

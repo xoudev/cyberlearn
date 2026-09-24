@@ -2,6 +2,44 @@
 
 ---
 
+## 2026-09-24 - Un compte banni restait actif dans l'app mobile
+
+### Symptôme
+
+Aucun signalement : trouvé en préparant le forum dans l'app. Sur le site,
+`requireRequestUser` renvoie un compte banni vers `/banned`, et toutes les
+actions passent par lui. Les routes `/api/mobile/*` authentifient avec
+`userFromBearer`, qui vérifiait le jeton (signature, expiration, MFA) mais pas
+le bannissement.
+
+### Conséquence
+
+Un compte banni gardait l'usage complet de l'app : terminer des leçons et
+gagner de l'XP (`progress`), répondre aux quiz, noter un parcours, signaler une
+question, changer son équipement. L'app ne lisait pas `user_bans` et
+n'affichait rien. Le forum et les demandes d'aide, prévus dans l'app, auraient
+hérité du même trou, alors qu'un bannissement vise d'abord ce qu'on publie.
+
+### Correctif
+
+- `userFromBearer` refuse un compte banni (`banRepository.findActive`, la
+  même requête que le site). La vérification vit dans la fonction que toutes
+  les routes appellent déjà : une route nouvelle ne peut pas l'oublier.
+- `identityFromBearer` garde l'ancien comportement, pour les deux seules routes
+  qu'un compte banni doit atteindre : `ban/acknowledge` et `ban/appeal`
+  (service partagé avec `/banned`, `apps/web/lib/moderation/ban-appeal.ts`).
+- L'app lit son propre bannissement (`user_bans_select_own`) au démarrage, au
+  retour au premier plan et toutes les cinq minutes, et n'ouvre plus que
+  `app/banned.tsx` tant qu'il est en vigueur.
+
+### Reste
+
+Les écritures directes sous RLS (bloc-notes, préférences, « leçon ouverte »)
+ne vérifient pas le bannissement : elles ne touchent que les données du compte
+lui-même, et l'app ne les propose plus une fois bannie.
+
+---
+
 ## 2026-05-23 - Incident cascade login après merge PR 2.4.A
 
 ### Symptôme initial
