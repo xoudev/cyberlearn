@@ -14,6 +14,16 @@
  * protocol later, refactor to an explicit `type` discriminator to
  * avoid shape ambiguity (tracked in docs/hardening/known-issues.md).
  *
+ * Every run goes through py-harness.js: a fresh namespace per run and per
+ * test, and errors reduced to the learner's own lines. Both replies carry an
+ * optional `hint` (French) next to the error, and a test result carries what
+ * the code printed (`output`).
+ *
+ * Lifecycle: { type: "ready" } once Pyodide and the harness are loaded, or
+ * { type: "error" } if they are not. The page waits for one of the two before
+ * starting its execution timeout, so a slow first download is not reported
+ * as the learner's infinite loop.
+ *
  * Hardening: ALL neutralizations (network, storage, addEventListener
  * freeze, onmessage/onerror freeze) run INSIDE loadPyodide().then(),
  * AFTER Pyodide has fully initialized. Pyodide itself calls
@@ -39,6 +49,12 @@ const _addListener = self.addEventListener.bind(self);
 
 // importScripts must run at top level, before any neutralization.
 importScripts("/runtimes/pyodide/pyodide.js");
+importScripts("/workers/py-harness.js");
+
+// The harness entry points, set once Pyodide is up. Kept here rather than in
+// Python's globals so nothing the learner runs can reach or replace them.
+let runTest = null;
+let runScript = null;
 
 let pyodideReady = null;
 
@@ -139,6 +155,12 @@ del _BlockedImport
         configurable: false,
       });
 
+      // 7. The harness, in a namespace of its own.
+      const harness = py.toPy({});
+      py.runPython(self.CL_PY_HARNESS, { globals: harness });
+      runTest = harness.get("run_test");
+      runScript = harness.get("run_script");
+
       self.postMessage({ type: "ready" });
       return py;
     });
@@ -158,16 +180,15 @@ async function handleMessage(event) {
     // ── Test mode - PythonChallenge protocol ──────────────────────────────────
     // Inbound:  { id, code, tests: TestCase[] }
     // Outbound: { id, results: TestResult[] }
-    let py;
     try {
-      py = await initPyodide();
+      await initPyodide();
     } catch (err) {
       self.postMessage({
         id,
         results: tests.map((t) => ({
           input: t.input,
           expected: t.expected,
-          actual: "Worker initialization failed: " + String(err),
+          actual: "Python n'a pas pu démarrer : " + String(err),
           passed: false,
           isError: true,
         })),
@@ -177,47 +198,35 @@ async function handleMessage(event) {
 
     const results = [];
     for (const test of tests) {
-      try {
-        const snippet = code + "\n__challenge_result__ = str(" + test.input + ")";
-        await py.runPythonAsync(snippet);
-        const actual = String(py.globals.get("__challenge_result__") ?? "None");
-        results.push({
-          input: test.input,
-          expected: test.expected,
-          actual,
-          passed: actual === test.expected,
-        });
-      } catch (e) {
-        const msg = e && e.message ? e.message : String(e);
-        const clean = msg
-          .split("\n")
-          .filter((l) => !l.includes("/lib/python") && !l.includes("_pyodide"))
-          .join("\n")
-          .trim();
-        results.push({
-          input: test.input,
-          expected: test.expected,
-          actual: clean || msg,
-          passed: false,
-          isError: true,
-        });
-      }
+      const r = JSON.parse(await runTest(code, test.input));
+      results.push({
+        input: test.input,
+        expected: test.expected,
+        actual: r.ok ? r.actual : r.error,
+        passed: r.ok && r.actual === test.expected,
+        isError: !r.ok,
+        hint: r.hint ?? null,
+        output: r.output,
+      });
     }
     self.postMessage({ id, results });
   } else {
     // ── Run mode - CodePlayground protocol ────────────────────────────────────
     // Inbound:  { id, code }
-    // Outbound: { id, output, error }
-    const output = [];
+    // Outbound: { id, output, error, hint }
     try {
-      const py = await initPyodide();
-      py.setStdout({ batched: (text) => output.push(text) });
-      py.setStderr({ batched: (text) => output.push("\x1b[31m" + text + "\x1b[0m") });
-      await py.runPythonAsync(code);
-      self.postMessage({ id, output: output.join("\n"), error: null });
+      await initPyodide();
     } catch (err) {
-      self.postMessage({ id, output: output.join("\n"), error: err.message });
+      self.postMessage({
+        id,
+        output: "",
+        error: "Python n'a pas pu démarrer : " + String(err),
+        hint: null,
+      });
+      return;
     }
+    const r = JSON.parse(await runScript(code));
+    self.postMessage({ id, output: r.output, error: r.ok ? null : r.error, hint: r.hint ?? null });
   }
 }
 
