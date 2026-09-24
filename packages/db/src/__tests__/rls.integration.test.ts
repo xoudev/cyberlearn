@@ -516,6 +516,46 @@ describe("RLS policies (integration)", () => {
     });
   });
 
+  describe("ratings", () => {
+    // Written by the server only, which checks the lesson (or a lesson of the
+    // path) was completed and recomputes the average in the same transaction.
+    // The comment is for the team, not for anybody holding the anon key.
+    it("a client cannot rate a lesson through the Data API", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("ratings").insert({
+        id: randomUUID(),
+        userId: userAId,
+        lessonId: publishedLessonId,
+        score: 5,
+        updatedAt: new Date().toISOString(),
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot rate a path through the Data API", async () => {
+      if (!configured) return;
+      const { data: anyPath } = await adminClient.from("paths").select("id").limit(1).single();
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { error } = await clientA.from("ratings").insert({
+        id: randomUUID(),
+        userId: userAId,
+        pathId: (anyPath as { id: string } | null)?.id,
+        score: 1,
+        updatedAt: new Date().toISOString(),
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("the comments are not readable, the scores are", async () => {
+      if (!configured) return;
+      const { error: feedbackError } = await anonClient.from("ratings").select("feedback").limit(1);
+      expect(feedbackError).not.toBeNull();
+      const { error: scoreError } = await anonClient.from("ratings").select("score").limit(1);
+      expect(scoreError).toBeNull();
+    });
+  });
+
   describe("contact_tickets", () => {
     // The honeypot, the minimum fill time, the rate limit and the Zod schema
     // all live in the contact server action. A client able to POST straight to

@@ -101,6 +101,10 @@ export default async function PathsPage(): Promise<React.ReactElement> {
       status,
       progressDone,
       progressTotal: lessonCount,
+      rating:
+        path.avgRating !== null && path.ratingsCount > 0
+          ? { avg: path.avgRating, count: path.ratingsCount }
+          : null,
       nextLesson,
     } satisfies SerializedPath;
   });

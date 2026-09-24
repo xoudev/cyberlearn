@@ -10,6 +10,8 @@ import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL } from "@/lib/db";
 import { usePathDetail, type PathMission } from "@/lib/queries";
+import { PathRatingCard } from "@/components/path-rating";
+import { averageLine } from "@/lib/rating";
 import { useSession } from "@/lib/session";
 
 type MissionState = "done" | "current" | "locked";
@@ -46,6 +48,7 @@ export default function PathDetail(): React.JSX.Element {
         <PathBody
           data={data}
           onOpenLesson={(s) => router.push({ pathname: "/lessons/[slug]", params: { slug: s } })}
+          onRated={() => void refetch()}
         />
       )}
     </Screen>
@@ -55,10 +58,13 @@ export default function PathDetail(): React.JSX.Element {
 function PathBody({
   data,
   onOpenLesson,
+  onRated,
 }: {
   data: NonNullable<ReturnType<typeof usePathDetail>["data"]>;
   onOpenLesson: (slug: string) => void;
+  onRated: () => void;
 }): React.JSX.Element {
+  const average = averageLine(data.avgRating, data.ratingsCount);
   const cat = CATEGORY_COLOR[data.category];
   const total = data.missions.length;
   const pct = total > 0 ? Math.round((data.completedCount / total) * 100) : 0;
@@ -83,6 +89,11 @@ function PathBody({
         <Text variant="body" style={{ marginTop: 8 }}>
           {data.description}
         </Text>
+        {average ? (
+          <Text variant="mono" style={{ marginTop: 8, fontSize: 12, color: colors.textSecondary }}>
+            <Text style={{ color: colors.warning }}>★</Text> {average}
+          </Text>
+        ) : null}
       </Rise>
 
       {/* Progress */}
@@ -224,6 +235,10 @@ function PathBody({
           })}
           {total === 0 ? <Pill label="Aucune mission publiée" color={colors.textMuted} /> : null}
         </View>
+      </Rise>
+
+      <Rise index={3}>
+        <PathRatingCard pathId={data.id} canRate={data.completedCount > 0} onRated={onRated} />
       </Rise>
     </View>
   );

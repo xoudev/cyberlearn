@@ -73,6 +73,47 @@ export interface CompleteLessonResult {
   quizScore?: { correct: number; total: number } | null;
 }
 
+export type RatePathReply =
+  | { ok: true; avgRating: number | null; ratingsCount: number }
+  | { ok: false; error: string };
+
+/**
+ * Rates a path (1 to 5, and a comment for the team). The server checks that
+ * one of its lessons is completed and recomputes the path's average.
+ */
+export async function ratePathApi(
+  pathId: string,
+  score: number,
+  feedback?: string,
+): Promise<RatePathReply> {
+  try {
+    const res = await authedFetch("/api/mobile/rating", {
+      method: "POST",
+      body: JSON.stringify({ pathId, score, ...(feedback ? { feedback } : {}) }),
+    });
+    return (await res.json()) as RatePathReply;
+  } catch {
+    return { ok: false, error: "Ta note n'a pas pu être envoyée. Réessaie." };
+  }
+}
+
+/** The signed-in user's own rating of a path, or null. */
+export async function fetchMyPathRating(
+  pathId: string,
+): Promise<{ score: number; feedback: string | null } | null> {
+  try {
+    const res = await authedFetch(`/api/mobile/rating?pathId=${encodeURIComponent(pathId)}`);
+    const body = (await res.json()) as {
+      ok: boolean;
+      score?: number | null;
+      feedback?: string | null;
+    };
+    return body.ok && body.score ? { score: body.score, feedback: body.feedback ?? null } : null;
+  } catch {
+    return null;
+  }
+}
+
 export type QuizAnswerReply =
   | { ok: true; selected: number; correct: boolean }
   | { ok: false; error: string };

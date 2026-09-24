@@ -50,6 +50,7 @@ const PATHS: SerializedPath[] = [
     status: "inprog",
     progressDone: 8,
     progressTotal: 13,
+    rating: null,
     nextLesson: {
       n: "09",
       title: "Sécuriser une API REST",
@@ -74,6 +75,7 @@ const PATHS: SerializedPath[] = [
     status: "inprog",
     progressDone: 3,
     progressTotal: 12,
+    rating: null,
     nextLesson: {
       n: "04",
       title: "Le routage, sans le folklore",
@@ -98,6 +100,7 @@ const PATHS: SerializedPath[] = [
     status: "idle",
     progressDone: 0,
     progressTotal: 14,
+    rating: null,
     nextLesson: null,
   },
   {
@@ -116,6 +119,7 @@ const PATHS: SerializedPath[] = [
     status: "done",
     progressDone: 15,
     progressTotal: 15,
+    rating: null,
     nextLesson: null,
   },
 ];
