@@ -109,3 +109,78 @@ describe("a hostile heading", () => {
     expect(r.section).toBe("titre");
   });
 });
+
+describe("braces hold values, never code", () => {
+  // The first version of this check evaluated whatever an author put between
+  // braces, on the server, and returned what it threw as the error message.
+  // These two lessons read an environment variable through it.
+  const SECRET = "check-must-not-read-this";
+
+  function withSecret<T>(run: () => Promise<T>): Promise<T> {
+    process.env.CL_TEST_SECRET = SECRET;
+    return run().finally(() => {
+      delete process.env.CL_TEST_SECRET;
+    });
+  }
+
+  it("does not run an attribute written as code, nor echo what it would throw", async () => {
+    const r = await withSecret(() =>
+      checkLessonMdx(
+        "## S\n\n<Callout title={(() => { throw new Error(process.env.CL_TEST_SECRET) })()}>x</Callout>",
+      ),
+    );
+    if (r.ok) throw new Error("accepted code");
+    expect(r.message).not.toContain(SECRET);
+    expect(r.message).toContain("title");
+  });
+
+  it("drops an export instead of running it as the module loads", async () => {
+    const r = await withSecret(() =>
+      checkLessonMdx(
+        "## S\n\nexport const x = (() => { throw new Error(process.env.CL_TEST_SECRET) })()\n\nDu texte.",
+      ),
+    );
+    expect(r).toEqual({ ok: true });
+  });
+
+  it("drops an import", async () => {
+    expect(await checkLessonMdx('## S\n\nimport fs from "node:fs"\n\nDu texte.')).toEqual({
+      ok: true,
+    });
+  });
+
+  it.each([
+    ["a call", '<Quiz options={["a"].map((x) => x)} correct={0} />'],
+    ["an operator", "<Quiz correct={1 + 0} />"],
+    ["a template with ${}", "<CodePlayground starterCode={`${1}`} />"],
+    ["a spread attribute", "<Quiz {...{ correct: 1 }} />"],
+    ["a spread in a list", '<Quiz options={[..."ab"]} />'],
+    ["a shorthand key", "<PythonChallenge tests={[{ input }]} />"],
+    ["a computed key", '<PythonChallenge tests={[{ ["input"]: "f()" }]} />'],
+    ["a member tag", "<process.exit />"],
+    ["an arrow function", "<Quiz correct={() => 1} />"],
+  ])("refuses %s", async (_label, component) => {
+    const r = await checkLessonMdx(`## S\n\n${component}`);
+    expect(r.ok).toBe(false);
+  });
+
+  it.each([
+    ["text", '<Quiz question={"Qu\'est-ce ?"} options={["a", "b"]} correct={0} />'],
+    ["a negative number", "<Quiz correct={-1} />"],
+    ["booleans and null", "<CodePlayground validate={true} expectedOutput={null} />"],
+    ["a template without ${}", "<CodePlayground starterCode={`print(1)\n\\${montre}`} />"],
+    [
+      "nested lists and objects",
+      '<PythonChallenge id="p" tests={[{ input: "f()", expected: "1" }]} />',
+    ],
+  ])("accepts %s", async (_label, component) => {
+    expect(await checkLessonMdx(`## S\n\n${component}`)).toEqual({ ok: true });
+  });
+
+  it("still tells a Python author what to write instead of True", async () => {
+    const r = await checkLessonMdx("## S\n\n<Quiz correct={False} />");
+    if (r.ok) throw new Error("accepted False");
+    expect(r.message).toContain("false");
+    expect(r.message).toContain('"False"');
+  });
+});
