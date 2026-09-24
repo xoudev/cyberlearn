@@ -1,13 +1,10 @@
 import React, { Suspense, type ReactNode } from "react";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import rehypeHighlight from "rehype-highlight";
-import rehypeSlug from "rehype-slug";
 
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
-import { LESSON_REMARK_PLUGINS } from "@cyberlearn/lib/mdx-check";
 import { lessonRepository, ratingRepository, qaRepository, noteRepository } from "@cyberlearn/db";
 import { NoteDrawer } from "./_components/note-drawer";
 import { LessonRating } from "./_components/lesson-rating";
@@ -28,6 +25,7 @@ import { Diagram } from "./_components/diagram";
 import { QuizGroup } from "./_components/quiz-group";
 import { PythonChallenge } from "./_components/python-challenge";
 import { LessonSection } from "./_components/lesson-section";
+import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 
 const MDX_COMPONENTS = {
   pre: CodeBlock,
@@ -41,28 +39,6 @@ const MDX_COMPONENTS = {
   Diagram,
   QuizGroup,
   PythonChallenge,
-};
-
-const MDX_OPTIONS = {
-  parseFrontmatter: true,
-  // blockJS: false - next-mdx-remote's default blockJS:true strips all JSX
-  // expression props (options={[...]}, correct={1}), breaking Quiz/CodePlayground.
-  // remarkStripProseExpressions replaces the prose-expression safety: it strips
-  // mdxFlowExpression/mdxTextExpression nodes ({variable} in prose) while leaving
-  // mdxJsxAttributeValueExpression nodes intact. Content is admin-only so this
-  // is safe (requireAdmin() on all mutations).
-  blockJS: false,
-  mdxOptions: {
-    // The same list the save-time check runs, so what the editor accepts is
-    // what this page renders. See @cyberlearn/lib/mdx-check.
-    remarkPlugins: LESSON_REMARK_PLUGINS,
-    // rehypeSanitize is intentionally absent here: lesson content is admin-only
-    // (enforced by requireAdmin() on all lesson mutations), and rehypeSanitize
-    // silently drops mdxJsxFlowElement nodes, which would strip CodePlayground,
-    // Quiz, and SimulatedTerminal components from the rendered output.
-    // User-generated content (Q&A, bio) is sanitized separately.
-    rehypePlugins: [rehypeSlug, rehypeHighlight],
-  },
 };
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────
@@ -446,7 +422,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
             <LessonSection
               source={src}
               components={MDX_COMPONENTS}
-              options={MDX_OPTIONS}
+              options={LESSON_MDX_OPTIONS}
               lessonSlug={lesson.slug}
               index={i}
             />

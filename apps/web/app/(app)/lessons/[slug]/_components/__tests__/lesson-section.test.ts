@@ -1,6 +1,10 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { splitMdxSections } from "@cyberlearn/lib";
+import { LESSON_COMPONENT_NAMES } from "@cyberlearn/lib/mdx-check";
 
 /**
  * A lesson section that fails, failing on its own.
@@ -20,6 +24,7 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 
 const { LessonSection } = await import("../lesson-section");
+const { LESSON_MDX_OPTIONS } = await import("../lesson-mdx-options");
 
 /** Stands in for the real challenge: shows it was reached, and with what. */
 function PythonChallenge(props: { tests: unknown }): React.ReactElement {
@@ -90,5 +95,55 @@ describe("a section that does not", () => {
     const html = await render("<PythonChallenge tests={[{ expected: True }]} />");
     expect(html).not.toContain("True is not defined");
     expect(html).not.toContain("ReferenceError");
+  });
+});
+
+describe("with the options the page uses", () => {
+  // Every component a lesson may use, as a tag that shows it was reached.
+  const COMPONENTS = Object.fromEntries(
+    LESSON_COMPONENT_NAMES.map((name) => [
+      name,
+      (props: { children?: React.ReactNode }) =>
+        React.createElement(`x-${name.toLowerCase()}`, null, props.children),
+    ]),
+  );
+
+  async function renderLive(source: string): Promise<string> {
+    const element = await LessonSection({
+      source,
+      components: COMPONENTS,
+      options: LESSON_MDX_OPTIONS,
+      lessonSlug: "lesson",
+      index: 0,
+    });
+    return renderToStaticMarkup(element);
+  }
+
+  it("renders every section of a real lesson", async () => {
+    const file = path.resolve(
+      __dirname,
+      "../../../../../../../../content/lessons/python/12-projet-cli.mdx",
+    );
+    const sections = splitMdxSections(readFileSync(file, "utf8"));
+    expect(sections.length).toBeGreaterThan(3);
+    for (const section of sections) {
+      expect(await renderLive(section)).not.toContain("Section indisponible");
+    }
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it("refuses code between braces before running it", async () => {
+    process.env.CL_TEST_SECRET = "page-must-not-read-this";
+    try {
+      const html = await renderLive(
+        "<Callout title={(() => { throw new Error(process.env.CL_TEST_SECRET) })()}>x</Callout>",
+      );
+      expect(html).toContain("Section indisponible");
+      const [error] = captureException.mock.calls[0] as [Error];
+      expect(error.message).toContain("attribut « title »");
+      expect(error.message).not.toContain("page-must-not-read-this");
+    } finally {
+      delete process.env.CL_TEST_SECRET;
+    }
   });
 });

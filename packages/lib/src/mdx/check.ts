@@ -3,6 +3,7 @@ import { isValidElement, type ReactNode } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
 import { parseChallengeTests } from "@cyberlearn/types";
+import { LessonMdxValueError, remarkLiteralValuesOnly } from "./literal-values.js";
 import { splitMdxSections } from "./split-sections.js";
 
 /**
@@ -18,10 +19,15 @@ import { splitMdxSections } from "./split-sections.js";
  * only fails when it runs.
  *
  * So this runs it. Each section is compiled and its content function called,
- * which evaluates every expression the author wrote - exactly what the lesson
- * page does, section by section, with the same remark plugins. Then the
- * element tree is walked for challenges, whose tests are read the same way the
+ * which builds every value the author wrote - exactly what the lesson page
+ * does, section by section, with the same remark plugins. Then the element
+ * tree is walked for challenges, whose tests are read the same way the
  * component reads them. Whatever this accepts, the page renders.
+ *
+ * Running it is safe because of remarkLiteralValuesOnly, which is in those
+ * plugins: between braces an author writes values, never code, and anything
+ * else is refused before it is compiled. The first version of this check had
+ * no such guard and evaluated whatever the braces held, on the server.
  *
  * Exported on its own subpath, not from the package index: it pulls in the MDX
  * compiler, and the mobile app imports @cyberlearn/lib.
@@ -63,7 +69,11 @@ function stripNode(node: { type?: string; children?: unknown[] }): void {
  * The remark plugins a lesson is rendered with. One list, imported by the page
  * and used here, so that what is checked and what is shown cannot drift apart.
  */
-export const LESSON_REMARK_PLUGINS = [remarkGfm, remarkStripProseExpressions];
+export const LESSON_REMARK_PLUGINS = [
+  remarkGfm,
+  remarkStripProseExpressions,
+  remarkLiteralValuesOnly,
+];
 
 /** Every component a lesson may use, by the name it is written with. */
 export const LESSON_COMPONENT_NAMES = [
@@ -185,24 +195,14 @@ function firstChallengeProblem(node: ReactNode): string | null {
 }
 
 /**
- * The error in the author's terms.
- *
- * One mistake gets its own sentence because it is the one that happened: an
- * author thinking in Python writes `True`, and inside `{...}` that is
- * JavaScript, where it does not exist.
+ * The error in the author's terms. A refused value already says what to write
+ * instead (see remarkLiteralValuesOnly); anything else is the compiler's own
+ * first line - a tag left open, a quote that never closes.
  */
 function explain(error: unknown): string {
+  if (error instanceof LessonMdxValueError) return error.message;
   const raw = error instanceof Error ? error.message : String(error);
-  const first = raw.split("\n")[0] ?? raw;
-  const python = /^(True|False|None) is not defined$/.exec(first);
-  if (python) {
-    const js = python[1] === "None" ? "null" : (python[1] ?? "").toLowerCase();
-    return (
-      `« ${python[1] ?? ""} » n'existe pas ici : entre accolades, c'est du JavaScript. ` +
-      `Écris ${js}, ou "${python[1] ?? ""}" entre guillemets si c'est le texte que Python doit afficher.`
-    );
-  }
-  return first;
+  return raw.split("\n")[0] ?? raw;
 }
 
 /**
