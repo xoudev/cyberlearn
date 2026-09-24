@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatNumberFr } from "@cyberlearn/lib";
 
 export interface PathCatalogCardData {
   slug: string;
@@ -142,7 +143,7 @@ export function PathCatalogCard({
             <b>~{path.estimatedHours}H</b>
           </span>
           <span className="sep">·</span>
-          <span className="xp">+{path.xpTotal.toLocaleString("fr-FR")} XP</span>
+          <span className="xp">+{formatNumberFr(path.xpTotal)} XP</span>
           {path.hasCert && (
             <>
               <span className="sep">·</span>

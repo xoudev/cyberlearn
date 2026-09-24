@@ -28,3 +28,4 @@ export * from "./quiz/quiz.js";
 export * from "./class/roster-input.js";
 export * from "./search/fold.js";
 export * from "./search/rank.js";
+export * from "./format.js";

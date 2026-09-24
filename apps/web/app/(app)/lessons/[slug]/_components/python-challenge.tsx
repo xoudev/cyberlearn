@@ -2,15 +2,13 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import type { default as MonacoEditorComp, BeforeMount } from "@monaco-editor/react";
+import { parseChallengeTests, type ChallengeTestCase } from "@cyberlearn/types";
 import { useLessonCompletion } from "./lesson-completion-context";
 
 const CHALLENGE_WORKER_TIMEOUT_MS = 15_000;
 
-export interface TestCase {
-  input: string;
-  expected: string;
-  label?: string;
-}
+/** A test once it has been through parseChallengeTests: both fields are text. */
+export type TestCase = ChallengeTestCase;
 
 interface TestResult {
   input: string;
@@ -69,16 +67,88 @@ export interface PythonChallengeProps {
   title?: string;
   description?: string;
   starterCode?: string;
-  tests: TestCase[];
+  /**
+   * Whatever the author wrote. An MDX attribute is code nobody type-checks,
+   * so this is read, not trusted: see parseChallengeTests.
+   */
+  tests: unknown;
 }
 
-export function PythonChallenge({
+/**
+ * The challenge, once its tests have been read.
+ *
+ * A misconfigured challenge used to take the whole lesson down: a dictionary
+ * in `expected` reached React as an object to render as text, and nobody could
+ * read the lesson at all (Sentry JAVASCRIPT-NEXTJS-15). Now it renders a notice
+ * where the challenge would be, and the rest of the lesson stands.
+ *
+ * The notice does not register with the section's completion gate. A student
+ * cannot pass a challenge that cannot be passed, and holding them in the
+ * section for it would turn the author's mistake into theirs.
+ */
+export function PythonChallenge(props: PythonChallengeProps): React.ReactElement {
+  const parsed = parseChallengeTests(props.tests);
+  if (!parsed.ok) {
+    return <ChallengeMisconfigured title={props.title} problem={parsed.problem} />;
+  }
+  return <PythonChallengeBody {...props} tests={parsed.tests} />;
+}
+
+function ChallengeMisconfigured({
+  title,
+  problem,
+}: {
+  title: string | undefined;
+  problem: string;
+}): React.ReactElement {
+  return (
+    <div
+      role="note"
+      style={{
+        margin: "32px 0",
+        padding: "18px 20px",
+        border: "1px solid rgba(255,176,32,0.45)",
+        borderLeft: "3px solid #FFB020",
+        background: "rgba(255,176,32,0.06)",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: "#FFB020",
+          marginBottom: 8,
+        }}
+      >
+        Défi indisponible{title !== undefined ? ` · ${title}` : ""}
+      </div>
+      <p style={{ margin: 0, color: "#B8B5D1", fontSize: 14, lineHeight: 1.55 }}>
+        Ce défi est mal configuré et ne peut pas être lancé. Tu peux continuer la leçon.
+      </p>
+      <p
+        style={{
+          margin: "10px 0 0",
+          color: "#6B6890",
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: 12,
+          lineHeight: 1.5,
+        }}
+      >
+        Pour l&apos;auteur : {problem}
+      </p>
+    </div>
+  );
+}
+
+function PythonChallengeBody({
   id,
   title,
   description,
   starterCode = "",
   tests,
-}: PythonChallengeProps): React.ReactElement {
+}: Omit<PythonChallengeProps, "tests"> & { tests: TestCase[] }): React.ReactElement {
   const itemId = id;
   const initialCode = starterCode.trim();
   const [code, setCode] = useState(initialCode);

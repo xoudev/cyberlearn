@@ -1,37 +1,13 @@
 import React, { Suspense, type ReactNode } from "react";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { MDXRemote } from "next-mdx-remote/rsc";
-import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSlug from "rehype-slug";
 
-// Strips mdxFlowExpression / mdxTextExpression nodes (prose JS like {variable}) from the
-// unist tree while leaving mdxJsxAttributeValueExpression nodes intact. This lets
-// blockJS:false preserve JSX attribute expressions (options={[...]}, correct={1}) without
-// also evaluating untrusted inline expressions that would throw ReferenceErrors at runtime.
-function remarkStripProseExpressions() {
-  return (tree: unknown): void => {
-    // SAFETY: unist Root always has { children?: unknown[] }; we only access .type and .children.
-    stripNode(tree as { type?: string; children?: unknown[] });
-  };
-}
-function stripNode(node: { type?: string; children?: unknown[] }): void {
-  if (!node.children) return;
-  for (let i = node.children.length - 1; i >= 0; i--) {
-    const child = node.children[i];
-    if (typeof child !== "object" || child === null) continue;
-    const c = child as { type?: string; children?: unknown[] };
-    if (c.type === "mdxFlowExpression" || c.type === "mdxTextExpression") {
-      node.children.splice(i, 1);
-    } else {
-      stripNode(c);
-    }
-  }
-}
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
+import { LESSON_REMARK_PLUGINS } from "@cyberlearn/lib/mdx-check";
 import { lessonRepository, ratingRepository, qaRepository, noteRepository } from "@cyberlearn/db";
 import { NoteDrawer } from "./_components/note-drawer";
 import { LessonRating } from "./_components/lesson-rating";
@@ -51,6 +27,43 @@ import { Callout } from "./_components/callout";
 import { Diagram } from "./_components/diagram";
 import { QuizGroup } from "./_components/quiz-group";
 import { PythonChallenge } from "./_components/python-challenge";
+import { LessonSection } from "./_components/lesson-section";
+
+const MDX_COMPONENTS = {
+  pre: CodeBlock,
+  Quiz,
+  CodePlayground,
+  SimulatedTerminal,
+  LessonVideo,
+  LessonImage,
+  ExternalLink,
+  Callout,
+  Diagram,
+  QuizGroup,
+  PythonChallenge,
+};
+
+const MDX_OPTIONS = {
+  parseFrontmatter: true,
+  // blockJS: false - next-mdx-remote's default blockJS:true strips all JSX
+  // expression props (options={[...]}, correct={1}), breaking Quiz/CodePlayground.
+  // remarkStripProseExpressions replaces the prose-expression safety: it strips
+  // mdxFlowExpression/mdxTextExpression nodes ({variable} in prose) while leaving
+  // mdxJsxAttributeValueExpression nodes intact. Content is admin-only so this
+  // is safe (requireAdmin() on all mutations).
+  blockJS: false,
+  mdxOptions: {
+    // The same list the save-time check runs, so what the editor accepts is
+    // what this page renders. See @cyberlearn/lib/mdx-check.
+    remarkPlugins: LESSON_REMARK_PLUGINS,
+    // rehypeSanitize is intentionally absent here: lesson content is admin-only
+    // (enforced by requireAdmin() on all lesson mutations), and rehypeSanitize
+    // silently drops mdxJsxFlowElement nodes, which would strip CodePlayground,
+    // Quiz, and SimulatedTerminal components from the rendered output.
+    // User-generated content (Q&A, bio) is sanitized separately.
+    rehypePlugins: [rehypeSlug, rehypeHighlight],
+  },
+};
 
 // ── Design meta maps - aligned with catalog.css / lesson-v2.css ───────────────
 
@@ -428,40 +441,14 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         {mdxSections.map((src, i) => (
           // SAFETY: index key is stable - sections don't reorder after page load
           <SectionPane key={i} index={i}>
-            <MDXRemote
+            {/* Each section fails on its own: one bad expression used to take
+                the whole lesson down. See lesson-section.tsx. */}
+            <LessonSection
               source={src}
-              components={{
-                pre: CodeBlock,
-                Quiz,
-                CodePlayground,
-                SimulatedTerminal,
-                LessonVideo,
-                LessonImage,
-                ExternalLink,
-                Callout,
-                Diagram,
-                QuizGroup,
-                PythonChallenge,
-              }}
-              options={{
-                parseFrontmatter: true,
-                // blockJS: false - next-mdx-remote's default blockJS:true strips all JSX
-                // expression props (options={[...]}, correct={1}), breaking Quiz/CodePlayground.
-                // remarkStripProseExpressions replaces the prose-expression safety: it strips
-                // mdxFlowExpression/mdxTextExpression nodes ({variable} in prose) while leaving
-                // mdxJsxAttributeValueExpression nodes intact. Content is admin-only so this
-                // is safe (requireAdmin() on all mutations).
-                blockJS: false,
-                mdxOptions: {
-                  remarkPlugins: [remarkGfm, remarkStripProseExpressions],
-                  // rehypeSanitize is intentionally absent here: lesson content is admin-only
-                  // (enforced by requireAdmin() on all lesson mutations), and rehypeSanitize
-                  // silently drops mdxJsxFlowElement nodes, which would strip CodePlayground,
-                  // Quiz, and SimulatedTerminal components from the rendered output.
-                  // User-generated content (Q&A, bio) is sanitized separately.
-                  rehypePlugins: [rehypeSlug, rehypeHighlight],
-                },
-              }}
+              components={MDX_COMPONENTS}
+              options={MDX_OPTIONS}
+              lessonSlug={lesson.slug}
+              index={i}
             />
           </SectionPane>
         ))}

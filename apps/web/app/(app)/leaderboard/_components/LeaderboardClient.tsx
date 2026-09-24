@@ -7,6 +7,7 @@ import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { DISPLAY, fmtXp, getMonogram, HexAvatar, MONO } from "./shared";
 import { LeagueClient } from "./LeagueClient";
 import styles from "./leaderboard.module.css";
+import { formatNumberFr } from "@cyberlearn/lib";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -313,7 +314,7 @@ function YouBanner({
       <div className={styles.identity}>
         <strong>Ta place dans le classement</strong>
         <span>
-          {totalPlayers.toLocaleString("fr-FR")} joueurs · Niveau {entry.level}
+          {formatNumberFr(totalPlayers)} joueurs · Niveau {entry.level}
         </span>
       </div>
       <strong className={styles.score}>
@@ -697,7 +698,7 @@ export function LeaderboardClient({
           </span>
           <span style={{ color: "#44406B" }}>/</span>
           <span>
-            <b style={{ color: "#B8B5D1" }}>{entries.length.toLocaleString("fr-FR")}</b> joueurs
+            <b style={{ color: "#B8B5D1" }}>{formatNumberFr(entries.length)}</b> joueurs
           </span>
           <span style={{ color: "#44406B" }}>/</span>
           <span>FR · EUROPE</span>

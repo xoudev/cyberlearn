@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import matter from "gray-matter";
-import { compile } from "@mdx-js/mdx";
+import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
 import {
   importLessonMetadataSchema,
   type ImportValidationResult,
@@ -116,18 +116,15 @@ export async function validateMdxContent(
     );
   }
 
-  // MDX dry-run compile
-  try {
-    await compile(body, {
-      outputFormat: "function-body",
-      development: false,
-    });
-  } catch (e) {
+  // MDX dry-run: compiled *and* run, section by section, with the lesson
+  // page's own remark plugins. A compile alone was the check here, and it let
+  // through the two errors Sentry recorded on 22 September - `True` inside a
+  // prop compiles perfectly well and only fails when it runs.
+  const render = await checkLessonMdx(body);
+  if (!render.ok) {
     return {
       valid: false,
-      errors: [
-        { message: `Erreur de compilation MDX: ${e instanceof Error ? e.message : "inconnu"}` },
-      ],
+      errors: [{ field: "contentMdx", message: describeLessonMdxProblem(render) }],
       warnings,
     };
   }

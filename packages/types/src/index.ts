@@ -6,3 +6,4 @@ export * from "./schemas/placement-test.schema.js";
 export * from "./schemas/import.schema.js";
 export * from "./schemas/lesson-cover.schema.js";
 export * from "./schemas/auth.schema.js";
+export * from "./schemas/challenge.schema.js";
