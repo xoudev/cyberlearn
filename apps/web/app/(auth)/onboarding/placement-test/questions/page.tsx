@@ -239,7 +239,7 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
             {[
               { label: "Identité", state: "done" },
               { label: "Avatar", state: "done" },
-              { label: "Positionnement", state: "current" },
+              { label: "Objectif", state: "current" },
             ].map(({ label, state }) => (
               <span
                 key={label}

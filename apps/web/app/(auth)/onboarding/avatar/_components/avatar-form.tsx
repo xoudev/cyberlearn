@@ -56,7 +56,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
       if (res.ok) {
         setCropFile(null);
         // Avatar saved; continue the onboarding flow like save-avatar does.
-        router.push("/onboarding/placement-test");
+        router.push("/onboarding/goals");
       } else {
         setCropFile(null);
         setUploadError(res.error ?? "Échec de l'envoi.");

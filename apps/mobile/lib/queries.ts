@@ -5,6 +5,12 @@ import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier"
 import { supabase } from "@/lib/supabase";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
+import {
+  GUIDE_PATH_COLUMNS,
+  toGuidePaths,
+  type GuidePath,
+  type RawGuidePath,
+} from "@/lib/path-guide";
 
 // Prisma's @default(uuid()) generates ids CLIENT-side, so these tables have
 // `id UUID NOT NULL` with no database default. Direct PostgREST inserts must
@@ -202,6 +208,23 @@ export function usePaths(userId: string | undefined) {
         fetchPathStatuses(userId),
       ]);
       return toPathCards((pathsRes.data ?? []) as RawPath[], statuses);
+    },
+  });
+}
+
+/** The catalogue's published paths, for the guide. A class's own paths are not suggested. */
+export function useGuidePaths() {
+  return useQuery({
+    queryKey: ["guide-paths"],
+    queryFn: async (): Promise<GuidePath[]> => {
+      const { data, error } = await supabase
+        .from("paths")
+        .select(GUIDE_PATH_COLUMNS)
+        .eq("status", "PUBLISHED")
+        .eq("audience", "CATALOGUE");
+      if (error) throw new Error(error.message);
+      // SAFETY: the columns selected above, in RawGuidePath's shape.
+      return toGuidePaths((data ?? []) as unknown as RawGuidePath[]);
     },
   });
 }

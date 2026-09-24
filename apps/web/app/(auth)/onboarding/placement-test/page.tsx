@@ -234,7 +234,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
             {[
               { label: "Identité", state: "done" },
               { label: "Avatar", state: "done" },
-              { label: "Positionnement", state: "current" },
+              { label: "Objectif", state: "current" },
             ].map(({ label, state }) => (
               <span
                 key={label}
@@ -533,7 +533,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               </form>
 
               <Link
-                href="/onboarding/avatar"
+                href="/onboarding/goals"
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,

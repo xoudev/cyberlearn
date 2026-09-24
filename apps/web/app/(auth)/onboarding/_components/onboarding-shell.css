@@ -1,0 +1,349 @@
+/* The onboarding frame: the glows and grid, the top bar, the three-step
+   progress and the bracketed panel. The first two steps and the placement
+   test draw the same thing with inline styles. */
+
+.ob-shell {
+  position: relative;
+  min-height: 100vh;
+  background: #030219;
+  color: #f5f5fa;
+}
+
+.ob-shell__glow,
+.ob-shell__grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ob-shell__glow {
+  background: radial-gradient(
+      ellipse 1100px 600px at 20% 10%,
+      rgba(0, 36, 255, 0.22),
+      transparent 60%
+    ), radial-gradient(ellipse 900px 500px at 85% 80%, rgba(10, 255, 212, 0.08), transparent 65%),
+    radial-gradient(ellipse 700px 500px at 50% 110%, rgba(0, 36, 255, 0.14), transparent 60%);
+}
+
+.ob-shell__grid {
+  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 37, 96, 0.16) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%);
+  mask-image: radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%);
+}
+
+.ob-shell__bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 32px;
+  background: rgba(3, 2, 25, 0.65);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-bottom: 1px solid #2a2560;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6f6b99;
+}
+
+.ob-shell__bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(10, 255, 212, 0.35) 20%,
+    rgba(0, 36, 255, 0.35) 80%,
+    transparent
+  );
+}
+
+.ob-shell__brand {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 14px;
+  color: #f5f5fa;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.ob-shell__brand b {
+  color: #0affd4;
+  font-weight: 700;
+}
+
+.ob-shell__slash {
+  color: #44406b;
+}
+
+.ob-shell__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 44px 32px 120px;
+}
+
+.ob-shell__progress {
+  width: 100%;
+  max-width: 640px;
+  margin: 56px 0 32px;
+}
+
+.ob-shell__progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6f6b99;
+}
+
+.ob-shell__progress-head b {
+  color: #0affd4;
+  font-weight: 700;
+}
+
+.ob-shell__step {
+  color: #f5f5fa;
+  font-weight: 600;
+}
+
+.ob-shell__track {
+  position: relative;
+  height: 4px;
+  background: rgba(5, 4, 26, 0.9);
+  border-top: 1px solid #2a2560;
+  border-bottom: 1px solid #2a2560;
+}
+
+.ob-shell__track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #0024ff 0%, #0affd4 100%);
+  box-shadow: 0 0 12px rgba(10, 255, 212, 0.7);
+}
+
+.ob-shell__ticks {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ob-shell__tick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #44406b;
+}
+
+.ob-shell__tick::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.ob-shell__tick[data-state="done"] {
+  color: #0affd4;
+}
+
+.ob-shell__tick[data-state="current"] {
+  color: #f5f5fa;
+}
+
+.ob-shell__tick[data-state="done"]::before,
+.ob-shell__tick[data-state="current"]::before {
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.ob-shell__panel {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  padding: 32px 36px 28px;
+  background: rgba(10, 8, 38, 0.85);
+  border: 1px solid #2a2560;
+}
+
+.ob-shell__panel::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 255, 212, 0.35),
+    rgba(0, 36, 255, 0.25) 50%,
+    transparent 100%
+  );
+  filter: blur(16px);
+  opacity: 0.55;
+}
+
+.ob-shell__corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #0affd4;
+}
+
+.ob-shell__corner--tl {
+  top: 8px;
+  left: 8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.ob-shell__corner--tr {
+  top: 8px;
+  right: 8px;
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.ob-shell__corner--bl {
+  bottom: 8px;
+  left: 8px;
+  border-right: 0;
+  border-top: 0;
+}
+
+.ob-shell__corner--br {
+  bottom: 8px;
+  right: 8px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.ob-shell__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 18px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid #1f1b47;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6f6b99;
+}
+
+.ob-shell__panel-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f5f5fa;
+}
+
+.ob-shell__panel-title b {
+  color: #0affd4;
+  font-weight: 700;
+}
+
+.ob-shell__title {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(26px, 4vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #f5f5fa;
+}
+
+.ob-shell__title em {
+  font-style: normal;
+  background: linear-gradient(135deg, #0024ff 0%, #0affd4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ob-shell__lede {
+  margin: 0 0 26px;
+  max-width: 480px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #b8b5d1;
+}
+
+.ob-shell__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ob-shell__link {
+  display: block;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6f6b99;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  width: 100%;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.ob-shell__link:hover {
+  color: #0affd4;
+}
+
+@media (max-width: 640px) {
+  .ob-shell__bar {
+    padding: 0 16px;
+    gap: 10px;
+  }
+
+  .ob-shell__crumb {
+    display: none;
+  }
+
+  .ob-shell__body {
+    padding: 44px 16px 80px;
+  }
+
+  .ob-shell__progress {
+    margin: 32px 0 24px;
+  }
+
+  .ob-shell__panel {
+    padding: 26px 18px 22px;
+  }
+}

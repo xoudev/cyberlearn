@@ -381,6 +381,13 @@ model UserPreferences {
   /// here until they have said so.
   friendsLeaderboard Boolean @default(false)
 
+  /// What the learner said they came for, in the onboarding questionnaire
+  /// (DEV, CYBERSEC, NETWORK, CAREER, UNSURE) and where they start from (NEW,
+  /// SOME, PRACTICING). Used to suggest paths, never to restrict any. Empty
+  /// and null for anyone who has not answered.
+  learningGoals String[] @default([])
+  startingLevel String?
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")

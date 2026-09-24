@@ -15,8 +15,8 @@ export default function OnboardingRequired(): React.JSX.Element {
         </Text>
         <Text variant="h1">Termine ton inscription</Text>
         <Text variant="body">
-          Ton compte n&apos;a pas encore de pseudo. Finalise ton profil (pseudo, test de placement,
-          avatar) sur cyberlearn.fr, puis reviens ici.
+          Ton compte n&apos;a pas encore de pseudo. Finalise ton profil (pseudo, avatar, objectif)
+          sur cyberlearn.fr, puis reviens ici.
         </Text>
         <Pressable
           onPress={() => void WebBrowser.openBrowserAsync("https://cyberlearn.fr/onboarding")}
