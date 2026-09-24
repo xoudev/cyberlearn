@@ -1,0 +1,307 @@
+/* "Trouver mon parcours": the two questions and the suggestions they lead to.
+   Shared by the onboarding step and /paths/guide. Square, dark, mono labels:
+   the onboarding panel's vocabulary. */
+
+.pg-question {
+  border: 0;
+  margin: 0 0 28px;
+  padding: 0;
+}
+
+.pg-question__legend {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6f6b99;
+  margin-bottom: 6px;
+}
+
+.pg-question__title {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: #f5f5fa;
+  margin: 0 0 4px;
+}
+
+.pg-question__hint {
+  font-size: 13px;
+  color: #8a86b3;
+  margin: 0 0 14px;
+}
+
+.pg-choices {
+  display: grid;
+  gap: 8px;
+}
+
+.pg-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid #2a2560;
+  background: rgba(5, 4, 26, 0.6);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.pg-choice:hover {
+  border-color: #3f3a80;
+}
+
+.pg-choice:has(input:checked) {
+  border-color: #0affd4;
+  background: rgba(10, 255, 212, 0.06);
+}
+
+.pg-choice:has(input:focus-visible) {
+  outline: 2px solid #0024ff;
+  outline-offset: 2px;
+}
+
+.pg-choice__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pg-choice__box {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1.5px solid #3f3a80;
+  display: grid;
+  place-items: center;
+}
+
+/* One answer only: a diamond, the onboarding's step marker, not a box. */
+.pg-choice__input[type="radio"] + .pg-choice__box {
+  transform: rotate(45deg) scale(0.8);
+}
+
+.pg-choice:has(input:checked) .pg-choice__box {
+  border-color: #0affd4;
+  background: #0affd4;
+  box-shadow: 0 0 8px rgba(10, 255, 212, 0.5);
+}
+
+.pg-choice__box::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+
+.pg-choice:has(input:checked) .pg-choice__box::after {
+  background: #030219;
+}
+
+.pg-choice__label {
+  display: block;
+  font-weight: 600;
+  font-size: 15px;
+  color: #f5f5fa;
+}
+
+.pg-choice__examples {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8a86b3;
+}
+
+.pg-error {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border-left: 3px solid #ff4757;
+  background: rgba(255, 71, 87, 0.06);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #ff8a95;
+}
+
+.pg-suggestions {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.pg-suggestion {
+  position: relative;
+  padding: 18px 20px;
+  border: 1px solid #2a2560;
+  border-left: 3px solid #0affd4;
+  background: rgba(5, 4, 26, 0.7);
+}
+
+.pg-suggestion__meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6f6b99;
+  margin-bottom: 6px;
+}
+
+.pg-suggestion__title {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: #f5f5fa;
+  margin: 0 0 6px;
+}
+
+.pg-suggestion__why {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #b8b5d1;
+  margin: 0 0 14px;
+}
+
+.pg-suggestion__why b {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0affd4;
+  margin-right: 6px;
+}
+
+.pg-note {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #8a86b3;
+  margin: 0 0 18px;
+}
+
+.pg-recap {
+  margin: 0 0 22px;
+  padding: 12px 14px;
+  border-left: 2px solid #0affd4;
+  background: rgba(10, 255, 212, 0.04);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #b8b5d1;
+}
+
+.pg-recap b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0affd4;
+  margin-bottom: 2px;
+}
+
+.pg-recap__edit {
+  color: #f5f5fa;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pg-recap__edit:hover {
+  color: #0affd4;
+}
+
+.pg-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .pg-suggestion {
+    padding: 16px 14px;
+  }
+
+  .pg-choice {
+    padding: 12px 12px;
+    gap: 12px;
+  }
+}
+
+/* Buttons: the onboarding's, square. .btn-blue (globals) adds the hover glow. */
+.pg-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid #0024ff;
+  background: #0024ff;
+  color: #ffffff;
+  box-shadow: 0 0 24px rgba(0, 36, 255, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.pg-btn--ghost {
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  border-color: #2a2560;
+  background: transparent;
+  color: #b8b5d1;
+  box-shadow: none;
+  transition: border-color 180ms ease, color 180ms ease;
+}
+
+.pg-btn--ghost:hover {
+  border-color: #0affd4;
+  color: #f5f5fa;
+}
+
+.pg-btn--small {
+  min-height: 42px;
+  font-size: 11px;
+}
+
+.pg-btn:focus-visible {
+  outline: 2px solid #0affd4;
+  outline-offset: 2px;
+}
+
+/* /paths/guide: the questions and suggestions, in a panel under the catalogue's header. */
+.pg-panel {
+  position: relative;
+  max-width: 720px;
+  padding: 28px 32px 24px;
+  border: 1px solid #2a2560;
+  background: rgba(10, 8, 38, 0.85);
+}
+
+.pg-back {
+  display: inline-block;
+  margin-top: 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6f6b99;
+  text-decoration: none;
+}
+
+.pg-back:hover {
+  color: #0affd4;
+}
+
+@media (max-width: 640px) {
+  .pg-panel {
+    padding: 22px 16px 18px;
+  }
+}

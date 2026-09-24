@@ -245,7 +245,7 @@ export default async function OnboardingAvatarPage(): Promise<React.ReactElement
             {[
               { label: "Identité", state: "done" },
               { label: "Avatar", state: "current" },
-              { label: "Positionnement", state: "pending" },
+              { label: "Objectif", state: "pending" },
             ].map(({ label, state }) => (
               <span
                 key={label}

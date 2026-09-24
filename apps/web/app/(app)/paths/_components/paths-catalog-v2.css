@@ -111,6 +111,32 @@
   margin: 0;
   max-width: 520px;
 }
+.pc2-root .pc2-guide {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: rgba(5, 4, 26, 0.6);
+  font-size: 14px;
+  color: var(--fg-secondary);
+  text-decoration: none;
+  transition: border-color var(--dur-base) ease, color var(--dur-base) ease;
+}
+.pc2-root .pc2-guide:hover {
+  border-color: var(--brand-turquoise);
+  color: var(--fg-primary);
+}
+.pc2-root .pc2-guide__tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-turquoise);
+}
 .pc2-root .pc2-telemetry {
   display: flex;
   flex-direction: column;

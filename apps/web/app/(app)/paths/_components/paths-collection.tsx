@@ -500,6 +500,11 @@ export function PathsCollection({
                 "Chaque parcours mène d'une compétence brute à un certificat vérifiable. Tu progresses mission par mission."
               }
             </p>
+            <Link href="/paths/guide" className="pc2-guide">
+              <span className="pc2-guide__tag">Guide</span>
+              Pas sûr de par où commencer ? Deux questions pour te proposer un parcours
+              <span aria-hidden="true">→</span>
+            </Link>
           </div>
           <div className="pc2-telemetry">
             <div className="pc2-telemetry__row">

@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React, { useDeferredValue, useMemo, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
@@ -6,7 +7,7 @@ import { PathCardView } from "@/components/cards";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { useTourAnchor } from "@/components/tour";
-import { Pill, SectionLabel, Text } from "@/components/ui";
+import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,
@@ -16,10 +17,13 @@ import {
   type Category,
   type Difficulty,
 } from "@/lib/db";
+import { useCosmetics } from "@/lib/cosmetics";
 import { usePaths } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 export default function Parcours(): React.JSX.Element {
+  const router = useRouter();
+  const { theme } = useCosmetics();
   const { session } = useSession();
   const { data, isLoading, error, refetch } = usePaths(session?.user.id);
   const [query, setQuery] = useState("");
@@ -53,6 +57,21 @@ export default function Parcours(): React.JSX.Element {
         title="Catalogue Parcours"
         right={data ? <Text variant="micro">{filtered.length} parcours</Text> : undefined}
       />
+      <PressableScale
+        onPress={() => router.push("/paths/guide")}
+        accessibilityRole="button"
+        accessibilityLabel="Trouver mon parcours : deux questions pour te proposer un parcours"
+        style={{ marginBottom: 12 }}
+      >
+        <Card accent={theme.accent} style={{ gap: 4, paddingVertical: 12 }}>
+          <Text variant="micro" style={{ color: theme.accent }}>
+            Guide
+          </Text>
+          <Text variant="bodySm" style={{ color: colors.textSecondary }}>
+            Pas sûr de par où commencer ? Deux questions pour te proposer un parcours →
+          </Text>
+        </Card>
+      </PressableScale>
       <View ref={searchAnchor} collapsable={false}>
         <TextInput
           value={query}

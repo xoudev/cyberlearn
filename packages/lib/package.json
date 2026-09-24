@@ -12,7 +12,8 @@
     "./gamification/*": "./src/gamification/*.ts",
     "./search/*": "./src/search/*.ts",
     "./mdx-check": "./src/mdx/check.ts",
-    "./mdx-quizzes": "./src/mdx/quizzes.ts"
+    "./mdx-quizzes": "./src/mdx/quizzes.ts",
+    "./paths/*": "./src/paths/*.ts"
   },
   "scripts": {
     "build": "tsc",

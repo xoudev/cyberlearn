@@ -47,5 +47,5 @@ export async function saveAvatar(
     data: { avatarUrl: parsed.data.avatarUrl },
   });
 
-  redirect("/onboarding/placement-test");
+  redirect("/onboarding/goals");
 }

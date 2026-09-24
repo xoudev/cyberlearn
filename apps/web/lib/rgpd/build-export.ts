@@ -30,6 +30,9 @@ export interface ExportPayload {
     reviewReminders: boolean;
     weeklyDigest: boolean;
     publicProfile: boolean;
+    /** The answers to "what brings you here", as given at sign-up or since. */
+    learningGoals: string[];
+    startingLevel: string | null;
   } | null;
   placementTest: {
     devScore: number;
@@ -250,6 +253,8 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         reviewReminders: true,
         weeklyDigest: true,
         publicProfile: true,
+        learningGoals: true,
+        startingLevel: true,
       },
     }),
     prisma.userPlacementResult.findUnique({
