@@ -27,6 +27,27 @@ difficulté, XP, prérequis) + corps MDX. Le format complet est documenté dans
 3. **Publier** : relire dans l'admin, puis passer leçons et parcours en
    PUBLISHED.
 
+## Mettre à jour une leçon déjà importée
+
+L'import refuse un refCode qui existe déjà. Une correction faite ici après
+l'import n'arrive donc pas seule sur le site : elle passe par admin →
+Leçons → **Mettre à jour depuis le dépôt** (`/lessons/sync`).
+
+- La page compare chaque fichier de ce dossier à sa leçon en base et montre les
+  différences : champs du frontmatter, puis passages du contenu.
+- Elle signale une leçon modifiée dans l'éditeur depuis son dernier import (la
+  mise à jour remplacerait ces modifications), un quiz modifié qui a déjà des
+  réponses, et un slug différent.
+- Rien n'est écrit sans confirmation, leçon par leçon ou toutes à la suite. Le
+  fichier passe les mêmes contrôles qu'à l'import. Le slug, le statut et
+  l'image de couverture ne changent jamais.
+- Chaque mise à jour est journalisée (`lesson.sync`). Elle est refusée si la
+  leçon a changé entre l'affichage et la confirmation.
+
+Les fichiers sont embarqués dans le déploiement de l'admin
+(`outputFileTracingIncludes` dans `apps/admin/next.config.ts`) : la page lit la
+version du dépôt qui est déployée, rien à télécharger ni à envoyer.
+
 ## Parcours disponibles
 
 Seize parcours, douze leçons chacun : **192 leçons**, `CL-LSN-001-V01` à

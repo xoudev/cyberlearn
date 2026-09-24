@@ -1160,3 +1160,214 @@
   gap: 6px;
   flex-wrap: wrap;
 }
+
+/* ─── Update lessons from the repository (/lessons/sync) ───── */
+
+.a-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.a-sync-kpis {
+  margin-bottom: 22px;
+}
+.a-sync-all {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.a-sync-all > .a-btn {
+  justify-self: start;
+}
+.a-sync-confirm {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--a-warning) 45%, transparent);
+  background: color-mix(in srgb, var(--a-warning) 6%, transparent);
+}
+.a-sync-confirm p,
+.a-sync-progress p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--a-fg-2);
+}
+.a-sync-progress {
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+}
+.a-sync-failures {
+  margin: 10px 0 0;
+  padding: 10px 14px 10px 28px;
+  border-left: 2px solid var(--a-danger);
+  background: color-mix(in srgb, var(--a-danger) 6%, transparent);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--a-fg-2);
+}
+.a-sync-failures b {
+  font-family: var(--font-mono);
+  color: var(--a-danger);
+}
+.a-sync-list {
+  display: grid;
+  gap: 14px;
+}
+.a-sync-card-head {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.a-sync-card-title {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.a-sync-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.a-sync-ref {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--a-muted);
+}
+.a-sync-name {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--a-fg);
+}
+.a-sync-name:hover {
+  color: var(--a-accent);
+}
+.a-sync-file {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--a-muted);
+  overflow-wrap: anywhere;
+}
+.a-sync-body {
+  display: grid;
+  gap: 12px;
+}
+.a-sync-warn {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--a-fg-2);
+  --warn: var(--a-warning);
+  border-left: 2px solid var(--warn);
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
+}
+.a-sync-warn[data-tone="info"] {
+  --warn: var(--a-blue-2);
+}
+.a-sync-fields {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.a-sync-fields > div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  font-size: 12.5px;
+}
+.a-sync-fields dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+  padding-top: 2px;
+}
+.a-sync-fields dd {
+  margin: 0;
+  color: var(--a-fg-2);
+  overflow-wrap: anywhere;
+}
+.a-sync-fields del {
+  color: var(--a-danger);
+}
+.a-sync-fields ins {
+  color: var(--a-accent);
+  text-decoration: none;
+}
+.a-sync-details summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--a-fg-2);
+}
+.a-sync-details summary:hover {
+  color: var(--a-accent);
+}
+.a-diff {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.a-diff-hunk {
+  border: 1px solid var(--a-border);
+  background: var(--a-surface-2);
+}
+.a-diff-head {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--a-border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--a-muted);
+}
+.a-diff-line {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  padding: 1px 10px 1px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--a-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.a-diff-line[data-kind="removed"] {
+  color: #ffb3c0;
+  background: color-mix(in srgb, var(--a-danger) 12%, transparent);
+}
+.a-diff-line[data-kind="added"] {
+  color: #b8fff2;
+  background: color-mix(in srgb, var(--a-accent) 10%, transparent);
+}
+.a-diff-sign {
+  text-align: center;
+  user-select: none;
+}
+.a-sync-extra {
+  margin-top: 18px;
+}
+.a-sync-plain {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--a-fg-2);
+}
+@media (max-width: 640px) {
+  .a-sync-fields > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

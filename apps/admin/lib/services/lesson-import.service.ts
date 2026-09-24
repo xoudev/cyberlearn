@@ -26,22 +26,23 @@ export interface BatchValidationContext {
   peerRefCodes: readonly string[];
 }
 
+/** Metadata as the import schema reads it off a lesson file's frontmatter. */
+export type LessonFileMetadata = NonNullable<ImportValidationResult["metadata"]>;
+
+export type LessonFileCheck =
+  | { ok: true; metadata: LessonFileMetadata; body: string; warnings: string[] }
+  | { ok: false; errors: ImportValidationError[]; warnings: string[] };
+
 /**
- * Four-layer validation pipeline for MDX lesson import.
+ * What a lesson file must pass whatever is done with it: the first three
+ * layers of the import. Shared with the update from the repository, so a
+ * lesson cannot reach the database by one door that the other would refuse.
  *
  * Layer 1 - Frontmatter parsing (gray-matter)
  * Layer 2 - Metadata Zod validation
  * Layer 3 - MDX body: injection check + dry-run compile
- * Layer 4 - Business rules: refCode/slug uniqueness, prerequisites exist
- *
- * With a batch context, a prerequisite that is missing from the database but
- * declared by a sibling file downgrades to a warning: the batch import orders
- * files topologically, so the sibling lands first.
  */
-export async function validateMdxContent(
-  fileContent: string,
-  batch?: BatchValidationContext,
-): Promise<ImportValidationResult> {
+export async function checkLessonFile(fileContent: string): Promise<LessonFileCheck> {
   const errors: ImportValidationError[] = [];
   const warnings: string[] = [];
 
@@ -51,7 +52,7 @@ export async function validateMdxContent(
     parsed = matter(fileContent);
   } catch (e) {
     return {
-      valid: false,
+      ok: false,
       errors: [
         { message: `Erreur de parsing YAML: ${e instanceof Error ? e.message : "inconnu"}` },
       ],
@@ -70,7 +71,7 @@ export async function validateMdxContent(
         message: issue.message,
       });
     }
-    return { valid: false, errors, warnings };
+    return { ok: false, errors, warnings };
   }
 
   const metadata = metaParsed.data;
@@ -91,7 +92,7 @@ export async function validateMdxContent(
         .trim();
 
       return {
-        valid: false,
+        ok: false,
         errors: [
           {
             message: `Contenu rejeté, injection potentielle détectée (pattern: ${pattern.toString()}) - contexte : "…${snippet}…"`,
@@ -123,11 +124,34 @@ export async function validateMdxContent(
   const render = await checkLessonMdx(body);
   if (!render.ok) {
     return {
-      valid: false,
+      ok: false,
       errors: [{ field: "contentMdx", message: describeLessonMdxProblem(render) }],
       warnings,
     };
   }
+
+  return { ok: true, metadata, body, warnings };
+}
+
+/**
+ * Four-layer validation pipeline for MDX lesson import: the file's own
+ * checks (checkLessonFile), then
+ *
+ * Layer 4 - Business rules: refCode/slug uniqueness, prerequisites exist
+ *
+ * With a batch context, a prerequisite that is missing from the database but
+ * declared by a sibling file downgrades to a warning: the batch import orders
+ * files topologically, so the sibling lands first.
+ */
+export async function validateMdxContent(
+  fileContent: string,
+  batch?: BatchValidationContext,
+): Promise<ImportValidationResult> {
+  const file = await checkLessonFile(fileContent);
+  if (!file.ok) return { valid: false, errors: file.errors, warnings: file.warnings };
+  const { metadata, body } = file;
+  const errors: ImportValidationError[] = [];
+  const warnings = [...file.warnings];
 
   // ── Layer 4: Business validation ─────────────────────────────────────────
   const [existingRefCode, existingSlug] = await Promise.all([
@@ -138,7 +162,7 @@ export async function validateMdxContent(
   if (existingRefCode) {
     errors.push({
       field: "refCode",
-      message: `Conflit: une leçon avec ce refCode existe déjà (ID: ${existingRefCode.id})`,
+      message: `Conflit: une leçon avec ce refCode existe déjà (ID: ${existingRefCode.id}). Pour la remplacer par son fichier du dépôt : Leçons, « Mettre à jour depuis le dépôt ».`,
     });
   }
 
