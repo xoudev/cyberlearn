@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import type { ForumAuthor, ForumTopicSummary } from "@cyberlearn/db";
 import { AvatarView } from "@/components/avatar-view";
+import { forumAuthorName } from "@/lib/forum/author-name";
 
 /** Shared pieces of the forum's chrome, so four pages cannot drift apart. */
 
@@ -77,8 +78,7 @@ export function Crumbs({
 
 /** A name that is never empty, whoever is left after an anonymisation. */
 export function authorName(author: ForumAuthor | null): string {
-  if (!author) return "Compte supprimé";
-  return author.displayName.trim() !== "" ? author.displayName : (author.username ?? "Sans nom");
+  return forumAuthorName(author);
 }
 
 /**
