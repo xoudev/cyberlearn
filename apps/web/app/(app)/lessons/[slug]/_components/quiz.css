@@ -1,0 +1,40 @@
+/* A lesson quiz's layout. Colours stay inline in quiz.tsx; what changes with
+   the width of the screen lives here, where a media query can reach it. */
+
+.cl-quiz {
+  padding: 32px 32px 28px;
+}
+
+.cl-quiz-question {
+  font-size: 24px;
+}
+
+.cl-quiz-option {
+  display: grid;
+  grid-template-columns: 40px 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+/* On a phone the four columns left the option text a word wide, squeezed by
+   the "Bonne réponse" label. The label goes under the text instead. */
+@media (max-width: 560px) {
+  .cl-quiz {
+    padding: 20px 16px 18px;
+  }
+
+  .cl-quiz-question {
+    font-size: 19px;
+  }
+
+  .cl-quiz-option {
+    grid-template-columns: 14px 16px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .cl-quiz-state {
+    grid-column: 3;
+  }
+}
