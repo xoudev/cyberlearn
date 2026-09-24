@@ -7,6 +7,7 @@ import type { FeaturedPath, LandingStats } from "@cyberlearn/db";
 import { VideoModal } from "@/components/video-modal";
 import { LandingTerminal } from "./landing-terminal";
 import { PublicNavbar } from "./public-navbar";
+import { formatNumberFr } from "@cyberlearn/lib";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -882,7 +883,7 @@ export function LandingClient({
                   >
                     <span>
                       <b style={{ color: "#F5F5FA" }}>{path.lessons}</b> leçons ·{" "}
-                      <b style={{ color: "#0AFFD4" }}>{path.xp.toLocaleString("fr-FR")}</b> XP
+                      <b style={{ color: "#0AFFD4" }}>{formatNumberFr(path.xp)}</b> XP
                     </span>
                     <span style={{ color: "#0AFFD4", fontWeight: 700 }}>→</span>
                   </div>
@@ -1076,7 +1077,10 @@ export function LandingClient({
                 letterSpacing: "0.06em",
               }}
             >
-              © {new Date().getFullYear()} Cyber Learn
+              {/* Rendered on the server and again in the browser, which can
+                  straddle midnight on 31 December. The text is allowed to
+                  differ; React is told so rather than left to rebuild the page. */}
+              <span suppressHydrationWarning>© {new Date().getFullYear()}</span> Cyber Learn
             </span>
           </div>
         </footer>

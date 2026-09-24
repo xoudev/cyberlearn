@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/sidebar";
 import { createSupabaseBrowserClient } from "@cyberlearn/db/supabase/client";
 import { CHANGELOG_SEEN_KEY, LATEST_VERSION } from "@/lib/changelog/entries";
+import { formatNumberFr } from "@cyberlearn/lib";
 
 interface SidebarNavProps {
   /** Shown only when there is at least one class to follow - not merely a role. */
@@ -613,7 +614,7 @@ export function SidebarNav({
             LVL · {level}
           </span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#6F6B99" }}>
-            {xpCurrent.toLocaleString("fr-FR")}/{xpNeeded.toLocaleString("fr-FR")}
+            {formatNumberFr(xpCurrent)}/{formatNumberFr(xpNeeded)}
           </span>
         </div>
 
@@ -652,7 +653,7 @@ export function SidebarNav({
           }}
         >
           <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>
-            +{xpNeededToNext.toLocaleString("fr-FR")} XP
+            +{formatNumberFr(xpNeededToNext)} XP
           </b>
           {" → LVL·"}
           {level + 1}

@@ -1,4 +1,5 @@
 import React from "react";
+import { formatNumberFr } from "@cyberlearn/lib";
 
 // Presentational primitives shared by the global leaderboard and the league
 // (season pod) views so both render with the same visual language.
@@ -15,7 +16,8 @@ export function getMonogram(displayName: string | null, username: string | null)
 }
 
 export function fmtXp(xp: number): string {
-  return xp.toLocaleString("fr-FR");
+  // Rendered by client components: see formatNumberFr for why not toLocaleString.
+  return formatNumberFr(xp);
 }
 
 /** Hexagonal avatar with a gradient border + monogram. */

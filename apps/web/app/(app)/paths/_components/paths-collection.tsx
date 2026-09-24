@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PathCatalogCard } from "@/app/_components/path-catalog-card";
 import { type DomainFilter, filterPaths, type TrackFilter } from "@/lib/paths/filter-paths";
 import "./paths-catalog-v2.css";
+import { formatNumberFr } from "@cyberlearn/lib";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -83,7 +84,9 @@ const PILLS: { id: Filter; cls: string; label: string }[] = [
   { id: "NETWORK", cls: "net", label: "Réseau" },
 ];
 
-const fmtXp = (n: number): string => n.toLocaleString("fr-FR");
+// Not toLocaleString: its thousands separator depends on the engine and
+// breaks hydration. See formatNumberFr.
+const fmtXp = (n: number): string => formatNumberFr(n);
 const pctOf = (p: SerializedPath): number =>
   p.progressTotal > 0 ? Math.round((p.progressDone / p.progressTotal) * 100) : 0;
 
