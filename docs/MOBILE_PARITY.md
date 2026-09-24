@@ -23,9 +23,16 @@ c'est lui qu'on relit avant de commencer une surface :
 - **Les lectures vont directement à Supabase**, sous RLS, depuis
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
-  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a onze :
-  `avatar`, `leaderboard`, `loadout`, `my-class`, `password`, `progress`,
-  `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`.
+  un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
+  dix-sept : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
+  `exam/start`, `exam/submit`, `leaderboard`, `loadout`, `my-class`,
+  `password`, `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`,
+  `send-otp`.
+- **Un compte banni ne passe pas** : `userFromBearer` fait la vérification que
+  `requireRequestUser` fait sur le site, et toute route qui l'appelle refuse un
+  compte banni. Seules `ban/acknowledge` et `ban/appeal` passent par
+  `identityFromBearer`, qui ne la fait pas : ce sont les deux choses qu'un
+  compte banni peut encore faire, comme sur `/banned`.
 - Une route API n'est donc nécessaire que pour ce que la RLS ne peut pas
   servir : une écriture à valider, ou quelque chose qui réclame la clé
   `service_role` — signer un avatar privé, par exemple.
@@ -44,6 +51,7 @@ RLS — jamais réécrites côté app.
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
 | Parcours + page d'un parcours | ✅ | ✅ |
+| Examen final d'un parcours : règles, 30 minutes chronométrées, reprise d'une tentative en cours, délai de 48 h, correction détaillée, certificat à la réussite ; certificat réclamé sur un parcours sans examen (même service, `apps/web/lib/exam/exam-service.ts` et `lib/certificates/claim.ts`) | ✅ | ✅ |
 | Révisions (SM-2) : file du jour, notation Oublié / Difficile / Facile, XP ; l'interrupteur `spacedRepetition` se règle et s'applique des deux côtés | ✅ | ✅ |
 | Trouver mon parcours : deux questions, deux ou trois parcours suggérés avec leur raison (`/paths/guide`, `app/paths/guide.tsx`, même classement `@cyberlearn/lib/paths/suggest`) | ✅ | ✅ |
 | Profil, progression, XP, niveau | ✅ | ✅ |
