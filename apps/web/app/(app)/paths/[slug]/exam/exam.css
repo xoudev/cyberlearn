@@ -30,7 +30,9 @@
   /* map mockup font roles onto the app's already-loaded fonts */
   --font-display: var(--font-sans, "Geist", system-ui, sans-serif);
   --font-body: var(--font-sans, "Inter", system-ui, sans-serif);
-  --font-mono: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  /* No --font-mono here: the layout sets it (next/font), and redeclaring it as
+     var(--font-mono, ...) is a cycle, which CSS resolves to nothing. Every
+     mono label under this root fell back to the sans font. */
   --dur-fast: 120ms;
   --dur-base: 180ms;
   --dur-slow: 280ms;
