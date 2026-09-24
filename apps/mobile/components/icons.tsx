@@ -108,3 +108,20 @@ export function ChevronLeft(p: IconProps): React.JSX.Element {
     </Base>
   );
 }
+
+export function CrossIcon(p: IconProps): React.JSX.Element {
+  return (
+    <Base {...p}>
+      <Path d="M4 4 L12 12 M12 4 L4 12" />
+    </Base>
+  );
+}
+
+export function ClockIcon(p: IconProps): React.JSX.Element {
+  return (
+    <Base {...p}>
+      <Circle cx="8" cy="8.8" r="5.2" />
+      <Path d="M8 6.2 V8.8 L9.8 10.1 M6.2 2.2 H9.8" />
+    </Base>
+  );
+}

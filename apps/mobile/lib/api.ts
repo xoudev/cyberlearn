@@ -1,5 +1,6 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
+import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
@@ -318,4 +319,75 @@ export async function fetchMyAvatarUrl(): Promise<string | null> {
   const body = (await res.json()) as { ok: true; avatarUrl: string | null } | { ok: false };
   if (!body.ok) return null;
   return body.avatarUrl;
+}
+
+// ── Path final exam (the site's service: draw, 30-minute limit, 48 h wait) ────
+
+export type ExamStatusReply =
+  | { ok: true; path: ExamPath; status: ExamStatusDto }
+  | { ok: false; error: string };
+
+/** Where the exam of the path `slug` stands for the signed-in learner. */
+export async function fetchExamStatusApi(slug: string): Promise<ExamStatusReply> {
+  const res = await authedFetch(`/api/mobile/exam?slug=${encodeURIComponent(slug)}`);
+  return (await res.json()) as ExamStatusReply;
+}
+
+export type StartExamReply =
+  | {
+      ok: true;
+      attemptId: string;
+      questions: ExamQuestion[];
+      startedAt: string;
+      /** Counted on the server's clock when it answered. */
+      secondsLeft: number;
+    }
+  | { ok: false; error: string };
+
+/** Starts an attempt, or resumes the one running: the server says which. */
+export async function startExamApi(pathId: string): Promise<StartExamReply> {
+  try {
+    const res = await authedFetch("/api/mobile/exam/start", {
+      method: "POST",
+      body: JSON.stringify({ pathId }),
+    });
+    return (await res.json()) as StartExamReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export type SubmitExamReply =
+  | { ok: true; score: number; passed: boolean; results: ExamReviewItem[] }
+  | { ok: false; error: string };
+
+/** Hands the copy in; the server scores it and issues the certificate on a pass. */
+export async function submitExamApi(
+  attemptId: string,
+  answers: Readonly<Record<string, string>>,
+): Promise<SubmitExamReply> {
+  try {
+    const res = await authedFetch("/api/mobile/exam/submit", {
+      method: "POST",
+      body: JSON.stringify({ attemptId, answers }),
+    });
+    return (await res.json()) as SubmitExamReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Claims the certificate of a finished path that has no exam. */
+export async function claimCertificateApi(
+  pathSlug: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/exam/claim", {
+      method: "POST",
+      body: JSON.stringify({ pathSlug }),
+    });
+    return readActionResponse(await res.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
 }
