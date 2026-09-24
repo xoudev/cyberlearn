@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import React from "react";
 import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
@@ -13,6 +14,7 @@ import {
   useNotifications,
   type NotificationItem,
 } from "@/lib/queries";
+import { inAppRouteFor } from "@/lib/notification-links";
 import { useSession } from "@/lib/session";
 
 const TYPE_META: Record<string, { icon: string; color: string }> = {
@@ -21,6 +23,7 @@ const TYPE_META: Record<string, { icon: string; color: string }> = {
   CERTIFICATE_ISSUED: { icon: "❖", color: colors.info },
   LEAGUE: { icon: "♟", color: colors.promote },
   REVIEW_DUE: { icon: "↻", color: colors.textSecondary },
+  FORUM_REPLY: { icon: "❝", color: colors.info },
 };
 
 function timeAgo(iso: string): string {
@@ -36,6 +39,7 @@ function timeAgo(iso: string): string {
 }
 
 export default function Notifications(): React.JSX.Element {
+  const router = useRouter();
   const { session } = useSession();
   const userId = session?.user.id;
   const queryClient = useQueryClient();
@@ -90,18 +94,26 @@ export default function Notifications(): React.JSX.Element {
           {(data ?? []).map((n: NotificationItem, i) => {
             const meta = TYPE_META[n.type] ?? { icon: "•", color: colors.textSecondary };
             const isUnread = n.readAt === null;
+            const route = inAppRouteFor(n.actionUrl);
             return (
               <Rise key={n.id} index={Math.min(i, 8)}>
                 <PressableScale
-                  disabled={!isUnread}
-                  accessibilityLabel={`Marquer « ${n.title} » comme lue`}
+                  disabled={!isUnread && route === null}
+                  accessibilityLabel={
+                    route !== null ? `Ouvrir « ${n.title} »` : `Marquer « ${n.title} » comme lue`
+                  }
                   onPress={() => {
-                    void markNotificationRead(n.id).then(async () => {
-                      await queryClient.invalidateQueries({ queryKey: ["notifications", userId] });
-                      await queryClient.invalidateQueries({
-                        queryKey: ["notifications-unread", userId],
+                    if (isUnread) {
+                      void markNotificationRead(n.id).then(async () => {
+                        await queryClient.invalidateQueries({
+                          queryKey: ["notifications", userId],
+                        });
+                        await queryClient.invalidateQueries({
+                          queryKey: ["notifications-unread", userId],
+                        });
                       });
-                    });
+                    }
+                    if (route !== null) router.push(route);
                   }}
                 >
                   <Card
