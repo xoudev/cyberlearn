@@ -58,6 +58,21 @@ export interface LessonFilters {
   paginate?: boolean;
 }
 
+/**
+ * A completed lesson's quiz score, as the catalogue shows it ("3/5"). Null
+ * before completion, for a lesson without quizzes, and for one completed
+ * before answers were recorded.
+ */
+function quizScoreOf(
+  progress: { status: string; quizCorrect: number | null; quizTotal: number | null } | undefined,
+): { correct: number; total: number } | null {
+  if (progress?.status !== "COMPLETED") return null;
+  if (progress.quizTotal === null || progress.quizTotal === 0 || progress.quizCorrect === null) {
+    return null;
+  }
+  return { correct: progress.quizCorrect, total: progress.quizTotal };
+}
+
 export const lessonRepository = {
   /**
    * A published lesson this reader may open, by slug.
@@ -135,7 +150,7 @@ export const lessonRepository = {
           coverImageUrl: true,
           progress: {
             where: { userId },
-            select: { status: true, completedAt: true },
+            select: { status: true, completedAt: true, quizCorrect: true, quizTotal: true },
           },
         },
       }),
@@ -155,6 +170,7 @@ export const lessonRepository = {
         coverImageUrl: row.coverImageUrl,
         refCode: row.refCode,
         progressStatus: row.progress[0]?.status ?? null,
+        quizScore: quizScoreOf(row.progress[0]),
       })),
     };
   },

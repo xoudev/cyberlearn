@@ -125,6 +125,9 @@ export async function resetProgress(
       tx.userChallengeProgress.deleteMany({ where: { userId } }),
       tx.challengeHintReveal.deleteMany({ where: { userId } }),
       tx.quizAttempt.deleteMany({ where: { userId } }),
+      // A lesson's quiz answers go with its progress: starting it again from
+      // nothing means being able to answer again.
+      tx.lessonQuizAnswer.deleteMany({ where: { userId } }),
       tx.userQuestProgress.deleteMany({ where: { userId } }),
       tx.xpLedger.deleteMany({ where: { userId } }),
       tx.leagueMembership.deleteMany({ where: { userId } }),

@@ -47,6 +47,16 @@ export interface ExportPayload {
     startedAt: Date;
     completedAt: Date | null;
     lastAccessedAt: Date;
+    quizCorrect: number | null;
+    quizTotal: number | null;
+  }[];
+  /** Every quiz answer given in a lesson: the first one, which is the one kept. */
+  lessonQuizAnswers: {
+    lessonTitle: string;
+    quizId: string;
+    selected: number;
+    correct: boolean;
+    answeredAt: Date;
   }[];
   pathsProgress: {
     pathTitle: string;
@@ -214,6 +224,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     cosmeticsUnlocked,
     cosmeticLoadout,
     answerUpvotes,
+    lessonQuizAnswers,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -255,6 +266,8 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
         startedAt: true,
         completedAt: true,
         lastAccessedAt: true,
+        quizCorrect: true,
+        quizTotal: true,
         lesson: { select: { title: true, slug: true } },
       },
     }),
@@ -453,6 +466,17 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       where: { userId },
       select: { answerId: true, createdAt: true },
     }),
+    prisma.lessonQuizAnswer.findMany({
+      where: { userId },
+      select: {
+        quizId: true,
+        selected: true,
+        correct: true,
+        answeredAt: true,
+        lesson: { select: { title: true } },
+      },
+      orderBy: { answeredAt: "asc" },
+    }),
   ]);
 
   return {
@@ -479,6 +503,15 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       startedAt: p.startedAt,
       completedAt: p.completedAt,
       lastAccessedAt: p.lastAccessedAt,
+      quizCorrect: p.quizCorrect,
+      quizTotal: p.quizTotal,
+    })),
+    lessonQuizAnswers: lessonQuizAnswers.map((a) => ({
+      lessonTitle: a.lesson.title,
+      quizId: a.quizId,
+      selected: a.selected,
+      correct: a.correct,
+      answeredAt: a.answeredAt,
     })),
     pathsProgress: pathProgress.map((p) => ({
       pathTitle: p.path.title,

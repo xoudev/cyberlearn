@@ -63,6 +63,10 @@ export {
 export { certificateRepository } from "./repositories/certificate.repository.js";
 export type { CreateCertificateInput } from "./repositories/certificate.repository.js";
 export { ratingRepository } from "./repositories/rating.repository.js";
+export {
+  lessonQuizRepository,
+  type RecordedQuizAnswer,
+} from "./repositories/lesson-quiz.repository.js";
 export { qaRepository } from "./repositories/qa.repository.js";
 export { noteRepository, type NoteSummary } from "./repositories/note.repository.js";
 export {

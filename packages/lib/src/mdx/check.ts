@@ -1,4 +1,5 @@
 import { evaluate } from "@mdx-js/mdx";
+import { quizProblem } from "./quizzes.js";
 import { isValidElement, type ReactNode } from "react";
 import * as runtime from "react/jsx-runtime";
 import remarkGfm from "remark-gfm";
@@ -99,6 +100,8 @@ export type LessonMdxCheck =
       section: string;
       /** In French, for the person who wrote it. */
       message: string;
+      /** "quiz" when the lesson renders but a quiz could not be scored. */
+      kind?: "quiz";
     };
 
 /** Stands in for every component: rendering is not the question, props are. */
@@ -117,7 +120,8 @@ STUBS.PythonChallenge = ChallengeStub;
 type MdxContent = (props: { components: Record<string, unknown> }) => ReactNode;
 
 export async function checkLessonMdx(mdx: string): Promise<LessonMdxCheck> {
-  for (const source of splitMdxSections(mdx)) {
+  const sections = splitMdxSections(mdx);
+  for (const source of sections) {
     const problem = await problemIn(source);
     if (problem === null) continue;
 
@@ -130,6 +134,16 @@ export async function checkLessonMdx(mdx: string): Promise<LessonMdxCheck> {
     return leadProblem !== null
       ? { ok: false, section: "introduction", message: leadProblem }
       : { ok: false, section: headingOf(source), message: problem };
+  }
+
+  // Every section renders. Then the quizzes: each answer is stored under its
+  // quiz's id, so the ids must exist and be unique across the lesson.
+  const seenQuizIds = new Set<string>();
+  for (const source of sections) {
+    const problem = quizProblem(source, seenQuizIds);
+    if (problem !== null) {
+      return { ok: false, section: headingOf(source), message: problem, kind: "quiz" };
+    }
   }
   return { ok: true };
 }
@@ -213,5 +227,6 @@ function explain(error: unknown): string {
 export function describeLessonMdxProblem(check: Extract<LessonMdxCheck, { ok: false }>): string {
   const where =
     check.section === "introduction" ? "L'introduction" : `La section « ${check.section} »`;
+  if (check.kind === "quiz") return `${where} : ${check.message} Rien n'a été enregistré.`;
   return `${where} ne s'afficherait pas, donc rien n'a été enregistré. ${check.message}`;
 }

@@ -69,6 +69,35 @@ export interface CompleteLessonResult {
   leveledUp: boolean;
   newLevel: number;
   newBadges: { name: string; rarity: string; xpReward: number }[];
+  /** Right answers out of the lesson's quizzes, fixed at completion. */
+  quizScore?: { correct: number; total: number } | null;
+}
+
+export type QuizAnswerReply =
+  | { ok: true; selected: number; correct: boolean }
+  | { ok: false; error: string };
+
+/**
+ * Records the answer to one quiz. The first answer is the only one: the reply
+ * is the answer on record, which is an earlier one if the quiz was already
+ * answered, on this device or on the site. Whether it is right is decided by
+ * the server, from the lesson.
+ */
+export async function answerQuizApi(
+  lessonId: string,
+  quizId: string,
+  selected: number,
+): Promise<QuizAnswerReply> {
+  try {
+    const res = await authedFetch("/api/mobile/quiz-answer", {
+      method: "POST",
+      body: JSON.stringify({ lessonId, quizId, selected }),
+    });
+    const body = (await res.json()) as QuizAnswerReply;
+    return body;
+  } catch {
+    return { ok: false, error: "Ta réponse n'a pas pu être enregistrée. Réessaie." };
+  }
 }
 
 export async function completeLessonApi(lessonId: string): Promise<CompleteLessonResult | null> {

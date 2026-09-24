@@ -10,6 +10,8 @@ export interface QuizBlock {
   question: string;
   options: string[];
   correct: number;
+  /** Why the right answer is right, shown once the question is answered. */
+  explanation: string | null;
 }
 
 export type Block =
@@ -71,12 +73,14 @@ function extractQuiz(tag: string): QuizBlock | null {
       .map((s) => s.replace(/^\s*"|"\s*$/g, ""));
   }
   if (options.length < 2) return null;
+  const explanation = /explanation\s*=\s*"((?:[^"\\]|\\.)*)"/.exec(tag)?.[1];
   return {
     kind: "quiz",
     id,
     question: question.replace(/\\"/g, '"'),
     options,
     correct: Number(correctRaw),
+    explanation: explanation ? explanation.replace(/\\"/g, '"') : null,
   };
 }
 

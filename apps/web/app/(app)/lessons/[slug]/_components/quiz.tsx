@@ -1,7 +1,25 @@
 "use client";
 
-import React, { useEffect, useReducer, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLessonCompletion } from "./lesson-completion-context";
+import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
+
+/**
+ * One question, one answer.
+ *
+ * A wrong answer used to be retried until it was right, so every lesson ended
+ * the same whatever the learner knew, and a quiz inside a group folded away
+ * once answered while a quiz on its own stayed open. Now:
+ *
+ *  - the first answer is the answer: it is recorded on the server, which
+ *    decides whether it is right, and it cannot be changed;
+ *  - an answered quiz stays open, grouped or not, showing the right option and
+ *    the explanation when the author wrote one;
+ *  - answering, right or wrong, is what lets the section go on.
+ *
+ * Outside a lesson page (an editor preview) there is no record to write to,
+ * and the quiz scores itself locally.
+ */
 
 interface QuizProps {
   id: string;
@@ -11,39 +29,16 @@ interface QuizProps {
   /** Legacy alias - kept for backwards compatibility. */
   choices?: string[];
   correct: number;
+  /** Why the right answer is right. Shown once the question is answered. */
+  explanation?: string;
   questionNumber?: number;
   questionCount?: number;
-  /** Injected by QuizGroup: called once the correct answer is submitted. */
-  onCorrect?: () => void;
-  /** Injected by QuizGroup: true when this is the currently active question. */
-  isGroupActive?: boolean;
-  /** Injected by QuizGroup: true when this question has already been answered correctly. */
-  isGroupDone?: boolean;
-}
-
-interface QuizState {
-  selected: number | null;
-  submitted: boolean;
-}
-
-type QuizAction = { type: "select"; index: number } | { type: "submit" } | { type: "reset" };
-
-function quizReducer(state: QuizState, action: QuizAction): QuizState {
-  switch (action.type) {
-    case "select":
-      if (state.submitted) return state;
-      return { ...state, selected: action.index };
-    case "submit":
-      if (state.selected === null) return state;
-      return { ...state, submitted: true };
-    case "reset":
-      return { selected: null, submitted: false };
-    default:
-      return state;
-  }
+  /** Injected by QuizGroup: called once, when this question is answered. */
+  onAnswered?: (answer: QuizAnswer) => void;
 }
 
 const LETTER = ["A", "B", "C", "D", "E", "F"];
+const RED = "#FF4757";
 
 export function Quiz({
   id,
@@ -51,21 +46,28 @@ export function Quiz({
   options,
   choices,
   correct,
+  explanation,
   questionNumber,
   questionCount,
-  onCorrect,
-  isGroupActive,
-  isGroupDone,
-}: QuizProps): React.ReactElement | null {
+  onAnswered,
+}: QuizProps): React.ReactElement {
   const items = options ?? choices ?? [];
-  const [state, dispatch] = useReducer(quizReducer, { selected: null, submitted: false });
+  const lessonQuiz = useLessonQuiz();
+  const [picked, setPicked] = useState<number | null>(null);
+  const [localAnswer, setLocalAnswer] = useState<QuizAnswer | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const answer = lessonQuiz ? (lessonQuiz.answers[id] ?? null) : localAnswer;
+  const answered = answer !== null;
+
   const completion = useLessonCompletion();
   // Ref to always call the latest callbacks without triggering re-registration
   // when isAllComplete/pendingCount change (which would cause an infinite loop).
   const completionRef = useRef(completion);
   completionRef.current = completion;
-  const onCorrectRef = useRef(onCorrect);
-  onCorrectRef.current = onCorrect;
+  const onAnsweredRef = useRef(onAnswered);
+  onAnsweredRef.current = onAnswered;
 
   useEffect(() => {
     completionRef.current?.register(id);
@@ -74,65 +76,40 @@ export function Quiz({
     };
   }, [id]);
 
+  // Answered - now, or before this section was last on screen - is done.
   useEffect(() => {
-    if (state.submitted && state.selected === correct) {
-      completionRef.current?.markDone(id);
-      onCorrectRef.current?.();
+    if (answer === null) return;
+    completionRef.current?.markDone(id);
+    onAnsweredRef.current?.(answer);
+  }, [answer, id]);
+
+  async function validate(): Promise<void> {
+    if (picked === null || answered || pending) return;
+    if (!lessonQuiz) {
+      setLocalAnswer({ selected: picked, correct: picked === correct });
+      return;
     }
-  }, [state.submitted, state.selected, correct, id]);
-
-  // Not yet reached in the group - QuizGroup prevents rendering this case,
-  // but guard here as a safety net.
-  if (isGroupActive === false && !isGroupDone) return null;
-
-  // Already answered correctly in the group - show compact done row.
-  if (isGroupDone) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "12px 20px",
-          border: "1px solid color-mix(in srgb, var(--cosmetic-accent) 15%, transparent)",
-          background: "color-mix(in srgb, var(--cosmetic-accent) 3%, transparent)",
-          fontFamily: "var(--font-body, sans-serif)",
-          fontSize: 13,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
-            color: "var(--cosmetic-accent)",
-            flexShrink: 0,
-          }}
-        >
-          ✓
-        </span>
-        <span
-          style={{
-            color: "#6B6890",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {question}
-        </span>
-      </div>
-    );
+    setPending(true);
+    setError(null);
+    const result = await lessonQuiz.submit(id, picked);
+    setPending(false);
+    if (!result.ok) setError(result.error);
   }
 
-  const isCorrect = state.submitted && state.selected === correct;
-  const isWrong = state.submitted && state.selected !== correct;
-
-  const inGroup = isGroupActive !== undefined || isGroupDone !== undefined;
+  const chosen = answered ? answer.selected : picked;
+  const isCorrect = answered && answer.correct;
+  const rightOption = items[correct];
+  const verdictText = explanation?.trim()
+    ? explanation.trim()
+    : !isCorrect && rightOption !== undefined
+      ? `La bonne réponse était ${LETTER[correct] ?? String(correct + 1)} : ${rightOption}.`
+      : null;
 
   return (
     <section
+      aria-label={questionNumber !== undefined ? `Question ${String(questionNumber)}` : "Question"}
       style={{
-        margin: inGroup ? "0" : "56px 0 0",
+        margin: questionNumber !== undefined ? "0" : "56px 0 0",
         padding: "32px 32px 28px",
         border: "1px solid #1F1B47",
         background: "rgba(10,8,38,0.5)",
@@ -181,6 +158,7 @@ export function Quiz({
           )}
         </span>
         <span
+          role={answered ? "status" : undefined}
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 10,
@@ -188,13 +166,12 @@ export function Quiz({
             textTransform: "uppercase",
           }}
         >
-          {isCorrect && <span style={{ color: "var(--cosmetic-accent)" }}>✓ Correct</span>}
-          {isWrong && <span style={{ color: "#FF4757" }}>✗ Incorrect · réessaye</span>}
-          {!state.submitted && questionNumber !== undefined && questionCount !== undefined && (
-            <span style={{ color: "#44406B" }}>
-              {String(questionNumber).padStart(2, "0")}/{String(questionCount).padStart(2, "0")}
-            </span>
-          )}
+          {answered &&
+            (isCorrect ? (
+              <span style={{ color: "var(--cosmetic-accent)" }}>✓ Bonne réponse</span>
+            ) : (
+              <span style={{ color: RED }}>✗ Mauvaise réponse</span>
+            ))}
         </span>
       </div>
 
@@ -214,17 +191,21 @@ export function Quiz({
       </h3>
 
       {/* Choices */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <div
+        role="radiogroup"
+        aria-label={question}
+        style={{ display: "flex", flexDirection: "column", gap: 0 }}
+      >
         {items.map((choice, i) => {
-          const isSelected = state.selected === i;
-          const isThisCorrect = state.submitted && i === correct;
-          const isThisWrong = state.submitted && isSelected && i !== correct;
+          const isChosen = chosen === i;
+          const isThisCorrect = answered && i === correct;
+          const isThisWrong = answered && isChosen && i !== correct;
 
           let borderLeftColor = "#1F1B47";
           let bg = "rgba(5,4,26,0.5)";
           let textColor = "#B8B5D1";
           let letterColor = "#3F3D5C";
-          let stateLabel = "-";
+          let stateLabel = "";
 
           if (isThisCorrect) {
             borderLeftColor = "var(--cosmetic-accent)";
@@ -232,21 +213,23 @@ export function Quiz({
               "linear-gradient(90deg, color-mix(in srgb, var(--cosmetic-accent) 8%, transparent), transparent 60%)";
             textColor = "#F5F5FA";
             letterColor = "var(--cosmetic-accent)";
-            stateLabel = "Bonne réponse";
+            stateLabel = isChosen ? "Ton choix · bonne réponse" : "Bonne réponse";
           } else if (isThisWrong) {
-            borderLeftColor = "#FF4757";
+            borderLeftColor = RED;
             bg = "linear-gradient(90deg, rgba(255,71,87,0.08), transparent 60%)";
             textColor = "#F5F5FA";
-            letterColor = "#FF4757";
+            letterColor = RED;
             stateLabel = "Ton choix";
-          } else if (isSelected && !state.submitted) {
+          } else if (isChosen && !answered) {
             borderLeftColor = "#0024FF";
             bg = "linear-gradient(90deg, rgba(0,36,255,0.1), transparent 60%)";
             textColor = "#F5F5FA";
             letterColor = "#6E8BFF";
-            stateLabel = "Sélectionné";
+          } else if (answered) {
+            textColor = "#6B6890";
           }
 
+          const locked = answered || pending;
           return (
             <label
               key={i}
@@ -259,7 +242,7 @@ export function Quiz({
                 border: "1px solid #1F1B47",
                 borderLeft: `3px solid ${borderLeftColor}`,
                 background: bg,
-                cursor: state.submitted ? "default" : "pointer",
+                cursor: locked ? "default" : "pointer",
                 fontFamily: "var(--font-body, sans-serif)",
                 fontSize: 14,
                 color: textColor,
@@ -268,7 +251,7 @@ export function Quiz({
                 position: "relative",
               }}
               onMouseEnter={(e) => {
-                if (!state.submitted && !isSelected) {
+                if (!locked && !isChosen) {
                   e.currentTarget.style.borderColor = "#2A2560";
                   e.currentTarget.style.background =
                     "color-mix(in srgb, var(--cosmetic-accent) 2%, transparent)";
@@ -276,7 +259,7 @@ export function Quiz({
                 }
               }}
               onMouseLeave={(e) => {
-                if (!state.submitted && !isSelected) {
+                if (!locked && !isChosen) {
                   e.currentTarget.style.borderColor = "#1F1B47";
                   e.currentTarget.style.borderLeftColor = "#1F1B47";
                   e.currentTarget.style.background = "rgba(5,4,26,0.5)";
@@ -288,12 +271,13 @@ export function Quiz({
                 type="radio"
                 name={`quiz-${id}`}
                 value={i}
-                checked={isSelected}
+                checked={isChosen}
                 onChange={() => {
-                  dispatch({ type: "select", index: i });
+                  setPicked(i);
+                  setError(null);
                 }}
-                style={{ display: "none" }}
-                disabled={state.submitted}
+                className="sr-only"
+                disabled={locked}
               />
               {/* Letter */}
               <span
@@ -309,10 +293,11 @@ export function Quiz({
               </span>
               {/* Radio indicator */}
               <span
+                aria-hidden="true"
                 style={{
                   width: 14,
                   height: 14,
-                  border: `1.5px solid ${isSelected || isThisCorrect ? borderLeftColor : "#2A2560"}`,
+                  border: `1.5px solid ${isChosen || isThisCorrect ? borderLeftColor : "#2A2560"}`,
                   borderRadius: "50%",
                   display: "grid",
                   placeItems: "center",
@@ -331,7 +316,7 @@ export function Quiz({
                     />
                   </svg>
                 )}
-                {isSelected && !state.submitted && (
+                {isChosen && !answered && (
                   <span
                     style={{
                       width: 6,
@@ -346,18 +331,14 @@ export function Quiz({
               {/* Choice text */}
               <span>{choice}</span>
               {/* State label */}
-              {state.submitted && (
+              {stateLabel !== "" && (
                 <span
                   style={{
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: isThisCorrect
-                      ? "var(--cosmetic-accent)"
-                      : isThisWrong
-                        ? "#FF4757"
-                        : "#3F3D5C",
+                    color: isThisCorrect ? "var(--cosmetic-accent)" : RED,
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -369,75 +350,88 @@ export function Quiz({
         })}
       </div>
 
-      {/* Submit / retry button */}
-      {!state.submitted ? (
-        <button
-          type="button"
-          disabled={state.selected === null}
-          onClick={() => {
-            dispatch({ type: "submit" });
-          }}
-          style={{
-            display: "block",
-            width: "100%",
-            marginTop: 16,
-            padding: "18px 24px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            background: state.selected === null ? "rgba(30,27,71,0.5)" : "#0024FF",
-            color: state.selected === null ? "#3F3D5C" : "#ffffff",
-            border: state.selected === null ? "1px solid #2A2560" : "1px solid #0024FF",
-            cursor: state.selected === null ? "not-allowed" : "pointer",
-            transition: "all 180ms ease",
-            boxShadow:
-              state.selected === null
-                ? "none"
-                : "0 0 24px rgba(0,36,255,0.25), inset 0 0 0 1px rgba(255,255,255,0.15)",
-          }}
-          onMouseEnter={(e) => {
-            if (state.selected !== null) e.currentTarget.style.background = "#1F3BFF";
-          }}
-          onMouseLeave={(e) => {
-            if (state.selected !== null) e.currentTarget.style.background = "#0024FF";
-          }}
-        >
-          Valider la réponse
-        </button>
-      ) : isWrong ? (
-        <button
-          type="button"
-          onClick={() => {
-            dispatch({ type: "reset" });
-          }}
-          style={{
-            display: "block",
-            width: "100%",
-            marginTop: 16,
-            padding: "14px 24px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            background: "transparent",
-            color: "#FF4757",
-            border: "1px solid rgba(255,71,87,0.4)",
-            cursor: "pointer",
-            transition: "all 180ms ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,71,87,0.06)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-          }}
-        >
-          Réessayer
-        </button>
-      ) : null}
+      {answered ? (
+        verdictText !== null && (
+          <div
+            style={{
+              marginTop: 16,
+              padding: "14px 18px",
+              borderLeft: `3px solid ${isCorrect ? "var(--cosmetic-accent)" : RED}`,
+              background: isCorrect
+                ? "color-mix(in srgb, var(--cosmetic-accent) 5%, transparent)"
+                : "rgba(255,71,87,0.05)",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: isCorrect ? "var(--cosmetic-accent)" : RED,
+                marginBottom: 6,
+              }}
+            >
+              {explanation?.trim() ? "Pourquoi" : "Correction"}
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-body, sans-serif)",
+                fontSize: 14,
+                lineHeight: 1.6,
+                color: "#B8B5D1",
+              }}
+            >
+              {verdictText}
+            </p>
+          </div>
+        )
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled={picked === null || pending}
+            onClick={() => {
+              void validate();
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              marginTop: 16,
+              padding: "18px 24px",
+              fontFamily: "var(--font-mono, monospace)",
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              background: picked === null ? "rgba(30,27,71,0.5)" : "#0024FF",
+              color: picked === null ? "#3F3D5C" : "#ffffff",
+              border: picked === null ? "1px solid #2A2560" : "1px solid #0024FF",
+              cursor: picked === null ? "not-allowed" : pending ? "wait" : "pointer",
+              transition: "all 180ms ease",
+              boxShadow:
+                picked === null
+                  ? "none"
+                  : "0 0 24px rgba(0,36,255,0.25), inset 0 0 0 1px rgba(255,255,255,0.15)",
+            }}
+          >
+            {pending ? "Enregistrement…" : "Valider la réponse"}
+          </button>
+          <div
+            role={error !== null ? "alert" : undefined}
+            style={{
+              margin: "10px 0 0",
+              fontFamily: "var(--font-mono, monospace)",
+              fontSize: 11,
+              letterSpacing: "0.04em",
+              color: error !== null ? RED : "#44406B",
+            }}
+          >
+            {error ?? "Une seule réponse par question : elle compte dans ta note de la leçon."}
+          </div>
+        </>
+      )}
     </section>
   );
 }

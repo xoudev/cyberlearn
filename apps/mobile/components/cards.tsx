@@ -91,7 +91,14 @@ export const LessonCardView = React.memo(function LessonCardView({
             {lesson.estimatedMinutes} min · +{lesson.xpReward} XP
           </Text>
           {lesson.status === "COMPLETED" ? (
-            <Pill label="Terminé" color={colors.success} />
+            <Pill
+              label={
+                lesson.quizScore
+                  ? `Terminé · ${String(lesson.quizScore.correct)}/${String(lesson.quizScore.total)}`
+                  : "Terminé"
+              }
+              color={colors.success}
+            />
           ) : lesson.status === "IN_PROGRESS" ? (
             <Pill label="En cours" color={colors.accent} active />
           ) : null}

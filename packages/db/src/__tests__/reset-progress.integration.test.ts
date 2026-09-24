@@ -121,6 +121,9 @@ describe("resetProgress (integration, real DB)", () => {
       data: { userId: learner, amount: 50, source: "LESSON" },
     });
     await prisma.userSkipWaiver.create({ data: { userId: learner, lessonId } });
+    await prisma.lessonQuizAnswer.create({
+      data: { userId: learner, lessonId, quizId: "q-1", selected: 2, correct: false },
+    });
 
     // And things it must leave alone.
     const note = await prisma.note.create({
@@ -208,6 +211,7 @@ describe("resetProgress (integration, real DB)", () => {
       activity: await prisma.userActivityDay.count({ where: { userId: learner } }),
       ledger: await prisma.xpLedger.count({ where: { userId: learner } }),
       waivers: await prisma.userSkipWaiver.count({ where: { userId: learner } }),
+      quizAnswers: await prisma.lessonQuizAnswer.count({ where: { userId: learner } }),
     };
     expect(counts).toEqual({
       lessons: 0,
@@ -217,6 +221,7 @@ describe("resetProgress (integration, real DB)", () => {
       activity: 0,
       ledger: 0,
       waivers: 0,
+      quizAnswers: 0,
     });
   });
 

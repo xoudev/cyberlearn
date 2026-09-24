@@ -11,7 +11,8 @@
     "./pseudonymize": "./src/pseudonymize.ts",
     "./gamification/*": "./src/gamification/*.ts",
     "./search/*": "./src/search/*.ts",
-    "./mdx-check": "./src/mdx/check.ts"
+    "./mdx-check": "./src/mdx/check.ts",
+    "./mdx-quizzes": "./src/mdx/quizzes.ts"
   },
   "scripts": {
     "build": "tsc",

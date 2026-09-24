@@ -337,6 +337,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
                   }
                   refCode={lesson.refCode}
                   coverSrc={coverSrcs[i] ?? null}
+                  quizScore={lesson.quizScore}
                   variant="catalog"
                 />
                 {locked && (
