@@ -62,6 +62,31 @@ export async function updatePasswordApi(input: {
   }
 }
 
+// ── A banned account: the two things it may still do (the site's /banned) ────
+
+/** Records that the ban notice was seen. A failure costs a second showing, nothing else. */
+export async function acknowledgeBanApi(): Promise<{ ok: boolean }> {
+  try {
+    const response = await authedFetch("/api/mobile/ban/acknowledge", { method: "POST" });
+    return readActionResponse(await response.json());
+  } catch {
+    return { ok: false };
+  }
+}
+
+/** Appeals the ban in force: one per decision, filed as a ticket for the moderators. */
+export async function appealBanApi(message: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const response = await authedFetch("/api/mobile/ban/appeal", {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    return readActionResponse(await response.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────
 
 export interface CompleteLessonResult {
