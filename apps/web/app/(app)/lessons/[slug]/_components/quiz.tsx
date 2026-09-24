@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLessonCompletion } from "./lesson-completion-context";
 import { useLessonQuiz, type QuizAnswer } from "./lesson-quiz-context";
+import { QuizReport } from "./quiz-report";
 
 /**
  * One question, one answer.
@@ -445,6 +446,7 @@ export function Quiz({
           </div>
         </>
       )}
+      <QuizReport quizId={id} />
     </section>
   );
 }

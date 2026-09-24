@@ -17,6 +17,11 @@ vi.mock("../../_actions/answer-quiz", () => ({
   answerQuiz: (...args: unknown[]) => answerQuiz(...args) as unknown,
 }));
 
+const reportQuizAction = vi.fn();
+vi.mock("../../_actions/report-quiz", () => ({
+  reportQuizAction: (...args: unknown[]) => reportQuizAction(...args) as unknown,
+}));
+
 const { Quiz } = await import("../quiz");
 const { QuizGroup } = await import("../quiz-group");
 const { LessonQuizProvider } = await import("../lesson-quiz-context");
@@ -40,13 +45,20 @@ const completion = {
 function Page({
   children,
   initialAnswers = {},
+  initialReported = [],
 }: {
   children: React.ReactNode;
   initialAnswers?: Record<string, { selected: number; correct: boolean }>;
+  initialReported?: string[];
 }): React.ReactElement {
   return (
     <LessonCompletionContext.Provider value={completion}>
-      <LessonQuizProvider lessonId={LESSON} userId={USER} initialAnswers={initialAnswers}>
+      <LessonQuizProvider
+        lessonId={LESSON}
+        userId={USER}
+        initialAnswers={initialAnswers}
+        initialReported={initialReported}
+      >
         {children}
       </LessonQuizProvider>
     </LessonCompletionContext.Provider>
@@ -263,5 +275,71 @@ describe("the order of the options", () => {
   it("stays the written one in an editor preview", () => {
     render(<Quiz id="q-1" question="?" options={OPTIONS} correct={1} />);
     expect(shown()).toEqual(["A12", "B15", "C8"]);
+  });
+});
+
+describe("reporting a question", () => {
+  function quiz(initialReported: string[] = []): void {
+    render(
+      <Page initialReported={initialReported}>
+        <Quiz id="q-1" question="Que renvoie notes[1] ?" options={OPTIONS} correct={1} />
+      </Page>,
+    );
+  }
+
+  it("asks why before anything can be sent", () => {
+    quiz();
+    fireEvent.click(screen.getByRole("button", { name: "Signaler cette question" }));
+    expect(screen.getByText("Qu'est-ce qui ne va pas ?")).toBeTruthy();
+    const send = screen.getByRole("button", { name: "Envoyer" });
+    expect((send as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByLabelText("La question ou les réponses sont ambiguës"));
+    expect((send as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("sends the question, the reason and the comment, then thanks", async () => {
+    reportQuizAction.mockResolvedValue({ ok: true });
+    quiz();
+    fireEvent.click(screen.getByRole("button", { name: "Signaler cette question" }));
+    fireEvent.click(screen.getByLabelText("La bonne réponse me semble fausse"));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: " notes[1] vaut 15 " } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Envoyer" }));
+      await Promise.resolve();
+    });
+    expect(reportQuizAction).toHaveBeenCalledWith({
+      lessonId: LESSON,
+      quizId: "q-1",
+      reason: "WRONG_ANSWER",
+      comment: "notes[1] vaut 15",
+    });
+    expect(
+      screen.getByText("Merci, c'est signalé. L'équipe va relire cette question."),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Modifier le signalement" })).toBeTruthy();
+  });
+
+  it("keeps the form open and says why when it could not be sent", async () => {
+    reportQuizAction.mockResolvedValue({ ok: false, error: "Leçon introuvable." });
+    quiz();
+    fireEvent.click(screen.getByRole("button", { name: "Signaler cette question" }));
+    fireEvent.click(screen.getByLabelText("Faute ou erreur dans le texte"));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Envoyer" }));
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("alert").textContent).toBe("Leçon introuvable.");
+    expect(screen.getByRole("button", { name: "Envoyer" })).toBeTruthy();
+  });
+
+  it("shows a question already reported as such, after a reload", () => {
+    quiz(["q-1"]);
+    expect(screen.getByText("Tu as signalé cette question. L'équipe va la relire.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Signaler cette question" })).toBeNull();
+  });
+
+  it("is not offered in an editor preview", () => {
+    render(<Quiz id="q-1" question="?" options={OPTIONS} correct={1} />);
+    expect(screen.queryByRole("button", { name: "Signaler cette question" })).toBeNull();
   });
 });

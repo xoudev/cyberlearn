@@ -1160,3 +1160,110 @@
   gap: 6px;
   flex-wrap: wrap;
 }
+
+/* ─── Reported quiz questions (/lessons/reports) ───────────── */
+
+.a-report-quiz {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--a-border);
+  background: var(--a-surface-2);
+}
+.a-report-question {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--a-fg);
+}
+.a-report-options {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--a-fg-2);
+}
+.a-report-options li[data-correct="true"] {
+  color: var(--a-accent);
+}
+.a-report-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.a-report-expl {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--a-muted);
+}
+.a-report-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.a-report-list li {
+  padding-left: 12px;
+  border-left: 2px solid var(--a-border-2);
+}
+.a-report-list p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--a-fg-2);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.a-report-cards {
+  display: grid;
+  gap: 14px;
+}
+.a-report-head {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.a-report-title {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.a-report-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.a-report-ref,
+.a-report-small {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--a-muted);
+  overflow-wrap: anywhere;
+}
+.a-report-name {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--a-fg);
+}
+.a-report-name:hover {
+  color: var(--a-accent);
+}
+.a-report-body {
+  display: grid;
+  gap: 12px;
+}
+.a-report-note {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--a-fg-2);
+  border-left: 2px solid var(--a-blue-2);
+  background: color-mix(in srgb, var(--a-blue-2) 7%, transparent);
+}

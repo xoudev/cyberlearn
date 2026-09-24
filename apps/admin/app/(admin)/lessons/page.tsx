@@ -1,34 +1,37 @@
 import React from "react";
 import type { Metadata } from "next";
-import { prisma } from "@cyberlearn/db";
+import { prisma, quizReportRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader, PrimaryLink } from "../_components/admin-ui";
 import { LessonsTable, type LessonRow } from "./_components/lessons-table";
 
 export const metadata: Metadata = { title: "Leçons" };
 
 export default async function AdminLessonsPage(): Promise<React.ReactElement> {
-  const lessons = await prisma.lesson.findMany({
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-      refCode: true,
-      slug: true,
-      title: true,
-      category: true,
-      difficulty: true,
-      status: true,
-      audience: true,
-      xpReward: true,
-      estimatedMinutes: true,
-      createdAt: true,
-      _count: {
-        select: {
-          progress: { where: { status: "COMPLETED" } },
-          pathLessons: true,
+  const [lessons, openReports] = await Promise.all([
+    prisma.lesson.findMany({
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        refCode: true,
+        slug: true,
+        title: true,
+        category: true,
+        difficulty: true,
+        status: true,
+        audience: true,
+        xpReward: true,
+        estimatedMinutes: true,
+        createdAt: true,
+        _count: {
+          select: {
+            progress: { where: { status: "COMPLETED" } },
+            pathLessons: true,
+          },
         },
       },
-    },
-  });
+    }),
+    quizReportRepository.countOpen(),
+  ]);
 
   const publishedCount = lessons.filter((l) => l.status === "PUBLISHED").length;
   const draftCount = lessons.filter((l) => l.status === "DRAFT").length;
@@ -56,6 +59,9 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
         description={`${String(publishedCount)} publiée${publishedCount !== 1 ? "s" : ""} · ${String(draftCount)} brouillon${draftCount !== 1 ? "s" : ""}.`}
         actions={
           <>
+            <GhostLink href="/lessons/reports">
+              Questions signalées{openReports > 0 ? ` (${String(openReports)})` : ""}
+            </GhostLink>
             <GhostLink href="/lessons/import">Importer MDX</GhostLink>
             <PrimaryLink href="/lessons/new">Nouvelle leçon</PrimaryLink>
           </>

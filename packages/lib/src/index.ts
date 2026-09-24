@@ -31,3 +31,4 @@ export * from "./search/rank.js";
 export * from "./format.js";
 export * from "./paths/suggest.js";
 export * from "./quiz/option-order.js";
+export * from "./quiz/report-reasons.js";

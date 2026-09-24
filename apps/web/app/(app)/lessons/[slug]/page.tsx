@@ -7,6 +7,7 @@ import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import {
   lessonQuizRepository,
+  quizReportRepository,
   lessonRepository,
   ratingRepository,
   qaRepository,
@@ -120,27 +121,41 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const lesson = await lessonRepository.findBySlug(slug, authUser.id);
   if (!lesson) notFound();
 
-  const [existing, pathContexts, ratingData, userRating, questions, note, quizAnswers] =
-    await Promise.all([
-      lessonRepository.findProgress(authUser.id, lesson.id),
-      // "Next" used to mean the next lesson published anywhere in the catalogue,
-      // by publishedAt. Finishing lesson 3 of the network path could therefore
-      // hand the reader a Python lesson that happened to ship the same week, and
-      // the path they were working through simply stopped being mentioned. It is
-      // the next lesson of *this* path now.
-      lessonRepository.findPathContexts(authUser.id, [lesson.id]),
-      ratingRepository.findLessonStats(lesson.id),
-      ratingRepository.findUserLessonRating(authUser.id, lesson.id),
-      qaRepository.findQuestionsByLesson(lesson.id),
-      // Tolerate the window between deploy and the prod notes migration: a missing
-      // table yields no preloaded note rather than a crashed lesson page.
-      noteRepository
-        .findForLesson(authUser.id, lesson.id)
-        .catch(() => null),
-      // The answers already on record: an answered question stays answered
-      // across a reload, and is never asked twice.
-      lessonQuizRepository.findForLesson(authUser.id, lesson.id),
-    ]);
+  const [
+    existing,
+    pathContexts,
+    ratingData,
+    userRating,
+    questions,
+    note,
+    quizAnswers,
+    reportedQuizIds,
+  ] = await Promise.all([
+    lessonRepository.findProgress(authUser.id, lesson.id),
+    // "Next" used to mean the next lesson published anywhere in the catalogue,
+    // by publishedAt. Finishing lesson 3 of the network path could therefore
+    // hand the reader a Python lesson that happened to ship the same week, and
+    // the path they were working through simply stopped being mentioned. It is
+    // the next lesson of *this* path now.
+    lessonRepository.findPathContexts(authUser.id, [lesson.id]),
+    ratingRepository.findLessonStats(lesson.id),
+    ratingRepository.findUserLessonRating(authUser.id, lesson.id),
+    qaRepository.findQuestionsByLesson(lesson.id),
+    // Tolerate the window between deploy and the prod notes migration: a missing
+    // table yields no preloaded note rather than a crashed lesson page.
+    noteRepository
+      .findForLesson(authUser.id, lesson.id)
+      .catch(() => null),
+    // The answers already on record: an answered question stays answered
+    // across a reload, and is never asked twice.
+    lessonQuizRepository.findForLesson(authUser.id, lesson.id),
+    // The questions this learner reported. Like the notes: during the window
+    // between a deploy and its migration, no table means nothing preloaded,
+    // not a crashed lesson.
+    quizReportRepository
+      .openQuizIdsFor(authUser.id, lesson.id)
+      .catch(() => []),
+  ]);
   const initialQuizAnswers: Record<string, QuizAnswer> = Object.fromEntries(
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
   );
@@ -420,6 +435,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
         lessonId={lesson.id}
         userId={authUser.id}
         initialAnswers={initialQuizAnswers}
+        initialReported={reportedQuizIds}
       >
         <LessonStepper
           lessonId={lesson.id}
