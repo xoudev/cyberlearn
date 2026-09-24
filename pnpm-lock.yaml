@@ -755,6 +755,12 @@ importers:
       '@cyberlearn/types':
         specifier: workspace:*
         version: link:../types
+      '@mdx-js/mdx':
+        specifier: 'catalog:'
+        version: 3.1.1
+      remark-gfm:
+        specifier: 'catalog:'
+        version: 4.0.1
     devDependencies:
       '@cyberlearn/config':
         specifier: workspace:*
@@ -762,6 +768,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.17
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.13)(@types/node@22.19.17)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
@@ -771,6 +780,9 @@ importers:
       next:
         specifier: 'catalog:'
         version: 15.5.15(@opentelemetry/api@1.9.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.5
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

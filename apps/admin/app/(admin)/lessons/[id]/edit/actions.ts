@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import { UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
 
 const updateLessonSchema = z.object({
   refCode: z.string().regex(/^CL-LSN-\d{3}-V\d{2}$/, "Format: CL-LSN-001-V01"),
@@ -56,6 +57,17 @@ export async function updateLessonAction(
     }),
   ]);
   if (!existing) notFound();
+
+  // Refused before it reaches the database. The editor used to save anything,
+  // and on 22 September two saves in a row broke a lesson for everyone who
+  // opened it (Sentry JAVASCRIPT-NEXTJS-14 and -15).
+  const render = await checkLessonMdx(parsed.data.contentMdx);
+  if (!render.ok) {
+    return {
+      error: "Le contenu ne s'affiche pas.",
+      fieldErrors: { contentMdx: describeLessonMdxProblem(render) },
+    };
+  }
 
   const { coverImageUrl, status, ...data } = parsed.data;
 

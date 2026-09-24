@@ -7,6 +7,7 @@ import { prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
 import { UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
+import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
 
 const createLessonSchema = z.object({
   refCode: z.string().regex(/^CL-LSN-\d{3}-V\d{2}$/, "Format: CL-LSN-001-V01"),
@@ -49,6 +50,15 @@ export async function createLessonAction(
       fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
+  }
+
+  // Refused before it reaches the database: see checkLessonMdx.
+  const render = await checkLessonMdx(parsed.data.contentMdx);
+  if (!render.ok) {
+    return {
+      error: "Le contenu ne s'affiche pas.",
+      fieldErrors: { contentMdx: describeLessonMdxProblem(render) },
+    };
   }
 
   const { coverImageUrl, publishNow, ...data } = parsed.data;

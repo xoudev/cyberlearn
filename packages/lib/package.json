@@ -10,7 +10,8 @@
     "./sm2": "./src/sm2.ts",
     "./pseudonymize": "./src/pseudonymize.ts",
     "./gamification/*": "./src/gamification/*.ts",
-    "./search/*": "./src/search/*.ts"
+    "./search/*": "./src/search/*.ts",
+    "./mdx-check": "./src/mdx/check.ts"
   },
   "scripts": {
     "build": "tsc",
@@ -22,10 +23,13 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@cyberlearn/types": "workspace:*"
+    "@cyberlearn/types": "workspace:*",
+    "@mdx-js/mdx": "catalog:",
+    "remark-gfm": "catalog:"
   },
   "peerDependencies": {
-    "next": "catalog:"
+    "next": "catalog:",
+    "react": "catalog:"
   },
   "devDependencies": {
     "@cyberlearn/config": "workspace:*",
@@ -35,6 +39,8 @@
     "vitest": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "react": "catalog:",
+    "@types/react": "catalog:"
   }
 }

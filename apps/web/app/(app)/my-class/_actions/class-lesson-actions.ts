@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { classRepository, prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
+import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
 
 /**
  * A teacher writing a lesson for their own class.
@@ -53,6 +54,11 @@ export async function createClassLessonAction(
     return { error: "Tu ne suis pas cette classe." };
   }
 
+  // Refused before it reaches the class: a lesson that does not render is a
+  // lesson its students open onto an error. See checkLessonMdx.
+  const render = await checkLessonMdx(parsed.data.contentMdx);
+  if (!render.ok) return { error: describeLessonMdxProblem(render) };
+
   const { classId, ...lesson } = parsed.data;
   const created = await classRepository.createClassLesson({
     classId,
@@ -89,6 +95,9 @@ export async function updateClassLessonAction(
   if (!(await classRepository.canEditClassLesson(user.id, parsed.data.lessonId))) {
     return { error: "Cette leçon n'est pas la tienne." };
   }
+
+  const render = await checkLessonMdx(parsed.data.contentMdx);
+  if (!render.ok) return { error: describeLessonMdxProblem(render) };
 
   const { lessonId, ...data } = parsed.data;
   await classRepository.updateClassLesson(lessonId, data);
