@@ -27,7 +27,7 @@ import {
 } from "@/lib/db";
 import { parseLesson } from "@/lib/lesson-blocks";
 import { fetchLessonQuizAnswers, markLessonOpened, useLessonDetail } from "@/lib/queries";
-import { scoreOf, type RecordedAnswer } from "@/lib/quiz";
+import { letterOf, optionOrderFor, scoreOf, type RecordedAnswer } from "@/lib/quiz";
 import { useSession } from "@/lib/session";
 
 type Step =
@@ -97,6 +97,8 @@ export default function LessonReader(): React.JSX.Element {
   const cat = CATEGORY_COLOR[data.category];
   const sections = parsed.sections;
   const quizzes = parsed.quizzes;
+  const currentQuiz = step.mode === "quiz" ? quizzes[step.qIndex] : undefined;
+  const currentOrder = currentQuiz ? optionOrderFor(userId, data.id, currentQuiz) : [];
   const totalSteps = sections.length + (quizzes.length > 0 ? 1 : 0);
 
   async function finishLesson(correctCount: number): Promise<void> {
@@ -180,6 +182,7 @@ export default function LessonReader(): React.JSX.Element {
         <QuizView
           key={step.qIndex}
           quiz={quizzes[step.qIndex] ?? null}
+          order={currentOrder}
           picked={step.picked}
           answer={answers[quizzes[step.qIndex]?.id ?? ""] ?? null}
           sending={step.sending}
@@ -306,6 +309,7 @@ function ReadView({
 
 function QuizView({
   quiz,
+  order,
   picked,
   answer,
   sending,
@@ -316,6 +320,8 @@ function QuizView({
   isLast,
 }: {
   quiz: { question: string; options: string[]; correct: number; explanation: string | null } | null;
+  /** Written indices in display order (optionOrderFor): the site's order for this learner. */
+  order: number[];
   picked: number | null;
   /** The answer on record: once there is one, the question is closed. */
   answer: RecordedAnswer | null;
@@ -330,7 +336,7 @@ function QuizView({
   const revealed = answer !== null;
   const chosen = revealed ? answer.selected : picked;
   const right = revealed && answer.correct;
-  const rightLetter = String.fromCharCode(65 + quiz.correct);
+  const rightLetter = letterOf(order, quiz.correct);
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -340,7 +346,8 @@ function QuizView({
           </Card>
         </Rise>
         <View style={{ gap: 10 }}>
-          {quiz.options.map((opt, i) => {
+          {order.map((i, position) => {
+            const opt = quiz.options[i] ?? "";
             const isPicked = chosen === i;
             const isCorrect = revealed && i === quiz.correct;
             const isWrong = revealed && isPicked && i !== quiz.correct;
@@ -352,7 +359,7 @@ function QuizView({
                   ? colors.accent
                   : colors.borderDefault;
             return (
-              <Rise key={i} index={i + 1}>
+              <Rise key={i} index={position + 1}>
                 <PressableScale disabled={revealed || sending} onPress={() => onPick(i)}>
                   <View
                     style={{
@@ -377,7 +384,7 @@ function QuizView({
                         fontSize: 12,
                       }}
                     >
-                      {String.fromCharCode(65 + i)}
+                      {String.fromCharCode(65 + position)}
                     </Text>
                     <Text variant="body" style={{ flex: 1, color: colors.textPrimary }}>
                       {opt}

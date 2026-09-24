@@ -13,7 +13,8 @@
     "./search/*": "./src/search/*.ts",
     "./mdx-check": "./src/mdx/check.ts",
     "./mdx-quizzes": "./src/mdx/quizzes.ts",
-    "./paths/*": "./src/paths/*.ts"
+    "./paths/*": "./src/paths/*.ts",
+    "./quiz/*": "./src/quiz/*.ts"
   },
   "scripts": {
     "build": "tsc",

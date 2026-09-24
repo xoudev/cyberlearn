@@ -226,7 +226,10 @@ Question à choix multiple intégrée dans la leçon. **Une seule réponse par q
 - Sans réponse possible à une deuxième tentative, une question ambiguë coûte un point injustement : une seule bonne réponse défendable, sans double négation
 - Écrire une `explanation` : c'est ce qui transforme une erreur en apprentissage
 - Formuler des questions précises et des options vraisemblables (éviter les pièges évidents)
-- La bonne réponse ne doit pas toujours être au même index
+- **Les options sont mélangées pour chaque apprenant** (`quizOptionOrder`, `@cyberlearn/lib/quiz/option-order`) : un ordre propre à chacun, le même à chaque visite et dans l'app mobile. L'aperçu de l'éditeur garde l'ordre écrit. Conséquences :
+  - ne jamais citer une option par sa lettre ou sa place, ni dans l'`explanation` (« la réponse B », « la deuxième ») ni dans une autre option ;
+  - une option qui renvoie aux autres (« Aucune des trois », « Toutes les réponses ci-dessus ») garde sa place écrite : la mettre en dernier ;
+  - `correct` reste l'index de l'option **telle qu'écrite** : c'est lui qui est envoyé et enregistré, quel que soit l'ordre affiché.
 
 ---
 

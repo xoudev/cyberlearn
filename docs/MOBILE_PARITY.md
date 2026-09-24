@@ -41,7 +41,7 @@ RLS — jamais réécrites côté app.
 | --- | --- | --- |
 | Connexion, inscription, MFA, mot de passe oublié | ✅ | ✅ |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
-| Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`) | ✅ | ✅ |
+| Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux) | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
 | Parcours + page d'un parcours | ✅ | ✅ |
 | Trouver mon parcours : deux questions, deux ou trois parcours suggérés avec leur raison (`/paths/guide`, `app/paths/guide.tsx`, même classement `@cyberlearn/lib/paths/suggest`) | ✅ | ✅ |

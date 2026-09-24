@@ -2,6 +2,7 @@
 import React from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { quizOptionOrder, quizOrderSeed } from "@cyberlearn/lib/quiz/option-order";
 
 /**
  * One question, one answer, and the reason when it is wrong.
@@ -22,7 +23,11 @@ const { LessonQuizProvider } = await import("../lesson-quiz-context");
 const { LessonCompletionContext } = await import("../lesson-completion-context");
 
 const LESSON = "11111111-1111-4111-8111-111111111111";
+const USER = "22222222-2222-4222-8222-222222222222";
 const OPTIONS = ["12", "15", "8"];
+/** The order this learner sees q-1's options in. */
+const ORDER = quizOptionOrder(OPTIONS, quizOrderSeed(USER, LESSON, "q-1"));
+const LETTERS = ["A", "B", "C"];
 
 const completion = {
   register: vi.fn(),
@@ -41,7 +46,7 @@ function Page({
 }): React.ReactElement {
   return (
     <LessonCompletionContext.Provider value={completion}>
-      <LessonQuizProvider lessonId={LESSON} initialAnswers={initialAnswers}>
+      <LessonQuizProvider lessonId={LESSON} userId={USER} initialAnswers={initialAnswers}>
         {children}
       </LessonQuizProvider>
     </LessonCompletionContext.Provider>
@@ -110,7 +115,8 @@ describe("a wrong answer", () => {
       </Page>,
     );
     await answer("12");
-    expect(screen.getByText("La bonne réponse était B : 15.")).toBeTruthy();
+    const letter = LETTERS[ORDER.indexOf(1)] ?? "";
+    expect(screen.getByText(`La bonne réponse était ${letter} : 15.`)).toBeTruthy();
   });
 
   it("still lets the section go on", async () => {
@@ -213,5 +219,49 @@ describe("outside a lesson page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Valider la réponse" }));
     expect(screen.getByText("✓ Bonne réponse")).toBeTruthy();
     expect(answerQuiz).not.toHaveBeenCalled();
+  });
+});
+
+describe("the order of the options", () => {
+  /** The option texts as displayed, top to bottom. */
+  function shown(): string[] {
+    return screen.getAllByRole("radio").map((r) => r.closest("label")?.textContent ?? "");
+  }
+
+  it("is this learner's own, not the written one", () => {
+    // The fixture is only meaningful if this learner's order differs.
+    expect(ORDER).not.toEqual([0, 1, 2]);
+    render(
+      <Page>
+        <Quiz id="q-1" question="Que renvoie notes[1] ?" options={OPTIONS} correct={1} />
+      </Page>,
+    );
+    expect(shown()).toEqual(ORDER.map((i, pos) => `${LETTERS[pos] ?? ""}${OPTIONS[i] ?? ""}`));
+  });
+
+  it("sends the option's written index, wherever it is shown", async () => {
+    render(
+      <Page>
+        <Quiz id="q-1" question="Que renvoie notes[1] ?" options={OPTIONS} correct={1} />
+      </Page>,
+    );
+    await answer("15");
+    expect(answerQuiz).toHaveBeenCalledWith(LESSON, "q-1", 1);
+    expect(screen.getByText("✓ Bonne réponse")).toBeTruthy();
+  });
+
+  it("shows an answer on record against the right option after a reload", () => {
+    render(
+      <Page initialAnswers={{ "q-1": { selected: 2, correct: false } }}>
+        <Quiz id="q-1" question="Que renvoie notes[1] ?" options={OPTIONS} correct={1} />
+      </Page>,
+    );
+    const chosen = screen.getAllByRole("radio").find((r) => (r as HTMLInputElement).checked);
+    expect(chosen?.closest("label")?.textContent).toContain("8");
+  });
+
+  it("stays the written one in an editor preview", () => {
+    render(<Quiz id="q-1" question="?" options={OPTIONS} correct={1} />);
+    expect(shown()).toEqual(["A12", "B15", "C8"]);
   });
 });
