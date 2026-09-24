@@ -1,6 +1,7 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
+import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
@@ -415,4 +416,90 @@ export async function claimCertificateApi(
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }
+}
+
+// ── Forum (the site's service: rate limit, moderation screen, held posts) ─────
+
+export interface ForumFront {
+  categories: ForumCategory[];
+  recent: ForumTopicSummary[];
+}
+
+export interface ForumSection {
+  category: Omit<ForumCategory, "lastPostAt">;
+  topics: ForumTopicSummary[];
+  page: number;
+  pages: number;
+}
+
+export interface ForumThread {
+  viewer: { isAdmin: boolean };
+  topic: ForumTopicSummary;
+  posts: ForumPost[];
+  page: number;
+  pages: number;
+}
+
+/** What a write answered: `heldForReview` when the screen took it down. */
+export interface ForumWriteReply {
+  ok: boolean;
+  error?: string;
+  href?: string;
+  heldForReview?: boolean;
+}
+
+async function forumRead<T>(path: string): Promise<T> {
+  const res = await authedFetch(path);
+  const body = (await res.json()) as ({ ok: true } & T) | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body;
+}
+
+export function fetchForumApi(): Promise<ForumFront> {
+  return forumRead<ForumFront>("/api/mobile/forum");
+}
+
+export function fetchForumSectionApi(slug: string, page: number): Promise<ForumSection> {
+  return forumRead<ForumSection>(
+    `/api/mobile/forum/section?slug=${encodeURIComponent(slug)}&page=${String(page)}`,
+  );
+}
+
+export function fetchForumThreadApi(
+  category: string,
+  slug: string,
+  page: number,
+): Promise<ForumThread> {
+  return forumRead<ForumThread>(
+    `/api/mobile/forum/topic?category=${encodeURIComponent(category)}&slug=${encodeURIComponent(slug)}&page=${String(page)}`,
+  );
+}
+
+async function forumWrite(path: string, body: unknown): Promise<ForumWriteReply> {
+  try {
+    const res = await authedFetch(path, { method: "POST", body: JSON.stringify(body) });
+    return (await res.json()) as ForumWriteReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export function createForumTopicApi(input: {
+  categorySlug: string;
+  title: string;
+  content: string;
+}): Promise<ForumWriteReply> {
+  return forumWrite("/api/mobile/forum/topic", input);
+}
+
+export function replyInForumApi(topicId: string, content: string): Promise<ForumWriteReply> {
+  return forumWrite("/api/mobile/forum/reply", { topicId, content });
+}
+
+export function editForumPostApi(postId: string, content: string): Promise<ForumWriteReply> {
+  return forumWrite("/api/mobile/forum/post/edit", { postId, content });
+}
+
+export function hideForumPostApi(postId: string): Promise<ForumWriteReply> {
+  return forumWrite("/api/mobile/forum/post/hide", { postId });
 }

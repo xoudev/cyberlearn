@@ -3,7 +3,12 @@ import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
 import { supabase } from "@/lib/supabase";
-import { fetchExamStatusApi } from "@/lib/api";
+import {
+  fetchExamStatusApi,
+  fetchForumApi,
+  fetchForumSectionApi,
+  fetchForumThreadApi,
+} from "@/lib/api";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
@@ -638,6 +643,8 @@ export interface NotificationItem {
   type: string;
   title: string;
   body: string;
+  /** The site's page it is about; the app opens its own screen for it. */
+  actionUrl: string | null;
   readAt: string | null;
   createdAt: string;
 }
@@ -650,7 +657,7 @@ export function useNotifications(userId: string | undefined) {
     queryFn: async (): Promise<NotificationItem[]> => {
       const { data } = await supabase
         .from("notifications")
-        .select("id,type,title,body,readAt,createdAt")
+        .select("id,type,title,body,actionUrl,readAt,createdAt")
         .eq("userId", userId as string) // gated by `enabled`
         .order("createdAt", { ascending: false })
         .limit(50);
@@ -1021,5 +1028,44 @@ export function useExamStatus(userId: string | undefined, slug: string | undefin
       if (!reply.ok) throw new Error(reply.error);
       return { path: reply.path, status: reply.status };
     },
+  });
+}
+
+// ── Forum ─────────────────────────────────────────────────────────────────────
+// Through the site's routes rather than reads under RLS: what a reader sees
+// (their own hidden posts included) is the repository's rule, and an author's
+// uploaded avatar needs a signature only the server can make.
+
+export function useForum(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["forum", userId],
+    enabled: Boolean(userId),
+    queryFn: fetchForumApi,
+  });
+}
+
+export function useForumSection(
+  userId: string | undefined,
+  slug: string | undefined,
+  page: number,
+) {
+  return useQuery({
+    queryKey: ["forum-section", slug, page, userId],
+    enabled: Boolean(userId && slug),
+    queryFn: () => fetchForumSectionApi(slug as string, page), // gated by `enabled`
+  });
+}
+
+export function useForumThread(
+  userId: string | undefined,
+  category: string | undefined,
+  slug: string | undefined,
+  page: number,
+) {
+  return useQuery({
+    queryKey: ["forum-thread", category, slug, page, userId],
+    enabled: Boolean(userId && category && slug),
+    // gated by `enabled`
+    queryFn: () => fetchForumThreadApi(category as string, slug as string, page),
   });
 }

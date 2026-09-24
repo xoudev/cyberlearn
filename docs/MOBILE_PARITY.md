@@ -24,10 +24,15 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  dix-sept : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
-  `exam/start`, `exam/submit`, `leaderboard`, `loadout`, `my-class`,
-  `password`, `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`,
-  `send-otp`.
+  vingt-trois : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
+  `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`,
+  `leaderboard`, `loadout`, `my-class`, `password`, `progress`, `quiz-answer`,
+  `quiz-report`, `rating`, `review`, `send-otp`.
+- Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
+  (ses propres messages retirés compris) est une règle du dépôt
+  (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
+  clé `service_role`.
 - **Un compte banni ne passe pas** : `userFromBearer` fait la vérification que
   `requireRequestUser` fait sur le site, et toute route qui l'appelle refuse un
   compte banni. Seules `ban/acknowledge` et `ban/appeal` passent par
@@ -58,7 +63,8 @@ RLS — jamais réécrites côté app.
 | Classement + ligue | ✅ | ✅ |
 | Bloc-notes | ✅ | ✅ |
 | Casier (cosmétiques) | ✅ | ✅ |
-| Notifications | ✅ | ✅ |
+| Notifications ; une notification liée à un sujet, une leçon, un parcours ou au bloc-notes ouvre l'écran correspondant | ✅ | ✅ |
+| Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
 | Réglages, sécurité | ✅ | ✅ |
@@ -72,7 +78,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Forum** | Poser une question quand on est bloqué est exactement ce qu'on fait depuis son téléphone | — |
 | **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré. Attention au statut : une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`), pas de l'écran — l'app affiche le refus, elle ne le décide pas | — |
 | **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
 | **Tableau de bord** | Aujourd'hui l'onglet Accueil. Le web a été refondu autour des parcours depuis (PR #233) ; l'onglet Accueil ne suit pas encore | — |
@@ -92,6 +97,7 @@ Chacune de ces lignes est une décision, pas une dette.
 | **Console d'administration** (`admin.cyberlearn.fr`) | Application séparée, gate ADMIN + TOTP. Hors périmètre de l'app apprenant |
 | **Défis** | Le catalogue est en cours de reconstruction. À rouvrir quand les premiers défis réexistent |
 | **Export RGPD, suppression de compte** | Actions irréversibles qui demandent une confirmation lue posément. Elles restent sur le web, et l'app y renvoie |
+| **Épingler ou fermer un sujet du forum** | Geste de modération réservé aux administrateurs, fait depuis le site. L'app affiche l'état (« Épinglé », « Fermé ») et refuse une réponse dans un sujet fermé, comme le site |
 | **Remise à zéro d'une progression** | Action d'administration, sur le compte de quelqu'un d'autre. Elle vit dans la console, pas dans une app apprenant |
 
 ## Quand cette page a été écrite
