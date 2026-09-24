@@ -68,12 +68,12 @@ export function AccountDeletedEmail({
             )}
 
             <Text style={styles.paragraph}>Ont été effacés définitivement :</Text>
-            <Text style={styles.listItem}>— ton profil, tes préférences et ton avatar ;</Text>
+            <Text style={styles.listItem}>• ton profil, tes préférences et ton avatar ;</Text>
             <Text style={styles.listItem}>
-              — ta progression, tes badges, tes séries et tes révisions ;
+              • ta progression, tes badges, tes séries et tes révisions ;
             </Text>
-            <Text style={styles.listItem}>— tes attestations et les fichiers associés ;</Text>
-            <Text style={styles.listItem}>— ton identifiant de connexion.</Text>
+            <Text style={styles.listItem}>• tes attestations et les fichiers associés ;</Text>
+            <Text style={styles.listItem}>• ton identifiant de connexion.</Text>
 
             <Text style={styles.paragraph}>
               Tes questions et réponses publiées dans les leçons restent en ligne, détachées de ton

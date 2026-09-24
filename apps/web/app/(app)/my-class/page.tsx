@@ -282,14 +282,16 @@ export default async function MyClassPage(): Promise<React.ReactElement> {
                 }}
                 teachers={roster.teachers.map((t) => ({
                   id: t.teacher.id,
-                  name: t.teacher.displayName || (t.teacher.username ?? "—"),
+                  name: t.teacher.displayName || (t.teacher.username ?? "Sans nom"),
                   subject: t.subject,
                 }))}
                 people={roster.members.map((mem) => {
                   const visible = mem.user.preferences?.publicProfile !== false;
                   return {
                     id: mem.user.id,
-                    name: visible ? mem.user.displayName || (mem.user.username ?? "—") : "Anonyme",
+                    name: visible
+                      ? mem.user.displayName || (mem.user.username ?? "Sans nom")
+                      : "Anonyme",
                     username: visible ? mem.user.username : null,
                     visible,
                     level: mem.user.level,
@@ -345,7 +347,7 @@ function buildTaught(
         assignmentOptions: assignmentOptionsByClass.get(c.id) ?? [],
         students: (rosters.get(c.id)?.members ?? []).map((m) => ({
           id: m.user.id,
-          name: m.user.displayName || (m.user.username ?? "—"),
+          name: m.user.displayName || (m.user.username ?? "Sans nom"),
           username: m.user.username,
           level: m.user.level,
           completed: completedByUser.get(m.user.id) ?? 0,

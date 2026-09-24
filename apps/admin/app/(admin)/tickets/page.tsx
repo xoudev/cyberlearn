@@ -107,7 +107,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           </a>
         ) : (
           <span key="j" style={{ color: UI.faint }}>
-            —
+            Aucun
           </span>
         ),
         <span key="d" className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>

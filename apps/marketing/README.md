@@ -32,17 +32,17 @@ dimensions live if this list ever drifts.
 soundtrack, and it ends on a download.
 
 `LinkedInVideo` is not a resize of it. LinkedIn's feed is a column read mostly
-on a phone, so a 16:9 gets a third of the height a square does — hence 1:1. It
+on a phone, so a 16:9 gets a third of the height a square does, hence 1:1. It
 autoplays muted and most people never unmute, so every beat is written to read
 with the sound off and there is no soundtrack at all: a track nobody hears is
 bytes. And it asks for testers rather than installs, so it ends on the two doors
-somebody can walk through — an account on the site, and the Android test
+somebody can walk through: an account on the site, and the Android test
 channel.
 
 It shows the web platform through **screenshots of the real components**, in
 `public/screens/`. The first version drew them by hand; that was wrong. A video
 recruiting testers has to show what they will actually get, and a drawing stops
-matching the product the moment somebody moves a button — with nobody to notice.
+matching the product the moment somebody moves a button, with nobody to notice.
 
 ## Regenerating the screenshots
 
@@ -56,7 +56,7 @@ pnpm --filter @cyberlearn/web dev            # then open /shotcapture
 
 Capture the three elements `#cap-paths`, `#cap-quiz` and `#cap-class` at
 1440 px wide and `deviceScaleFactor: 2`, dismiss the cookie banner first, and
-hide the dev overlay (`nextjs-portal { display: none }`) — it floats over the
+hide the dev overlay (`nextjs-portal { display: none }`): it floats over the
 bottom-left of every clip. Write them to `apps/marketing/public/screens/` and
 update the pixel sizes in `src/components/browser.tsx`, which uses them so
 nothing is stretched.

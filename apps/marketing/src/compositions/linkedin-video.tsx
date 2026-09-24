@@ -94,7 +94,7 @@ function Hook({ duration }: { duration: number }): React.JSX.Element {
             lineHeight: 1.45,
           }}
         >
-          CyberLearn — apprendre la cyber, le dev
+          CyberLearn : apprendre la cyber, le dev
           <br />
           et le réseau. Seul, ou avec sa classe.
         </div>
@@ -261,7 +261,7 @@ function Ask({ duration }: { duration: number }): React.JSX.Element {
               letterSpacing: 2,
             }}
           >
-            cyberlearn.fr — compte gratuit
+            cyberlearn.fr · compte gratuit
           </div>
           <div
             style={{

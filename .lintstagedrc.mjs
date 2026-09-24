@@ -14,6 +14,10 @@ const isRuntimeFile = (f) => f.includes("/public/runtimes/");
 const isDocsFile = (f) => f.replace(/\\/g, "/").includes("/docs/");
 
 export default {
+  // Read-only, and it picks its own scope (apps, packages, content): see the script.
+  "*": (files) =>
+    `node scripts/check-typography.mjs ${files.map((f) => JSON.stringify(resolve(f))).join(" ")}`,
+
   "*.{ts,tsx,js,jsx,mjs,cjs}": (files) => {
     const biomeFiles = files.filter((f) => !isRuntimeFile(f) && !isDocsFile(f));
     if (biomeFiles.length === 0) return [];

@@ -142,7 +142,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       <PageHeader
         eyebrow="Aperçu"
         title="Vue d'ensemble"
-        description="Croissance, contenu publié et signalements — l'état de la plateforme sur les 8 dernières semaines."
+        description="Croissance, contenu publié et signalements : l'état de la plateforme sur les 8 dernières semaines."
         actions={
           <>
             <GhostLink href="/lessons/import">Importer MDX</GhostLink>

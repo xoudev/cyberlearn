@@ -121,7 +121,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
           </span>
         ) : (
           <span key="n" style={{ color: UI.faint }}>
-            —
+            Aucune
           </span>
         ),
         <StatusBadge

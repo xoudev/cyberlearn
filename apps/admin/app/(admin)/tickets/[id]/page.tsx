@@ -194,7 +194,7 @@ export default async function AdminTicketPage({
                     {ticket.jiraIssueKey} ↗
                   </a>
                 ) : (
-                  <span style={{ color: UI.faint }}>—</span>
+                  <span style={{ color: UI.faint }}>Aucun ticket lié</span>
                 )}
               </DetailRow>
               <DetailRow label="Créé le">{formatDateTime(ticket.createdAt)}</DetailRow>

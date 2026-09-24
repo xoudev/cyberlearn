@@ -233,7 +233,7 @@ export function PrivacyForm({
               Indépendant du réglage ci-dessus : le classement public, c&apos;est la plateforme
               entière, tes amis sont des gens que tu as acceptés un par un. Tu peux être masqué sur
               l&apos;un et visible sur l&apos;autre, dans les deux sens. Il n&apos;y a pas de mode
-              anonyme ici : sur une liste de cinq amis, « Anonyme » n&apos;anonymise personne — on
+              anonyme ici : sur une liste de cinq amis, « Anonyme » n&apos;anonymise personne : on
               sait qui sont ses propres amis. Tu y figures sous ton nom, ou tu n&apos;y figures pas.
             </InfoTip>
           }

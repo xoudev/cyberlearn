@@ -5,7 +5,7 @@ import { issueCertificate } from "@/lib/certificates/issue";
 import { requireRequestUser } from "@/lib/auth";
 
 // checkAndIssueCertificates used to live here. Every export of a "use server"
-// file is a callable endpoint, and it takes a userId parameter — so it let a
+// file is a callable endpoint, and it takes a userId parameter, so it let a
 // caller mint certificates for an arbitrary account. It now sits in
 // @/lib/certificates/check-and-issue, reachable from the server only.
 

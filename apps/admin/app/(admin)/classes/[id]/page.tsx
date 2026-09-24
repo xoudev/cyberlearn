@@ -88,12 +88,12 @@ export default async function AdminClassPage({
         classId={klass.id}
         teachers={klass.teachers.map((t) => ({
           id: t.teacher.id,
-          name: t.teacher.displayName || (t.teacher.username ?? "—"),
+          name: t.teacher.displayName || (t.teacher.username ?? "Sans nom"),
           subject: t.subject,
         }))}
         members={klass.members.map((m) => ({
           id: m.user.id,
-          name: m.user.displayName || (m.user.username ?? "—"),
+          name: m.user.displayName || (m.user.username ?? "Sans nom"),
           email: m.user.email,
           role: m.user.role,
           joinedAt: m.joinedAt.toISOString(),

@@ -94,7 +94,7 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
           </span>
         ) : (
           <span key="m" style={{ color: UI.faint }}>
-            —
+            Aucun détail
           </span>
         ),
         <span key="d" className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>

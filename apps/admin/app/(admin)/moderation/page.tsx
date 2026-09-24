@@ -85,7 +85,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
         <KpiCard label="Faux positifs" value={String(overturned)} tone="danger" />
         <KpiCard
           label="Taux de faux positifs"
-          value={judged === 0 ? "—" : `${String(Math.round((overturned / judged) * 100))}%`}
+          value={judged === 0 ? "n.d." : `${String(Math.round((overturned / judged) * 100))}%`}
           tone="info"
         />
       </div>
@@ -160,7 +160,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
                       </Tag>
                     </td>
                     <td align="right" className="mono" style={{ color: UI.faint, fontSize: 11 }}>
-                      {event.reviewedBy?.displayName ?? "—"}
+                      {event.reviewedBy?.displayName ?? "Compte supprimé"}
                     </td>
                   </tr>
                 ))}

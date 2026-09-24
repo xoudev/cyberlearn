@@ -54,7 +54,7 @@ export function ResetProgressForm({
     <Card title="Remettre la progression à zéro" pad>
       <p className="a-form-notice">
         Efface l&apos;XP, le niveau, les séries, la progression des leçons et des parcours, les
-        révisions, les badges, les quêtes, les défis, les cosmétiques et les attestations — fichiers
+        révisions, les badges, les quêtes, les défis, les cosmétiques et les attestations, fichiers
         compris. Le compte, son identité, ses préférences, ses classes, ses notes et tout ce
         qu&apos;il a publié restent en place. Le test de positionnement aussi : il ne se repasse
         pas. Rien de tout cela ne se récupère.

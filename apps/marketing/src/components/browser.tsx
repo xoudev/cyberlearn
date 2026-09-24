@@ -7,7 +7,7 @@ import { fonts, palette } from "../theme";
  *
  * The images in `public/screens` are screenshots of the product's own React
  * components, rendered with the product's own CSS. They are not drawings of
- * it — the first version of this file was, and that was the wrong call. A
+ * it. The first version of this file was, and that was the wrong call. A
  * video that recruits testers has to show what they will actually get, and a
  * drawing starts lying the moment somebody moves a button.
  *
@@ -17,7 +17,7 @@ import { fonts, palette } from "../theme";
  * publishes real students' names, and most of them are minors.
  *
  * Regenerating them is the price of keeping them honest. When a screen changes
- * enough that this video misrepresents it, recapture — that is a smaller job
+ * enough that this video misrepresents it, recapture: that is a smaller job
  * than noticing a drawing has drifted, which nobody ever does.
  */
 
