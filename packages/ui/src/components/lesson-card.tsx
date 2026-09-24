@@ -329,6 +329,12 @@ interface LessonCardProps {
   coverSrc?: string | null | undefined;
   currentSection?: number | undefined;
   totalSections?: number | undefined;
+  /**
+   * A completed lesson's quiz score, right answers out of its quizzes. Shown
+   * beside "Terminé" on the catalogue card; absent for a lesson without
+   * quizzes, or completed before answers were recorded.
+   */
+  quizScore?: { correct: number; total: number } | null | undefined;
   /** "catalog" = full card with cover; "compact" = minimal list card */
   variant?: "catalog" | "compact" | undefined;
   /** Client-only: wrap with arbitrary JSX. Cannot be passed from Server Components - use <Link><LessonCard /></Link> pattern instead. */
@@ -348,6 +354,7 @@ export function LessonCard({
   coverSrc,
   currentSection,
   totalSections,
+  quizScore,
   variant = "compact",
   wrapper,
 }: LessonCardProps): React.ReactElement {
@@ -373,6 +380,7 @@ export function LessonCard({
         coverSrc={coverSrc ?? null}
         {...(currentSection !== undefined ? { currentSection } : {})}
         {...(totalSections !== undefined ? { totalSections } : {})}
+        quizScore={status === "COMPLETED" ? (quizScore ?? null) : null}
       />
     ) : (
       <CompactCard
@@ -405,6 +413,7 @@ function CatalogCard({
   coverSrc,
   currentSection,
   totalSections,
+  quizScore,
 }: {
   title: string;
   description?: string | undefined;
@@ -419,6 +428,7 @@ function CatalogCard({
   coverSrc?: string | null | undefined;
   currentSection?: number | undefined;
   totalSections?: number | undefined;
+  quizScore: { correct: number; total: number } | null;
 }): React.ReactElement {
   const isCompleted = status === "COMPLETED";
   const isInProgress = status === "IN_PROGRESS";
@@ -936,10 +946,32 @@ function CatalogCard({
         >
           <StatusIcon status={status} />
           {statusMeta.label}
+          {quizScore !== null && (
+            <span
+              title={`Quiz : ${String(quizScore.correct)} bonne${quizScore.correct > 1 ? "s" : ""} réponse${quizScore.correct > 1 ? "s" : ""} sur ${String(quizScore.total)}`}
+              style={{
+                marginLeft: 4,
+                padding: "1px 6px",
+                border: `1px solid ${quizScoreColor(quizScore)}66`,
+                color: quizScoreColor(quizScore),
+                fontWeight: 700,
+                letterSpacing: "0.06em",
+              }}
+            >
+              <span className="sr-only">Quiz : </span>
+              {quizScore.correct}/{quizScore.total}
+            </span>
+          )}
         </span>
       </div>
     </article>
   );
+}
+
+/** Full marks in the accent, a pass in soft white, below half in amber. */
+function quizScoreColor(score: { correct: number; total: number }): string {
+  if (score.correct === score.total) return "#0AFFD4";
+  return score.correct * 2 >= score.total ? "#B8B5D1" : "#FFB020";
 }
 
 // ── Compact card - minimal list view (used on dashboard, etc.) ────────────────

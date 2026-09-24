@@ -165,8 +165,8 @@ describe("braces hold values, never code", () => {
   });
 
   it.each([
-    ["text", '<Quiz question={"Qu\'est-ce ?"} options={["a", "b"]} correct={0} />'],
-    ["a negative number", "<Quiz correct={-1} />"],
+    ["text", '<Quiz id="q" question={"Qu\'est-ce ?"} options={["a", "b"]} correct={0} />'],
+    ["a negative number", "<Callout offset={-1}>x</Callout>"],
     ["booleans and null", "<CodePlayground validate={true} expectedOutput={null} />"],
     ["a template without ${}", "<CodePlayground starterCode={`print(1)\n\\${montre}`} />"],
     [

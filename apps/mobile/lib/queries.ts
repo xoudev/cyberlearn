@@ -4,6 +4,7 @@ import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
 import { supabase } from "@/lib/supabase";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
+import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
 
 // Prisma's @default(uuid()) generates ids CLIENT-side, so these tables have
 // `id UUID NOT NULL` with no database default. Direct PostgREST inserts must
@@ -44,6 +45,8 @@ export interface LessonCard {
   estimatedMinutes: number;
   xpReward: number;
   status: ProgressStatus | null;
+  /** A completed lesson's quiz score, when one was recorded. */
+  quizScore?: QuizScore | null;
 }
 
 export interface BadgeItem {
@@ -226,20 +229,28 @@ export function useLessons(userId: string | undefined, filters: LessonFilters) {
       const lessonsRes = await query.order("publishedAt", { ascending: false }).limit(60);
       const rows = (lessonsRes.data ?? []) as Omit<LessonCard, "status">[];
 
-      let statusByLesson = new Map<string, ProgressStatus>();
+      type ProgressRow = {
+        lessonId: string;
+        status: ProgressStatus;
+        quizCorrect: number | null;
+        quizTotal: number | null;
+      };
+      let progressByLesson = new Map<string, ProgressRow>();
       if (userId) {
         const { data } = await supabase
           .from("user_lesson_progress")
-          .select("lessonId,status")
+          .select("lessonId,status,quizCorrect,quizTotal")
           .eq("userId", userId);
-        statusByLesson = new Map(
-          ((data ?? []) as { lessonId: string; status: ProgressStatus }[]).map((r) => [
-            r.lessonId,
-            r.status,
-          ]),
-        );
+        progressByLesson = new Map(((data ?? []) as ProgressRow[]).map((r) => [r.lessonId, r]));
       }
-      return rows.map((l) => ({ ...l, status: statusByLesson.get(l.id) ?? null }));
+      return rows.map((l) => {
+        const progress = progressByLesson.get(l.id);
+        return {
+          ...l,
+          status: progress?.status ?? null,
+          quizScore: progress ? progressScore(progress) : null,
+        };
+      });
     },
   });
 }
@@ -478,6 +489,28 @@ export function useLessonDetail(userId: string | undefined, slug: string | undef
       return { ...lesson, status };
     },
   });
+}
+
+/**
+ * The quiz answers already on record for a lesson, keyed by quiz id: an
+ * answered question is shown answered, and is never asked twice. Read under
+ * RLS, which only returns the reader's own answers.
+ */
+export async function fetchLessonQuizAnswers(
+  userId: string,
+  lessonId: string,
+): Promise<Record<string, RecordedAnswer>> {
+  const { data } = await supabase
+    .from("lesson_quiz_answers")
+    .select("quizId,selected,correct")
+    .eq("userId", userId)
+    .eq("lessonId", lessonId);
+  return Object.fromEntries(
+    ((data ?? []) as { quizId: string; selected: number; correct: boolean }[]).map((a) => [
+      a.quizId,
+      { selected: a.selected, correct: a.correct },
+    ]),
+  );
 }
 
 /** Mark a lesson as opened (IN_PROGRESS) - resume tracking, no XP involved. */

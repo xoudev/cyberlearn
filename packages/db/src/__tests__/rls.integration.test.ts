@@ -184,6 +184,18 @@ describe("RLS policies (integration)", () => {
     });
     if (aErr2) throw new Error(`Failed to insert quiz_attempt: ${aErr2.message}`);
 
+    // A wrong answer of User B's to a lesson quiz: the one a client would
+    // want to rewrite, or erase to try again.
+    const { error: lqaErr } = await adminClient.from("lesson_quiz_answers").insert({
+      id: randomUUID(),
+      userId: userBId,
+      lessonId: publishedLessonId,
+      quizId: "rls-q",
+      selected: 2,
+      correct: false,
+    });
+    if (lqaErr) throw new Error(`Failed to insert lesson_quiz_answer: ${lqaErr.message}`);
+
     configured = true;
   });
 
@@ -420,6 +432,87 @@ describe("RLS policies (integration)", () => {
         answers: [],
       });
       expect(error).not.toBeNull(); // RLS denies: no client INSERT policy exists
+    });
+  });
+
+  describe("lesson_quiz_answers", () => {
+    // One attempt per quiz: whether an answer is right is decided on the
+    // server, from the lesson. Through the Data API a client may read its own
+    // answers and do nothing else with them.
+    async function bAnswer(): Promise<{ selected: number; correct: boolean } | undefined> {
+      const { data } = await adminClient
+        .from("lesson_quiz_answers")
+        .select("selected, correct")
+        .eq("userId", userBId)
+        .eq("quizId", "rls-q");
+      return (data as { selected: number; correct: boolean }[] | null)?.[0];
+    }
+
+    it("user B can read their own answers", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { data, error } = await clientB
+        .from("lesson_quiz_answers")
+        .select("quizId, selected, correct")
+        .eq("userId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([{ quizId: "rls-q", selected: 2, correct: false }]);
+    });
+
+    it("user A cannot read user B's answers", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA
+        .from("lesson_quiz_answers")
+        .select("*")
+        .eq("userId", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
+    });
+
+    it("a client cannot record an answer as right", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      const { error } = await clientB.from("lesson_quiz_answers").insert({
+        id: randomUUID(),
+        userId: userBId,
+        lessonId: publishedLessonId,
+        quizId: "rls-q-forged",
+        selected: 0,
+        correct: true,
+      });
+      expect(error).not.toBeNull();
+    });
+
+    it("a client cannot turn a wrong answer into a right one", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB
+        .from("lesson_quiz_answers")
+        .update({ selected: 1, correct: true })
+        .eq("quizId", "rls-q");
+      expect(await bAnswer()).toEqual({ selected: 2, correct: false });
+    });
+
+    it("a client cannot erase an answer to try again", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB.from("lesson_quiz_answers").delete().eq("quizId", "rls-q");
+      expect(await bAnswer()).toEqual({ selected: 2, correct: false });
+    });
+
+    it("a client cannot write its own quiz score on its progress", async () => {
+      if (!configured) return;
+      const clientB = await signInAs(TEST_USER_B_EMAIL);
+      await clientB
+        .from("user_lesson_progress")
+        .update({ quizCorrect: 5, quizTotal: 5 })
+        .eq("userId", userBId);
+      const { data } = await adminClient
+        .from("user_lesson_progress")
+        .select("quizCorrect, quizTotal")
+        .eq("userId", userBId);
+      expect(data).toEqual([{ quizCorrect: null, quizTotal: null }]);
     });
   });
 

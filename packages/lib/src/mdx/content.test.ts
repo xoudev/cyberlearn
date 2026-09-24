@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkLessonMdx } from "./check.js";
+import { extractLessonQuizzes } from "./quizzes.js";
 
 /**
  * Every lesson in the repository renders.
@@ -37,4 +38,19 @@ describe("the lessons in content/", () => {
     const result = await checkLessonMdx(body);
     expect(result).toEqual({ ok: true });
   });
+
+  it("have every quiz scorable: the server reads as many as the lesson shows", () => {
+    // The answer key is read off the syntax tree. A quiz the reader missed
+    // would be one the page shows and the server refuses to score.
+    let total = 0;
+    for (const file of FILES) {
+      const mdx = readFileSync(file, "utf8");
+      const written = (mdx.match(/<Quiz\s/g) ?? []).length;
+      const read = extractLessonQuizzes(mdx);
+      expect(read.length, path.relative(ROOT, file)).toBe(written);
+      total += read.length;
+    }
+    expect(total).toBeGreaterThan(500);
+    // Parses every lesson: a few seconds alone, more beside the other suites.
+  }, 30_000);
 });

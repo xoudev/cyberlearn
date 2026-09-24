@@ -5,7 +5,13 @@ import Link from "next/link";
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
-import { lessonRepository, ratingRepository, qaRepository, noteRepository } from "@cyberlearn/db";
+import {
+  lessonQuizRepository,
+  lessonRepository,
+  ratingRepository,
+  qaRepository,
+  noteRepository,
+} from "@cyberlearn/db";
 import { NoteDrawer } from "./_components/note-drawer";
 import { LessonRating } from "./_components/lesson-rating";
 import { LessonQA } from "./_components/lesson-qa";
@@ -26,6 +32,7 @@ import { QuizGroup } from "./_components/quiz-group";
 import { PythonChallenge } from "./_components/python-challenge";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
+import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
 
 const MDX_COMPONENTS = {
   pre: CodeBlock,
@@ -113,23 +120,30 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const lesson = await lessonRepository.findBySlug(slug, authUser.id);
   if (!lesson) notFound();
 
-  const [existing, pathContexts, ratingData, userRating, questions, note] = await Promise.all([
-    lessonRepository.findProgress(authUser.id, lesson.id),
-    // "Next" used to mean the next lesson published anywhere in the catalogue,
-    // by publishedAt. Finishing lesson 3 of the network path could therefore
-    // hand the reader a Python lesson that happened to ship the same week, and
-    // the path they were working through simply stopped being mentioned. It is
-    // the next lesson of *this* path now.
-    lessonRepository.findPathContexts(authUser.id, [lesson.id]),
-    ratingRepository.findLessonStats(lesson.id),
-    ratingRepository.findUserLessonRating(authUser.id, lesson.id),
-    qaRepository.findQuestionsByLesson(lesson.id),
-    // Tolerate the window between deploy and the prod notes migration: a missing
-    // table yields no preloaded note rather than a crashed lesson page.
-    noteRepository
-      .findForLesson(authUser.id, lesson.id)
-      .catch(() => null),
-  ]);
+  const [existing, pathContexts, ratingData, userRating, questions, note, quizAnswers] =
+    await Promise.all([
+      lessonRepository.findProgress(authUser.id, lesson.id),
+      // "Next" used to mean the next lesson published anywhere in the catalogue,
+      // by publishedAt. Finishing lesson 3 of the network path could therefore
+      // hand the reader a Python lesson that happened to ship the same week, and
+      // the path they were working through simply stopped being mentioned. It is
+      // the next lesson of *this* path now.
+      lessonRepository.findPathContexts(authUser.id, [lesson.id]),
+      ratingRepository.findLessonStats(lesson.id),
+      ratingRepository.findUserLessonRating(authUser.id, lesson.id),
+      qaRepository.findQuestionsByLesson(lesson.id),
+      // Tolerate the window between deploy and the prod notes migration: a missing
+      // table yields no preloaded note rather than a crashed lesson page.
+      noteRepository
+        .findForLesson(authUser.id, lesson.id)
+        .catch(() => null),
+      // The answers already on record: an answered question stays answered
+      // across a reload, and is never asked twice.
+      lessonQuizRepository.findForLesson(authUser.id, lesson.id),
+    ]);
+  const initialQuizAnswers: Record<string, QuizAnswer> = Object.fromEntries(
+    quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
+  );
 
   const placement = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds).get(
     lesson.id,
@@ -402,33 +416,35 @@ export default async function LessonPage({ params }: Props): Promise<React.React
       </div>
 
       {/* ── Stepper: timeline + MDX sections + rail + nav ─────────────────── */}
-      <LessonStepper
-        lessonId={lesson.id}
-        lessonTitle={lesson.title}
-        xpReward={lesson.xpReward}
-        isCompleted={isCompleted}
-        sections={sections}
-        railExtra={
-          <Suspense fallback={null}>
-            <LessonAuthor lessonId={lesson.id} />
-          </Suspense>
-        }
-      >
-        {mdxSections.map((src, i) => (
-          // SAFETY: index key is stable - sections don't reorder after page load
-          <SectionPane key={i} index={i}>
-            {/* Each section fails on its own: one bad expression used to take
+      <LessonQuizProvider lessonId={lesson.id} initialAnswers={initialQuizAnswers}>
+        <LessonStepper
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+          xpReward={lesson.xpReward}
+          isCompleted={isCompleted}
+          sections={sections}
+          railExtra={
+            <Suspense fallback={null}>
+              <LessonAuthor lessonId={lesson.id} />
+            </Suspense>
+          }
+        >
+          {mdxSections.map((src, i) => (
+            // SAFETY: index key is stable - sections don't reorder after page load
+            <SectionPane key={i} index={i}>
+              {/* Each section fails on its own: one bad expression used to take
                 the whole lesson down. See lesson-section.tsx. */}
-            <LessonSection
-              source={src}
-              components={MDX_COMPONENTS}
-              options={LESSON_MDX_OPTIONS}
-              lessonSlug={lesson.slug}
-              index={i}
-            />
-          </SectionPane>
-        ))}
-      </LessonStepper>
+              <LessonSection
+                source={src}
+                components={MDX_COMPONENTS}
+                options={LESSON_MDX_OPTIONS}
+                lessonSlug={lesson.slug}
+                index={i}
+              />
+            </SectionPane>
+          ))}
+        </LessonStepper>
+      </LessonQuizProvider>
 
       {/* ── Next bar ─────────────────────────────────────────────────────────
           Rendered even with no next lesson: the bar carries the "terminer"

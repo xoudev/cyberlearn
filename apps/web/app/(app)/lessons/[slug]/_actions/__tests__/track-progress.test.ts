@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   findAllActive: vi.fn(),
   findUserBadgeIds: vi.fn(),
   findCriterionFacts: vi.fn(),
+  findQuizAnswers: vi.fn(),
   transaction: vi.fn(),
   tx: {
     userLessonProgress: { updateMany: vi.fn(), createMany: vi.fn() },
@@ -49,6 +50,7 @@ vi.mock("@cyberlearn/db", () => ({
     findCriterionFacts: m.findCriterionFacts,
   },
   userRepository: { findForGamification: m.findForGamification },
+  lessonQuizRepository: { findForLesson: m.findQuizAnswers },
 }));
 
 import { completeLesson } from "../track-progress";
@@ -255,5 +257,71 @@ describe("completeLesson - badge xpReward crediting (interactive transaction)", 
     } else {
       expect(m.tx.notification.create).not.toHaveBeenCalled();
     }
+  });
+});
+
+/** The `data` a mocked Prisma write was first called with. */
+function dataOf(fn: { mock: { calls: unknown[][] } }): Record<string, unknown> {
+  // SAFETY: both writes checked here are called with a single `{ data }` argument.
+  return (fn.mock.calls[0]?.[0] as { data: Record<string, unknown> }).data;
+}
+
+describe("completeLesson - the quiz score", () => {
+  const QUIZZES = [
+    '<Quiz id="q-1" question="?" options={["a", "b"]} correct={0} />',
+    '<Quiz id="q-2" question="?" options={["a", "b"]} correct={1} />',
+    '<Quiz id="q-3" question="?" options={["a", "b"]} correct={1} />',
+  ].join("\n\n");
+
+  beforeEach(() => {
+    m.lessonFindUnique.mockResolvedValue({
+      xpReward: 20,
+      slug: "listes",
+      category: "DEV",
+      contentMdx: `## Section\n\n${QUIZZES}`,
+    });
+    m.findQuizAnswers.mockResolvedValue([
+      { quizId: "q-1", selected: 0, correct: true },
+      { quizId: "q-2", selected: 0, correct: false },
+      { quizId: "q-3", selected: 1, correct: true },
+      // An answer to a quiz the lesson no longer has does not count.
+      { quizId: "q-old", selected: 0, correct: true },
+    ]);
+  });
+
+  it("fixes right answers out of the lesson's quizzes on the completion", async () => {
+    const result = await completeLesson(LESSON_ID);
+    expect(result.quizScore).toEqual({ correct: 2, total: 3 });
+    expect(dataOf(m.tx.userLessonProgress.updateMany)).toMatchObject({
+      status: "COMPLETED",
+      quizCorrect: 2,
+      quizTotal: 3,
+    });
+  });
+
+  it("writes it on a freshly inserted row too", async () => {
+    m.tx.userLessonProgress.updateMany.mockResolvedValue({ count: 0 });
+    m.tx.userLessonProgress.createMany.mockResolvedValue({ count: 1 });
+    await completeLesson(LESSON_ID);
+    expect(dataOf(m.tx.userLessonProgress.createMany)).toMatchObject({
+      quizCorrect: 2,
+      quizTotal: 3,
+    });
+  });
+
+  it("leaves it empty for a lesson without quizzes", async () => {
+    m.lessonFindUnique.mockResolvedValue({
+      xpReward: 20,
+      slug: "texte",
+      category: "DEV",
+      contentMdx: "## Section\n\nDu texte.",
+    });
+    const result = await completeLesson(LESSON_ID);
+    expect(result.quizScore).toBeNull();
+    expect(m.findQuizAnswers).not.toHaveBeenCalled();
+    expect(dataOf(m.tx.userLessonProgress.updateMany)).toMatchObject({
+      quizCorrect: null,
+      quizTotal: null,
+    });
   });
 });

@@ -11,6 +11,7 @@ import { awardBadges } from "@/lib/badges/award";
 import { creditXp } from "@/lib/xp/credit";
 import { checkAndIssueCertificates } from "@/lib/certificates/check-and-issue";
 import { recordQuestProgress } from "@/lib/quests/progress";
+import { lessonQuizScore } from "@/lib/lessons/quiz-answer";
 
 export interface CompleteLessonResult {
   alreadyCompleted: boolean;
@@ -19,6 +20,8 @@ export interface CompleteLessonResult {
   leveledUp: boolean;
   newLevel: number;
   newBadges: { name: string; rarity: string; xpReward: number }[];
+  /** Right answers out of the lesson's quizzes; null when it has none. */
+  quizScore: { correct: number; total: number } | null;
 }
 
 export const EMPTY_COMPLETE_RESULT: CompleteLessonResult = {
@@ -27,6 +30,7 @@ export const EMPTY_COMPLETE_RESULT: CompleteLessonResult = {
   leveledUp: false,
   newLevel: 1,
   newBadges: [],
+  quizScore: null,
 };
 
 /**
@@ -45,7 +49,7 @@ export async function completeLessonForUser(
   const [lesson, user, existing, allBadges, wantsRevisions] = await Promise.all([
     prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { xpReward: true, slug: true, category: true },
+      select: { xpReward: true, slug: true, category: true, contentMdx: true },
     }),
     userRepository.findForGamification(userId),
     lessonRepository.findProgress(userId, lessonId),
@@ -54,6 +58,14 @@ export async function completeLessonForUser(
   ]);
 
   if (!lesson || !user) return EMPTY_COMPLETE_RESULT;
+
+  // The quiz score is fixed now, with the completion: right answers out of
+  // the quizzes the lesson has at this moment. The catalogue shows it.
+  const quizScore = await lessonQuizScore(userId, lessonId, lesson.contentMdx);
+  const scoreColumns = {
+    quizCorrect: quizScore?.correct ?? null,
+    quizTotal: quizScore?.total ?? null,
+  };
 
   // Optimistic hint, read outside any transaction: it decides whether the
   // (expensive) badge evaluation below is worth running. The authoritative
@@ -110,14 +122,21 @@ export async function completeLessonForUser(
     // caller ends up with a non-zero count, so the reward is credited once.
     const claimed = await tx.userLessonProgress.updateMany({
       where: { userId, lessonId, status: { not: "COMPLETED" } },
-      data: { status: "COMPLETED", completedAt: now },
+      data: { status: "COMPLETED", completedAt: now, ...scoreColumns },
     });
 
     let firstCompletion = claimed.count > 0;
     if (claimed.count === 0) {
       // Either the row is already COMPLETED, or the user has no row at all.
       const created = await tx.userLessonProgress.createMany({
-        data: { userId, lessonId, status: "COMPLETED", attempts: 1, completedAt: now },
+        data: {
+          userId,
+          lessonId,
+          status: "COMPLETED",
+          attempts: 1,
+          completedAt: now,
+          ...scoreColumns,
+        },
         skipDuplicates: true,
       });
       firstCompletion = created.count > 0;
@@ -220,5 +239,6 @@ export async function completeLessonForUser(
       rarity: b.rarity,
       xpReward: b.xpReward,
     })),
+    quizScore,
   };
 }

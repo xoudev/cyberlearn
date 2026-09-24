@@ -48,8 +48,23 @@ const safe = true;
         question: "Port sécurisé ?",
         options: ["80", "443"],
         correct: 1,
+        explanation: null,
       },
     ]);
+  });
+
+  it("keeps a quiz's explanation, to show once it is answered", () => {
+    const lesson = parseLesson(`
+## Quiz
+
+<Quiz id="q-1"
+  question="Port sécurisé ?"
+  options={["80", "443"]}
+  correct={1}
+  explanation="HTTPS écoute sur le port 443, HTTP sur le \\"80\\"."
+/>
+`);
+    expect(lesson.quizzes[0]?.explanation).toBe('HTTPS écoute sur le port 443, HTTP sur le "80".');
   });
 
   it("keeps web-only media visible as labelled placeholders", () => {

@@ -17,7 +17,7 @@ import { BlockView } from "@/components/lesson-render";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
-import { completeLessonApi, type CompleteLessonResult } from "@/lib/api";
+import { answerQuizApi, completeLessonApi, type CompleteLessonResult } from "@/lib/api";
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,
@@ -26,13 +26,22 @@ import {
   type Rarity,
 } from "@/lib/db";
 import { parseLesson } from "@/lib/lesson-blocks";
-import { markLessonOpened, useLessonDetail } from "@/lib/queries";
+import { fetchLessonQuizAnswers, markLessonOpened, useLessonDetail } from "@/lib/queries";
+import { scoreOf, type RecordedAnswer } from "@/lib/quiz";
 import { useSession } from "@/lib/session";
 
 type Step =
   | { mode: "read"; section: number }
-  | { mode: "quiz"; qIndex: number; correctCount: number; picked: number | null; revealed: boolean }
+  | { mode: "quiz"; qIndex: number; picked: number | null; sending: boolean; error: string | null }
   | { mode: "result"; correctCount: number; reward: CompleteLessonResult | null; saving: boolean };
+
+const FIRST_QUESTION: Extract<Step, { mode: "quiz" }> = {
+  mode: "quiz",
+  qIndex: 0,
+  picked: null,
+  sending: false,
+  error: null,
+};
 
 export default function LessonReader(): React.JSX.Element {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -44,6 +53,10 @@ export default function LessonReader(): React.JSX.Element {
 
   const [step, setStep] = useState<Step>({ mode: "read", section: 0 });
   const [showLevelUp, setShowLevelUp] = useState(false);
+  // The answers on record, keyed by quiz id. The first answer is the only one:
+  // a question answered here or on the site is shown answered, never asked
+  // again, and it is the server that says whether it was right.
+  const [answers, setAnswers] = useState<Record<string, RecordedAnswer>>({});
 
   const parsed = useMemo(() => (data ? parseLesson(data.contentMdx) : null), [data]);
 
@@ -53,6 +66,18 @@ export default function LessonReader(): React.JSX.Element {
       void markLessonOpened(userId, data.id);
     }
   }, [userId, data]);
+
+  const lessonId = data?.id;
+  useEffect(() => {
+    if (!userId || !lessonId) return;
+    let cancelled = false;
+    void fetchLessonQuizAnswers(userId, lessonId).then((recorded) => {
+      if (!cancelled) setAnswers((prev) => ({ ...recorded, ...prev }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, lessonId]);
 
   if (isLoading || !data || !parsed) {
     return (
@@ -145,7 +170,7 @@ export default function LessonReader(): React.JSX.Element {
             if (step.section < sections.length - 1) {
               setStep({ mode: "read", section: step.section + 1 });
             } else if (quizzes.length > 0) {
-              setStep({ mode: "quiz", qIndex: 0, correctCount: 0, picked: null, revealed: false });
+              setStep(FIRST_QUESTION);
             } else {
               void finishLesson(0);
             }
@@ -156,22 +181,37 @@ export default function LessonReader(): React.JSX.Element {
           key={step.qIndex}
           quiz={quizzes[step.qIndex] ?? null}
           picked={step.picked}
-          revealed={step.revealed}
-          onPick={(i) => setStep({ ...step, picked: i })}
-          onValidate={() => setStep({ ...step, revealed: true })}
+          answer={answers[quizzes[step.qIndex]?.id ?? ""] ?? null}
+          sending={step.sending}
+          error={step.error}
+          onPick={(i) => setStep({ ...step, picked: i, error: null })}
+          onValidate={() => {
+            const quiz = quizzes[step.qIndex];
+            if (!quiz || step.picked === null) return;
+            const picked = step.picked;
+            setStep({ ...step, sending: true, error: null });
+            void answerQuizApi(data.id, quiz.id, picked).then((reply) => {
+              if (reply.ok) {
+                setAnswers((prev) => ({
+                  ...prev,
+                  [quiz.id]: { selected: reply.selected, correct: reply.correct },
+                }));
+                setStep({ ...step, picked, sending: false, error: null });
+              } else {
+                setStep({ ...step, picked, sending: false, error: reply.error });
+              }
+            });
+          }}
           onNext={() => {
-            const gained = step.picked === quizzes[step.qIndex]?.correct ? 1 : 0;
-            const newCount = step.correctCount + gained;
             if (step.qIndex < quizzes.length - 1) {
-              setStep({
-                mode: "quiz",
-                qIndex: step.qIndex + 1,
-                correctCount: newCount,
-                picked: null,
-                revealed: false,
-              });
+              setStep({ ...FIRST_QUESTION, qIndex: step.qIndex + 1 });
             } else {
-              void finishLesson(newCount);
+              void finishLesson(
+                scoreOf(
+                  quizzes.map((q) => q.id),
+                  answers,
+                ).correct,
+              );
             }
           }}
           isLast={step.qIndex === quizzes.length - 1}
@@ -183,9 +223,7 @@ export default function LessonReader(): React.JSX.Element {
           total={quizzes.length}
           reward={step.reward}
           saving={step.saving}
-          onReplay={() =>
-            setStep({ mode: "quiz", qIndex: 0, correctCount: 0, picked: null, revealed: false })
-          }
+          onReview={() => setStep(FIRST_QUESTION)}
           onRetrySync={() => void finishLesson(step.correctCount)}
           onContinue={() => router.back()}
           hasQuiz={quizzes.length > 0}
@@ -269,21 +307,30 @@ function ReadView({
 function QuizView({
   quiz,
   picked,
-  revealed,
+  answer,
+  sending,
+  error,
   onPick,
   onValidate,
   onNext,
   isLast,
 }: {
-  quiz: { question: string; options: string[]; correct: number } | null;
+  quiz: { question: string; options: string[]; correct: number; explanation: string | null } | null;
   picked: number | null;
-  revealed: boolean;
+  /** The answer on record: once there is one, the question is closed. */
+  answer: RecordedAnswer | null;
+  sending: boolean;
+  error: string | null;
   onPick: (i: number) => void;
   onValidate: () => void;
   onNext: () => void;
   isLast: boolean;
 }): React.JSX.Element {
   if (!quiz) return <View />;
+  const revealed = answer !== null;
+  const chosen = revealed ? answer.selected : picked;
+  const right = revealed && answer.correct;
+  const rightLetter = String.fromCharCode(65 + quiz.correct);
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -294,7 +341,7 @@ function QuizView({
         </Rise>
         <View style={{ gap: 10 }}>
           {quiz.options.map((opt, i) => {
-            const isPicked = picked === i;
+            const isPicked = chosen === i;
             const isCorrect = revealed && i === quiz.correct;
             const isWrong = revealed && isPicked && i !== quiz.correct;
             const border = isCorrect
@@ -306,7 +353,7 @@ function QuizView({
                   : colors.borderDefault;
             return (
               <Rise key={i} index={i + 1}>
-                <PressableScale disabled={revealed} onPress={() => onPick(i)}>
+                <PressableScale disabled={revealed || sending} onPress={() => onPick(i)}>
                   <View
                     style={{
                       flexDirection: "row",
@@ -349,23 +396,26 @@ function QuizView({
             <View
               style={{
                 borderLeftWidth: 3,
-                borderLeftColor: picked === quiz.correct ? colors.success : colors.danger,
-                backgroundColor:
-                  picked === quiz.correct ? "rgba(10,255,212,0.07)" : "rgba(255,77,109,0.07)",
+                borderLeftColor: right ? colors.success : colors.danger,
+                backgroundColor: right ? "rgba(10,255,212,0.07)" : "rgba(255,77,109,0.07)",
                 padding: 12,
+                gap: 6,
               }}
             >
-              <Text
-                variant="micro"
-                style={{ color: picked === quiz.correct ? colors.success : colors.danger }}
-              >
-                {picked === quiz.correct
-                  ? "Bonne réponse !"
-                  : `Raté - la bonne réponse était ${String.fromCharCode(65 + quiz.correct)}.`}
+              <Text variant="micro" style={{ color: right ? colors.success : colors.danger }}>
+                {right ? "Bonne réponse !" : `Raté : la bonne réponse était ${rightLetter}.`}
               </Text>
+              {quiz.explanation ? <Text variant="bodySm">{quiz.explanation}</Text> : null}
             </View>
           </PopIn>
-        ) : null}
+        ) : (
+          <Text
+            variant="bodySm"
+            style={{ marginTop: 14, color: error ? colors.danger : colors.textMuted }}
+          >
+            {error ?? "Une seule réponse par question : elle compte dans ta note de la leçon."}
+          </Text>
+        )}
       </ScrollView>
       <View style={{ paddingVertical: 10 }}>
         <GradientButton
@@ -374,10 +424,12 @@ function QuizView({
               ? isLast
                 ? "Voir le résultat →"
                 : "Question suivante →"
-              : "Valider ma réponse"
+              : sending
+                ? "Enregistrement…"
+                : "Valider ma réponse"
           }
           onPress={revealed ? onNext : onValidate}
-          disabled={picked === null}
+          disabled={!revealed && (picked === null || sending)}
         />
       </View>
     </View>
@@ -392,7 +444,7 @@ function ResultView({
   total,
   reward,
   saving,
-  onReplay,
+  onReview,
   onRetrySync,
   onContinue,
   hasQuiz,
@@ -402,7 +454,7 @@ function ResultView({
   total: number;
   reward: CompleteLessonResult | null;
   saving: boolean;
-  onReplay: () => void;
+  onReview: () => void;
   onRetrySync: () => void;
   onContinue: () => void;
   hasQuiz: boolean;
@@ -632,7 +684,7 @@ function ResultView({
         <View style={{ flexDirection: "row", gap: 10 }}>
           {hasQuiz ? (
             <PressableScale
-              onPress={onReplay}
+              onPress={onReview}
               disabled={saving}
               style={{
                 flex: 1,
@@ -644,7 +696,7 @@ function ResultView({
                 opacity: saving ? 0.5 : 1,
               }}
             >
-              <Text variant="micro">Rejouer</Text>
+              <Text variant="micro">Revoir les réponses</Text>
             </PressableScale>
           ) : null}
           <GradientButton

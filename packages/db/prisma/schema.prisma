@@ -55,6 +55,7 @@ model User {
   reviewSchedules   ReviewSchedule[]
   contactTickets    ContactTicket[]
   ratings           Rating[]
+  lessonQuizAnswers LessonQuizAnswer[]
   questions         LessonQuestion[]
   answers           LessonAnswer[]
   auditLogs         AuditLog[]              @relation("ActorLogs")
@@ -378,7 +379,7 @@ model UserPreferences {
   /// five friends an "Anonyme" row is not anonymous - a reader knows who their
   /// own friends are, so naming four of them names the fifth. Nobody appears
   /// here until they have said so.
-  friendsLeaderboard    Boolean               @default(false)
+  friendsLeaderboard Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -459,36 +460,37 @@ enum ContentStatus {
 }
 
 model Lesson {
-  id               String         @id @default(uuid()) @db.Uuid
-  refCode          String         @unique // Format: CL-LSN-001-V01
-  slug             String         @unique
-  title            String         @db.VarChar(200)
-  description      String         @db.VarChar(500)
+  id               String          @id @default(uuid()) @db.Uuid
+  refCode          String          @unique // Format: CL-LSN-001-V01
+  slug             String          @unique
+  title            String          @db.VarChar(200)
+  description      String          @db.VarChar(500)
   category         Category
   difficulty       Difficulty
   estimatedMinutes Int
   xpReward         Int
-  contentMdx       String         @db.Text
+  contentMdx       String          @db.Text
   coverImageUrl    String?
-  status           ContentStatus  @default(DRAFT)
+  status           ContentStatus   @default(DRAFT)
   /// CATALOGUE unless a teacher wrote it for their classes. Defaulted so every
   /// lesson that existed before this column is what it always was.
   audience         ContentAudience @default(CATALOGUE)
-  version          Int            @default(1)
+  version          Int             @default(1)
   /// Nullable so deleting an account does not take the lesson with it: the
   /// lesson stays and the byline says the account is gone. Same treatment as a
   /// lesson question's userId.
-  authorId         String?        @db.Uuid
+  authorId         String?         @db.Uuid
   avgRating        Float? // Recomputed in transaction on each Rating mutation
-  ratingsCount     Int            @default(0)
+  ratingsCount     Int             @default(0)
   publishedAt      DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   author User? @relation("LessonAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   pathLessons      PathLesson[]
   progress         UserLessonProgress[]
+  quizAnswers      LessonQuizAnswer[]
   reviewSchedules  ReviewSchedule[]
   ratings          Rating[]
   questions        LessonQuestion[]
@@ -599,19 +601,19 @@ enum PathTrack {
 }
 
 model Path {
-  id                  String        @id @default(uuid()) @db.Uuid
-  refCode             String        @unique // Format: CL-PATH-001-V01
-  slug                String        @unique
-  title               String        @db.VarChar(200)
-  description         String        @db.VarChar(1000)
+  id                  String          @id @default(uuid()) @db.Uuid
+  refCode             String          @unique // Format: CL-PATH-001-V01
+  slug                String          @unique
+  title               String          @db.VarChar(200)
+  description         String          @db.VarChar(1000)
   category            Category
-  track               PathTrack     @default(SKILL)
+  track               PathTrack       @default(SKILL)
   difficulty          Difficulty
   estimatedHours      Int
   coverImageUrl       String?
   certificateTemplate String? // Reference to PDF template
-  certificateBadgeId  String?       @db.Uuid
-  status              ContentStatus @default(DRAFT)
+  certificateBadgeId  String?         @db.Uuid
+  status              ContentStatus   @default(DRAFT)
   /// Who this path is for. A CLASS path is PUBLISHED - the class has to be able
   /// to open it - so "published" stopped being the same question as "in the
   /// catalogue" the day a teacher could build one. Everything that counts,
@@ -619,13 +621,13 @@ model Path {
   audience            ContentAudience @default(CATALOGUE)
   /// Who built it. Nullable so erasing an account leaves the path standing for
   /// the class working through it, exactly as a lesson's author is.
-  authorId            String?       @db.Uuid
-  version             Int           @default(1)
+  authorId            String?         @db.Uuid
+  version             Int             @default(1)
   avgRating           Float? // Recomputed in transaction on each Rating mutation
-  ratingsCount        Int           @default(0)
+  ratingsCount        Int             @default(0)
   publishedAt         DateTime?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   author       User?              @relation("PathAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   lessons      PathLesson[]
@@ -1016,6 +1018,11 @@ model UserLessonProgress {
   startedAt        DateTime       @default(now())
   completedAt      DateTime?
   lastAccessedAt   DateTime       @default(now())
+  /// The lesson's quiz score, fixed when it is completed: right answers out
+  /// of the quizzes it had then. Null for a lesson without quizzes, and for
+  /// one completed before answers were recorded.
+  quizCorrect      Int?           @db.SmallInt
+  quizTotal        Int?           @db.SmallInt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
@@ -1023,6 +1030,27 @@ model UserLessonProgress {
   @@unique([userId, lessonId])
   @@index([userId, status])
   @@map("user_lesson_progress")
+}
+
+/// One answer to one quiz of a lesson. The first answer is the only one: a
+/// wrong answer is not retried, it is explained. `quizId` is the quiz's `id`
+/// attribute in the lesson's MDX, unique within the lesson (the editors check
+/// it before saving). `correct` is decided on the server, from the lesson.
+model LessonQuizAnswer {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  lessonId   String   @db.Uuid
+  quizId     String   @db.VarChar(100)
+  selected   Int      @db.SmallInt
+  correct    Boolean
+  answeredAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId, quizId])
+  @@index([lessonId])
+  @@map("lesson_quiz_answers")
 }
 
 // ============================================================
@@ -1314,9 +1342,9 @@ model Friendship {
   id String @id @default(uuid()) @db.Uuid
 
   /// The lower of the two ids, by plain string comparison. Not "the requester".
-  userAId String @db.Uuid
+  userAId       String @db.Uuid
   /// The higher of the two.
-  userBId String @db.Uuid
+  userBId       String @db.Uuid
   /// Who asked. Always one of userAId and userBId.
   requestedById String @db.Uuid
 
@@ -1364,7 +1392,7 @@ model UserBan {
 
   /// Who decided. Nullable so erasing an administrator's account does not erase
   /// the bans they issued.
-  issuedById String? @db.Uuid
+  issuedById String?  @db.Uuid
   createdAt  DateTime @default(now())
 
   /// Set when it is lifted early - by an administrator, or because an appeal
@@ -1479,10 +1507,10 @@ model ContactTicket {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  messages TicketMessage[]
+  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages  TicketMessage[]
   /// Set when this ticket is somebody contesting a ban.
-  appealFor UserBan?       @relation("BanAppeal")
+  appealFor UserBan?        @relation("BanAppeal")
 
   @@index([status])
   @@index([userId])

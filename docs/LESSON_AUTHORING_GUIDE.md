@@ -196,7 +196,9 @@ Encadré coloré pour attirer l'attention. 4 types disponibles.
 
 ### 5.2 Quiz (QCM)
 
-Question à choix multiple intégrée dans la leçon. Auto-correctif côté client.
+Question à choix multiple intégrée dans la leçon. **Une seule réponse par question** : la première est enregistrée et notée par le serveur, elle ne se retente pas. Une fois répondue, la question reste ouverte et montre la bonne option, et l'explication quand il y en a une.
+
+À la fin de la leçon, la note (bonnes réponses sur le nombre de quiz, ex. `3/5`) est figée et s'affiche sur la carte de la leçon dans le catalogue.
 
 ```jsx
 <Quiz
@@ -204,6 +206,7 @@ Question à choix multiple intégrée dans la leçon. Auto-correctif côté clie
   question="Quel port utilise HTTPS par défaut ?"
   options={["80", "443", "8080", "22"]}
   correct={1}
+  explanation="HTTPS écoute sur 443 ; 80 est le port de HTTP, en clair."
 />
 ```
 
@@ -214,10 +217,14 @@ Question à choix multiple intégrée dans la leçon. Auto-correctif côté clie
 | `question` | string | Texte de la question |
 | `options` | string[] | Tableau de 2 à 6 réponses possibles |
 | `correct` | number | Index (0-based) de la bonne réponse |
+| `explanation` | string (optionnel, recommandé) | Pourquoi la bonne réponse est la bonne. Affichée après la réponse, juste ou fausse |
 
 **Règles d'usage :**
 - Chaque leçon doit avoir **au moins 1 Quiz**
-- Les `id` doivent être uniques dans la leçon
+- Les `id` sont **obligatoires et uniques dans la leçon** : la réponse d'un élève est enregistrée sous cet identifiant. L'éditeur refuse d'enregistrer une leçon où un quiz n'en a pas, ou en partage un
+- Ne pas changer l'`id` d'un quiz déjà publié : les réponses déjà données y sont attachées
+- Sans réponse possible à une deuxième tentative, une question ambiguë coûte un point injustement : une seule bonne réponse défendable, sans double négation
+- Écrire une `explanation` : c'est ce qui transforme une erreur en apprentissage
 - Formuler des questions précises et des options vraisemblables (éviter les pièges évidents)
 - La bonne réponse ne doit pas toujours être au même index
 
@@ -225,7 +232,7 @@ Question à choix multiple intégrée dans la leçon. Auto-correctif côté clie
 
 ### 5.2b QuizGroup - Série de QCM séquentiels
 
-Groupe plusieurs `<Quiz>` en une séquence verrouillée : la question suivante n'apparaît qu'une fois la précédente répondue correctement. Une barre de progression montre l'avancement.
+Groupe plusieurs `<Quiz>` en une séquence : la question suivante apparaît une fois la précédente répondue, juste ou fausse. Une barre de progression montre l'avancement (vert : juste, rouge : faux).
 
 ```mdx
 <QuizGroup>
@@ -251,8 +258,8 @@ Groupe plusieurs `<Quiz>` en une séquence verrouillée : la question suivante n
 ```
 
 **Comportement :**
-- Affiche une seule question à la fois
-- Les questions répondues correctement passent en vue compacte (ligne avec ✓)
+- Affiche les questions répondues, puis la suivante
+- Une question répondue reste ouverte, comme un quiz seul, avec sa correction
 - Barre de progression avec points au-dessus du groupe
 - Chaque `<Quiz>` à l'intérieur doit toujours avoir un `id` unique
 

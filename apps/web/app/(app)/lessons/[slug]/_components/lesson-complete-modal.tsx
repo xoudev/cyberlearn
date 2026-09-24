@@ -310,6 +310,36 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
           </div>
         </div>
 
+        {/* Quiz score: the note the catalogue will show for this lesson. */}
+        {result.quizScore !== null && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              padding: "10px 16px",
+              marginBottom: 16,
+              border: "1px solid #1F1B47",
+              background: "rgba(5,4,26,0.6)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "#6B6890",
+            }}
+          >
+            <span>Quiz de la leçon</span>
+            <span style={{ color: "#F5F5FA", fontWeight: 700, fontSize: 14 }}>
+              {result.quizScore.correct}/{result.quizScore.total}
+              <span style={{ color: "#6B6890", fontWeight: 400, fontSize: 11 }}>
+                {" "}
+                bonne{result.quizScore.correct > 1 ? "s" : ""} réponse
+                {result.quizScore.correct > 1 ? "s" : ""}
+              </span>
+            </span>
+          </div>
+        )}
+
         {/* Level-up banner */}
         {result.leveledUp && (
           <div
