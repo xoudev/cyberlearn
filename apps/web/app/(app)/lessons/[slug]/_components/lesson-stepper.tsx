@@ -3,6 +3,7 @@
 import React, {
   type ReactNode,
   useCallback,
+  useEffect,
   useMemo,
   useReducer,
   useRef,
@@ -95,6 +96,24 @@ export function LessonStepper({
   const [completionResult, setCompletionResult] = useState<CompleteLessonResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  // A new section starts at its top. The button that changes it sits at the
+  // bottom of the previous one, so without this the reader landed in the
+  // middle of the next section, or past its end. Skipped on the first render:
+  // opening a lesson must not move the page.
+  const articleRef = useRef<HTMLElement>(null);
+  const shownStepRef = useRef(currentStep);
+  useEffect(() => {
+    if (shownStepRef.current === currentStep) return;
+    shownStepRef.current = currentStep;
+    const article = articleRef.current;
+    if (!article) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    article.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    // Keyboard and screen-reader users start the new section too, not on a
+    // button that is now far below them.
+    article.focus({ preventScroll: true });
+  }, [currentStep]);
 
   // ── Stable exercise dispatchers ──────────────────────────────────────────────
 
@@ -199,8 +218,16 @@ export function LessonStepper({
         <div>
           {/* MDX content - flows directly, no card wrapper per design */}
           <article
+            ref={articleRef}
+            tabIndex={-1}
+            aria-label={sections[currentStep]?.text}
             className="prose lesson-content max-w-none"
-            style={{ paddingBottom: 20, counterReset: `h2-counter ${String(currentStep)}` }}
+            style={{
+              paddingBottom: 20,
+              counterReset: `h2-counter ${String(currentStep)}`,
+              scrollMarginTop: 24,
+              outline: "none",
+            }}
           >
             {children}
           </article>
