@@ -11,6 +11,7 @@
     "./social/*": "./src/social/*.ts",
     "./dashboard/*": "./src/dashboard/*.ts",
     "./pseudonymize": "./src/pseudonymize.ts",
+    "./notes/*": "./src/notes/*.ts",
     "./gamification/*": "./src/gamification/*.ts",
     "./moderation/*": "./src/moderation/*.ts",
     "./search/*": "./src/search/*.ts",

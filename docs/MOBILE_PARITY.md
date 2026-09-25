@@ -24,13 +24,15 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  trente-deux : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
+  quarante : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
   `exam/start`, `exam/submit`, `forum`, `forum/post/edit`, `forum/post/hide`,
-  `forum/reply`, `forum/section`, `forum/topic`, `leaderboard`, `lesson-qa`,
+  `forum/reply`, `forum/section`, `forum/topic`, `friends`, `friends/accept`,
+  `friends/remove`, `friends/request`, `leaderboard`, `lesson-qa`,
   `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
-  `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `password`,
-  `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
-  `support`, `support/reply`, `support/ticket`.
+  `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `notes/share`,
+  `notes/shared`, `notes/unshare`, `password`, `profile`, `progress`,
+  `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`, `support`,
+  `support/reply`, `support/ticket`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -67,7 +69,7 @@ RLS — jamais réécrites côté app.
 | Classement + ligue | ✅ | ✅ |
 | Amis : demandes reçues et envoyées, liste, accepter, refuser, annuler, retirer, personne prévenu d'un refus (même service, `apps/web/lib/friends/friends-service.ts`) ; le profil de quelqu'un et son bouton d'ami (mêmes libellés et mêmes transitions, `@cyberlearn/lib/social/friendship`), fermé à un inconnu quand il est privé, comme `/u/[username]` ; classement entre amis, sans ligne anonyme | ✅ | ✅ (`app/friends.tsx`, `app/u/[username].tsx`, onglet « Amis » du classement) |
 | Confidentialité : visibilité dans le classement public (masqué, anonyme, public), visible par mes amis, profil public | ✅ (`/settings/privacy`) | ✅ (Réglages) |
-| Bloc-notes | ✅ | ✅ |
+| Bloc-notes ; partager une note avec sa classe ou ses amis (même liste, même modération : un refus nommé, l'auteur et ses professeurs prévenus, même service `apps/web/lib/notes/note-share.ts`), la reprendre ; les notes reçues, en lecture seule (même aperçu, `@cyberlearn/lib/notes/preview`) | ✅ | ✅ |
 | Casier (cosmétiques) | ✅ | ✅ |
 | Notifications ; une notification liée à un sujet, une leçon, un parcours, un profil (demande d'ami) ou au bloc-notes ouvre l'écran correspondant | ✅ | ✅ |
 | Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
@@ -88,7 +90,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
 | **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) n'existe que sur le web. Le bannissement et son appel, eux, sont dans l'app | — |
 | **Fin d'inscription** (pseudo, avatar, objectif) | L'app renvoie au site pour les trois étapes (`onboarding-required.tsx`). Le questionnaire de la troisième étape est déjà dans l'onglet Parcours ; ce qui manque, c'est de pouvoir finir son inscription sans quitter l'app | Rien |
-| **Partage de note** | Le bloc-notes est des deux côtés, le partage non — ni l'envoi, ni la réception. Il manquait à ce tableau : « Bloc-notes ✅ ✅ » était vrai du carnet et faux de la fonctionnalité. Le filtre qui refuse un partage vit dans le dépôt (`note-share.repository`), donc l'app l'hériterait sans le réécrire | — |
 
 ### Volontairement web-only
 

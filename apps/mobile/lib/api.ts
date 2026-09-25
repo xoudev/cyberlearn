@@ -1,5 +1,6 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
+import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
@@ -412,6 +413,61 @@ export async function fetchMyAvatarUrl(): Promise<string | null> {
   const body = (await res.json()) as { ok: true; avatarUrl: string | null } | { ok: false };
   if (!body.ok) return null;
   return body.avatarUrl;
+}
+
+// ── Note sharing (the site's service: the author's people only, screened) ─────
+
+/** The notes other people handed to the reader: the site's "Reçues". */
+export async function fetchReceivedNotesApi(): Promise<IncomingNote[]> {
+  const res = await authedFetch("/api/mobile/notes/shared");
+  const body = (await res.json()) as
+    | { ok: true; notes: IncomingNote[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.notes;
+}
+
+/** Who a note can go to, and who already holds it. */
+export async function fetchShareAudienceApi(noteId: string): Promise<ShareAudience> {
+  const res = await authedFetch(`/api/mobile/notes/share?noteId=${encodeURIComponent(noteId)}`);
+  const body = (await res.json()) as ({ ok: true } & ShareAudience) | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return { entries: body.entries, noAudience: body.noAudience };
+}
+
+export interface ShareNoteReply {
+  ok: boolean;
+  /** How many people the note newly reached. */
+  shared?: number;
+  error?: string;
+}
+
+export async function shareNoteApi(
+  noteId: string,
+  recipientIds: string[],
+): Promise<ShareNoteReply> {
+  try {
+    const res = await authedFetch("/api/mobile/notes/share", {
+      method: "POST",
+      body: JSON.stringify({ noteId, recipientIds }),
+    });
+    return (await res.json()) as ShareNoteReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Takes the note back from one person. */
+export async function unshareNoteApi(noteId: string, recipientId: string): Promise<boolean> {
+  try {
+    const res = await authedFetch("/api/mobile/notes/unshare", {
+      method: "POST",
+      body: JSON.stringify({ noteId, recipientId }),
+    });
+    return readActionResponse(await res.json()).ok;
+  } catch {
+    return false;
+  }
 }
 
 // ── Path final exam (the site's service: draw, 30-minute limit, 48 h wait) ────
