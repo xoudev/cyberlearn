@@ -1,0 +1,65 @@
+import { useLocalSearchParams } from "expo-router";
+import React from "react";
+import { View } from "react-native";
+import { colors } from "@cyberlearn/tokens";
+import { BackButton } from "@/components/buttons";
+import { NoteMarkdown } from "@/components/note-markdown";
+import { useReceivedNotes } from "@/components/received-notes";
+import { Screen } from "@/components/screen";
+import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
+import { Card, Text } from "@/components/ui";
+import { useSession } from "@/lib/session";
+
+/**
+ * A note somebody handed to the reader, read-only: the site's reader with
+ * "partagée par". It is theirs, so there is nothing to edit or share on.
+ * Read from the same list as the library, so a note taken back by its author
+ * reads as gone rather than lingering.
+ */
+export default function ReceivedNote(): React.JSX.Element {
+  const { noteId } = useLocalSearchParams<{ noteId: string }>();
+  const { session } = useSession();
+  const { data, isLoading, error, refetch } = useReceivedNotes(session?.user.id);
+  const note = data?.find((n) => n.id === noteId) ?? null;
+
+  return (
+    <Screen onRefresh={() => refetch()}>
+      <View style={{ marginBottom: 16 }}>
+        <BackButton label="Bloc-notes" />
+      </View>
+
+      {isLoading ? (
+        <ListSkeleton rows={3} />
+      ) : error ? (
+        <ErrorState onRetry={() => void refetch()} code="NOTE_RECEIVED" />
+      ) : !note ? (
+        <EmptyState
+          title="Note introuvable"
+          body="La personne qui te l'a partagée l'a peut-être reprise."
+        />
+      ) : (
+        <View style={{ gap: 14 }}>
+          <View style={{ gap: 4 }}>
+            <Text variant="micro" style={{ color: colors.accent }}>
+              Note reçue
+            </Text>
+            <Text variant="h2">{note.lessonTitle}</Text>
+            <Text variant="micro" style={{ color: colors.textMuted }}>
+              {`maj ${new Date(note.updatedAt).toLocaleDateString("fr-FR")} · ${String(note.wordCount)} mot${note.wordCount > 1 ? "s" : ""} · `}
+              <Text variant="micro" style={{ color: colors.accent }}>
+                {`partagée par ${note.authorName}`}
+              </Text>
+            </Text>
+          </View>
+          <Card>
+            {note.content.trim() === "" ? (
+              <Text variant="bodySm">Note vide</Text>
+            ) : (
+              <NoteMarkdown markdown={note.content} />
+            )}
+          </Card>
+        </View>
+      )}
+    </Screen>
+  );
+}
