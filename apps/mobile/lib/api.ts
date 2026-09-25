@@ -2,6 +2,7 @@ import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
+import type { FriendLists, PublicProfile } from "@/lib/friends";
 import type { QaQuestion } from "@/lib/lesson-qa";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
@@ -232,6 +233,8 @@ export interface LeaderboardEntry {
   level: number;
   xpTotal: number;
   streakDays: number;
+  /** The name may open the profile: decided by the server, never inferred here. */
+  hasPublicProfile: boolean;
 }
 
 export interface PodEntry {
@@ -254,13 +257,75 @@ export interface LeaderboardData {
     seasonEndsAt: string;
     ladder: PodEntry[];
   } | null;
+  /** The reader's friends who chose to be listed, plus the reader, as on the site. */
+  friendsBoard: FriendsBoard;
+}
+
+export interface FriendsBoard {
+  entries: LeaderboardEntry[];
+  /** Whether the reader is on their friends' boards in turn. */
+  listedForFriends: boolean;
 }
 
 export async function fetchLeaderboard(): Promise<LeaderboardData> {
   const res = await authedFetch("/api/mobile/leaderboard");
   const body = (await res.json()) as ({ ok: true } & LeaderboardData) | { ok: false };
   if (!body.ok) throw new Error("Chargement impossible");
-  return { entries: body.entries, userRank: body.userRank, league: body.league };
+  return {
+    entries: body.entries,
+    userRank: body.userRank,
+    league: body.league,
+    friendsBoard: body.friendsBoard,
+  };
+}
+
+// ── Friends (the site's service: requests, notifications, the pair rule) ──────
+
+/** What a friendship write answered; `becameFriends` when asking was agreeing. */
+export interface FriendWriteReply {
+  ok: boolean;
+  error?: string;
+  becameFriends?: boolean;
+}
+
+export async function fetchFriendsApi(): Promise<FriendLists> {
+  const res = await authedFetch("/api/mobile/friends");
+  const body = (await res.json()) as ({ ok: true } & FriendLists) | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return { incoming: body.incoming, friends: body.friends, outgoing: body.outgoing };
+}
+
+async function friendWrite(path: string, userId: string): Promise<FriendWriteReply> {
+  try {
+    const res = await authedFetch(path, { method: "POST", body: JSON.stringify({ userId }) });
+    return (await res.json()) as FriendWriteReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export function requestFriendApi(userId: string): Promise<FriendWriteReply> {
+  return friendWrite("/api/mobile/friends/request", userId);
+}
+
+export function acceptFriendApi(userId: string): Promise<FriendWriteReply> {
+  return friendWrite("/api/mobile/friends/accept", userId);
+}
+
+/** Declines, cancels or unfriends: one call, as on the site. */
+export function removeFriendApi(userId: string): Promise<FriendWriteReply> {
+  return friendWrite("/api/mobile/friends/remove", userId);
+}
+
+/** Somebody's profile page; null when it does not exist or is closed to the reader. */
+export async function fetchProfileApi(username: string): Promise<PublicProfile | null> {
+  const res = await authedFetch(`/api/mobile/profile?username=${encodeURIComponent(username)}`);
+  if (res.status === 404) return null;
+  const body = (await res.json()) as
+    | { ok: true; profile: PublicProfile }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.profile;
 }
 
 // ── Locker (cosmetics loadout - guarded ownership check server-side) ──────────

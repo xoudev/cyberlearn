@@ -15,10 +15,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const [entries, userRank, season] = await Promise.all([
+    const [entries, userRank, season, friendsBoard] = await Promise.all([
       leaderboardRepository.findTopUsers(50, user.id),
       leaderboardRepository.findUserRank(user.id),
       leagueRepository.getActiveSeason(),
+      // The friends board, with its own opt-in rule (buildFriendsBoard), as on
+      // the site's "Amis" tab.
+      leaderboardRepository.findFriendsBoard(user.id),
     ]);
 
     let league: {
@@ -45,7 +48,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    return NextResponse.json({ ok: true, entries, userRank, league });
+    return NextResponse.json({ ok: true, entries, userRank, league, friendsBoard });
   } catch (err) {
     console.error("[mobile/leaderboard] error:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, error: "Chargement impossible." }, { status: 500 });

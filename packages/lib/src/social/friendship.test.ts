@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { friendshipView, orderPair, otherSide } from "./friendship.js";
+import {
+  FRIENDSHIP_ACTION_LABEL,
+  friendshipAfter,
+  friendshipMove,
+  friendshipView,
+  orderPair,
+  otherSide,
+} from "./friendship.js";
 
 const ALICE = "11111111-1111-4111-8111-111111111111";
 const BOB = "22222222-2222-4222-8222-222222222222";
@@ -49,5 +56,31 @@ describe("friendshipView", () => {
     const accepted = { status: "ACCEPTED", requestedById: ALICE } as const;
     expect(friendshipView(accepted, ALICE)).toBe("friends");
     expect(friendshipView(accepted, BOB)).toBe("friends");
+  });
+});
+
+describe("the button on a profile", () => {
+  it("says what pressing it does, in each state", () => {
+    // The label is the action, not the state: somebody who has asked sees how
+    // to take it back, not a reminder that they asked.
+    expect(FRIENDSHIP_ACTION_LABEL).toEqual({
+      none: "Ajouter en ami",
+      outgoing: "Annuler la demande",
+      incoming: "Accepter la demande",
+      friends: "Retirer des amis",
+    });
+  });
+
+  it("asks from nothing or from their request, and undoes from the other two", () => {
+    expect(friendshipMove("none")).toBe("request");
+    expect(friendshipMove("incoming")).toBe("request");
+    expect(friendshipMove("outgoing")).toBe("remove");
+    expect(friendshipMove("friends")).toBe("remove");
+  });
+
+  it("lands on friends when asking turned out to be agreeing", () => {
+    expect(friendshipAfter("request", false)).toBe("outgoing");
+    expect(friendshipAfter("request", true)).toBe("friends");
+    expect(friendshipAfter("remove", false)).toBe("none");
   });
 });
