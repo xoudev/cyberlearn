@@ -26,6 +26,7 @@ import { TourProvider } from "@/components/tour";
 import { useReducedMotionPreference } from "@/lib/accessibility";
 import { CosmeticsProvider } from "@/lib/cosmetics";
 import { mirrorInboxToDevice } from "@/lib/device-notifications";
+import { onboardingCompleteIn, onboardingStepFor } from "@/lib/onboarding";
 import { ensureUserRow, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -123,8 +124,9 @@ function RootNavigator(): React.JSX.Element {
     }
   }, [session, initializing, assuranceChecking, mfaRequired, segments, pathname, router]);
 
-  // On first authentication: make sure a public.users row exists, and route
-  // un-onboarded users (no username) to the web onboarding gate.
+  // On first authentication: make sure a public.users row exists, and send an
+  // account that has not finished signing up to the step it is at, as the
+  // site does (no handle: the first step; no completion flag: the avatar).
   useEffect(() => {
     const user = session?.user;
     if (!user || assuranceChecking || mfaRequired) return;
@@ -132,8 +134,11 @@ function RootNavigator(): React.JSX.Element {
     void (async () => {
       await ensureUserRow(user.id, user.email ?? "", user.email?.split("@")[0] ?? "Apprenti");
       const { data } = await supabase.from("users").select("username").eq("id", user.id).single();
-      const username = readUsername(data);
-      if (active && !username) router.replace("/onboarding-required");
+      const step = onboardingStepFor({
+        username: readUsername(data),
+        onboardingComplete: onboardingCompleteIn(user.app_metadata),
+      });
+      if (active && step !== null) router.replace({ pathname: "/onboarding", params: { step } });
     })();
     return () => {
       active = false;

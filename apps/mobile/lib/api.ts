@@ -89,6 +89,61 @@ export async function appealBanApi(message: string): Promise<{ ok: boolean; erro
   }
 }
 
+// ── Signing up (the site's three onboarding steps, same service) ─────────────
+
+export type OnboardingProfileReply =
+  | { ok: true }
+  | {
+      ok: false;
+      errors?: Partial<Record<"username" | "displayName" | "bio", string>>;
+      error?: string;
+    };
+
+export async function saveOnboardingProfileApi(input: {
+  username: string;
+  displayName: string;
+  bio: string;
+}): Promise<OnboardingProfileReply> {
+  try {
+    const res = await authedFetch("/api/mobile/onboarding/profile", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    return (await res.json()) as OnboardingProfileReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export async function saveOnboardingAvatarApi(
+  avatarUrl: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/onboarding/avatar", {
+      method: "POST",
+      body: JSON.stringify({ avatarUrl }),
+    });
+    return readActionResponse(await res.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Keeps the answers when there are some, and marks the sign-up complete. */
+export async function finishOnboardingApi(
+  answers: { goals: string[]; level: string } | null,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/onboarding/finish", {
+      method: "POST",
+      body: JSON.stringify(answers ?? {}),
+    });
+    return readActionResponse(await res.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────
 
 export interface CompleteLessonResult {
