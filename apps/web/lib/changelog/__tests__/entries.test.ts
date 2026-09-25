@@ -70,3 +70,17 @@ describe("the changelog", () => {
     }
   });
 });
+
+describe("the unseen mark and the dates", () => {
+  it("marks the newest release unseen until it is the one recorded", async () => {
+    const { hasUnseenChangelog } = await import("../entries");
+    expect(hasUnseenChangelog(null)).toBe(true);
+    expect(hasUnseenChangelog("0.1")).toBe(true);
+    expect(hasUnseenChangelog(LATEST_VERSION)).toBe(false);
+  });
+
+  it("writes a date the way the page shows it", async () => {
+    const { formatChangelogDate } = await import("../entries");
+    expect(formatChangelogDate("2026-09-19")).toBe("19 septembre 2026");
+  });
+});

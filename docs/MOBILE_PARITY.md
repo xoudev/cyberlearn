@@ -80,6 +80,7 @@ RLS — jamais réécrites côté app.
 | Bloc-notes ; partager une note avec sa classe ou ses amis (même liste, même modération : un refus nommé, l'auteur et ses professeurs prévenus, même service `apps/web/lib/notes/note-share.ts`), la reprendre ; les notes reçues, en lecture seule (même aperçu, `@cyberlearn/lib/notes/preview`) | ✅ | ✅ |
 | Casier (cosmétiques) | ✅ | ✅ |
 | Notifications ; une notification liée à un sujet, une leçon, un parcours, un profil (demande d'ami) ou au bloc-notes ouvre l'écran correspondant | ✅ | ✅ |
+| Nouveautés : les notes de version, de la plus récente à la plus ancienne, avec leurs marques Nouveau, Amélioration, Correctif (même liste `@cyberlearn/lib/changelog/entries`), et une marque « nouveau » tant que la dernière n'a pas été ouverte sur l'appareil | ✅ (`/changelog`, point dans la barre latérale) | ✅ (`app/changelog.tsx`, marque dans le hub du profil) |
 | Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
@@ -93,12 +94,10 @@ RLS — jamais réécrites côté app.
 
 ### Encore dû
 
-Par ordre de valeur pour quelqu'un qui n'a que son téléphone. Relevé en
-comparant chaque page du site aux écrans de l'app.
-
-| Surface | Pourquoi ça compte | Bloqué par |
-| --- | --- | --- |
-| **Nouveautés** (`/changelog`) | La page des nouveautés du produit, signalée par un point dans la barre tant qu'elle n'a pas été lue. Absente de l'app | — |
+Rien pour l'instant. La dernière comparaison, page par page, du site et des
+écrans de l'app a trouvé cinq surfaces manquantes (quêtes, série, nouveau mot
+de passe, recherche globale, nouveautés), portées depuis. Une surface ajoutée
+au site sans son pendant mobile s'inscrit ici, avec ce qui la bloque.
 
 ### Volontairement web-only
 
