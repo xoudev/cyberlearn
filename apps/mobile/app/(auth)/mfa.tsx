@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 import { GradientButton } from "@/components/buttons";
 import { AuthError, AuthField, AuthFormScreen, AuthTextLink } from "@/components/auth-form";
+import { signedInRoute } from "@/lib/recovery";
 import { supabase } from "@/lib/supabase";
 
 export default function MfaChallenge(): React.JSX.Element {
@@ -48,7 +49,8 @@ export default function MfaChallenge(): React.JSX.Element {
       setError("Code incorrect ou expiré.");
       return;
     }
-    router.replace("/home");
+    // A recovering session goes on to choose its new password.
+    router.replace(signedInRoute());
   }
 
   return (
