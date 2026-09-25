@@ -5,6 +5,9 @@ import {
   opensLabel,
   stepIndex,
   tapDirection,
+  lineTop,
+  wrappedCardContent,
+  wrappedCardFrame,
   wrappedShareText,
   wrappedWindow,
   type WrappedPayload,
@@ -76,5 +79,37 @@ describe("sharing and opening", () => {
   it("opens with the site's window", () => {
     expect(wrappedWindow(new Date("2026-12-10T10:00:00Z")).open).toBe(true);
     expect(wrappedWindow(new Date("2026-10-10T10:00:00Z")).open).toBe(false);
+  });
+});
+
+describe("the story image", () => {
+  it("is laid out so the capture comes out at 1080 x 1920 pixels on any phone", () => {
+    for (const ratio of [1, 2, 2.625, 3, 3.5]) {
+      const frame = wrappedCardFrame(ratio);
+      expect(frame.width * ratio).toBeCloseTo(1080);
+      expect(frame.height * ratio).toBeCloseTo(1920);
+      expect(frame.px(120) * ratio).toBeCloseTo(120);
+    }
+  });
+
+  it("falls back to one pixel per unit for a ratio it cannot use", () => {
+    expect(wrappedCardFrame(0).width).toBe(1080);
+  });
+
+  it("turns the canvas's baselines into tops, above the baseline", () => {
+    expect(lineTop(400, 210)).toBeCloseTo(200.5);
+    expect(lineTop(190, 34)).toBeLessThan(190);
+  });
+
+  it("carries the site's figures and words", () => {
+    const card = wrappedCardContent(PAYLOAD, "alex");
+    expect(card.title).toBe("CYBERLEARN WRAPPED");
+    expect(card.handle).toBe("@alex");
+    expect(card.stats.map((s) => s.label)).toEqual([
+      "XP gagnés",
+      "leçons",
+      "badges",
+      "jours de série",
+    ]);
   });
 });
