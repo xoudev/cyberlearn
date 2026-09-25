@@ -2,6 +2,11 @@
 
 import React, { useState } from "react";
 import type { WrappedPayload } from "@cyberlearn/lib";
+import {
+  WRAPPED_CARD_SIZE,
+  fmtCompact,
+  wrappedCardContent,
+} from "@cyberlearn/lib/gamification/wrapped-card";
 
 // ── Style language (shared dark / neon idiom, one accent per card) ────────────
 
@@ -21,11 +26,6 @@ const TIER_LABEL: Record<string, string> = {
   DIAMANT: "Diamant",
   ELITE: "Élite",
 };
-
-function fmtCompact(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}k`;
-  return String(n);
-}
 
 function topPercent(rank: number, total: number): number {
   if (total <= 0) return 100;
@@ -220,8 +220,10 @@ function FinalCard({
  * the document has. The fallbacks keep it legible if they are not.
  */
 function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasElement {
-  const W = 1080;
-  const H = 1920;
+  const W = WRAPPED_CARD_SIZE.width;
+  const H = WRAPPED_CARD_SIZE.height;
+  // The figures and the words are the app's too (@cyberlearn/lib/gamification/wrapped-card).
+  const card = wrappedCardContent(payload, handle);
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -248,25 +250,19 @@ function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasEleme
 
   ctx.fillStyle = ACCENT;
   ctx.font = `700 34px ${MONO_F}`;
-  ctx.fillText("CYBERLEARN WRAPPED", W / 2, 190);
+  ctx.fillText(card.title, W / 2, 190);
 
   ctx.fillStyle = "#F5F5FA";
   ctx.font = `800 210px ${SANS_F}`;
-  ctx.fillText(payload.periodKey, W / 2, 400);
+  ctx.fillText(card.year, W / 2, 400);
 
   ctx.fillStyle = "#6B6890";
   ctx.font = `28px ${MONO_F}`;
-  ctx.fillText(`@${handle}`, W / 2, 470);
+  ctx.fillText(card.handle, W / 2, 470);
 
   // Four figures, two per row. Numbers first and labels under them, because the
   // number is what somebody screenshots this for.
-  const stats: [string, string][] = [
-    [fmtCompact(payload.xp.thisYear), "XP gagnés"],
-    [String(payload.lessons.total), "leçons"],
-    [String(payload.badges.thisYear), "badges"],
-    [String(payload.streak.longest), "jours de série"],
-  ];
-  stats.forEach(([value, label], i) => {
+  card.stats.forEach(({ value, label }, i) => {
     const x = i % 2 === 0 ? W / 4 : (W / 4) * 3;
     const y = 760 + Math.floor(i / 2) * 320;
     ctx.fillStyle = ACCENT;
@@ -277,14 +273,10 @@ function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasEleme
     ctx.fillText(label, x, y + 60);
   });
 
-  const topDomain = payload.lessons.topDomain;
-  if (topDomain !== null) {
-    // DOMAIN_LABEL is keyed by string, so the lookup is optional as far as the
-    // compiler knows; the code itself is the honest fallback.
-    const domainLabel = DOMAIN_LABEL[topDomain] ?? topDomain;
+  if (card.domain !== null) {
     ctx.fillStyle = "#B8B5D1";
     ctx.font = `36px ${SANS_F}`;
-    ctx.fillText(`Domaine de l'année : ${domainLabel}`, W / 2, 1300);
+    ctx.fillText(card.domain, W / 2, 1300);
   }
 
   // Everything stays above ~1550: the bottom of a story is where the app's own
@@ -298,7 +290,7 @@ function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasEleme
 
   ctx.fillStyle = "#44406B";
   ctx.font = `28px ${MONO_F}`;
-  ctx.fillText("cyberlearn.fr", W / 2, 1520);
+  ctx.fillText(card.site, W / 2, 1520);
 
   return canvas;
 }
@@ -343,7 +335,7 @@ function ExportPanel({
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `cyberlearn-wrapped-${payload.periodKey}.png`;
+        a.download = wrappedCardContent(payload, handle).fileName;
         a.click();
         // Revoked on the next tick: revoking synchronously can beat the click
         // in some browsers and download an empty file.
@@ -377,7 +369,7 @@ function ExportPanel({
           setFailed("L'image n'a pas pu être générée.");
           return;
         }
-        const file = new File([blob], `cyberlearn-wrapped-${payload.periodKey}.png`, {
+        const file = new File([blob], wrappedCardContent(payload, handle).fileName, {
           type: "image/png",
         });
         try {

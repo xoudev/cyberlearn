@@ -79,7 +79,7 @@ RLS — jamais réécrites côté app.
 | Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
-| Wrapped : une entrée qui n'existe que du 1er décembre au 7 janvier (même fenêtre, `@cyberlearn/lib/gamification/wrapped-window`), une histoire de six à neuf écrans selon l'année avec avance automatique, appui à droite ou à gauche, appui long pour lire ; mêmes écrans et mêmes mots (`@cyberlearn/lib/gamification/wrapped-story`), même récap (`apps/web/lib/wrapped/recap.ts`), page « pas encore ouvert » hors saison | ✅ (étiquette dans la barre) | ✅ (étiquette dans l'en-tête de l'Accueil, `app/wrapped.tsx`) |
+| Wrapped : une entrée qui n'existe que du 1er décembre au 7 janvier (même fenêtre, `@cyberlearn/lib/gamification/wrapped-window`), une histoire de six à neuf écrans selon l'année avec avance automatique, appui à droite ou à gauche, appui long pour lire ; mêmes écrans et mêmes mots (`@cyberlearn/lib/gamification/wrapped-story`), même récap (`apps/web/lib/wrapped/recap.ts`), page « pas encore ouvert » hors saison ; la carte finale en image au format story 1080×1920, mêmes chiffres et mêmes mots (`@cyberlearn/lib/gamification/wrapped-card`), téléchargée ou partagée sur le site, partagée ou enregistrée depuis la feuille de partage du téléphone dans l'app (`react-native-view-shot`, `expo-sharing`), ou partagée en texte | ✅ (étiquette dans la barre) | ✅ (étiquette dans l'en-tête de l'Accueil, `app/wrapped.tsx`) |
 | Réglages : profil (nom affiché, bio, un des huit avatars ou une photo ; une photo ou un glyphe gardés tels quels tant qu'on n'en choisit pas un autre, même service `apps/web/lib/profile/update-profile.ts`), notifications (mêmes interrupteurs et mêmes mots, `@cyberlearn/lib/settings/notifications`, dont les avis par email ; l'alerte de série grisée des deux côtés tant que rien ne l'envoie), répétition espacée, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 | Avatar : glyphe, image intégrée, photo envoyée ; envoyer une photo depuis la bibliothèque du téléphone, recadrée au carré, à l'étape avatar de l'inscription et dans le profil, enregistrée aussitôt (mêmes contrôles et mêmes messages : JPEG, PNG ou WebP, 2 Mo au plus, octets vérifiés, bucket privé ; même service `apps/web/lib/avatar/upload.ts`) | ✅ | ✅ (`expo-image-picker`, sans caméra ni micro) |
@@ -89,11 +89,9 @@ RLS — jamais réécrites côté app.
 
 ### Encore dû
 
-Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
-
-| Surface | Pourquoi ça compte | Bloqué par |
-| --- | --- | --- |
-| **Exporter la carte Wrapped en image** | Le site dessine la carte finale en image, à télécharger ou partager ; l'app partage l'année en texte avec la feuille de partage du téléphone. Faire une image demande deux dépendances absentes du projet (`react-native-view-shot`, `expo-sharing`) | Accord sur les dépendances |
+Rien pour l'instant : tout ce que le site propose à un apprenant existe dans
+l'app, ou figure ci-dessous comme choix délibéré. Une surface ajoutée au site
+sans son pendant mobile s'inscrit ici, avec ce qui la bloque.
 
 ### Volontairement web-only
 

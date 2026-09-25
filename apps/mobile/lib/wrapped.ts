@@ -1,5 +1,6 @@
 import type { AccentName } from "@cyberlearn/lib/gamification/wrapped-story";
 import type { WrappedPayload } from "@cyberlearn/lib/gamification/wrapped";
+import { WRAPPED_CARD_SIZE } from "@cyberlearn/lib/gamification/wrapped-card";
 
 /**
  * Wrapped in the app: the site's story (same slides, same words, same
@@ -17,6 +18,7 @@ export {
   type Slide,
 } from "@cyberlearn/lib/gamification/wrapped-story";
 export { wrappedWindow } from "@cyberlearn/lib/gamification/wrapped-window";
+export { WRAPPED_CARD_SIZE, wrappedCardContent } from "@cyberlearn/lib/gamification/wrapped-card";
 export type { WrappedPayload } from "@cyberlearn/lib/gamification/wrapped";
 
 /** Below this, a press was a tap; above it, somebody was holding to read. */
@@ -50,8 +52,8 @@ export function stepIndex(index: number, count: number, direction: "previous" | 
 }
 
 /**
- * What the share sheet sends. The site hands over a drawn image; the app sends
- * the year in words, which every share target takes.
+ * The year in words, for "Partager en texte": the image is the card, and this
+ * is for a target that takes text only.
  */
 export function wrappedShareText(payload: WrappedPayload, handle: string): string {
   const n = (value: number): string => value.toLocaleString("fr-FR");
@@ -91,4 +93,27 @@ export function opensLabel(opensOn: string, now: number): string {
   return days > 0
     ? `Ouverture le ${date} · ${String(days)} jour${days > 1 ? "s" : ""}`
     : `Ouverture le ${date}`;
+}
+
+/**
+ * The captured card's frame in layout units, and the conversion from the
+ * site's canvas pixels to them: laid out at 1080 / pixelRatio, the view
+ * captures at 1080 x 1920 pixels on any phone, the story size the site exports.
+ */
+export function wrappedCardFrame(pixelRatio: number): {
+  width: number;
+  height: number;
+  px: (canvasPixels: number) => number;
+} {
+  const ratio = pixelRatio > 0 ? pixelRatio : 1;
+  const px = (canvasPixels: number): number => canvasPixels / ratio;
+  return { width: px(WRAPPED_CARD_SIZE.width), height: px(WRAPPED_CARD_SIZE.height), px };
+}
+
+/**
+ * Where a text box starts for a line the site's canvas draws at `baseline`:
+ * the canvas places text by its baseline, a view by its top.
+ */
+export function lineTop(baseline: number, fontSize: number): number {
+  return baseline - fontSize * 0.95;
 }

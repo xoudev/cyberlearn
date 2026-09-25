@@ -1,18 +1,33 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type GestureResponderEvent, Pressable, Share, View } from "react-native";
+import * as Sharing from "expo-sharing";
+import {
+  type GestureResponderEvent,
+  PixelRatio,
+  Pressable,
+  Text as RNText,
+  Share,
+  type TextStyle,
+  View,
+} from "react-native";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { captureRef } from "react-native-view-shot";
 import { colors, fonts } from "@cyberlearn/tokens";
-import { GradientButton } from "@/components/buttons";
+import { ActionChip, GradientButton } from "@/components/buttons";
 import { Text } from "@/components/ui";
 import { useReducedMotionPreference } from "@/lib/accessibility";
 import { useCosmetics } from "@/lib/cosmetics";
 import {
   HOLD_MS,
   SLIDE_MS,
+  WRAPPED_CARD_SIZE,
   accentColor,
   buildStorySlides,
   fmtNumber,
   stepIndex,
+  lineTop,
   tapDirection,
+  wrappedCardContent,
+  wrappedCardFrame,
   wrappedShareText,
   type Slide,
   type WrappedPayload,
@@ -289,9 +304,11 @@ function SlideView({
 }
 
 /**
- * The last slide: the year on one card, and the share sheet. The site draws
- * the card into an image; the app sends the year in words, which every share
- * target on a phone takes.
+ * The last slide: the year on one card, and the share sheet. "Partager l'image"
+ * sends the site's story image (1080 x 1920, the same figures and words,
+ * @cyberlearn/lib/gamification/wrapped-card), captured from a copy of the card
+ * laid out off screen; the share sheet is also where it is saved to the phone.
+ * "Partager en texte" stays for a target that takes no image.
  */
 function ShareCard({
   payload,
@@ -303,12 +320,44 @@ function ShareCard({
   accent: string;
 }): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const imageRef = useRef<View>(null);
   const rows: [string, string][] = [
     ["XP", fmtNumber(payload.xp.thisYear)],
     ["Leçons", fmtNumber(payload.lessons.total)],
     ["Série", `${fmtNumber(payload.streak.longest)} j`],
     ["Badges", fmtNumber(payload.badges.thisYear)],
   ];
+
+  const shareText = (): void => {
+    setError(null);
+    Share.share({ message: wrappedShareText(payload, handle) }).catch(() =>
+      setError("Le partage n'a pas pu s'ouvrir."),
+    );
+  };
+
+  const shareImage = async (): Promise<void> => {
+    if (busy) return;
+    setError(null);
+    setBusy(true);
+    try {
+      if (!(await Sharing.isAvailableAsync())) {
+        shareText();
+        return;
+      }
+      const uri = await captureRef(imageRef, { format: "png", quality: 1, result: "tmpfile" });
+      await Sharing.shareAsync(uri, {
+        mimeType: "image/png",
+        UTI: "public.png",
+        dialogTitle: "Mon CyberLearn Wrapped",
+      });
+    } catch {
+      setError("L'image n'a pas pu être partagée.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <View style={{ gap: 14, marginTop: 6 }}>
       <View
@@ -342,19 +391,118 @@ function ShareCard({
         </View>
       </View>
       <GradientButton
-        label="Partager mon année"
-        onPress={() => {
-          setError(null);
-          Share.share({ message: wrappedShareText(payload, handle) }).catch(() =>
-            setError("Le partage n'a pas pu s'ouvrir."),
-          );
-        }}
+        label={busy ? "Préparation de l'image…" : "Partager l'image"}
+        disabled={busy}
+        onPress={() => void shareImage()}
       />
+      <View style={{ alignSelf: "flex-start" }}>
+        <ActionChip label="Partager en texte" tone="neutral" disabled={busy} onPress={shareText} />
+      </View>
+      <Text variant="micro" style={{ color: colors.textMuted }}>
+        Story 1080×1920, prête à poster.
+      </Text>
       {error !== null ? (
         <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>
           {error}
         </Text>
       ) : null}
+      <StoryImage viewRef={imageRef} payload={payload} handle={handle} />
+    </View>
+  );
+}
+
+/**
+ * The site's story image, as views: its canvas (WrappedClient's drawStoryCard)
+ * line for line, same positions, sizes and colours, in the reader's accent.
+ * Laid out off screen and hidden from assistive technology: it exists to be
+ * captured, and the card above says the same thing on screen.
+ */
+function StoryImage({
+  viewRef,
+  payload,
+  handle,
+}: {
+  viewRef: React.RefObject<View | null>;
+  payload: WrappedPayload;
+  handle: string;
+}): React.JSX.Element {
+  const { theme } = useCosmetics();
+  const card = wrappedCardContent(payload, handle);
+  const { width, height, px } = wrappedCardFrame(PixelRatio.get());
+  const W: number = WRAPPED_CARD_SIZE.width;
+
+  // A line of the canvas: centred on `x` in a box `boxWidth` wide.
+  const line = (
+    baseline: number,
+    size: number,
+    family: string,
+    color: string,
+    x = W / 2,
+    boxWidth = W,
+  ): TextStyle => ({
+    position: "absolute",
+    top: px(lineTop(baseline, size)),
+    left: px(x - boxWidth / 2),
+    width: px(boxWidth),
+    textAlign: "center",
+    fontFamily: family,
+    fontSize: px(size),
+    lineHeight: px(size * 1.2),
+    color,
+    includeFontPadding: false,
+  });
+  const mono = `${fonts.mono}_400Regular`;
+  const monoBold = `${fonts.mono}_700Bold`;
+  const sansHeavy = `${fonts.sans}_800ExtraBold`;
+  const sans = `${fonts.sans}_400Regular`;
+
+  return (
+    <View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ position: "absolute", top: 0, left: -10000 }}
+    >
+      <View
+        ref={viewRef}
+        collapsable={false}
+        style={{ width, height, backgroundColor: "#030219", overflow: "hidden" }}
+      >
+        <Svg width={width} height={height} style={{ position: "absolute", top: 0, left: 0 }}>
+          <Defs>
+            <RadialGradient
+              id="wrapped-glow"
+              cx={px(W / 2)}
+              cy={px(420)}
+              r={px(900)}
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0" stopColor="#0AFFD4" stopOpacity={0.1} />
+              <Stop offset="1" stopColor="#030219" stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Rect x={0} y={0} width={width} height={height} fill="url(#wrapped-glow)" />
+          <Rect x={px(140)} y={px(1439)} width={px(W - 280)} height={px(2)} fill="#1F1B47" />
+        </Svg>
+
+        <RNText style={line(190, 34, monoBold, theme.accent)}>{card.title}</RNText>
+        <RNText style={line(400, 210, sansHeavy, "#F5F5FA")}>{card.year}</RNText>
+        <RNText style={line(470, 28, mono, "#6B6890")}>{card.handle}</RNText>
+        {card.stats.map(({ value, label }, i) => {
+          const x = i % 2 === 0 ? W / 4 : (W / 4) * 3;
+          const y = 760 + Math.floor(i / 2) * 320;
+          return (
+            <React.Fragment key={label}>
+              <RNText style={line(y, 120, sansHeavy, theme.accent, x, W / 2)}>{value}</RNText>
+              <RNText style={line(y + 60, 30, mono, "#6B6890", x, W / 2)}>{label}</RNText>
+            </React.Fragment>
+          );
+        })}
+        {card.domain !== null ? (
+          <RNText style={line(1300, 36, sans, "#B8B5D1")}>{card.domain}</RNText>
+        ) : null}
+        <RNText style={line(1520, 28, mono, "#44406B")}>{card.site}</RNText>
+      </View>
     </View>
   );
 }
