@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { AVATAR_UPLOAD_ERROR, AVATAR_UPLOAD_MAX_BYTES } from "@cyberlearn/types";
-import { photoMimeOf, photoUploadPart } from "../avatar-photo";
+import { AVATAR_EXPORT_PX, AVATAR_UPLOAD_ERROR, AVATAR_UPLOAD_MAX_BYTES } from "@cyberlearn/types";
+import {
+  AVATAR_PHOTO_HINT,
+  avatarPhotoTransform,
+  photoMimeOf,
+  photoUploadPart,
+} from "../avatar-photo";
 
 describe("a photo picked on the phone", () => {
   it("takes the picker's type when the server accepts it", () => {
@@ -45,5 +50,34 @@ describe("a photo picked on the phone", () => {
 
   it("lets the server judge a size the picker did not report", () => {
     expect(photoUploadPart({ uri: "file:///x.png" }).ok).toBe(true);
+  });
+});
+
+describe("bringing a photo to the site's square", () => {
+  it("reduces a square photo to 512 px, without cutting it", () => {
+    expect(avatarPhotoTransform(3024, 3024)).toEqual({ crop: null, size: 512 });
+  });
+
+  it("cuts the centred square out of a photo the gallery did not crop", () => {
+    expect(avatarPhotoTransform(4032, 3024)).toEqual({
+      crop: { originX: 504, originY: 0, width: 3024, height: 3024 },
+      size: 512,
+    });
+    expect(avatarPhotoTransform(1080, 1921)).toEqual({
+      crop: { originX: 0, originY: 420, width: 1080, height: 1080 },
+      size: 512,
+    });
+  });
+
+  it("never enlarges a small photo", () => {
+    expect(avatarPhotoTransform(300, 300)).toEqual({ crop: null, size: 300 });
+  });
+
+  it("falls back to the site's size when the picker reports no dimensions", () => {
+    expect(avatarPhotoTransform(0, 0)).toEqual({ crop: null, size: AVATAR_EXPORT_PX });
+  });
+
+  it("says what happens to the photo", () => {
+    expect(AVATAR_PHOTO_HINT).toBe("Recadrée au carré et réduite à 512 × 512 pixels.");
   });
 });
