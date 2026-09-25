@@ -18,7 +18,8 @@
     "./markdown/*": "./src/markdown/*.ts",
     "./paths/*": "./src/paths/*.ts",
     "./quiz/*": "./src/quiz/*.ts",
-    "./revisions/*": "./src/revisions/*.ts"
+    "./revisions/*": "./src/revisions/*.ts",
+    "./settings/*": "./src/settings/*.ts"
   },
   "scripts": {
     "build": "tsc",

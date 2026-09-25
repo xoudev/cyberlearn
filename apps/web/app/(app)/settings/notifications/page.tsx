@@ -11,7 +11,12 @@ export default async function NotificationsSettingsPage(): Promise<React.JSX.Ele
   const authUser = await requireRequestUser();
   const prefs = await prisma.userPreferences.findUnique({
     where: { userId: authUser.id },
-    select: { reviewReminders: true, weeklyDigest: true, streakReminder: true },
+    select: {
+      reviewReminders: true,
+      weeklyDigest: true,
+      streakReminder: true,
+      emailNotifications: true,
+    },
   });
 
   return (
@@ -20,6 +25,7 @@ export default async function NotificationsSettingsPage(): Promise<React.JSX.Ele
       <NotificationsForm
         initialReviewReminders={prefs?.reviewReminders ?? true}
         initialWeeklyDigest={prefs?.weeklyDigest ?? true}
+        initialEmailNotifications={prefs?.emailNotifications ?? true}
         streakReminder={prefs?.streakReminder ?? true}
       />
     </div>

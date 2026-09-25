@@ -24,13 +24,13 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  vingt-neuf : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
-  `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
-  `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`,
-  `leaderboard`, `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`,
-  `lesson-qa/question`, `lesson-qa/upvote`, `lesson-rating`, `loadout`,
-  `my-class`, `password`, `progress`, `quiz-answer`, `quiz-report`, `rating`,
-  `review`, `send-otp`.
+  trente : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
+  `exam/start`, `exam/submit`, `forum`, `forum/post/edit`, `forum/post/hide`,
+  `forum/reply`, `forum/section`, `forum/topic`, `leaderboard`, `lesson-qa`,
+  `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
+  `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `password`,
+  `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
+  `settings/profile`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -71,7 +71,7 @@ RLS — jamais réécrites côté app.
 | Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
-| Réglages, sécurité | ✅ | ✅ |
+| Réglages : profil (nom affiché, bio, un des huit avatars ; une photo ou un glyphe gardés tels quels, même service `apps/web/lib/profile/update-profile.ts`), notifications (mêmes interrupteurs et mêmes mots, `@cyberlearn/lib/settings/notifications`, dont les avis par email ; l'alerte de série grisée des deux côtés tant que rien ne l'envoie), répétition espacée, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 | Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
 | Compte banni : un seul écran (motif, date, durée), l'avis marqué comme vu, l'appel | ✅ (`/banned`) | ✅ (`app/banned.tsx`) |

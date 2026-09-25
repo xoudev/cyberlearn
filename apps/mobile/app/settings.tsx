@@ -4,6 +4,10 @@ import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import { Pressable, Switch, View } from "react-native";
+import {
+  NOTIFICATION_SETTINGS,
+  SPACED_REPETITION_SETTING,
+} from "@cyberlearn/lib/settings/notifications";
 import { colors } from "@cyberlearn/tokens";
 import { PressableScale, Rise } from "@/components/anim";
 import { BackButton } from "@/components/buttons";
@@ -19,16 +23,23 @@ import { updatePreference, usePreferences, useProfile, type Preferences } from "
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
-const PREF_ROWS: { key: keyof Preferences; label: string; hint: string }[] = [
-  { key: "emailNotifications", label: "E-mails", hint: "Notifications par e-mail" },
+// The site's words: spaced repetition (with the preferences on the site),
+// then the switches of /settings/notifications. A switch for something that
+// nothing sends yet is shown, and disabled, as on the site: a live-looking
+// switch would be a promise.
+const PREF_ROWS: { key: keyof Preferences; label: string; hint: string; available: boolean }[] = [
   {
     key: "spacedRepetition",
-    label: "Révisions",
-    hint: "Les leçons terminées reviennent au bon moment pour être retenues",
+    label: SPACED_REPETITION_SETTING.name,
+    hint: SPACED_REPETITION_SETTING.descOn,
+    available: true,
   },
-  { key: "reviewReminders", label: "Rappels de révision", hint: "Quand une révision SM-2 est due" },
-  { key: "weeklyDigest", label: "Digest hebdo", hint: "Résumé de ta semaine" },
-  { key: "streakReminder", label: "Rappel de série", hint: "Avant de perdre ta série" },
+  ...NOTIFICATION_SETTINGS.map((setting) => ({
+    key: setting.key,
+    label: setting.name,
+    hint: setting.desc,
+    available: setting.available,
+  })),
 ];
 
 export default function Reglages(): React.JSX.Element {
@@ -120,25 +131,41 @@ export default function Reglages(): React.JSX.Element {
             />
           </View>
           <Divider style={{ marginVertical: 6 }} />
-          {PREF_ROWS.map((row, i) => (
-            <View key={row.key}>
-              {i > 0 ? <Divider style={{ marginVertical: 6 }} /> : null}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="h3">{row.label}</Text>
-                  <Text variant="micro" style={{ color: colors.textMuted }}>
-                    {row.hint}
-                  </Text>
+          {PREF_ROWS.map((row, i) => {
+            const value = prefs?.[row.key] ?? true;
+            const hint =
+              row.key === "spacedRepetition" && !value
+                ? SPACED_REPETITION_SETTING.descOff
+                : row.hint;
+            return (
+              <View key={row.key}>
+                {i > 0 ? <Divider style={{ marginVertical: 6 }} /> : null}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="h3">
+                      {row.label}
+                      {row.available ? null : (
+                        <Text variant="micro" style={{ color: colors.warning }}>
+                          {"  ·  bientôt"}
+                        </Text>
+                      )}
+                    </Text>
+                    <Text variant="micro" style={{ color: colors.textMuted }}>
+                      {hint}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={value}
+                    disabled={!row.available}
+                    onValueChange={(v) => void toggle(row.key, v)}
+                    trackColor={{ false: colors.bgOverlay, true: "rgba(10,255,212,0.35)" }}
+                    thumbColor={value && row.available ? colors.accent : colors.textMuted}
+                    accessibilityLabel={row.label}
+                  />
                 </View>
-                <Switch
-                  value={prefs?.[row.key] ?? true}
-                  onValueChange={(v) => void toggle(row.key, v)}
-                  trackColor={{ false: colors.bgOverlay, true: "rgba(10,255,212,0.35)" }}
-                  thumbColor={prefs?.[row.key] ? colors.accent : colors.textMuted}
-                />
               </View>
-            </View>
-          ))}
+            );
+          })}
         </Card>
       </Rise>
 
@@ -156,23 +183,28 @@ export default function Reglages(): React.JSX.Element {
           </PressableScale>
           <Divider />
           {[
-            { label: "Modifier mon profil", url: "https://cyberlearn.fr/profile/edit" },
+            { label: "Modifier mon profil", route: "/profile-edit" },
             { label: "Confidentialité", url: "https://cyberlearn.fr/privacy" },
             { label: "CGU", url: "https://cyberlearn.fr/legal/terms" },
             {
               label: "Exporter / supprimer mes données (RGPD)",
               url: "https://cyberlearn.fr/settings/data",
             },
-          ].map((l, i) => (
+          ].map((l: { label: string; url?: string; route?: string }, i) => (
             <View key={l.label}>
               {i > 0 ? <Divider /> : null}
               <PressableScale
-                onPress={() => void WebBrowser.openBrowserAsync(l.url)}
+                onPress={() => {
+                  // SAFETY: typed routes are disabled; expo-router accepts any
+                  // registered pathname string at runtime.
+                  if (l.route) router.push(l.route as never);
+                  else if (l.url) void WebBrowser.openBrowserAsync(l.url);
+                }}
                 style={{ flexDirection: "row", justifyContent: "space-between", padding: 14 }}
               >
                 <Text variant="h3">{l.label}</Text>
-                <Text variant="micro" style={{ color: colors.textMuted }}>
-                  web ↗
+                <Text variant="micro" style={{ color: l.route ? colors.accent : colors.textMuted }}>
+                  {l.route ? "Ouvrir →" : "web ↗"}
                 </Text>
               </PressableScale>
             </View>
