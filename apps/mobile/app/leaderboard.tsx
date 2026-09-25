@@ -1,13 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, View, type ViewStyle } from "react-native";
 import { colors, division as divisionColors, fonts } from "@cyberlearn/tokens";
 import { BackButton } from "@/components/buttons";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
-import { fetchLeaderboard, type LeaderboardEntry, type PodEntry } from "@/lib/api";
+import {
+  fetchLeaderboard,
+  type FriendsBoard,
+  type LeaderboardEntry,
+  type PodEntry,
+} from "@/lib/api";
+import { boardName, friendsBoardNotice, friendsCountLabel } from "@/lib/friends";
 
 const DIVISION_LABEL: Record<string, string> = {
   BRONZE: "Bronze",
@@ -39,8 +45,16 @@ function displayName(e: {
   return e.isCurrentUser ? "Toi" : "Anonyme";
 }
 
+/** The site's two boards that the app has: the platform, and the reader's friends. */
+const BOARDS = [
+  { id: "global", label: "Général" },
+  { id: "friends", label: "Amis" },
+] as const;
+type Board = (typeof BOARDS)[number]["id"];
+
 export default function Leaderboard(): React.JSX.Element {
   const router = useRouter();
+  const [board, setBoard] = useState<Board>("global");
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["leaderboard"],
     queryFn: fetchLeaderboard,
@@ -66,11 +80,22 @@ export default function Leaderboard(): React.JSX.Element {
           {/* My position */}
           <MyRankCard data={data} />
 
+          <BoardSwitch value={board} onChange={setBoard} />
+
+          {board === "friends" ? (
+            <FriendsSection
+              board={data.friendsBoard}
+              onOpenSettings={() => router.push("/settings")}
+            />
+          ) : null}
+
           {/* Podium top 3 */}
-          {data.entries.length >= 3 ? <Podium entries={data.entries.slice(0, 3)} /> : null}
+          {board === "global" && data.entries.length >= 3 ? (
+            <Podium entries={data.entries.slice(0, 3)} />
+          ) : null}
 
           {/* League pod */}
-          {data.league ? (
+          {board === "global" && data.league ? (
             <View>
               <SectionLabel
                 eyebrow="Saison en cours"
@@ -124,14 +149,16 @@ export default function Leaderboard(): React.JSX.Element {
           ) : null}
 
           {/* Global top */}
-          <View>
-            <SectionLabel eyebrow="Général" title="Top classement" />
-            <Card style={{ padding: 0 }}>
-              {data.entries.slice(3, 25).map((e: LeaderboardEntry, i) => (
-                <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
-              ))}
-            </Card>
-          </View>
+          {board === "global" ? (
+            <View>
+              <SectionLabel eyebrow="Général" title="Top classement" />
+              <Card style={{ padding: 0 }}>
+                {data.entries.slice(3, 25).map((e: LeaderboardEntry, i) => (
+                  <GlobalRow key={`${String(e.rank)}-${String(i)}`} entry={e} />
+                ))}
+              </Card>
+            </View>
+          ) : null}
         </View>
       )}
     </Screen>
@@ -321,10 +348,19 @@ function LadderRow({ member, index }: { member: PodEntry; index: number }): Reac
   );
 }
 
-function GlobalRow({ entry }: { entry: LeaderboardEntry }): React.JSX.Element {
+function GlobalRow({
+  entry,
+  name = displayName(entry),
+}: {
+  entry: LeaderboardEntry;
+  /** The friends board names everybody; the public board may not. */
+  name?: string;
+}): React.JSX.Element {
   const top3 = entry.rank <= 3;
   return (
-    <View
+    <ProfileLink
+      username={entry.hasPublicProfile ? entry.username : null}
+      name={name}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -353,7 +389,7 @@ function GlobalRow({ entry }: { entry: LeaderboardEntry }): React.JSX.Element {
           color: entry.isCurrentUser ? colors.accent : colors.textPrimary,
         }}
       >
-        {entry.isCurrentUser ? `› ${displayName(entry)}` : displayName(entry)}
+        {entry.isCurrentUser ? `› ${name}` : name}
       </Text>
       <Text variant="micro" style={{ color: colors.textMuted }}>
         NV.{entry.level}
@@ -369,6 +405,138 @@ function GlobalRow({ entry }: { entry: LeaderboardEntry }): React.JSX.Element {
       >
         {entry.xpTotal} XP
       </Text>
+    </ProfileLink>
+  );
+}
+
+/**
+ * A board row that opens the person's profile, when the server says their
+ * name may be a link (hasPublicProfile): a public profile on the public
+ * board, any friend with a handle on the friends board. Otherwise a plain row.
+ */
+function ProfileLink({
+  username,
+  name,
+  style,
+  children,
+}: {
+  username: string | null;
+  name: string;
+  style: ViewStyle;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  const router = useRouter();
+  if (username === null) return <View style={style}>{children}</View>;
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`Profil de ${name}`}
+      onPress={() => router.push({ pathname: "/u/[username]", params: { username } })}
+      style={({ pressed }) => [style, pressed ? { opacity: 0.7 } : null]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+function BoardSwitch({
+  value,
+  onChange,
+}: {
+  value: Board;
+  onChange: (board: Board) => void;
+}): React.JSX.Element {
+  return (
+    <View accessibilityRole="tablist" style={{ flexDirection: "row", gap: 8 }}>
+      {BOARDS.map((b) => {
+        const active = b.id === value;
+        return (
+          <Pressable
+            key={b.id}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            onPress={() => onChange(b.id)}
+            style={{
+              flex: 1,
+              minHeight: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: active ? colors.accent : colors.borderDefault,
+              backgroundColor: active ? colors.accent : "transparent",
+            }}
+          >
+            <Text variant="micro" style={{ color: active ? colors.bgBase : colors.textSecondary }}>
+              {b.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * The friends board, as on the site. Nobody is anonymised and nobody is
+ * greyed out: on a list this short, "Anonyme" would be a name with one step
+ * missing. Somebody is listed under their name because they said so, or they
+ * are absent; the notice says which of the two the reader is.
+ */
+function FriendsSection({
+  board,
+  onOpenSettings,
+}: {
+  board: FriendsBoard;
+  onOpenSettings: () => void;
+}): React.JSX.Element {
+  const others = board.entries.filter((e) => !e.isCurrentUser);
+  const notice = friendsBoardNotice(board.listedForFriends);
+  return (
+    <View>
+      <SectionLabel
+        eyebrow="Entre amis"
+        title="Tes amis"
+        right={
+          <Text variant="micro" style={{ color: colors.textMuted }}>
+            {friendsCountLabel(others.length)}
+          </Text>
+        }
+      />
+      {board.entries.length === 0 ? (
+        <Text variant="bodySm" style={{ marginBottom: 16 }}>
+          Rien à classer pour l'instant : ce tableau réunit les amis qui ont choisi d'y figurer.
+        </Text>
+      ) : (
+        <Card style={{ padding: 0 }}>
+          {board.entries.map((e) => (
+            <GlobalRow key={String(e.rank)} entry={e} name={boardName(e)} />
+          ))}
+        </Card>
+      )}
+      <View
+        style={{
+          marginTop: 16,
+          borderWidth: 1,
+          borderColor: colors.borderDefault,
+          backgroundColor: "rgba(5,4,26,0.5)",
+          padding: 14,
+          gap: 8,
+        }}
+      >
+        <Text variant="mono" style={{ fontSize: 11.5, lineHeight: 18, color: colors.textMuted }}>
+          {notice.text}
+        </Text>
+        <Pressable
+          accessibilityRole="link"
+          onPress={onOpenSettings}
+          hitSlop={8}
+          style={{ alignSelf: "flex-start", minHeight: 32, justifyContent: "center" }}
+        >
+          <Text variant="micro" style={{ color: colors.accent }}>
+            {`${notice.link} →`}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
