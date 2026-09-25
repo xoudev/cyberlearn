@@ -24,7 +24,7 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  cinquante et un : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  cinquante-deux : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
   `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
   `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
   `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
@@ -33,7 +33,7 @@ c'est lui qu'on relit avant de commencer une surface :
   `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
   `onboarding/finish`, `onboarding/goals`, `onboarding/profile`, `password`,
   `placement`, `placement/submit`, `profile`, `progress`, `quests/claim`,
-  `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
+  `quiz-answer`, `quiz-report`, `rating`, `review`, `search`, `send-otp`,
   `settings/profile`, `streak`, `support`, `support/reply`, `support/ticket`,
   `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
@@ -72,6 +72,7 @@ RLS — jamais réécrites côté app.
 | Examen final d'un parcours : règles, 30 minutes chronométrées, reprise d'une tentative en cours, délai de 48 h, correction détaillée, certificat à la réussite ; certificat réclamé sur un parcours sans examen (même service, `apps/web/lib/exam/exam-service.ts` et `lib/certificates/claim.ts`) | ✅ | ✅ |
 | Révisions (SM-2) : file du jour, notation Oublié / Difficile / Facile, XP ; l'interrupteur `spacedRepetition` se règle et s'applique des deux côtés | ✅ | ✅ |
 | Trouver mon parcours : deux questions, deux ou trois parcours suggérés avec leur raison (`/paths/guide`, `app/paths/guide.tsx`, même classement `@cyberlearn/lib/paths/suggest`) | ✅ | ✅ |
+| Recherche globale : parcours d'abord, puis leçons, puis ses propres notes, au fil de la frappe à partir de deux lettres, limitée à ce que l'appelant peut ouvrir (même service `apps/web/lib/search/run.ts`, même classement `buildGroups`) ; une note s'ouvre sur sa leçon | ✅ (barre du site) | ✅ (loupe de l'Accueil, `app/search.tsx`) |
 | Profil, progression, XP, niveau | ✅ | ✅ |
 | Classement + ligue | ✅ | ✅ |
 | Amis : demandes reçues et envoyées, liste, accepter, refuser, annuler, retirer, personne prévenu d'un refus (même service, `apps/web/lib/friends/friends-service.ts`) ; le profil de quelqu'un et son bouton d'ami (mêmes libellés et mêmes transitions, `@cyberlearn/lib/social/friendship`), fermé à un inconnu quand il est privé, comme `/u/[username]` ; classement entre amis, sans ligne anonyme | ✅ | ✅ (`app/friends.tsx`, `app/u/[username].tsx`, onglet « Amis » du classement) |
@@ -97,7 +98,6 @@ comparant chaque page du site aux écrans de l'app.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Recherche globale** | La barre du site cherche d'un coup dans les parcours, les leçons et ses propres notes. L'app a une recherche par onglet (leçons, parcours), mais pas de recherche commune, ni dans les notes | — |
 | **Nouveautés** (`/changelog`) | La page des nouveautés du produit, signalée par un point dans la barre tant qu'elle n'a pas été lue. Absente de l'app | — |
 
 ### Volontairement web-only

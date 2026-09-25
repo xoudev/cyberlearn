@@ -32,6 +32,7 @@ const note = (n: number, lessonTitle: string, content: string): SearchRows["note
   content,
   wordCount: content.split(/\s+/u).length,
   updatedAt: new Date("2026-03-04T10:00:00Z"),
+  lessonId: `lesson-${String(n)}`,
   lessonSlug: `lecon-${String(n)}`,
   lessonTitle,
   lessonCategory: "NETWORK",
@@ -119,5 +120,22 @@ describe("buildGroups", () => {
     // The database narrows; the ranking still decides. A row that matched only
     // a stray character must not be shown as an answer.
     expect(buildGroups(rows({ lessons: [lesson(1, "Docker")] }), "injection")).toEqual([]);
+  });
+});
+
+describe("what the app opens a result by", () => {
+  it("gives a path's and a lesson's slug, and a note's lesson", () => {
+    const groups = buildGroups(
+      rows({
+        paths: [path(1, "Injection SQL")],
+        lessons: [lesson(2, "Injection SQL")],
+        notes: [note(3, "Injection SQL", "injection")],
+      }),
+      "injection",
+    );
+    const refs = Object.fromEntries(
+      groups.flatMap((g) => g.results).map((r) => [r.kind, r.ref] as const),
+    );
+    expect(refs).toEqual({ path: "parcours-1", lesson: "lecon-2", note: "lesson-3" });
   });
 });

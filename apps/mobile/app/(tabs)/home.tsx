@@ -10,7 +10,7 @@ import { View } from "react-native";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
 import { ActionChip, GradientButton, IconButton } from "@/components/buttons";
-import { BellIcon, ChevronRight } from "@/components/icons";
+import { BellIcon, ChevronRight, SearchIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { BadgeIcon } from "@/components/media";
 import { RevisionsCard } from "@/components/revisions-card";
@@ -116,6 +116,12 @@ function HomeBody({
               />
             </View>
           ) : null}
+          {/* The site's navbar search: parcours, lessons and the reader's notes. */}
+          <View style={{ marginRight: 8 }}>
+            <IconButton onPress={() => router.push("/search")} accessibilityLabel="Rechercher">
+              <SearchIcon color={colors.textSecondary} size={20} />
+            </IconButton>
+          </View>
           <View ref={bellAnchor} collapsable={false}>
             <IconButton
               onPress={() => router.push("/notifications")}
