@@ -13,6 +13,7 @@ import { randomUUID } from "node:crypto";
 import {
   AVATAR_MIME_EXTENSION,
   AVATAR_UPLOAD_ALLOWED_MIME,
+  AVATAR_UPLOAD_ERROR,
   AVATAR_UPLOAD_MAX_BYTES,
   UPLOADED_AVATAR_PREFIX,
   isUploadedAvatar,
@@ -103,18 +104,18 @@ export async function uploadUserAvatar(
   file: File,
   previousAvatarUrl: string | null,
 ): Promise<AvatarUploadResult> {
-  if (file.size === 0) return { error: "Fichier vide." };
+  if (file.size === 0) return { error: AVATAR_UPLOAD_ERROR.empty };
   if (file.size > AVATAR_UPLOAD_MAX_BYTES) {
-    return { error: "Image trop lourde (2 Mo maximum)." };
+    return { error: AVATAR_UPLOAD_ERROR.tooLarge };
   }
   if (!(AVATAR_UPLOAD_ALLOWED_MIME as readonly string[]).includes(file.type)) {
-    return { error: "Format non supporté. Utilise JPEG, PNG ou WebP." };
+    return { error: AVATAR_UPLOAD_ERROR.format };
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const sniffed = sniffImageMime(bytes);
   if (!sniffed || sniffed !== file.type) {
-    return { error: "Le contenu du fichier ne correspond pas à une image valide." };
+    return { error: AVATAR_UPLOAD_ERROR.content };
   }
 
   const key = `${userId}/${randomUUID()}.${AVATAR_MIME_EXTENSION[sniffed]}`;
@@ -125,7 +126,7 @@ export async function uploadUserAvatar(
     upsert: false,
   });
   if (error) {
-    return { error: "Échec de l'envoi de l'image. Réessaie." };
+    return { error: AVATAR_UPLOAD_ERROR.storage };
   }
 
   // Best-effort cleanup of the previous uploaded avatar (ignore failures).

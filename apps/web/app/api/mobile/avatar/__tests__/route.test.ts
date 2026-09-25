@@ -17,6 +17,13 @@ const userFromBearer =
   vi.fn<(r: Request) => Promise<{ id: string; email: string | null } | null>>();
 const findUnique = vi.fn<(args: unknown) => Promise<{ avatarUrl: string | null } | null>>();
 const resolveAvatarSrc = vi.fn<(v: string | null) => Promise<string | null>>();
+const setAvatarPhotoFor =
+  vi.fn<
+    (
+      u: string,
+      file: unknown,
+    ) => Promise<{ ok: true; marker: string } | { ok: false; error: string }>
+  >();
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: (r: Request) => userFromBearer(r) }));
 vi.mock("@cyberlearn/db", () => ({
@@ -25,8 +32,11 @@ vi.mock("@cyberlearn/db", () => ({
 vi.mock("@/lib/avatar/storage", () => ({
   resolveAvatarSrc: (v: string | null) => resolveAvatarSrc(v),
 }));
+vi.mock("@/lib/avatar/upload", () => ({
+  setAvatarPhotoFor: (u: string, file: unknown) => setAvatarPhotoFor(u, file),
+}));
 
-const { GET } = await import("../route");
+const { GET, POST } = await import("../route");
 
 function request(): NextRequest {
   return new NextRequest("https://cyberlearn.fr/api/mobile/avatar");
@@ -36,6 +46,7 @@ beforeEach(() => {
   userFromBearer.mockReset();
   findUnique.mockReset();
   resolveAvatarSrc.mockReset();
+  setAvatarPhotoFor.mockReset();
 });
 
 describe("who may ask", () => {
@@ -108,5 +119,69 @@ describe("what comes back", () => {
     expect(res.status).toBe(500);
     expect(body.error).toBe("Avatar indisponible.");
     expect(JSON.stringify(body)).not.toContain("10.0.0.4");
+  });
+});
+
+describe("sending a photo", () => {
+  function upload(form: FormData | string, headers: Record<string, string> = {}): NextRequest {
+    return new NextRequest("https://cyberlearn.fr/api/mobile/avatar", {
+      method: "POST",
+      body: form,
+      headers,
+    });
+  }
+
+  function photoForm(): FormData {
+    const form = new FormData();
+    form.set(
+      "avatar",
+      new File([new Uint8Array([0xff, 0xd8, 0xff])], "a.jpg", { type: "image/jpeg" }),
+    );
+    return form;
+  }
+
+  it("refuses a caller with no valid token, and stores nothing", async () => {
+    userFromBearer.mockResolvedValue(null);
+    expect((await POST(upload(photoForm()))).status).toBe(401);
+    expect(setAvatarPhotoFor).not.toHaveBeenCalled();
+  });
+
+  it("refuses a declared body over the cap before reading it", async () => {
+    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    const res = await POST(upload("x", { "content-length": String(3 * 1024 * 1024) }));
+    expect(res.status).toBe(413);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      "Image trop lourde (2 Mo maximum).",
+    );
+    expect(setAvatarPhotoFor).not.toHaveBeenCalled();
+  });
+
+  it("refuses a body that is not a form", async () => {
+    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    const res = await POST(upload("nope", { "content-type": "text/plain" }));
+    expect(res.status).toBe(400);
+    expect(setAvatarPhotoFor).not.toHaveBeenCalled();
+  });
+
+  it("stores the caller's photo and answers with it signed, never the marker", async () => {
+    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    setAvatarPhotoFor.mockResolvedValue({ ok: true, marker: "__upload:user-1/n.jpg" });
+    resolveAvatarSrc.mockResolvedValue("https://x.supabase.co/sign/n?token=t");
+
+    const res = await POST(upload(photoForm()));
+    const body = (await res.json()) as { ok: boolean; avatarUrl: string | null };
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ ok: true, avatarUrl: "https://x.supabase.co/sign/n?token=t" });
+    expect(setAvatarPhotoFor.mock.calls[0]?.[0]).toBe("user-1");
+    expect(setAvatarPhotoFor.mock.calls[0]?.[1]).toBeInstanceOf(File);
+  });
+
+  it("passes the service's refusal on", async () => {
+    userFromBearer.mockResolvedValue({ id: "user-1", email: null });
+    setAvatarPhotoFor.mockResolvedValue({ ok: false, error: "Fichier vide." });
+    const res = await POST(upload(photoForm()));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, error: "Fichier vide." });
   });
 });

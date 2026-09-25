@@ -8,6 +8,7 @@ import { ActionChip, GradientButton } from "@/components/buttons";
 import { MessageInput } from "@/components/forum";
 import { Avatar } from "@/components/media";
 import { PathGuideFlow, type GuideAnswers } from "@/components/path-guide";
+import { PhotoUploadButton } from "@/components/photo-upload";
 import { Screen } from "@/components/screen";
 import { Card, SectionLabel, Text } from "@/components/ui";
 import {
@@ -267,8 +268,8 @@ function AvatarStep({
     <View style={{ gap: 14 }}>
       <SectionLabel eyebrow="Avatar" title="Choisis ton avatar" />
       <Text variant="body" style={{ color: colors.textSecondary }}>
-        Il t'accompagne sur ton profil, dans le classement et sur le forum. Une photo peut se mettre
-        plus tard, depuis le site.
+        Il t'accompagne sur ton profil, dans le classement et sur le forum. Choisis-en un, ou envoie
+        une photo.
       </Text>
       <View
         accessibilityRole="radiogroup"
@@ -302,6 +303,8 @@ function AvatarStep({
           );
         })}
       </View>
+      {/* A photo is saved as soon as it is sent, and the sign-up goes on, as on the site. */}
+      <PhotoUploadButton disabled={sending} onUploaded={() => onDone()} />
       {error !== null ? (
         <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>
           {error}

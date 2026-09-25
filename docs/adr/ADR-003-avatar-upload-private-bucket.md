@@ -41,7 +41,9 @@ Add a private `avatars` bucket, mirroring the existing `certificates` setup:
 ## Security mitigations
 
 - **Upload is server-mediated only** (service_role after auth + validation); no
-  client-side upload, no public URL.
+  client-side upload, no public URL. The site's form and the mobile app
+  (`POST /api/mobile/avatar`, bearer token) both go through the same service,
+  `apps/web/lib/avatar/upload.ts`, so every check below applies to both.
 - **Format allowlist**: `image/jpeg`, `image/png`, `image/webp` only. **SVG is
   rejected** (script-injection / XSS vector when served from our origin).
 - **Magic-byte sniffing**: the first bytes must match the declared MIME, so a

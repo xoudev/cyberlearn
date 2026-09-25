@@ -1,7 +1,8 @@
 /**
  * The avatars a new account picks from while signing up: the same eight, with
  * the same names, on the site and in the app. The server accepts nothing else
- * at this step; a photo comes from the site's avatar step or the settings.
+ * at this step; a photo goes through the upload service
+ * (apps/web/lib/avatar/upload.ts), from the site or the app.
  */
 export const ONBOARDING_AVATAR_CHOICES = [
   { path: "/avatars/av-1.svg", label: "CYBER" },

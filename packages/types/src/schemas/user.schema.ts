@@ -112,6 +112,16 @@ export type AvatarUploadMime = (typeof AVATAR_UPLOAD_ALLOWED_MIME)[number];
 
 export const AVATAR_UPLOAD_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
+// What a refused upload says, the same from the site's form and from the app.
+export const AVATAR_UPLOAD_ERROR = {
+  missing: "Aucun fichier reçu.",
+  empty: "Fichier vide.",
+  tooLarge: "Image trop lourde (2 Mo maximum).",
+  format: "Format non supporté. Utilise JPEG, PNG ou WebP.",
+  content: "Le contenu du fichier ne correspond pas à une image valide.",
+  storage: "Échec de l'envoi de l'image. Réessaie.",
+} as const;
+
 // Maps an allowed MIME type to the file extension used in the storage key.
 export const AVATAR_MIME_EXTENSION: Record<AvatarUploadMime, string> = {
   "image/jpeg": "jpg",

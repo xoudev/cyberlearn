@@ -31,6 +31,16 @@ const config: ExpoConfig = {
     "expo-web-browser",
     "expo-font",
     [
+      "expo-image-picker",
+      {
+        // The library only, for a photo avatar: no camera, no microphone.
+        photosPermission:
+          "CyberLearn accède à tes photos pour que tu puisses en choisir une comme avatar.",
+        cameraPermission: false,
+        microphonePermission: false,
+      },
+    ],
+    [
       "expo-splash-screen",
       {
         // Dark brand splash instead of the default white screen.
