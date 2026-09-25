@@ -17,10 +17,16 @@ function readBoolean(value: FormDataEntryValue | null): boolean | undefined {
   return undefined;
 }
 
+function optionalBoolean(value: FormDataEntryValue | null): unknown {
+  if (value === null) return undefined;
+  return readBoolean(value) ?? value;
+}
+
 /**
- * Updates the wired email-notification toggles (review reminders + product
- * digest). streakReminder is intentionally not accepted here - its delivery is
- * not built yet, so the UI keeps it disabled.
+ * Updates the wired email-notification toggles (review reminders, the
+ * moderation and class-work notices, product news). streakReminder is
+ * intentionally not accepted here - its delivery is not built yet, so the UI
+ * keeps it disabled.
  */
 export async function updateNotificationsAction(
   _prev: UpdateNotificationsState,
@@ -31,17 +37,25 @@ export async function updateNotificationsAction(
   const parsed = updateNotificationsSchema.safeParse({
     reviewReminders: readBoolean(formData.get("reviewReminders")),
     weeklyDigest: readBoolean(formData.get("weeklyDigest")),
+    // Absent from an older form: left as it is. Present, it has to be a
+    // boolean like the others, so a malformed value reaches Zod as itself.
+    emailNotifications: optionalBoolean(formData.get("emailNotifications")),
   });
   if (!parsed.success) {
     return { error: "Préférences de notification invalides." };
   }
 
-  const { reviewReminders, weeklyDigest } = parsed.data;
+  const { reviewReminders, weeklyDigest, emailNotifications } = parsed.data;
+  const values = {
+    reviewReminders,
+    weeklyDigest,
+    ...(emailNotifications !== undefined ? { emailNotifications } : {}),
+  };
 
   await prisma.userPreferences.upsert({
     where: { userId: authUser.id },
-    create: { userId: authUser.id, reviewReminders, weeklyDigest },
-    update: { reviewReminders, weeklyDigest },
+    create: { userId: authUser.id, ...values },
+    update: values,
   });
 
   revalidatePath("/settings/notifications");

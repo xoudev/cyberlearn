@@ -10,17 +10,10 @@ import { AVATAR_UPLOAD_ALLOWED_MIME } from "@cyberlearn/types";
 import { AvatarCropper } from "@/components/avatar-cropper";
 import { croppedBlobToFile } from "@/lib/avatar/cropped-file";
 import Link from "next/link";
+import { ONBOARDING_AVATAR_CHOICES } from "@cyberlearn/lib/onboarding/avatars";
 
-const AVATARS = [
-  { path: "/avatars/av-1.svg", label: "CYBER" },
-  { path: "/avatars/av-2.svg", label: "CIRCUIT" },
-  { path: "/avatars/av-3.svg", label: "ALERT" },
-  { path: "/avatars/av-4.svg", label: "ORBIT" },
-  { path: "/avatars/av-5.svg", label: "SIGNAL" },
-  { path: "/avatars/av-6.svg", label: "SHIELD" },
-  { path: "/avatars/av-7.svg", label: "NODE" },
-  { path: "/avatars/av-8.svg", label: "CL" },
-] as const;
+// The app offers the same eight (@cyberlearn/lib/onboarding/avatars).
+const AVATARS = ONBOARDING_AVATAR_CHOICES;
 
 const initialState: SaveAvatarState = {};
 

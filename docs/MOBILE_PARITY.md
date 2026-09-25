@@ -24,14 +24,16 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  trente-huit : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
-  `exam/start`, `exam/submit`, `forum`, `forum/post/edit`, `forum/post/hide`,
-  `forum/reply`, `forum/section`, `forum/topic`, `friends`, `friends/accept`,
-  `friends/remove`, `friends/request`, `leaderboard`, `lesson-qa`,
-  `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
-  `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `password`,
-  `profile`, `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`,
-  `send-otp`, `support`, `support/reply`, `support/ticket`, `wrapped`.
+  quarante-six : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
+  `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
+  `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
+  `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
+  `lesson-qa/upvote`, `lesson-rating`, `loadout`, `moderation`, `my-class`,
+  `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
+  `onboarding/finish`, `onboarding/profile`, `password`, `profile`, `progress`,
+  `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
+  `settings/profile`, `support`, `support/reply`, `support/ticket`, `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -55,6 +57,7 @@ RLS — jamais réécrites côté app.
 | Surface | Web | Mobile |
 | --- | --- | --- |
 | Connexion, inscription, MFA, mot de passe oublié | ✅ | ✅ |
+| Fin d'inscription : identifiant, nom affiché et bio, avatar parmi les huit du site, puis les deux questions et les parcours suggérés (ou « Passer, j'explore seul ») ; même service (`apps/web/lib/onboarding/steps.ts`), mêmes avatars (`@cyberlearn/lib/onboarding/avatars`), reprise à la bonne étape comme sur le site | ✅ | ✅ (`app/onboarding.tsx`) |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
@@ -68,18 +71,19 @@ RLS — jamais réécrites côté app.
 | Classement + ligue | ✅ | ✅ |
 | Amis : demandes reçues et envoyées, liste, accepter, refuser, annuler, retirer, personne prévenu d'un refus (même service, `apps/web/lib/friends/friends-service.ts`) ; le profil de quelqu'un et son bouton d'ami (mêmes libellés et mêmes transitions, `@cyberlearn/lib/social/friendship`), fermé à un inconnu quand il est privé, comme `/u/[username]` ; classement entre amis, sans ligne anonyme | ✅ | ✅ (`app/friends.tsx`, `app/u/[username].tsx`, onglet « Amis » du classement) |
 | Confidentialité : visibilité dans le classement public (masqué, anonyme, public), visible par mes amis, profil public | ✅ (`/settings/privacy`) | ✅ (Réglages) |
-| Bloc-notes | ✅ | ✅ |
+| Bloc-notes ; partager une note avec sa classe ou ses amis (même liste, même modération : un refus nommé, l'auteur et ses professeurs prévenus, même service `apps/web/lib/notes/note-share.ts`), la reprendre ; les notes reçues, en lecture seule (même aperçu, `@cyberlearn/lib/notes/preview`) | ✅ | ✅ |
 | Casier (cosmétiques) | ✅ | ✅ |
 | Notifications ; une notification liée à un sujet, une leçon, un parcours, un profil (demande d'ami) ou au bloc-notes ouvre l'écran correspondant | ✅ | ✅ |
 | Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
 | Wrapped : une entrée qui n'existe que du 1er décembre au 7 janvier (même fenêtre, `@cyberlearn/lib/gamification/wrapped-window`), une histoire de six à neuf écrans selon l'année avec avance automatique, appui à droite ou à gauche, appui long pour lire ; mêmes écrans et mêmes mots (`@cyberlearn/lib/gamification/wrapped-story`), même récap (`apps/web/lib/wrapped/recap.ts`), page « pas encore ouvert » hors saison | ✅ (étiquette dans la barre) | ✅ (étiquette dans l'en-tête de l'Accueil, `app/wrapped.tsx`) |
-| Réglages, sécurité | ✅ | ✅ |
+| Réglages : profil (nom affiché, bio, un des huit avatars ; une photo ou un glyphe gardés tels quels, même service `apps/web/lib/profile/update-profile.ts`), notifications (mêmes interrupteurs et mêmes mots, `@cyberlearn/lib/settings/notifications`, dont les avis par email ; l'alerte de série grisée des deux côtés tant que rien ne l'envoie), répétition espacée, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 | Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
 | Aide & demandes : déposer une demande (mêmes thèmes, même liste pour un établissement, même limite de débit, réponse à l'adresse du compte), la liste, le fil et la réponse ; une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`, envoyé à l'app en `acceptsReplies`) | ✅ | ✅ |
 | Compte banni : un seul écran (motif, date, durée), l'avis marqué comme vu, l'appel | ✅ (`/banned`) | ✅ (`app/banned.tsx`) |
+| Modération côté auteur : ce qui a été signalé, où, quand et ce qu'il en est advenu, sans score ni règle (mêmes mots, `@cyberlearn/lib/moderation/record`) ; les avis de modération y mènent | ✅ (`/settings/moderation`) | ✅ (`app/moderation.tsx`) |
 
 ### Encore dû
 
@@ -88,9 +92,8 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
 | **Exporter la carte Wrapped en image** | Le site dessine la carte finale en image, à télécharger ou partager ; l'app partage l'année en texte avec la feuille de partage du téléphone. Faire une image demande deux dépendances absentes du projet (`react-native-view-shot`, `expo-sharing`) | Accord sur les dépendances |
-| **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) n'existe que sur le web. Le bannissement et son appel, eux, sont dans l'app | — |
-| **Fin d'inscription** (pseudo, avatar, objectif) | L'app renvoie au site pour les trois étapes (`onboarding-required.tsx`). Le questionnaire de la troisième étape est déjà dans l'onglet Parcours ; ce qui manque, c'est de pouvoir finir son inscription sans quitter l'app | Rien |
-| **Partage de note** | Le bloc-notes est des deux côtés, le partage non — ni l'envoi, ni la réception. Il manquait à ce tableau : « Bloc-notes ✅ ✅ » était vrai du carnet et faux de la fonctionnalité. Le filtre qui refuse un partage vit dans le dépôt (`note-share.repository`), donc l'app l'hériterait sans le réécrire | — |
+| **Test de positionnement** | Proposé à la fin de l'inscription à qui dit avoir déjà une base, pour sauter les leçons déjà maîtrisées. L'app termine l'inscription sans lui ; il reste sur le site (`/onboarding/placement-test`) | — |
+| **Envoyer une photo d'avatar** | Le site accepte une photo (recadrée, 2 Mo au plus) à l'étape avatar et dans les réglages ; l'app l'affiche mais ne sait pas en envoyer. Choisir une image sur le téléphone demande une dépendance (`expo-image-picker`) qui n'est pas dans le projet | Accord sur la dépendance |
 
 ### Volontairement web-only
 

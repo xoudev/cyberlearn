@@ -58,3 +58,32 @@ describe("updateNotificationsAction", () => {
     });
   });
 });
+
+describe("updateNotificationsAction - the e-mail notices", () => {
+  it("persists the switch for the moderation and class-work e-mails when sent", async () => {
+    const result = await updateNotificationsAction(
+      {},
+      makeFormData({ reviewReminders: "true", weeklyDigest: "true", emailNotifications: "false" }),
+    );
+    expect(result.success).toBe(true);
+    expect(mockPrisma.userPreferences.upsert).toHaveBeenCalledWith({
+      where: { userId: MOCK_USER.id },
+      create: {
+        userId: MOCK_USER.id,
+        reviewReminders: true,
+        weeklyDigest: true,
+        emailNotifications: false,
+      },
+      update: { reviewReminders: true, weeklyDigest: true, emailNotifications: false },
+    });
+  });
+
+  it("rejects a malformed value for it", async () => {
+    const result = await updateNotificationsAction(
+      {},
+      makeFormData({ reviewReminders: "true", weeklyDigest: "true", emailNotifications: "yes" }),
+    );
+    expect(result.error).toBeDefined();
+    expect(mockPrisma.userPreferences.upsert).not.toHaveBeenCalled();
+  });
+});

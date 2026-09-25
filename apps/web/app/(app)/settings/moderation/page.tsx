@@ -2,6 +2,11 @@ import React from "react";
 import type { Metadata } from "next";
 import { moderationRepository } from "@cyberlearn/db";
 import { surfaceNoun } from "@cyberlearn/lib";
+import {
+  MODERATION_RECORD_EMPTY,
+  MODERATION_RECORD_INTRO,
+  moderationOutcome,
+} from "@cyberlearn/lib/moderation/record";
 import { requireRequestUser } from "@/lib/auth";
 import { SectionHead } from "../_components/SettingsPrimitives";
 import { MONO, S, SANS } from "../_components/tokens";
@@ -19,15 +24,9 @@ export const metadata: Metadata = { title: "Modération" };
  * It exists because the notices point somewhere. "Ta réponse a été supprimée"
  * in an inbox three days later, with no way to see which one or what has
  * happened since, is an accusation rather than an explanation.
+ *
+ * The words are the app's too (@cyberlearn/lib/moderation/record).
  */
-
-const WAITING = { label: "En attente d'un modérateur", color: "#FFB547" } as const;
-
-const STATE: Record<string, { label: string; color: string }> = {
-  PENDING: WAITING,
-  OVERTURNED: { label: "Fausse alerte · rétabli", color: "#0AFFD4" },
-  UPHELD: { label: "Confirmé · supprimé", color: "#FF6B7A" },
-};
 
 function stamp(date: Date): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -46,9 +45,7 @@ export default async function ModerationRecordPage(): Promise<React.JSX.Element>
       <SectionHead label="MODÉRATION" hint="ce qui a été signalé" />
 
       <p style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.65, color: S.fg2, margin: 0 }}>
-        La modération automatique relit chaque message publié. Quand elle signale quelque chose, le
-        message est retiré de la vue des autres et un modérateur le relit. Tu trouveras ici ce
-        qu&apos;elle a signalé et ce qu&apos;il en est advenu.
+        {MODERATION_RECORD_INTRO}
       </p>
 
       {events.length === 0 ? (
@@ -62,12 +59,12 @@ export default async function ModerationRecordPage(): Promise<React.JSX.Element>
             margin: 0,
           }}
         >
-          {"// rien à signaler : aucun de tes messages n'a été retenu"}
+          {`// ${MODERATION_RECORD_EMPTY}`}
         </p>
       ) : (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
           {events.map((event) => {
-            const state = STATE[event.outcome] ?? WAITING;
+            const state = moderationOutcome(event.outcome);
             return (
               <li
                 key={event.id}

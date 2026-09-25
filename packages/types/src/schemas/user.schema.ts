@@ -142,6 +142,8 @@ export type ThemeInput = z.infer<typeof themeSchema>;
 export const updateNotificationsSchema = z.object({
   reviewReminders: z.boolean(),
   weeklyDigest: z.boolean(),
+  /** Moderation notices and class work by e-mail; optional for older forms. */
+  emailNotifications: z.boolean().optional(),
 });
 
 export type UpdateNotificationsInput = z.infer<typeof updateNotificationsSchema>;

@@ -32,12 +32,12 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Forum", route: "/forum" },
   { label: "Aide & demandes", route: "/support" },
   { label: "Notifications", route: "/notifications" },
+  { label: "Ma modération", route: "/moderation" },
   { label: "Réglages", route: "/settings" },
   // Still on the web. Each of these is listed in docs/MOBILE_PARITY.md with
   // whether it is owed or deliberately web-only, so the gap is a decision on
   // record rather than something that looks forgotten.
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
-  { label: "Ma modération", url: "https://cyberlearn.fr/settings/moderation" },
 ];
 
 /** The stored form that needs the server to turn it into something drawable. */

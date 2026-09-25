@@ -19,11 +19,20 @@ import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
  * cookies are writable), which is the case for both callers.
  */
 export async function setOnboardingComplete(userId: string): Promise<void> {
+  await markOnboardingComplete(userId);
+
+  const supabase = await getSupabaseServerClient();
+  await supabase.auth.refreshSession();
+}
+
+/**
+ * The flag alone, without the cookie refresh: for the app, which holds its own
+ * session and refreshes it itself once the call returns. Same rule as above:
+ * the userId must come from a verified identity, never from the request body.
+ */
+export async function markOnboardingComplete(userId: string): Promise<void> {
   const adminClient = createSupabaseAdminClient();
   await adminClient.auth.admin.updateUserById(userId, {
     app_metadata: { onboarding_complete: true },
   });
-
-  const supabase = await getSupabaseServerClient();
-  await supabase.auth.refreshSession();
 }
