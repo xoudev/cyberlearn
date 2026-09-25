@@ -7,6 +7,7 @@ import { AuthField } from "@/components/auth-form";
 import { BackButton, GradientButton } from "@/components/buttons";
 import { MessageInput } from "@/components/forum";
 import { Avatar } from "@/components/media";
+import { PhotoUploadButton } from "@/components/photo-upload";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { SectionLabel, Text } from "@/components/ui";
@@ -31,9 +32,9 @@ interface OwnProfile {
 
 /**
  * The site's /settings/profile: the name shown, the bio, and one of the
- * built-in avatars. An uploaded photo or a glyph stays as it is unless another
- * avatar is picked; sending a photo from the phone is not in the app yet.
- * The handle is not editable, as on the site.
+ * built-in avatars or a photo from the phone. A photo is saved as soon as it
+ * is sent, as on the site; it, or a glyph, stays as it is unless another
+ * avatar is picked. The handle is not editable, as on the site.
  */
 export default function ProfileEdit(): React.JSX.Element {
   const { session } = useSession();
@@ -85,6 +86,7 @@ function ProfileForm({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [photoSaved, setPhotoSaved] = useState(false);
 
   // The avatar in use, drawable: an uploaded photo needs the server to sign it.
   const [currentSrc, setCurrentSrc] = useState<string | null>(profile.avatarUrl);
@@ -183,7 +185,10 @@ function ProfileForm({
               accessibilityLabel={
                 choice.id === "current" ? "Garder l'avatar actuel" : `Avatar ${choice.label}`
               }
-              onPress={() => setAvatar(choice.id)}
+              onPress={() => {
+                setAvatar(choice.id);
+                setPhotoSaved(false);
+              }}
               style={{
                 width: "22%",
                 flexGrow: 1,
@@ -203,6 +208,22 @@ function ProfileForm({
           );
         })}
       </View>
+
+      <PhotoUploadButton
+        disabled={sending}
+        onUploaded={(src) => {
+          setCurrentSrc(src);
+          setAvatar("current");
+          setPhotoSaved(true);
+          void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+          void queryClient.invalidateQueries({ queryKey: ["profile-edit", userId] });
+        }}
+      />
+      {photoSaved ? (
+        <Text variant="bodySm" accessibilityLiveRegion="polite" style={{ color: theme.accent }}>
+          Photo enregistrée.
+        </Text>
+      ) : null}
 
       {error !== null ? (
         <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>

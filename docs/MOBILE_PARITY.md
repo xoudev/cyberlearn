@@ -58,7 +58,7 @@ RLS — jamais réécrites côté app.
 | Surface | Web | Mobile |
 | --- | --- | --- |
 | Connexion, inscription, MFA, mot de passe oublié | ✅ | ✅ |
-| Fin d'inscription : identifiant, nom affiché et bio, avatar parmi les huit du site, puis les deux questions et les parcours suggérés (ou « Passer, j'explore seul ») ; même service (`apps/web/lib/onboarding/steps.ts`), mêmes avatars (`@cyberlearn/lib/onboarding/avatars`), reprise à la bonne étape comme sur le site | ✅ | ✅ (`app/onboarding.tsx`) |
+| Fin d'inscription : identifiant, nom affiché et bio, avatar parmi les huit du site ou une photo, puis les deux questions et les parcours suggérés (ou « Passer, j'explore seul ») ; même service (`apps/web/lib/onboarding/steps.ts`), mêmes avatars (`@cyberlearn/lib/onboarding/avatars`), reprise à la bonne étape comme sur le site | ✅ | ✅ (`app/onboarding.tsx`) |
 | Test de positionnement, proposé à la fin de l'inscription à qui dit avoir déjà une base : les questions sans leurs réponses (ni l'explication qui les donne), une seule fois, corrigé sur le serveur ; les leçons débutant et intermédiaire des domaines maîtrisés débloquées, le badge, un parcours du catalogue recommandé (même service, `apps/web/lib/onboarding/placement.ts` ; mêmes mots, `@cyberlearn/lib/onboarding/placement`) | ✅ | ✅ (`app/placement.tsx`) |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
@@ -80,9 +80,9 @@ RLS — jamais réécrites côté app.
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
 | Wrapped : une entrée qui n'existe que du 1er décembre au 7 janvier (même fenêtre, `@cyberlearn/lib/gamification/wrapped-window`), une histoire de six à neuf écrans selon l'année avec avance automatique, appui à droite ou à gauche, appui long pour lire ; mêmes écrans et mêmes mots (`@cyberlearn/lib/gamification/wrapped-story`), même récap (`apps/web/lib/wrapped/recap.ts`), page « pas encore ouvert » hors saison | ✅ (étiquette dans la barre) | ✅ (étiquette dans l'en-tête de l'Accueil, `app/wrapped.tsx`) |
-| Réglages : profil (nom affiché, bio, un des huit avatars ; une photo ou un glyphe gardés tels quels, même service `apps/web/lib/profile/update-profile.ts`), notifications (mêmes interrupteurs et mêmes mots, `@cyberlearn/lib/settings/notifications`, dont les avis par email ; l'alerte de série grisée des deux côtés tant que rien ne l'envoie), répétition espacée, sécurité | ✅ | ✅ |
+| Réglages : profil (nom affiché, bio, un des huit avatars ou une photo ; une photo ou un glyphe gardés tels quels tant qu'on n'en choisit pas un autre, même service `apps/web/lib/profile/update-profile.ts`), notifications (mêmes interrupteurs et mêmes mots, `@cyberlearn/lib/settings/notifications`, dont les avis par email ; l'alerte de série grisée des deux côtés tant que rien ne l'envoie), répétition espacée, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
-| Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
+| Avatar : glyphe, image intégrée, photo envoyée ; envoyer une photo depuis la bibliothèque du téléphone, recadrée au carré, à l'étape avatar de l'inscription et dans le profil, enregistrée aussitôt (mêmes contrôles et mêmes messages : JPEG, PNG ou WebP, 2 Mo au plus, octets vérifiés, bucket privé ; même service `apps/web/lib/avatar/upload.ts`) | ✅ | ✅ (`expo-image-picker`, sans caméra ni micro) |
 | Aide & demandes : déposer une demande (mêmes thèmes, même liste pour un établissement, même limite de débit, réponse à l'adresse du compte), la liste, le fil et la réponse ; une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`, envoyé à l'app en `acceptsReplies`) | ✅ | ✅ |
 | Compte banni : un seul écran (motif, date, durée), l'avis marqué comme vu, l'appel | ✅ (`/banned`) | ✅ (`app/banned.tsx`) |
 | Modération côté auteur : ce qui a été signalé, où, quand et ce qu'il en est advenu, sans score ni règle (mêmes mots, `@cyberlearn/lib/moderation/record`) ; les avis de modération y mènent | ✅ (`/settings/moderation`) | ✅ (`app/moderation.tsx`) |
@@ -94,7 +94,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
 | **Exporter la carte Wrapped en image** | Le site dessine la carte finale en image, à télécharger ou partager ; l'app partage l'année en texte avec la feuille de partage du téléphone. Faire une image demande deux dépendances absentes du projet (`react-native-view-shot`, `expo-sharing`) | Accord sur les dépendances |
-| **Envoyer une photo d'avatar** | Le site accepte une photo (recadrée, 2 Mo au plus) à l'étape avatar et dans les réglages ; l'app l'affiche mais ne sait pas en envoyer. Choisir une image sur le téléphone demande une dépendance (`expo-image-picker`) qui n'est pas dans le projet | Accord sur la dépendance |
 
 ### Volontairement web-only
 

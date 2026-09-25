@@ -1,4 +1,5 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
+import type { PhotoPart } from "@/lib/avatar-photo";
 import { supabase } from "@/lib/supabase";
 import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
@@ -13,10 +14,12 @@ import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || "https://cyberlearn.fr";
 
 function requestWithToken(path: string, token: string, init?: RequestInit): Promise<Response> {
+  // A multipart body sets its own Content-Type, boundary included.
+  const json = !(init?.body instanceof FormData);
   return fetch(`${SITE_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(json ? { "Content-Type": "application/json" } : {}),
       Authorization: `Bearer ${token}`,
       ...(init?.headers ?? {}),
     },
@@ -564,6 +567,28 @@ export async function fetchMyAvatarUrl(): Promise<string | null> {
   const body = (await res.json()) as { ok: true; avatarUrl: string | null } | { ok: false };
   if (!body.ok) return null;
   return body.avatarUrl;
+}
+
+/**
+ * Sends a photo as the caller's avatar, through the site's checks. Answers
+ * with the new avatar already signed, so it can be drawn at once.
+ */
+export async function uploadAvatarPhotoApi(
+  part: PhotoPart,
+): Promise<{ ok: true; avatarUrl: string | null } | { ok: false; error?: string }> {
+  try {
+    const form = new FormData();
+    // SAFETY: React Native's FormData sends a file from a { uri, name, type }
+    // descriptor; the DOM typing it shares only knows Blob.
+    form.append("avatar", part as unknown as Blob);
+    const res = await authedFetch("/api/mobile/avatar", { method: "POST", body: form });
+    const body = (await res.json()) as
+      | { ok: true; avatarUrl: string | null }
+      | { ok: false; error?: string };
+    return body.ok ? { ok: true, avatarUrl: body.avatarUrl } : { ok: false, error: body.error };
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
 }
 
 // ── Note sharing (the site's service: the author's people only, screened) ─────
