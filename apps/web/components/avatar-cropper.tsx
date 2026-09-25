@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { AVATAR_EXPORT_PX } from "@cyberlearn/types";
 
 const VIEWPORT = 280; // on-screen crop square (px)
-const OUTPUT = 512; // exported avatar size (px)
+const OUTPUT = AVATAR_EXPORT_PX; // exported avatar size (px), the app's too
 const MAX_ZOOM = 4;
 
 interface Offset {

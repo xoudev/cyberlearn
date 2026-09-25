@@ -112,6 +112,10 @@ export type AvatarUploadMime = (typeof AVATAR_UPLOAD_ALLOWED_MIME)[number];
 
 export const AVATAR_UPLOAD_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
+// The side, in pixels, of the square a photo avatar is reduced to before it is
+// sent: the site's cropper exports this size, and the app resizes to it.
+export const AVATAR_EXPORT_PX = 512;
+
 // What a refused upload says, the same from the site's form and from the app.
 export const AVATAR_UPLOAD_ERROR = {
   missing: "Aucun fichier reçu.",
