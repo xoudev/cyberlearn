@@ -714,10 +714,14 @@ export async function markLessonOpened(userId: string, lessonId: string): Promis
 export interface QuestItem {
   id: string;
   title: string;
+  /** WEEKLY_BONUS is the completion bonus; the others are the quests to do. */
+  type: string;
   target: number;
   xpReward: number;
+  freezeReward: number;
   progress: number;
   completed: boolean;
+  claimed: boolean;
 }
 
 export function useQuests(userId: string | undefined, weekKey: string) {
@@ -728,34 +732,44 @@ export function useQuests(userId: string | undefined, weekKey: string) {
       const [questsRes, progressRes] = await Promise.all([
         supabase
           .from("quests")
-          .select("id,title,target,xpReward,orderIndex")
+          .select("id,title,type,target,xpReward,freezeReward,orderIndex")
           .eq("isActive", true)
           .order("orderIndex"),
         supabase
           .from("user_quest_progress")
-          .select("questId,progress,completed")
+          .select("questId,progress,completed,claimed")
           .eq("userId", userId as string) // gated by `enabled`
           .eq("weekKey", weekKey),
       ]);
       const progress = new Map(
         (
-          (progressRes.data ?? []) as { questId: string; progress: number; completed: boolean }[]
+          (progressRes.data ?? []) as {
+            questId: string;
+            progress: number;
+            completed: boolean;
+            claimed: boolean;
+          }[]
         ).map((p) => [p.questId, p]),
       );
       return (
         (questsRes.data ?? []) as {
           id: string;
           title: string;
+          type: string;
           target: number;
           xpReward: number;
+          freezeReward: number;
         }[]
       ).map((q) => ({
         id: q.id,
         title: q.title,
+        type: q.type,
         target: q.target,
         xpReward: q.xpReward,
+        freezeReward: q.freezeReward,
         progress: progress.get(q.id)?.progress ?? 0,
         completed: progress.get(q.id)?.completed ?? false,
+        claimed: progress.get(q.id)?.claimed ?? false,
       }));
     },
   });

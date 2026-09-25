@@ -2,19 +2,16 @@ import React from "react";
 import { isoWeekKey, msUntilWeekReset } from "@cyberlearn/lib";
 import { questRepository } from "@cyberlearn/db";
 import type { QuestType, QuestWithProgress } from "@cyberlearn/db";
+import {
+  fmtWeekReset,
+  splitWeekQuests,
+  weekCompletion,
+} from "@cyberlearn/lib/gamification/weekly-quests";
 import { ClaimQuestButton } from "./claim-quest-button";
 
 const TURQ = "var(--cosmetic-accent)";
 const AMBER = "#FFB547";
 const HEX = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
-
-function fmtReset(ms: number): string {
-  const totalMin = Math.max(0, Math.floor(ms / 60_000));
-  const d = Math.floor(totalMin / 1440);
-  const h = Math.floor((totalMin % 1440) / 60);
-  const m = totalMin % 60;
-  return `${String(d)}j ${String(h)}h ${String(m)}m`;
-}
 
 function QuestGlyph({ type }: { type: QuestType }): React.ReactElement {
   const c = {
@@ -201,14 +198,12 @@ export async function QuestsPanel({
   const quests = await questRepository.findWeek(userId, isoWeekKey(now));
   if (quests.length === 0) return null;
 
-  const main = quests.filter((q) => q.type !== "WEEKLY_BONUS");
-  const bonus = quests.find((q) => q.type === "WEEKLY_BONUS");
+  // The split, the week's completion and the words are the app's too
+  // (@cyberlearn/lib/gamification/weekly-quests).
+  const { main, bonus } = splitWeekQuests(quests);
   if (main.length === 0) return null;
 
-  const claimedCount = main.filter((q) => q.claimed).length;
-  const pct = Math.round((claimedCount / main.length) * 100);
-  const totalXp = main.reduce((s, q) => s + q.xpReward, 0);
-  const claimedXp = main.filter((q) => q.claimed).reduce((s, q) => s + q.xpReward, 0);
+  const { claimedCount, pct, totalXp, claimedXp } = weekCompletion(main);
 
   return (
     <div
@@ -252,7 +247,7 @@ export async function QuestsPanel({
             padding: "5px 11px",
           }}
         >
-          Reset dans <b style={{ color: "#B8B5D1" }}>{fmtReset(msUntilWeekReset(now))}</b>
+          Reset dans <b style={{ color: "#B8B5D1" }}>{fmtWeekReset(msUntilWeekReset(now))}</b>
         </span>
       </div>
 

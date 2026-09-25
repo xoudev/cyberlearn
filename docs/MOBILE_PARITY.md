@@ -24,17 +24,17 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  quarante-neuf : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
-  `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
-  `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
-  `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
-  `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
+  cinquante : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
+  `exam/start`, `exam/submit`, `forum`, `forum/post/edit`, `forum/post/hide`,
+  `forum/reply`, `forum/section`, `forum/topic`, `friends`, `friends/accept`,
+  `friends/remove`, `friends/request`, `leaderboard`, `lesson-qa`,
+  `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
   `lesson-qa/upvote`, `lesson-rating`, `loadout`, `moderation`, `my-class`,
   `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
   `onboarding/finish`, `onboarding/goals`, `onboarding/profile`, `password`,
-  `placement`, `placement/submit`, `profile`, `progress`, `quiz-answer`,
-  `quiz-report`, `rating`, `review`, `send-otp`, `settings/profile`, `support`,
-  `support/reply`, `support/ticket`, `wrapped`.
+  `placement`, `placement/submit`, `profile`, `progress`, `quests/claim`,
+  `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
+  `settings/profile`, `support`, `support/reply`, `support/ticket`, `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -65,6 +65,7 @@ RLS — jamais réécrites côté app.
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
 | Noter une leçon terminée (note et commentaire), moyenne affichée ; questions-réponses sous une leçon : poser une question, répondre, accepter une réponse à sa propre question, voter pour celle d'un autre, même modération automatique et même message « retenu » (même service, `apps/web/lib/lessons/rate-lesson.ts` et `lib/lessons/qa.ts`) | ✅ | ✅ |
 | Tableau de bord autour des parcours : le parcours en tête (même classement, `@cyberlearn/lib/dashboard/featured-paths`) avec sa progression et la prochaine mission, la leçon en cours, les révisions dues, puis les quatre chiffres (mêmes libellés, `dashboard/stats`) ; sections numérotées qui se referment quand l'une est vide (`dashboard/sections`) | ✅ | ✅ (onglet Accueil) |
+| Quêtes de la semaine : compte à rebours jusqu'au reset, complétion de la semaine, progression de chaque quête, récompense à réclamer une fois la quête faite (XP, gel de série), bonus de complétion ; une réclamation qui fait monter de niveau le dit (même service `apps/web/lib/quests/claim.ts`, mêmes mots et même calcul `@cyberlearn/lib/gamification/weekly-quests`) | ✅ | ✅ (onglet Accueil, `components/weekly-quests.tsx`) |
 | Parcours + page d'un parcours | ✅ | ✅ |
 | Examen final d'un parcours : règles, 30 minutes chronométrées, reprise d'une tentative en cours, délai de 48 h, correction détaillée, certificat à la réussite ; certificat réclamé sur un parcours sans examen (même service, `apps/web/lib/exam/exam-service.ts` et `lib/certificates/claim.ts`) | ✅ | ✅ |
 | Révisions (SM-2) : file du jour, notation Oublié / Difficile / Facile, XP ; l'interrupteur `spacedRepetition` se règle et s'applique des deux côtés | ✅ | ✅ |
@@ -94,7 +95,7 @@ comparant chaque page du site aux écrans de l'app.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Quêtes de la semaine** | Le tableau de bord du site montre les quêtes de la semaine, leur progression et le bouton qui en réclame la récompense (XP, gel de série). L'app fait déjà avancer les quêtes quand on termine une leçon, mais n'affiche rien et ne sait pas réclamer : quelqu'un qui n'a que son téléphone ne touche jamais ces récompenses | — |
+| **Calendrier de série** | Le tableau de bord et le profil du site montrent la série du jour et le record, le calendrier d'activité de l'année, le prochain palier et la réserve de gels de série. L'app n'affiche que la série et le record : ni le calendrier, ni la réserve de gels que les quêtes remplissent | — |
 | **Choisir un nouveau mot de passe** | L'app envoie l'e-mail de réinitialisation, mais le lien ouvre le site (`/reset-password`) pour choisir le nouveau mot de passe. L'app ne sait pas ouvrir ce lien elle-même | — |
 | **Recherche globale** | La barre du site cherche d'un coup dans les parcours, les leçons et ses propres notes. L'app a une recherche par onglet (leçons, parcours), mais pas de recherche commune, ni dans les notes | — |
 | **Nouveautés** (`/changelog`) | La page des nouveautés du produit, signalée par un point dans la barre tant qu'elle n'a pas été lue. Absente de l'app | — |

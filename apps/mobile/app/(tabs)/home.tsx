@@ -17,6 +17,7 @@ import { RevisionsCard } from "@/components/revisions-card";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { useTourAnchor } from "@/components/tour";
+import { WeeklyQuests } from "@/components/weekly-quests";
 import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
 import { useCosmetics } from "@/lib/cosmetics";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL, RARITY_COLOR } from "@/lib/db";
@@ -87,7 +88,6 @@ function HomeBody({
   const { me, level, rank, badges, resume, paths, stats } = data;
   const tier = computeTier(level.level);
   const sections = planSections({ hasResume: resume !== null, dueReviews });
-  const activeQuests = (quests ?? []).filter((q) => !q.completed).length;
   const xpToNext = Math.max(level.needed - level.current, 0);
   const fr = (value: number): string => value.toLocaleString("fr-FR");
   const wrapped = wrappedWindow(new Date());
@@ -346,42 +346,7 @@ function HomeBody({
             ))}
           </View>
 
-          {(quests ?? []).length > 0 ? (
-            <Card style={{ gap: 14 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text variant="h3">Quêtes de la semaine</Text>
-                {activeQuests > 0 ? (
-                  <Text variant="micro" style={{ color: theme.accent }}>
-                    {activeQuests} en cours
-                  </Text>
-                ) : (
-                  <Text variant="micro" style={{ color: colors.success }}>
-                    ✓ complétées
-                  </Text>
-                )}
-              </View>
-              {(quests ?? []).map((q) => (
-                <View key={q.id} style={{ gap: 6 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10 }}>
-                    <Text variant="h3" numberOfLines={1} style={{ flex: 1, fontSize: 13.5 }}>
-                      {q.completed ? "✓ " : ""}
-                      {q.title}
-                    </Text>
-                    <Text
-                      variant="mono"
-                      style={{ fontSize: 11, color: q.completed ? colors.success : colors.warning }}
-                    >
-                      {q.completed
-                        ? "OK"
-                        : `${String(Math.min(q.progress, q.target))}/${String(q.target)}`}{" "}
-                      · +{q.xpReward} XP
-                    </Text>
-                  </View>
-                  <XPBar current={Math.min(q.progress, q.target)} needed={q.target} height={4} />
-                </View>
-              ))}
-            </Card>
-          ) : null}
+          <WeeklyQuests quests={quests ?? []} userId={userId} />
 
           <PressableScale onPress={() => router.push("/leaderboard")}>
             <Card
