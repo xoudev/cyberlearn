@@ -57,7 +57,7 @@ RLS — jamais réécrites côté app.
 
 | Surface | Web | Mobile |
 | --- | --- | --- |
-| Connexion, inscription, MFA, mot de passe oublié | ✅ | ✅ |
+| Connexion, inscription, MFA, demande de réinitialisation du mot de passe (le nouveau mot de passe se choisit encore sur le site, voir « Encore dû ») | ✅ | ✅ |
 | Fin d'inscription : identifiant, nom affiché et bio, avatar parmi les huit du site ou une photo, puis les deux questions et les parcours suggérés (ou « Passer, j'explore seul ») ; même service (`apps/web/lib/onboarding/steps.ts`), mêmes avatars (`@cyberlearn/lib/onboarding/avatars`), reprise à la bonne étape comme sur le site | ✅ | ✅ (`app/onboarding.tsx`) |
 | Test de positionnement, proposé à la fin de l'inscription à qui dit avoir déjà une base : les questions sans leurs réponses (ni l'explication qui les donne), une seule fois, corrigé sur le serveur ; les leçons débutant et intermédiaire des domaines maîtrisés débloquées, le badge, un parcours du catalogue recommandé (même service, `apps/web/lib/onboarding/placement.ts` ; mêmes mots, `@cyberlearn/lib/onboarding/placement`) | ✅ | ✅ (`app/placement.tsx`) |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
@@ -89,9 +89,15 @@ RLS — jamais réécrites côté app.
 
 ### Encore dû
 
-Rien pour l'instant : tout ce que le site propose à un apprenant existe dans
-l'app, ou figure ci-dessous comme choix délibéré. Une surface ajoutée au site
-sans son pendant mobile s'inscrit ici, avec ce qui la bloque.
+Par ordre de valeur pour quelqu'un qui n'a que son téléphone. Relevé en
+comparant chaque page du site aux écrans de l'app.
+
+| Surface | Pourquoi ça compte | Bloqué par |
+| --- | --- | --- |
+| **Quêtes de la semaine** | Le tableau de bord du site montre les quêtes de la semaine, leur progression et le bouton qui en réclame la récompense (XP, gel de série). L'app fait déjà avancer les quêtes quand on termine une leçon, mais n'affiche rien et ne sait pas réclamer : quelqu'un qui n'a que son téléphone ne touche jamais ces récompenses | — |
+| **Choisir un nouveau mot de passe** | L'app envoie l'e-mail de réinitialisation, mais le lien ouvre le site (`/reset-password`) pour choisir le nouveau mot de passe. L'app ne sait pas ouvrir ce lien elle-même | — |
+| **Recherche globale** | La barre du site cherche d'un coup dans les parcours, les leçons et ses propres notes. L'app a une recherche par onglet (leçons, parcours), mais pas de recherche commune, ni dans les notes | — |
+| **Nouveautés** (`/changelog`) | La page des nouveautés du produit, signalée par un point dans la barre tant qu'elle n'a pas été lue. Absente de l'app | — |
 
 ### Volontairement web-only
 
