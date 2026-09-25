@@ -8,6 +8,7 @@ import { threadFromHref } from "./forum";
  */
 
 export type InAppRoute =
+  | { pathname: "/moderation" }
   | { pathname: "/forum/[category]/[topic]"; params: { category: string; topic: string } }
   | { pathname: "/lessons/[slug]"; params: { slug: string } }
   | { pathname: "/paths/[slug]"; params: { slug: string } }
@@ -46,6 +47,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     // The badges live under the profile tab in the app.
     case "/badges":
       return { pathname: "/profile" };
+    // Every moderation notice points at the record, a settings page on the site.
+    case "/settings/moderation":
+      return { pathname: "/moderation" };
     default:
       return null;
   }

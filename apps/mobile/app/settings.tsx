@@ -273,6 +273,16 @@ export default function Reglages(): React.JSX.Element {
             </Text>
           </PressableScale>
           <Divider />
+          <PressableScale
+            onPress={() => router.push("/moderation")}
+            style={{ flexDirection: "row", justifyContent: "space-between", padding: 14 }}
+          >
+            <Text variant="h3">Ma modération</Text>
+            <Text variant="micro" style={{ color: colors.accent }}>
+              Ouvrir →
+            </Text>
+          </PressableScale>
+          <Divider />
           {[
             { label: "Modifier mon profil", url: "https://cyberlearn.fr/profile/edit" },
             { label: "Confidentialité", url: "https://cyberlearn.fr/privacy" },
