@@ -223,6 +223,29 @@ export async function submitPlacementApi(
   }
 }
 
+// ── Weekly quests (the site's claim: XP, streak-freeze, once only) ───────────
+
+export interface ClaimQuestReply {
+  ok: boolean;
+  xpGained?: number;
+  leveledUp?: boolean;
+  newLevel?: number;
+  error?: string;
+}
+
+/** Claims a completed quest's reward; the server checks it is done and not yet claimed. */
+export async function claimQuestApi(questId: string): Promise<ClaimQuestReply> {
+  try {
+    const res = await authedFetch("/api/mobile/quests/claim", {
+      method: "POST",
+      body: JSON.stringify({ questId }),
+    });
+    return (await res.json()) as ClaimQuestReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────
 
 export interface CompleteLessonResult {
