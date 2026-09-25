@@ -6,6 +6,7 @@ const m = vi.hoisted(() => ({
   saveOnboardingProfile: vi.fn<(u: string, input: unknown) => Promise<unknown>>(),
   saveOnboardingAvatar: vi.fn<(u: string, avatarUrl: unknown) => Promise<unknown>>(),
   finishOnboardingFor: vi.fn<(u: string, input: unknown) => Promise<unknown>>(),
+  saveOnboardingGoalsFor: vi.fn<(u: string, input: unknown) => Promise<unknown>>(),
 }));
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
@@ -13,11 +14,13 @@ vi.mock("@/lib/onboarding/steps", () => ({
   saveOnboardingProfile: m.saveOnboardingProfile,
   saveOnboardingAvatar: m.saveOnboardingAvatar,
   finishOnboardingFor: m.finishOnboardingFor,
+  saveOnboardingGoalsFor: m.saveOnboardingGoalsFor,
 }));
 
 const { POST: PROFILE } = await import("../profile/route");
 const { POST: AVATAR } = await import("../avatar/route");
 const { POST: FINISH } = await import("../finish/route");
+const { POST: GOALS } = await import("../goals/route");
 
 function post(url: string, body: string): NextRequest {
   return new NextRequest(`https://cyberlearn.fr/api/mobile/${url}`, { method: "POST", body });
@@ -33,18 +36,21 @@ describe("every sign-up route", () => {
     ["profile", () => PROFILE(post("onboarding/profile", "{}"))],
     ["avatar", () => AVATAR(post("onboarding/avatar", "{}"))],
     ["finish", () => FINISH(post("onboarding/finish", "{}"))],
+    ["goals", () => GOALS(post("onboarding/goals", "{}"))],
   ])("refuses a caller the gate turns away (%s)", async (_n, call) => {
     m.userFromBearer.mockResolvedValue(null);
     expect((await call()).status).toBe(401);
     expect(m.saveOnboardingProfile).not.toHaveBeenCalled();
     expect(m.saveOnboardingAvatar).not.toHaveBeenCalled();
     expect(m.finishOnboardingFor).not.toHaveBeenCalled();
+    expect(m.saveOnboardingGoalsFor).not.toHaveBeenCalled();
   });
 
   it.each([
     ["profile", () => PROFILE(post("onboarding/profile", "nope"))],
     ["avatar", () => AVATAR(post("onboarding/avatar", "nope"))],
     ["finish", () => FINISH(post("onboarding/finish", "nope"))],
+    ["goals", () => GOALS(post("onboarding/goals", "nope"))],
   ])("refuses a body that is not JSON (%s)", async (_n, call) => {
     expect((await call()).status).toBe(400);
   });
@@ -80,5 +86,14 @@ describe("the three steps", () => {
     const res = await FINISH(post("onboarding/finish", JSON.stringify(body)));
     expect(res.status).toBe(200);
     expect(m.finishOnboardingFor).toHaveBeenCalledWith("user-1", body);
+  });
+
+  it("keeps the answers on the way to the placement test, without finishing", async () => {
+    m.saveOnboardingGoalsFor.mockResolvedValue({ ok: true });
+    const body = { goals: ["CYBERSEC"], level: "SOME" };
+    const res = await GOALS(post("onboarding/goals", JSON.stringify(body)));
+    expect(res.status).toBe(200);
+    expect(m.saveOnboardingGoalsFor).toHaveBeenCalledWith("user-1", body);
+    expect(m.finishOnboardingFor).not.toHaveBeenCalled();
   });
 });

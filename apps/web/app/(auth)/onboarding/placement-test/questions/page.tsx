@@ -1,8 +1,8 @@
 import React from "react";
 import Image from "next/image";
-import { prisma } from "@cyberlearn/db";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { placementTestFor } from "@/lib/onboarding/placement";
 import { PlacementTestForm } from "./_components/placement-test-form";
 
 export default async function PlacementQuestionsPage(): Promise<React.ReactElement> {
@@ -13,26 +13,11 @@ export default async function PlacementQuestionsPage(): Promise<React.ReactEleme
 
   if (!user) redirect("/login");
 
-  const existing = await prisma.userPlacementResult.findUnique({ where: { userId: user.id } });
-  if (existing) redirect("/dashboard");
-
-  const questions = await prisma.placementQuestion.findMany({
-    where: { isActive: true },
-    select: {
-      id: true,
-      category: true,
-      difficulty: true,
-      question: true,
-      options: true,
-      explanation: true,
-      orderIndex: true,
-    },
-    orderBy: [{ category: "asc" }, { orderIndex: "asc" }],
-  });
-
-  if (questions.length === 0) redirect("/dashboard");
-
-  const estimatedMinutes = Math.ceil(questions.length * 0.75);
+  // The questions without their answers or explanations: the same service as
+  // the app's, so neither sends the browser what gives the answer away.
+  const test = await placementTestFor(user.id);
+  if (test.status !== "open") redirect("/dashboard");
+  const { questions, estimatedMinutes } = test;
 
   return (
     <div

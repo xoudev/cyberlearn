@@ -13,6 +13,7 @@ import { Card, SectionLabel, Text } from "@/components/ui";
 import {
   finishOnboardingApi,
   saveOnboardingAvatarApi,
+  saveOnboardingGoalsApi,
   saveOnboardingProfileApi,
   type OnboardingProfileReply,
 } from "@/lib/api";
@@ -28,6 +29,7 @@ import {
   isOnboardingAvatar,
   type OnboardingStep,
 } from "@/lib/onboarding";
+import { PLACEMENT_COPY, offersPlacementTest } from "@/lib/placement";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -341,6 +343,21 @@ function GoalsStep({ onBack }: { onBack: () => void }): React.JSX.Element {
     then();
   };
 
+  // The test is still part of signing up: the answers are kept, and handing
+  // the test in, or skipping it, is what ends it, as on the site.
+  const toPlacement = async (answers: GuideAnswers): Promise<void> => {
+    if (finishing) return;
+    setFinishing(true);
+    setError(null);
+    const result = await saveOnboardingGoalsApi(answers);
+    setFinishing(false);
+    if (!result.ok) {
+      setError(result.error ?? "Impossible d'enregistrer tes réponses pour l'instant.");
+      return;
+    }
+    router.push("/placement");
+  };
+
   return (
     <View style={{ gap: 14 }}>
       <SectionLabel eyebrow="Objectif" title="Qu'est-ce que tu veux apprendre ?" />
@@ -359,13 +376,27 @@ function GoalsStep({ onBack }: { onBack: () => void }): React.JSX.Element {
           })
         }
         footer={(answers) => (
-          <View style={{ alignSelf: "flex-start", marginTop: 8 }}>
-            <ActionChip
-              label="Voir tout le catalogue"
-              tone="neutral"
-              disabled={finishing}
-              onPress={() => void finish(answers, () => router.replace("/paths"))}
-            />
+          <View style={{ gap: 12, marginTop: 8 }}>
+            {offersPlacementTest(answers.level) ? (
+              <View style={{ gap: 6 }}>
+                <View style={{ alignSelf: "flex-start" }}>
+                  <ActionChip
+                    label={PLACEMENT_COPY.offer}
+                    disabled={finishing}
+                    onPress={() => void toPlacement(answers)}
+                  />
+                </View>
+                <Text variant="bodySm">{PLACEMENT_COPY.offerNote}</Text>
+              </View>
+            ) : null}
+            <View style={{ alignSelf: "flex-start" }}>
+              <ActionChip
+                label="Voir tout le catalogue"
+                tone="neutral"
+                disabled={finishing}
+                onPress={() => void finish(answers, () => router.replace("/paths"))}
+              />
+            </View>
           </View>
         )}
         questionsFooter={

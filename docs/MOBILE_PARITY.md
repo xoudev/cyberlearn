@@ -24,16 +24,17 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  quarante-six : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  quarante-neuf : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
   `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
   `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
   `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
   `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
   `lesson-qa/upvote`, `lesson-rating`, `loadout`, `moderation`, `my-class`,
   `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
-  `onboarding/finish`, `onboarding/profile`, `password`, `profile`, `progress`,
-  `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
-  `settings/profile`, `support`, `support/reply`, `support/ticket`, `wrapped`.
+  `onboarding/finish`, `onboarding/goals`, `onboarding/profile`, `password`,
+  `placement`, `placement/submit`, `profile`, `progress`, `quiz-answer`,
+  `quiz-report`, `rating`, `review`, `send-otp`, `settings/profile`, `support`,
+  `support/reply`, `support/ticket`, `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -50,7 +51,7 @@ c'est lui qu'on relit avant de commencer une surface :
 Les règles d'autorisation restent dans les dépôts (`packages/db`) et dans la
 RLS — jamais réécrites côté app.
 
-## État au 21 septembre 2026
+## État au 25 septembre 2026
 
 ### Sur les deux
 
@@ -58,6 +59,7 @@ RLS — jamais réécrites côté app.
 | --- | --- | --- |
 | Connexion, inscription, MFA, mot de passe oublié | ✅ | ✅ |
 | Fin d'inscription : identifiant, nom affiché et bio, avatar parmi les huit du site, puis les deux questions et les parcours suggérés (ou « Passer, j'explore seul ») ; même service (`apps/web/lib/onboarding/steps.ts`), mêmes avatars (`@cyberlearn/lib/onboarding/avatars`), reprise à la bonne étape comme sur le site | ✅ | ✅ (`app/onboarding.tsx`) |
+| Test de positionnement, proposé à la fin de l'inscription à qui dit avoir déjà une base : les questions sans leurs réponses (ni l'explication qui les donne), une seule fois, corrigé sur le serveur ; les leçons débutant et intermédiaire des domaines maîtrisés débloquées, le badge, un parcours du catalogue recommandé (même service, `apps/web/lib/onboarding/placement.ts` ; mêmes mots, `@cyberlearn/lib/onboarding/placement`) | ✅ | ✅ (`app/placement.tsx`) |
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
@@ -92,7 +94,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
 | **Exporter la carte Wrapped en image** | Le site dessine la carte finale en image, à télécharger ou partager ; l'app partage l'année en texte avec la feuille de partage du téléphone. Faire une image demande deux dépendances absentes du projet (`react-native-view-shot`, `expo-sharing`) | Accord sur les dépendances |
-| **Test de positionnement** | Proposé à la fin de l'inscription à qui dit avoir déjà une base, pour sauter les leçons déjà maîtrisées. L'app termine l'inscription sans lui ; il reste sur le site (`/onboarding/placement-test`) | — |
 | **Envoyer une photo d'avatar** | Le site accepte une photo (recadrée, 2 Mo au plus) à l'étape avatar et dans les réglages ; l'app l'affiche mais ne sait pas en envoyer. Choisir une image sur le téléphone demande une dépendance (`expo-image-picker`) qui n'est pas dans le projet | Accord sur la dépendance |
 
 ### Volontairement web-only

@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { SearchParams } from "next/dist/server/request/search-params";
+import { PLACEMENT_CATEGORY_LABEL, placementLevelFor } from "@cyberlearn/lib/onboarding/placement";
 
 interface ResultPageProps {
   searchParams: Promise<SearchParams>;
@@ -18,7 +19,7 @@ function ScoreBar({
   score,
   color,
 }: { label: string; score: number; color: string }): React.ReactElement {
-  const level = score >= 70 ? "Avancé" : score >= 40 ? "Intermédiaire" : "Débutant";
+  const level = placementLevelFor(score);
   return (
     <div style={{ padding: "20px 24px", borderBottom: "1px solid #2A2560" }}>
       <div
@@ -124,9 +125,17 @@ export default async function PlacementResultPage({
   const recPath = typeof params.path === "string" ? params.path : null;
 
   const scores = [
-    { label: "Développement", score: devScore, color: CAT_COLORS.DEV ?? "#6E8BFF" },
-    { label: "Cybersécurité", score: cyberSec, color: CAT_COLORS.CYBERSEC ?? "#FF4757" },
-    { label: "Réseaux & Systèmes", score: network, color: CAT_COLORS.NETWORK ?? "#0AFFD4" },
+    { label: PLACEMENT_CATEGORY_LABEL.DEV, score: devScore, color: CAT_COLORS.DEV ?? "#6E8BFF" },
+    {
+      label: PLACEMENT_CATEGORY_LABEL.CYBERSEC,
+      score: cyberSec,
+      color: CAT_COLORS.CYBERSEC ?? "#FF4757",
+    },
+    {
+      label: PLACEMENT_CATEGORY_LABEL.NETWORK,
+      score: network,
+      color: CAT_COLORS.NETWORK ?? "#0AFFD4",
+    },
   ];
 
   const bestDomain = scores.reduce((a, b) => (a.score >= b.score ? a : b));

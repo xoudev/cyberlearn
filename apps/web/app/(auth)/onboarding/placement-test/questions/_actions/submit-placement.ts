@@ -1,20 +1,9 @@
 "use server";
 
-import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  placementSubmissionSchema,
-  PLACEMENT_MASTERY_THRESHOLD,
-  WAIVED_DIFFICULTIES,
-} from "@cyberlearn/types";
-import {
-  PLACEMENT_TEST_PASSED_EVENT,
-  computePlacementScores,
-  getMasteredCategories,
-} from "@cyberlearn/lib";
-import { evaluateAndAwardBadges } from "@/lib/badges/award";
-import { setOnboardingComplete } from "@/lib/onboarding/finalize";
 import { redirect } from "next/navigation";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { setOnboardingComplete } from "@/lib/onboarding/finalize";
+import { submitPlacementFor } from "@/lib/onboarding/placement";
 
 export interface PlacementActionState {
   success: boolean;
@@ -24,14 +13,12 @@ export interface PlacementActionState {
 }
 
 /**
- * Server Action: validates placement test answers, computes scores,
- * stores results, and grants prerequisite skip waivers.
+ * Server Action: the site's end of the placement test. Reads the form's
+ * `answer_<questionId>` fields, hands them to the service the app uses too
+ * (@/lib/onboarding/placement), which scores them against the database and
+ * grants the waivers, then ends the onboarding and shows the result.
  *
- * Security:
- * - Correct answers are fetched from the DB server-side - NEVER from the client
- * - A user can only submit the placement test once (checked with findUnique)
- * - Scores are validated: 0 ≤ score ≤ 100
- * - No XP awarded, no lessons marked COMPLETED (brief requirement)
+ * A second submission goes to the dashboard: the test is taken once.
  */
 export async function submitPlacementTest(
   _prev: PlacementActionState,
@@ -44,141 +31,22 @@ export async function submitPlacementTest(
 
   if (!user) redirect("/login");
 
-  // ── Prevent double submission ────────────────────────────────────────────
-  const existing = await prisma.userPlacementResult.findUnique({
-    where: { userId: user.id },
-  });
-
-  if (existing) {
-    redirect("/dashboard");
-  }
-
-  // ── Parse and validate submitted answers ─────────────────────────────────
-  const rawAnswers: { questionId: string; selectedOptionId: string }[] = [];
-
+  const answers: { questionId: string; selectedOptionId: unknown }[] = [];
   for (const [key, value] of formData.entries()) {
     if (key.startsWith("answer_")) {
-      const questionId = key.replace("answer_", "");
-      rawAnswers.push({ questionId, selectedOptionId: value as string });
+      answers.push({ questionId: key.slice("answer_".length), selectedOptionId: value });
     }
   }
 
-  const parsed = placementSubmissionSchema.safeParse({ answers: rawAnswers });
-  if (!parsed.success) {
-    return { success: false, message: "Réponses invalides. Veuillez réessayer." };
-  }
-
-  const { answers } = parsed.data;
-  const questionIds = answers.map((a) => a.questionId);
-
-  // ── Fetch correct answers server-side ─────────────────────────────────────
-  const questions = await prisma.placementQuestion.findMany({
-    where: { id: { in: questionIds }, isActive: true },
-    select: {
-      id: true,
-      category: true,
-      correctOptionId: true,
-    },
-  });
-
-  // Build a lookup map
-  const questionMap = new Map(questions.map((q) => [q.id, q]));
-
-  // ── Score each answer ────────────────────────────────────────────────────
-  const results = answers
-    .map((answer) => {
-      const question = questionMap.get(answer.questionId);
-      if (!question) return null;
-      return {
-        category: question.category as "DEV" | "CYBERSEC" | "NETWORK",
-        isCorrect: answer.selectedOptionId === question.correctOptionId,
-      };
-    })
-    .filter((r): r is NonNullable<typeof r> => r !== null);
-
-  const scores = computePlacementScores(results);
-  const mastered = getMasteredCategories(scores);
-
-  // ── Determine skip waivers ───────────────────────────────────────────────
-  // Fetch all BEGINNER + INTERMEDIATE lessons in mastered categories
-  const categoriesToWaive = (
-    Object.entries(mastered) as ["DEV" | "CYBERSEC" | "NETWORK", boolean][]
-  )
-    .filter(([, isMastered]) => isMastered)
-    .map(([category]) => category);
-
-  const lessonsToWaive =
-    categoriesToWaive.length > 0
-      ? await prisma.lesson.findMany({
-          where: {
-            category: { in: categoriesToWaive },
-            difficulty: { in: WAIVED_DIFFICULTIES as unknown as ("BEGINNER" | "INTERMEDIATE")[] },
-            // The catalogue only. A placement test waives lessons someone has
-            // shown they do not need; a class's own material is not something
-            // the platform can decide they already know, and this runs at
-            // onboarding, before they are in any class.
-            ...CATALOGUE_LESSON,
-          },
-          select: { id: true },
-        })
-      : [];
-
-  // ── Persist in a transaction ──────────────────────────────────────────────
-  await prisma.$transaction([
-    // Store placement result
-    prisma.userPlacementResult.create({
-      data: {
-        userId: user.id,
-        devScore: scores.devScore,
-        cybersecScore: scores.cybersecScore,
-        networkScore: scores.networkScore,
-      },
-    }),
-    // Grant skip waivers
-    ...lessonsToWaive.map((lesson) =>
-      prisma.userSkipWaiver.upsert({
-        where: { userId_lessonId: { userId: user.id, lessonId: lesson.id } },
-        create: { userId: user.id, lessonId: lesson.id },
-        update: {},
-      }),
-    ),
-  ]);
-
-  // ── Find the recommended path slug ───────────────────────────────────────
-  let recommendedPathSlug: string | null = null;
-
-  if (categoriesToWaive.length > 0) {
-    // Pick the path in the highest-scoring mastered category
-    const topCategory =
-      scores.cybersecScore >= PLACEMENT_MASTERY_THRESHOLD &&
-      scores.cybersecScore >= scores.devScore &&
-      scores.cybersecScore >= scores.networkScore
-        ? "CYBERSEC"
-        : scores.devScore >= PLACEMENT_MASTERY_THRESHOLD && scores.devScore >= scores.networkScore
-          ? "DEV"
-          : scores.networkScore >= PLACEMENT_MASTERY_THRESHOLD
-            ? "NETWORK"
-            : null;
-
-    if (topCategory) {
-      const recommendedPath = await prisma.path.findFirst({
-        where: { category: topCategory, status: "PUBLISHED" },
-        orderBy: { difficulty: "asc" },
-        select: { slug: true },
-      });
-      recommendedPathSlug = recommendedPath?.slug ?? null;
-    }
-  }
-
-  // CUSTOM placement_test_passed badges. Must run BEFORE redirect(), which
-  // throws to perform the navigation. The placement result is already
-  // persisted above, so the evaluation reads it straight from the DB.
-  if (categoriesToWaive.length > 0) {
-    await evaluateAndAwardBadges(user.id, ["CUSTOM"], { event: PLACEMENT_TEST_PASSED_EVENT });
+  const result = await submitPlacementFor(user.id, { answers });
+  if (!result.ok) {
+    if (result.reason === "taken") redirect("/dashboard");
+    return { success: false, message: result.error };
   }
 
   await setOnboardingComplete(user.id);
 
+  const { scores, recommendedPathSlug } = result;
   redirect(
     `/onboarding/placement-test/result?dev=${scores.devScore.toString()}&cybersec=${scores.cybersecScore.toString()}&network=${scores.networkScore.toString()}&path=${recommendedPathSlug ?? ""}`,
   );
