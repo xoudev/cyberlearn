@@ -9,6 +9,7 @@ import {
   fetchForumSectionApi,
   fetchForumThreadApi,
 } from "@/lib/api";
+import { dbIso, dbIsoOrNull } from "@/lib/db-time";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
 import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
@@ -465,7 +466,7 @@ export function useProfile(userId: string | undefined) {
       const certificates = certRows.map((c) => ({
         publicId: c.publicId,
         score: c.score,
-        issuedAt: c.issuedAt,
+        issuedAt: dbIso(c.issuedAt),
         pathTitle: one(c.paths)?.title ?? "Parcours",
       }));
 
@@ -782,7 +783,12 @@ export function useNotifications(userId: string | undefined) {
         .eq("userId", userId as string) // gated by `enabled`
         .order("createdAt", { ascending: false })
         .limit(50);
-      return (data ?? []) as NotificationItem[];
+      // SAFETY: the columns selected above, in NotificationItem's shape.
+      return ((data ?? []) as NotificationItem[]).map((n) => ({
+        ...n,
+        readAt: dbIsoOrNull(n.readAt),
+        createdAt: dbIso(n.createdAt),
+      }));
     },
   });
 }
@@ -949,7 +955,7 @@ export function useNotes(userId: string | undefined) {
             folderId: n.folderId,
             content: n.content,
             wordCount: n.wordCount,
-            updatedAt: n.updatedAt,
+            updatedAt: dbIso(n.updatedAt),
             lessonTitle: lesson.title,
             lessonSlug: lesson.slug,
             category: lesson.category,

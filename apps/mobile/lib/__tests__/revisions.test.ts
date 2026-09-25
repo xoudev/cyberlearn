@@ -60,3 +60,22 @@ describe("reviewSummary", () => {
     expect(reviewSummary([])).toEqual({ count: 0, minutes: 0, xp: 0 });
   });
 });
+
+describe("a review read from the database, on a phone in Paris", () => {
+  it("is due when the server says so, not two hours early", () => {
+    const previous = process.env.TZ;
+    process.env.TZ = "Europe/Paris";
+    try {
+      // The Data API's text for 11:00 UTC: no offset.
+      const items = toReviewItems([
+        { id: "s1", nextReviewAt: "2026-09-24T11:00:00", lesson: lesson("a") },
+      ]);
+      expect(items[0]?.nextReviewAt).toBe("2026-09-24T11:00:00.000Z");
+      // At 10:00 UTC it is still an hour away; read as local time it was due.
+      expect(splitReviews(items, NOW).due).toHaveLength(0);
+      expect(splitReviews(items, new Date("2026-09-24T11:00:00Z")).due).toHaveLength(1);
+    } finally {
+      process.env.TZ = previous;
+    }
+  });
+});

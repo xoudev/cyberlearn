@@ -1,5 +1,6 @@
 import { reviewMinutes, reviewXpFor } from "@cyberlearn/lib/revisions/review-display";
 import type { Category, Difficulty } from "@/lib/db";
+import { dbIso } from "./db-time";
 
 /**
  * The app's revisions queue, read under RLS (own review_schedules). Grading
@@ -50,7 +51,8 @@ export function toReviewItems(rows: readonly RawReviewRow[]): ReviewItem[] {
         category: lesson.category,
         difficulty: lesson.difficulty,
         xpReward: lesson.xpReward,
-        nextReviewAt: r.nextReviewAt,
+        // Normalised as it is read: every comparison below and on screen uses it.
+        nextReviewAt: dbIso(r.nextReviewAt),
       },
     ];
   });
