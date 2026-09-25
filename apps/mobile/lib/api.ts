@@ -5,6 +5,7 @@ import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/li
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
 import type { QaQuestion } from "@/lib/lesson-qa";
+import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
 import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
@@ -162,6 +163,58 @@ export async function finishOnboardingApi(
       body: JSON.stringify(answers ?? {}),
     });
     return readActionResponse(await res.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Keeps the answers on the way to the placement test, leaving the sign-up open. */
+export async function saveOnboardingGoalsApi(answers: {
+  goals: string[];
+  level: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/onboarding/goals", {
+      method: "POST",
+      body: JSON.stringify(answers),
+    });
+    return readActionResponse(await res.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+// ── Placement test (the site's service: scored and waived on the server) ─────
+
+/** The caller's test: the questions without their answers, or why there is none. */
+export async function fetchPlacementApi(): Promise<PlacementTest> {
+  const res = await authedFetch("/api/mobile/placement");
+  const body = (await res.json()) as ({ ok: true } & PlacementTest) | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  if (body.status === "open") {
+    return {
+      status: "open",
+      questions: body.questions,
+      estimatedMinutes: body.estimatedMinutes,
+    };
+  }
+  return { status: body.status };
+}
+
+export type PlacementSubmitReply =
+  | ({ ok: true } & PlacementResult)
+  | { ok: false; taken?: boolean; error?: string };
+
+/** Hands the test in; the server scores it and marks the sign-up complete. */
+export async function submitPlacementApi(
+  selected: Readonly<Record<string, string>>,
+): Promise<PlacementSubmitReply> {
+  try {
+    const res = await authedFetch("/api/mobile/placement/submit", {
+      method: "POST",
+      body: JSON.stringify({ answers: placementAnswersFrom(selected) }),
+    });
+    return (await res.json()) as PlacementSubmitReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }

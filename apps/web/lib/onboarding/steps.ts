@@ -109,6 +109,25 @@ export async function saveOnboardingAvatar(
 }
 
 /**
+ * Step 3's answers, kept when both questions were answered. On their own for
+ * somebody going on to the placement test: the test is still part of signing
+ * up, and ends it when it is submitted, as "Faire le test de positionnement"
+ * does on the site.
+ */
+export async function saveOnboardingGoalsFor(
+  userId: string,
+  input: unknown,
+): Promise<{ ok: true }> {
+  const raw = typeof input === "object" && input !== null ? input : {};
+  const answers = parseLearningAnswers({
+    goals: "goals" in raw ? raw.goals : undefined,
+    level: "level" in raw ? raw.level : undefined,
+  });
+  if (answers !== null) await saveLearningAnswers(userId, answers);
+  return { ok: true };
+}
+
+/**
  * Step 3, the app's end of it: keeps the questionnaire's answers when both
  * questions were answered, then marks the sign-up complete. Skipping sends no
  * answers and still completes it, as "Passer, j'explore seul" does on the site.
@@ -118,12 +137,7 @@ export async function saveOnboardingAvatar(
  * visit to the site does not send the account back into onboarding.
  */
 export async function finishOnboardingFor(userId: string, input: unknown): Promise<{ ok: true }> {
-  const raw = typeof input === "object" && input !== null ? input : {};
-  const answers = parseLearningAnswers({
-    goals: "goals" in raw ? raw.goals : undefined,
-    level: "level" in raw ? raw.level : undefined,
-  });
-  if (answers !== null) await saveLearningAnswers(userId, answers);
+  await saveOnboardingGoalsFor(userId, input);
   await markOnboardingComplete(userId);
   return { ok: true };
 }

@@ -4,40 +4,22 @@ import React, { useState } from "react";
 import { useActionState } from "react";
 import { submitPlacementTest } from "../_actions/submit-placement";
 import type { PlacementActionState } from "../_actions/submit-placement";
-
-interface PlacementOption {
-  id: string;
-  text: string;
-}
-interface PlacementQuestion {
-  id: string;
-  category: string;
-  difficulty: string;
-  question: string;
-  options: unknown;
-  explanation: string | null;
-  orderIndex: number;
-}
+import {
+  PLACEMENT_CATEGORY_LABEL,
+  PLACEMENT_DIFFICULTY_LABEL,
+  isPlacementCategory,
+} from "@cyberlearn/lib/onboarding/placement";
+import type { PlacementQuestionView as PlacementQuestion } from "@/lib/onboarding/placement";
 
 interface PlacementTestFormProps {
   questions: PlacementQuestion[];
   estimatedMinutes: number;
 }
 
-const CAT_LABELS: Record<string, string> = {
-  DEV: "Développement",
-  CYBERSEC: "Cybersécurité",
-  NETWORK: "Réseaux & Systèmes",
-};
 const CAT_COLORS: Record<string, string> = {
   DEV: "#6E8BFF",
   CYBERSEC: "#FF4757",
   NETWORK: "#0AFFD4",
-};
-const DIFF_LABELS: Record<string, string> = {
-  BEGINNER: "Débutant",
-  INTERMEDIATE: "Intermédiaire",
-  ADVANCED: "Avancé",
 };
 
 const initialState: PlacementActionState = { success: false };
@@ -250,7 +232,9 @@ export function PlacementTestForm({
 
         {Object.entries(grouped).map(([category, catQs]) => {
           const catColor = CAT_COLORS[category] ?? "#6E8BFF";
-          const catLabel = CAT_LABELS[category] ?? category;
+          const catLabel = isPlacementCategory(category)
+            ? PLACEMENT_CATEGORY_LABEL[category]
+            : category;
 
           return (
             <section key={category} style={{ marginBottom: 32 }}>
@@ -301,8 +285,8 @@ export function PlacementTestForm({
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {catQs.map((q, idx) => {
-                  const options = q.options as PlacementOption[];
-                  const diffLabel = DIFF_LABELS[q.difficulty] ?? q.difficulty;
+                  const options = q.options;
+                  const diffLabel = PLACEMENT_DIFFICULTY_LABEL[q.difficulty] ?? q.difficulty;
                   const num = String(idx + 1).padStart(2, "0");
 
                   return (

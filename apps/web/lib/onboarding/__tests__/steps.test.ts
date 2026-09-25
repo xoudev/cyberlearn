@@ -28,6 +28,7 @@ const {
   USERNAME_TAKEN,
   finishOnboardingFor,
   saveOnboardingAvatar,
+  saveOnboardingGoalsFor,
   saveOnboardingProfile,
 } = await import("../steps");
 
@@ -152,5 +153,22 @@ describe("finishOnboardingFor", () => {
     await finishOnboardingFor("user-1", { goals: ["CYBERSEC"] });
     await finishOnboardingFor("user-1", { goals: ["HACKING"], level: "NEW" });
     expect(m.saveLearningAnswers).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveOnboardingGoalsFor", () => {
+  it("keeps both answers and leaves the sign-up open, for the placement test", async () => {
+    expect(await saveOnboardingGoalsFor("user-1", { goals: ["DEV"], level: "NEW" })).toEqual({
+      ok: true,
+    });
+    expect(m.saveLearningAnswers).toHaveBeenCalledWith("user-1", { goals: ["DEV"], level: "NEW" });
+    expect(m.markOnboardingComplete).not.toHaveBeenCalled();
+  });
+
+  it("records nothing from half an answer, and still does not finish", async () => {
+    await saveOnboardingGoalsFor("user-1", { level: "NEW" });
+    await saveOnboardingGoalsFor("user-1", null);
+    expect(m.saveLearningAnswers).not.toHaveBeenCalled();
+    expect(m.markOnboardingComplete).not.toHaveBeenCalled();
   });
 });
