@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
+import type { QaQuestion } from "@/lib/lesson-qa";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
@@ -567,4 +568,97 @@ export function editForumPostApi(postId: string, content: string): Promise<Forum
 
 export function hideForumPostApi(postId: string): Promise<ForumWriteReply> {
   return forumWrite("/api/mobile/forum/post/hide", { postId });
+}
+
+// ── A lesson's rating and Q&A (the site's services) ───────────────────────────
+
+/** The reader's own rating of a lesson, and the lesson's average. */
+export async function fetchLessonRatingApi(lessonId: string): Promise<{
+  mine: { score: number; feedback: string | null } | null;
+  avgRating: number | null;
+  ratingsCount: number;
+}> {
+  try {
+    const res = await authedFetch(
+      `/api/mobile/lesson-rating?lessonId=${encodeURIComponent(lessonId)}`,
+    );
+    const body = (await res.json()) as
+      | {
+          ok: true;
+          score: number | null;
+          feedback: string | null;
+          avgRating: number | null;
+          ratingsCount: number;
+        }
+      | { ok: false };
+    if (!body.ok) return { mine: null, avgRating: null, ratingsCount: 0 };
+    return {
+      mine: body.score !== null ? { score: body.score, feedback: body.feedback } : null,
+      avgRating: body.avgRating,
+      ratingsCount: body.ratingsCount,
+    };
+  } catch {
+    return { mine: null, avgRating: null, ratingsCount: 0 };
+  }
+}
+
+/** Rates a lesson; the server checks it is completed and recomputes its average. */
+export async function rateLessonApi(
+  lessonId: string,
+  score: number,
+  feedback?: string,
+): Promise<RatePathReply> {
+  try {
+    const res = await authedFetch("/api/mobile/lesson-rating", {
+      method: "POST",
+      body: JSON.stringify({ lessonId, score, ...(feedback ? { feedback } : {}) }),
+    });
+    return (await res.json()) as RatePathReply;
+  } catch {
+    return { ok: false, error: "Ta note n'a pas pu être envoyée. Réessaie." };
+  }
+}
+
+export async function fetchLessonQaApi(lessonId: string): Promise<QaQuestion[]> {
+  const res = await authedFetch(`/api/mobile/lesson-qa?lessonId=${encodeURIComponent(lessonId)}`);
+  const body = (await res.json()) as
+    | { ok: true; questions: QaQuestion[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.questions;
+}
+
+/** What a Q&A write answered: `heldForReview` when the screen took it down. */
+export type QaWriteReply = { ok: true; heldForReview?: true } | { ok: false; error: string };
+
+async function qaWrite(path: string, body: unknown): Promise<QaWriteReply> {
+  try {
+    const res = await authedFetch(path, { method: "POST", body: JSON.stringify(body) });
+    return (await res.json()) as QaWriteReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export function askLessonQuestionApi(input: {
+  lessonId: string;
+  title: string;
+  content: string;
+}): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/question", input);
+}
+
+export function answerLessonQuestionApi(
+  questionId: string,
+  content: string,
+): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/answer", { questionId, content });
+}
+
+export function acceptLessonAnswerApi(answerId: string): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/accept", { answerId });
+}
+
+export function upvoteLessonAnswerApi(answerId: string): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/upvote", { answerId });
 }

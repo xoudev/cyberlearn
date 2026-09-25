@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 import type { NotificationItem } from "@/lib/queries";
+import { dbTime } from "@/lib/db-time";
 
 // Mirrors the in-app inbox to the DEVICE notification tray with local
 // notifications. expo-notifications was REMOVED from Expo Go on Android
@@ -106,8 +107,9 @@ export async function mirrorInboxToDevice(items: NotificationItem[]): Promise<vo
     return;
   }
 
-  const lastSeen = new Date(lastSeenRaw).getTime();
-  const fresh = items.filter((n) => new Date(n.createdAt).getTime() > lastSeen).slice(0, 5); // cap a burst
+  // Read as UTC: a mark stored by an older version is the raw database text.
+  const lastSeen = dbTime(lastSeenRaw).getTime();
+  const fresh = items.filter((n) => dbTime(n.createdAt).getTime() > lastSeen).slice(0, 5); // cap a burst
   if (fresh.length === 0) return;
 
   if (!(await ensureConfigured())) return;

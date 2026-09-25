@@ -24,12 +24,14 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  vingt-huit : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  trente-quatre : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
   `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
   `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
   `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
-  `loadout`, `my-class`, `password`, `profile`, `progress`, `quiz-answer`,
-  `quiz-report`, `rating`, `review`, `send-otp`.
+  `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
+  `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `password`,
+  `profile`, `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`,
+  `send-otp`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -56,6 +58,7 @@ RLS — jamais réécrites côté app.
 | Catalogue de leçons + lecture d'une leçon | ✅ | ✅ |
 | Quiz d'une leçon : une seule réponse, correction, note sur la carte (`3/5`), options dans un ordre propre à chaque apprenant (le même sur les deux), « Signaler cette question » | ✅ | ✅ |
 | Noter un parcours (dès une première mission terminée), moyenne affichée | ✅ | ✅ |
+| Noter une leçon terminée (note et commentaire), moyenne affichée ; questions-réponses sous une leçon : poser une question, répondre, accepter une réponse à sa propre question, voter pour celle d'un autre, même modération automatique et même message « retenu » (même service, `apps/web/lib/lessons/rate-lesson.ts` et `lib/lessons/qa.ts`) | ✅ | ✅ |
 | Tableau de bord autour des parcours : le parcours en tête (même classement, `@cyberlearn/lib/dashboard/featured-paths`) avec sa progression et la prochaine mission, la leçon en cours, les révisions dues, puis les quatre chiffres (mêmes libellés, `dashboard/stats`) ; sections numérotées qui se referment quand l'une est vide (`dashboard/sections`) | ✅ | ✅ (onglet Accueil) |
 | Parcours + page d'un parcours | ✅ | ✅ |
 | Examen final d'un parcours : règles, 30 minutes chronométrées, reprise d'une tentative en cours, délai de 48 h, correction détaillée, certificat à la réussite ; certificat réclamé sur un parcours sans examen (même service, `apps/web/lib/exam/exam-service.ts` et `lib/certificates/claim.ts`) | ✅ | ✅ |
@@ -87,7 +90,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 | **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) n'existe que sur le web. Le bannissement et son appel, eux, sont dans l'app | — |
 | **Fin d'inscription** (pseudo, avatar, objectif) | L'app renvoie au site pour les trois étapes (`onboarding-required.tsx`). Le questionnaire de la troisième étape est déjà dans l'onglet Parcours ; ce qui manque, c'est de pouvoir finir son inscription sans quitter l'app | Rien |
 | **Partage de note** | Le bloc-notes est des deux côtés, le partage non — ni l'envoi, ni la réception. Il manquait à ce tableau : « Bloc-notes ✅ ✅ » était vrai du carnet et faux de la fonctionnalité. Le filtre qui refuse un partage vit dans le dépôt (`note-share.repository`), donc l'app l'hériterait sans le réécrire | — |
-| **Noter une leçon** | Le site demande une note à la fin de chaque leçon, l'app non : les avis ne viennent que de ceux qui lisent sur ordinateur. La route `rating` existe déjà pour les parcours, et le service `rateLessonAction` vérifie la leçon terminée ; il reste l'écran | — |
 
 ### Volontairement web-only
 
