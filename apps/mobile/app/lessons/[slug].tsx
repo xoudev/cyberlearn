@@ -14,6 +14,7 @@ import {
 import { ActionChip, BackButton, GradientButton } from "@/components/buttons";
 import { CheckIcon } from "@/components/icons";
 import { BlockView } from "@/components/lesson-render";
+import { LessonRatingCard } from "@/components/lesson-rating";
 import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
@@ -145,6 +146,16 @@ export default function LessonReader(): React.JSX.Element {
                 })
               }
             />
+            <ActionChip
+              label="? Questions"
+              tone="neutral"
+              onPress={() =>
+                router.push({
+                  pathname: "/lesson-questions/[lessonId]",
+                  params: { lessonId: data.id, title: data.title },
+                })
+              }
+            />
             <Text variant="micro" style={{ color: colors.accent }}>
               {step.mode === "read"
                 ? `${String(step.section + 1)} / ${String(sections.length)}`
@@ -244,6 +255,7 @@ export default function LessonReader(): React.JSX.Element {
         />
       ) : (
         <ResultView
+          lessonId={data.id}
           lessonTitle={data.title}
           correctCount={step.correctCount}
           total={quizzes.length}
@@ -252,6 +264,12 @@ export default function LessonReader(): React.JSX.Element {
           onReview={() => setStep(FIRST_QUESTION)}
           onRetrySync={() => void finishLesson(step.correctCount)}
           onContinue={() => router.back()}
+          onOpenQuestions={() =>
+            router.push({
+              pathname: "/lesson-questions/[lessonId]",
+              params: { lessonId: data.id, title: data.title },
+            })
+          }
           hasQuiz={quizzes.length > 0}
         />
       )}
@@ -474,6 +492,7 @@ function QuizView({
 // ── Result view ───────────────────────────────────────────────────────────────
 
 function ResultView({
+  lessonId,
   lessonTitle,
   correctCount,
   total,
@@ -482,8 +501,10 @@ function ResultView({
   onReview,
   onRetrySync,
   onContinue,
+  onOpenQuestions,
   hasQuiz,
 }: {
+  lessonId: string;
   lessonTitle: string;
   correctCount: number;
   total: number;
@@ -492,6 +513,7 @@ function ResultView({
   onReview: () => void;
   onRetrySync: () => void;
   onContinue: () => void;
+  onOpenQuestions: () => void;
   hasQuiz: boolean;
 }): React.JSX.Element {
   const { width } = useWindowDimensions();
@@ -710,6 +732,13 @@ function ResultView({
             })}
           </View>
         ) : null}
+
+        {/* The end of a lesson on the site: its rating, then its questions.
+            The rating opens once the completion is on record. */}
+        <LessonRatingCard lessonId={lessonId} canRate={reward !== null} />
+        <View style={{ alignSelf: "flex-start" }}>
+          <ActionChip label="Questions sur la leçon" tone="neutral" onPress={onOpenQuestions} />
+        </View>
       </View>
 
       <View style={{ gap: 10, paddingTop: 4 }}>

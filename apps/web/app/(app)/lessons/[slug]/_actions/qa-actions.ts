@@ -1,24 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { requireRequestUser } from "@/lib/auth";
-import { MODERATION_SURFACE, moderationRepository, qaRepository } from "@cyberlearn/db";
-import { FLAG_BUDGET_MESSAGE, excerpt } from "@cyberlearn/lib";
-import { announceModeration } from "@/lib/moderation/announce";
-import { checkQaSubmission } from "@/lib/rate-limit";
-import { recordQuestProgress } from "@/lib/quests/progress";
+import {
+  acceptLessonAnswer,
+  postLessonAnswer,
+  postLessonQuestion,
+  upvoteLessonAnswer,
+  type QaResult,
+} from "@/lib/lessons/qa";
 
-const questionSchema = z.object({
-  lessonId: z.string().uuid(),
-  title: z.string().min(10).max(200),
-  content: z.string().min(20).max(5000),
-});
-
-const answerSchema = z.object({
-  questionId: z.string().uuid(),
-  content: z.string().min(10).max(5000),
-});
+/**
+ * The site's entry points for a lesson's Q&A: the session, then the service
+ * the app uses too (@/lib/lessons/qa).
+ */
 
 export interface QaActionResult {
   success: boolean;
@@ -31,122 +26,26 @@ export interface QaActionResult {
   heldForReview?: boolean;
 }
 
+function toActionResult(result: QaResult): QaActionResult {
+  if (!result.ok) return { success: false, error: result.error };
+  return result.heldForReview ? { success: true, heldForReview: true } : { success: true };
+}
+
 export async function postQuestionAction(
   lessonId: string,
   title: string,
   content: string,
-  lessonSlug: string,
 ): Promise<QaActionResult> {
   const user = await requireRequestUser();
-
-  const qaLimit = await checkQaSubmission(user.id);
-  if (!qaLimit.success) {
-    return { success: false, error: "Trop de messages. Réessayez dans une minute." };
-  }
-
-  const parsed = questionSchema.safeParse({ lessonId, title, content });
-  if (!parsed.success) {
-    const msg = parsed.error.issues[0]?.message ?? "Données invalides.";
-    return { success: false, error: msg };
-  }
-
-  // Screened before it is written. The title and the body go through together
-  // because an insult in a title is an insult, and screening only the longer
-  // field is the kind of gap that gets found immediately.
-  const screen = await moderationRepository.screen({
-    text: `${title}\n\n${content}`,
-    surface: MODERATION_SURFACE.lessonQuestion,
-    userId: user.id,
-  });
-
-  // Over budget: nothing is written at all, hidden or otherwise. The screen
-  // already takes each flagged message out of sight, so this is not about the
-  // content - it is about one account filling the queue.
-  if (screen.throttled) return { success: false, error: FLAG_BUDGET_MESSAGE };
-
-  // Written either way, hidden when the screen flagged it. Turning it away
-  // instead used to destroy the message on the spot, so a false positive cost
-  // the person what they had written and left a reviewer with an excerpt and
-  // nothing to put back.
-  const question = await qaRepository.createQuestion({
-    lessonId,
-    userId: user.id,
-    title,
-    content,
-    isHidden: screen.flagged,
-  });
-  // The reviewer's decision is carried through to this row, so the id has to
-  // be on the event before anybody can act on it.
-  if (screen.eventId !== null) {
-    await moderationRepository.attachContent(screen.eventId, question.id);
-  }
-  // Said on the page and said again in their inbox. Somebody who posted and
-  // closed the tab is exactly the person who will otherwise come back
-  // tomorrow, find nothing where their question was, and post it again.
-  if (screen.flagged) {
-    await announceModeration({
-      userId: user.id,
-      surface: MODERATION_SURFACE.lessonQuestion,
-      stage: "held",
-      excerpt: excerpt(`${title}\n\n${content}`, 300),
-    });
-  }
-  revalidatePath(`/lessons/${lessonSlug}`);
-
-  return screen.flagged ? { success: true, heldForReview: true } : { success: true };
+  return toActionResult(await postLessonQuestion(user.id, { lessonId, title, content }));
 }
 
 export async function postAnswerAction(
   questionId: string,
   content: string,
-  lessonSlug: string,
 ): Promise<QaActionResult> {
   const user = await requireRequestUser();
-
-  const qaLimit = await checkQaSubmission(user.id);
-  if (!qaLimit.success) {
-    return { success: false, error: "Trop de messages. Réessayez dans une minute." };
-  }
-
-  const parsed = answerSchema.safeParse({ questionId, content });
-  if (!parsed.success) {
-    const msg = parsed.error.issues[0]?.message ?? "Données invalides.";
-    return { success: false, error: msg };
-  }
-
-  const screen = await moderationRepository.screen({
-    text: content,
-    surface: MODERATION_SURFACE.lessonAnswer,
-    userId: user.id,
-  });
-
-  if (screen.throttled) return { success: false, error: FLAG_BUDGET_MESSAGE };
-
-  const answer = await qaRepository.createAnswer({
-    questionId,
-    userId: user.id,
-    content,
-    isHidden: screen.flagged,
-  });
-  if (screen.eventId !== null) {
-    await moderationRepository.attachContent(screen.eventId, answer.id);
-  }
-  // Weekly quest: posting a write-up (Q&A answer) this week. Not for a message
-  // that is sitting in a moderation queue - if a reviewer destroys it, the
-  // progress it earned would stay.
-  if (!screen.flagged) {
-    await recordQuestProgress(user.id, "FORUM_POST", new Date(), { amount: 1 });
-  } else {
-    await announceModeration({
-      userId: user.id,
-      surface: MODERATION_SURFACE.lessonAnswer,
-      stage: "held",
-      excerpt: excerpt(content, 300),
-    });
-  }
-  revalidatePath(`/lessons/${lessonSlug}`);
-
-  return screen.flagged ? { success: true, heldForReview: true } : { success: true };
+  return toActionResult(await postLessonAnswer(user.id, { questionId, content }));
 }
 
 export async function acceptAnswerAction(
@@ -154,19 +53,9 @@ export async function acceptAnswerAction(
   lessonSlug: string,
 ): Promise<QaActionResult> {
   const user = await requireRequestUser();
-
-  const answer = await qaRepository.findAnswerWithQuestion(answerId);
-  if (!answer) return { success: false, error: "Réponse introuvable." };
-
-  // Only the question author can accept an answer
-  if (answer.question.userId !== user.id) {
-    return { success: false, error: "Seul l'auteur de la question peut accepter une réponse." };
-  }
-
-  await qaRepository.acceptAnswer(answerId, answer.questionId);
-  revalidatePath(`/lessons/${lessonSlug}`);
-
-  return { success: true };
+  const result = await acceptLessonAnswer(user.id, answerId);
+  if (result.ok) revalidatePath(`/lessons/${lessonSlug}`);
+  return toActionResult(result);
 }
 
 export async function upvoteAnswerAction(
@@ -174,17 +63,7 @@ export async function upvoteAnswerAction(
   lessonSlug: string,
 ): Promise<QaActionResult> {
   const user = await requireRequestUser();
-
-  const z_id = z.string().uuid().safeParse(answerId);
-  if (!z_id.success) return { success: false, error: "ID invalide." };
-
-  const outcome = await qaRepository.castUpvote(z_id.data, user.id);
-  if (outcome === "notfound") return { success: false, error: "Réponse introuvable." };
-  if (outcome === "self") {
-    return { success: false, error: "Tu ne peux pas voter pour ta propre réponse." };
-  }
-
-  // "ok" and "already" are both a success state: the upvote counts exactly once.
-  revalidatePath(`/lessons/${lessonSlug}`);
-  return { success: true };
+  const result = await upvoteLessonAnswer(user.id, answerId);
+  if (result.ok) revalidatePath(`/lessons/${lessonSlug}`);
+  return toActionResult(result);
 }
