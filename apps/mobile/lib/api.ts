@@ -401,6 +401,29 @@ export async function fetchMyClass(): Promise<MyClassData> {
   return { classes: body.classes, work: body.work };
 }
 
+// ── The reader's own moderation record (the site's /settings/moderation) ──────
+
+/** One recorded decision about the reader's own writing. */
+export interface ModerationEvent {
+  id: string;
+  /** Where it was written, e.g. "forum.post". */
+  surface: string;
+  excerpt: string;
+  /** "PENDING", "OVERTURNED" or "UPHELD". */
+  outcome: string;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export async function fetchModerationRecordApi(): Promise<ModerationEvent[]> {
+  const res = await authedFetch("/api/mobile/moderation");
+  const body = (await res.json()) as
+    | { ok: true; events: ModerationEvent[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.events;
+}
+
 /**
  * The signed URL for the caller's own uploaded avatar, or null.
  *
