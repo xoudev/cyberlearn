@@ -28,12 +28,12 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Casier", route: "/locker" },
   { label: "Révisions", route: "/revisions" },
   { label: "Forum", route: "/forum" },
+  { label: "Aide & demandes", route: "/support" },
   { label: "Notifications", route: "/notifications" },
   { label: "Réglages", route: "/settings" },
   // Still on the web. Each of these is listed in docs/MOBILE_PARITY.md with
   // whether it is owed or deliberately web-only, so the gap is a decision on
   // record rather than something that looks forgotten.
-  { label: "Aide & demandes", url: "https://cyberlearn.fr/support" },
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
   { label: "Amis", url: "https://cyberlearn.fr/friends" },
   { label: "Ma modération", url: "https://cyberlearn.fr/settings/moderation" },

@@ -13,6 +13,7 @@
     "./gamification/*": "./src/gamification/*.ts",
     "./moderation/*": "./src/moderation/*.ts",
     "./search/*": "./src/search/*.ts",
+    "./tickets/*": "./src/tickets/*.ts",
     "./mdx-check": "./src/mdx/check.ts",
     "./mdx-quizzes": "./src/mdx/quizzes.ts",
     "./markdown/*": "./src/markdown/*.ts",

@@ -8,6 +8,8 @@ import {
   fetchForumApi,
   fetchForumSectionApi,
   fetchForumThreadApi,
+  fetchSupportThreadApi,
+  fetchSupportTicketsApi,
 } from "@/lib/api";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
@@ -1188,5 +1190,23 @@ export function useForumThread(
     enabled: Boolean(userId && category && slug),
     // gated by `enabled`
     queryFn: () => fetchForumThreadApi(category as string, slug as string, page),
+  });
+}
+
+// ── Aide & demandes ───────────────────────────────────────────────────────────
+
+export function useSupportTickets(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["support", userId],
+    enabled: Boolean(userId),
+    queryFn: fetchSupportTicketsApi,
+  });
+}
+
+export function useSupportThread(userId: string | undefined, id: string | undefined) {
+  return useQuery({
+    queryKey: ["support-thread", id, userId],
+    enabled: Boolean(userId && id),
+    queryFn: () => fetchSupportThreadApi(id as string), // gated by `enabled`
   });
 }

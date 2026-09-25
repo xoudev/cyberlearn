@@ -2,6 +2,7 @@ import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
+import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
@@ -502,4 +503,60 @@ export function editForumPostApi(postId: string, content: string): Promise<Forum
 
 export function hideForumPostApi(postId: string): Promise<ForumWriteReply> {
   return forumWrite("/api/mobile/forum/post/hide", { postId });
+}
+
+// ── Help requests (the site's /support and contact form) ──────────────────────
+
+export async function fetchSupportTicketsApi(): Promise<SupportTicketSummary[]> {
+  const res = await authedFetch("/api/mobile/support");
+  const body = (await res.json()) as
+    | { ok: true; tickets: SupportTicketSummary[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.tickets;
+}
+
+export async function fetchSupportThreadApi(id: string): Promise<SupportThread> {
+  const res = await authedFetch(`/api/mobile/support/ticket?id=${encodeURIComponent(id)}`);
+  const body = (await res.json()) as
+    | { ok: true; ticket: SupportThread }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.ticket;
+}
+
+export type FileTicketReply =
+  | { ok: true; ticketId: string }
+  | { ok: false; error: string; fieldErrors?: Partial<Record<string, string>> };
+
+/** Files a request as the signed-in account, answered at the account's address. */
+export async function fileSupportTicketApi(input: {
+  theme: string;
+  subject: string;
+  message: string;
+}): Promise<FileTicketReply> {
+  try {
+    const res = await authedFetch("/api/mobile/support", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    return (await res.json()) as FileTicketReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export async function replySupportTicketApi(
+  ticketId: string,
+  body: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/support/reply", {
+      method: "POST",
+      body: JSON.stringify({ ticketId, body }),
+    });
+    return readActionResponse(await res.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
 }
