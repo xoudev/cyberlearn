@@ -1,5 +1,6 @@
 import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
+import type { IncomingNote, ShareAudience } from "@/lib/note-share";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
@@ -106,6 +107,61 @@ export async function appealBanApi(message: string): Promise<{ ok: boolean; erro
       body: JSON.stringify({ message }),
     });
     return readActionResponse(await response.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+// ── Signing up (the site's three onboarding steps, same service) ─────────────
+
+export type OnboardingProfileReply =
+  | { ok: true }
+  | {
+      ok: false;
+      errors?: Partial<Record<"username" | "displayName" | "bio", string>>;
+      error?: string;
+    };
+
+export async function saveOnboardingProfileApi(input: {
+  username: string;
+  displayName: string;
+  bio: string;
+}): Promise<OnboardingProfileReply> {
+  try {
+    const res = await authedFetch("/api/mobile/onboarding/profile", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    return (await res.json()) as OnboardingProfileReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+export async function saveOnboardingAvatarApi(
+  avatarUrl: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/onboarding/avatar", {
+      method: "POST",
+      body: JSON.stringify({ avatarUrl }),
+    });
+    return readActionResponse(await res.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Keeps the answers when there are some, and marks the sign-up complete. */
+export async function finishOnboardingApi(
+  answers: { goals: string[]; level: string } | null,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/onboarding/finish", {
+      method: "POST",
+      body: JSON.stringify(answers ?? {}),
+    });
+    return readActionResponse(await res.json());
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }
@@ -420,6 +476,29 @@ export async function fetchMyClass(): Promise<MyClassData> {
   return { classes: body.classes, work: body.work };
 }
 
+// ── The reader's own moderation record (the site's /settings/moderation) ──────
+
+/** One recorded decision about the reader's own writing. */
+export interface ModerationEvent {
+  id: string;
+  /** Where it was written, e.g. "forum.post". */
+  surface: string;
+  excerpt: string;
+  /** "PENDING", "OVERTURNED" or "UPHELD". */
+  outcome: string;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export async function fetchModerationRecordApi(): Promise<ModerationEvent[]> {
+  const res = await authedFetch("/api/mobile/moderation");
+  const body = (await res.json()) as
+    | { ok: true; events: ModerationEvent[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.events;
+}
+
 /**
  * The signed URL for the caller's own uploaded avatar, or null.
  *
@@ -432,6 +511,61 @@ export async function fetchMyAvatarUrl(): Promise<string | null> {
   const body = (await res.json()) as { ok: true; avatarUrl: string | null } | { ok: false };
   if (!body.ok) return null;
   return body.avatarUrl;
+}
+
+// ── Note sharing (the site's service: the author's people only, screened) ─────
+
+/** The notes other people handed to the reader: the site's "Reçues". */
+export async function fetchReceivedNotesApi(): Promise<IncomingNote[]> {
+  const res = await authedFetch("/api/mobile/notes/shared");
+  const body = (await res.json()) as
+    | { ok: true; notes: IncomingNote[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.notes;
+}
+
+/** Who a note can go to, and who already holds it. */
+export async function fetchShareAudienceApi(noteId: string): Promise<ShareAudience> {
+  const res = await authedFetch(`/api/mobile/notes/share?noteId=${encodeURIComponent(noteId)}`);
+  const body = (await res.json()) as ({ ok: true } & ShareAudience) | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return { entries: body.entries, noAudience: body.noAudience };
+}
+
+export interface ShareNoteReply {
+  ok: boolean;
+  /** How many people the note newly reached. */
+  shared?: number;
+  error?: string;
+}
+
+export async function shareNoteApi(
+  noteId: string,
+  recipientIds: string[],
+): Promise<ShareNoteReply> {
+  try {
+    const res = await authedFetch("/api/mobile/notes/share", {
+      method: "POST",
+      body: JSON.stringify({ noteId, recipientIds }),
+    });
+    return (await res.json()) as ShareNoteReply;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
+/** Takes the note back from one person. */
+export async function unshareNoteApi(noteId: string, recipientId: string): Promise<boolean> {
+  try {
+    const res = await authedFetch("/api/mobile/notes/unshare", {
+      method: "POST",
+      body: JSON.stringify({ noteId, recipientId }),
+    });
+    return readActionResponse(await res.json()).ok;
+  } catch {
+    return false;
+  }
 }
 
 // ── Path final exam (the site's service: draw, 30-minute limit, 48 h wait) ────

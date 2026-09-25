@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Category } from "@cyberlearn/db";
+import { noteExcerpt as excerpt, timeAgo } from "@cyberlearn/lib/notes/preview";
 import {
   createFolderAction,
   deleteFolderAction,
@@ -42,31 +43,6 @@ const FILTERS: { key: "ALL" | Category; label: string }[] = [
 
 const ALL = "__all__";
 const NONE = "__none__";
-
-/** Strip markdown to a short plain-text preview for the card. */
-function excerpt(markdown: string): string {
-  const text = markdown
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/[*_`>#[\]()~-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  return text.length > 150 ? `${text.slice(0, 149).trimEnd()}…` : text;
-}
-
-function timeAgo(iso: string, now: number | null): string {
-  const then = new Date(iso).getTime();
-  if (now === null) return new Date(iso).toLocaleDateString("fr-FR");
-  const s = Math.max(0, Math.round((now - then) / 1000));
-  if (s < 60) return "à l'instant";
-  const m = Math.round(s / 60);
-  if (m < 60) return `il y a ${String(m)} min`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `il y a ${String(h)} h`;
-  const d = Math.round(h / 24);
-  if (d < 30) return `il y a ${String(d)} j`;
-  return new Date(iso).toLocaleDateString("fr-FR");
-}
 
 export function NotesLibrary({
   notes: initialNotes,
