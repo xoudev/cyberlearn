@@ -29,6 +29,7 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Révisions", route: "/revisions" },
   { label: "Forum", route: "/forum" },
   { label: "Notifications", route: "/notifications" },
+  { label: "Ma modération", route: "/moderation" },
   { label: "Réglages", route: "/settings" },
   // Still on the web. Each of these is listed in docs/MOBILE_PARITY.md with
   // whether it is owed or deliberately web-only, so the gap is a decision on
@@ -36,7 +37,6 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Aide & demandes", url: "https://cyberlearn.fr/support" },
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
   { label: "Amis", url: "https://cyberlearn.fr/friends" },
-  { label: "Ma modération", url: "https://cyberlearn.fr/settings/moderation" },
   { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
 ];
 
