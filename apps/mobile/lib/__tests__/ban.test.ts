@@ -77,3 +77,21 @@ describe("appealProblem", () => {
     expect(appealProblem("a".repeat(4000))).toBeNull();
   });
 });
+
+describe("a ban read from the database, on a phone in Paris", () => {
+  it("ends when the server says so, not two hours early", () => {
+    const previous = process.env.TZ;
+    process.env.TZ = "Europe/Paris";
+    try {
+      // Ends at 13:00 UTC, as the Data API writes it: no offset.
+      const rows = [row({ expiresAt: "2026-09-24T13:00:00", createdAt: "2026-09-20T12:00:00" })];
+      // 12:30 UTC: still in force. Read as local time, it had ended at 11:00 UTC.
+      expect(activeBanOf(rows, new Date("2026-09-24T12:30:00Z"))?.expiresAt?.toISOString()).toBe(
+        "2026-09-24T13:00:00.000Z",
+      );
+      expect(activeBanOf(rows, new Date("2026-09-24T13:00:00Z"))).toBeNull();
+    } finally {
+      process.env.TZ = previous;
+    }
+  });
+});

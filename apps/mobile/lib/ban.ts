@@ -1,4 +1,5 @@
 import { banTimeLeft, isBanActive } from "@cyberlearn/lib/moderation/ban";
+import { dbTime } from "./db-time";
 
 /**
  * The ban on this account, as the app reads it: its own rows of `user_bans`,
@@ -34,9 +35,9 @@ export function activeBanOf(rows: readonly RawBanRow[], now: Date): ActiveBan | 
   const active = rows
     .map((row) => ({
       row,
-      expiresAt: row.expiresAt === null ? null : new Date(row.expiresAt),
-      liftedAt: row.liftedAt === null ? null : new Date(row.liftedAt),
-      createdAt: new Date(row.createdAt),
+      expiresAt: row.expiresAt === null ? null : dbTime(row.expiresAt),
+      liftedAt: row.liftedAt === null ? null : dbTime(row.liftedAt),
+      createdAt: dbTime(row.createdAt),
     }))
     .filter((ban) => isBanActive(ban, now))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
