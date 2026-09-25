@@ -6,7 +6,7 @@ import type { WrappedPayload } from "@cyberlearn/lib";
 import { WrappedExperience } from "./WrappedExperience";
 
 /**
- * /wrapped, for a direct link - the mobile app's profile points here.
+ * /wrapped, for a direct link. The app has its own story now (app/wrapped.tsx).
  *
  * The story takes the screen, so closing it has to go somewhere rather than
  * just unmount and leave a blank route behind. Back, if there is a back;

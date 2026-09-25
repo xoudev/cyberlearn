@@ -1,5 +1,6 @@
 import { computeTier } from "@cyberlearn/lib/gamification/tier";
 import { isoWeekKey } from "@cyberlearn/lib/gamification/week";
+import { wrappedWindow } from "@cyberlearn/lib/gamification/wrapped-window";
 import { nextRankName, rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { planSections, sectionNumber } from "@cyberlearn/lib/dashboard/sections";
 import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
@@ -89,6 +90,7 @@ function HomeBody({
   const activeQuests = (quests ?? []).filter((q) => !q.completed).length;
   const xpToNext = Math.max(level.needed - level.current, 0);
   const fr = (value: number): string => value.toLocaleString("fr-FR");
+  const wrapped = wrappedWindow(new Date());
 
   return (
     <View style={{ gap: 24 }}>
@@ -103,6 +105,16 @@ function HomeBody({
               Bon retour
             </Text>
           </View>
+          {/* Wrapped, while it is open and only then: an event in the header, as
+              the site shows it in its bar, never a permanent entry. */}
+          {wrapped.open ? (
+            <View style={{ marginRight: 8 }}>
+              <ActionChip
+                label={`Wrapped ${wrapped.periodKey}`}
+                onPress={() => router.push("/wrapped")}
+              />
+            </View>
+          ) : null}
           <View ref={bellAnchor} collapsable={false}>
             <IconButton
               onPress={() => router.push("/notifications")}

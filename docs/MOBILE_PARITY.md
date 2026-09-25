@@ -24,7 +24,7 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  quarante-cinq : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  quarante-six : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
   `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
   `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
   `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
@@ -33,7 +33,7 @@ c'est lui qu'on relit avant de commencer une surface :
   `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
   `onboarding/finish`, `onboarding/profile`, `password`, `profile`, `progress`,
   `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
-  `settings/profile`, `support`, `support/reply`, `support/ticket`.
+  `settings/profile`, `support`, `support/reply`, `support/ticket`, `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -77,6 +77,7 @@ RLS — jamais réécrites côté app.
 | Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
+| Wrapped : une entrée qui n'existe que du 1er décembre au 7 janvier (même fenêtre, `@cyberlearn/lib/gamification/wrapped-window`), une histoire de six à neuf écrans selon l'année avec avance automatique, appui à droite ou à gauche, appui long pour lire ; mêmes écrans et mêmes mots (`@cyberlearn/lib/gamification/wrapped-story`), même récap (`apps/web/lib/wrapped/recap.ts`), page « pas encore ouvert » hors saison | ✅ (étiquette dans la barre) | ✅ (étiquette dans l'en-tête de l'Accueil, `app/wrapped.tsx`) |
 | Réglages : profil (nom affiché, bio, un des huit avatars ; une photo ou un glyphe gardés tels quels, même service `apps/web/lib/profile/update-profile.ts`), notifications (mêmes interrupteurs et mêmes mots, `@cyberlearn/lib/settings/notifications`, dont les avis par email ; l'alerte de série grisée des deux côtés tant que rien ne l'envoie), répétition espacée, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 | Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
@@ -90,7 +91,7 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
+| **Exporter la carte Wrapped en image** | Le site dessine la carte finale en image, à télécharger ou partager ; l'app partage l'année en texte avec la feuille de partage du téléphone. Faire une image demande deux dépendances absentes du projet (`react-native-view-shot`, `expo-sharing`) | Accord sur les dépendances |
 | **Test de positionnement** | Proposé à la fin de l'inscription à qui dit avoir déjà une base, pour sauter les leçons déjà maîtrisées. L'app termine l'inscription sans lui ; il reste sur le site (`/onboarding/placement-test`) | — |
 | **Envoyer une photo d'avatar** | Le site accepte une photo (recadrée, 2 Mo au plus) à l'étape avatar et dans les réglages ; l'app l'affiche mais ne sait pas en envoyer. Choisir une image sur le téléphone demande une dépendance (`expo-image-picker`) qui n'est pas dans le projet | Accord sur la dépendance |
 

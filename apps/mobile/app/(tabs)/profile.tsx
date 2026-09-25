@@ -38,7 +38,6 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   // whether it is owed or deliberately web-only, so the gap is a decision on
   // record rather than something that looks forgotten.
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
-  { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
 ];
 
 /** The stored form that needs the server to turn it into something drawable. */
