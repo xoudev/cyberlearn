@@ -20,6 +20,11 @@ export interface SearchResult {
   /** The line under the title: a description, or the matching bit of a note. */
   subtitle: string;
   href: string;
+  /**
+   * What the app opens it by: a path's or a lesson's slug, a note's lesson id
+   * (the app's note screen is per lesson). The site uses `href`.
+   */
+  ref: string;
   /** The short facts on the right: lesson count, duration, word count. */
   meta: string;
   category: Category | null;
@@ -67,6 +72,7 @@ export function buildGroups(rows: SearchRows, query: string, perKind = PER_KIND)
     title: p.title,
     subtitle: p.description,
     href: `/paths/${p.slug}`,
+    ref: p.slug,
     meta: `${plural(p.lessonCount, "leçon", "leçons")} · ${hours(p.estimatedHours)} · ${DIFFICULTY_LABEL[p.difficulty]}`,
     category: p.category,
   }));
@@ -81,6 +87,7 @@ export function buildGroups(rows: SearchRows, query: string, perKind = PER_KIND)
     title: l.title,
     subtitle: l.description,
     href: `/lessons/${l.slug}`,
+    ref: l.slug,
     meta: `${String(l.estimatedMinutes)} min · ${DIFFICULTY_LABEL[l.difficulty]}`,
     category: l.category,
   }));
@@ -97,6 +104,7 @@ export function buildGroups(rows: SearchRows, query: string, perKind = PER_KIND)
     title: n.lessonTitle,
     subtitle: excerptAround(n.content, query),
     href: `/notes?note=${encodeURIComponent(n.id)}`,
+    ref: n.lessonId,
     meta: plural(n.wordCount, "mot", "mots"),
     category: n.lessonCategory,
   }));

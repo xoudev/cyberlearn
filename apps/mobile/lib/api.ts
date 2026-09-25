@@ -6,6 +6,7 @@ import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/li
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
 import type { FriendLists, PublicProfile } from "@/lib/friends";
 import type { QaQuestion } from "@/lib/lesson-qa";
+import type { SearchGroupItem } from "@/lib/search";
 import { placementAnswersFrom, type PlacementResult, type PlacementTest } from "@/lib/placement";
 import type { SupportThread, SupportTicketSummary } from "@/lib/support";
 
@@ -300,6 +301,18 @@ export async function fetchStreakApi(): Promise<StreakOverview> {
     daysThisYear: body.daysThisYear,
     activity: body.activity,
   };
+}
+
+// ── Search (the site's navbar search: parcours, lessons, own notes) ─────────
+
+/** The groups for a term, parcours first; none below two characters. */
+export async function searchApi(term: string): Promise<SearchGroupItem[]> {
+  const res = await authedFetch(`/api/mobile/search?q=${encodeURIComponent(term)}`);
+  const body = (await res.json()) as
+    | { ok: true; groups: SearchGroupItem[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Recherche impossible");
+  return body.groups;
 }
 
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────

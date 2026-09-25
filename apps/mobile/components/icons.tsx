@@ -76,6 +76,15 @@ export function BellIcon(p: IconProps): React.JSX.Element {
   );
 }
 
+export function SearchIcon(p: IconProps): React.JSX.Element {
+  return (
+    <Base {...p}>
+      <Circle cx="7" cy="7" r="4.5" />
+      <Path d="M10.5 10.5 L14 14" />
+    </Base>
+  );
+}
+
 export function ChevronRight(p: IconProps): React.JSX.Element {
   return (
     <Base {...p}>

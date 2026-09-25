@@ -60,6 +60,8 @@ export interface NoteSearchRow {
   content: string;
   wordCount: number;
   updatedAt: Date;
+  /** The note's lesson: the app opens a note by its lesson. */
+  lessonId: string;
   lessonSlug: string;
   lessonTitle: string;
   lessonCategory: Category;
@@ -176,7 +178,7 @@ export const searchRepository = {
               content: true,
               wordCount: true,
               updatedAt: true,
-              lesson: { select: { slug: true, title: true, category: true } },
+              lesson: { select: { id: true, slug: true, title: true, category: true } },
             },
           }),
     ]);
@@ -198,6 +200,7 @@ export const searchRepository = {
         content: n.content,
         wordCount: n.wordCount,
         updatedAt: n.updatedAt,
+        lessonId: n.lesson.id,
         lessonSlug: n.lesson.slug,
         lessonTitle: n.lesson.title,
         lessonCategory: n.lesson.category,
