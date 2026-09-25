@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
@@ -10,7 +11,7 @@ import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
-import { fetchMyAvatarUrl } from "@/lib/api";
+import { fetchFriendsApi, fetchMyAvatarUrl } from "@/lib/api";
 import { RARITY_COLOR } from "@/lib/db";
 import { useProfile } from "@/lib/queries";
 import { useSession } from "@/lib/session";
@@ -24,6 +25,7 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   // the site now e-mails people about those.
   { label: "Ma classe", route: "/my-class" },
   { label: "Classement", route: "/leaderboard" },
+  { label: "Amis", route: "/friends" },
   { label: "Bloc-notes", route: "/notes" },
   { label: "Casier", route: "/locker" },
   { label: "Révisions", route: "/revisions" },
@@ -35,7 +37,6 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   // whether it is owed or deliberately web-only, so the gap is a decision on
   // record rather than something that looks forgotten.
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
-  { label: "Amis", url: "https://cyberlearn.fr/friends" },
   { label: "Ma modération", url: "https://cyberlearn.fr/settings/moderation" },
   { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
 ];
@@ -79,6 +80,12 @@ export default function Profil(): React.JSX.Element {
     };
   }, [needsSigning, stored]);
   const idAnchor = useTourAnchor("profil-id");
+  const { data: friends } = useQuery({
+    queryKey: ["friends"],
+    queryFn: fetchFriendsApi,
+    staleTime: 60_000,
+  });
+  const waiting = friends?.incoming.length ?? 0;
 
   if (isLoading || !data) {
     return (
@@ -259,7 +266,16 @@ export default function Profil(): React.JSX.Element {
                   paddingVertical: 14,
                 }}
               >
-                <Text variant="h3">{link.label}</Text>
+                <Text variant="h3">
+                  {link.label}
+                  {/* Requests waiting on the reader, as the mark next to the
+                      site's bell counts them. */}
+                  {link.route === "/friends" && waiting > 0 ? (
+                    <Text variant="micro" style={{ color: colors.accent }}>
+                      {`  ·  ${String(waiting)} en attente`}
+                    </Text>
+                  ) : null}
+                </Text>
                 {link.url ? (
                   <Text variant="micro" style={{ color: colors.textMuted }}>
                     web ↗

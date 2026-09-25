@@ -822,6 +822,9 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
 
 // ── Preferences (settings) ────────────────────────────────────────────────────
 
+/** Who sees the reader on the public board (UserPreferences.leaderboardVisibility). */
+export type LeaderboardVisibility = "HIDDEN" | "ANONYMOUS" | "PUBLIC";
+
 export interface Preferences {
   emailNotifications: boolean;
   reviewReminders: boolean;
@@ -829,14 +832,28 @@ export interface Preferences {
   streakReminder: boolean;
   /** Spaced repetition itself: off hides the revisions, as on the site. */
   spacedRepetition: boolean;
+  /** The profile page opens by link; friends get in either way. */
+  publicProfile: boolean;
+  /** Listed, by name, on friends' boards. Its own switch, off until turned on. */
+  friendsLeaderboard: boolean;
+  leaderboardVisibility: LeaderboardVisibility;
 }
 
-const DEFAULT_PREFS: Preferences = {
+/** The keys that are plain switches, as opposed to the visibility choice. */
+export type PreferenceSwitch = {
+  [K in keyof Preferences]: Preferences[K] extends boolean ? K : never;
+}[keyof Preferences];
+
+/** The schema's defaults: what an absent row means, as on the site. */
+export const DEFAULT_PREFS: Preferences = {
   emailNotifications: true,
   reviewReminders: true,
   weeklyDigest: true,
   streakReminder: true,
   spacedRepetition: true,
+  publicProfile: true,
+  friendsLeaderboard: false,
+  leaderboardVisibility: "ANONYMOUS",
 };
 
 export function usePreferences(userId: string | undefined) {
@@ -846,7 +863,9 @@ export function usePreferences(userId: string | undefined) {
     queryFn: async (): Promise<Preferences> => {
       const { data } = await supabase
         .from("user_preferences")
-        .select("emailNotifications,reviewReminders,weeklyDigest,streakReminder,spacedRepetition")
+        .select(
+          "emailNotifications,reviewReminders,weeklyDigest,streakReminder,spacedRepetition,publicProfile,friendsLeaderboard,leaderboardVisibility",
+        )
         .eq("userId", userId as string) // gated by `enabled`
         .maybeSingle();
       return (data as Preferences | null) ?? DEFAULT_PREFS;
@@ -856,13 +875,23 @@ export function usePreferences(userId: string | undefined) {
 
 export async function updatePreference(
   userId: string,
-  key: keyof Preferences,
+  key: PreferenceSwitch,
   value: boolean,
 ): Promise<void> {
   // prefs_self_all RLS: upsert covers users without a row yet.
   await supabase
     .from("user_preferences")
     .upsert({ userId, [key]: value }, { onConflict: "userId" });
+}
+
+/** The public board's visibility; the column is an enum, so the database refuses anything else. */
+export async function updateLeaderboardVisibility(
+  userId: string,
+  value: LeaderboardVisibility,
+): Promise<void> {
+  await supabase
+    .from("user_preferences")
+    .upsert({ userId, leaderboardVisibility: value }, { onConflict: "userId" });
 }
 
 // ── Révisions (SM-2) ──────────────────────────────────────────────────────────
