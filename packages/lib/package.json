@@ -18,6 +18,7 @@
     "./tickets/*": "./src/tickets/*.ts",
     "./mdx-check": "./src/mdx/check.ts",
     "./mdx-quizzes": "./src/mdx/quizzes.ts",
+    "./onboarding/*": "./src/onboarding/*.ts",
     "./markdown/*": "./src/markdown/*.ts",
     "./paths/*": "./src/paths/*.ts",
     "./quiz/*": "./src/quiz/*.ts",
