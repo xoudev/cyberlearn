@@ -27,6 +27,7 @@ import { useReducedMotionPreference } from "@/lib/accessibility";
 import { CosmeticsProvider } from "@/lib/cosmetics";
 import { mirrorInboxToDevice } from "@/lib/device-notifications";
 import { onboardingCompleteIn, onboardingStepFor } from "@/lib/onboarding";
+import { isRecoveryPending, signedInRoute } from "@/lib/recovery";
 import { ensureUserRow, useNotifications } from "@/lib/queries";
 import { SessionProvider, useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -120,7 +121,8 @@ function RootNavigator(): React.JSX.Element {
     } else if (session && mfaRequired && !inMfaChallenge) {
       router.replace("/mfa");
     } else if (session && !mfaRequired && inAuth) {
-      router.replace("/home");
+      // Home, or the new password when the session came from the recovery code.
+      router.replace(signedInRoute());
     }
   }, [session, initializing, assuranceChecking, mfaRequired, segments, pathname, router]);
 
@@ -138,7 +140,10 @@ function RootNavigator(): React.JSX.Element {
         username: readUsername(data),
         onboardingComplete: onboardingCompleteIn(user.app_metadata),
       });
-      if (active && step !== null) router.replace({ pathname: "/onboarding", params: { step } });
+      // A recovering account chooses its password first; onboarding waits.
+      if (active && step !== null && !isRecoveryPending()) {
+        router.replace({ pathname: "/onboarding", params: { step } });
+      }
     })();
     return () => {
       active = false;

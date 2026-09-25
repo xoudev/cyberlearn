@@ -116,6 +116,33 @@ export async function appealBanApi(message: string): Promise<{ ok: boolean; erro
   }
 }
 
+/**
+ * Sets a new password without the old one: accepted only in a session opened
+ * by the emailed recovery code less than 15 minutes ago. `expired` says the
+ * window has closed and the code has to be asked for again.
+ */
+export async function resetPasswordApi(input: {
+  password: string;
+  passwordConfirmation: string;
+}): Promise<{ ok: boolean; error?: string; expired?: boolean }> {
+  try {
+    const response = await authedFetch("/api/mobile/password", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    const body: unknown = await response.json();
+    const result = readActionResponse(body);
+    const expired =
+      typeof body === "object" &&
+      body !== null &&
+      "needsCurrentPassword" in body &&
+      body.needsCurrentPassword === true;
+    return expired ? { ...result, expired } : result;
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
 // ── Signing up (the site's three onboarding steps, same service) ─────────────
 
 export type OnboardingProfileReply =

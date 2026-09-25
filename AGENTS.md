@@ -7,8 +7,9 @@
 - Styling: Tailwind CSS v4 (CSS-first, no tailwind.config.js) + shadcn/ui
 - DB: Supabase Postgres + Prisma 6.x ORM
 - Auth: Supabase Auth (e-mail + password, GitHub OAuth, optional TOTP;
-  mandatory TOTP on the admin console). The only one-time-code path left is
-  the mobile sign-in route, `/api/mobile/send-otp`. See `docs/authentication.md`.
+  mandatory TOTP on the admin console). One-time codes remain in two places:
+  the legacy mobile sign-in route, `/api/mobile/send-otp`, and the
+  password-recovery code the app verifies. See `docs/authentication.md`.
 - Storage: Supabase Storage
 - Realtime: Supabase Realtime (notifications in-app)
 - Email: Resend + React Email

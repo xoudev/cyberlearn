@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { banRepository } from "@cyberlearn/db";
 import { env } from "@/lib/env";
-import { sessionMeetsMfaRequirement } from "./bearer-token";
+import { RECOVERY_GRANT_MAX_AGE_SECONDS } from "@/lib/auth/recovery-grant";
+import { hasRecentRecovery, sessionMeetsMfaRequirement } from "./bearer-token";
 
 export interface BearerUser {
   id: string;
@@ -20,9 +21,13 @@ export interface BearerUser {
  * appeal), like the site's /banned page and its actions, which use
  * getRequestUser. Everything else goes through userFromBearer.
  */
-export async function identityFromBearer(request: Request): Promise<BearerUser | null> {
+function bearerToken(request: Request): string {
   const header = request.headers.get("authorization") ?? "";
-  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+}
+
+export async function identityFromBearer(request: Request): Promise<BearerUser | null> {
+  const token = bearerToken(request);
   if (!token) return null;
 
   const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
@@ -52,4 +57,15 @@ export async function userFromBearer(request: Request): Promise<BearerUser | nul
   if (!user) return null;
   if (await banRepository.findActive(user.id)) return null;
   return user;
+}
+
+/**
+ * Whether the request's session was opened by the emailed recovery code less
+ * than 15 minutes ago, the lifetime of the site's recovery cookie. Call it
+ * after userFromBearer has verified the same token.
+ */
+export function bearerHasRecoveryGrant(request: Request, now: Date = new Date()): boolean {
+  const token = bearerToken(request);
+  if (!token) return false;
+  return hasRecentRecovery(token, Math.floor(now.getTime() / 1000), RECOVERY_GRANT_MAX_AGE_SECONDS);
 }

@@ -10,7 +10,17 @@ portal, and the native mobile application.
 - GitHub OAuth remains available as an alternative sign-in method on the public
   website and the native mobile application.
 - The email address must be verified before the first authenticated session.
-- Password recovery always returns to `cyberlearn.fr/reset-password`.
+- Password recovery sends one e-mail carrying both a link and a code. The link
+  opens `cyberlearn.fr/auth/confirm`, which verifies it and drops a 15-minute
+  recovery cookie before `/reset-password`. The code is for the native app: it
+  verifies it with `verifyOtp({ type: "recovery" })`, which opens a session
+  whose token records `recovery` in its `amr` claim, and asks for the new
+  password on its own screen.
+- A new password without the current one is accepted only right after that
+  step: on the site with the recovery cookie, in the app when the token's
+  `recovery` entry is under 15 minutes old (`bearerHasRecoveryGrant`). A
+  stolen session alone must still supply the current password. With TOTP
+  enabled, both require AAL2 first.
 - TOTP MFA is optional for students. Once a verified factor exists, both the web
   and mobile route gates require AAL2 before mounting protected application UI.
 - Password and TOTP settings are available on the website and in the native app.
