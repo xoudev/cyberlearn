@@ -16,6 +16,7 @@ import { BadgeIcon } from "@/components/media";
 import { RevisionsCard } from "@/components/revisions-card";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
+import { StreakPanel } from "@/components/streak-panel";
 import { useTourAnchor } from "@/components/tour";
 import { WeeklyQuests } from "@/components/weekly-quests";
 import { Card, Pill, SectionLabel, Text, XPBar } from "@/components/ui";
@@ -347,6 +348,7 @@ function HomeBody({
           </View>
 
           <WeeklyQuests quests={quests ?? []} userId={userId} />
+          <StreakPanel userId={userId} />
 
           <PressableScale onPress={() => router.push("/leaderboard")}>
             <Card

@@ -1,6 +1,7 @@
 import React from "react";
 import { dayKey, nextMilestone } from "@cyberlearn/lib";
 import { streakRepository } from "@cyberlearn/db";
+import { WEEKDAY_LABELS, streakCalendar } from "@cyberlearn/lib/gamification/streak-calendar";
 
 const TURQ = "var(--cosmetic-accent)";
 const AMBER = "#FFB547";
@@ -14,33 +15,9 @@ const HEAT = [
 ];
 
 // GitHub-style calendar heatmap tokens.
-const HEAT_WEEKS = 53;
 const CELL_PX = "11px";
 const GAP_PX = "3px";
 const ROWS_7 = "repeat(7, 11px)";
-const MS_DAY = 86_400_000;
-const MONTH_ABBR = [
-  "jan",
-  "fév",
-  "mar",
-  "avr",
-  "mai",
-  "juin",
-  "juil",
-  "août",
-  "sep",
-  "oct",
-  "nov",
-  "déc",
-];
-const WEEKDAY_LABELS = ["Lun", "", "Mer", "", "Ven", "", ""];
-
-function intensity(count: number): number {
-  if (count <= 0) return 0;
-  if (count === 1) return 1;
-  if (count === 2) return 2;
-  return 3;
-}
 
 function Stat({
   label,
@@ -81,28 +58,8 @@ export async function StreakPanel({
   if (!o) return null;
 
   // GitHub-style calendar: 53 week-columns × 7 day-rows (Monday-first), ending on
-  // this week. Day index i = week*7 + weekday → a column-major grid lays it out.
-  const todayKey = dayKey(new Date());
-  const todayMs = Date.parse(`${todayKey}T00:00:00Z`);
-  const todayDow = (new Date(todayMs).getUTCDay() + 6) % 7; // 0=Mon … 6=Sun
-  const startMs = todayMs - ((HEAT_WEEKS - 1) * 7 + todayDow) * MS_DAY;
-
-  const cells: { key: string; level: number; count: number; future: boolean }[] = [];
-  for (let i = 0; i < HEAT_WEEKS * 7; i++) {
-    const ms = startMs + i * MS_DAY;
-    const k = new Date(ms).toISOString().slice(0, 10);
-    const future = ms > todayMs;
-    const count = o.activity[k] ?? 0;
-    cells.push({ key: k, level: intensity(count), count, future });
-  }
-
-  const monthLabels: string[] = [];
-  let prevMonth = -1;
-  for (let w = 0; w < HEAT_WEEKS; w++) {
-    const month = new Date(startMs + w * 7 * MS_DAY).getUTCMonth();
-    monthLabels.push(month === prevMonth ? "" : (MONTH_ABBR[month] ?? ""));
-    prevMonth = month;
-  }
+  // this week. The grid is the app's too (@cyberlearn/lib/gamification/streak-calendar).
+  const { cells, monthLabels } = streakCalendar(o.activity, dayKey(new Date()));
 
   const next = nextMilestone(o.currentStreak);
   const accent = o.active ? TURQ : "#6B6890";
