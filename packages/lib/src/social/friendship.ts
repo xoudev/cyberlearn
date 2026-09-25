@@ -54,10 +54,35 @@ export function friendshipView(
   return friendship.requestedById === viewerId ? "outgoing" : "incoming";
 }
 
-/** What the button says, for each of the four. */
+/**
+ * What the button on somebody's profile says, for each of the four. Shared by
+ * the site's button and the app's, so the same state reads the same way.
+ */
 export const FRIENDSHIP_ACTION_LABEL: Record<FriendshipView, string> = {
   none: "Ajouter en ami",
-  outgoing: "Demande envoyée",
+  outgoing: "Annuler la demande",
   incoming: "Accepter la demande",
   friends: "Retirer des amis",
 };
+
+/**
+ * What pressing that button does. Accepting goes through a request on
+ * purpose: asking somebody who already asked is agreeing, so the one call
+ * covers both, and a request cancelled in the meantime becomes a fresh ask
+ * rather than an error.
+ */
+export function friendshipMove(view: FriendshipView): "request" | "remove" {
+  return view === "none" || view === "incoming" ? "request" : "remove";
+}
+
+/**
+ * Where the button stands once the server said yes. A request that turned
+ * into agreeing (they had asked too) lands on "friends", not "outgoing".
+ */
+export function friendshipAfter(
+  move: "request" | "remove",
+  becameFriends: boolean,
+): FriendshipView {
+  if (move === "remove") return "none";
+  return becameFriends ? "friends" : "outgoing";
+}

@@ -11,7 +11,8 @@ export type InAppRoute =
   | { pathname: "/forum/[category]/[topic]"; params: { category: string; topic: string } }
   | { pathname: "/lessons/[slug]"; params: { slug: string } }
   | { pathname: "/paths/[slug]"; params: { slug: string } }
-  | { pathname: "/lessons" | "/notes" | "/my-class" | "/profile" | "/revisions" };
+  | { pathname: "/u/[username]"; params: { username: string } }
+  | { pathname: "/lessons" | "/notes" | "/my-class" | "/profile" | "/revisions" | "/friends" };
 
 const SLUG = "([a-z0-9-]+)";
 
@@ -30,6 +31,9 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
   if (lesson) return { pathname: "/lessons/[slug]", params: { slug: lesson } };
   const pathSlug = new RegExp(`^/paths/${SLUG}$`, "u").exec(path)?.[1];
   if (pathSlug) return { pathname: "/paths/[slug]", params: { slug: pathSlug } };
+  // A friend request or an acceptance points at the other person's profile.
+  const username = new RegExp(`^/u/${SLUG}$`, "u").exec(path)?.[1];
+  if (username) return { pathname: "/u/[username]", params: { username } };
 
   switch (path) {
     case "/lessons":
@@ -37,6 +41,7 @@ export function inAppRouteFor(actionUrl: string | null): InAppRoute | null {
     case "/my-class":
     case "/revisions":
     case "/profile":
+    case "/friends":
       return { pathname: path };
     // The badges live under the profile tab in the app.
     case "/badges":
