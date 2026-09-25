@@ -79,7 +79,7 @@ export function LessonQA({
 
       {/* Question form - renders full-width below the header */}
       <div style={{ marginBottom: 24 }}>
-        <PostQuestionForm lessonId={lessonId} lessonSlug={lessonSlug} />
+        <PostQuestionForm lessonId={lessonId} />
       </div>
 
       {/* Questions list */}
@@ -254,7 +254,7 @@ function QuestionCard({
           borderTop: question.answers.length > 0 ? "1px solid #1A1640" : "none",
         }}
       >
-        <PostAnswerForm questionId={question.id} lessonSlug={lessonSlug} />
+        <PostAnswerForm questionId={question.id} />
       </div>
     </div>
   );

@@ -11,10 +11,7 @@ import { HELD_FOR_REVIEW } from "@/lib/moderation/held-notice";
 
 // ── Post question form ────────────────────────────────────────────────────────
 
-export function PostQuestionForm({
-  lessonId,
-  lessonSlug,
-}: { lessonId: string; lessonSlug: string }): React.JSX.Element {
+export function PostQuestionForm({ lessonId }: { lessonId: string }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -27,7 +24,7 @@ export function PostQuestionForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const res = await postQuestionAction(lessonId, title, content, lessonSlug);
+      const res = await postQuestionAction(lessonId, title, content);
       if (!res.success) {
         setError(res.error ?? "Erreur.");
         return;
@@ -175,10 +172,7 @@ function HeldNotice(): React.JSX.Element {
 
 // ── Post answer form ──────────────────────────────────────────────────────────
 
-export function PostAnswerForm({
-  questionId,
-  lessonSlug,
-}: { questionId: string; lessonSlug: string }): React.JSX.Element {
+export function PostAnswerForm({ questionId }: { questionId: string }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -190,7 +184,7 @@ export function PostAnswerForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const res = await postAnswerAction(questionId, content, lessonSlug);
+      const res = await postAnswerAction(questionId, content);
       if (!res.success) {
         setError(res.error ?? "Erreur.");
         return;

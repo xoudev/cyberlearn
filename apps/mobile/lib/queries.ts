@@ -8,6 +8,7 @@ import {
   fetchForumApi,
   fetchForumSectionApi,
   fetchForumThreadApi,
+  fetchLessonQaApi,
 } from "@/lib/api";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
@@ -1188,5 +1189,15 @@ export function useForumThread(
     enabled: Boolean(userId && category && slug),
     // gated by `enabled`
     queryFn: () => fetchForumThreadApi(category as string, slug as string, page),
+  });
+}
+
+// ── Questions sur une leçon ───────────────────────────────────────────────────
+
+export function useLessonQa(userId: string | undefined, lessonId: string | undefined) {
+  return useQuery({
+    queryKey: ["lesson-qa", lessonId, userId],
+    enabled: Boolean(userId && lessonId),
+    queryFn: () => fetchLessonQaApi(lessonId as string), // gated by `enabled`
   });
 }
