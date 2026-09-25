@@ -62,6 +62,8 @@ export function WeeklyQuests({
       queryClient.invalidateQueries({ queryKey: ["quests", userId] }),
       queryClient.invalidateQueries({ queryKey: ["dashboard", userId] }),
       queryClient.invalidateQueries({ queryKey: ["profile", userId] }),
+      // A bonus can carry a streak-freeze, which the streak panel shows.
+      queryClient.invalidateQueries({ queryKey: ["streak", userId] }),
     ]);
   };
 

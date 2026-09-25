@@ -246,6 +246,35 @@ export async function claimQuestApi(questId: string): Promise<ClaimQuestReply> {
   }
 }
 
+// ── Streak panel (the site's overview: activity, freezes in reserve) ─────────
+
+export interface StreakOverview {
+  currentStreak: number;
+  longestStreak: number;
+  freezes: number;
+  active: boolean;
+  daysThisYear: number;
+  /** Activity count by day, "YYYY-MM-DD", over the last year. */
+  activity: Record<string, number>;
+}
+
+/** The reader's streak panel, as the site's dashboard and profile read it. */
+export async function fetchStreakApi(): Promise<StreakOverview> {
+  const res = await authedFetch("/api/mobile/streak");
+  const body = (await res.json()) as
+    | ({ ok: true } & StreakOverview)
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return {
+    currentStreak: body.currentStreak,
+    longestStreak: body.longestStreak,
+    freezes: body.freezes,
+    active: body.active,
+    daysThisYear: body.daysThisYear,
+    activity: body.activity,
+  };
+}
+
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────
 
 export interface CompleteLessonResult {

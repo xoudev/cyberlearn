@@ -9,6 +9,7 @@ import { ChevronRight } from "@/components/icons";
 import { Avatar, BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
+import { StreakPanel } from "@/components/streak-panel";
 import { useTourAnchor } from "@/components/tour";
 import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/ui";
 import { fetchFriendsApi, fetchMyAvatarUrl } from "@/lib/api";
@@ -233,11 +234,15 @@ export default function Profil(): React.JSX.Element {
           />
         )
       ) : (
-        <Card style={{ gap: 8 }}>
-          <Text variant="body">Leçons complétées : {completed}</Text>
-          <Text variant="body">Série record : {me.longestStreak} j</Text>
-          <Text variant="body">XP total : {String(me.xpTotal)}</Text>
-        </Card>
+        <View style={{ gap: 12 }}>
+          <Card style={{ gap: 8 }}>
+            <Text variant="body">Leçons complétées : {completed}</Text>
+            <Text variant="body">Série record : {me.longestStreak} j</Text>
+            <Text variant="body">XP total : {String(me.xpTotal)}</Text>
+          </Card>
+          {/* The site's profile carries the streak panel too. */}
+          <StreakPanel userId={session?.user.id} />
+        </View>
       )}
 
       {/* Hub */}
