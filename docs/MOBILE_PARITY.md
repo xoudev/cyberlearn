@@ -24,13 +24,13 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  vingt-neuf : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
-  `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
-  `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`,
-  `leaderboard`, `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`,
-  `lesson-qa/question`, `lesson-qa/upvote`, `lesson-rating`, `loadout`,
-  `my-class`, `password`, `progress`, `quiz-answer`, `quiz-report`, `rating`,
-  `review`, `send-otp`.
+  trente-deux : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
+  `exam/start`, `exam/submit`, `forum`, `forum/post/edit`, `forum/post/hide`,
+  `forum/reply`, `forum/section`, `forum/topic`, `leaderboard`, `lesson-qa`,
+  `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
+  `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `password`,
+  `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
+  `support`, `support/reply`, `support/ticket`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la

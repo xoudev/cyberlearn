@@ -9,6 +9,8 @@ import {
   fetchForumSectionApi,
   fetchForumThreadApi,
   fetchLessonQaApi,
+  fetchSupportThreadApi,
+  fetchSupportTicketsApi,
 } from "@/lib/api";
 import { dbIso, dbIsoOrNull } from "@/lib/db-time";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
@@ -1205,5 +1207,23 @@ export function useLessonQa(userId: string | undefined, lessonId: string | undef
     queryKey: ["lesson-qa", lessonId, userId],
     enabled: Boolean(userId && lessonId),
     queryFn: () => fetchLessonQaApi(lessonId as string), // gated by `enabled`
+  });
+}
+
+// ── Aide & demandes ───────────────────────────────────────────────────────────
+
+export function useSupportTickets(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["support", userId],
+    enabled: Boolean(userId),
+    queryFn: fetchSupportTicketsApi,
+  });
+}
+
+export function useSupportThread(userId: string | undefined, id: string | undefined) {
+  return useQuery({
+    queryKey: ["support-thread", id, userId],
+    enabled: Boolean(userId && id),
+    queryFn: () => fetchSupportThreadApi(id as string), // gated by `enabled`
   });
 }
