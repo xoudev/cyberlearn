@@ -1,37 +1,17 @@
 /**
- * How a ticket's theme and status read to the person who opened it.
- *
- * The console has its own copy of these labels in its own visual language. They
- * are two audiences and two vocabularies: "Feature request" is fine in a queue
- * an administrator reads, and the person waiting on an answer is better served
- * by "Suggestion". What must not diverge is the set of keys, which the types
- * below hold to the enum.
+ * How a ticket's theme and status read to the person who opened it. Written
+ * once in @cyberlearn/lib/tickets/tickets, which the app reads too; held here to
+ * the database's enums, so a theme or a status added there without a label is
+ * a type error rather than a blank.
  */
 
 import type { TicketStatus, TicketTheme } from "@cyberlearn/db";
+import {
+  TICKET_STATUS_LABEL,
+  TICKET_STATUS_TONE,
+  TICKET_THEME_LABEL,
+} from "@cyberlearn/lib/tickets/tickets";
 
-export const THEME_LABEL: Record<TicketTheme, string> = {
-  BUG: "Bug",
-  QUESTION: "Question",
-  FEATURE_REQUEST: "Suggestion",
-  SECURITY: "Sécurité",
-  CONTENT_ERROR: "Erreur dans un contenu",
-  ESTABLISHMENT_REQUEST: "Ajout d'un établissement",
-  BAN_APPEAL: "Appel d'un bannissement",
-  OTHER: "Autre",
-};
-
-export const STATUS_LABEL: Record<TicketStatus, string> = {
-  OPEN: "Reçu",
-  IN_PROGRESS: "En traitement",
-  RESOLVED: "Résolu",
-  CLOSED: "Clos",
-};
-
-/** Which of the four gets the accent, the warning colour, or neither. */
-export const STATUS_TONE: Record<TicketStatus, "accent" | "warning" | "muted"> = {
-  OPEN: "warning",
-  IN_PROGRESS: "warning",
-  RESOLVED: "accent",
-  CLOSED: "muted",
-};
+export const THEME_LABEL: Record<TicketTheme, string> = TICKET_THEME_LABEL;
+export const STATUS_LABEL: Record<TicketStatus, string> = TICKET_STATUS_LABEL;
+export const STATUS_TONE: Record<TicketStatus, "accent" | "warning" | "muted"> = TICKET_STATUS_TONE;

@@ -24,14 +24,13 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  trente-quatre : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`,
-  `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
-  `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
-  `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
-  `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
+  trente-deux : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
+  `exam/start`, `exam/submit`, `forum`, `forum/post/edit`, `forum/post/hide`,
+  `forum/reply`, `forum/section`, `forum/topic`, `leaderboard`, `lesson-qa`,
+  `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
   `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `password`,
-  `profile`, `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`,
-  `send-otp`.
+  `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
+  `support`, `support/reply`, `support/ticket`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -77,6 +76,7 @@ RLS — jamais réécrites côté app.
 | Réglages, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 | Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
+| Aide & demandes : déposer une demande (mêmes thèmes, même liste pour un établissement, même limite de débit, réponse à l'adresse du compte), la liste, le fil et la réponse ; une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`, envoyé à l'app en `acceptsReplies`) | ✅ | ✅ |
 | Compte banni : un seul écran (motif, date, durée), l'avis marqué comme vu, l'appel | ✅ (`/banned`) | ✅ (`app/banned.tsx`) |
 
 ### Encore dû
@@ -85,7 +85,6 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Aide & demandes** (tickets + fil) | Un ticket se dépose quand on rencontre le problème, pas une fois rentré. Attention au statut : une demande résolue ou close n'accepte plus de message, et le refus vient du dépôt (`ticket.repository`), pas de l'écran — l'app affiche le refus, elle ne le décide pas | — |
 | **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
 | **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) n'existe que sur le web. Le bannissement et son appel, eux, sont dans l'app | — |
 | **Fin d'inscription** (pseudo, avatar, objectif) | L'app renvoie au site pour les trois étapes (`onboarding-required.tsx`). Le questionnaire de la troisième étape est déjà dans l'onglet Parcours ; ce qui manque, c'est de pouvoir finir son inscription sans quitter l'app | Rien |
