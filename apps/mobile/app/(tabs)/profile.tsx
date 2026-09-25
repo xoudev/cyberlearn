@@ -15,7 +15,9 @@ import { Card, Divider, Pill, SectionLabel, StatCell, Text } from "@/components/
 import { fetchFriendsApi, fetchMyAvatarUrl } from "@/lib/api";
 import { RARITY_COLOR } from "@/lib/db";
 import { useProfile } from "@/lib/queries";
+import { CHANGELOG_COPY } from "@/lib/changelog";
 import { useSession } from "@/lib/session";
+import { useChangelogSeen } from "@/lib/use-changelog-seen";
 
 const SUB_TABS = ["Badges", "Certificats", "Stats", "Collection"] as const;
 type Sub = (typeof SUB_TABS)[number];
@@ -35,6 +37,7 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   { label: "Notifications", route: "/notifications" },
   { label: "Ma modération", route: "/moderation" },
   { label: "Réglages", route: "/settings" },
+  { label: "Nouveautés", route: "/changelog" },
   // Still on the web. Each of these is listed in docs/MOBILE_PARITY.md with
   // whether it is owed or deliberately web-only, so the gap is a decision on
   // record rather than something that looks forgotten.
@@ -53,6 +56,7 @@ export default function Profil(): React.JSX.Element {
   const router = useRouter();
   const { session } = useSession();
   const { data, isLoading, error, refetch } = useProfile(session?.user.id);
+  const { unseen: changelogUnseen } = useChangelogSeen();
   const [sub, setSub] = useState<Sub>("Badges");
   // An uploaded avatar lives in a private bucket, so the row the app read
   // itself holds a marker rather than a URL and only the server can sign it.
@@ -277,6 +281,13 @@ export default function Profil(): React.JSX.Element {
                   {link.route === "/friends" && waiting > 0 ? (
                     <Text variant="micro" style={{ color: colors.accent }}>
                       {`  ·  ${String(waiting)} en attente`}
+                    </Text>
+                  ) : null}
+                  {/* The latest release notes not yet opened here, as the
+                      site's sidebar marks them. */}
+                  {link.route === "/changelog" && changelogUnseen ? (
+                    <Text variant="micro" style={{ color: colors.accent }}>
+                      {`  ·  ${CHANGELOG_COPY.unseen}`}
                     </Text>
                   ) : null}
                 </Text>

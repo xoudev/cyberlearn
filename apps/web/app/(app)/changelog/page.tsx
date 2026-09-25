@@ -4,16 +4,12 @@ import {
   CHANGELOG,
   CHANGE_META,
   LATEST_VERSION,
+  formatChangelogDate,
   type ChangelogEntry,
 } from "@/lib/changelog/entries";
 import { MarkChangelogSeen } from "./_components/mark-seen";
 
 export const metadata: Metadata = { title: "Nouveautés · CyberLearn" };
-
-function formatDate(iso: string): string {
-  const d = new Date(`${iso}T00:00:00`);
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-}
 
 function EntryCard({
   entry,
@@ -98,7 +94,7 @@ function EntryCard({
             marginLeft: "auto",
           }}
         >
-          {formatDate(entry.date)}
+          {formatChangelogDate(entry.date)}
         </span>
       </div>
 
