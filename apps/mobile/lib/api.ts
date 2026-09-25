@@ -2,7 +2,7 @@ import { isInvalidRefreshTokenError } from "@/lib/auth-errors";
 import { supabase } from "@/lib/supabase";
 import type { ExamPath, ExamQuestion, ExamReviewItem, ExamStatusDto } from "@/lib/exam";
 import type { ForumCategory, ForumPost, ForumTopicSummary } from "@/lib/forum";
-import type { SupportThread, SupportTicketSummary } from "@/lib/support";
+import type { QaQuestion } from "@/lib/lesson-qa";
 
 // Thin client for the web app's mobile API routes (apps/web/app/api/mobile/*).
 // Overridable via EXPO_PUBLIC_SITE_URL for local dev against localhost:3000.
@@ -505,58 +505,95 @@ export function hideForumPostApi(postId: string): Promise<ForumWriteReply> {
   return forumWrite("/api/mobile/forum/post/hide", { postId });
 }
 
-// ── Help requests (the site's /support and contact form) ──────────────────────
+// ── A lesson's rating and Q&A (the site's services) ───────────────────────────
 
-export async function fetchSupportTicketsApi(): Promise<SupportTicketSummary[]> {
-  const res = await authedFetch("/api/mobile/support");
-  const body = (await res.json()) as
-    | { ok: true; tickets: SupportTicketSummary[] }
-    | { ok: false; error?: string };
-  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  return body.tickets;
-}
-
-export async function fetchSupportThreadApi(id: string): Promise<SupportThread> {
-  const res = await authedFetch(`/api/mobile/support/ticket?id=${encodeURIComponent(id)}`);
-  const body = (await res.json()) as
-    | { ok: true; ticket: SupportThread }
-    | { ok: false; error?: string };
-  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
-  return body.ticket;
-}
-
-export type FileTicketReply =
-  | { ok: true; ticketId: string }
-  | { ok: false; error: string; fieldErrors?: Partial<Record<string, string>> };
-
-/** Files a request as the signed-in account, answered at the account's address. */
-export async function fileSupportTicketApi(input: {
-  theme: string;
-  subject: string;
-  message: string;
-}): Promise<FileTicketReply> {
+/** The reader's own rating of a lesson, and the lesson's average. */
+export async function fetchLessonRatingApi(lessonId: string): Promise<{
+  mine: { score: number; feedback: string | null } | null;
+  avgRating: number | null;
+  ratingsCount: number;
+}> {
   try {
-    const res = await authedFetch("/api/mobile/support", {
+    const res = await authedFetch(
+      `/api/mobile/lesson-rating?lessonId=${encodeURIComponent(lessonId)}`,
+    );
+    const body = (await res.json()) as
+      | {
+          ok: true;
+          score: number | null;
+          feedback: string | null;
+          avgRating: number | null;
+          ratingsCount: number;
+        }
+      | { ok: false };
+    if (!body.ok) return { mine: null, avgRating: null, ratingsCount: 0 };
+    return {
+      mine: body.score !== null ? { score: body.score, feedback: body.feedback } : null,
+      avgRating: body.avgRating,
+      ratingsCount: body.ratingsCount,
+    };
+  } catch {
+    return { mine: null, avgRating: null, ratingsCount: 0 };
+  }
+}
+
+/** Rates a lesson; the server checks it is completed and recomputes its average. */
+export async function rateLessonApi(
+  lessonId: string,
+  score: number,
+  feedback?: string,
+): Promise<RatePathReply> {
+  try {
+    const res = await authedFetch("/api/mobile/lesson-rating", {
       method: "POST",
-      body: JSON.stringify(input),
+      body: JSON.stringify({ lessonId, score, ...(feedback ? { feedback } : {}) }),
     });
-    return (await res.json()) as FileTicketReply;
+    return (await res.json()) as RatePathReply;
+  } catch {
+    return { ok: false, error: "Ta note n'a pas pu être envoyée. Réessaie." };
+  }
+}
+
+export async function fetchLessonQaApi(lessonId: string): Promise<QaQuestion[]> {
+  const res = await authedFetch(`/api/mobile/lesson-qa?lessonId=${encodeURIComponent(lessonId)}`);
+  const body = (await res.json()) as
+    | { ok: true; questions: QaQuestion[] }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.questions;
+}
+
+/** What a Q&A write answered: `heldForReview` when the screen took it down. */
+export type QaWriteReply = { ok: true; heldForReview?: true } | { ok: false; error: string };
+
+async function qaWrite(path: string, body: unknown): Promise<QaWriteReply> {
+  try {
+    const res = await authedFetch(path, { method: "POST", body: JSON.stringify(body) });
+    return (await res.json()) as QaWriteReply;
   } catch {
     return { ok: false, error: "Connexion au serveur impossible." };
   }
 }
 
-export async function replySupportTicketApi(
-  ticketId: string,
-  body: string,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const res = await authedFetch("/api/mobile/support/reply", {
-      method: "POST",
-      body: JSON.stringify({ ticketId, body }),
-    });
-    return readActionResponse(await res.json());
-  } catch {
-    return { ok: false, error: "Connexion au serveur impossible." };
-  }
+export function askLessonQuestionApi(input: {
+  lessonId: string;
+  title: string;
+  content: string;
+}): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/question", input);
+}
+
+export function answerLessonQuestionApi(
+  questionId: string,
+  content: string,
+): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/answer", { questionId, content });
+}
+
+export function acceptLessonAnswerApi(answerId: string): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/accept", { answerId });
+}
+
+export function upvoteLessonAnswerApi(answerId: string): Promise<QaWriteReply> {
+  return qaWrite("/api/mobile/lesson-qa/upvote", { answerId });
 }
