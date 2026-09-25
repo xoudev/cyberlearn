@@ -27,6 +27,7 @@ import { PressableScale } from "@/components/anim";
 import { AppModal } from "@/components/app-modal";
 import { ActionChip, BackButton } from "@/components/buttons";
 import { FOLDER_ICON_NAMES, FolderGlyph } from "@/components/folder-icons";
+import { ReceivedNotes } from "@/components/received-notes";
 import { ChevronRight } from "@/components/icons";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
@@ -537,11 +538,15 @@ export default function Notes(): React.JSX.Element {
   const handleRefresh = useCallback(async (): Promise<void> => {
     setRefreshing(true);
     try {
-      await refetch();
+      // The received notes live under the same key prefix: read them again too.
+      await Promise.all([
+        refetch(),
+        queryClient.invalidateQueries({ queryKey: ["notes", userId, "received"] }),
+      ]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetch]);
+  }, [queryClient, refetch, userId]);
 
   const screenError =
     mutError ?? (error && data ? "Actualisation impossible. Vérifie ta connexion." : null);
@@ -602,6 +607,10 @@ export default function Notes(): React.JSX.Element {
               ) : undefined
             }
           />
+
+          {/* Notes handed over by classmates and friends, above the reader's
+              own, as on the site. */}
+          <ReceivedNotes userId={userId} />
 
           {isLoading ? (
             <ListSkeleton rows={4} />
