@@ -67,6 +67,26 @@ export async function updatePasswordApi(input: {
   }
 }
 
+/**
+ * Edits the name shown, the bio and, when given, the avatar (one of the
+ * built-in ones), through the site's service (/settings/profile).
+ */
+export async function updateProfileApi(input: {
+  displayName: string;
+  bio: string;
+  avatarUrl?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const response = await authedFetch("/api/mobile/settings/profile", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    return readActionResponse(await response.json());
+  } catch {
+    return { ok: false, error: "Connexion au serveur impossible." };
+  }
+}
+
 // ── A banned account: the two things it may still do (the site's /banned) ────
 
 /** Records that the ban notice was seen. A failure costs a second showing, nothing else. */
