@@ -1,6 +1,12 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import {
+  FRIENDSHIP_ACTION_LABEL,
+  friendshipAfter,
+  friendshipMove,
+  type FriendshipView,
+} from "@cyberlearn/lib";
 import { removeFriendAction, sendFriendRequestAction } from "@/app/(app)/_actions/friend-actions";
 
 /**
@@ -13,53 +19,39 @@ import { removeFriendAction, sendFriendRequestAction } from "@/app/(app)/_action
  * It knows only what the server told it when the page rendered, and says so
  * afterwards rather than guessing - pressing it on somebody who has already
  * asked you turns into being friends, and the label has to be able to say that.
+ * The labels and the moves are the app's too (@cyberlearn/lib/social/friendship).
  */
 export function AddFriendButton({
   targetId,
   initialState,
 }: {
   targetId: string;
-  initialState: "none" | "outgoing" | "incoming" | "friends";
+  initialState: FriendshipView;
 }): React.JSX.Element {
   const [state, setState] = useState(initialState);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-
-  const undo = (label: string): React.JSX.Element => (
-    <button
-      type="button"
-      className="fp-btn"
-      disabled={pending}
-      onClick={() => {
-        start(async () => {
-          const result = await removeFriendAction(targetId);
-          if (result.ok) setState("none");
-        });
-      }}
-    >
-      {label}
-    </button>
-  );
-
-  if (state === "friends") return undo("Retirer des amis");
-  if (state === "outgoing") return undo("Annuler la demande");
+  const move = friendshipMove(state);
 
   return (
     <>
       <button
         type="button"
-        className="fp-btn fp-btn--primary"
+        className={move === "request" ? "fp-btn fp-btn--primary" : "fp-btn"}
         disabled={pending}
         onClick={() => {
           setError(null);
           start(async () => {
-            const result = await sendFriendRequestAction(targetId);
-            if (result.ok) setState(result.becameFriends === true ? "friends" : "outgoing");
-            else setError(result.error ?? "Impossible pour l'instant.");
+            const result =
+              move === "request"
+                ? await sendFriendRequestAction(targetId)
+                : await removeFriendAction(targetId);
+            if (result.ok) setState(friendshipAfter(move, result.becameFriends === true));
+            else if (move === "request") setError(result.error ?? "Impossible pour l'instant.");
           });
         }}
       >
-        {state === "incoming" ? "Accepter la demande" : "Ajouter en ami"}
+        {FRIENDSHIP_ACTION_LABEL[state]}
       </button>
       {error !== null && (
         <span className="fp-error" role="alert">

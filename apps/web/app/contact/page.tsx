@@ -4,30 +4,10 @@ import React, { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { submitContactAction, type ContactFormState } from "./_actions/contact-actions";
 import { Select } from "@cyberlearn/ui";
+import { ESTABLISHMENT_CHECKLIST, TICKET_FORM_THEMES } from "@cyberlearn/lib/tickets/tickets";
 
-const THEMES = [
-  { value: "BUG", label: "Bug" },
-  { value: "QUESTION", label: "Question" },
-  { value: "FEATURE_REQUEST", label: "Suggestion" },
-  { value: "SECURITY", label: "Sécurité" },
-  { value: "CONTENT_ERROR", label: "Erreur de contenu" },
-  { value: "ESTABLISHMENT_REQUEST", label: "Ajouter mon établissement" },
-  { value: "OTHER", label: "Autre" },
-] as const;
-
-/**
- * What an establishment request has to contain to be actionable.
- *
- * It is the one theme with a shape. Without these four, the first reply is
- * always the same four questions and the request waits a round trip for
- * nothing, so they are asked here instead of after.
- */
-const ESTABLISHMENT_CHECKLIST = [
-  "Le nom exact de l'établissement et sa ville",
-  "Les formations ou promotions concernées (BTS SIO 1re année, etc.)",
-  "Le nombre d'élèves et de professeurs attendus",
-  "Une adresse de contact officielle (direction, référent numérique)",
-] as const;
+// The themes and the establishment checklist are shared with the app.
+const THEMES = TICKET_FORM_THEMES;
 
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
