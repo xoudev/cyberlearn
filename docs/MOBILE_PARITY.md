@@ -24,13 +24,14 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  trente-deux : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
+  trente-huit : `avatar`, `ban/acknowledge`, `ban/appeal`, `exam`, `exam/claim`,
   `exam/start`, `exam/submit`, `forum`, `forum/post/edit`, `forum/post/hide`,
-  `forum/reply`, `forum/section`, `forum/topic`, `leaderboard`, `lesson-qa`,
+  `forum/reply`, `forum/section`, `forum/topic`, `friends`, `friends/accept`,
+  `friends/remove`, `friends/request`, `leaderboard`, `lesson-qa`,
   `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
   `lesson-qa/upvote`, `lesson-rating`, `loadout`, `my-class`, `password`,
-  `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`, `send-otp`,
-  `support`, `support/reply`, `support/ticket`.
+  `profile`, `progress`, `quiz-answer`, `quiz-report`, `rating`, `review`,
+  `send-otp`, `support`, `support/reply`, `support/ticket`, `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit
   (ses propres messages retirés compris) est une règle du dépôt
   (`forum.repository`), et l'avatar envoyé d'un auteur doit être signé avec la
@@ -73,6 +74,7 @@ RLS — jamais réécrites côté app.
 | Forum : sections, derniers messages, sujets par page, ouvrir un sujet, répondre, modifier et retirer son message (un administrateur retire n'importe lequel), même modération automatique et même message « retenu » ; le markdown est découpé par le même module (`@cyberlearn/lib/markdown/note-markdown`) | ✅ | ✅ |
 | Certificats | ✅ | ✅ |
 | Badges | ✅ | ✅ (sous-onglet de Profil) |
+| Wrapped : une entrée qui n'existe que du 1er décembre au 7 janvier (même fenêtre, `@cyberlearn/lib/gamification/wrapped-window`), une histoire de six à neuf écrans selon l'année avec avance automatique, appui à droite ou à gauche, appui long pour lire ; mêmes écrans et mêmes mots (`@cyberlearn/lib/gamification/wrapped-story`), même récap (`apps/web/lib/wrapped/recap.ts`), page « pas encore ouvert » hors saison | ✅ (étiquette dans la barre) | ✅ (étiquette dans l'en-tête de l'Accueil, `app/wrapped.tsx`) |
 | Réglages, sécurité | ✅ | ✅ |
 | **Ma classe — côté élève** (travail donné, dates) | ✅ | ✅ |
 | Avatar : glyphe, image intégrée, photo envoyée | ✅ | ✅ |
@@ -85,7 +87,7 @@ Par ordre de valeur pour quelqu'un qui n'a que son téléphone.
 
 | Surface | Pourquoi ça compte | Bloqué par |
 | --- | --- | --- |
-| **Wrapped** | Événement annuel, partageable : le format story est fait pour un téléphone, et c'est précisément la forme que le web a prise (9 écrans, avance automatique, appui pour naviguer). Côté web ce n'est pas un onglet : une étiquette apparaît dans la barre pendant la fenêtre d'ouverture (1er décembre → 7 janvier) et ouvre une pop-up. L'app doit reprendre cette forme, pas un onglet permanent | — |
+| **Exporter la carte Wrapped en image** | Le site dessine la carte finale en image, à télécharger ou partager ; l'app partage l'année en texte avec la feuille de partage du téléphone. Faire une image demande deux dépendances absentes du projet (`react-native-view-shot`, `expo-sharing`) | Accord sur les dépendances |
 | **Modération — côté auteur** | Un blocage et une sanction arrivent par e-mail et par notification, mais la page qui les liste (`/settings/moderation`) n'existe que sur le web. Le bannissement et son appel, eux, sont dans l'app | — |
 | **Fin d'inscription** (pseudo, avatar, objectif) | L'app renvoie au site pour les trois étapes (`onboarding-required.tsx`). Le questionnaire de la troisième étape est déjà dans l'onglet Parcours ; ce qui manque, c'est de pouvoir finir son inscription sans quitter l'app | Rien |
 | **Partage de note** | Le bloc-notes est des deux côtés, le partage non — ni l'envoi, ni la réception. Il manquait à ce tableau : « Bloc-notes ✅ ✅ » était vrai du carnet et faux de la fonctionnalité. Le filtre qui refuse un partage vit dans le dépôt (`note-share.repository`), donc l'app l'hériterait sans le réécrire | — |

@@ -485,6 +485,27 @@ export async function claimCertificateApi(
   }
 }
 
+// ── Wrapped (the year's recap, open from 1 December to 7 January) ─────────────
+
+export type WrappedReply =
+  | {
+      open: true;
+      payload: import("@cyberlearn/lib/gamification/wrapped").WrappedPayload | null;
+      handle: string;
+      periodKey: string;
+    }
+  | { open: false; periodKey: string; opensOn: string | null };
+
+/** The reader's recap when it is open, or when it next opens: the server's clock decides. */
+export async function fetchWrappedApi(): Promise<WrappedReply> {
+  const res = await authedFetch("/api/mobile/wrapped");
+  const body = (await res.json()) as ({ ok: true } & WrappedReply) | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.open
+    ? { open: true, payload: body.payload, handle: body.handle, periodKey: body.periodKey }
+    : { open: false, periodKey: body.periodKey, opensOn: body.opensOn };
+}
+
 // ── Forum (the site's service: rate limit, moderation screen, held posts) ─────
 
 export interface ForumFront {

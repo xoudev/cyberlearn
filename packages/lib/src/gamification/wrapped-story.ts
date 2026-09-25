@@ -1,7 +1,9 @@
-import type { WrappedPayload } from "@cyberlearn/lib";
+import type { WrappedPayload } from "./wrapped.js";
 
 /**
- * The year, told as a sequence rather than laid out as a page.
+ * The year, told as a sequence rather than laid out as a page. Shared by the
+ * site's story and the app's, so both tell the same year in the same words.
+ *
  *
  * Slides are data, not markup. Two reasons. One renderer means every slide
  * shares a scale and a rhythm, which is the thing that makes a story read as
@@ -75,14 +77,29 @@ export function fmtNumber(n: number): string {
   return n.toLocaleString("fr-FR");
 }
 
-/** "Mars 2026" from a "YYYY-MM" key. */
+const MONTHS = [
+  "Janvier",
+  "Février",
+  "Mars",
+  "Avril",
+  "Mai",
+  "Juin",
+  "Juillet",
+  "Août",
+  "Septembre",
+  "Octobre",
+  "Novembre",
+  "Décembre",
+];
+
+/**
+ * "Mars 2026" from a "YYYY-MM" key. Written out rather than asked of Intl:
+ * the key is already a calendar month, and not every phone's JavaScript
+ * engine formats months the same way.
+ */
 export function monthLabel(key: string): string {
-  const label = new Intl.DateTimeFormat("fr-FR", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${key}-01T12:00:00Z`));
-  return label.charAt(0).toUpperCase() + label.slice(1);
+  const [year, month] = key.split("-");
+  return `${MONTHS[Number(month) - 1] ?? ""} ${year ?? ""}`.trim();
 }
 
 /** Where somebody sits among everyone, as the round number people quote. */

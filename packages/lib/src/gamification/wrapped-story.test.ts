@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { WrappedPayload } from "@cyberlearn/lib";
-import { buildStorySlides, monthLabel, topPercent } from "../slides";
+import type { WrappedPayload } from "./wrapped.js";
+import { buildStorySlides, monthLabel, topPercent } from "./wrapped-story.js";
 
 /**
  * The story's shape, not its styling.
@@ -186,5 +186,20 @@ describe("helpers", () => {
     expect(topPercent(1, 100000)).toBe(1);
     expect(topPercent(37, 1840)).toBe(2);
     expect(topPercent(5, 0)).toBe(100);
+  });
+});
+
+describe("monthLabel, written out", () => {
+  it("reads every month the way the site's Intl formatting did", () => {
+    const intl = new Intl.DateTimeFormat("fr-FR", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    for (let month = 1; month <= 12; month++) {
+      const key = `2026-${String(month).padStart(2, "0")}`;
+      const label = intl.format(new Date(`${key}-01T12:00:00Z`));
+      expect(monthLabel(key)).toBe(label.charAt(0).toUpperCase() + label.slice(1));
+    }
   });
 });

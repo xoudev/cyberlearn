@@ -38,7 +38,6 @@ const HUB_LINKS: { label: string; route?: string; url?: string }[] = [
   // record rather than something that looks forgotten.
   { label: "Défis", url: "https://cyberlearn.fr/challenges" },
   { label: "Ma modération", url: "https://cyberlearn.fr/settings/moderation" },
-  { label: "Wrapped", url: "https://cyberlearn.fr/wrapped" },
 ];
 
 /** The stored form that needs the server to turn it into something drawable. */
