@@ -72,7 +72,7 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
         </span>,
         <span key="t" className="mono">
           <span style={{ color: UI.turquoise }}>{log.targetType}</span>
-          {log.targetId && <span style={{ color: UI.faint }}> · {log.targetId.slice(0, 8)}</span>}
+          {log.targetId && <span style={{ color: UI.muted }}> · {log.targetId.slice(0, 8)}</span>}
         </span>,
         metaStr ? (
           <span
@@ -93,7 +93,7 @@ export default async function AdminAuditPage(): Promise<React.ReactElement> {
             {metaStr}
           </span>
         ) : (
-          <span key="m" style={{ color: UI.faint }}>
+          <span key="m" style={{ color: UI.muted }}>
             Aucun détail
           </span>
         ),

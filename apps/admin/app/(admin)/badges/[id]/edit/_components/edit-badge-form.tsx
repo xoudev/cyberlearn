@@ -75,7 +75,7 @@ function Field({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#44406B",
+            color: "#7F7BA9",
             margin: "0 0 6px",
           }}
         >
@@ -366,7 +366,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#44406B",
+              color: "#7F7BA9",
               margin: "4px 0 0",
             }}
           >
@@ -541,7 +541,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
                   fontSize: 9,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#44406B",
+                  color: "#7F7BA9",
                   margin: "0 0 14px",
                 }}
               >
@@ -695,7 +695,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
             </button>
           )
         ) : (
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#44406B", margin: 0 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7F7BA9", margin: 0 }}>
             Suppression impossible : {String(badge._count.userBadges)} utilisateur(s) ont déjà ce
             badge. Désactive-le plutôt.
           </p>

@@ -39,7 +39,8 @@ const DIFF_COLORS: Record<string, DiffColor> = {
   EXPERT: { color: "#FFB020", bg: "rgba(255,176,32,0.1)" },
 };
 
-const GRID = "32px 120px 1fr 100px 100px 70px 70px 110px 40px";
+// No reference column: the ref sits under the title, where it is read with it.
+const GRID = "32px minmax(0, 1fr) 110px 120px 60px 90px 110px 40px";
 
 const CATEGORIES = ["ALL", "DEV", "CYBERSEC", "NETWORK"] as const;
 const DIFFICULTIES = ["ALL", "BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"] as const;
@@ -284,7 +285,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
             marginLeft: "auto",
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#44406B",
+            color: "#7F7BA9",
           }}
         >
           {String(filtered.length)} / {String(lessons.length)}
@@ -386,37 +387,47 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
       {/* Table */}
       <div
         className="admin-table-wrap"
+        role="table"
+        aria-label="Leçons"
         style={{ background: "rgba(5,4,26,0.4)", border: "1px solid #1F1B47" }}
       >
         {/* Header row */}
         <div
+          role="row"
           style={{
             display: "grid",
             gridTemplateColumns: GRID,
             padding: "12px 16px",
             borderBottom: "1px solid #1F1B47",
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            letterSpacing: "0.18em",
+            fontSize: 12,
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "#44406B",
+            color: "#9A96C0",
             alignItems: "center",
           }}
         >
-          <SquareCheckbox
-            checked={allSelected}
-            indeterminate={someSelected}
-            onChange={toggleAll}
-            title="Tout sélectionner"
-          />
-          <span>Ref</span>
-          <span>Titre</span>
-          <span>Catégorie</span>
-          <span>Difficulté</span>
-          <span style={{ textAlign: "right" }}>XP</span>
-          <span style={{ textAlign: "right" }}>Faits</span>
-          <span style={{ textAlign: "right" }}>Statut</span>
-          <span />
+          <span role="columnheader">
+            <SquareCheckbox
+              checked={allSelected}
+              indeterminate={someSelected}
+              onChange={toggleAll}
+              title="Tout sélectionner"
+            />
+          </span>
+          <span role="columnheader">Leçon</span>
+          <span role="columnheader">Catégorie</span>
+          <span role="columnheader">Difficulté</span>
+          <span role="columnheader" style={{ textAlign: "right" }}>
+            XP
+          </span>
+          <span role="columnheader" style={{ textAlign: "right" }}>
+            Terminées
+          </span>
+          <span role="columnheader" style={{ textAlign: "right" }}>
+            Statut
+          </span>
+          <span role="columnheader" aria-label="Supprimer" />
         </div>
 
         {filtered.length === 0 ? (
@@ -440,6 +451,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
             return (
               <div
                 key={lesson.id}
+                role="row"
                 style={{
                   display: "grid",
                   gridTemplateColumns: GRID,
@@ -450,24 +462,23 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                   transition: "background 120ms ease",
                 }}
               >
-                <SquareCheckbox
-                  checked={isSel}
-                  onChange={() => {
-                    toggleOne(lesson.id);
-                  }}
-                  title="Sélectionner"
-                />
-
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#4D8BFF" }}>
-                  {lesson.refCode}
+                <span role="cell">
+                  <SquareCheckbox
+                    checked={isSel}
+                    onChange={() => {
+                      toggleOne(lesson.id);
+                    }}
+                    title={`Sélectionner « ${lesson.title} »`}
+                  />
                 </span>
 
-                <div style={{ minWidth: 0 }}>
+                {/* The title leads; ref, slug and length are the line under it. */}
+                <div role="cell" style={{ minWidth: 0 }}>
                   <Link
                     href={`/lessons/${lesson.id}/edit`}
                     style={{
                       fontFamily: "var(--font-sans)",
-                      fontSize: 13,
+                      fontSize: 15,
                       fontWeight: 600,
                       color: "#F5F5FA",
                       textDecoration: "none",
@@ -478,12 +489,13 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                   <div
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      color: "#44406B",
-                      marginTop: 2,
+                      fontSize: 12,
+                      color: "#7F7BA9",
+                      marginTop: 3,
                     }}
                   >
-                    {lesson.slug} · {String(lesson.estimatedMinutes)} min
+                    <span style={{ color: "#6E8BFF" }}>{lesson.refCode}</span> · {lesson.slug} ·{" "}
+                    {String(lesson.estimatedMinutes)} min
                   </div>
                   {/* Otherwise an admin scanning this list finds a lesson they
                       did not commission, cannot see in the catalogue, and has
@@ -505,10 +517,11 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                 </div>
 
                 <span
+                  role="cell"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    color: "#7F7BA9",
+                    fontSize: 12,
+                    color: "#B8B5D1",
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
                   }}
@@ -517,9 +530,10 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                 </span>
 
                 <span
+                  role="cell"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 9,
+                    fontSize: 11,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     color: diff.color,
@@ -533,6 +547,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                 </span>
 
                 <span
+                  role="cell"
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 12,
@@ -545,9 +560,10 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                 </span>
 
                 <span
+                  role="cell"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 11,
+                    fontSize: 12,
                     color: "#B8B5D1",
                     textAlign: "right",
                   }}
@@ -555,7 +571,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                   {String(lesson.completions)}
                 </span>
 
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div role="cell" style={{ display: "flex", justifyContent: "flex-end" }}>
                   <StatusBadge
                     entityId={lesson.id}
                     currentStatus={lesson.status}
@@ -563,16 +579,18 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                   />
                 </div>
 
-                <DeleteLessonButton
-                  lessonId={lesson.id}
-                  lessonTitle={lesson.title}
-                  disabled={lesson.status === "PUBLISHED" || lesson.pathLessonsCount > 0}
-                  disabledReason={
-                    lesson.status === "PUBLISHED"
-                      ? "Archivez la leçon avant de la supprimer"
-                      : "Cette leçon appartient à un parcours"
-                  }
-                />
+                <span role="cell">
+                  <DeleteLessonButton
+                    lessonId={lesson.id}
+                    lessonTitle={lesson.title}
+                    disabled={lesson.status === "PUBLISHED" || lesson.pathLessonsCount > 0}
+                    disabledReason={
+                      lesson.status === "PUBLISHED"
+                        ? "Archivez la leçon avant de la supprimer"
+                        : "Cette leçon appartient à un parcours"
+                    }
+                  />
+                </span>
               </div>
             );
           })

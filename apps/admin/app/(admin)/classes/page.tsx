@@ -60,7 +60,7 @@ export default async function AdminClassesPage(): Promise<React.ReactElement> {
         <span key="p" className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
           {promotion}
           {c.promotion.startYear !== null && (
-            <span style={{ color: UI.faint }}> · {c.promotion.startYear}</span>
+            <span style={{ color: UI.muted }}> · {c.promotion.startYear}</span>
           )}
         </span>,
         String(c._count.members),

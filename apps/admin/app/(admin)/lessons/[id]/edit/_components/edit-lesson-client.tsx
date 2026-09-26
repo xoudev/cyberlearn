@@ -58,7 +58,7 @@ function Label({
             letterSpacing: "0.04em",
             textTransform: "none",
             fontSize: 10.5,
-            color: "#44406B",
+            color: "#7F7BA9",
             marginLeft: "auto",
           }}
         >
@@ -71,7 +71,7 @@ function Label({
 
 function Help({ children }: { children: React.ReactNode }) {
   return (
-    <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "#44406B" }}>
+    <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "#7F7BA9" }}>
       {children}
     </span>
   );
@@ -150,11 +150,11 @@ export function EditLessonClient({
         >
           <span style={{ color: TURQ }}>$</span>
           <b style={{ color: "#B8B5D1", fontWeight: 500 }}>~/admin</b>
-          <span style={{ color: "#44406B" }}>/</span>
+          <span style={{ color: "#7F7BA9" }}>/</span>
           <Link href="/lessons" style={{ color: "#7F7BA9", textDecoration: "none" }}>
             leçons
           </Link>
-          <span style={{ color: "#44406B" }}>/</span>
+          <span style={{ color: "#7F7BA9" }}>/</span>
           <span style={{ color: TURQ, fontWeight: 700 }}>éditer</span>
           <span
             className="adm-caret"
@@ -526,7 +526,7 @@ export function EditLessonClient({
               style={{
                 fontFamily: MONO,
                 fontSize: 10.5,
-                color: "#44406B",
+                color: "#7F7BA9",
                 letterSpacing: "0.06em",
                 marginRight: "auto",
               }}

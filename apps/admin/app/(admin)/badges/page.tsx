@@ -64,7 +64,7 @@ export default async function AdminBadgesPage(): Promise<React.ReactElement> {
         0,
       ],
       cells: [
-        <span key="r" className="mono" style={{ color: UI.faint }}>
+        <span key="r" className="mono" style={{ color: UI.muted }}>
           {b.refCode}
         </span>,
         <span key="n" style={{ display: "block", maxWidth: 260 }}>

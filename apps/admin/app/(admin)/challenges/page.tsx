@@ -66,7 +66,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
         0,
       ],
       cells: [
-        <span key="r" className="mono" style={{ color: UI.faint }}>
+        <span key="r" className="mono" style={{ color: UI.muted }}>
           {c.refCode}
         </span>,
         <span key="t" style={{ display: "block", maxWidth: 280 }}>
@@ -83,7 +83,7 @@ export default async function AdminChallengesPage(): Promise<React.ReactElement>
           >
             {c.title}
           </span>
-          <span className="mono" style={{ fontSize: 10, color: UI.faint }}>
+          <span className="mono" style={{ fontSize: 10, color: UI.muted }}>
             {c.slug}
           </span>
         </span>,

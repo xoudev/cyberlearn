@@ -303,7 +303,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
                           <Tag tone={roleTone(u.role)}>{roleLabel(u.role)}</Tag>
                         </td>
                         <td className="num">
-                          <span style={{ color: UI.faint }}>LVL·</span>
+                          <span style={{ color: UI.muted }}>LVL·</span>
                           <b style={{ color: UI.turquoise }}>{String(u.level).padStart(2, "0")}</b>
                         </td>
                         <td className="num" style={{ color: UI.muted }}>

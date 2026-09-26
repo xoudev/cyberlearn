@@ -60,7 +60,6 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
       search: `${p.title} ${p.slug} ${p.refCode} ${cat} ${diff.label}`.toLowerCase(),
       facets: [p.category, p.status],
       sort: [
-        p.refCode,
         p.title.toLowerCase(),
         cat,
         p.difficulty,
@@ -72,17 +71,16 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
         0,
       ],
       cells: [
-        <span key="r" className="mono" style={{ color: UI.faint }}>
-          {p.refCode}
-        </span>,
-        <Link key="t" href={`/paths/${p.id}/edit`} style={{ display: "block", maxWidth: 280 }}>
+        // The title leads; the reference and the slug are the line under it,
+        // rather than a column of their own nobody reads first.
+        <Link key="t" href={`/paths/${p.id}/edit`} style={{ display: "block", maxWidth: 340 }}>
           <span
             style={{
               display: "block",
               fontWeight: 600,
               color: UI.fg,
-              fontSize: 13,
-              marginBottom: 2,
+              fontSize: 15,
+              marginBottom: 3,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -90,18 +88,18 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
           >
             {p.title}
           </span>
-          <span className="mono" style={{ fontSize: 10, color: UI.faint }}>
-            {p.slug}
+          <span className="mono" style={{ fontSize: 12, color: UI.muted }}>
+            <span style={{ color: UI.blueSoft }}>{p.refCode}</span> · {p.slug}
           </span>
         </Link>,
         <span
           key="c"
           className="mono"
           style={{
-            fontSize: 10.5,
+            fontSize: 12,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: UI.muted,
+            color: UI.fg2,
           }}
         >
           {cat}
@@ -117,10 +115,10 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
         p.avgRating != null ? (
           <span key="n" style={{ color: UI.warning, fontWeight: 700 }}>
             {p.avgRating.toFixed(1)}
-            <span style={{ color: UI.faint, fontWeight: 400 }}> ({String(p.ratingsCount)})</span>
+            <span style={{ color: UI.muted, fontWeight: 400 }}> ({String(p.ratingsCount)})</span>
           </span>
         ) : (
-          <span key="n" style={{ color: UI.faint }}>
+          <span key="n" style={{ color: UI.muted }}>
             Aucune
           </span>
         ),
@@ -163,8 +161,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
 
       <DataGrid
         columns={[
-          { label: "Ref", sortable: true },
-          { label: "Titre", sortable: true },
+          { label: "Parcours", sortable: true },
           { label: "Catégorie", sortable: true },
           { label: "Difficulté", sortable: true },
           { label: "Leçons", align: "right", sortable: true },
