@@ -12,9 +12,9 @@
 import { isUploadedCover, uploadedCoverKey } from "@cyberlearn/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export const LESSON_COVER_BUCKET = "lesson-covers";
+const LESSON_COVER_BUCKET = "lesson-covers";
 /** Signed-URL lifetime. 1h is the project's documented maximum for storage. */
-export const LESSON_COVER_SIGNED_TTL_SECONDS = 60 * 60;
+const LESSON_COVER_SIGNED_TTL_SECONDS = 60 * 60;
 // Re-sign once a cached URL has less than this left, so any URL we hand out is
 // always valid for a comfortable margin.
 const SIGNED_REFRESH_BUFFER_MS = 5 * 60 * 1000;
@@ -34,29 +34,8 @@ function setCachedSignedUrl(key: string, url: string): void {
 }
 
 /**
- * Resolves a stored cover value to a renderable src:
- *   - `__cover:<key>` → a short-lived signed URL (or null if signing fails)
- *   - anything else   → returned unchanged (external URL or null).
- */
-export async function resolveLessonCoverSrc(value: string | null): Promise<string | null> {
-  if (!isUploadedCover(value)) return value;
-  const key = uploadedCoverKey(value);
-  if (!key) return null;
-
-  const cached = getCachedSignedUrl(key);
-  if (cached) return cached;
-
-  const admin = createSupabaseAdminClient();
-  const { data, error } = await admin.storage
-    .from(LESSON_COVER_BUCKET)
-    .createSignedUrl(key, LESSON_COVER_SIGNED_TTL_SECONDS);
-  if (error) return null;
-  setCachedSignedUrl(key, data.signedUrl);
-  return data.signedUrl;
-}
-
-/**
- * Batch version of {@link resolveLessonCoverSrc} for the catalog grid. Signs all
+ * Resolves stored cover values (`__cover:<key>` markers become short-lived
+ * signed URLs, anything else is returned unchanged) for the catalog grid. Signs all
  * uploaded markers in a single round-trip and preserves input order.
  */
 export async function resolveLessonCoverSrcMany(

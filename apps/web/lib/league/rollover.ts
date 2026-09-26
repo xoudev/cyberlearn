@@ -29,7 +29,7 @@ export interface RolloverResult {
  * Returning players are pre-seated into the next season with their carried-over
  * division (seasonXp reset to 0), so the ladder is fixed when the season opens.
  */
-export async function finalizeSeason(seasonId: string, now: Date): Promise<RolloverResult> {
+async function finalizeSeason(seasonId: string, now: Date): Promise<RolloverResult> {
   return prisma.$transaction(
     async (tx): Promise<RolloverResult> => {
       const claimed = await tx.season.updateMany({

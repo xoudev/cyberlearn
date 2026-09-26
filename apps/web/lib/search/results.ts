@@ -37,7 +37,7 @@ export interface SearchGroup {
 }
 
 /** How many of each kind the panel shows. The rest are behind "voir tout". */
-export const PER_KIND = 5;
+const PER_KIND = 5;
 
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   BEGINNER: "Débutant",

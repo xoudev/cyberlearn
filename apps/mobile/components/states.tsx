@@ -17,7 +17,7 @@ import { useReducedMotionPreference } from "@/lib/accessibility";
 // ── Skeleton (loading) ────────────────────────────────────────────────────────
 
 /** One pulsing placeholder block. */
-export function Bone({ style }: { style?: ViewStyle }): React.JSX.Element {
+function Bone({ style }: { style?: ViewStyle }): React.JSX.Element {
   const reducedMotion = useReducedMotionPreference();
   const opacity = useSharedValue(0.45);
   useEffect(() => {
@@ -42,7 +42,7 @@ export function Bone({ style }: { style?: ViewStyle }): React.JSX.Element {
 }
 
 /** Catalog-card shaped skeleton (mockup frame 13). */
-export function CardSkeleton(): React.JSX.Element {
+function CardSkeleton(): React.JSX.Element {
   return (
     <View
       style={{

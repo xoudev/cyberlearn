@@ -140,7 +140,7 @@ export function CardLink({
 
 // ── KPI with trend sparkline ──────────────────────────────────────────────────
 
-export function Sparkline({
+function Sparkline({
   points,
   width = 88,
   height = 30,

@@ -18,7 +18,7 @@ function buildRedis(): Redis | null {
 const redis = buildRedis();
 
 /** 5 requests per 15 minutes per IP, applied to auth endpoints. */
-export const authRateLimit = redis
+const authRateLimit = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "15 m"), prefix: "rl:admin:auth" })
   : null;
 

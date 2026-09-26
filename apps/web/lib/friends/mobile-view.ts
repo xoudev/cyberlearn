@@ -28,11 +28,11 @@ export interface MobileFriendLists {
  * The name a friends list shows. displayName is a string that can be empty,
  * so || falls through an empty one to the handle, as the site's panel does.
  */
-export function friendName(person: { displayName: string; username: string | null }): string {
+function friendName(person: { displayName: string; username: string | null }): string {
   return person.displayName || (person.username ?? "?");
 }
 
-export function toMobileFriend(entry: FriendEntry): MobileFriend {
+function toMobileFriend(entry: FriendEntry): MobileFriend {
   return {
     id: entry.person.id,
     username: entry.person.username,

@@ -46,12 +46,12 @@
     }
   },
   "devDependencies": {
-    "turbo": "^2.5.2",
-    "next": "catalog:",
     "@biomejs/biome": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
     "husky": "catalog:",
     "lint-staged": "catalog:",
-    "@commitlint/cli": "catalog:",
-    "@commitlint/config-conventional": "catalog:"
+    "next": "catalog:",
+    "turbo": "^2.11.4"
   }
 }

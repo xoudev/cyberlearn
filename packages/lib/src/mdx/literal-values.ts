@@ -99,7 +99,7 @@ function checkElement(element: MdNode): void {
       value: unknown;
     };
     if (typeof value !== "object" || value === null) continue;
-    checkAttributeValue(name, attributeName, value as { value?: unknown; data?: unknown });
+    checkAttributeValue(name, attributeName, value);
   }
 }
 

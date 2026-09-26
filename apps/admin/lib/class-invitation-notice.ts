@@ -17,7 +17,7 @@ import { learnerUrl } from "./learner-url";
  */
 
 /** Long enough to survive a school holiday, short enough to mean something. */
-export const INVITATION_TTL_DAYS = 30;
+const INVITATION_TTL_DAYS = 30;
 
 export interface InvitationOutcome {
   invited: string[];

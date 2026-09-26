@@ -48,13 +48,13 @@
   },
   "devDependencies": {
     "@cyberlearn/config": "workspace:*",
-    "prisma": "catalog:",
-    "tsx": "^4.19.3",
-    "typescript": "catalog:",
     "@types/node": "catalog:",
-    "vitest": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
-    "typescript-eslint": "catalog:"
+    "prisma": "catalog:",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
   }
 }

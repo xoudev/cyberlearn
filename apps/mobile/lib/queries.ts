@@ -1056,10 +1056,6 @@ export async function saveNoteForLesson(
   }
 }
 
-export async function deleteNote(noteId: string): Promise<void> {
-  await supabase.from("notes").delete().eq("id", noteId);
-}
-
 // ── Locker (cosmetics) ────────────────────────────────────────────────────────
 
 export type CosmeticType = "TERMINAL_THEME" | "HEXAGON_STYLE" | "PROFILE_FRAME" | "ACCENT_COLOR";

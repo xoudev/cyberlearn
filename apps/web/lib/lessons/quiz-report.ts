@@ -7,7 +7,7 @@ import {
   quizReportRepository,
 } from "@cyberlearn/db";
 
-export const quizReportSchema = z.object({
+const quizReportSchema = z.object({
   lessonId: z.string().uuid(),
   quizId: z.string().min(1).max(100),
   reason: z.enum(QUIZ_REPORT_REASONS),

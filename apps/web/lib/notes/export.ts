@@ -37,7 +37,7 @@ export function notesToMarkdown(notes: ExportableNote[], heading: string): strin
 }
 
 /** Turn a string into a filesystem-safe basename (no extension). */
-export function safeBaseName(input: string): string {
+function safeBaseName(input: string): string {
   const base = input
     .toLowerCase()
     .normalize("NFD")

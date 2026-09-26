@@ -1,6 +1,5 @@
 import { Head } from "@react-email/components";
 import React from "react";
-import { fonts } from "./theme.js";
 
 /**
  * The head every mail shares, which exists to carry the two typefaces.
@@ -75,4 +74,3 @@ export function EmailHead(): React.ReactElement {
 }
 
 /** Re-exported so a template imports its chrome and its styles from one place. */
-export { fonts };

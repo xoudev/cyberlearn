@@ -28,7 +28,7 @@ import { useReducedMotionPreference } from "@/lib/accessibility";
 
 const TOUR_KEY = "cl.tour.done";
 
-export async function isTourDone(): Promise<boolean> {
+async function isTourDone(): Promise<boolean> {
   return (await AsyncStorage.getItem(TOUR_KEY)) === "1";
 }
 

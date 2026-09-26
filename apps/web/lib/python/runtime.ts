@@ -44,9 +44,9 @@ export interface PythonRunResult {
 }
 
 /** Long: this is a first download on whatever connection the learner has. */
-export const BOOT_TIMEOUT_MS = 90_000;
+const BOOT_TIMEOUT_MS = 90_000;
 /** Counted from the moment Python is ready, never before. */
-export const RUN_TIMEOUT_MS = 10_000;
+const RUN_TIMEOUT_MS = 10_000;
 
 export const TIMEOUT_MESSAGE =
   "Ton code tourne depuis plus de 10 secondes, il a été arrêté. Une boucle qui ne s'arrête jamais ?";
@@ -66,7 +66,7 @@ interface Timeouts {
   run: number;
 }
 
-export class PythonBootError extends Error {
+class PythonBootError extends Error {
   override name = "PythonBootError";
 }
 

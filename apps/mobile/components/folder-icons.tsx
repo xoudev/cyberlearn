@@ -95,28 +95,3 @@ export function FolderGlyph({
     </Svg>
   );
 }
-
-/** The "all notes" stacked-layers glyph. */
-export function AllNotesGlyph({
-  color,
-  size = 15,
-}: {
-  color: string;
-  size?: number;
-}): React.JSX.Element {
-  return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke={color}
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <Path d="M8 2.2l5.5 2.8L8 7.8 2.5 5z" />
-      <Path d="M2.5 8l5.5 2.8L13.5 8M2.5 11l5.5 2.8L13.5 11" />
-    </Svg>
-  );
-}
