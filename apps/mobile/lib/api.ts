@@ -315,6 +315,38 @@ export async function searchApi(term: string): Promise<SearchGroupItem[]> {
   return body.groups;
 }
 
+// ── Badge collection (the site's /badges: every badge, earned or locked) ─────
+
+export interface CollectionBadge {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string;
+  rarity: string;
+  earned: boolean;
+  /** "12 sept. 2026", when earned. */
+  earnedDateStr: string | null;
+  /** How far along a locked badge is, when its criterion can be counted. */
+  progress: { done: number; total: number; label: string } | null;
+}
+
+export interface BadgeCollection {
+  /** Légendaire first, as the site orders them; empty rarities left out. */
+  groups: { rarity: string; label: string; badges: CollectionBadge[] }[];
+  earnedCount: number;
+  totalCount: number;
+}
+
+/** The whole collection, built by the same service as the site's page. */
+export async function fetchBadgeCollectionApi(): Promise<BadgeCollection> {
+  const res = await authedFetch("/api/mobile/badges");
+  const body = (await res.json()) as
+    | ({ ok: true } & BadgeCollection)
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return { groups: body.groups, earnedCount: body.earnedCount, totalCount: body.totalCount };
+}
+
 // ── Lesson completion (guarded server flow: XP, streak, badges, quests) ───────
 
 export interface CompleteLessonResult {
