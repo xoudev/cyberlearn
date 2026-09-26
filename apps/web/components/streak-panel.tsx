@@ -248,7 +248,13 @@ export async function StreakPanel({
             plus
           </span>
         </div>
-        <div style={{ overflowX: "auto", maxWidth: "100%", minWidth: 0, paddingBottom: 4 }}>
+        {/* A scrolling box takes keyboard focus; named, it announces what it
+            holds instead of reading the month labels one by one. */}
+        <div
+          role="region"
+          aria-label="Activité des douze derniers mois"
+          style={{ overflowX: "auto", maxWidth: "100%", minWidth: 0, paddingBottom: 4 }}
+        >
           <div style={{ display: "inline-flex", flexDirection: "column", gap: 6 }}>
             {/* Month labels, aligned above their week columns */}
             <div style={{ display: "flex" }}>

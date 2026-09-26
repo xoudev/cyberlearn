@@ -42,6 +42,11 @@ export default async function AppLayout({
     // (correct first paint) and lets the casier equip them live, app-wide.
     <CosmeticsProvider initial={cosmetics}>
       <SidebarProvider defaultOpen={defaultOpen}>
+        {/* First stop of the Tab key: without it, the content sat behind the
+            sixteen links of the sidebar and the navbar, every page. */}
+        <a href="#contenu" className="skip-link">
+          Aller au contenu
+        </a>
         <Suspense
           fallback={
             <div
@@ -72,7 +77,9 @@ export default async function AppLayout({
           >
             <Navbar />
           </Suspense>
-          <main className="flex flex-1 flex-col overflow-y-auto">{children}</main>
+          <main id="contenu" tabIndex={-1} className="flex flex-1 flex-col overflow-y-auto">
+            {children}
+          </main>
           <Footer />
         </div>
       </SidebarProvider>
