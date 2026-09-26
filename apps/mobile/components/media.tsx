@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { Image, View } from "react-native";
-import Svg, { Path, Polygon, SvgUri } from "react-native-svg";
+import Svg, { Path, Polygon } from "react-native-svg";
+// The CSS-aware loader: uploaded icons (SVG Repo exports) hide their bounding
+// square with a <style> rule that plain SvgUri ignores, drawing a grey block.
+import { SvgCssUri } from "react-native-svg/css";
 import { colors, fonts } from "@cyberlearn/tokens";
 import { Text } from "@/components/ui";
 import { useCosmetics } from "@/lib/cosmetics";
@@ -57,8 +60,13 @@ export function Avatar({
   const inner = size * 0.62;
   const contentColor = color ?? theme.accent;
   const isGlyph = avatarUrl?.startsWith("__glyph:");
+  // Judged on the path alone: a signed upload URL also runs through an
+  // "avatars" bucket (…/sign/avatars/…png?token=…) and is a raster image,
+  // which SvgUri draws as nothing at all.
   const isSvg =
-    !!avatarUrl && !isGlyph && (avatarUrl.endsWith(".svg") || avatarUrl.includes("/avatars/"));
+    !!avatarUrl &&
+    !isGlyph &&
+    ((avatarUrl.split("?")[0] ?? "").endsWith(".svg") || avatarUrl.startsWith("/avatars/"));
   const isRaster = !!avatarUrl && !isGlyph && !isSvg && avatarUrl.startsWith("http");
 
   return (
@@ -115,7 +123,7 @@ export function Avatar({
           <Path d={GLYPH_PATHS[avatarUrl.slice(8)]} />
         </Svg>
       ) : isSvg && avatarUrl && !failed ? (
-        <SvgUri
+        <SvgCssUri
           width={inner}
           height={inner}
           uri={absolute(avatarUrl)}
@@ -171,6 +179,6 @@ export function BadgeIcon({
     );
   }
   return (
-    <SvgUri width={size} height={size} uri={absolute(iconUrl)} onError={() => setFailed(true)} />
+    <SvgCssUri width={size} height={size} uri={absolute(iconUrl)} onError={() => setFailed(true)} />
   );
 }

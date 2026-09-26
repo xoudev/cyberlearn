@@ -156,18 +156,29 @@ export default function LessonReader(): React.JSX.Element {
                 })
               }
             />
-            <Text variant="micro" style={{ color: colors.accent }}>
-              {step.mode === "read"
-                ? `${String(step.section + 1)} / ${String(sections.length)}`
-                : step.mode === "quiz"
-                  ? `Quiz ${String(step.qIndex + 1)} / ${String(quizzes.length)}`
-                  : "Résultat"}
-            </Text>
           </View>
         </View>
-        <Text variant="micro" style={{ color: cat }}>
-          {CATEGORY_LABEL[data.category]} · {DIFFICULTY_LABEL[data.difficulty]}
-        </Text>
+        {/* The step sits on the category line: next to three chips it ran past
+            the right edge of a phone. */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
+          <Text variant="micro" style={{ color: cat, flexShrink: 1 }}>
+            {CATEGORY_LABEL[data.category]} · {DIFFICULTY_LABEL[data.difficulty]}
+          </Text>
+          <Text variant="micro" style={{ color: colors.accent }}>
+            {step.mode === "read"
+              ? `${String(step.section + 1)} / ${String(sections.length)}`
+              : step.mode === "quiz"
+                ? `Quiz ${String(step.qIndex + 1)} / ${String(quizzes.length)}`
+                : "Résultat"}
+          </Text>
+        </View>
         <Text variant="h1" numberOfLines={2}>
           {data.title}
         </Text>
@@ -753,14 +764,22 @@ function ResultView({
               style={{
                 flex: 1,
                 minHeight: 50,
-                borderRadius: radius.sm,
+                paddingHorizontal: 10,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: colors.bgOverlay,
+                borderWidth: 1,
+                borderColor: colors.borderDefault,
                 opacity: saving ? 0.5 : 1,
               }}
             >
-              <Text variant="micro">Revoir les réponses</Text>
+              {/* Wrapped on two lines at phone width, so it is centred as a
+                  block and not only as a box. */}
+              <Text
+                variant="micro"
+                style={{ color: colors.textSecondary, textAlign: "center", letterSpacing: 1 }}
+              >
+                Revoir les réponses
+              </Text>
             </PressableScale>
           ) : null}
           <GradientButton
