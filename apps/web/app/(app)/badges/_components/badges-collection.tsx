@@ -7,33 +7,11 @@ import {
   BADGE_RARITY_VAR,
   toBadgeRarity,
 } from "@cyberlearn/ui";
+import type { BadgeGroup, SerializedBadge } from "@/lib/badges/collection";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-export interface BadgeProgress {
-  done: number;
-  total: number;
-  label: string;
-}
-
-export interface SerializedBadge {
-  id: string;
-  refCode: string;
-  name: string;
-  description: string;
-  iconUrl: string;
-  rarity: string;
-  criterionType: string;
-  earned: boolean;
-  earnedDateStr: string | null;
-  progress: BadgeProgress | null;
-}
-
-export interface BadgeGroup {
-  rarity: string;
-  label: string;
-  badges: SerializedBadge[];
-}
+// BadgeGroup and SerializedBadge come from the service that builds the
+// collection for the site and the app (@/lib/badges/collection).
 
 interface Props {
   groups: BadgeGroup[];

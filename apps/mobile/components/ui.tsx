@@ -52,12 +52,23 @@ const VARIANTS: Record<Variant, TextStyle> = {
   },
 };
 
+// A span inside a line ("Bonjour, <accent>name</accent>") must inherit that
+// line's font, size and line height, as nested RN text does. Falling back to
+// `body` there set a 20px line height under a 30px title and clipped it.
+const InsideText = React.createContext(false);
+
 export function Text({
-  variant = "body",
+  variant,
   style,
   ...rest
 }: TextProps & { variant?: Variant }): React.JSX.Element {
-  return <RNText {...rest} style={[VARIANTS[variant], style]} />;
+  const nested = React.useContext(InsideText);
+  const base = variant ? VARIANTS[variant] : nested ? null : VARIANTS.body;
+  return (
+    <InsideText.Provider value={true}>
+      <RNText {...rest} style={[base, style]} />
+    </InsideText.Provider>
+  );
 }
 
 // ── Surfaces ──────────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { AnimatedXPBar, PressableScale, Rise } from "@/components/anim";
+import { BadgeCollectionList } from "@/components/badge-collection";
 import { ChevronRight } from "@/components/icons";
 import { Avatar, BadgeIcon } from "@/components/media";
 import { Screen } from "@/components/screen";
@@ -175,8 +176,11 @@ export default function Profil(): React.JSX.Element {
         ))}
       </View>
 
-      {/* Sub-tab content */}
-      {sub === "Badges" || sub === "Collection" ? (
+      {/* Sub-tab content. Badges lists what has been earned; Collection is
+          the whole catalogue, locked badges and their progress included. */}
+      {sub === "Collection" ? (
+        <BadgeCollectionList />
+      ) : sub === "Badges" ? (
         badges.length > 0 ? (
           <View style={{ gap: 10 }}>
             {badges.map((b) => (
