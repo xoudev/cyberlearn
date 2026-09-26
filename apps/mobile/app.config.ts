@@ -7,7 +7,7 @@ const config: ExpoConfig = {
   slug: "cyberlearn-mobile",
   owner: "xoudark",
   scheme: "cyberlearn",
-  version: "2.3.1",
+  version: "2.4.0",
   orientation: "portrait",
   userInterfaceStyle: "dark",
   backgroundColor: "#030219",
