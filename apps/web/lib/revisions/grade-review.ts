@@ -3,7 +3,7 @@ import { prisma } from "@cyberlearn/db";
 import { computeSm2, reviewXpFor } from "@cyberlearn/lib";
 import { creditXp } from "@/lib/xp/credit";
 
-export const reviewGradeSchema = z.object({
+const reviewGradeSchema = z.object({
   scheduleId: z.string().uuid(),
   quality: z.union([z.literal(1), z.literal(3), z.literal(5)]),
 });

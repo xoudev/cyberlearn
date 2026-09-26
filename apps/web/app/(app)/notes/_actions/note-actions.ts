@@ -52,12 +52,3 @@ export async function saveNoteAction(input: {
     return { ok: false, error: "Enregistrement impossible." };
   }
 }
-
-/** Delete the current lesson's note. */
-export async function deleteNoteAction(lessonId: string): Promise<{ ok: boolean }> {
-  const user = await requireRequestUser();
-  const parsed = z.string().uuid().safeParse(lessonId);
-  if (!parsed.success) return { ok: false };
-  await noteRepository.deleteForLesson(user.id, parsed.data);
-  return { ok: true };
-}

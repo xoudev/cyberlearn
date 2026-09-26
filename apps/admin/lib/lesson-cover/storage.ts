@@ -25,9 +25,9 @@ import {
 } from "@cyberlearn/types";
 import { createSupabaseAdminClient } from "@cyberlearn/db";
 
-export const LESSON_COVER_BUCKET = "lesson-covers";
+const LESSON_COVER_BUCKET = "lesson-covers";
 /** Signed-URL lifetime. 1h is the project's documented maximum for storage. */
-export const LESSON_COVER_SIGNED_TTL_SECONDS = 60 * 60;
+const LESSON_COVER_SIGNED_TTL_SECONDS = 60 * 60;
 
 /**
  * Confirms the raw bytes actually match an allowed raster format, regardless of
@@ -250,14 +250,6 @@ export async function importLessonCoverFromUrl(
   }
 
   return storeCoverBytes(bytes, sniffed, previousCover);
-}
-
-/** Removes a lesson's uploaded cover object, if the value is an upload marker. */
-export async function deleteLessonCover(coverImageUrl: string | null): Promise<void> {
-  const key = uploadedCoverKey(coverImageUrl);
-  if (!key) return;
-  const admin = createSupabaseAdminClient();
-  await admin.storage.from(LESSON_COVER_BUCKET).remove([key]);
 }
 
 /**

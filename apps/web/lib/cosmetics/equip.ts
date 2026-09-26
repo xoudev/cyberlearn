@@ -7,7 +7,7 @@ export interface EquipResult {
   error?: string;
 }
 
-export const COSMETIC_TYPES: readonly CosmeticType[] = [
+const COSMETIC_TYPES: readonly CosmeticType[] = [
   "TERMINAL_THEME",
   "HEXAGON_STYLE",
   "PROFILE_FRAME",

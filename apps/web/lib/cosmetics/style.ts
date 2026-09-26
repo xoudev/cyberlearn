@@ -19,12 +19,3 @@ export function cosmeticAvatarFilter(scale = 1): CSSProperties {
   const frame = `drop-shadow(0 0 calc(var(--cosmetic-frame-glow) * ${String(26 * scale)}px) color-mix(in srgb, var(--cosmetic-frame-accent) 80%, transparent))`;
   return { filter: `${hex} ${frame}` };
 }
-
-/** Ring colour for a profile frame (falls back to the frame default token). */
-export const cosmeticFrameBorder = "var(--cosmetic-frame-accent)";
-
-/** Background + foreground for a themed terminal / code surface. */
-export const cosmeticTerminalStyle: CSSProperties = {
-  background: "var(--cosmetic-terminal-bg)",
-  color: "var(--cosmetic-terminal-fg)",
-};

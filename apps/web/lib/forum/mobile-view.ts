@@ -52,7 +52,7 @@ export interface MobileForumPost {
   avatar: string | null;
 }
 
-export function toMobileAuthor(author: ForumAuthor | null): MobileForumAuthor | null {
+function toMobileAuthor(author: ForumAuthor | null): MobileForumAuthor | null {
   if (!author) return null;
   return {
     id: author.id,

@@ -52,9 +52,9 @@ export interface ForumPost {
 }
 
 /** The server's limits (lib/forum/forum-service.ts). */
-export const TITLE_MIN = 8;
+const TITLE_MIN = 8;
 export const TITLE_MAX = 160;
-export const BODY_MIN = 10;
+const BODY_MIN = 10;
 export const BODY_MAX = 10_000;
 
 /** What is wrong with a new thread before it is sent, or null. */

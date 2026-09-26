@@ -14,7 +14,7 @@
 - Realtime: Supabase Realtime (notifications in-app)
 - Email: Resend + React Email
 - Validation: Zod everywhere (client + server)
-- State: TanStack Query v5
+- State: TanStack Query v5 in the mobile app; the site and the console read on the server (RSC)
 - Testing: Vitest (unit) + RLS/IDOR integration suite (ephemeral Supabase stack in CI)
 - CI: GitHub Actions, thirteen jobs (format, lint, typecheck, test, build, runtime
   integrity, lesson diagrams, lesson markers, typography, auth hook signature,
@@ -51,7 +51,7 @@ content/      → MDX lessons and quizzes, versioned
 
 ## Critical Rules
 
-1. **ALL code in English** : variables, functions, types, comments, tests, logs. French ONLY in user-facing strings, MDX lesson content, and email templates. Those strings are written inline in the components today — `next-intl` is in the dependencies but nothing imports it and there is no `messages/fr.json`. Do not write against that file as though it existed.
+1. **ALL code in English** : variables, functions, types, comments, tests, logs. French ONLY in user-facing strings, MDX lesson content, and email templates. Those strings are written inline in the components: there is no i18n library (`next-intl` was removed, never imported) and no `messages/fr.json`.
 2. **Zero `any`** : use `unknown` + type narrowing if needed. `as` casts require a comment justifying them.
 3. **No secrets in code**, ever. Use env vars validated by `@t3-oss/env-nextjs` + Zod. Check `.env.example`.
 4. **Zod on ALL inputs** : every Server Action, every Route Handler, every form. `safeParse` always, never raw `parse`.

@@ -20,7 +20,7 @@ function metadataString(metadata: unknown, keys: readonly string[]): string | un
 // hand, and the next role would have to be too - silently, because a value the
 // database can return and this type cannot name is a type error at the call
 // site, not here.
-export async function syncAuthenticatedUser(user: User): Promise<{
+async function syncAuthenticatedUser(user: User): Promise<{
   username: string | null;
   role: UserRole;
 }> {
@@ -39,19 +39,33 @@ export async function syncAuthenticatedUser(user: User): Promise<{
   });
 }
 
+/** What `supabase.auth.mfa.getAuthenticatorAssuranceLevel()` answers. */
+export interface AssuranceCheck {
+  // Strings, not "aal1" | "aal2": supabase-js now types the levels open-ended
+  // (`'aal1' | 'aal2' | (string & {})`), ready for levels to come.
+  data: { currentLevel: string | null; nextLevel: string | null } | null;
+  error: unknown;
+}
+
+/**
+ * Whether the session must go through the MFA challenge first. It must when
+ * the level it can reach is not the one it holds, whatever that level is
+ * called: the check used to name "aal2", so a higher level added later would
+ * have been let through without a challenge. An error, or no answer, is a
+ * challenge too.
+ */
+export function needsMfaStep(assurance: AssuranceCheck): boolean {
+  if (assurance.error || !assurance.data) return true;
+  const { currentLevel, nextLevel } = assurance.data;
+  return nextLevel !== null && nextLevel !== currentLevel;
+}
+
 export async function resolveUserPostSignInRoute(
-  assurance: {
-    data: { currentLevel: "aal1" | "aal2" | null; nextLevel: "aal1" | "aal2" | null } | null;
-    error: unknown;
-  },
+  assurance: AssuranceCheck,
   user: User,
   requestedRoute: string,
 ): Promise<string> {
-  if (
-    assurance.error ||
-    !assurance.data ||
-    (assurance.data.nextLevel === "aal2" && assurance.data.currentLevel !== "aal2")
-  ) {
+  if (needsMfaStep(assurance)) {
     return `/mfa?next=${encodeURIComponent(requestedRoute)}`;
   }
 

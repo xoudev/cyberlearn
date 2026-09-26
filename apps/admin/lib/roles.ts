@@ -24,7 +24,7 @@ export const ROLE_LABEL: Record<UserRole, string> = {
 // turquoise; red is the one that says something - a control that grants the
 // keys to the console should look like it - so the tags follow the select
 // rather than the other way round.
-export const ROLE_TONE: Record<UserRole, Tone> = {
+const ROLE_TONE: Record<UserRole, Tone> = {
   STUDENT: "neutral",
   TEACHER: "info",
   ADMIN: "danger",

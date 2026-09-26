@@ -42,7 +42,7 @@ describe("scoreSubmission", () => {
     const { score, results } = scoreSubmission(drawn, {
       "1": "a",
       "2": "b",
-      "3": "x" as string,
+      "3": "x",
       "4": "a",
     });
     // 3/4 correct (q3 wrong) → 75

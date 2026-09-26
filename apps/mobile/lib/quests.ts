@@ -10,7 +10,6 @@ import { QUEST_COPY } from "@cyberlearn/lib/gamification/weekly-quests";
 export {
   QUEST_COPY,
   fmtWeekReset,
-  questProgressPct,
   questState,
   splitWeekQuests,
   weekCompletion,

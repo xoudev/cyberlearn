@@ -22,9 +22,9 @@ import {
 } from "@cyberlearn/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export const AVATAR_BUCKET = "avatars";
+const AVATAR_BUCKET = "avatars";
 /** Signed-URL lifetime. 1h is the project's documented maximum for storage. */
-export const AVATAR_SIGNED_TTL_SECONDS = 60 * 60;
+const AVATAR_SIGNED_TTL_SECONDS = 60 * 60;
 // Re-sign once a cached URL has less than this left, so any URL we hand out is
 // always valid for a comfortable margin.
 const SIGNED_REFRESH_BUFFER_MS = 5 * 60 * 1000;
@@ -136,14 +136,6 @@ export async function uploadUserAvatar(
   }
 
   return { marker: `${UPLOADED_AVATAR_PREFIX}${key}` };
-}
-
-/** Removes a user's uploaded avatar object, if the value is an upload marker. */
-export async function deleteUploadedAvatar(avatarUrl: string | null): Promise<void> {
-  const key = uploadedAvatarKey(avatarUrl);
-  if (!key) return;
-  const admin = createSupabaseAdminClient();
-  await admin.storage.from(AVATAR_BUCKET).remove([key]);
 }
 
 /**

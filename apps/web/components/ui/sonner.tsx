@@ -8,7 +8,7 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 // Dark-only app (see RootLayout forcedTheme): toasts are always dark and never
 // keyed off the stored/OS theme, so a light-styled toast can't slip through.
-const Toaster = ({ theme = "dark", ...props }: ToasterProps) => {
+const Toaster = ({ theme = "dark", ...props }: ToasterProps): React.JSX.Element => {
   return (
     <Sonner
       theme={theme}

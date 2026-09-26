@@ -2,7 +2,7 @@ import { z } from "zod";
 import { NOTE_REPORT_REASONS, noteReportRepository } from "@cyberlearn/db";
 import { NOTE_REPORT_COMMENT_MAX } from "@cyberlearn/lib/notes/report-reasons";
 
-export const noteReportSchema = z.object({
+const noteReportSchema = z.object({
   noteId: z.string().uuid(),
   reason: z.enum(NOTE_REPORT_REASONS),
   comment: z.string().trim().max(NOTE_REPORT_COMMENT_MAX).optional(),

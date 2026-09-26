@@ -57,7 +57,7 @@ export function banDurationLabel(ban: ActiveBan, now: Date): string {
   return banTimeLeft(ban.expiresAt, now);
 }
 
-export const APPEAL_MIN_LENGTH = 30;
+const APPEAL_MIN_LENGTH = 30;
 export const APPEAL_MAX_LENGTH = 4000;
 
 /**

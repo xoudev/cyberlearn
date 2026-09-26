@@ -24,7 +24,7 @@ export interface SearchGroupItem {
 }
 
 /** The server's MIN_SEARCH_LENGTH: below it nothing is asked. */
-export const MIN_SEARCH_LENGTH = 2;
+const MIN_SEARCH_LENGTH = 2;
 
 /** Long enough to stop typing, short enough not to feel like waiting: the site's. */
 export const SEARCH_DEBOUNCE_MS = 200;

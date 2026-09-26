@@ -163,25 +163,8 @@ async function writeAuditLog(
   });
 }
 
-/** Validates the MDX content and returns the result without persisting. */
-export async function validateImportAction(fileContent: string): Promise<ImportValidationResult> {
-  await requireAdminAction();
-
-  const fileSizeSchema = z.string().max(512 * 1024, "Fichier trop grand (max 500 Ko)");
-  const sizeCheck = fileSizeSchema.safeParse(fileContent);
-  if (!sizeCheck.success) {
-    return {
-      valid: false,
-      errors: [{ message: sizeCheck.error.issues[0]?.message ?? "Fichier invalide." }],
-      warnings: [],
-    };
-  }
-
-  return validateMdxContent(fileContent);
-}
-
 /** Validates + imports a lesson into the DB as DRAFT. */
-export async function importLessonAction(fileContent: string): Promise<ImportActionResult> {
+async function importLessonAction(fileContent: string): Promise<ImportActionResult> {
   const admin = await requireAdminAction();
 
   // Size check

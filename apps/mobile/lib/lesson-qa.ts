@@ -35,11 +35,11 @@ export interface QaQuestion {
   answers: QaAnswer[];
 }
 
-export const QUESTION_TITLE_MIN = 10;
+const QUESTION_TITLE_MIN = 10;
 export const QUESTION_TITLE_MAX = 200;
-export const QUESTION_BODY_MIN = 20;
+const QUESTION_BODY_MIN = 20;
 export const QA_BODY_MAX = 5000;
-export const ANSWER_BODY_MIN = 10;
+const ANSWER_BODY_MIN = 10;
 
 /** What is wrong with a question before it is sent, in the server's words. */
 export function questionDraftProblem(title: string, content: string): string | null {

@@ -9,34 +9,6 @@ import { recordQuestProgress } from "@/lib/quests/progress";
 import { checkHintReveal } from "@/lib/rate-limit";
 import { creditXp } from "@/lib/xp/credit";
 
-// ── Start ──────────────────────────────────────────────────────────────────────
-
-export async function startChallengeAction(challengeId: string): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(challengeId).success) return { error: "ID invalide." };
-  const user = await requireRequestUser();
-
-  const challenge = await prisma.challenge.findUnique({
-    where: { id: challengeId, isActive: true },
-    select: { maxAttempts: true, prerequisiteId: true },
-  });
-  if (!challenge) return { error: "Challenge introuvable." };
-
-  // Check prerequisite
-  if (challenge.prerequisiteId) {
-    const prereq = await challengeRepository.getUserProgress(user.id, challenge.prerequisiteId);
-    if (prereq?.status !== "COMPLETED") return { error: "Prérequis non complété." };
-  }
-
-  const existing = await challengeRepository.getUserProgress(user.id, challengeId);
-  if (existing?.status === "COMPLETED") return { error: "Déjà complété." };
-  if (existing && existing.attempts >= challenge.maxAttempts)
-    return { error: "Nombre maximum de tentatives atteint." };
-
-  await challengeRepository.startChallenge(user.id, challengeId);
-  revalidatePath("/challenges");
-  return {};
-}
-
 // ── Submit flag (CTF) ──────────────────────────────────────────────────────────
 
 export async function submitFlagAction(

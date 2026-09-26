@@ -25,7 +25,7 @@ function buildRedis(): Redis | null {
 
 const _legacyRedis = buildRedis();
 
-export const authRateLimit = _legacyRedis
+const authRateLimit = _legacyRedis
   ? new Ratelimit({
       redis: _legacyRedis,
       limiter: Ratelimit.slidingWindow(5, "15 m"),
