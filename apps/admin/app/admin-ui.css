@@ -12,7 +12,7 @@
   --a-border-2: #2a2560;
   --a-fg: #f5f5fa;
   --a-fg-2: #b8b5d1;
-  --a-muted: #6b6890;
+  --a-muted: #7f7ba9;
   --a-faint: #3f3d5c;
   --a-accent: #0affd4;
 
@@ -533,7 +533,7 @@
   padding: 10px 16px;
   font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 9.5px;
+  font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--a-muted);

@@ -27,7 +27,7 @@ function colorize(type: string, raw: string): React.ReactNode {
     );
   }
   if (type === "comment") {
-    return <span style={{ color: "#3F3D5C" }}>{raw}</span>;
+    return <span style={{ color: "#7F7BA9" }}>{raw}</span>;
   }
   if (type === "out") {
     const m = /^(\[.\])\s(.+:\s)(.+)$/.exec(raw);
@@ -126,7 +126,7 @@ export function LandingTerminal(): React.ReactElement {
             marginLeft: 12,
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.08em",
           }}
         >

@@ -67,7 +67,7 @@ export function XpHeroCard({
             fontWeight: 600,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
           }}
         >
           Progression
@@ -78,11 +78,23 @@ export function XpHeroCard({
             fontSize: 10,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
           }}
         >
-          Rang{" "}
-          <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>#{String(userRank)}</b>
+          {/* 0 is findUserRank's "not ranked": the leaderboard counts students
+              only, so a teacher or an admin read "Rang #0". */}
+          {userRank > 0 ? (
+            <>
+              Rang{" "}
+              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 600 }}>
+                #{String(userRank)}
+              </b>
+            </>
+          ) : (
+            <span title="Le classement compte les apprenants à partir de leur premier XP.">
+              Hors classement
+            </span>
+          )}
         </span>
       </div>
 
@@ -164,7 +176,7 @@ export function XpHeroCard({
           flexWrap: "wrap",
           fontFamily: "var(--font-mono)",
           fontSize: 11,
-          color: "#6F6B99",
+          color: "#7F7BA9",
           letterSpacing: "0.04em",
         }}
       >

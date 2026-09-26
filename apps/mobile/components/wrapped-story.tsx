@@ -487,14 +487,14 @@ function StoryImage({
 
         <RNText style={line(190, 34, monoBold, theme.accent)}>{card.title}</RNText>
         <RNText style={line(400, 210, sansHeavy, "#F5F5FA")}>{card.year}</RNText>
-        <RNText style={line(470, 28, mono, "#6B6890")}>{card.handle}</RNText>
+        <RNText style={line(470, 28, mono, "#7F7BA9")}>{card.handle}</RNText>
         {card.stats.map(({ value, label }, i) => {
           const x = i % 2 === 0 ? W / 4 : (W / 4) * 3;
           const y = 760 + Math.floor(i / 2) * 320;
           return (
             <React.Fragment key={label}>
               <RNText style={line(y, 120, sansHeavy, theme.accent, x, W / 2)}>{value}</RNText>
-              <RNText style={line(y + 60, 30, mono, "#6B6890", x, W / 2)}>{label}</RNText>
+              <RNText style={line(y + 60, 30, mono, "#7F7BA9", x, W / 2)}>{label}</RNText>
             </React.Fragment>
           );
         })}

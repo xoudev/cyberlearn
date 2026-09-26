@@ -35,7 +35,7 @@ export function XPBar({
       {showValues && (
         <div
           className="flex items-center justify-between font-mono text-xs"
-          style={{ color: "#6B6890" }}
+          style={{ color: "#7F7BA9" }}
         >
           <span>
             <span style={{ color: "var(--cosmetic-accent)" }}>

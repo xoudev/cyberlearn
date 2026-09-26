@@ -13,6 +13,7 @@ import {
   renameFolderAction,
 } from "../_actions/folder-actions";
 import { saveNoteAction } from "../_actions/note-actions";
+import { dismissSharedNoteAction } from "../_actions/share-actions";
 import {
   CAT,
   FOLDER_DEFAULT_COLOR,
@@ -47,7 +48,7 @@ const NONE = "__none__";
 export function NotesLibrary({
   notes: initialNotes,
   folders: initialFolders,
-  incoming,
+  incoming: receivedNotes,
   openNoteId = null,
 }: {
   notes: SerializedNote[];
@@ -65,6 +66,9 @@ export function NotesLibrary({
   const [notes, setNotes] = useState<SerializedNote[]>(initialNotes);
   const [folders, setFolders] = useState<SerializedFolder[]>(initialFolders);
   const [incomingId, setIncomingId] = useState<string | null>(null);
+  // Local, as notes and folders are: a received note the reader masks leaves
+  // the list at once rather than on the next visit.
+  const [incoming, setIncoming] = useState<SerializedIncomingNote[]>(receivedNotes);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"ALL" | Category>("ALL");
   const [selectedFolder, setSelectedFolder] = useState<string>(ALL);
@@ -391,7 +395,7 @@ export function NotesLibrary({
             height="14"
             viewBox="0 0 16 16"
             fill="none"
-            stroke="#6F6B99"
+            stroke="#7F7BA9"
             strokeWidth={1.5}
             style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}
             aria-hidden="true"
@@ -625,7 +629,7 @@ export function NotesLibrary({
           </div>
 
           {folders.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6F6B99" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
               {"Aucun dossier pour l'instant. Crée-en un ci-dessus."}
             </div>
           ) : (
@@ -684,7 +688,7 @@ export function NotesLibrary({
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
-                    color: "#6F6B99",
+                    color: "#7F7BA9",
                     minWidth: 54,
                   }}
                 >
@@ -807,7 +811,7 @@ export function NotesLibrary({
                       gap: 10,
                       fontFamily: "var(--font-mono)",
                       fontSize: 10.5,
-                      color: "#6F6B99",
+                      color: "#7F7BA9",
                       borderTop: "1px solid #1F1B47",
                       paddingTop: 10,
                     }}
@@ -846,7 +850,10 @@ export function NotesLibrary({
                 type="button"
                 className={styles.folderTile}
                 aria-label={"Ouvrir le dossier " + folder.name}
-                aria-pressed={focusedFolder === folder.id}
+                // Selection is only visual: aria-pressed made this a toggle, which
+                // screen readers announce like a checkbox, for a button whose
+                // action (Enter, a double click, a tap) is to open the folder.
+                data-selected={focusedFolder === folder.id}
                 data-drop-active={dragOverKey === folder.id}
                 onClick={(event) => {
                   if (event.detail === 0) openFolder(folder.id);
@@ -901,7 +908,7 @@ export function NotesLibrary({
             textAlign: "center",
             fontFamily: "var(--font-mono)",
             fontSize: 13,
-            color: "#6F6B99",
+            color: "#7F7BA9",
           }}
         >
           {notes.length === 0
@@ -979,7 +986,7 @@ export function NotesLibrary({
                           />
                           {cat.label}
                           {n.pathTitle ? (
-                            <span style={{ color: "#6F6B99", letterSpacing: "0.06em" }}>
+                            <span style={{ color: "#7F7BA9", letterSpacing: "0.06em" }}>
                               · {n.pathTitle}
                             </span>
                           ) : null}
@@ -1012,7 +1019,7 @@ export function NotesLibrary({
                             justifyContent: "space-between",
                             fontFamily: "var(--font-mono)",
                             fontSize: 10.5,
-                            color: "#6F6B99",
+                            color: "#7F7BA9",
                             borderTop: "1px solid #1F1B47",
                             paddingTop: 10,
                           }}
@@ -1053,6 +1060,17 @@ export function NotesLibrary({
           sharedBy={incomingNote.authorName}
           onClose={() => {
             setIncomingId(null);
+          }}
+          onDismiss={async () => {
+            const { ok } = await dismissSharedNoteAction(incomingNote.id);
+            if (ok) {
+              const id = incomingNote.id;
+              setIncomingId(null);
+              setIncoming((prev) => prev.filter((n) => n.id !== id));
+              // No excerpt: the reason to mask a note can be what it says.
+              toast.success("Note masquée.");
+            }
+            return ok;
           }}
           // Neither is reachable in read-only mode; the reader asks for them
           // because an owner's copy needs them.
@@ -1215,7 +1233,7 @@ function PaletteDots({
           border: value === null ? "2px solid #F5F5FA" : "2px solid #2A2560",
           cursor: "pointer",
           padding: 0,
-          color: "#6F6B99",
+          color: "#7F7BA9",
           fontSize: 11,
           lineHeight: 1,
         }}

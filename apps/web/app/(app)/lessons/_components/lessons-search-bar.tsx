@@ -48,7 +48,7 @@ export function LessonsSearchBar({ initialQuery }: LessonsSearchBarProps): React
           left: 12,
           top: "50%",
           transform: "translateY(-50%)",
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           pointerEvents: "none",
         }}
       >

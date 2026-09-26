@@ -342,7 +342,7 @@ aside[data-state="collapsed"] .sidebar-label {
 }
 .hljs-comment,
 .hljs-quote {
-  color: #6b6890;
+  color: #7f7ba9;
   font-style: italic;
 }
 .hljs-title,
@@ -357,7 +357,7 @@ aside[data-state="collapsed"] .sidebar-label {
 }
 .hljs-operator,
 .hljs-punctuation {
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .hljs-meta {
   color: #3f3d5c;
@@ -376,12 +376,12 @@ aside[data-state="collapsed"] .sidebar-label {
   --tw-prose-lead: #b8b5d1;
   --tw-prose-links: #4d8bff;
   --tw-prose-bold: #f5f5fa;
-  --tw-prose-counters: #6b6890;
+  --tw-prose-counters: #7f7ba9;
   --tw-prose-bullets: #0affd4;
   --tw-prose-hr: #1f1b47;
   --tw-prose-quotes: #b8b5d1;
   --tw-prose-quote-borders: #0affd4;
-  --tw-prose-captions: #6b6890;
+  --tw-prose-captions: #7f7ba9;
   --tw-prose-code: #0affd4;
   --tw-prose-pre-code: #b8b5d1;
   --tw-prose-pre-bg: #0a0826;
@@ -553,7 +553,7 @@ article.lesson-content h3 {
 article.lesson-content h4 {
   font-size: 14px !important;
   font-weight: 600 !important;
-  color: #6b6890 !important;
+  color: #7f7ba9 !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
   margin-top: 1.5rem !important;
@@ -732,7 +732,7 @@ article.lesson-content blockquote p code {
   transition: border-color 180ms ease, color 180ms ease, background 180ms ease;
 }
 .btn-ghost:hover {
-  border-color: #6f6b99 !important;
+  border-color: #7f7ba9 !important;
   color: #f5f5fa !important;
   background: rgba(42, 37, 96, 0.25) !important;
 }
@@ -743,7 +743,7 @@ article.lesson-content blockquote p code {
 }
 .link-cta:hover {
   color: #f5f5fa !important;
-  border-bottom-color: #6f6b99 !important;
+  border-bottom-color: #7f7ba9 !important;
 }
 
 /* Inline action link (e.g. "Réviser →" in review rows) */
@@ -813,7 +813,7 @@ article.lesson-content blockquote p code {
 
 /* Icon inside nav item */
 .sidebar-nav-icon {
-  color: #6f6b99;
+  color: #7f7ba9;
   flex-shrink: 0;
   transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -831,7 +831,7 @@ article.lesson-content blockquote p code {
   margin-left: auto;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #6f6b99;
+  color: #7f7ba9;
   padding: 1px 6px;
   border: 1px solid #2a2560;
   border-radius: 2px;
@@ -858,7 +858,7 @@ article.lesson-content blockquote p code {
 
 /* Sign-out button */
 .sidebar-signout {
-  color: #6f6b99;
+  color: #7f7ba9;
   transition: color 180ms ease;
 }
 .sidebar-signout:hover {
@@ -867,7 +867,7 @@ article.lesson-content blockquote p code {
 
 /* Settings shortcut next to the sign-out button */
 .sidebar-settings {
-  color: #6f6b99;
+  color: #7f7ba9;
   transition: color 180ms ease;
 }
 .sidebar-settings:hover {
@@ -876,7 +876,7 @@ article.lesson-content blockquote p code {
 
 /* Sidebar trigger (hamburger) */
 [data-sidebar="trigger"] {
-  color: #6f6b99;
+  color: #7f7ba9;
   transition: color 180ms ease;
 }
 [data-sidebar="trigger"]:hover {
@@ -946,7 +946,7 @@ article.lesson-content blockquote p code {
 }
 .link-underline:hover {
   color: #f5f5fa !important;
-  border-bottom-color: #6f6b99 !important;
+  border-bottom-color: #7f7ba9 !important;
 }
 
 /* Footer/nav text links */
@@ -1303,7 +1303,7 @@ article.lesson-content blockquote p code {
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: none;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* Notes: the folder drawer grid. Cards rather than filter pills, so a folder
@@ -2063,7 +2063,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: #6b6890;
+  color: #7f7ba9;
   margin-bottom: 28px;
   display: inline-flex;
   align-items: center;
@@ -2154,7 +2154,7 @@ a:hover > .lesson-author-card {
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .chx-stats__item {
   display: inline-flex;
@@ -2190,7 +2190,7 @@ a:hover > .lesson-author-card {
   box-shadow: 0 0 6px #0affd4;
 }
 .chx-stats__dot--avail {
-  background: #6b6890;
+  background: #7f7ba9;
 }
 
 /* ── Filters ── */
@@ -2218,7 +2218,7 @@ a:hover > .lesson-author-card {
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
   margin-right: 6px;
 }
 .chx-filters__split {
@@ -2404,7 +2404,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: #6b6890;
+  color: #7f7ba9;
   z-index: 3;
 }
 .feat__coords--right {
@@ -2472,7 +2472,7 @@ a:hover > .lesson-author-card {
 .feat__ref {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #6b6890;
+  color: #7f7ba9;
   letter-spacing: 0.08em;
 }
 .feat__title {
@@ -2795,7 +2795,7 @@ a:hover > .lesson-author-card {
 .cc__ref {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #6b6890;
+  color: #7f7ba9;
   letter-spacing: 0.06em;
 }
 .cc__title {
@@ -2832,7 +2832,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.06em;
-  color: #6b6890;
+  color: #7f7ba9;
   text-transform: uppercase;
 }
 .cc__meta-xp {
@@ -3039,13 +3039,13 @@ a:hover > .lesson-author-card {
   height: 26px;
   background: rgba(3, 2, 25, 0.7);
   border: 1px solid #1f1b47;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .cc__lock-msg {
   padding: 8px 18px 12px;
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: #6b6890;
+  color: #7f7ba9;
   letter-spacing: 0.04em;
   background: rgba(5, 4, 26, 0.4);
   border-top: 1px solid rgba(31, 27, 71, 0.4);
@@ -3074,7 +3074,7 @@ a:hover > .lesson-author-card {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -3096,7 +3096,7 @@ a:hover > .lesson-author-card {
 .chx-section-head__count {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #6b6890;
+  color: #7f7ba9;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -3148,7 +3148,7 @@ a:hover > .lesson-author-card {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
   margin: 24px 0 10px;
 }
 .challenge-instructions ul,
@@ -3196,7 +3196,7 @@ a:hover > .lesson-author-card {
   border-left: 3px solid #2a2560;
   padding: 10px 16px;
   margin: 0 0 16px;
-  color: #6b6890;
+  color: #7f7ba9;
   font-style: italic;
 }
 .challenge-instructions strong {
@@ -3216,7 +3216,7 @@ a:hover > .lesson-author-card {
 
 /* ── Legal pages ──────────────────────────────────────────────────────────── */
 .legal-back-link {
-  color: #6b6890;
+  color: #7f7ba9;
   font-size: 13px;
   font-family: var(--font-mono);
   text-decoration: none;
@@ -3264,7 +3264,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono, monospace);
   font-size: 10.5px;
   letter-spacing: 0.08em;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* ─── Page chrome ─────────────────────────────────────────────────────────
@@ -3281,7 +3281,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .pg-crumb b {
   color: #b8b5d1;
@@ -3331,7 +3331,7 @@ a:hover > .lesson-author-card {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .pg-eyebrow::before {
   content: "// ";
@@ -3389,7 +3389,7 @@ a:hover > .lesson-author-card {
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .cls-card__title {
   margin: 0 0 4px;
@@ -3404,7 +3404,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.7;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .cls-card__teachers b {
   color: #b8b5d1;
@@ -3441,7 +3441,7 @@ a:hover > .lesson-author-card {
 }
 .cls-stat__of {
   font-size: 12px;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .cls-stat__label {
   margin-top: 4px;
@@ -3449,7 +3449,7 @@ a:hover > .lesson-author-card {
   font-size: 9.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* A section label. It carries its own top margin only when something precedes
@@ -3461,7 +3461,7 @@ a:hover > .lesson-author-card {
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 .cls-card__title + .cls-subhead {
@@ -3534,7 +3534,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.08em;
-  color: #6b6890;
+  color: #7f7ba9;
   white-space: nowrap;
   text-align: right;
 }
@@ -3553,7 +3553,7 @@ a:hover > .lesson-author-card {
   margin: 0;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* A school, then its intakes: the filing a teacher already keeps. */
@@ -3573,7 +3573,7 @@ a:hover > .lesson-author-card {
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .cls-group__intake {
   margin: 0 0 12px;
@@ -3617,7 +3617,7 @@ a:hover > .lesson-author-card {
   width: 14px;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #6b6890;
+  color: #7f7ba9;
   text-align: center;
 }
 .cls-work__row[data-state="done"] .cls-work__mark {
@@ -3629,7 +3629,7 @@ a:hover > .lesson-author-card {
 /* Struck through rather than hidden: a student should be able to see that the
    thing they were asked for is the thing they did. */
 .cls-work__row[data-state="done"] .cls-work__title {
-  color: #6b6890;
+  color: #7f7ba9;
   text-decoration: line-through;
 }
 .cls-work__body {
@@ -3649,14 +3649,14 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 10.5px;
   line-height: 1.5;
-  color: #6b6890;
+  color: #7f7ba9;
   overflow-wrap: anywhere;
 }
 .cls-work__due {
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.06em;
-  color: #6b6890;
+  color: #7f7ba9;
   white-space: nowrap;
 }
 .cls-work__row[data-state="late"] .cls-work__due {
@@ -3668,7 +3668,7 @@ a:hover > .lesson-author-card {
   font-size: 9.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
   background: transparent;
   border: 1px solid rgba(42, 37, 96, 0.8);
   cursor: pointer;
@@ -3721,7 +3721,7 @@ a:hover > .lesson-author-card {
 }
 .cls-assign__head::before {
   content: "+ ";
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .cls-assign[open] > .cls-assign__head::before {
   content: "− ";
@@ -3746,7 +3746,7 @@ a:hover > .lesson-author-card {
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .cls-field__hint {
   font-family: var(--font-mono);
@@ -3908,7 +3908,7 @@ a:hover > .lesson-author-card {
   font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
   text-decoration: none;
 }
 .tle-back:hover {
@@ -3945,7 +3945,7 @@ a:hover > .lesson-author-card {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.06em;
-  color: #6b6890;
+  color: #7f7ba9;
   border: 1px solid rgba(42, 37, 96, 0.8);
   white-space: nowrap;
 }
@@ -3982,7 +3982,7 @@ a:hover > .lesson-author-card {
   font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
   background: transparent;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -4001,7 +4001,7 @@ a:hover > .lesson-author-card {
   padding: 0 5px;
   font-size: 9.5px;
   font-weight: 700;
-  color: #6b6890;
+  color: #7f7ba9;
   border: 1px solid rgba(42, 37, 96, 0.9);
 }
 .cls-tab[data-active="true"] .cls-tab__count {
@@ -4051,7 +4051,7 @@ a:hover > .lesson-author-card {
 .cls-teacher__body span {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* The roster becomes an ordered list on the student's side, so a place in it
@@ -4180,7 +4180,7 @@ a:hover > .lesson-author-card {
   place-items: center;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #6b6890;
+  color: #7f7ba9;
   background: transparent;
   border: 1px solid rgba(42, 37, 96, 0.8);
   cursor: pointer;
@@ -4234,7 +4234,7 @@ a:hover > .lesson-author-card {
   flex-shrink: 0;
   font: 9.5px var(--font-mono);
   letter-spacing: 0.1em;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* ─── Class resources (corrigés) ──────────────────────────────────────────── */
@@ -4275,7 +4275,7 @@ a.cls-res__title:hover {
 .cls-res__meta {
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: #6b6890;
+  color: #7f7ba9;
   white-space: nowrap;
 }
 /* Rendered as written, not as markup: a corrigé is typed into a textarea by a
@@ -4333,7 +4333,7 @@ a.cls-res__title:hover {
   font-size: 9.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
   background: transparent;
   border: 1px solid rgba(42, 37, 96, 0.8);
   cursor: pointer;
@@ -4397,7 +4397,7 @@ a.cls-res__title:hover {
   flex-shrink: 0;
   font: 9.5px var(--font-mono);
   letter-spacing: 0.1em;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -4432,7 +4432,7 @@ a.cls-res__title:hover {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.04em;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .path-progress-foot b {
   color: #f5f5fa;
@@ -4479,7 +4479,7 @@ a.cls-res__title:hover {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .gs-row {
   display: flex;
@@ -4536,7 +4536,7 @@ a.cls-res__title:hover {
   font-family: var(--font-mono);
   font-size: 9.5px;
   letter-spacing: 0.04em;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .gs-empty {
   display: flex;
@@ -4573,7 +4573,7 @@ a.cls-res__title:hover {
   font-family: var(--font-mono);
   font-size: 9.5px;
   letter-spacing: 0.06em;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 /* ─── Wrapped, while it is shut ───────────────────────────────────────────── */
@@ -4626,7 +4626,7 @@ a.cls-res__title:hover {
   margin: 0;
   font: 11px var(--font-mono);
   letter-spacing: 0.06em;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 /* .cls-btn pins itself to the start of its grid track, which is right on a
    form and wrong in the middle of a centred column. */
@@ -4675,7 +4675,7 @@ a.cls-res__title:hover {
 }
 .tk-row__meta {
   font: 10.5px var(--font-mono);
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .tk-status {
@@ -4696,7 +4696,7 @@ a.cls-res__title:hover {
   border-color: rgba(255, 176, 32, 0.4);
 }
 .tk-status[data-tone="muted"] {
-  color: #6b6890;
+  color: #7f7ba9;
   border-color: rgba(42, 37, 96, 0.9);
 }
 
@@ -4733,7 +4733,7 @@ a.cls-res__title:hover {
   font: 10px var(--font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .tk-msg[data-staff="true"] .tk-msg__who {
   color: var(--cosmetic-accent);
@@ -4872,7 +4872,7 @@ a.cls-res__title:hover {
   font: 10px var(--font-mono);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 .fp-head-rule {
@@ -4893,7 +4893,7 @@ a.cls-res__title:hover {
   padding: 22px 18px;
   font: 11.5px var(--font-mono);
   line-height: 1.55;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 .fp-section {
@@ -4902,7 +4902,7 @@ a.cls-res__title:hover {
   font: 600 9.5px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .fp-list {
@@ -4962,7 +4962,7 @@ a.fp-name:hover {
 .fp-meta {
   font: 9.5px var(--font-mono);
   letter-spacing: 0.06em;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .fp-actions {
@@ -4984,7 +4984,7 @@ a.fp-name:hover {
   transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
 }
 .fp-btn:hover:not(:disabled) {
-  border-color: #6f6b99;
+  border-color: #7f7ba9;
   color: #f5f5fa;
 }
 .fp-btn:disabled {
@@ -5097,7 +5097,7 @@ a.fp-name:hover {
   border-radius: 0;
   border-color: #2a2560;
   background: #0a0826;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
   color: #f5f5fa;

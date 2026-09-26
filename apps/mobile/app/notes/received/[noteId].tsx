@@ -1,13 +1,15 @@
-import { useLocalSearchParams } from "expo-router";
-import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
 import { View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
-import { BackButton } from "@/components/buttons";
+import { ActionChip, BackButton } from "@/components/buttons";
 import { NoteMarkdown } from "@/components/note-markdown";
 import { useReceivedNotes } from "@/components/received-notes";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
+import { dismissReceivedNoteApi } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 /**
@@ -21,6 +23,26 @@ export default function ReceivedNote(): React.JSX.Element {
   const { session } = useSession();
   const { data, isLoading, error, refetch } = useReceivedNotes(session?.user.id);
   const note = data?.find((n) => n.id === noteId) ?? null;
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [dismissing, setDismissing] = useState(false);
+  const [dismissFailed, setDismissFailed] = useState(false);
+
+  // As on the site: a received note can hold anything its author wrote, and the
+  // reader can at least take it out of their list.
+  const dismiss = async (): Promise<void> => {
+    if (!note) return;
+    setDismissing(true);
+    setDismissFailed(false);
+    const ok = await dismissReceivedNoteApi(note.id);
+    setDismissing(false);
+    if (!ok) {
+      setDismissFailed(true);
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["notes", session?.user.id, "received"] });
+    router.back();
+  };
 
   return (
     <Screen onRefresh={() => refetch()}>
@@ -58,6 +80,19 @@ export default function ReceivedNote(): React.JSX.Element {
               <NoteMarkdown markdown={note.content} />
             )}
           </Card>
+          <View style={{ alignSelf: "flex-start" }}>
+            <ActionChip
+              label={dismissing ? "…" : "Masquer cette note"}
+              tone="neutral"
+              disabled={dismissing}
+              onPress={() => void dismiss()}
+            />
+          </View>
+          {dismissFailed ? (
+            <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>
+              Impossible de la masquer, réessaie.
+            </Text>
+          ) : null}
         </View>
       )}
     </Screen>

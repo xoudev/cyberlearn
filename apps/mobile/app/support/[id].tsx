@@ -164,7 +164,7 @@ function Thread({
         </View>
       ) : (
         <Card style={{ gap: 10 }}>
-          <Text variant="bodySm">{closedNotice(ticket.status)}</Text>
+          <Text variant="bodySm">{closedNotice(ticket)}</Text>
           {error !== null ? (
             <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>
               {error}

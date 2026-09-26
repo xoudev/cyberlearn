@@ -25,7 +25,7 @@ export default function PrivacyPage(): React.JSX.Element {
       <p
         style={{
           fontSize: "13px",
-          color: "#6B6890",
+          color: "#7F7BA9",
           fontFamily: "var(--font-mono)",
           marginBottom: "48px",
         }}

@@ -50,7 +50,7 @@
   background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
   border-color: var(--color-border-default);
 }
-.folderTile[aria-pressed="true"],
+.folderTile[data-selected="true"],
 .folderTile[data-drop-active="true"] {
   background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
   border-color: var(--cosmetic-accent);

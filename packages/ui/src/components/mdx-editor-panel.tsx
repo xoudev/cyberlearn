@@ -32,7 +32,7 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
         background: "#07051E",
         display: "grid",
         placeItems: "center",
-        color: "#3F3D5C",
+        color: "#7F7BA9",
         fontFamily: "var(--font-mono)",
         fontSize: 11,
         letterSpacing: "0.1em",
@@ -183,7 +183,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           style={{
             fontFamily: MONO,
             fontSize: 9,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.1em",
             marginBottom: 8,
           }}
@@ -194,7 +194,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           {props.question ?? "Question…"}
         </p>
         {props.options && (
-          <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6B6890", fontFamily: MONO }}>
+          <p style={{ margin: "6px 0 0", fontSize: 11, color: "#7F7BA9", fontFamily: MONO }}>
             {props.options}
           </p>
         )}
@@ -247,7 +247,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
             padding: "10px 14px",
             fontFamily: MONO,
             fontSize: 12,
-            color: "#6B6890",
+            color: "#7F7BA9",
             lineHeight: 1.6,
           }}
         >
@@ -269,7 +269,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
           textAlign: "center",
         }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 11, color: "#6B6890" }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>
           🖼 {props.alt ?? props.src ?? "image"}
         </span>
       </div>
@@ -292,7 +292,7 @@ function PreviewComponent({ source }: { source: string }): React.ReactElement {
       <span style={{ fontFamily: MONO, fontSize: 9, color: "#4D8BFF", letterSpacing: "0.1em" }}>
         COMPOSANT
       </span>
-      <code style={{ fontFamily: MONO, fontSize: 11, color: "#6B6890" }}>&lt;{name}&gt;</code>
+      <code style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9" }}>&lt;{name}&gt;</code>
     </div>
   );
 }
@@ -365,7 +365,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
             style={{
               fontFamily: MONO,
               fontSize: 11,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               marginRight: 8,
               fontWeight: 500,
             }}
@@ -540,7 +540,7 @@ function MdxPreview({ content }: { content: string }): React.ReactElement {
         style={{
           padding: "48px 0",
           textAlign: "center",
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           fontFamily: MONO,
           fontSize: 11,
           letterSpacing: "0.08em",
@@ -591,7 +591,7 @@ function TBtn({
         background: active || hov ? "rgba(255,255,255,0.06)" : "transparent",
         border: active ? `1px solid ${BORDER}` : "1px solid transparent",
         borderRadius: 3,
-        color: active ? ACCENT : hov ? "#F5F5FA" : "#6B6890",
+        color: active ? ACCENT : hov ? "#F5F5FA" : "#7F7BA9",
         fontFamily: mono ? MONO : "inherit",
         fontWeight: mono ? 700 : 400,
         fontSize: 12,
@@ -628,7 +628,7 @@ interface GuideSection {
 const GUIDE_SECTIONS: GuideSection[] = [
   {
     title: "Markdown",
-    accent: "#6B6890",
+    accent: "#7F7BA9",
     entries: [
       { label: "H1", snippet: "# Titre principal\n" },
       { label: "H2", snippet: "## Section\n" },
@@ -811,7 +811,7 @@ function GuideRow({
               : hov
                 ? `${accent}11`
                 : "transparent",
-            color: done ? ACCENT : hov ? accent : "#6B6890",
+            color: done ? ACCENT : hov ? accent : "#7F7BA9",
             fontFamily: MONO,
             fontSize: 9,
             fontWeight: 700,
@@ -829,7 +829,7 @@ function GuideRow({
           style={{
             fontFamily: MONO,
             fontSize: 9,
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             letterSpacing: "0.04em",
             marginTop: 2,
           }}
@@ -848,7 +848,7 @@ function MdxGuide({ onInsert }: { onInsert: (s: string) => void }): React.ReactE
         style={{
           fontFamily: MONO,
           fontSize: 9,
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           letterSpacing: "0.12em",
           padding: "10px 16px",
           display: "flex",
@@ -948,7 +948,7 @@ function defineTheme(monaco: Parameters<BeforeMount>[0]) {
       "editor.lineHighlightBackground": "#0A0826",
       "editor.selectionBackground": "#2A256088",
       "editorLineNumber.foreground": "#3F3D5C",
-      "editorLineNumber.activeForeground": "#6B6890",
+      "editorLineNumber.activeForeground": "#7F7BA9",
       "editorCursor.foreground": TURQ,
       "editorIndentGuide.background1": "#1F1B47",
       "scrollbarSlider.background": "#2A256066",
@@ -1219,7 +1219,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
               height: 22,
               background: "#0A0826",
               border: `1px solid ${BORDER}`,
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: MONO,
               fontSize: 9,
               cursor: "pointer",
@@ -1282,7 +1282,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
               height: 22,
               background: "#0A0826",
               border: `1px solid ${BORDER}`,
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: MONO,
               fontSize: 9,
               cursor: "pointer",
@@ -1363,7 +1363,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
               height: 22,
               background: "#0A0826",
               border: `1px solid ${BORDER}`,
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: MONO,
               fontSize: 9,
               cursor: "pointer",
@@ -1413,7 +1413,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
               height: 22,
               background: "#0A0826",
               border: `1px solid ${BORDER}`,
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: MONO,
               fontSize: 9,
               cursor: "pointer",
@@ -1472,7 +1472,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
               background: showGuide ? "rgba(77,139,255,0.08)" : "transparent",
               border: `1px solid ${showGuide ? "rgba(77,139,255,0.3)" : BORDER}`,
               borderRadius: 3,
-              color: showGuide ? "#4D8BFF" : "#6B6890",
+              color: showGuide ? "#4D8BFF" : "#7F7BA9",
               fontFamily: MONO,
               fontSize: 9,
               letterSpacing: "0.1em",
@@ -1515,7 +1515,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
                 split ? "color-mix(in srgb, var(--cosmetic-accent) 30%, transparent)" : BORDER
               }`,
               borderRadius: 3,
-              color: split ? ACCENT : "#6B6890",
+              color: split ? ACCENT : "#7F7BA9",
               fontFamily: MONO,
               fontSize: 9,
               letterSpacing: "0.1em",
@@ -1618,7 +1618,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
                 style={{
                   fontFamily: MONO,
                   fontSize: 9,
-                  color: "#3F3D5C",
+                  color: "#7F7BA9",
                   letterSpacing: "0.12em",
                   marginBottom: 16,
                   display: "flex",
@@ -1656,7 +1656,7 @@ export function MdxEditorPanel({ value, onChange }: MdxEditorPanelProps): React.
           fontFamily: MONO,
           fontSize: 9.5,
           letterSpacing: "0.08em",
-          color: "#6B6890",
+          color: "#7F7BA9",
           textTransform: "uppercase",
           flexShrink: 0,
         }}

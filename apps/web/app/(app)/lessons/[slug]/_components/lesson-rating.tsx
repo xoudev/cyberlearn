@@ -85,7 +85,7 @@ export function LessonRating({
       fontWeight: 700,
       letterSpacing: "0.18em",
       textTransform: "uppercase",
-      color: "#3F3D5C",
+      color: "#7F7BA9",
       display: "flex",
       alignItems: "center",
       gap: 10,
@@ -304,7 +304,7 @@ export function LessonRating({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -357,7 +357,7 @@ export function LessonRating({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#6B6890",
+                color: "#7F7BA9",
                 letterSpacing: "0.06em",
               }}
             >
@@ -383,7 +383,7 @@ export function LessonRating({
             height="14"
             viewBox="0 0 16 16"
             fill="none"
-            stroke="#6B6890"
+            stroke="#7F7BA9"
             strokeWidth="1.5"
             strokeLinecap="round"
           >
@@ -394,7 +394,7 @@ export function LessonRating({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.04em",
             }}
           >
@@ -524,7 +524,7 @@ export function LessonRating({
                 textTransform: "uppercase",
                 background: selected ? "#0024FF" : "transparent",
                 border: `1px solid ${selected ? "#0024FF" : "#2A2560"}`,
-                color: selected ? "#fff" : "#6B6890",
+                color: selected ? "#fff" : "#7F7BA9",
                 cursor: selected && !isPending ? "pointer" : "default",
                 transition: "all 180ms ease",
               }}
@@ -545,7 +545,7 @@ export function LessonRating({
                 textTransform: "uppercase",
                 background: "transparent",
                 border: "1px solid #2A2560",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 cursor: "pointer",
               }}
             >

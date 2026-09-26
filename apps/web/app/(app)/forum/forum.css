@@ -70,7 +70,7 @@
   margin-bottom: 18px;
   font: 11px var(--font-mono);
   letter-spacing: 0.08em;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .fo-crumb a {
   color: #b8b5d1;
@@ -127,7 +127,7 @@
   padding-top: 10px;
   border-top: 1px solid #1f1b47;
   font: 10.5px var(--font-mono);
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 /* ── Threads ────────────────────────────────────────────────────────────── */
@@ -149,7 +149,7 @@
 }
 .fo-section-head h2::before {
   content: "// ";
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .fo-list {
@@ -202,7 +202,7 @@
 .fo-topic-meta {
   margin-top: 6px;
   font: 10.5px var(--font-mono);
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .fo-topic-count {
   text-align: center;
@@ -219,7 +219,7 @@
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .fo-tag {
@@ -290,7 +290,7 @@
 }
 .fo-post-level {
   font: 10px var(--font-mono);
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .fo-post-body {
   display: flex;
@@ -308,7 +308,7 @@
   margin-bottom: 12px;
   border-bottom: 1px solid #1f1b47;
   font: 10.5px var(--font-mono);
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .fo-post-tools {
   display: flex;
@@ -368,7 +368,7 @@
   font: 700 10px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .fo-input,
 .fo-textarea {
@@ -393,7 +393,7 @@
 .fo-hint {
   font: 11px var(--font-mono);
   line-height: 1.5;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 .fo-error {
   margin: 0;
@@ -423,7 +423,7 @@
   border: 1px dashed #2a2560;
   font: 13px var(--font-mono);
   line-height: 1.6;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .fo-pager {

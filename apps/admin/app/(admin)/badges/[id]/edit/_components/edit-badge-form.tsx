@@ -40,7 +40,7 @@ const LABEL_STYLE: React.CSSProperties = {
   fontSize: 9.5,
   letterSpacing: "0.18em",
   textTransform: "uppercase",
-  color: "#6B6890",
+  color: "#7F7BA9",
   marginBottom: 6,
 };
 
@@ -341,7 +341,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -402,7 +402,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               border: `1px solid ${BORDER}`,
               padding: "9px 16px",
               textDecoration: "none",
@@ -590,7 +590,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
               textTransform: "uppercase",
               background: "transparent",
               border: `1px solid ${BORDER}`,
-              color: "#6B6890",
+              color: "#7F7BA9",
               textDecoration: "none",
             }}
           >
@@ -663,7 +663,7 @@ export function EditBadgeForm({ badge, lessons }: Props): React.ReactElement {
                   padding: "8px 16px",
                   background: "transparent",
                   border: `1px solid ${BORDER}`,
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   cursor: "pointer",

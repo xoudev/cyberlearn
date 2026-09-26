@@ -22,7 +22,7 @@ function getTier(level: number): string {
 
 const RK_COLORS: Record<number, { color: string; grad: string }> = {
   1: { color: "#FFB547", grad: "linear-gradient(135deg, #FFE08A 0%, #FFB547 50%, #FF8E1F 100%)" },
-  2: { color: "#C8CFE2", grad: "linear-gradient(135deg, #F0F2F8 0%, #B8B5D1 50%, #6F6B99 100%)" },
+  2: { color: "#C8CFE2", grad: "linear-gradient(135deg, #F0F2F8 0%, #B8B5D1 50%, #7F7BA9 100%)" },
   3: { color: "#E08A4A", grad: "linear-gradient(135deg, #F2B07A 0%, #E08A4A 50%, #8C4A1F 100%)" },
 };
 
@@ -187,7 +187,7 @@ function PodiumCard({
           ...MONO,
           fontSize: 11,
           letterSpacing: "0.1em",
-          color: "#6B6890",
+          color: "#7F7BA9",
           textTransform: "uppercase",
           margin: "0 0 16px",
         }}
@@ -226,7 +226,7 @@ function PodiumCard({
             fontWeight: 600,
             fontSize: 12,
             letterSpacing: "0.18em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             textTransform: "uppercase",
           }}
         >
@@ -307,7 +307,22 @@ function YouBanner({
   userRank: number;
   totalPlayers: number;
 }) {
-  if (!entry || userRank < 1) return null;
+  // Not ranked (findUserRank's 0): say why instead of leaving the reader to
+  // look for themselves in a list they are not part of.
+  if (userRank < 1) {
+    return (
+      <aside className={styles.position} aria-label="Ton classement">
+        <div className={styles.identity}>
+          <strong>Tu n&apos;apparais pas dans ce classement</strong>
+          <span>
+            Il compte les apprenants à partir de leur premier XP. Un compte de l&apos;équipe ou un
+            profil masqué dans les paramètres n&apos;y figure pas.
+          </span>
+        </div>
+      </aside>
+    );
+  }
+  if (!entry) return null;
   return (
     <aside className={styles.position} aria-label="Ton classement">
       <span className={styles.positionRank}>#{userRank}</span>
@@ -405,7 +420,7 @@ function FriendsSection({ board }: { board: FriendsBoard }): React.JSX.Element {
           ...MONO,
           fontSize: 11.5,
           lineHeight: 1.6,
-          color: "#6B6890",
+          color: "#7F7BA9",
           border: "1px solid #2A2560",
           background: "rgba(5,4,26,0.5)",
           padding: "14px 16px",
@@ -519,7 +534,7 @@ export function LeaderboardClient({
             ...MONO,
             fontSize: 12,
             letterSpacing: "0.04em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             marginBottom: 28,
             display: "inline-flex",
             alignItems: "center",
@@ -566,7 +581,7 @@ export function LeaderboardClient({
                 fontSize: 12,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 14,
               }}
             >
@@ -630,7 +645,7 @@ export function LeaderboardClient({
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: filter === f.id ? "var(--cosmetic-accent)" : "#6B6890",
+                  color: filter === f.id ? "var(--cosmetic-accent)" : "#7F7BA9",
                   boxShadow:
                     filter === f.id
                       ? "inset 0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 45%, transparent)"
@@ -667,7 +682,7 @@ export function LeaderboardClient({
             gap: 16,
             ...MONO,
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.08em",
             textTransform: "uppercase",
             margin: "18px 0 48px",

@@ -15,7 +15,7 @@ export default function ImportLessonPage(): React.ReactElement {
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -40,7 +40,7 @@ export default function ImportLessonPage(): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             margin: "6px 0 0",
           }}
         >

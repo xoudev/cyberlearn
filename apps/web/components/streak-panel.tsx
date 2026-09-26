@@ -34,7 +34,7 @@ function Stat({
         style={{
           fontSize: 10,
           letterSpacing: "0.14em",
-          color: "#6F6B99",
+          color: "#7F7BA9",
           textTransform: "uppercase",
         }}
       >
@@ -62,7 +62,7 @@ export async function StreakPanel({
   const { cells, monthLabels } = streakCalendar(o.activity, dayKey(new Date()));
 
   const next = nextMilestone(o.currentStreak);
-  const accent = o.active ? TURQ : "#6B6890";
+  const accent = o.active ? TURQ : "#7F7BA9";
 
   return (
     <div
@@ -186,7 +186,7 @@ export async function StreakPanel({
               fontFamily: "var(--font-mono)",
               fontSize: 10,
               letterSpacing: "0.16em",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               textTransform: "uppercase",
             }}
           >
@@ -232,7 +232,7 @@ export async function StreakPanel({
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.16em",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             textTransform: "uppercase",
           }}
         >
@@ -261,7 +261,7 @@ export async function StreakPanel({
                   columnGap: GAP_PX,
                   fontFamily: "var(--font-mono)",
                   fontSize: 9.5,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                 }}
               >
                 {monthLabels.map((m, w) => (
@@ -285,7 +285,7 @@ export async function StreakPanel({
                   flexShrink: 0,
                   fontFamily: "var(--font-mono)",
                   fontSize: 9,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                 }}
               >
                 {WEEKDAY_LABELS.map((d, r) => (

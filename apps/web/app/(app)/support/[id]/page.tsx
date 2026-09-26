@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isTicketOpen, ticketRepository } from "@cyberlearn/db";
+import { TICKET_FOLLOW_UP, ticketConclusion } from "@cyberlearn/lib/tickets/tickets";
 import { requireRequestUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { STATUS_LABEL, STATUS_TONE, THEME_LABEL } from "@/lib/tickets/meta";
@@ -75,14 +76,21 @@ export default async function TicketPage({
       {isTicketOpen(ticket.status) ? (
         <TicketReply ticketId={ticket.id} />
       ) : (
-        <p className="cls-empty">
-          Cette demande est {ticket.status === "RESOLVED" ? "résolue" : "close"}. Si le problème
-          revient, ouvre-en une nouvelle depuis{" "}
-          <Link href="/contact" style={{ color: "var(--cosmetic-accent)" }}>
-            le formulaire de contact
-          </Link>
-          .
-        </p>
+        <div className="cls-empty">
+          <p style={{ margin: 0 }}>
+            {ticketConclusion({
+              status: ticket.status,
+              closedAt: ticket.updatedAt,
+              staffReplied: ticket.messages.some((m) => m.fromStaff),
+            })}
+          </p>
+          <p style={{ margin: "8px 0 0" }}>
+            {TICKET_FOLLOW_UP}{" "}
+            <Link href="/contact" style={{ color: "var(--cosmetic-accent)" }}>
+              Ouvrir une nouvelle demande
+            </Link>
+          </p>
+        </div>
       )}
     </div>
   );

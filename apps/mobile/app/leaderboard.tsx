@@ -173,6 +173,19 @@ function MyRankCard({
   data: { userRank: number; entries: LeaderboardEntry[]; league: { division: string } | null };
 }): React.JSX.Element {
   const me = data.entries.find((e) => e.isCurrentUser) ?? null;
+  // 0 is the server's "not ranked": the same words as the site's leaderboard
+  // rather than "0e place".
+  if (data.userRank < 1) {
+    return (
+      <Card style={{ gap: 4, paddingVertical: 18 }}>
+        <Text variant="h3">Tu n&apos;apparais pas dans ce classement</Text>
+        <Text variant="bodySm">
+          Il compte les apprenants à partir de leur premier XP. Un compte de l&apos;équipe ou un
+          profil masqué dans les paramètres n&apos;y figure pas.
+        </Text>
+      </Card>
+    );
+  }
   return (
     <Card
       accent={colors.accent}

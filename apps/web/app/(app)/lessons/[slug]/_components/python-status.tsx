@@ -110,7 +110,7 @@ export function DraftControls({
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       {restored && (
-        <span style={{ ...MONO, fontSize: 10, color: "#6B6890" }}>Brouillon retrouvé</span>
+        <span style={{ ...MONO, fontSize: 10, color: "#7F7BA9" }}>Brouillon retrouvé</span>
       )}
       <button
         type="button"
@@ -123,7 +123,7 @@ export function DraftControls({
           textTransform: "uppercase",
           padding: "4px 8px",
           background: "transparent",
-          color: "#6B6890",
+          color: "#7F7BA9",
           border: "1px solid #2A2560",
           cursor: "pointer",
         }}

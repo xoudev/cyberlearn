@@ -41,7 +41,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "#6B6890",
+  color: "#7F7BA9",
   marginBottom: 4,
 };
 
@@ -125,7 +125,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: "#6B6890",
+          color: "#7F7BA9",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           marginBottom: 16,
@@ -137,7 +137,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
         }}
       >
         <span>{"// INDICES"}</span>
-        <span style={{ color: "#3F3D5C", fontSize: 9 }}>
+        <span style={{ color: "#7F7BA9", fontSize: 9 }}>
           {String(hints.length)} indice{hints.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -163,7 +163,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             marginBottom: 12,
           }}
         >
@@ -219,7 +219,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{
                     padding: "6px 14px",
                     background: savePending ? "#2A2560" : "#0AFFD4",
-                    color: savePending ? "#6B6890" : "#030219",
+                    color: savePending ? "#7F7BA9" : "#030219",
                     fontFamily: "var(--font-mono)",
                     fontWeight: 700,
                     fontSize: 10,
@@ -238,7 +238,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                     padding: "6px 14px",
                     background: "transparent",
                     border: "1px solid #2A2560",
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     fontFamily: "var(--font-mono)",
                     fontWeight: 600,
                     fontSize: 10,
@@ -258,7 +258,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 9,
-                    color: "#3F3D5C",
+                    color: "#7F7BA9",
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
                     marginBottom: 4,
@@ -290,7 +290,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                     padding: "4px 10px",
                     background: "transparent",
                     border: "1px solid #2A2560",
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     fontFamily: "var(--font-mono)",
                     fontWeight: 600,
                     fontSize: 9,
@@ -386,7 +386,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                 style={{
                   padding: "6px 14px",
                   background: createPending ? "#2A2560" : "#0AFFD4",
-                  color: createPending ? "#6B6890" : "#030219",
+                  color: createPending ? "#7F7BA9" : "#030219",
                   fontFamily: "var(--font-mono)",
                   fontWeight: 700,
                   fontSize: 10,
@@ -410,7 +410,7 @@ export function HintsManager({ challengeId, hints }: Props): React.ReactElement 
                   padding: "6px 14px",
                   background: "transparent",
                   border: "1px solid #2A2560",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   fontFamily: "var(--font-mono)",
                   fontWeight: 600,
                   fontSize: 10,

@@ -78,7 +78,7 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
           fontSize: 11,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "#6F6B99",
+          color: "#7F7BA9",
         }}
       >
         <span
@@ -166,7 +166,7 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
                 fontSize: 11,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 14,
@@ -184,7 +184,7 @@ export default async function OnboardingPage(): Promise<React.ReactElement> {
                 fontSize: 10,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,

@@ -69,6 +69,8 @@ export const ticketRepository = {
         status: true,
         message: true,
         createdAt: true,
+        // A finished ticket takes no message, so this is when it was closed.
+        updatedAt: true,
         messages: {
           orderBy: { createdAt: "asc" },
           select: {

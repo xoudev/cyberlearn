@@ -48,7 +48,7 @@ const LABEL_STYLE: React.CSSProperties = {
   fontSize: 9.5,
   letterSpacing: "0.18em",
   textTransform: "uppercase",
-  color: "#6B6890",
+  color: "#7F7BA9",
   marginBottom: 6,
 };
 
@@ -100,7 +100,7 @@ const ghostBtnStyle: React.CSSProperties = {
   padding: "12px 22px",
   background: "transparent",
   border: `1px solid ${BORDER}`,
-  color: "#6B6890",
+  color: "#7F7BA9",
   fontFamily: "var(--font-mono)",
   fontWeight: 700,
   fontSize: 11,
@@ -195,7 +195,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -220,7 +220,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               margin: "8px 0 0",
             }}
           >
@@ -234,7 +234,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
             fontSize: 10,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             border: `1px solid ${BORDER}`,
             padding: "9px 16px",
             whiteSpace: "nowrap",
@@ -249,7 +249,7 @@ export function QuizManager({ path, quiz, questions }: Props): React.JSX.Element
       {quiz ? (
         <QuestionsSection path={path} quiz={quiz} questions={questions} />
       ) : (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890" }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
           {"Enregistre d'abord les réglages pour créer le quiz, puis ajoute des questions."}
         </p>
       )}
@@ -392,7 +392,7 @@ function QuestionsSection({
           }}
         >
           Questions{" "}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
             ({questions.length} · {quiz.activeQuestionCount} active(s))
           </span>
         </h2>
@@ -466,7 +466,7 @@ function QuestionRow({
     <div style={CARD_STYLE}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: 14, color: "#F5F5FA" }}>
-          <span style={{ fontFamily: "var(--font-mono)", color: "#6B6890" }}>
+          <span style={{ fontFamily: "var(--font-mono)", color: "#7F7BA9" }}>
             #{question.orderIndex}
           </span>{" "}
           {question.question}

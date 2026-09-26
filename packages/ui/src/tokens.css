@@ -102,7 +102,7 @@
   /* Text */
   --color-text-primary: #f5f5fa;
   --color-text-secondary: #b8b5d1;
-  --color-text-muted: #6b6890;
+  --color-text-muted: #7f7ba9;
   --color-text-disabled: #3f3d5c;
 
   /* Semantic */
@@ -125,7 +125,7 @@
   --muted-foreground: var(--color-text-muted);
   /* Sidebar - spec: design-system.md */
   --sidebar: #030219;
-  --sidebar-foreground: #6b6890;
+  --sidebar-foreground: #7f7ba9;
   --sidebar-primary: var(--cosmetic-accent);
   --sidebar-primary-foreground: #030219;
   --sidebar-accent: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);

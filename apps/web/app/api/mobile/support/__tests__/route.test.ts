@@ -165,6 +165,7 @@ describe("GET /api/mobile/support/ticket", () => {
       theme: "BUG",
       message: "Pas de son.",
       createdAt: new Date("2026-09-20T08:00:00.000Z"),
+      updatedAt: new Date("2026-09-22T10:00:00.000Z"),
       messages: [
         {
           id: "m-1",
@@ -184,16 +185,23 @@ describe("GET /api/mobile/support/ticket", () => {
     };
     m.findForRequester.mockResolvedValue({ ...base, status: "IN_PROGRESS" });
     const open = (await (await THREAD(get(`/ticket?id=${TICKET_ID}`))).json()) as {
-      ticket: { acceptsReplies: boolean; messages: { authorName: string | null }[] };
+      ticket: {
+        acceptsReplies: boolean;
+        closedAt: string | null;
+        messages: { authorName: string | null }[];
+      };
     };
     expect(open.ticket.acceptsReplies).toBe(true);
+    expect(open.ticket.closedAt).toBeNull();
     expect(open.ticket.messages.map((msg) => msg.authorName)).toEqual(["Camille", null]);
 
     m.findForRequester.mockResolvedValue({ ...base, status: "RESOLVED" });
     const done = (await (await THREAD(get(`/ticket?id=${TICKET_ID}`))).json()) as {
-      ticket: { acceptsReplies: boolean };
+      ticket: { acceptsReplies: boolean; closedAt: string | null };
     };
     expect(done.ticket.acceptsReplies).toBe(false);
+    // When it was closed, for the conclusion the screen words.
+    expect(done.ticket.closedAt).toBe("2026-09-22T10:00:00.000Z");
   });
 });
 

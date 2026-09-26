@@ -9,7 +9,7 @@ import {
 } from "@/lib/changelog/entries";
 import { MarkChangelogSeen } from "./_components/mark-seen";
 
-export const metadata: Metadata = { title: "Nouveautés · CyberLearn" };
+export const metadata: Metadata = { title: "Nouveautés" };
 
 function EntryCard({
   entry,
@@ -89,7 +89,7 @@ function EntryCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.04em",
             marginLeft: "auto",
           }}

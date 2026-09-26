@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { reviewDueLabel, reviewMinutes, reviewXpFor } from "@cyberlearn/lib";
 import { RevisionsList, type ReviewRow } from "./_components/revisions-list";
 
-export const metadata: Metadata = { title: "Révisions · CyberLearn" };
+export const metadata: Metadata = { title: "Révisions" };
 export const dynamic = "force-dynamic";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
     const due = reviewDueLabel(s.nextReviewAt, now);
     const cat = CAT_LABELS[s.lesson.category] ?? {
       label: s.lesson.category,
-      color: "#6B6890",
+      color: "#7F7BA9",
       border: "rgba(107,104,144,0.35)",
     };
     return {
@@ -118,7 +118,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             fontFamily: "var(--font-mono)",
             fontSize: 12,
             letterSpacing: "0.04em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             marginBottom: 28,
             display: "inline-flex",
             alignItems: "center",
@@ -152,7 +152,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
             fontSize: 11,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             marginBottom: 14,
           }}
         >
@@ -307,7 +307,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                   fontSize: 11,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   textDecoration: "none",
                   padding: "16px 8px",
                 }}
@@ -358,7 +358,7 @@ export default async function RevisionsPage(): Promise<React.ReactElement> {
                   fontSize: 11,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   textDecoration: "none",
                   padding: "16px 8px",
                 }}
@@ -397,7 +397,7 @@ function UpcomingSection({ schedules, now }: { schedules: Schedule[]; now: Date 
           fontSize: 11,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#6B6890",
+          color: "#7F7BA9",
           marginBottom: 14,
         }}
       >

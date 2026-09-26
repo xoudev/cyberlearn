@@ -29,7 +29,7 @@ export default function AppError({
           fontFamily: "var(--font-mono)",
         }}
       >
-        <div style={{ fontSize: 10, letterSpacing: "0.18em", color: "#3F3D5C", marginBottom: 18 }}>
+        <div style={{ fontSize: 10, letterSpacing: "0.18em", color: "#7F7BA9", marginBottom: 18 }}>
           {"// SECTION · ERREUR"}
         </div>
         <h1
@@ -49,7 +49,7 @@ export default function AppError({
         </p>
         {error.digest ? (
           <p
-            style={{ fontSize: 11, color: "#3F3D5C", letterSpacing: "0.06em", margin: "0 0 20px" }}
+            style={{ fontSize: 11, color: "#7F7BA9", letterSpacing: "0.06em", margin: "0 0 20px" }}
           >
             ID : {error.digest}
           </p>
@@ -84,7 +84,7 @@ export default function AppError({
               textTransform: "uppercase",
               background: "transparent",
               border: "1px solid #2A2560",
-              color: "#6B6890",
+              color: "#7F7BA9",
               textDecoration: "none",
               display: "inline-flex",
               alignItems: "center",

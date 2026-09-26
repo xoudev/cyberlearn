@@ -72,7 +72,7 @@ export default function GlobalError({
             style={{
               fontSize: 10,
               letterSpacing: "0.18em",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               marginBottom: 20,
             }}
           >
@@ -101,7 +101,7 @@ export default function GlobalError({
             <p
               style={{
                 fontSize: 11,
-                color: "#3F3D5C",
+                color: "#7F7BA9",
                 fontFamily: "monospace",
                 letterSpacing: "0.06em",
                 margin: "0 0 20px",
@@ -141,7 +141,7 @@ export default function GlobalError({
                 textTransform: "uppercase",
                 background: "transparent",
                 border: "1px solid #2A2560",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",

@@ -175,7 +175,7 @@ export function CodePlayground({
       base: "vs-dark",
       inherit: true,
       rules: [
-        { token: "comment", foreground: "6B6890", fontStyle: "italic" },
+        { token: "comment", foreground: "7F7BA9", fontStyle: "italic" },
         { token: "keyword", foreground: "4D8BFF" },
         { token: "string", foreground: "0AFFD4" },
         { token: "number", foreground: "FFB020" },
@@ -590,7 +590,7 @@ export function CodePlayground({
               <span style={{ color: "var(--cosmetic-accent)", flexShrink: 0, userSelect: "none" }}>
                 &gt;&gt;&gt;
               </span>
-              <span style={{ color: "#3F3D5C", fontStyle: "italic" }}>(aucune sortie)</span>
+              <span style={{ color: "#7F7BA9", fontStyle: "italic" }}>(aucune sortie)</span>
             </div>
           )}
         </div>
@@ -605,10 +605,10 @@ export function CodePlayground({
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 9,
             letterSpacing: "0.12em",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
           }}
         >
-          Sortie attendue : <b style={{ color: "#6B6890" }}>{expectedOutput}</b>
+          Sortie attendue : <b style={{ color: "#7F7BA9" }}>{expectedOutput}</b>
         </div>
       )}
 

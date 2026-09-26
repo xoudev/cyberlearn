@@ -82,7 +82,7 @@ export interface SelectProps {
 const C = {
   bg: "var(--cl-select-bg, #05041a)",
   fg: "var(--cl-select-fg, #f5f5fa)",
-  muted: "var(--cl-select-fg-muted, #6f6b99)",
+  muted: "var(--cl-select-fg-muted, #7f7ba9)",
   border: "var(--cl-select-border, #2a2560)",
   accent: "var(--cl-select-accent, var(--cosmetic-accent, #0affd4))",
   panel: "var(--cl-select-panel-bg, #0a0826)",

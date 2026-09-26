@@ -13,7 +13,7 @@ export function Footer(): React.JSX.Element {
     >
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <span>© {new Date().getFullYear()} Cyber Learn</span>
-        <nav aria-label="Liens de pied de page" className="flex gap-4">
+        <nav aria-label="Liens de pied de page" className="flex flex-wrap gap-x-4 gap-y-2">
           <Link href="/download" className="transition-colors hover:text-foreground">
             Application mobile
           </Link>

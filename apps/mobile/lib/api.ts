@@ -315,6 +315,22 @@ export async function searchApi(term: string): Promise<SearchGroupItem[]> {
   return body.groups;
 }
 
+// ── Rank (the site's dashboard figure) ────────────────────────────────────────
+
+/**
+ * The reader's place on the leaderboard, or null when they are not on it
+ * (not a student, no XP yet, or hidden). Counted by the server, where the
+ * board's rules live.
+ */
+export async function fetchMyRankApi(): Promise<number | null> {
+  const res = await authedFetch("/api/mobile/rank");
+  const body = (await res.json()) as
+    | { ok: true; rank: number | null }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return body.rank;
+}
+
 // ── Badge collection (the site's /badges: every badge, earned or locked) ─────
 
 export interface CollectionBadge {
@@ -763,6 +779,19 @@ export async function unshareNoteApi(noteId: string, recipientId: string): Promi
     const res = await authedFetch("/api/mobile/notes/unshare", {
       method: "POST",
       body: JSON.stringify({ noteId, recipientId }),
+    });
+    return readActionResponse(await res.json()).ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Takes a note somebody handed the reader out of their "Reçues". */
+export async function dismissReceivedNoteApi(noteId: string): Promise<boolean> {
+  try {
+    const res = await authedFetch("/api/mobile/notes/dismiss", {
+      method: "POST",
+      body: JSON.stringify({ noteId }),
     });
     return readActionResponse(await res.json()).ok;
   } catch {

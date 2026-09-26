@@ -86,7 +86,7 @@
   font: 11px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 .ws-brand b {
   color: var(--cosmetic-accent);
@@ -247,7 +247,7 @@
   font: 10px var(--font-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* ── The split ─────────────────────────────────────────────────────────── */
@@ -330,7 +330,7 @@
   font: 10px var(--font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #6b6890;
+  color: #7f7ba9;
 }
 
 /* ── The last slide ────────────────────────────────────────────────────── */
@@ -375,7 +375,7 @@
 .ws-count {
   font: 10px var(--font-mono);
   letter-spacing: 0.14em;
-  color: #6b6890;
+  color: #7f7ba9;
   font-variant-numeric: tabular-nums;
 }
 

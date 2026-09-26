@@ -346,6 +346,18 @@ export const noteShareRepository = {
     });
     return res.count > 0;
   },
+
+  /**
+   * The recipient's side of unshare: a note somebody handed them leaves their
+   * "Reçues". Scoped to their own row, so it reaches nobody else's copy, and
+   * the author can still share it again.
+   */
+  async dismissReceived(recipientId: string, noteId: string): Promise<boolean> {
+    const res = await prisma.noteShare.deleteMany({
+      where: { noteId, sharedWithId: recipientId },
+    });
+    return res.count > 0;
+  },
 };
 
 /**

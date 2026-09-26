@@ -19,7 +19,7 @@ const MERMAID_THEME = {
     clusterBkg: "#110F33",
     titleColor: "#F5F5FA",
     edgeLabelBackground: "#0A0826",
-    lineColor: "#6B6890",
+    lineColor: "#7F7BA9",
     textColor: "#B8B5D1",
     primaryColor: "#1F1B47",
     primaryTextColor: "#F5F5FA",
@@ -35,7 +35,7 @@ const MERMAID_THEME = {
     activationBorderColor: "var(--cosmetic-accent)",
     activationBkgColor: "color-mix(in srgb, var(--cosmetic-accent) 8%, transparent)",
     sequenceNumberColor: "var(--cosmetic-accent)",
-    signalColor: "#6B6890",
+    signalColor: "#7F7BA9",
     signalTextColor: "#B8B5D1",
   },
   // HTML labels put a <div><p> inside a <foreignObject> - real HTML, sitting
@@ -224,7 +224,7 @@ export function Diagram({ children, caption }: DiagramProps): React.JSX.Element 
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 11,
             letterSpacing: "0.06em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             textAlign: "center",
           }}
         >

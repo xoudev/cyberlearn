@@ -38,7 +38,7 @@ const VARIANTS: Record<
     border: "#3F3D5C",
     bg: "rgba(63,61,92,0.15)",
     iconBg: "rgba(63,61,92,0.30)",
-    iconColor: "#6B6890",
+    iconColor: "#7F7BA9",
     icon: "·",
   },
 };

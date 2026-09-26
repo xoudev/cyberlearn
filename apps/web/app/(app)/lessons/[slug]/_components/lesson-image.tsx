@@ -85,7 +85,7 @@ export function LessonImage(rawProps: LessonImageProps): React.JSX.Element {
         <figcaption
           style={{
             fontSize: "12px",
-            color: "#6B6890",
+            color: "#7F7BA9",
             fontFamily: "var(--font-mono, monospace)",
             letterSpacing: "0.02em",
             padding: "0 4px",

@@ -214,7 +214,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
           fontSize: 9,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#6F6B99",
+          color: "#7F7BA9",
         }}
       >
         {"// "}
@@ -234,7 +234,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
             placeItems: "center",
             background: "#05041A",
             border: "1px solid #2A2560",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             zIndex: 2,
           }}
         >
@@ -288,7 +288,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
           fontFamily: "var(--font-body)",
           fontSize: isLeg ? 13 : 12.5,
           lineHeight: 1.5,
-          color: badge.earned ? "#B8B5D1" : "#6F6B99",
+          color: badge.earned ? "#B8B5D1" : "#7F7BA9",
           margin: "0 0 16px",
           maxWidth: isLeg ? 320 : 260,
         }}
@@ -308,7 +308,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
             fontSize: 10.5,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -345,7 +345,7 @@ function BadgeCard({ badge }: { badge: SerializedBadge }) {
               fontSize: 10,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               marginBottom: 6,
             }}
           >
@@ -445,7 +445,7 @@ function SectionHeader({
           fontFamily: "var(--font-mono)",
           fontWeight: 600,
           fontSize: 11,
-          color: "#6F6B99",
+          color: "#7F7BA9",
           letterSpacing: "0.14em",
         }}
       >
@@ -509,7 +509,7 @@ export function BadgesCollection({
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           letterSpacing: "0.04em",
-          color: "#6F6B99",
+          color: "#7F7BA9",
           marginBottom: 26,
           display: "inline-flex",
           alignItems: "center",
@@ -568,7 +568,7 @@ export function BadgesCollection({
                 fontWeight: 600,
                 fontSize: "0.42em",
                 letterSpacing: "0.04em",
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 verticalAlign: "0.25em",
                 marginLeft: 14,
               }}
@@ -602,7 +602,7 @@ export function BadgesCollection({
               gap: 18,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               flexWrap: "wrap",
@@ -675,7 +675,7 @@ export function BadgesCollection({
               gap: 14,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
             }}
@@ -698,7 +698,7 @@ export function BadgesCollection({
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             marginRight: 6,
           }}
         >
@@ -755,7 +755,7 @@ export function BadgesCollection({
                   padding: "1px 6px",
                   border: `1px solid ${isActive ? `color-mix(in oklab, ${dotColor} 38%, transparent)` : "#2A2560"}`,
                   letterSpacing: "0.04em",
-                  color: isActive ? dotColor : "#6F6B99",
+                  color: isActive ? dotColor : "#7F7BA9",
                 }}
               >
                 {pill.count}
@@ -784,7 +784,7 @@ export function BadgesCollection({
               left: 12,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               pointerEvents: "none",
             }}
             aria-hidden="true"
@@ -837,7 +837,7 @@ export function BadgesCollection({
 
       {/* Empty state when search returns nothing */}
       {visibleGroups.length === 0 && (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "#6F6B99" }}>
+        <div style={{ textAlign: "center", padding: "80px 0", color: "#7F7BA9" }}>
           <p
             style={{
               fontFamily: "var(--font-mono)",

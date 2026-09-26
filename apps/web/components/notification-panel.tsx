@@ -201,7 +201,7 @@ export function NotificationPanel({
             : "transparent",
           border: `1px solid ${open ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "transparent"}`,
           cursor: "pointer",
-          color: open ? "var(--cosmetic-accent)" : "#6B6890",
+          color: open ? "var(--cosmetic-accent)" : "#7F7BA9",
           transition: "all 150ms ease",
         }}
       >
@@ -284,7 +284,7 @@ export function NotificationPanel({
                   fontSize: 10,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
@@ -345,7 +345,7 @@ export function NotificationPanel({
                 textAlign: "center",
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#6B6890",
+                color: "#7F7BA9",
               }}
             >
               Chargement…
@@ -370,7 +370,7 @@ export function NotificationPanel({
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   margin: 0,
                 }}
               >
@@ -488,7 +488,7 @@ function NotificationRow({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             lineHeight: 1.5,
             marginBottom: 4,
             display: "-webkit-box",

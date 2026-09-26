@@ -69,7 +69,7 @@ export function LevelUpModal({ newLevel, xpGained, onClose }: Props): React.Reac
             fontSize: 10,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             marginBottom: 18,
           }}
         >

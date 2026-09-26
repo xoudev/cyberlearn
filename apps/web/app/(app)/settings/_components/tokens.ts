@@ -9,7 +9,7 @@ export const S = {
   overlay: "#110F33",
   fg: "#F5F5FA",
   fg2: "#B8B5D1",
-  muted: "#6B6890",
+  muted: "#7F7BA9",
   blue: "#0024FF",
   blueHover: "#1F3BFF",
   turq: "var(--cosmetic-accent)",

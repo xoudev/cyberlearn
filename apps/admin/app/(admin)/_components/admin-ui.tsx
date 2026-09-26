@@ -15,7 +15,7 @@ export const UI = {
   borderStrong: "#2A2560",
   fg: "#F5F5FA",
   fg2: "#B8B5D1",
-  muted: "#6B6890",
+  muted: "#7F7BA9",
   faint: "#3F3D5C",
   turquoise: "#0AFFD4",
   blue: "#0024FF",

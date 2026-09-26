@@ -174,7 +174,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
         <div
           style={{
             fontSize: "11px",
-            color: "#6B6890",
+            color: "#7F7BA9",
             fontFamily: "var(--font-mono, monospace)",
             letterSpacing: "0.02em",
             overflow: "hidden",

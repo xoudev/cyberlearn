@@ -31,7 +31,7 @@ interface DiffColor {
   color: string;
   bg: string;
 }
-const DIFF_DEFAULT: DiffColor = { color: "#6B6890", bg: "rgba(42,37,96,0.3)" };
+const DIFF_DEFAULT: DiffColor = { color: "#7F7BA9", bg: "rgba(42,37,96,0.3)" };
 const DIFF_COLORS: Record<string, DiffColor> = {
   BEGINNER: { color: "#0AFFD4", bg: "rgba(10,255,212,0.1)" },
   INTERMEDIATE: { color: "#4D8BFF", bg: "rgba(77,139,255,0.1)" },
@@ -266,7 +266,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
             style={{
               background: "transparent",
               border: "1px solid #2A2560",
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: "var(--font-mono)",
               fontSize: 10,
               letterSpacing: "0.1em",
@@ -334,7 +334,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
               onClick={() => {
                 runBulk("DRAFT");
               }}
-              style={bulkBtn("#6B6890", isPending)}
+              style={bulkBtn("#7F7BA9", isPending)}
             >
               Brouillon
             </button>
@@ -359,7 +359,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
               marginLeft: "auto",
               background: "transparent",
               border: "none",
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: "var(--font-mono)",
               fontSize: 10,
               letterSpacing: "0.1em",
@@ -426,7 +426,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
               textAlign: "center",
               fontFamily: "var(--font-mono)",
               fontSize: 12,
-              color: "#6B6890",
+              color: "#7F7BA9",
             }}
           >
             {lessons.length === 0
@@ -492,7 +492,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                     <div
                       style={{
                         fontFamily: "var(--font-mono)",
-                        fontSize: 9.5,
+                        fontSize: 11,
                         letterSpacing: "0.12em",
                         textTransform: "uppercase",
                         color: "#B14DFF",
@@ -508,7 +508,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
                   }}

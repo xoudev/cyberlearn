@@ -81,7 +81,7 @@ export default function VerifyPage(): React.JSX.Element {
           fontFamily: "var(--font-mono)",
           fontSize: 13,
           letterSpacing: "0.03em",
-          color: "#6F6B99",
+          color: "#7F7BA9",
           display: "flex",
           alignItems: "center",
           gap: 8,
@@ -171,7 +171,7 @@ export default function VerifyPage(): React.JSX.Element {
             fontSize: 11,
             letterSpacing: "0.22em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             marginBottom: 12,
             display: "flex",
             alignItems: "center",
@@ -246,7 +246,7 @@ export default function VerifyPage(): React.JSX.Element {
           <LiveDot /> Registre public
         </span>
         <span style={{ color: "#2A2560" }}>/</span>
-        <span style={{ color: "#6F6B99" }}>cyberlearn.fr/verify</span>
+        <span style={{ color: "#7F7BA9" }}>cyberlearn.fr/verify</span>
       </div>
     </div>
   );

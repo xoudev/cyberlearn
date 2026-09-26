@@ -69,7 +69,7 @@ function Field({
               fontSize: 10,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               fontWeight: 500,
             }}
           >
@@ -108,7 +108,7 @@ function Field({
               padding: "0 14px",
               fontFamily: "var(--font-mono)",
               fontSize: 15,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               borderRight: "1px solid #1F1B47",
               background: "rgba(5,4,26,0.6)",
               flexShrink: 0,
@@ -216,7 +216,7 @@ export function OnboardingForm({
             fontSize: 10,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
           }}
         >
           INIT
@@ -290,7 +290,7 @@ export function OnboardingForm({
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
                 fontWeight: 600,
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 whiteSpace: "nowrap",
               }}
             >
@@ -338,7 +338,7 @@ export function OnboardingForm({
                   fontSize: 10,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   fontWeight: 500,
                 }}
               >
@@ -398,11 +398,11 @@ export function OnboardingForm({
                   borderTop: "1px solid #1F1B47",
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   letterSpacing: "0.08em",
                 }}
               >
-                <span style={{ color: bioLen > BIO_MAX * 0.85 ? "#FFB020" : "#6F6B99" }}>
+                <span style={{ color: bioLen > BIO_MAX * 0.85 ? "#FFB020" : "#7F7BA9" }}>
                   {bioLen} / {BIO_MAX}
                 </span>
               </div>

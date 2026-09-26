@@ -208,7 +208,7 @@ export default async function CertVerifyPage({
             fontSize: 11,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
@@ -236,7 +236,7 @@ export default async function CertVerifyPage({
           padding: "18px 32px 14px",
           fontFamily: "var(--font-mono)",
           fontSize: 12,
-          color: "#6B6890",
+          color: "#7F7BA9",
           letterSpacing: "0.04em",
           borderBottom: "1px solid #1A1640",
           display: "flex",
@@ -439,7 +439,7 @@ export default async function CertVerifyPage({
                     fontSize: 10,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     marginTop: 2,
                   }}
                 >
@@ -454,7 +454,7 @@ export default async function CertVerifyPage({
                   fontSize: 9.5,
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   marginBottom: 4,
                 }}
               >
@@ -482,7 +482,7 @@ export default async function CertVerifyPage({
                 fontSize: 11,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 10,
               }}
             >
@@ -521,7 +521,7 @@ export default async function CertVerifyPage({
                 fontSize: 11,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 8,
               }}
             >
@@ -559,7 +559,7 @@ export default async function CertVerifyPage({
                     cert.score !== null ? (
                       <>
                         {cert.score}
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#6B6890" }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#7F7BA9" }}>
                           {" / 100"}
                         </span>
                       </>
@@ -581,7 +581,7 @@ export default async function CertVerifyPage({
                       fontSize: 9.5,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
-                      color: "#6B6890",
+                      color: "#7F7BA9",
                       marginBottom: 6,
                     }}
                   >
@@ -620,7 +620,7 @@ export default async function CertVerifyPage({
                   fontSize: 9.5,
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   marginBottom: 8,
                 }}
               >
@@ -631,13 +631,13 @@ export default async function CertVerifyPage({
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   lineHeight: 1.8,
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   letterSpacing: "0.03em",
                 }}
               >
                 <b style={{ color: "#B8B5D1" }}>SHA-256</b>
                 <br />
-                <span style={{ color: "#3F3D5C" }}>{hashGrouped}</span>
+                <span style={{ color: "#7F7BA9" }}>{hashGrouped}</span>
               </div>
             </div>
           </div>
@@ -806,7 +806,7 @@ export default async function CertVerifyPage({
                   fontSize: 9.5,
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   marginBottom: 6,
                 }}
               >

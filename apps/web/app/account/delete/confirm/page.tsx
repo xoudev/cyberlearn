@@ -74,7 +74,7 @@ export default async function AccountDeleteConfirmPage({
           Ton profil, ta progression, tes badges, tes notes et tes certificats seront effacés.
           <b style={{ color: "#F5F5FA" }}> Cette action est irréversible.</b>
         </p>
-        <p style={{ fontSize: 13, lineHeight: 1.6, color: "#6B6890", margin: "0 0 26px" }}>
+        <p style={{ fontSize: 13, lineHeight: 1.6, color: "#7F7BA9", margin: "0 0 26px" }}>
           Si tu n&apos;es pas à l&apos;origine de cette demande, ferme simplement cette page : rien
           ne sera supprimé.
         </p>

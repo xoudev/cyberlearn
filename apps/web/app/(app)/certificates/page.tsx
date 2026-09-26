@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prisma } from "@cyberlearn/db";
 import { requireRequestUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Mes certificats · CyberLearn" };
+export const metadata: Metadata = { title: "Mes certificats" };
 
 const GOLD = "#FFB547";
 
@@ -14,7 +14,7 @@ const DIFF_COLORS: Record<string, { color: string; label: string }> = {
   ADVANCED: { color: "#B14DFF", label: "Avancé" },
   EXPERT: { color: "#FFB020", label: "Expert" },
 };
-const DIFF_DEFAULT = { color: "#6B6890", label: "-" };
+const DIFF_DEFAULT = { color: "#7F7BA9", label: "-" };
 
 const CAT_LABEL: Record<string, string> = {
   DEV: "Développement",
@@ -125,7 +125,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
           ...MONO,
           fontSize: 12,
           letterSpacing: "0.04em",
-          color: "#6F6B99",
+          color: "#7F7BA9",
           marginBottom: 26,
           display: "inline-flex",
           alignItems: "center",
@@ -161,7 +161,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               fontSize: 11,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 14,
             }}
           >
@@ -237,7 +237,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               gap: 18,
               ...MONO,
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               flexWrap: "wrap",
@@ -249,7 +249,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             </span>
             <span style={{ color: "#44406B" }}>/</span>
             <span>
-              <b style={{ color: revokedCerts.length > 0 ? "#FF4757" : "#6F6B99" }}>
+              <b style={{ color: revokedCerts.length > 0 ? "#FF4757" : "#7F7BA9" }}>
                 {revokedCerts.length}
               </b>{" "}
               révoqué{revokedCerts.length !== 1 ? "s" : ""}
@@ -272,7 +272,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
             style={{
               ...MONO,
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
             }}
@@ -304,7 +304,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
               fontSize: 11,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               margin: "0 0 10px",
             }}
           >
@@ -441,7 +441,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                           fontSize: 9,
                           letterSpacing: "0.14em",
                           textTransform: "uppercase",
-                          color: "#6F6B99",
+                          color: "#7F7BA9",
                         }}
                       >
                         {"// "}
@@ -478,7 +478,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                       fontSize: 21,
                       lineHeight: 1.15,
                       letterSpacing: "-0.015em",
-                      color: isRevoked ? "#6B6890" : "#F5F5FA",
+                      color: isRevoked ? "#7F7BA9" : "#F5F5FA",
                       margin: "0 0 12px",
                     }}
                   >
@@ -495,7 +495,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                       marginBottom: 16,
                     }}
                   >
-                    <span style={{ ...MONO, fontSize: 11, color: "#6B6890" }}>{cat}</span>
+                    <span style={{ ...MONO, fontSize: 11, color: "#7F7BA9" }}>{cat}</span>
                     <span
                       style={{
                         display: "inline-flex",
@@ -513,7 +513,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                     >
                       {diff.label}
                     </span>
-                    <span style={{ ...MONO, fontSize: 11, color: "#6B6890" }}>
+                    <span style={{ ...MONO, fontSize: 11, color: "#7F7BA9" }}>
                       ~{String(cert.path.estimatedHours)}h
                     </span>
                   </div>
@@ -530,12 +530,12 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                       fontSize: 10.5,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
-                      color: "#6F6B99",
+                      color: "#7F7BA9",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                       <span>Délivré le</span>
-                      <b style={{ color: isRevoked ? "#6B6890" : "#F5F5FA", fontWeight: 600 }}>
+                      <b style={{ color: isRevoked ? "#7F7BA9" : "#F5F5FA", fontWeight: 600 }}>
                         {issuedAt}
                       </b>
                     </div>
@@ -544,7 +544,7 @@ export default async function CertificatesPage(): Promise<React.ReactElement> {
                         <span>Score examen</span>
                         <b
                           style={{
-                            color: isRevoked ? "#6B6890" : "var(--cosmetic-accent)",
+                            color: isRevoked ? "#7F7BA9" : "var(--cosmetic-accent)",
                             fontWeight: 600,
                           }}
                         >

@@ -101,7 +101,7 @@ const DIFF_DIAMONDS: Record<string, number> = {
 function diamonds(difficulty: string): React.ReactElement {
   const n = DIFF_DIAMONDS[difficulty] ?? 1;
   return (
-    <span style={{ letterSpacing: "-0.05em", color: "#6B6890" }}>
+    <span style={{ letterSpacing: "-0.05em", color: "#7F7BA9" }}>
       {"◆".repeat(n)}
       <span style={{ color: "#44406B" }}>{"◇".repeat(4 - n)}</span>
     </span>
@@ -182,7 +182,7 @@ function LessonRow({
   const isDragging = dragState.dragId === lesson.id;
   const isDropTarget =
     dragState.overId === lesson.id && dragState.dragId !== null && dragState.dragId !== lesson.id;
-  const cat = CAT_CHIPS[lesson.category] ?? { color: "#6B6890", border: "rgba(107,104,144,0.35)" };
+  const cat = CAT_CHIPS[lesson.category] ?? { color: "#7F7BA9", border: "rgba(107,104,144,0.35)" };
 
   return (
     <li
@@ -259,7 +259,7 @@ function LessonRow({
           fontWeight: 700,
           fontSize: 11,
           letterSpacing: "0.04em",
-          color: idx === 0 ? TURQ : "#6B6890",
+          color: idx === 0 ? TURQ : "#7F7BA9",
           background: "#050416",
           border: `1px solid ${idx === 0 ? "rgba(10,255,212,0.35)" : BORDER}`,
           width: 36,
@@ -303,7 +303,7 @@ function LessonRow({
           {diamonds(lesson.difficulty)}
           <span style={{ color: "#44406B" }}>·</span>
           <span>
-            <b style={{ color: "#6B6890" }}>{lesson.estimatedMinutes}</b> min
+            <b style={{ color: "#7F7BA9" }}>{lesson.estimatedMinutes}</b> min
           </span>
         </span>
       </div>
@@ -360,7 +360,7 @@ function LessonRow({
           height: 30,
           background: "transparent",
           border: `1px solid ${BORDER}`,
-          color: "#6B6890",
+          color: "#7F7BA9",
           cursor: "pointer",
           transition: "all 150ms ease",
         }}
@@ -457,7 +457,7 @@ function LessonPicker({
             style={{
               background: "none",
               border: 0,
-              color: "#6B6890",
+              color: "#7F7BA9",
               cursor: "pointer",
               fontFamily: MONO,
               fontSize: 13,
@@ -495,7 +495,7 @@ function LessonPicker({
           ) : (
             filtered.map((l) => {
               const cat = CAT_CHIPS[l.category] ?? {
-                color: "#6B6890",
+                color: "#7F7BA9",
                 border: "rgba(107,104,144,0.35)",
               };
               return (
@@ -648,7 +648,7 @@ export function NewPathClient({
         .le-num:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
         .pe-row:hover{background:#0E0A33!important}
         .pe-add:hover{color:${TURQ}!important;background:rgba(10,255,212,0.04)!important;border-top-color:rgba(10,255,212,0.4)!important;border-top-style:solid!important}
-        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#6B6890!important;background:rgba(255,255,255,0.03)!important}
+        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#7F7BA9!important;background:rgba(255,255,255,0.03)!important}
       `}</style>
 
       {pickerOpen && (
@@ -669,7 +669,7 @@ export function NewPathClient({
             fontFamily: MONO,
             fontSize: 12,
             letterSpacing: "0.04em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             marginBottom: 28,
             display: "inline-flex",
             alignItems: "center",
@@ -722,7 +722,7 @@ export function NewPathClient({
               gap: 14,
               fontFamily: MONO,
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
             }}
           >
@@ -799,7 +799,7 @@ export function NewPathClient({
             Gérer le quiz final
           </span>
           <span
-            style={{ fontFamily: MONO, fontSize: 11, color: "#6B6890", letterSpacing: "0.02em" }}
+            style={{ fontFamily: MONO, fontSize: 11, color: "#7F7BA9", letterSpacing: "0.02em" }}
           >
             {"Enregistre le parcours d'abord pour gérer le quiz final."}
           </span>
@@ -872,7 +872,7 @@ export function NewPathClient({
                     width: 36,
                     fontFamily: MONO,
                     fontSize: 13,
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     borderRight: `1px solid ${BORDER}`,
                     background: "rgba(0,0,0,0.25)",
                   }}
@@ -1032,7 +1032,7 @@ export function NewPathClient({
                   fontFamily: MONO,
                   fontSize: 10.5,
                   letterSpacing: "0.18em",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   borderLeft: `1px solid ${BORDER}`,
                   background: "rgba(0,0,0,0.25)",
                   textTransform: "uppercase",
@@ -1069,7 +1069,7 @@ export function NewPathClient({
                   width: 36,
                   fontFamily: MONO,
                   fontSize: 13,
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   borderRight: `1px solid ${BORDER}`,
                   background: "rgba(0,0,0,0.25)",
                 }}
@@ -1148,7 +1148,7 @@ export function NewPathClient({
                 style={{
                   fontFamily: BODY_F,
                   fontSize: 12.5,
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   lineHeight: 1.5,
                   margin: 0,
                 }}
@@ -1189,8 +1189,8 @@ export function NewPathClient({
                   <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
                 </h3>
                 <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#44406B" }}>
-                  <b style={{ color: "#6B6890" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
-                  <b style={{ color: "#6B6890" }}>{totals.xp}</b> XP cumulés
+                  <b style={{ color: "#7F7BA9" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
+                  <b style={{ color: "#7F7BA9" }}>{totals.xp}</b> XP cumulés
                 </span>
               </div>
 
@@ -1248,7 +1248,7 @@ export function NewPathClient({
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   cursor: "pointer",
                   transition: "all 150ms ease",
                 }}
@@ -1351,7 +1351,7 @@ export function NewPathClient({
                   padding: "1px 6px",
                   border: `1px solid ${BORDER}`,
                   background: "#0A0826",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   margin: "0 1px",
                 }}
               >
@@ -1364,7 +1364,7 @@ export function NewPathClient({
                   padding: "1px 6px",
                   border: `1px solid ${BORDER}`,
                   background: "#0A0826",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   margin: "0 1px",
                 }}
               >
@@ -1378,7 +1378,7 @@ export function NewPathClient({
                   padding: "1px 6px",
                   border: `1px solid ${BORDER}`,
                   background: "#0A0826",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   margin: "0 1px",
                 }}
               >
@@ -1397,7 +1397,7 @@ export function NewPathClient({
                 textTransform: "uppercase",
                 padding: "13px 22px",
                 background: "transparent",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
                 textDecoration: "none",

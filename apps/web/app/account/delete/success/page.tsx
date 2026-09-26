@@ -21,7 +21,7 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
             fontFamily: "monospace",
             fontSize: 12,
             letterSpacing: "0.04em",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             marginBottom: 24,
             display: "inline-flex",
             flexWrap: "wrap",
@@ -46,7 +46,7 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
             fontFamily: "monospace",
             fontSize: 10,
             letterSpacing: "0.18em",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             marginBottom: 16,
             display: "flex",
             alignItems: "center",
@@ -164,7 +164,7 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
             Cyber Learn.
           </p>
 
-          <p style={{ fontSize: 13, color: "#6B6890", lineHeight: 1.55, margin: "0 0 24px" }}>
+          <p style={{ fontSize: 13, color: "#7F7BA9", lineHeight: 1.55, margin: "0 0 24px" }}>
             Vos certificats restent vérifiables publiquement à leur URL d&apos;origine, mais ne
             portent plus votre nom.
           </p>
@@ -178,7 +178,7 @@ export default function AccountDeleteSuccessPage(): React.JSX.Element {
               fontSize: 10,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               marginBottom: 24,
               display: "flex",
               flexWrap: "wrap",

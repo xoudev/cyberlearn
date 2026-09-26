@@ -110,3 +110,36 @@ export function ticketReplyProblem(body: string): string | null {
   if (length > TICKET_REPLY_MAX) return "5000 caractères au plus pour le message.";
   return null;
 }
+
+const CLOSED_ON = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Paris",
+});
+
+/**
+ * Why the reply box is gone, on the site and in the app. It used to say only
+ * "Cette demande est close", which on a ticket the team closed without a word
+ * read as a door shut with no reason. It now says when, and whether the answer
+ * is in the thread above or was never written.
+ *
+ * `closedAt` is the ticket's last change: a finished ticket takes no message,
+ * so nothing moves it after it is closed.
+ */
+export function ticketConclusion(ticket: {
+  status: TicketStatusKey;
+  closedAt: Date | string | null;
+  staffReplied: boolean;
+}): string {
+  const verb = ticket.status === "RESOLVED" ? "marquée comme résolue" : "close";
+  const when = ticket.closedAt ? ` le ${CLOSED_ON.format(new Date(ticket.closedAt))}` : "";
+  const answer = ticket.staffReplied
+    ? "La dernière réponse de l'équipe, ci-dessus, en donne la conclusion."
+    : "L'équipe l'a fermée sans réponse écrite.";
+  return `Cette demande a été ${verb}${when}. ${answer}`;
+}
+
+/** What to do next when a finished ticket does not settle it. */
+export const TICKET_FOLLOW_UP =
+  "Si le problème revient ou si la réponse ne te suffit pas, ouvre une nouvelle demande.";

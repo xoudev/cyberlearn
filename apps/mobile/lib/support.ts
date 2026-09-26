@@ -1,7 +1,9 @@
 import {
+  TICKET_FOLLOW_UP,
   TICKET_THEME_LABEL,
   type TicketStatusKey,
   type TicketThemeKey,
+  ticketConclusion,
 } from "@cyberlearn/lib/tickets/tickets";
 
 /**
@@ -38,6 +40,8 @@ export interface SupportThread {
   message: string;
   createdAt: string;
   acceptsReplies: boolean;
+  /** When a finished ticket was closed; null while it is open. */
+  closedAt: string | null;
   messages: SupportMessage[];
 }
 
@@ -67,7 +71,14 @@ export function speakerLine(
   return `${who} · ${STAMP.format(new Date(message.createdAt))}`;
 }
 
-/** Why the reply box is gone, in the site's words. */
-export function closedNotice(status: TicketStatusKey): string {
-  return `Cette demande est ${status === "RESOLVED" ? "résolue" : "close"}. Si le problème revient, ouvre-en une nouvelle.`;
+/** Why the reply box is gone, in the site's words (ticketConclusion). */
+export function closedNotice(
+  ticket: Pick<SupportThread, "status" | "closedAt" | "messages">,
+): string {
+  const conclusion = ticketConclusion({
+    status: ticket.status,
+    closedAt: ticket.closedAt,
+    staffReplied: ticket.messages.some((m) => m.fromStaff),
+  });
+  return `${conclusion} ${TICKET_FOLLOW_UP}`;
 }

@@ -96,7 +96,7 @@ export async function LessonAuthor({
               fontSize: 12,
               // On the accent-tinted hexagon, which is dark: the accent itself
               // reads, near-black does not.
-              color: byline.kind === "gone" ? "#6B6890" : "var(--cosmetic-accent)",
+              color: byline.kind === "gone" ? "#7F7BA9" : "var(--cosmetic-accent)",
             }}
           >
             {byline.kind === "gone" ? "?" : name.charAt(0).toUpperCase()}
@@ -111,7 +111,7 @@ export async function LessonAuthor({
             fontWeight: 700,
             fontSize: 13,
             lineHeight: 1.3,
-            color: byline.kind === "gone" ? "#6B6890" : "#F5F5FA",
+            color: byline.kind === "gone" ? "#7F7BA9" : "#F5F5FA",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -126,7 +126,7 @@ export async function LessonAuthor({
             fontSize: 10,
             lineHeight: 1.45,
             letterSpacing: "0.06em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             // Wraps rather than truncating: the rail is narrow, and "Équipe
             // CyberLearn · 3 février 2026" would lose the date to an ellipsis.
           }}
@@ -149,7 +149,7 @@ export async function LessonAuthor({
           fontWeight: 700,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           display: "flex",
           alignItems: "center",
           gap: 10,

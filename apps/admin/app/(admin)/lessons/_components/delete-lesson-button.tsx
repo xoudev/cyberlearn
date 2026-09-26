@@ -66,6 +66,9 @@ export function DeleteLessonButton({
     <div style={{ position: "relative", display: "flex", justifyContent: "flex-end" }}>
       <button
         type="button"
+        // Named, and red at rest: an icon in the table\'s faintest grey was the
+        // only sign of an irreversible action.
+        aria-label={`Supprimer la leçon « ${lessonTitle} »`}
         title={disabled ? (disabledReason ?? "Action non disponible") : "Supprimer la leçon"}
         disabled={(disabled ?? false) || isPending}
         onClick={() => {
@@ -86,7 +89,7 @@ export function DeleteLessonButton({
           background: hov && !disabled ? "rgba(255,71,87,0.08)" : "transparent",
           border: `1px solid ${hov && !disabled ? "rgba(255,71,87,0.3)" : "transparent"}`,
           borderRadius: 4,
-          color: disabled ? "#2A2560" : hov ? "#FF4757" : "#44406B",
+          color: disabled ? "#2A2560" : "#FF4757",
           cursor: (disabled ?? false) || isPending ? "not-allowed" : "pointer",
           transition: "all 120ms ease",
           flexShrink: 0,

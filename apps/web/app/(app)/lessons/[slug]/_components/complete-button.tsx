@@ -46,7 +46,7 @@ export function CompleteButton({
           variant === "ghost"
             ? {
                 background: "transparent",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 border: "1px solid #2A2560",
                 borderRadius: 0,
                 padding: fullWidth ? "10px 16px" : "10px 20px",
@@ -75,7 +75,7 @@ export function CompleteButton({
         }}
         onMouseLeave={(e) => {
           if (variant === "ghost") {
-            e.currentTarget.style.color = "#6B6890";
+            e.currentTarget.style.color = "#7F7BA9";
             e.currentTarget.style.background = "transparent";
           } else {
             e.currentTarget.style.boxShadow =
