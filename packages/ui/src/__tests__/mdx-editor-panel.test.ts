@@ -13,7 +13,7 @@
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -44,7 +44,9 @@ function walk(dir: string, out: string[] = []): string[] {
     if (SKIP.has(entry)) continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
-    else if (full.endsWith(".tsx") || full.endsWith(".ts")) out.push(full);
+    // Forward slashes whatever the OS: the assertions below name "apps/admin",
+    // and join() hands Windows "apps\admin", so the test failed there alone.
+    else if (full.endsWith(".tsx") || full.endsWith(".ts")) out.push(full.split(sep).join("/"));
   }
   return out;
 }

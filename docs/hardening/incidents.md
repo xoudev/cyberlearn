@@ -2,6 +2,41 @@
 
 ---
 
+## 2026-09-26 - Le bucket des icônes de badges était inscriptible avec la clé publique
+
+### Constat
+
+Relevé en rangeant le bucket `Badge`, public et créé depuis le tableau de bord
+sans ADR. Les politiques du bucket `certificates`
+(`supabase/migrations/20260508_storage_rls.sql`) sont PERMISSIVE et écrites
+`USING (bucket_id <> 'certificates')` : elles accordaient à `anon` et
+`authenticated` la lecture, l'envoi, le remplacement et la suppression dans
+tout autre bucket. `avatars` et `lesson-covers` étaient refermés par leurs
+propres politiques RESTRICTIVE, mais pas `Badge`. Vérifié en lecture seule : la
+clé publique listait le contenu du bucket. Par les mêmes droits, n'importe qui
+pouvait remplacer une icône affichée sur tous les profils. Aucune écriture n'a
+été tentée pour le vérifier.
+
+### Correctif
+
+`supabase/migrations/20260926_storage_client_access_blocked.sql` ferme Storage
+à tous les clients, dans tous les buckets, par des politiques RESTRICTIVE
+`USING (false)`. Le code n'y accède que par `service_role`, côté serveur. Les
+URL publiques de `Badge` restent servies. Le bucket n'accepte plus que des
+images de 256 Ko au plus. Décision : ADR-004. Test :
+`storage-public-bucket.integration.test.ts`.
+
+**À appliquer à la main en production** (éditeur SQL Supabase), comme les
+autres fichiers de `supabase/migrations`.
+
+### Leçon
+
+Une politique PERMISSIVE écrite « tout sauf X » accorde tout le reste. Les
+fermetures se font en RESTRICTIVE, et un bucket créé depuis le tableau de bord
+hérite de ce que les politiques existantes accordent.
+
+---
+
 ## 2026-09-24 - Un compte banni restait actif dans l'app mobile
 
 ### Symptôme

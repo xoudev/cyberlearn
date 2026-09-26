@@ -54,11 +54,16 @@ Everything server-side goes through `apps/web/app/api/mobile/*` (Bearer JWT):
    (See `.env.example`. Values are public / RLS-protected.)
 2. From the repo root: `pnpm install`.
 3. `pnpm --filter @cyberlearn/mobile dev` (or `cd apps/mobile && npx expo start`).
+   `expo-dev-client` is installed, so this serves a **development build**. To
+   use Expo Go instead, run `pnpm --filter @cyberlearn/mobile start:go`, or press
+   `s` in the running server.
 4. Open it:
    - **Android emulator** (Windows-friendly): press `a`.
-   - **Your phone**: scan the QR with Expo Go, or build a **dev client**
-     (`npx expo run:android` / EAS) - recommended for production-like secure
-     session storage.
+   - **Your phone**: install the development build once
+     (`pnpm dlx eas-cli@latest build --platform android --profile development`,
+     an APK), then scan the QR with it. It is the production app's native code
+     with a dev menu, so secure session storage behaves as in the store build.
+     Expo Go still works through `start:go`.
    - **iOS** needs a Mac or an EAS cloud build.
 
 The app talks to the **real production Supabase** (same URL/anon key as web).
@@ -67,15 +72,16 @@ onboarding on cyberlearn.fr (Phase 1 does not include mobile onboarding).
 
 ## Distribution
 
-`eas.json` defines two release artifacts:
+`eas.json` defines three profiles:
 
+- `development`: an APK with the dev client, to run `expo start` against.
 - `preview`: a signed Android APK for direct installation and testing.
 - `production`: an Android App Bundle (AAB) for Google Play. Store build numbers
   are incremented remotely by EAS.
 
-The public app version lives in `apps/mobile/app.config.ts` (`version`, plus
-`android.versionCode` for local release builds) and is mirrored in
-`apps/mobile/package.json`. Publish through the `fr.cyberlearn.mobile` Google
+The public app version lives in `apps/mobile/app.config.ts` (`version`) and is
+mirrored in `apps/mobile/package.json`. The Android version code lives on EAS
+alone (`appVersionSource: "remote"`); `app.config.ts` no longer carries one. Publish through the `fr.cyberlearn.mobile` Google
 Play application, separate from the former Flutter listing and its incompatible
 package identity.
 
@@ -87,15 +93,25 @@ From `apps/mobile`:
    `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the EAS preview and production
    environments. These are public client values, but they must still be
    supplied at build time.
-4. Run `pnpm dlx eas-cli@latest build:version:set`, select Android, and initialize
-   the remote version from the Android version code in `app.config.ts`.
+4. The remote Android version code is already initialised (10 after the first
+   production build). `pnpm dlx eas-cli@latest build:version:get` reads it;
+   `build:version:set` only if Play ever holds a higher one.
 5. Build a direct APK with
    `pnpm dlx eas-cli@latest build --platform android --profile preview`.
 6. Build the Play Store AAB with
    `pnpm dlx eas-cli@latest build --platform android --profile production`.
 
-Let EAS generate a new upload key for the new Google Play application, then keep
-that credential backed up. It is independent from the former Flutter listing.
+Releases are signed with the keystore EAS holds for this project (upload key
+SHA-1 `5D:33:C9:D1:14:88:22:AF:A6:27:FD:B6:0D:40:CA:61:2E:FB:29:76`). Version 8
+(2.3.0) was uploaded from a local build whose key was lost; replacing it with
+the EAS key was requested from Google Play support on 26 September 2026. Until
+Google confirms, Play refuses bundles signed with the EAS key.
+
+Uploads to Google Play go through `eas submit` with a Google service account key
+stored on EAS (Play Console, Users and permissions: release permissions on this
+app only). From `apps/mobile`:
+`pnpm dlx eas-cli@latest submit --platform android --profile production --latest`
+sends the latest build to the internal testing track.
 
 After publishing an artifact, configure the web deployment variables used by
 `/download`:

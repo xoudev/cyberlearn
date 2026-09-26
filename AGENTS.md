@@ -117,7 +117,11 @@ le compte de policies régresse sous 56.
 
 ## Conventions Storage
 
-- Tout bucket Supabase Storage est PRIVÉ par défaut. Aucun bucket public.
+- Tout bucket Supabase Storage est PRIVÉ par défaut. Aucun bucket public. Seule exception :
+  `Badge` (icônes de badges), public en lecture par son URL publique, voir
+  ADR-004. Aucun client (anon, authenticated) n'accède à Storage, dans aucun
+  bucket : politiques RESTRICTIVE de
+  `supabase/migrations/20260926_storage_client_access_blocked.sql`.
 - L'accès aux fichiers se fait via service_role côté serveur + URLs signées
   à TTL court (60s pour les téléchargements ponctuels, max 1h).
 - Toute exception au "privé par défaut" doit faire l'objet d'une ADR

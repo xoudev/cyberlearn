@@ -13,5 +13,7 @@ export default defineConfig({
     environment: "node",
     include: ["**/*.test.ts", "**/*.test.tsx"],
     exclude: ["node_modules", ".next"],
+    // jsdom's storage, where Node 25+ shadows it with its own empty one.
+    setupFiles: ["./test/jsdom-storage.ts"],
   },
 });
