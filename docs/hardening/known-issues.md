@@ -276,3 +276,28 @@ est retirée, et le commentaire de garde couvre maintenant les deux dossiers.
 Règle générale : une règle `.gitignore` sur un dossier partiellement tracé est
 toujours un piège. Le symptôme n'est pas une erreur, c'est un fichier qui
 n'apparaît pas — et personne ne cherche ce qui ne s'affiche pas.
+
+## Alertes Dependabot restantes après la mise à jour du 26 septembre 2026
+
+Next.js est passé de 15.5.15 à 15.5.26. La 15.5.15 portait deux alertes
+critiques, dont une exécution de code à distance sans authentification par
+l'API d'optimisation d'images (fichiers AVIF). Le site en production tournait
+sur cette version. Vitest est passé à 3.2.7, pour une lecture de fichiers
+arbitraires par l'interface web de Vitest. Les dépendances indirectes signalées
+ont été montées à leur version corrigée dans les plages déjà déclarées : xmldom,
+brace-expansion, js-yaml, postcss, vite, ws, fast-uri, browserslist et sharp.
+
+Trois restent ouvertes, et aucune n'est exécutée par le site en ligne :
+
+- **`postcss@8.4.31`**, figé par Next lui-même (dépendance exacte du compilateur
+  CSS de Next). Il ne traite que les feuilles de style du dépôt, au build, pas
+  des entrées d'utilisateurs. Il partira avec une version de Next qui le relève.
+- **`image-size@1.2.1`**, tiré par Metro (le bundler de l'app mobile). Le
+  correctif n'existe qu'en 2.x, que Metro n'accepte pas encore. Il ne lit que
+  les images du dépôt pendant le bundling.
+- **`deepmerge-ts@7.1.5`**, tiré par `@prisma/config`. Le correctif est en 8.x.
+  Il ne fusionne que la configuration Prisma du dépôt, en local et en CI.
+
+À réexaminer quand Next, Expo ou Prisma publient une version qui relève ces
+dépendances ; ne pas les forcer par un `overrides`, qui ferait tourner Metro ou
+Prisma sur une version majeure qu'ils n'ont pas testée.
