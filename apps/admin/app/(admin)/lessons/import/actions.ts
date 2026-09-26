@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import matter from "gray-matter";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/auth";
-import { prisma } from "@cyberlearn/db";
+import { prisma, type Prisma } from "@cyberlearn/db";
 import type { ImportValidationResult } from "@cyberlearn/types";
 import {
   validateMdxContent,
@@ -150,7 +150,8 @@ async function writeAuditLog(
   actorId: string,
   action: string,
   targetId: string | undefined,
-  metadata: Record<string, unknown>,
+  // Prisma's JSON input type: what the column takes, checked where it is built.
+  metadata: Prisma.InputJsonObject,
 ): Promise<void> {
   await prisma.auditLog.create({
     data: {
@@ -158,7 +159,7 @@ async function writeAuditLog(
       action,
       targetType: "lesson",
       targetId: targetId ?? null,
-      metadata: metadata as object,
+      metadata: metadata,
     },
   });
 }

@@ -901,7 +901,9 @@ function ErrorItem({ error }: { error: ImportValidationError }) {
 
 function MetadataPreview({
   metadata,
-}: { metadata: NonNullable<ImportValidationResult["metadata"]> }) {
+}: {
+  metadata: NonNullable<ImportValidationResult["metadata"]>;
+}) {
   const rows: [string, string][] = [
     ["refCode", metadata.refCode],
     ["slug", metadata.slug],

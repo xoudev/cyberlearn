@@ -88,7 +88,10 @@ export function FolderGlyph({
 export function AllNotesGlyph({
   color,
   size = 15,
-}: { color: string; size?: number }): React.JSX.Element {
+}: {
+  color: string;
+  size?: number;
+}): React.JSX.Element {
   return (
     <svg
       width={size}

@@ -1,13 +1,11 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
   },
-  "organizeImports": {
-    "enabled": false
-  },
+  "assist": { "actions": { "source": { "organizeImports": "off" } } },
   "linter": {
     "enabled": false
   },
@@ -33,26 +31,27 @@
     }
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      ".next",
-      "dist",
-      "build",
-      "coverage",
-      ".turbo",
-      "*.min.js",
-      "pnpm-lock.yaml",
-      "docs/",
-      "apps/web/public/runtimes/",
-      ".vercel/",
-      "packages/*/src/**/*.js",
-      "packages/*/src/**/*.js.map",
-      "packages/*/src/**/*.d.ts",
-      "packages/*/src/**/*.d.ts.map",
-      "packages/db/prisma/**/*.js",
-      "packages/db/prisma/**/*.js.map",
-      "packages/db/prisma/**/*.d.ts",
-      "packages/db/prisma/**/*.d.ts.map"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/.next",
+      "!**/dist",
+      "!**/build",
+      "!**/coverage",
+      "!**/.turbo",
+      "!**/*.min.js",
+      "!**/pnpm-lock.yaml",
+      "!**/docs",
+      "!**/apps/web/public/runtimes",
+      "!**/.vercel",
+      "!**/packages/**/*/src/**/*.js",
+      "!**/packages/**/*/src/**/*.js.map",
+      "!**/packages/**/*/src/**/*.d.ts",
+      "!**/packages/**/*/src/**/*.d.ts.map",
+      "!**/packages/db/prisma/**/*.js",
+      "!**/packages/db/prisma/**/*.js.map",
+      "!**/packages/db/prisma/**/*.d.ts",
+      "!**/packages/db/prisma/**/*.d.ts.map"
     ]
   }
 }

@@ -72,7 +72,7 @@ function badgeRarityFromMeta(item: NotificationItem): BadgeRarity {
   // SAFETY: notification metadata is untyped JSON; narrow before reading rarity.
   const meta = (item as { metadata?: unknown }).metadata;
   if (meta !== null && typeof meta === "object" && "rarity" in meta) {
-    const r = (meta as { rarity: unknown }).rarity;
+    const r = meta.rarity;
     if (typeof r === "string") return toBadgeRarity(r);
   }
   return "COMMON";

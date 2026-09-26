@@ -370,12 +370,12 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 transition: "border-color 180ms ease, color 180ms ease",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "#7F7BA9";
-                (e.currentTarget as HTMLAnchorElement).style.color = "#F5F5FA";
+                e.currentTarget.style.borderColor = "#7F7BA9";
+                e.currentTarget.style.color = "#F5F5FA";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "#2A2560";
-                (e.currentTarget as HTMLAnchorElement).style.color = "#B8B5D1";
+                e.currentTarget.style.borderColor = "#2A2560";
+                e.currentTarget.style.color = "#B8B5D1";
               }}
             >
               ← Retour

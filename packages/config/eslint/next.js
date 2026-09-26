@@ -17,7 +17,12 @@ export default tseslint.config({ ignores: [".next/**"] }, ...baseConfig, {
   },
   rules: {
     ...reactPlugin.configs.recommended.rules,
-    ...reactHooksPlugin.configs.recommended.rules,
+    // The two rules react-hooks has always had. Its v7 "recommended" adds the
+    // React Compiler's rules (purity, refs, set-state-in-effect...), which
+    // prepare code for a compiler these apps do not run - and flag Date.now()
+    // in a Server Component, where it is fine. Turn them on with the compiler.
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
     ...pluginNext.configs.recommended.rules,
     ...pluginNext.configs["core-web-vitals"].rules,
 
@@ -26,6 +31,8 @@ export default tseslint.config({ ignores: [".next/**"] }, ...baseConfig, {
     "react/prop-types": "off",
   },
   settings: {
-    react: { version: "detect" },
+    // Named, not "detect": eslint-plugin-react finds the version through
+    // context.getFilename(), which ESLint 10 removed, and crashes on it.
+    react: { version: "19.3" },
   },
 });

@@ -11,7 +11,10 @@ export const NOTE_REPORT_REASONS = [
 export type NoteReportReasonValue = (typeof NOTE_REPORT_REASONS)[number];
 
 // Fails to compile when the schema gains a reason this list does not have.
-const everyReasonListed: Record<Exclude<NoteReportReason, NoteReportReasonValue>, never> = {};
+const everyReasonListed: [Exclude<NoteReportReason, NoteReportReasonValue>] extends [never]
+  ? true
+  : never = true;
+// eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator -- marks the compile-time check as used; it has no runtime value to discard.
 void everyReasonListed;
 
 /** What the console can do with a reported note. */

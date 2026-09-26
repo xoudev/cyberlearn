@@ -469,7 +469,7 @@ describe("RLS policies (integration)", () => {
         .select("selected, correct")
         .eq("userId", userBId)
         .eq("quizId", "rls-q");
-      return (data as { selected: number; correct: boolean }[] | null)?.[0];
+      return data?.[0];
     }
 
     it("user B can read their own answers", async () => {
@@ -550,6 +550,7 @@ describe("RLS policies (integration)", () => {
         .select("nextReviewAt")
         .eq("userId", userBId)
         .eq("lessonId", publishedLessonId);
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- the untyped Supabase client returns any rows; the cast types them, and dropping it trips no-unsafe-return.
       return (data as { nextReviewAt: string }[] | null)?.[0]?.nextReviewAt;
     }
 
@@ -616,7 +617,7 @@ describe("RLS policies (integration)", () => {
       const { error } = await clientA.from("user_path_progress").insert({
         id: randomUUID(),
         userId: userAId,
-        pathId: (anyPath as { id: string } | null)?.id ?? randomUUID(),
+        pathId: anyPath?.id ?? randomUUID(),
         status: "COMPLETED",
       });
       expect(error).not.toBeNull();
@@ -633,7 +634,7 @@ describe("RLS policies (integration)", () => {
         .select("reason, status")
         .eq("userId", userBId)
         .eq("quizId", "rls-report-q");
-      return (data as { reason: string; status: string }[] | null)?.[0];
+      return data?.[0];
     }
 
     it("user B can read their own reports", async () => {
@@ -705,7 +706,7 @@ describe("RLS policies (integration)", () => {
       const { error } = await clientA.from("ratings").insert({
         id: randomUUID(),
         userId: userAId,
-        pathId: (anyPath as { id: string } | null)?.id,
+        pathId: anyPath?.id,
         score: 1,
         updatedAt: new Date().toISOString(),
       });

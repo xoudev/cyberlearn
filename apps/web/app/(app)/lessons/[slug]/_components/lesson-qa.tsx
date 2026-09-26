@@ -135,7 +135,11 @@ function QuestionCard({
   question,
   lessonSlug,
   currentUserId,
-}: { question: Question; lessonSlug: string; currentUserId: string }) {
+}: {
+  question: Question;
+  lessonSlug: string;
+  currentUserId: string;
+}) {
   const isAuthor = question.user?.id === currentUserId;
   const dateStr = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
     question.createdAt,

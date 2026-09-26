@@ -71,7 +71,8 @@
 .exam-root .exam-bg__grid {
   position: absolute;
   inset: -2px;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.32) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.32) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.32) 1px, transparent 1px);
   background-size: 46px 46px;
   -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 8%, transparent 80%);
@@ -106,7 +107,9 @@
   max-width: 1140px;
   background: linear-gradient(180deg, rgba(31, 27, 71, 0.55), rgba(10, 8, 38, 0.7));
   border: 1px solid var(--border);
-  box-shadow: 0 50px 120px -50px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow:
+    0 50px 120px -50px rgba(0, 0, 0, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 .exam-root .exam-frame::before {
   content: "";
@@ -388,9 +391,13 @@
   color: var(--fg-inverse);
   background: var(--teal);
   border: 1px solid var(--teal);
-  box-shadow: 0 0 32px -6px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent), inset 0 0 0
-    1px rgba(255, 255, 255, 0.12);
-  transition: background var(--dur-base), box-shadow var(--dur-base), transform var(--dur-fast);
+  box-shadow:
+    0 0 32px -6px color-mix(in srgb, var(--cosmetic-accent) 55%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition:
+    background var(--dur-base),
+    box-shadow var(--dur-base),
+    transform var(--dur-fast);
 }
 .exam-root .exam-start:hover:not(:disabled) {
   background: var(--brand-turquoise-hover);
@@ -776,7 +783,10 @@
   border-radius: 0;
   font-family: inherit;
   color: var(--fg-secondary);
-  transition: border-color var(--dur-base), background var(--dur-base), box-shadow var(--dur-base);
+  transition:
+    border-color var(--dur-base),
+    background var(--dur-base),
+    box-shadow var(--dur-base);
 }
 .exam-root .q-opt:hover {
   border-color: var(--border-strong);
@@ -833,8 +843,9 @@
 .exam-root .q-opt.is-selected {
   border-color: var(--teal);
   background: color-mix(in srgb, var(--cosmetic-accent) 6%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent), 0 0 26px -10px
-    color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--cosmetic-accent) 30%, transparent),
+    0 0 26px -10px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .exam-root .q-opt.is-selected .q-opt__key::before {
   background: var(--teal);
@@ -1034,8 +1045,8 @@
   align-items: center;
   padding: 40px;
   margin-bottom: 18px;
-  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.05), transparent 60%),
-    var(--bg-card);
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.05), transparent 60%), var(--bg-card);
   border: 1px solid rgba(var(--accent-rgb), 0.4);
   box-shadow: 0 0 60px -30px rgba(var(--accent-rgb), 0.6);
 }

@@ -74,7 +74,10 @@ const CALLOUT: Record<string, { color: string; label: string }> = {
 export function BlockView({
   block,
   index,
-}: { block: Block; index: number }): React.JSX.Element | null {
+}: {
+  block: Block;
+  index: number;
+}): React.JSX.Element | null {
   const { theme } = useCosmetics();
 
   switch (block.kind) {

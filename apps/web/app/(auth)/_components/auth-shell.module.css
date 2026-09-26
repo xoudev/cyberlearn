@@ -14,7 +14,8 @@
   min-height: 100vh;
   padding: 48px clamp(40px, 6vw, 96px);
   overflow: hidden;
-  background: radial-gradient(circle at 14% 16%, rgba(0, 36, 255, 0.24), transparent 38%),
+  background:
+    radial-gradient(circle at 14% 16%, rgba(0, 36, 255, 0.24), transparent 38%),
     radial-gradient(circle at 78% 82%, rgba(10, 255, 212, 0.08), transparent 34%), #05041a;
 }
 
@@ -161,7 +162,9 @@
   padding: 0 14px;
   font-family: var(--font-mono);
   font-size: 14px;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 
 .input:focus {

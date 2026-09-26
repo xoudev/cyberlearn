@@ -35,8 +35,8 @@
   align-items: center;
   justify-content: center;
   gap: 26px;
-  background: radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0, 36, 255, 0.16), transparent 65%),
-    #030219;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0, 36, 255, 0.16), transparent 65%), #030219;
   /* `both` holds the last frame, so the overlay stays hidden and inert rather
      than reappearing when the animation ends. Nothing removes the node: at
      visibility:hidden it paints nothing and catches nothing. */

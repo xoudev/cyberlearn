@@ -61,6 +61,7 @@ vi.mock("../supabase/admin.js", () => ({
 // SAFETY: Vitest's expect.objectContaining() is typed as any; project back to
 // the sample type T so no-unsafe-assignment does not fire at call sites.
 function containing<T extends Record<string, unknown>>(sample: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- expect.* returns any; the cast types it for the caller, and dropping it trips no-unsafe-*.
   return expect.objectContaining(sample as never) as unknown as T;
 }
 

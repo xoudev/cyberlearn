@@ -135,7 +135,9 @@
   padding: 8px 10px;
   font-size: 13px;
   color: var(--a-muted);
-  transition: color 140ms ease, background 140ms ease;
+  transition:
+    color 140ms ease,
+    background 140ms ease;
 }
 .a-side-item:hover {
   color: var(--a-fg-2);
@@ -262,7 +264,11 @@
   white-space: nowrap;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: filter 140ms ease, background 140ms ease, color 140ms ease, border-color 140ms ease;
+  transition:
+    filter 140ms ease,
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease;
 }
 .a-btn--primary {
   background: var(--a-blue);
@@ -609,7 +615,9 @@
   font-family: var(--font-mono);
   font-size: 10.5px;
   cursor: pointer;
-  transition: color 120ms ease, border-color 120ms ease;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease;
 }
 .a-pager-btn:hover:not(:disabled) {
   color: var(--a-fg);
@@ -792,7 +800,8 @@
   justify-content: space-between;
   padding: 44px 48px;
   border-right: 1px solid var(--a-border);
-  background: radial-gradient(ellipse 90% 60% at 10% 0%, rgba(0, 36, 255, 0.22), transparent 60%),
+  background:
+    radial-gradient(ellipse 90% 60% at 10% 0%, rgba(0, 36, 255, 0.22), transparent 60%),
     radial-gradient(ellipse 70% 50% at 90% 100%, rgba(10, 255, 212, 0.07), transparent 65%),
     var(--a-bg);
   overflow: hidden;
@@ -806,7 +815,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.18) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.18) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.18) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse at 30% 30%, black 0%, transparent 75%);

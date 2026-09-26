@@ -88,13 +88,13 @@ function Field({
           transition: "border-color 180ms ease, box-shadow 180ms ease",
         }}
         onFocusCapture={(e) => {
-          const el = e.currentTarget as HTMLDivElement;
+          const el = e.currentTarget;
           el.style.borderColor = "#0AFFD4";
           el.style.boxShadow = "0 0 0 1px rgba(10,255,212,0.3), 0 0 14px rgba(10,255,212,0.12)";
           el.style.background = "#06052A";
         }}
         onBlurCapture={(e) => {
-          const el = e.currentTarget as HTMLDivElement;
+          const el = e.currentTarget;
           el.style.borderColor = error ? "rgba(255,71,87,0.6)" : "#2A2560";
           el.style.boxShadow = "none";
           el.style.background = "#05041A";
@@ -355,14 +355,14 @@ export function OnboardingForm({
                 transition: "border-color 180ms ease, box-shadow 180ms ease",
               }}
               onFocusCapture={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
+                const el = e.currentTarget;
                 el.style.borderColor = "#0AFFD4";
                 el.style.boxShadow =
                   "0 0 0 1px rgba(10,255,212,0.3), 0 0 14px rgba(10,255,212,0.12)";
                 el.style.background = "#06052A";
               }}
               onBlurCapture={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
+                const el = e.currentTarget;
                 el.style.borderColor = "#2A2560";
                 el.style.boxShadow = "none";
                 el.style.background = "#05041A";

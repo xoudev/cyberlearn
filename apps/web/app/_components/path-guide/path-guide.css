@@ -47,7 +47,9 @@
   border: 1px solid #2a2560;
   background: rgba(5, 4, 26, 0.6);
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
 .pg-choice:hover {
@@ -248,7 +250,9 @@
   border: 1px solid #0024ff;
   background: #0024ff;
   color: #ffffff;
-  box-shadow: 0 0 24px rgba(0, 36, 255, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 24px rgba(0, 36, 255, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .pg-btn--ghost {
@@ -258,7 +262,9 @@
   background: transparent;
   color: #b8b5d1;
   box-shadow: none;
-  transition: border-color 180ms ease, color 180ms ease;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
 .pg-btn--ghost:hover {

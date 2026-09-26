@@ -785,12 +785,12 @@ export function LandingClient({
                     transition: "border-color 200ms ease, transform 200ms ease",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.borderColor = `${color}66`;
-                    (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-3px)";
+                    e.currentTarget.style.borderColor = `${color}66`;
+                    e.currentTarget.style.transform = "translateY(-3px)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.borderColor = `${color}33`;
-                    (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)";
+                    e.currentTarget.style.borderColor = `${color}33`;
+                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
                   <span

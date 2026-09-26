@@ -12,7 +12,9 @@ import { PathRating } from "./_components/path-rating";
 
 export async function generateMetadata({
   params,
-}: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
   const path = await prisma.path.findUnique({ where: { slug }, select: { title: true } });
   return { title: path?.title ?? "Parcours" };
@@ -188,7 +190,9 @@ function NodeContent({ state, num }: { state: CardState; num: string }): React.J
 
 export default async function PathDetailPage({
   params,
-}: { params: Promise<{ slug: string }> }): Promise<React.ReactElement> {
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<React.ReactElement> {
   const { slug } = await params;
   const supabase = await getSupabaseServerClient();
   const authUser = await requireUser(supabase);

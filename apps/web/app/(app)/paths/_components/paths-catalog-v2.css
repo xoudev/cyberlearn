@@ -125,7 +125,9 @@
   font-size: 14px;
   color: var(--fg-secondary);
   text-decoration: none;
-  transition: border-color var(--dur-base) ease, color var(--dur-base) ease;
+  transition:
+    border-color var(--dur-base) ease,
+    color var(--dur-base) ease;
 }
 .pc2-root .pc2-guide:hover {
   border-color: var(--brand-turquoise);
@@ -253,8 +255,9 @@
   color: var(--cp-color);
   border-color: var(--cp-color);
   background: color-mix(in oklab, var(--cp-color) 6%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--cp-color) 20%, transparent), 0 0 18px
-    color-mix(in oklab, var(--cp-color) 16%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--cp-color) 20%, transparent),
+    0 0 18px color-mix(in oklab, var(--cp-color) 16%, transparent);
 }
 .pc2-root .pc2-filters__sep {
   width: 1px;
@@ -419,14 +422,18 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-  background: radial-gradient(
+  background:
+    radial-gradient(
       ellipse 600px 420px at 85% 0%,
       color-mix(in oklab, var(--k-color) 16%, transparent),
       transparent 70%
-    ), linear-gradient(135deg, rgba(0, 36, 255, 0.1), transparent 55%), rgba(10, 8, 38, 0.72);
+    ),
+    linear-gradient(135deg, rgba(0, 36, 255, 0.1), transparent 55%), rgba(10, 8, 38, 0.72);
   border: 1px solid color-mix(in oklab, var(--k-color) 38%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--k-color) 14%, transparent), 0 30px 80px -40px
-    rgba(0, 0, 0, 0.9), 0 0 60px -20px color-mix(in oklab, var(--k-color) 30%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--k-color) 14%, transparent),
+    0 30px 80px -40px rgba(0, 0, 0, 0.9),
+    0 0 60px -20px color-mix(in oklab, var(--k-color) 30%, transparent);
   --bk-color: var(--k-color);
   --k-color: #ff4757;
 }
@@ -631,8 +638,9 @@
   position: relative;
   height: 100%;
   background: linear-gradient(90deg, #0024ff 0%, var(--cosmetic-accent) 100%);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent), inset 0 0 8px
-    rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent),
+    inset 0 0 8px rgba(255, 255, 255, 0.25);
 }
 .pc2-root .bar-thick__fill::after {
   content: "";
@@ -642,7 +650,9 @@
   bottom: -3px;
   width: 3px;
   background: var(--brand-turquoise);
-  box-shadow: 0 0 14px var(--brand-turquoise), 0 0 24px var(--brand-turquoise);
+  box-shadow:
+    0 0 14px var(--brand-turquoise),
+    0 0 24px var(--brand-turquoise);
 }
 .pc2-root .hero-path__cta-row {
   display: flex;
@@ -668,7 +678,9 @@
   text-decoration: none;
   cursor: pointer;
   border-radius: 0;
-  box-shadow: 0 0 26px rgba(0, 36, 255, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 26px rgba(0, 36, 255, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   transition: all var(--dur-base);
   position: relative;
 }
@@ -706,11 +718,9 @@
 .pc2-root .hero-path__console {
   position: relative;
   border-left: 1px solid var(--border);
-  background: linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--k-color) 5%, transparent),
-      transparent 45%
-    ), #05041a;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--k-color) 5%, transparent), transparent 45%),
+    #05041a;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -719,7 +729,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.4) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.4) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.4) 1px, transparent 1px);
   background-size: 22px 22px;
   -webkit-mask-image: radial-gradient(ellipse 80% 70% at 60% 35%, black 10%, transparent 78%);
@@ -765,11 +776,15 @@
   box-shadow: inset 3px 0 0 var(--brand-blue);
   text-decoration: none;
   display: block;
-  transition: border-color var(--dur-base), box-shadow var(--dur-base);
+  transition:
+    border-color var(--dur-base),
+    box-shadow var(--dur-base);
 }
 .pc2-root a.hero-next:hover {
   border-color: color-mix(in oklab, var(--brand-blue) 70%, var(--border));
-  box-shadow: inset 3px 0 0 var(--brand-blue), 0 0 26px -10px rgba(0, 36, 255, 0.7);
+  box-shadow:
+    inset 3px 0 0 var(--brand-blue),
+    0 0 26px -10px rgba(0, 36, 255, 0.7);
 }
 .pc2-root .hero-next__lbl {
   font-family: var(--font-mono);
@@ -827,42 +842,47 @@
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
   min-width: 0;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       ellipse 220px 220px at 12% 30%,
       color-mix(in oklab, var(--k-color) 14%, transparent),
       transparent 70%
-    ), rgba(10, 8, 38, 0.6);
+    ),
+    rgba(10, 8, 38, 0.6);
   border: 1px solid color-mix(in oklab, var(--brand-turquoise) 32%, var(--border));
-  box-shadow: inset 3px 0 0 var(--brand-turquoise), 0 0 30px -16px
-    color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
+  box-shadow:
+    inset 3px 0 0 var(--brand-turquoise),
+    0 0 30px -16px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent);
   --bk-color: var(--brand-turquoise);
   --k-color: var(--cosmetic-accent);
   text-decoration: none;
   color: inherit;
-  transition: transform var(--dur-base), box-shadow var(--dur-base);
+  transition:
+    transform var(--dur-base),
+    box-shadow var(--dur-base);
 }
 .pc2-root .active-card:hover {
   transform: translateY(-3px);
-  box-shadow: inset 3px 0 0 var(--brand-turquoise), 0 18px 40px -22px
-    color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
+  box-shadow:
+    inset 3px 0 0 var(--brand-turquoise),
+    0 18px 40px -22px color-mix(in srgb, var(--cosmetic-accent) 60%, transparent);
 }
 .pc2-root .active-card__glyph {
   position: relative;
   display: grid;
   place-items: center;
   border-right: 1px solid var(--border);
-  background: linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--k-color) 6%, transparent),
-      transparent
-    ), #05041a;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--k-color) 6%, transparent), transparent),
+    #05041a;
   overflow: hidden;
 }
 .pc2-root .active-card__glyph::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.4) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.4) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.4) 1px, transparent 1px);
   background-size: 18px 18px;
   -webkit-mask-image: radial-gradient(ellipse at center, black 10%, transparent 80%);
@@ -994,26 +1014,30 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(
-      ellipse 360px 280px at 80% 0%,
-      rgba(255, 181, 71, 0.16),
-      transparent 65%
-    ),
+  background:
+    radial-gradient(ellipse 360px 280px at 80% 0%, rgba(255, 181, 71, 0.16), transparent 65%),
     linear-gradient(
       150deg,
       color-mix(in srgb, var(--cosmetic-accent) 7%, transparent),
       transparent 55%
-    ), rgba(10, 8, 38, 0.7);
+    ),
+    rgba(10, 8, 38, 0.7);
   border: 1px solid rgba(255, 181, 71, 0.42);
-  box-shadow: 0 0 0 1px rgba(255, 181, 71, 0.12), 0 0 50px -22px rgba(255, 181, 71, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(255, 181, 71, 0.12),
+    0 0 50px -22px rgba(255, 181, 71, 0.5);
   --bk-color: #ffb547;
   text-decoration: none;
   color: inherit;
-  transition: transform var(--dur-base), box-shadow var(--dur-base);
+  transition:
+    transform var(--dur-base),
+    box-shadow var(--dur-base);
 }
 .pc2-root .trophy-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 0 0 1px rgba(255, 181, 71, 0.2), 0 18px 44px -22px rgba(255, 181, 71, 0.6);
+  box-shadow:
+    0 0 0 1px rgba(255, 181, 71, 0.2),
+    0 18px 44px -22px rgba(255, 181, 71, 0.6);
 }
 .pc2-root .trophy-card::before {
   content: "";
@@ -1205,7 +1229,10 @@
   --k-color: #ff4757;
   text-decoration: none;
   color: inherit;
-  transition: transform var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base);
+  transition:
+    transform var(--dur-base),
+    border-color var(--dur-base),
+    box-shadow var(--dur-base);
 }
 .pc2-root .game-card--net {
   --k-color: var(--cosmetic-accent);
@@ -1230,7 +1257,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.45) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.45) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.45) 1px, transparent 1px);
   background-size: 18px 18px;
   -webkit-mask-image: radial-gradient(ellipse at center, black 12%, transparent 78%);
@@ -1397,9 +1425,10 @@
 .pc2-root .game-card:hover {
   transform: translateY(-4px);
   border-color: color-mix(in oklab, var(--k-color) 55%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--k-color) 22%, transparent), 0 22px 46px -26px
-    color-mix(in oklab, var(--k-color) 55%, transparent), 0 0 40px -18px
-    color-mix(in oklab, var(--k-color) 40%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--k-color) 22%, transparent),
+    0 22px 46px -26px color-mix(in oklab, var(--k-color) 55%, transparent),
+    0 0 40px -18px color-mix(in oklab, var(--k-color) 40%, transparent);
 }
 .pc2-root .game-card:hover .bk {
   opacity: 1;

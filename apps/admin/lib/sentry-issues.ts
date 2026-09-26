@@ -71,7 +71,7 @@ function num(value: unknown): number {
 /** What Sentry says about a refusal, when it bothers to say something. */
 function detailOf(body: unknown): string | null {
   if (typeof body !== "object" || body === null || !("detail" in body)) return null;
-  const detail = (body as { detail: unknown }).detail;
+  const detail = body.detail;
   return typeof detail === "string" && detail.trim() !== "" ? detail : null;
 }
 

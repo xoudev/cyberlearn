@@ -20,11 +20,11 @@ export function initialAvatarChoice(stored: string | null): string {
 }
 
 /** The body to send: the avatar only when a built-in one was picked. */
-export function profileEditBody(form: {
+export function profileEditBody(form: { displayName: string; bio: string; avatar: string }): {
   displayName: string;
   bio: string;
-  avatar: string;
-}): { displayName: string; bio: string; avatarUrl?: string } {
+  avatarUrl?: string;
+} {
   const body = { displayName: form.displayName.trim(), bio: form.bio.trim() };
   return PROFILE_AVATARS.includes(form.avatar) ? { ...body, avatarUrl: form.avatar } : body;
 }

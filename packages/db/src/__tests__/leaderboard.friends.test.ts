@@ -9,9 +9,14 @@ function person(
   xpTotal: number,
   {
     optedIn = true,
-    role = "STUDENT" as RawFriendsBoardUser["role"],
+    role = "STUDENT",
     hasPreferences = true,
     username = `u-${id}` as string | null,
+  }: {
+    optedIn?: boolean;
+    role?: RawFriendsBoardUser["role"];
+    hasPreferences?: boolean;
+    username?: string | null;
   } = {},
 ): RawFriendsBoardUser {
   return {

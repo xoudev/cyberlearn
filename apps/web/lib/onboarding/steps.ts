@@ -41,12 +41,7 @@ function isFieldKey(key: unknown): key is OnboardingField {
 
 /** A unique-constraint violation: somebody took the name between the check and the write. */
 function isDuplicate(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: unknown }).code === "P2002"
-  );
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
 
 /** Step 1: the handle, the name shown, and an optional bio. */

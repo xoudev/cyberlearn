@@ -107,9 +107,6 @@ const CAT_META = {
   },
 } as const;
 
-type DiffKey = keyof typeof DIFF_META;
-type CatKey = keyof typeof CAT_META;
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -148,18 +145,14 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     qaRepository.findQuestionsByLesson(lesson.id),
     // Tolerate the window between deploy and the prod notes migration: a missing
     // table yields no preloaded note rather than a crashed lesson page.
-    noteRepository
-      .findForLesson(authUser.id, lesson.id)
-      .catch(() => null),
+    noteRepository.findForLesson(authUser.id, lesson.id).catch(() => null),
     // The answers already on record: an answered question stays answered
     // across a reload, and is never asked twice.
     lessonQuizRepository.findForLesson(authUser.id, lesson.id),
     // The questions this learner reported. Like the notes: during the window
     // between a deploy and its migration, no table means nothing preloaded,
     // not a crashed lesson.
-    quizReportRepository
-      .openQuizIdsFor(authUser.id, lesson.id)
-      .catch(() => []),
+    quizReportRepository.openQuizIdsFor(authUser.id, lesson.id).catch(() => []),
   ]);
   const initialQuizAnswers: Record<string, QuizAnswer> = Object.fromEntries(
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
@@ -190,8 +183,8 @@ export default async function LessonPage({ params }: Props): Promise<React.React
   const progressStatus = existing?.status ?? "IN_PROGRESS";
   const isCompleted = progressStatus === "COMPLETED";
 
-  const catKey = lesson.category as CatKey;
-  const diffKey = lesson.difficulty as DiffKey;
+  const catKey = lesson.category;
+  const diffKey = lesson.difficulty;
   const cat = CAT_META[catKey];
   const diff = DIFF_META[diffKey];
 
@@ -556,7 +549,10 @@ function AngularTag({
 function BriefingRow({
   label,
   children,
-}: { label: string; children: ReactNode }): React.ReactElement {
+}: {
+  label: string;
+  children: ReactNode;
+}): React.ReactElement {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <span
@@ -582,7 +578,10 @@ function BriefingRow({
 function TitleWithAccent({
   title,
   accentColor,
-}: { title: string; accentColor: string }): React.ReactElement {
+}: {
+  title: string;
+  accentColor: string;
+}): React.ReactElement {
   const words = title.split(" ");
   if (words.length <= 2) {
     return (

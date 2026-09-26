@@ -87,7 +87,11 @@ function AuthorLine({
   author,
   date,
   extra,
-}: { author: QaAuthor | null; date: string; extra?: string }): React.JSX.Element {
+}: {
+  author: QaAuthor | null;
+  date: string;
+  extra?: string;
+}): React.JSX.Element {
   const { theme } = useCosmetics();
   return (
     <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>

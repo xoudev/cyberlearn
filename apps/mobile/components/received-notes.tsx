@@ -31,7 +31,9 @@ function categoryOf(value: string): Category | null {
 
 export function ReceivedNotes({
   userId,
-}: { userId: string | undefined }): React.JSX.Element | null {
+}: {
+  userId: string | undefined;
+}): React.JSX.Element | null {
   const router = useRouter();
   const { data } = useReceivedNotes(userId);
   const [now, setNow] = useState(() => Date.now());

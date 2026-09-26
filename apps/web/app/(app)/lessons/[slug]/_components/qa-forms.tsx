@@ -257,7 +257,11 @@ export function AcceptAnswerButton({
   answerId,
   lessonSlug,
   isAccepted,
-}: { answerId: string; lessonSlug: string; isAccepted: boolean }): React.JSX.Element {
+}: {
+  answerId: string;
+  lessonSlug: string;
+  isAccepted: boolean;
+}): React.JSX.Element {
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -310,7 +314,11 @@ export function UpvoteButton({
   answerId,
   lessonSlug,
   upvotes,
-}: { answerId: string; lessonSlug: string; upvotes: number }): React.JSX.Element {
+}: {
+  answerId: string;
+  lessonSlug: string;
+  upvotes: number;
+}): React.JSX.Element {
   const [count, setCount] = useState(upvotes);
   const [voted, setVoted] = useState(false);
   const [isPending, startTransition] = useTransition();

@@ -110,10 +110,10 @@ export function CookieBanner({ initialConsent }: CookieBannerProps): React.JSX.E
               transition: "background 200ms",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "#1A3AFF";
+              e.currentTarget.style.background = "#1A3AFF";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = "#0024FF";
+              e.currentTarget.style.background = "#0024FF";
             }}
           >
             J&apos;AI COMPRIS

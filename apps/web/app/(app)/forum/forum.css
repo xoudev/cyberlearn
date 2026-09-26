@@ -98,7 +98,9 @@
   background: rgba(5, 4, 26, 0.5);
   border: 1px solid #1f1b47;
   border-left: 3px solid var(--fo-accent, var(--cosmetic-accent));
-  transition: border-color 150ms, background 150ms;
+  transition:
+    border-color 150ms,
+    background 150ms;
 }
 .fo-cat:hover {
   background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);
@@ -170,7 +172,9 @@
   background: rgba(5, 4, 26, 0.5);
   border: 1px solid #1f1b47;
   border-left: 3px solid var(--fo-accent, var(--cosmetic-accent));
-  transition: border-color 150ms, background 150ms;
+  transition:
+    border-color 150ms,
+    background 150ms;
 }
 .fo-topic:hover {
   background: color-mix(in srgb, var(--cosmetic-accent) 3%, transparent);

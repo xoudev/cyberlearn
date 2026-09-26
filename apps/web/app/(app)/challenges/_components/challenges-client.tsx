@@ -236,7 +236,10 @@ function typeModifier(type: ChallengeItem["type"]): string {
 function TypeIcon({
   type,
   size = 44,
-}: { type: ChallengeItem["type"]; size?: number }): React.ReactElement {
+}: {
+  type: ChallengeItem["type"];
+  size?: number;
+}): React.ReactElement {
   if (type === "CTF") return <IconCrosshair size={size} />;
   if (type === "PUZZLE") return <IconPuzzle size={size} />;
   if (type === "SCRIPT") {
@@ -324,7 +327,10 @@ function Countdown({ endMs }: { endMs: number }): React.ReactElement {
 function Featured({
   challenge,
   endMs,
-}: { challenge: ChallengeItem; endMs: number }): React.ReactElement {
+}: {
+  challenge: ChallengeItem;
+  endMs: number;
+}): React.ReactElement {
   const ck = catCssKey(challenge.category);
   const tm = typeModifier(challenge.type);
   return (

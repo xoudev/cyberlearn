@@ -125,7 +125,7 @@ export default async function AdminPathsPage(): Promise<React.ReactElement> {
         <StatusBadge
           key="s"
           entityId={p.id}
-          currentStatus={p.status as "DRAFT" | "PUBLISHED" | "ARCHIVED"}
+          currentStatus={p.status}
           action={updatePathStatusAction}
         />,
         <span

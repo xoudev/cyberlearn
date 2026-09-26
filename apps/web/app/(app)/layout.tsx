@@ -23,7 +23,9 @@ async function loadCosmetics(userId: string): Promise<ReturnType<typeof cosmetic
 
 export default async function AppLayout({
   children,
-}: { children: React.ReactNode }): Promise<React.JSX.Element> {
+}: {
+  children: React.ReactNode;
+}): Promise<React.JSX.Element> {
   const cookieStore = await cookies();
 
   const sidebarCookie = cookieStore.get("sidebar_state")?.value;

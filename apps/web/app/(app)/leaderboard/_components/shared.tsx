@@ -25,7 +25,11 @@ export function HexAvatar({
   mono,
   grad,
   size = 36,
-}: { mono: string; grad: string; size?: number }): React.JSX.Element {
+}: {
+  mono: string;
+  grad: string;
+  size?: number;
+}): React.JSX.Element {
   const s = size;
   return (
     <div

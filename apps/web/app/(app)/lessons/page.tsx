@@ -328,18 +328,11 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
                   title={lesson.title}
                   slug={lesson.slug}
                   description={lesson.description}
-                  difficulty={
-                    lesson.difficulty as "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT"
-                  }
-                  category={lesson.category as "CYBERSEC" | "DEV" | "NETWORK"}
+                  difficulty={lesson.difficulty}
+                  category={lesson.category}
                   durationMinutes={lesson.estimatedMinutes}
                   xpReward={lesson.xpReward}
-                  status={
-                    (lesson.progressStatus ?? "NOT_STARTED") as
-                      | "NOT_STARTED"
-                      | "IN_PROGRESS"
-                      | "COMPLETED"
-                  }
+                  status={lesson.progressStatus ?? "NOT_STARTED"}
                   refCode={lesson.refCode}
                   coverSrc={coverSrcs[i] ?? null}
                   quizScore={lesson.quizScore}
@@ -542,7 +535,10 @@ function SelectPill({
 function DifficultySelect({
   params,
   active,
-}: { params: RawParams; active: Difficulty | undefined }): React.ReactElement {
+}: {
+  params: RawParams;
+  active: Difficulty | undefined;
+}): React.ReactElement {
   return (
     <div style={{ position: "relative" }}>
       <div
@@ -565,7 +561,10 @@ function DifficultySelect({
 function StatusSelect({
   params,
   active,
-}: { params: RawParams; active: ProgressStatus | undefined }): React.ReactElement {
+}: {
+  params: RawParams;
+  active: ProgressStatus | undefined;
+}): React.ReactElement {
   return (
     <div style={{ position: "relative" }}>
       <SelectPill href={buildUrl(params, { status: null })} active={active === undefined}>

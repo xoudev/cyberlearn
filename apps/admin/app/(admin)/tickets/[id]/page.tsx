@@ -146,10 +146,7 @@ export default async function AdminTicketPage({
         <div style={{ display: "grid", gap: 18, alignContent: "start" }}>
           <Card title="Statut" pad>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <TicketStatusSelect
-                ticketId={ticket.id}
-                currentStatus={ticket.status as "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"}
-              />
+              <TicketStatusSelect ticketId={ticket.id} currentStatus={ticket.status} />
               <span
                 style={{
                   fontFamily: UI.mono,

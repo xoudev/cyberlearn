@@ -23,7 +23,12 @@ let rejectNextLimit = false;
 let hangNextLimit = false;
 
 vi.mock("@upstash/redis", () => ({
-  Redis: vi.fn(() => ({})),
+  // A function, not an arrow: the module calls `new Redis(...)`, and since
+  // Vitest 4 a mock keeps its implementation's semantics - arrows cannot be
+  // constructed.
+  Redis: vi.fn(function () {
+    return {};
+  }),
 }));
 
 vi.mock("@upstash/ratelimit", () => {

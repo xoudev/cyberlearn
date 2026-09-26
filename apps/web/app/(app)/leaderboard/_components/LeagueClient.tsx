@@ -54,7 +54,10 @@ function useCountdown(targetMs: number): {
 function DivisionBadge({
   division,
   size = "md",
-}: { division: LeagueDivisionCode; size?: "md" | "lg" }): React.JSX.Element {
+}: {
+  division: LeagueDivisionCode;
+  size?: "md" | "lg";
+}): React.JSX.Element {
   const color = DIVISION_VAR[division];
   const lg = size === "lg";
   return (
