@@ -23,7 +23,7 @@ interface AdminSidebarProps {
 }
 
 const BORDER = "#1F1B47";
-const MUTED = "#6B6890";
+const MUTED = "#7F7BA9";
 const TURQUOISE = "#0AFFD4";
 
 function NavIcon({ name }: { name: string }): React.ReactElement | null {

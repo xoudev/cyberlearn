@@ -84,7 +84,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px 24px;
-  color: #6f6b99;
+  color: #7f7ba9;
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -184,7 +184,7 @@
   transform: translateY(-50%);
   border: 0;
   background: transparent;
-  color: #6f6b99;
+  color: #7f7ba9;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 9px;
@@ -195,7 +195,7 @@
 
 .hint,
 .finePrint {
-  color: #6f6b99;
+  color: #7f7ba9;
   font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1.55;
@@ -265,7 +265,7 @@
 
 .oauthButton:hover,
 .oauthButton:focus-visible {
-  border-color: #6f6b99;
+  border-color: #7f7ba9;
   background: #0a0828;
 }
 

@@ -31,7 +31,7 @@ const KIND_MARK: Record<SearchKind, string> = {
 };
 
 const BORDER = "#2A2560";
-const MUTED = "#6F6B99";
+const MUTED = "#7F7BA9";
 
 /** Long enough to stop typing, short enough not to feel like waiting. */
 const DEBOUNCE_MS = 180;
@@ -61,6 +61,14 @@ export function GlobalSearch(): React.ReactElement {
   const [cursor, setCursor] = useState(0);
   /** The term the shown results belong to, so "no results" never lies mid-flight. */
   const [answered, setAnswered] = useState("");
+
+  // The hint follows the keyboard in front of the reader: ⌘ means nothing on
+  // Windows or Linux. The server cannot know, so it renders Ctrl and a Mac
+  // switches after mount.
+  const [shortcut, setShortcut] = useState("Ctrl K");
+  useEffect(() => {
+    if (/Mac|iPhone|iPad/.test(navigator.userAgent)) setShortcut("⌘K");
+  }, []);
 
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -202,7 +210,7 @@ export function GlobalSearch(): React.ReactElement {
         style={{
           width: "100%",
           height: 34,
-          padding: "0 42px 0 36px",
+          padding: "0 60px 0 36px",
           background: "rgba(5,4,26,0.8)",
           border: `1px solid ${BORDER}`,
           borderRadius: 2,
@@ -212,6 +220,7 @@ export function GlobalSearch(): React.ReactElement {
           outline: "none",
         }}
         aria-label="Rechercher"
+        aria-keyshortcuts="Control+K Meta+K"
         role="combobox"
         aria-expanded={showPanel}
         aria-controls="global-search-results"
@@ -238,7 +247,7 @@ export function GlobalSearch(): React.ReactElement {
           transition: "opacity 140ms ease",
         }}
       >
-        ⌘K
+        {shortcut}
       </span>
 
       {showPanel ? (

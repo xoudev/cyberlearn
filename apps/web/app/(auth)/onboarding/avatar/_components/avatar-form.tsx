@@ -147,7 +147,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
             fontSize: 10,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
           }}
         >
           02/03
@@ -225,7 +225,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                   }}
                   onMouseEnter={(e) => {
                     if (isSelected) return;
-                    e.currentTarget.style.borderColor = "#6F6B99";
+                    e.currentTarget.style.borderColor = "#7F7BA9";
                     e.currentTarget.style.background = "#07062A";
                   }}
                   onMouseLeave={(e) => {
@@ -272,7 +272,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                       fontSize: 9,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
-                      color: isSelected ? "#0AFFD4" : "#6F6B99",
+                      color: isSelected ? "#0AFFD4" : "#7F7BA9",
                     }}
                   >
                     {label}
@@ -319,8 +319,8 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
               width: "100%",
               height: 52,
               background: "transparent",
-              border: "1px dashed #6F6B99",
-              color: uploading ? "#6F6B99" : "#B8B5D1",
+              border: "1px dashed #7F7BA9",
+              color: uploading ? "#7F7BA9" : "#B8B5D1",
               fontFamily: "var(--font-mono)",
               fontWeight: 600,
               fontSize: 11.5,
@@ -370,7 +370,7 @@ export function AvatarForm({ currentAvatarUrl }: AvatarFormProps): React.ReactEl
                 transition: "border-color 180ms ease, color 180ms ease",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "#6F6B99";
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = "#7F7BA9";
                 (e.currentTarget as HTMLAnchorElement).style.color = "#F5F5FA";
               }}
               onMouseLeave={(e) => {

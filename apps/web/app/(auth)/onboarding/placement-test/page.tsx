@@ -85,7 +85,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
           fontSize: 11,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "#6F6B99",
+          color: "#7F7BA9",
         }}
       >
         <span
@@ -173,7 +173,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                 fontSize: 11,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 14,
@@ -191,7 +191,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                 fontSize: 10,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
               }}
             >
               OPTIONNEL
@@ -333,7 +333,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               }}
             >
               <b style={{ color: "#0AFFD4", fontWeight: 700 }}>›</b> TEST DE POSITIONNEMENT
-              <span style={{ fontWeight: 400, color: "#6F6B99", fontSize: 11, marginLeft: 8 }}>
+              <span style={{ fontWeight: 400, color: "#7F7BA9", fontSize: 11, marginLeft: 8 }}>
                 (OPTIONNEL)
               </span>
             </h2>
@@ -343,7 +343,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                 fontSize: 10,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
               }}
             >
               03/03
@@ -421,7 +421,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                       fontSize: 9.5,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
-                      color: "#6F6B99",
+                      color: "#7F7BA9",
                       marginBottom: 8,
                     }}
                   >
@@ -446,7 +446,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: 11,
-                          color: "#6F6B99",
+                          color: "#7F7BA9",
                           fontWeight: 500,
                           letterSpacing: "0.04em",
                         }}
@@ -464,7 +464,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 letterSpacing: "0.04em",
                 lineHeight: 1.6,
                 padding: "12px 14px",
@@ -539,7 +539,7 @@ export default async function PlacementTestIntroPage(): Promise<React.ReactEleme
                   fontSize: 11,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   textDecoration: "none",
                   textAlign: "center",
                   display: "block",

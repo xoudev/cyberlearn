@@ -48,7 +48,7 @@ function MiniStat({ value, label }: { value: string; label: string }): React.JSX
           fontSize: 9.5,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "#6B6890",
+          color: "#7F7BA9",
           marginTop: 6,
         }}
       >
@@ -84,7 +84,7 @@ function FinalCard({
           justifyContent: "space-between",
           ...MONO,
           fontSize: 10.5,
-          color: "#6B6890",
+          color: "#7F7BA9",
           letterSpacing: "0.1em",
         }}
       >
@@ -116,7 +116,7 @@ function FinalCard({
           Wrapped
         </span>
       </h2>
-      <span style={{ ...MONO, fontSize: 10, letterSpacing: "0.14em", color: "#6B6890" }}>
+      <span style={{ ...MONO, fontSize: 10, letterSpacing: "0.14em", color: "#7F7BA9" }}>
         {"// "}RÉCAP DE L’ANNÉE
       </span>
 
@@ -146,7 +146,7 @@ function FinalCard({
                   fontSize: 9.5,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   marginTop: 4,
                 }}
               >
@@ -172,7 +172,7 @@ function FinalCard({
                   fontSize: 9.5,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   marginTop: 4,
                 }}
               >
@@ -256,7 +256,7 @@ function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasEleme
   ctx.font = `800 210px ${SANS_F}`;
   ctx.fillText(card.year, W / 2, 400);
 
-  ctx.fillStyle = "#6B6890";
+  ctx.fillStyle = "#7F7BA9";
   ctx.font = `28px ${MONO_F}`;
   ctx.fillText(card.handle, W / 2, 470);
 
@@ -268,7 +268,7 @@ function drawStoryCard(payload: WrappedPayload, handle: string): HTMLCanvasEleme
     ctx.fillStyle = ACCENT;
     ctx.font = `800 120px ${SANS_F}`;
     ctx.fillText(value, x, y);
-    ctx.fillStyle = "#6B6890";
+    ctx.fillStyle = "#7F7BA9";
     ctx.font = `30px ${MONO_F}`;
     ctx.fillText(label, x, y + 60);
   });
@@ -419,7 +419,7 @@ function ExportPanel({
           fontSize: 11,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#6B6890",
+          color: "#7F7BA9",
           marginBottom: 4,
         }}
       >

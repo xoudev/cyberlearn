@@ -39,7 +39,7 @@ export const tokens = {
 
   textPrimary: "#F5F5FA",
   textSecondary: "#B8B5D1",
-  textMuted: "#6B6890",
+  textMuted: "#7F7BA9",
   textDisabled: "#3F3D5C",
 
   brandBlue: "#0024FF",

@@ -82,7 +82,7 @@
   font: 10px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .factValue {
@@ -143,7 +143,7 @@
   color: #b8b5d1;
 }
 .ghost:hover {
-  border-color: #6f6b99;
+  border-color: #7f7ba9;
   background: rgba(111, 107, 153, 0.08);
 }
 
@@ -199,7 +199,7 @@
   font: 10px var(--font-mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6f6b99;
+  color: #7f7ba9;
 }
 
 .textarea {

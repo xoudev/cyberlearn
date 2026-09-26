@@ -38,7 +38,7 @@ export function VerifyForm(): React.JSX.Element {
             fontSize: 10.5,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             marginBottom: 10,
           }}
         >
@@ -135,7 +135,7 @@ export function VerifyForm(): React.JSX.Element {
           letterSpacing: "0.14em",
           textTransform: "uppercase",
           border: "none",
-          color: ready ? "#05041A" : "#6B6890",
+          color: ready ? "#05041A" : "#7F7BA9",
           background: ready ? "linear-gradient(90deg, #0AFFD4, #4DFFE0)" : "#15122A",
           boxShadow: ready ? "0 0 24px rgba(10,255,212,0.28)" : "none",
           cursor: ready ? "pointer" : "not-allowed",
@@ -153,7 +153,7 @@ export function VerifyForm(): React.JSX.Element {
             fontSize: 12,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             textDecoration: "none",
           }}
         >

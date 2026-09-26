@@ -143,7 +143,7 @@ const TOKEN_STYLE: Record<TokenType, React.CSSProperties> = {
   keyword: { color: "#4D8BFF", fontWeight: 600 },
   builtin: { color: "#B14DFF" },
   string: { color: "var(--cosmetic-accent)" },
-  comment: { color: "#6B6890", fontStyle: "italic" },
+  comment: { color: "#7F7BA9", fontStyle: "italic" },
   number: { color: "#FFB020" },
   decorator: { color: "#FF4D6D" },
   operator: { color: "#8B88B8" },
@@ -449,7 +449,7 @@ export function ScriptRunner({
             padding: "16px 0",
             textAlign: "right",
             userSelect: "none",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             flexShrink: 0,
           }}
         >
@@ -610,7 +610,7 @@ export function ScriptRunner({
           <span>{isLoading ? "Chargement..." : isRunning ? "Exécution..." : "Prêt"}</span>
           <span
             style={{
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               marginLeft: "auto",
               letterSpacing: "0.1em",
               fontWeight: 500,
@@ -692,7 +692,7 @@ export function ScriptRunner({
             padding: "16px 20px",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}

@@ -26,7 +26,7 @@ export const colors = {
   // Text
   textPrimary: "#f5f5fa",
   textSecondary: "#b8b5d1",
-  textMuted: "#6b6890",
+  textMuted: "#7f7ba9",
   textDisabled: "#3f3d5c",
   // Brand + default cosmetic accent
   brandBlue: "#0024ff",

@@ -151,7 +151,7 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             margin: 0,
           }}
         >

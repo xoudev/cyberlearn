@@ -6,7 +6,9 @@ import { SettingsNav } from "./_components/SettingsNav";
 import { MONO, S, SANS } from "./_components/tokens";
 
 export const metadata: Metadata = {
-  title: "Paramètres",
+  // An object, not a string: a plain title here drops the root template for
+  // every settings page below it, which then read "Profil" with no site name.
+  title: { default: "Paramètres", template: "%s · Paramètres · CyberLearn" },
   description: "Gérez votre profil, votre confidentialité et vos préférences.",
 };
 

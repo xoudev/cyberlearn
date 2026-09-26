@@ -678,7 +678,7 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
             marginBottom: 32,
           }}
         >
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#6B6890", margin: 0 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#7F7BA9", margin: 0 }}>
             Aucun défi disponible pour le moment.
           </p>
         </div>
@@ -716,7 +716,7 @@ export function ChallengesClient({ items, featured, featuredEndMs }: Props): Rea
           >
             Aucun défi trouvé
           </p>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9", margin: 0 }}>
             Essaie d&apos;autres filtres pour trouver tes challenges.
           </p>
         </div>

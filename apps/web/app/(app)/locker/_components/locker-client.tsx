@@ -219,7 +219,7 @@ function Card({
               placeItems: "center",
               background: "rgba(3,2,25,0.6)",
               borderRadius: 6,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               fontSize: 18,
             }}
             aria-hidden="true"
@@ -341,7 +341,7 @@ function Card({
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -538,7 +538,7 @@ export function LockerClient({
               fontSize: 10,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               marginBottom: 16,
               display: "flex",
               justifyContent: "space-between",
@@ -620,7 +620,7 @@ export function LockerClient({
                     fontSize: 9,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: "#6F6B99",
+                    color: "#7F7BA9",
                     marginTop: 2,
                   }}
                 >
@@ -671,7 +671,7 @@ export function LockerClient({
                 }}
               >
                 <span
-                  style={{ color: "#6F6B99", letterSpacing: "0.08em", textTransform: "uppercase" }}
+                  style={{ color: "#7F7BA9", letterSpacing: "0.08em", textTransform: "uppercase" }}
                 >
                   {SLOT_LABEL[slot.type]}
                 </span>

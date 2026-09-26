@@ -140,7 +140,7 @@ const styles = {
   codeLabel: {
     fontFamily: "'JetBrains Mono', 'Courier New', monospace",
     fontSize: "11px",
-    color: "#6B6890",
+    color: "#7F7BA9",
     letterSpacing: "0.12em",
     textTransform: "uppercase" as const,
     margin: "0 0 8px",

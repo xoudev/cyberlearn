@@ -21,7 +21,7 @@ const CAT_META: Partial<Record<Category, { color: string; label: string }>> = {
   DEV: { color: "#6E8BFF", label: "Développement" },
   NETWORK: { color: "#0AFFD4", label: "Réseaux" },
 };
-const CAT_DEFAULT = { color: "#6B6890", label: "-" };
+const CAT_DEFAULT = { color: "#7F7BA9", label: "-" };
 
 /** Regular pointy-top hexagon; same canonical geometry as the badge medallion. */
 const HEX_CLIP = "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)";
@@ -93,7 +93,7 @@ function SectionLabel({ eyebrow, title }: { eyebrow: string; title: string }): R
           fontSize: 11,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#6F6B99",
+          color: "#7F7BA9",
           display: "inline-flex",
           alignItems: "center",
           gap: 10,
@@ -186,7 +186,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
               gap: 8,
               ...MONO,
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textDecoration: "none",
               textTransform: "uppercase",
@@ -302,7 +302,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   fontSize: 11,
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   marginBottom: 12,
                 }}
               >
@@ -338,7 +338,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                 style={{
                   ...MONO,
                   fontSize: 12,
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   letterSpacing: "0.04em",
                   margin: user.bio ? "0 0 12px" : 0,
                 }}
@@ -419,7 +419,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                     fontSize: 10,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: "#6F6B99",
+                    color: "#7F7BA9",
                   }}
                 >
                   → LVL {level + 1}
@@ -454,7 +454,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   justifyContent: "space-between",
                   ...MONO,
                   fontSize: 10,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   letterSpacing: "0.06em",
                 }}
               >
@@ -489,7 +489,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
             {
               label: "Streak actuel",
               value: `${String(user.streakDays)}j`,
-              color: user.streakDays > 0 ? "#FFB547" : "#6B6890",
+              color: user.streakDays > 0 ? "#FFB547" : "#7F7BA9",
               sub: user.streakDays > 0 ? "🔥 en cours" : "à relancer",
             },
             {
@@ -512,7 +512,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                   fontSize: 10,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   marginBottom: 14,
                 }}
               >
@@ -584,7 +584,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                       fontSize: 10,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
-                      color: "#6F6B99",
+                      color: "#7F7BA9",
                       maxWidth: 120,
                     }}
                   >
@@ -674,7 +674,7 @@ export default async function PublicProfilePage({ params }: Props): Promise<Reac
                         gap: 8,
                         ...MONO,
                         fontSize: 10.5,
-                        color: "#6F6B99",
+                        color: "#7F7BA9",
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
                         flexShrink: 0,

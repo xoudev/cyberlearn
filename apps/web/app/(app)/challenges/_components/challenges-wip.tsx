@@ -16,7 +16,7 @@ export function ChallengesWip(): React.ReactElement {
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           letterSpacing: "0.04em",
-          color: "#6B6890",
+          color: "#7F7BA9",
           marginBottom: 28,
           display: "inline-flex",
           alignItems: "center",
@@ -37,7 +37,7 @@ export function ChallengesWip(): React.ReactElement {
           fontSize: 11,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#6B6890",
+          color: "#7F7BA9",
           marginBottom: 14,
         }}
       >
@@ -150,7 +150,7 @@ export function ChallengesWip(): React.ReactElement {
             fontSize: 11,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             textDecoration: "none",
             padding: "16px 8px",
           }}

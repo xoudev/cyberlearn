@@ -154,7 +154,7 @@ body::before {
   flex-shrink: 0;
   background: transparent;
   border: none;
-  color: #6b6890;
+  color: #7f7ba9;
   cursor: pointer;
 }
 @media (min-width: 768px) {

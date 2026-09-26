@@ -17,7 +17,7 @@ import { useLessonQuiz } from "./lesson-quiz-context";
  * question. Only on a lesson page: an editor preview has nobody to report to.
  */
 
-const MUTED = "#6B6890";
+const MUTED = "#7F7BA9";
 const RED = "#FF4757";
 
 const linkStyle: React.CSSProperties = {

@@ -6,7 +6,7 @@ import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { rolloverDueSeasons } from "@/lib/league/rollover";
 import { LeaderboardClient } from "./_components/LeaderboardClient";
 
-export const metadata: Metadata = { title: "Classement · CyberLearn" };
+export const metadata: Metadata = { title: "Classement" };
 export const dynamic = "force-dynamic";
 // The lazy fallback below runs the same transaction as the cron, which is
 // allowed 60s. Without a matching budget the render would be killed mid-flight,

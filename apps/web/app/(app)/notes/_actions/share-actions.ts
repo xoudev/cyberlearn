@@ -2,6 +2,7 @@
 
 import { requireRequestUser } from "@/lib/auth";
 import {
+  dismissSharedNoteFor,
   shareAudienceFor,
   shareNoteFor,
   unshareNoteFor,
@@ -41,4 +42,10 @@ export async function unshareNoteAction(
 ): Promise<{ ok: boolean }> {
   const user = await requireRequestUser();
   return unshareNoteFor(user.id, noteId, recipientId);
+}
+
+/** Takes a note somebody handed the reader out of their "Reçues". */
+export async function dismissSharedNoteAction(noteId: string): Promise<{ ok: boolean }> {
+  const user = await requireRequestUser();
+  return dismissSharedNoteFor(user.id, noteId);
 }

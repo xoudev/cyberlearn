@@ -22,6 +22,11 @@ interface NoteReaderProps {
    * editing, filing or re-sharing is theirs to do.
    */
   sharedBy?: string;
+  /**
+   * A received note only: takes it out of the reader's "Reçues". Resolves
+   * true once done; the parent then closes the reader.
+   */
+  onDismiss?: () => Promise<boolean>;
 }
 
 export function NoteReader({
@@ -31,10 +36,13 @@ export function NoteReader({
   onMove,
   onSaveContent,
   sharedBy,
+  onDismiss,
 }: NoteReaderProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const mine = sharedBy === undefined;
+  const [dismissing, setDismissing] = useState(false);
+  const [dismissFailed, setDismissFailed] = useState(false);
   const [draft, setDraft] = useState(note.content);
   const [pending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -194,7 +202,7 @@ export function NoteReader({
                 />
                 {cat.label}
                 {note.pathTitle ? (
-                  <span style={{ color: "#6F6B99" }}>· {note.pathTitle}</span>
+                  <span style={{ color: "#7F7BA9" }}>· {note.pathTitle}</span>
                 ) : null}
               </span>
               <h2
@@ -215,7 +223,7 @@ export function NoteReader({
                   marginTop: 6,
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                 }}
               >
                 maj {dateLabel} · {note.wordCount} mot{note.wordCount > 1 ? "s" : ""}
@@ -288,6 +296,33 @@ export function NoteReader({
             <button type="button" onClick={exportMd} style={toolBtn(false)}>
               Exporter .md
             </button>
+            {/* A received note can hold anything its author wrote: the reader
+                can at least take it out of their list, where it was put. */}
+            {!mine && onDismiss ? (
+              <button
+                type="button"
+                disabled={dismissing}
+                onClick={() => {
+                  setDismissing(true);
+                  setDismissFailed(false);
+                  void onDismiss().then((ok) => {
+                    setDismissing(false);
+                    if (!ok) setDismissFailed(true);
+                  });
+                }}
+                style={toolBtn(false)}
+              >
+                {dismissing ? "…" : "Masquer cette note"}
+              </button>
+            ) : null}
+            {dismissFailed ? (
+              <span
+                role="alert"
+                style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#FF4757" }}
+              >
+                Impossible de la masquer, réessaie.
+              </span>
+            ) : null}
             {mine ? (
               <label
                 style={{
@@ -297,7 +332,7 @@ export function NoteReader({
                   marginLeft: "auto",
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                 }}
               >
                 Dossier
@@ -348,7 +383,7 @@ export function NoteReader({
                 }}
               />
             ) : note.content.trim() === "" ? (
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#6F6B99" }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "#7F7BA9" }}>
                 Note vide.
               </p>
             ) : (

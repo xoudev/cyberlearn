@@ -241,7 +241,7 @@ export function Quiz({
             textColor = "#F5F5FA";
             letterColor = "#6E8BFF";
           } else if (answered) {
-            textColor = "#6B6890";
+            textColor = "#7F7BA9";
           }
 
           const locked = answered || pending;

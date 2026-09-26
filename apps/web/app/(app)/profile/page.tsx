@@ -31,7 +31,7 @@ const RARITY_GRAD: Record<Rarity, string> = {
   LEGENDARY: "linear-gradient(135deg, #FFB547 0%, #FF4757 50%, #0024FF 100%)",
   EPIC: "linear-gradient(135deg, var(--cosmetic-accent) 0%, #0024FF 100%)",
   RARE: "linear-gradient(135deg, #6E8BFF 0%, #4A3FCC 100%)",
-  COMMON: "linear-gradient(135deg, #B8B5D1 0%, #6F6B99 100%)",
+  COMMON: "linear-gradient(135deg, #B8B5D1 0%, #7F7BA9 100%)",
 };
 
 const RARITY_COLOR: Record<Rarity, string> = {
@@ -289,7 +289,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           letterSpacing: "0.04em",
-          color: "#6F6B99",
+          color: "#7F7BA9",
           marginBottom: 28,
           display: "inline-flex",
           alignItems: "center",
@@ -386,7 +386,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   fontSize: 11,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                 }}
               >
                 Niveau {level}
@@ -405,7 +405,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                     fontSize: 11,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: "#6F6B99",
+                    color: "#7F7BA9",
                     textDecoration: "none",
                     display: "inline-flex",
                     alignItems: "center",
@@ -421,11 +421,11 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                     }}
                   />
                   Classe <b style={{ color: "#B8B5D1", fontWeight: 600 }}>{primaryClass.name}</b>
-                  <span style={{ color: "#3F3D5C" }}>
+                  <span style={{ color: "#7F7BA9" }}>
                     {primaryClass.promotion.establishment.name} · {primaryClass.promotion.name}
                   </span>
                   {classes.length > 1 && (
-                    <span style={{ color: "#3F3D5C" }}>+{classes.length - 1}</span>
+                    <span style={{ color: "#7F7BA9" }}>+{classes.length - 1}</span>
                   )}
                 </Link>
               )}
@@ -467,7 +467,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 fontSize: 11,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#3F3D5C",
+                color: "#7F7BA9",
               }}
             >
               <span
@@ -549,7 +549,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 fontSize: 10,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#3F3D5C",
+                color: "#7F7BA9",
                 marginBottom: 14,
                 display: "flex",
                 alignItems: "center",
@@ -622,7 +622,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 borderTop: "1px dashed #1F1B47",
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#3F3D5C",
+                color: "#7F7BA9",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
               }}
@@ -706,7 +706,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.18em",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             background: "#030219",
             padding: "0 8px",
           }}
@@ -739,7 +739,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                 fontSize: 10,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#3F3D5C",
+                color: "#7F7BA9",
               }}
             >
               Niveau actuel
@@ -768,7 +768,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               letterSpacing: "0.06em",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               textTransform: "uppercase",
             }}
           >
@@ -890,7 +890,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
           <span
             style={{
               textTransform: "uppercase",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.12em",
             }}
           >
@@ -926,7 +926,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginTop: 10,
@@ -984,7 +984,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
                   fontSize: 18,
                   fontWeight: 600,
                   letterSpacing: "-0.02em",
-                  color: "#3F3D5C",
+                  color: "#7F7BA9",
                   WebkitTextFillColor: "#3F3D5C",
                 }}
               >
@@ -996,7 +996,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginTop: 10,
@@ -1024,7 +1024,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginTop: 10,
@@ -1055,7 +1055,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginTop: 10,
@@ -1087,7 +1087,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               marginTop: 10,
@@ -1107,7 +1107,7 @@ export default async function ProfilePage(): Promise<React.ReactElement> {
             fontSize: 11,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             margin: "0 0 16px",
           }}
         >
@@ -1149,7 +1149,7 @@ function StatCell({
           fontSize: 10,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           marginBottom: 14,
           display: "flex",
           alignItems: "center",

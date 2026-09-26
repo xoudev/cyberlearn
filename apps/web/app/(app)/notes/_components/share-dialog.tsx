@@ -210,7 +210,7 @@ export function ShareDialog({
                     fontWeight: 700,
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    color: "#6F6B99",
+                    color: "#7F7BA9",
                     marginBottom: 8,
                   }}
                 >
@@ -401,7 +401,7 @@ const mutedLine: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
   fontSize: 12.5,
   lineHeight: 1.6,
-  color: "#6F6B99",
+  color: "#7F7BA9",
   margin: 0,
 };
 

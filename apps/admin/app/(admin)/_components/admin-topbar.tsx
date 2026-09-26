@@ -246,7 +246,7 @@ export function AdminTopbar({ initials, handle }: AdminTopbarProps): React.React
                     fontSize: 9,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: destination.hint === "action" ? "#0AFFD4" : "#6B6890",
+                    color: destination.hint === "action" ? "#0AFFD4" : "#7F7BA9",
                   }}
                 >
                   {destination.hint}

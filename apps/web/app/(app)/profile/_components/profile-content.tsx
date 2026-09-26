@@ -144,7 +144,7 @@ function ProfileBadgeCard({ badge }: { badge: SerializedBadge }) {
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           letterSpacing: "0.08em",
         }}
       >
@@ -164,7 +164,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
           }}
@@ -178,7 +178,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {lessons.map((lp) => {
-        const catColor = CAT_COLOR[lp.category] ?? "#6B6890";
+        const catColor = CAT_COLOR[lp.category] ?? "#7F7BA9";
         return (
           <Link key={lp.lessonId} href={`/lessons/${lp.slug}`} style={{ textDecoration: "none" }}>
             <div
@@ -219,7 +219,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     margin: 0,
                   }}
                 >
@@ -242,7 +242,7 @@ function ActivityFeed({ lessons }: { lessons: SerializedLesson[] }) {
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
-                      color: "#3F3D5C",
+                      color: "#7F7BA9",
                       letterSpacing: "0.04em",
                     }}
                   >
@@ -276,7 +276,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
           }}
@@ -321,7 +321,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               fontWeight: 600,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.16em",
               marginRight: 12,
             }}
@@ -477,7 +477,7 @@ function CertsSection({ certs }: { certs: SerializedCert[] }) {
                 gap: 14,
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#3F3D5C",
+                color: "#7F7BA9",
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
                 marginBottom: 14,
@@ -684,7 +684,7 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.14em",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             textTransform: "uppercase",
             display: "inline-flex",
             alignItems: "center",
@@ -709,7 +709,7 @@ export function ProfileContent({ badges, lessons, certs }: Props): React.JSX.Ele
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#3F3D5C",
+                color: "#7F7BA9",
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
               }}

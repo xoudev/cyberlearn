@@ -335,7 +335,7 @@ function SectionLabel({ text }: { text: string }) {
         fontSize: 10,
         letterSpacing: "0.14em",
         textTransform: "uppercase" as const,
-        color: "#6F6B99",
+        color: "#7F7BA9",
         padding: "0 24px",
         marginBottom: 10,
       }}
@@ -613,7 +613,7 @@ export function SidebarNav({
           >
             LVL · {level}
           </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#6F6B99" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#7F7BA9" }}>
             {formatNumberFr(xpCurrent)}/{formatNumberFr(xpNeeded)}
           </span>
         </div>
@@ -648,7 +648,7 @@ export function SidebarNav({
             marginTop: 10,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#6F6B99",
+            color: "#7F7BA9",
             letterSpacing: "0.04em",
           }}
         >

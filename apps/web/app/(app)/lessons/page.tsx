@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { lessonRepository } from "@cyberlearn/db";
 import { LessonCard } from "@cyberlearn/ui";
@@ -9,6 +10,8 @@ import { indexPlacements } from "@/lib/lessons/unlock";
 import { availableFirst } from "@/lib/lessons/catalog-order";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
+
+export const metadata: Metadata = { title: "Leçons" };
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -78,7 +81,7 @@ export default async function LessonsPage({
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           letterSpacing: "0.04em",
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           marginBottom: 22,
           display: "inline-flex",
           alignItems: "center",
@@ -154,8 +157,10 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
   const startIdx = (page - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(page * PAGE_SIZE, total);
 
-  const inProgressCount = lessons.filter((l) => l.progressStatus === "IN_PROGRESS").length;
-  const completedCount = lessons.filter((l) => l.progressStatus === "COMPLETED").length;
+  // Over every matching lesson, as `total` next to them is: counted over the
+  // page on screen, the strip said "1 en cours" while the dashboard said 2.
+  const inProgressCount = matchingLessons.filter((l) => l.progressStatus === "IN_PROGRESS").length;
+  const completedCount = matchingLessons.filter((l) => l.progressStatus === "COMPLETED").length;
 
   return (
     <>
@@ -214,7 +219,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
               gap: 18,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
             }}
@@ -239,7 +244,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
               gap: 18,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textTransform: "uppercase",
             }}
@@ -261,7 +266,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
               fontSize: 10,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               marginRight: 6,
             }}
           >
@@ -385,7 +390,7 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
             background: "rgba(5,4,26,0.5)",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             letterSpacing: "0.08em",
             textTransform: "uppercase",
           }}
@@ -627,7 +632,7 @@ function EmptyState(): React.ReactElement {
         <p style={{ fontSize: 20, fontWeight: 700, color: "#F5F5FA", margin: 0 }}>
           Aucune leçon trouvée
         </p>
-        <p style={{ marginTop: 6, fontSize: 13, color: "#6B6890" }}>
+        <p style={{ marginTop: 6, fontSize: 13, color: "#7F7BA9" }}>
           Modifie tes filtres ou ta recherche pour explorer d&apos;autres leçons.
         </p>
       </div>

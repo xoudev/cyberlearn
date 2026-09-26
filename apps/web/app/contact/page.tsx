@@ -89,7 +89,7 @@ export default function ContactPage(): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 12,
-            color: "#6B6890",
+            color: "#7F7BA9",
             margin: 0,
             lineHeight: 1.6,
           }}
@@ -116,7 +116,7 @@ export default function ContactPage(): React.ReactElement {
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -138,7 +138,7 @@ export default function ContactPage(): React.ReactElement {
         >
           Nous contacter
         </h1>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9", margin: 0 }}>
           Un bug, une suggestion ou une question ? On te répond.
         </p>
       </div>
@@ -166,7 +166,7 @@ export default function ContactPage(): React.ReactElement {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 6,
             }}
           >
@@ -208,7 +208,7 @@ export default function ContactPage(): React.ReactElement {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 6,
             }}
           >
@@ -290,7 +290,7 @@ export default function ContactPage(): React.ReactElement {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 6,
             }}
           >
@@ -335,7 +335,7 @@ export default function ContactPage(): React.ReactElement {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 6,
             }}
           >

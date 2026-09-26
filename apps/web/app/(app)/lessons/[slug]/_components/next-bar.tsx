@@ -127,7 +127,7 @@ export function NextBar({
                 fontFamily: "var(--font-mono, monospace)",
                 fontSize: 10,
                 letterSpacing: "0.08em",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 textDecoration: "none",
               }}
             >
@@ -168,7 +168,7 @@ export function NextBar({
                 {diffLabel}
               </span>
               <span
-                style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 9, color: "#3F3D5C" }}
+                style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 9, color: "#7F7BA9" }}
               >
                 {next.estimatedMinutes} min · +{next.xpReward} XP
               </span>

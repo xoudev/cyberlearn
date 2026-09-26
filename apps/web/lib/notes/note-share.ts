@@ -147,6 +147,20 @@ export async function unshareNoteFor(
   return { ok: await noteShareRepository.unshare(userId, note.data, recipient.data) };
 }
 
+/**
+ * Takes a received note out of the reader's "Reçues", on the site and in the
+ * app. Their own row only: the author keeps the note, and so does everybody
+ * else it went to.
+ */
+export async function dismissSharedNoteFor(
+  userId: string,
+  noteId: unknown,
+): Promise<{ ok: boolean }> {
+  const note = uuid.safeParse(noteId);
+  if (!note.success) return { ok: false };
+  return { ok: await noteShareRepository.dismissReceived(userId, note.data) };
+}
+
 /** A note somebody handed to the reader, as the app receives it. */
 export interface MobileIncomingNote {
   id: string;

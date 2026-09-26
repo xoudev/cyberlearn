@@ -38,7 +38,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: "0.14em",
   textTransform: "uppercase",
-  color: "#6B6890",
+  color: "#7F7BA9",
   marginBottom: 6,
 };
 
@@ -96,7 +96,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
@@ -128,7 +128,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
@@ -171,7 +171,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
@@ -233,7 +233,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             marginBottom: 16,
@@ -380,7 +380,7 @@ export function NewChallengeForm({ prerequisites }: Props): React.ReactElement {
             alignItems: "center",
             padding: "9px 20px",
             border: "1px solid #2A2560",
-            color: "#6B6890",
+            color: "#7F7BA9",
             fontFamily: "var(--font-mono)",
             fontWeight: 600,
             fontSize: 11,

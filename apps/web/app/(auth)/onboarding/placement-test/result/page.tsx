@@ -85,7 +85,7 @@ function ScoreBar({
               fontFamily: "var(--font-mono)",
               fontSize: 13,
               fontWeight: 500,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: 0,
             }}
           >
@@ -197,7 +197,7 @@ export default async function PlacementResultPage({
           fontSize: 11,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "#6F6B99",
+          color: "#7F7BA9",
         }}
       >
         <span
@@ -268,7 +268,7 @@ export default async function PlacementResultPage({
                 fontSize: 11,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
@@ -364,7 +364,7 @@ export default async function PlacementResultPage({
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
                 }}
@@ -387,7 +387,7 @@ export default async function PlacementResultPage({
                 background: "rgba(5,4,26,0.5)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 10.5,
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 letterSpacing: "0.04em",
                 borderTop: "1px solid #1F1B47",
               }}

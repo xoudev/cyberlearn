@@ -283,7 +283,7 @@ export function AcceptAnswerButton({
           ? "color-mix(in srgb, var(--cosmetic-accent) 12%, transparent)"
           : "transparent",
         border: `1px solid ${isAccepted ? "color-mix(in srgb, var(--cosmetic-accent) 40%, transparent)" : "#2A2560"}`,
-        color: isAccepted ? "var(--cosmetic-accent)" : "#6B6890",
+        color: isAccepted ? "var(--cosmetic-accent)" : "#7F7BA9",
         cursor: isAccepted ? "default" : "pointer",
       }}
     >
@@ -340,7 +340,7 @@ export function UpvoteButton({
         fontSize: 10,
         background: "transparent",
         border: `1px solid ${voted ? "rgba(0,36,255,0.4)" : "#1F1B47"}`,
-        color: voted ? "#4D8BFF" : "#6B6890",
+        color: voted ? "#4D8BFF" : "#7F7BA9",
         cursor: voted ? "default" : "pointer",
       }}
     >
@@ -398,6 +398,6 @@ const BTN_GHOST: React.CSSProperties = {
   textTransform: "uppercase",
   background: "transparent",
   border: "1px solid #2A2560",
-  color: "#6B6890",
+  color: "#7F7BA9",
   cursor: "pointer",
 };

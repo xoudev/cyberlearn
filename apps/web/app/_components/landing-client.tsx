@@ -164,7 +164,7 @@ export function LandingClient({
                 fontSize: 11,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 28,
                 padding: "6px 12px",
                 border: "1px solid #1F1B47",
@@ -365,7 +365,7 @@ export function LandingClient({
                     }}
                   />
                 )}
-                <span style={{ color: "#6B6890" }}>
+                <span style={{ color: "#7F7BA9" }}>
                   {num && <b style={{ color: "#F5F5FA", marginRight: 6 }}>{num}</b>}
                   {label}
                 </span>
@@ -384,7 +384,7 @@ export function LandingClient({
                 fontSize: 10,
                 letterSpacing: "0.24em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 16,
                 display: "flex",
                 alignItems: "center",
@@ -463,7 +463,7 @@ export function LandingClient({
                       { num: "06", text: 'scan("10.0.0.1")', comment: false },
                     ].map(({ num, text, comment }) => (
                       <div key={num} style={{ display: "flex", gap: 16, lineHeight: 1.7 }}>
-                        <span style={{ color: "#3F3D5C", minWidth: 20 }}>{num}</span>
+                        <span style={{ color: "#7F7BA9", minWidth: 20 }}>{num}</span>
                         <span style={{ color: comment ? "#3F3D5C" : "#B8B5D1" }}>{text}</span>
                       </div>
                     ))}
@@ -485,7 +485,7 @@ export function LandingClient({
                         justifyContent: "space-between",
                         fontFamily: "var(--font-mono)",
                         fontSize: 10,
-                        color: "#6B6890",
+                        color: "#7F7BA9",
                         marginBottom: 8,
                         letterSpacing: "0.08em",
                       }}
@@ -606,7 +606,7 @@ export function LandingClient({
                         style={{
                           fontFamily: "var(--font-mono)",
                           fontSize: 9,
-                          color: "#3F3D5C",
+                          color: "#7F7BA9",
                           lineHeight: 1.8,
                           letterSpacing: "0.04em",
                         }}
@@ -661,7 +661,7 @@ export function LandingClient({
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
                       letterSpacing: "0.18em",
-                      color: "#6B6890",
+                      color: "#7F7BA9",
                       marginBottom: 10,
                     }}
                   >
@@ -708,7 +708,7 @@ export function LandingClient({
                 fontSize: 10,
                 letterSpacing: "0.24em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 16,
                 display: "flex",
                 alignItems: "center",
@@ -830,7 +830,7 @@ export function LandingClient({
                         fontSize: 9,
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
-                        color: "#6B6890",
+                        color: "#7F7BA9",
                       }}
                     >
                       {lvl}
@@ -877,7 +877,7 @@ export function LandingClient({
                       borderTop: "1px solid #1F1B47",
                       fontFamily: "var(--font-mono)",
                       fontSize: 11,
-                      color: "#6B6890",
+                      color: "#7F7BA9",
                       letterSpacing: "0.06em",
                     }}
                   >
@@ -931,7 +931,7 @@ export function LandingClient({
                 fontSize: 10,
                 letterSpacing: "0.28em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 24,
               }}
             >
@@ -1061,7 +1061,7 @@ export function LandingClient({
                     fontSize: 11,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     textDecoration: "none",
                   }}
                 >
@@ -1073,7 +1073,7 @@ export function LandingClient({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#3F3D5C",
+                color: "#7F7BA9",
                 letterSpacing: "0.06em",
               }}
             >

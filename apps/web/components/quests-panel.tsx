@@ -66,7 +66,7 @@ function QuestGlyph({ type }: { type: QuestType }): React.ReactElement {
 }
 
 function QuestRow({ q }: { q: QuestWithProgress }): React.ReactElement {
-  const accent = q.completed ? TURQ : "#6B6890";
+  const accent = q.completed ? TURQ : "#7F7BA9";
   const pct = q.target > 0 ? Math.min(100, Math.round((q.progress / q.target) * 100)) : 0;
   return (
     <div
@@ -142,7 +142,7 @@ function QuestRow({ q }: { q: QuestWithProgress }): React.ReactElement {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               whiteSpace: "nowrap",
             }}
           >
@@ -162,7 +162,7 @@ function QuestRow({ q }: { q: QuestWithProgress }): React.ReactElement {
               fontSize: 11,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
             }}
           >
             ✓ Réclamé
@@ -175,7 +175,7 @@ function QuestRow({ q }: { q: QuestWithProgress }): React.ReactElement {
               fontFamily: "var(--font-mono)",
               fontSize: 11,
               letterSpacing: "0.08em",
-              color: q.type === "WEEKLY_BONUS" ? AMBER : "#6F6B99",
+              color: q.type === "WEEKLY_BONUS" ? AMBER : "#7F7BA9",
             }}
           >
             ● +{q.xpReward} XP
@@ -242,7 +242,7 @@ export async function QuestsPanel({
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: "0.06em",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             border: "1px solid #2A2560",
             padding: "5px 11px",
           }}
@@ -261,7 +261,7 @@ export async function QuestsPanel({
             fontSize: 10,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             marginBottom: 8,
           }}
         >
@@ -350,7 +350,7 @@ export async function QuestsPanel({
                 fontSize: 10.5,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
               }}
             >
               Bonus complétion · les {main.length} quêtes
@@ -377,7 +377,7 @@ export async function QuestsPanel({
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
                   textTransform: "uppercase",
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                 }}
               >
                 ✓ Réclamé

@@ -44,7 +44,7 @@ export function LessonQA({
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -122,7 +122,7 @@ export function LessonQA({
             />
             <circle cx="20" cy="27" r="1" fill="#2A2560" />
           </svg>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9", margin: 0 }}>
             Sois le premier à poser une question sur cette leçon.
           </p>
         </div>
@@ -219,7 +219,7 @@ function QuestionCard({
             gap: 12,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
           }}
         >
           <UserPill user={question.user} />
@@ -317,7 +317,7 @@ function AnswerRow({
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <UserPill user={answer.user} />
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#44406B" }}>·</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#6B6890" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#7F7BA9" }}>
           {dateStr}
         </span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
@@ -371,7 +371,7 @@ function UserPill({
       >
         {name.charAt(0).toUpperCase()}
       </span>
-      <span style={{ color: user ? "#F5F5FA" : "#6B6890", fontWeight: 600 }}>{name}</span>
+      <span style={{ color: user ? "#F5F5FA" : "#7F7BA9", fontWeight: 600 }}>{name}</span>
       {user && (
         <span style={{ color: "var(--cosmetic-accent)", fontSize: 9 }}>LVL·{user.level}</span>
       )}

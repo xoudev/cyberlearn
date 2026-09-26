@@ -66,7 +66,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
         <span
           style={{
             marginLeft: "auto",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             fontWeight: 500,
             fontSize: 10,
             letterSpacing: "0.12em",
@@ -114,7 +114,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   <span style={{ color: "var(--cosmetic-accent)", fontWeight: 700 }}>
                     › Indice {num} · révélé
                   </span>
-                  <span style={{ color: "#6B6890" }}>
+                  <span style={{ color: "#7F7BA9" }}>
                     {hint.xpCost === 0 ? "Gratuit" : `−${String(hint.xpCost)} XP`}
                   </span>
                 </div>
@@ -158,7 +158,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
                   fontWeight: 700,
                   fontSize: 12,
                   letterSpacing: "0.1em",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   display: "grid",
                   placeItems: "center",
                   width: 36,
@@ -213,7 +213,7 @@ export function HintsPanel({ hints, initialRevealed, userXp }: Props): React.Rea
               {/* Chevron */}
               <span
                 style={{
-                  color: "#3F3D5C",
+                  color: "#7F7BA9",
                   fontFamily: "var(--font-mono)",
                   fontSize: 16,
                   transition: "transform 200ms ease, color 200ms ease",

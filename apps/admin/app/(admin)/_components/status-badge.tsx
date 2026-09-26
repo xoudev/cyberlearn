@@ -5,7 +5,7 @@ import React, { useState, useOptimistic, useTransition } from "react";
 type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 const META: Record<ContentStatus, { color: string; label: string }> = {
-  DRAFT: { color: "#6B6890", label: "Brouillon" },
+  DRAFT: { color: "#7F7BA9", label: "Brouillon" },
   PUBLISHED: { color: "#0AFFD4", label: "Publié" },
   ARCHIVED: { color: "#FF4757", label: "Archivé" },
 };

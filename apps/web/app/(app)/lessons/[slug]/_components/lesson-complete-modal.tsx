@@ -232,7 +232,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 fontSize: 10,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 4,
               }}
             >
@@ -297,7 +297,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.12em",
               textTransform: "uppercase",
               textAlign: "right",
@@ -325,13 +325,13 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
               fontSize: 11,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
             }}
           >
             <span>Quiz de la leçon</span>
             <span style={{ color: "#F5F5FA", fontWeight: 700, fontSize: 14 }}>
               {result.quizScore.correct}/{result.quizScore.total}
-              <span style={{ color: "#6B6890", fontWeight: 400, fontSize: 11 }}>
+              <span style={{ color: "#7F7BA9", fontWeight: 400, fontSize: 11 }}>
                 {" "}
                 bonne{result.quizScore.correct > 1 ? "s" : ""} réponse
                 {result.quizScore.correct > 1 ? "s" : ""}
@@ -386,7 +386,7 @@ export function LessonCompleteModal({ result, lessonTitle, onClose }: Props): Re
                 fontSize: 9,
                 letterSpacing: "0.2em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 8,
               }}
             >

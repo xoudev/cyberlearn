@@ -40,10 +40,24 @@ describe("speakerLine", () => {
 });
 
 describe("closedNotice", () => {
-  it("says resolved or closed, and what to do next", () => {
-    expect(closedNotice("RESOLVED")).toBe(
-      "Cette demande est résolue. Si le problème revient, ouvre-en une nouvelle.",
+  const closedAt = "2026-06-18T10:00:00.000Z";
+  const staff = {
+    id: "m1",
+    body: "Réglé.",
+    fromStaff: true,
+    createdAt: closedAt,
+    authorName: null,
+  };
+
+  it("dates the conclusion, points at the answer, and says what to do next", () => {
+    expect(closedNotice({ status: "RESOLVED", closedAt, messages: [staff] })).toBe(
+      "Cette demande a été marquée comme résolue le 18 juin 2026. La dernière réponse de l'équipe, ci-dessus, en donne la conclusion. Si le problème revient ou si la réponse ne te suffit pas, ouvre une nouvelle demande.",
     );
-    expect(closedNotice("CLOSED")).toMatch(/^Cette demande est close\./u);
+  });
+
+  it("says so when the team closed it without a word", () => {
+    expect(closedNotice({ status: "CLOSED", closedAt, messages: [] })).toMatch(
+      /^Cette demande a été close le 18 juin 2026\. L'équipe l'a fermée sans réponse écrite\./u,
+    );
   });
 });

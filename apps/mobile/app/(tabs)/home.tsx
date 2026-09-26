@@ -193,7 +193,7 @@ function HomeBody({
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <Text variant="micro">Progression</Text>
             <Text variant="micro" style={{ color: tier.tier.color }}>
-              Rang #{fr(rank)} · {tier.tier.label}
+              {rank !== null ? `Rang #${fr(rank)}` : "Hors classement"} · {tier.tier.label}
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12 }}>
@@ -366,7 +366,7 @@ function HomeBody({
             >
               <View style={{ gap: 2 }}>
                 <Text variant="micro">Classement</Text>
-                <Text variant="h2">{fr(rank)}e place</Text>
+                <Text variant="h2">{rank !== null ? `${fr(rank)}e place` : "Hors classement"}</Text>
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Pill label={`Palier ${tier.tier.label}`} color={tier.tier.color} />

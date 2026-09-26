@@ -90,7 +90,7 @@ export default async function EditChallengePage({ params }: Props): Promise<Reac
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             margin: 0,
           }}
         >

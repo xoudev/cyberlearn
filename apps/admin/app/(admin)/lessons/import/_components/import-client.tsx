@@ -268,7 +268,7 @@ export function ImportClient(): React.ReactElement {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               margin: "0 0 10px",
             }}
           >
@@ -757,7 +757,7 @@ function FileRow({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
             background: "none",
             border: "none",
             cursor: "pointer",

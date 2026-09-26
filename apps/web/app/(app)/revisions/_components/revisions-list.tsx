@@ -77,7 +77,7 @@ function GradeRowBody({
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#6B6890" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7F7BA9" }}>
           Comment tu as retenu cette leçon ?
           {row.reviewXp > 0 && (
             <span style={{ color: "#44406B" }}> · réussite = +{String(row.reviewXp)} XP</span>
@@ -90,7 +90,7 @@ function GradeRowBody({
             fontSize: 10,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             textDecoration: "none",
             border: "1px solid #2A2560",
             padding: "6px 12px",
@@ -166,7 +166,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                     fontFamily: "var(--font-sans)",
                     fontWeight: 600,
                     fontSize: 14,
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     marginBottom: 2,
                     textDecoration: "line-through",
                   }}
@@ -205,7 +205,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                   fontWeight: 700,
                   fontSize: 11,
                   letterSpacing: "0.04em",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   background: "#05041A",
                   border: "1px solid #2A2560",
                   width: 36,
@@ -268,7 +268,7 @@ export function RevisionsList({ rows }: { rows: ReviewRow[] }): React.ReactEleme
                   fontSize: 11,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
-                  color: row.dueToday ? "#FF4D6D" : "#6B6890",
+                  color: row.dueToday ? "#FF4D6D" : "#7F7BA9",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,

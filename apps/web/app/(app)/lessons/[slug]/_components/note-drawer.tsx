@@ -431,7 +431,7 @@ export function NoteDrawer({
             borderTop: "1px solid #1F1B47",
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6F6B99",
+            color: "#7F7BA9",
           }}
         >
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>

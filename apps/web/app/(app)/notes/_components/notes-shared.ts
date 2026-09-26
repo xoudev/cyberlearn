@@ -73,4 +73,4 @@ export const FOLDER_PALETTE: readonly string[] = [
 ];
 
 /** Default dot colour for a folder with no colour set. */
-export const FOLDER_DEFAULT_COLOR = "#6F6B99";
+export const FOLDER_DEFAULT_COLOR = "#7F7BA9";

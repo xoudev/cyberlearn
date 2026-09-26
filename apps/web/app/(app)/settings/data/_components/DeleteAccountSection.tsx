@@ -101,7 +101,7 @@ export function DeleteAccountSection({
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.18em",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             marginBottom: 16,
             display: "flex",
             alignItems: "center",
@@ -123,7 +123,7 @@ export function DeleteAccountSection({
             style={{
               background: "transparent",
               border: "none",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               cursor: "pointer",
               fontFamily: "var(--font-mono)",
               fontSize: 14,
@@ -177,7 +177,7 @@ export function DeleteAccountSection({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 12,
-                color: "#6B6890",
+                color: "#7F7BA9",
                 display: "flex",
                 gap: 8,
                 alignItems: "flex-start",
@@ -191,7 +191,7 @@ export function DeleteAccountSection({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 12,
-              color: "#6B6890",
+              color: "#7F7BA9",
               display: "flex",
               gap: 8,
               alignItems: "flex-start",
@@ -243,7 +243,7 @@ export function DeleteAccountSection({
             fontFamily: "var(--font-mono)",
             fontSize: 11,
             letterSpacing: "0.08em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             marginBottom: 6,
             textTransform: "uppercase",
           }}
@@ -307,7 +307,7 @@ export function DeleteAccountSection({
                 textTransform: "uppercase",
                 background: "transparent",
                 border: "1px solid #2A2560",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 cursor: "pointer",
               }}
             >
@@ -358,7 +358,7 @@ export function DeleteAccountSection({
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             marginBottom: 14,
             display: "flex",
             alignItems: "center",
@@ -437,7 +437,7 @@ export function DeleteAccountSection({
             fontSize: 11,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             marginBottom: 18,
             display: "flex",
             flexWrap: "wrap",
@@ -484,7 +484,7 @@ export function DeleteAccountSection({
               letterSpacing: "0.05em",
               textTransform: "uppercase",
               border: "1px solid #2A1B1B",
-              color: "#6B6890",
+              color: "#7F7BA9",
               cursor: "default",
             }}
           >

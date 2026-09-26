@@ -151,7 +151,7 @@ export function PlacementTestForm({
                     fontSize: 9.5,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: "#6F6B99",
+                    color: "#7F7BA9",
                     marginBottom: 8,
                   }}
                 >
@@ -176,7 +176,7 @@ export function PlacementTestForm({
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 11,
-                        color: "#6F6B99",
+                        color: "#7F7BA9",
                         fontWeight: 500,
                         letterSpacing: "0.04em",
                       }}
@@ -194,7 +194,7 @@ export function PlacementTestForm({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.04em",
               lineHeight: 1.6,
               padding: "12px 14px",
@@ -373,7 +373,7 @@ export function PlacementTestForm({
                               }}
                               onMouseEnter={(e) => {
                                 if (isSelected) return;
-                                e.currentTarget.style.borderColor = "#6F6B99";
+                                e.currentTarget.style.borderColor = "#7F7BA9";
                                 e.currentTarget.style.background = "rgba(10,8,38,0.9)";
                               }}
                               onMouseLeave={(e) => {
@@ -398,7 +398,7 @@ export function PlacementTestForm({
                                 style={{
                                   width: 14,
                                   height: 14,
-                                  border: `1.5px solid ${isSelected ? "#0AFFD4" : "#6F6B99"}`,
+                                  border: `1.5px solid ${isSelected ? "#0AFFD4" : "#7F7BA9"}`,
                                   borderRadius: "50%",
                                   display: "grid",
                                   placeItems: "center",
@@ -450,7 +450,7 @@ export function PlacementTestForm({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
               textAlign: "center",
             }}
@@ -529,7 +529,7 @@ export function PlacementTestForm({
               fontSize: 11,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               textDecoration: "none",
               textAlign: "center",
               borderBottom: "1px solid transparent",
@@ -541,7 +541,7 @@ export function PlacementTestForm({
               e.currentTarget.style.color = "#B8B5D1";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#6F6B99";
+              e.currentTarget.style.color = "#7F7BA9";
             }}
           >
             Passer · aller au tableau de bord

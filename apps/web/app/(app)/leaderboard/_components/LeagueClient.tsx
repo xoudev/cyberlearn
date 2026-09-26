@@ -152,7 +152,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           fontWeight: 800,
           fontSize: 22,
           letterSpacing: "-0.02em",
-          color: accent ?? "#6B6890",
+          color: accent ?? "#7F7BA9",
         }}
       >
         <span style={{ color: "#44406B", fontSize: 14, fontWeight: 600, marginRight: 2 }}>#</span>
@@ -182,7 +182,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
             style={{
               ...MONO,
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.04em",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -210,7 +210,7 @@ function PodRow({ entry }: { entry: PodLadderEntry }): React.JSX.Element {
           style={{
             ...MONO,
             fontSize: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             fontWeight: 500,
@@ -286,7 +286,7 @@ function EmptyState({ title, message }: { title: string; message: string }): Rea
       >
         {title}
       </p>
-      <p style={{ ...MONO, fontSize: 13, color: "#6B6890", letterSpacing: "0.04em", margin: 0 }}>
+      <p style={{ ...MONO, fontSize: 13, color: "#7F7BA9", letterSpacing: "0.04em", margin: 0 }}>
         {message}
       </p>
     </div>
@@ -367,7 +367,7 @@ function LeagueBoard({
           gap: 16,
           ...MONO,
           fontSize: 11,
-          color: "#6B6890",
+          color: "#7F7BA9",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           marginBottom: 28,
@@ -441,7 +441,7 @@ function LeagueBoard({
             gap: 4,
           }}
         >
-          <span style={{ color: "#6B6890", fontSize: 28, fontWeight: 600 }}>#</span>
+          <span style={{ color: "#7F7BA9", fontSize: 28, fontWeight: 600 }}>#</span>
           <span
             style={{
               background: "linear-gradient(180deg, #F5F5FA, var(--cosmetic-accent))",
@@ -452,7 +452,7 @@ function LeagueBoard({
           >
             {myRank ?? "-"}
           </span>
-          <span style={{ ...MONO, fontSize: 16, color: "#6B6890", fontWeight: 500 }}>
+          <span style={{ ...MONO, fontSize: 16, color: "#7F7BA9", fontWeight: 500 }}>
             / {podMemberCount}
           </span>
         </div>
@@ -465,7 +465,7 @@ function LeagueBoard({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
             }}
           >
             XP SAISON
@@ -494,7 +494,7 @@ function LeagueBoard({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6B6890",
+              color: "#7F7BA9",
             }}
           >
             STATUT
@@ -533,14 +533,14 @@ function LeagueBoard({
             margin: 0,
           }}
         >
-          <span style={{ color: "#6B6890" }}>{"// "}</span>POULE · CLASSEMENT VIF
+          <span style={{ color: "#7F7BA9" }}>{"// "}</span>POULE · CLASSEMENT VIF
         </h3>
         <span
           style={{
             ...MONO,
             fontSize: 11,
             letterSpacing: "0.1em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             textTransform: "uppercase",
           }}
         >
@@ -572,7 +572,7 @@ function LeagueBoard({
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6B6890",
+            color: "#7F7BA9",
             fontWeight: 600,
           }}
         >

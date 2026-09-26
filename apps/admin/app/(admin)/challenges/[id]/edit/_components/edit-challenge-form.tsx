@@ -61,7 +61,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: "0.14em",
   textTransform: "uppercase",
-  color: "#6B6890",
+  color: "#7F7BA9",
   marginBottom: 6,
 };
 
@@ -143,7 +143,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 2,
             }}
           >
@@ -165,7 +165,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 2,
             }}
           >
@@ -187,7 +187,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#6B6890",
+              color: "#7F7BA9",
               marginBottom: 2,
             }}
           >
@@ -198,7 +198,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
               fontFamily: "var(--font-mono)",
               fontWeight: 700,
               fontSize: 13,
-              color: optimisticActive ? "#0AFFD4" : "#6B6890",
+              color: optimisticActive ? "#0AFFD4" : "#7F7BA9",
               display: "flex",
               alignItems: "center",
               gap: 6,
@@ -209,7 +209,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
                 width: 7,
                 height: 7,
                 borderRadius: "50%",
-                background: optimisticActive ? "#0AFFD4" : "#6B6890",
+                background: optimisticActive ? "#0AFFD4" : "#7F7BA9",
                 display: "inline-block",
                 boxShadow: optimisticActive ? "0 0 6px rgba(10,255,212,0.5)" : "none",
               }}
@@ -277,7 +277,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
               marginBottom: 16,
@@ -314,7 +314,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
               marginBottom: 16,
@@ -364,7 +364,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
               marginBottom: 16,
@@ -427,7 +427,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
               marginBottom: 16,
@@ -568,7 +568,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
               alignItems: "center",
               padding: "9px 20px",
               border: "1px solid #2A2560",
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: "var(--font-mono)",
               fontWeight: 600,
               fontSize: 11,
@@ -628,7 +628,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               margin: "0 0 12px",
             }}
           >
@@ -686,7 +686,7 @@ export function EditChallengeForm({ challenge, prerequisites }: Props): React.Re
               padding: "7px 16px",
               background: "transparent",
               border: "1px solid #2A2560",
-              color: "#6B6890",
+              color: "#7F7BA9",
               fontFamily: "var(--font-mono)",
               fontWeight: 600,
               fontSize: 10,

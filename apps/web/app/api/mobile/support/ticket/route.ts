@@ -37,6 +37,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       message: ticket.message,
       createdAt: ticket.createdAt.toISOString(),
       acceptsReplies: isTicketOpen(ticket.status),
+      // A finished ticket takes no message, so its last change is its closing.
+      closedAt: isTicketOpen(ticket.status) ? null : ticket.updatedAt.toISOString(),
       messages: ticket.messages.map((m) => ({
         id: m.id,
         body: m.body,

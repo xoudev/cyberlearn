@@ -484,7 +484,7 @@ function StepperRail({
             fontSize: 10,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             marginBottom: 14,
             paddingBottom: 10,
             borderBottom: "1px solid #1F1B47",
@@ -658,7 +658,7 @@ function SectionNavBar({
             textTransform: "uppercase",
             cursor: currentStep === 0 ? "default" : "pointer",
             background: "transparent",
-            color: currentStep === 0 ? "#2A2560" : "#6B6890",
+            color: currentStep === 0 ? "#2A2560" : "#7F7BA9",
             border: 0,
             minHeight: 60,
             transition: "color 180ms ease, background 180ms ease",
@@ -672,7 +672,7 @@ function SectionNavBar({
           }}
           onMouseLeave={(e) => {
             if (currentStep > 0) {
-              e.currentTarget.style.color = "#6B6890";
+              e.currentTarget.style.color = "#7F7BA9";
               e.currentTarget.style.background = "transparent";
             }
           }}
@@ -697,7 +697,7 @@ function SectionNavBar({
               fontSize: 9,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
             }}
           >
             Section {String(currentStep + 1).padStart(2, "0")} /{" "}
@@ -848,7 +848,7 @@ function CompletionBanner({ xpReward }: { xpReward: number }): React.ReactElemen
           style={{
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 11,
-            color: "#6B6890",
+            color: "#7F7BA9",
             margin: 0,
           }}
         >

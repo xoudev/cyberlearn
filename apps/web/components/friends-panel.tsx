@@ -227,7 +227,7 @@ export function FriendsPanel({
             : "transparent",
           border: `1px solid ${open ? "color-mix(in srgb, var(--cosmetic-accent) 20%, transparent)" : "transparent"}`,
           cursor: "pointer",
-          color: open ? "var(--cosmetic-accent)" : "#6B6890",
+          color: open ? "var(--cosmetic-accent)" : "#7F7BA9",
           transition: "all 150ms ease",
         }}
       >

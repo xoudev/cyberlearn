@@ -54,7 +54,7 @@ const DIFF_META = {
 } satisfies Record<LessonDifficulty, { label: string; bars: number; color: string }>;
 
 const STATUS_META = {
-  NOT_STARTED: { label: "COMMENCER", color: "#6B6890" },
+  NOT_STARTED: { label: "COMMENCER", color: "#7F7BA9" },
   IN_PROGRESS: { label: "EN COURS", color: "#0AFFD4" },
   COMPLETED: { label: "TERMINÉ", color: "#0AFFD4" },
 } satisfies Record<LessonStatus, { label: string; color: string }>;
@@ -734,7 +734,7 @@ function CatalogCard({
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 9.5,
             letterSpacing: "0.14em",
-            color: "#3F3D5C",
+            color: "#7F7BA9",
             background: "rgba(3,2,25,0.7)",
             padding: "2px 6px",
             border: "1px solid rgba(42,37,96,0.5)",
@@ -754,7 +754,7 @@ function CatalogCard({
               fontFamily: "var(--font-mono, monospace)",
               fontSize: 9.5,
               letterSpacing: "0.1em",
-              color: "#3F3D5C",
+              color: "#7F7BA9",
               zIndex: 2,
             }}
           >
@@ -834,7 +834,7 @@ function CatalogCard({
                 fontSize: 10,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 marginBottom: 6,
               }}
             >
@@ -883,7 +883,7 @@ function CatalogCard({
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 11,
           letterSpacing: "0.06em",
-          color: "#3F3D5C",
+          color: "#7F7BA9",
         }}
       >
         {/* XP with diamond accent */}
@@ -1054,7 +1054,7 @@ function CompactCard({
             fontFamily: "var(--font-body, sans-serif)",
             fontSize: 12,
             lineHeight: 1.5,
-            color: "#6B6890",
+            color: "#7F7BA9",
             margin: 0,
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -1112,7 +1112,7 @@ function CompactCard({
           paddingTop: 10,
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 11,
-          color: "#6B6890",
+          color: "#7F7BA9",
         }}
       >
         {durationMinutes !== undefined && (

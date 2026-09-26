@@ -6,7 +6,7 @@ import { getSharedUserProfile, requireRequestUser } from "@/lib/auth";
 import { WrappedRoute } from "./_components/WrappedRoute";
 import { WrappedClosed } from "./_components/WrappedClosed";
 
-export const metadata: Metadata = { title: "Ton Wrapped · CyberLearn" };
+export const metadata: Metadata = { title: "Ton Wrapped" };
 export const dynamic = "force-dynamic";
 
 /**

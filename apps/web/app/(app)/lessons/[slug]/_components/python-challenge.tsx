@@ -84,7 +84,7 @@ function ChallengeMisconfigured({
       <p
         style={{
           margin: "10px 0 0",
-          color: "#6B6890",
+          color: "#7F7BA9",
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 12,
           lineHeight: 1.5,
@@ -145,7 +145,7 @@ function PythonChallengeBody({
       base: "vs-dark",
       inherit: true,
       rules: [
-        { token: "comment", foreground: "6B6890", fontStyle: "italic" },
+        { token: "comment", foreground: "7F7BA9", fontStyle: "italic" },
         { token: "keyword", foreground: "4D8BFF" },
         { token: "string", foreground: "0AFFD4" },
         { token: "number", foreground: "FFB020" },
@@ -550,7 +550,7 @@ function PythonChallengeBody({
                         fontFamily: "var(--font-mono, monospace)",
                         fontSize: 11,
                         lineHeight: 1.5,
-                        color: "#6B6890",
+                        color: "#7F7BA9",
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word",
                         marginTop: 4,
@@ -576,7 +576,7 @@ function PythonChallengeBody({
                   ) : (
                     <span>
                       <span style={{ color: "#44406B" }}>attendu : </span>
-                      <span style={{ color: "#6B6890" }}>{result.expected}</span>
+                      <span style={{ color: "#7F7BA9" }}>{result.expected}</span>
                     </span>
                   )}
                 </div>

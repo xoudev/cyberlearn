@@ -231,7 +231,7 @@ export function AvatarCropper({
             fontSize: 10,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
           }}
         >
           Zoom

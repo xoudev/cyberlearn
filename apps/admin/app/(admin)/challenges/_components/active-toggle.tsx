@@ -25,7 +25,7 @@ export function ActiveToggle({
     });
   }
 
-  const color = optimisticActive ? "#0AFFD4" : "#6B6890";
+  const color = optimisticActive ? "#0AFFD4" : "#7F7BA9";
 
   return (
     <button

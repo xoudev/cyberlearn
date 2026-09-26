@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
+import { fetchMyRankApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import {
   fetchExamStatusApi,
@@ -138,7 +139,8 @@ function toPathCards(rows: RawPath[], statuses: Map<string, ProgressStatus>): Pa
 export interface DashboardData {
   me: MeRow;
   level: LevelInfo;
-  rank: number;
+  /** Null when the reader is not on the leaderboard. */
+  rank: number | null;
   resume: { slug: string; title: string; category: Category } | null;
   inProgressTotal: number;
   badges: BadgeItem[];
@@ -167,6 +169,11 @@ export function useDashboard(userId: string | undefined) {
     queryFn: async (): Promise<DashboardData> => {
       const uid = userId as string; // gated by `enabled`
       const since = monthStart(new Date()).toISOString();
+      // From the server, as the site's dashboard counts it: counting the users
+      // above the reader here saw only what RLS lets through and ignored the
+      // board's rules, so an account off the board read "#1". A failure leaves
+      // the home screen up without a rank.
+      const rankPromise = fetchMyRankApi().catch(() => null);
       const [
         meRes,
         completedRes,
@@ -240,10 +247,7 @@ export function useDashboard(userId: string | undefined) {
       const me = meRes.data as MeRow | null;
       if (!me) throw new Error("Profil introuvable");
 
-      const rankRes = await supabase
-        .from("users")
-        .select("id", { count: "exact", head: true })
-        .gt("xpTotal", me.xpTotal);
+      const rank = await rankPromise;
 
       // Embeds cast via `unknown` (no generated Supabase types); `one()` handles
       // the array-or-object runtime shape.
@@ -292,7 +296,7 @@ export function useDashboard(userId: string | undefined) {
       return {
         me,
         level,
-        rank: (rankRes.count ?? 0) + 1,
+        rank,
         resume,
         inProgressTotal: inProgressRes.count ?? 0,
         badges,

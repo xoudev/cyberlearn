@@ -7,6 +7,7 @@ const m = vi.hoisted(() => ({
   shareNoteFor: vi.fn<(u: string, input: unknown) => Promise<unknown>>(),
   unshareNoteFor: vi.fn<(u: string, noteId: unknown, recipientId: unknown) => Promise<unknown>>(),
   sharedWithMeFor: vi.fn<(u: string) => Promise<unknown[]>>(),
+  dismissSharedNoteFor: vi.fn<(u: string, noteId: unknown) => Promise<unknown>>(),
 }));
 
 vi.mock("../../_lib/auth", () => ({ userFromBearer: m.userFromBearer }));
@@ -15,11 +16,13 @@ vi.mock("@/lib/notes/note-share", () => ({
   shareNoteFor: m.shareNoteFor,
   unshareNoteFor: m.unshareNoteFor,
   sharedWithMeFor: m.sharedWithMeFor,
+  dismissSharedNoteFor: m.dismissSharedNoteFor,
 }));
 
 const { GET: SHARED } = await import("../shared/route");
 const { GET: AUDIENCE, POST: SHARE } = await import("../share/route");
 const { POST: UNSHARE } = await import("../unshare/route");
+const { POST: DISMISS } = await import("../dismiss/route");
 
 const NOTE = "1c0b9a8d-7e6f-4b5a-8c3d-2e1f0a9b8c7d";
 const PEER = "2d1c0b9a-8e7f-4c6b-9d4e-3f2a1b0c9d8e";
@@ -42,6 +45,7 @@ describe("every note-sharing route", () => {
     ["audience", () => AUDIENCE(get(`notes/share?noteId=${NOTE}`))],
     ["share", () => SHARE(post("notes/share", "{}"))],
     ["unshare", () => UNSHARE(post("notes/unshare", "{}"))],
+    ["dismiss", () => DISMISS(post("notes/dismiss", "{}"))],
   ])("refuses a caller the gate turns away (%s): no token, or banned", async (_n, call) => {
     m.userFromBearer.mockResolvedValue(null);
     expect((await call()).status).toBe(401);
@@ -49,6 +53,7 @@ describe("every note-sharing route", () => {
     expect(m.shareAudienceFor).not.toHaveBeenCalled();
     expect(m.shareNoteFor).not.toHaveBeenCalled();
     expect(m.unshareNoteFor).not.toHaveBeenCalled();
+    expect(m.dismissSharedNoteFor).not.toHaveBeenCalled();
   });
 });
 
@@ -133,5 +138,23 @@ describe("POST /api/mobile/notes/unshare", () => {
     const res = await UNSHARE(post("notes/unshare", JSON.stringify({})));
     expect(res.status).toBe(409);
     expect(m.unshareNoteFor).toHaveBeenCalledWith("user-1", null, null);
+  });
+});
+
+describe("POST /api/mobile/notes/dismiss", () => {
+  it("takes the received note out of the caller's own list", async () => {
+    m.dismissSharedNoteFor.mockResolvedValue({ ok: true });
+    const res = await DISMISS(post("notes/dismiss", JSON.stringify({ noteId: NOTE })));
+    expect(res.status).toBe(200);
+    expect(m.dismissSharedNoteFor).toHaveBeenCalledWith("user-1", NOTE);
+  });
+
+  it("relays a refusal, and a body that is not JSON never reaches the service", async () => {
+    m.dismissSharedNoteFor.mockResolvedValue({ ok: false });
+    expect((await DISMISS(post("notes/dismiss", JSON.stringify({})))).status).toBe(409);
+    expect(m.dismissSharedNoteFor).toHaveBeenCalledWith("user-1", null);
+    m.dismissSharedNoteFor.mockClear();
+    expect((await DISMISS(post("notes/dismiss", "nope"))).status).toBe(400);
+    expect(m.dismissSharedNoteFor).not.toHaveBeenCalled();
   });
 });

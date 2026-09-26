@@ -148,7 +148,7 @@ export default function NewLessonPage(): React.ReactElement {
         .le-input:focus,.le-select:focus,.le-textarea:focus{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25),inset 0 0 0 1px rgba(10,255,212,0.08)!important}
         .le-prefix:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
         .le-num:focus-within{border-color:${TURQ}!important;background:#0E0A33!important;box-shadow:0 0 0 1px rgba(10,255,212,0.25)!important}
-        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#6B6890!important;background:rgba(255,255,255,0.03)!important}
+        .adm-btn-ghost:hover{color:#F5F5FA!important;border-color:#7F7BA9!important;background:rgba(255,255,255,0.03)!important}
       `}</style>
 
       <div className="admin-page-content" style={{ maxWidth: 1100 }}>
@@ -158,7 +158,7 @@ export default function NewLessonPage(): React.ReactElement {
             fontFamily: MONO,
             fontSize: 12,
             letterSpacing: "0.04em",
-            color: "#6B6890",
+            color: "#7F7BA9",
             marginBottom: 28,
             display: "inline-flex",
             alignItems: "center",
@@ -211,7 +211,7 @@ export default function NewLessonPage(): React.ReactElement {
               gap: 14,
               fontFamily: MONO,
               fontSize: 11,
-              color: "#6B6890",
+              color: "#7F7BA9",
               letterSpacing: "0.08em",
             }}
           >
@@ -308,7 +308,7 @@ export default function NewLessonPage(): React.ReactElement {
                     width: 36,
                     fontFamily: MONO,
                     fontSize: 13,
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     borderRight: `1px solid ${BORDER}`,
                     background: "rgba(0,0,0,0.25)",
                   }}
@@ -438,7 +438,7 @@ export default function NewLessonPage(): React.ReactElement {
                     fontFamily: MONO,
                     fontSize: 10.5,
                     letterSpacing: "0.18em",
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     borderLeft: `1px solid ${BORDER}`,
                     background: "rgba(0,0,0,0.25)",
                     textTransform: "uppercase",
@@ -484,7 +484,7 @@ export default function NewLessonPage(): React.ReactElement {
                     fontFamily: MONO,
                     fontSize: 10.5,
                     letterSpacing: "0.18em",
-                    color: "#6B6890",
+                    color: "#7F7BA9",
                     borderLeft: `1px solid ${BORDER}`,
                     background: "rgba(0,0,0,0.25)",
                     textTransform: "uppercase",
@@ -576,7 +576,7 @@ export default function NewLessonPage(): React.ReactElement {
                 style={{
                   fontFamily: BODY_F,
                   fontSize: 12.5,
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   lineHeight: 1.5,
                   margin: 0,
                 }}
@@ -614,7 +614,7 @@ export default function NewLessonPage(): React.ReactElement {
                   padding: "1px 6px",
                   border: `1px solid ${BORDER}`,
                   background: "#0A0826",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   margin: "0 1px",
                 }}
               >
@@ -627,7 +627,7 @@ export default function NewLessonPage(): React.ReactElement {
                   padding: "1px 6px",
                   border: `1px solid ${BORDER}`,
                   background: "#0A0826",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   margin: "0 1px",
                 }}
               >
@@ -641,7 +641,7 @@ export default function NewLessonPage(): React.ReactElement {
                   padding: "1px 6px",
                   border: `1px solid ${BORDER}`,
                   background: "#0A0826",
-                  color: "#6B6890",
+                  color: "#7F7BA9",
                   margin: "0 1px",
                 }}
               >
@@ -660,7 +660,7 @@ export default function NewLessonPage(): React.ReactElement {
                 textTransform: "uppercase",
                 padding: "13px 22px",
                 background: "transparent",
-                color: "#6B6890",
+                color: "#7F7BA9",
                 border: `1px solid ${BORDER}`,
                 transition: "all 150ms ease",
                 textDecoration: "none",

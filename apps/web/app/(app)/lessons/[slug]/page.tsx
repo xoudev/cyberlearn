@@ -1,4 +1,5 @@
 import React, { Suspense, type ReactNode } from "react";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -34,6 +35,10 @@ import { PythonChallenge } from "./_components/python-challenge";
 import { LessonSection } from "./_components/lesson-section";
 import { LESSON_MDX_OPTIONS } from "./_components/lesson-mdx-options";
 import { LessonQuizProvider, type QuizAnswer } from "./_components/lesson-quiz-context";
+
+// Not the lesson's own title: the slug alone would put the title of a
+// class-only lesson in the tab of anyone who guessed its address.
+export const metadata: Metadata = { title: "Leçon" };
 
 const MDX_COMPONENTS = {
   pre: CodeBlock,
@@ -210,7 +215,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
           gap: 10,
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 12,
-          color: "#6B6890",
+          color: "#7F7BA9",
           letterSpacing: "0.04em",
           padding: "6px 14px",
           border: "1px solid #2A2560",
@@ -300,7 +305,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
               <span className="briefing-dot" />
               mission briefing
             </span>
-            <span style={{ color: "#3F3D5C", letterSpacing: "0.08em", textTransform: "none" }}>
+            <span style={{ color: "#7F7BA9", letterSpacing: "0.08em", textTransform: "none" }}>
               id · {lesson.refCode.slice(-8)}
             </span>
           </div>
@@ -396,7 +401,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
                     gap: 8,
                     fontFamily: "var(--font-mono, monospace)",
                     fontSize: 10,
-                    color: "#3F3D5C",
+                    color: "#7F7BA9",
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
                     marginBottom: 8,
@@ -561,7 +566,7 @@ function BriefingRow({
           gap: 8,
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 10,
-          color: "#3F3D5C",
+          color: "#7F7BA9",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
         }}

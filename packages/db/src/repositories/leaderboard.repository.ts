@@ -23,8 +23,13 @@ export type { RawFriendsBoardUser } from "./leaderboard.friends.js";
 // their own class - a teacher at rank 1 above their students reads as a
 // scoreboard nobody can win. They are excluded from the list, from the rank
 // numbering, and from their own standing, the same way a HIDDEN user is.
+//
+// Participation: a student enters the board with their first XP. Accounts
+// that signed up and never earned any filled the board with "Anonyme · 0 XP"
+// rows that ranked nothing.
 const RANKED_USER_FILTER: Prisma.UserWhereInput = {
   role: UserRole.STUDENT,
+  xpTotal: { gt: 0 },
   OR: [
     { preferences: { is: null } },
     { preferences: { is: { leaderboardVisibility: { not: LeaderboardVisibility.HIDDEN } } } },
@@ -102,6 +107,7 @@ export const leaderboardRepository = {
     // meaning: not being ranked is the same answer as being hidden.
     if (
       user.role !== UserRole.STUDENT ||
+      user.xpTotal <= 0 ||
       resolveVisibility(user.preferences) === LeaderboardVisibility.HIDDEN
     ) {
       return buildCurrentUserPosition(user, null);
@@ -167,6 +173,8 @@ export const leaderboardRepository = {
     // which the optional chain folds into the same branch, since a user who is
     // not there has no role either.
     if (user?.role !== UserRole.STUDENT) return 0;
+    // Not on the board until the first XP (RANKED_USER_FILTER).
+    if (user.xpTotal <= 0) return 0;
 
     const higher = await prisma.user.count({
       where: { AND: [RANKED_USER_FILTER, { xpTotal: { gt: user.xpTotal } }] },

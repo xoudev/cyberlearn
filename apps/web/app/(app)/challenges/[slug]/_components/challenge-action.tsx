@@ -127,7 +127,7 @@ function FlagForm({
           >
             FLAG CORRECT · CHALLENGE RÉSOLU
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9" }}>
             XP crédités sur ton profil.
           </div>
         </div>
@@ -159,7 +159,7 @@ function FlagForm({
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: "#6B6890",
+          color: "#7F7BA9",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           marginBottom: 4,
@@ -228,7 +228,7 @@ function FlagForm({
         </button>
       </div>
 
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#6B6890" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7F7BA9" }}>
         {remaining} tentative{remaining > 1 ? "s" : ""} restante{remaining > 1 ? "s" : ""} sur{" "}
         {maxAttempts}
       </div>
@@ -250,7 +250,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: 10,
-          color: "#6B6890",
+          color: "#7F7BA9",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           marginBottom: 4,
@@ -286,7 +286,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
           background: pending
             ? "#1F1B47"
             : "color-mix(in srgb, var(--cosmetic-accent) 10%, transparent)",
-          color: pending ? "#6B6890" : "var(--cosmetic-accent)",
+          color: pending ? "#7F7BA9" : "var(--cosmetic-accent)",
           border: `1px solid ${pending ? "#2A2560" : "color-mix(in srgb, var(--cosmetic-accent) 35%, transparent)"}`,
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
@@ -301,7 +301,7 @@ function CompleteButton({ challengeId }: { challengeId: string }): React.ReactEl
         {pending ? "Enregistrement..." : "Marquer comme complété"}
       </button>
 
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#6B6890", margin: 0 }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#7F7BA9", margin: 0 }}>
         Sur l&apos;honneur · valide uniquement si tu as réellement résolu le challenge.
       </p>
     </form>
@@ -335,7 +335,7 @@ export function ChallengeAction({
             display: "flex",
             alignItems: "center",
             gap: 10,
-            color: "#6B6890",
+            color: "#7F7BA9",
             fontFamily: "var(--font-mono)",
             fontSize: 12,
           }}

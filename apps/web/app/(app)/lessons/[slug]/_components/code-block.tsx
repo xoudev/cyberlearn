@@ -100,7 +100,7 @@ export function CodeBlock({
                 fontSize: 9,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                color: "#3F3D5C",
+                color: "#7F7BA9",
                 flexShrink: 0,
               }}
             >

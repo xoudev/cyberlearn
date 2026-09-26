@@ -5,6 +5,7 @@ import { XpHeroCard } from "./_components/xp-hero-card";
 import { WelcomeModal } from "./_components/welcome-modal";
 import { computeLevel } from "@cyberlearn/lib";
 import { rankFeaturedPaths } from "@cyberlearn/lib/dashboard/featured-paths";
+import { lessonOutline } from "@cyberlearn/lib/dashboard/lesson-outline";
 import { nextRankName, rankName } from "@cyberlearn/lib/dashboard/rank-name";
 import { planSections, sectionNumber } from "@cyberlearn/lib/dashboard/sections";
 import { dashboardStats } from "@cyberlearn/lib/dashboard/stats";
@@ -74,6 +75,9 @@ async function DashboardContent(): Promise<React.ReactElement> {
             category: true,
             estimatedMinutes: true,
             xpReward: true,
+            // The card previews this lesson's own outline and summary.
+            description: true,
+            contentMdx: true,
           },
         },
       },
@@ -262,7 +266,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
           gap: 16,
           fontFamily: "var(--font-mono)",
           fontSize: 11,
-          color: "#6F6B99",
+          color: "#7F7BA9",
           letterSpacing: "0.06em",
           marginBottom: 32,
           textTransform: "uppercase",
@@ -292,7 +296,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
               fontSize: 11,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               display: "inline-flex",
               alignItems: "center",
               gap: 10,
@@ -379,7 +383,7 @@ async function DashboardContent(): Promise<React.ReactElement> {
                     textTransform: "uppercase",
                   }}
                 >
-                  jours
+                  {streakDays > 1 ? "jours" : "jour"}
                 </span>
               </span>
             )}
@@ -423,7 +427,10 @@ async function DashboardContent(): Promise<React.ReactElement> {
             ctaLabel="Historique complet →"
             ctaHref="/lessons"
           />
-          <TerminalCard lesson={resumeLesson.lesson} />
+          <TerminalCard
+            lesson={resumeLesson.lesson}
+            outline={lessonOutline(resumeLesson.lesson.contentMdx, 50)}
+          />
         </section>
       )}
 
@@ -529,7 +536,7 @@ function SectionLabel({
             fontSize: 11,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
-            color: "#6F6B99",
+            color: "#7F7BA9",
             display: "inline-flex",
             alignItems: "center",
             gap: 10,
@@ -594,6 +601,7 @@ const DIFF_LABELS: Record<string, string> = {
 
 function TerminalCard({
   lesson,
+  outline,
 }: {
   lesson: {
     slug: string;
@@ -602,10 +610,44 @@ function TerminalCard({
     category: string;
     estimatedMinutes: number;
     xpReward: number;
+    description: string;
   };
+  /** The lesson's own section titles (lessonOutline); empty falls back. */
+  outline: string[];
 }) {
   const catColor = CAT_COLORS[lesson.category] ?? "#6E8BFF";
   const diffLabel = DIFF_LABELS[lesson.difficulty] ?? lesson.difficulty;
+  // Every line comes from the lesson being resumed. The card once showed the
+  // same SQL-injection query and "next section: defences" for every lesson,
+  // so a cryptography lesson was previewed with another lesson's code.
+  const comment = (text: string): React.ReactNode => (
+    <span style={{ color: "#7F7BA9", fontStyle: "italic" }}># {text}</span>
+  );
+  const codeLines: React.ReactNode[] = [
+    comment(lesson.title),
+    <span key="def">
+      <span style={{ color: "#6E8BFF" }}>def</span>{" "}
+      <span style={{ color: "#F5F5FA", fontWeight: 500 }}>continuer</span>
+      <span style={{ color: "#7F7BA9" }}>(session):</span>
+    </span>,
+    <span key="ret">
+      {" "}
+      <span style={{ color: "#6E8BFF" }}>return</span> session
+      <span style={{ color: "#7F7BA9" }}>.</span>
+      <span style={{ color: "#F5F5FA", fontWeight: 500 }}>reprendre</span>
+      <span style={{ color: "#7F7BA9" }}>(</span>
+      <span style={{ color: "var(--cosmetic-accent)" }}>&quot;{lesson.slug}&quot;</span>
+      <span style={{ color: "#7F7BA9" }}>)</span>
+    </span>,
+    <span key="blank" />,
+    ...(outline.length > 0
+      ? [
+          comment("Au programme"),
+          ...outline.slice(0, 4).map((title) => comment(`· ${title}`)),
+          ...(outline.length > 4 ? [comment(`· … et ${String(outline.length - 4)} de plus`)] : []),
+        ]
+      : [comment(`${String(lesson.estimatedMinutes)} min · +${String(lesson.xpReward)} XP`)]),
+  ];
 
   return (
     <div className="terminal-card-grid">
@@ -667,7 +709,7 @@ function TerminalCard({
               marginLeft: 14,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.04em",
             }}
           >
@@ -712,116 +754,40 @@ function TerminalCard({
           }}
         >
           {[
-            {
-              num: "01",
-              content: (
-                <span>
-                  <span style={{ color: "#6F6B99", fontStyle: "italic" }}># {lesson.title}</span>
-                </span>
-              ),
-            },
-            {
-              num: "02",
-              content: (
-                <span>
-                  <span style={{ color: "#6E8BFF" }}>def</span>{" "}
-                  <span style={{ color: "#F5F5FA", fontWeight: 500 }}>continuer</span>
-                  <span style={{ color: "#6F6B99" }}>(session):</span>
-                </span>
-              ),
-            },
-            {
-              num: "03",
-              content: (
-                <span
-                  style={{
-                    background: "linear-gradient(90deg, rgba(255,71,87,0.1), transparent)",
-                    marginLeft: -28,
-                    paddingLeft: 28,
-                    display: "block",
-                  }}
-                >
-                  <span>
-                    {" "}
-                    q <span style={{ color: "#6F6B99" }}>=</span>{" "}
-                    <span style={{ color: "var(--cosmetic-accent)" }}>
-                      &quot;SELECT * FROM leçon WHERE actif=True&quot;
-                    </span>
-                  </span>
-                </span>
-              ),
-              highlight: true,
-            },
-            {
-              num: "04",
-              content: (
-                <span>
-                  {" "}
-                  <span style={{ color: "#6E8BFF" }}>return</span> db
-                  <span style={{ color: "#6F6B99" }}>.</span>
-                  <span style={{ color: "#F5F5FA", fontWeight: 500 }}>execute</span>
-                  <span style={{ color: "#6F6B99" }}>(q).</span>
-                  <span style={{ color: "#F5F5FA", fontWeight: 500 }}>reprendre</span>
-                  <span style={{ color: "#6F6B99" }}>()</span>
-                </span>
-              ),
-            },
-            { num: "05", content: <span></span> },
-            {
-              num: "06",
-              content: (
-                <span>
-                  <span style={{ color: "#6F6B99", fontStyle: "italic" }}>
-                    # Prochaine section : les défenses qui fonctionnent
-                  </span>
-                </span>
-              ),
-            },
-            {
-              num: "07",
-              content: (
-                <span>
-                  <span style={{ color: "#6F6B99", fontStyle: "italic" }}>
-                    # requêtes préparées · validation · moindre privilège
-                  </span>
-                </span>
-              ),
-            },
-            {
-              num: "08",
-              content: (
-                <span>
-                  &gt;{" "}
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: 8,
-                      height: 14,
-                      background: "var(--cosmetic-accent)",
-                      boxShadow: "0 0 8px var(--cosmetic-accent)",
-                      verticalAlign: "-2px",
-                      animation: "blink 1s step-end infinite",
-                    }}
-                  />
-                </span>
-              ),
-            },
-          ].map(({ num, content }) => (
-            <div key={num} style={{ display: "flex", gap: 16 }}>
+            ...codeLines,
+            <span key="cursor">
+              &gt;{" "}
               <span
                 style={{
-                  color: "#44406B",
-                  userSelect: "none",
-                  width: 18,
-                  textAlign: "right",
-                  flexShrink: 0,
+                  display: "inline-block",
+                  width: 8,
+                  height: 14,
+                  background: "var(--cosmetic-accent)",
+                  boxShadow: "0 0 8px var(--cosmetic-accent)",
+                  verticalAlign: "-2px",
+                  animation: "blink 1s step-end infinite",
                 }}
-              >
-                {num}
-              </span>
-              <span style={{ flex: 1 }}>{content}</span>
-            </div>
-          ))}
+              />
+            </span>,
+          ].map((content, i) => {
+            const num = String(i + 1).padStart(2, "0");
+            return (
+              <div key={num} style={{ display: "flex", gap: 16, minWidth: 0 }}>
+                <span
+                  style={{
+                    color: "#44406B",
+                    userSelect: "none",
+                    width: 18,
+                    textAlign: "right",
+                    flexShrink: 0,
+                  }}
+                >
+                  {num}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{content}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -851,7 +817,7 @@ function TerminalCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            color: "#6F6B99",
+            color: "#7F7BA9",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             marginBottom: 12,
@@ -884,33 +850,25 @@ function TerminalCard({
             margin: "0 0 24px",
           }}
         >
-          Prochaine section : les trois défenses qui fonctionnent vraiment. Requêtes préparées,
-          validation, moindre privilège.
+          {lesson.description}
         </p>
 
-        {/* Step indicators */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: 3,
-                background:
-                  i < 3
-                    ? "var(--cosmetic-accent)"
-                    : i === 3
-                      ? "linear-gradient(90deg, var(--cosmetic-accent) 50%, #05041A 50%)"
-                      : "#05041A",
-                border: "1px solid #2A2560",
-                boxShadow:
-                  i < 4
-                    ? "0 0 8px color-mix(in srgb, var(--cosmetic-accent) 50%, transparent)"
-                    : "none",
-              }}
-            />
-          ))}
-        </div>
+        {/* The sections still to read are not recorded, so the card says how
+            many there are rather than drawing a progress it does not know. */}
+        {outline.length > 0 ? (
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "#9A96C0",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              marginBottom: 24,
+            }}
+          >
+            {outline.length === 1 ? "1 section" : `${String(outline.length)} sections`} au programme
+          </div>
+        ) : null}
 
         {/* CTAs */}
         <div style={{ marginTop: "auto", display: "flex", gap: 12, alignItems: "center" }}>
@@ -1047,7 +1005,7 @@ function ReviewsBlock({
                   fontSize: 10,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                 }}
               >
                 <span style={{ color: catColor, fontWeight: 600 }}>{catLabel}</span>
@@ -1113,7 +1071,7 @@ function ReviewsBlock({
                 fontSize: 11,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
@@ -1144,7 +1102,7 @@ function ReviewsBlock({
           background: "rgba(5,4,26,0.5)",
           fontFamily: "var(--font-mono)",
           fontSize: 11,
-          color: "#6F6B99",
+          color: "#7F7BA9",
           letterSpacing: "0.08em",
         }}
       >
@@ -1245,7 +1203,7 @@ function TrophyShelf({
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
-                color: "#6F6B99",
+                color: "#7F7BA9",
                 letterSpacing: "0.08em",
               }}
             >
@@ -1331,7 +1289,7 @@ function StatsBig({
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               display: "block",
               marginBottom: 18,
             }}
@@ -1358,7 +1316,7 @@ function StatsBig({
               <span
                 style={{
                   fontSize: 28,
-                  color: "#6F6B99",
+                  color: "#7F7BA9",
                   fontWeight: 600,
                   letterSpacing: "-0.02em",
                 }}
@@ -1373,7 +1331,7 @@ function StatsBig({
               marginTop: 14,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: it.highlight ? "var(--cosmetic-accent)" : "#6F6B99",
+              color: it.highlight ? "var(--cosmetic-accent)" : "#7F7BA9",
               letterSpacing: "0.04em",
               display: "inline-flex",
               alignItems: "center",
@@ -1444,7 +1402,7 @@ function PathsGrid({
           background: "rgba(5,4,26,0.4)",
         }}
       >
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#6B6890", margin: 0 }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#7F7BA9", margin: 0 }}>
           {"// aucun parcours publié pour le moment"}
         </p>
       </div>
@@ -1577,7 +1535,7 @@ function PathsGrid({
                     display: "block",
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,
-                    color: "#6F6B99",
+                    color: "#7F7BA9",
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     marginTop: 6,
@@ -1675,7 +1633,7 @@ function PathsGrid({
               fontSize: 10,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#6F6B99",
+              color: "#7F7BA9",
               marginBottom: 16,
             }}
           >
@@ -1707,9 +1665,9 @@ function PathsGrid({
           </p>
           <div style={{ display: "flex", gap: 8, margin: "20px 0 16px", flexWrap: "wrap" }}>
             <Tag
-              color={DIFF_COLORS_DASH[secondary.difficulty] ?? "#6B6890"}
-              bg={`${DIFF_COLORS_DASH[secondary.difficulty] ?? "#6B6890"}14`}
-              borderColor={`${DIFF_COLORS_DASH[secondary.difficulty] ?? "#6B6890"}40`}
+              color={DIFF_COLORS_DASH[secondary.difficulty] ?? "#7F7BA9"}
+              bg={`${DIFF_COLORS_DASH[secondary.difficulty] ?? "#7F7BA9"}14`}
+              borderColor={`${DIFF_COLORS_DASH[secondary.difficulty] ?? "#7F7BA9"}40`}
             >
               {secondary.difficulty}
             </Tag>
@@ -1720,7 +1678,7 @@ function PathsGrid({
               gap: 24,
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "#6F6B99",
+              color: "#7F7BA9",
               letterSpacing: "0.06em",
               marginBottom: 20,
             }}

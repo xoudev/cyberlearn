@@ -78,7 +78,7 @@ export default function GlobalError({
             <p
               style={{
                 fontSize: 11,
-                color: "#6B6890",
+                color: "#7F7BA9",
                 fontFamily: "monospace",
                 letterSpacing: "0.06em",
                 margin: "0 0 22px",
