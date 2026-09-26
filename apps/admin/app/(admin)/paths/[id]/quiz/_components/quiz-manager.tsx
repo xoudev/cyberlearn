@@ -78,7 +78,7 @@ const SECTION_EYEBROW: React.CSSProperties = {
   fontSize: 9,
   letterSpacing: "0.18em",
   textTransform: "uppercase",
-  color: "#44406B",
+  color: "#7F7BA9",
   margin: "0 0 16px",
 };
 
@@ -172,7 +172,7 @@ function Field({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#44406B",
+            color: "#7F7BA9",
             margin: "0 0 6px",
           }}
         >

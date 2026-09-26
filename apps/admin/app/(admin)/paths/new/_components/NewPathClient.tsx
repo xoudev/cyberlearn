@@ -103,7 +103,7 @@ function diamonds(difficulty: string): React.ReactElement {
   return (
     <span style={{ letterSpacing: "-0.05em", color: "#7F7BA9" }}>
       {"◆".repeat(n)}
-      <span style={{ color: "#44406B" }}>{"◇".repeat(4 - n)}</span>
+      <span style={{ color: "#7F7BA9" }}>{"◇".repeat(4 - n)}</span>
     </span>
   );
 }
@@ -136,7 +136,7 @@ function Label({
             letterSpacing: "0.04em",
             textTransform: "none",
             fontSize: 10.5,
-            color: "#44406B",
+            color: "#7F7BA9",
             marginLeft: "auto",
           }}
         >
@@ -147,7 +147,7 @@ function Label({
   );
 }
 function Help({ children }: { children: React.ReactNode }) {
-  return <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#44406B" }}>{children}</span>;
+  return <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>{children}</span>;
 }
 function FieldErr({ msg }: { msg?: string | undefined }) {
   return msg ? <span style={{ fontFamily: MONO, fontSize: 10, color: DANGER }}>{msg}</span> : null;
@@ -291,7 +291,7 @@ function LessonRow({
           style={{
             fontFamily: MONO,
             fontSize: 10.5,
-            color: "#44406B",
+            color: "#7F7BA9",
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
@@ -299,9 +299,9 @@ function LessonRow({
           }}
         >
           <span style={{ color: TURQ }}>{lesson.refCode}</span>
-          <span style={{ color: "#44406B" }}>·</span>
+          <span style={{ color: "#7F7BA9" }}>·</span>
           {diamonds(lesson.difficulty)}
-          <span style={{ color: "#44406B" }}>·</span>
+          <span style={{ color: "#7F7BA9" }}>·</span>
           <span>
             <b style={{ color: "#7F7BA9" }}>{lesson.estimatedMinutes}</b> min
           </span>
@@ -449,7 +449,7 @@ function LessonPicker({
               color: "#B8B5D1",
             }}
           >
-            <span style={{ color: "#44406B" }}>{"// "}</span>AJOUTER UNE LEÇON
+            <span style={{ color: "#7F7BA9" }}>{"// "}</span>AJOUTER UNE LEÇON
           </span>
           <button
             type="button"
@@ -487,7 +487,7 @@ function LessonPicker({
                 textAlign: "center",
                 fontFamily: MONO,
                 fontSize: 11,
-                color: "#44406B",
+                color: "#7F7BA9",
               }}
             >
               Aucune leçon disponible
@@ -535,7 +535,7 @@ function LessonPicker({
                     >
                       {l.title}
                     </p>
-                    <span style={{ fontFamily: MONO, fontSize: 10, color: "#44406B" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: "#7F7BA9" }}>
                       {l.refCode} · {l.estimatedMinutes} min · +{l.xpReward} XP
                     </span>
                   </div>
@@ -678,9 +678,9 @@ export function NewPathClient({
         >
           <span style={{ color: TURQ }}>$</span>
           <b style={{ color: "#B8B5D1", fontWeight: 500 }}>~/admin</b>
-          <span style={{ color: "#44406B" }}>/</span>
+          <span style={{ color: "#7F7BA9" }}>/</span>
           <span>parcours</span>
-          <span style={{ color: "#44406B" }}>/</span>
+          <span style={{ color: "#7F7BA9" }}>/</span>
           <span
             style={{ color: DANGER, fontWeight: 700, textShadow: "0 0 8px rgba(255,77,109,0.4)" }}
           >
@@ -776,7 +776,7 @@ export function NewPathClient({
               fontWeight: 700,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: "#44406B",
+              color: "#7F7BA9",
               background: "transparent",
               border: "1px solid #1F1B47",
               cursor: "not-allowed",
@@ -1185,10 +1185,10 @@ export function NewPathClient({
                     margin: 0,
                   }}
                 >
-                  <span style={{ color: "#44406B" }}>{"// "}</span>
+                  <span style={{ color: "#7F7BA9" }}>{"// "}</span>
                   <b style={{ color: TURQ }}>{lessons.length}</b> leçons · ordre actuel
                 </h3>
-                <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#44406B" }}>
+                <span style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9" }}>
                   <b style={{ color: "#7F7BA9" }}>{(totals.dur / 60).toFixed(1)} h</b> total ·{" "}
                   <b style={{ color: "#7F7BA9" }}>{totals.xp}</b> XP cumulés
                 </span>
@@ -1202,7 +1202,7 @@ export function NewPathClient({
                     textAlign: "center",
                     fontFamily: MONO,
                     fontSize: 11,
-                    color: "#44406B",
+                    color: "#7F7BA9",
                     letterSpacing: "0.06em",
                   }}
                 >
@@ -1309,7 +1309,7 @@ export function NewPathClient({
                         fontSize: 9.5,
                         letterSpacing: "0.18em",
                         textTransform: "uppercase",
-                        color: "#44406B",
+                        color: "#7F7BA9",
                       }}
                     >
                       {cell.lbl}
@@ -1342,7 +1342,7 @@ export function NewPathClient({
             }}
           >
             <span
-              style={{ fontFamily: MONO, fontSize: 10.5, color: "#44406B", marginRight: "auto" }}
+              style={{ fontFamily: MONO, fontSize: 10.5, color: "#7F7BA9", marginRight: "auto" }}
             >
               <kbd
                 style={{

@@ -67,7 +67,7 @@ function Field({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            color: "#44406B",
+            color: "#7F7BA9",
             margin: "0 0 6px",
           }}
         >
@@ -475,7 +475,7 @@ export function NewBadgeForm({ lessons }: Props): React.ReactElement {
                   fontSize: 9,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
-                  color: "#44406B",
+                  color: "#7F7BA9",
                   margin: "0 0 14px",
                 }}
               >

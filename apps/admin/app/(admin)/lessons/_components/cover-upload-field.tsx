@@ -130,7 +130,7 @@ export function CoverUploadField({
               fontFamily: MONO,
               fontSize: 10,
               letterSpacing: "0.16em",
-              color: "#44406B",
+              color: "#7F7BA9",
               textTransform: "uppercase",
             }}
           >
@@ -190,7 +190,7 @@ export function CoverUploadField({
         {/* Option 2: upload a file */}
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <span
-            style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: "#44406B" }}
+            style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", color: "#7F7BA9" }}
           >
             OU
           </span>
@@ -225,7 +225,7 @@ export function CoverUploadField({
         </div>
 
         <span
-          style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "#44406B" }}
+          style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: "0.04em", color: "#7F7BA9" }}
         >
           JPEG, PNG ou WebP · 4 Mo max · 1280×720 recommandé · le lien est ré-hébergé
         </span>

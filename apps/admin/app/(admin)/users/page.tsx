@@ -93,7 +93,7 @@ export default async function AdminUsersPage(): Promise<React.ReactElement> {
         </span>,
         <RoleSelect key="r" userId={u.id} currentRole={u.role} />,
         <span key="l">
-          <span style={{ color: UI.faint }}>LVL·</span>
+          <span style={{ color: UI.muted }}>LVL·</span>
           <b style={{ color: UI.turquoise }}>{String(u.level).padStart(2, "0")}</b>
         </span>,
         u.xpTotal.toLocaleString("fr-FR"),

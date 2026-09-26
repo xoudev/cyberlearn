@@ -326,7 +326,7 @@ export function ImportClient(): React.ReactElement {
                 fontSize: 9,
                 letterSpacing: "0.2em",
                 textTransform: "uppercase",
-                color: "#44406B",
+                color: "#7F7BA9",
               }}
             >
               Lot · {files.length} fichier{files.length > 1 ? "s" : ""}
@@ -508,12 +508,12 @@ export function ImportClient(): React.ReactElement {
               fontSize: 9,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "#44406B",
+              color: "#7F7BA9",
             }}
           >
             ÉDITEUR MDX
           </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#44406B" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#7F7BA9" }}>
             {current?.name ?? "aucun fichier"}
             {current?.imported ? " · importée (lecture seule)" : ""}
           </span>
@@ -583,7 +583,7 @@ export function ImportClient(): React.ReactElement {
             borderTop: "1px solid #1F1B47",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
-            color: "#44406B",
+            color: "#7F7BA9",
             display: "flex",
             gap: 16,
           }}
@@ -611,7 +611,7 @@ export function ImportClient(): React.ReactElement {
               fontSize: 9,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "#44406B",
+              color: "#7F7BA9",
             }}
           >
             APERÇU MÉTADONNÉES
@@ -625,7 +625,7 @@ export function ImportClient(): React.ReactElement {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "#44406B",
+                color: "#7F7BA9",
                 paddingTop: 20,
               }}
             >
@@ -656,7 +656,7 @@ function FileRow({
   const status = file.imported
     ? { color: "#0AFFD4", label: "importée" }
     : file.validation === null
-      ? { color: "#44406B", label: "à valider" }
+      ? { color: "#7F7BA9", label: "à valider" }
       : file.validation.valid
         ? {
             color: "#0AFFD4",
@@ -935,7 +935,7 @@ function MetadataPreview({
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,
-              color: "#44406B",
+              color: "#7F7BA9",
               marginBottom: 2,
             }}
           >

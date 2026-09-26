@@ -119,7 +119,7 @@
   padding: 1px 6px;
   border: 1px solid var(--a-border);
   background: var(--a-surface-2);
-  color: var(--a-faint);
+  color: var(--a-muted);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -507,7 +507,7 @@
   font-size: 12px;
 }
 .a-search input::placeholder {
-  color: var(--a-faint);
+  color: var(--a-muted);
 }
 .a-toolbar-count {
   margin-left: auto;
@@ -727,7 +727,7 @@
 .a-feed-time {
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--a-faint);
+  color: var(--a-muted);
   white-space: nowrap;
   padding-top: 2px;
 }
@@ -890,7 +890,7 @@
    gone the moment someone types, which is exactly when they are wondering
    whether they had to. */
 .a-label-optional {
-  color: var(--a-faint);
+  color: var(--a-muted);
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0.04em;

@@ -114,7 +114,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
                     <span className="mono" style={{ fontSize: 11, color: UI.muted }}>
                       {SURFACE_LABEL[event.surface] ?? event.surface}
                     </span>
-                    <span className="mono" style={{ fontSize: 11, color: UI.faint }}>
+                    <span className="mono" style={{ fontSize: 11, color: UI.muted }}>
                       {event.user?.displayName ?? "compte supprimé"}
                       {event.user?.username !== null &&
                         event.user?.username !== undefined &&
@@ -164,7 +164,7 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
                         {event.outcome === "OVERTURNED" ? "Faux positif" : "Confirmé"}
                       </Tag>
                     </td>
-                    <td align="right" className="mono" style={{ color: UI.faint, fontSize: 11 }}>
+                    <td align="right" className="mono" style={{ color: UI.muted, fontSize: 11 }}>
                       {event.reviewedBy?.displayName ?? "Compte supprimé"}
                     </td>
                   </tr>

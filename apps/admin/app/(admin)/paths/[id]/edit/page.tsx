@@ -120,15 +120,15 @@ function PathRatings({ ratings }: { ratings: PathRatingRow[] }): React.ReactElem
                   <tr key={r.id}>
                     <td className="mono" style={{ color: UI.warning, whiteSpace: "nowrap" }}>
                       {"★".repeat(r.score)}
-                      <span style={{ color: UI.faint }}>{"★".repeat(5 - r.score)}</span>
+                      <span style={{ color: UI.muted }}>{"★".repeat(5 - r.score)}</span>
                     </td>
                     <td style={{ width: "100%" }}>
-                      {r.feedback ?? <span style={{ color: UI.faint }}>Sans commentaire</span>}
+                      {r.feedback ?? <span style={{ color: UI.muted }}>Sans commentaire</span>}
                     </td>
-                    <td className="mono" style={{ color: UI.faint, whiteSpace: "nowrap" }}>
+                    <td className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
                       {r.user?.displayName ?? r.user?.username ?? "Compte supprimé"}
                     </td>
-                    <td className="mono" style={{ color: UI.faint, whiteSpace: "nowrap" }}>
+                    <td className="mono" style={{ color: UI.muted, whiteSpace: "nowrap" }}>
                       {dated.format(r.updatedAt)}
                     </td>
                   </tr>

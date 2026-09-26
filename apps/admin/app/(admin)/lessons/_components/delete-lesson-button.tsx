@@ -140,7 +140,7 @@ export function DeleteLessonButton({
             }}
             style={{
               marginLeft: 8,
-              color: "#44406B",
+              color: "#7F7BA9",
               background: "none",
               border: "none",
               cursor: "pointer",

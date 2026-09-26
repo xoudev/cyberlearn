@@ -84,7 +84,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           >
             {t.subject}
           </span>
-          <span className="mono" style={{ fontSize: 10, color: UI.faint }}>
+          <span className="mono" style={{ fontSize: 10, color: UI.muted }}>
             {t.id.slice(0, 8)} · lire le message →
           </span>
         </Link>,
@@ -106,7 +106,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
             {t.jiraIssueKey} ↗
           </a>
         ) : (
-          <span key="j" style={{ color: UI.faint }}>
+          <span key="j" style={{ color: UI.muted }}>
             Aucun
           </span>
         ),

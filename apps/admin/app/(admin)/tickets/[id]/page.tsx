@@ -171,7 +171,7 @@ export default async function AdminTicketPage({
                     {contactEmail}
                   </a>
                 ) : (
-                  <span style={{ color: UI.faint }}>anonymisé</span>
+                  <span style={{ color: UI.muted }}>anonymisé</span>
                 )}
               </DetailRow>
               <DetailRow label="Thème">
@@ -194,7 +194,7 @@ export default async function AdminTicketPage({
                     {ticket.jiraIssueKey} ↗
                   </a>
                 ) : (
-                  <span style={{ color: UI.faint }}>Aucun ticket lié</span>
+                  <span style={{ color: UI.muted }}>Aucun ticket lié</span>
                 )}
               </DetailRow>
               <DetailRow label="Créé le">{formatDateTime(ticket.createdAt)}</DetailRow>
