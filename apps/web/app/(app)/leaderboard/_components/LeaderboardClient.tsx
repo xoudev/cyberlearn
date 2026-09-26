@@ -11,6 +11,9 @@ import { formatNumberFr } from "@cyberlearn/lib";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/** "28 septembre": when the current season closes, in the header strip. */
+const SEASON_END = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+
 function getTier(level: number): string {
   if (level >= 28) return "Maître";
   if (level >= 20) return "Expert";
@@ -586,8 +589,8 @@ export function LeaderboardClient({
               }}
             >
               <span style={{ color: "#44406B" }}>{"// "}</span>
-              SAISON · {season ? String(season.index).padStart(2, "0") : "--"} ·{" "}
-              <b style={{ color: "var(--cosmetic-accent)", fontWeight: 500 }}>LIVE</b>
+              {/* No "LIVE": the board is read when the page loads, not streamed. */}
+              {season ? `Saison · ${String(season.index).padStart(2, "0")}` : "Hors saison"}
             </span>
             <h1
               style={{
@@ -690,37 +693,21 @@ export function LeaderboardClient({
             borderBottom: "1px dashed #2A2560",
           }}
         >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              color: "var(--cosmetic-accent)",
-            }}
-          >
-            <span
-              className="cl-live-dot"
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "var(--cosmetic-accent)",
-                boxShadow: "0 0 8px var(--cosmetic-accent)",
-                animation: "cl-pulse 2s ease-in-out infinite",
-              }}
-            />
-            SESSION SÉCURISÉE
-          </span>
-          <span style={{ color: "#44406B" }}>/</span>
+          {/* Only what is true of this board. "Session sécurisée", "FR · Europe"
+              and "maj temps réel" were decoration dressed as information. */}
           <span>
-            <b style={{ color: "#B8B5D1" }}>{formatNumberFr(entries.length)}</b> joueurs
+            <b style={{ color: "#B8B5D1" }}>{formatNumberFr(entries.length)}</b>{" "}
+            {entries.length === 1 ? "joueur classé" : "joueurs classés"}
           </span>
-          <span style={{ color: "#44406B" }}>/</span>
-          <span>FR · EUROPE</span>
-          <span style={{ color: "#44406B" }}>/</span>
-          <span>
-            maj · <b style={{ color: "#B8B5D1" }}>temps réel</b>
-          </span>
+          {season ? (
+            <>
+              <span style={{ color: "#44406B" }}>/</span>
+              <span>
+                Fin de saison ·{" "}
+                <b style={{ color: "#B8B5D1" }}>{SEASON_END.format(new Date(season.endsAt))}</b>
+              </span>
+            </>
+          ) : null}
         </div>
 
         {filter === "league" ? (
