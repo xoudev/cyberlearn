@@ -921,7 +921,7 @@ function TerminalCard({
               textDecoration: "none",
             }}
           >
-            Skip
+            Toutes les leçons
           </Link>
         </div>
       </div>

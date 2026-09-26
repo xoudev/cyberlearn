@@ -5103,3 +5103,39 @@ a.fp-name:hover {
   color: #f5f5fa;
   border-color: var(--toast-edge);
 }
+
+/* ── Keyboard ─────────────────────────────────────────────────────────────
+ * "Aller au contenu": the first stop of the Tab key on every signed-in page,
+ * off-screen until it has focus.
+ */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -100px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--cosmetic-accent);
+  color: #030219;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 12px;
+}
+/* The skip link's target takes focus only to move the reading point. */
+#contenu:focus {
+  outline: none;
+}
+
+/*
+ * A field reached with the keyboard always shows it. Twenty-five fields set
+ * `outline: none` inline and put nothing in its place, so the notes search
+ * and the lesson's note pad took focus invisibly. !important because inline
+ * styles win otherwise; :focus-visible so a mouse click draws nothing.
+ */
+:where(input, textarea, select, [contenteditable="true"]):focus-visible {
+  outline: 2px solid var(--cosmetic-accent) !important;
+  outline-offset: 1px;
+}
