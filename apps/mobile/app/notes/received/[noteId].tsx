@@ -1,15 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import { colors } from "@cyberlearn/tokens";
 import { ActionChip, BackButton } from "@/components/buttons";
 import { NoteMarkdown } from "@/components/note-markdown";
+import { NoteReportForm } from "@/components/note-report";
 import { useReceivedNotes } from "@/components/received-notes";
 import { Screen } from "@/components/screen";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Text } from "@/components/ui";
-import { dismissReceivedNoteApi } from "@/lib/api";
+import { NOTE_REPORT_SENT } from "@cyberlearn/lib/notes/report-reasons";
+import { dismissReceivedNoteApi, reportReceivedNoteApi } from "@/lib/api";
 import { useSession } from "@/lib/session";
 
 /**
@@ -27,6 +29,7 @@ export default function ReceivedNote(): React.JSX.Element {
   const queryClient = useQueryClient();
   const [dismissing, setDismissing] = useState(false);
   const [dismissFailed, setDismissFailed] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   // As on the site: a received note can hold anything its author wrote, and the
   // reader can at least take it out of their list.
@@ -42,6 +45,22 @@ export default function ReceivedNote(): React.JSX.Element {
     }
     await queryClient.invalidateQueries({ queryKey: ["notes", session?.user.id, "received"] });
     router.back();
+  };
+
+  // Reported, the note has left the list on the server: same way out as a
+  // dismiss, with the site's words, and never an excerpt of the note.
+  const report = async (
+    reason: string,
+    comment: string,
+  ): Promise<{ ok: true } | { ok: false; error: string }> => {
+    if (!note) return { ok: false, error: "Note introuvable." };
+    const result = await reportReceivedNoteApi(note.id, reason, comment);
+    if (result.ok) {
+      await queryClient.invalidateQueries({ queryKey: ["notes", session?.user.id, "received"] });
+      Alert.alert("Signalement envoyé", NOTE_REPORT_SENT);
+      router.back();
+    }
+    return result;
   };
 
   return (
@@ -80,14 +99,29 @@ export default function ReceivedNote(): React.JSX.Element {
               <NoteMarkdown markdown={note.content} />
             )}
           </Card>
-          <View style={{ alignSelf: "flex-start" }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             <ActionChip
               label={dismissing ? "…" : "Masquer cette note"}
               tone="neutral"
               disabled={dismissing}
               onPress={() => void dismiss()}
             />
+            <ActionChip
+              label="Signaler"
+              tone="danger"
+              onPress={() => {
+                setReporting((open) => !open);
+              }}
+            />
           </View>
+          {reporting ? (
+            <NoteReportForm
+              onSend={report}
+              onCancel={() => {
+                setReporting(false);
+              }}
+            />
+          ) : null}
           {dismissFailed ? (
             <Text variant="bodySm" accessibilityRole="alert" style={{ color: colors.danger }}>
               Impossible de la masquer, réessaie.

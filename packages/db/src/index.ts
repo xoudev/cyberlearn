@@ -91,6 +91,13 @@ export {
   type IncomingNote,
 } from "./repositories/note-share.repository.js";
 export {
+  noteReportRepository,
+  NOTE_REPORT_REASONS,
+  type NoteReportOutcome,
+  type NoteReportReasonValue,
+  type ReportedNote,
+} from "./repositories/note-report.repository.js";
+export {
   noteFolderRepository,
   type NoteFolderSummary,
 } from "./repositories/note-folder.repository.js";

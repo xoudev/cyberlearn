@@ -24,13 +24,13 @@ c'est lui qu'on relit avant de commencer une surface :
   `apps/mobile/lib/queries.ts`. C'est la RLS qui autorise, pas l'app.
 - **Les écritures et les actions** passent par `apps/web/app/api/mobile/*` avec
   un jeton bearer, appelées depuis `apps/mobile/lib/api.ts`. Il y en a
-  cinquante-cinq : `avatar`, `badges`, `ban/acknowledge`, `ban/appeal`, `exam`,
+  cinquante-six : `avatar`, `badges`, `ban/acknowledge`, `ban/appeal`, `exam`,
   `exam/claim`, `exam/start`, `exam/submit`, `forum`, `forum/post/edit`,
   `forum/post/hide`, `forum/reply`, `forum/section`, `forum/topic`, `friends`,
   `friends/accept`, `friends/remove`, `friends/request`, `leaderboard`,
   `lesson-qa`, `lesson-qa/accept`, `lesson-qa/answer`, `lesson-qa/question`,
   `lesson-qa/upvote`, `lesson-rating`, `loadout`, `moderation`, `my-class`,
-  `notes/dismiss`, `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
+  `notes/dismiss`, `notes/report`, `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
   `onboarding/finish`, `onboarding/goals`, `onboarding/profile`, `password`,
   `placement`, `placement/submit`, `profile`, `progress`, `quests/claim`,
   `quiz-answer`, `quiz-report`, `rank`, `rating`, `review`, `search`, `send-otp`,
@@ -77,7 +77,7 @@ RLS — jamais réécrites côté app.
 | Classement + ligue ; le classement compte les apprenants à partir de leur premier XP, non masqués, et le dit à qui n'y figure pas (même filtre `RANKED_USER_FILTER`) | ✅ | ✅ |
 | Amis : demandes reçues et envoyées, liste, accepter, refuser, annuler, retirer, personne prévenu d'un refus (même service, `apps/web/lib/friends/friends-service.ts`) ; le profil de quelqu'un et son bouton d'ami (mêmes libellés et mêmes transitions, `@cyberlearn/lib/social/friendship`), fermé à un inconnu quand il est privé, comme `/u/[username]` ; classement entre amis, sans ligne anonyme | ✅ | ✅ (`app/friends.tsx`, `app/u/[username].tsx`, onglet « Amis » du classement) |
 | Confidentialité : visibilité dans le classement public (masqué, anonyme, public), visible par mes amis, profil public | ✅ (`/settings/privacy`) | ✅ (Réglages) |
-| Bloc-notes ; partager une note avec sa classe ou ses amis (même liste, même modération : un refus nommé, l'auteur et ses professeurs prévenus, même service `apps/web/lib/notes/note-share.ts`), la reprendre ; les notes reçues, en lecture seule (même aperçu, `@cyberlearn/lib/notes/preview`), qu'on peut masquer de sa liste (même service, `dismissSharedNoteFor`) | ✅ | ✅ |
+| Bloc-notes ; partager une note avec sa classe ou ses amis (même liste, même modération : un refus nommé, l'auteur et ses professeurs prévenus, même service `apps/web/lib/notes/note-share.ts`), la reprendre ; les notes reçues, en lecture seule (même aperçu, `@cyberlearn/lib/notes/preview`), qu'on peut masquer de sa liste (même service, `dismissSharedNoteFor`) ou signaler à l'équipe, avec les mêmes raisons (`@cyberlearn/lib/notes/report-reasons`, même service `reportSharedNoteFor`) : la note quitte alors sa liste, l'auteur ne sait pas qui l'a signalée, et la console la retire de tous les partages ou classe sans suite | ✅ | ✅ |
 | Casier (cosmétiques) | ✅ | ✅ |
 | Notifications ; une notification liée à un sujet, une leçon, un parcours, un profil (demande d'ami) ou au bloc-notes ouvre l'écran correspondant | ✅ | ✅ |
 | Nouveautés : les notes de version, de la plus récente à la plus ancienne, avec leurs marques Nouveau, Amélioration, Correctif (même liste `@cyberlearn/lib/changelog/entries`), et une marque « nouveau » tant que la dernière n'a pas été ouverte sur l'appareil | ✅ (`/changelog`, point dans la barre latérale) | ✅ (`app/changelog.tsx`, marque dans le hub du profil) |

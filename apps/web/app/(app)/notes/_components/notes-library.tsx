@@ -13,7 +13,8 @@ import {
   renameFolderAction,
 } from "../_actions/folder-actions";
 import { saveNoteAction } from "../_actions/note-actions";
-import { dismissSharedNoteAction } from "../_actions/share-actions";
+import { dismissSharedNoteAction, reportSharedNoteAction } from "../_actions/share-actions";
+import { NOTE_REPORT_SENT } from "@cyberlearn/lib/notes/report-reasons";
 import {
   CAT,
   FOLDER_DEFAULT_COLOR,
@@ -1071,6 +1072,17 @@ export function NotesLibrary({
               toast.success("Note masquée.");
             }
             return ok;
+          }}
+          onReport={async (input) => {
+            const result = await reportSharedNoteAction({ noteId: incomingNote.id, ...input });
+            if (result.ok) {
+              const id = incomingNote.id;
+              setIncomingId(null);
+              setIncoming((prev) => prev.filter((n) => n.id !== id));
+              // No excerpt here either: the reason to report it is what it says.
+              toast.success(NOTE_REPORT_SENT);
+            }
+            return result;
           }}
           // Neither is reachable in read-only mode; the reader asks for them
           // because an owner's copy needs them.

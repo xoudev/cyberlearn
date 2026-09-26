@@ -4,9 +4,11 @@ import React, { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { renderNoteMarkdown } from "@/lib/markdown/render-note";
 import { downloadMarkdown, noteToMarkdown } from "@/lib/notes/export";
+import { ReportNoteForm } from "./report-note-form";
 import { ShareDialog } from "./share-dialog";
 import { CAT, type SerializedFolder, type SerializedNote } from "./notes-shared";
 import { Select } from "@cyberlearn/ui";
+import type { NoteReportReasonKey } from "@cyberlearn/lib/notes/report-reasons";
 
 interface NoteReaderProps {
   note: SerializedNote;
@@ -27,6 +29,15 @@ interface NoteReaderProps {
    * true once done; the parent then closes the reader.
    */
   onDismiss?: () => Promise<boolean>;
+  /**
+   * A received note only: reports it to the team. Resolves with the service's
+   * answer; on success the parent closes the reader, the note having left the
+   * reader's list.
+   */
+  onReport?: (input: {
+    reason: NoteReportReasonKey;
+    comment: string;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 export function NoteReader({
@@ -37,12 +48,14 @@ export function NoteReader({
   onSaveContent,
   sharedBy,
   onDismiss,
+  onReport,
 }: NoteReaderProps): React.JSX.Element {
   const [editing, setEditing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const mine = sharedBy === undefined;
   const [dismissing, setDismissing] = useState(false);
   const [dismissFailed, setDismissFailed] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [draft, setDraft] = useState(note.content);
   const [pending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -315,6 +328,18 @@ export function NoteReader({
                 {dismissing ? "…" : "Masquer cette note"}
               </button>
             ) : null}
+            {!mine && onReport ? (
+              <button
+                type="button"
+                aria-expanded={reporting}
+                onClick={() => {
+                  setReporting((open) => !open);
+                }}
+                style={{ ...toolBtn(reporting), color: "#FF6B78" }}
+              >
+                Signaler
+              </button>
+            ) : null}
             {dismissFailed ? (
               <span
                 role="alert"
@@ -355,6 +380,14 @@ export function NoteReader({
           </div>
 
           {/* Body */}
+          {reporting && onReport ? (
+            <ReportNoteForm
+              onSubmit={onReport}
+              onCancel={() => {
+                setReporting(false);
+              }}
+            />
+          ) : null}
           <div style={{ overflowY: "auto", padding: "20px 22px", flex: 1 }}>
             {editing ? (
               <textarea
