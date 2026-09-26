@@ -799,6 +799,24 @@ export async function dismissReceivedNoteApi(noteId: string): Promise<boolean> {
   }
 }
 
+/** Reports a received note to the team; it leaves the reader's "Reçues" too. */
+export async function reportReceivedNoteApi(
+  noteId: string,
+  reason: string,
+  comment: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await authedFetch("/api/mobile/notes/report", {
+      method: "POST",
+      body: JSON.stringify({ noteId, reason, comment }),
+    });
+    const reply = readActionResponse(await res.json());
+    return reply.ok ? { ok: true } : { ok: false, error: reply.error ?? "Signalement refusé." };
+  } catch {
+    return { ok: false, error: "Le signalement n'a pas pu être envoyé. Réessaie." };
+  }
+}
+
 // ── Path final exam (the site's service: draw, 30-minute limit, 48 h wait) ────
 
 export type ExamStatusReply =

@@ -9,6 +9,7 @@ import {
   type ShareAudienceState,
   type ShareNoteResult,
 } from "@/lib/notes/note-share";
+import { reportSharedNoteFor, type NoteReportResult } from "@/lib/notes/note-report";
 
 /**
  * The site's entry points for sharing a note: the session, then the service
@@ -48,4 +49,14 @@ export async function unshareNoteAction(
 export async function dismissSharedNoteAction(noteId: string): Promise<{ ok: boolean }> {
   const user = await requireRequestUser();
   return dismissSharedNoteFor(user.id, noteId);
+}
+
+/** Reports a received note to the team; it leaves the reader's "Reçues" too. */
+export async function reportSharedNoteAction(input: {
+  noteId: string;
+  reason: string;
+  comment?: string;
+}): Promise<NoteReportResult> {
+  const user = await requireRequestUser();
+  return reportSharedNoteFor(user.id, input);
 }

@@ -82,6 +82,7 @@ model User {
   setAssignments    ClassAssignment[]       @relation("ClassAssignmentAuthor")
   classResources    ClassResource[]         @relation("ClassResourceAuthor")
   notesSharedWithMe NoteShare[]             @relation("NoteRecipient")
+  noteReports       NoteReport[]            @relation("NoteReporter")
   moderationEvents  ModerationEvent[]       @relation("ModerationSubject")
   moderationReviews ModerationEvent[]       @relation("ModerationReviewer")
   authoredLessons   Lesson[]                @relation("LessonAuthor")
@@ -534,10 +535,11 @@ model Note {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  folder NoteFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  shares NoteShare[]
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson  Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  folder  NoteFolder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  shares  NoteShare[]
+  reports NoteReport[]
 
   @@unique([userId, lessonId])
   @@index([userId])
@@ -565,6 +567,49 @@ model NoteShare {
   @@id([noteId, sharedWithId])
   @@index([sharedWithId])
   @@map("note_shares")
+}
+
+enum NoteReportReason {
+  HATE
+  SEXUAL
+  SPAM
+  PERSONAL_DATA
+  OTHER
+}
+
+/// What the team did with a reported note. UNSHARED: taken off every share,
+/// left to its author. DISMISSED: read and kept as it was.
+enum NoteReportStatus {
+  OPEN
+  UNSHARED
+  DISMISSED
+}
+
+/// A recipient telling the team that a note handed to them is not acceptable.
+///
+/// Not a ModerationEvent: those are attached to the author and count towards
+/// the flags that restrict their account, and a report is somebody's claim,
+/// not a verdict. One per reporter and note; reporting again updates it. The
+/// reporter's row goes on erasure of their account (SetNull keeps the report),
+/// and the whole report goes with the note.
+model NoteReport {
+  id         String           @id @default(uuid()) @db.Uuid
+  noteId     String           @db.Uuid
+  reporterId String?          @db.Uuid
+  reason     NoteReportReason
+  comment    String?          @db.VarChar(500)
+  status     NoteReportStatus @default(OPEN)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  resolvedAt DateTime?
+
+  note     Note  @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  reporter User? @relation("NoteReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+
+  @@unique([reporterId, noteId])
+  @@index([status])
+  @@index([noteId])
+  @@map("note_reports")
 }
 
 model NoteFolder {

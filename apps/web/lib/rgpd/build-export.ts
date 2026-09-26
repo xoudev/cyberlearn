@@ -70,6 +70,17 @@ export interface ExportPayload {
     status: string;
     createdAt: Date;
   }[];
+  /**
+   * Every report this person made on a note shared with them: their reason
+   * and comment. Not the note itself, which is its author's.
+   */
+  noteReports: {
+    lessonTitle: string;
+    reason: string;
+    comment: string | null;
+    status: string;
+    createdAt: Date;
+  }[];
   pathsProgress: {
     pathTitle: string;
     pathSlug: string;
@@ -238,6 +249,7 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     answerUpvotes,
     lessonQuizAnswers,
     quizReports,
+    noteReports,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
@@ -504,6 +516,17 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
       },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.noteReport.findMany({
+      where: { reporterId: userId },
+      select: {
+        reason: true,
+        comment: true,
+        status: true,
+        createdAt: true,
+        note: { select: { lesson: { select: { title: true } } } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
   ]);
 
   return {
@@ -543,6 +566,13 @@ export async function buildExportPayload(userId: string): Promise<ExportPayload>
     quizReports: quizReports.map((r) => ({
       lessonTitle: r.lesson.title,
       quizId: r.quizId,
+      reason: r.reason,
+      comment: r.comment,
+      status: r.status,
+      createdAt: r.createdAt,
+    })),
+    noteReports: noteReports.map((r) => ({
+      lessonTitle: r.note.lesson.title,
       reason: r.reason,
       comment: r.comment,
       status: r.status,

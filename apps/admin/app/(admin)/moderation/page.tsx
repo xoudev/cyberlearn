@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
-import { isActionableEvent, moderationRepository } from "@cyberlearn/db";
-import { Card, EmptyState, KpiCard, PageHeader, Tag, UI } from "../_components/admin-ui";
+import { isActionableEvent, moderationRepository, noteReportRepository } from "@cyberlearn/db";
+import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag, UI } from "../_components/admin-ui";
 import { ReviewButtons } from "./_components/review-buttons";
 
 export const metadata: Metadata = { title: "Modération" };
@@ -61,10 +61,11 @@ function formatDate(d: Date): string {
  * evidence.
  */
 export default async function AdminModerationPage(): Promise<React.ReactElement> {
-  const [pending, resolved, counts] = await Promise.all([
+  const [pending, resolved, counts, reportedNotes] = await Promise.all([
     moderationRepository.listPending(100),
     moderationRepository.listResolved(30),
     moderationRepository.countsByOutcome(),
+    noteReportRepository.countOpenNotes(),
   ]);
 
   const overturned = counts.OVERTURNED ?? 0;
@@ -77,6 +78,10 @@ export default async function AdminModerationPage(): Promise<React.ReactElement>
         eyebrow="Sécurité"
         title="Modération"
         description="Ce que le filtre automatique a refusé ou signalé. Confirmer ou infirmer ne republie rien : ça dit si la règle est bonne."
+        actions={
+          // Reports by people, kept apart from the filter's own queue.
+          <GhostLink href="/moderation/notes">Notes signalées · {String(reportedNotes)}</GhostLink>
+        }
       />
 
       <div className="a-kpi-grid">
