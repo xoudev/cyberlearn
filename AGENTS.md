@@ -12,8 +12,7 @@
   DIRECT_URL through `packages/db/prisma.config.ts`; the app reads DATABASE_URL,
   translated for `pg` by `packages/db/src/connection.ts`
 - Auth: Supabase Auth (e-mail + password, GitHub OAuth, optional TOTP;
-  mandatory TOTP on the admin console). One-time codes remain in two places:
-  the legacy mobile sign-in route, `/api/mobile/send-otp`, and the
+  mandatory TOTP on the admin console). The only one-time code left is the
   password-recovery code the app verifies. See `docs/authentication.md`.
 - Storage: Supabase Storage
 - Realtime: Supabase Realtime (notifications in-app)

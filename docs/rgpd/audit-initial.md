@@ -361,9 +361,9 @@ DPA Sentry est à vérifier, et l'audit des Replays à 30 jours reste ouvert dan
 La ligne `email — Identifiant de connexion (Magic Link)` décrit un flux
 remplacé : l'inscription et la connexion se font par e-mail et mot de passe
 (12 à 128 caractères), le GitHub OAuth reste une alternative, et un facteur TOTP
-est possible côté apprenant, obligatoire côté console. Le seul chemin à code à
-usage unique qui subsiste est `/api/mobile/send-otp`, maintenu pour les builds
-mobiles déjà installés. Détail dans `docs/authentication.md`.
+est possible côté apprenant, obligatoire côté console. Le dernier chemin à code
+de connexion à usage unique, `/api/mobile/send-otp`, a été retiré le
+27 septembre 2026. Détail dans `docs/authentication.md`.
 
 ### Jira n'a jamais reçu de données (section 6 périmée)
 

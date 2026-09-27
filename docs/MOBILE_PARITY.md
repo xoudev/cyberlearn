@@ -33,7 +33,7 @@ c'est lui qu'on relit avant de commencer une surface :
   `notes/dismiss`, `notes/report`, `notes/share`, `notes/shared`, `notes/unshare`, `onboarding/avatar`,
   `onboarding/finish`, `onboarding/goals`, `onboarding/profile`, `password`,
   `placement`, `placement/submit`, `profile`, `progress`, `quests/claim`,
-  `quiz-answer`, `quiz-report`, `rank`, `rating`, `review`, `search`, `send-otp`,
+  `quiz-answer`, `quiz-report`, `rank`, `rating`, `review`, `search`,
   `settings/profile`, `streak`, `support`, `support/reply`, `support/ticket`,
   `wrapped`.
 - Le forum se lit aussi par des routes, pas sous RLS : ce qu'un lecteur voit

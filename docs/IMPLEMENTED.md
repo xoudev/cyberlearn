@@ -78,7 +78,6 @@
 | `/api/search` | Recherche globale (parcours, leçons, notes) |
 | `/api/me/export` | Export des données personnelles (RGPD Art. 20) |
 | `/api/me/delete/request` · `/confirm` | Suppression de compte en deux temps (Art. 17) |
-| `/api/mobile/send-otp` | Code de connexion pour l'app native |
 | `/api/mobile/progress` | Complétion d'une leçon, par le même flux que le web |
 | `/api/mobile/leaderboard` | Classement et échelle de pod |
 | `/api/mobile/my-class` | Travail donné à l'élève |

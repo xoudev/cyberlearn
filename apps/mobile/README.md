@@ -40,8 +40,6 @@ Everything server-side goes through `apps/web/app/api/mobile/*` (Bearer JWT):
 - `GET /my-class` - the work a learner has been given.
 - `GET /loadout` - the cosmetics they have equipped.
 - `POST /password` - changing the password from the native security screen.
-- `POST /send-otp` - the sign-in code, sent through the platform's own template
-  rather than Supabase's default.
 
 ## Run it
 
