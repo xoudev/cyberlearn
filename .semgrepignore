@@ -7,6 +7,10 @@ docs/design/paths/
 # "JWT alg=none" challenge). Inline nosemgrep cannot live inside the
 # template-literal lesson bodies, so the file is excluded wholesale.
 packages/db/prisma/seed.ts
+# MDX lessons: teaching material, not code. A Linux lesson shows /etc/passwd
+# and /etc/shadow lines, and they sit in code blocks the reader sees, where an
+# inline nosemgrep would render. Gitleaks still scans them for real secrets.
+content/lessons/
 # Compiled in-place tsc artifacts (gitignored, but be explicit for local runs).
 packages/*/src/**/*.js
 packages/db/prisma/**/*.js
