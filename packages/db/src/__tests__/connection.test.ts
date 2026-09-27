@@ -18,6 +18,10 @@ describe("pgPoolOptions", () => {
   });
 
   it("encrypts a remote connection without verifying the certificate, as Prisma 6 did", () => {
+    // Asserts the Prisma 6 behaviour kept on purpose, not a new bypass: Supabase
+    // signs with its own CA, absent from Node's store, so verifying needs that
+    // CA shipped first (sslmode=verify-full then turns it on). See connection.ts.
+    // nosemgrep: problem-based-packs.insecure-transport.js-node.bypass-tls-verification.bypass-tls-verification
     expect(pgPoolOptions(POOLER).ssl).toEqual({ rejectUnauthorized: false });
   });
 
