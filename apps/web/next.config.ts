@@ -32,10 +32,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
   images: {
+    // Next 16 raised the default to four hours. A badge icon replaced under the
+    // same public URL would then stay stale that long; one minute is what the
+    // site was built against.
+    minimumCacheTTL: 60,
     // Allowlist external image domains (SSRF protection - no user-controlled URLs)
     remotePatterns: [
       {
