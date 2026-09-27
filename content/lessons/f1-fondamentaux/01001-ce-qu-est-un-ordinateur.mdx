@@ -1,0 +1,195 @@
+---
+refCode: CL-LSN-01001-V01
+slug: fondamentaux-ce-qu-est-un-ordinateur
+title: "Ce qu'est un ordinateur"
+description: "Matériel, logiciel et données, le modèle entrée-traitement-sortie, l'idée géniale du programme enregistré en mémoire, et pourquoi ton téléphone, ta box et le serveur d'un site web sont tous des ordinateurs construits sur le même plan."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 35
+xpReward: 200
+prerequisites: []
+---
+
+Tu utilises des ordinateurs toute la journée, souvent sans le savoir. Le téléphone dans ta poche en est un. La box internet aussi, comme la carte bancaire, la voiture récente, la montre connectée, le serveur qui t'envoie cette page. Ils n'ont ni la même forme, ni la même taille, ni le même prix, et pourtant ils fonctionnent tous selon le même principe, inventé il y a près de quatre-vingts ans. Ce parcours part de là : comprendre ce qu'est réellement un ordinateur, avant d'apprendre à le programmer, à l'administrer ou à le défendre.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- définir un ordinateur en une phrase, et reconnaître des ordinateurs qui n'en ont pas l'air ;
+- distinguer le matériel, le logiciel et les données ;
+- décrire le modèle entrée, traitement, sortie et stockage ;
+- expliquer l'idée du programme enregistré en mémoire, et pourquoi elle a tout changé ;
+- nommer les grandes familles de logiciels : micrologiciel, système d'exploitation, applications.
+
+## pourquoi ça compte
+
+Tout ce que tu apprendras ensuite repose sur ce modèle. Un développeur écrit des instructions qu'un processeur exécutera. Un administrateur gère la mémoire, le stockage et les programmes d'une machine. Un analyste en sécurité cherche comment un attaquant a fait exécuter ses propres instructions à la place de celles prévues. Quand on sait ce qu'est un ordinateur à ce niveau, les notions qui viennent ensuite (processeur, mémoire, système d'exploitation, réseau) se rangent d'elles-mêmes au bon endroit.
+
+C'est aussi une question de lucidité. Une caméra de surveillance, une imprimante ou un thermostat connectés sont des ordinateurs, avec leurs programmes, leurs failles et leurs mises à jour. Les considérer comme de simples appareils, c'est les oublier dans la sécurité d'une maison ou d'une entreprise ; beaucoup d'attaques passent justement par eux.
+
+## une définition
+
+Un **ordinateur** est une machine qui **traite des données** en suivant une **liste d'instructions**, le **programme**, et qui peut changer de programme.
+
+Chaque mot compte :
+
+- **traiter des données** : calculer, comparer, trier, transformer. Un texte, une photo, un paiement, une position GPS sont des données ;
+- **en suivant des instructions** : l'ordinateur ne décide rien ; il exécute, une instruction après l'autre, extrêmement vite ;
+- **qui peut changer de programme** : c'est ce qui le distingue d'une calculatrice simple ou d'une machine à laver d'autrefois, dont le fonctionnement était figé. Le même ordinateur est un traitement de texte le matin, un lecteur vidéo le soir.
+
+## matériel, logiciel, données
+
+On découpe tout système informatique en trois couches.
+
+| Couche | Ce que c'est | Exemples |
+| --- | --- | --- |
+| **Matériel** (*hardware*) | Ce qu'on peut toucher | Processeur, mémoire, disque, écran, clavier, carte réseau |
+| **Logiciel** (*software*) | Les programmes, c'est-à-dire des listes d'instructions | Windows, Linux, un navigateur, un jeu, une application bancaire |
+| **Données** (*data*) | Ce que les programmes manipulent | Tes photos, un fichier de comptes, une base de clients, un message |
+
+La frontière entre logiciel et données est plus fine qu'il n'y paraît : pour l'ordinateur, un programme **est** une donnée, une suite de nombres rangée en mémoire comme une photo. Ce qui le rend spécial, c'est qu'on demande au processeur de l'exécuter. Garde cette idée en tête : elle explique pourquoi un simple document piégé peut prendre le contrôle d'une machine, quand un programme confond par erreur des données avec des instructions.
+
+## le modèle entrée, traitement, sortie
+
+Tout ordinateur, du plus petit au plus gros, suit le même schéma.
+
+<Diagram caption="Le modèle de base d'un ordinateur">
+flowchart LR
+  E["Entrée : clavier, souris, capteur, réseau"] --> T["Traitement : le processeur exécute le programme"]
+  T --> S["Sortie : écran, haut-parleur, imprimante, réseau"]
+  T --- M["Mémoire et stockage : programmes et données"]
+</Diagram>
+
+- **L'entrée** fait arriver les données : touches du clavier, clics, photo prise par l'appareil, température mesurée par un capteur, paquet reçu du réseau.
+- **Le traitement** est fait par le **processeur**, qui exécute les instructions du programme.
+- **La sortie** rend le résultat : affichage, son, impression, message envoyé.
+- **La mémoire et le stockage** conservent les programmes et les données, pendant le traitement et entre deux utilisations.
+
+Prenons un exemple concret : tu paies avec ta carte dans un magasin.
+
+1. **Entrée** : le terminal lit la puce de la carte et reçoit le code que tu tapes.
+2. **Traitement** : son processeur prépare une demande d'autorisation, chiffrée.
+3. **Sortie** : la demande part sur le réseau vers la banque, qui la traite à son tour sur ses propres ordinateurs.
+4. **Entrée** à nouveau : la réponse arrive, le processeur la vérifie.
+5. **Sortie** : l'écran affiche « Paiement accepté », le ticket s'imprime.
+
+Une seule opération, plusieurs ordinateurs, et chacun suit le même cycle.
+
+## l'idée qui a tout changé : le programme enregistré
+
+Les premières machines à calculer électroniques des années 1940 se programmaient en **rebranchant des câbles**. Changer de calcul prenait des jours. En 1945, le mathématicien John von Neumann décrit, en s'appuyant sur les travaux de l'équipe de l'ENIAC, une autre organisation : ranger **le programme lui-même dans la mémoire**, avec les données. Pour changer de programme, il suffit alors de charger d'autres instructions en mémoire.
+
+<Diagram caption="L'architecture dite de von Neumann">
+flowchart TD
+  P["Processeur : unité de calcul et unité de contrôle"] --- M["Mémoire : instructions et données, au même endroit"]
+  P --- ES["Entrées et sorties"]
+</Diagram>
+
+Cette architecture, qu'on appelle **architecture de von Neumann**, est encore celle de presque tous les ordinateurs actuels. Elle a deux conséquences que tu retrouveras tout au long de ta formation :
+
+- un ordinateur est **universel** : avec le bon programme, il peut faire n'importe quel traitement de l'information ;
+- programmes et données partagent la même mémoire. Si un programme mal écrit laisse des données déborder là où se trouvent des instructions, ces données peuvent être **exécutées**. Une grande famille d'attaques, que tu étudieras dans le parcours sur l'assembleur, repose sur ce principe.
+
+## les grandes familles de logiciels
+
+Tous les logiciels n'ont pas le même rôle. Du plus proche du matériel au plus proche de toi :
+
+| Famille | Rôle | Exemples |
+| --- | --- | --- |
+| **Micrologiciel** (*firmware*) | Petit programme gravé dans le matériel, qui le fait démarrer et fonctionner | L'UEFI d'un PC, le logiciel d'un disque SSD, d'une box |
+| **Système d'exploitation** | Gère le matériel et le partage entre les programmes | Linux, Windows, macOS, Android, iOS |
+| **Applications** | Répondent à tes besoins | Navigateur, messagerie, jeu, tableur |
+
+Le **système d'exploitation** mérite une mention particulière : c'est lui qui fait que plusieurs applications peuvent tourner en même temps sans se marcher dessus, qui range les fichiers, qui décide qui a le droit de faire quoi. Le module 3 de ce parcours lui est entièrement consacré.
+
+Les deux premières couches, micrologiciel et système d'exploitation, sont celles dont on parle le moins et qui comptent le plus pour la sécurité. Une application compromise ne concerne en principe qu'elle-même ; un système d'exploitation ou un micrologiciel compromis donne le contrôle de toute la machine, et survit souvent à une réinstallation des applications. C'est pourquoi les mises à jour du système et du micrologiciel sont prioritaires sur toutes les autres.
+
+## des ordinateurs partout
+
+Avec cette définition, on découvre des ordinateurs un peu partout :
+
+- **les ordinateurs personnels** et portables, qui te sont familiers ;
+- **les téléphones et tablettes**, qui sont des ordinateurs complets, souvent plus puissants que les PC d'il y a dix ans ;
+- **les serveurs**, sans écran ni clavier, rangés par milliers dans des centres de données, qui font tourner les sites web, les messageries, les jeux en ligne ;
+- **les systèmes embarqués**, cachés dans d'autres objets : voiture, montre, appareil photo, box, caméra, ascenseur, pacemaker. Il y en a bien plus que d'ordinateurs visibles.
+
+Tous ont un processeur, de la mémoire, des entrées et des sorties, et un programme. Tous peuvent donc avoir des **défauts dans leur programme**, et doivent être **mis à jour**. Un objet connecté jamais mis à jour est un ordinateur vulnérable branché sur ton réseau.
+
+<Callout type="info">
+La puissance a changé d'échelle, pas le principe. L'ordinateur de guidage des missions Apollo, qui a posé des humains sur la Lune en 1969, disposait d'environ 4 Kio de mémoire vive. Un téléphone actuel en a plusieurs millions de fois plus. Il suit pourtant exactement le même modèle : un processeur exécute des instructions rangées en mémoire.
+</Callout>
+
+## démonstration : un programme, pas à pas
+
+Voici un tout petit programme en Python, un langage que tu apprendras en détail plus tard. Il suffit ici de le lire comme une liste d'instructions : il reproduit le modèle entrée, traitement, sortie.
+
+```python
+prix = 24.90            # entrée : une donnée
+quantite = 3            # entrée : une autre donnée
+total = prix * quantite # traitement : un calcul
+print("Total :", total) # sortie : un affichage
+```
+
+```text
+Total : 74.69999999999999
+```
+
+Tu attendais sans doute `74.7`. Ce n'est pas une erreur du programme : l'ordinateur range les nombres à virgule en binaire, et certains, comme 24,90, n'y ont pas de représentation exacte. Le module 2 de ce parcours t'expliquera pourquoi, et comment on s'en accommode (pour de l'argent, on compte en centimes, avec des nombres entiers).
+
+Quatre instructions exécutées dans l'ordre, de haut en bas. Les deux premières rangent des données en mémoire sous un nom, la troisième demande au processeur un calcul, la quatrième envoie le résultat vers la sortie. Tout programme, même un système d'exploitation de plusieurs dizaines de millions de lignes, n'est qu'une très longue suite d'instructions de ce genre.
+
+## à toi de jouer
+
+Voici le même programme, prêt à être exécuté. Lance-le, puis modifie-le : change le prix et la quantité, ajoute une remise de 10 % (multiplie le total par 0.9) et affiche le nouveau total. Chaque modification que tu fais, c'est un nouveau programme que l'ordinateur exécute.
+
+<CodePlayground language="python" starterCode={`# Entrée : des données
+prix = 24.90
+quantite = 3
+
+# Traitement : un calcul
+total = prix * quantite
+
+# Sortie : un affichage
+print("Total :", total)
+
+# À toi : ajoute une remise de 10 % et affiche le nouveau total
+`} />
+
+Remarque que tu n'as touché à aucun câble : tu as changé le comportement de la machine en changeant seulement des instructions rangées en mémoire. C'est exactement l'idée du programme enregistré.
+
+## les pièges
+
+- **Croire qu'un ordinateur « comprend » ou « décide ».** Il exécute des instructions, sans aucune intention. Quand un programme fait une erreur, c'est qu'une instruction ou une donnée était fausse.
+- **Réduire l'ordinateur au PC.** Téléphones, serveurs, box et objets connectés en sont aussi, avec les mêmes besoins de mises à jour et de protection.
+- **Confondre système d'exploitation et application.** Le navigateur est une application ; Windows ou Linux est le système qui la fait tourner.
+- **Penser que programmes et données sont de nature différente.** Pour la machine, ce sont des nombres en mémoire. Cette confusion possible est à l'origine de nombreuses failles.
+- **Oublier le micrologiciel.** Lui aussi est un logiciel, qui a ses défauts et ses mises à jour, et ce sont souvent les plus négligées.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.computerhistory.org/revolution/" description="L'histoire des ordinateurs, des machines à calculer aux smartphones, par le Computer History Museum">Revolution : the first 2000 years of computing</ExternalLink>
+
+<ExternalLink href="https://www.cnil.fr/fr/objets-connectes" description="Les objets connectés, leurs données et leurs risques, par la CNIL">CNIL : les objets connectés</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/mises-a-jour" description="Pourquoi et comment mettre à jour ses appareils">Cybermalveillance.gouv.fr : les mises à jour</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Qu'est-ce qui distingue un ordinateur d'une simple calculatrice ?" options={["Il est plus rapide", "Il peut changer de programme et donc de fonction", "Il a un écran", "Il est connecté à Internet"]} correct={1} explanation="Un ordinateur exécute un programme qu'on peut remplacer : c'est ce qui le rend universel. Une calculatrice simple a un fonctionnement figé." />
+  <Quiz id="q-2" question="Parmi ces éléments, lequel est du logiciel ?" options={["Le processeur", "La barrette de mémoire", "Le navigateur web", "Le disque SSD"]} correct={2} explanation="Le navigateur est un programme, une liste d'instructions. Les trois autres sont du matériel, qu'on peut toucher." />
+  <Quiz id="q-3" question="Dans le paiement par carte, la lecture du code tapé sur le clavier du terminal correspond à quelle étape ?" options={["Traitement", "Sortie", "Entrée", "Stockage"]} correct={2} explanation="Le code tapé est une donnée qui arrive dans la machine : c'est une entrée. Le calcul de la demande est le traitement, l'affichage du résultat une sortie." />
+  <Quiz id="q-4" question="Quelle est l'idée principale de l'architecture de von Neumann ?" options={["Utiliser l'électricité plutôt que la mécanique", "Ranger le programme en mémoire, avec les données", "Relier les ordinateurs en réseau", "Avoir plusieurs processeurs"]} correct={1} explanation="Le programme enregistré en mémoire permet de changer de programme sans modifier le matériel. C'est l'organisation de presque tous les ordinateurs actuels." />
+  <Quiz id="q-5" question="Quel logiciel gère le matériel et le partage entre les applications ?" options={["Le micrologiciel", "Le système d'exploitation", "Le navigateur", "Le tableur"]} correct={1} explanation="Le système d'exploitation, comme Linux ou Windows, gère le processeur, la mémoire, les fichiers et les droits pour toutes les applications." />
+  <Quiz id="q-6" question="Pourquoi une caméra connectée doit-elle être mise à jour ?" options={["Pour améliorer la qualité de l'image", "Parce que c'est un ordinateur, dont le programme peut contenir des failles", "Pour économiser l'électricité", "Ce n'est pas nécessaire"]} correct={1} explanation="Un objet connecté a un processeur, une mémoire et un programme. Ses défauts de programme peuvent être exploités, et seules les mises à jour les corrigent." />
+</QuizGroup>
+
+## à retenir
+
+- Un **ordinateur** traite des **données** en suivant un **programme**, qu'on peut changer.
+- Trois couches : **matériel** (ce qu'on touche), **logiciel** (les programmes), **données** (ce qu'on manipule).
+- Tout ordinateur suit le modèle **entrée, traitement, sortie**, avec de la **mémoire** et du **stockage**.
+- **Architecture de von Neumann** : programme et données dans la même mémoire. D'où l'universalité, et certaines failles.
+- Logiciels : **micrologiciel**, **système d'exploitation**, **applications**.
+- Téléphones, serveurs, box et objets connectés sont des ordinateurs, à mettre à jour comme les autres.

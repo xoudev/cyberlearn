@@ -1,0 +1,186 @@
+---
+refCode: CL-LSN-01005-V01
+slug: fondamentaux-carte-mere-et-bus
+title: "La carte mère et les bus"
+description: "Comment les composants se parlent : la carte mère et son support de processeur, le chipset, les bus PCIe, SATA, USB et de la mémoire, les générations et les voies, la puce TPM, et comment lire l'inventaire matériel d'une machine avec lspci et lsusb."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 220
+prerequisites: ["CL-LSN-01004-V01"]
+---
+
+Tu connais maintenant les pièces principales : processeur, mémoire vive, stockage. Encore faut-il qu'elles communiquent. C'est le rôle de la **carte mère**, la grande plaque sur laquelle tout est branché, et des **bus**, les voies de communication qui la parcourent. Comprendre cette circulation, c'est savoir pourquoi un SSD est plus rapide dans un emplacement que dans un autre, pourquoi une carte graphique a besoin d'un connecteur particulier, et pourquoi un simple périphérique branché sur un port peut, dans certains cas, accéder à la mémoire de l'ordinateur.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- décrire le rôle de la carte mère et de ses principaux éléments ;
+- expliquer ce qu'est un bus et ce que mesurent son débit et sa latence ;
+- distinguer les bus de la mémoire, PCIe, SATA et USB, et ce qui s'y branche ;
+- lire les notions de générations et de voies du PCIe ;
+- expliquer le rôle de la puce TPM ;
+- lire l'inventaire matériel d'une machine Linux avec `lspci` et `lsusb`.
+
+## pourquoi ça compte
+
+Pour un administrateur, la carte mère détermine ce qu'une machine peut accueillir : combien de mémoire, combien de disques, quelles cartes d'extension. Savoir lire un inventaire matériel permet de diagnostiquer un composant non reconnu, de vérifier ce qu'un serveur a réellement dans le ventre, ou de choisir le bon emplacement pour un SSD.
+
+Côté sécurité, les bus sont aussi des portes. Un périphérique branché sur un port rapide peut, s'il est malveillant, se faire passer pour un clavier et taper des commandes, ou même lire directement la mémoire. Et la puce **TPM** de la carte mère est au cœur des protections modernes du démarrage et du chiffrement.
+
+## la carte mère
+
+La **carte mère** (*motherboard*) est le circuit imprimé principal de l'ordinateur. On y trouve :
+
+- le **support du processeur** (*socket*), propre à une famille de processeurs : un processeur ne se monte que sur une carte au support compatible ;
+- les **emplacements de mémoire vive**, qui limitent la quantité et le type de mémoire utilisable ;
+- les **emplacements d'extension** PCIe, pour la carte graphique, une carte réseau ou un SSD NVMe au format M.2 ;
+- les **connecteurs de stockage** SATA ;
+- les **contrôleurs intégrés** : réseau, son, USB, qui évitent d'ajouter des cartes ;
+- la puce du **micrologiciel** (UEFI), qui démarre la machine (leçon suivante) ;
+- souvent une puce **TPM**, pour la sécurité ;
+- les **connecteurs d'alimentation**, qui reçoivent l'électricité du bloc d'alimentation et la distribuent.
+
+Sur un téléphone ou un ordinateur portable récent, tout cela est miniaturisé, et une partie est intégrée dans une seule puce, le **système sur puce** (*System on Chip*, SoC), qui réunit processeur, processeur graphique, contrôleurs et parfois mémoire.
+
+## qu'est-ce qu'un bus ?
+
+Un **bus** est une voie de communication partagée entre des composants, avec ses propres règles d'échange. On le caractérise par deux mesures :
+
+- le **débit** (*bandwidth*) : la quantité de données transmise par seconde, en Mo/s ou Go/s ;
+- la **latence** : le temps que met une donnée à arriver.
+
+Une autoroute à dix voies a un grand débit ; une route directe a une faible latence. Un bus idéal a les deux, mais chaque bus fait des compromis selon ce qu'il relie.
+
+<Diagram caption="Les principales voies de communication d'un PC">
+flowchart TD
+  CPU["Processeur"] ---|"bus mémoire"| RAM["Mémoire vive"]
+  CPU ---|"PCIe direct"| GPU["Carte graphique"]
+  CPU ---|"PCIe direct"| NVME["SSD NVMe"]
+  CPU ---|"liaison dédiée"| CS["Chipset"]
+  CS ---|"SATA"| HDD["Disques SATA"]
+  CS ---|"USB"| USB["Clavier, souris, clés USB"]
+  CS ---|"PCIe"| NET["Carte réseau, autres cartes"]
+</Diagram>
+
+Sur les ordinateurs actuels, les composants les plus exigeants (mémoire, carte graphique, SSD rapides) sont reliés **directement au processeur**. Les autres passent par le **chipset**, une puce de la carte mère qui regroupe les connexions plus lentes et les relie au processeur par une liaison unique. Cette organisation explique qu'un SSD NVMe soit parfois plus rapide dans l'emplacement M.2 relié au processeur que dans celui relié au chipset.
+
+## le bus de la mémoire
+
+La mémoire vive est reliée au processeur par son propre bus, conçu pour la plus faible latence possible. Les barrettes suivent une norme, **DDR** (*Double Data Rate*), déclinée en générations (DDR4, DDR5) **incompatibles entre elles** : une barrette DDR5 ne se monte pas sur une carte mère DDR4. Les serveurs utilisent souvent de la mémoire **ECC** (*Error-Correcting Code*), capable de détecter et de corriger les erreurs isolées, fréquentes à grande échelle et sources de plantages ou de données corrompues.
+
+## PCIe : générations et voies
+
+**PCI Express** (PCIe) est le bus principal des composants rapides. Il fonctionne par **voies** (*lanes*), des liaisons indépendantes qu'on regroupe : un emplacement ×1 a une voie, un ×4 en a quatre, un ×16 en a seize. Chaque **génération** double à peu près le débit par voie.
+
+| Génération | Débit par voie, par sens (environ) | En ×4 | En ×16 |
+| --- | --- | --- | --- |
+| PCIe 3.0 | 1 Go/s | 4 Go/s | 16 Go/s |
+| PCIe 4.0 | 2 Go/s | 8 Go/s | 32 Go/s |
+| PCIe 5.0 | 4 Go/s | 16 Go/s | 64 Go/s |
+
+Une carte graphique occupe en général un emplacement ×16, un SSD NVMe utilise quatre voies (×4), une carte réseau une à huit. Les générations sont compatibles entre elles, mais la liaison fonctionne à la vitesse de la **plus ancienne** des deux : un SSD PCIe 5.0 dans un emplacement 4.0 fonctionnera à la vitesse du 4.0. Et le nombre total de voies d'un processeur est limité, ce qui borne le nombre de cartes rapides qu'une machine peut accueillir.
+
+## SATA et USB
+
+- **SATA** relie les disques durs et les SSD d'entrée de gamme, à environ 600 Mo/s au maximum en théorie, un peu moins en pratique (leçon précédente).
+- **USB** (*Universal Serial Bus*) relie les périphériques externes : clavier, souris, clés, disques externes, téléphones. Ses versions successives vont de quelques Mo/s à plusieurs dizaines de Gbit/s, et le connecteur **USB-C**, réversible, ne dit rien à lui seul de la vitesse : un même connecteur peut transporter de l'USB lent, de l'USB rapide, de la vidéo ou de l'alimentation.
+- **Thunderbolt**, présent sur de nombreux portables avec un connecteur USB-C, prolonge carrément le PCIe à l'extérieur de la machine.
+
+## les bus et la sécurité
+
+Un bus rapide est une porte large. Deux risques classiques :
+
+- **Un périphérique USB piégé.** Un appareil qui ressemble à une clé USB peut en réalité se déclarer comme un **clavier** et taper, en une fraction de seconde, des commandes sur la session ouverte. L'ordinateur fait confiance à un clavier : il ne demande rien. D'où la règle de base : ne jamais brancher une clé USB trouvée ou reçue sans savoir d'où elle vient.
+- **L'accès direct à la mémoire.** Pour être rapides, les périphériques PCIe et Thunderbolt peuvent lire et écrire **directement dans la mémoire vive**, sans passer par le processeur : c'est le **DMA** (*Direct Memory Access*). Un périphérique malveillant branché sur un port Thunderbolt a longtemps pu lire toute la mémoire d'une machine verrouillée. Les ordinateurs récents se protègent avec une unité matérielle, l'**IOMMU**, qui limite ce que chaque périphérique peut atteindre.
+
+<Callout type="warning">
+Une clé USB « perdue » sur un parking ou reçue par courrier est une technique d'attaque connue et efficace : des études ont montré qu'une grande partie de ces clés finissent branchées par curiosité. En entreprise, un support inconnu se remet au service informatique, qui l'examine sur une machine isolée ; il ne se branche jamais sur un poste de travail.
+</Callout>
+
+## la puce TPM
+
+La plupart des cartes mères récentes intègrent une puce **TPM** (*Trusted Platform Module*), ou son équivalent dans le processeur. C'est un petit coffre-fort matériel qui :
+
+- **génère et garde des clés** de chiffrement, qui ne peuvent pas être extraites de la puce ;
+- **mesure le démarrage** : il enregistre une empreinte de chaque étape (micrologiciel, chargeur, noyau), ce qui permet de savoir si l'une d'elles a été modifiée ;
+- peut **libérer une clé seulement si le démarrage est intact**, ce qui permet de déchiffrer le disque automatiquement au démarrage, sans mot de passe, tout en refusant si quelqu'un a trafiqué la chaîne de démarrage.
+
+C'est le TPM qui fait fonctionner BitLocker sans saisie de mot de passe sur de nombreux PC Windows, et Windows 11 l'exige. La leçon suivante, sur le démarrage, montre la chaîne qu'il protège.
+
+## démonstration : l'inventaire matériel d'une machine Linux
+
+`lspci` liste tous les périphériques reliés au bus PCIe, et `lsusb` ceux reliés en USB.
+
+```bash
+lspci
+```
+
+```text
+00:00.0 Host bridge: Intel Corporation 12th Gen Core Processor Host Bridge/DRAM Registers
+00:02.0 VGA compatible controller: Intel Corporation Alder Lake-P GT2 [Iris Xe Graphics]
+00:14.0 USB controller: Intel Corporation Alder Lake PCH USB 3.2 xHCI Host Controller
+00:17.0 SATA controller: Intel Corporation Alder Lake-P SATA AHCI Controller
+01:00.0 Non-Volatile memory controller: Samsung Electronics Co Ltd NVMe SSD Controller PM9A1/PM9A3/980PRO
+02:00.0 Network controller: Intel Corporation Wi-Fi 6E(802.11ax) AX211 160MHz
+```
+
+Chaque ligne commence par l'**adresse** du périphérique sur le bus, suivie de sa **catégorie** et de son modèle. On y lit la puce graphique intégrée, le contrôleur USB, le contrôleur SATA, un **SSD NVMe** Samsung et une **carte Wi-Fi**. `lspci -v` détaille chaque élément, dont le **pilote** qui le gère ; la dernière leçon de ce module explique ce qu'est un pilote.
+
+```bash
+lsusb
+```
+
+```text
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 001 Device 003: ID 046d:c52b Logitech, Inc. Unifying Receiver
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+```
+
+Un récepteur sans fil Logitech (clavier et souris), et les deux « concentrateurs racines » USB 2.0 et 3.0 de la machine. Les deux nombres après `ID` identifient le fabricant et le produit : c'est grâce à eux que le système choisit le bon pilote.
+
+## à toi de jouer
+
+Dans le terminal, affiche la liste des périphériques PCIe, puis celle des périphériques USB. Repère le SSD NVMe et la carte réseau dans la première, et un périphérique qui n'a rien à faire là dans la seconde.
+
+<SimulatedTerminal shell="bash" title="Qu'y a-t-il dans cette machine ?" expectedCommands={["lspci", "lsusb"]} hints={["lspci liste le bus PCIe.", "lsusb liste le bus USB."]} commands={{ "lspci": "00:00.0 Host bridge: Intel Corporation 12th Gen Core Processor Host Bridge/DRAM Registers\n00:02.0 VGA compatible controller: Intel Corporation Alder Lake-P GT2 [Iris Xe Graphics]\n00:14.0 USB controller: Intel Corporation Alder Lake PCH USB 3.2 xHCI Host Controller\n00:17.0 SATA controller: Intel Corporation Alder Lake-P SATA AHCI Controller\n01:00.0 Non-Volatile memory controller: Samsung Electronics Co Ltd NVMe SSD Controller PM9A1/PM9A3/980PRO\n02:00.0 Network controller: Intel Corporation Wi-Fi 6E(802.11ax) AX211 160MHz", "lsusb": "Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub\nBus 001 Device 003: ID 046d:c52b Logitech, Inc. Unifying Receiver\nBus 001 Device 007: ID 1a86:7523 QinHeng Electronics CH340 serial converter\nBus 001 Device 008: ID 16c0:0486 Van Ooijen Technische Informatica Teensyduino RawHID\nBus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub", "lspci | grep -i nvme": "01:00.0 Non-Volatile memory controller: Samsung Electronics Co Ltd NVMe SSD Controller PM9A1/PM9A3/980PRO" }} />
+
+Dans la sortie de `lsusb`, un périphérique « Teensyduino » est une petite carte électronique programmable, souvent utilisée pour fabriquer de faux claviers qui tapent des commandes. Sur le poste d'un collègue qui dit n'avoir branché qu'une souris, ce serait une découverte à signaler.
+
+## les pièges
+
+- **Acheter une pièce sans vérifier la compatibilité.** Support du processeur, génération de mémoire (DDR4 ou DDR5), format et génération PCIe : la carte mère décide.
+- **Croire qu'un connecteur USB-C dit la vitesse.** Le même connecteur peut être très lent ou très rapide.
+- **Mettre un SSD rapide dans un emplacement lent.** La liaison s'aligne sur la plus ancienne génération, et un emplacement relié au chipset peut être moins rapide.
+- **Brancher un support inconnu.** Une « clé » peut être un clavier qui tape des commandes.
+- **Laisser les ports rapides ouverts sur des machines sensibles.** L'accès direct à la mémoire est une vraie surface d'attaque ; l'IOMMU et la désactivation des ports inutiles la réduisent.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/lspci.8.html" description="Lister et détailler les périphériques PCIe sous Linux">lspci(8)</ExternalLink>
+
+<ExternalLink href="https://trustedcomputinggroup.org/resource/trusted-platform-module-tpm-summary/" description="Le résumé officiel de ce qu'est une puce TPM">Trusted Computing Group : TPM</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Les règles d'hygiène de l'ANSSI, dont celles qui portent sur les supports amovibles">Guide d'hygiène informatique de l'ANSSI</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le rôle du chipset ?" options={["Refroidir le processeur", "Regrouper les connexions les plus lentes (SATA, USB, certaines cartes) et les relier au processeur", "Stocker les fichiers", "Remplacer la mémoire vive"]} correct={1} explanation="Les composants les plus exigeants sont reliés directement au processeur ; le chipset regroupe les autres." />
+  <Quiz id="q-2" question="Un SSD NVMe PCIe 5.0 est monté dans un emplacement PCIe 4.0. À quelle vitesse fonctionne-t-il ?" options={["À la vitesse du 5.0", "À la vitesse du 4.0", "Il ne fonctionne pas", "Deux fois plus vite"]} correct={1} explanation="Les générations sont compatibles, mais la liaison s'aligne sur la plus ancienne des deux." />
+  <Quiz id="q-3" question="Que signifie ×4 pour un emplacement PCIe ?" options={["Quatrième génération", "Quatre voies de communication regroupées", "Quatre fois plus lent", "Quatre périphériques branchés"]} correct={1} explanation="Le chiffre après le × indique le nombre de voies. La génération est un autre critère." />
+  <Quiz id="q-4" question="Une barrette DDR5 peut-elle se monter sur une carte mère prévue pour la DDR4 ?" options={["Oui, avec un adaptateur", "Non, les générations DDR sont incompatibles entre elles", "Oui, mais plus lentement", "Seulement sur un serveur"]} correct={1} explanation="Chaque génération de mémoire a son propre connecteur et ses propres signaux." />
+  <Quiz id="q-5" question="Pourquoi une clé USB inconnue peut-elle prendre le contrôle d'une session ouverte ?" options={["Parce qu'elle contient toujours un virus", "Parce qu'elle peut se déclarer comme un clavier et taper des commandes, auxquelles l'ordinateur fait confiance", "Parce qu'elle consomme trop d'électricité", "Parce qu'elle efface le disque"]} correct={1} explanation="Un clavier n'a pas besoin d'autorisation : ce qu'il tape est exécuté comme si l'utilisateur le tapait." />
+  <Quiz id="q-6" question="À quoi sert la puce TPM ?" options={["À accélérer les jeux", "À générer et protéger des clés, et à mesurer l'intégrité du démarrage", "À stocker les photos", "À relier le Wi-Fi"]} correct={1} explanation="Le TPM garde des clés impossibles à extraire et ne les libère que si la chaîne de démarrage n'a pas été modifiée." />
+  <Quiz id="q-7" question="Quelle commande liste les périphériques reliés au bus PCIe sous Linux ?" options={["lsusb", "lspci", "lsblk", "lscpu"]} correct={1} explanation="lspci liste le bus PCIe, lsusb le bus USB, lsblk les supports de stockage, lscpu le processeur." />
+</QuizGroup>
+
+## à retenir
+
+- La **carte mère** relie tout : support du processeur, mémoire, emplacements PCIe, connecteurs SATA, contrôleurs intégrés, micrologiciel, TPM.
+- Un **bus** se mesure en **débit** et en **latence**. Les composants rapides vont au processeur, les autres passent par le **chipset**.
+- **PCIe** : des **voies** (×1, ×4, ×16) et des **générations** qui doublent le débit ; la liaison s'aligne sur la plus ancienne.
+- Mémoire **DDR4** ou **DDR5**, incompatibles ; **ECC** sur les serveurs. **SATA** pour les disques, **USB** pour l'externe, **Thunderbolt** prolonge le PCIe.
+- Sécurité : un faux clavier USB tape des commandes, l'**accès direct à la mémoire** des ports rapides est limité par l'**IOMMU**, la puce **TPM** protège les clés et le démarrage.
+- Inventaire sous Linux : `lspci`, `lsusb`, `lsblk`, `lscpu`.

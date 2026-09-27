@@ -1,0 +1,127 @@
+---
+refCode: CL-LSN-01901-V01
+slug: fondamentaux-bilan-module-1
+title: "Bilan du module 1 : la fiche technique d'une machine"
+description: "Le quiz du module Comment fonctionne un ordinateur, puis un projet : établir la fiche technique commentée de ta propre machine, sous Windows ou sous Linux, en expliquant le rôle de chaque composant et ce qu'il implique pour la sécurité."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 60
+xpReward: 350
+prerequisites: ["CL-LSN-01007-V01"]
+---
+
+Tu sais maintenant ce qu'il y a dans un ordinateur et comment tout cela s'enchaîne : le modèle entrée, traitement, sortie, le processeur et son cycle, la mémoire vive, le stockage, la carte mère et ses bus, le démarrage, les pilotes. Ce bilan vérifie ces connaissances, puis te fait appliquer tout le module à un objet bien réel : ta propre machine. À la fin, tu auras sa fiche technique complète, et tu sauras expliquer chaque ligne.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- expliquer le rôle de chaque grand composant d'un ordinateur ;
+- relier les caractéristiques d'un composant à ce qu'elles changent en pratique ;
+- retrouver ces informations sur une vraie machine, sous Windows ou sous Linux ;
+- repérer dans cette fiche les points qui comptent pour la sécurité : chiffrement, Secure Boot, TPM, mises à jour.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="f1m1-q-1" question="Qu'est-ce qui fait d'une machine un ordinateur ?" options={["Un écran et un clavier", "Elle traite des données en suivant un programme qu'on peut changer", "Une connexion à Internet", "Un disque dur"]} correct={1} explanation="Un ordinateur exécute un programme remplaçable. Un serveur sans écran ou une box en sont aussi." />
+  <Quiz id="f1m1-q-2" question="Dans l'architecture de von Neumann, où se trouve le programme en cours d'exécution ?" options={["Dans le processeur uniquement", "En mémoire, avec les données", "Sur le réseau", "Dans le micrologiciel"]} correct={1} explanation="Le programme est rangé en mémoire, comme les données : c'est ce qui permet d'en changer, et ce qui rend possibles certaines failles." />
+  <Quiz id="f1m1-q-3" question="Quel registre du processeur désigne la prochaine instruction à exécuter ?" options={["L'accumulateur", "Le compteur de programme", "Le cache L1", "Le registre de pile"]} correct={1} explanation="Le compteur de programme contient l'adresse de la prochaine instruction ; un saut le modifie." />
+  <Quiz id="f1m1-q-4" question="Un processeur annonce 8 cœurs et 16 threads. Qu'est-ce que cela veut dire ?" options={["16 cœurs physiques", "8 cœurs physiques, chacun suivant deux fils d'exécution", "8 processeurs séparés", "Une fréquence de 16 GHz"]} correct={1} explanation="Chaque cœur suit deux fils d'exécution : le système voit 16 processeurs logiques." />
+  <Quiz id="f1m1-q-5" question="À quoi sert la mémoire cache du processeur ?" options={["À stocker les fichiers", "À garder près du processeur les données récemment utilisées", "À démarrer la machine", "À chiffrer le disque"]} correct={1} explanation="La mémoire vive est beaucoup plus lente que le processeur ; le cache limite ces attentes." />
+  <Quiz id="f1m1-q-6" question="Pourquoi faut-il enregistrer un document avant une coupure de courant ?" options={["Parce que le stockage est volatile", "Parce que tant qu'il n'est qu'en mémoire vive, qui est volatile, il disparaît sans courant", "Parce que le processeur l'efface", "Ce n'est pas nécessaire"]} correct={1} explanation="La mémoire vive perd son contenu sans alimentation ; seul le stockage le conserve." />
+  <Quiz id="f1m1-q-7" question="Parmi ces accès, lequel est le plus lent ?" options={["Lire en cache L1", "Lire en mémoire vive", "Lire sur un SSD NVMe", "Lire sur un disque dur"]} correct={3} explanation="Le disque dur, mécanique, répond en millisecondes : des milliers de fois plus lentement que la mémoire vive." />
+  <Quiz id="f1m1-q-8" question="On vide la corbeille. Les données d'un fichier sur un disque dur sont-elles effacées ?" options={["Oui, immédiatement", "Non, leur emplacement est marqué libre, et elles restent jusqu'à être écrasées", "Oui, mais seulement sur un SSD", "Elles sont envoyées au fabricant"]} correct={1} explanation="Supprimer retire le fichier de la liste et libère la place. Les données restent récupérables tant qu'elles ne sont pas écrasées." />
+  <Quiz id="f1m1-q-9" question="Un SSD NVMe PCIe 4.0 est monté dans un emplacement PCIe 3.0. Que se passe-t-il ?" options={["Il ne fonctionne pas", "Il fonctionne à la vitesse du PCIe 3.0", "Il va plus vite qu'annoncé", "Il abîme la carte mère"]} correct={1} explanation="Les générations PCIe sont compatibles ; la liaison s'aligne sur la plus ancienne." />
+  <Quiz id="f1m1-q-10" question="Pourquoi une clé USB trouvée ne doit-elle jamais être branchée sur un poste de travail ?" options={["Parce qu'elle peut être pleine", "Parce qu'elle peut se déclarer comme un clavier et taper des commandes, ou contenir un programme malveillant", "Parce qu'elle consomme trop", "Parce qu'elle efface le disque automatiquement"]} correct={1} explanation="Un faux clavier est accepté sans question par le système. Les supports inconnus s'examinent sur une machine isolée." />
+  <Quiz id="f1m1-q-11" question="Quel est le premier programme exécuté au démarrage d'un PC ?" options={["Windows", "Le micrologiciel UEFI", "Le chargeur GRUB", "L'antivirus"]} correct={1} explanation="Le micrologiciel de la carte mère démarre en premier, puis lance le chargeur, qui lance le noyau." />
+  <Quiz id="f1m1-q-12" question="Que vérifie Secure Boot ?" options={["La vitesse du disque", "La signature de chaque élément de la chaîne de démarrage", "Le mot de passe de session", "La connexion réseau"]} correct={1} explanation="Chaque maillon vérifie la signature du suivant et refuse d'exécuter un élément modifié ou non signé." />
+  <Quiz id="f1m1-q-13" question="Pourquoi un pilote défectueux peut-il faire planter toute la machine ?" options={["Parce qu'il est trop gros", "Parce qu'il s'exécute dans l'espace noyau, avec tous les droits", "Parce qu'il utilise Internet", "Parce qu'il est payant"]} correct={1} explanation="Le code du noyau n'est isolé de rien : une erreur y arrête tout le système." />
+  <Quiz id="f1m1-q-14" question="Que garantit la signature d'un pilote ?" options={["Qu'il ne contient aucune faille", "Qu'il vient d'un éditeur identifié et n'a pas été modifié", "Qu'il est le plus récent", "Qu'il fonctionne sur tous les systèmes"]} correct={1} explanation="Une signature prouve l'origine et l'intégrité, pas l'absence de défaut. Un pilote signé peut être vulnérable." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées : le module 2 s'appuie directement sur les notions de mémoire et d'octet.
+
+## projet
+
+### l'énoncé
+
+Établis la **fiche technique commentée** de ta propre machine : ordinateur personnel, portable, ou la machine virtuelle d'entraînement si tu en as une. Pour chaque composant, tu relèves ses caractéristiques **et** tu expliques en une ou deux phrases ce qu'elles changent en pratique. Une fiche qui ne fait que recopier des chiffres ne remplit pas l'objectif : c'est l'explication qui compte.
+
+### ce que la fiche doit contenir
+
+1. **Le système d'exploitation** et sa version.
+2. **Le processeur** : modèle, architecture (x86-64 ou ARM), nombre de cœurs et de fils d'exécution, fréquence.
+3. **La mémoire vive** : quantité totale, et quantité utilisée au moment du relevé.
+4. **Le stockage** : type (SSD ou disque dur, NVMe ou SATA), capacité, espace libre.
+5. **Le démarrage** : UEFI ou BIOS, Secure Boot actif ou non, présence d'un TPM.
+6. **Le chiffrement du stockage** : actif ou non.
+7. **Trois périphériques** connectés, avec leur bus (USB, PCIe...) et, si tu peux, leur pilote.
+8. **Une conclusion de sécurité** : deux ou trois points forts, et au moins un point à améliorer.
+
+### où trouver les informations
+
+**Sous Windows**, dans l'ordre du plus simple au plus détaillé :
+
+- **Paramètres, Système, Informations système** : processeur, mémoire, version de Windows ;
+- le **Gestionnaire des tâches**, onglet **Performances** : cœurs, processeurs logiques, fréquence, mémoire, type de disque ;
+- l'outil **Informations système** (tape `msinfo32` dans la recherche) : mode du BIOS (UEFI ou hérité), état du démarrage sécurisé ;
+- **Sécurité Windows**, rubrique **Sécurité de l'appareil** : présence du TPM (« processeur de sécurité ») et chiffrement de l'appareil ;
+- le **Gestionnaire de périphériques** pour les périphériques et leurs pilotes (leçon 7) ;
+- en PowerShell : `Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors` et `Get-PhysicalDisk | Select-Object FriendlyName, MediaType, BusType, Size`.
+
+**Sous Linux**, avec les commandes vues dans le module :
+
+- `cat /etc/os-release` pour le système ;
+- `lscpu` pour le processeur ;
+- `free -h` pour la mémoire ;
+- `lsblk -o NAME,SIZE,TYPE,ROTA,MOUNTPOINT` et `df -h` pour le stockage ;
+- `ls /sys/firmware/efi` (le répertoire n'existe qu'en démarrage UEFI) et `mokutil --sb-state` pour le démarrage ;
+- `ls /dev/tpm*` pour la présence d'un TPM ;
+- `lsblk -f` pour repérer un volume chiffré (type `crypto_LUKS`) ;
+- `lspci -k` et `lsusb` pour les périphériques.
+
+<Callout type="warning">
+Ta fiche contient des informations sur ta machine : garde-la pour toi ou pour ton formateur. Ne publie jamais en ligne le numéro de série, les identifiants ou la configuration détaillée d'une machine professionnelle : ce sont exactement les informations qu'un attaquant collecte pour préparer une attaque ciblée.
+</Callout>
+
+### les critères de réussite
+
+| Critère | Attendu |
+| --- | --- |
+| Complétude | Les huit rubriques sont remplies |
+| Exactitude | Chaque valeur vient d'un relevé sur la machine, pas d'une supposition |
+| Explication | Chaque composant a une phrase qui dit ce que ses caractéristiques changent |
+| Vocabulaire | Les termes du module sont employés correctement : cœur, thread, cache, volatile, NVMe, UEFI, Secure Boot, pilote |
+| Sécurité | La conclusion cite au moins un point fort et un point à améliorer, justifiés |
+
+### la correction commentée : un exemple de fiche
+
+Voici une fiche rédigée pour un ordinateur portable fictif, qui montre le niveau d'explication attendu. La tienne aura d'autres valeurs.
+
+| Rubrique | Relevé | Ce que cela signifie |
+| --- | --- | --- |
+| Système | Windows 11 Professionnel 24H2 | Version récente, qui reçoit encore les mises à jour de sécurité. |
+| Processeur | Intel Core i5-1235U, x86-64, 10 cœurs, 12 threads | Processeur de portable économe ; ses cœurs nombreux aident quand plusieurs applications tournent en même temps. Architecture x86-64 : les logiciels pour PC classiques fonctionnent. |
+| Mémoire vive | 16 Go, dont 9,1 Go utilisés | Assez pour un usage bureautique et quelques onglets. Au-delà d'un usage à 90 %, le système utiliserait l'espace d'échange et ralentirait. |
+| Stockage | SSD NVMe 512 Go, 214 Go libres | Démarrage et ouverture des applications rapides. Assez de place libre pour les mises à jour. |
+| Démarrage | UEFI, Secure Boot activé, TPM 2.0 présent | La chaîne de démarrage est vérifiée, et le TPM peut protéger la clé de chiffrement du disque. |
+| Chiffrement | BitLocker activé | En cas de vol du portable, le disque est illisible sans la clé. |
+| Périphériques | Carte Wi-Fi Intel (PCIe, pilote Intel), récepteur de souris Logitech (USB), webcam intégrée (USB) | Pilotes fournis par Windows Update ; aucun périphérique inconnu. |
+| Sécurité | Points forts : Secure Boot, TPM, chiffrement du disque. À améliorer : les réglages du micrologiciel ne sont pas protégés par un mot de passe, et le démarrage sur clé USB est autorisé. | Un tiers ayant un accès physique pourrait modifier ces réglages ; sur un portable qui voyage, un mot de passe du micrologiciel s'impose. |
+
+La dernière ligne est la plus importante : elle transforme un inventaire en **diagnostic**. C'est exactement le regard qu'on attend d'un technicien, d'un administrateur ou d'un auditeur.
+
+### pour aller plus loin
+
+Compare ta fiche avec celle d'un autre appareil de ta maison : un vieux PC, une tablette, une box si son interface d'administration donne ces informations. Lequel a le démarrage le mieux protégé ? Lequel ne reçoit plus de mises à jour ? Ce réflexe de comparaison te servira au module 7, consacré aux bons réflexes de sécurité.
+
+## à retenir
+
+- Un ordinateur se décrit par son **processeur**, sa **mémoire vive**, son **stockage**, son **démarrage** et ses **périphériques**, chacun avec ses caractéristiques et ce qu'elles impliquent.
+- Chaque caractéristique se **relève** sur la machine réelle : outils de Windows, ou `lscpu`, `free`, `lsblk`, `lspci`, `mokutil` sous Linux.
+- Une fiche utile ne recopie pas des chiffres : elle **explique** et **conclut**, notamment sur la sécurité.
+- Les points de sécurité matériels à vérifier sur toute machine : **Secure Boot**, **TPM**, **chiffrement du stockage**, **mot de passe du micrologiciel**, **mises à jour**.
+- Le module 2 t'apprend comment toutes les données de la machine, texte, nombres, images, sont représentées en binaire.
