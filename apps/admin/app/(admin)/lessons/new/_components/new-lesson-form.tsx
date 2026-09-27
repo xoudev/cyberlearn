@@ -284,7 +284,7 @@ export function NewLessonForm(): React.ReactElement {
               <Help>
                 Format :{" "}
                 <b style={{ color: TURQ }}>
-                  CL-LSN-{"{NNN}"}-V{"{NN}"}
+                  CL-LSN-{"{NNN}"}-V{"{NN}"} ou CL-LSN-{"{PPNNN}"}-V{"{NN}"}
                 </b>{" "}
                 · doit être unique
               </Help>

@@ -1,0 +1,116 @@
+{
+  "refCode": "CL-PATH-101-V01",
+  "slug": "fondamentaux-informatique",
+  "title": "Fondamentaux de l'informatique",
+  "description": "Comprendre ce qui se passe dans un ordinateur, du bouton d'allumage à l'affichage d'une page web : composants, binaire et encodages, systèmes d'exploitation, fonctionnement d'Internet, premiers pas en ligne de commande, algorithmique et réflexes de sécurité. Le point de départ de tous les cursus.",
+  "category": "DEV",
+  "track": "SKILL",
+  "difficulty": "BEGINNER",
+  "estimatedHours": 40,
+  "modules": [
+    {
+      "title": "Comment fonctionne un ordinateur",
+      "description": "décrire le rôle de chaque composant et suivre une instruction du disque jusqu'au processeur.",
+      "lessons": [
+        "CL-LSN-01001-V01",
+        "CL-LSN-01002-V01",
+        "CL-LSN-01003-V01",
+        "CL-LSN-01004-V01",
+        "CL-LSN-01005-V01",
+        "CL-LSN-01006-V01",
+        "CL-LSN-01007-V01"
+      ]
+    },
+    {
+      "title": "Représenter l'information",
+      "description": "convertir entre les bases et expliquer comment texte, image et son deviennent des nombres.",
+      "lessons": [
+        "CL-LSN-01008-V01",
+        "CL-LSN-01009-V01",
+        "CL-LSN-01010-V01",
+        "CL-LSN-01011-V01",
+        "CL-LSN-01012-V01",
+        "CL-LSN-01013-V01",
+        "CL-LSN-01014-V01"
+      ]
+    },
+    {
+      "title": "Les systèmes d'exploitation",
+      "description": "expliquer ce que fait un système d'exploitation et comparer Windows, Linux et macOS sur les notions communes.",
+      "lessons": [
+        "CL-LSN-01015-V01",
+        "CL-LSN-01016-V01",
+        "CL-LSN-01017-V01",
+        "CL-LSN-01018-V01",
+        "CL-LSN-01019-V01",
+        "CL-LSN-01020-V01",
+        "CL-LSN-01021-V01",
+        "CL-LSN-01022-V01"
+      ]
+    },
+    {
+      "title": "Internet et le web vus de l'intérieur",
+      "description": "raconter tout ce qui se passe entre la saisie d'une adresse et l'affichage de la page.",
+      "lessons": [
+        "CL-LSN-01023-V01",
+        "CL-LSN-01024-V01",
+        "CL-LSN-01025-V01",
+        "CL-LSN-01026-V01",
+        "CL-LSN-01027-V01",
+        "CL-LSN-01028-V01",
+        "CL-LSN-01029-V01",
+        "CL-LSN-01030-V01"
+      ]
+    },
+    {
+      "title": "Premiers pas en ligne de commande",
+      "description": "naviguer, manipuler des fichiers et obtenir de l'aide sans interface graphique.",
+      "lessons": [
+        "CL-LSN-01031-V01",
+        "CL-LSN-01032-V01",
+        "CL-LSN-01033-V01",
+        "CL-LSN-01034-V01",
+        "CL-LSN-01035-V01",
+        "CL-LSN-01036-V01",
+        "CL-LSN-01037-V01"
+      ]
+    },
+    {
+      "title": "Penser comme un programmeur",
+      "description": "décomposer un problème et écrire un algorithme correct en pseudo-code puis en Python.",
+      "lessons": [
+        "CL-LSN-01038-V01",
+        "CL-LSN-01039-V01",
+        "CL-LSN-01040-V01",
+        "CL-LSN-01041-V01",
+        "CL-LSN-01042-V01",
+        "CL-LSN-01043-V01",
+        "CL-LSN-01044-V01"
+      ]
+    },
+    {
+      "title": "Les bons réflexes de sécurité numérique",
+      "description": "protéger ses comptes, ses appareils et ses données selon les recommandations de l'ANSSI.",
+      "lessons": [
+        "CL-LSN-01045-V01",
+        "CL-LSN-01046-V01",
+        "CL-LSN-01047-V01",
+        "CL-LSN-01048-V01",
+        "CL-LSN-01049-V01",
+        "CL-LSN-01050-V01",
+        "CL-LSN-01051-V01"
+      ]
+    },
+    {
+      "title": "Projet de fin de parcours",
+      "description": "réinvestir tout le parcours sur un cas complet.",
+      "lessons": [
+        "CL-LSN-01052-V01",
+        "CL-LSN-01053-V01",
+        "CL-LSN-01054-V01",
+        "CL-LSN-01055-V01",
+        "CL-LSN-01056-V01"
+      ]
+    }
+  ]
+}

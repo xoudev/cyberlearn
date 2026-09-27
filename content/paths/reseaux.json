@@ -1,0 +1,164 @@
+{
+  "refCode": "CL-PATH-103-V01",
+  "slug": "reseaux",
+  "title": "Réseaux informatiques",
+  "description": "Concevoir, configurer et sécuriser un réseau : modèles OSI et TCP/IP, Ethernet et Wi-Fi, commutation et VLAN, adressage IPv4 et IPv6, routage, TCP et UDP, services d'infrastructure, protocoles applicatifs, analyse de trafic et segmentation. Couvre les programmes Network+ et CCNA.",
+  "category": "NETWORK",
+  "track": "SKILL",
+  "difficulty": "BEGINNER",
+  "estimatedHours": 70,
+  "modules": [
+    {
+      "title": "Pourquoi et comment les machines communiquent",
+      "lessons": [
+        "CL-LSN-03001-V01",
+        "CL-LSN-03002-V01",
+        "CL-LSN-03003-V01",
+        "CL-LSN-03004-V01",
+        "CL-LSN-03005-V01",
+        "CL-LSN-03006-V01",
+        "CL-LSN-03007-V01"
+      ]
+    },
+    {
+      "title": "Le support et la liaison",
+      "lessons": [
+        "CL-LSN-03008-V01",
+        "CL-LSN-03009-V01",
+        "CL-LSN-03010-V01",
+        "CL-LSN-03011-V01",
+        "CL-LSN-03012-V01",
+        "CL-LSN-03013-V01",
+        "CL-LSN-03014-V01",
+        "CL-LSN-03015-V01"
+      ]
+    },
+    {
+      "title": "La commutation",
+      "lessons": [
+        "CL-LSN-03016-V01",
+        "CL-LSN-03017-V01",
+        "CL-LSN-03018-V01",
+        "CL-LSN-03019-V01",
+        "CL-LSN-03020-V01",
+        "CL-LSN-03021-V01",
+        "CL-LSN-03022-V01",
+        "CL-LSN-03023-V01"
+      ]
+    },
+    {
+      "title": "IPv4 et l'adressage",
+      "lessons": [
+        "CL-LSN-03024-V01",
+        "CL-LSN-03025-V01",
+        "CL-LSN-03026-V01",
+        "CL-LSN-03027-V01",
+        "CL-LSN-03028-V01",
+        "CL-LSN-03029-V01",
+        "CL-LSN-03030-V01",
+        "CL-LSN-03031-V01",
+        "CL-LSN-03032-V01"
+      ]
+    },
+    {
+      "title": "IPv6",
+      "lessons": [
+        "CL-LSN-03033-V01",
+        "CL-LSN-03034-V01",
+        "CL-LSN-03035-V01",
+        "CL-LSN-03036-V01",
+        "CL-LSN-03037-V01",
+        "CL-LSN-03038-V01",
+        "CL-LSN-03039-V01"
+      ]
+    },
+    {
+      "title": "Le routage",
+      "lessons": [
+        "CL-LSN-03040-V01",
+        "CL-LSN-03041-V01",
+        "CL-LSN-03042-V01",
+        "CL-LSN-03043-V01",
+        "CL-LSN-03044-V01",
+        "CL-LSN-03045-V01",
+        "CL-LSN-03046-V01",
+        "CL-LSN-03047-V01"
+      ]
+    },
+    {
+      "title": "La couche transport",
+      "lessons": [
+        "CL-LSN-03048-V01",
+        "CL-LSN-03049-V01",
+        "CL-LSN-03050-V01",
+        "CL-LSN-03051-V01",
+        "CL-LSN-03052-V01",
+        "CL-LSN-03053-V01",
+        "CL-LSN-03054-V01",
+        "CL-LSN-03055-V01"
+      ]
+    },
+    {
+      "title": "Les services d'infrastructure",
+      "lessons": [
+        "CL-LSN-03056-V01",
+        "CL-LSN-03057-V01",
+        "CL-LSN-03058-V01",
+        "CL-LSN-03059-V01",
+        "CL-LSN-03060-V01",
+        "CL-LSN-03061-V01",
+        "CL-LSN-03062-V01",
+        "CL-LSN-03063-V01"
+      ]
+    },
+    {
+      "title": "Les protocoles applicatifs",
+      "lessons": [
+        "CL-LSN-03064-V01",
+        "CL-LSN-03065-V01",
+        "CL-LSN-03066-V01",
+        "CL-LSN-03067-V01",
+        "CL-LSN-03068-V01",
+        "CL-LSN-03069-V01",
+        "CL-LSN-03070-V01",
+        "CL-LSN-03071-V01"
+      ]
+    },
+    {
+      "title": "Observer le trafic",
+      "lessons": [
+        "CL-LSN-03072-V01",
+        "CL-LSN-03073-V01",
+        "CL-LSN-03074-V01",
+        "CL-LSN-03075-V01",
+        "CL-LSN-03076-V01",
+        "CL-LSN-03077-V01",
+        "CL-LSN-03078-V01"
+      ]
+    },
+    {
+      "title": "Sécuriser un réseau",
+      "lessons": [
+        "CL-LSN-03079-V01",
+        "CL-LSN-03080-V01",
+        "CL-LSN-03081-V01",
+        "CL-LSN-03082-V01",
+        "CL-LSN-03083-V01",
+        "CL-LSN-03084-V01",
+        "CL-LSN-03085-V01",
+        "CL-LSN-03086-V01"
+      ]
+    },
+    {
+      "title": "Projet de fin de parcours",
+      "lessons": [
+        "CL-LSN-03087-V01",
+        "CL-LSN-03088-V01",
+        "CL-LSN-03089-V01",
+        "CL-LSN-03090-V01",
+        "CL-LSN-03091-V01",
+        "CL-LSN-03092-V01"
+      ]
+    }
+  ]
+}

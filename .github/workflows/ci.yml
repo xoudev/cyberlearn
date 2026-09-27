@@ -385,6 +385,16 @@ jobs:
       - name: Run integration tests (RLS / IDOR / storage)
         run: pnpm --filter @cyberlearn/db test:integration
 
+      - name: Seed paths and modules, twice
+        # After the tests: db:seed's fixtures reuse CL-PATH-001 and 002, which
+        # seed-paths would rewrite into the catalogue's. Run twice: the second
+        # run rewrites every position and module, which is where a unique
+        # constraint or a non-idempotent step would show.
+        run: |
+          pnpm --filter @cyberlearn/db db:seed-paths
+          pnpm --filter @cyberlearn/db db:seed-paths
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "SELECT p.\"refCode\", count(m.id) AS modules FROM paths p LEFT JOIN path_modules m ON m.\"pathId\" = p.id WHERE p.\"refCode\" LIKE 'CL-PATH-1%' GROUP BY p.\"refCode\" ORDER BY 1;"
+
       - name: Stop Supabase local stack
         if: always()
         run: supabase stop

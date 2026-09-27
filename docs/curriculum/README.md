@@ -82,11 +82,11 @@ s'ouvre sur ce cadre avant toute technique.
 
 | # | Chantier | Pourquoi | Ampleur |
 | --- | --- | --- | --- |
-| T1 | **Modules** : table `PathModule` (titre, description, position), `PathLesson.moduleId`, affichage sur le site et dans l'app | Un parcours de 80 leçons en liste plate est illisible | Migration + RLS + web + mobile |
-| T2 | **Quiz de module** : même format que les quiz finaux (`content/quizzes/`), rattaché au module | Valider module par module | Moyenne |
+| T1 | ✅ **Modules** : table `PathModule` (titre, description, position), `PathLesson.moduleId`, affichage sur le site et dans l'app | Un parcours de 80 leçons en liste plate est illisible | Migration + RLS + web + mobile |
+| T2 | ✅ **Quiz de module** : la dernière leçon de chaque module, écrite avec `QuizGroup`, sans mécanisme à part | Valider module par module | Aucune |
 | T3 | **Cursus** : regrouper des parcours (`track = CAREER` existe, il faut la relation cursus → parcours) et un certificat de cursus | Le métier comme objectif | Moyenne |
-| T4 | **refCodes** : passer à `CL-LSN-PPNNN-V01` (parcours sur 2 chiffres, leçon sur 3) | L'ancien format plafonne à 999 leçons | Petite (regex + docs) |
-| T5 | **Import par module** : le lot de 30 fichiers suffit si on importe un module à la fois ; `seed-paths` apprend les modules | 1 500 fichiers | Petite |
+| T4 | ✅ **refCodes** : passer à `CL-LSN-PPNNN-V01` (parcours sur 2 chiffres, leçon sur 3) | L'ancien format plafonne à 999 leçons | Petite (regex + docs) |
+| T5 | ✅ **Import par module** : le lot de 30 fichiers suffit si on importe un module à la fois ; `seed-paths` lit `content/paths/*.json` et crée les modules | 1 500 fichiers | Petite |
 | T6 | **Terminal Linux réel** (WebVM, `docs/backlog/terminal-v2-webvm.md`) | Linux, admin, DevOps et SOC ne s'apprennent pas sur un terminal simulé | Grosse |
 | T7 | **Labs hébergés** pour le web et les tests d'intrusion : cibles vulnérables isolées, une par apprenant, sans accès sortant | C'est ce qui fait TryHackMe et Hack The Box. Sans ça, les parcours offensifs restent théoriques | Très grosse : infrastructure, coût, abus |
 

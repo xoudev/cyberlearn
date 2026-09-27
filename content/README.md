@@ -110,6 +110,42 @@ PythonChallenge à tests automatiques), la dernière étant un projet ou une mis
 en situation. Le titre exact de chaque leçon est dans son frontmatter : ne pas
 recopier les 192 ici, ils dériveraient.
 
+## Le nouveau catalogue : `content/paths/`
+
+Le catalogue qui remplace les seize parcours ci-dessus est planifié dans
+[docs/curriculum](../docs/curriculum/README.md). Chaque parcours y est décrit
+par un manifeste, `content/paths/<slug>.json` : ses métadonnées et ses
+**modules**, chacun avec son titre, sa description et ses leçons dans l'ordre.
+
+```json
+{
+  "refCode": "CL-PATH-102-V01",
+  "slug": "linux",
+  "title": "Linux : de zéro à l'autonomie",
+  "category": "DEV",
+  "difficulty": "BEGINNER",
+  "estimatedHours": 60,
+  "description": "…",
+  "modules": [
+    { "title": "Découvrir Linux et le shell", "lessons": ["CL-LSN-02001-V01", "…"] }
+  ]
+}
+```
+
+- **Numérotation** : le parcours N du plan porte `CL-PATH-1NN-V01`, et ses
+  leçons `CL-LSN-NNxxx-V01` (le numéro du parcours sur deux chiffres, puis
+  celui de la leçon dans le parcours). Le format à trois chiffres reste valable
+  pour les leçons existantes.
+- **Vérification** : un test (`packages/db/src/__tests__/path-manifests.test.ts`)
+  refuse un manifeste mal formé, un fichier qui ne porte pas le nom de son slug,
+  une leçon listée deux fois ou dans deux parcours, et une leçon dont le numéro
+  ne correspond pas à son parcours.
+- **Seed** : `db:seed-paths` crée le parcours, ses modules, et range chaque
+  leçon importée dans le sien. Une leçon pas encore importée est signalée et
+  sautée ; relancer le seed après chaque import de module.
+- **Quiz de module** : c'est la dernière leçon du module, écrite avec
+  `QuizGroup` (voir le guide d'écriture). Aucun mécanisme à part.
+
 ## Convention MDX importante
 
 Le code à l'intérieur d'un `<CodePlayground>` est passé via la prop

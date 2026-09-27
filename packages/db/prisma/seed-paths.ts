@@ -1,10 +1,16 @@
 /**
- * Creates the learning paths and attaches the imported lessons to them, in
- * order, by refCode. Run AFTER importing the lesson .mdx files (admin
- * /lessons/import). Idempotent: upserts the path and its lesson links, so it
- * is safe to re-run after importing more lessons.
+ * Creates the learning paths, their modules, and attaches the imported lessons
+ * to them, in order, by refCode. Run AFTER importing the lesson .mdx files
+ * (admin /lessons/import). Idempotent: upserts the path, its modules and its
+ * lesson links, so it is safe to re-run after importing more lessons.
  *
  *   pnpm --filter @cyberlearn/db db:seed-paths
+ *
+ * Two sources:
+ * - PATHS below: the first catalogue, one flat list of lessons per path;
+ * - content/paths/<slug>.json: the new catalogue (docs/curriculum), in
+ *   modules, checked by ./path-manifests.ts. A manifest that does not pass the
+ *   check stops the seed before anything is written.
  *
  * Paths are created as DRAFT, like imported lessons: review then publish from
  * the admin. A lesson refCode not found in the database is skipped with a
@@ -12,6 +18,7 @@
  */
 
 import { createPrismaClient } from "../src/prisma.js";
+import { loadPathManifests, manifestLessons } from "./path-manifests.js";
 
 const prisma = createPrismaClient();
 
@@ -421,57 +428,158 @@ const PATHS: PathManifest[] = [
   },
 ];
 
-async function main(): Promise<void> {
-  for (const m of PATHS) {
-    const path = await prisma.path.upsert({
-      where: { refCode: m.refCode },
-      create: {
-        refCode: m.refCode,
-        slug: m.slug,
-        title: m.title,
-        description: m.description,
-        category: m.category,
-        track: m.track ?? "SKILL",
-        difficulty: m.difficulty,
-        estimatedHours: m.estimatedHours,
-        status: "DRAFT",
-      },
-      update: {
-        title: m.title,
-        description: m.description,
-        category: m.category,
-        track: m.track ?? "SKILL",
-        difficulty: m.difficulty,
-        estimatedHours: m.estimatedHours,
-      },
-    });
+/** One path as the seed writes it, whichever source it came from. */
+interface SeedPath {
+  refCode: string;
+  slug: string;
+  title: string;
+  description: string;
+  category: "DEV" | "CYBERSEC" | "NETWORK";
+  track: "SKILL" | "CAREER";
+  difficulty: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+  estimatedHours: number;
+  modules: { title: string; description: string | null }[];
+  /** In study order; moduleIndex points into `modules`, null without modules. */
+  lessons: { refCode: string; moduleIndex: number | null }[];
+}
 
-    let position = 1;
-    let attached = 0;
-    const missing: string[] = [];
-    for (const refCode of m.lessons) {
-      const lesson = await prisma.lesson.findUnique({
-        where: { refCode },
-        select: { id: true },
+// Positions are moved out of the way before a path is rewritten: the unique
+// (pathId, position) refuses a reorder written one row at a time.
+const POSITION_PARKING = 1_000_000;
+
+async function seedPath(p: SeedPath): Promise<void> {
+  const fields = {
+    title: p.title,
+    description: p.description,
+    category: p.category,
+    track: p.track,
+    difficulty: p.difficulty,
+    estimatedHours: p.estimatedHours,
+  };
+  const path = await prisma.path.upsert({
+    where: { refCode: p.refCode },
+    create: { refCode: p.refCode, slug: p.slug, status: "DRAFT", ...fields },
+    update: fields,
+  });
+
+  const found = await prisma.lesson.findMany({
+    where: { refCode: { in: p.lessons.map((l) => l.refCode) } },
+    select: { id: true, refCode: true },
+  });
+  const idByRef = new Map(found.map((l) => [l.refCode, l.id]));
+  const missing = p.lessons.filter((l) => !idByRef.has(l.refCode)).map((l) => l.refCode);
+
+  const leftovers = await prisma.$transaction(
+    async (tx) => {
+      await tx.pathLesson.updateMany({
+        where: { pathId: path.id },
+        data: { position: { increment: POSITION_PARKING } },
       });
-      if (!lesson) {
-        missing.push(refCode);
-        continue;
+
+      const moduleIds: string[] = [];
+      for (const [index, module] of p.modules.entries()) {
+        const saved = await tx.pathModule.upsert({
+          where: { pathId_position: { pathId: path.id, position: index + 1 } },
+          create: {
+            pathId: path.id,
+            position: index + 1,
+            title: module.title,
+            description: module.description,
+          },
+          update: { title: module.title, description: module.description },
+          select: { id: true },
+        });
+        moduleIds.push(saved.id);
       }
-      await prisma.pathLesson.upsert({
-        where: { pathId_lessonId: { pathId: path.id, lessonId: lesson.id } },
-        create: { pathId: path.id, lessonId: lesson.id, position },
-        update: { position },
+      await tx.pathModule.deleteMany({
+        where: { pathId: path.id, position: { gt: p.modules.length } },
       });
-      position++;
-      attached++;
-    }
 
-    console.log(`${m.refCode} "${m.title}": ${attached}/${m.lessons.length} leçons attachées`);
-    if (missing.length > 0) {
-      console.log(`  manquantes (à importer d'abord): ${missing.join(", ")}`);
-    }
+      let position = 1;
+      for (const lesson of p.lessons) {
+        const lessonId = idByRef.get(lesson.refCode);
+        if (!lessonId) continue;
+        const moduleId =
+          lesson.moduleIndex === null ? null : (moduleIds[lesson.moduleIndex] ?? null);
+        await tx.pathLesson.upsert({
+          where: { pathId_lessonId: { pathId: path.id, lessonId } },
+          create: { pathId: path.id, lessonId, position, moduleId },
+          update: { position, moduleId },
+        });
+        position++;
+      }
+
+      // Lessons linked to the path but no longer in its source: kept, after
+      // the others and out of any module. A seed never empties a path someone
+      // may be halfway through; removing one is a decision for the console.
+      const stale = await tx.pathLesson.findMany({
+        where: { pathId: path.id, position: { gt: POSITION_PARKING } },
+        orderBy: { position: "asc" },
+        select: { lessonId: true, lesson: { select: { refCode: true } } },
+      });
+      for (const link of stale) {
+        await tx.pathLesson.update({
+          where: { pathId_lessonId: { pathId: path.id, lessonId: link.lessonId } },
+          data: { position, moduleId: null },
+        });
+        position++;
+      }
+      return stale.map((link) => link.lesson.refCode);
+    },
+    { timeout: 120_000 },
+  );
+
+  const attached = p.lessons.length - missing.length;
+  const modules = p.modules.length > 0 ? `, ${String(p.modules.length)} modules` : "";
+  console.log(
+    `${p.refCode} "${p.title}": ${String(attached)}/${String(p.lessons.length)} leçons attachées${modules}`,
+  );
+  if (missing.length > 0) {
+    console.log(`  manquantes (à importer d'abord): ${missing.join(", ")}`);
   }
+  if (leftovers.length > 0) {
+    console.log(`  hors de la source, gardées en fin de parcours: ${leftovers.join(", ")}`);
+  }
+}
+
+async function main(): Promise<void> {
+  const { manifests, errors } = loadPathManifests();
+  if (errors.length > 0) {
+    console.error("Manifestes de content/paths invalides, rien n'a été écrit :");
+    for (const error of errors) console.error(`  ${error}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const legacy: SeedPath[] = PATHS.map((m) => ({
+    refCode: m.refCode,
+    slug: m.slug,
+    title: m.title,
+    description: m.description,
+    category: m.category,
+    track: m.track ?? "SKILL",
+    difficulty: m.difficulty,
+    estimatedHours: m.estimatedHours,
+    modules: [],
+    lessons: m.lessons.map((refCode) => ({ refCode, moduleIndex: null })),
+  }));
+  const catalogue: SeedPath[] = manifests.map(({ manifest }) => ({
+    refCode: manifest.refCode,
+    slug: manifest.slug,
+    title: manifest.title,
+    description: manifest.description,
+    category: manifest.category,
+    track: manifest.track,
+    difficulty: manifest.difficulty,
+    estimatedHours: manifest.estimatedHours,
+    modules: manifest.modules.map((module) => ({
+      title: module.title,
+      description: module.description ?? null,
+    })),
+    lessons: manifestLessons(manifest),
+  }));
+
+  for (const path of [...legacy, ...catalogue]) await seedPath(path);
   console.log("\nParcours créés en DRAFT. Publiez-les depuis l'admin après relecture.");
 }
 

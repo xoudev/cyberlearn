@@ -685,6 +685,7 @@ model Path {
 
   author       User?              @relation("PathAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   lessons      PathLesson[]
+  modules      PathModule[]
   progress     UserPathProgress[]
   certificates Certificate[]
   ratings      Rating[]
@@ -697,17 +698,41 @@ model Path {
   @@map("paths")
 }
 
+/// A chapter of a path: a titled group of consecutive lessons. The order of
+/// study stays PathLesson.position; a module only names where a group starts
+/// and ends. A path without modules is shown in blocks of six, as before.
+model PathModule {
+  id          String   @id @default(uuid()) @db.Uuid
+  pathId      String   @db.Uuid
+  position    Int
+  title       String   @db.VarChar(200)
+  description String?  @db.VarChar(1000)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  path    Path         @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  lessons PathLesson[]
+
+  @@unique([pathId, position])
+  @@map("path_modules")
+}
+
 model PathLesson {
   pathId     String  @db.Uuid
   lessonId   String  @db.Uuid
   position   Int
   isRequired Boolean @default(true)
+  /// The module this lesson is filed under, in this path. Null for a path
+  /// without modules. Deleting a module leaves its lessons in the path.
+  moduleId   String? @db.Uuid
 
-  path   Path   @relation(fields: [pathId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  path   Path        @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  lesson Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  module PathModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
 
   @@id([pathId, lessonId])
   @@unique([pathId, position])
+  @@index([moduleId])
   @@map("path_lessons")
 }
 

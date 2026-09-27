@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
 import type { ContentStatus } from "@cyberlearn/db";
+import { pathRefCodeSchema } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 
 const createPathSchema = z.object({
-  refCode: z.string().regex(/^CL-PATH-\d{3}-V\d{2}$/, "Format: CL-PATH-001-V01"),
+  refCode: pathRefCodeSchema,
   slug: z
     .string()
     .regex(/^[a-z0-9-]+$/)
