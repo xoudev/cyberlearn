@@ -1,0 +1,180 @@
+---
+refCode: CL-LSN-02904-V01
+slug: linux-bilan-module-4
+title: "Bilan du module 4 : les droits d'une équipe"
+description: "Le quiz du module Utilisateurs, groupes et permissions, puis un projet : organiser les comptes, les groupes, les répertoires partagés et les droits d'administration d'une petite équipe, et prouver chaque règle par un test, avec une correction commentée."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 90
+xpReward: 500
+prerequisites: ["CL-LSN-02031-V01"]
+---
+
+Le module 4 t'a donné le cœur de la sécurité d'un système Linux : qui sont les comptes, comment on les gère, ce que signifient les permissions, comment on les règle, les bits spéciaux, les ACL, `sudo`, les limites et PAM. Ce bilan vérifie les connaissances, puis te fait construire, de bout en bout, l'organisation des droits d'une petite équipe, en prouvant chaque règle par un test. C'est exactement le travail qu'on attend d'un administrateur qui prend en main un serveur partagé.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- créer des comptes humains et de service, et les ranger dans des groupes sans erreur ;
+- construire des répertoires partagés où chacun a exactement les droits prévus ;
+- donner un droit précis à une personne extérieure avec une ACL ;
+- accorder des droits d'administration limités avec `sudo`, sans ouvrir de shell root ;
+- désactiver proprement un compte ;
+- **prouver** chaque règle, en te mettant à la place de chaque compte.
+
+## quiz
+
+Quatorze questions sur les huit leçons du module.
+
+<QuizGroup>
+  <Quiz id="m4-q-1" question="Qu'est-ce qui donne à root ses pouvoirs ?" options={["Son nom", "Son UID 0", "Son répertoire /root", "Son appartenance au groupe sudo"]} correct={1} explanation="Le noyau ne connaît que les identifiants. Tout compte d'UID 0 a les pouvoirs de root, quel que soit son nom." />
+  <Quiz id="m4-q-2" question="Dans /etc/shadow, que signifie un champ de mot de passe vide ?" options={["Le compte est verrouillé", "Le compte n'a aucun mot de passe", "Le mot de passe a expiré", "Le compte est un compte de service"]} correct={1} explanation="! ou * interdisent l'authentification par mot de passe ; un champ vide signifie qu'il n'y en a pas, ce qui est une faille." />
+  <Quiz id="m4-q-3" question="Quelle commande ajoute bob au groupe docker sans lui retirer ses autres groupes ?" options={["usermod -G docker bob", "usermod -aG docker bob", "groupadd docker bob", "chgrp docker bob"]} correct={1} explanation="-G seul remplace la liste des groupes secondaires ; -a ajoute." />
+  <Quiz id="m4-q-4" question="Quelle méthode empêche aussi les connexions SSH par clé sur le compte de quelqu'un qui part ?" options={["passwd -l", "Faire expirer le compte avec usermod -e 1 ou chage -E 0", "Changer son mot de passe", "Supprimer son .bashrc"]} correct={1} explanation="Le verrouillage du mot de passe ne concerne pas les clés. Un compte expiré est refusé par la pile account de PAM, quelle que soit la méthode d'authentification." />
+  <Quiz id="m4-q-5" question="Sur un répertoire, que permet le droit x ?" options={["Exécuter les fichiers du répertoire", "Traverser le répertoire pour accéder à son contenu", "Supprimer le répertoire", "Lister le contenu"]} correct={1} explanation="Sur un répertoire, r liste les noms, w crée et supprime des entrées, x permet d'y accéder." />
+  <Quiz id="m4-q-6" question="Un fichier en r--r--r-- se trouve dans un répertoire en rwxrwxrwx. Qui peut le supprimer ?" options={["Personne", "Seulement root", "N'importe quel compte", "Seulement le propriétaire"]} correct={2} explanation="La suppression dépend des droits du répertoire. Sans sticky bit, tout compte qui peut écrire dans le répertoire peut supprimer le fichier." />
+  <Quiz id="m4-q-7" question="Quelle notation octale correspond à rw-r----- ?" options={["640", "644", "604", "460"]} correct={0} explanation="rw- = 6, r-- = 4, --- = 0." />
+  <Quiz id="m4-q-8" question="Quelle commande donne des droits adaptés à tout un site, sans rendre les fichiers exécutables ?" options={["chmod -R 755 site", "chmod -R u=rwX,g=rX,o= site", "chmod -R 777 site", "chmod -R +x site"]} correct={1} explanation="X majuscule ne donne l'exécution qu'aux répertoires et aux fichiers déjà exécutables." />
+  <Quiz id="m4-q-9" question="Avec un umask de 077, quels droits reçoit un nouveau fichier ?" options={["644", "600", "700", "755"]} correct={1} explanation="Un fichier est demandé en 666 ; umask 077 retire tout au groupe et aux autres : 600." />
+  <Quiz id="m4-q-10" question="Quel bit faut-il sur un répertoire d'équipe pour que les nouveaux fichiers appartiennent au groupe du répertoire ?" options={["setuid", "setgid", "sticky", "Aucun"]} correct={1} explanation="Le setgid sur un répertoire fait hériter son groupe aux fichiers créés dedans." />
+  <Quiz id="m4-q-11" question="Pourquoi un programme setuid root qui permet de lancer des commandes est-il dangereux ?" options={["Parce qu'il est lent", "Parce que n'importe quel utilisateur peut s'en servir pour lancer un shell root", "Parce qu'il consomme de la mémoire", "Parce qu'il ne fonctionne pas sur Debian"]} correct={1} explanation="Le programme tourne avec les droits de root ; s'il lance une commande, elle tourne en root aussi." />
+  <Quiz id="m4-q-12" question="Dans une ACL, que fait le masque ?" options={["Il cache le fichier", "Il plafonne les droits des entrées nommées et du groupe", "Il remplace les droits du propriétaire", "Il chiffre les droits"]} correct={1} explanation="Le masque limite les droits effectifs des entrées nommées et du groupe propriétaire ; chmod le modifie." />
+  <Quiz id="m4-q-13" question="Une règle sudo autorise un compte à lancer vim en root. Pourquoi est-ce un accès root complet ?" options={["Parce que vim est setuid", "Parce que vim permet de lancer une commande shell, qui s'exécute en root", "Parce que vim modifie sudoers", "Ce n'est pas le cas"]} correct={1} explanation="Depuis vim, on peut lancer n'importe quelle commande. Pour éditer un fichier système, on autorise sudoedit." />
+  <Quiz id="m4-q-14" question="Où règle-t-on le nombre de fichiers ouverts d'un service lancé par systemd ?" options={["Dans /etc/security/limits.conf", "Dans son unité systemd, avec LimitNOFILE", "Dans ~/.bashrc", "Dans /etc/sudoers"]} correct={1} explanation="limits.conf s'applique aux sessions via PAM ; un service systemd se règle dans son unité." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées. Les permissions reviennent dans tous les modules suivants, et dans tous les parcours de sécurité.
+
+## projet
+
+### la situation
+
+Une petite agence web installe un serveur de travail partagé. Il faut y organiser l'équipe. Ce projet demande les droits root : fais-le dans la **machine virtuelle d'entraînement** installée au parcours Fondamentaux (ou dans le terminal Linux du parcours dès qu'il sera disponible), **jamais sur un serveur réel**.
+
+### le cahier des charges
+
+**Les personnes et les rôles**
+
+| Compte | Rôle |
+| --- | --- |
+| `lea` | Développeuse, cheffe de projet |
+| `hugo` | Développeur |
+| `ines` | Graphiste |
+| `sam` | Administrateur de l'agence |
+| `audit-ext` | Auditeur externe, pour 30 jours |
+
+**Les règles à mettre en place**
+
+1. Un groupe `dev` (Léa, Hugo) et un groupe `design` (Inès, Léa).
+2. Un répertoire `/srv/projets` pour `dev` : ses membres y créent et modifient des fichiers, les fichiers créés restent au groupe `dev`, personne ne supprime les fichiers des autres, et les autres comptes n'y ont **aucun** accès.
+3. Un répertoire `/srv/maquettes` pour `design`, avec les mêmes règles.
+4. L'auditeur `audit-ext` peut **lire** `/srv/projets`, y compris les fichiers créés pendant sa mission, sans rien modifier. Son compte expire tout seul dans 30 jours.
+5. Hugo peut redémarrer le service `nginx` avec `sudo`, et **rien d'autre**.
+6. Sam est administrateur complet.
+7. Un compte de service `app-agence`, sans connexion possible, possède `/srv/app` en `750`.
+8. Tous les comptes humains reçoivent un `umask` de `007` à la connexion, pour que les fichiers créés soient modifiables par le groupe et fermés aux autres.
+
+### les critères de réussite
+
+Chaque règle se **prouve** par une commande exécutée **à la place** du compte concerné, avec `sudo -u`. Tous les tests suivants doivent donner le résultat attendu.
+
+| Test | Résultat attendu |
+| --- | --- |
+| `sudo -u hugo touch /srv/projets/a.txt` | Réussit |
+| `ls -l /srv/projets/a.txt` | Groupe `dev` |
+| `sudo -u lea rm /srv/projets/a.txt` | Refusé (sticky bit) |
+| `sudo -u ines ls /srv/projets` | Refusé |
+| `sudo -u audit-ext cat /srv/projets/a.txt` | Réussit |
+| `sudo -u audit-ext touch /srv/projets/b.txt` | Refusé |
+| `sudo chage -l audit-ext` | Une date d'expiration dans 30 jours |
+| `sudo -l -U hugo` | Uniquement `systemctl restart nginx` |
+| `sudo -l -U sam` | `(ALL : ALL) ALL` |
+| `getent passwd app-agence` | Shell `nologin`, UID inférieur à 1000 |
+| `sudo find /srv -perm -o+w` | Aucun résultat |
+
+### la correction commentée
+
+À lire après avoir essayé. Relis chaque ligne en te demandant quelle règle elle met en place.
+
+**1. Les groupes et les comptes :**
+
+```bash
+sudo groupadd dev
+sudo groupadd design
+for u in lea hugo ines sam audit-ext; do sudo adduser --disabled-password --gecos "" "$u"; done
+sudo usermod -aG dev,design lea
+sudo usermod -aG dev hugo
+sudo usermod -aG design ines
+sudo usermod -aG sudo sam
+```
+
+`--disabled-password` crée les comptes sans mot de passe utilisable ; chacun définira le sien, ou utilisera une clé. `-aG`, toujours avec le `a`.
+
+**2 et 3. Les répertoires d'équipe**, avec setgid et sticky bit :
+
+```bash
+sudo mkdir -p /srv/projets /srv/maquettes
+sudo chgrp dev /srv/projets
+sudo chgrp design /srv/maquettes
+sudo chmod 3770 /srv/projets /srv/maquettes
+```
+
+`3770` : setgid (2) pour l'héritage du groupe, sticky (1) pour la protection contre la suppression, `rwx` pour root et le groupe, rien pour les autres.
+
+**4. L'auditeur**, par ACL sur l'existant et par défaut, avec expiration :
+
+```bash
+sudo setfacl -R -m u:audit-ext:rX /srv/projets
+sudo setfacl -R -d -m u:audit-ext:rX /srv/projets
+sudo chage -E "$(date -d '+30 days' +%F)" audit-ext
+```
+
+La date d'expiration est calculée par `date`, ce qui évite de l'écrire à la main.
+
+**5. Le droit limité de Hugo**, dans un fichier dédié :
+
+```bash
+echo 'hugo ALL=(root) /usr/bin/systemctl restart nginx' | sudo tee /etc/sudoers.d/hugo-nginx > /dev/null
+sudo chmod 0440 /etc/sudoers.d/hugo-nginx
+sudo visudo -c
+```
+
+On écrit par `tee` pour que l'écriture se fasse en root (module 3), puis `visudo -c` vérifie la syntaxe de toute la configuration avant qu'une erreur ne bloque `sudo`.
+
+**6.** Sam est administrateur par son appartenance au groupe `sudo`, fait à l'étape 1.
+
+**7. Le compte de service :**
+
+```bash
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin app-agence
+sudo mkdir -p /srv/app
+sudo chown app-agence:app-agence /srv/app
+sudo chmod 750 /srv/app
+```
+
+**8. L'`umask` des comptes humains.** Sur Debian, la valeur par défaut des sessions se règle dans `/etc/login.defs` (`UMASK 007`), appliquée par PAM. Pour un réglage limité à ces comptes, on peut aussi l'ajouter à leur `~/.profile`. Vérifie ensuite dans une nouvelle session avec `sudo -iu lea umask`.
+
+**La preuve.** Lance chaque test du tableau. Un test qui ne donne pas le résultat attendu désigne précisément la règle à corriger : c'est tout l'intérêt de prouver chaque règle séparément, plutôt que de constater que « ça marche » en essayant avec son propre compte d'administrateur, qui passe partout.
+
+**Le départ de Hugo**, pour finir, à faire après les tests :
+
+```bash
+sudo usermod -L -e 1 -s /usr/sbin/nologin hugo
+sudo rm /etc/sudoers.d/hugo-nginx
+sudo find / -xdev -user hugo 2>/dev/null
+```
+
+Compte expiré et sans shell, règle `sudo` retirée, fichiers repérés. Relance `sudo -l -U hugo` : il n'a plus aucun droit.
+
+### pour aller plus loin
+
+Écris un script `audit-droits.sh` qui affiche, pour ce serveur : les comptes d'UID 0, les comptes avec un vrai shell, les membres des groupes `sudo` et `docker`, les fichiers `sudoers.d`, les programmes setuid, les fichiers modifiables par tous sous `/srv`, et les fichiers de `/srv` qui portent une ACL. Tu as vu toutes les commandes nécessaires dans ce module. Tu en feras un vrai outil au module 7.
+
+## à retenir
+
+- Une organisation de droits se construit par **rôles** : des groupes, des répertoires d'équipe en `3770`, des ACL pour les exceptions, des règles `sudo` précises.
+- Chaque règle se **prouve** avec `sudo -u compte` : ton propre compte d'administrateur passe partout et ne prouve rien.
+- Un accès temporaire a une **date d'expiration** ; un départ se traite par expiration, retrait des règles et recherche des fichiers.
+- Les droits d'administration se donnent **commande par commande**, jamais par un éditeur, un visualiseur ou un interpréteur.
+- Le module 5 passe aux processus : ce qui tourne sur la machine, sous quel compte, et comment le contrôler.

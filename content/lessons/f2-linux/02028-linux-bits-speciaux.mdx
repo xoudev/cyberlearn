@@ -1,0 +1,248 @@
+---
+refCode: CL-LSN-02028-V01
+slug: linux-bits-speciaux
+title: "Les bits spéciaux : setuid, setgid, sticky"
+description: "Les trois droits qui ne sont ni r, ni w, ni x : setuid qui fait tourner un programme avec les droits de son propriétaire, setgid et les répertoires partagés, le sticky bit de /tmp, comment les lire et les poser, et pourquoi un setuid mal placé donne root."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 350
+prerequisites: ["CL-LSN-02027-V01"]
+---
+
+Voici une énigme. `/etc/shadow` n'est lisible et modifiable que par root. Pourtant, n'importe quel utilisateur peut changer son propre mot de passe avec la commande `passwd`, ce qui modifie ce fichier. Comment un programme lancé par un utilisateur ordinaire peut-il écrire dans un fichier réservé à root ? La réponse tient dans un droit supplémentaire, le **setuid**. Avec ses deux cousins, le **setgid** et le **sticky bit**, il complète les permissions vues jusqu'ici, et il est au cœur de nombreuses élévations de privilèges.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce que font le setuid, le setgid et le sticky bit, sur un fichier et sur un répertoire ;
+- les repérer dans la sortie de `ls -l` et dans la notation octale à quatre chiffres ;
+- les poser et les retirer avec `chmod` ;
+- construire un répertoire partagé d'équipe où les fichiers restent au groupe et où personne ne supprime ceux des autres ;
+- expliquer pourquoi un programme setuid root est dangereux, et auditer ceux d'un système.
+
+## pourquoi ça compte
+
+Le setuid est l'exception la plus importante au modèle de permissions : un moyen contrôlé de donner temporairement les droits de root à un utilisateur ordinaire, pour une tâche précise. Contrôlé, tant que le programme est sûr. Si un programme setuid root a un défaut, ou s'il permet de lancer d'autres commandes, n'importe quel utilisateur peut devenir root. La recherche des programmes setuid est d'ailleurs l'une des toutes premières étapes d'un attaquant qui veut élever ses privilèges, et des outils publics recensent les programmes courants qui permettent d'en abuser.
+
+Le sticky bit et le setgid, eux, sont les outils de base du partage de fichiers entre utilisateurs, sans lesquels un répertoire commun devient vite un endroit où chacun peut détruire le travail des autres.
+
+## le setuid
+
+Un programme s'exécute normalement avec les droits de **celui qui le lance**. Si le bit **setuid** (*set user ID*) est posé sur un fichier exécutable, le programme s'exécute avec les droits de **son propriétaire**, quel que soit celui qui le lance.
+
+```bash
+ls -l /usr/bin/passwd
+```
+
+```text
+-rwsr-xr-x 1 root root 68248 mars  4  2024 /usr/bin/passwd
+```
+
+À la place du `x` du propriétaire, un **`s`** : le setuid est posé, et le fichier appartient à root. Quand Alice lance `passwd`, le processus tourne avec les droits de root, et peut donc écrire dans `/etc/shadow`. Le programme `passwd` lui-même se charge de vérifier qu'Alice ne modifie **que son propre** mot de passe : toute la sécurité repose sur le fait que ce programme est correct.
+
+<Diagram caption="Avec et sans setuid">
+flowchart TD
+  A["Alice lance un programme"] --> B["Le fichier a-t-il le bit setuid ?"]
+  B -->|"non"| C["Le processus a les droits d'Alice"]
+  B -->|"oui, fichier de root"| D["Le processus a les droits de root"]
+  D --> E["Le programme doit lui-même limiter ce qu'Alice peut faire"]
+</Diagram>
+
+D'autres programmes setuid root courants : `sudo`, `su`, `mount`, `umount`, `chsh`, `newgrp`, `ping` sur certains systèmes anciens. Leur liste est **courte et stable** sur un système donné.
+
+Deux détails de lecture : un `s` minuscule indique setuid **et** exécution ; un **`S`** majuscule indique setuid **sans** droit d'exécution, une combinaison sans effet qui trahit en général une erreur de manipulation. Et le noyau Linux **ignore** le setuid sur les scripts (bash, Python) : il ne fonctionne que sur les programmes compilés, justement parce qu'il est trop difficile d'écrire un script qui résiste à toutes les manipulations d'environnement.
+
+### pourquoi c'est dangereux
+
+Un programme setuid root doit résister à tout ce que l'utilisateur peut contrôler : ses arguments, ses variables d'environnement, les fichiers qu'il lui fait lire. Qu'un seul de ces points permette de lancer une commande, et l'utilisateur obtient un shell root. Quelques exemples typiques, que l'on cherche à **éviter** en tant qu'administrateur :
+
+- un éditeur de texte setuid root, depuis lequel on peut ouvrir `/etc/shadow` ou lancer un shell ;
+- un interpréteur (Python, Perl) setuid, qui exécute n'importe quel code avec les droits de root ;
+- `find` setuid, dont l'option `-exec` lance n'importe quelle commande ;
+- un programme maison écrit sans précaution et rendu setuid « pour que ça marche ».
+
+<Callout type="danger">
+Ne pose jamais le setuid sur un programme pour résoudre un problème de droits. Si un utilisateur a besoin d'une action d'administrateur précise, la bonne réponse est une règle `sudo` limitée à cette commande (leçon 7), qui est journalisée et révocable. Un setuid ajouté par facilité est une élévation de privilèges offerte à tous les comptes de la machine.
+</Callout>
+
+## le setgid
+
+Le bit **setgid** (*set group ID*) a deux usages, selon qu'il est posé sur un fichier ou sur un répertoire.
+
+**Sur un programme**, il fait tourner le processus avec le **groupe** du fichier. Il est rare aujourd'hui ; l'exemple classique est un programme qui doit lire des fichiers réservés à un groupe particulier.
+
+**Sur un répertoire**, il est beaucoup plus utile : tout fichier ou sous-répertoire **créé dedans hérite du groupe du répertoire**, au lieu de recevoir le groupe principal de son créateur.
+
+```bash
+ls -ld /srv/equipe-web
+```
+
+```text
+drwxrws--- 2 root web 4096 sept. 27 12:10 /srv/equipe-web
+```
+
+Le `s` à la place du `x` du groupe indique le setgid. Quand Claire, dont le groupe principal est `claire`, crée un fichier ici, ce fichier appartient au groupe `web`, et tous les membres de l'équipe peuvent donc y accéder. Sans setgid, chaque fichier appartiendrait au groupe personnel de son créateur, et les autres n'y auraient pas accès.
+
+## le sticky bit
+
+Tu as vu à la leçon 3 le problème des répertoires partagés : avec `w` sur le répertoire, **chacun peut supprimer les fichiers des autres**. Le **sticky bit** règle ce problème. Posé sur un répertoire, il ne permet de supprimer ou de renommer un fichier qu'à :
+
+- son **propriétaire** ;
+- le **propriétaire du répertoire** ;
+- **root**.
+
+```bash
+ls -ld /tmp
+```
+
+```text
+drwxrwxrwt 12 root root 4096 sept. 27 12:15 /tmp
+```
+
+Le **`t`** à la place du dernier `x` est le sticky bit. `/tmp` est ouvert en écriture à tous (`rwxrwxrwx`), mais chacun ne peut supprimer que ses propres fichiers. Un `T` majuscule indique le sticky bit sans droit d'exécution pour les autres.
+
+Sur un fichier ordinaire, le sticky bit n'a plus de sens sous Linux ; il est ignoré.
+
+## la notation octale à quatre chiffres
+
+Les trois bits spéciaux ont leur propre chiffre octal, placé **devant** les trois habituels :
+
+| Bit | Valeur | Affichage | Position |
+| --- | --- | --- | --- |
+| setuid | 4 | `s` ou `S` | À la place du `x` du propriétaire |
+| setgid | 2 | `s` ou `S` | À la place du `x` du groupe |
+| sticky | 1 | `t` ou `T` | À la place du `x` des autres |
+
+| Octal | Symbolique | Exemple |
+| --- | --- | --- |
+| 4755 | `rwsr-xr-x` | `/usr/bin/passwd` |
+| 2770 | `rwxrws---` | Répertoire d'équipe |
+| 1777 | `rwxrwxrwt` | `/tmp` |
+| 3770 | `rwxrws--T` | Répertoire d'équipe avec setgid et sticky |
+
+`stat -c '%a'` affiche ce quatrième chiffre quand il n'est pas nul.
+
+## poser et retirer les bits spéciaux
+
+En notation symbolique :
+
+```bash
+sudo chmod u+s /usr/local/bin/outil     # setuid (à éviter, voir plus haut)
+sudo chmod g+s /srv/equipe-web          # setgid sur un répertoire
+sudo chmod +t /srv/depot                # sticky bit
+sudo chmod u-s /usr/local/bin/outil     # retirer le setuid
+```
+
+En notation octale :
+
+```bash
+sudo chmod 2770 /srv/equipe-web
+sudo chmod 1777 /srv/depot
+```
+
+Attention à un comportement de GNU `chmod` qui surprend : sur un **répertoire**, une notation octale ordinaire **conserve** le setuid et le setgid existants. `chmod 770` ou même `chmod 0770` laissent le setgid en place. Pour le retirer, il faut soit la notation symbolique (`chmod g-s`), soit un zéro supplémentaire en tête (`chmod 00770`). Le but est d'éviter qu'un `chmod` distrait ne casse l'héritage de groupe d'un répertoire d'équipe ; la conséquence est qu'il faut le savoir le jour où l'on veut vraiment retirer ce bit.
+
+Autre protection du système : quand un fichier setuid ou setgid est **modifié** par un utilisateur ordinaire, ou que son propriétaire change avec `chown`, le noyau **retire** automatiquement ces bits. On ne peut donc pas écrire son propre code dans un programme setuid root existant pour en hériter les droits.
+
+## auditer les programmes setuid et setgid
+
+Tu as vu cette recherche au module 2 avec `find`. Elle mérite d'être faite régulièrement, et comparée à une liste de référence :
+
+```bash
+sudo find / -xdev -type f \( -perm -4000 -o -perm -2000 \) -exec ls -l {} + 2>/dev/null
+```
+
+```text
+-rwsr-xr-x 1 root root      72072 mars  4  2024 /usr/bin/chfn
+-rwsr-xr-x 1 root root      68248 mars  4  2024 /usr/bin/passwd
+-rwsr-xr-x 1 root root     277936 avril 2  2024 /usr/bin/sudo
+-rwxr-sr-x 1 root shadow    31184 févr. 20 2024 /usr/bin/chage
+-rwsr-xr-x 1 root root    8386096 sept. 26 23:44 /usr/local/bin/python3
+```
+
+La dernière ligne est une alerte : un interpréteur Python **setuid root**, installé hier soir dans `/usr/local/bin`. Quiconque le lance exécute du code en root. Sur un vrai système, c'est une porte dérobée ou une erreur grave, et dans les deux cas il faut retirer le bit immédiatement et chercher qui l'a posé.
+
+Une bonne pratique est d'enregistrer la liste sur un système sain, puis de la comparer à intervalles réguliers avec `diff` ou `comm` (module 3) : toute nouveauté doit avoir une explication.
+
+## démonstration : le répertoire de l'équipe web
+
+L'équipe web (groupe `web`) a besoin d'un répertoire commun, `/srv/equipe-web`, où :
+
+- tous les membres peuvent créer et modifier des fichiers ;
+- les fichiers créés restent accessibles à toute l'équipe ;
+- personne ne peut supprimer le fichier d'un autre ;
+- les autres comptes n'ont aucun accès.
+
+```bash
+sudo mkdir /srv/equipe-web
+sudo chgrp web /srv/equipe-web
+sudo chmod 3770 /srv/equipe-web
+ls -ld /srv/equipe-web
+```
+
+```text
+drwxrws--T 2 root web 4096 sept. 27 12:30 /srv/equipe-web
+```
+
+Lecture : `rwx` pour root, `rws` pour le groupe `web` (setgid : les fichiers héritent du groupe), `--T` pour les autres (aucun droit, et le sticky bit : personne ne supprime les fichiers d'autrui). Pour que les fichiers créés soient aussi **modifiables** par le groupe, les membres de l'équipe utilisent un `umask 002` (leçon précédente), ou l'on complète avec des ACL par défaut (leçon suivante).
+
+Vérification, en tant que Claire :
+
+```bash
+touch /srv/equipe-web/maquette.html
+ls -l /srv/equipe-web/maquette.html
+```
+
+```text
+-rw-rw-r-- 1 claire web 0 sept. 27 12:31 /srv/equipe-web/maquette.html
+```
+
+Le fichier appartient au groupe `web`, pas à `claire` : le setgid a fait son travail.
+
+## à toi de jouer
+
+Affiche les droits de `/usr/bin/passwd` et de `/tmp` pour y repérer le setuid et le sticky bit. Puis cherche tous les programmes setuid du système de fichiers racine, en affichant leurs détails.
+
+<SimulatedTerminal shell="bash" title="Les droits spéciaux" expectedCommands={["ls -l /usr/bin/passwd", "ls -ld /tmp", "sudo find / -xdev -type f -perm -4000 -exec ls -l {} +"]} hints={["ls -l sur le programme : cherche un s à la place d'un x.", "ls -ld pour le répertoire lui-même : cherche un t.", "find avec -perm -4000, puis -exec ls -l sur les résultats."]} commands={{ "ls -l /usr/bin/passwd": "-rwsr-xr-x 1 root root 68248 mars  4  2024 /usr/bin/passwd", "ls -ld /tmp": "drwxrwxrwt 12 root root 4096 sept. 27 12:15 /tmp", "stat -c '%a %n' /usr/bin/passwd /tmp": "4755 /usr/bin/passwd\n1777 /tmp", "sudo find / -xdev -type f -perm -4000 -exec ls -l {} +": "-rwsr-xr-x 1 root root   72072 mars  4  2024 /usr/bin/chfn\n-rwsr-xr-x 1 root root   68248 mars  4  2024 /usr/bin/passwd\n-rwsr-xr-x 1 root root  277936 avril 2  2024 /usr/bin/sudo\n-rwsr-xr-x 1 root root 8386096 sept. 26 23:44 /usr/local/bin/python3" }} />
+
+Repère dans le dernier résultat la ligne qui n'a rien à faire là, et réfléchis à ce qu'elle permettrait à n'importe quel utilisateur.
+
+## les pièges
+
+- **Poser le setuid pour régler un problème de droits.** C'est offrir root à tout le monde. Une règle `sudo` précise.
+- **Croire que le setuid marche sur un script.** Linux l'ignore sur les scripts ; il ne s'applique qu'aux programmes compilés.
+- **Un répertoire d'équipe sans setgid.** Les fichiers prennent le groupe personnel de leur créateur et deviennent inaccessibles aux autres.
+- **Un répertoire partagé sans sticky bit.** Chacun peut supprimer les fichiers des autres.
+- **Ignorer un `S` ou un `T` majuscule.** Le bit spécial est posé sans droit d'exécution : c'est presque toujours une erreur.
+- **Ne jamais auditer les programmes setuid.** Leur liste doit être connue, et toute nouveauté expliquée.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man2/chmod.2.html" description="Les bits spéciaux et leur effet, vus par le noyau">chmod(2)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/credentials.7.html" description="Les identités réelles et effectives d'un processus, qui expliquent le setuid">credentials(7)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/Mode-Structure.html" description="La structure complète d'un mode de fichier">GNU coreutils : Mode Structure</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi un utilisateur ordinaire peut-il modifier /etc/shadow avec la commande passwd ?" options={["Parce que /etc/shadow est modifiable par tous", "Parce que passwd est setuid root : il s'exécute avec les droits de son propriétaire", "Parce que passwd demande le mot de passe root", "Parce que l'utilisateur est dans le groupe shadow"]} correct={1} explanation="Le bit setuid fait tourner le programme avec les droits de son propriétaire, ici root. passwd limite lui-même ce que l'utilisateur peut modifier." />
+  <Quiz id="q-2" question="Que signifie le t dans drwxrwxrwt ?" options={["Le répertoire est temporaire", "Le sticky bit : seul le propriétaire d'un fichier, celui du répertoire ou root peut le supprimer", "Le répertoire est chiffré", "Le répertoire est en lecture seule"]} correct={1} explanation="Le sticky bit protège les fichiers d'un répertoire partagé contre la suppression par d'autres utilisateurs." />
+  <Quiz id="q-3" question="Quel est l'effet du setgid sur un répertoire ?" options={["Les fichiers créés dedans héritent du groupe du répertoire", "Seul le groupe peut entrer dans le répertoire", "Les programmes du répertoire s'exécutent en root", "Le répertoire ne peut pas être supprimé"]} correct={0} explanation="Sans setgid, un fichier prend le groupe principal de son créateur. Avec, il prend celui du répertoire, ce qui rend le partage d'équipe possible." />
+  <Quiz id="q-4" question="Quelle notation octale correspond à rwxrws--- ?" options={["770", "2770", "4770", "1770"]} correct={1} explanation="Le setgid vaut 2 dans le chiffre des bits spéciaux, placé devant 770." />
+  <Quiz id="q-5" question="Un audit trouve /usr/local/bin/python3 en rwsr-xr-x, propriété de root. Que faut-il en penser ?" options={["C'est normal pour Python", "C'est une alerte grave : n'importe quel utilisateur peut exécuter du code en root", "C'est sans effet car Python est un script", "Cela accélère Python"]} correct={1} explanation="Python est un programme compilé : le setuid s'applique. Un interpréteur setuid root exécute n'importe quel code avec les droits de root." />
+  <Quiz id="q-6" question="Le setuid est-il pris en compte sur un script bash ?" options={["Oui, toujours", "Non, Linux l'ignore sur les scripts interprétés", "Seulement si le script appartient à root", "Seulement avec sudo"]} correct={1} explanation="Le noyau ignore le setuid sur les scripts, trop difficiles à sécuriser contre les manipulations d'environnement." />
+  <Quiz id="q-7" question="Un utilisateur a besoin de redémarrer un service précis. Quelle est la bonne solution ?" options={["Poser le setuid sur systemctl", "Lui donner le mot de passe root", "Une règle sudo limitée à cette commande", "Mettre son compte dans le groupe root"]} correct={2} explanation="sudo permet de n'autoriser qu'une commande précise, avec journalisation. Un setuid sur systemctl donnerait tous ses pouvoirs à tout le monde." />
+</QuizGroup>
+
+## à retenir
+
+- **setuid** (4, `s` à la place du `x` du propriétaire) : le programme s'exécute avec les droits de son propriétaire. Ignoré sur les scripts. Dangereux sur tout programme qui permet de lancer des commandes.
+- **setgid** (2, `s` à la place du `x` du groupe) : sur un répertoire, les fichiers créés héritent de son groupe.
+- **sticky** (1, `t` à la place du dernier `x`) : sur un répertoire, chacun ne supprime que ses propres fichiers. C'est le cas de `/tmp` (1777).
+- Répertoire d'équipe : `chgrp equipe`, puis `chmod 3770` (setgid et sticky).
+- `S` ou `T` majuscule : bit posé sans exécution, souvent une erreur.
+- Auditer régulièrement : `find / -xdev -perm -4000`, et comparer à une liste de référence.

@@ -1,0 +1,263 @@
+---
+refCode: CL-LSN-02031-V01
+slug: linux-limites-pam
+title: "Limites de ressources et PAM"
+description: "Empêcher un compte d'épuiser la machine avec ulimit et limits.conf, limites douces et dures, puis PAM, la chaîne de modules qui décide comment on s'authentifie : ses quatre étapes, ses règles de contrôle, la politique de mots de passe et le verrouillage après des échecs."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02030-V01"]
+---
+
+Les permissions décident de ce qu'un compte peut **toucher**. Deux autres mécanismes complètent le tableau. Les **limites de ressources** décident de ce qu'un compte peut **consommer** : combien de fichiers ouverts, combien de processus, quelle taille de mémoire. Et **PAM** décide de la façon dont on **entre** : quel mot de passe est acceptable, combien d'essais sont permis, ce qui se passe à l'ouverture d'une session. Ces réglages sont moins visibles que les droits sur les fichiers, mais une application qui plante faute de pouvoir ouvrir assez de fichiers, ou un serveur attaqué par des essais de mots de passe à répétition, les rendent très concrets.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- afficher et modifier les limites de ressources d'un shell avec `ulimit`, et distinguer limites douces et dures ;
+- fixer des limites durables pour un compte ou un groupe dans `/etc/security/limits.conf` ;
+- expliquer ce qu'est PAM et le rôle de ses quatre familles de modules ;
+- lire un fichier de `/etc/pam.d/` et comprendre ses règles de contrôle ;
+- mettre en place une politique de qualité des mots de passe et le verrouillage temporaire après plusieurs échecs ;
+- modifier PAM sans risquer de s'enfermer dehors.
+
+## pourquoi ça compte
+
+Un seul processus qui se multiplie sans fin, par bug ou par malveillance, peut rendre une machine entière inutilisable pour tous ses utilisateurs : c'est un **déni de service** local, que les limites de processus empêchent. À l'inverse, des limites trop basses font échouer les applications légitimes : « Too many open files » est l'une des erreurs de production les plus classiques des serveurs web et des bases de données.
+
+PAM, lui, est le point de passage de **toutes** les authentifications : connexion SSH, `sudo`, `su`, ouverture de session graphique. C'est là qu'on impose des mots de passe solides, qu'on bloque les attaques par essais répétés, qu'on ajoute une authentification à deux facteurs. Et c'est aussi un endroit où une erreur de configuration peut empêcher tout le monde de se connecter, ou, pire, laisser entrer sans mot de passe.
+
+## les limites de ressources
+
+Chaque processus hérite d'un ensemble de **limites** fixées par le noyau : nombre de fichiers ouverts, nombre de processus de l'utilisateur, taille des fichiers qu'il peut créer, taille de la mémoire, et d'autres. `ulimit -a` les affiche pour le shell courant :
+
+```bash
+ulimit -a
+```
+
+```text
+real-time non-blocking time  (microseconds, -R) unlimited
+core file size              (blocks, -c) 0
+data seg size               (kbytes, -d) unlimited
+file size                   (blocks, -f) unlimited
+max locked memory           (kbytes, -l) 8192
+open files                          (-n) 1024
+max user processes                  (-u) 15432
+stack size                  (kbytes, -s) 8192
+cpu time                   (seconds, -t) unlimited
+virtual memory              (kbytes, -v) unlimited
+```
+
+Les deux qu'on règle le plus souvent :
+
+- **`-n`, les fichiers ouverts**. Chaque connexion réseau, chaque fichier lu compte comme un fichier ouvert. Un serveur web qui gère des milliers de connexions a besoin de bien plus que 1024 ;
+- **`-u`, les processus de l'utilisateur**. La limite qui empêche un compte de saturer la table des processus de la machine.
+
+### limites douces et limites dures
+
+Chaque limite a deux valeurs :
+
+- la limite **douce** (*soft*) est celle qui s'applique réellement ;
+- la limite **dure** (*hard*) est un plafond : un utilisateur ordinaire peut monter sa limite douce **jusqu'à** la limite dure, ou baisser la limite dure, mais jamais l'augmenter. Seul root le peut.
+
+```bash
+ulimit -Sn     # limite douce des fichiers ouverts
+ulimit -Hn     # limite dure
+ulimit -n 4096 # monter la limite douce, dans la limite de la dure
+```
+
+<Diagram caption="Limite douce et limite dure">
+flowchart LR
+  A["Limite douce : ce qui s'applique"] -->|"l'utilisateur peut la monter jusqu'à"| B["Limite dure : le plafond"]
+  B -->|"seul root peut la monter"| C["Maximum du système"]
+</Diagram>
+
+Un réglage fait avec `ulimit` ne vaut que pour le shell courant et les processus qu'il lance.
+
+### des limites durables : limits.conf
+
+Pour qu'une limite s'applique à chaque session d'un compte ou d'un groupe, on l'écrit dans `/etc/security/limits.conf`, ou mieux dans un fichier dédié de `/etc/security/limits.d/` :
+
+```text
+# /etc/security/limits.d/90-limites.conf
+# domaine      type   ressource   valeur
+@developpeurs  hard   nproc       2000
+@developpeurs  soft   nproc       1000
+appweb         soft   nofile      65536
+appweb         hard   nofile      65536
+*              hard   core        0
+```
+
+Le domaine est un nom de compte, un groupe précédé de `@`, ou `*` pour tous. Les ressources ont des noms plus lisibles que les options de `ulimit` : `nofile` pour les fichiers ouverts, `nproc` pour les processus, `core` pour la taille des fichiers de vidage mémoire. La dernière ligne interdit ces fichiers de vidage à tous : ils peuvent contenir des mots de passe ou des clés présents en mémoire au moment d'un plantage.
+
+Ces limites sont appliquées **à l'ouverture de la session**, par un module PAM (`pam_limits`), dont on parle plus bas. Elles ne s'appliquent donc pas aux **services lancés par systemd**, qui ont leurs propres directives (`LimitNOFILE=`, `LimitNPROC=`), au module 8. C'est un piège courant : on augmente `nofile` dans `limits.conf`, et le service web, qui ne passe pas par une session, n'en voit rien.
+
+## PAM : l'authentification modulaire
+
+**PAM** (*Pluggable Authentication Modules*) est la couche qui gère l'authentification pour presque tous les programmes du système. Au lieu que `sshd`, `sudo`, `su` et l'écran de connexion implémentent chacun leur vérification de mot de passe, ils délèguent à PAM, qui suit une **pile de modules** décrite dans un fichier de configuration par programme, dans `/etc/pam.d/`.
+
+```bash
+ls /etc/pam.d/
+```
+
+```text
+chfn  common-account  common-auth  common-password  common-session  cron  login  other  passwd  sshd  su  sudo
+```
+
+Chaque service a son fichier (`sshd`, `sudo`, `su`...), et Debian regroupe les règles communes dans les fichiers `common-*`, inclus par les autres.
+
+### quatre familles de modules
+
+Un fichier PAM contient des lignes de quatre types, qui correspondent à quatre questions :
+
+| Type | Question | Exemples de modules |
+| --- | --- | --- |
+| `auth` | **Qui es-tu ?** Vérifier l'identité | `pam_unix` (mot de passe), `pam_faillock`, un module de double authentification |
+| `account` | **As-tu le droit d'entrer maintenant ?** | `pam_unix` (compte expiré ?), `pam_access`, `pam_time` |
+| `password` | **Comment changer le secret ?** | `pam_pwquality` (qualité), `pam_unix` (enregistrement) |
+| `session` | **Que préparer à l'entrée et à la sortie ?** | `pam_limits`, création du répertoire, journalisation |
+
+<Diagram caption="Le parcours d'une connexion SSH dans PAM">
+flowchart LR
+  A["Connexion SSH"] --> B["auth : identité vérifiée ?"]
+  B --> C["account : compte valide, pas expiré, autorisé ?"]
+  C --> D["session : limites appliquées, session ouverte"]
+</Diagram>
+
+C'est la pile `account` qui refuse un compte expiré avec `chage -E` (leçon 2), même quand l'authentification par clé SSH a réussi : la clé répond à « qui es-tu ? », pas à « as-tu le droit d'entrer ? ».
+
+### les règles de contrôle
+
+Chaque ligne indique aussi comment le résultat de son module pèse sur la décision :
+
+| Contrôle | Effet |
+| --- | --- |
+| `required` | Doit réussir ; en cas d'échec, la suite est quand même évaluée, puis tout échoue |
+| `requisite` | Doit réussir ; en cas d'échec, tout échoue immédiatement |
+| `sufficient` | Si ce module réussit (et qu'aucun `required` n'a échoué avant), c'est gagné, on s'arrête |
+| `optional` | Le résultat ne compte que s'il est le seul module de la pile |
+
+Debian utilise aussi une syntaxe plus détaillée entre crochets, comme `[success=1 default=ignore]`, qui dit précisément quoi faire selon chaque résultat ; elle se lit avec la page de manuel `pam.conf(5)`.
+
+```bash
+grep -v "^#" /etc/pam.d/common-auth | grep -v "^$"
+```
+
+```text
+auth	[success=1 default=ignore]	pam_unix.so nullok
+auth	requisite			pam_deny.so
+auth	required			pam_permit.so
+```
+
+Lecture : si `pam_unix` valide le mot de passe, on saute la ligne suivante (`success=1`) ; sinon, on arrive sur `pam_deny`, qui refuse. Le mot `nullok` autorise les comptes **sans** mot de passe à passer l'authentification : c'est le réglage par défaut de Debian, et une des raisons pour lesquelles un champ vide dans `/etc/shadow` (leçon 1) est une faille. Beaucoup de guides de durcissement recommandent de le retirer.
+
+## deux durcissements courants
+
+### la qualité des mots de passe
+
+Le module `pam_pwquality` (paquet `libpam-pwquality`) refuse les mots de passe trop faibles au moment où on les change. Il se règle dans `/etc/security/pwquality.conf` :
+
+```text
+minlen = 14
+dictcheck = 1
+usercheck = 1
+enforce_for_root
+```
+
+Longueur minimale de 14, refus des mots du dictionnaire et de ceux qui contiennent le nom du compte, et application à root aussi. Les recommandations actuelles privilégient la **longueur** plutôt que des règles de composition compliquées (« une majuscule, un chiffre, un symbole »), qui produisent des mots de passe à la fois pénibles et prévisibles.
+
+### le verrouillage après des échecs
+
+Le module `pam_faillock` compte les échecs d'authentification et **verrouille temporairement** un compte après un certain nombre. Il se règle dans `/etc/security/faillock.conf` :
+
+```text
+deny = 5
+unlock_time = 900
+```
+
+Après 5 échecs, le compte est bloqué 15 minutes. `faillock --user claire` affiche les échecs enregistrés, et `faillock --user claire --reset` débloque. Attention au revers : un attaquant qui connaît un nom de compte peut le **bloquer volontairement** en ratant exprès. Pour SSH exposé sur Internet, on combine plutôt l'authentification par clé et un blocage par **adresse** (module 10) ; le verrouillage par compte reste utile pour les accès locaux et internes.
+
+<Callout type="danger">
+Une erreur dans `/etc/pam.d/` peut empêcher **toute** connexion, y compris celle de root, ou au contraire en autoriser sans mot de passe. Avant de modifier PAM : garde une **session root ouverte** dans un autre terminal, sauvegarde le fichier, modifie, puis teste dans une **nouvelle** session (`ssh`, `su`, `sudo`) sans fermer celle de secours. Sur Debian et Ubuntu, préfère l'outil `pam-auth-update`, qui active et désactive les modules proprement, plutôt que d'éditer les fichiers `common-*` à la main.
+</Callout>
+
+## démonstration : « Too many open files »
+
+Le journal d'une application montre, aux heures de pointe :
+
+```text
+2026-09-27T18:04:12 app-factures[2211]: accept4: too many open files
+```
+
+**1. Quelle limite a le processus en cours ?** `/proc` (module 2) expose les limites réelles d'un processus, là où `ulimit` ne montre que celles de ton shell :
+
+```bash
+grep "open files" /proc/2211/limits
+```
+
+```text
+Max open files            1024                 524288               files
+```
+
+Limite douce 1024, limite dure 524 288 : l'application est bridée par sa limite douce.
+
+**2. Combien en utilise-t-elle ?** Chaque fichier ouvert apparaît dans `/proc/2211/fd` :
+
+```bash
+sudo ls /proc/2211/fd | wc -l
+```
+
+```text
+1021
+```
+
+Elle est au plafond. **3. Où corriger ?** L'application est un **service systemd** : `limits.conf` ne la concerne pas. La correction se fait dans son unité, avec `LimitNOFILE=65536`, comme tu le verras au module 8. Si elle avait été lancée depuis une session, par exemple par un utilisateur avec `nohup`, c'est `limits.conf` qu'on aurait modifié, puis la session qu'on aurait rouverte. Savoir **qui** lance le programme décide donc de l'endroit où l'on règle sa limite.
+
+## à toi de jouer
+
+Affiche toutes les limites de ton shell, puis seulement la limite dure du nombre de fichiers ouverts. Enfin, affiche les lignes actives (sans commentaires ni lignes vides) du fichier PAM `common-auth`.
+
+<SimulatedTerminal shell="bash" title="Limites et authentification" expectedCommands={["ulimit -a", "ulimit -Hn", "grep -v \"^#\" /etc/pam.d/common-auth | grep -v \"^$\""]} hints={["ulimit avec l'option qui affiche tout.", "H pour la limite dure, n pour les fichiers ouverts.", "Deux grep -v enchaînés : les commentaires, puis les lignes vides."]} commands={{ "ulimit -a": "core file size              (blocks, -c) 0\ndata seg size               (kbytes, -d) unlimited\nfile size                   (blocks, -f) unlimited\nopen files                          (-n) 1024\nmax user processes                  (-u) 15432\nstack size                  (kbytes, -s) 8192\ncpu time                   (seconds, -t) unlimited", "ulimit -n": "1024", "ulimit -Sn": "1024", "ulimit -Hn": "524288", "grep -v \"^#\" /etc/pam.d/common-auth | grep -v \"^$\"": "auth\t[success=1 default=ignore]\tpam_unix.so nullok\nauth\trequisite\t\t\tpam_deny.so\nauth\trequired\t\t\tpam_permit.so", "ls /etc/pam.d/": "chfn  common-account  common-auth  common-password  common-session  cron  login  other  passwd  sshd  su  sudo" }} />
+
+Repère dans la sortie de `common-auth` l'option `nullok` : qu'autorise-t-elle, et pourquoi la retirer sur un serveur ?
+
+## les pièges
+
+- **Augmenter `limits.conf` pour un service systemd.** Il ne passe pas par une session : c'est l'unité qu'il faut régler.
+- **Lire `ulimit` au lieu des limites du processus.** `ulimit` montre ton shell ; `/proc/PID/limits` montre le processus.
+- **Oublier que la limite douce ne peut dépasser la dure.** Il faut régler les deux.
+- **Modifier PAM sans session de secours.** Une erreur peut bloquer toutes les connexions.
+- **Laisser `nullok`.** Les comptes sans mot de passe passent l'authentification.
+- **Imposer des règles de composition compliquées.** La longueur protège mieux et gêne moins.
+- **Verrouiller les comptes exposés sur Internet après quelques échecs.** Un attaquant peut les bloquer exprès. Clés SSH et blocage par adresse.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/limits.conf.5.html" description="Le format de limits.conf et les ressources disponibles">limits.conf(5)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/pam.conf.5.html" description="La syntaxe des fichiers PAM et des règles de contrôle">pam.conf(5)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/pam_faillock.8.html" description="Le verrouillage des comptes après des échecs d'authentification">pam_faillock(8)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Un utilisateur ordinaire peut-il augmenter sa limite dure de fichiers ouverts ?" options={["Oui, avec ulimit -Hn", "Non : il peut monter la limite douce jusqu'à la dure, mais seul root augmente la dure", "Oui, en modifiant son .bashrc", "Oui, avec sudo -l"]} correct={1} explanation="La limite dure est un plafond. Un utilisateur peut la baisser, jamais la monter." />
+  <Quiz id="q-2" question="Tu as augmenté nofile dans /etc/security/limits.conf, mais le service web lancé par systemd a toujours 1024. Pourquoi ?" options={["Il faut redémarrer la machine", "limits.conf s'applique aux sessions via PAM ; un service systemd se règle dans son unité", "Le fichier est ignoré sur Debian", "nofile ne concerne pas les réseaux"]} correct={1} explanation="pam_limits applique limits.conf à l'ouverture d'une session. Les services systemd ont leurs propres directives, comme LimitNOFILE." />
+  <Quiz id="q-3" question="Comment connaître les limites réellement appliquées au processus 2211 ?" options={["ulimit -a", "cat /proc/2211/limits", "sudo -l", "cat /etc/security/limits.conf"]} correct={1} explanation="ulimit montre les limites de ton shell ; /proc/PID/limits celles du processus visé." />
+  <Quiz id="q-4" question="Dans PAM, quelle famille de modules vérifie qu'un compte n'est pas expiré ?" options={["auth", "account", "password", "session"]} correct={1} explanation="auth vérifie l'identité, account le droit d'entrer maintenant, password le changement de secret, session la préparation de la session." />
+  <Quiz id="q-5" question="Que signifie l'option nullok de pam_unix ?" options={["Refuser les mots de passe vides", "Accepter qu'un compte sans mot de passe passe l'authentification", "Désactiver l'authentification", "Activer la double authentification"]} correct={1} explanation="nullok laisse passer les comptes dont le mot de passe est vide. Les guides de durcissement recommandent de la retirer." />
+  <Quiz id="q-6" question="Quelle précaution prendre avant de modifier un fichier de /etc/pam.d/ sur un serveur distant ?" options={["Redémarrer SSH d'abord", "Garder une session root ouverte et tester dans une nouvelle session", "Vider les journaux", "Désactiver sudo"]} correct={1} explanation="Une erreur de PAM peut bloquer toutes les connexions. La session ouverte permet de réparer." />
+  <Quiz id="q-7" question="Pourquoi le verrouillage d'un compte après 5 échecs est-il délicat pour un accès SSH exposé sur Internet ?" options={["Parce qu'il ne fonctionne pas avec SSH", "Parce qu'un attaquant peut bloquer volontairement un compte en ratant exprès", "Parce qu'il désactive les clés SSH", "Parce qu'il ralentit le serveur"]} correct={1} explanation="Le verrouillage par compte peut être retourné en déni de service. Pour SSH exposé, on préfère les clés et un blocage par adresse." />
+</QuizGroup>
+
+## à retenir
+
+- `ulimit -a` affiche les limites du shell ; `-n` fichiers ouverts, `-u` processus. Douce = appliquée, dure = plafond que seul root monte.
+- Limites durables par compte ou `@groupe` : `/etc/security/limits.d/`. Elles s'appliquent aux **sessions**, pas aux services systemd (`LimitNOFILE=`).
+- Les limites réelles d'un processus : `/proc/PID/limits`.
+- PAM : `auth` (qui es-tu ?), `account` (as-tu le droit d'entrer ?), `password` (changer le secret), `session` (préparer). Contrôles `required`, `requisite`, `sufficient`, `optional`.
+- Durcissement : `pam_pwquality` (longueur d'abord), `pam_faillock` (avec prudence sur Internet), retrait de `nullok`.
+- Modifier PAM : session root de secours, sauvegarde, test dans une nouvelle session, `pam-auth-update` sur Debian.
