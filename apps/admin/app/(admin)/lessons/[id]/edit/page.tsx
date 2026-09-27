@@ -5,6 +5,8 @@ import { prisma } from "@cyberlearn/db";
 import { EditLessonClient } from "./_components/edit-lesson-client";
 import { resolveLessonCoverSrc } from "@/lib/lesson-cover/storage";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Éditer la leçon" };
 
 export default async function EditLessonPage({
@@ -12,6 +14,7 @@ export default async function EditLessonPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
+  await requireAdminPage();
   const { id } = await params;
 
   const lesson = await prisma.lesson.findUnique({

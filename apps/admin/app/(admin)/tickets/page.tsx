@@ -7,6 +7,8 @@ import { DataGrid, type GridRow } from "../_components/data-grid";
 import { TicketStatusSelect } from "./_components/TicketStatusSelect";
 import { STATUS_META, THEME_META } from "./ticket-meta";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Tickets" };
 
 function formatDate(d: Date): string {
@@ -19,6 +21,7 @@ function formatDate(d: Date): string {
 }
 
 export default async function AdminTicketsPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const tickets = await prisma.contactTicket.findMany({
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     select: {

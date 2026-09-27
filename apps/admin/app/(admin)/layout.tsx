@@ -1,8 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
-import { notFound, redirect } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdminPage } from "@/lib/auth";
 import { prisma } from "@cyberlearn/db";
 import { AdminTopbar } from "./_components/admin-topbar";
 import { AdminSidebar } from "./_components/admin-sidebar";
@@ -35,34 +34,16 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }): Promise<React.ReactElement> {
-  const supabase = await getSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  // The verified TOTP factors ride on the user object already fetched above -
-  // calling mfa.listFactors() would trigger a second network roundtrip.
-  const hasVerifiedTotp =
-    user.factors?.some((factor) => factor.factor_type === "totp" && factor.status === "verified") ??
-    false;
-  if (!hasVerifiedTotp) redirect("/mfa/setup");
-
-  const [dbUser, assurance, counts] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: { role: true, username: true },
-    }),
-    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+  // The check every page repeats (see requireAdminPage): the layout alone is
+  // not a gate, since a client navigation can render a page without it.
+  const admin = await requireAdminPage();
+  const [dbUser, counts] = await Promise.all([
+    prisma.user.findUnique({ where: { id: admin.id }, select: { username: true } }),
     getSidebarCounts(),
   ]);
 
-  if (dbUser?.role !== "ADMIN") notFound();
-  if (assurance.error || assurance.data.currentLevel !== "aal2") redirect("/mfa");
-
-  const emailPrefix = (user.email ?? "admin").split("@")[0] ?? "admin";
-  const displayHandle = dbUser.username ?? emailPrefix;
+  const emailPrefix = (admin.email ?? "admin").split("@")[0] ?? "admin";
+  const displayHandle = dbUser?.username ?? emailPrefix;
   const initials = displayHandle.slice(0, 2).toUpperCase();
   const handle = `@${displayHandle}`;
 
@@ -73,7 +54,7 @@ export default async function AdminLayout({
         <AdminSidebar
           initials={initials}
           handle={handle}
-          email={user.email ?? ""}
+          email={admin.email ?? ""}
           counts={counts}
         />
         <div className="admin-content-area">{children}</div>

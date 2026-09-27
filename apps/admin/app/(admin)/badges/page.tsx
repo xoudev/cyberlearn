@@ -5,6 +5,8 @@ import { prisma } from "@cyberlearn/db";
 import { PageHeader, PrimaryLink, Tag, UI, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Badges" };
 
 const RARITY_META: Record<string, { tone: Tone; label: string }> = {
@@ -27,6 +29,7 @@ const CRITERION_LABEL: Record<string, string> = {
 };
 
 export default async function AdminBadgesPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const badges = await prisma.badge.findMany({
     orderBy: [{ rarity: "asc" }, { createdAt: "desc" }],
     select: {

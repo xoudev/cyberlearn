@@ -8,6 +8,8 @@ import { DeletePathButton } from "./_components/delete-path-button";
 import { StatusBadge } from "../_components/status-badge";
 import { updatePathStatusAction } from "./_actions/path-actions";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Parcours" };
 
 const DIFF_META: Record<string, { tone: Tone; label: string }> = {
@@ -24,6 +26,7 @@ const CAT_LABEL: Record<string, string> = {
 };
 
 export default async function AdminPathsPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const paths = await prisma.path.findMany({
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     select: {

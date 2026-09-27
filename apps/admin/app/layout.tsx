@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { AdminSplashScreen } from "@/components/splash-screen";
 import "@/components/splash-screen.css";
@@ -18,9 +19,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
+}: Readonly<{ children: React.ReactNode }>): Promise<React.JSX.Element> {
+  // Set by the middleware for this request. Reading it makes every page render
+  // per request, which a nonce needs: a prerendered page would carry a nonce
+  // that no response's policy matches.
+  const nonce = (await headers()).get("x-nonce") ?? "";
   return (
     <html
       lang="fr"
@@ -28,7 +33,7 @@ export default function RootLayout({
       className={`dark ${jakarta.variable} ${jetbrains.variable}`}
     >
       <body>
-        <AdminSplashScreen />
+        <AdminSplashScreen nonce={nonce} />
         {children}
       </body>
     </html>

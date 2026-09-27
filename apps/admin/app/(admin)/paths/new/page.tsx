@@ -2,9 +2,12 @@ import React from "react";
 import { prisma } from "@cyberlearn/db";
 import { NewPathClient } from "./_components/NewPathClient";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const dynamic = "force-dynamic";
 
 export default async function NewPathPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const [lessons, paths] = await Promise.all([
     prisma.lesson.findMany({
       // Drafts are offered on purpose here - a path is staged before either is

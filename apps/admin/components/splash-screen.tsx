@@ -21,8 +21,8 @@ const SESSION_KEY = "cl-admin-splash-shown";
 /**
  * Parser-blocking by design: it executes where it sits, above the overlay, so
  * a return visit in the same tab never sees a frame of it. The console's CSP
- * allows inline scripts ('unsafe-inline' for Monaco), so there is no nonce to
- * thread through here - unlike the site, whose policy is nonce-based.
+ * is nonce-based, like the site's: an inline script without the request's
+ * nonce is dropped, so the root layout hands it down.
  *
  * Fixed text, with the key carried as data on the tag rather than interpolated
  * into the source. The site's copy explains why; the short version is that
@@ -38,11 +38,15 @@ const SKIP_SCRIPT =
 /** Without scripting there is no session marker, so it would play on every page. */
 const NOSCRIPT_CSS = `[data-splash]{display:none}`;
 
-export function AdminSplashScreen(): React.ReactElement {
+export function AdminSplashScreen({ nonce }: { nonce?: string }): React.ReactElement {
   return (
     <>
       {/* A fixed string, and the key beside it as data rather than as code. */}
-      <script data-splash-key={SESSION_KEY} dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }} />
+      <script
+        nonce={nonce}
+        data-splash-key={SESSION_KEY}
+        dangerouslySetInnerHTML={{ __html: SKIP_SCRIPT }}
+      />
       <noscript>
         <style dangerouslySetInnerHTML={{ __html: NOSCRIPT_CSS }} />
       </noscript>

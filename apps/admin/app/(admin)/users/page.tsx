@@ -7,6 +7,8 @@ import { DataGrid, type GridRow } from "../_components/data-grid";
 import { ROLE_LABEL, ROLES, roleRank } from "@/lib/roles";
 import { RoleSelect } from "./_components/role-select";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Utilisateurs" };
 
 function formatDate(d: Date): string {
@@ -26,6 +28,7 @@ function relativeDate(d: Date): string {
 }
 
 export default async function AdminUsersPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {

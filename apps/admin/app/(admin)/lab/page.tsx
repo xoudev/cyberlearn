@@ -7,6 +7,8 @@ import { Card, PageHeader, Tag, UI } from "../_components/admin-ui";
 import { EmailViewer } from "./_components/email-viewer";
 import { ModerationProbe } from "./_components/moderation-probe";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Banc d'essai" };
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,7 @@ export const dynamic = "force-dynamic";
  * next to the confirmation it needs.
  */
 export default async function LabPage(): Promise<React.JSX.Element> {
+  await requireAdminPage();
   const samples = await Promise.all(
     EMAIL_SAMPLES.map(async (s) => ({ ...s, html: (await renderEmailSample(s.key)) ?? "" })),
   );

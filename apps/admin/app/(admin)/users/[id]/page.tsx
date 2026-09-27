@@ -19,6 +19,8 @@ import { BanForm } from "./_components/ban-form";
 import { DeleteUserForm } from "./_components/delete-user-form";
 import { ResetProgressForm } from "./_components/reset-progress-form";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Compte" };
 export const dynamic = "force-dynamic";
 
@@ -39,6 +41,7 @@ export default async function AdminUserPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
+  await requireAdminPage();
   const { id } = await params;
 
   const user = await prisma.user.findUnique({

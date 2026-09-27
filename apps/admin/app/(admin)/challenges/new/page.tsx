@@ -4,9 +4,12 @@ import { prisma } from "@cyberlearn/db";
 import { NewChallengeForm } from "./_components/new-challenge-form";
 import type { ChallengeOption } from "./_components/new-challenge-form";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Nouveau challenge" };
 
 export default async function NewChallengePage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const challenges = await prisma.challenge.findMany({
     where: { isActive: true },
     orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],

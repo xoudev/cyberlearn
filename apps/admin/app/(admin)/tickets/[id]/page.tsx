@@ -7,6 +7,8 @@ import { TicketStatusSelect } from "../_components/TicketStatusSelect";
 import { TicketThread } from "../_components/TicketThread";
 import { STATUS_META, THEME_META } from "../ticket-meta";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Ticket" };
 
 function formatDateTime(d: Date): string {
@@ -68,6 +70,7 @@ export default async function AdminTicketPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
+  await requireAdminPage();
   const { id } = await params;
 
   const ticket = await prisma.contactTicket.findUnique({

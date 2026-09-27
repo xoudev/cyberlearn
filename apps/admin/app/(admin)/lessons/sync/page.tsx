@@ -13,6 +13,8 @@ import { lessonSyncOverview, type LessonUpdate } from "@/lib/services/lesson-syn
 import type { DiffHunk } from "@/lib/text-diff";
 import { UpdateAllButton, UpdateOneButton } from "./_components/sync-controls";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Mettre à jour depuis le dépôt" };
 export const dynamic = "force-dynamic";
 // Reads and compares every lesson file: a few seconds, more than the default.
@@ -124,6 +126,7 @@ function UpdateCard({ u }: { u: LessonUpdate }): React.ReactElement {
 }
 
 export default async function LessonSyncPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const overview = await lessonSyncOverview();
 
   return (

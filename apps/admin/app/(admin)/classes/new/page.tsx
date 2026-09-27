@@ -4,6 +4,8 @@ import { classRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader } from "../../_components/admin-ui";
 import { ComposeForms } from "./_components/compose-forms";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Créer" };
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,7 @@ export const dynamic = "force-dynamic";
  * rather than silently refusing.
  */
 export default async function NewClassPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const hierarchy = await classRepository.listHierarchy();
 
   return (

@@ -8,6 +8,8 @@ import { loadRootEnv } from "../../scripts/load-root-env.mjs";
 loadRootEnv(path.join(__dirname, "../../"));
 
 const nextConfig: NextConfig = {
+  // No X-Powered-By: naming the framework only saves an attacker a lookup.
+  poweredByHeader: false,
   // Must point to the monorepo root so Next.js file tracing follows imports
   // up through pnpm's node_modules/.pnpm/ tree.
   outputFileTracingRoot: path.join(__dirname, "../../"),
