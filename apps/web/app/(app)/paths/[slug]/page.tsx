@@ -6,6 +6,7 @@ import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { indexPlacements, type LockState } from "@/lib/lessons/unlock";
 import { requireUser } from "@cyberlearn/lib";
+import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
 import { pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
 import { BossNode } from "./_components/boss-node";
 import { PathRating } from "./_components/path-rating";
@@ -203,6 +204,10 @@ export default async function PathDetailPage({
     // the entitlement would have been left out.
     where: { slug, ...pathsVisibleTo(authUser.id) },
     include: {
+      modules: {
+        orderBy: { position: "asc" },
+        select: { id: true, position: true, title: true, description: true },
+      },
       lessons: {
         orderBy: { position: "asc" },
         include: {
@@ -276,17 +281,9 @@ export default async function PathDetailPage({
     (pl) => placements.get(pl.lesson.id)?.state ?? "locked",
   );
 
-  // Group lessons into modules (every 6 lessons)
-  const MODULE_SIZE = 6;
-  const modules: { label: string; start: number; end: number }[] = [];
-  for (let i = 0; i < totalLessons; i += MODULE_SIZE) {
-    const moduleNum = modules.length + 1;
-    modules.push({
-      label: `Module ${String(moduleNum).padStart(2, "0")}`,
-      start: i,
-      end: Math.min(i + MODULE_SIZE, totalLessons),
-    });
-  }
+  // The path's own modules when it has them, blocks of six otherwise. The
+  // order of study is the lessons' position either way.
+  const modules = groupIntoModules(path.lessons, path.modules);
 
   const pathStatus = userPathProgress.status;
   const pathCompleted = pathStatus === "COMPLETED";
@@ -437,18 +434,18 @@ export default async function PathDetailPage({
       <div className="pd2-body">
         <div className="cpath">
           {modules.map((mod) => {
-            const moduleLessons = path.lessons.slice(mod.start, mod.end);
-            const gateDone = moduleLessons.some((_, j) => {
-              const s = nodeStates[mod.start + j];
+            const gateDone = mod.indices.some((index) => {
+              const s = nodeStates[index];
               return s === "completed" || s === "unlocked";
             });
             return (
-              <React.Fragment key={mod.label}>
+              <React.Fragment key={mod.key}>
                 <div className={`cp-gate${gateDone ? " cp-gate--done" : ""}`}>
                   <div className="cp-gate__side cp-gate__side--l">
                     <span className="cp-gate__rule" />
-                    <span className="cp-gate__label">
-                      <span className="mod">{mod.label.toUpperCase()}</span>
+                    <span className="cp-gate__label" title={mod.description ?? undefined}>
+                      <span className="mod">{moduleLabel(mod).toUpperCase()}</span>
+                      {mod.title !== null ? <span className="nm">{mod.title}</span> : null}
                     </span>
                   </div>
                   <div className="cp-mid">
@@ -456,13 +453,14 @@ export default async function PathDetailPage({
                   </div>
                   <div className="cp-gate__side">
                     <span className="cp-gate__count">
-                      <b>{mod.end - mod.start}</b> missions
+                      <b>{mod.indices.length}</b> missions
                     </span>
                     <span className="cp-gate__rule" />
                   </div>
                 </div>
-                {moduleLessons.map((pl, j) => {
-                  const globalIdx = mod.start + j;
+                {mod.indices.map((globalIdx) => {
+                  const pl = path.lessons[globalIdx];
+                  if (!pl) return null;
                   const st = cardState(nodeStates[globalIdx] ?? "locked");
                   const side = globalIdx % 2 === 0 ? "is-left" : "is-right";
                   const num = String(globalIdx + 1).padStart(2, "0");

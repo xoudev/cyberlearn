@@ -32,7 +32,9 @@ const INJECTION = [
 // it as the closing paragraph. 133 lessons shipped with one.
 const MARKER = /\n[ \t]*OK [^\n]*crit[ \t]*$/;
 
-const REFCODE = /^CL-LSN-\d{3}-V\d{2}$/;
+// Mirrors LESSON_REF_CODE in @cyberlearn/types (this script runs as plain
+// JavaScript and cannot import it).
+const REFCODE = /^CL-LSN-(\d{3}|\d{5})-V\d{2}$/;
 const SLUG = /^[a-z0-9-]+$/;
 
 function quoteFrontmatter(txt) {

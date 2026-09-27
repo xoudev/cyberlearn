@@ -14,6 +14,7 @@ import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@/lib/rating";
 import { useSession } from "@/lib/session";
+import { groupIntoModules, moduleLabel, type ModuleGroup } from "@cyberlearn/lib/paths/modules";
 
 type MissionState = "done" | "current" | "locked";
 
@@ -73,6 +74,15 @@ function PathBody({
   const total = data.missions.length;
   const pct = total > 0 ? Math.round((data.completedCount / total) * 100) : 0;
   const states = missionStates(data.missions);
+  // A header before the first mission of each of the path's own modules. A path
+  // without modules stays one list, as it always was here.
+  const moduleStarts = new Map<number, ModuleGroup>();
+  if (data.modules.length > 0) {
+    for (const group of groupIntoModules(data.missions, data.modules)) {
+      const first = group.indices[0];
+      if (first !== undefined && group.title !== null) moduleStarts.set(first, group);
+    }
+  }
   const currentIndex = states.indexOf("current");
   const resume = currentIndex >= 0 ? data.missions[currentIndex] : null;
 
@@ -153,88 +163,103 @@ function PathBody({
                 : state === "current"
                   ? colors.accent
                   : colors.textDisabled;
+            const moduleStart = moduleStarts.get(i);
             return (
-              <PressableScale
-                key={m.lessonId}
-                disabled={state === "locked"}
-                onPress={() => onOpenLesson(m.slug)}
-              >
-                <Card
-                  accent={state === "current" ? colors.accent : undefined}
-                  style={{
-                    opacity: state === "locked" ? 0.6 : 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 14,
-                    paddingVertical: 14,
-                  }}
-                >
-                  {/* Number / state chip */}
-                  <View
+              <React.Fragment key={m.lessonId}>
+                {moduleStart ? (
+                  <View style={{ marginTop: i === 0 ? 0 : 14, gap: 2 }}>
+                    <Text variant="micro" style={{ color: colors.accent, letterSpacing: 1.5 }}>
+                      {moduleLabel(moduleStart).toUpperCase()} · {moduleStart.indices.length}{" "}
+                      missions
+                    </Text>
+                    <Text variant="h3" numberOfLines={2}>
+                      {moduleStart.title}
+                    </Text>
+                    {moduleStart.description ? (
+                      <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
+                        {moduleStart.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+                <PressableScale disabled={state === "locked"} onPress={() => onOpenLesson(m.slug)}>
+                  <Card
+                    accent={state === "current" ? colors.accent : undefined}
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
+                      opacity: state === "locked" ? 0.6 : 1,
+                      flexDirection: "row",
                       alignItems: "center",
-                      justifyContent: "center",
-                      borderWidth: 1.5,
-                      borderColor: stateColor,
-                      backgroundColor:
-                        state === "done"
-                          ? "rgba(10,255,212,0.10)"
-                          : state === "current"
-                            ? "rgba(10,255,212,0.06)"
-                            : "transparent",
+                      gap: 14,
+                      paddingVertical: 14,
                     }}
                   >
-                    {state === "done" ? (
-                      <CheckIcon color={colors.success} size={15} strokeWidth={2} />
-                    ) : state === "locked" ? (
-                      <LockIcon color={colors.textDisabled} size={14} strokeWidth={1.4} />
-                    ) : (
-                      <Text
-                        style={{
-                          fontFamily: `${fonts.mono}_700Bold`,
-                          fontSize: 13,
-                          lineHeight: 17,
-                          color: colors.accent,
-                        }}
-                      >
-                        {i + 1}
-                      </Text>
-                    )}
-                  </View>
-
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text variant="micro" style={{ color: stateColor, letterSpacing: 1 }}>
-                      {state === "done"
-                        ? `Mission ${String(i + 1)} · terminée`
-                        : state === "current"
-                          ? `Mission ${String(i + 1)} · tu es ici`
-                          : `Mission ${String(i + 1)}`}
-                    </Text>
-                    <Text
-                      variant="h3"
-                      numberOfLines={2}
-                      style={state === "locked" ? { color: colors.textSecondary } : undefined}
+                    {/* Number / state chip */}
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 1.5,
+                        borderColor: stateColor,
+                        backgroundColor:
+                          state === "done"
+                            ? "rgba(10,255,212,0.10)"
+                            : state === "current"
+                              ? "rgba(10,255,212,0.06)"
+                              : "transparent",
+                      }}
                     >
-                      {m.title}
-                    </Text>
-                    <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
-                      {state === "locked"
-                        ? "Termine la mission précédente pour déverrouiller"
-                        : `${m.estimatedMinutes} min · +${m.xpReward} XP`}
-                    </Text>
-                  </View>
+                      {state === "done" ? (
+                        <CheckIcon color={colors.success} size={15} strokeWidth={2} />
+                      ) : state === "locked" ? (
+                        <LockIcon color={colors.textDisabled} size={14} strokeWidth={1.4} />
+                      ) : (
+                        <Text
+                          style={{
+                            fontFamily: `${fonts.mono}_700Bold`,
+                            fontSize: 13,
+                            lineHeight: 17,
+                            color: colors.accent,
+                          }}
+                        >
+                          {i + 1}
+                        </Text>
+                      )}
+                    </View>
 
-                  {state !== "locked" ? (
-                    <ChevronRight
-                      color={state === "current" ? colors.accent : colors.textMuted}
-                      size={15}
-                    />
-                  ) : null}
-                </Card>
-              </PressableScale>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text variant="micro" style={{ color: stateColor, letterSpacing: 1 }}>
+                        {state === "done"
+                          ? `Mission ${String(i + 1)} · terminée`
+                          : state === "current"
+                            ? `Mission ${String(i + 1)} · tu es ici`
+                            : `Mission ${String(i + 1)}`}
+                      </Text>
+                      <Text
+                        variant="h3"
+                        numberOfLines={2}
+                        style={state === "locked" ? { color: colors.textSecondary } : undefined}
+                      >
+                        {m.title}
+                      </Text>
+                      <Text variant="mono" style={{ fontSize: 10.5, color: colors.textMuted }}>
+                        {state === "locked"
+                          ? "Termine la mission précédente pour déverrouiller"
+                          : `${m.estimatedMinutes} min · +${m.xpReward} XP`}
+                      </Text>
+                    </View>
+
+                    {state !== "locked" ? (
+                      <ChevronRight
+                        color={state === "current" ? colors.accent : colors.textMuted}
+                        size={15}
+                      />
+                    ) : null}
+                  </Card>
+                </PressableScale>
+              </React.Fragment>
             );
           })}
           {total === 0 ? <Pill label="Aucune mission publiée" color={colors.textMuted} /> : null}

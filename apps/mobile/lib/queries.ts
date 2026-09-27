@@ -17,6 +17,7 @@ import { dbIso, dbIsoOrNull } from "@/lib/db-time";
 import type { ExamPath, ExamStatusDto } from "@/lib/exam";
 import { countSince, homePaths, monthStart, type HomePath, type HomePaths } from "@/lib/home";
 import type { DashboardStatsInput } from "@cyberlearn/lib/dashboard/stats";
+import type { ModuleRef } from "@cyberlearn/lib/paths/modules";
 import type { Category, Difficulty, ProgressStatus, Rarity } from "@/lib/db";
 import { progressScore, type QuizScore, type RecordedAnswer } from "@/lib/quiz";
 import { REVIEW_COLUMNS, toReviewItems, type RawReviewRow, type ReviewItem } from "@/lib/revisions";
@@ -511,6 +512,8 @@ export interface PathMission {
   slug: string;
   title: string;
   position: number;
+  /** The path module the mission is filed under; null for a path without modules. */
+  moduleId: string | null;
   estimatedMinutes: number;
   xpReward: number;
   status: ProgressStatus | null;
@@ -525,6 +528,8 @@ export interface PathDetail {
   difficulty: Difficulty;
   estimatedHours: number;
   missions: PathMission[];
+  /** The path's own modules, in order; empty for a path without modules. */
+  modules: ModuleRef[];
   completedCount: number;
   avgRating: number | null;
   ratingsCount: number;
@@ -538,7 +543,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
       const pathRes = await supabase
         .from("paths")
         .select(
-          "id,slug,title,description,category,difficulty,estimatedHours,avgRating,ratingsCount, path_lessons(position, lessons(id,slug,title,estimatedMinutes,xpReward))",
+          "id,slug,title,description,category,difficulty,estimatedHours,avgRating,ratingsCount, path_modules(id,position,title,description), path_lessons(position, moduleId, lessons(id,slug,title,estimatedMinutes,xpReward))",
         )
         .eq("slug", slug as string) // gated by `enabled`
         .eq("status", "PUBLISHED")
@@ -553,8 +558,10 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         estimatedHours: number;
         avgRating: number | null;
         ratingsCount: number;
+        path_modules: ModuleRef[] | null;
         path_lessons: {
           position: number;
+          moduleId: string | null;
           lessons: Embed<{
             id: string;
             slug: string;
@@ -589,6 +596,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
             slug: lesson.slug,
             title: lesson.title,
             position: pl.position,
+            moduleId: pl.moduleId,
             estimatedMinutes: lesson.estimatedMinutes,
             xpReward: lesson.xpReward,
             status: statusByLesson.get(lesson.id) ?? null,
@@ -608,6 +616,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         avgRating: raw.avgRating,
         ratingsCount: raw.ratingsCount,
         missions,
+        modules: [...(raw.path_modules ?? [])].sort((a, b) => a.position - b.position),
         completedCount: missions.filter((m) => m.status === "COMPLETED").length,
       };
     },

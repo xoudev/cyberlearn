@@ -868,7 +868,13 @@
   color: var(--fg-primary);
 }
 .pd2 .cp-gate__label .nm {
+  display: block;
+  margin-top: 4px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--fg-tertiary);
+  letter-spacing: 0.08em;
 }
 .pd2 .cp-gate--done .cp-gate__label .mod {
   color: var(--brand-turquoise);

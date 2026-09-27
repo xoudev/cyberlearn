@@ -3,12 +3,12 @@
 import { redirect, notFound } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@cyberlearn/db";
-import { UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
+import { lessonRefCodeSchema, UPLOADED_COVER_PREFIX } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-check";
 
 const updateLessonSchema = z.object({
-  refCode: z.string().regex(/^CL-LSN-\d{3}-V\d{2}$/, "Format: CL-LSN-001-V01"),
+  refCode: lessonRefCodeSchema,
   slug: z
     .string()
     .regex(/^[a-z0-9-]+$/)

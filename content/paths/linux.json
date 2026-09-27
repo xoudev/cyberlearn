@@ -1,0 +1,147 @@
+{
+  "refCode": "CL-PATH-102-V01",
+  "slug": "linux",
+  "title": "Linux : de zéro à l'autonomie",
+  "description": "Administrer seul un serveur Linux : shell, fichiers, traitement de texte, utilisateurs et permissions, processus, logiciels, scripts Bash, services systemd et journaux, stockage, réseau et durcissement. Couvre le programme LPIC-1.",
+  "category": "DEV",
+  "track": "SKILL",
+  "difficulty": "BEGINNER",
+  "estimatedHours": 60,
+  "modules": [
+    {
+      "title": "Découvrir Linux et le shell",
+      "lessons": [
+        "CL-LSN-02001-V01",
+        "CL-LSN-02002-V01",
+        "CL-LSN-02003-V01",
+        "CL-LSN-02004-V01",
+        "CL-LSN-02005-V01",
+        "CL-LSN-02006-V01",
+        "CL-LSN-02007-V01"
+      ]
+    },
+    {
+      "title": "Fichiers et arborescence",
+      "lessons": [
+        "CL-LSN-02008-V01",
+        "CL-LSN-02009-V01",
+        "CL-LSN-02010-V01",
+        "CL-LSN-02011-V01",
+        "CL-LSN-02012-V01",
+        "CL-LSN-02013-V01",
+        "CL-LSN-02014-V01",
+        "CL-LSN-02015-V01"
+      ]
+    },
+    {
+      "title": "Travailler le texte",
+      "lessons": [
+        "CL-LSN-02016-V01",
+        "CL-LSN-02017-V01",
+        "CL-LSN-02018-V01",
+        "CL-LSN-02019-V01",
+        "CL-LSN-02020-V01",
+        "CL-LSN-02021-V01",
+        "CL-LSN-02022-V01",
+        "CL-LSN-02023-V01"
+      ]
+    },
+    {
+      "title": "Utilisateurs, groupes et permissions",
+      "lessons": [
+        "CL-LSN-02024-V01",
+        "CL-LSN-02025-V01",
+        "CL-LSN-02026-V01",
+        "CL-LSN-02027-V01",
+        "CL-LSN-02028-V01",
+        "CL-LSN-02029-V01",
+        "CL-LSN-02030-V01",
+        "CL-LSN-02031-V01"
+      ]
+    },
+    {
+      "title": "Processus, signaux et ressources",
+      "lessons": [
+        "CL-LSN-02032-V01",
+        "CL-LSN-02033-V01",
+        "CL-LSN-02034-V01",
+        "CL-LSN-02035-V01",
+        "CL-LSN-02036-V01",
+        "CL-LSN-02037-V01",
+        "CL-LSN-02038-V01"
+      ]
+    },
+    {
+      "title": "Installer et gérer des logiciels",
+      "lessons": [
+        "CL-LSN-02039-V01",
+        "CL-LSN-02040-V01",
+        "CL-LSN-02041-V01",
+        "CL-LSN-02042-V01",
+        "CL-LSN-02043-V01",
+        "CL-LSN-02044-V01"
+      ]
+    },
+    {
+      "title": "Scripts Bash",
+      "lessons": [
+        "CL-LSN-02045-V01",
+        "CL-LSN-02046-V01",
+        "CL-LSN-02047-V01",
+        "CL-LSN-02048-V01",
+        "CL-LSN-02049-V01",
+        "CL-LSN-02050-V01",
+        "CL-LSN-02051-V01",
+        "CL-LSN-02052-V01",
+        "CL-LSN-02053-V01"
+      ]
+    },
+    {
+      "title": "Services, systemd et journaux",
+      "lessons": [
+        "CL-LSN-02054-V01",
+        "CL-LSN-02055-V01",
+        "CL-LSN-02056-V01",
+        "CL-LSN-02057-V01",
+        "CL-LSN-02058-V01",
+        "CL-LSN-02059-V01",
+        "CL-LSN-02060-V01"
+      ]
+    },
+    {
+      "title": "Disques, systèmes de fichiers et sauvegardes",
+      "lessons": [
+        "CL-LSN-02061-V01",
+        "CL-LSN-02062-V01",
+        "CL-LSN-02063-V01",
+        "CL-LSN-02064-V01",
+        "CL-LSN-02065-V01",
+        "CL-LSN-02066-V01",
+        "CL-LSN-02067-V01"
+      ]
+    },
+    {
+      "title": "Linux en réseau",
+      "lessons": [
+        "CL-LSN-02068-V01",
+        "CL-LSN-02069-V01",
+        "CL-LSN-02070-V01",
+        "CL-LSN-02071-V01",
+        "CL-LSN-02072-V01",
+        "CL-LSN-02073-V01",
+        "CL-LSN-02074-V01"
+      ]
+    },
+    {
+      "title": "Projet de fin de parcours",
+      "lessons": [
+        "CL-LSN-02075-V01",
+        "CL-LSN-02076-V01",
+        "CL-LSN-02077-V01",
+        "CL-LSN-02078-V01",
+        "CL-LSN-02079-V01",
+        "CL-LSN-02080-V01"
+      ]
+    }
+  ]
+}

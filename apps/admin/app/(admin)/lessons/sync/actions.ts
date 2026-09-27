@@ -1,11 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { lessonRefCodeSchema } from "@cyberlearn/types";
 import { requireAdminAction } from "@/lib/auth";
 import { applyLessonUpdate } from "@/lib/services/lesson-sync.service";
 
 const inputSchema = z.object({
-  refCode: z.string().regex(/^CL-LSN-\d{3}-V\d{2}$/),
+  refCode: lessonRefCodeSchema,
   hash: z.string().regex(/^[a-f0-9]{64}$/),
 });
 
