@@ -11,9 +11,9 @@
  * warning (import it first).
  */
 
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma.js";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 interface PathManifest {
   refCode: string;

@@ -1,14 +1,14 @@
 // packages/db/prisma/schema.prisma
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
+  provider = "prisma-client-js"
 }
 
+// The URLs live elsewhere since Prisma 7: prisma.config.ts for the CLI
+// (migrations, on DIRECT_URL) and src/prisma.ts for the app (DATABASE_URL,
+// through the pg adapter).
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // ============================================================

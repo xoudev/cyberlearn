@@ -9,13 +9,13 @@
  * Idempotent: does nothing if a season is already ACTIVE.
  */
 
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma.js";
 
 const apply = process.argv.includes("--apply");
 const SEASON_DAYS = 7;
 
 async function main(): Promise<void> {
-  const prisma = new PrismaClient();
+  const prisma = createPrismaClient();
   try {
     const active = await prisma.season.findFirst({ where: { status: "ACTIVE" } });
     if (active) {

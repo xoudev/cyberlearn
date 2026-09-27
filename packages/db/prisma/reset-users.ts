@@ -26,10 +26,10 @@
  *   pnpm --filter @cyberlearn/db db:reset-users --apply --include-admins
  */
 
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma.js";
 import { createSupabaseAdminClient } from "../src/supabase/admin";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const apply = process.argv.includes("--apply");
 const includeAdmins = process.argv.includes("--include-admins");
 

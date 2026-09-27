@@ -5,7 +5,9 @@
 - Monorepo: Turborepo + pnpm 9.x workspaces
 - Apps: Next.js 15 (App Router, RSC) + TypeScript 5.x strict
 - Styling: Tailwind CSS v4 (CSS-first, no tailwind.config.js) + shadcn/ui
-- DB: Supabase Postgres + Prisma 6.x ORM
+- DB: Supabase Postgres + Prisma 7.x ORM, on the `pg` driver adapter. The CLI reads
+  DIRECT_URL through `packages/db/prisma.config.ts`; the app reads DATABASE_URL,
+  translated for `pg` by `packages/db/src/connection.ts`
 - Auth: Supabase Auth (e-mail + password, GitHub OAuth, optional TOTP;
   mandatory TOTP on the admin console). One-time codes remain in two places:
   the legacy mobile sign-in route, `/api/mobile/send-otp`, and the

@@ -17,8 +17,9 @@ catalog:
   "@types/react-dom": "^19.3.0"
 
   # Database & Auth
-  prisma: "^6.7.0"
-  "@prisma/client": "^6.7.0"
+  prisma: "^7.10.0"
+  "@prisma/client": "^7.10.0"
+  "@prisma/adapter-pg": "^7.10.0"
   "@supabase/supabase-js": "^2.49.4"
   "@supabase/ssr": "^0.6.1"
 

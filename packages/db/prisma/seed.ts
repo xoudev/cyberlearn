@@ -11,9 +11,9 @@
  * - 15 placement test questions (5 per category)
  */
 
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma.js";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 // ─── IDs (stable for reproducible dev seeding) ────────────────────────────
 
