@@ -13,7 +13,7 @@ export const importLessonMetadataSchema = z.object({
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedMinutes: z.number().int().positive().max(600),
   xpReward: z.number().int().nonnegative().max(10000),
-  coverImageUrl: z.string().url().nullable().optional(),
+  coverImageUrl: z.url().nullable().optional(),
   prerequisites: z.array(z.string().regex(/^CL-LSN-\d{3}-V\d{2}$/)).default([]),
 });
 

@@ -31,7 +31,7 @@ export type OnboardingInput = z.infer<typeof onboardingSchema>;
 export const updateProfileSchema = z.object({
   displayName: z.string().trim().min(1).max(64).optional(),
   bio: z.string().trim().max(280, "Bio must be at most 280 characters").optional(),
-  avatarUrl: z.string().url().optional().nullable(),
+  avatarUrl: z.url().optional().nullable(),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

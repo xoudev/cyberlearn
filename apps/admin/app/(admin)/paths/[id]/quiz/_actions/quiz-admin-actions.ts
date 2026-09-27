@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { prisma, quizRepository } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 import { questionSchema, quizSettingsSchema } from "./quiz-validation";
@@ -35,7 +36,10 @@ export async function saveQuizSettingsAction(input: {
 
   const parsed = quizSettingsSchema.safeParse(input);
   if (!parsed.success) {
-    return invalid("Réglages invalides.", firstFieldErrors(parsed.error.flatten().fieldErrors));
+    return invalid(
+      "Réglages invalides.",
+      firstFieldErrors(z.flattenError(parsed.error).fieldErrors),
+    );
   }
 
   const quiz = await quizRepository.upsertQuizByPath({ pathId: input.pathId, ...parsed.data });
@@ -70,7 +74,10 @@ export async function createQuestionAction(input: {
 
   const parsed = questionSchema.safeParse(input);
   if (!parsed.success) {
-    return invalid("Question invalide.", firstFieldErrors(parsed.error.flatten().fieldErrors));
+    return invalid(
+      "Question invalide.",
+      firstFieldErrors(z.flattenError(parsed.error).fieldErrors),
+    );
   }
   const d = parsed.data;
 
@@ -115,7 +122,10 @@ export async function updateQuestionAction(input: {
 
   const parsed = questionSchema.safeParse(input);
   if (!parsed.success) {
-    return invalid("Question invalide.", firstFieldErrors(parsed.error.flatten().fieldErrors));
+    return invalid(
+      "Question invalide.",
+      firstFieldErrors(z.flattenError(parsed.error).fieldErrors),
+    );
   }
   const d = parsed.data;
 

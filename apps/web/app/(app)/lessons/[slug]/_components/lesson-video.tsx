@@ -20,7 +20,7 @@ export function LessonVideo(rawProps: LessonVideoProps): React.JSX.Element {
   const result = lessonVideoPropsSchema.safeParse(rawProps);
   if (!result.success) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[LessonVideo] invalid props:", result.error.flatten());
+      console.warn("[LessonVideo] invalid props:", z.flattenError(result.error));
     }
     return (
       <div

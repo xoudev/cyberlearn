@@ -8,7 +8,7 @@ import {
 } from "@cyberlearn/db";
 
 const quizReportSchema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: z.guid(),
   quizId: z.string().min(1).max(100),
   reason: z.enum(QUIZ_REPORT_REASONS),
   comment: z.string().trim().max(500).optional(),

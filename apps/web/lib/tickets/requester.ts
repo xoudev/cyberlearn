@@ -32,7 +32,7 @@ const ticketSchema = z.object({
     },
   ),
   message: z.string().trim().min(TICKET_MESSAGE_MIN).max(TICKET_MESSAGE_MAX),
-  email: z.string().email(),
+  email: z.email(),
 });
 
 export type TicketField = keyof z.infer<typeof ticketSchema>;
@@ -83,7 +83,7 @@ export async function fileTicket(input: {
 }
 
 const replySchema = z.object({
-  ticketId: z.string().uuid(),
+  ticketId: z.guid(),
   body: z.string().trim().min(TICKET_REPLY_MIN).max(TICKET_REPLY_MAX),
 });
 

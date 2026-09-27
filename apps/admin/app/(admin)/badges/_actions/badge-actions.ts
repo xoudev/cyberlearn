@@ -47,10 +47,7 @@ function buildCriterionData(
       return { data: { category: category.data, count: count.data } };
     }
     case "LESSON_SPECIFIC": {
-      const lessonId = z
-        .string()
-        .uuid("ID de leçon invalide")
-        .safeParse(formData.get("criterion_lessonId"));
+      const lessonId = z.guid("ID de leçon invalide").safeParse(formData.get("criterion_lessonId"));
       if (!lessonId.success)
         return { data: null, error: lessonId.error.issues[0]?.message ?? "Leçon requise" };
       return { data: { lessonId: lessonId.data } };
@@ -90,7 +87,7 @@ const VALID_CRITERION_TYPES = [
 const badgeBaseSchema = z.object({
   name: z.string().trim().min(2).max(100),
   description: z.string().trim().min(5).max(500),
-  iconUrl: z.string().url("URL icône invalide"),
+  iconUrl: z.url("URL icône invalide"),
   rarity: z.enum(["COMMON", "RARE", "EPIC", "LEGENDARY"]),
   criterionType: z.enum(VALID_CRITERION_TYPES),
   xpReward: z.coerce.number().int().nonnegative().max(10000),
@@ -118,7 +115,7 @@ export async function createBadgeAction(
 
   if (!parsed.success) {
     const fieldErrors: BadgeFormState["fieldErrors"] = {};
-    for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
+    for (const [field, errs] of Object.entries(z.flattenError(parsed.error).fieldErrors)) {
       if (errs[0]) fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
@@ -183,7 +180,7 @@ export async function updateBadgeAction(
 ): Promise<BadgeFormState> {
   const admin = await requireAdminAction();
 
-  const id = z.string().uuid().safeParse(formData.get("id"));
+  const id = z.guid().safeParse(formData.get("id"));
   if (!id.success) return { error: "ID invalide." };
 
   const raw = Object.fromEntries(formData.entries());
@@ -191,7 +188,7 @@ export async function updateBadgeAction(
 
   if (!parsed.success) {
     const fieldErrors: BadgeFormState["fieldErrors"] = {};
-    for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
+    for (const [field, errs] of Object.entries(z.flattenError(parsed.error).fieldErrors)) {
       if (errs[0]) fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
@@ -250,7 +247,7 @@ export async function updateBadgeAction(
 export async function toggleBadgeActiveAction(formData: FormData): Promise<void> {
   await requireAdminAction();
 
-  const id = z.string().uuid().safeParse(formData.get("id"));
+  const id = z.guid().safeParse(formData.get("id"));
   if (!id.success) return;
 
   const badge = await prisma.badge.findUnique({
@@ -268,7 +265,7 @@ export async function toggleBadgeActiveAction(formData: FormData): Promise<void>
 export async function deleteBadgeAction(formData: FormData): Promise<void> {
   const admin = await requireAdminAction();
 
-  const id = z.string().uuid().safeParse(formData.get("id"));
+  const id = z.guid().safeParse(formData.get("id"));
   if (!id.success) return;
 
   const badge = await prisma.badge.findUnique({

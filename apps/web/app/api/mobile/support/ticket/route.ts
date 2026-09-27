@@ -17,7 +17,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "Non authentifié." }, { status: 401 });
   }
 
-  const id = z.string().uuid().safeParse(request.nextUrl.searchParams.get("id"));
+  const id = z.guid().safeParse(request.nextUrl.searchParams.get("id"));
   if (!id.success) {
     return NextResponse.json({ ok: false, error: "Demande introuvable." }, { status: 404 });
   }

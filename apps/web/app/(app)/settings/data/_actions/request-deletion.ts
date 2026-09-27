@@ -9,9 +9,7 @@ import { checkAccountDeletionRequest } from "@/lib/rate-limit";
 import { requestDeletion } from "@/lib/rgpd/request-deletion";
 
 const formSchema = z.object({
-  confirmation: z.literal("SUPPRIMER", {
-    errorMap: () => ({ message: "Vous devez taper SUPPRIMER pour confirmer." }),
-  }),
+  confirmation: z.literal("SUPPRIMER", { error: "Vous devez taper SUPPRIMER pour confirmer." }),
 });
 
 export interface RequestDeletionState {

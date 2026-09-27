@@ -8,13 +8,13 @@ import { z } from "zod";
  */
 export const env = createEnv({
   server: {
-    DATABASE_URL: z.string().url(),
-    DIRECT_URL: z.string().url(),
+    DATABASE_URL: z.url(),
+    DIRECT_URL: z.url(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     IP_SALT: z.string().min(32),
     RESEND_API_KEY: z.string().startsWith("re_"),
-    RESEND_FROM_EMAIL: z.string().email(),
-    SENTRY_DSN: z.string().url().optional(),
+    RESEND_FROM_EMAIL: z.email(),
+    SENTRY_DSN: z.url().optional(),
     SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
     /**
      * A user token carrying event:read, for reading the issue list on the
@@ -26,16 +26,16 @@ export const env = createEnv({
     SENTRY_ISSUES_TOKEN: z.string().min(1).optional(),
     SENTRY_ORG: z.string().min(1).optional(),
     SENTRY_PROJECT: z.string().min(1).optional(),
-    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+    UPSTASH_REDIS_REST_URL: z.url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   },
 
   client: {
-    NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+    NEXT_PUBLIC_SUPABASE_URL: z.url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-    NEXT_PUBLIC_SITE_URL: z.string().url(),
-    NEXT_PUBLIC_ADMIN_URL: z.string().url(),
-    NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+    NEXT_PUBLIC_SITE_URL: z.url(),
+    NEXT_PUBLIC_ADMIN_URL: z.url(),
+    NEXT_PUBLIC_SENTRY_DSN: z.url().optional(),
   },
 
   runtimeEnv: {

@@ -29,14 +29,14 @@ const establishmentSchema = z.object({
 });
 
 const promotionSchema = z.object({
-  establishmentId: z.string().uuid(),
+  establishmentId: z.guid(),
   name: z.string().trim().min(2).max(160),
   slug,
   startYear: z.coerce.number().int().min(1900).max(2200).optional(),
 });
 
 const classSchema = z.object({
-  promotionId: z.string().uuid(),
+  promotionId: z.guid(),
   name: z.string().trim().min(1).max(120),
   slug,
   description: z.string().trim().max(500).optional().or(z.literal("")),
@@ -45,11 +45,11 @@ const classSchema = z.object({
 // Editing is the same shape as creating, plus which row. Extending the create
 // schemas rather than restating the fields is what keeps a rule like the slug
 // pattern from applying on the way in and not on the way back.
-const establishmentEditSchema = establishmentSchema.extend({ id: z.string().uuid() });
+const establishmentEditSchema = establishmentSchema.extend({ id: z.guid() });
 const promotionEditSchema = promotionSchema
   .omit({ establishmentId: true })
-  .extend({ id: z.string().uuid() });
-const classEditSchema = classSchema.omit({ promotionId: true }).extend({ id: z.string().uuid() });
+  .extend({ id: z.guid() });
+const classEditSchema = classSchema.omit({ promotionId: true }).extend({ id: z.guid() });
 
 export interface ActionState {
   error?: string;
@@ -136,7 +136,7 @@ export async function createClassAction(
 }
 
 const memberSchema = z.object({
-  classId: z.string().uuid(),
+  classId: z.guid(),
   // One field, one entry per line: pasting a class list should not mean adding
   // twenty students one at a time. The field is still called `emails` because
   // that is the form control's name; what it accepts is addresses and @handles,
@@ -249,7 +249,7 @@ export async function addMembersByIdAction(
 ): Promise<{ ok: boolean; added?: number; error?: string }> {
   const admin = await requireAdminAction();
   const parsed = z
-    .object({ classId: z.string().uuid(), userIds: z.array(z.string().uuid()).min(1).max(200) })
+    .object({ classId: z.guid(), userIds: z.array(z.guid()).min(1).max(200) })
     .safeParse({ classId, userIds });
   if (!parsed.success) return { ok: false, error: "Sélection invalide." };
 
@@ -266,8 +266,8 @@ export async function revokeInvitationAction(
   invitationId: string,
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
-  if (!z.string().uuid().safeParse(classId).success) return { ok: false };
-  if (!z.string().uuid().safeParse(invitationId).success) return { ok: false };
+  if (!z.guid().safeParse(classId).success) return { ok: false };
+  if (!z.guid().safeParse(invitationId).success) return { ok: false };
 
   await classRepository.revokeInvitation(invitationId);
   await audit(admin.id, "class.invitation.revoke", classId, { invitationId });
@@ -280,8 +280,8 @@ export async function removeMemberAction(
   userId: string,
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
-  if (!z.string().uuid().safeParse(classId).success) return { ok: false };
-  if (!z.string().uuid().safeParse(userId).success) return { ok: false };
+  if (!z.guid().safeParse(classId).success) return { ok: false };
+  if (!z.guid().safeParse(userId).success) return { ok: false };
 
   await classRepository.removeMember(classId, userId);
   await audit(admin.id, "class.members.remove", classId, { userId });
@@ -290,8 +290,8 @@ export async function removeMemberAction(
 }
 
 const teacherSchema = z.object({
-  classId: z.string().uuid(),
-  teacherId: z.string().uuid(),
+  classId: z.guid(),
+  teacherId: z.guid(),
   subject: z.string().trim().max(120).optional().or(z.literal("")),
 });
 
@@ -330,8 +330,8 @@ export async function unassignTeacherAction(
   teacherId: string,
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
-  if (!z.string().uuid().safeParse(classId).success) return { ok: false };
-  if (!z.string().uuid().safeParse(teacherId).success) return { ok: false };
+  if (!z.guid().safeParse(classId).success) return { ok: false };
+  if (!z.guid().safeParse(teacherId).success) return { ok: false };
 
   await classRepository.unassignTeacher(classId, teacherId);
   await audit(admin.id, "class.teacher.unassign", classId, { teacherId });
@@ -344,7 +344,7 @@ export async function setClassArchivedAction(
   archived: boolean,
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
-  if (!z.string().uuid().safeParse(classId).success) return { ok: false };
+  if (!z.guid().safeParse(classId).success) return { ok: false };
 
   await classRepository.setArchived(classId, archived);
   await audit(admin.id, archived ? "class.archive" : "class.unarchive", classId, {});
@@ -443,7 +443,7 @@ export async function setEstablishmentArchivedAction(
   archived: boolean,
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
-  if (!z.string().uuid().safeParse(establishmentId).success) return { ok: false };
+  if (!z.guid().safeParse(establishmentId).success) return { ok: false };
 
   await classRepository.setEstablishmentArchived(establishmentId, archived);
   await audit(
@@ -462,7 +462,7 @@ export async function setPromotionArchivedAction(
   archived: boolean,
 ): Promise<{ ok: boolean }> {
   const admin = await requireAdminAction();
-  if (!z.string().uuid().safeParse(promotionId).success) return { ok: false };
+  if (!z.guid().safeParse(promotionId).success) return { ok: false };
 
   await classRepository.setPromotionArchived(promotionId, archived);
   await audit(

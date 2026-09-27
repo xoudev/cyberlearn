@@ -19,7 +19,7 @@ import { announceModeration } from "@/lib/moderation/announce";
  * any "use server" module so it cannot be invoked with an arbitrary userId.
  */
 
-const uuid = z.string().uuid();
+const uuid = z.guid();
 const shareSchema = z.object({
   noteId: uuid,
   // A class, not a mailing list. Twenty-five names is a big class; anything

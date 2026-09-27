@@ -14,7 +14,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!user) {
     return NextResponse.json({ ok: false, error: "Non authentifié." }, { status: 401 });
   }
-  const lessonId = z.string().uuid().safeParse(request.nextUrl.searchParams.get("lessonId"));
+  const lessonId = z.guid().safeParse(request.nextUrl.searchParams.get("lessonId"));
   if (!lessonId.success) {
     return NextResponse.json({ ok: false, error: "Requête invalide." }, { status: 400 });
   }

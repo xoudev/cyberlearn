@@ -5,7 +5,7 @@ const jwtPayloadSchema = z.object({
 });
 
 const amrSchema = z.object({
-  amr: z.array(z.object({ method: z.string(), timestamp: z.number() }).passthrough()).optional(),
+  amr: z.array(z.looseObject({ method: z.string(), timestamp: z.number() })).optional(),
 });
 
 function readPayload(token: string): unknown {

@@ -35,7 +35,7 @@ export async function claimQuestFor(
   questId: unknown,
   now: Date = new Date(),
 ): Promise<ClaimQuestResult> {
-  const parsed = z.string().uuid().safeParse(questId);
+  const parsed = z.guid().safeParse(questId);
   if (!parsed.success) return { ok: false, error: QUEST_ERROR.invalid };
 
   const weekKey = isoWeekKey(now);

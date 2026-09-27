@@ -44,7 +44,7 @@ function parseLessonIds(raw: FormDataEntryValue | null): string[] | null {
     .filter((s) => s.length > 0);
   if (ids.length === 0 || ids.length > 60) return null;
   if (new Set(ids).size !== ids.length) return null;
-  if (!ids.every((id) => z.string().uuid().safeParse(id).success)) return null;
+  if (!ids.every((id) => z.guid().safeParse(id).success)) return null;
   return ids;
 }
 
@@ -69,7 +69,7 @@ export async function createClassPathAction(
   const user = await requireRequestUser();
 
   const classId = formData.get("classId");
-  if (typeof classId !== "string" || !z.string().uuid().safeParse(classId).success) {
+  if (typeof classId !== "string" || !z.guid().safeParse(classId).success) {
     return { error: "Classe invalide." };
   }
   const parsed = pathSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -132,7 +132,7 @@ export async function updateClassPathAction(
   const user = await requireRequestUser();
 
   const pathId = formData.get("pathId");
-  if (typeof pathId !== "string" || !z.string().uuid().safeParse(pathId).success) {
+  if (typeof pathId !== "string" || !z.guid().safeParse(pathId).success) {
     return { error: "Parcours invalide." };
   }
   const parsed = pathSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -157,7 +157,7 @@ export async function updateClassPathAction(
 
 export async function deleteClassPathAction(pathId: string): Promise<{ ok: boolean }> {
   const user = await requireRequestUser();
-  if (!z.string().uuid().safeParse(pathId).success) return { ok: false };
+  if (!z.guid().safeParse(pathId).success) return { ok: false };
   if (!(await classRepository.canEditClassPath(user.id, pathId))) return { ok: false };
 
   await classRepository.deleteClassPath(pathId);

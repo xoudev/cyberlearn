@@ -7,7 +7,7 @@ import { requireRequestUser } from "@/lib/auth";
 const MAX_CONTENT = 20_000;
 
 const saveSchema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: z.guid(),
   content: z.string().max(MAX_CONTENT),
 });
 

@@ -10,13 +10,13 @@ import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
-// nativeEnum rather than a spelled-out list: the accepted values are the ones
+// The Prisma enum rather than a spelled-out list: the accepted values are the ones
 // the column can hold, by construction. A hand-written enum here would be one
 // more copy to remember - and the one guarding a privilege change is the worst
 // place to find out a copy was missed.
 const updateRoleSchema = z.object({
-  userId: z.string().uuid(),
-  newRole: z.nativeEnum(UserRole),
+  userId: z.guid(),
+  newRole: z.enum(UserRole),
 });
 
 export async function updateUserRoleAction(
@@ -52,7 +52,7 @@ export async function updateUserRoleAction(
 // ─── Deletion ───────────────────────────────────────────────────────────────
 
 const deleteUserSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.guid(),
   /**
    * The account's own e-mail, typed back by the administrator.
    *
@@ -60,7 +60,7 @@ const deleteUserSchema = z.object({
    * right account from deleting the one above it in a sorted list is having
    * looked at which row you are on. Typing the address is how you look.
    */
-  confirmEmail: z.string().trim().toLowerCase().email(),
+  confirmEmail: z.string().trim().toLowerCase().pipe(z.email()),
   /** Shown to the person in the notice. Nothing is invented when absent. */
   reason: z.string().trim().max(300).optional().or(z.literal("")),
 });
@@ -164,7 +164,7 @@ export async function deleteUserAction(
 // ── Bans ──────────────────────────────────────────────────────────────────────
 
 const banSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.guid(),
   duration: z.string().refine(isBanDurationKey, "Durée invalide."),
   /**
    * Required, and not by accident.
@@ -276,7 +276,7 @@ export async function liftBanAction(
   const admin = await requireAdminAction();
   const parsed = z
     .object({
-      userId: z.string().uuid(),
+      userId: z.guid(),
       reason: z.string().trim().max(500).optional().or(z.literal("")),
     })
     .safeParse(Object.fromEntries(formData.entries()));
@@ -309,7 +309,7 @@ export async function liftBanAction(
 // ─── Resetting progress ─────────────────────────────────────────────────────
 
 const resetProgressSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.guid(),
   /**
    * The account's own handle, typed back.
    *

@@ -21,7 +21,7 @@ import { checkLessonMdx, describeLessonMdxProblem } from "@cyberlearn/lib/mdx-ch
  */
 
 const lessonSchema = z.object({
-  classId: z.string().uuid(),
+  classId: z.guid(),
   title: z.string().trim().min(3).max(200),
   description: z.string().trim().min(10).max(500),
   category: z.enum(["DEV", "CYBERSEC", "NETWORK"]),
@@ -80,7 +80,7 @@ export async function createClassLessonAction(
   return { ok: true, slug: created.slug };
 }
 
-const editSchema = lessonSchema.omit({ classId: true }).extend({ lessonId: z.string().uuid() });
+const editSchema = lessonSchema.omit({ classId: true }).extend({ lessonId: z.guid() });
 
 export async function updateClassLessonAction(
   _prev: ClassLessonState,
@@ -108,7 +108,7 @@ export async function updateClassLessonAction(
 
 export async function deleteClassLessonAction(lessonId: string): Promise<{ ok: boolean }> {
   const user = await requireRequestUser();
-  if (!z.string().uuid().safeParse(lessonId).success) return { ok: false };
+  if (!z.guid().safeParse(lessonId).success) return { ok: false };
   if (!(await classRepository.canEditClassLesson(user.id, lessonId))) return { ok: false };
 
   await classRepository.deleteClassLesson(lessonId);

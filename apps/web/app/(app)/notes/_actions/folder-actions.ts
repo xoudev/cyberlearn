@@ -20,13 +20,13 @@ const createSchema = z.object({
   color: colorSchema.optional(),
   icon: iconSchema.optional(),
 });
-const renameSchema = z.object({ folderId: z.string().uuid(), name: nameSchema });
-const recolorSchema = z.object({ folderId: z.string().uuid(), color: colorSchema });
-const reiconSchema = z.object({ folderId: z.string().uuid(), icon: iconSchema });
-const deleteSchema = z.object({ folderId: z.string().uuid() });
+const renameSchema = z.object({ folderId: z.guid(), name: nameSchema });
+const recolorSchema = z.object({ folderId: z.guid(), color: colorSchema });
+const reiconSchema = z.object({ folderId: z.guid(), icon: iconSchema });
+const deleteSchema = z.object({ folderId: z.guid() });
 const moveSchema = z.object({
-  noteId: z.string().uuid(),
-  folderId: z.string().uuid().nullable(),
+  noteId: z.guid(),
+  folderId: z.guid().nullable(),
 });
 
 export interface FolderResult {

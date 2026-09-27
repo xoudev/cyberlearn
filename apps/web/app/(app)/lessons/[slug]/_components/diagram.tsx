@@ -46,9 +46,15 @@ const MERMAID_THEME = {
   // no room for, and the box clipped it. SVG labels are measured with getBBox
   // on the element that actually gets painted, and no page CSS reaches them.
   //
-  // Must be top level: mermaid 11 ignores flowchart.htmlLabels (verified - only
+  // Must be top level: mermaid ignores flowchart.htmlLabels (verified - only
   // the root flag flips the output from <foreignObject> to <text>).
   htmlLabels: false,
+  // Mermaid 12 lays flowcharts out with ELK and paints them in its "neo" look
+  // unless told otherwise. Every lesson diagram was written and checked against
+  // dagre and the classic look, so those stay pinned rather than letting the
+  // whole catalogue re-lay itself out at once.
+  layout: "dagre",
+  look: "classic" as const,
 };
 
 /**

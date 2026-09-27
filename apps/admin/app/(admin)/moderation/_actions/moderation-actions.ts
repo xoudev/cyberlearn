@@ -28,7 +28,7 @@ import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 const RECORD_PATH = "/settings/moderation";
 
 const resolveSchema = z.object({
-  eventId: z.string().uuid(),
+  eventId: z.guid(),
   outcome: z.enum(["UPHELD", "OVERTURNED"]),
   /** Absent, or one of the ban lengths. Only ever honoured on UPHELD. */
   sanction: z.string().optional(),

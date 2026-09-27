@@ -24,7 +24,7 @@ export async function markNotificationReadAction(
   notificationId: string,
 ): Promise<{ success: boolean }> {
   const user = await requireRequestUser();
-  const parsed = z.string().uuid().safeParse(notificationId);
+  const parsed = z.guid().safeParse(notificationId);
   if (!parsed.success) return { success: false };
   await notificationRepository.markAsRead(notificationId, user.id);
   return { success: true };

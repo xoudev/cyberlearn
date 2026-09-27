@@ -19,11 +19,11 @@ import { requireRequestUser } from "@/lib/auth";
 
 const resourceSchema = z
   .object({
-    classId: z.string().uuid(),
-    assignmentId: z.string().uuid().optional().or(z.literal("")),
+    classId: z.guid(),
+    assignmentId: z.guid().optional().or(z.literal("")),
     title: z.string().trim().min(2).max(200),
     body: z.string().trim().max(50_000).optional().or(z.literal("")),
-    url: z.string().trim().url().max(2000).optional().or(z.literal("")),
+    url: z.string().trim().pipe(z.url().max(2000)).optional().or(z.literal("")),
     releasedAt: z.string().trim().optional().or(z.literal("")),
     afterCompletion: z.coerce.boolean().optional(),
   })
@@ -92,7 +92,7 @@ export async function createResourceAction(
 
 export async function deleteResourceAction(resourceId: string): Promise<{ ok: boolean }> {
   const user = await requireRequestUser();
-  if (!z.string().uuid().safeParse(resourceId).success) return { ok: false };
+  if (!z.guid().safeParse(resourceId).success) return { ok: false };
 
   const classId = await classRepository.findResourceClass(resourceId);
   if (classId === null) return { ok: false };
