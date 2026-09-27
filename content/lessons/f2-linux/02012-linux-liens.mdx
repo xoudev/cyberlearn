@@ -1,0 +1,268 @@
+---
+refCode: CL-LSN-02012-V01
+slug: linux-liens-physiques-symboliques
+title: "Liens physiques et liens symboliques"
+description: "Ce qu'est un inode, pourquoi un nom de fichier n'est qu'une étiquette, la différence entre un lien physique et un lien symbolique, les liens cassés, et comment nginx, les déploiements et le système lui-même s'en servent."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02011-V01"]
+---
+
+Tu as déjà croisé des flèches dans `ls -l` : `/bin -> usr/bin`, `current -> /srv/app/releases/...`, et dans la configuration de nginx `default -> /etc/nginx/sites-available/default`. Ce sont des **liens**. Pour comprendre ce qu'ils sont, et pourquoi il en existe deux sortes très différentes, il faut d'abord voir comment Linux range réellement un fichier sur le disque. Le nom d'un fichier n'est pas le fichier : c'est une étiquette posée dessus.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un inode et ce qu'il contient, et pourquoi le nom n'en fait pas partie ;
+- créer un lien physique et un lien symbolique, et dire ce qui les distingue ;
+- prévoir ce qui arrive à chacun quand on supprime ou déplace le fichier d'origine ;
+- repérer un lien symbolique cassé et trouver vers quoi pointe un lien avec `readlink` ;
+- reconnaître les usages courants des liens dans un système : configuration de nginx, déploiements, versions de programmes.
+
+## pourquoi ça compte
+
+Les liens sont partout dans un système Linux, et on les manipule sans le savoir. Un administrateur qui les comprend sait activer un site nginx proprement, basculer instantanément une application vers une nouvelle version et revenir en arrière en une commande, ou comprendre pourquoi un espace disque ne se libère pas après une suppression.
+
+Ils ont aussi un versant sécurité. Des attaques classiques reposent sur des liens symboliques déposés dans des répertoires partagés comme `/tmp`, pour faire écrire un programme privilégié ailleurs que prévu. Le noyau a des protections contre ces attaques, et un enquêteur doit savoir lire un lien pour savoir où mène vraiment un chemin.
+
+## ce qu'est un inode
+
+Sur un système de fichiers Linux, chaque fichier est décrit par une petite structure appelée **inode** (pour *index node*). Elle contient tout ce qui concerne le fichier, **sauf son nom** :
+
+- son type (fichier, répertoire, lien...) ;
+- son propriétaire et son groupe ;
+- ses permissions ;
+- sa taille ;
+- ses dates (modification, changement, accès : leçon 8) ;
+- le nombre de liens physiques qui le désignent ;
+- l'emplacement de ses données sur le disque.
+
+Chaque inode a un **numéro**, unique sur son système de fichiers. Et le nom ? Il est dans le **répertoire**. Un répertoire n'est rien d'autre qu'une table qui associe des noms à des numéros d'inode.
+
+<Diagram caption="Un répertoire associe des noms à des inodes, qui pointent vers les données">
+flowchart LR
+  subgraph R["Répertoire /home/alice"]
+    N1["notes.txt"]
+    N2["copie-notes.txt"]
+  end
+  N1 --> I["Inode 1 048 577 : propriétaire alice, droits rw-r--r--, taille 2 048, 2 liens"]
+  N2 --> I
+  I --> D["Blocs de données sur le disque"]
+</Diagram>
+
+`ls -i` affiche le numéro d'inode devant chaque nom :
+
+```bash
+ls -li notes.txt
+```
+
+```text
+1048577 -rw-r--r-- 1 alice alice 2048 sept. 27 10:02 notes.txt
+```
+
+Tout ce qu'on a vu à la leçon 4 sur `mv` s'éclaire : renommer un fichier sur le même système de fichiers, c'est seulement changer une entrée dans une table de répertoire. L'inode et les données ne bougent pas.
+
+## les liens physiques
+
+Un **lien physique** (*hard link*) est simplement **un deuxième nom pour le même inode**. On le crée avec `ln`, sans option :
+
+```bash
+ln notes.txt copie-notes.txt
+ls -li notes.txt copie-notes.txt
+```
+
+```text
+1048577 -rw-r--r-- 2 alice alice 2048 sept. 27 10:02 copie-notes.txt
+1048577 -rw-r--r-- 2 alice alice 2048 sept. 27 10:02 notes.txt
+```
+
+Trois choses à remarquer. Les deux noms ont **le même numéro d'inode**. Le compteur de liens, la colonne après les permissions, est passé de 1 à **2**. Et aucun des deux n'est « l'original » : ce sont deux noms de même rang pour le même fichier. Modifier le contenu par l'un des noms le modifie pour l'autre, puisque c'est le même.
+
+Que se passe-t-il si on supprime l'un des deux ?
+
+```bash
+rm notes.txt
+cat copie-notes.txt
+```
+
+Le contenu est toujours là. `rm` ne supprime pas un fichier : il **supprime un nom**, et décrémente le compteur de liens. Les données ne sont libérées que quand ce compteur tombe à zéro, et qu'aucun programme n'a plus le fichier ouvert. C'est d'ailleurs pour cela que la commande système sous-jacente s'appelle `unlink`.
+
+Les liens physiques ont deux limites :
+
+- ils ne franchissent pas les systèmes de fichiers, puisqu'un numéro d'inode n'a de sens que sur le sien ;
+- on ne peut pas en créer vers un répertoire (le système s'en réserve l'usage : `.` et `..` sont des liens physiques, ce qui explique le compteur d'un répertoire, toujours au moins 2).
+
+<Callout type="info">
+Voici l'explication d'un mystère classique : « j'ai supprimé un fichier de journal de 20 Go et `df` affiche toujours le disque plein ». Si un programme a encore le fichier ouvert (le service qui écrit le journal), son inode n'est pas libéré tant que le programme tourne. Le nom a disparu, les données sont toujours là. Il faut redémarrer ou recharger le service, et le module 5 te montrera comment repérer ces fichiers supprimés mais encore ouverts.
+</Callout>
+
+## les liens symboliques
+
+Un **lien symbolique** (*symlink*) est tout autre chose : c'est **un petit fichier à part entière, qui contient un chemin**. Quand on l'ouvre, le système suit ce chemin et ouvre ce qu'il désigne. On le crée avec `ln -s`, la **cible** d'abord, le **lien** ensuite :
+
+```bash
+ln -s /etc/nginx/sites-available/monsite /etc/nginx/sites-enabled/monsite
+ls -l /etc/nginx/sites-enabled/
+```
+
+```text
+lrwxrwxrwx 1 root root 35 sept. 27 10:20 monsite -> /etc/nginx/sites-available/monsite
+```
+
+Le `l` en tête de ligne indique un lien symbolique, et la flèche montre sa cible. Sa taille, 35 octets, est la longueur du chemin qu'il contient. Ses permissions `rwxrwxrwx` ne veulent rien dire : ce sont celles de la cible qui s'appliquent.
+
+<Diagram caption="Un lien symbolique contient un chemin, pas des données">
+flowchart LR
+  L["sites-enabled/monsite (lien, son propre inode)"] -->|"contient le chemin"| C["sites-available/monsite"]
+  C --> I["Inode du vrai fichier"]
+  I --> D["Données"]
+</Diagram>
+
+Contrairement au lien physique, le lien symbolique :
+
+- **peut viser un répertoire** ;
+- **peut franchir les systèmes de fichiers**, et même viser un chemin qui n'existe pas encore ;
+- **dépend du chemin** : si la cible est déplacée ou supprimée, le lien reste, mais ne mène plus nulle part. On dit qu'il est **cassé** (*dangling*).
+
+### les liens cassés
+
+```bash
+rm /etc/nginx/sites-available/monsite
+cat /etc/nginx/sites-enabled/monsite
+```
+
+```text
+cat: /etc/nginx/sites-enabled/monsite: No such file or directory
+```
+
+Le message est trompeur : le lien existe bien (`ls` le montre), c'est sa cible qui a disparu. Avec les couleurs de `ls`, un lien cassé s'affiche en général en rouge. Pour les trouver tous dans une arborescence, `find` a un test dédié :
+
+```bash
+find /etc -xtype l
+```
+
+### chemin absolu ou relatif dans le lien
+
+La cible d'un lien symbolique peut être absolue ou relative. Attention : **un chemin relatif est interprété à partir du répertoire où se trouve le lien**, pas de celui où tu étais en le créant.
+
+```bash
+cd /srv/app
+ln -s releases/20260927080150 current
+```
+
+Ici, `current` contient `releases/20260927080150`, qui se résout depuis `/srv/app` : tout va bien. Le même lien créé depuis un autre répertoire avec un chemin relatif mal pensé serait cassé dès sa création. Un lien relatif a un avantage : si on déplace tout le répertoire `/srv/app` ailleurs, ses liens internes restent valides.
+
+### lire un lien
+
+- `ls -l lien` affiche la flèche et la cible ;
+- `readlink lien` affiche seulement le chemin contenu, tel qu'il est écrit ;
+- `readlink -f lien` résout tout, y compris des liens vers des liens, et affiche le chemin final absolu, comme `realpath` vu à la leçon 2.
+
+```bash
+readlink -f /usr/bin/editor
+```
+
+```text
+/usr/bin/nano
+```
+
+Sur Debian, `editor` passe par `/etc/alternatives/editor`, lui-même lien vers l'éditeur choisi avec `update-alternatives` (vu au module 1). Deux liens enchaînés, et `readlink -f` va jusqu'au bout.
+
+## les liens dans la vraie vie
+
+**Activer un site nginx.** Les configurations de sites sont écrites dans `sites-available/`, et nginx ne charge que ce qui est dans `sites-enabled/`. Activer un site, c'est y créer un lien ; le désactiver, c'est supprimer le lien, sans toucher à la configuration.
+
+**Basculer une version.** Beaucoup d'outils de déploiement placent chaque version dans son propre répertoire et font pointer un lien `current` vers la version active. Mettre en production, c'est changer la cible du lien ; revenir en arrière, c'est le remettre sur la version précédente. Le basculement est quasi instantané, et l'ancienne version reste intacte sur le disque.
+
+**Le système lui-même.** Le `/usr` fusionné de la leçon 1 (`/bin -> usr/bin`), les alternatives de Debian, les bibliothèques partagées (`libssl.so.3 -> libssl.so.3.0.13`) : tout cela repose sur des liens symboliques.
+
+## liens et commandes : les comportements à connaître
+
+- **`rm lien`** supprime le lien, jamais la cible. Mais attention à la barre finale : sur un lien vers un répertoire, `rm -r lien/` descend **dans le répertoire cible** et en supprime le contenu. Pour supprimer un lien vers un répertoire, écris son nom **sans** barre finale.
+- **`cp`** suit les liens par défaut et copie le contenu de la cible. `cp -a` (ou `-P`) copie le lien lui-même.
+- **`ln -sfn nouvelle-cible lien`** remplace un lien existant : `-f` force, `-n` évite de créer le nouveau lien *à l'intérieur* du répertoire visé par l'ancien. C'est la forme à utiliser pour basculer `current`.
+
+<Callout type="danger">
+Les répertoires où tout le monde écrit, comme `/tmp`, ont longtemps permis des attaques par liens symboliques : un utilisateur malveillant crée à l'avance `/tmp/rapport.txt` comme lien vers `/etc/passwd`, et attend qu'un programme lancé en root écrive dans `/tmp/rapport.txt`. Les noyaux actuels bloquent ce scénario (paramètre `fs.protected_symlinks`, actif par défaut), mais la règle de conception reste : un programme privilégié ne doit jamais écrire dans un répertoire partagé à un nom prévisible. On utilise `mktemp`, qui crée un nom imprévisible.
+</Callout>
+
+## démonstration : déployer et revenir en arrière
+
+Une application est déployée dans `/srv/app/releases`, et `current` désigne la version active. Une nouvelle version vient d'être copiée.
+
+```bash
+ls -l /srv/app
+```
+
+```text
+lrwxrwxrwx 1 deploy deploy   32 sept. 24 17:31 current -> /srv/app/releases/20260924173022
+drwxr-xr-x 4 deploy deploy 4096 sept. 27 08:01 releases
+```
+
+**Mettre en production** la nouvelle version, en remplaçant le lien d'un coup :
+
+```bash
+ln -sfn /srv/app/releases/20260927080150 /srv/app/current
+readlink /srv/app/current
+```
+
+```text
+/srv/app/releases/20260927080150
+```
+
+Le service web, qui sert `/srv/app/current`, sert maintenant la nouvelle version (après un rechargement selon les cas). Une erreur apparaît en production ? **Retour arrière** en une commande :
+
+```bash
+ln -sfn /srv/app/releases/20260924173022 /srv/app/current
+```
+
+Aucune copie de fichiers, aucune suppression : juste un chemin différent dans un petit fichier. C'est la raison pour laquelle cette technique est si répandue.
+
+## à toi de jouer
+
+Dans cet exercice, crée un lien symbolique `current` qui pointe vers `releases/v2`, vérifie sa cible avec `readlink`, puis crée un lien physique `archive.txt` vers `notes.txt` et compare les numéros d'inode des deux noms.
+
+<SimulatedTerminal shell="bash" title="Deux sortes de liens" expectedCommands={["ln -s releases/v2 current", "readlink current", "ln notes.txt archive.txt", "ls -li notes.txt archive.txt"]} hints={["ln -s, la cible d'abord, le nom du lien ensuite.", "readlink affiche le chemin contenu dans le lien.", "ln sans option crée un lien physique.", "ls avec les options l et i montre les numéros d'inode."]} commands={{ "ls -l": "-rw-r--r-- 1 alice alice 2048 sept. 27 10:02 notes.txt\ndrwxr-xr-x 4 alice alice 4096 sept. 27 09:40 releases", "ln -s releases/v2 current": "", "readlink current": "releases/v2", "readlink -f current": "/home/alice/releases/v2", "ls -l current": "lrwxrwxrwx 1 alice alice 11 sept. 27 10:31 current -> releases/v2", "ln notes.txt archive.txt": "", "ls -li notes.txt archive.txt": "1048577 -rw-r--r-- 2 alice alice 2048 sept. 27 10:02 archive.txt\n1048577 -rw-r--r-- 2 alice alice 2048 sept. 27 10:02 notes.txt", "ln releases releases-lien": "ln: releases: hard link not allowed for directory", "find . -xtype l": "" }} />
+
+Même numéro d'inode et compteur à 2 : deux noms, un seul fichier. Essaie aussi `ln releases releases-lien` pour voir le refus d'un lien physique vers un répertoire.
+
+## les pièges
+
+- **Inverser la cible et le lien dans `ln -s`.** L'ordre est le même que `cp` : ce qui existe d'abord, le nouveau nom ensuite.
+- **Un chemin relatif pensé depuis le mauvais endroit.** Il se résout depuis le répertoire du lien. Vérifie avec `readlink -f` juste après la création.
+- **Croire qu'un lien physique est une copie.** C'est le même fichier : modifier l'un modifie l'autre.
+- **`rm -r lien/` avec une barre finale.** Tu vides la cible. Supprime un lien par son nom, sans barre.
+- **Remplacer un lien vers un répertoire sans `-n`.** `ln -sf` crée le nouveau lien à l'intérieur du répertoire visé. `ln -sfn`.
+- **S'étonner que l'espace ne se libère pas.** Un fichier supprimé mais encore ouvert par un programme garde ses données.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/ln-invocation.html" description="Les options de ln, dont -s, -f et -n">GNU coreutils : ln</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/symlink.7.html" description="Le fonctionnement des liens symboliques et la façon dont les commandes les suivent">symlink(7)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/inode.7.html" description="Ce que contient un inode">inode(7)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Qu'est-ce qu'un inode ne contient pas ?" options={["Le propriétaire du fichier", "Les permissions", "Le nom du fichier", "La taille"]} correct={2} explanation="Le nom est dans le répertoire, qui associe des noms à des numéros d'inode. L'inode contient tout le reste." />
+  <Quiz id="q-2" question="notes.txt a un lien physique nommé copie.txt. Tu supprimes notes.txt. Que devient le contenu ?" options={["Il est supprimé", "Il reste accessible par copie.txt", "copie.txt devient un lien cassé", "Il est déplacé dans /tmp"]} correct={1} explanation="rm supprime un nom et décrémente le compteur de liens. Tant qu'un nom reste, l'inode et les données sont conservés." />
+  <Quiz id="q-3" question="La cible d'un lien symbolique est supprimée. Que se passe-t-il ?" options={["Le lien est supprimé automatiquement", "Le lien existe toujours mais ne mène plus nulle part", "Le lien devient une copie du fichier", "Le système restaure la cible"]} correct={1} explanation="Un lien symbolique contient seulement un chemin. Si la cible disparaît, le lien reste, cassé." />
+  <Quiz id="q-4" question="Pourquoi ne peut-on pas créer un lien physique vers un fichier d'un autre disque ?" options={["Parce que c'est interdit par les permissions", "Parce qu'un numéro d'inode n'a de sens que sur son propre système de fichiers", "Parce que les liens physiques sont réservés à root", "Parce que l'autre disque est en lecture seule"]} correct={1} explanation="Un lien physique est une entrée qui désigne un numéro d'inode, et chaque système de fichiers a sa propre numérotation. Un lien symbolique, qui contient un chemin, n'a pas cette limite." />
+  <Quiz id="q-5" question="Dans quel ordre écrit-on les arguments de ln -s ?" options={["Le nom du lien, puis la cible", "La cible, puis le nom du lien", "L'ordre n'a pas d'importance", "La cible seule suffit"]} correct={1} explanation="Comme pour cp : ce qui existe d'abord, le nouveau nom ensuite." />
+  <Quiz id="q-6" question="current est un lien vers un répertoire. Quelle commande supprime le lien sans toucher au contenu du répertoire ?" options={["rm -r current/", "rm current", "rmdir current/", "rm -rf current/*"]} correct={1} explanation="rm sur le nom du lien supprime le lien. Avec une barre finale et -r, rm descendrait dans le répertoire cible et en supprimerait le contenu." />
+  <Quiz id="q-7" question="Tu as supprimé un journal de 20 Go, mais df montre toujours le disque plein. Quelle est l'explication la plus probable ?" options={["Le fichier est dans une corbeille", "Un programme a encore le fichier ouvert : son inode n'est pas libéré", "df se met à jour une fois par jour", "rm n'a supprimé que la moitié du fichier"]} correct={1} explanation="Les données ne sont libérées que quand le fichier n'a plus aucun nom et n'est plus ouvert par aucun programme. Recharger le service qui l'écrit libère l'espace." />
+</QuizGroup>
+
+## à retenir
+
+- Un **inode** décrit un fichier (propriétaire, droits, taille, dates, données) ; le **nom** est dans le répertoire. `ls -i` montre les numéros.
+- **Lien physique** (`ln cible nom`) : un nom de plus pour le même inode. Même fichier, compteur de liens incrémenté, pas de répertoire, pas d'autre disque. `rm` supprime un nom, pas le fichier.
+- **Lien symbolique** (`ln -s cible nom`) : un petit fichier qui contient un chemin. Peut viser un répertoire ou un autre disque ; se casse si la cible disparaît.
+- Un chemin relatif dans un lien part du répertoire du lien. `readlink -f` montre la destination finale.
+- Usages : `sites-enabled` de nginx, `current` des déploiements (`ln -sfn` pour basculer), `/bin -> usr/bin`, alternatives.
+- Ne jamais écrire en root dans `/tmp` sous un nom prévisible : `mktemp`.
