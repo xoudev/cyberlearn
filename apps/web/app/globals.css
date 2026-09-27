@@ -91,11 +91,9 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: radial-gradient(
-      ellipse 1200px 600px at 15% -20%,
-      rgba(0, 36, 255, 0.18),
-      transparent 60%
-    ), radial-gradient(ellipse 900px 500px at 100% 10%, rgba(10, 255, 212, 0.06), transparent 65%),
+  background:
+    radial-gradient(ellipse 1200px 600px at 15% -20%, rgba(0, 36, 255, 0.18), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 100% 10%, rgba(10, 255, 212, 0.06), transparent 65%),
     radial-gradient(ellipse 800px 500px at 50% 120%, rgba(0, 36, 255, 0.1), transparent 60%);
   pointer-events: none;
   z-index: 0;
@@ -105,7 +103,8 @@ body::after {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.15) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.15) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.15) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%);
@@ -138,7 +137,9 @@ aside[data-state="collapsed"] .sidebar-label {
   overflow-y: auto;
   overflow-x: hidden;
   flex-shrink: 0;
-  transition: width 200ms ease-linear, min-width 200ms ease-linear;
+  transition:
+    width 200ms ease-linear,
+    min-width 200ms ease-linear;
   background: rgba(3, 2, 25, 0.4);
   border-right: 1px solid #2a2560;
   display: flex;
@@ -283,7 +284,9 @@ aside[data-state="collapsed"] .sidebar-label {
     text-shadow: 0 0 12px rgba(10, 255, 212, 0.4);
   }
   50% {
-    text-shadow: 0 0 32px rgba(10, 255, 212, 0.9), 0 0 60px rgba(10, 255, 212, 0.4);
+    text-shadow:
+      0 0 32px rgba(10, 255, 212, 0.9),
+      0 0 60px rgba(10, 255, 212, 0.4);
   }
   100% {
     text-shadow: 0 0 18px rgba(10, 255, 212, 0.5);
@@ -447,7 +450,9 @@ article.lesson-content a {
   text-decoration: underline;
   text-decoration-color: rgba(77, 139, 255, 0.3);
   text-underline-offset: 3px;
-  transition: color 150ms ease, text-decoration-color 150ms ease;
+  transition:
+    color 150ms ease,
+    text-decoration-color 150ms ease;
 }
 article.lesson-content a:hover {
   color: #0affd4 !important;
@@ -579,7 +584,9 @@ article.lesson-content h4 {
     rgba(42, 37, 96, 0.3) 60%,
     transparent
   );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
@@ -690,14 +697,20 @@ article.lesson-content blockquote p code {
 /* ─── Path detail - lesson skill-tree node hover ────────────────────────── */
 
 .lesson-node-link {
-  box-shadow: 0 0 0 1px rgba(10, 255, 212, 0.18), 0 0 24px rgba(10, 255, 212, 0.08), inset 3px 0 0
-    #0affd4;
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  box-shadow:
+    0 0 0 1px rgba(10, 255, 212, 0.18),
+    0 0 24px rgba(10, 255, 212, 0.08),
+    inset 3px 0 0 #0affd4;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
 }
 .lesson-node-link:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgba(10, 255, 212, 0.3), 0 0 32px rgba(10, 255, 212, 0.18), inset 3px 0 0
-    #0affd4;
+  box-shadow:
+    0 0 0 1px rgba(10, 255, 212, 0.3),
+    0 0 32px rgba(10, 255, 212, 0.18),
+    inset 3px 0 0 #0affd4;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -715,21 +728,30 @@ article.lesson-content blockquote p code {
   transition: box-shadow 180ms ease;
 }
 .btn-teal:hover {
-  box-shadow: 0 0 32px rgba(10, 255, 212, 0.7), 0 0 80px rgba(10, 255, 212, 0.3) !important;
+  box-shadow:
+    0 0 32px rgba(10, 255, 212, 0.7),
+    0 0 80px rgba(10, 255, 212, 0.3) !important;
 }
 
 /* Primary blue CTA */
 .btn-blue {
-  transition: background 180ms ease, box-shadow 180ms ease;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease;
 }
 .btn-blue:hover {
   background: #1f3bff !important;
-  box-shadow: 0 0 40px rgba(0, 36, 255, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+  box-shadow:
+    0 0 40px rgba(0, 36, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
 }
 
 /* Ghost / secondary button */
 .btn-ghost {
-  transition: border-color 180ms ease, color 180ms ease, background 180ms ease;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background 180ms ease;
 }
 .btn-ghost:hover {
   border-color: #7f7ba9 !important;
@@ -739,7 +761,9 @@ article.lesson-content blockquote p code {
 
 /* Text CTA link (e.g. section "Historique complet →") */
 .link-cta {
-  transition: color 180ms ease, border-color 180ms ease;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease;
 }
 .link-cta:hover {
   color: #f5f5fa !important;
@@ -748,7 +772,9 @@ article.lesson-content blockquote p code {
 
 /* Inline action link (e.g. "Réviser →" in review rows) */
 .link-action {
-  transition: color 180ms ease, gap 180ms ease;
+  transition:
+    color 180ms ease,
+    gap 180ms ease;
 }
 .link-action:hover {
   color: #0affd4 !important;
@@ -789,9 +815,11 @@ article.lesson-content blockquote p code {
   border-left: 2px solid transparent;
   margin-left: -2px;
   background-color: transparent;
-  transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms
-    cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow
-    180ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sidebar-nav-item:not([aria-current="page"]):hover {
@@ -835,7 +863,9 @@ article.lesson-content blockquote p code {
   padding: 1px 6px;
   border: 1px solid #2a2560;
   border-radius: 2px;
-  transition: color 180ms ease, border-color 180ms ease;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease;
 }
 
 .sidebar-nav-item[aria-current="page"] .sidebar-nav-badge {
@@ -885,14 +915,18 @@ article.lesson-content blockquote p code {
 
 /* Navbar search - focus ring */
 .navbar-search-input:focus {
-  box-shadow: 0 0 0 1px rgba(10, 255, 212, 0.4), 0 0 16px rgba(10, 255, 212, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(10, 255, 212, 0.4),
+    0 0 16px rgba(10, 255, 212, 0.08);
 }
 
 /* Navbar level pill link */
 .navbar-level-link {
   text-decoration: none;
   cursor: pointer;
-  transition: border-color 180ms ease, background-color 180ms ease;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
 }
 .navbar-level-link:hover {
   border-color: rgba(10, 255, 212, 0.4) !important;
@@ -917,7 +951,9 @@ article.lesson-content blockquote p code {
 
 /* Generic clickable card - lift on hover */
 .card-lift {
-  transition: border-color 200ms ease, transform 200ms ease;
+  transition:
+    border-color 200ms ease,
+    transform 200ms ease;
 }
 .card-lift:hover {
   border-color: #2a2560 !important;
@@ -942,7 +978,9 @@ article.lesson-content blockquote p code {
 
 /* Link with bottom-border underline (legal, etc.) - same effect as link-cta */
 .link-underline {
-  transition: color 180ms ease, border-color 180ms ease;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease;
 }
 .link-underline:hover {
   color: #f5f5fa !important;
@@ -1267,7 +1305,9 @@ article.lesson-content blockquote p code {
 .lesson-locked > *:first-child {
   opacity: 0.38;
   filter: saturate(0.35);
-  transition: opacity 180ms ease, filter 180ms ease;
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease;
 }
 .lesson-locked:hover > *:first-child,
 .lesson-locked:focus-visible > *:first-child {
@@ -1453,7 +1493,9 @@ article.lesson-content blockquote p code {
   text-transform: uppercase;
   background: color-mix(in srgb, #0affd4 9%, transparent);
   border: 1px solid color-mix(in srgb, #0affd4 38%, transparent);
-  transition: background 180ms ease, border-color 180ms ease;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
 }
 
 .landing-nav-download svg {
@@ -1876,7 +1918,9 @@ article.lesson-content blockquote p code {
 .lesson-author-card {
   border: 1px solid #1f1b47;
   background: rgba(5, 4, 26, 0.5);
-  transition: border-color 150ms ease, background 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
 }
 /* Only the linked byline lights up: an erased or private author is not
    clickable, so a hover state there would promise a profile that is not
@@ -2255,7 +2299,9 @@ a:hover > .lesson-author-card {
   color: var(--danger-red);
   border-color: var(--danger-red);
   background: rgba(255, 77, 109, 0.06);
-  box-shadow: 0 0 0 1px rgba(255, 77, 109, 0.25), 0 0 18px rgba(255, 77, 109, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 109, 0.25),
+    0 0 18px rgba(255, 77, 109, 0.18);
 }
 .x-pill__dot {
   width: 6px;
@@ -2310,7 +2356,9 @@ a:hover > .lesson-author-card {
     rgba(255, 77, 109, 0.55) 50%,
     rgba(42, 37, 96, 0.4) 100%
   );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
@@ -2337,7 +2385,8 @@ a:hover > .lesson-author-card {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.55) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.55) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.55) 1px, transparent 1px);
   background-size: 22px 22px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 90%);
@@ -2346,7 +2395,8 @@ a:hover > .lesson-author-card {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255, 77, 109, 0.22), transparent 70%),
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255, 77, 109, 0.22), transparent 70%),
     radial-gradient(ellipse 50% 40% at 50% 50%, rgba(10, 255, 212, 0.1), transparent 70%);
 }
 
@@ -2572,13 +2622,18 @@ a:hover > .lesson-author-card {
   flex-direction: column;
   overflow: hidden;
   cursor: pointer;
-  transition: border-color var(--dur-base), transform var(--dur-base), box-shadow var(--dur-base);
+  transition:
+    border-color var(--dur-base),
+    transform var(--dur-base),
+    box-shadow var(--dur-base);
 }
 .cc:hover {
   border-color: var(--danger-red-dim);
   transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgba(255, 77, 109, 0.18), 0 0 32px rgba(255, 77, 109, 0.18), 0 8px 30px
-    rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 109, 0.18),
+    0 0 32px rgba(255, 77, 109, 0.18),
+    0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Corner ticks */
@@ -2635,7 +2690,8 @@ a:hover > .lesson-author-card {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.55) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.55) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.55) 1px, transparent 1px);
   background-size: 18px 18px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 90%);
@@ -2886,7 +2942,9 @@ a:hover > .lesson-author-card {
 }
 .cc__btn:hover {
   background: #ff6680;
-  box-shadow: 0 0 24px rgba(255, 77, 109, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 0 24px rgba(255, 77, 109, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 .cc__btn:active {
   transform: translateY(1px);
@@ -2935,7 +2993,9 @@ a:hover > .lesson-author-card {
 }
 .cc--done:hover {
   border-color: #0affd4;
-  box-shadow: 0 0 0 1px rgba(10, 255, 212, 0.18), 0 0 32px rgba(10, 255, 212, 0.16);
+  box-shadow:
+    0 0 0 1px rgba(10, 255, 212, 0.18),
+    0 0 32px rgba(10, 255, 212, 0.16);
 }
 .cc--done:hover .cc__tick {
   border-color: #0affd4;
@@ -2974,7 +3034,9 @@ a:hover > .lesson-author-card {
 }
 .cc--prog:hover {
   border-color: var(--orange-prog);
-  box-shadow: 0 0 0 1px rgba(255, 176, 32, 0.18), 0 0 32px rgba(255, 176, 32, 0.16);
+  box-shadow:
+    0 0 0 1px rgba(255, 176, 32, 0.18),
+    0 0 32px rgba(255, 176, 32, 0.16);
 }
 .cc--prog:hover .cc__tick {
   border-color: var(--orange-prog);
@@ -4492,7 +4554,9 @@ a.cls-res__title:hover {
   border-left: 2px solid transparent;
   text-align: left;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
 }
 .gs-row--active {
   background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
@@ -4558,7 +4622,9 @@ a.cls-res__title:hover {
   font-size: 10px;
   color: var(--cosmetic-accent);
   cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
 }
 .gs-empty-action:hover {
   border-color: var(--cosmetic-accent);
@@ -4654,7 +4720,9 @@ a.cls-res__title:hover {
   background: rgba(5, 4, 26, 0.5);
   border: 1px solid #1f1b47;
   border-left: 3px solid var(--cosmetic-accent);
-  transition: border-color 150ms ease, background 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
 }
 .tk-row:hover {
   border-color: #2a2560;
@@ -4796,7 +4864,9 @@ a.cls-res__title:hover {
   background: color-mix(in srgb, var(--cosmetic-accent) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--cosmetic-accent) 34%, transparent);
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
 }
 .wr-chip:hover {
   background: color-mix(in srgb, var(--cosmetic-accent) 16%, transparent);
@@ -4848,7 +4918,9 @@ a.cls-res__title:hover {
   overflow-y: auto;
   background: #0a0826;
   border: 1px solid #2a2560;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px #2a2560;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 0 0 1px #2a2560;
   z-index: 1000;
 }
 
@@ -4981,7 +5053,10 @@ a.fp-name:hover {
   text-transform: uppercase;
   color: #b8b5d1;
   cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
 }
 .fp-btn:hover:not(:disabled) {
   border-color: #7f7ba9;
