@@ -30,6 +30,17 @@ export const CHANGE_META: Record<ChangeType, { label: string; color: string; bg:
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "2.9",
+    date: "2026-09-27",
+    title: "Le clic droit dans le bloc-notes",
+    changes: [
+      {
+        type: "new",
+        text: "Un clic droit sur une note ouvre un menu : la modifier, la partager, la ranger dans un dossier, copier son texte, l'exporter ou la supprimer, sans l'ouvrir d'abord. Sur un dossier, le menu le renomme, change sa couleur ou son icône et exporte ce qu'il contient. Le menu se pilote aussi au clavier (touche Menu ou Maj+F10, puis les flèches). Maj+clic droit rend le menu du navigateur.",
+      },
+    ],
+  },
+  {
     version: "2.8",
     date: "2026-09-19",
     title: "Le classement entre amis",
