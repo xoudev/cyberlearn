@@ -4,6 +4,7 @@ import { authRedirectSchema } from "@cyberlearn/types";
 import { sendMagicLinkEmail } from "@cyberlearn/email";
 import type { EmailActionType } from "@cyberlearn/email";
 import { env } from "@/lib/env";
+import { verifyWebhookSignature } from "@/lib/auth/webhook-signature";
 
 const hookPayloadSchema = z.object({
   user: z.object({
@@ -32,48 +33,6 @@ function resolveNextPath(redirectTo: string): string {
   }
 }
 
-async function verifyWebhookSignature(
-  rawBody: string,
-  webhookId: string,
-  webhookTimestamp: string,
-  webhookSignature: string,
-): Promise<boolean> {
-  // Reject stale webhooks (>5 minutes old)
-  const ts = parseInt(webhookTimestamp, 10);
-  if (Number.isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) {
-    return false;
-  }
-
-  // Secret may be stored as "v1,whsec_<base64>", "whsec_<base64>", or plain base64
-  const secretBase64 = env.SUPABASE_HOOK_SECRET.replace(/^v1,whsec_/, "").replace(/^whsec_/, "");
-  const keyBytes = Uint8Array.from(atob(secretBase64), (c) => c.charCodeAt(0));
-
-  const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`;
-  const key = await crypto.subtle.importKey(
-    "raw",
-    keyBytes,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signatureBytes = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(signedContent),
-  );
-  const expectedSig = btoa(
-    Array.from(new Uint8Array(signatureBytes))
-      .map((b) => String.fromCharCode(b))
-      .join(""),
-  );
-
-  // webhook-signature may contain multiple space-separated "v1,<sig>" values
-  return webhookSignature.split(" ").some((s) => {
-    const [, sig] = s.split(",");
-    return sig === expectedSig;
-  });
-}
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     let rawBody: string;
@@ -91,12 +50,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return new NextResponse(null, { status: 401 });
     }
 
-    const valid = await verifyWebhookSignature(
+    const valid = await verifyWebhookSignature({
       rawBody,
       webhookId,
       webhookTimestamp,
       webhookSignature,
-    );
+      secret: env.SUPABASE_HOOK_SECRET,
+    });
     if (!valid) {
       return new NextResponse(null, { status: 401 });
     }
