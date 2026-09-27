@@ -1,0 +1,157 @@
+---
+refCode: CL-LSN-01020-V01
+slug: fondamentaux-installer-et-mettre-a-jour
+title: "Installer et mettre à jour"
+description: "D'où viennent les logiciels et comment savoir qu'ils sont authentiques : installateurs, magasins et gestionnaires de paquets, dépôts et signatures, dépendances, puis pourquoi les mises à jour sont la mesure de sécurité la plus rentable, ce qu'est une fin de support, et comment des attaquants ont piégé la chaîne de distribution elle-même. Avec une session apt et une vérification d'empreinte à programmer."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01019-V01"]
+---
+
+Installer un logiciel paraît anodin : on télécharge, on clique sur Suivant, c'est fini. C'est pourtant l'un des moments les plus sensibles de la vie d'une machine : on donne à un programme venu d'ailleurs le droit de s'installer, souvent avec les droits d'administrateur que tu as étudiés dans la leçon précédente. D'où vient-il ? Est-il bien celui que l'éditeur a publié ? Et une fois installé, qui s'occupe de corriger ses failles ? Cette leçon répond à ces questions et explique pourquoi « fais tes mises à jour » est le conseil de sécurité que tu entendras le plus souvent, pour d'excellentes raisons.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- citer les grandes façons d'installer un logiciel sous Windows, Linux et macOS ;
+- expliquer ce qu'est un paquet, un dépôt et une dépendance ;
+- expliquer comment les signatures et les empreintes garantissent l'authenticité ;
+- expliquer pourquoi les mises à jour de sécurité sont urgentes ;
+- expliquer ce qu'est une fin de support et ses conséquences ;
+- citer des attaques contre la chaîne d'approvisionnement logicielle.
+
+## pourquoi ça compte
+
+La très grande majorité des attaques réussies n'utilisent pas de faille inconnue : elles exploitent des failles **connues et corrigées**, sur des machines qui n'ont pas été mises à jour. Les agences de sécurité, dont l'ANSSI, placent la gestion des mises à jour parmi les toutes premières mesures à appliquer. Pour un technicien ou un administrateur, installer proprement, savoir d'où vient chaque logiciel et tenir un parc à jour est une part essentielle du métier. Pour un développeur, les dépendances de ses projets posent exactement les mêmes questions.
+
+## les façons d'installer
+
+**L'installateur téléchargé.** Sous Windows, le cas historique : un fichier `.exe` ou `.msi` récupéré sur le site de l'éditeur, qui copie les fichiers, crée les raccourcis et inscrit le logiciel dans le système. Sous macOS, l'équivalent est une image `.dmg` ou un paquet `.pkg`. C'est aussi la façon la plus risquée, car tout dépend de l'endroit où l'on télécharge.
+
+**Le magasin d'applications.** Microsoft Store, App Store d'Apple, Google Play : un catalogue centralisé, où chaque application est vérifiée à des degrés divers et se met à jour automatiquement. C'est la norme sur les téléphones.
+
+**Le gestionnaire de paquets.** C'est la façon naturelle d'installer sous Linux : une seule commande, `apt install` sur Debian et Ubuntu, `dnf install` sur Fedora, et le logiciel est téléchargé, vérifié et installé avec tout ce dont il a besoin. Windows a désormais le sien, **winget**, et macOS dispose de **Homebrew**, très utilisé par les développeurs.
+
+**Les applications portables** ne s'installent pas du tout : un dossier qu'on copie et qu'on lance. Pratique, mais personne ne les met à jour pour toi.
+
+## paquets, dépôts et dépendances
+
+Un **paquet** est une archive qui contient les fichiers d'un logiciel, accompagnés de **métadonnées** : son nom, sa version, sa description, la liste des paquets dont il a besoin, et parfois des scripts à exécuter à l'installation. Sous Debian et Ubuntu, ce sont des fichiers `.deb` ; sous Fedora et Red Hat, des `.rpm`.
+
+Les paquets sont publiés dans des **dépôts** : des serveurs qui hébergent des milliers de paquets et un index qui les décrit. Ta machine connaît une liste de dépôts de confiance, ceux de sa distribution, et le gestionnaire de paquets ne va chercher que là.
+
+Presque aucun logiciel ne fonctionne seul : il s'appuie sur des bibliothèques partagées, d'autres programmes, des données. Ce sont ses **dépendances**. Le gestionnaire de paquets les calcule et les installe automatiquement ; il sait aussi qu'une bibliothèque sert à dix logiciels et ne doit pas être supprimée avec le premier. Il y a un bénéfice de sécurité à cela : quand une faille est corrigée dans une bibliothèque partagée, **une seule mise à jour** protège tous les logiciels qui l'utilisent.
+
+<Diagram caption="Le chemin d'un paquet, du dépôt jusqu'à la machine">
+flowchart LR
+  A["Éditeur ou distribution"] --> B["Dépôt : paquets et index signés"]
+  B --> C["Gestionnaire de paquets"]
+  C --> D["Vérifie signature et empreintes"]
+  D --> E["Installe le paquet et ses dépendances"]
+</Diagram>
+
+## authenticité : signatures et empreintes
+
+Comment être sûr que le logiciel téléchargé est bien celui publié par l'éditeur, et qu'il n'a pas été modifié en chemin ou remplacé sur un site piraté ? Deux outils, que tu as déjà croisés.
+
+**Les empreintes.** Beaucoup d'éditeurs publient l'empreinte **SHA-256** de leurs fichiers : 64 chiffres hexadécimaux. On calcule l'empreinte du fichier téléchargé et on compare. La moindre modification change complètement l'empreinte. Sous Windows, la commande PowerShell `Get-FileHash` la calcule ; sous Linux, `sha256sum`. Limite importante : si l'empreinte est publiée sur le même site que le fichier et que le site est piraté, l'attaquant change les deux.
+
+**Les signatures.** Une signature numérique prouve qu'un fichier vient bien du détenteur d'une clé et n'a pas été modifié depuis. Tu verras leur fonctionnement mathématique dans les parcours de cryptographie ; retiens ici où on les rencontre :
+
+- les gestionnaires de paquets Linux vérifient automatiquement la **signature de l'index** de chaque dépôt, puis l'empreinte de chaque paquet listée dans cet index. Un paquet modifié est refusé ;
+- sous Windows, les programmes sont signés avec **Authenticode** : les propriétés du fichier, onglet Signatures numériques, montrent l'éditeur, et la fenêtre UAC l'affiche aussi. Un « éditeur inconnu » est un signal d'alerte ;
+- sous macOS, **Gatekeeper** exige par défaut que les applications soient signées par un développeur identifié et **notariées**, c'est-à-dire analysées par Apple.
+
+Une signature prouve l'**origine** et l'**intégrité**, pas l'innocence : un éditeur honnête peut publier un logiciel vulnérable, et des attaquants ont déjà volé des clés de signature.
+
+## pourquoi les mises à jour comptent
+
+Les logiciels contiennent des erreurs, et certaines sont des failles de sécurité. Quand une faille est découverte, elle reçoit souvent un identifiant **CVE** (par exemple `CVE-2024-3094`), l'éditeur publie un correctif, et une course commence. Car la publication d'un correctif révèle aussi l'existence de la faille : des attaquants comparent l'ancienne et la nouvelle version pour comprendre ce qui a été corrigé, et fabriquent un moyen de l'exploiter, parfois en quelques jours, parfois en quelques heures.
+
+L'exemple le plus célèbre est **WannaCry**, en mai 2017. Ce rançongiciel se propageait tout seul de machine en machine grâce à une faille du partage de fichiers de Windows. Microsoft avait publié le correctif **deux mois plus tôt**, en mars. Des centaines de milliers de machines non mises à jour ont été chiffrées dans plus de 150 pays, dont celles d'hôpitaux britanniques, qui ont dû reporter des opérations.
+
+Quelques repères pratiques :
+
+- Microsoft publie ses correctifs de sécurité le **deuxième mardi de chaque mois**, le *Patch Tuesday*, et en urgence quand une faille est déjà exploitée ;
+- les distributions Linux publient leurs correctifs au fil de l'eau, dans un dépôt de sécurité dédié ;
+- les navigateurs se mettent à jour automatiquement, parfois chaque semaine : ce sont les logiciels les plus exposés ;
+- une mise à jour n'est effective qu'une fois **appliquée** : un correctif du noyau ou d'une bibliothèque déjà chargée exige souvent un **redémarrage** ou le redémarrage des services concernés.
+
+En entreprise, on ne déploie pas une mise à jour majeure sur mille postes sans l'avoir testée sur quelques-uns. Mais pour les correctifs de sécurité, surtout ceux qui corrigent une faille activement exploitée, le délai se compte en jours, pas en mois.
+
+## la fin de support
+
+Chaque version d'un logiciel a une **durée de vie**. Passée sa **fin de support**, l'éditeur ne publie plus de correctifs de sécurité : les failles découvertes ensuite restent ouvertes pour toujours. Windows 10 a ainsi atteint sa fin de support le **14 octobre 2025** ; au-delà, seules les machines inscrites à un programme payant de mises à jour étendues reçoivent encore des correctifs. Chaque version d'Ubuntu ou de Debian a aussi sa date de fin.
+
+Une machine en fin de support n'est pas en panne : elle fonctionne parfaitement, ce qui rend le risque invisible. Mais chaque mois qui passe ajoute des failles connues et jamais corrigées. Tenir l'inventaire des versions et des dates de fin de support fait partie de la gestion d'un parc.
+
+## quand la source elle-même est piégée
+
+Les attaquants ont compris que le plus efficace était parfois de piéger le logiciel **avant** qu'il n'arrive chez la victime. On parle d'attaques contre la **chaîne d'approvisionnement** (*supply chain*). Quelques exemples réels :
+
+- **les faux sites de téléchargement** : une publicité en tête des résultats d'un moteur de recherche mène à une copie parfaite du site d'un logiciel connu, qui distribue une version piégée. D'où la règle : télécharger depuis le site officiel, tapé soi-même, ou depuis un magasin ou un dépôt ;
+- **les paquets au nom trompeur** : dans les dépôts ouverts à tous des langages de programmation, comme PyPI pour Python ou npm pour JavaScript, des attaquants publient des paquets aux noms proches de paquets populaires, en comptant sur une faute de frappe ;
+- **les mises à jour compromises** : en 2017, une version officielle de l'utilitaire CCleaner, signée par son éditeur, contenait une porte dérobée ; en 2020, la mise à jour du logiciel Orion de SolarWinds a infecté des milliers d'organisations, dont des administrations américaines ;
+- **la porte dérobée dans xz** : en 2024, on a découvert qu'une personne avait gagné pendant plus de deux ans la confiance des mainteneurs de la bibliothèque de compression xz, présente sur presque tous les systèmes Linux, pour y glisser une porte dérobée visant les connexions SSH. Elle a été repérée juste avant d'atteindre les versions stables des grandes distributions, parce qu'un ingénieur a remarqué que ses connexions SSH prenaient une demi-seconde de trop.
+
+Ces attaques ne rendent pas les mises à jour dangereuses : ne pas mettre à jour reste bien plus risqué. Elles rappellent qu'aucune mesure n'est absolue, et qu'il faut aussi surveiller ce que font les logiciels une fois installés.
+
+## à toi de jouer : une session apt
+
+Tu administres un serveur Debian. Mets à jour la liste des paquets disponibles avec `sudo apt update`, regarde ce qui peut être mis à jour avec `apt list --upgradable`, puis applique les mises à jour avec `sudo apt upgrade`.
+
+<SimulatedTerminal shell="bash" title="Mettre à jour un serveur Debian" expectedCommands={["sudo apt update", "apt list --upgradable", "sudo apt upgrade"]} hints={["apt update rafraîchit la liste des paquets disponibles depuis les dépôts ; il faut sudo.", "apt list --upgradable montre les paquets qui ont une version plus récente.", "apt upgrade installe les nouvelles versions ; il faut sudo."]} commands={{ "sudo apt update": "Atteint :1 http://deb.debian.org/debian trixie InRelease\nRéception de :2 http://security.debian.org/debian-security trixie-security InRelease [43,4 kB]\nRéception de :3 http://security.debian.org/debian-security trixie-security/main amd64 Packages [112 kB]\n155 ko réceptionnés en 1s (148 ko/s)\n3 paquets peuvent être mis à jour. Exécutez « apt list --upgradable » pour les voir.", "apt list --upgradable": "openssl/stable-security 3.5.1-1+deb13u1 amd64 [pouvant être mis à jour depuis : 3.5.1-1]\nlibssl3t64/stable-security 3.5.1-1+deb13u1 amd64 [pouvant être mis à jour depuis : 3.5.1-1]\nopenssh-server/stable-security 1:10.0p1-7+deb13u1 amd64 [pouvant être mis à jour depuis : 1:10.0p1-7]", "sudo apt upgrade": "Mise à niveau :\n  libssl3t64  openssh-server  openssl\n\nRésumé :\n  Mise à niveau : 3, Installation : 0, Suppression : 0, Non mis à jour : 0\n  Taille du téléchargement : 3 614 ko\n\nSouhaitez-vous continuer ? [O/n] O\nParamétrage de libssl3t64:amd64 (3.5.1-1+deb13u1) ...\nParamétrage de openssl (3.5.1-1+deb13u1) ...\nParamétrage de openssh-server (1:10.0p1-7+deb13u1) ...\nTraitement des actions différées (« triggers ») pour man-db ...", "apt install cowsay": "Erreur : Impossible d'ouvrir le fichier verrou /var/lib/dpkg/lock-frontend - open (13: Permission non accordée)\nErreur : Impossible d'obtenir le verrou de dpkg (/var/lib/dpkg/lock-frontend). Avez-vous les droits du superutilisateur ?" }} />
+
+Les trois paquets viennent du dépôt `trixie-security` : ce sont des correctifs de sécurité, pour la bibliothèque de chiffrement OpenSSL et pour le serveur de connexion à distance SSH. Remarque que la bibliothèque `libssl3t64` est mise à jour une fois pour tous les programmes qui l'utilisent. Mais les programmes déjà lancés gardent l'ancienne version en mémoire jusqu'à leur redémarrage : sur un vrai serveur, il faudrait encore redémarrer les services concernés, ou la machine.
+
+## exercice noté : vérifier une empreinte
+
+Écris `solution(contenu, empreinte)` qui renvoie `True` si l'empreinte SHA-256 du texte `contenu`, encodé en UTF-8, correspond à l'empreinte publiée, et `False` sinon. L'empreinte publiée peut être écrite en majuscules ou en minuscules, et contenir des espaces au début ou à la fin, comme quand on la copie depuis une page web. Utilise le module `hashlib`.
+
+<PythonChallenge id="f1-maj-1" title="Vérifier une empreinte" description="Renvoie True si l'empreinte SHA-256 du contenu correspond à l'empreinte publiée, sans tenir compte de la casse ni des espaces autour." starterCode="import hashlib
+
+def solution(contenu, empreinte):
+    calculee = ''  # hashlib.sha256(...).hexdigest()
+    publiee = empreinte  # à nettoyer
+    return calculee == publiee" tests={[{ input: "solution('abc', 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')", expected: "True" }, { input: "solution('abc', 'BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD')", expected: "True" }, { input: "solution('abd', 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')", expected: "False" }, { input: "solution('installateur-v2.4.1', '  8b2d5a7efd5b7197448712680c7e131db771bf127872a4aea24d11604d4bb8b5 ')", expected: "True" }, { input: "solution('', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')", expected: "True" }]} />
+
+## les pièges
+
+- **Télécharger depuis le premier résultat de recherche.** Les publicités mènent parfois à de faux sites : passe par le site officiel, un magasin ou un dépôt.
+- **Reporter indéfiniment les mises à jour.** Les failles corrigées sont exploitées vite, parfois en quelques jours.
+- **Oublier de redémarrer.** Un correctif installé n'est actif qu'une fois les programmes concernés relancés.
+- **Garder des systèmes en fin de support.** Ils fonctionnent, mais leurs failles ne seront plus jamais corrigées.
+- **Ignorer un « éditeur inconnu ».** Un logiciel non signé ou signé par un inconnu mérite une vérification.
+- **Croire qu'une signature garantit l'absence de danger.** Elle prouve l'origine et l'intégrité, pas l'innocence.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cert.ssi.gouv.fr/" description="Le CERT-FR publie les avis de sécurité et les alertes sur les failles activement exploitées">CERT-FR : avis et alertes</ExternalLink>
+
+<ExternalLink href="https://www.cve.org/" description="Le catalogue officiel des identifiants de vulnérabilités, en anglais">CVE : Common Vulnerabilities and Exposures</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/package-manager/winget/" description="Installer et mettre à jour des logiciels en ligne de commande sous Windows">Microsoft : le gestionnaire de paquets winget</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel avantage de sécurité apporte une bibliothèque partagée gérée par le gestionnaire de paquets ?" options={["Elle rend les logiciels plus rapides", "Elle empêche toute faille", "Elle chiffre les logiciels", "Une seule mise à jour corrige la faille pour tous les logiciels qui l'utilisent"]} correct={3} explanation="La bibliothèque est installée une fois et partagée : la corriger protège d'un coup tous ses utilisateurs." />
+  <Quiz id="q-2" question="Que vérifie apt avant d'installer un paquet ?" options={["Rien, il fait confiance au réseau", "Le prix du logiciel", "Que le paquet est le plus récent sur Internet", "La signature de l'index du dépôt et l'empreinte du paquet"]} correct={3} explanation="L'index signé liste les empreintes des paquets : un paquet modifié en chemin est refusé." />
+  <Quiz id="q-3" question="Pourquoi faut-il appliquer rapidement un correctif de sécurité ?" options={["Parce que la publication du correctif aide aussi les attaquants à comprendre et exploiter la faille", "Parce que les anciennes versions ralentissent", "Parce que l'éditeur l'exige par contrat", "Ce n'est pas urgent"]} correct={0} explanation="En comparant les versions, les attaquants retrouvent la faille corrigée et l'exploitent sur les machines en retard." />
+  <Quiz id="q-4" question="WannaCry a infecté des centaines de milliers de machines en mai 2017. Depuis quand le correctif existait-il ?" options={["Depuis deux mois", "Il n'existait pas encore", "Depuis la veille", "Depuis dix ans"]} correct={0} explanation="Microsoft avait publié le correctif en mars 2017. Les machines touchées ne l'avaient pas appliqué." />
+  <Quiz id="q-5" question="Qu'implique la fin de support d'un système ?" options={["Il cesse de démarrer", "Il ne reçoit plus de correctifs de sécurité, et ses nouvelles failles restent ouvertes", "Il devient gratuit", "Il est désinstallé automatiquement"]} correct={1} explanation="Le système fonctionne toujours, mais chaque faille découverte ensuite ne sera jamais corrigée." />
+  <Quiz id="q-6" question="L'empreinte SHA-256 d'un fichier téléchargé ne correspond pas à celle publiée par l'éditeur. Que faire ?" options={["L'installer quand même", "Ne pas l'installer : le fichier est corrompu ou modifié", "Recalculer jusqu'à ce que ça corresponde", "Désactiver l'antivirus"]} correct={1} explanation="La moindre modification change l'empreinte. Une différence signale un téléchargement abîmé ou un fichier piégé." />
+  <Quiz id="q-7" question="Qu'est-ce qu'une attaque contre la chaîne d'approvisionnement logicielle ?" options={["Un vol de matériel pendant la livraison", "Le piégeage d'un logiciel ou d'une mise à jour avant qu'il n'arrive chez ses utilisateurs", "Une panne de serveur", "Une attaque contre un magasin en ligne"]} correct={1} explanation="L'attaquant compromet la source, un éditeur, un dépôt ou une mise à jour, et touche d'un coup tous les utilisateurs." />
+</QuizGroup>
+
+## à retenir
+
+- On installe par **installateur**, **magasin**, **gestionnaire de paquets** (apt, dnf, winget, Homebrew) ou application **portable**.
+- Un **paquet** contient fichiers et métadonnées ; il vient d'un **dépôt** ; le gestionnaire résout ses **dépendances**.
+- **Empreintes** (SHA-256) et **signatures** (index de dépôt, Authenticode, Gatekeeper) garantissent **origine** et **intégrité**, pas l'innocence.
+- Les attaques exploitent surtout des failles **connues et corrigées** : applique vite les correctifs, et **redémarre** ce qui doit l'être.
+- Après la **fin de support**, plus aucun correctif : il faut migrer.
+- La **chaîne d'approvisionnement** peut être piégée : faux sites, paquets au nom trompeur, mises à jour compromises.

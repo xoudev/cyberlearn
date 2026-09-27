@@ -1,0 +1,170 @@
+---
+refCode: CL-LSN-01021-V01
+slug: fondamentaux-windows-linux-macos
+title: "Windows, Linux, macOS"
+description: "Les trois grands systèmes comparés sur les notions du module : leurs origines, où on les trouve, ce qui change (chemins, administration, configuration, services, journaux, lignes de commande) et ce qui ne change pas. Avec un grand tableau d'équivalences et les mêmes tâches accomplies dans PowerShell et dans bash."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01020-V01"]
+---
+
+Depuis le début de ce module, chaque notion a été présentée sous Windows et sous Linux, parfois sous macOS : processus, mémoire, fichiers, droits, mises à jour. Il est temps de prendre du recul et de comparer les trois systèmes d'un seul regard. Tu vas découvrir qu'ils se ressemblent beaucoup plus que leurs interfaces ne le laissent croire : les **concepts** sont les mêmes, seuls les **noms** et les **outils** changent. Un professionnel qui a compris cela passe d'un système à l'autre sans difficulté, et c'est exactement ce qu'on attend de lui, car tout système d'information réel mélange les trois.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- situer l'origine des trois systèmes et leurs liens de parenté ;
+- dire où chacun domine : postes de travail, serveurs, téléphones ;
+- donner l'équivalent d'un outil ou d'une notion d'un système à l'autre ;
+- distinguer ce qui change réellement de ce qui ne change pas ;
+- accomplir les mêmes tâches de base dans PowerShell et dans bash ;
+- expliquer pourquoi aucun système n'est invulnérable.
+
+## pourquoi ça compte
+
+Dans une entreprise typique, les salariés travaillent sous Windows, les développeurs et les graphistes souvent sous macOS, et les serveurs, le cloud, les routeurs et les caméras tournent sous Linux. Un technicien de support doit dépanner les trois. Un administrateur gère des serveurs Linux depuis un poste Windows. Un analyste de sécurité suit une intrusion qui commence sur un portable Windows et se poursuit sur un serveur Linux. Savoir traduire une notion d'un système à l'autre est un gain de temps constant, et une condition pour ne rien oublier.
+
+## trois familles
+
+**Unix** naît en 1969 aux laboratoires Bell, aux États-Unis. Ses idées fondatrices, une arborescence unique à partir de `/`, « tout est fichier », des petits outils combinables en ligne de commande, des utilisateurs avec des droits, ont inspiré presque tous les systèmes qui ont suivi.
+
+**Linux** est un noyau écrit à partir de 1991 par Linus Torvalds, qui reprend les principes d'Unix sans en reprendre le code. Associé aux outils du projet GNU, il forme les distributions que tu as vues dans la leçon 1. C'est un logiciel libre : son code est public, et n'importe qui peut l'étudier, le modifier et le redistribuer.
+
+**macOS** descend directement de la famille Unix : son noyau XNU intègre des éléments du système BSD, et macOS est officiellement certifié Unix. Son terminal ressemble donc beaucoup à celui de Linux, et la plupart des commandes de base sont les mêmes.
+
+**Windows** vient d'une autre lignée. Les Windows grand public reposaient d'abord sur MS-DOS ; depuis Windows XP, tous reposent sur le noyau **NT**, conçu au début des années 1990 avec des idées différentes : lettres de lecteur, registre, listes de contrôle d'accès. Windows n'est pas un Unix, mais il intègre aujourd'hui un vrai noyau Linux grâce au sous-système **WSL**, très utilisé par les développeurs.
+
+<Diagram caption="Trois familles de systèmes d'exploitation">
+flowchart TD
+  U["Unix, 1969"] --> B["BSD"]
+  B --> M["macOS et iOS, noyau XNU"]
+  U -.->|mêmes principes, code réécrit| L["Linux, 1991 : Debian, Ubuntu, Android"]
+  D["MS-DOS"] --> W1["Windows 95, 98"]
+  N["Noyau NT, 1993"] --> W["Windows XP à Windows 11"]
+</Diagram>
+
+## qui domine où
+
+Les parts de marché varient selon les sources, mais les grandes tendances sont stables :
+
+- **postes de travail** : Windows est largement majoritaire, autour de sept ordinateurs sur dix ; macOS vient ensuite ; Linux reste minoritaire, avec ChromeOS, lui-même bâti sur le noyau Linux ;
+- **serveurs et cloud** : Linux domine très nettement ; la grande majorité des sites web et des machines virtuelles des grands fournisseurs de cloud tournent sous Linux, même si Windows Server reste très présent dans les entreprises, notamment pour l'annuaire Active Directory ;
+- **téléphones** : Android, qui utilise le noyau Linux, et iOS, cousin de macOS, se partagent presque tout le marché ;
+- **supercalculateurs** : depuis 2017, les 500 plus puissants du monde tournent tous sous Linux ;
+- **objets connectés** : box, routeurs, caméras, téléviseurs tournent le plus souvent sous Linux, souvent dans une version ancienne rarement mise à jour.
+
+## ce qui ne change pas
+
+Tout ce que ce module a présenté existe dans les trois systèmes :
+
+- un **noyau** qui tourne en mode privilégié et des programmes en **espace utilisateur**, reliés par des **appels système** ;
+- des **processus** avec un identifiant, un parent, un utilisateur, un état, partagés par un **ordonnanceur** ;
+- une **mémoire virtuelle** avec des pages, de l'échange sur disque et les protections NX et ASLR ;
+- des **systèmes de fichiers** avec une arborescence, des métadonnées et des droits ;
+- des **comptes**, des **groupes**, un **administrateur** et un mécanisme pour **élever ses droits** ;
+- des **paquets** ou des installateurs, des **signatures** et des **mises à jour** ;
+- le même matériel dessous, et la même pile réseau TCP/IP, que tu étudieras au module suivant.
+
+Quand tu découvres un système inconnu, cherche donc d'abord comment il nomme ces notions-là : elles y sont forcément.
+
+## ce qui change : le tableau d'équivalences
+
+| Notion | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| Noyau | NT | Linux | XNU |
+| Système de fichiers courant | NTFS | ext4, XFS, Btrfs | APFS |
+| Organisation des volumes | lettres `C:`, `D:` | une racine `/`, volumes montés | une racine `/`, volumes dans `/Volumes` |
+| Séparateur de chemin | `\` | `/` | `/` |
+| Casse des noms | ignorée par défaut | significative | ignorée par défaut |
+| Dossier personnel | `C:\Users\alice` | `/home/alice` | `/Users/alice` |
+| Administrateur | groupe Administrateurs, SYSTEM | root (UID 0) | groupe admin, root |
+| Élever ses droits | UAC | `sudo` | `sudo`, fenêtre d'autorisation |
+| Installer un logiciel | installateur, Microsoft Store, `winget` | `apt`, `dnf`, `pacman` | App Store, `.dmg`, Homebrew |
+| Configuration du système | le **registre**, base de données centrale | fichiers texte dans `/etc` | fichiers `.plist`, commande `defaults` |
+| Services en arrière-plan | services Windows (`services.msc`) | unités **systemd** (`systemctl`) | **launchd** (`launchctl`) |
+| Tâches planifiées | Planificateur de tâches | `cron`, minuteries systemd | launchd |
+| Journaux | Observateur d'événements | `journalctl`, `/var/log` | application Console, `log show` |
+| Voir les processus | Gestionnaire des tâches | `ps`, `top`, `htop` | Moniteur d'activité, `ps`, `top` |
+| Pare-feu | Pare-feu Windows Defender | nftables, `ufw`, firewalld | pare-feu d'application, `pf` |
+| Chiffrement du disque | BitLocker | LUKS | FileVault |
+| Shell par défaut | PowerShell, `cmd` | bash, souvent | zsh depuis 2019 |
+| Fin de ligne des fichiers texte | CR LF | LF | LF |
+
+Deux différences méritent un commentaire.
+
+**Le registre de Windows** est une base de données hiérarchique qui centralise la configuration du système et des applications. Il s'édite avec `regedit` ou PowerShell. Sous Linux, la configuration est éparpillée dans des fichiers texte, principalement dans `/etc`, qu'on lit et modifie avec un éditeur. Chaque approche a ses avantages ; en sécurité, retiens que le registre est l'endroit où beaucoup de logiciels malveillants s'inscrivent pour se relancer à chaque démarrage, par exemple dans la clé `Run`, et qu'il fait partie des premiers endroits inspectés lors d'une analyse.
+
+**Les services** sont des programmes qui tournent en arrière-plan sans fenêtre, souvent dès le démarrage : serveur web, antivirus, impression, mises à jour. Chaque système a son gestionnaire, mais tous permettent les mêmes opérations : lister, démarrer, arrêter, activer au démarrage, consulter l'état. Un service inconnu configuré pour démarrer automatiquement est un autre grand classique de la persistance des attaquants.
+
+## la ligne de commande
+
+Les trois systèmes offrent une interface graphique et une ligne de commande. Les professionnels utilisent beaucoup la seconde, parce qu'elle s'automatise, fonctionne à distance et laisse une trace précise de ce qui a été fait.
+
+Sous Linux et macOS, le **shell** (bash, zsh) manipule du **texte** : chaque commande produit des lignes que la suivante peut filtrer, comme tu l'as vu avec `ps aux --sort=-%cpu | head -5`. Le parcours Linux y est entièrement consacré.
+
+Sous Windows, **PowerShell** a remplacé l'ancien `cmd`. Ses commandes, appelées *cmdlets*, suivent un modèle **verbe-nom** (`Get-Process`, `Stop-Service`, `Get-ChildItem`) et manipulent des **objets** plutôt que du texte : on peut trier des processus par consommation de processeur sans découper de colonnes. PowerShell existe aussi sous Linux et macOS, et plusieurs alias facilitent la transition : `ls`, `cd`, `pwd` et `cat` fonctionnent dans PowerShell.
+
+Un point de sécurité : PowerShell est aussi l'un des outils préférés des attaquants sous Windows, parce qu'il est présent partout, très puissant, et peut exécuter du code sans rien écrire sur le disque. Tu as vu au module 2 comment une commande encodée en Base64 peut s'y cacher. Les versions récentes journalisent les blocs de script exécutés, ce que les équipes de défense activent en priorité.
+
+## aucun système invulnérable
+
+Une idée reçue tenace veut que macOS ou Linux « n'aient pas de virus ». C'est faux. Tous les systèmes ont des failles, et tous ont des logiciels malveillants. Ce qui varie, c'est l'**intérêt des attaquants**, qui visent là où se trouvent leurs cibles :
+
+- les postes de travail Windows, les plus nombreux en entreprise, sont les plus visés par les rançongiciels et le vol d'identifiants ;
+- les serveurs Linux, exposés sur Internet, sont visés par les mineurs de cryptomonnaie, les réseaux de machines zombies et le vol de données ;
+- les objets connectés sous Linux, rarement mis à jour et protégés par des mots de passe par défaut, ont formé des armées de machines zombies, comme le réseau **Mirai** en 2016, qui a paralysé de grands sites web ;
+- les Mac sont de plus en plus visés, en particulier par des voleurs d'identifiants et de portefeuilles de cryptomonnaie.
+
+Les règles de sécurité sont donc les mêmes partout : mises à jour, moindre privilège, logiciels de sources fiables, chiffrement du disque, sauvegardes. Le système change les outils, pas les principes.
+
+## à toi de jouer : les mêmes tâches, deux shells
+
+Commence par PowerShell sous Windows. Demande qui tu es avec `whoami`, où tu te trouves avec `Get-Location`, le contenu du dossier avec `Get-ChildItem`, puis les trois processus qui consomment le plus de processeur.
+
+<SimulatedTerminal shell="powershell" title="Sous Windows, avec PowerShell" expectedCommands={["whoami", "Get-Location", "Get-ChildItem", "Get-Process | Sort-Object CPU -Descending | Select-Object -First 3"]} hints={["whoami fonctionne aussi dans PowerShell.", "Get-Location affiche le dossier courant, comme pwd.", "Get-ChildItem liste le contenu du dossier, comme ls.", "Get-Process, trié par CPU décroissant avec Sort-Object, puis Select-Object -First 3."]} commands={{ "whoami": "pc-alice\\alice", "hostname": "PC-ALICE", "Get-Location": "\nPath\n----\nC:\\Users\\alice\n", "pwd": "\nPath\n----\nC:\\Users\\alice\n", "Get-ChildItem": "\n    Répertoire : C:\\Users\\alice\n\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\nd-r---        12/09/2026     09:14                Desktop\nd-r---        27/09/2026     10:02                Documents\nd-r---        26/09/2026     18:40                Downloads\n-a----        27/09/2026     10:05           1422 notes.txt\n", "ls": "\n    Répertoire : C:\\Users\\alice\n\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\nd-r---        12/09/2026     09:14                Desktop\nd-r---        27/09/2026     10:02                Documents\nd-r---        26/09/2026     18:40                Downloads\n-a----        27/09/2026     10:05           1422 notes.txt\n", "Get-Process | Sort-Object CPU -Descending | Select-Object -First 3": "\nHandles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName\n-------  ------    -----      -----     ------     --  -- -----------\n   2814     142   412368     398220   1284,56  11288   1 msedge\n   1937      98   186420     201334    642,11   6904   1 explorer\n    812      41    95212     120880    118,30   9420   1 Code\n" }} />
+
+Puis les mêmes tâches dans bash, sous Linux : `whoami`, `pwd`, `ls -l`, et les processus les plus gourmands avec `ps aux --sort=-%cpu | head -4`.
+
+<SimulatedTerminal shell="bash" title="Sous Linux, avec bash" expectedCommands={["whoami", "pwd", "ls -l", "ps aux --sort=-%cpu | head -4"]} hints={["whoami affiche le compte courant.", "pwd affiche le dossier courant.", "ls -l liste le contenu avec les détails.", "ps aux, trié par %CPU décroissant, puis head -4 pour l'en-tête et trois lignes."]} commands={{ "whoami": "alice", "hostname": "pc-alice", "pwd": "/home/alice", "ls -l": "total 16\ndrwxr-xr-x 2 alice alice 4096 sept. 12 09:14 Bureau\ndrwxr-xr-x 5 alice alice 4096 sept. 27 10:02 Documents\n-rw-r--r-- 1 alice alice 1422 sept. 27 10:05 notes.txt\ndrwxr-xr-x 3 alice alice 4096 sept. 26 18:40 Téléchargements", "ps aux --sort=-%cpu | head -4": "USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nalice       3021 14.2  6.1 34120552 498212 ?     Sl   09:02  21:24 /usr/lib/firefox/firefox\nalice       1874  3.5  2.4 4912304 196880 ?      Ssl  09:01   5:18 /usr/bin/gnome-shell\nalice       3377  1.1  1.5 1204388 124012 ?      Sl   09:20   1:31 /usr/share/code/code" }} />
+
+Compare les deux sorties. Les colonnes n'ont pas les mêmes noms, mais on y lit les mêmes informations : un identifiant de processus (`Id` et `PID`), un temps de processeur consommé (`CPU(s)` et `TIME`), une mémoire occupée (`WS(K)` et `RSS`), un nom de programme. Sous Linux, le dossier personnel en français s'appelle `Bureau` et `Téléchargements` ; sous Windows, les vrais noms restent `Desktop` et `Downloads`, et seul l'explorateur les affiche traduits.
+
+## les pièges
+
+- **Croire qu'un système est invulnérable.** Tous ont des failles et des logiciels malveillants ; les principes de protection sont les mêmes.
+- **Transposer les chemins tels quels.** `\` et lettres de lecteur d'un côté, `/` et racine unique de l'autre, et la casse compte sous Linux.
+- **Chercher un registre sous Linux.** La configuration y est dans des fichiers texte, surtout dans `/etc`.
+- **Confondre l'affichage et le nom réel.** L'explorateur Windows traduit `Desktop` en Bureau, mais le chemin reste `C:\Users\alice\Desktop`.
+- **Oublier PowerShell dans la surveillance.** C'est un outil d'administration puissant, et donc un outil d'attaque apprécié.
+
+## pour aller plus loin
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/powershell/scripting/overview" description="La documentation officielle de PowerShell, pour Windows, Linux et macOS">Microsoft : qu'est-ce que PowerShell ?</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/wsl/about" description="Faire tourner un vrai Linux dans Windows avec WSL">Microsoft : le sous-système Windows pour Linux</ExternalLink>
+
+<ExternalLink href="https://www.top500.org/statistics/list/" description="Les statistiques des 500 supercalculateurs les plus puissants, dont leur système d'exploitation">TOP500 : statistiques</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Lequel de ces systèmes descend directement de la famille Unix ?" options={["macOS", "Windows 11", "MS-DOS", "Aucun"]} correct={0} explanation="macOS repose sur le noyau XNU, qui intègre des éléments de BSD, et il est certifié Unix. Linux reprend les principes d'Unix sans son code." />
+  <Quiz id="q-2" question="Où Linux est-il le plus dominant ?" options={["Sur les postes de travail des entreprises", "Sur les consoles de jeu uniquement", "Nulle part", "Sur les serveurs, le cloud et les supercalculateurs"]} correct={3} explanation="Linux fait tourner la grande majorité des serveurs et du cloud, et tous les supercalculateurs du classement TOP500." />
+  <Quiz id="q-3" question="Quel est l'équivalent Linux du registre de Windows ?" options={["Le dossier /home", "Le dossier /etc et ses fichiers de configuration texte", "La commande sudo", "Il n'y a aucune configuration sous Linux"]} correct={1} explanation="Linux n'a pas de base centrale : la configuration du système est rangée dans des fichiers texte, surtout dans /etc." />
+  <Quiz id="q-4" question="Quel outil chiffre le disque sous macOS ?" options={["FileVault", "BitLocker", "LUKS", "SmartScreen"]} correct={0} explanation="FileVault chiffre le disque sous macOS, comme BitLocker sous Windows et LUKS sous Linux." />
+  <Quiz id="q-5" question="Qu'est-ce qui distingue PowerShell de bash ?" options={["PowerShell ne fonctionne que sous Windows", "bash ne sait pas lister des fichiers", "Ils sont identiques", "PowerShell manipule des objets, bash manipule du texte"]} correct={3} explanation="Les cmdlets de PowerShell s'échangent des objets. Dans bash, chaque commande produit du texte que la suivante filtre." />
+  <Quiz id="q-6" question="Quelle affirmation sur la sécurité des systèmes est juste ?" options={["macOS n'a pas de logiciels malveillants", "Tous les systèmes ont des failles ; les attaquants visent là où se trouvent leurs cibles", "Linux est invulnérable", "Seul Windows a besoin de mises à jour"]} correct={1} explanation="Chaque système a ses failles et ses logiciels malveillants. Les mêmes principes de protection s'appliquent partout." />
+  <Quiz id="q-7" question="Quel est l'équivalent de systemctl, qui gère les services sous Linux, dans l'interface de Windows ?" options={["Le Planificateur de tâches", "L'Observateur d'événements", "Le Gestionnaire de périphériques", "La console des services, services.msc"]} correct={3} explanation="services.msc liste les services Windows et permet de les démarrer, les arrêter et régler leur démarrage automatique." />
+</QuizGroup>
+
+## à retenir
+
+- Trois familles : **Unix**, dont descend **macOS** ; **Linux**, qui en reprend les principes ; **Windows**, bâti sur le noyau **NT**.
+- Windows domine les **postes de travail** ; Linux les **serveurs**, le **cloud**, les **supercalculateurs** et les **objets connectés** ; Android et iOS les **téléphones**.
+- Les **concepts** sont communs : noyau, processus, mémoire virtuelle, fichiers, droits, paquets, mises à jour.
+- Ce qui change : **chemins**, **casse**, **configuration** (registre ou `/etc`), **services** (services Windows, systemd, launchd), **journaux**, **outils**.
+- **PowerShell** manipule des objets, **bash** du texte ; les deux sont indispensables à un professionnel.
+- **Aucun système n'est invulnérable** : les principes de sécurité s'appliquent partout.

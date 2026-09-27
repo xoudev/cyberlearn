@@ -1,0 +1,175 @@
+---
+refCode: CL-LSN-01018-V01
+slug: fondamentaux-les-fichiers
+title: "Les fichiers et les systèmes de fichiers"
+description: "Comment des blocs d'octets deviennent des fichiers rangés dans des dossiers : le rôle d'un système de fichiers, NTFS, ext4, APFS et exFAT comparés, les chemins sous Windows et sous Linux, les métadonnées, les extensions face aux types réels, les liens et la marque du web. Avec un exercice sur les chemins qui mène droit à une faille classique, la traversée de répertoires."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01017-V01"]
+---
+
+Un disque, tu l'as vu au module 1, n'est qu'une immense suite de blocs numérotés. Il ne connaît ni les noms, ni les dossiers, ni les dates. Pourtant, tu retrouves ton CV dans `Documents`, tu sais quand il a été modifié, et personne d'autre que toi ne peut le lire. Tout cela est l'œuvre du **système de fichiers**, une des briques du noyau vues dans la leçon 1. Cette leçon explique comment il fonctionne, compare ceux de Windows, Linux et macOS, et montre plusieurs endroits où les fichiers touchent à la sécurité, des extensions trompeuses aux chemins qui remontent là où ils ne devraient pas.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le rôle d'un système de fichiers ;
+- citer les systèmes de fichiers courants et leurs usages ;
+- écrire et lire un chemin absolu ou relatif, sous Windows et sous Linux ;
+- citer les métadonnées d'un fichier et leur intérêt ;
+- expliquer pourquoi l'extension ne dit pas le vrai type d'un fichier ;
+- expliquer ce qu'est la marque du web ;
+- expliquer et prévenir une traversée de répertoires.
+
+## pourquoi ça compte
+
+Les fichiers sont l'objet que tout le monde manipule, et donc celui sur lequel se jouent beaucoup de problèmes concrets : une clé USB qui refuse un fichier de 5 Go, un script qui ne trouve pas un fichier à cause d'une majuscule, un disque formaté pour Mac illisible sous Windows. Côté sécurité, les attaques par pièce jointe jouent sur les extensions et les raccourcis, les enquêteurs s'appuient sur les dates des fichiers pour reconstituer une intrusion, et la **traversée de répertoires** figure depuis toujours parmi les failles web les plus exploitées. Les notions de cette leçon servent partout ensuite.
+
+## ce que fait un système de fichiers
+
+Un **système de fichiers** est à la fois une **organisation des données sur le disque** et le **code du noyau** qui la gère. Il répond à quatre questions :
+
+- **où** se trouvent les octets de chaque fichier : dans quels blocs du disque, dans quel ordre ;
+- **comment** retrouver un fichier par son nom, dans une arborescence de dossiers ;
+- **quelles informations** accompagnent chaque fichier : taille, dates, propriétaire, droits ;
+- **quels blocs sont libres** pour de nouvelles données.
+
+**Formater** une partition, c'est y créer un système de fichiers vide : les structures de gestion sont écrites, et tous les blocs sont déclarés libres. Les anciennes données ne sont pas forcément effacées pour autant, comme tu l'as vu au module 1 : un formatage rapide ne fait que réinitialiser les structures.
+
+Sous Linux, dans les systèmes de fichiers comme **ext4**, chaque fichier est décrit par un **inode** (nœud d'information), une petite fiche qui contient ses métadonnées et la liste de ses blocs, mais **pas son nom**. Les noms sont rangés dans les dossiers, qui ne sont que des listes associant un nom à un numéro d'inode. Sous Windows, **NTFS** tient une grande table, la **MFT** (*master file table*), avec une entrée par fichier, qui joue un rôle comparable.
+
+La plupart des systèmes de fichiers modernes sont **journalisés** : avant de modifier leurs structures, ils notent l'opération prévue dans un journal. Si le courant est coupé au milieu, le système relit le journal au redémarrage et remet tout en ordre en quelques secondes, au lieu d'analyser tout le disque.
+
+## les systèmes de fichiers courants
+
+| Système | Où on le trouve | À savoir |
+| --- | --- | --- |
+| **NTFS** | Windows | Droits d'accès détaillés, chiffrement, journal, flux de données alternatifs |
+| **ext4** | la plupart des distributions Linux | Robuste et journalisé ; XFS et Btrfs sont d'autres choix courants |
+| **APFS** | macOS, iOS | Conçu pour les SSD, chiffrement intégré, instantanés |
+| **FAT32** | anciennes clés USB, cartes mémoire | Lisible partout, mais aucun droit d'accès et **fichiers limités à 4 Gio** |
+| **exFAT** | clés USB et cartes SD récentes | Lisible par Windows, macOS et Linux, sans la limite de 4 Gio, mais sans droits ni journal |
+
+La compatibilité explique beaucoup de surprises. Windows ne lit pas nativement l'ext4 ni l'APFS. macOS lit le NTFS mais ne l'écrit pas par défaut. Une clé USB destinée à passer d'une machine à l'autre est donc généralement formatée en exFAT. Et une clé en FAT32 refusera toujours un fichier de plus de 4 Gio, quelle que soit la place libre : la taille d'un fichier y est notée sur 32 bits, et tu sais depuis le module 2 ce que cela implique.
+
+Retiens aussi que FAT32 et exFAT n'ont **aucune notion de propriétaire ni de droits** : tout le monde peut lire et modifier tout ce qu'une clé contient.
+
+## les chemins
+
+Un **chemin** désigne l'emplacement d'un fichier dans l'arborescence.
+
+**Sous Windows**, chaque volume a sa **lettre de lecteur** et sa propre arborescence, et les éléments sont séparés par des barres obliques inverses : `C:\Users\alice\Documents\cv.docx`. Une clé USB apparaît comme un nouveau lecteur, `E:` par exemple.
+
+**Sous Linux et macOS**, il n'y a qu'**une seule arborescence**, qui part de la **racine** `/`, et les éléments sont séparés par des barres obliques : `/home/alice/Documents/cv.odt`. Un autre disque ou une clé USB ne reçoit pas de lettre : il est **monté** dans un dossier de l'arborescence, par exemple `/media/alice/CLE`, et son contenu apparaît à cet endroit.
+
+<Diagram caption="Deux façons d'organiser les volumes">
+flowchart TD
+  W["Windows"] --> C["C: : le système et les utilisateurs"]
+  W --> E["E: : la clé USB"]
+  L["Linux : une seule racine /"] --> H["/home/alice"]
+  L --> M["/media/alice/CLE : la clé USB montée ici"]
+</Diagram>
+
+Un chemin est **absolu** quand il part de la racine (`/home/alice/notes.txt`, `C:\Users\alice\notes.txt`), et **relatif** quand il part du dossier courant (`notes.txt`, `Documents/cv.odt`). Deux noms spéciaux existent partout : `.` désigne le dossier courant, et `..` le dossier parent. Depuis `/home/alice/Documents`, le chemin relatif `../Images/chat.png` désigne `/home/alice/Images/chat.png`. Sous Linux, `~` est un raccourci pour le dossier personnel.
+
+Une différence piège régulièrement ceux qui passent d'un système à l'autre : sous Linux, les noms sont **sensibles à la casse**, et `Rapport.txt` et `rapport.txt` sont deux fichiers différents qui peuvent coexister. Windows et macOS, par défaut, ne font pas la différence : ils conservent la casse que tu as tapée, mais considèrent les deux noms comme identiques. Un site web développé sous Windows qui appelle `Logo.PNG` au lieu de `logo.png` fonctionne chez le développeur, puis casse une fois installé sur un serveur Linux.
+
+## les métadonnées
+
+En plus de son contenu, chaque fichier porte des **métadonnées** :
+
+- sa **taille** ;
+- son **propriétaire** et ses **droits d'accès** (leçon suivante) ;
+- plusieurs **dates** : création, dernière modification du contenu, dernier accès, et sous Linux dernier changement des métadonnées ;
+- des **attributs** : caché, lecture seule, système, archive sous Windows ;
+- sur certains systèmes, des attributs étendus libres.
+
+Sous Windows, l'onglet **Détails** des propriétés d'un fichier et la commande PowerShell `Get-Item` les montrent ; sous Linux, `ls -l` et surtout `stat`, que le parcours Linux étudie en détail.
+
+Les dates sont précieuses en **investigation** : elles permettent de reconstituer une chronologie, quel fichier est apparu à quel moment, lequel a été ouvert juste avant l'incident. Mais elles se modifient facilement : un attaquant averti antidate ses fichiers pour qu'ils se fondent parmi ceux du système, une technique appelée *timestomping*. Les enquêteurs croisent donc plusieurs sources : sous Linux, la date de changement des métadonnées, que l'utilisateur ne peut pas fixer librement ; sous Windows, les copies des dates que NTFS garde dans la MFT.
+
+Les **fichiers cachés** méritent une remarque. Sous Linux et macOS, un fichier est caché simplement parce que son nom commence par un point, comme `.bashrc`. Sous Windows, c'est un attribut. Dans les deux cas, cacher un fichier le retire de l'affichage par défaut, et rien de plus : ce n'est **pas une protection**. Un logiciel malveillant qui se range dans un dossier caché compte seulement sur l'inattention.
+
+## extension et type réel
+
+L'**extension**, les lettres après le dernier point du nom, n'est qu'une **convention**. Elle ne change rien au contenu du fichier. Windows s'en sert pour choisir l'application qui ouvre le fichier lors d'un double-clic ; Linux, lui, décide si un fichier est un programme d'après son droit d'exécution, pas d'après son nom.
+
+Tu as vu au module 2 que le vrai type d'un fichier se lit dans ses premiers octets, son nombre magique. Les attaquants jouent sur l'écart entre les deux :
+
+- **les extensions masquées** : Windows cache par défaut les extensions des types connus. `facture.pdf.exe` s'affiche `facture.pdf`, avec parfois une icône de PDF fournie par le programme lui-même. Afficher les extensions (dans l'explorateur, menu Affichage) est l'un des premiers réglages d'une machine bien configurée ;
+- **les raccourcis piégés** : un fichier `.lnk` est un raccourci, mais il peut lancer n'importe quelle commande avec n'importe quelle icône ;
+- **les caractères trompeurs** : un caractère Unicode spécial peut inverser le sens d'affichage d'une partie du nom et faire apparaître `rapportexe.pdf` pour un fichier qui se termine en réalité par `.exe`.
+
+La règle : un fichier reçu se juge sur son **type réel**, pas sur son nom ni sur son icône.
+
+## les liens
+
+Un fichier peut être accessible par plusieurs chemins. Sous Windows, le **raccourci** (`.lnk`) est un petit fichier qui pointe vers une cible. Sous Linux et macOS, le **lien symbolique** joue ce rôle au niveau du système de fichiers : c'est un fichier spécial qui contient le chemin de sa cible, et presque tous les programmes le suivent sans s'en rendre compte. Il existe aussi des **liens physiques**, deux noms pour le même inode, que le parcours Linux présente en détail. Les liens sont pratiques, mais ils peuvent aussi tromper un programme qui croit écrire dans un fichier et écrit en réalité ailleurs.
+
+## la marque du web
+
+NTFS permet d'attacher à un fichier des **flux de données alternatifs** : des contenus supplémentaires, invisibles dans l'explorateur, rangés à côté du contenu principal. Windows s'en sert pour une protection importante. Quand tu télécharges un fichier avec un navigateur ou le reçois par messagerie, Windows lui ajoute un petit flux nommé `Zone.Identifier` qui note qu'il vient d'Internet. C'est la **marque du web** (*Mark of the Web*).
+
+Grâce à elle, Windows affiche un avertissement avant d'exécuter un programme téléchargé (SmartScreen), et Office ouvre les documents venus d'Internet en **mode protégé**, avec les macros bloquées. C'est pour contourner cette marque que des attaquants ont pris l'habitude d'envoyer leurs fichiers dans des images disque `.iso` ou des archives : les fichiers extraits de certains conteneurs ne recevaient pas la marque. Microsoft a corrigé une partie de ces contournements, mais la leçon demeure : une protection qui repose sur une métadonnée ne fonctionne que tant que la métadonnée suit le fichier. Et comme FAT32 et exFAT n'ont pas de flux alternatifs, un fichier copié sur une clé USB perd sa marque.
+
+## la traversée de répertoires
+
+Beaucoup d'applications construisent un chemin à partir d'une donnée fournie par l'utilisateur. Un site propose de télécharger une facture avec une adresse comme `/telecharger?fichier=facture-042.pdf`, et le serveur lit `/var/www/factures/` suivi du nom demandé. Que se passe-t-il si quelqu'un demande `../../../etc/passwd` ? Le chemin devient `/var/www/factures/../../../etc/passwd`, qui, une fois les `..` résolus, désigne `/etc/passwd`, un fichier système qui n'a rien à faire là. C'est la **traversée de répertoires** (*path traversal*), une faille classique qui permet de lire, parfois d'écrire, des fichiers hors du dossier prévu.
+
+La bonne défense ne consiste pas à interdire la suite de caractères `../`, que les attaquants contournent par des encodages variés, comme tu l'as vu au module 2 avec les formes trop longues d'UTF-8. Elle consiste à **résoudre complètement le chemin**, puis à **vérifier qu'il se trouve toujours dans le dossier autorisé**. Mieux encore, on évite de laisser l'utilisateur fournir un chemin : on lui fait choisir un identifiant, que l'application traduit elle-même en nom de fichier.
+
+## à toi de jouer
+
+Écris `solution(chemin)` qui **normalise** un chemin absolu de style Linux : elle retire les `.`, les barres obliques en double et la barre finale, et résout chaque `..` en remontant d'un dossier. Remonter au-dessus de la racine est impossible : `..` à la racine reste à la racine. Par exemple, `/home/alice/documents/../images/./chat.png` devient `/home/alice/images/chat.png`.
+
+Indice : découpe le chemin avec `split('/')` et utilise une liste comme une pile. Un nom ordinaire s'empile, `..` dépile s'il reste quelque chose, `.` et les éléments vides sont ignorés.
+
+<PythonChallenge id="f1-chemins-1" title="Normaliser un chemin" description="Renvoie le chemin absolu normalisé, avec les . et .. résolus." starterCode="def solution(chemin):
+    pile = []
+    for element in chemin.split('/'):
+        pass  # ignorer, empiler ou dépiler
+    return '/' + '/'.join(pile)" tests={[{ input: "solution('/home/alice/documents/../images/./chat.png')", expected: "/home/alice/images/chat.png" }, { input: "solution('/var/www/html/../../../etc/passwd')", expected: "/etc/passwd" }, { input: "solution('/../..')", expected: "/" }, { input: "solution('/home//alice/')", expected: "/home/alice" }, { input: "solution('/srv/./app/static/../../app/config.yml')", expected: "/srv/app/config.yml" }]} />
+
+Regarde bien le deuxième test : c'est exactement la traversée de répertoires. Une fois ta fonction écrite, la défense tient en une ligne : normaliser le chemin construit, puis vérifier qu'il commence toujours par le dossier autorisé suivi d'une barre oblique. Python fournit `os.path.normpath`, et la bibliothèque `pathlib` une méthode `resolve` qui suit aussi les liens symboliques, ce que ta fonction ne fait pas.
+
+## les pièges
+
+- **Formater une clé en FAT32 pour de gros fichiers.** Au-delà de 4 Gio, c'est impossible : choisis exFAT.
+- **Oublier la casse sous Linux.** `Rapport.txt` et `rapport.txt` sont deux fichiers différents.
+- **Se fier à l'extension ou à l'icône.** Affiche les extensions et vérifie le type réel.
+- **Prendre un fichier caché pour un fichier protégé.** Cacher n'est pas protéger.
+- **Faire confiance aux dates.** Elles se falsifient ; croise-les avec d'autres sources.
+- **Filtrer `../` au lieu de normaliser.** Résous le chemin, puis vérifie qu'il reste dans le dossier autorisé.
+
+## pour aller plus loin
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/win32/fileio/naming-a-file" description="Les règles de nommage et de chemins de Windows, lettres de lecteur comprises">Microsoft : nommer des fichiers et des chemins</ExternalLink>
+
+<ExternalLink href="https://owasp.org/www-community/attacks/Path_Traversal" description="La traversée de répertoires décrite par l'OWASP, avec ses variantes, en anglais">OWASP : Path Traversal</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/pathlib.html" description="Manipuler des chemins proprement en Python">Documentation Python : pathlib</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi une clé USB refuse-t-elle un fichier de 6 Go alors qu'elle a 30 Go libres ?" options={["Elle est formatée en FAT32, qui limite chaque fichier à 4 Gio", "Elle est défectueuse", "Le fichier est corrompu", "Windows limite les copies à 4 Go"]} correct={0} explanation="FAT32 note la taille d'un fichier sur 32 bits : au-delà de 4 Gio, c'est impossible. exFAT lève cette limite." />
+  <Quiz id="q-2" question="Depuis le dossier /home/alice/projets, que désigne ../photos/plage.jpg ?" options={["/home/alice/projets/photos/plage.jpg", "/home/photos/plage.jpg", "/home/alice/photos/plage.jpg", "/photos/plage.jpg"]} correct={2} explanation=".. remonte d'un dossier, de projets à alice, puis on descend dans photos." />
+  <Quiz id="q-3" question="Sous Linux, où apparaît le contenu d'une clé USB ?" options={["Dans un lecteur E:", "Dans /dev uniquement", "Nulle part sans redémarrer", "Dans un dossier de l'arborescence où elle est montée, par exemple /media/alice/CLE"]} correct={3} explanation="Linux n'a qu'une arborescence : un volume est monté dans un dossier, et son contenu apparaît à cet endroit." />
+  <Quiz id="q-4" question="Un collègue reçoit devis.pdf avec une icône de PDF. En affichant les extensions, le nom devient devis.pdf.exe. Qu'est-ce que c'est ?" options={["Un PDF normal", "Un PDF compressé", "Un programme déguisé, à ne pas ouvrir", "Une erreur d'affichage de Windows"]} correct={2} explanation="Windows masquait l'extension réelle .exe, et le programme fournit sa propre icône de PDF." />
+  <Quiz id="q-5" question="À quoi sert la marque du web sous Windows ?" options={["À accélérer les téléchargements", "À chiffrer les fichiers téléchargés", "À compresser les fichiers", "À signaler qu'un fichier vient d'Internet pour déclencher avertissements et mode protégé"]} correct={3} explanation="Le flux Zone.Identifier note l'origine Internet. SmartScreen et le mode protégé d'Office s'appuient dessus." />
+  <Quiz id="q-6" question="Un serveur lit /srv/docs/ suivi du nom demandé. Quelle demande exploite une traversée de répertoires ?" options={["rapport.pdf", "RAPPORT.PDF", "../../etc/passwd", "rapport.pdf.bak"]} correct={2} explanation="Les .. font remonter hors de /srv/docs jusqu'à la racine, puis vers un fichier système." />
+  <Quiz id="q-7" question="Quelle est la bonne défense contre la traversée de répertoires ?" options={["Interdire la suite de caractères ../", "Cacher le dossier", "Normaliser le chemin construit puis vérifier qu'il reste dans le dossier autorisé", "Renommer les fichiers sensibles"]} correct={2} explanation="Un filtre sur ../ se contourne par des encodages. Résoudre le chemin puis vérifier son préfixe ne se contourne pas ainsi." />
+</QuizGroup>
+
+## à retenir
+
+- Un **système de fichiers** range les octets en blocs, tient l'arborescence, les **métadonnées** et l'espace libre ; formater, c'est en créer un vide.
+- **NTFS** (Windows), **ext4** (Linux), **APFS** (macOS), **exFAT** (clés USB) ; **FAT32** limite les fichiers à 4 Gio ; FAT et exFAT n'ont **aucun droit**.
+- Windows : lettres de lecteur et `\` ; Linux et macOS : **une racine** `/` et des volumes **montés**. `.` = ici, `..` = parent. Linux est **sensible à la casse**.
+- Les dates aident l'enquête mais se **falsifient** ; cacher un fichier ne le **protège** pas.
+- L'**extension** est une convention ; le **type réel** est dans le contenu. Affiche les extensions.
+- La **marque du web** signale les fichiers venus d'Internet ; elle se perd hors de NTFS.
+- **Traversée de répertoires** : normaliser le chemin, puis vérifier qu'il reste dans le dossier autorisé.
