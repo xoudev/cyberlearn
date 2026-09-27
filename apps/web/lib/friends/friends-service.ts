@@ -7,6 +7,8 @@ import {
 } from "@cyberlearn/db";
 import { resolveAvatarSrcMany } from "@/lib/avatar/storage";
 
+import { checkNotifyingWrite } from "@/lib/rate-limit";
+
 /**
  * Asking, answering and undoing - the four buttons a friendship ever needs -
  * plus the read the lists open with.
@@ -110,6 +112,12 @@ export async function requestFriendship(
 ): Promise<FriendActionResult> {
   const target = idSchema.safeParse(targetId);
   if (!target.success) return { ok: false, error: NOT_FOUND };
+
+  // Each request notifies its target: without a budget, one account could
+  // bury anybody's notifications.
+  const limit = await checkNotifyingWrite(userId);
+  if (!limit.success)
+    return { ok: false, error: "Beaucoup d'envois d'un coup : réessaie dans un moment." };
 
   const result = await friendshipRepository.request(userId, target.data);
   if (!result.ok) {

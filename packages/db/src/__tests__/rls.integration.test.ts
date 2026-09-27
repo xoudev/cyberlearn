@@ -42,7 +42,9 @@ describe("RLS policies (integration)", () => {
     adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    anonClient = createClient(supabaseUrl, supabaseAnonKey);
+    anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     // Cleanup leftover test users from a previous interrupted run (idempotent)
     for (const email of [TEST_USER_A_EMAIL, TEST_USER_B_EMAIL]) {
@@ -239,7 +241,14 @@ describe("RLS policies (integration)", () => {
   });
 
   async function signInAs(email: string): Promise<SupabaseClient> {
-    const { data, error } = await anonClient.auth.signInWithPassword({
+    // A throwaway client signs in. Signing in through anonClient left it holding
+    // the session, so every "anon" assertion after the first signInAs ran as
+    // that user - unnoticed while those assertions were about columns nobody
+    // may read, caught once one was about rows only their owner may.
+    const signer = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await signer.auth.signInWithPassword({
       email,
       password: TEST_PASSWORD,
     });
@@ -330,14 +339,37 @@ describe("RLS policies (integration)", () => {
   // ── users ─────────────────────────────────────────────────────────────────
 
   describe("users", () => {
-    it("anon can read public user profiles", async () => {
+    // The anon key ships in the bundle and the app: with it, anybody could list
+    // every account and walk past the leaderboard's privacy settings.
+    it("anon cannot read any profile", async () => {
       if (!configured) return;
       const { data, error } = await anonClient
         .from("users")
         .select("id, displayName")
         .eq("id", userAId);
+      expect(error !== null || (data ?? []).length === 0).toBe(true);
+    });
+
+    it("a user reads their own profile, bio included", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA
+        .from("users")
+        .select("id, displayName, bio")
+        .eq("id", userAId);
       expect(error).toBeNull();
       expect(data?.length).toBe(1);
+    });
+
+    it("a user cannot read another user's profile", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA
+        .from("users")
+        .select("id, displayName")
+        .eq("id", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
     });
 
     it("user cannot escalate their own role to ADMIN", async () => {

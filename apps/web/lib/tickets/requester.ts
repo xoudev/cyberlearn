@@ -10,7 +10,7 @@ import {
   isTicketFormTheme,
   type TicketFormTheme,
 } from "@cyberlearn/lib/tickets/tickets";
-import { checkContactForm } from "@/lib/rate-limit";
+import { checkContactForm, checkNotifyingWrite } from "@/lib/rate-limit";
 
 /**
  * A help request, from the side of the person asking: filing one, and adding
@@ -107,6 +107,13 @@ export async function replyAsRequester(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const parsed = replySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Écris un message avant d'envoyer." };
+
+  // A reply notifies the team; filing is capped by the contact form's budget,
+  // replying by the same one as the other writes that notify somebody.
+  const limit = await checkNotifyingWrite(userId);
+  if (!limit.success) {
+    return { ok: false, error: "Beaucoup d'envois d'un coup : réessaie dans un moment." };
+  }
 
   // Ownership first, and on its own: the repository gate knows about statuses,
   // not about who is allowed to write here.
