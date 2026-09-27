@@ -12,7 +12,7 @@ import { checkMagicLinkPerEmail, checkMagicLinkPerIp } from "@/lib/rate-limit";
 // that shows the code. The mobile app then calls supabase.auth.verifyOtp().
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z.email(),
 });
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

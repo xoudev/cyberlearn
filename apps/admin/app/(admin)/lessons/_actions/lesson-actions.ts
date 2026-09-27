@@ -24,7 +24,7 @@ const createLessonSchema = z.object({
   xpReward: z.coerce.number().int().nonnegative().max(10000),
   contentMdx: z.string().trim().min(10),
   coverImageUrl: z
-    .union([z.string().url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
+    .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
     .optional()
     .or(z.literal("")),
   publishNow: z.coerce.boolean().optional(),
@@ -46,7 +46,7 @@ export async function createLessonAction(
 
   if (!parsed.success) {
     const fieldErrors: CreateLessonState["fieldErrors"] = {};
-    for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
+    for (const [field, errs] of Object.entries(z.flattenError(parsed.error).fieldErrors)) {
       fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
@@ -122,7 +122,7 @@ export async function updateLessonStatusAction(
   lessonId: string,
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
 ): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(lessonId).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(lessonId).success) return { error: "ID invalide." };
   if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
 
   const [admin, lesson] = await Promise.all([
@@ -157,7 +157,7 @@ export async function updateLessonStatusAction(
 // ── Bulk status update ────────────────────────────────────────────────────────
 
 const bulkStatusSchema = z.object({
-  lessonIds: z.array(z.string().uuid()).min(1).max(500),
+  lessonIds: z.array(z.guid()).min(1).max(500),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
 });
 
@@ -205,7 +205,7 @@ export async function bulkUpdateLessonStatusAction(
 // ── Delete ──────────────────────────────────────────────────────────────────────
 
 const deleteLessonSchema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: z.guid(),
 });
 
 export interface DeleteLessonState {

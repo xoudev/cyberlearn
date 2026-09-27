@@ -35,10 +35,7 @@ const challengeSchema = z.object({
   flag: z.string().trim().max(500).optional(),
   starterCode: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.string().optional()),
   orderIndex: z.coerce.number().int().min(0).default(0),
-  prerequisiteId: z.preprocess(
-    (v) => (v === "" || v == null ? undefined : v),
-    z.string().uuid().optional(),
-  ),
+  prerequisiteId: z.preprocess((v) => (v === "" || v == null ? undefined : v), z.guid().optional()),
   attachmentUrl: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
     z.string().trim().max(500).optional(),
@@ -123,7 +120,7 @@ export async function updateChallengeAction(
   formData: FormData,
 ): Promise<ChallengeFormState> {
   await requireAdminAction();
-  if (!z.string().uuid().safeParse(id).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(id).success) return { error: "ID invalide." };
 
   const parsed = parseFormData(formData);
   if (!parsed.success) {
@@ -167,7 +164,7 @@ export async function setChallengeActiveAction(
   isActive: boolean,
 ): Promise<{ error?: string }> {
   await requireAdminAction();
-  if (!z.string().uuid().safeParse(id).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(id).success) return { error: "ID invalide." };
 
   await prisma.challenge.update({ where: { id }, data: { isActive } });
   revalidatePath("/challenges");
@@ -178,7 +175,7 @@ export async function setChallengeActiveAction(
 
 export async function deleteChallengeAction(id: string): Promise<{ error?: string }> {
   await requireAdminAction();
-  if (!z.string().uuid().safeParse(id).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(id).success) return { error: "ID invalide." };
 
   const progress = await prisma.userChallengeProgress.count({ where: { challengeId: id } });
   if (progress > 0) {
@@ -201,7 +198,7 @@ export async function createHintAction(
   orderIndex: number,
 ): Promise<{ error?: string }> {
   await requireAdminAction();
-  if (!z.string().uuid().safeParse(challengeId).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(challengeId).success) return { error: "ID invalide." };
 
   const validated = z
     .object({
@@ -231,7 +228,7 @@ export async function updateHintAction(
   xpCost: number,
 ): Promise<{ error?: string }> {
   await requireAdminAction();
-  if (!z.string().uuid().safeParse(hintId).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(hintId).success) return { error: "ID invalide." };
 
   const validated = z
     .object({
@@ -257,7 +254,7 @@ export async function updateHintAction(
 
 export async function deleteHintAction(hintId: string): Promise<{ error?: string }> {
   await requireAdminAction();
-  if (!z.string().uuid().safeParse(hintId).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(hintId).success) return { error: "ID invalide." };
 
   try {
     await prisma.challengeHint.delete({ where: { id: hintId } });

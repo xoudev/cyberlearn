@@ -4,7 +4,7 @@ import { z } from "zod";
 
 // A single answer to a placement question
 export const placementAnswerSchema = z.object({
-  questionId: z.string().uuid("Invalid question ID"),
+  questionId: z.guid("Invalid question ID"),
   selectedOptionId: z.string().min(1).max(10, "Invalid option ID"),
 });
 

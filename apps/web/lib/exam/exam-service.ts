@@ -122,7 +122,7 @@ export async function startExam(userId: string, pathId: unknown): Promise<StartQ
   const rl = await checkQuizStart(userId);
   if (!rl.success) return { ok: false, error: "Trop de tentatives. Réessaie plus tard." };
 
-  const parsedPathId = z.string().uuid().safeParse(pathId);
+  const parsedPathId = z.guid().safeParse(pathId);
   if (!parsedPathId.success) return { ok: false, error: "Parcours invalide." };
 
   const quiz = await quizRepository.findActiveQuizByPathId(parsedPathId.data);
@@ -196,7 +196,7 @@ export async function submitExam(
   const rl = await checkQuizSubmit(userId);
   if (!rl.success) return { ok: false, error: "Trop de soumissions. Réessaie plus tard." };
 
-  const parsedId = z.string().uuid().safeParse(attemptId);
+  const parsedId = z.guid().safeParse(attemptId);
   if (!parsedId.success) return { ok: false, error: "Tentative invalide." };
 
   const parsedAnswers = answersSchema.safeParse(answers);

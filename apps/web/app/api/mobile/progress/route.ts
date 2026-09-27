@@ -4,7 +4,7 @@ import { completeLessonForUser } from "@/lib/lessons/complete";
 import { userFromBearer } from "../_lib/auth";
 
 const schema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: z.guid(),
 });
 
 /**

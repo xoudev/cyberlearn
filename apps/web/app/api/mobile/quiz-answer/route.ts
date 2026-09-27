@@ -4,7 +4,7 @@ import { recordQuizAnswer } from "@/lib/lessons/quiz-answer";
 import { userFromBearer } from "../_lib/auth";
 
 const schema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: z.guid(),
   quizId: z.string().min(1).max(100),
   selected: z.number().int().min(0).max(25),
 });

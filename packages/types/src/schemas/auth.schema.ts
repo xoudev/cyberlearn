@@ -3,8 +3,7 @@ import { z } from "zod";
 export const authEmailSchema = z
   .string()
   .trim()
-  .email("A valid email address is required")
-  .max(254, "Email address is too long")
+  .pipe(z.email("A valid email address is required").max(254, "Email address is too long"))
   .transform((email) => email.toLowerCase());
 
 export const newPasswordSchema = z
@@ -61,7 +60,7 @@ export const passwordSignUpSchema = z
   .superRefine(({ password, passwordConfirmation }, context) => {
     if (password !== passwordConfirmation) {
       context.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["passwordConfirmation"],
         message: "Passwords do not match",
       });
@@ -80,7 +79,7 @@ export const passwordUpdateSchema = z
   .superRefine(({ password, passwordConfirmation }, context) => {
     if (password !== passwordConfirmation) {
       context.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["passwordConfirmation"],
         message: "Passwords do not match",
       });

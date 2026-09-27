@@ -11,7 +11,7 @@ import { getTerminalScenario } from "@cyberlearn/lib";
 const simulatedTerminalPropsSchema = z.object({
   id: z.string().optional(),
   scenario: z.string().optional(),
-  commands: z.record(z.string()).optional(),
+  commands: z.record(z.string(), z.string()).optional(),
   title: z.string().optional(),
   height: z.number().positive().optional(),
   shell: z.enum(["bash", "powershell"]).optional(),
@@ -505,7 +505,7 @@ export function SimulatedTerminal(rawProps: SimulatedTerminalProps): React.React
   // Runtime prop validation - warn on bad values in dev, never throw
   const parsed = simulatedTerminalPropsSchema.safeParse(rawProps);
   if (!parsed.success && process.env.NODE_ENV !== "production") {
-    console.warn("[SimulatedTerminal] invalid props:", parsed.error.flatten());
+    console.warn("[SimulatedTerminal] invalid props:", z.flattenError(parsed.error));
   }
 
   const {

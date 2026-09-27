@@ -17,7 +17,7 @@ export function LessonImage(rawProps: LessonImageProps): React.JSX.Element {
   const result = lessonImagePropsSchema.safeParse(rawProps);
   if (!result.success) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[LessonImage] invalid props:", result.error.flatten());
+      console.warn("[LessonImage] invalid props:", z.flattenError(result.error));
     }
     return (
       <div

@@ -19,7 +19,7 @@ const updatePathSchema = z.object({
   track: z.enum(["SKILL", "CAREER"]).default("SKILL"),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedHours: z.coerce.number().int().positive().max(500),
-  coverImageUrl: z.string().url().optional().or(z.literal("")),
+  coverImageUrl: z.url().optional().or(z.literal("")),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
 });
 
@@ -38,7 +38,7 @@ export async function updatePathAction(
 
   if (!parsed.success) {
     const fieldErrors: UpdatePathState["fieldErrors"] = {};
-    for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
+    for (const [field, errs] of Object.entries(z.flattenError(parsed.error).fieldErrors)) {
       fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };

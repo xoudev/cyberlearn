@@ -30,7 +30,7 @@ import { recordQuestProgress } from "@/lib/quests/progress";
 
 const titleSchema = z.string().trim().min(8).max(160);
 const bodySchema = z.string().trim().min(10).max(10_000);
-const uuid = z.string().uuid();
+const uuid = z.guid();
 
 export interface ForumActionResult {
   ok: boolean;

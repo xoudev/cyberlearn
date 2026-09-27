@@ -16,7 +16,7 @@ export type { CompleteLessonResult };
  * mobile API route can reuse it - this action only authenticates the session.
  */
 export async function completeLesson(lessonId: string): Promise<CompleteLessonResult> {
-  if (!z.string().uuid().safeParse(lessonId).success) return EMPTY_COMPLETE_RESULT;
+  if (!z.guid().safeParse(lessonId).success) return EMPTY_COMPLETE_RESULT;
   const authUser = await requireRequestUser();
   return completeLessonForUser(authUser.id, lessonId);
 }

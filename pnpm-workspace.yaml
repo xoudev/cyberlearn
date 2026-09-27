@@ -23,8 +23,8 @@ catalog:
   "@supabase/ssr": "^0.6.1"
 
   # Validation
-  zod: "^3.24.3"
-  "@t3-oss/env-nextjs": "^0.12.0"
+  zod: "^4.6.5"
+  "@t3-oss/env-nextjs": "^0.13.11"
 
   # Styling
   tailwindcss: "^4.3.3"

@@ -22,7 +22,7 @@ const updateLessonSchema = z.object({
   xpReward: z.coerce.number().int().nonnegative().max(10000),
   contentMdx: z.string().trim().min(10),
   coverImageUrl: z
-    .union([z.string().url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
+    .union([z.url(), z.string().startsWith(UPLOADED_COVER_PREFIX)])
     .optional()
     .or(z.literal("")),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
@@ -43,7 +43,7 @@ export async function updateLessonAction(
 
   if (!parsed.success) {
     const fieldErrors: UpdateLessonState["fieldErrors"] = {};
-    for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
+    for (const [field, errs] of Object.entries(z.flattenError(parsed.error).fieldErrors)) {
       fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
