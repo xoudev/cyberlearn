@@ -110,7 +110,9 @@ describe("class lessons (integration, real DB)", () => {
 
     const catalogue = await prisma.lesson.create({
       data: {
-        refCode: `CL-LSN-${suffix.slice(0, 3)}-V01`,
+        // Three hex characters were all digits one run in four, and then named a
+        // seeded lesson often enough to break the suite: a letter keeps it apart.
+        refCode: `CL-LSN-T${suffix}-V01`,
         slug: `catalogue-${suffix}`,
         title: `Catalogue ${suffix}`,
         description: "Une leçon du catalogue",
