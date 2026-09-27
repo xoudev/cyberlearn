@@ -330,14 +330,37 @@ describe("RLS policies (integration)", () => {
   // ── users ─────────────────────────────────────────────────────────────────
 
   describe("users", () => {
-    it("anon can read public user profiles", async () => {
+    // The anon key ships in the bundle and the app: with it, anybody could list
+    // every account and walk past the leaderboard's privacy settings.
+    it("anon cannot read any profile", async () => {
       if (!configured) return;
       const { data, error } = await anonClient
         .from("users")
         .select("id, displayName")
         .eq("id", userAId);
+      expect(error !== null || (data ?? []).length === 0).toBe(true);
+    });
+
+    it("a user reads their own profile, bio included", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA
+        .from("users")
+        .select("id, displayName, bio")
+        .eq("id", userAId);
       expect(error).toBeNull();
       expect(data?.length).toBe(1);
+    });
+
+    it("a user cannot read another user's profile", async () => {
+      if (!configured) return;
+      const clientA = await signInAs(TEST_USER_A_EMAIL);
+      const { data, error } = await clientA
+        .from("users")
+        .select("id, displayName")
+        .eq("id", userBId);
+      expect(error).toBeNull();
+      expect(data).toEqual([]);
     });
 
     it("user cannot escalate their own role to ADMIN", async () => {

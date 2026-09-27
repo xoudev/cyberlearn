@@ -179,6 +179,11 @@ export async function editForumPost(
   input: unknown,
   path?: string,
 ): Promise<ForumActionResult> {
+  // Editing is writing: same budget as posting, or an edit loop would be the
+  // way around it.
+  const limit = await checkQaSubmission(userId);
+  if (!limit.success) return { ok: false, error: TOO_FAST };
+
   const parsed = z.object({ postId: uuid, content: bodySchema }).safeParse(input);
   if (!parsed.success) return { ok: false, error: "Message trop court." };
 

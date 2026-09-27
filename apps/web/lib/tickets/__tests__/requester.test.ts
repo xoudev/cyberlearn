@@ -15,7 +15,11 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: { contactTicket: { create: m.create, findFirst: m.findFirst } },
   ticketRepository: { addMessage: m.addMessage },
 }));
-vi.mock("@/lib/rate-limit", () => ({ checkContactForm: m.checkContactForm }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkContactForm: m.checkContactForm,
+  // Replies spend from the shared budget for writes that notify somebody.
+  checkNotifyingWrite: () => Promise.resolve({ success: true }),
+}));
 
 const { fileTicket, replyAsRequester } = await import("../requester");
 

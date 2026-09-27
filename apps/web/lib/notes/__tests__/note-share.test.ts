@@ -7,6 +7,7 @@ const m = vi.hoisted(() => ({
   share: vi.fn<(input: unknown) => Promise<unknown>>(),
   unshare: vi.fn<(authorId: string, noteId: string, recipientId: string) => Promise<boolean>>(),
   announceModeration: vi.fn<(input: unknown) => Promise<void>>(),
+  notifyingWrite: vi.fn<(userId: string) => Promise<{ success: boolean }>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -22,6 +23,7 @@ vi.mock("@cyberlearn/lib", () => ({
   labelRules: (rules: string[]) => rules.map((r) => `règle ${r}`),
 }));
 vi.mock("@/lib/moderation/announce", () => ({ announceModeration: m.announceModeration }));
+vi.mock("@/lib/rate-limit", () => ({ checkNotifyingWrite: m.notifyingWrite }));
 
 const { shareAudienceFor, shareNoteFor, sharedWithMeFor, unshareNoteFor } = await import(
   "../note-share"
@@ -82,6 +84,18 @@ describe("shareAudienceFor", () => {
 });
 
 describe("shareNoteFor", () => {
+  beforeEach(() => {
+    m.notifyingWrite.mockResolvedValue({ success: true });
+  });
+
+  it("stops sharing once the hour's budget is spent, before the repository", async () => {
+    m.notifyingWrite.mockResolvedValue({ success: false });
+    expect(await shareNoteFor(ME, { noteId: NOTE, recipientIds: [PEER] })).toMatchObject({
+      ok: false,
+    });
+    expect(m.share).not.toHaveBeenCalled();
+  });
+
   it("refuses a selection that is not one, before the repository", async () => {
     expect(await shareNoteFor(ME, { noteId: NOTE, recipientIds: [] })).toEqual({
       ok: false,

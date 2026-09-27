@@ -63,5 +63,14 @@
     "lint-staged": "catalog:",
     "next": "catalog:",
     "turbo": "^2.11.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "dompurify@<3.4.13": "^3.4.16",
+      "lodash-es@<4.18.1": "^4.18.1",
+      "mysql2@<3.24.4": "^3.24.4",
+      "deepmerge-ts@<8": "^8.0.2",
+      "@babel/core@<7.29.6": "^7.29.6"
+    }
   }
 }

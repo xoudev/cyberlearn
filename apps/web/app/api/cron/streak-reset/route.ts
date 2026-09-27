@@ -4,15 +4,15 @@ import { applyDayBoundary, dayKey } from "@cyberlearn/lib";
 
 import { logger } from "@cyberlearn/lib/logger";
 
+import { isAuthorizedCron } from "@/lib/cron-auth";
+
 // Vercel Cron: runs daily (see vercel.json crons config).
 // For each user with a live streak who did not act yesterday, either consume a
 // freeze to preserve the streak or break it - using Europe/Paris day boundaries
 // (the same notion of "day" as the activity logic, via dayKey).
 export async function GET(request: Request): Promise<NextResponse> {
-  const authHeader = request.headers.get("authorization");
-  // Fail closed: a missing/empty CRON_SECRET must never authorize.
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  // Fail closed, in constant time: see lib/cron-auth.ts.
+  if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -198,6 +198,23 @@ export async function checkQaSubmission(userId: string): Promise<RateLimitResult
   return toResult(await limiter.limit(userId));
 }
 
+/**
+ * 30 writes per user per hour that each land in somebody else's notifications:
+ * friend requests, note shares, replies on a support ticket. One budget for
+ * all of them, like the forum and the lesson Q&A share theirs - somebody
+ * flooding other people does not care which button they use.
+ */
+export async function checkNotifyingWrite(userId: string): Promise<RateLimitResult> {
+  if (IS_DEV) return PASS_THROUGH;
+  const limiter = getLimiter(
+    "notify",
+    (r) =>
+      new Ratelimit({ redis: r, limiter: Ratelimit.slidingWindow(30, "1 h"), prefix: "rl:notify" }),
+  );
+  if (!limiter) return PASS_THROUGH;
+  return toResult(await limiter.limit(userId));
+}
+
 /** 20 hint reveals per user per hour. */
 export async function checkHintReveal(userId: string): Promise<RateLimitResult> {
   if (IS_DEV) return PASS_THROUGH;

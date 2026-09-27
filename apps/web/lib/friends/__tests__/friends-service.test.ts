@@ -18,6 +18,7 @@ const m = vi.hoisted(() => ({
   createNotification: vi.fn<(data: unknown) => Promise<void>>(),
   findUser: vi.fn<(args: unknown) => Promise<unknown>>(),
   resolveAvatarSrcMany: vi.fn<(values: (string | null)[]) => Promise<(string | null)[]>>(),
+  notifyingWrite: vi.fn<(userId: string) => Promise<{ success: boolean }>>(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
@@ -33,6 +34,7 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: { user: { findUnique: m.findUser } },
 }));
 vi.mock("@/lib/avatar/storage", () => ({ resolveAvatarSrcMany: m.resolveAvatarSrcMany }));
+vi.mock("@/lib/rate-limit", () => ({ checkNotifyingWrite: m.notifyingWrite }));
 
 const { acceptFriendship, listFriendsFor, removeFriendship, requestFriendship } = await import(
   "../friends-service"
@@ -62,6 +64,18 @@ beforeEach(() => {
 });
 
 describe("requestFriendship", () => {
+  beforeEach(() => {
+    m.notifyingWrite.mockResolvedValue({ success: true });
+  });
+
+  it("stops asking once the hour's budget is spent, before touching the table", async () => {
+    m.notifyingWrite.mockResolvedValue({ success: false });
+    expect(await requestFriendship(ME, THEM)).toMatchObject({ ok: false });
+    expect(m.notifyingWrite).toHaveBeenCalledWith(ME);
+    expect(m.request).not.toHaveBeenCalled();
+    expect(m.createNotification).not.toHaveBeenCalled();
+  });
+
   it("refuses an id that is not one, before touching the table", async () => {
     expect(await requestFriendship(ME, "nope")).toEqual({
       ok: false,

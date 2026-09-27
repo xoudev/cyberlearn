@@ -3,6 +3,8 @@ import { noteShareRepository } from "@cyberlearn/db";
 import { labelRules } from "@cyberlearn/lib";
 import { announceModeration } from "@/lib/moderation/announce";
 
+import { checkNotifyingWrite } from "@/lib/rate-limit";
+
 /**
  * Handing a note to a classmate or a friend.
  *
@@ -85,6 +87,12 @@ export interface ShareNoteResult {
 export async function shareNoteFor(userId: string, input: unknown): Promise<ShareNoteResult> {
   const parsed = shareSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Sélection invalide." };
+
+  // A share notifies every recipient, so it spends from the same budget as a
+  // friend request.
+  const limit = await checkNotifyingWrite(userId);
+  if (!limit.success)
+    return { ok: false, error: "Beaucoup d'envois d'un coup : réessaie dans un moment." };
 
   const result = await noteShareRepository.share({
     authorId: userId,

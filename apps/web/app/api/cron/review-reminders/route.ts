@@ -3,13 +3,13 @@ import { prisma, notificationRepository } from "@cyberlearn/db";
 
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
+import { isAuthorizedCron } from "@/lib/cron-auth";
+
 // Vercel Cron: runs daily at 08:00 UTC (see vercel.json crons config).
 // Sends REVIEW_REMINDER notifications to users with lessons due today.
 export async function GET(request: Request): Promise<NextResponse> {
-  const authHeader = request.headers.get("authorization");
-  // Fail closed: a missing/empty CRON_SECRET must never authorize.
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  // Fail closed, in constant time: see lib/cron-auth.ts.
+  if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

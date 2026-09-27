@@ -5,20 +5,13 @@ import { Redis } from "@upstash/redis";
 
 import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
+import { isAuthorizedCron } from "@/lib/cron-auth";
+
 // Vercel Cron: runs every 6 hours (see vercel.json).
 // Keeps Supabase and Upstash warm - Supabase Free pauses after 7 days of inactivity.
 
-function isAuthorized(req: NextRequest): boolean {
-  const auth = req.headers.get("authorization");
-  // Fail closed: a missing/empty CRON_SECRET must never authorize (otherwise
-  // `Bearer ` matches `Bearer ` and the cron is open to anyone).
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return auth === `Bearer ${secret}`;
-}
-
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  if (!isAuthorized(req)) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
