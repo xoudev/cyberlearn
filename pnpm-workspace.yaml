@@ -56,8 +56,8 @@ catalog:
   "@radix-ui/react-tooltip": "^1.2.16"
 
   # Email
-  resend: "^4.5.1"
-  "@react-email/components": "^0.0.36"
+  resend: "^6.30.0"
+  "@react-email/components": "^1.0.12"
 
   # Rate limiting
   "@upstash/ratelimit": "^2.2.0"
@@ -77,7 +77,7 @@ catalog:
   "@tailwindcss/typography": "^0.5.20"
 
   # Monitoring
-  "@sentry/nextjs": "^9.14.0"
+  "@sentry/nextjs": "^11.0.0"
 
   # Testing
   vitest: "^5.0.2"
