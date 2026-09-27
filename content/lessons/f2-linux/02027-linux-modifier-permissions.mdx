@@ -1,0 +1,271 @@
+---
+refCode: CL-LSN-02027-V01
+slug: linux-modifier-permissions
+title: "Modifier les permissions : chmod, chown, umask"
+description: "Changer les droits en notation symbolique ou octale, changer propriétaire et groupe, appliquer des droits à toute une arborescence sans rendre les fichiers exécutables, et régler les droits que reçoivent les fichiers à leur création avec umask."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02026-V01"]
+---
+
+Savoir lire les permissions ne suffit pas : il faut les régler. Rendre un script exécutable, protéger une clé privée, donner un répertoire à l'équipe web, corriger les droits d'un site entier après une copie maladroite. Trois commandes suffisent, `chmod`, `chown` et `chgrp`, et une quatrième, `umask`, décide des droits que reçoivent les fichiers **au moment où ils sont créés**. Cette leçon les couvre, avec l'erreur récursive qui a déjà rendu exécutables des milliers de fichiers de sites web.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- modifier les droits en notation symbolique (`u+x`, `go-w`, `o=`) et en notation octale (`640`) ;
+- changer le propriétaire et le groupe d'un fichier, et savoir qui a le droit de le faire ;
+- appliquer des droits à toute une arborescence, en traitant différemment fichiers et répertoires ;
+- expliquer ce que fait `umask` et choisir une valeur adaptée ;
+- remettre d'aplomb les droits d'un répertoire de site web.
+
+## pourquoi ça compte
+
+Régler les droits est un geste de sécurité quotidien. SSH refuse d'utiliser une clé privée lisible par d'autres que son propriétaire ; une application web qui peut écrire dans son propre code est une application qu'un attaquant peut modifier ; un fichier de configuration créé avec des droits trop ouverts expose ses secrets à tous les comptes de la machine. Et les droits se règlent souvent en masse, sur des arborescences entières : une commande mal écrite, et l'erreur se multiplie par dix mille fichiers.
+
+## chmod : changer les droits
+
+### la notation symbolique
+
+`chmod` (*change mode*) accepte une description des modifications, sous la forme **qui**, **opération**, **droits** :
+
+| Élément | Valeurs |
+| --- | --- |
+| Qui | `u` propriétaire, `g` groupe, `o` autres, `a` tous |
+| Opération | `+` ajouter, `-` retirer, `=` fixer exactement |
+| Droits | `r`, `w`, `x` |
+
+```bash
+chmod u+x sauvegarde.sh          # rendre exécutable pour le propriétaire
+chmod go-w rapport.txt           # retirer l'écriture au groupe et aux autres
+chmod o= secret.conf             # plus aucun droit pour les autres
+chmod u=rw,g=r,o= app.conf       # fixer exactement : rw-r-----
+chmod a+r index.html             # lisible par tous
+```
+
+L'intérêt de la forme symbolique est de **modifier** sans tout réécrire : `chmod u+x` ajoute l'exécution au propriétaire sans toucher au reste. Sans lettre de catégorie, `chmod +x` s'applique à tous, en tenant compte de l'`umask` vu plus bas.
+
+### la notation octale
+
+La forme octale **fixe** tous les droits d'un coup, avec les valeurs vues à la leçon précédente (r = 4, w = 2, x = 1) :
+
+```bash
+chmod 600 ~/.ssh/id_ed25519      # rw------- : clé privée
+chmod 644 index.html             # rw-r--r--
+chmod 755 /usr/local/bin/outil   # rwxr-xr-x
+chmod 750 /srv/equipe            # rwxr-x---
+```
+
+Laquelle choisir ? La forme octale quand on sait exactement ce qu'on veut obtenir ; la forme symbolique quand on veut changer un droit précis sans se soucier des autres. Dans un script, la forme octale a l'avantage d'être sans ambiguïté : le résultat ne dépend pas de l'état de départ.
+
+`chmod` n'est permis qu'au **propriétaire** du fichier et à root. Avoir le droit d'écrire dans un fichier ne donne pas celui de changer ses permissions.
+
+## chown et chgrp : changer propriétaire et groupe
+
+```bash
+sudo chown claire rapport.txt              # nouveau propriétaire
+sudo chown claire:developpeurs rapport.txt # propriétaire et groupe
+sudo chown :developpeurs rapport.txt       # groupe seul
+sudo chgrp developpeurs rapport.txt        # groupe seul, autre commande
+```
+
+Deux règles d'autorisation :
+
+- **changer le propriétaire** d'un fichier est réservé à **root**. Un utilisateur ordinaire ne peut pas donner ses fichiers à quelqu'un d'autre. C'est volontaire : sinon, on pourrait faire porter à un autre la responsabilité d'un fichier, ou le remplir contre son gré pour épuiser son quota de disque ;
+- **changer le groupe** est permis au propriétaire, mais seulement vers un groupe **dont il est membre**.
+
+L'option `--reference` copie le propriétaire, le groupe ou les droits d'un autre fichier, ce qui évite de les retaper :
+
+```bash
+sudo chown --reference=/etc/nginx/nginx.conf /etc/nginx/conf.d/nouveau.conf
+sudo chmod --reference=/etc/nginx/nginx.conf /etc/nginx/conf.d/nouveau.conf
+```
+
+## modifier toute une arborescence
+
+`chmod`, `chown` et `chgrp` acceptent tous `-R` pour traiter récursivement un répertoire et tout son contenu :
+
+```bash
+sudo chown -R www-data:www-data /var/www/site
+```
+
+Pour `chown`, pas de difficulté. Pour `chmod`, un piège classique attend.
+
+### le piège de chmod -R 755
+
+On veut que le site soit lisible par le serveur web. La commande qui vient à l'esprit :
+
+```bash
+chmod -R 755 /var/www/site
+```
+
+Elle donne `rwxr-xr-x` à **tout** : aux répertoires, ce qui est correct (il faut `x` pour les traverser), mais aussi à **chaque fichier**, qui devient exécutable. Des images, des feuilles de style, des fichiers de configuration exécutables : c'est inutile, et sur certaines configurations de serveur, dangereux.
+
+<Diagram caption="Fichiers et répertoires n'ont pas besoin des mêmes droits">
+flowchart TD
+  A["Arborescence d'un site"] --> B["Répertoires : besoin de x pour être traversés"]
+  A --> C["Fichiers : pas besoin de x, sauf les programmes"]
+  B --> D["755 ou 750"]
+  C --> E["644 ou 640"]
+</Diagram>
+
+Deux solutions.
+
+**Le X majuscule.** En notation symbolique, `X` (majuscule) donne le droit d'exécution **seulement aux répertoires**, et aux fichiers qui l'avaient déjà pour au moins une catégorie :
+
+```bash
+chmod -R u=rwX,g=rX,o= /var/www/site
+```
+
+Les répertoires deviennent `rwxr-x---`, les fichiers ordinaires `rw-r-----`, et les éventuels scripts déjà exécutables le restent.
+
+**`find` pour traiter séparément.** Plus explicite, et plus sûr quand on veut retirer un `x` posé par erreur :
+
+```bash
+find /var/www/site -type d -exec chmod 750 {} +
+find /var/www/site -type f -exec chmod 640 {} +
+```
+
+Les répertoires reçoivent `750`, les fichiers `640`, sans exception. C'est la commande qui répare un site après un `chmod -R 755` malheureux.
+
+<Callout type="danger">
+Relis toujours le chemin d'une commande récursive avant de valider. `sudo chown -R www-data /var/www /site` (avec une espace égarée) donne tout `/site` **et** `/var/www` à `www-data` ; `sudo chmod -R 777 /` avec une variable vide rend tout le système modifiable par tous et le rend souvent inutilisable. GNU `chown` et `chmod` refusent heureusement de travailler récursivement sur `/` lui-même (`--preserve-root`), mais pas sur `/usr` ou `/etc`.
+</Callout>
+
+## umask : les droits à la naissance
+
+Quand un programme crée un fichier, il demande en général des droits larges : `666` (`rw-rw-rw-`) pour un fichier, `777` pour un répertoire. Le noyau **retire** alors les droits indiqués par l'**umask** du processus. L'`umask` est un masque : chaque bit qui y figure est enlevé.
+
+```bash
+umask
+```
+
+```text
+0022
+```
+
+Avec `022`, on retire l'écriture (2) au groupe et aux autres. Un fichier créé reçoit donc `644`, un répertoire `755`.
+
+| umask | Fichiers créés | Répertoires créés | Usage |
+| --- | --- | --- | --- |
+| `022` | 644 `rw-r--r--` | 755 `rwxr-xr-x` | Le réglage par défaut le plus courant |
+| `027` | 640 `rw-r-----` | 750 `rwxr-x---` | Serveurs : rien pour les autres |
+| `077` | 600 `rw-------` | 700 `rwx------` | Données privées, comptes sensibles |
+| `002` | 664 `rw-rw-r--` | 775 `rwxrwxr-x` | Travail en équipe dans des répertoires de groupe |
+
+Le calcul se fait par soustraction de bits, pas par soustraction arithmétique, mais pour les valeurs usuelles le résultat est le même : 666 moins 022 donne 644.
+
+`umask 027` dans un shell change le réglage **pour ce shell et ses enfants**, jusqu'à sa fermeture. Pour le rendre permanent, on l'écrit dans `~/.profile` (module 1), ou dans la configuration du service : systemd a une directive `UMask=` pour chaque service (module 8). Sur Debian et Ubuntu récents, l'`umask` par défaut des sessions est réglé dans `/etc/login.defs` et par PAM.
+
+<Callout type="info">
+L'`umask` explique pourquoi un fichier créé par un script de sauvegarde est lisible par tout le monde alors qu'il contient un export de base de données. Le script n'a rien fait de mal : il a simplement hérité d'un `umask 022`. Un script qui manipule des données sensibles commence par fixer son propre `umask 077`, et les fichiers qu'il crée naissent privés, sans qu'il faille penser à chacun.
+</Callout>
+
+## vérifier après coup : les droits dangereux
+
+Régler des droits, c'est bien ; vérifier qu'il ne reste pas d'erreur, c'est mieux. `find` et son critère `-perm` (module 2) permettent de balayer une arborescence à la recherche des droits qui n'ont rien à faire là.
+
+```bash
+find /var/www -perm -o+w              # modifiable par n'importe qui
+find /var/www -type f -perm /111      # fichiers exécutables, à justifier un par un
+find ~/.ssh -type f ! -perm 600       # fichiers de ~/.ssh qui ne sont pas en 600
+```
+
+`-perm -o+w` trouve tout ce que « les autres » peuvent modifier : dans un site web, la liste doit être vide. `-perm /111` trouve les fichiers dont au moins une catégorie a le droit d'exécution : dans un répertoire de contenu (images, pages, styles), chacun mérite une explication. La troisième ligne vérifie les clés SSH, que le client SSH refuse d'ailleurs d'utiliser si elles sont trop ouvertes, avec l'avertissement `UNPROTECTED PRIVATE KEY FILE`.
+
+Ces vérifications ont leur place dans une routine régulière, voire dans un script lancé chaque nuit qui signale toute nouveauté : un fichier devenu modifiable par tous du jour au lendemain est rarement un accident.
+
+## démonstration : remettre un site d'aplomb
+
+Un site vient d'être copié dans `/var/www/boutique` par un collègue, avec son propre compte. Constat :
+
+```bash
+ls -l /var/www/boutique | head -4
+```
+
+```text
+-rwxrwxrwx 1 claire claire  5120 sept. 27 11:40 index.php
+-rwxrwxrwx 1 claire claire   812 sept. 27 11:40 config.php
+drwxrwxrwx 4 claire claire  4096 sept. 27 11:40 images
+drwxrwxrwx 2 claire claire  4096 sept. 27 11:40 uploads
+```
+
+Tout appartient à Claire, et tout est en `777` : n'importe quel compte de la machine peut modifier le code du site, et donc y glisser une porte dérobée. Objectifs : le code appartient à un compte de déploiement et n'est **pas modifiable** par le serveur web ; le serveur web (`www-data`) peut **lire** le site et **écrire** seulement dans `uploads/` ; les autres n'ont rien.
+
+**1. Propriétaire et groupe** :
+
+```bash
+sudo chown -R deploy:www-data /var/www/boutique
+```
+
+**2. Droits de base**, séparés entre répertoires et fichiers :
+
+```bash
+sudo find /var/www/boutique -type d -exec chmod 750 {} +
+sudo find /var/www/boutique -type f -exec chmod 640 {} +
+```
+
+Le compte `deploy` peut tout modifier ; le groupe `www-data` peut lire et traverser ; les autres n'ont plus rien.
+
+**3. L'exception** : le serveur web doit pouvoir écrire les fichiers envoyés par les utilisateurs :
+
+```bash
+sudo chmod 770 /var/www/boutique/uploads
+```
+
+**4. Vérification :**
+
+```bash
+namei -l /var/www/boutique/config.php
+```
+
+Le résultat : le serveur web lit `config.php` mais ne peut pas le modifier, et un attaquant qui exploiterait une faille de l'application ne pourrait écrire que dans `uploads/`. Le parcours de sécurité web t'expliquera pourquoi on configure aussi le serveur pour ne **jamais exécuter** de code dans ce répertoire-là.
+
+## à toi de jouer
+
+Rends le script `sauvegarde.sh` exécutable pour son propriétaire en notation symbolique. Puis protège la clé privée `id_ed25519` pour que seul son propriétaire puisse la lire et l'écrire, en notation octale. Enfin, affiche l'`umask` actuel.
+
+<SimulatedTerminal shell="bash" title="Régler les droits" expectedCommands={["chmod u+x sauvegarde.sh", "chmod 600 id_ed25519", "umask"]} hints={["u pour le propriétaire, + pour ajouter, x pour l'exécution.", "Lecture et écriture pour le propriétaire seul : 4 + 2 = 6, puis 0 et 0.", "umask sans argument affiche la valeur courante."]} commands={{ "ls -l": "-rw-r--r-- 1 alice alice  411 sept. 27 11:50 id_ed25519\n-rw-r--r-- 1 alice alice  512 sept. 27 11:52 sauvegarde.sh", "chmod u+x sauvegarde.sh": "", "chmod 600 id_ed25519": "", "ls -l id_ed25519 sauvegarde.sh": "-rw------- 1 alice alice  411 sept. 27 11:50 id_ed25519\n-rwxr--r-- 1 alice alice  512 sept. 27 11:52 sauvegarde.sh", "umask": "0022", "umask -S": "u=rwx,g=rx,o=rx", "chown bob sauvegarde.sh": "chown: changing ownership of 'sauvegarde.sh': Operation not permitted" }} />
+
+Essaie aussi `chown bob sauvegarde.sh` : sans les droits root, changer le propriétaire est refusé, même pour ton propre fichier.
+
+## les pièges
+
+- **`chmod -R 755` sur un site.** Tous les fichiers deviennent exécutables. `u=rwX,g=rX,o=` ou `find -type d` et `-type f` séparément.
+- **777 pour régler un « Permission denied ».** Tout le monde peut tout modifier. Trouve le compte qui a besoin du droit.
+- **Une commande récursive avec une variable ou une espace égarée.** Relis le chemin, ou lance d'abord un `find` sans action pour voir ce qui serait touché.
+- **Oublier l'`umask` d'un script.** Les fichiers qu'il crée héritent de droits trop ouverts. `umask 077` en tête du script.
+- **Croire qu'on peut donner son fichier à un autre.** Changer le propriétaire est réservé à root.
+- **Ne jamais vérifier après coup.** Un `find -perm -o+w` sur les répertoires sensibles révèle en une commande ce qui a échappé à la correction.
+- **Laisser le serveur web propriétaire de son code.** Une faille de l'application permet alors de modifier le code lui-même.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/chmod-invocation.html" description="Toutes les formes de chmod, dont X majuscule">GNU coreutils : chmod</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/chown-invocation.html" description="chown, ses options et --reference">GNU coreutils : chown</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man2/umask.2.html" description="Le fonctionnement de l'umask d'un processus">umask(2)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que fait chmod go-w fichier ?" options={["Donne l'écriture au groupe et aux autres", "Retire l'écriture au groupe et aux autres", "Retire tous les droits au groupe", "Fixe les droits à rw-"]} correct={1} explanation="g et o désignent le groupe et les autres, - retire, w est l'écriture. Les autres droits ne changent pas." />
+  <Quiz id="q-2" question="Quelle commande donne exactement rwxr-x--- à un répertoire ?" options={["chmod 750 rep", "chmod 755 rep", "chmod 570 rep", "chmod u+rwx rep"]} correct={0} explanation="rwx = 7, r-x = 5, --- = 0. chmod u+rwx n'ajouterait que les droits du propriétaire sans fixer les autres." />
+  <Quiz id="q-3" question="Pourquoi chmod -R 755 /var/www/site est-il une mauvaise idée ?" options={["Parce que 755 est interdit sur les sites", "Parce que tous les fichiers deviennent exécutables, alors que seuls les répertoires en ont besoin", "Parce que -R ne fonctionne pas avec chmod", "Parce que le serveur web ne pourra plus lire"]} correct={1} explanation="Les répertoires ont besoin de x pour être traversés, les fichiers ordinaires non. X majuscule ou deux find séparés règlent le problème." />
+  <Quiz id="q-4" question="Que fait X majuscule dans chmod -R u=rwX,g=rX,o= rep ?" options={["Il donne l'exécution à tous les fichiers", "Il donne l'exécution aux répertoires, et aux fichiers déjà exécutables", "Il retire l'exécution partout", "Il rend les fichiers cachés"]} correct={1} explanation="X ne pose le bit d'exécution que là où il a un sens : répertoires, et fichiers qui étaient déjà exécutables pour au moins une catégorie." />
+  <Quiz id="q-5" question="Alice veut donner son fichier notes.txt à Bob avec chown bob notes.txt. Que se passe-t-il ?" options={["Le fichier appartient désormais à Bob", "La commande est refusée : changer le propriétaire est réservé à root", "Bob doit accepter le transfert", "Le fichier est copié chez Bob"]} correct={1} explanation="Seul root peut changer le propriétaire d'un fichier. Le propriétaire peut seulement changer le groupe, vers un groupe dont il est membre." />
+  <Quiz id="q-6" question="Avec un umask de 027, quels droits reçoit un fichier ordinaire nouvellement créé ?" options={["644", "640", "750", "600"]} correct={1} explanation="Un fichier est demandé en 666 ; on retire l'écriture au groupe et tout aux autres : rw-r-----, soit 640." />
+  <Quiz id="q-7" question="Un script de sauvegarde crée des exports de base de données lisibles par tous. Quelle est la correction la plus générale ?" options={["Lancer le script en root", "Ajouter umask 077 au début du script", "Supprimer les exports après usage", "Utiliser chmod 777"]} correct={1} explanation="Avec umask 077, tout ce que le script crée naît en 600 ou 700, sans qu'il faille penser à chaque fichier." />
+</QuizGroup>
+
+## à retenir
+
+- `chmod` symbolique pour **modifier** (`u+x`, `go-w`, `o=`, `u=rw,g=r,o=`), octal pour **fixer** (`600`, `640`, `644`, `750`, `755`).
+- `chown user:groupe` réservé à root ; `chgrp` ou `chown :groupe` au propriétaire, vers un de ses groupes. `--reference` pour copier.
+- Récursif : `chown -R` sans risque particulier ; pour `chmod`, **`u=rwX,g=rX,o=`** ou deux `find` (`-type d` puis `-type f`).
+- `umask` retire des droits à la création : `022` (644 et 755), `027` (640 et 750), `077` (600 et 700). `umask 077` en tête des scripts qui manipulent des secrets.
+- Un site : code au compte de déploiement, lecture seule pour le serveur web, écriture seulement là où c'est indispensable.

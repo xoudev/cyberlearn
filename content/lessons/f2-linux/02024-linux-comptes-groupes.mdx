@@ -1,0 +1,272 @@
+---
+refCode: CL-LSN-02024-V01
+slug: linux-comptes-groupes
+title: "Comptes et groupes"
+description: "Ce qu'est un compte pour Linux, les fichiers /etc/passwd, /etc/group et /etc/shadow champ par champ, les identifiants UID et GID, les comptes système et les comptes humains, et les commandes pour savoir qui est qui."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02903-V01"]
+---
+
+Tout ce qui se passe sur un système Linux se passe **au nom de quelqu'un**. Chaque fichier appartient à un compte, chaque processus tourne sous l'identité d'un compte, et chaque accès est autorisé ou refusé selon ce compte et ses groupes. Même les services, le serveur web ou la base de données, ont leur propre compte. Ce module traite de ces identités et des droits qui en découlent : c'est le cœur de la sécurité d'un système, et le terrain de jeu favori des attaquants qui cherchent à passer d'un compte ordinaire à root.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un compte pour le noyau : un numéro, pas un nom ;
+- lire `/etc/passwd`, `/etc/group` et `/etc/shadow` champ par champ ;
+- distinguer root, les comptes système et les comptes humains par leurs identifiants ;
+- dire à quoi sert un groupe, et la différence entre groupe principal et groupes secondaires ;
+- obtenir l'identité et les groupes d'un compte avec `id`, `groups` et `getent` ;
+- repérer dans ces fichiers ce qui doit alerter.
+
+## pourquoi ça compte
+
+Comprendre les comptes, c'est comprendre **qui peut faire quoi**. Un serveur web compromis ne donne à l'attaquant que les droits du compte `www-data` ; tout l'enjeu, pour lui, est ensuite de gagner d'autres droits. Pour le défenseur, l'enjeu est inverse : que chaque compte n'ait que ce dont il a besoin, et repérer vite un compte qui n'a rien à faire là.
+
+En enquête, les fichiers de comptes sont parmi les premiers regardés. Un compte ajouté récemment, un deuxième compte avec l'identifiant 0, un compte de service qui a soudain un vrai shell : ce sont des traces classiques de compromission, et on ne les voit que si l'on sait lire ces fichiers.
+
+## un compte, c'est un numéro
+
+Pour le noyau, un utilisateur n'a pas de nom : c'est un **UID** (*user identifier*), un entier. Un groupe est un **GID** (*group identifier*). Les noms qu'on voit (`alice`, `www-data`) ne sont qu'une étiquette, que les commandes traduisent en consultant des fichiers de correspondance.
+
+Cette précision a des conséquences concrètes. Deux noms associés au même UID sont, pour le système, **le même utilisateur**. Et les fichiers d'un compte supprimé continuent d'appartenir à son UID : si un nouveau compte reçoit plus tard le même numéro, il hérite de fait de ces fichiers. On l'a vu avec `find -nouser` au module 2.
+
+| UID | Qui | Rôle |
+| --- | --- | --- |
+| 0 | **root** | L'administrateur. Le noyau ne vérifie presque aucun droit pour lui |
+| 1 à 999 | **Comptes système** | Les services : `www-data`, `postgres`, `sshd`, `systemd-network`... |
+| 1000 et plus | **Comptes humains** | Les personnes, sur Debian, Ubuntu et Red Hat récents |
+| 65534 | **nobody** | Un compte sans aucun droit, pour faire tourner ce qui doit en avoir le moins possible |
+
+Les limites exactes se règlent dans `/etc/login.defs` (`UID_MIN`, `SYS_UID_MAX`), mais ces valeurs sont celles de presque toutes les distributions actuelles.
+
+<Callout type="info">
+Ce qui fait la puissance de root, ce n'est pas son nom mais son UID 0. Un compte nommé `maintenance` avec l'UID 0 a exactement les mêmes pouvoirs que root. C'est une technique de persistance connue des attaquants, et la première chose à vérifier dans `/etc/passwd` après un incident : il ne doit exister **qu'un seul** UID 0.
+</Callout>
+
+## /etc/passwd : la liste des comptes
+
+Chaque compte occupe une ligne de `/etc/passwd`, avec sept champs séparés par des deux-points :
+
+```bash
+grep "^alice:" /etc/passwd
+```
+
+```text
+alice:x:1000:1000:Alice Martin,,,:/home/alice:/bin/bash
+```
+
+<Diagram caption="Les sept champs d'une ligne de /etc/passwd">
+flowchart LR
+  A["alice : le nom"] --> B["x : mot de passe, stocké ailleurs"]
+  B --> C["1000 : l'UID"]
+  C --> D["1000 : le GID du groupe principal"]
+  D --> E["Alice Martin : un commentaire"]
+  E --> F["/home/alice : le répertoire personnel"]
+  F --> G["/bin/bash : le shell de connexion"]
+</Diagram>
+
+| N° | Champ | Remarque |
+| --- | --- | --- |
+| 1 | Nom de connexion | Unique |
+| 2 | Mot de passe | Toujours `x` aujourd'hui : le mot de passe chiffré est dans `/etc/shadow` |
+| 3 | UID | L'identifiant numérique |
+| 4 | GID | L'identifiant du **groupe principal** |
+| 5 | Commentaire (GECOS) | Nom complet, téléphone... souvent vide |
+| 6 | Répertoire personnel | Où l'on arrive à la connexion |
+| 7 | Shell | Le programme lancé à la connexion |
+
+Le septième champ dit si le compte peut ouvrir une session. Les comptes de service ont presque tous `/usr/sbin/nologin` ou `/bin/false` : toute tentative de connexion est immédiatement refusée. Un compte de service avec `/bin/bash` est anormal.
+
+`/etc/passwd` est **lisible par tout le monde**, et c'est voulu : `ls -l` a besoin d'y lire les noms pour afficher les propriétaires. C'est exactement pour cette raison que les mots de passe n'y sont plus.
+
+## /etc/shadow : les mots de passe
+
+Les mots de passe, ou plus exactement leur **empreinte**, sont dans `/etc/shadow`, lisible **uniquement par root** :
+
+```bash
+sudo grep "^alice:" /etc/shadow
+```
+
+```text
+alice:$y$j9T$Kx4b0R...tronqué...:20358:0:99999:7:::
+```
+
+| N° | Champ | Remarque |
+| --- | --- | --- |
+| 1 | Nom | Le même que dans `/etc/passwd` |
+| 2 | Empreinte du mot de passe | Voir ci-dessous |
+| 3 | Dernier changement | En jours depuis le 1er janvier 1970 |
+| 4 | Âge minimum | Jours avant de pouvoir le changer à nouveau |
+| 5 | Âge maximum | Jours avant de devoir le changer |
+| 6 | Avertissement | Jours de préavis avant l'expiration |
+| 7 à 9 | Inactivité, expiration du compte, réservé | Souvent vides |
+
+Le deuxième champ se lit ainsi :
+
+- il commence par `$` suivi d'un identifiant d'algorithme : `$y$` pour **yescrypt** (Debian 11 et plus, Ubuntu 22.04 et plus), `$6$` pour SHA-512, plus ancien. Viennent ensuite un **sel** aléatoire, puis l'empreinte elle-même. Le mot de passe n'y figure jamais en clair ;
+- `!` ou `*` au lieu d'une empreinte : **aucune connexion par mot de passe** possible. C'est le cas de tous les comptes système, et d'un compte verrouillé ;
+- un champ **vide** : le compte n'a pas de mot de passe du tout. Selon la configuration, on peut s'y connecter sans rien taper. C'est une faille.
+
+Tu étudieras dans le parcours de cryptographie pourquoi on stocke une empreinte salée et lente à calculer plutôt que le mot de passe. Pour l'instant, retiens que `/etc/shadow` doit rester **lisible par root seul** : quiconque le lit peut tenter de retrouver les mots de passe hors ligne, sans limite d'essais.
+
+## /etc/group : les groupes
+
+Un **groupe** rassemble des comptes pour leur donner des droits en commun : l'équipe web a accès aux fichiers du site, les administrateurs ont le droit d'utiliser `sudo`. Chaque groupe occupe une ligne de `/etc/group` :
+
+```bash
+grep "^sudo:" /etc/group
+```
+
+```text
+sudo:x:27:alice,bob
+```
+
+Quatre champs : le nom, un mot de passe de groupe (inutilisé, `x`), le **GID**, et la liste des **membres secondaires**, séparés par des virgules.
+
+Chaque compte a :
+
+- **un groupe principal**, celui du champ 4 de `/etc/passwd`. Sur Debian et Ubuntu, c'est par défaut un groupe du même nom que le compte, dont il est le seul membre (`alice` dans le groupe `alice`). Les fichiers que le compte crée appartiennent à ce groupe ;
+- **des groupes secondaires**, ceux où son nom apparaît dans `/etc/group`. Ils ajoutent des droits.
+
+Le compte n'apparaît pas dans la liste des membres de son groupe principal : ce lien-là est dans `/etc/passwd`. C'est pourquoi on consulte les deux fichiers, ou plus simplement la commande `id`.
+
+Quelques groupes ont un sens particulier sur Debian et Ubuntu :
+
+| Groupe | Donne le droit de |
+| --- | --- |
+| `sudo` | Utiliser `sudo` pour agir en root (`wheel` sur la famille Red Hat) |
+| `adm` | Lire la plupart des journaux de `/var/log` |
+| `docker` | Piloter Docker, ce qui revient en pratique à être root |
+| `www-data` | Accéder aux fichiers servis par le serveur web |
+
+<Callout type="danger">
+Appartenir au groupe `docker` équivaut à avoir les droits root : un membre peut lancer un conteneur qui monte tout le disque du système et le modifier à sa guise. Même chose pour `lxd`, `disk` (accès direct aux disques) ou `sudo`. Quand tu audites un système, la liste des membres de ces groupes est aussi importante que la liste des comptes qui connaissent le mot de passe root.
+</Callout>
+
+## qui suis-je, et qui est qui ?
+
+**`id`** donne l'identité complète d'un compte, le sien par défaut :
+
+```bash
+id
+```
+
+```text
+uid=1000(alice) gid=1000(alice) groups=1000(alice),4(adm),27(sudo),33(www-data)
+```
+
+UID, groupe principal, puis tous les groupes. Pour un autre compte : `id bob`.
+
+**`groups`** n'affiche que les noms des groupes : `groups alice`.
+
+**`getent`** interroge les bases de comptes **à la manière du système**. Sur un poste isolé, cela revient à lire `/etc/passwd` ou `/etc/group`. Mais en entreprise, les comptes viennent souvent d'un annuaire central (LDAP, Active Directory) et **n'apparaissent pas** dans `/etc/passwd`. `getent` les voit, `grep` non :
+
+```bash
+getent passwd alice
+getent group sudo
+```
+
+Prends l'habitude de `getent` dans les scripts : il donne la bonne réponse quelle que soit l'origine des comptes.
+
+## démonstration : l'audit rapide des comptes
+
+Tu arrives sur un serveur et tu veux en dresser l'état des comptes en quelques commandes.
+
+**1. Les UID 0.** Il ne doit y en avoir qu'un :
+
+```bash
+awk -F ':' '$3 == 0 { print $1 }' /etc/passwd
+```
+
+```text
+root
+```
+
+**2. Les comptes qui peuvent se connecter**, c'est-à-dire dont le shell n'est ni `nologin` ni `false` :
+
+```bash
+awk -F ':' '$7 !~ /(nologin|false)$/ { print $1, $3, $7 }' /etc/passwd
+```
+
+```text
+root 0 /bin/bash
+sync 4 /bin/sync
+alice 1000 /bin/bash
+bob 1001 /bin/bash
+postgres 114 /bin/bash
+```
+
+`sync` est un compte historique sans risque. Mais `postgres`, un compte système avec un vrai shell : c'est fréquent (le paquet le crée ainsi pour faciliter l'administration de la base), mais c'est un point à connaître.
+
+**3. Les comptes sans mot de passe :**
+
+```bash
+sudo awk -F ':' '$2 == "" { print $1 }' /etc/shadow
+```
+
+Aucune sortie : aucun compte n'est ouvert sans mot de passe.
+
+**4. Les membres des groupes qui donnent les droits d'administration :**
+
+```bash
+getent group sudo adm docker
+```
+
+```text
+sudo:x:27:alice,bob
+adm:x:4:syslog,alice
+docker:x:998:bob
+```
+
+`bob` est membre de `docker` : il est donc, de fait, administrateur, même si personne ne l'a voulu consciemment. Quatre commandes, et l'essentiel de la surface des comptes est connue.
+
+## à toi de jouer
+
+Affiche ta propre identité avec `id`. Puis cherche les comptes dont l'UID vaut 0 dans `/etc/passwd`. Enfin, affiche les membres du groupe `sudo` avec `getent`.
+
+<SimulatedTerminal shell="bash" title="Qui est qui ?" expectedCommands={["id", "awk -F ':' '$3 == 0 { print $1 }' /etc/passwd", "getent group sudo"]} hints={["id sans argument parle de toi.", "awk avec le séparateur deux-points : on garde les lignes dont le troisième champ vaut 0.", "getent group suivi du nom du groupe."]} commands={{ "id": "uid=1000(alice) gid=1000(alice) groups=1000(alice),4(adm),27(sudo),33(www-data)", "id bob": "uid=1001(bob) gid=1001(bob) groups=1001(bob),27(sudo),998(docker)", "awk -F ':' '$3 == 0 { print $1 }' /etc/passwd": "root\nmaintenance", "grep maintenance /etc/passwd": "maintenance:x:0:0::/var/lib/maintenance:/bin/bash", "getent group sudo": "sudo:x:27:alice,bob", "cat /etc/shadow": "cat: /etc/shadow: Permission denied", "ls -l /etc/passwd /etc/shadow": "-rw-r--r-- 1 root root   1843 sept. 25 14:10 /etc/passwd\n-rw-r----- 1 root shadow 1102 sept. 25 14:10 /etc/shadow" }} />
+
+Regarde bien le résultat de la deuxième commande : un compte `maintenance` a l'UID 0. Affiche sa ligne avec `grep maintenance /etc/passwd`. Sur un vrai serveur, ce serait une alerte de sécurité majeure.
+
+## les pièges
+
+- **Croire que le nom compte.** Le système ne connaît que l'UID. Deux noms avec l'UID 0 sont deux root.
+- **Lire seulement `/etc/group` pour connaître les groupes d'un compte.** Le groupe principal est dans `/etc/passwd`. `id` donne la réponse complète.
+- **Utiliser `grep` sur `/etc/passwd` dans un environnement d'entreprise.** Les comptes d'un annuaire n'y sont pas. `getent`.
+- **Oublier les groupes qui valent root.** `sudo`, `docker`, `lxd`, `disk` : leurs membres sont administrateurs de fait.
+- **Laisser `/etc/shadow` lisible par d'autres que root.** Les empreintes peuvent alors être attaquées hors ligne.
+- **Ignorer un champ vide dans `/etc/shadow`.** C'est un compte sans mot de passe.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/passwd.5.html" description="Le format du fichier /etc/passwd">passwd(5)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/shadow.5.html" description="Le format du fichier /etc/shadow">shadow(5)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/getent.1.html" description="Interroger les bases de comptes du système, y compris les annuaires">getent(1)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pour le noyau, qu'est-ce qui identifie un utilisateur ?" options={["Son nom de connexion", "Son UID, un nombre", "Son répertoire personnel", "Son mot de passe"]} correct={1} explanation="Le noyau ne manipule que des identifiants numériques. Les noms sont une traduction faite par les commandes." />
+  <Quiz id="q-2" question="Un compte nommé support a l'UID 0 dans /etc/passwd. Qu'en conclure ?" options={["Rien, c'est un compte de support ordinaire", "Il a tous les pouvoirs de root, et c'est un signal d'alerte", "Il ne peut pas se connecter", "Il est désactivé"]} correct={1} explanation="Les pouvoirs de root tiennent à l'UID 0, pas au nom. Un second UID 0 est une technique de persistance connue." />
+  <Quiz id="q-3" question="Pourquoi le deuxième champ de /etc/passwd contient-il seulement x ?" options={["Parce que les comptes n'ont pas de mot de passe", "Parce que l'empreinte du mot de passe est stockée dans /etc/shadow, lisible par root seul", "Parce que le mot de passe est chiffré en x", "Parce que le compte est verrouillé"]} correct={1} explanation="/etc/passwd doit être lisible par tous. Les empreintes ont été déplacées dans /etc/shadow pour qu'on ne puisse pas les attaquer hors ligne." />
+  <Quiz id="q-4" question="Dans /etc/shadow, le champ du mot de passe d'un compte de service vaut *. Que signifie-t-il ?" options={["Le mot de passe est une étoile", "Aucune connexion par mot de passe n'est possible pour ce compte", "Le compte n'a pas de mot de passe et s'ouvre sans rien taper", "Le mot de passe a expiré"]} correct={1} explanation="! ou * à la place d'une empreinte interdit toute authentification par mot de passe. C'est un champ vide qui signifierait l'absence de mot de passe." />
+  <Quiz id="q-5" question="Où est défini le groupe principal d'un compte ?" options={["Dans la liste des membres de /etc/group", "Dans le quatrième champ de /etc/passwd", "Dans /etc/shadow", "Dans le répertoire personnel"]} correct={1} explanation="Le GID du groupe principal est dans /etc/passwd ; /etc/group ne liste que les membres secondaires." />
+  <Quiz id="q-6" question="Pourquoi appartenir au groupe docker équivaut-il à être root ?" options={["Parce que docker est un alias de root", "Parce qu'un membre peut lancer un conteneur qui monte le disque du système et le modifier", "Parce que le groupe docker a l'UID 0", "Ce n'est pas le cas"]} correct={1} explanation="Piloter le démon Docker permet de monter n'importe quel répertoire de l'hôte dans un conteneur lancé en root, et donc de tout modifier." />
+  <Quiz id="q-7" question="Dans un script qui doit fonctionner aussi avec des comptes venant d'un annuaire LDAP, comment obtenir la ligne d'un compte ?" options={["grep nom /etc/passwd", "getent passwd nom", "cat /etc/passwd", "id -n"]} correct={1} explanation="getent interroge toutes les sources de comptes configurées sur la machine, fichiers locaux et annuaires compris." />
+</QuizGroup>
+
+## à retenir
+
+- Un compte est un **UID**, un groupe un **GID**. 0 = root, 1 à 999 = services, 1000 et plus = humains. Un seul UID 0.
+- `/etc/passwd` (lisible par tous) : nom, `x`, UID, GID principal, commentaire, répertoire, shell. `nologin` pour les services.
+- `/etc/shadow` (root seul) : empreintes salées (`$y$` yescrypt), `!` ou `*` = pas de mot de passe utilisable, champ vide = aucun mot de passe.
+- `/etc/group` : nom, `x`, GID, membres secondaires. Groupe principal dans `/etc/passwd`.
+- `id`, `groups`, `getent passwd` et `getent group` pour savoir qui est qui.
+- Groupes qui valent root : `sudo`, `docker`, `lxd`, `disk`.

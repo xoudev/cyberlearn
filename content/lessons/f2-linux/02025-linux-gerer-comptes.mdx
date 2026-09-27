@@ -1,0 +1,300 @@
+---
+refCode: CL-LSN-02025-V01
+slug: linux-gerer-comptes
+title: "Créer, modifier, désactiver des comptes"
+description: "adduser et useradd, ajouter un compte à un groupe sans en perdre d'autres, les mots de passe et leur expiration, les comptes de service, et la procédure complète quand quelqu'un quitte l'équipe, y compris le piège des clés SSH."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02024-V01"]
+---
+
+Un nouveau collègue arrive, il lui faut un compte avec les bons accès. Un service à installer demande son propre compte, sans droit de connexion. Un stagiaire a besoin d'un accès limité dans le temps. Une personne quitte l'entreprise, et son accès doit disparaître le jour même, complètement. Ces opérations sont quotidiennes, et chacune a son piège : un groupe retiré par erreur, un compte « désactivé » qui accepte encore les connexions par clé, un répertoire supprimé avec des données dont on avait besoin.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- créer un compte humain complet, avec son répertoire et son shell, et le distinguer d'un compte de service ;
+- ajouter un compte à un groupe sans lui retirer ses autres groupes ;
+- définir un mot de passe, en imposer le changement, en fixer une durée de validité, et donner une date d'expiration à un compte ;
+- verrouiller un compte de façon réellement efficace, y compris contre les connexions par clé SSH ;
+- supprimer un compte proprement, et savoir quand ne pas le faire ;
+- créer et gérer des groupes.
+
+## pourquoi ça compte
+
+La gestion des comptes est un des contrôles de sécurité les plus élémentaires, et un des plus souvent mal faits. Les audits trouvent régulièrement des comptes de personnes parties depuis des mois, des comptes de test jamais supprimés, des accès temporaires devenus permanents. Chacun est une porte d'entrée potentielle, d'autant plus dangereuse que personne ne surveille son utilisation.
+
+Le référentiel d'hygiène de l'ANSSI en fait une règle explicite : chaque compte doit correspondre à une personne ou un service identifiés, avec les seuls droits nécessaires, et être retiré dès qu'il n'a plus lieu d'être.
+
+## créer un compte : adduser ou useradd
+
+Deux commandes existent, et la confusion est fréquente.
+
+**`useradd`** est l'outil de bas niveau, présent sur toutes les distributions. Il fait **exactement** ce qu'on lui dit, et rien de plus. Sans options, il ne crée même pas le répertoire personnel sur Debian :
+
+```bash
+sudo useradd -m -s /bin/bash -c "Claire Dubois" claire
+sudo passwd claire
+```
+
+`-m` crée le répertoire personnel (en y copiant le contenu de `/etc/skel`, qui contient les `.bashrc` et `.profile` par défaut), `-s` choisit le shell, `-c` le commentaire. `passwd` définit ensuite le mot de passe.
+
+**`adduser`**, sur Debian et Ubuntu, est un script plus convivial qui fait tout cela d'un coup et pose des questions :
+
+```bash
+sudo adduser claire
+```
+
+```text
+Adding user `claire' ...
+Adding new group `claire' (1002) ...
+Adding new user `claire' (1002) with group `claire (1002)' ...
+Creating home directory `/home/claire' ...
+Copying files from `/etc/skel' ...
+New password:
+Retype new password:
+passwd: password updated successfully
+```
+
+Règle pratique : **`adduser` à la main sur Debian et Ubuntu, `useradd` dans les scripts** et sur les autres distributions, parce que son comportement est le même partout et qu'il ne pose pas de question. Sur la famille Red Hat, `adduser` n'est qu'un autre nom de `useradd`.
+
+### un compte de service
+
+Un service (une application, un agent de sauvegarde) doit tourner sous **son propre compte**, avec ses propres fichiers, et sans que personne puisse s'y connecter. On crée un compte **système** : UID en dessous de 1000, pas de répertoire personnel (ou un répertoire dédié), shell `nologin`.
+
+```bash
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin app-factures
+```
+
+Sur Debian : `sudo adduser --system --group --no-create-home app-factures`. Pourquoi un compte par service ? Parce que si l'application est compromise, l'attaquant n'obtient que les droits de ce compte, qui n'a accès qu'aux fichiers de cette application, et pas à ceux des autres services ni à ceux des utilisateurs.
+
+## modifier un compte : usermod
+
+`usermod` change n'importe quelle propriété d'un compte existant.
+
+| Option | Effet |
+| --- | --- |
+| `-aG groupe` | **Ajouter** le compte à un groupe secondaire |
+| `-s shell` | Changer le shell de connexion |
+| `-c "texte"` | Changer le commentaire |
+| `-d rep -m` | Changer le répertoire personnel, en déplaçant son contenu |
+| `-l nouveau` | Renommer le compte (l'UID ne change pas) |
+| `-L` et `-U` | Verrouiller et déverrouiller le mot de passe |
+| `-e AAAA-MM-JJ` | Fixer une date d'expiration du compte |
+
+### le piège du -G sans -a
+
+C'est l'erreur la plus classique de toute l'administration des comptes :
+
+```bash
+sudo usermod -G sudo claire
+```
+
+Cette commande **remplace** tous les groupes secondaires de `claire` par le seul groupe `sudo`. Si elle était dans `www-data`, `adm` et `developpeurs`, elle n'y est plus. La forme correcte **ajoute** avec `-a` (*append*) :
+
+```bash
+sudo usermod -aG sudo claire
+```
+
+<Callout type="warning">
+Un changement de groupe ne s'applique pas aux sessions déjà ouvertes : les groupes d'un processus sont fixés à la connexion. Claire doit se **déconnecter et se reconnecter** pour que son nouveau groupe soit actif. `id claire` montre la configuration ; `id` tapé dans sa session ouverte montre encore les anciens groupes. C'est la cause de nombreux « je t'ai ajoutée au groupe mais ça ne marche toujours pas ».
+</Callout>
+
+`gpasswd` offre une alternative plus lisible pour les groupes : `sudo gpasswd -a claire developpeurs` ajoute, `sudo gpasswd -d claire developpeurs` retire.
+
+## les mots de passe et leur durée de vie
+
+`passwd` change le mot de passe de l'utilisateur courant, ou, en root, celui de n'importe qui. Quelques options utiles pour l'administrateur :
+
+```bash
+sudo passwd -e claire      # expire le mot de passe : il devra être changé à la prochaine connexion
+sudo passwd -S claire      # affiche l'état du mot de passe
+```
+
+```text
+claire P 2026-09-27 0 99999 7 -1
+```
+
+`P` signifie que le mot de passe est utilisable (`L` s'il est verrouillé, `NP` s'il n'y en a pas), suivi de la date du dernier changement et des règles de durée.
+
+`chage` (*change age*) règle ces durées et l'expiration du compte :
+
+```bash
+sudo chage -l claire
+```
+
+```text
+Last password change                                    : sept. 27, 2026
+Password expires                                        : never
+Password inactive                                       : never
+Account expires                                         : never
+Minimum number of days between password change          : 0
+Maximum number of days between password change          : 99999
+Number of days of warning before password expires       : 7
+```
+
+Pour un accès **temporaire**, on fixe une date d'expiration du compte, au-delà de laquelle plus aucune connexion n'est possible :
+
+```bash
+sudo chage -E 2026-12-19 stagiaire
+```
+
+C'est le bon réflexe pour un stagiaire, un prestataire, un audit : l'accès s'arrête tout seul, même si personne n'y pense le jour venu.
+
+<Callout type="info">
+Imposer un changement de mot de passe tous les 90 jours n'est plus recommandé par les guides actuels (ANSSI, NIST) : cela pousse les gens vers des mots de passe prévisibles (`Printemps2026!`, puis `Ete2026!`). On recommande plutôt des mots de passe longs, un changement en cas de soupçon de compromission, et surtout l'authentification par clé ou à plusieurs facteurs. `chage -M` reste utile pour des exigences réglementaires particulières.
+</Callout>
+
+## désactiver un compte, vraiment
+
+Quelqu'un quitte l'équipe ce soir. Le réflexe courant est de verrouiller son mot de passe :
+
+```bash
+sudo passwd -l claire
+```
+
+`passwd -l` ajoute un `!` devant l'empreinte dans `/etc/shadow` : le mot de passe ne peut plus être utilisé. **Mais la connexion SSH par clé fonctionne toujours** : elle ne passe pas par le mot de passe. Si Claire a une clé dans `~claire/.ssh/authorized_keys`, elle peut encore se connecter.
+
+<Diagram caption="Ce que bloque chaque méthode">
+flowchart TD
+  A["passwd -l : mot de passe verrouillé"] --> B["Connexion par mot de passe : bloquée"]
+  A --> C["Connexion SSH par clé : TOUJOURS POSSIBLE"]
+  D["chage -E 0 : compte expiré"] --> E["Toutes les connexions : bloquées"]
+  F["shell nologin"] --> G["Ouverture de session : refusée"]
+</Diagram>
+
+Une désactivation efficace combine plusieurs mesures :
+
+```bash
+sudo usermod -L -e 1 claire                       # verrouille le mot de passe et fait expirer le compte
+sudo usermod -s /usr/sbin/nologin claire          # plus de shell de connexion
+sudo pkill -KILL -u claire                        # termine ses sessions et processus en cours
+sudo crontab -l -u claire                          # vérifie ses tâches planifiées
+```
+
+`-e 1` fixe l'expiration au 2 janvier 1970, c'est-à-dire dans le passé : le compte est expiré, et SSH refuse alors aussi les connexions par clé. `pkill -u` termine les sessions encore ouvertes, qui ne seraient sinon pas affectées. Et une tâche planifiée du compte continuerait de s'exécuter : on la vérifie, et on la supprime si besoin.
+
+## les clés SSH d'un compte
+
+Puisque les clés SSH contournent le mot de passe, il faut savoir où elles se trouvent. Par défaut, les clés publiques autorisées à se connecter à un compte sont listées dans le fichier `~/.ssh/authorized_keys` de ce compte, une clé par ligne. Chaque ligne se termine souvent par un commentaire qui identifie la clé, comme `claire@portable`.
+
+```bash
+sudo cat /home/claire/.ssh/authorized_keys
+```
+
+```text
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM3...tronqué... claire@portable
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP9...tronqué... deploiement-ci
+```
+
+Deux clés : celle de l'ordinateur portable de Claire, et une clé nommée `deploiement-ci`, sans doute utilisée par une chaîne de déploiement automatique. Lors d'un départ, on retire la première ; la seconde doit être rattachée à un compte de service plutôt qu'au compte d'une personne, sinon le déploiement cassera le jour de la suppression du compte. Une clé inconnue dans ce fichier, surtout dans celui de root, est par ailleurs un signe classique de compromission : c'est l'un des moyens les plus simples pour un attaquant de garder un accès. Tu étudieras les clés et leur durcissement au module 10.
+
+## supprimer un compte
+
+```bash
+sudo userdel claire           # supprime le compte, garde ses fichiers
+sudo userdel -r claire        # supprime aussi son répertoire personnel et sa boîte aux lettres
+```
+
+Sur Debian, `deluser --remove-home claire` fait la même chose que `userdel -r`, et `deluser --backup` archive les fichiers avant de les supprimer.
+
+Faut-il supprimer ou désactiver ? Souvent, on **désactive d'abord** et on supprime plus tard :
+
+- ses fichiers peuvent contenir des données dont l'équipe a besoin ;
+- en cas d'enquête ultérieure, un compte désactivé garde son historique, ses fichiers et ses dates ;
+- les fichiers qu'elle possède **ailleurs** que dans son répertoire personnel ne sont pas supprimés par `userdel -r`. Ils restent au nom d'un UID orphelin, qu'un futur compte pourrait recevoir (leçon 1). Avant de supprimer, on les cherche :
+
+```bash
+sudo find / -xdev -user claire 2>/dev/null
+```
+
+## les groupes
+
+```bash
+sudo groupadd developpeurs              # créer un groupe
+sudo gpasswd -a claire developpeurs     # y ajouter quelqu'un
+sudo gpasswd -d claire developpeurs     # l'en retirer
+sudo groupdel developpeurs              # supprimer le groupe
+getent group developpeurs               # voir ses membres
+```
+
+L'usage courant : un groupe par **équipe** ou par **rôle**, qui reçoit des droits sur des répertoires partagés (leçons 3 à 6 de ce module). On ajoute et retire des personnes du groupe, sans jamais toucher aux droits des fichiers eux-mêmes.
+
+## démonstration : l'arrivée et le départ de Claire
+
+**L'arrivée.** Claire rejoint l'équipe web pour six mois, avec un accès aux fichiers du site mais pas les droits d'administration.
+
+```bash
+sudo adduser claire
+sudo usermod -aG www-data,developpeurs claire
+sudo chage -E 2027-03-31 claire
+sudo passwd -e claire
+id claire
+```
+
+```text
+uid=1002(claire) gid=1002(claire) groups=1002(claire),33(www-data),1005(developpeurs)
+```
+
+Compte créé, deux groupes **ajoutés** avec `-aG`, expiration automatique fin mars, et mot de passe à changer dès la première connexion : le mot de passe transmis pour la création ne reste pas valable.
+
+**Le départ anticipé.** Claire part en décembre. Le jour même :
+
+```bash
+sudo usermod -L -e 1 -s /usr/sbin/nologin claire
+sudo pkill -KILL -u claire
+sudo crontab -l -u claire
+sudo find / -xdev -user claire -not -path "/home/claire/*" 2>/dev/null
+sudo tar -czf /root/archives/claire-$(date +%F).tar.gz /home/claire
+```
+
+Compte désactivé contre toutes les connexions, sessions terminées, tâches planifiées vérifiées, fichiers hors de son répertoire repérés, et répertoire archivé. La suppression définitive pourra attendre la fin du délai de conservation prévu par l'entreprise.
+
+## à toi de jouer
+
+Ajoute le compte `claire` au groupe `developpeurs` **sans lui retirer ses autres groupes**. Puis vérifie ses groupes avec `id`. Enfin, fais expirer son compte immédiatement avec `chage`.
+
+<SimulatedTerminal shell="bash" title="Gérer un compte" expectedCommands={["sudo usermod -aG developpeurs claire", "id claire", "sudo chage -E 0 claire"]} hints={["usermod avec -a (ajouter) et -G (groupes secondaires).", "id suivi du nom du compte.", "chage -E fixe la date d'expiration du compte ; 0 la place dans le passé."]} commands={{ "id claire": "uid=1002(claire) gid=1002(claire) groups=1002(claire),33(www-data),1005(developpeurs)", "sudo usermod -aG developpeurs claire": "", "sudo usermod -G developpeurs claire": "", "sudo chage -E 0 claire": "", "sudo chage -l claire": "Last password change                                    : sept. 27, 2026\nPassword expires                                        : never\nPassword inactive                                       : never\nAccount expires                                         : janv. 01, 1970", "sudo passwd -S claire": "claire P 2026-09-27 0 99999 7 -1" }} />
+
+Essaie de comprendre ce qu'aurait fait `sudo usermod -G developpeurs claire` sans le `-a` : Claire aurait perdu son appartenance à `www-data`.
+
+## les pièges
+
+- **`usermod -G` sans `-a`.** Tous les autres groupes secondaires sont retirés.
+- **Oublier que les groupes s'appliquent à la connexion.** Déconnexion et reconnexion nécessaires.
+- **Croire que `passwd -l` désactive un compte.** Les clés SSH fonctionnent toujours. `usermod -e 1` (ou `chage -E 0`) et `nologin`.
+- **Oublier les sessions ouvertes et les tâches planifiées.** `pkill -u` et `crontab -l -u`.
+- **`userdel -r` sans avoir cherché les fichiers ailleurs.** Ils restent orphelins, au nom d'un UID qui sera peut-être réattribué.
+- **Un accès temporaire sans date d'expiration.** Il devient permanent. `chage -E`.
+- **Faire tourner un service sous un compte humain ou sous root.** Un compte système dédié par service.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/useradd.8.html" description="Toutes les options de création de compte">useradd(8)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/usermod.8.html" description="La modification des comptes, dont -a et -G">usermod(8)</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Les règles d'hygiène de l'ANSSI, dont la gestion des comptes">Guide d'hygiène informatique de l'ANSSI</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Claire est dans les groupes www-data et adm. Que devient-elle après sudo usermod -G sudo claire ?" options={["Elle est dans www-data, adm et sudo", "Elle n'est plus que dans sudo, en plus de son groupe principal", "Rien ne change sans redémarrage", "Elle perd son groupe principal"]} correct={1} explanation="-G sans -a remplace la liste des groupes secondaires. Il fallait usermod -aG sudo claire." />
+  <Quiz id="q-2" question="Pourquoi créer un compte système dédié pour chaque service ?" options={["Pour que le service démarre plus vite", "Pour qu'une compromission du service ne donne accès qu'aux fichiers de ce service", "Parce que root ne peut pas lancer de service", "Pour économiser de la mémoire"]} correct={1} explanation="Chaque service isolé dans son compte limite ce qu'un attaquant peut atteindre s'il le compromet. C'est le principe du moindre privilège." />
+  <Quiz id="q-3" question="Après passwd -l claire, Claire peut-elle encore se connecter en SSH ?" options={["Non, jamais", "Oui, si elle a une clé autorisée : passwd -l ne bloque que le mot de passe", "Oui, avec son ancien mot de passe", "Seulement depuis la console"]} correct={1} explanation="Le verrouillage porte sur l'empreinte du mot de passe. L'authentification par clé ne l'utilise pas. Faire expirer le compte bloque toutes les méthodes." />
+  <Quiz id="q-4" question="Quelle commande limite l'accès d'un stagiaire jusqu'au 19 décembre 2026 inclus ?" options={["sudo passwd -e stagiaire", "sudo chage -E 2026-12-19 stagiaire", "sudo usermod -L stagiaire", "sudo userdel stagiaire"]} correct={1} explanation="chage -E fixe une date d'expiration du compte, après laquelle aucune connexion n'est acceptée. passwd -e ne fait qu'imposer un changement de mot de passe." />
+  <Quiz id="q-5" question="Tu viens d'ajouter Bob au groupe docker, mais dans sa session, id ne montre pas ce groupe. Pourquoi ?" options={["La commande a échoué", "Les groupes d'une session sont fixés à la connexion : il doit se reconnecter", "Le groupe docker n'existe pas", "Il faut redémarrer la machine"]} correct={1} explanation="La configuration est à jour, mais les processus de la session ouverte gardent les groupes qu'ils avaient à leur création." />
+  <Quiz id="q-6" question="Avant de supprimer le compte d'une personne partie, que faut-il chercher ?" options={["Son mot de passe", "Les fichiers qui lui appartiennent en dehors de son répertoire personnel", "Son adresse IP", "Son shell"]} correct={1} explanation="userdel -r ne supprime que le répertoire personnel. Les autres fichiers restent au nom d'un UID orphelin." />
+  <Quiz id="q-7" question="Pourquoi préfère-t-on useradd à adduser dans un script ?" options={["Parce que useradd est plus récent", "Parce que useradd ne pose pas de question et se comporte de la même façon sur toutes les distributions", "Parce que adduser ne crée pas de compte", "Parce que useradd crée automatiquement un mot de passe"]} correct={1} explanation="adduser est un script interactif propre à Debian et Ubuntu. useradd est non interactif et présent partout, ce qui convient à l'automatisation." />
+</QuizGroup>
+
+## à retenir
+
+- Créer : `adduser` à la main sur Debian et Ubuntu, `useradd -m -s /bin/bash` dans les scripts ; un compte **système** par service (`--system`, `nologin`).
+- Groupes : **`usermod -aG`**, jamais `-G` seul ; `gpasswd -a` et `-d`. Effet à la prochaine connexion.
+- Mots de passe : `passwd -e` impose un changement, `chage -E date` fait expirer un compte, `chage -l` affiche les règles.
+- Désactiver vraiment : `usermod -L -e 1 -s /usr/sbin/nologin`, puis `pkill -u` et vérification de `crontab`. `passwd -l` seul laisse passer les clés SSH.
+- Supprimer : chercher d'abord les fichiers hors du répertoire personnel (`find / -xdev -user`), archiver, puis `userdel -r`.
