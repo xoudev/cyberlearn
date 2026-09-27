@@ -1,0 +1,15 @@
+.item:hover:not([aria-disabled="true"]),
+.item:focus-visible,
+.item:focus {
+  background: color-mix(in srgb, var(--cosmetic-accent) 12%, transparent);
+  outline: none;
+}
+.item[data-danger="true"]:hover,
+.item[data-danger="true"]:focus {
+  background: rgba(255, 71, 87, 0.12);
+}
+.swatch:hover,
+.swatch:focus {
+  outline: 2px solid var(--cosmetic-accent);
+  outline-offset: 1px;
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Category } from "@cyberlearn/db";
 import { noteExcerpt as excerpt, timeAgo } from "@cyberlearn/lib/notes/preview";
@@ -27,9 +28,21 @@ import {
   type SerializedNote,
 } from "./notes-shared";
 import { AllNotesGlyph, FolderGlyph } from "./folder-icons";
-import { NoteReader } from "./note-reader";
+import { NoteReader, type ReaderMode } from "./note-reader";
+import {
+  ContextMenu,
+  keepsNativeMenu,
+  menuPoint,
+  useContextMenu,
+  type MenuEntry,
+} from "./context-menu";
 import styles from "./notes-library.module.css";
-import { downloadMarkdown, notesToMarkdown } from "@/lib/notes/export";
+import {
+  downloadMarkdown,
+  noteToMarkdown,
+  notesToMarkdown,
+  type ExportableNote,
+} from "@/lib/notes/export";
 
 // Payload key for the native drag-and-drop of note cards onto folders.
 const DND_MIME = "application/x-cyberlearn-note";
@@ -64,6 +77,7 @@ export function NotesLibrary({
    */
   openNoteId?: string | null;
 }): React.JSX.Element {
+  const router = useRouter();
   const [notes, setNotes] = useState<SerializedNote[]>(initialNotes);
   const [folders, setFolders] = useState<SerializedFolder[]>(initialFolders);
   const [incomingId, setIncomingId] = useState<string | null>(null);
@@ -76,6 +90,12 @@ export function NotesLibrary({
   const [focusedFolder, setFocusedFolder] = useState<string | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [readerId, setReaderId] = useState<string | null>(openNoteId);
+  const [readerMode, setReaderMode] = useState<ReaderMode>("read");
+  const [incomingMode, setIncomingMode] = useState<ReaderMode>("read");
+  const { menu, open: openMenu, close: closeMenu } = useContextMenu();
+  // An input to focus once it is on screen: the menu's "Renommer" and
+  // "Nouveau dossier" open the "Gérer" panel and land in the right field.
+  const [focusRequest, setFocusRequest] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
 
   // Folder create form + rename drafts.
@@ -91,6 +111,17 @@ export function NotesLibrary({
   useEffect(() => {
     setNow(Date.now());
   }, []);
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    const field = document.getElementById(focusRequest);
+    if (field instanceof HTMLInputElement) {
+      field.focus();
+      field.select();
+      field.scrollIntoView({ block: "nearest" });
+    }
+    setFocusRequest(null);
+  }, [focusRequest, manageOpen]);
 
   // NB: local state is authoritative once mounted. Every mutation updates it
   // optimistically and reverts on failure, so we deliberately do NOT re-absorb
@@ -308,35 +339,375 @@ export function NotesLibrary({
     return false;
   };
 
-  const exportAll = (): void => {
-    if (filtered.length === 0) {
+  const exportNotes = (list: SerializedNote[], heading: string): void => {
+    if (list.length === 0) {
       toast.error("Aucune note à exporter");
       return;
     }
+    downloadMarkdown(heading, notesToMarkdown(list.map(toExport), heading));
+  };
+
+  const exportAll = (): void => {
     const heading =
       selectedFolder === ALL
         ? "Mes notes"
         : selectedFolder === NONE
           ? "Sans dossier"
           : (folders.find((f) => f.id === selectedFolder)?.name ?? "Mes notes");
-    const md = notesToMarkdown(
-      filtered.map((n) => ({
-        lessonTitle: n.lessonTitle,
-        lessonSlug: n.lessonSlug,
-        pathTitle: n.pathTitle,
-        categoryLabel: CAT[n.lessonCategory].label,
-        content: n.content,
-        updatedAt: n.updatedAt,
-      })),
-      heading,
+    exportNotes(filtered, heading);
+  };
+
+  const exportOne = (note: SerializedNote): void => {
+    downloadMarkdown(note.lessonSlug, noteToMarkdown(toExport(note)));
+  };
+
+  const copyContent = (note: SerializedNote): void => {
+    navigator.clipboard.writeText(note.content).then(
+      () => toast.success("Note copiée"),
+      () => toast.error("Copie impossible"),
     );
-    downloadMarkdown(heading, md);
+  };
+
+  // Saving an empty note is how a note is deleted (noteRepository.upsert): the
+  // same action, the same rules, and its shares go with it.
+  const handleDeleteNote = (note: SerializedNote): void => {
+    if (
+      !window.confirm(
+        `Supprimer ta note sur « ${note.lessonTitle} » ? Elle sera aussi retirée de tes partages.`,
+      )
+    ) {
+      return;
+    }
+    const index = notes.findIndex((n) => n.id === note.id);
+    setNotes((prev) => prev.filter((n) => n.id !== note.id));
+    void saveNoteAction({ lessonId: note.lessonId, content: "" }).then((res) => {
+      if (res.ok) {
+        toast.success("Note supprimée");
+        return;
+      }
+      setNotes((prev) => {
+        const next = [...prev];
+        next.splice(Math.min(index, next.length), 0, note);
+        return next;
+      });
+      toast.error(res.error ?? "Suppression impossible");
+    });
+  };
+
+  const handleDismiss = (noteId: string): void => {
+    void dismissSharedNoteAction(noteId).then(({ ok }) => {
+      if (ok) {
+        setIncoming((prev) => prev.filter((n) => n.id !== noteId));
+        // No excerpt: the reason to mask a note can be what it says.
+        toast.success("Note masquée.");
+      } else {
+        toast.error("Impossible de la masquer, réessaie.");
+      }
+    });
+  };
+
+  const openReader = (id: string, mode: ReaderMode): void => {
+    setReaderMode(mode);
+    setReaderId(id);
+  };
+
+  const openIncoming = (id: string, mode: ReaderMode): void => {
+    setIncomingMode(mode);
+    setIncomingId(id);
+  };
+
+  const startRename = (folder: SerializedFolder): void => {
+    setRenameDrafts((prev) => ({ ...prev, [folder.id]: folder.name }));
+    setManageOpen(true);
+    setFocusRequest(renameFieldId(folder.id));
+  };
+
+  const startCreate = (): void => {
+    setManageOpen(true);
+    setFocusRequest(CREATE_FIELD_ID);
+  };
+
+  // ── Right-click menus ─────────────────────────────────────────────────────
+
+  const noteMenu = (note: SerializedNote): MenuEntry[] => [
+    {
+      kind: "item",
+      id: "open",
+      label: "Ouvrir",
+      onSelect: () => {
+        openReader(note.id, "read");
+      },
+    },
+    {
+      kind: "item",
+      id: "edit",
+      label: "Modifier",
+      onSelect: () => {
+        openReader(note.id, "edit");
+      },
+    },
+    {
+      kind: "item",
+      id: "share",
+      label: "Partager…",
+      onSelect: () => {
+        openReader(note.id, "share");
+      },
+    },
+    {
+      kind: "item",
+      id: "lesson",
+      label: "Ouvrir la leçon",
+      onSelect: () => {
+        router.push(`/lessons/${note.lessonSlug}`);
+      },
+    },
+    { kind: "separator", id: "s1" },
+    { kind: "label", id: "move", label: "Déplacer vers" },
+    {
+      kind: "item",
+      id: "move-none",
+      label: "Sans dossier",
+      checked: note.folderId === null,
+      disabled: note.folderId === null,
+      onSelect: () => {
+        handleMove(note.id, null);
+      },
+    },
+    ...folders.map(
+      (folder): MenuEntry => ({
+        kind: "item",
+        id: `move-${folder.id}`,
+        label: folder.name,
+        checked: note.folderId === folder.id,
+        disabled: note.folderId === folder.id,
+        onSelect: () => {
+          handleMove(note.id, folder.id);
+        },
+      }),
+    ),
+    { kind: "separator", id: "s2" },
+    {
+      kind: "item",
+      id: "copy",
+      label: "Copier le texte",
+      onSelect: () => {
+        copyContent(note);
+      },
+    },
+    {
+      kind: "item",
+      id: "export",
+      label: "Exporter en .md",
+      onSelect: () => {
+        exportOne(note);
+      },
+    },
+    { kind: "separator", id: "s3" },
+    {
+      kind: "item",
+      id: "delete",
+      label: "Supprimer la note",
+      danger: true,
+      onSelect: () => {
+        handleDeleteNote(note);
+      },
+    },
+  ];
+
+  const incomingMenu = (note: SerializedIncomingNote): MenuEntry[] => [
+    {
+      kind: "item",
+      id: "open",
+      label: "Ouvrir",
+      onSelect: () => {
+        openIncoming(note.id, "read");
+      },
+    },
+    {
+      kind: "item",
+      id: "copy",
+      label: "Copier le texte",
+      onSelect: () => {
+        copyContent(note);
+      },
+    },
+    {
+      kind: "item",
+      id: "export",
+      label: "Exporter en .md",
+      onSelect: () => {
+        exportOne(note);
+      },
+    },
+    { kind: "separator", id: "s1" },
+    {
+      kind: "item",
+      id: "dismiss",
+      label: "Masquer cette note",
+      onSelect: () => {
+        handleDismiss(note.id);
+      },
+    },
+    {
+      kind: "item",
+      id: "report",
+      label: "Signaler…",
+      danger: true,
+      onSelect: () => {
+        openIncoming(note.id, "report");
+      },
+    },
+  ];
+
+  const folderMenu = (folder: SerializedFolder): MenuEntry[] => {
+    const inside = notes.filter((n) => n.folderId === folder.id);
+    return [
+      {
+        kind: "item",
+        id: "open",
+        label: "Ouvrir",
+        onSelect: () => {
+          openFolder(folder.id);
+        },
+      },
+      {
+        kind: "item",
+        id: "rename",
+        label: "Renommer",
+        onSelect: () => {
+          startRename(folder);
+        },
+      },
+      { kind: "label", id: "color-label", label: "Couleur" },
+      {
+        kind: "swatches",
+        id: "color",
+        label: "Couleur",
+        options: [
+          ...FOLDER_PALETTE.map((color) => ({
+            key: color,
+            label: `Couleur ${color}`,
+            active: folder.color === color,
+            render: (
+              <span
+                aria-hidden="true"
+                style={{ width: 12, height: 12, borderRadius: "50%", background: color }}
+              />
+            ),
+          })),
+          {
+            key: NO_COLOR,
+            label: "Aucune couleur",
+            active: folder.color === null,
+            render: (
+              <span aria-hidden="true" style={{ color: "#7F7BA9" }}>
+                ×
+              </span>
+            ),
+          },
+        ],
+        onPick: (key) => {
+          handleRecolor(folder, key === NO_COLOR ? null : key);
+        },
+      },
+      { kind: "label", id: "icon-label", label: "Icône" },
+      {
+        kind: "swatches",
+        id: "icon",
+        label: "Icône",
+        options: FOLDER_ICON_NAMES.map((name) => ({
+          key: name,
+          label: `Icône ${name}`,
+          active: (folder.icon ?? FOLDER_DEFAULT_ICON) === name,
+          render: (
+            <FolderGlyph name={name} color={folder.color ?? FOLDER_DEFAULT_COLOR} size={14} />
+          ),
+        })),
+        onPick: (key) => {
+          const icon = FOLDER_ICON_NAMES.find((name) => name === key);
+          if (icon) handleReicon(folder, icon);
+        },
+      },
+      { kind: "separator", id: "s1" },
+      {
+        kind: "item",
+        id: "export",
+        label: "Exporter le dossier",
+        disabled: inside.length === 0,
+        onSelect: () => {
+          exportNotes(inside, folder.name);
+        },
+      },
+      {
+        kind: "item",
+        id: "delete",
+        label: "Supprimer le dossier",
+        danger: true,
+        onSelect: () => {
+          handleDeleteFolder(folder);
+        },
+      },
+    ];
+  };
+
+  const pageMenu = (): MenuEntry[] => [
+    { kind: "item", id: "new-folder", label: "Nouveau dossier", onSelect: startCreate },
+    {
+      kind: "item",
+      id: "export-all",
+      label: "Exporter les notes affichées",
+      disabled: filtered.length === 0,
+      onSelect: exportAll,
+    },
+  ];
+
+  // One listener for the whole page: what was right-clicked is read off the
+  // data attributes of the card or folder under the pointer.
+  const onContextMenu = (event: React.MouseEvent<HTMLDivElement>): void => {
+    if (keepsNativeMenu(event) || !(event.target instanceof Element)) return;
+    const target = event.target;
+    const noteEl = target.closest<HTMLElement>("[data-note-id]");
+    const incomingEl = target.closest<HTMLElement>("[data-incoming-id]");
+    const folderEl = target.closest<HTMLElement>("[data-folder-id]");
+    let label = "Bloc-notes";
+    let entries: MenuEntry[] | null = null;
+    let anchor: HTMLElement | null = null;
+    if (noteEl) {
+      const note = notes.find((n) => n.id === noteEl.dataset.noteId);
+      if (note) {
+        label = `Note : ${note.lessonTitle}`;
+        entries = noteMenu(note);
+        anchor = noteEl;
+      }
+    } else if (incomingEl) {
+      const note = incoming.find((n) => n.id === incomingEl.dataset.incomingId);
+      if (note) {
+        label = `Note reçue : ${note.lessonTitle}`;
+        entries = incomingMenu(note);
+        anchor = incomingEl;
+      }
+    } else if (folderEl) {
+      const folder = folders.find((f) => f.id === folderEl.dataset.folderId);
+      if (folder) {
+        label = `Dossier : ${folder.name}`;
+        entries = folderMenu(folder);
+        anchor = folderEl;
+      }
+    } else {
+      entries = pageMenu();
+    }
+    if (!entries) return;
+    event.preventDefault();
+    const { x, y } = menuPoint(event, anchor ?? event.currentTarget);
+    openMenu({ x, y, label, entries, returnFocus: anchor });
   };
 
   return (
     <div
       className="page-container"
       style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(16px,4vw,48px)" }}
+      onContextMenu={onContextMenu}
     >
       {/* Header */}
       <div
@@ -580,6 +951,7 @@ export function NotesLibrary({
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleCreateFolder();
               }}
+              id={CREATE_FIELD_ID}
               placeholder="Nom du nouveau dossier"
               aria-label="Nom du nouveau dossier"
               maxLength={40}
@@ -670,6 +1042,7 @@ export function NotesLibrary({
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur();
                   }}
+                  id={renameFieldId(f.id)}
                   maxLength={40}
                   aria-label={`Renommer ${f.name}`}
                   style={{
@@ -746,8 +1119,9 @@ export function NotesLibrary({
                 <button
                   key={n.id}
                   type="button"
+                  data-incoming-id={n.id}
                   onClick={() => {
-                    setIncomingId(n.id);
+                    openIncoming(n.id, "read");
                   }}
                   style={{
                     display: "flex",
@@ -849,6 +1223,7 @@ export function NotesLibrary({
               <button
                 key={folder.id}
                 type="button"
+                data-folder-id={folder.id}
                 className={styles.folderTile}
                 aria-label={"Ouvrir le dossier " + folder.name}
                 // Selection is only visual: aria-pressed made this a toggle, which
@@ -941,12 +1316,13 @@ export function NotesLibrary({
                       <button
                         key={n.id}
                         type="button"
+                        data-note-id={n.id}
                         onClick={() => {
-                          setReaderId(n.id);
+                          openReader(n.id, "read");
                         }}
                         {...dragProps(n.id)}
                         className="note-card"
-                        title="Glisse cette note vers un dossier, ou clique pour l'ouvrir"
+                        title="Clique pour l'ouvrir, glisse-la vers un dossier, clic droit pour plus d'actions"
                         style={{
                           display: "flex",
                           flexDirection: "column",
@@ -1044,6 +1420,7 @@ export function NotesLibrary({
         <NoteReader
           note={readerNote}
           folders={folders}
+          initialMode={readerMode}
           onClose={() => {
             setReaderId(null);
           }}
@@ -1059,6 +1436,7 @@ export function NotesLibrary({
           note={incomingNote}
           folders={[]}
           sharedBy={incomingNote.authorName}
+          initialMode={incomingMode}
           onClose={() => {
             setIncomingId(null);
           }}
@@ -1090,8 +1468,28 @@ export function NotesLibrary({
           onSaveContent={() => Promise.resolve(false)}
         />
       )}
+
+      {menu ? <ContextMenu menu={menu} onClose={closeMenu} /> : null}
     </div>
   );
+}
+
+const CREATE_FIELD_ID = "notes-new-folder-name";
+const NO_COLOR = "__none__";
+
+function renameFieldId(folderId: string): string {
+  return `notes-rename-${folderId}`;
+}
+
+function toExport(note: SerializedNote): ExportableNote {
+  return {
+    lessonTitle: note.lessonTitle,
+    lessonSlug: note.lessonSlug,
+    pathTitle: note.pathTitle,
+    categoryLabel: CAT[note.lessonCategory].label,
+    content: note.content,
+    updatedAt: note.updatedAt,
+  };
 }
 
 interface DropHandlers {

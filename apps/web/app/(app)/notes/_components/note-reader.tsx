@@ -38,7 +38,15 @@ interface NoteReaderProps {
     reason: NoteReportReasonKey;
     comment: string;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  /**
+   * What the reader opens on: the note itself, or straight into one of its
+   * actions - how the library's right-click menu lands on "Modifier",
+   * "Partager" or "Signaler" without a second click.
+   */
+  initialMode?: ReaderMode;
 }
+
+export type ReaderMode = "read" | "edit" | "share" | "report";
 
 export function NoteReader({
   note,
@@ -49,13 +57,15 @@ export function NoteReader({
   sharedBy,
   onDismiss,
   onReport,
+  initialMode = "read",
 }: NoteReaderProps): React.JSX.Element {
-  const [editing, setEditing] = useState(false);
-  const [sharing, setSharing] = useState(false);
   const mine = sharedBy === undefined;
+  // Editing and sharing are the owner's; reporting is the recipient's.
+  const [editing, setEditing] = useState(mine && initialMode === "edit");
+  const [sharing, setSharing] = useState(mine && initialMode === "share");
   const [dismissing, setDismissing] = useState(false);
   const [dismissFailed, setDismissFailed] = useState(false);
-  const [reporting, setReporting] = useState(false);
+  const [reporting, setReporting] = useState(!mine && initialMode === "report");
   const [draft, setDraft] = useState(note.content);
   const [pending, startTransition] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);

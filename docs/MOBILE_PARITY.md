@@ -111,6 +111,7 @@ Chacune de ces lignes est une décision, pas une dette.
 | **Export RGPD, suppression de compte** | Actions irréversibles qui demandent une confirmation lue posément. Elles restent sur le web, et l'app y renvoie |
 | **Épingler ou fermer un sujet du forum** | Geste de modération réservé aux administrateurs, fait depuis le site. L'app affiche l'état (« Épinglé », « Fermé ») et refuse une réponse dans un sujet fermé, comme le site |
 | **Remise à zéro d'une progression** | Action d'administration, sur le compte de quelqu'un d'autre. Elle vit dans la console, pas dans une app apprenant |
+| **Clic droit du bloc-notes** (menu sur une note, une note reçue, un dossier) | Un raccourci de pointeur, sans action propre : tout ce qu'il propose existe déjà sur le site (lecteur, panneau « Gérer ») et dans l'app, où chaque carte a ses boutons et où le glisser-déposer range les notes. Un téléphone n'a pas de clic droit, et un appui long y est déjà le geste qui déplace une note |
 
 ## Quand cette page a été écrite
 
