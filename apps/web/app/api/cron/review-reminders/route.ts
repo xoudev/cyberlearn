@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma, notificationRepository } from "@cyberlearn/db";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 // Vercel Cron: runs daily at 08:00 UTC (see vercel.json crons config).
 // Sends REVIEW_REMINDER notifications to users with lessons due today.
 export async function GET(request: Request): Promise<NextResponse> {
@@ -102,7 +104,10 @@ export async function GET(request: Request): Promise<NextResponse> {
       sent++;
     } catch (error) {
       failed++;
-      console.error(`[review-reminders] notification failed for user ${userId}:`, error);
+      logger.error(
+        { scope: "review-reminders", userId, err: errorMessage(error) },
+        "notification failed",
+      );
     }
   }
 

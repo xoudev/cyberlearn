@@ -56,7 +56,7 @@ content/      → MDX lessons and quizzes, versioned
 3. **No secrets in code**, ever. Use env vars validated by `@t3-oss/env-nextjs` + Zod. Check `.env.example`.
 4. **Zod on ALL inputs** : every Server Action, every Route Handler, every form. `safeParse` always, never raw `parse`.
 5. **Server-first** : everything that CAN be a Server Component MUST be. `"use client"` requires justification.
-6. **No console.log in prod** : use Pino logger. Errors: never leak stack traces to client.
+6. **No console.log in prod** : use the Pino `logger` from `@cyberlearn/lib/logger`, with `errorMessage(err)` rather than the error object (`docs/security/logging.md`). Only the Edge middleware, client components and CLI scripts keep `console`. Errors: never leak stack traces to client.
 7. **RLS enforced** : every Supabase table has Row Level Security. No exceptions.
 8. **Repository pattern** : no direct Prisma calls from components. Services → Repositories → Prisma.
 9. **Conventional Commits** : `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `security:`. Type and scope in English, subject in French — it describes a change to a French-language product. Enforced by `commitlint` on `commit-msg`, header capped at 100 characters. See `docs/dev/commit-conventions.md`.

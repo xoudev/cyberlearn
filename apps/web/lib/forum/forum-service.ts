@@ -12,6 +12,8 @@ import { announceModeration } from "@/lib/moderation/announce";
 import { checkQaSubmission } from "@/lib/rate-limit";
 import { recordQuestProgress } from "@/lib/quests/progress";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * Writing on the forum.
  *
@@ -274,6 +276,6 @@ async function notifyParticipants(
       ),
     );
   } catch (error) {
-    console.error("[forum] failed to notify participants:", error);
+    logger.error({ scope: "forum", err: errorMessage(error) }, "failed to notify participants");
   }
 }

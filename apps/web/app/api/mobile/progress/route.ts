@@ -3,6 +3,8 @@ import { z } from "zod";
 import { completeLessonForUser } from "@/lib/lessons/complete";
 import { userFromBearer } from "../_lib/auth";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 const schema = z.object({
   lessonId: z.guid(),
 });
@@ -34,10 +36,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const result = await completeLessonForUser(user.id, parsed.data.lessonId);
     return NextResponse.json({ ok: true, result });
   } catch (err) {
-    console.error(
-      "[mobile/progress] completion error:",
-      err instanceof Error ? err.message : String(err),
-    );
+    logger.error({ scope: "mobile/progress", err: errorMessage(err) }, "completion error");
     return NextResponse.json({ ok: false, error: "Enregistrement impossible." }, { status: 500 });
   }
 }

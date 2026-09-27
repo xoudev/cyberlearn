@@ -10,6 +10,8 @@ import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 // The Prisma enum rather than a spelled-out list: the accepted values are the ones
 // the column can hold, by construction. A hand-written enum here would be one
 // more copy to remember - and the one guarding a privilege change is the worst
@@ -116,7 +118,7 @@ export async function deleteUserAction(
       action: "admin.user.deleted",
     });
   } catch (error) {
-    console.error("[admin] deleteUserAction failed:", error);
+    logger.error({ scope: "admin", err: errorMessage(error) }, "deleteUserAction failed");
     return { error: "La suppression a échoué. Rien n'a été effacé." };
   }
 
@@ -143,7 +145,7 @@ export async function deleteUserAction(
     // The account is already gone; nothing here can put it back. The failure is
     // recorded where it can still be acted on rather than thrown away.
     emailFailed = true;
-    console.error("[admin] account deletion notice failed:", error);
+    logger.error({ scope: "admin", err: errorMessage(error) }, "account deletion notice failed");
     await prisma.auditLog.create({
       data: {
         actorId: admin.id,
@@ -260,7 +262,7 @@ export async function banUserAction(
       siteUrl: learnerSiteUrl(),
     });
   } catch (error) {
-    console.error("[admin] ban notice e-mail failed:", error);
+    logger.error({ scope: "admin", err: errorMessage(error) }, "ban notice e-mail failed");
     emailFailed = true;
   }
 
@@ -362,7 +364,7 @@ export async function resetProgressAction(
   try {
     summary = await resetProgress(target.id, { actorId: admin.id });
   } catch (error) {
-    console.error("[admin] resetProgressAction failed:", error);
+    logger.error({ scope: "admin", err: errorMessage(error) }, "resetProgressAction failed");
     return { error: "La remise à zéro a échoué. Rien n'a été effacé." };
   }
 

@@ -4,6 +4,8 @@ import { prisma } from "../prisma.js";
 import { friendshipRepository } from "./friendship.repository.js";
 import { UNACTIONED_SURFACE, moderationRepository } from "./moderation.repository.js";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * Handing a note to someone, and what stands between the two.
  *
@@ -413,7 +415,7 @@ async function alertTeachersOf(input: {
     });
     return byTeacher.size;
   } catch (error) {
-    console.error("[note-share] failed to alert teachers:", error);
+    logger.error({ scope: "note-share", err: errorMessage(error) }, "failed to alert teachers");
     return 0;
   }
 }
@@ -438,6 +440,6 @@ async function notifyRecipients(input: {
       })),
     });
   } catch (error) {
-    console.error("[note-share] failed to notify recipients:", error);
+    logger.error({ scope: "note-share", err: errorMessage(error) }, "failed to notify recipients");
   }
 }

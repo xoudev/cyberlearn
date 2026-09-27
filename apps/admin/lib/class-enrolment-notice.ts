@@ -3,6 +3,8 @@ import { sendClassEnrolledEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 import { learnerUrl } from "./learner-url";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * Tells students they have been put in a class.
  *
@@ -76,7 +78,7 @@ export async function notifyEnrolledInClass(classId: string, userIds: string[]):
       })),
     });
   } catch (error) {
-    console.error("[class-enrolment] notifications failed:", error);
+    logger.error({ scope: "class-enrolment", err: errorMessage(error) }, "notifications failed");
   }
 
   const profileUrl = learnerUrl("/profile");
@@ -100,7 +102,10 @@ export async function notifyEnrolledInClass(classId: string, userIds: string[]):
           profileUrl,
         });
       } catch (error) {
-        console.error("[class-enrolment] email failed for one recipient:", error);
+        logger.error(
+          { scope: "class-enrolment", err: errorMessage(error) },
+          "email failed for one recipient",
+        );
       }
     }),
   );

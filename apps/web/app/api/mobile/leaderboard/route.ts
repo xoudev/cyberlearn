@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { leaderboardRepository, leagueRepository } from "@cyberlearn/db";
 import { userFromBearer } from "../_lib/auth";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * Leaderboard + league data for the mobile Leaderboard screen. Served by the
  * API (not direct Supabase) because league_memberships RLS is self-select only:
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, entries, userRank, league, friendsBoard });
   } catch (err) {
-    console.error("[mobile/leaderboard] error:", err instanceof Error ? err.message : String(err));
+    logger.error({ scope: "mobile/leaderboard", err: errorMessage(err) }, "error");
     return NextResponse.json({ ok: false, error: "Chargement impossible." }, { status: 500 });
   }
 }

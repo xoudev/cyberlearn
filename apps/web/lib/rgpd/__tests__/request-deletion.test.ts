@@ -9,6 +9,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { logger } from "@cyberlearn/lib/logger";
+
 vi.stubEnv("IP_SALT", "request-deletion-test-salt-that-is-at-least-32-chars");
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
@@ -142,7 +144,7 @@ describe("requestDeletion - happy path", () => {
 describe("requestDeletion - email failure", () => {
   it("returns { success: false, error: 'email_failed' } when Resend throws", async () => {
     mockSendDeletionConfirmEmail.mockRejectedValueOnce(new Error("Resend timeout"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
+    const logSpy = vi.spyOn(logger, "error").mockImplementation((): void => undefined);
 
     const result = await requestDeletion(USER, META);
     expect(result.success).toBe(false);
@@ -150,16 +152,16 @@ describe("requestDeletion - email failure", () => {
       expect(result.error).toBe("email_failed");
     }
 
-    consoleSpy.mockRestore();
+    logSpy.mockRestore();
   });
 
   it("does not create an audit log when email fails", async () => {
     mockSendDeletionConfirmEmail.mockRejectedValueOnce(new Error("timeout"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
+    const logSpy = vi.spyOn(logger, "error").mockImplementation((): void => undefined);
 
     await requestDeletion(USER, META);
     expect(mockPrisma.auditLog.create).not.toHaveBeenCalled();
 
-    consoleSpy.mockRestore();
+    logSpy.mockRestore();
   });
 });

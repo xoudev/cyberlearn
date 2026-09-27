@@ -8,6 +8,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { logger } from "@cyberlearn/lib/logger";
+
 // ── Env stubs - must be set before the module is imported ────────────────────
 // getRedis() reads process.env directly (not the t3-oss typed env)
 vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://mock.upstash.io");
@@ -284,7 +286,10 @@ describe("fail-open - Upstash not configured", () => {
     vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
     vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
 
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation((): void => undefined);
+    // After resetModules: the rate limiter will import a fresh logger, and the
+    // spy has to sit on that instance, not on the one this file started with.
+    const { logger: freshLogger } = await import("@cyberlearn/lib/logger");
+    const warnSpy = vi.spyOn(freshLogger, "warn").mockImplementation((): void => undefined);
 
     const { checkDataExport: checkDataExportFresh } = await import("@/lib/rate-limit");
 
@@ -296,6 +301,7 @@ describe("fail-open - Upstash not configured", () => {
 
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith(
+      { scope: "rate-limit" },
       expect.stringContaining("UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN not configured"),
     );
 
@@ -310,15 +316,15 @@ describe("fail-open - Upstash not configured", () => {
 describe("checkAuthRateLimit - Redis outage", () => {
   it("allows authentication when the configured Redis request rejects", async () => {
     rejectNextLimit = true;
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
 
     const allowed = await checkAuthRateLimit({
       headers: new Headers({ "x-forwarded-for": "203.0.113.8" }),
     });
 
     expect(allowed).toBe(true);
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
+    expect(logError).toHaveBeenCalled();
+    logError.mockRestore();
   });
 
   it("gives up rather than holding the sign-in when Redis never answers", async () => {
@@ -326,7 +332,7 @@ describe("checkAuthRateLimit - Redis outage", () => {
     // but a request that hangs. Without a cap the password check waits behind
     // it, so this asserts the wait is bounded, not merely that it ends.
     hangNextLimit = true;
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined);
 
     const startedAt = Date.now();
     const allowed = await checkAuthRateLimit({
@@ -336,7 +342,7 @@ describe("checkAuthRateLimit - Redis outage", () => {
 
     expect(allowed).toBe(true);
     expect(elapsed).toBeLessThan(2_000);
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
+    expect(logError).toHaveBeenCalled();
+    logError.mockRestore();
   });
 });

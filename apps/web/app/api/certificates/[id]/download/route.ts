@@ -3,6 +3,8 @@ import { prisma } from "@cyberlearn/db";
 import { createSupabaseAdminClient } from "@cyberlearn/db/supabase/admin";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+import { logger } from "@cyberlearn/lib/logger";
+
 const BUCKET = "certificates";
 const SIGNED_TTL = 60; // 60 seconds - short-lived to limit forwarding window
 
@@ -26,10 +28,10 @@ export async function GET(
   });
 
   if (!cert || cert.pdfStorageKey === "pending") {
-    console.warn("[certificates/download] not found or pending", {
-      certId: id,
-      actorId: user.id,
-    });
+    logger.warn(
+      { scope: "certificates/download", certId: id, actorId: user.id },
+      "not found or pending",
+    );
     return new Response(null, { status: 404 });
   }
 
@@ -45,10 +47,10 @@ export async function GET(
     .createSignedUrl(cert.pdfStorageKey, SIGNED_TTL, { download: filename });
 
   if (!data) {
-    console.error("[certificates/download] signed url error", {
-      certId: id,
-      code: error.message,
-    });
+    logger.error(
+      { scope: "certificates/download", certId: id, err: error.message },
+      "signed url error",
+    );
     return new Response(null, { status: 500 });
   }
 

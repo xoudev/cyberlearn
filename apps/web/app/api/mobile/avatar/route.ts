@@ -5,6 +5,8 @@ import { resolveAvatarSrc } from "@/lib/avatar/storage";
 import { setAvatarPhotoFor } from "@/lib/avatar/upload";
 import { userFromBearer } from "../_lib/auth";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * The caller's own avatar, ready to display.
  *
@@ -39,10 +41,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const avatarUrl = await resolveAvatarSrc(row?.avatarUrl ?? null);
     return NextResponse.json({ ok: true, avatarUrl });
   } catch (err) {
-    console.error(
-      "[mobile/avatar] resolve error:",
-      err instanceof Error ? err.message : String(err),
-    );
+    logger.error({ scope: "mobile/avatar", err: errorMessage(err) }, "resolve error");
     return NextResponse.json({ ok: false, error: "Avatar indisponible." }, { status: 500 });
   }
 }

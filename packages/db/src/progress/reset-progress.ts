@@ -1,6 +1,8 @@
 import { prisma } from "../prisma.js";
 import { createSupabaseAdminClient } from "../supabase/admin.js";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * Putting a learner back to their first day, without touching who they are.
  *
@@ -75,9 +77,12 @@ function defaultCleanupReporter(
   error: unknown,
   context: Record<string, unknown>,
 ): void {
-  // Constant format string, the area as an argument: a value interpolated into
-  // it could forge the shape of a log line.
-  console.error("[reset-progress] cleanup failed", { area, error, ...context });
+  // Constant message, the area as a field: a value interpolated into the
+  // message could forge the shape of a log line.
+  logger.error(
+    { scope: "reset-progress", area, err: errorMessage(error), ...context },
+    "cleanup failed",
+  );
 }
 
 export async function resetProgress(

@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 // base64url alphabet only - rejects any value that can't be a valid token
 const tokenParamSchema = z
   .string()
@@ -107,7 +109,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
   } catch (err) {
-    console.error("[delete/confirm] deleteAccount failed:", err);
+    logger.error({ scope: "delete/confirm", err: errorMessage(err) }, "deleteAccount failed");
     return NextResponse.redirect(new URL("/account/delete/error?reason=internal", origin), 303);
   }
 

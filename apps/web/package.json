@@ -42,6 +42,7 @@
     "lucide-react": "catalog:",
     "mermaid": "^12.0.0",
     "next": "catalog:",
+    "pino": "catalog:",
     "next-mdx-remote": "catalog:",
     "next-themes": "catalog:",
     "qrcode": "^1.5.4",

@@ -6,6 +6,8 @@ import type { LeagueDivisionCode } from "@cyberlearn/lib";
 import { rolloverDueSeasons } from "@/lib/league/rollover";
 import { LeaderboardClient } from "./_components/LeaderboardClient";
 
+import { errorMessage, logger } from "@cyberlearn/lib/logger";
+
 export const metadata: Metadata = { title: "Classement" };
 export const dynamic = "force-dynamic";
 // The lazy fallback below runs the same transaction as the cron, which is
@@ -29,7 +31,7 @@ export default async function LeaderboardPage(): Promise<React.ReactElement> {
   try {
     await rolloverDueSeasons(new Date(Date.now() - LAZY_ROLLOVER_GRACE_MS));
   } catch (error) {
-    console.error("[leaderboard] lazy season rollover failed:", error);
+    logger.error({ scope: "leaderboard", err: errorMessage(error) }, "lazy season rollover failed");
   }
 
   const [entries, userRank, season, friendsBoard] = await Promise.all([

@@ -30,6 +30,7 @@
     "@upstash/redis": "catalog:",
     "gray-matter": "catalog:",
     "next": "catalog:",
+    "pino": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:"

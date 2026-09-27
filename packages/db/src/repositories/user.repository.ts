@@ -2,6 +2,8 @@ import { prisma } from "../prisma.js";
 import { classRepository } from "./class.repository.js";
 import { friendshipRepository } from "./friendship.repository.js";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 export const userRepository = {
   /**
    * Creates or refreshes the application profile associated with a Supabase
@@ -37,7 +39,10 @@ export const userRepository = {
     try {
       await classRepository.redeemInvitationsForEmail(input.id, input.email);
     } catch (error) {
-      console.error("[auth] class invitation redemption failed:", error);
+      logger.error(
+        { scope: "auth", err: errorMessage(error) },
+        "class invitation redemption failed",
+      );
     }
 
     return profile;
