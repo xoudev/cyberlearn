@@ -1,0 +1,251 @@
+---
+refCode: CL-LSN-02008-V01
+slug: linux-hierarchie-standard
+title: "La hiérarchie des répertoires"
+description: "Pourquoi un système Linux n'a qu'un seul arbre de fichiers, ce que contiennent /etc, /var, /usr, /home, /tmp, /proc et les autres, et comment savoir où chercher un fichier de configuration, un journal ou un programme sans le connaître."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02901-V01"]
+---
+
+Sous Windows, on pense en lecteurs : `C:`, `D:`, une clé USB en `E:`. Sous Linux, il n'y a qu'un seul arbre, qui part d'une racine unique, et tout s'y accroche : les disques, les clés USB, les partages réseau, et même des choses qui ne sont pas des fichiers du tout, comme les processus en cours. Cet arbre suit un plan commun à presque toutes les distributions. Le connaître, c'est savoir où chercher sur n'importe quelle machine, sans jamais l'avoir vue.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est la racine `/` et pourquoi Linux n'a qu'un seul arbre de fichiers ;
+- dire ce que contiennent les répertoires principaux : `/etc`, `/var`, `/usr`, `/home`, `/root`, `/tmp`, `/opt`, `/srv`, `/boot`, `/dev`, `/proc`, `/sys` ;
+- deviner où se trouve un fichier de configuration, un journal, un programme ou des données d'application ;
+- distinguer les répertoires qui changent souvent de ceux qui ne changent qu'aux mises à jour, et en tirer les bonnes conséquences pour les sauvegardes ;
+- reconnaître les systèmes de fichiers virtuels qui ne sont pas stockés sur le disque.
+
+## pourquoi ça compte
+
+Un administrateur passe une bonne partie de son temps à chercher : où est la configuration de ce service, où écrit-il ses journaux, où sont ses données, qu'est-ce qui remplit le disque ? Sans carte, on cherche partout. Avec la carte, on va droit au bon endroit dans neuf cas sur dix.
+
+La carte sert aussi pour les décisions importantes. Que faut-il sauvegarder ? Quels répertoires peuvent grossir jusqu'à remplir le disque ? Où un attaquant qui a pris pied sur une machine va-t-il déposer un fichier, et où un enquêteur va-t-il le chercher ? Les réponses dépendent toutes de la hiérarchie des répertoires.
+
+## un seul arbre
+
+Tout part de la **racine**, notée `/`. Chaque fichier du système a un chemin qui commence par elle : `/etc/hostname`, `/home/alice/notes.txt`, `/var/log/syslog`. La barre oblique sert à la fois de nom pour la racine et de séparateur entre les répertoires.
+
+Un disque supplémentaire ou une clé USB n'apparaissent pas comme une lettre, mais comme un répertoire de l'arbre : on dit qu'ils sont **montés** à un endroit, le **point de montage**. Une clé USB branchée sur un poste de travail apparaît par exemple dans `/media/alice/CLE-USB`. Un second disque de données sur un serveur peut être monté sur `/srv/donnees`. Pour l'utilisateur, c'est un répertoire comme un autre ; tu verras au module 9 comment ce montage se fait.
+
+<Diagram caption="Un seul arbre, plusieurs supports">
+flowchart TD
+  R["/ (disque système)"] --> E["/etc"]
+  R --> H["/home"]
+  R --> V["/var"]
+  R --> S["/srv"]
+  S --> D["/srv/donnees (second disque, monté ici)"]
+  R --> M["/media"]
+  M --> U["/media/alice/CLE-USB (clé USB)"]
+  R --> P["/proc (le noyau, rien sur le disque)"]
+</Diagram>
+
+## la norme : le FHS
+
+Le plan de l'arbre suit une norme, le **Filesystem Hierarchy Standard** (FHS), maintenue par la Linux Foundation. Les distributions la respectent dans les grandes lignes, avec quelques variantes. Voici les répertoires qu'il faut connaître, regroupés par rôle.
+
+### la configuration : /etc
+
+`/etc` contient **la configuration de tout le système** : fichiers texte, lisibles et modifiables par root. C'est le répertoire le plus important pour un administrateur. Quelques habitants typiques :
+
+| Fichier ou répertoire | Rôle |
+| --- | --- |
+| `/etc/hostname` | Le nom de la machine |
+| `/etc/hosts` | Des correspondances nom et adresse IP locales |
+| `/etc/passwd`, `/etc/group`, `/etc/shadow` | Les comptes, les groupes, les mots de passe chiffrés |
+| `/etc/fstab` | Les systèmes de fichiers à monter au démarrage |
+| `/etc/ssh/sshd_config` | La configuration du serveur SSH |
+| `/etc/nginx/` | La configuration de nginx, un répertoire entier |
+| `/etc/cron.d/` | Des tâches planifiées |
+| `/etc/os-release` | L'identité de la distribution, vue au module 1 |
+
+La règle de devinette : **la configuration d'un logiciel installé par le système est presque toujours dans `/etc`**, dans un fichier ou un répertoire qui porte son nom.
+
+### les programmes : /usr, /bin, /sbin
+
+`/usr` contient **les programmes et leurs fichiers**, installés par le gestionnaire de paquets et en lecture seule le reste du temps :
+
+- `/usr/bin` : les commandes des utilisateurs (`ls`, `grep`, `python3`...) ;
+- `/usr/sbin` : les commandes d'administration (`useradd`, `sshd`, `fdisk`...) ;
+- `/usr/lib` : les bibliothèques partagées et les fichiers internes des programmes ;
+- `/usr/share` : les données indépendantes de l'architecture, dont la documentation (`/usr/share/doc`) et les pages de manuel (`/usr/share/man`) ;
+- `/usr/local` : ce que l'administrateur installe **à la main**, hors du gestionnaire de paquets, avec la même structure (`/usr/local/bin`...). Le gestionnaire de paquets n'y touche jamais.
+
+Et `/bin`, `/sbin`, `/lib` ? Historiquement, ils contenaient le strict nécessaire au démarrage, quand `/usr` était sur un autre disque pas encore disponible. Sur les distributions récentes (Debian depuis la version 12, Fedora, Ubuntu, Arch), ce sont de simples **liens** vers `/usr/bin`, `/usr/sbin` et `/usr/lib`. On parle de « `/usr` fusionné ». Tu verras ce qu'est un lien à la leçon 5 de ce module.
+
+### les données qui changent : /var
+
+`/var` (pour *variable*) contient ce qui **grossit et change en permanence** pendant que le système tourne :
+
+- `/var/log` : les journaux. Le premier endroit où regarder quand quelque chose ne marche pas ;
+- `/var/lib` : les données d'état des services. Les bases de données de PostgreSQL et MySQL y vivent souvent (`/var/lib/postgresql`, `/var/lib/mysql`), comme l'état du gestionnaire de paquets et les données de Docker (`/var/lib/docker`) ;
+- `/var/cache` : des caches qu'on peut vider sans perdre d'information, comme les paquets téléchargés ;
+- `/var/spool` : les files d'attente, du courrier à imprimer aux tâches `cron` ;
+- `/var/tmp` : des fichiers temporaires qui doivent survivre à un redémarrage.
+
+<Callout type="warning">
+`/var` est le répertoire qui remplit les disques. Un journal qui n'est plus découpé, une base de données qui grossit, des images Docker qui s'accumulent : quand un serveur tombe parce que « le disque est plein », c'est dans `/var` qu'on cherche en premier. Et un disque plein ne fait pas qu'empêcher d'écrire : des services s'arrêtent, des bases de données se corrompent.
+</Callout>
+
+### les utilisateurs : /home et /root
+
+`/home` contient **un répertoire par utilisateur** : `/home/alice`, `/home/bob`. Chacun y range ses fichiers, et c'est là que vivent ses fichiers de configuration personnels (`.bashrc`, `.profile`, vus au module 1). Le raccourci `~` désigne ton propre répertoire personnel.
+
+L'administrateur root fait exception : son répertoire personnel est `/root`, directement sous la racine. La raison est pratique : `/home` est souvent sur un disque séparé, et root doit pouvoir se connecter même quand ce disque est en panne.
+
+### les temporaires : /tmp
+
+`/tmp` accueille les **fichiers temporaires**. Tout le monde peut y écrire, et son contenu est effacé au redémarrage sur la plupart des distributions (il est souvent en mémoire vive, dans un système de fichiers `tmpfs`). Un bit spécial, le *sticky bit*, empêche chacun de supprimer les fichiers des autres : tu le verras au module 4.
+
+Justement parce que tout le monde peut y écrire, `/tmp` est un lieu classique de dépôt de fichiers malveillants sur une machine compromise. Un exécutable inconnu dans `/tmp` ou `/dev/shm` est un signal à prendre au sérieux.
+
+### les ajouts : /opt et /srv
+
+- `/opt` accueille les **logiciels tiers** livrés d'un bloc, avec tous leurs fichiers dans un seul répertoire : `/opt/google/chrome`, `/opt/application-metier/`.
+- `/srv` est prévu pour les **données servies** par la machine : les fichiers d'un site web, d'un serveur FTP, d'un dépôt Git. Dans la pratique, beaucoup de distributions mettent encore les sites web dans `/var/www`.
+
+### le démarrage : /boot
+
+`/boot` contient ce qu'il faut pour démarrer : le noyau (`vmlinuz-...`), l'image de démarrage initiale (`initrd.img-...`) et la configuration du chargeur de démarrage. On n'y touche pas à la main. Un `/boot` plein, fréquent quand de vieux noyaux s'accumulent sur une petite partition, empêche les mises à jour du noyau.
+
+## les systèmes de fichiers virtuels
+
+Certains répertoires ne correspondent à rien sur le disque : le noyau les fabrique à la volée quand on les lit. C'est l'application directe du principe Unix « tout est fichier ».
+
+- **`/proc`** expose les **processus** et beaucoup d'informations du noyau. Chaque processus y a un répertoire à son numéro (`/proc/1234`). `/proc/cpuinfo` décrit le processeur, `/proc/meminfo` la mémoire, `/proc/version` le noyau.
+- **`/sys`** expose le **matériel et les pilotes**, de façon plus structurée. Certaines valeurs s'y modifient en écrivant dans un fichier, par exemple la luminosité d'un écran.
+- **`/dev`** contient les **périphériques** sous forme de fichiers spéciaux : `/dev/sda` pour le premier disque, `/dev/null` qui avale tout ce qu'on y écrit, `/dev/zero` qui produit des zéros à l'infini, `/dev/urandom` qui produit de l'aléa.
+- **`/run`** contient des données d'exécution du démarrage en cours, en mémoire : fichiers de numéros de processus, sockets, verrous. Il est vidé à chaque démarrage.
+
+```bash
+cat /proc/version
+```
+
+```text
+Linux version 6.1.0-18-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0) #1 SMP PREEMPT_DYNAMIC Debian 6.1.76-1 (2024-02-01)
+```
+
+Ce texte n'est écrit nulle part sur le disque : le noyau le produit au moment où `cat` lit le « fichier ».
+
+<Callout type="info">
+Parce que `/proc`, `/sys`, `/dev` et `/run` sont fabriqués à la volée, on ne les sauvegarde jamais, et les outils qui parcourent tout le disque (`find /`, `du /`) les excluent en général. Un `du` qui semble ne jamais finir parcourt souvent `/proc` par erreur.
+</Callout>
+
+## la carte, résumée
+
+<Diagram caption="Où chercher quoi">
+flowchart LR
+  Q1["Une configuration ?"] --> A1["/etc"]
+  Q2["Un journal ?"] --> A2["/var/log"]
+  Q3["Les données d'un service ?"] --> A3["/var/lib"]
+  Q4["Un programme ?"] --> A4["/usr/bin, /usr/sbin, /usr/local/bin"]
+  Q5["Les fichiers d'un utilisateur ?"] --> A5["/home/nom"]
+  Q6["Un logiciel tiers ?"] --> A6["/opt"]
+  Q7["Le processus 1234 ?"] --> A7["/proc/1234"]
+</Diagram>
+
+### ce que cela change pour les sauvegardes
+
+La hiérarchie répond directement à la question « que faut-il sauvegarder ? ».
+
+- **À sauvegarder** : `/etc` (la configuration, petite et précieuse), `/home` et `/root` (les données des utilisateurs), `/srv` ou `/var/www` (les données servies), les données des services dans `/var/lib`, **exportées proprement** (une base de données se sauvegarde avec son outil de sauvegarde, pas en copiant ses fichiers pendant qu'elle tourne).
+- **Inutile** : `/usr` et `/boot` se réinstallent depuis les paquets ; `/tmp`, `/var/cache` et `/var/tmp` sont jetables ; `/proc`, `/sys`, `/dev`, `/run` n'existent pas sur le disque.
+
+Tu mettras cette liste en pratique au module 9, et dans le projet de fin de parcours.
+
+## démonstration : le disque est plein
+
+Une alerte : le disque d'un serveur web est plein à 97 %. Voici comment la carte guide l'enquête, commande par commande.
+
+**1. Quel système de fichiers est plein ?**
+
+```bash
+df -h /
+```
+
+```text
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/vda1        40G   38G  1.3G  97% /
+```
+
+**2. Qu'est-ce qui occupe la place ?** On mesure les grands répertoires de premier niveau, en restant sur ce disque (`-x`) pour ne pas descendre dans `/proc` :
+
+```bash
+sudo du -xh --max-depth=1 / | sort -h
+```
+
+```text
+12K     /srv
+8.0M    /etc
+180M    /boot
+1.2G    /home
+3.1G    /usr
+33G     /var
+38G     /
+```
+
+`/var` : comme prévu. On descend d'un niveau :
+
+```bash
+sudo du -xh --max-depth=1 /var | sort -h
+```
+
+```text
+84M     /var/cache
+1.1G    /var/lib
+31G     /var/log
+33G     /var
+```
+
+**3. Le coupable.** Ce sont les journaux. Une application écrit dans `/var/log/app/` sans que ses journaux soient jamais découpés ni supprimés. La solution durable (la rotation des journaux) est au module 8 ; la carte t'a mené à la cause en trois commandes, sans rien connaître de ce serveur.
+
+## à toi de jouer
+
+Tu arrives sur un serveur. Trouve la configuration du serveur SSH, puis affiche les dernières lignes du journal système, puis lis la version du noyau dans le système de fichiers virtuel du noyau. Tu peux explorer avec `ls` avant.
+
+<SimulatedTerminal shell="bash" title="Lire la carte" expectedCommands={["ls /etc/ssh", "sudo tail -n 5 /var/log/syslog", "cat /proc/version"]} hints={["La configuration de tout le système est dans /etc ; celle de SSH dans un répertoire à son nom.", "Les journaux sont dans /var/log ; le journal système s'appelle syslog sur Debian. Il faut les droits de root pour le lire.", "Les informations du noyau sont dans /proc."]} commands={{ "ls /": "bin   dev  home  lib64  mnt  proc  run   srv  tmp  var\nboot  etc  lib   media  opt  root  sbin  sys  usr", "ls -l /bin": "lrwxrwxrwx 1 root root 7 mars  4 2024 /bin -> usr/bin", "ls /etc/ssh": "moduli  ssh_config  ssh_config.d  sshd_config  sshd_config.d  ssh_host_ed25519_key  ssh_host_ed25519_key.pub", "ls /var/log": "alternatives.log  apt  auth.log  btmp  dpkg.log  journal  nginx  syslog  wtmp", "tail -n 5 /var/log/syslog": "tail: cannot open '/var/log/syslog' for reading: Permission denied", "sudo tail -n 5 /var/log/syslog": "2026-09-27T09:12:01.114+02:00 srv-web-01 CRON[51210]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)\n2026-09-27T09:14:33.502+02:00 srv-web-01 sshd[51288]: Accepted publickey for alice from 192.0.2.15 port 50214 ssh2\n2026-09-27T09:14:33.519+02:00 srv-web-01 systemd-logind[612]: New session 88 of user alice.\n2026-09-27T09:15:02.008+02:00 srv-web-01 nginx[798]: reloaded\n2026-09-27T09:17:01.201+02:00 srv-web-01 CRON[51402]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)", "cat /proc/version": "Linux version 6.1.0-18-amd64 (debian-kernel@lists.debian.org) (gcc-12 (Debian 12.2.0-14) 12.2.0) #1 SMP PREEMPT_DYNAMIC Debian 6.1.76-1 (2024-02-01)", "cat /proc/meminfo": "MemTotal:        4015132 kB\nMemFree:          512344 kB\nMemAvailable:    2871220 kB", "ls /home": "alice  bob" }} />
+
+Essaie aussi `ls -l /bin` : la flèche montre que `/bin` n'est qu'un lien vers `usr/bin`, le « `/usr` fusionné » de Debian 12.
+
+## les pièges
+
+- **Chercher une configuration dans `/usr`.** Les fichiers de `/usr` sont remplacés à chaque mise à jour du paquet. La configuration que tu modifies est dans `/etc` ; si tu modifies un fichier de `/usr`, ta modification disparaîtra à la prochaine mise à jour.
+- **Installer à la main dans `/usr/bin`.** C'est le domaine du gestionnaire de paquets, qui peut écraser ton fichier. Ce que tu installes toi-même va dans `/usr/local` ou `/opt`.
+- **Garder des données importantes dans `/tmp`.** Elles disparaissent au redémarrage.
+- **Oublier `/var` dans la surveillance.** C'est lui qui remplit les disques. Surveille son espace libre.
+- **Sauvegarder une base de données en copiant `/var/lib/mysql`.** Des fichiers copiés pendant que la base tourne sont souvent inutilisables. On utilise l'outil d'export de la base.
+- **Parcourir `/proc` avec `find /` ou `du /`.** Ce n'est pas le disque. Utilise `-xdev` pour `find` et `-x` pour `du` afin de rester sur un seul système de fichiers.
+
+## pour aller plus loin
+
+<ExternalLink href="https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html" description="La norme de la hiérarchie des répertoires, version 3.0">Filesystem Hierarchy Standard</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/hier.7.html" description="La description de la hiérarchie telle que la documente le manuel">hier(7)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/proc.5.html" description="Tout ce que le noyau expose dans /proc">proc(5)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Où chercher en premier la configuration d'un service installé par le gestionnaire de paquets ?" options={["/usr/share", "/etc", "/var/lib", "/opt"]} correct={1} explanation="La configuration de tout le système est dans /etc, souvent dans un fichier ou un répertoire au nom du service." />
+  <Quiz id="q-2" question="Un serveur a son disque plein. Quel répertoire regarder en premier ?" options={["/etc", "/boot", "/var", "/usr"]} correct={2} explanation="/var contient les journaux, les bases de données et les caches : tout ce qui grossit pendant que le système tourne." />
+  <Quiz id="q-3" question="Tu installes à la main un outil qui n'existe pas dans les paquets de ta distribution. Où le placer ?" options={["/usr/bin, avec les autres commandes", "/usr/local/bin", "/etc", "/tmp"]} correct={1} explanation="/usr/local est réservé à ce que l'administrateur installe lui-même ; le gestionnaire de paquets n'y touche jamais. /usr/bin lui appartient et peut être réécrit à une mise à jour." />
+  <Quiz id="q-4" question="Que contient /proc/1234 ?" options={["Le 1234e fichier du disque", "Des informations sur le processus numéro 1234, fabriquées par le noyau", "Une sauvegarde de la configuration", "Le journal de la commande 1234 de l'historique"]} correct={1} explanation="/proc est un système de fichiers virtuel : chaque processus y a un répertoire à son numéro, et rien de tout cela n'est stocké sur le disque." />
+  <Quiz id="q-5" question="Lequel de ces répertoires n'a aucun intérêt à être sauvegardé ?" options={["/etc", "/home", "/proc", "/srv"]} correct={2} explanation="/proc est fabriqué par le noyau à la volée et n'existe pas sur le disque. /etc, /home et /srv contiennent de la configuration et des données." />
+  <Quiz id="q-6" question="Pourquoi le répertoire personnel de root est-il /root et non /home/root ?" options={["Par tradition, sans raison technique", "Pour que root puisse se connecter même si /home, souvent sur un autre disque, est indisponible", "Parce que /home est réservé aux utilisateurs Windows", "Pour cacher root aux autres utilisateurs"]} correct={1} explanation="/home est souvent sur une partition ou un disque séparé. Placer le répertoire de root sur la partition racine lui permet de se connecter pour réparer même si /home est en panne." />
+  <Quiz id="q-7" question="Sur une Debian 12, ls -l /bin affiche /bin -> usr/bin. Qu'est-ce que cela signifie ?" options={["/bin est corrompu", "/bin est un lien vers /usr/bin : la distribution a fusionné ces répertoires", "Les commandes de /bin ont été supprimées", "Il faut recréer /bin"]} correct={1} explanation="Les distributions récentes ont fusionné /bin, /sbin et /lib dans /usr ; les anciens chemins sont conservés sous forme de liens pour la compatibilité." />
+</QuizGroup>
+
+## à retenir
+
+- Un seul arbre, qui part de `/`. Disques et clés s'y **montent** dans un répertoire.
+- `/etc` la configuration, `/usr` les programmes (`/usr/local` pour ce que tu installes), `/var` ce qui change et grossit (`/var/log`, `/var/lib`), `/home` et `/root` les utilisateurs, `/tmp` le temporaire, `/opt` les logiciels tiers, `/srv` les données servies, `/boot` le démarrage.
+- `/proc`, `/sys`, `/dev` et `/run` sont **virtuels** : fabriqués par le noyau, jamais sauvegardés.
+- Disque plein : `df -h`, puis `du -xh --max-depth=1` en descendant, en commençant par `/var`.
+- Sauvegarder `/etc`, `/home`, `/root`, `/srv` et les données des services exportées proprement ; pas `/usr`, `/tmp` ni les systèmes virtuels.

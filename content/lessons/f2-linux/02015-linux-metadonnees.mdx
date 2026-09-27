@@ -1,0 +1,272 @@
+---
+refCode: CL-LSN-02015-V01
+slug: linux-metadonnees-fichiers
+title: "Les métadonnées d'un fichier"
+description: "Tout ce que stat révèle sur un fichier, les trois dates (modification, changement, accès) et la date de création, le vrai type d'un fichier avec file, la taille apparente et la taille sur le disque, et les attributs étendus comme l'immuabilité."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02014-V01"]
+---
+
+Un fichier, ce n'est pas seulement un contenu. C'est aussi un propriétaire, des droits, une taille, plusieurs dates, un type réel qui ne correspond pas toujours à son extension, et parfois des attributs cachés que `ls` ne montre pas. Ces informations sur le fichier, qu'on appelle ses **métadonnées**, répondent à des questions très concrètes : ce fichier a-t-il été modifié récemment ? Est-ce vraiment une image, ou un programme déguisé ? Pourquoi occupe-t-il moins de place sur le disque que sa taille annoncée ? Pourquoi root lui-même ne peut-il pas le supprimer ?
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire chaque ligne de la sortie de `stat` ;
+- distinguer les trois dates d'un fichier (modification, changement, accès), dire ce qui fait bouger chacune, et situer la date de création ;
+- identifier le type réel d'un fichier avec `file`, quelle que soit son extension ;
+- expliquer l'écart entre la taille d'un fichier et la place qu'il occupe sur le disque ;
+- repérer et manipuler les attributs étendus, dont l'attribut d'immuabilité.
+
+## pourquoi ça compte
+
+Les métadonnées sont la matière première de l'investigation. Quand un serveur a été compromis, l'enquêteur reconstruit une **chronologie** : quels fichiers ont changé, et quand. Il le fait en lisant ces dates, et il doit savoir lesquelles un attaquant peut falsifier facilement et lesquelles résistent mieux. Il vérifie aussi le **type réel** des fichiers suspects : un programme malveillant nommé `photo.jpg` reste un programme.
+
+En administration, elles expliquent des comportements déroutants : une sauvegarde qui ne voit pas qu'un fichier a changé, un disque qui semble plein alors que la somme des tailles est petite, un fichier de configuration impossible à modifier même en root. Chaque fois, la réponse est dans les métadonnées.
+
+## stat : la fiche complète d'un fichier
+
+`ls -l` montre une partie des métadonnées. `stat` les montre toutes :
+
+```bash
+stat /etc/hosts
+```
+
+```text
+  File: /etc/hosts
+  Size: 221         Blocks: 8          IO Block: 4096   regular file
+Device: 254,1       Inode: 1310723     Links: 1
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2026-09-27 09:02:14.502118331 +0200
+Modify: 2026-09-12 14:02:51.118233412 +0200
+Change: 2026-09-12 14:02:51.118233412 +0200
+ Birth: 2024-03-04 10:41:07.221004103 +0100
+```
+
+Ligne par ligne :
+
+- **Size** : la taille du contenu, en octets. **Blocks** : le nombre de blocs de 512 octets réellement alloués sur le disque. **IO Block** : la taille d'un bloc du système de fichiers. **regular file** : le type.
+- **Device** : le périphérique qui porte le fichier. **Inode** : son numéro d'inode (leçon 5). **Links** : son nombre de liens physiques.
+- **Access** (première ligne) : les permissions, en notation octale (`0644`) et symbolique (`-rw-r--r--`), que le module 4 détaille. **Uid** et **Gid** : le propriétaire et le groupe, avec leurs numéros.
+- Puis **quatre dates**, à la nanoseconde près, qui méritent chacune leur explication.
+
+## les dates d'un fichier
+
+| Date | Nom court | Ce qu'elle mesure | Ce qui la met à jour |
+| --- | --- | --- | --- |
+| Modify | `mtime` | La dernière modification du **contenu** | Écrire dans le fichier |
+| Change | `ctime` | Le dernier changement de l'**inode** | Écrire dans le fichier, mais aussi changer ses droits, son propriétaire, son nombre de liens, le renommer |
+| Access | `atime` | La dernière **lecture** | Lire le fichier (avec des nuances, voir plus bas) |
+| Birth | `btime` | La **création** | Rien : elle est fixée à la création |
+
+Le piège courant : croire que `ctime` veut dire *creation time*. Il n'en est rien : c'est la date du dernier **changement** de l'inode. Un `chmod` ne modifie pas le contenu, donc pas `mtime`, mais il change l'inode, donc `ctime`.
+
+<Diagram caption="Quelle opération fait bouger quelle date ?">
+flowchart LR
+  A["Lire le fichier (cat)"] --> AT["atime"]
+  B["Modifier le contenu (éditeur, >>)"] --> MT["mtime"]
+  B --> CT["ctime"]
+  C["Changer droits ou propriétaire (chmod, chown)"] --> CT
+  D["Renommer, ajouter un lien"] --> CT
+</Diagram>
+
+### la date d'accès et relatime
+
+Mettre à jour `atime` à chaque lecture voudrait dire écrire sur le disque à chaque fois qu'on lit, ce qui serait coûteux. La plupart des systèmes montent donc leurs disques avec l'option `relatime` : `atime` n'est mis à jour que s'il est plus ancien que `mtime` ou `ctime`, ou s'il date de plus de 24 heures. D'autres montages utilisent `noatime`, qui ne la met jamais à jour. Conséquence : `atime` est une information **approximative**, sur laquelle on ne peut pas conclure à coup sûr qu'un fichier n'a pas été lu.
+
+### la date de création
+
+La date de création (`Birth`) n'existe que sur les systèmes de fichiers récents (ext4, XFS, Btrfs) et n'est affichée par `stat` que depuis quelques années. Sur d'anciens systèmes ou certains montages, la ligne affiche un simple tiret. `ls` ne la montre pas, mais `find` sait la tester avec `-newerBt`.
+
+### ce qu'on peut falsifier
+
+`touch`, vu à la leçon 3, modifie `mtime` et `atime` à la date qu'on veut :
+
+```bash
+touch -d "2024-01-15 08:00" rapport.txt
+stat -c '%y  %z' rapport.txt
+```
+
+```text
+2024-01-15 08:00:00.000000000 +0100  2026-09-27 11:40:02.901733120 +0200
+```
+
+`mtime` (`%y`) affiche désormais janvier 2024. Mais `ctime` (`%z`), lui, indique **maintenant** : modifier les dates a changé l'inode. `ctime` ne se règle pas avec une commande ordinaire ; il faudrait changer l'horloge de la machine ou écrire directement sur le disque.
+
+<Callout type="info">
+Cette asymétrie est précieuse en enquête. Un attaquant qui dépose un fichier et lui donne une vieille date de modification pour qu'il passe inaperçu (une technique appelée *timestomping*) laisse un `ctime` récent, incohérent avec le `mtime`. Un `mtime` très ancien avec un `ctime` d'hier sur un binaire système est exactement le genre d'anomalie qu'on recherche. Le parcours d'investigation numérique y reviendra en détail.
+</Callout>
+
+### formater la sortie de stat
+
+`stat -c` permet de choisir ce qu'on affiche, avec des codes :
+
+```bash
+stat -c '%n %s octets, propriétaire %U, droits %a' /etc/hosts
+```
+
+```text
+/etc/hosts 221 octets, propriétaire root, droits 644
+```
+
+Les codes utiles : `%n` nom, `%s` taille, `%U` et `%G` propriétaire et groupe, `%a` droits en octal, `%i` inode, `%y` `%z` `%x` `%w` les dates de modification, changement, accès et création. C'est la forme à utiliser dans les scripts, plutôt que de découper la sortie de `ls`.
+
+## le vrai type d'un fichier : file
+
+Sous Linux, **l'extension ne compte pas**. Un fichier nommé `photo.jpg` peut contenir n'importe quoi ; c'est son contenu qui décide de ce qu'il est. La commande `file` examine les premiers octets du fichier, sa **signature** (les « nombres magiques »), et en déduit son type :
+
+```bash
+file /etc/hosts /usr/bin/ls /usr/share/pixmaps/debian-logo.png
+```
+
+```text
+/etc/hosts:                         ASCII text
+/usr/bin/ls:                        ELF 64-bit LSB pie executable, x86-64, dynamically linked
+/usr/share/pixmaps/debian-logo.png: PNG image data, 48 x 48, 8-bit/color RGBA, non-interlaced
+```
+
+`ELF` est le format des programmes exécutables sous Linux. Si `file` répond `ELF 64-bit` pour un fichier nommé `facture.pdf`, ce n'est pas une facture. `file -i` donne le type au format MIME (`text/plain`, `image/png`), celui qu'utilisent les navigateurs et les serveurs web.
+
+<Callout type="warning">
+Ne te fie jamais à l'extension d'un fichier reçu ou déposé par un inconnu, ni pour l'ouvrir, ni pour décider s'il est dangereux. Et côté développement, une application qui accepte des envois de fichiers doit vérifier le contenu réel, pas l'extension ni le type annoncé par le navigateur, que l'utilisateur contrôle tous les deux. C'est exactement ce que fait le site de ce parcours pour les avatars.
+</Callout>
+
+## taille apparente et taille sur le disque
+
+`ls -l` affiche la **taille apparente**, celle du contenu. `du` affiche la **place occupée** sur le disque. Les deux diffèrent, pour deux raisons.
+
+**Les blocs.** Le disque est découpé en blocs, souvent de 4 Kio. Un fichier de 221 octets occupe un bloc entier : 4 Kio sur le disque. Un répertoire de dix mille petits fichiers occupe donc bien plus que la somme de leurs tailles.
+
+**Les fichiers creux.** Un fichier peut déclarer une grande taille sans que tout soit écrit : les zones jamais écrites ne sont pas allouées. On appelle cela un fichier *creux* (*sparse*). Les images de disques de machines virtuelles en sont l'exemple typique.
+
+```bash
+ls -lh disque-vm.img
+du -h disque-vm.img
+```
+
+```text
+-rw-r--r-- 1 alice alice 20G sept. 27 11:52 disque-vm.img
+1.3G	disque-vm.img
+```
+
+Le disque virtuel annonce 20 Go, mais n'occupe que 1,3 Go : seules les zones réellement utilisées par la machine virtuelle sont écrites. Attention en copiant ce genre de fichier : une copie naïve peut le « remplir » et lui faire occuper vraiment 20 Go. `cp --sparse=always` et `rsync --sparse` préservent les trous.
+
+## les attributs étendus
+
+Au-delà des permissions, les systèmes de fichiers ext4 et quelques autres acceptent des **attributs** supplémentaires, qu'on lit avec `lsattr` et qu'on modifie avec `chattr`. Le plus connu est **`i`, l'immuabilité** : un fichier immuable ne peut être ni modifié, ni supprimé, ni renommé, ni lié, **même par root**, tant que l'attribut est en place.
+
+```bash
+sudo chattr +i /etc/resolv.conf
+lsattr /etc/resolv.conf
+```
+
+```text
+----i---------e------- /etc/resolv.conf
+```
+
+```bash
+sudo rm /etc/resolv.conf
+```
+
+```text
+rm: cannot remove '/etc/resolv.conf': Operation not permitted
+```
+
+`sudo chattr -i` retire l'attribut. On l'utilise pour protéger un fichier qu'un service réécrit sans arrêt contre ta volonté. L'attribut `a` (*append only*) n'autorise que l'ajout à la fin, utile pour certains journaux.
+
+<Callout type="danger">
+L'immuabilité sert aussi aux attaquants : un programme malveillant rendu immuable résiste à un `rm` d'administrateur pressé, et l'erreur « Operation not permitted » en root déroute. Si root ne peut pas supprimer un fichier, le réflexe est `lsattr`. Un attribut `i` sur un fichier que personne n'a volontairement protégé est un indice de compromission.
+</Callout>
+
+Il existe enfin des **attributs étendus** au sens large (*xattrs*), des paires nom-valeur attachées au fichier, qu'on lit avec `getfattr`. Les systèmes de sécurité comme SELinux y stockent leurs étiquettes, et les navigateurs y notent parfois l'origine d'un fichier téléchargé. On en reparlera avec les contrôles d'accès avancés.
+
+## démonstration : un fichier suspect
+
+Un analyste te signale un fichier inhabituel sur un serveur web : `/var/www/site/images/logo-old.png`.
+
+**1. Son type réel :**
+
+```bash
+file /var/www/site/images/logo-old.png
+```
+
+```text
+/var/www/site/images/logo-old.png: PHP script, ASCII text
+```
+
+Ce n'est pas une image mais un script PHP, que le serveur web pourrait exécuter s'il est appelé : c'est le profil d'une porte dérobée (*webshell*).
+
+**2. Ses dates :**
+
+```bash
+stat -c 'mtime %y | ctime %z | btime %w' /var/www/site/images/logo-old.png
+```
+
+```text
+mtime 2023-06-02 10:14:00.000000000 +0200 | ctime 2026-09-26 23:41:17.554019201 +0200 | btime 2026-09-26 23:41:17.550911034 +0200
+```
+
+La date de modification prétend juin 2023, mais le fichier a été **créé** et son inode **changé** hier à 23 h 41 : l'ancienne date est un maquillage. On tient une heure précise pour chercher dans les journaux du serveur web ce qui s'est passé à 23 h 41.
+
+**3. Ses attributs :**
+
+```bash
+lsattr /var/www/site/images/logo-old.png
+```
+
+```text
+----i---------e------- /var/www/site/images/logo-old.png
+```
+
+Immuable, pour résister au nettoyage. Trois commandes ont confirmé la compromission et donné une piste temporelle. La suite (préserver les preuves avant de toucher au fichier, isoler la machine) relève de la réponse à incident, où tu apprendras à ne pas détruire ce que tu viens de trouver.
+
+## à toi de jouer
+
+Examine le fichier `facture.pdf` reçu par e-mail : affiche d'abord sa fiche complète avec `stat`, puis vérifie son type réel avec `file`, et enfin regarde ses attributs avec `lsattr`.
+
+<SimulatedTerminal shell="bash" title="Un fichier suspect" expectedCommands={["stat facture.pdf", "file facture.pdf", "lsattr facture.pdf"]} hints={["stat suivi du nom du fichier donne toutes ses métadonnées.", "file examine le contenu, pas l'extension.", "lsattr montre les attributs étendus comme l'immuabilité."]} commands={{ "ls -l facture.pdf": "-rwxr-xr-x 1 alice alice 18432 janv. 15  2024 facture.pdf", "stat facture.pdf": "  File: facture.pdf\n  Size: 18432       Blocks: 40         IO Block: 4096   regular file\nDevice: 254,1       Inode: 2621447     Links: 1\nAccess: (0755/-rwxr-xr-x)  Uid: ( 1000/   alice)   Gid: ( 1000/   alice)\nAccess: 2026-09-27 11:58:40.110245008 +0200\nModify: 2024-01-15 08:00:00.000000000 +0100\nChange: 2026-09-27 11:58:02.664781225 +0200\n Birth: 2026-09-27 11:58:02.662010951 +0200", "file facture.pdf": "facture.pdf: ELF 64-bit LSB pie executable, x86-64, dynamically linked, stripped", "file -i facture.pdf": "facture.pdf: application/x-pie-executable; charset=binary", "lsattr facture.pdf": "---------------e------- facture.pdf", "stat -c '%y %z' facture.pdf": "2024-01-15 08:00:00.000000000 +0100 2026-09-27 11:58:02.664781225 +0200" }} />
+
+Relève les indices : droits d'exécution sur un « PDF », un type `ELF` qui en fait un programme, et une date de modification de 2024 contredite par une création aujourd'hui. Ce fichier ne s'ouvre pas : il se signale.
+
+## les pièges
+
+- **Prendre `ctime` pour la date de création.** C'est la date du dernier changement de l'inode. La création, c'est `Birth`, quand elle existe.
+- **Faire confiance à `mtime`.** `touch -d` la règle à volonté. Compare-la à `ctime` et à `Birth`.
+- **Conclure qu'un fichier n'a pas été lu parce que `atime` est ancien.** Avec `relatime` ou `noatime`, `atime` est approximatif.
+- **Se fier à l'extension.** `file` regarde le contenu ; l'extension ne prouve rien.
+- **Confondre taille et occupation.** `ls -l` donne la taille apparente, `du` la place réelle.
+- **Rester bloqué sur « Operation not permitted » en root.** Regarde `lsattr` : un attribut `i` bloque tout.
+- **Découper la sortie de `ls` dans un script.** `stat -c` donne exactement le champ voulu.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/stat.1.html" description="Tous les codes de format de stat -c">stat(1)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/inode.7.html" description="Les dates d'un inode et ce qui les modifie">inode(7)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/chattr.1.html" description="Les attributs de fichier des systèmes ext2, ext3 et ext4">chattr(1)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Tu fais chmod 600 secret.txt sans toucher au contenu. Quelle date change ?" options={["mtime seulement", "ctime", "atime seulement", "Aucune"]} correct={1} explanation="Changer les droits modifie l'inode, donc ctime. Le contenu n'a pas changé, donc mtime reste identique." />
+  <Quiz id="q-2" question="Que signifie ctime ?" options={["La date de création du fichier", "La date du dernier changement de l'inode", "La date de la dernière copie", "La date de dernière lecture"]} correct={1} explanation="Le c signifie change, pas creation. La date de création, quand le système la conserve, s'appelle Birth ou btime." />
+  <Quiz id="q-3" question="Un binaire système a un mtime de 2022 et un ctime d'hier. Que peut-on en penser ?" options={["Rien d'anormal, les dates sont toujours différentes", "C'est une incohérence qui peut indiquer une date de modification falsifiée", "Le fichier a été lu hier", "Le disque a un problème matériel"]} correct={1} explanation="touch peut remettre une ancienne date de modification, mais ctime enregistre le moment où l'inode a changé. Une telle incohérence sur un binaire système mérite une enquête." />
+  <Quiz id="q-4" question="Comment savoir si fichier.jpg est vraiment une image ?" options={["Regarder son extension", "Utiliser la commande file, qui examine son contenu", "L'ouvrir dans un navigateur", "Regarder sa taille"]} correct={1} explanation="file lit la signature au début du fichier. L'extension n'est qu'une partie du nom, que n'importe qui peut choisir." />
+  <Quiz id="q-5" question="ls -lh annonce 50G pour une image de disque, du -h annonce 3G. Pourquoi ?" options={["ls se trompe", "C'est un fichier creux : les zones jamais écrites ne sont pas allouées sur le disque", "Le fichier est compressé automatiquement", "du ne compte que les métadonnées"]} correct={1} explanation="ls affiche la taille apparente, du la place réellement allouée. Un fichier creux déclare une grande taille sans occuper l'espace correspondant." />
+  <Quiz id="q-6" question="Root reçoit « Operation not permitted » en supprimant un fichier. Quelle commande vérifier en premier ?" options={["ls -l", "lsattr", "file", "du"]} correct={1} explanation="Un attribut d'immuabilité i interdit toute modification ou suppression, même à root, tant qu'il n'est pas retiré avec chattr -i." />
+  <Quiz id="q-7" question="Pourquoi atime n'est-il pas une preuve fiable qu'un fichier n'a pas été lu ?" options={["Parce qu'il n'existe pas sous Linux", "Parce qu'avec relatime ou noatime, il n'est pas mis à jour à chaque lecture", "Parce qu'il est toujours égal à mtime", "Parce que seul root peut le lire"]} correct={1} explanation="Pour éviter une écriture à chaque lecture, la plupart des systèmes ne mettent atime à jour qu'occasionnellement, voire jamais." />
+</QuizGroup>
+
+## à retenir
+
+- `stat` donne la fiche complète : taille, blocs, inode, liens, droits, propriétaire, dates. `stat -c` pour choisir les champs dans un script.
+- **mtime** = contenu modifié, **ctime** = inode changé (droits, propriétaire, contenu, nom), **atime** = lecture (approximative), **Birth** = création.
+- `touch -d` falsifie mtime et atime, pas ctime : une incohérence entre les deux est un indice.
+- `file` donne le type **réel** d'après le contenu. L'extension ne prouve rien.
+- `ls -l` : taille apparente ; `du` : place réelle. Les fichiers creux annoncent plus qu'ils n'occupent.
+- `lsattr` et `chattr` : l'attribut `i` rend un fichier intouchable, même pour root. Premier réflexe devant un « Operation not permitted » en root.

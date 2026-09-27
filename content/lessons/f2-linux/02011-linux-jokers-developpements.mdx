@@ -1,0 +1,309 @@
+---
+refCode: CL-LSN-02011-V01
+slug: linux-jokers-developpements
+title: "Les jokers et les développements du shell"
+description: "Ce que bash transforme dans ta ligne avant d'exécuter quoi que ce soit : les jokers * ? et [ ], les accolades, le tilde, les variables, la substitution de commande et le calcul, dans quel ordre, et comment voir le résultat avant d'agir."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02010-V01"]
+---
+
+Quand tu tapes `rm *.log`, ce n'est pas `rm` qui cherche les fichiers qui finissent par `.log`. C'est bash, avant même de lancer `rm`, qui remplace `*.log` par la liste des fichiers correspondants. `rm` reçoit une liste de noms et ne sait même pas qu'il y avait une étoile. Ce travail préalable s'appelle le **développement** (*expansion*), et il y en a plusieurs sortes. Les comprendre, c'est savoir exactement ce qu'une commande va recevoir, et donc ce qu'elle va faire.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- utiliser les jokers `*`, `?`, `[...]` et `[!...]` pour désigner des groupes de fichiers ;
+- générer des listes avec les accolades, par énumération ou par intervalle ;
+- insérer le résultat d'une commande ou d'un calcul dans une autre commande ;
+- citer l'ordre dans lequel bash applique les développements ;
+- prévisualiser n'importe quel développement avec `echo` avant d'exécuter une commande qui agit ;
+- prévoir ce qui se passe quand un joker ne correspond à rien, ou à des fichiers cachés.
+
+## pourquoi ça compte
+
+Les jokers sont la manière la plus rapide d'agir sur des dizaines de fichiers, et donc la plus rapide d'en détruire des dizaines par erreur. Un espace mal placé, et `rm *.log` devient `rm * .log` : toute la liste du répertoire. Savoir que c'est bash qui développe, et savoir voir ce qu'il produit, est la meilleure protection qui existe.
+
+C'est aussi une question de sécurité. Un script qui laisse bash développer une donnée venue de l'extérieur, un nom de fichier fourni par un utilisateur, par exemple, peut se retrouver à agir sur des fichiers que personne n'avait prévus. Les guillemets de la leçon 3 du module 1 prennent ici tout leur sens.
+
+## les jokers de noms de fichiers
+
+Trois motifs de base, qu'on appelle en anglais *globs* :
+
+| Motif | Correspond à | Exemple | Désigne |
+| --- | --- | --- | --- |
+| `*` | N'importe quelle suite de caractères, même vide | `*.log` | `app.log`, `.log` excepté |
+| `?` | Exactement un caractère | `rapport-?.txt` | `rapport-1.txt`, pas `rapport-12.txt` |
+| `[abc]` | Un caractère parmi ceux listés | `[Rr]apport.txt` | `Rapport.txt` et `rapport.txt` |
+| `[a-z]` | Un caractère dans l'intervalle | `serveur[1-3]` | `serveur1`, `serveur2`, `serveur3` |
+| `[!abc]` | Un caractère qui n'est **pas** listé | `*[!0-9]` | les noms qui ne finissent pas par un chiffre |
+
+Les motifs se combinent : `access.log.[0-9]*` désigne `access.log.1`, `access.log.2.gz`, `access.log.14`, mais pas `access.log`.
+
+```bash
+ls /var/log/nginx/access.log.[0-9]*
+```
+
+```text
+/var/log/nginx/access.log.1       /var/log/nginx/access.log.3.gz
+/var/log/nginx/access.log.2.gz    /var/log/nginx/access.log.4.gz
+```
+
+Les jokers ne franchissent pas les barres obliques : `*` ne désigne que des noms dans un seul répertoire. Pour descendre dans les sous-répertoires, il faut `*/` explicitement (`*/*.conf`), ou l'option `globstar` de bash, qui donne un sens à `**` : `**/*.conf` parcourt toute l'arborescence. On l'active avec `shopt -s globstar`. Pour les recherches sérieuses dans une arborescence, `find` (leçon 6) reste l'outil adapté.
+
+### les classes de caractères
+
+À l'intérieur des crochets, on peut aussi nommer une **classe** de caractères plutôt qu'un intervalle. La syntaxe, un peu lourde, met le nom entre `[:` et `:]`, le tout à l'intérieur des crochets du joker :
+
+| Classe | Caractères |
+| --- | --- |
+| `[[:digit:]]` | Un chiffre, comme `[0-9]` |
+| `[[:lower:]]` et `[[:upper:]]` | Une minuscule, une majuscule |
+| `[[:alpha:]]` et `[[:alnum:]]` | Une lettre ; une lettre ou un chiffre |
+| `[[:space:]]` | Un caractère d'espacement |
+
+Pourquoi s'en servir alors que `[0-9]` ou `[a-z]` sont plus courts ? Parce que la signification d'un intervalle de lettres dépend, pour certains outils et certains shells, de la **langue** configurée : dans l'ordre alphabétique de certaines langues, `[a-z]` peut inclure des majuscules ou des lettres accentuées. Bash, depuis sa version 5, compare les intervalles dans l'ordre des codes de caractères, ce qui évite la surprise dans le shell lui-même ; mais les mêmes motifs se retrouvent dans `grep`, `sed` ou `find`, qui ne suivent pas forcément cette règle. Les classes, elles, veulent dire la même chose partout. Tu les retrouveras avec les expressions régulières au module 3, où elles s'écrivent exactement de la même façon.
+
+```bash
+ls rapport-[[:digit:]][[:digit:]].txt
+```
+
+```text
+rapport-01.txt  rapport-02.txt  rapport-12.txt
+```
+
+### deux comportements qui surprennent
+
+**Les fichiers cachés sont ignorés.** `*` ne correspond jamais à un nom qui commence par un point. `rm *` dans ton répertoire personnel laisse donc `.bashrc` et `.ssh` en place, et `cp * sauvegarde/` oublie les fichiers cachés. Pour les inclure, il faut un motif qui commence explicitement par un point (`.*`, attention : il désigne aussi `.` et `..`), ou l'option `dotglob`.
+
+**Un motif qui ne correspond à rien reste tel quel.** S'il n'existe aucun fichier `.bak`, bash n'a rien à mettre à la place de `*.bak`, et transmet le texte `*.bak` à la commande :
+
+```bash
+rm *.bak
+```
+
+```text
+rm: cannot remove '*.bak': No such file or directory
+```
+
+L'erreur est sans gravité ici, mais dans un script, une boucle `for f in *.bak` exécutera une fois son contenu avec la valeur littérale `*.bak`. L'option `nullglob` fait disparaître un motif sans correspondance ; tu t'en serviras au module 7.
+
+## les accolades : générer des listes
+
+Les accolades ne cherchent pas de fichiers : elles **fabriquent** du texte, que les fichiers existent ou non.
+
+```bash
+echo fichier-{a,b,c}.txt
+```
+
+```text
+fichier-a.txt fichier-b.txt fichier-c.txt
+```
+
+```bash
+echo sauvegarde-{1..5}
+```
+
+```text
+sauvegarde-1 sauvegarde-2 sauvegarde-3 sauvegarde-4 sauvegarde-5
+```
+
+L'usage le plus courant est de créer une arborescence entière en une ligne, ou de faire une copie de sauvegarde sans retaper le nom :
+
+```bash
+mkdir -p projet/{src,tests,docs}
+cp /etc/nginx/nginx.conf{,.bak}
+```
+
+La seconde ligne devient `cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak` : l'accolade contient une option vide et une option `.bak`. On peut aussi compter avec un zéro initial (`{01..12}` donne `01 02 ... 12`) ou avec un pas (`{0..100..10}`).
+
+<Callout type="info">
+Il ne faut pas d'espace dans les accolades, ni après les virgules. `{a, b}` n'est pas développé : bash le laisse tel quel, en deux mots `{a,` et `b}`.
+</Callout>
+
+## le tilde
+
+Tu l'utilises déjà : `~` devient ton répertoire personnel, `~bob` celui de bob. Un détail compte : le tilde n'est développé qu'**en début de mot**, et **pas entre guillemets**. `"~/notes.txt"` désigne un répertoire nommé `~` dans le répertoire courant, ce qui n'est presque jamais ce qu'on voulait. Entre guillemets, on écrit `"$HOME/notes.txt"`.
+
+## les variables
+
+Vu au module 1 : `$HOME`, `$USER` et `$PATH` sont remplacés par leur valeur. Bash sait aussi transformer une valeur au passage, grâce à une syntaxe avec accolades qu'on appelle le développement de paramètre. Deux formes utiles dès maintenant :
+
+```bash
+fichier=rapport.txt
+echo "${fichier%.txt}.pdf"
+echo "${VILLE:-Paris}"
+```
+
+```text
+rapport.pdf
+Paris
+```
+
+La première retire le suffixe `.txt`, la seconde donne une valeur par défaut si la variable est vide. Tu en verras bien d'autres au module 7.
+
+## la substitution de commande
+
+`$(commande)` est remplacé par **ce que la commande affiche**. On insère ainsi le résultat d'une commande dans une autre :
+
+```bash
+echo "Nous sommes le $(date +%F), sur $(hostname)."
+```
+
+```text
+Nous sommes le 2026-09-27, sur srv-web-01.
+```
+
+L'usage de tous les jours : nommer une sauvegarde avec la date du jour.
+
+```bash
+tar -czf "etc-$(date +%F).tar.gz" /etc
+```
+
+Tu verras parfois une ancienne syntaxe avec des accents graves, `` `date` ``. Elle fait la même chose, mais s'imbrique mal et se lit mal : préfère `$( )`.
+
+## le calcul
+
+`$(( expression ))` est remplacé par le **résultat d'un calcul entier** :
+
+```bash
+echo $(( 1024 * 1024 ))
+echo "Il reste $(( 100 - 37 )) %"
+```
+
+```text
+1048576
+Il reste 63 %
+```
+
+Seuls les entiers sont gérés : `$(( 7 / 2 ))` vaut `3`. Pour les nombres à virgule, on passe par d'autres outils comme `bc` ou `awk`.
+
+## l'ordre des développements
+
+Bash applique les développements dans un ordre précis, et cet ordre explique bien des comportements.
+
+<Diagram caption="L'ordre dans lequel bash transforme une ligne">
+flowchart TD
+  A["1. Accolades : listes fabriquées"] --> B["2. Tilde : répertoire personnel"]
+  B --> C["3. Variables, substitution de commande, calcul"]
+  C --> D["4. Découpage en mots des résultats non protégés"]
+  D --> E["5. Jokers : noms de fichiers"]
+  E --> F["6. Retrait des guillemets"]
+  F --> G["La commande reçoit ses arguments"]
+</Diagram>
+
+Deux conséquences importantes :
+
+- **Les jokers passent en dernier.** Une variable qui contient `*.log`, utilisée sans guillemets, sera développée en liste de fichiers. Entre guillemets doubles, elle ne l'est pas : c'est une raison de plus pour toujours mettre les variables entre guillemets.
+- **Le découpage en mots s'applique aux résultats.** Si une variable ou une substitution de commande contient des espaces et n'est pas entre guillemets, son résultat est coupé en plusieurs arguments. C'est l'origine du fameux bug des noms de fichiers avec espaces.
+
+Et les guillemets simples désactivent **tous** ces développements : `echo '*.log $HOME $(date)'` affiche ce texte tel quel.
+
+## voir avant d'agir : echo
+
+Voici le réflexe le plus précieux de cette leçon. Puisque c'est bash qui développe, et que `echo` affiche simplement ce qu'il reçoit, **mettre `echo` devant une commande montre exactement ce qu'elle recevrait**, sans l'exécuter :
+
+```bash
+echo rm /var/log/app/*.log.[0-9]*
+```
+
+```text
+rm /var/log/app/app.log.1 /var/log/app/app.log.2 /var/log/app/app.log.3
+```
+
+Si la ligne affichée est bien celle que tu veux exécuter, retire le `echo` (flèche du haut, Ctrl+A, efface) et valide. Ce réflexe complète celui de la leçon précédente (`ls` avant `rm`), et marche pour n'importe quelle commande, y compris `mv` et `cp` avec des accolades.
+
+<Callout type="danger">
+Relis toujours l'espace autour d'un joker. `rm *.tmp` supprime les fichiers `.tmp`. `rm * .tmp` supprime **tous** les fichiers du répertoire, puis se plaint qu'il n'existe pas de fichier nommé `.tmp`. Un seul espace fait la différence, et `echo rm * .tmp` te l'aurait montré.
+</Callout>
+
+## démonstration : faire le ménage dans des journaux
+
+Le répertoire d'une application contient des journaux tournants. Il faut archiver les anciens et ne garder que les plus récents.
+
+```bash
+cd /var/log/app
+ls
+```
+
+```text
+app.log    app.log.2  app.log.4  app.log.6  error.log    error.log.2
+app.log.1  app.log.3  app.log.5  app.log.7  error.log.1  error.log.3
+```
+
+**1. Désigner les anciens journaux** : ceux dont le numéro va de 3 à 7, pour les deux fichiers. On prévisualise :
+
+```bash
+echo {app,error}.log.[3-7]
+```
+
+```text
+app.log.3 app.log.4 app.log.5 app.log.6 app.log.7 error.log.3
+```
+
+Les accolades ont fabriqué deux motifs, `app.log.[3-7]` et `error.log.[3-7]`, que les jokers ont ensuite comparés aux fichiers existants. `error.log.4` à `7` n'existent pas : seul `error.log.3` est retenu.
+
+**2. Les archiver dans une archive datée** :
+
+```bash
+sudo tar -czf "/var/backups/app-logs-$(date +%F).tar.gz" {app,error}.log.[3-7]
+```
+
+**3. Les supprimer, en vérifiant d'abord :**
+
+```bash
+echo sudo rm {app,error}.log.[3-7]
+sudo rm {app,error}.log.[3-7]
+```
+
+Trois développements différents (accolades, jokers, substitution de commande) ont fait en deux lignes un travail qui aurait demandé de taper une dizaine de noms.
+
+## à toi de jouer
+
+Prévisualise avec `echo` les noms que produisent les accolades `rapport-{janvier,fevrier,mars}.txt`, puis la liste des fichiers `.conf` du répertoire courant, et enfin le message qui contient la date du jour obtenue avec `date +%F`.
+
+<SimulatedTerminal shell="bash" title="Voir avant d'agir" expectedCommands={["echo rapport-{janvier,fevrier,mars}.txt", "echo *.conf", "echo \"Sauvegarde du $(date +%F)\""]} hints={["Les accolades contiennent les trois mois, séparés par des virgules, sans espace.", "Le joker * suivi de .conf.", "La substitution de commande s'écrit avec un dollar et des parenthèses, à l'intérieur de guillemets doubles."]} commands={{ "ls": "app.conf  db.conf  notes.txt  .secret.conf", "ls -a": ".  ..  app.conf  db.conf  notes.txt  .secret.conf", "echo rapport-{janvier,fevrier,mars}.txt": "rapport-janvier.txt rapport-fevrier.txt rapport-mars.txt", "echo rapport-{janvier, fevrier, mars}.txt": "rapport-{janvier, fevrier, mars}.txt", "echo *.conf": "app.conf db.conf", "echo .*.conf": ".secret.conf", "echo *.bak": "*.bak", "echo \"Sauvegarde du $(date +%F)\"": "Sauvegarde du 2026-09-27", "echo 'Sauvegarde du $(date +%F)'": "Sauvegarde du $(date +%F)", "echo $(( 1024 * 1024 ))": "1048576" }} />
+
+Remarque que `echo *.conf` n'affiche pas `.secret.conf` : le joker ignore les fichiers cachés. Essaie `echo .*.conf`, puis `echo *.bak` pour voir un motif sans correspondance rester tel quel.
+
+## les pièges
+
+- **Un espace dans le motif.** `rm * .tmp` n'est pas `rm *.tmp`. `echo` avant.
+- **Oublier que `*` ignore les fichiers cachés.** Une copie `cp * sauvegarde/` n'emporte pas `.env` ni `.git`.
+- **Un motif sans correspondance.** Il reste tel quel et arrive à la commande sous forme de texte.
+- **Un tilde entre guillemets.** `"~/fichier"` n'est pas développé ; écris `"$HOME/fichier"`.
+- **Des espaces dans les accolades.** `{a, b}` n'est pas développé.
+- **Une variable non protégée qui contient un joker ou des espaces.** Elle est développée et découpée. Guillemets doubles, toujours.
+- **Compter sur les jokers pour descendre dans les sous-répertoires.** `*` reste dans un seul répertoire. `find` pour une arborescence.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Shell-Expansions.html" description="Tous les développements de bash, dans l'ordre où ils s'appliquent">Bash : Shell Expansions</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html" description="La syntaxe exacte des jokers, dont les classes de caractères">Bash : Pattern Matching</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/glob.7.html" description="Les jokers tels que les définit la norme Unix">glob(7)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Qui transforme *.log en liste de fichiers dans la commande rm *.log ?" options={["La commande rm", "Le shell bash, avant de lancer rm", "Le noyau", "Le terminal"]} correct={1} explanation="C'est bash qui développe les jokers. rm reçoit directement la liste des noms, sans jamais voir l'étoile." />
+  <Quiz id="q-2" question="Quels fichiers désigne le motif log.?" options={["log.1 et log.12", "log.1 et log.a, mais pas log.12", "Tous les fichiers qui commencent par log", "Uniquement un fichier nommé log.?"]} correct={1} explanation="? correspond à exactement un caractère : log.1 et log.a conviennent, log.12 en a deux après le point." />
+  <Quiz id="q-3" question="Dans ton répertoire personnel, cp * sauvegarde/ copie-t-il le fichier .bashrc ?" options={["Oui, * désigne tous les fichiers", "Non, * ignore les noms qui commencent par un point", "Oui, mais seulement avec sudo", "Non, car .bashrc est protégé en écriture"]} correct={1} explanation="Par défaut, les jokers ne correspondent jamais aux noms qui commencent par un point : les fichiers cachés sont laissés de côté." />
+  <Quiz id="q-4" question="Que produit cp /etc/hosts{,.bak} ?" options={["Une erreur de syntaxe", "cp /etc/hosts /etc/hosts.bak", "cp /etc/hosts.bak /etc/hosts", "La copie de tous les fichiers de /etc"]} correct={1} explanation="L'accolade contient une option vide puis .bak : elle fabrique /etc/hosts et /etc/hosts.bak, soit une copie de sauvegarde." />
+  <Quiz id="q-5" question="Comment voir ce que recevrait la commande rm app.log.[0-9]* sans rien supprimer ?" options={["rm -n app.log.[0-9]*", "echo rm app.log.[0-9]*", "rm --dry-run app.log.[0-9]*", "help rm app.log.[0-9]*"]} correct={1} explanation="echo affiche ce qu'il reçoit après les développements de bash : c'est exactement la ligne qui serait exécutée." />
+  <Quiz id="q-6" question="Il n'existe aucun fichier .bak dans le répertoire. Que reçoit la commande ls *.bak ?" options={["Rien, la commande n'est pas lancée", "Une liste vide", "Le texte *.bak tel quel", "La liste de tous les fichiers"]} correct={2} explanation="Un motif sans correspondance n'est pas remplacé : bash transmet le texte littéral, et ls se plaint qu'aucun fichier ne porte ce nom." />
+  <Quiz id="q-7" question="Parmi les développements suivants, lequel bash applique-t-il en dernier ?" options={["Les accolades", "Le tilde", "Les variables", "Les jokers de noms de fichiers"]} correct={3} explanation="Les jokers passent après les accolades, le tilde, les variables, les substitutions et le découpage en mots. Seul le retrait des guillemets vient ensuite." />
+</QuizGroup>
+
+## à retenir
+
+- C'est **bash** qui développe, avant de lancer la commande. La commande ne voit que le résultat.
+- Jokers : `*` n'importe quoi, `?` un caractère, `[abc]` et `[a-z]` un caractère parmi, `[!...]` un caractère hors liste. Ils ignorent les fichiers cachés et restent dans un seul répertoire.
+- Accolades : fabriquent des listes (`{a,b}`, `{1..10}`), même sans fichiers, sans espaces à l'intérieur.
+- `$(commande)` insère une sortie, `$(( calcul ))` un résultat entier, `~` le répertoire personnel (hors guillemets).
+- Ordre : accolades, tilde, variables et substitutions, découpage, jokers, retrait des guillemets.
+- **`echo` devant une commande** montre ce qu'elle recevrait : le réflexe avant tout `rm`, `mv` ou `cp` avec des jokers.
