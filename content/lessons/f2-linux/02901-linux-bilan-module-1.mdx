@@ -1,0 +1,144 @@
+---
+refCode: CL-LSN-02901-V01
+slug: linux-bilan-module-1
+title: "Bilan du module 1 : ton environnement de travail"
+description: "Le quiz du module Découvrir Linux et le shell, puis un projet : configurer ton propre environnement bash (PATH, éditeur, historique, alias, invite), avec des critères de réussite et une correction commentée."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-02007-V01"]
+---
+
+Tu as fait le tour du premier module : ce qu'est Linux, ce que fait le shell, comment se construit une commande, où trouver de l'aide, comment travailler vite sans retaper, ce que sont les variables d'environnement et comment éditer un fichier. Ce bilan vérifie que tout tient ensemble, puis te fait construire quelque chose de durable : l'environnement dans lequel tu travailleras pendant le reste du parcours.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- identifier une machine et le shell qui tourne dessus ;
+- lire et écrire correctement une commande, y compris avec des noms de fichiers piégés ;
+- trouver de l'aide sans quitter le terminal ;
+- régler ton environnement de façon permanente, dans le bon fichier ;
+- modifier un fichier de configuration avec méthode.
+
+## quiz
+
+Quatorze questions, qui couvrent les sept leçons. Une seule réponse par question : prends le temps de lire toutes les options.
+
+<QuizGroup>
+  <Quiz id="m1-q-1" question="Tu arrives sur un serveur inconnu. Quelle commande te donne le nom et la version de la distribution ?" options={["uname -r", "cat /etc/os-release", "echo $SHELL", "hostname"]} correct={1} explanation="/etc/os-release décrit la distribution. uname -r ne connaît que le noyau." />
+  <Quiz id="m1-q-2" question="Un conteneur minimal n'a pas les options habituelles de certaines commandes. Quelle distribution est la cause la plus probable ?" options={["Debian", "Red Hat Enterprise Linux", "Alpine, dont les commandes viennent de BusyBox", "Ubuntu LTS"]} correct={2} explanation="Alpine remplace les outils GNU par BusyBox, plus léger mais avec moins d'options." />
+  <Quiz id="m1-q-3" question="Pour savoir si ll est un alias, une fonction ou un programme, quelle commande utilises-tu ?" options={["which ll", "type ll", "man ll", "echo $ll"]} correct={1} explanation="type connaît tout ce que connaît bash : alias, fonctions, commandes intégrées et programmes du PATH." />
+  <Quiz id="m1-q-4" question="Juste après une commande, echo $? affiche 127. Que s'est-il passé ?" options={["La commande a réussi", "La commande n'a pas été trouvée", "La commande a été interrompue par Ctrl+C", "La commande n'avait pas les droits d'écriture"]} correct={1} explanation="127 est le code réservé à une commande introuvable. 0 signifie un succès." />
+  <Quiz id="m1-q-5" question="Quelle commande copie le fichier nommé « budget 2026.ods » dans le répertoire archives ?" options={["cp budget 2026.ods archives/", "cp \"budget 2026.ods\" archives/", "cp budget-2026.ods archives/", "cp -- budget 2026.ods archives/"]} correct={1} explanation="Sans guillemets, le shell découpe le nom en deux arguments. Le double tiret ne regroupe pas les mots, il marque seulement la fin des options." />
+  <Quiz id="m1-q-6" question="Dans mkdir /srv/data && cd /srv/data, quand la commande cd s'exécute-t-elle ?" options={["Toujours", "Seulement si mkdir a réussi", "Seulement si mkdir a échoué", "Jamais, && est une erreur de syntaxe"]} correct={1} explanation="&& n'exécute la commande suivante qu'après un code de retour 0." />
+  <Quiz id="m1-q-7" question="Quelle commande affiche le texte $HOME tel quel, sans le remplacer par ton répertoire ?" options={["echo \"$HOME\"", "echo '$HOME'", "echo $HOME", "echo HOME"]} correct={1} explanation="Les guillemets simples neutralisent toute interprétation. Les guillemets doubles laissent le shell remplacer les variables." />
+  <Quiz id="m1-q-8" question="Tu veux lire la documentation du fichier de configuration crontab, et non celle de la commande. Que tapes-tu ?" options={["man crontab", "man 5 crontab", "crontab --help", "help crontab"]} correct={1} explanation="Les formats de fichiers de configuration sont documentés en section 5 du manuel." />
+  <Quiz id="m1-q-9" question="Tu ne connais pas le nom de la commande qui compresse des fichiers au format zip. Quel est le bon réflexe ?" options={["apropos zip", "man zip-compress", "help compress", "type zip-format"]} correct={0} explanation="apropos cherche un mot dans les descriptions de toutes les pages de manuel." />
+  <Quiz id="m1-q-10" question="Tu cherches une commande tapée il y a une heure et qui contenait le mot certbot. Quel raccourci est le plus adapté ?" options={["Flèche haut, cent fois", "Ctrl+R puis certbot", "Ctrl+L", "!!"]} correct={1} explanation="Ctrl+R cherche en arrière dans l'historique, et affiche la commande avant de l'exécuter." />
+  <Quiz id="m1-q-11" question="Pourquoi un script qui contient la ligne export PATH=$HOME/outils:$PATH ne change-t-il pas le PATH de ton terminal quand tu le lances avec bash script.sh ?" options={["Parce que export ne fonctionne pas dans un script", "Parce que le script tourne dans un processus enfant, dont l'environnement disparaît avec lui", "Parce qu'il faut redémarrer la machine", "Parce que le PATH est en lecture seule"]} correct={1} explanation="Un enfant reçoit une copie de l'environnement ; rien ne remonte au parent. Pour appliquer ses réglages au shell courant, il faut source script.sh." />
+  <Quiz id="m1-q-12" question="Dans quel fichier placer un alias pour qu'il soit disponible dans chaque nouveau terminal ?" options={["~/.bash_history", "~/.bashrc", "/etc/os-release", "~/.profile uniquement, jamais ailleurs"]} correct={1} explanation="~/.bashrc est lu par chaque shell interactif ; c'est là qu'on met alias, invite et réglages de l'historique." />
+  <Quiz id="m1-q-13" question="Dans vim, tu as tapé plusieurs lettres en mode normal et le fichier est abîmé. Que fais-tu ?" options={["Échap puis u autant de fois que nécessaire", "Ctrl+Z", "Fermer le terminal", ":wq"]} correct={0} explanation="Échap garantit d'être en mode normal, et u annule les modifications une à une. :wq enregistrerait les dégâts." />
+  <Quiz id="m1-q-14" question="Tu viens de modifier la configuration de nginx. Quelle est l'étape suivante, avant de recharger le service ?" options={["Supprimer le fichier .bak", "Tester la syntaxe avec sudo nginx -t", "Redémarrer la machine", "Fermer la session SSH"]} correct={1} explanation="Le test de syntaxe détecte une erreur sans couper le service. On ne recharge qu'après un test réussi." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Relis les leçons concernées avant de passer au module 2 : tout ce qui suit s'appuie sur elles.
+
+## projet
+
+### l'énoncé
+
+Tu vas configurer ton environnement de travail pour le reste du parcours. Tout se fait dans ton répertoire personnel, sans droits d'administrateur, sur n'importe quelle machine Linux : une machine virtuelle, un WSL sous Windows, ou le terminal Linux du parcours dès qu'il sera disponible.
+
+### le cahier des charges
+
+1. **Un répertoire pour tes scripts.** Crée `~/bin`, et fais en sorte qu'il soit dans ton `PATH` à chaque connexion, **en tête**, sans perdre les autres répertoires.
+2. **Un éditeur par défaut.** `EDITOR` et `VISUAL` valent l'éditeur de ton choix (nano ou vim), pour tous les programmes que tu lances.
+3. **Un historique utile et sûr.** Au moins 10 000 commandes gardées en mémoire et dans le fichier, les doublons consécutifs et les lignes commençant par une espace ignorés, et l'historique ajouté au fichier plutôt qu'écrasé.
+4. **Trois alias** : `ll` pour `ls -lh`, `la` pour `ls -lah`, et `..` pour remonter d'un répertoire.
+5. **Une invite qui renseigne.** Elle affiche l'utilisateur, la machine et le répertoire courant, comme aujourd'hui, et elle reste sur une seule ligne.
+6. **Un premier script dans `~/bin`**, nommé `qui-suis-je`, qui affiche en trois lignes : ton nom d'utilisateur, la distribution (le champ `PRETTY_NAME` de `/etc/os-release`) et la version du noyau. Il doit se lancer en tapant simplement `qui-suis-je`, depuis n'importe quel répertoire.
+
+### les critères de réussite
+
+Ouvre un **nouveau** terminal (ou reconnecte-toi), puis vérifie chaque point. Tous doivent passer.
+
+| Vérification | Résultat attendu |
+| --- | --- |
+| `echo $PATH` | Commence par `/home/ton-nom/bin:` et contient toujours `/usr/bin` |
+| `printenv EDITOR` | Le nom de ton éditeur |
+| `echo $HISTSIZE $HISTFILESIZE` | Deux nombres d'au moins 10000 |
+| `echo $HISTCONTROL` | `ignoreboth` |
+| `shopt histappend` | `histappend      on` |
+| `type ll` | Indique que `ll` est un alias de `ls -lh` |
+| `cd /etc && ..` puis `pwd` | `/` |
+| `cd /tmp && qui-suis-je` | Trois lignes : utilisateur, distribution, noyau |
+
+### la correction commentée
+
+Ne la lis qu'après avoir essayé. Il y a d'autres solutions valables : ce qui compte, c'est que les critères passent et que tu saches expliquer chaque ligne.
+
+**Dans `~/.profile`**, lu à la connexion, les variables d'environnement :
+
+```bash
+# Mes scripts d'abord, puis les répertoires du système
+export PATH="$HOME/bin:$PATH"
+
+# L'éditeur que lancent crontab -e, sudoedit, git...
+export EDITOR=nano
+export VISUAL=nano
+```
+
+Pourquoi `~/.profile` : ces variables doivent être exportées une fois à la connexion et héritées par tous les programmes. Les mettre dans `~/.bashrc` marcherait aussi dans un terminal, mais le `PATH` grossirait à chaque shell imbriqué, puisque chaque `bash` relirait la ligne et ajouterait `~/bin` une fois de plus.
+
+**Dans `~/.bashrc`**, lu par chaque shell interactif, les réglages du shell. Sur Debian et Ubuntu, le fichier existe déjà et contient des réglages d'historique : **modifie** les lignes existantes plutôt que d'en ajouter des doublons, qui prêteraient à confusion.
+
+```bash
+# Historique : long, sans doublons ni lignes commençant par une espace,
+# ajouté au fichier au lieu de l'écraser
+HISTSIZE=10000
+HISTFILESIZE=10000
+HISTCONTROL=ignoreboth
+shopt -s histappend
+
+# Alias
+alias ll='ls -lh'
+alias la='ls -lah'
+alias ..='cd ..'
+```
+
+`HISTSIZE` et `HISTFILESIZE` n'ont pas besoin d'`export` : seul bash les lit, aucun programme enfant. Les alias entre guillemets simples, parce que leur contenu doit être pris tel quel.
+
+**L'invite** : celle de Debian est déjà définie dans `~/.bashrc` par une ligne `PS1=...`, qui affiche `\u@\h:\w\$` (utilisateur, machine, répertoire, puis `$` ou `#`). Le critère 5 est donc rempli sans rien changer. Si tu veux la personnaliser, c'est cette ligne qu'on modifie, et `man bash`, section PROMPTING, liste tous les codes possibles.
+
+**Le script `~/bin/qui-suis-je`**, à créer avec ton éditeur :
+
+```bash
+#!/bin/bash
+# Affiche qui je suis, sur quelle distribution et quel noyau.
+whoami
+grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2
+uname -r
+```
+
+Puis on le rend exécutable :
+
+```bash
+chmod +x ~/bin/qui-suis-je
+```
+
+La première ligne, le *shebang*, dit quel programme doit interpréter le script ; `chmod +x` l'autorise à être exécuté. Tu verras ces deux points en détail aux modules 4 et 7. La ligne `grep ... | cut ...` extrait la valeur entre guillemets du champ `PRETTY_NAME` : c'est un avant-goût du module 3.
+
+**Pourquoi il faut rouvrir un terminal** : les fichiers de démarrage ne sont relus qu'au démarrage d'un shell. `source ~/.bashrc` applique les alias tout de suite, mais le `PATH` de `~/.profile` n'est lu qu'à la connexion. Rouvrir une session, c'est aussi la seule vraie preuve que la configuration tient.
+
+### pour aller plus loin
+
+Si tout passe, deux améliorations utiles : afficher le code de retour de la dernière commande dans l'invite quand il n'est pas 0, et versionner tes fichiers de configuration avec Git dès que tu l'auras appris, pour retrouver ton environnement sur n'importe quelle machine en une commande.
+
+## à retenir
+
+- Tu sais maintenant identifier une machine, parler au shell avec une syntaxe exacte, trouver de l'aide sur place, travailler sans retaper, et régler ton environnement.
+- Les réglages permanents se répartissent : variables d'environnement dans `~/.profile`, alias, invite et historique dans `~/.bashrc`.
+- Une configuration se vérifie dans une **nouvelle** session : c'est la seule preuve qu'elle tient.
+- Le module 2 te fait parcourir et manipuler le système de fichiers, en t'appuyant sur tout ce qui précède.

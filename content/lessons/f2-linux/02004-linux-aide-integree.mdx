@@ -1,0 +1,286 @@
+---
+refCode: CL-LSN-02004-V01
+slug: linux-aide-integree
+title: "Trouver de l'aide sans quitter le terminal"
+description: "Les pages de manuel et leurs sections, la lecture d'un synopsis, la navigation dans man, apropos pour trouver une commande dont on ignore le nom, help pour les commandes intégrées et --help pour un rappel rapide."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02003-V01"]
+---
+
+Personne ne connaît par cœur les options de `tar`, `find` ou `rsync`. Les administrateurs expérimentés non plus. Ce qui les distingue des débutants, c'est qu'ils savent trouver la réponse en trente secondes, sur la machine elle-même, sans moteur de recherche. Un serveur n'a pas toujours accès à Internet, et une réponse trouvée sur un forum décrit peut-être une autre version de la commande que celle qui est installée. La documentation de la machine, elle, correspond exactement à ce qui s'y trouve.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- ouvrir la page de manuel d'une commande, t'y déplacer, y chercher un mot et en sortir ;
+- lire le synopsis d'une commande et comprendre ses crochets, ses points de suspension et ses barres verticales ;
+- choisir la bonne section du manuel quand un nom en a plusieurs ;
+- trouver une commande dont tu ignores le nom avec `apropos` ;
+- obtenir l'aide d'une commande intégrée au shell avec `help`, et un rappel rapide avec `--help`.
+
+## pourquoi ça compte
+
+La documentation locale a trois avantages sur tout le reste. Elle est **exacte** : elle décrit la version installée, pas celle d'un tutoriel écrit il y a cinq ans pour une autre distribution. Elle est **disponible** : sur un serveur isolé, dans une salle d'examen de certification, dans une situation d'incident où chaque minute compte. Et elle est **complète** : les pages de manuel décrivent toutes les options, les codes de retour, les fichiers utilisés, les variables d'environnement lues, là où un article de blog n'en montre que trois.
+
+Les certifications Linux (LPIC-1, RHCSA) le savent : certaines se passent sans accès à Internet, avec seulement la documentation de la machine. Savoir s'en servir fait partie de ce qui est évalué.
+
+## les pages de manuel
+
+La commande `man` (pour *manual*) affiche la documentation d'une commande, d'un fichier de configuration ou d'une fonction.
+
+```bash
+man ls
+```
+
+Une page de manuel suit toujours le même plan, et le connaître permet d'aller droit à l'information :
+
+| Section de la page | Ce qu'on y trouve |
+| --- | --- |
+| NAME | Le nom et une ligne de description |
+| SYNOPSIS | La forme de la commande : options et arguments possibles |
+| DESCRIPTION | Ce que fait la commande, puis chaque option en détail |
+| EXIT STATUS | Les codes de retour et leur sens |
+| ENVIRONMENT | Les variables d'environnement qui changent son comportement |
+| FILES | Les fichiers qu'elle lit ou écrit |
+| EXAMPLES | Des exemples d'utilisation, quand l'auteur en a écrit |
+| SEE ALSO | Les commandes et pages liées |
+
+Quand tu ouvres une page pour la première fois, lis NAME, puis SYNOPSIS, puis va chercher l'option qui t'intéresse. Personne ne lit une page de manuel de haut en bas.
+
+### se déplacer dans une page
+
+`man` affiche la page dans un **visualiseur**, en général `less`. Les touches à connaître :
+
+| Touche | Action |
+| --- | --- |
+| Espace ou Page suivante | Descendre d'un écran |
+| `b` | Remonter d'un écran |
+| Flèches | Ligne par ligne |
+| `/mot` puis Entrée | Chercher « mot » vers le bas |
+| `n` et `N` | Occurrence suivante et précédente |
+| `g` et `G` | Début et fin de la page |
+| `h` | L'aide du visualiseur |
+| `q` | Quitter |
+
+La recherche est la touche la plus utile. Tu cherches l'option qui affiche les tailles en format lisible dans `ls` ? Ouvre `man ls`, tape `/human` puis Entrée : tu tombes sur `-h, --human-readable`.
+
+<Callout type="info">
+Une astuce de recherche : dans une page de manuel, les options sont écrites en début de ligne avec leur tiret. Chercher `/^ *-h` (début de ligne, espaces éventuels, puis `-h`) trouve la définition de l'option `-h` au lieu de toutes les phrases qui contiennent les lettres « -h ».
+</Callout>
+
+## lire un synopsis
+
+Le synopsis de `cp` ressemble à ceci :
+
+```text
+SYNOPSIS
+       cp [OPTION]... [-T] SOURCE DEST
+       cp [OPTION]... SOURCE... DIRECTORY
+       cp [OPTION]... -t DIRECTORY SOURCE...
+```
+
+Il obéit à une notation précise, commune à toute la documentation Unix :
+
+- **Les crochets** `[ ]` entourent ce qui est **facultatif**. `[OPTION]` : tu peux mettre des options ou non.
+- **Les points de suspension** `...` signalent que l'élément **peut être répété**. `SOURCE...` : une ou plusieurs sources.
+- **Les majuscules** (ou le texte souligné dans le terminal) désignent ce que tu **remplaces** par ta propre valeur : `DEST` est le chemin de destination, pas le mot « DEST ».
+- **Le texte en gras** se tape **tel quel** : le nom de la commande, une option précise.
+- **La barre verticale** `|` sépare des **choix exclusifs** : `{start|stop}` veut dire `start` ou `stop`.
+- **Plusieurs lignes** décrivent plusieurs **formes** d'utilisation.
+
+Ce synopsis se lit donc ainsi : `cp` s'utilise pour copier une source vers une destination, ou plusieurs sources dans un répertoire, avec ou sans options. La troisième forme, avec `-t`, permet d'écrire le répertoire en premier, ce qui sert dans les scripts.
+
+## les sections du manuel
+
+Le manuel est divisé en sections numérotées, parce qu'un même nom peut désigner plusieurs choses.
+
+| Section | Contenu |
+| --- | --- |
+| 1 | Les commandes des utilisateurs |
+| 2 | Les appels système (les fonctions du noyau) |
+| 3 | Les fonctions des bibliothèques (C surtout) |
+| 4 | Les fichiers spéciaux, souvent dans `/dev` |
+| 5 | Les formats de fichiers et de configuration |
+| 6 | Les jeux |
+| 7 | Les conventions et vues d'ensemble |
+| 8 | Les commandes d'administration système |
+
+Prenons `passwd`. C'est à la fois une commande (qui change un mot de passe) et un fichier (`/etc/passwd`, qui liste les comptes). `man passwd` ouvre la première page trouvée, celle de la section 1, la commande. Pour le format du fichier, il faut préciser la section :
+
+```bash
+man 5 passwd
+```
+
+Dans la documentation, on écrit d'ailleurs le nom suivi de la section entre parenthèses : `passwd(1)` pour la commande, `passwd(5)` pour le fichier, `open(2)` pour l'appel système. Quand tu verras `crontab(5)` dans un SEE ALSO, tu sauras quoi taper.
+
+<Diagram caption="Un nom, plusieurs pages">
+flowchart LR
+  A["man passwd"] --> B["passwd(1) : la commande qui change un mot de passe"]
+  C["man 5 passwd"] --> D["passwd(5) : le format du fichier /etc/passwd"]
+</Diagram>
+
+La commande `whatis` affiche la ligne NAME de toutes les pages portant un nom, ce qui dit immédiatement dans quelles sections il existe :
+
+```bash
+whatis passwd
+```
+
+```text
+passwd (1ssl)        - OpenSSL passwd command
+passwd (1)           - change user password
+passwd (5)           - the password file
+```
+
+## trouver une commande dont on ignore le nom
+
+Tu sais ce que tu veux faire, pas quelle commande le fait. `apropos` (ou son équivalent `man -k`) cherche un mot dans les descriptions de toutes les pages :
+
+```bash
+apropos "secure copy"
+```
+
+```text
+scp (1)              - OpenSSH secure file copy
+```
+
+Tu peux chercher plus large et filtrer ensuite :
+
+```bash
+apropos partition
+```
+
+```text
+addpart (8)          - tell the kernel about the existence of a partition
+cfdisk (8)           - display or manipulate a disk partition table
+delpart (8)          - tell the kernel to forget about a partition
+fdisk (8)            - manipulate disk partition table
+parted (8)           - a partition manipulation program
+partprobe (8)        - inform the OS of partition table changes
+sfdisk (8)           - display or manipulate a disk partition table
+```
+
+Le numéro de section est une information en soi : ici, tout est en section 8, ce qui te rappelle que manipuler des partitions est une tâche d'administration, qui demandera les droits root.
+
+<Callout type="warning">
+`apropos` cherche dans une base d'index construite à l'installation. Si elle répond `nothing appropriate` à tout, l'index n'a pas été construit : `sudo mandb` le reconstruit. Et dans de nombreuses images de conteneurs et installations minimales, les pages de manuel sont purement supprimées pour gagner de la place. Sur Ubuntu Server minimal, la commande `unminimize` les réinstalle.
+</Callout>
+
+## l'aide des commandes intégrées
+
+Tu te souviens que `cd`, `echo` ou `type` sont intégrées à bash. Elles n'ont souvent pas de page de manuel à elles : `man cd` renvoie une erreur ou ouvre la page géante de bash. Pour elles, bash fournit `help` :
+
+```bash
+help cd
+```
+
+```text
+cd: cd [-L|[-P [-e]] [-@]] [dir]
+    Change the shell working directory.
+
+    Change the current directory to DIR.  The default DIR is the value of the
+    HOME shell variable. If DIR is "-", it is converted to $OLDPWD.
+    ...
+```
+
+Remarque le synopsis de la première ligne : tu sais maintenant le lire. `help` seul liste toutes les commandes intégrées. Avant de chercher l'aide d'une commande, `type` (leçon 2) te dit donc aussi **où** la chercher : commande intégrée, `help` ; programme, `man`.
+
+## le rappel rapide : --help
+
+Presque tous les programmes acceptent l'option `--help`, qui affiche un résumé des options directement dans le terminal, sans visualiseur :
+
+```bash
+cp --help
+```
+
+C'est l'outil du quotidien : tu connais la commande, tu cherches juste une option. Combine-le avec `grep`, que tu approfondiras au module 3, pour filtrer :
+
+```bash
+cp --help | grep -i recursive
+```
+
+```text
+  -R, -r, --recursive          copy directories recursively
+```
+
+### et info ?
+
+Les outils GNU ont un second système de documentation, `info`, plus long et organisé comme un livre avec des liens. Pour `coreutils`, `bash`, `tar` ou `sed`, la documentation `info` est souvent plus complète que la page de manuel, qui renvoie d'ailleurs vers elle en fin de page. Tape `info coreutils` pour y entrer, `q` pour en sortir. Enfin, `/usr/share/doc/` contient pour beaucoup de paquets des fichiers `README`, des exemples de configuration et les notes de version.
+
+## démonstration : de la question à la commande
+
+Situation réelle : tu dois créer une archive compressée du répertoire `/etc` pour la sauvegarder, et tu ne te souviens plus de la syntaxe de `tar`.
+
+**1. Le rappel rapide.** `tar --help` affiche plus de 200 lignes. Filtrons ce qui parle de compression :
+
+```bash
+tar --help | grep -i gzip
+```
+
+```text
+  -z, --gzip, --gunzip, --ungzip   filter the archive through gzip
+```
+
+**2. La forme générale.** La page de manuel donne des exemples. Dans `man tar`, tape `/EXAMPLES` puis Entrée :
+
+```text
+EXAMPLES
+       Create archive.tar from files foo and bar.
+             tar -cf archive.tar foo bar
+```
+
+**3. L'assemblage.** `-c` crée, `-f` indique le fichier d'archive, `-z` compresse avec gzip :
+
+```bash
+tar -czf etc-sauvegarde.tar.gz /etc
+```
+
+Trois étapes, moins d'une minute, aucune recherche sur Internet, et une commande qui correspond exactement à la version de `tar` installée.
+
+## à toi de jouer
+
+Tu dois copier un fichier vers un autre serveur, de façon chiffrée, mais tu ne connais pas la commande. Trouve-la avec `apropos`, puis vérifie avec `whatis` dans quelles sections elle est documentée. Enfin, affiche l'aide de la commande intégrée `cd`.
+
+<SimulatedTerminal shell="bash" title="Chercher sans Internet" expectedCommands={["apropos \"secure copy\"", "whatis scp", "help cd"]} hints={["apropos cherche une expression dans les descriptions : mets-la entre guillemets.", "whatis suivi du nom de la commande trouvée.", "Pour une commande intégrée à bash, c'est help, pas man."]} commands={{ "apropos \"secure copy\"": "scp (1)              - OpenSSH secure file copy", "man -k \"secure copy\"": "scp (1)              - OpenSSH secure file copy", "apropos copy": "cp (1)               - copy files and directories\ncpio (1)             - copy files to and from archives\ndd (1)               - convert and copy a file\nrsync (1)            - a fast, versatile, remote (and local) file-copying tool\nscp (1)              - OpenSSH secure file copy", "whatis scp": "scp (1)              - OpenSSH secure file copy", "whatis passwd": "passwd (1)           - change user password\npasswd (5)           - the password file", "help cd": "cd: cd [-L|[-P [-e]] [-@]] [dir]\n    Change the shell working directory.\n\n    Change the current directory to DIR.  The default DIR is the value of the\n    HOME shell variable.", "man cd": "No manual entry for cd", "type cd": "cd is a shell builtin", "scp --help": "usage: scp [-346ABCOpqRrsTv] [-c cipher] [-D sftp_server_path] [-F ssh_config]\n           [-i identity_file] [-J destination] [-l limit] [-o ssh_option]\n           [-P port] [-S program] [-X sftp_option] source ... target" }} />
+
+La dernière commande prévue, `scp --help`, te montre un synopsis réel : repère les options facultatives entre crochets et le `source ... target` final.
+
+## les pièges
+
+- **Rester coincé dans `man`.** La touche pour sortir est `q`. Pas Échap, pas Ctrl+C.
+- **Lire la mauvaise section.** `man passwd` décrit la commande, pas le fichier. Si la page ne correspond pas à ce que tu cherches, regarde `whatis` ou le SEE ALSO.
+- **Chercher `man cd`.** Les commandes intégrées se documentent avec `help`. `type` te dit dans quel cas tu es.
+- **Faire confiance à un tutoriel plutôt qu'à la machine.** Une option citée sur un site peut ne pas exister dans ta version, ou avoir un autre sens sur macOS. La page de manuel locale fait foi.
+- **Conclure qu'une commande n'existe pas parce que `apropos` ne trouve rien.** L'index peut ne pas être construit (`sudo mandb`), ou les pages supprimées dans une image minimale.
+- **Copier les majuscules du synopsis.** `DEST` et `SOURCE` se remplacent par tes propres chemins.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/man.1.html" description="La page de manuel de man lui-même, avec la liste des sections">man(1)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/man-pages.7.html" description="Les conventions d'écriture des pages de manuel, dont la notation des synopsis">man-pages(7)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/" description="La documentation complète des outils de base GNU, plus détaillée que les pages de manuel">GNU Coreutils manual</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Tu veux connaître le format du fichier /etc/passwd, et non la commande passwd. Que tapes-tu ?" options={["man passwd", "man 5 passwd", "help passwd", "passwd --help"]} correct={1} explanation="Les formats de fichiers sont en section 5. Sans numéro, man ouvre la première section trouvée, ici la 1, qui décrit la commande." />
+  <Quiz id="q-2" question="Dans le synopsis cp [OPTION]... SOURCE... DIRECTORY, que signifient les points de suspension après SOURCE ?" options={["Que SOURCE est facultatif", "Que SOURCE peut être répété : une ou plusieurs sources", "Que la commande est incomplète", "Qu'il faut taper trois points"]} correct={1} explanation="Les points de suspension indiquent qu'un élément peut être répété. Les crochets, eux, indiquent qu'il est facultatif." />
+  <Quiz id="q-3" question="Tu ignores le nom de la commande qui affiche l'utilisation des disques. Quelle commande t'aide à la trouver ?" options={["man disk", "apropos disk", "help disk", "whatis"]} correct={1} explanation="apropos, ou man -k, cherche un mot dans les descriptions de toutes les pages de manuel et liste les commandes correspondantes." />
+  <Quiz id="q-4" question="man cd répond « No manual entry for cd ». Pourquoi, et que faire ?" options={["cd n'est pas installée : il faut l'installer", "cd est une commande intégrée à bash : il faut utiliser help cd", "La base du manuel est corrompue : il faut réinstaller man", "cd est une commande d'administration : il faut man 8 cd"]} correct={1} explanation="Les commandes intégrées au shell n'ont souvent pas de page de manuel propre. bash fournit help pour les documenter." />
+  <Quiz id="q-5" question="Dans une page de manuel affichée par man, comment chercher le mot « recursive » ?" options={["Taper Ctrl+F puis recursive", "Taper /recursive puis Entrée", "Taper grep recursive", "Taper ?recursive dans un autre terminal"]} correct={1} explanation="Dans le visualiseur less, la barre oblique lance une recherche vers le bas. n passe à l'occurrence suivante." />
+  <Quiz id="q-6" question="Pourquoi préférer la documentation de la machine à un tutoriel trouvé en ligne ?" options={["Parce qu'elle est toujours plus courte", "Parce qu'elle décrit exactement la version installée", "Parce que les tutoriels en ligne sont interdits sur les serveurs", "Parce qu'elle est écrite en français"]} correct={1} explanation="Les options et comportements changent d'une version et d'un système à l'autre. La page de manuel locale correspond à ce qui est réellement installé." />
+</QuizGroup>
+
+## à retenir
+
+- `man commande` ouvre la page de manuel. On y lit NAME et SYNOPSIS, puis on cherche avec `/mot`, `n` pour la suite, `q` pour sortir.
+- Synopsis : `[ ]` facultatif, `...` répétable, MAJUSCULES à remplacer, `|` choix exclusif.
+- Le manuel a des sections : 1 commandes, 5 fichiers de configuration, 8 administration. `man 5 passwd`, et la notation `passwd(5)`.
+- `apropos mot` (ou `man -k`) trouve une commande par sa description ; `whatis` dit dans quelles sections un nom existe.
+- Commandes intégrées : `help commande`. Rappel rapide : `commande --help`, filtré avec `grep`.
+- Pour les outils GNU, `info` et `/usr/share/doc/` complètent les pages de manuel.

@@ -1,0 +1,280 @@
+---
+refCode: CL-LSN-02005-V01
+slug: linux-historique-edition-ligne
+title: "L'historique et l'édition de la ligne"
+description: "Les raccourcis clavier qui font gagner des heures, la complétion, la recherche dans l'historique, les rappels avec !! et !$, et ce que l'historique révèle : pourquoi un mot de passe tapé en clair n'y a pas sa place."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 35
+xpReward: 220
+prerequisites: ["CL-LSN-02004-V01"]
+---
+
+Regarde quelqu'un d'expérimenté travailler dans un terminal : il ne retape presque rien. Il rappelle une commande d'il y a une heure en trois touches, corrige une faute au milieu d'une longue ligne sans utiliser la souris, laisse la touche Tab finir les noms de fichiers à sa place. Ce n'est pas du talent, ce sont une vingtaine de raccourcis. Cette leçon te les donne, puis regarde l'historique sous un autre angle : ce qu'il conserve, et ce qu'il ne devrait pas conserver.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- te déplacer et corriger une ligne de commande au clavier, sans la retaper ;
+- utiliser la complétion avec Tab pour les commandes, les fichiers et les options ;
+- retrouver une ancienne commande avec Ctrl+R et la relancer ;
+- réutiliser la commande précédente ou son dernier argument avec `!!` et `!$` ;
+- expliquer où l'historique est enregistré et empêcher qu'un secret y soit écrit.
+
+## pourquoi ça compte
+
+La vitesse n'est pas le seul enjeu. Retaper une commande, c'est prendre le risque de la retaper autrement : une lettre de travers dans un chemin, et c'est un autre fichier qui est modifié. Rappeler une commande qui a marché est plus sûr que la réécrire.
+
+L'historique a aussi une dimension de sécurité que peu de débutants soupçonnent. Il est écrit sur disque, dans un fichier lisible par son propriétaire et par root. Quand un analyste enquête sur un serveur compromis, le fichier d'historique fait partie des premières choses qu'il lit, pour savoir ce qui a été tapé. Et quand un attaquant prend pied sur une machine, il le lit aussi, pour y trouver des mots de passe tapés en clair, des noms de serveurs, des chemins intéressants. Ce que tu tapes aujourd'hui peut être lu plus tard, par quelqu'un d'autre.
+
+## éditer la ligne sans la retaper
+
+Bash délègue l'édition de la ligne à une bibliothèque nommée **Readline**. C'est elle qui donne leur sens à ces raccourcis, et tu les retrouveras dans d'autres programmes qui l'utilisent (le client `mysql`, l'interpréteur Python interactif, `gdb`...).
+
+### se déplacer
+
+| Raccourci | Effet |
+| --- | --- |
+| Ctrl+A | Aller au début de la ligne |
+| Ctrl+E | Aller à la fin de la ligne |
+| Alt+B ou Ctrl+Flèche gauche | Reculer d'un mot |
+| Alt+F ou Ctrl+Flèche droite | Avancer d'un mot |
+
+### effacer et coller
+
+| Raccourci | Effet |
+| --- | --- |
+| Ctrl+W | Effacer le mot avant le curseur |
+| Ctrl+U | Effacer tout ce qui est avant le curseur |
+| Ctrl+K | Effacer tout ce qui est après le curseur |
+| Ctrl+Y | Recoller le dernier texte effacé |
+| Ctrl+_ | Annuler la dernière modification |
+
+Ce que Ctrl+W, Ctrl+U et Ctrl+K effacent n'est pas perdu : Readline le garde, et Ctrl+Y le recolle à l'endroit du curseur. C'est un couper-coller interne au terminal, indépendant du presse-papiers de ton système.
+
+### contrôler l'affichage et l'exécution
+
+| Raccourci | Effet |
+| --- | --- |
+| Ctrl+L | Effacer l'écran (comme `clear`), la ligne en cours reste |
+| Ctrl+C | Abandonner la ligne en cours, ou interrompre la commande qui tourne |
+| Ctrl+D | Sur une ligne vide : fermer le shell |
+
+<Callout type="warning">
+Dans un terminal, Ctrl+C **n'est pas** « copier » : il interrompt la commande en cours. Pour copier, c'est en général Ctrl+Maj+C (et Ctrl+Maj+V pour coller) dans les terminaux Linux, ou la sélection à la souris puis le clic du milieu. Beaucoup de débutants ont interrompu une longue copie de fichiers en voulant copier un texte.
+</Callout>
+
+## la complétion
+
+La touche **Tab** est le raccourci le plus rentable de tous. Tape le début d'un nom et appuie sur Tab :
+
+- s'il n'y a qu'une possibilité, bash complète le nom entier ;
+- s'il y en a plusieurs, bash complète jusqu'où c'est commun, et un **second Tab** affiche la liste des possibilités.
+
+```bash
+ls /etc/sys
+```
+
+Un Tab ici complète en `/etc/sysctl.` ou affiche, au second appui, les noms qui commencent par `sys` : `sysctl.conf`, `sysctl.d/`, `systemd/`. La complétion marche sur les noms de commandes (tape `syst` puis Tab : `systemctl`), sur les chemins, et sur beaucoup d'options et de sous-commandes quand le paquet `bash-completion` est installé : `systemctl res` puis Tab propose `restart`, `git che` puis Tab propose `checkout`.
+
+Au-delà du gain de temps, la complétion est un **outil de vérification**. Si Tab ne complète pas un chemin, c'est qu'il n'existe pas, ou que tu n'as pas le droit de le lire. Tu le sais avant d'avoir lancé quoi que ce soit.
+
+## l'historique
+
+Chaque commande que tu valides est ajoutée à l'historique du shell.
+
+- **Flèche haut et flèche bas** parcourent les commandes précédentes. C'est le rappel le plus simple.
+- **La commande `history`** affiche l'historique numéroté.
+
+```bash
+history
+```
+
+```text
+  498  cd /var/www/site
+  499  git pull
+  500  sudo systemctl reload nginx
+  501  tail -n 50 /var/log/nginx/error.log
+  502  history
+```
+
+Pour filtrer un long historique, on le passe à `grep` :
+
+```bash
+history | grep nginx
+```
+
+### chercher en arrière : Ctrl+R
+
+Le raccourci le plus puissant de l'historique. Appuie sur **Ctrl+R**, puis tape un morceau de la commande que tu cherches :
+
+```text
+(reverse-i-search)`reload': sudo systemctl reload nginx
+```
+
+Bash affiche la commande la plus récente qui contient ce texte. Appuie encore sur Ctrl+R pour remonter à l'occurrence précédente. Ensuite :
+
+- **Entrée** exécute la commande trouvée ;
+- **Flèche gauche ou droite** la place sur la ligne pour que tu la modifies d'abord ;
+- **Ctrl+G** abandonne la recherche.
+
+<Diagram caption="Retrouver une commande avec Ctrl+R">
+flowchart LR
+  A["Ctrl+R"] --> B["Taper un morceau : reload"]
+  B --> C["La plus récente qui correspond s'affiche"]
+  C -->|"Ctrl+R encore"| D["Occurrence plus ancienne"]
+  C -->|"Entrée"| E["Exécutée telle quelle"]
+  C -->|"Flèche"| F["Modifiée avant exécution"]
+  D --> C
+</Diagram>
+
+### les rappels avec le point d'exclamation
+
+Bash offre une notation pour réutiliser l'historique sans le parcourir. On l'appelle le **développement d'historique**.
+
+| Notation | Remplacée par | Exemple |
+| --- | --- | --- |
+| `!!` | La commande précédente entière | `sudo !!` |
+| `!n` | La commande numéro n de `history` | `!500` |
+| `!-2` | L'avant-dernière commande | `!-2` |
+| `!texte` | La dernière commande qui commence par ce texte | `!tail` |
+| `!$` | Le dernier argument de la commande précédente | `cd !$` |
+
+Deux usages reviennent tous les jours. Le premier : tu lances une commande qui demande les droits d'administrateur et elle échoue avec « Permission denied ». Plutôt que de la retaper :
+
+```bash
+sudo !!
+```
+
+Le second : tu viens de créer ou de lister un répertoire avec un long chemin, et tu veux t'y rendre.
+
+```bash
+mkdir -p /srv/app/releases/2026-09-27
+cd !$
+```
+
+Le raccourci clavier **Alt+.** fait la même chose que `!$`, en l'insérant directement dans la ligne, où tu peux le voir et le modifier. Appuyé plusieurs fois, il remonte aux derniers arguments des commandes plus anciennes.
+
+<Callout type="danger">
+`!texte` exécute immédiatement la dernière commande qui commence par ce texte, sans te la montrer d'abord. `!rm` relance ton dernier `rm`, quel qu'il soit. Pour les commandes qui modifient ou suppriment, préfère Ctrl+R, qui affiche la commande avant de l'exécuter. Tu peux aussi ajouter `:p` pour afficher sans exécuter : `!rm:p`.
+</Callout>
+
+Enfin, pour corriger une faute dans la commande précédente, la notation `^ancien^nouveau` la relance en remplaçant la première occurrence :
+
+```bash
+systemctl status ngnix
+^ngnix^nginx
+```
+
+## où l'historique est enregistré
+
+Pendant que le shell tourne, l'historique est en mémoire. À la **fermeture du shell**, bash l'écrit dans un fichier, par défaut `~/.bash_history`. C'est ce fichier qui est relu au prochain démarrage.
+
+Plusieurs variables en règlent le comportement :
+
+| Variable | Rôle | Valeur courante |
+| --- | --- | --- |
+| `HISTFILE` | Le fichier d'historique | `~/.bash_history` |
+| `HISTSIZE` | Nombre de commandes gardées en mémoire | 1000 sur Debian et Ubuntu |
+| `HISTFILESIZE` | Nombre de lignes gardées dans le fichier | 2000 sur Debian et Ubuntu |
+| `HISTCONTROL` | Ce qu'on n'enregistre pas | `ignoreboth` sur Debian et Ubuntu |
+
+`HISTCONTROL=ignoreboth` combine deux règles : `ignoredups` (ne pas enregistrer deux fois de suite la même commande) et `ignorespace` (ne pas enregistrer une commande **qui commence par une espace**). C'est cette seconde règle qui compte pour la sécurité.
+
+Une conséquence qui surprend : avec plusieurs terminaux ouverts, chacun a son propre historique en mémoire, et ne voit pas ce que tu tapes dans les autres. À la fermeture, sans l'option `histappend`, le dernier shell fermé réécrit le fichier et efface ce que les autres y avaient mis. Debian et Ubuntu activent cette option dans le `.bashrc` qu'ils fournissent ; la leçon suivante montre ce fichier et comment l'ajouter ailleurs.
+
+## l'historique et les secrets
+
+Imagine que tu te connectes à une base de données en passant le mot de passe en argument :
+
+```bash
+mysql -u admin -pS3cr3t!2026 production
+```
+
+Ce mot de passe est maintenant dans ton historique en mémoire, puis dans `~/.bash_history`, en clair, pour des mois. Il apparaît aussi, le temps de l'exécution, dans la liste des processus visible par les autres utilisateurs. Voici comment l'éviter, de la meilleure à la moins bonne solution.
+
+1. **Ne jamais taper un secret en argument.** Les outils sérieux savent demander le mot de passe (`mysql -u admin -p` sans valeur, puis saisie masquée) ou le lire dans un fichier protégé.
+2. **Si tu dois le faire malgré tout, commence la ligne par une espace.** Avec `HISTCONTROL=ignoreboth`, elle n'est pas enregistrée. Vérifie la valeur de `HISTCONTROL` avant de compter dessus : ce n'est pas la valeur par défaut partout, notamment sur la famille Red Hat.
+3. **Si c'est trop tard, retire la ligne.** `history -d 503` supprime l'entrée 503 de l'historique en mémoire, avant qu'elle ne soit écrite. Si elle est déjà dans le fichier, il faut aussi l'y effacer. Et surtout : considère le mot de passe comme compromis et change-le.
+
+<Callout type="info">
+Côté défense, la même logique sert aux enquêteurs. Sur une machine compromise, les fichiers `.bash_history` des comptes révèlent souvent le passage d'un attaquant : téléchargement d'un outil, création d'un compte, modification d'une tâche planifiée. Un historique vidé ou un fichier remplacé par un lien vers `/dev/null` est en lui-même un signal suspect. Tu retrouveras ces indices dans le parcours de réponse à incident.
+</Callout>
+
+## démonstration : une séance de travail sans retaper
+
+Voici une séquence réelle, commentée, où presque rien n'est retapé.
+
+```bash
+tail -n 20 /var/log/nginx/error.log
+```
+
+```text
+tail: cannot open '/var/log/nginx/error.log' for reading: Permission denied
+```
+
+Le journal appartient à root. On relance la même commande avec les droits d'administrateur :
+
+```bash
+sudo !!
+```
+
+```text
+sudo tail -n 20 /var/log/nginx/error.log
+2026/09/27 08:14:02 [error] 812#812: *41 open() "/var/www/site/favicon.ico" failed (2: No such file or directory)
+```
+
+Bash affiche d'abord la commande reconstituée, puis l'exécute. L'erreur parle d'un fichier manquant dans `/var/www/site`. On liste ce répertoire, puis on s'y rend en réutilisant le chemin sans le retaper :
+
+```bash
+ls /var/www/site
+cd !$
+```
+
+Une heure plus tard, tu veux relire les erreurs. Ctrl+R, tu tapes `error.log`, la commande `sudo tail -n 20 /var/log/nginx/error.log` apparaît, Entrée. Quatre commandes, une vingtaine de touches.
+
+## à toi de jouer
+
+Tu reprends le travail sur un serveur. Affiche l'historique pour voir ce qui a été fait, filtre-le pour ne garder que les commandes qui parlent de `backup`, puis relance la commande numéro 212 grâce au développement d'historique.
+
+<SimulatedTerminal shell="bash" title="Reprendre là où on s'était arrêté" expectedCommands={["history", "history | grep backup", "!212"]} hints={["La commande history seule affiche la liste numérotée.", "Un tube | vers grep filtre la sortie.", "Un point d'exclamation suivi du numéro relance la commande correspondante."]} commands={{ "history": "  205  cd /srv/app\n  206  git status\n  207  ls -lh /backup\n  208  df -h\n  209  sudo systemctl status backup.timer\n  210  vim /etc/backup/backup.conf\n  211  sudo systemctl restart backup.service\n  212  sudo journalctl -u backup.service -n 20\n  213  history", "history | grep backup": "  207  ls -lh /backup\n  209  sudo systemctl status backup.timer\n  210  vim /etc/backup/backup.conf\n  211  sudo systemctl restart backup.service\n  212  sudo journalctl -u backup.service -n 20\n  214  history | grep backup", "!212": "sudo journalctl -u backup.service -n 20\nsept. 27 02:00:01 srv-app-01 systemd[1]: Starting backup.service - Sauvegarde nocturne...\nsept. 27 02:03:47 srv-app-01 backup.sh[48211]: 14 fichiers sauvegardés, 2,1 Go\nsept. 27 02:03:47 srv-app-01 systemd[1]: backup.service: Deactivated successfully.", "!212:p": "sudo journalctl -u backup.service -n 20", "echo $HISTCONTROL": "ignoreboth", "echo $HISTFILE": "/home/alice/.bash_history", "echo $HISTSIZE": "1000" }} />
+
+Remarque que `!212` affiche d'abord la commande reconstituée, puis son résultat. Essaie aussi `!212:p`, qui affiche sans exécuter, et `echo $HISTCONTROL`.
+
+## les pièges
+
+- **Ctrl+C pour copier.** Dans un terminal, il interrompt. Copier, c'est Ctrl+Maj+C.
+- **`!texte` sur une commande destructrice.** Elle est relancée sans être montrée. Utilise Ctrl+R ou `:p`.
+- **Un secret en argument.** Il finit dans `~/.bash_history` et dans la liste des processus. S'il a été tapé, il est compromis : change-le.
+- **Compter sur l'espace initiale sans vérifier `HISTCONTROL`.** Elle ne protège que si `ignorespace` ou `ignoreboth` est actif.
+- **Croire que l'historique est écrit en temps réel.** Par défaut, il ne l'est qu'à la fermeture du shell. Un shell tué brutalement perd son historique, et sans `histappend` plusieurs terminaux s'écrasent entre eux.
+- **Utiliser `!!` dans un script.** Le développement d'historique est désactivé dans les scripts : il n'a de sens qu'en interactif.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Command-Line-Editing.html" description="Tous les raccourcis de Readline et leur configuration">Bash : Command Line Editing</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/History-Interaction.html" description="La syntaxe complète du développement d'historique">Bash : History Expansion</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Bash-Variables.html" description="HISTFILE, HISTSIZE, HISTCONTROL et les autres variables de bash">Bash Variables</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Tu viens de lancer une commande qui échoue avec « Permission denied ». Comment la relancer avec les droits d'administrateur sans la retaper ?" options={["sudo !!", "sudo !$", "!sudo", "sudo history"]} correct={0} explanation="!! est remplacé par la commande précédente entière. !$ ne donnerait que son dernier argument, et !sudo relancerait la dernière commande commençant par sudo." />
+  <Quiz id="q-2" question="Que fait la combinaison Ctrl+R ?" options={["Elle relance la dernière commande", "Elle cherche en arrière dans l'historique une commande contenant le texte tapé", "Elle recharge le fichier .bashrc", "Elle efface l'historique"]} correct={1} explanation="Ctrl+R ouvre une recherche incrémentale dans l'historique. La commande trouvée s'affiche et ne s'exécute qu'avec Entrée." />
+  <Quiz id="q-3" question="Après mkdir -p /srv/app/releases/v3, que fait cd !$ ?" options={["Il va dans le répertoire personnel", "Il va dans /srv/app/releases/v3", "Il relance mkdir", "Il affiche une erreur car !$ n'existe pas"]} correct={1} explanation="!$ est remplacé par le dernier argument de la commande précédente, ici le chemin créé." />
+  <Quiz id="q-4" question="Sur une Debian avec HISTCONTROL=ignoreboth, quelle commande n'est pas enregistrée dans l'historique ?" options={["Une commande qui commence par sudo", "Une commande précédée d'une espace", "Une commande qui échoue", "Une commande de plus de 80 caractères"]} correct={1} explanation="ignoreboth combine ignorespace, qui écarte les commandes commençant par une espace, et ignoredups, qui écarte les doublons consécutifs." />
+  <Quiz id="q-5" question="Tu as tapé par erreur un mot de passe en argument d'une commande. Quelle est la seule réaction suffisante ?" options={["Supprimer la ligne avec history -d", "Fermer le terminal", "Changer le mot de passe", "Vider l'écran avec Ctrl+L"]} correct={2} explanation="Retirer la ligne de l'historique limite les dégâts, mais le secret a pu être vu dans la liste des processus ou déjà écrit ailleurs. Un secret exposé se considère comme compromis." />
+  <Quiz id="q-6" question="Dans un terminal Linux, que produit Ctrl+C pendant qu'une copie de fichiers est en cours ?" options={["Le texte sélectionné est copié", "La copie de fichiers est interrompue", "Rien, la copie continue", "Le terminal se ferme"]} correct={1} explanation="Ctrl+C envoie un signal d'interruption à la commande en cours. Pour copier du texte, c'est Ctrl+Maj+C." />
+</QuizGroup>
+
+## à retenir
+
+- Édition : Ctrl+A et Ctrl+E pour le début et la fin, Ctrl+W, Ctrl+U et Ctrl+K pour effacer, Ctrl+Y pour recoller.
+- **Tab** complète, **Tab Tab** liste les possibilités. Un chemin qui ne se complète pas n'existe pas ou n'est pas lisible.
+- Historique : flèches, `history`, et surtout **Ctrl+R** pour chercher.
+- `!!` la commande précédente, `!$` (ou Alt+.) son dernier argument, `!n` la commande numéro n, `^ancien^nouveau` pour corriger.
+- L'historique est écrit dans `~/.bash_history` à la fermeture du shell. Une commande précédée d'une espace n'y va pas si `HISTCONTROL` contient `ignorespace`.
+- Aucun secret en argument. S'il a été tapé, il est compromis.

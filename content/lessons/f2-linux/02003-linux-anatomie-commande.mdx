@@ -1,0 +1,311 @@
+---
+refCode: CL-LSN-02003-V01
+slug: linux-anatomie-commande
+title: "L'anatomie d'une commande"
+description: "Options courtes et longues, arguments, guillemets simples et doubles, caractères d'échappement, enchaînements avec ; && et || : la grammaire complète d'une ligne de commande, pour ne plus taper au hasard."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02002-V01"]
+---
+
+Une ligne de commande a une grammaire, aussi stricte que celle d'une phrase. Un espace de trop, une apostrophe mal placée, et le sens change complètement, parfois sans message d'erreur. Cette leçon démonte une commande pièce par pièce, pour que tu saches exactement ce que tu écris et ce que le shell va comprendre.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- identifier dans une commande le nom, les options et les arguments ;
+- écrire une option courte, une option longue, et une option qui attend une valeur, sous toutes ses formes ;
+- protéger un nom de fichier qui contient des espaces ou des caractères spéciaux ;
+- choisir entre guillemets simples, guillemets doubles et barre oblique inverse ;
+- enchaîner plusieurs commandes avec `;`, `&&` et `||`, en sachant quand chacune s'exécute.
+
+## pourquoi ça compte
+
+Les erreurs de syntaxe en ligne de commande ne sont pas toujours bruyantes. Une commande mal protégée peut s'appliquer à deux fichiers au lieu d'un, supprimer autre chose que ce que tu visais, ou laisser fuir un mot de passe dans l'historique. En administration, ces erreurs silencieuses coûtent cher : un script de nettoyage qui ne gère pas les espaces dans les noms de fichiers peut effacer des données qui n'avaient rien à voir.
+
+C'est aussi, directement, une question de sécurité. Les failles dites d'**injection de commande**, que tu étudieras dans le parcours sur la sécurité web, reposent entièrement sur les règles de cette leçon : un attaquant glisse un `;` ou un `&&` dans une donnée qu'un programme passe au shell sans la protéger. Comprendre la grammaire, c'est comprendre l'attaque et la défense.
+
+## les trois parties d'une commande
+
+Prenons une commande complète :
+
+```bash
+ls -l --human-readable /var/log
+```
+
+<Diagram caption="Les parties d'une commande">
+flowchart LR
+  A["ls : la commande"] --- B["-l : option courte"]
+  B --- C["--human-readable : option longue"]
+  C --- D["/var/log : argument"]
+</Diagram>
+
+- **La commande** : le premier mot, ce qu'on exécute. Tu as vu à la leçon précédente comment bash la trouve.
+- **Les options** : elles modifient le comportement de la commande. Elles commencent par un ou deux tirets.
+- **Les arguments** : ce sur quoi la commande agit. Ici, le répertoire à lister.
+
+Les espaces séparent les parties. `ls -l /var/log` et `ls-l /var/log` n'ont rien à voir : la seconde cherche une commande nommée `ls-l`, qui n'existe pas.
+
+## les options
+
+### options courtes et longues
+
+Une **option courte** est un tiret suivi d'une lettre : `-l`, `-a`, `-h`. Une **option longue** est deux tirets suivis d'un mot : `--all`, `--human-readable`. Beaucoup d'options existent sous les deux formes :
+
+```bash
+ls -a
+ls --all
+```
+
+Les deux commandes font la même chose. La forme courte est rapide à taper, la forme longue est lisible. Dans un script que d'autres liront, préfère la forme longue : dans six mois, `--recursive` se comprendra mieux que `-R`.
+
+### regrouper les options courtes
+
+Les options courtes sans valeur peuvent se coller derrière un seul tiret :
+
+```bash
+ls -l -a -h /var/log
+ls -lah /var/log
+```
+
+Ces deux lignes sont identiques. L'ordre des lettres n'a pas d'importance. Attention : ce regroupement ne marche qu'avec les options courtes. `--all--human-readable` ne veut rien dire.
+
+### les options qui attendent une valeur
+
+Certaines options ont besoin d'une valeur. `head` affiche le début d'un fichier, et son option `-n` dit combien de lignes :
+
+```bash
+head -n 5 /etc/passwd
+head -n5 /etc/passwd
+head --lines=5 /etc/passwd
+head --lines 5 /etc/passwd
+```
+
+Les quatre formes sont acceptées par les outils GNU. Pour une option courte, la valeur suit, avec ou sans espace. Pour une option longue, on met un signe `=` ou un espace.
+
+<Callout type="warning">
+Les conventions varient d'une commande à l'autre. Les outils GNU suivent tous les règles ci-dessus, mais d'autres programmes ont leurs habitudes : `find` utilise des options longues à un seul tiret (`-name`, `-type`), et `java` aussi. En cas de doute, `--help` ou la page de manuel tranchent, et c'est le sujet de la leçon suivante.
+</Callout>
+
+### le double tiret : fin des options
+
+Imagine un fichier qui s'appelle `-rapport.txt`. Pour le lire :
+
+```bash
+cat -rapport.txt
+```
+
+```text
+cat: invalid option -- 'r'
+```
+
+`cat` a pris le nom pour des options. La convention universelle pour lever l'ambiguïté est le **double tiret** `--`, qui signifie « à partir d'ici, plus aucune option, seulement des arguments » :
+
+```bash
+cat -- -rapport.txt
+```
+
+Tu peux aussi écrire `cat ./-rapport.txt` : un chemin qui commence par `./` ne commence plus par un tiret. Ce détail a l'air anecdotique, mais des scripts ont effacé des données parce qu'un fichier malicieusement nommé `-rf` traînait dans un répertoire. Le double tiret en protège.
+
+## les arguments
+
+Les arguments suivent en général les options. Une commande peut en accepter plusieurs :
+
+```bash
+ls /etc /var /tmp
+```
+
+`ls` liste alors les trois répertoires, l'un après l'autre. De même, `rm fichier1 fichier2` supprime les deux. C'est justement le problème quand un nom contient un espace.
+
+### l'ordre des options et des arguments
+
+Par convention, les options viennent avant les arguments. Les outils GNU sont tolérants : ils acceptent aussi `ls /etc -l`, en réordonnant eux-mêmes ce qu'ils reçoivent. Ce n'est pas le cas partout. Sur macOS ou sur les systèmes BSD, dont les outils suivent la norme POSIX à la lettre, `ls /etc -l` cherche un fichier nommé `-l` et échoue : là-bas, la première chose qui n'est pas une option marque la fin des options. Le même comportement strict s'obtient sous Linux en définissant la variable `POSIXLY_CORRECT`.
+
+Retiens donc la forme sûre, celle qui marche sur tous les systèmes et dans tous les scripts : **la commande, puis toutes les options, puis tous les arguments**. C'est aussi la plus lisible pour la personne qui relira ta commande.
+
+## les espaces et les guillemets
+
+Un fichier s'appelle `rapport final.txt`. Tu tapes :
+
+```bash
+rm rapport final.txt
+```
+
+Le shell découpe la ligne aux espaces et `rm` reçoit **deux** arguments : `rapport` et `final.txt`. Si ces deux fichiers existent, tu viens de supprimer les mauvais. S'ils n'existent pas, tu as deux erreurs et ton fichier est toujours là. Dans aucun cas tu n'as fait ce que tu voulais.
+
+Il y a trois manières de dire au shell qu'un espace fait partie du nom.
+
+**Les guillemets doubles** regroupent le texte en un seul mot, mais laissent le shell remplacer les variables qu'ils contiennent :
+
+```bash
+rm "rapport final.txt"
+echo "Bonjour $USER"
+```
+
+```text
+Bonjour alice
+```
+
+**Les guillemets simples** regroupent le texte et **désactivent tout** : à l'intérieur, rien n'est interprété, pas même les variables.
+
+```bash
+echo 'Bonjour $USER'
+```
+
+```text
+Bonjour $USER
+```
+
+**La barre oblique inverse** protège le seul caractère qui la suit :
+
+```bash
+rm rapport\ final.txt
+echo "Le prix est de 5 \$"
+```
+
+```text
+Le prix est de 5 $
+```
+
+| Protection | Regroupe les espaces | Interprète les variables | Usage typique |
+| --- | --- | --- | --- |
+| `"..."` | Oui | Oui | Le cas général, avec des variables |
+| `'...'` | Oui | Non | Un texte à transmettre tel quel |
+| `\` | Un caractère | Non (pour ce caractère) | Un espace ou un symbole isolé |
+
+La règle pratique : **mets des guillemets doubles autour de tout ce qui vient d'une variable ou d'un nom de fichier**. `rm "$fichier"` ne casse jamais, `rm $fichier` casse dès que le nom contient un espace. Tu l'appliqueras systématiquement dans tes scripts au module 7.
+
+<Callout type="info">
+Pour mettre une apostrophe dans un texte en guillemets simples, il n'y a pas d'échappement possible : on ferme, on ajoute l'apostrophe protégée, on rouvre. `echo 'l'\''arbre'` affiche `l'arbre`. Le plus simple reste souvent de passer aux guillemets doubles : `echo "l'arbre"`.
+</Callout>
+
+### les caractères qui ont un sens pour le shell
+
+Certains caractères déclenchent un comportement : `$` (variables), `*` et `?` (jokers), `;` `&` `|` (enchaînements), `>` et `<` (redirections, au module 3), `#` (commentaire), `~` (répertoire personnel). Dès qu'un de ces caractères doit être pris littéralement, il faut le protéger. Les guillemets simples les neutralisent tous.
+
+Le `#` mérite une mention : en début de mot, il commence un commentaire, et le shell ignore tout le reste de la ligne.
+
+```bash
+ls /tmp   # ceci est un commentaire, ignoré
+```
+
+## enchaîner les commandes
+
+Tu peux écrire plusieurs commandes sur une ligne. Trois séparateurs, trois comportements, tous liés au code de retour vu à la leçon précédente.
+
+**Le point-virgule** exécute les commandes l'une après l'autre, quoi qu'il arrive :
+
+```bash
+cd /tmp ; ls
+```
+
+**Le ET logique**, `&&`, n'exécute la seconde que si la première **a réussi** (code 0) :
+
+```bash
+mkdir sauvegarde && cp notes.txt sauvegarde/
+```
+
+Si le répertoire n'a pas pu être créé, la copie n'est même pas tentée.
+
+**Le OU logique**, `||`, n'exécute la seconde que si la première **a échoué** :
+
+```bash
+ping -c 1 serveur-db || echo "La base de données ne répond pas"
+```
+
+<Diagram caption="Quand la seconde commande s'exécute-t-elle ?">
+flowchart TD
+  A["Première commande"] --> B["Code de retour"]
+  B -->|"0 : succès"| C["Le point-virgule et le ET enchaînent, le OU s'arrête"]
+  B -->|"autre : échec"| D["Le point-virgule et le OU enchaînent, le ET s'arrête"]
+</Diagram>
+
+On combine souvent les deux pour faire un petit « si, sinon » :
+
+```bash
+grep -q alice /etc/passwd && echo "compte présent" || echo "compte absent"
+```
+
+Ce raccourci a pourtant un défaut que beaucoup découvrent en production. `A && B || C` n'est pas un vrai « si A alors B sinon C ». C s'exécute si A échoue, mais aussi si A réussit et que **B échoue**. Prenons :
+
+```bash
+test -d /sauvegardes && cp base.sql /sauvegardes/ || echo "Pas de répertoire de sauvegarde"
+```
+
+Si le répertoire existe mais que le disque est plein, la copie échoue, et le message affiché ment : il dit que le répertoire n'existe pas. Pour un simple message, c'est gênant. Si la troisième commande avait été une action, par exemple la création d'un répertoire ailleurs ou une suppression, c'est un vrai incident. La règle : garde `&& ... ||` pour les cas où la commande du milieu ne peut pas échouer, comme un `echo`. Dès que la logique compte, écris une vraie condition avec `if`, que tu apprendras au module 7.
+
+Et pour une commande trop longue, une barre oblique inverse en fin de ligne permet de continuer sur la ligne suivante :
+
+```bash
+tar --create --gzip \
+    --file sauvegarde.tar.gz \
+    /etc /home
+```
+
+<Callout type="danger">
+Le point-virgule est dangereux dans les commandes destructrices. `cd /dossier-a-vider ; rm -rf *` : si le `cd` échoue (faute de frappe, répertoire absent), le `rm` s'exécute quand même, **dans le répertoire où tu te trouvais**. Avec `&&`, il ne s'exécute pas. Pour tout ce qui supprime ou écrase, enchaîne avec `&&`.
+</Callout>
+
+## démonstration : lire une commande qu'on t'a envoyée
+
+Un collègue t'envoie cette ligne en te disant « lance ça, ça nettoie les vieux journaux » :
+
+```bash
+find /var/log/app -name "*.log" -mtime +30 -print ; rm -f /var/log/app/old/*
+```
+
+Avant de l'exécuter, décompose-la avec ce que tu viens d'apprendre.
+
+1. Deux commandes, séparées par un **point-virgule** : la seconde s'exécute quoi qu'il arrive à la première.
+2. La première, `find`, cherche dans `/var/log/app` les fichiers dont le nom correspond au motif `*.log` (les guillemets empêchent le shell de développer le joker trop tôt), modifiés il y a plus de 30 jours, et **affiche** leur nom. Elle ne supprime rien.
+3. La seconde supprime, sans demander confirmation (`-f`), tout le contenu de `/var/log/app/old/`, qu'il ait 30 jours ou 3 minutes.
+
+Conclusion : la ligne ne fait pas ce qu'annonce ton collègue. Elle affiche une liste, puis supprime autre chose. C'est exactement le genre de vérification à faire avant de coller une commande trouvée sur un forum ou dans un message.
+
+## à toi de jouer
+
+Dans ce répertoire se trouve un fichier nommé `rapport final.txt` et un fichier nommé `-notes.txt`. Affiche d'abord le contenu du premier avec `cat` en le protégeant correctement, puis lis les trois premières lignes du second avec `head`, en utilisant le double tiret.
+
+<SimulatedTerminal shell="bash" title="Noms de fichiers piégés" expectedCommands={["cat \"rapport final.txt\"", "head -n 3 -- -notes.txt"]} hints={["Un nom avec un espace se met entre guillemets doubles.", "head -n 3, puis -- pour signaler la fin des options, puis le nom."]} commands={{ "ls": "-notes.txt  rapport final.txt", "ls -l": "total 8\n-rw-r--r-- 1 alice alice 412 sept. 27 09:12 -notes.txt\n-rw-r--r-- 1 alice alice 128 sept. 27 09:10 rapport final.txt", "cat rapport final.txt": "cat: rapport: No such file or directory\ncat: final.txt: No such file or directory", "cat \"rapport final.txt\"": "Bilan du trimestre : 3 incidents, 0 perte de données.", "cat 'rapport final.txt'": "Bilan du trimestre : 3 incidents, 0 perte de données.", "cat rapport\\ final.txt": "Bilan du trimestre : 3 incidents, 0 perte de données.", "head -n 3 -notes.txt": "head: invalid option -- 't'\nTry 'head --help' for more information.", "head -n 3 -- -notes.txt": "- vérifier les sauvegardes\n- renouveler le certificat\n- relire les accès sudo", "head -n 3 ./-notes.txt": "- vérifier les sauvegardes\n- renouveler le certificat\n- relire les accès sudo", "echo 'Bonjour $USER'": "Bonjour $USER", "echo \"Bonjour $USER\"": "Bonjour alice" }} />
+
+Essaie aussi la version sans guillemets, `cat rapport final.txt`, pour voir l'erreur double : le shell a bien fabriqué deux arguments.
+
+## les pièges
+
+- **Oublier les guillemets autour d'un nom ou d'une variable.** C'est la première cause de scripts qui marchent en test et cassent en production, le jour où un nom contient un espace.
+- **Confondre guillemets simples et doubles.** `'$HOME'` reste le texte `$HOME`, `"$HOME"` devient `/home/alice`.
+- **Coller des guillemets typographiques.** Un texte copié depuis un traitement de texte ou une page web contient parfois des guillemets courbes, que le shell ne reconnaît pas comme des guillemets. Retape-les.
+- **Enchaîner une commande destructrice avec `;`.** Si l'étape précédente échoue, la destruction a lieu quand même. Utilise `&&`.
+- **Exécuter une commande qu'on ne sait pas lire.** Toute ligne copiée depuis Internet se décompose avant d'être lancée, surtout si elle contient `sudo`, `rm`, un `|` vers `sh` ou `bash`, ou un `;`.
+- **Mettre un mot de passe en argument.** Tout ce que tu tapes en argument est visible dans l'historique et, pendant l'exécution, par les autres utilisateurs de la machine dans la liste des processus. Les outils sérieux lisent les secrets dans un fichier ou demandent la saisie.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Quoting.html" description="Les règles exactes des guillemets et de l'échappement dans bash">Bash : Quoting</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/prep/standards/html_node/Command_002dLine-Interfaces.html" description="Les conventions que suivent les outils GNU pour les options">GNU Coding Standards : Command-Line Interfaces</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Lists.html" description="Le fonctionnement de ; && et || dans le manuel de bash">Bash : Lists of Commands</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans la commande tar -czf archive.tar.gz /etc, que représente /etc ?" options={["Une option", "Un argument", "Le nom de la commande", "Une variable d'environnement"]} correct={1} explanation="/etc est ce sur quoi la commande agit : c'est un argument. -czf regroupe trois options courtes, dont f qui prend la valeur archive.tar.gz." />
+  <Quiz id="q-2" question="Quelle commande supprime uniquement le fichier nommé « mes notes.txt » ?" options={["rm mes notes.txt", "rm \"mes notes.txt\"", "rm mes-notes.txt", "rm -- mes notes.txt"]} correct={1} explanation="Sans protection, le shell découpe le nom en deux arguments. Les guillemets en font un seul. Le double tiret signale la fin des options, mais ne regroupe pas les mots." />
+  <Quiz id="q-3" question="Qu'affiche la commande echo 'Utilisateur : $USER' ?" options={["Utilisateur : alice", "Utilisateur : $USER", "Une erreur de syntaxe", "Utilisateur :"]} correct={1} explanation="Les guillemets simples désactivent toute interprétation, y compris celle des variables. Le texte est affiché tel quel." />
+  <Quiz id="q-4" question="Dans cd /tmp/vieux && rm -rf *, que se passe-t-il si le répertoire /tmp/vieux n'existe pas ?" options={["rm supprime le contenu du répertoire courant", "rm n'est pas exécuté", "rm supprime /tmp", "Le shell crée le répertoire puis le vide"]} correct={1} explanation="&& n'exécute la seconde commande que si la première a réussi. Le cd échoue, donc rm n'est jamais lancé. Avec un point-virgule, rm aurait vidé le répertoire courant." />
+  <Quiz id="q-5" question="Un fichier s'appelle -f. Laquelle de ces commandes l'affiche sans ambiguïté ?" options={["cat -f", "cat \"-f\"", "cat -- -f", "cat '-f'"]} correct={2} explanation="Les guillemets n'enlèvent pas le tiret : cat reçoit toujours un mot qui commence par -, qu'il prend pour une option. Le double tiret dit à cat qu'il n'y a plus d'options après lui." />
+  <Quiz id="q-6" question="Quelle forme n'est pas équivalente à head -n 5 fichier.txt pour les outils GNU ?" options={["head -n5 fichier.txt", "head --lines=5 fichier.txt", "head --lines 5 fichier.txt", "head --n5 fichier.txt"]} correct={3} explanation="Une option courte ne s'écrit pas avec deux tirets. Les trois autres formes sont toutes acceptées par head." />
+</QuizGroup>
+
+## à retenir
+
+- Une commande = **nom**, puis **options** (qui modifient le comportement), puis **arguments** (sur quoi elle agit). Les espaces séparent les mots.
+- Options courtes `-a` (regroupables : `-lah`) ou longues `--all`. Une valeur se donne avec `-n 5`, `-n5`, `--lines=5` ou `--lines 5`.
+- `--` marque la fin des options : indispensable pour un nom qui commence par un tiret.
+- `"..."` regroupe et laisse passer les variables, `'...'` regroupe et neutralise tout, `\` protège un seul caractère. Entoure toujours variables et noms de fichiers de guillemets doubles.
+- `;` enchaîne toujours, `&&` seulement après un succès, `||` seulement après un échec. Pour tout ce qui détruit, `&&`.
+- Une commande copiée se lit et se décompose avant d'être exécutée.

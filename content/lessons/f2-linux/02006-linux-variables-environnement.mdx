@@ -1,0 +1,300 @@
+---
+refCode: CL-LSN-02006-V01
+slug: linux-variables-environnement
+title: "Les variables d'environnement et le PATH"
+description: "Variables du shell et variables d'environnement, export et héritage, le PATH et l'ordre de recherche des commandes, les fichiers lus au démarrage de bash, et pourquoi une commande « introuvable » l'est rarement."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02005-V01"]
+---
+
+« Ça marche chez moi. » Une bonne partie des fois où cette phrase est prononcée, la différence entre les deux machines tient dans une variable d'environnement : un `PATH` qui ne contient pas le même répertoire, une langue différente qui change le format d'une sortie, un éditeur par défaut qui n'est pas celui qu'on croit. Cette leçon explique ce que sont ces variables, comment elles passent d'un programme à l'autre, et où les régler pour qu'elles tiennent.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- créer, lire et supprimer une variable du shell ;
+- faire la différence entre une variable du shell et une variable d'environnement, et passer de l'une à l'autre avec `export` ;
+- expliquer comment le `PATH` décide quelle commande s'exécute, et y ajouter un répertoire ;
+- donner une variable à une seule commande, sans la garder ;
+- choisir entre `~/.profile` et `~/.bashrc` pour rendre un réglage permanent, et recharger la configuration.
+
+## pourquoi ça compte
+
+Les variables d'environnement sont le moyen universel de configurer un programme sans modifier son code. Une application web lit l'adresse de sa base de données dans `DATABASE_URL`, un outil de déploiement trouve ses identifiants dans une variable, un conteneur Docker reçoit toute sa configuration de cette façon. Tu les manipuleras dans chaque parcours qui suit, du développement back-end au cloud.
+
+Elles comptent aussi pour la sécurité, dans les deux sens. Elles transportent souvent des secrets, qu'il faut savoir ne pas exposer. Et le `PATH` décide quel programme s'exécute quand tu tapes un nom : un répertoire mal placé dans le `PATH`, et quelqu'un peut faire exécuter son propre programme à la place de `ls` ou de `sudo`.
+
+## les variables du shell
+
+Une variable est un nom associé à une valeur. On la crée en écrivant le nom, un signe égal, la valeur, **sans aucune espace** :
+
+```bash
+ville=Lyon
+```
+
+On lit sa valeur en faisant précéder son nom d'un `$` :
+
+```bash
+echo $ville
+```
+
+```text
+Lyon
+```
+
+Quelques règles, dont chacune correspond à une erreur fréquente :
+
+- **Pas d'espace autour du `=`.** `ville = Lyon` fait chercher au shell une commande nommée `ville`, avec les arguments `=` et `Lyon`.
+- **Des guillemets si la valeur contient des espaces** : `message="Bonjour à tous"`.
+- **Les noms sont sensibles à la casse.** `ville` et `VILLE` sont deux variables. Par convention, les variables d'environnement sont en majuscules, et on met ses variables personnelles en minuscules pour ne pas écraser les autres par accident.
+- **Une variable inexistante vaut une chaîne vide**, sans erreur. `echo $vile` avec une faute de frappe n'affiche rien, et c'est tout.
+- **Accolades pour délimiter le nom** quand du texte suit : `echo "${ville}_2026"`. Sans elles, le shell chercherait une variable nommée `ville_2026`.
+
+`unset ville` supprime la variable.
+
+## variables du shell et variables d'environnement
+
+C'est la distinction la plus importante de la leçon. Une variable créée comme ci-dessus est une **variable du shell** : elle n'existe que dans ce shell. Les programmes que le shell lance ne la voient pas.
+
+```bash
+ville=Lyon
+bash -c 'echo "Ville : $ville"'
+```
+
+```text
+Ville :
+```
+
+`bash -c` lance un nouveau shell, un processus enfant, qui exécute la commande entre guillemets. Il ne connaît pas `ville`. Pour qu'une variable soit transmise aux processus enfants, il faut l'**exporter** :
+
+```bash
+export ville
+bash -c 'echo "Ville : $ville"'
+```
+
+```text
+Ville : Lyon
+```
+
+Elle est devenue une **variable d'environnement**. On peut créer et exporter en une fois : `export VILLE=Lyon`.
+
+<Diagram caption="Ce qu'un processus enfant reçoit">
+flowchart TD
+  A["Shell : ville=Lyon (non exportée), EDITOR=nano (exportée)"] -->|"lance"| B["Processus enfant : reçoit une copie de EDITOR uniquement"]
+  B -->|"modifie sa copie de EDITOR"| C["Le shell parent n'est pas touché"]
+</Diagram>
+
+Deux propriétés découlent de ce mécanisme, et elles expliquent beaucoup de comportements :
+
+- **L'enfant reçoit une copie.** S'il la modifie, le parent n'en sait rien. C'est pourquoi un script qui fait `export PATH=...` ne change pas le `PATH` du terminal qui l'a lancé : le script tourne dans un processus enfant, qui disparaît avec ses modifications.
+- **La transmission ne va que vers le bas.** Un programme ne peut jamais modifier l'environnement de celui qui l'a lancé.
+
+Pour voir les variables :
+
+- `env` ou `printenv` affichent toutes les **variables d'environnement** ;
+- `printenv HOME` affiche une seule variable, sans le `$` ;
+- `set` affiche **tout** ce que connaît le shell : variables d'environnement, variables du shell et fonctions. La sortie est longue.
+
+## les variables qu'on croise partout
+
+| Variable | Contenu | Exemple |
+| --- | --- | --- |
+| `HOME` | Ton répertoire personnel | `/home/alice` |
+| `USER` | Ton nom d'utilisateur | `alice` |
+| `SHELL` | Ton shell de connexion | `/bin/bash` |
+| `PWD` et `OLDPWD` | Le répertoire courant et le précédent | `/etc`, `/home/alice` |
+| `PATH` | Les répertoires où chercher les commandes | `/usr/local/bin:/usr/bin:/bin` |
+| `LANG` | La langue et l'encodage | `fr_FR.UTF-8` |
+| `EDITOR` | L'éditeur utilisé par `crontab -e`, `git`, `visudo`... | `nano` |
+| `TERM` | Le type de terminal, pour les couleurs et l'affichage | `xterm-256color` |
+| `PS1` | Le format de l'invite | `\u@\h:\w\$ ` |
+
+## le PATH en détail
+
+Tu as vu à la leçon 2 que bash cherche en dernier les programmes « dans le `PATH` ». Voici ce que cela veut dire exactement.
+
+```bash
+echo $PATH
+```
+
+```text
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
+Le `PATH` est une liste de répertoires séparés par des deux-points. Quand tu tapes `python3`, bash regarde dans `/usr/local/sbin`, puis `/usr/local/bin`, puis `/usr/sbin`, et ainsi de suite, et exécute **le premier** `python3` exécutable qu'il trouve. L'ordre compte donc : `/usr/local/bin` passe avant `/usr/bin`, ce qui permet d'installer une version plus récente d'un outil à côté de celle du système, et de la voir utilisée en priorité.
+
+<Diagram caption="Recherche de python3 dans le PATH">
+flowchart LR
+  A["python3"] --> B["/usr/local/sbin : absent"]
+  B --> C["/usr/local/bin : trouvé, exécuté"]
+  C -.->|"jamais consulté"| D["/usr/bin/python3"]
+</Diagram>
+
+### ajouter un répertoire
+
+Tu écris tes propres scripts dans `~/bin`. Pour les lancer par leur nom, n'importe où, ajoute ce répertoire au `PATH` :
+
+```bash
+export PATH="$HOME/bin:$PATH"
+```
+
+La nouvelle valeur est `~/bin`, suivi de l'ancienne valeur. Les guillemets protègent les éventuels espaces. Placé en tête, ton répertoire est prioritaire ; placé en fin (`"$PATH:$HOME/bin"`), il ne sert qu'en dernier recours. Ce réglage ne dure que le temps de la session : on verra plus bas comment le rendre permanent.
+
+<Callout type="danger">
+N'ajoute jamais le répertoire courant, `.`, à ton `PATH`, et surtout pas en tête. Il suffirait qu'un fichier nommé `ls` traîne dans un répertoire où tu te rends, par exemple `/tmp` où tout le monde peut écrire, pour que taper `ls` exécute ce fichier avec tes droits. C'est pour cette raison que, sous Linux, on lance un script du répertoire courant en écrivant explicitement `./script.sh`. Même logique pour tout répertoire modifiable par d'autres que toi : il n'a rien à faire dans ton `PATH`.
+</Callout>
+
+### le cache des commandes
+
+Bash mémorise l'emplacement des commandes déjà trouvées pour ne pas refaire la recherche à chaque fois. Si tu déplaces un programme ou en installes une nouvelle version ailleurs dans le `PATH`, bash peut continuer à exécuter l'ancien emplacement. `hash -r` vide ce cache. `type` te montre d'ailleurs quand une commande est « hashed ».
+
+## une variable pour une seule commande
+
+On peut donner une variable à une seule commande en l'écrivant devant, sur la même ligne :
+
+```bash
+LANG=C date
+```
+
+```text
+Sun Sep 27 10:42:08 CEST 2026
+```
+
+La commande `date` reçoit `LANG=C` et s'affiche en anglais, mais ton shell n'est pas modifié : la commande suivante retrouve ta langue habituelle. C'est très utilisé dans les scripts, pour obtenir une sortie stable, indépendante de la langue de celui qui les lance. `LC_ALL=C sort` trie par exemple selon l'ordre des octets, identique sur toutes les machines.
+
+## rendre un réglage permanent
+
+Tout ce qu'on fait dans un shell disparaît à sa fermeture. Pour qu'un réglage soit appliqué à chaque session, on l'écrit dans un des fichiers que bash lit au démarrage. Lesquels, cela dépend du type de shell.
+
+- **Shell de connexion** : celui qu'on obtient en se connectant (en SSH, sur la console). Bash lit `/etc/profile`, puis le premier qui existe parmi `~/.bash_profile`, `~/.bash_login` et `~/.profile`.
+- **Shell interactif ordinaire** : celui d'une nouvelle fenêtre de terminal dans une session graphique, ou quand tu tapes `bash`. Bash lit `~/.bashrc` (et, sur Debian et Ubuntu, `/etc/bash.bashrc` avant).
+
+<Diagram caption="Quels fichiers bash lit-il au démarrage ?">
+flowchart TD
+  A["Shell de connexion (SSH, console)"] --> B["/etc/profile"]
+  B --> C["~/.bash_profile, sinon ~/.bash_login, sinon ~/.profile"]
+  C -->|"sur Debian et Ubuntu, ~/.profile charge"| D["~/.bashrc"]
+  E["Nouveau terminal, ou bash tapé à la main"] --> D
+</Diagram>
+
+Sur Debian et Ubuntu, le `~/.profile` fourni charge lui-même `~/.bashrc`, ce qui fait que ce dernier finit toujours par être lu. D'où la répartition habituelle :
+
+- dans **`~/.profile`** : les variables d'environnement, dont le `PATH`. Elles sont réglées une fois à la connexion et héritées par tout le reste ;
+- dans **`~/.bashrc`** : ce qui concerne le shell interactif. Les alias, l'invite `PS1`, les options de l'historique, les fonctions.
+
+C'est dans ce `.bashrc` que Debian et Ubuntu activent l'option qui fait **ajouter** l'historique au fichier au lieu de l'écraser, et règlent la taille de l'historique :
+
+```bash
+shopt -s histappend
+HISTCONTROL=ignoreboth
+HISTSIZE=1000
+HISTFILESIZE=2000
+```
+
+Après avoir modifié un de ces fichiers, les shells déjà ouverts ne voient rien. Pour appliquer tout de suite, on relit le fichier dans le shell courant :
+
+```bash
+source ~/.bashrc
+```
+
+`source` (ou son synonyme `.`) exécute le fichier **dans le shell courant**, et non dans un processus enfant. C'est justement ce qui permet à ses `export` et à ses alias de s'appliquer à toi, là où `bash ~/.bashrc` les aurait appliqués à un enfant qui disparaît aussitôt.
+
+<Callout type="info">
+`sudo` ne transmet pas ton environnement tel quel : il le réinitialise et utilise son propre `PATH`, défini par l'option `secure_path` de sa configuration. C'est une protection, pas un bug. Si un script marche en utilisateur et devient « introuvable » avec `sudo`, c'est souvent qu'il est dans ton `~/bin`, que le `PATH` de `sudo` ne contient pas. Donne alors le chemin complet.
+</Callout>
+
+## démonstration : un script « introuvable »
+
+Tu as écrit un script `~/bin/nettoyer`, rendu exécutable. Tu tapes son nom :
+
+```bash
+nettoyer
+```
+
+```text
+nettoyer: command not found
+```
+
+Reprenons le raisonnement de la leçon 2. Code 127, donc bash n'a rien trouvé. Le script est pourtant là :
+
+```bash
+ls -l ~/bin/nettoyer
+```
+
+```text
+-rwxr-xr-x 1 alice alice 214 sept. 27 10:51 /home/alice/bin/nettoyer
+```
+
+Il est exécutable (le `x`). La question devient : `~/bin` est-il dans le `PATH` ?
+
+```bash
+echo $PATH
+```
+
+```text
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
+Non. On l'ajoute pour la session, et on vérifie :
+
+```bash
+export PATH="$HOME/bin:$PATH"
+type nettoyer
+```
+
+```text
+nettoyer is /home/alice/bin/nettoyer
+```
+
+Reste à le rendre permanent, en ajoutant la ligne `export PATH="$HOME/bin:$PATH"` à la fin de `~/.profile`. Au passage, le `~/.profile` de Debian contient déjà un bloc qui ajoute `~/bin` au `PATH`... **si le répertoire existe au moment de la connexion**. Il suffit donc parfois de créer le répertoire, puis de se reconnecter.
+
+## à toi de jouer
+
+Sur ce serveur, affiche d'abord le `PATH`, puis définis `nano` comme éditeur par défaut pour toi et pour tous les programmes que tu lanceras, et vérifie enfin que la variable est bien une variable d'environnement.
+
+<SimulatedTerminal shell="bash" title="Régler son environnement" expectedCommands={["echo $PATH", "export EDITOR=nano", "printenv EDITOR"]} hints={["La valeur d'une variable se lit avec un $ devant son nom.", "Une variable destinée aux autres programmes s'exporte.", "printenv suivi du nom de la variable, sans $."]} commands={{ "echo $PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "export EDITOR=nano": "", "printenv EDITOR": "nano", "echo $EDITOR": "nano", "env": "SHELL=/bin/bash\nPWD=/home/alice\nLOGNAME=alice\nHOME=/home/alice\nLANG=fr_FR.UTF-8\nTERM=xterm-256color\nUSER=alice\nEDITOR=nano\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "EDITOR=nano": "", "printenv HOME": "/home/alice", "type python3": "python3 is /usr/bin/python3" }} />
+
+Pour voir la différence avec une variable non exportée, relis le passage sur `bash -c` : la même variable, sans `export`, n'aurait pas été vue par `printenv`, qui est un programme séparé.
+
+## les pièges
+
+- **Des espaces autour du `=`.** `EDITOR = nano` est une commande `EDITOR` avec deux arguments. Aucune espace.
+- **Oublier `export`.** Une variable du shell n'est pas vue par les programmes lancés, y compris par les scripts.
+- **Attendre qu'un script modifie l'environnement de ton terminal.** Il tourne dans un enfant. Pour appliquer ses réglages, il faut le lancer avec `source`.
+- **Écraser le `PATH`.** `export PATH=~/bin` sans `:$PATH` supprime tous les autres répertoires : plus aucune commande ne se trouve, même `ls`. Si ça t'arrive, ferme le terminal : la session suivante repartira des fichiers de démarrage.
+- **Mettre `.` ou un répertoire modifiable par d'autres dans le `PATH`.** C'est une porte ouverte à l'exécution d'un programme piégé.
+- **Mettre un secret dans un fichier de démarrage lisible.** Un mot de passe exporté dans `~/.bashrc` est lisible par quiconque lit ce fichier, et hérité par chaque programme que tu lances. Les secrets se stockent dans des fichiers aux permissions restreintes (module 4) ou dans un gestionnaire de secrets.
+- **Modifier `~/.bashrc` et s'étonner que rien ne change.** Les shells ouverts ne relisent pas le fichier : `source ~/.bashrc`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html" description="L'ordre exact de lecture des fichiers de démarrage selon le type de shell">Bash Startup Files</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/environ.7.html" description="L'environnement d'un processus et les variables standard">environ(7)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Environment.html" description="Comment bash construit l'environnement transmis aux commandes">Bash : Environment</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle ligne crée correctement une variable nommée projet ?" options={["projet = site-web", "projet=site-web", "$projet=site-web", "set projet site-web"]} correct={1} explanation="Aucune espace autour du signe égal, et pas de $ à la création. Le $ sert uniquement à lire la valeur." />
+  <Quiz id="q-2" question="Tu tapes niveau=3 puis bash -c 'echo $niveau'. Qu'affiche la seconde commande ?" options={["3", "Une ligne vide", "$niveau", "Une erreur"]} correct={1} explanation="bash -c lance un processus enfant. Sans export, la variable reste une variable du shell parent, que l'enfant ne reçoit pas." />
+  <Quiz id="q-3" question="Le PATH vaut /usr/local/bin:/usr/bin et un programme outil existe dans les deux répertoires. Lequel s'exécute quand tu tapes outil ?" options={["/usr/bin/outil, le répertoire du système", "/usr/local/bin/outil, le premier trouvé dans l'ordre du PATH", "Les deux, l'un après l'autre", "Aucun : bash signale un conflit"]} correct={1} explanation="Bash parcourt le PATH de gauche à droite et exécute le premier exécutable qui porte ce nom." />
+  <Quiz id="q-4" question="Quelle commande ajoute ~/bin en tête du PATH sans perdre les répertoires existants ?" options={["export PATH=~/bin", "export PATH=\"$HOME/bin:$PATH\"", "PATH+=~/bin", "export $PATH=\"$HOME/bin\""]} correct={1} explanation="La nouvelle valeur doit contenir l'ancienne. export PATH=~/bin remplace tout le PATH, et plus aucune commande du système ne serait trouvée." />
+  <Quiz id="q-5" question="Tu viens d'ajouter un alias dans ~/.bashrc. Comment l'utiliser dans le terminal déjà ouvert ?" options={["bash ~/.bashrc", "source ~/.bashrc", "export ~/.bashrc", "Il est disponible immédiatement"]} correct={1} explanation="source exécute le fichier dans le shell courant. bash ~/.bashrc l'exécuterait dans un processus enfant, dont les réglages disparaissent avec lui." />
+  <Quiz id="q-6" question="Pourquoi ne faut-il jamais ajouter le répertoire courant . au PATH ?" options={["Parce que cela ralentit la recherche des commandes", "Parce qu'un programme piégé nommé comme une commande courante pourrait être exécuté à ta place", "Parce que bash ne l'accepte pas", "Parce que cela efface l'historique"]} correct={1} explanation="Il suffirait d'un fichier nommé ls dans un répertoire où tu te rends pour qu'il s'exécute avec tes droits. On lance un script local explicitement avec ./script." />
+  <Quiz id="q-7" question="Où placer l'ajout d'un répertoire au PATH pour qu'il s'applique à toutes tes sessions ?" options={["Dans ~/.bash_history", "Dans ~/.profile", "Dans /tmp/.bashrc", "Dans la variable PS1"]} correct={1} explanation="Les variables d'environnement se règlent à la connexion, dans ~/.profile, et sont ensuite héritées. ~/.bashrc est plutôt réservé aux alias, à l'invite et aux réglages du shell interactif." />
+</QuizGroup>
+
+## à retenir
+
+- `nom=valeur` sans espace, `$nom` pour lire, `unset nom` pour supprimer. Guillemets doubles autour des valeurs et des lectures.
+- Une variable du shell reste dans le shell ; `export` en fait une **variable d'environnement**, dont chaque enfant reçoit une **copie**. Rien ne remonte vers le parent.
+- `env` et `printenv` pour l'environnement, `set` pour tout.
+- Le **`PATH`** est parcouru de gauche à droite, le premier trouvé gagne. On l'étend avec `export PATH="$HOME/bin:$PATH"`, jamais avec `.`.
+- `VAR=valeur commande` donne une variable à une seule commande.
+- Permanent : variables dans `~/.profile`, alias et invite dans `~/.bashrc`. Pour appliquer tout de suite : `source ~/.bashrc`.
