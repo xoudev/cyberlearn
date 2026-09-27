@@ -64,9 +64,18 @@ dans cet ordre :
 8. **Quiz** : 5 à 8 questions qui vérifient les objectifs, avec explications.
 9. **Récapitulatif** : ce qu'il faut retenir en cinq lignes.
 
-Longueur visée : 2 500 à 4 000 mots, soit 30 à 45 minutes. La CI vérifie déjà la
-typographie, les diagrammes et les marqueurs d'auteur. On ajoutera un contrôle
-de présence des sections 1, 5, 8 et 9.
+Longueur visée : 2 500 à 4 000 mots, soit 30 à 45 minutes, dont au moins
+1 800 mots de prose (hors code, composants et schémas).
+
+Ce standard est vérifié par un test,
+`packages/lib/src/mdx/catalogue-standard.test.ts`, sur chaque leçon d'un dossier
+du nouveau catalogue (`content/lessons/f2-linux/`, etc.) : sections objectifs,
+pourquoi ça compte, pièges, pour aller plus loin, quiz et à retenir ; un
+`QuizGroup` d'au moins cinq questions, toutes expliquées ; un exercice
+exécutable ; un schéma ; la longueur. Le fichier porte le numéro de son
+refCode (`02001-...mdx`). Les bilans de module (numéros 901 et suivants :
+`CL-LSN-02901-V01` pour le module 1 de Linux) regroupent le quiz et l'énoncé du
+projet du module.
 
 **Le projet de module** est un énoncé, un environnement de départ, des critères
 de réussite vérifiables et une correction commentée.
@@ -122,4 +131,5 @@ ouvrent leur certificat.
 
 **Premier jalon concret** : le module 1 de Linux, écrit au nouveau standard et
 publié en brouillon. Il sert à valider le standard (longueur, pratique, quiz,
-projet) avant d'en produire 230.
+projet) avant d'en produire 230. ✅ Écrit : `content/lessons/f2-linux/`, sept
+leçons et le bilan du module (`02901`), à importer et relire dans la console.

@@ -1,0 +1,267 @@
+---
+refCode: CL-LSN-02007-V01
+slug: linux-editer-nano-vim
+title: "Éditer un fichier : nano, puis vim"
+description: "Modifier un fichier de configuration sans interface graphique : nano pour commencer, les modes de vim et les gestes de survie qui fonctionnent sur n'importe quel serveur, et la méthode pour modifier un fichier système sans casser le service."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02006-V01"]
+---
+
+Administrer Linux, c'est pour une bonne part modifier des fichiers texte : la configuration d'un serveur web, la liste des tâches planifiées, les droits d'administration, les paramètres de SSH. Sur un serveur, pas de bloc-notes à ouvrir d'un double clic : l'éditeur tourne dans le terminal. Cette leçon t'en donne deux. **nano**, simple, qui s'utilise sans rien apprendre. Et **vim**, qui intimide, mais qu'il faut savoir manier au moins un peu, parce que c'est parfois le seul éditeur présent.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- ouvrir, modifier, enregistrer et quitter un fichier avec nano ;
+- expliquer les modes de vim et passer de l'un à l'autre ;
+- dans vim : insérer du texte, enregistrer, quitter avec ou sans enregistrer, te déplacer, supprimer, copier, annuler, chercher et remplacer ;
+- modifier un fichier de configuration système avec méthode : sauvegarde, édition avec les bons droits, vérification de la syntaxe avant d'appliquer ;
+- choisir l'éditeur que lancent les autres commandes grâce à `EDITOR`.
+
+## pourquoi ça compte
+
+Les pannes les plus bêtes de l'administration viennent de fichiers de configuration mal modifiés : un point-virgule oublié dans la configuration de nginx, et le site est hors ligne au prochain rechargement ; une erreur dans celle de SSH, et plus personne ne peut se connecter au serveur ; une faute dans celle de `sudo`, et plus personne n'est administrateur. Savoir éditer un fichier ne suffit pas : il faut savoir le faire de façon à pouvoir revenir en arrière.
+
+Quant à vim, la question n'est pas de l'aimer. Il est installé, sous le nom `vi`, sur pratiquement tous les systèmes Unix, jusque dans les images minimales et les systèmes embarqués où nano n'existe pas. C'est souvent le seul éditeur disponible dans un conteneur de dépannage ou un mode de secours. Le jour où tu en auras besoin, tu n'auras pas le temps d'apprendre.
+
+## nano : l'éditeur sans surprise
+
+On ouvre un fichier en donnant son nom. S'il n'existe pas, il sera créé à l'enregistrement.
+
+```bash
+nano notes.txt
+```
+
+nano s'utilise comme un bloc-notes : tu tapes, le texte s'insère, les flèches déplacent le curseur. En bas de l'écran, une barre rappelle les raccourcis. Le symbole `^` y signifie **Ctrl**, et `M-` signifie **Alt**.
+
+| Raccourci | Action |
+| --- | --- |
+| Ctrl+O puis Entrée | Enregistrer (*Write Out*) |
+| Ctrl+X | Quitter ; nano demande s'il faut enregistrer les modifications |
+| Ctrl+W | Chercher un texte |
+| Alt+R | Chercher et remplacer |
+| Ctrl+K | Couper la ligne entière |
+| Ctrl+U | Coller |
+| Alt+U | Annuler |
+| Ctrl+_ | Aller à une ligne précise |
+| Ctrl+C | Afficher la position du curseur (numéro de ligne) |
+
+Deux options valent d'être connues. `nano -l fichier` affiche les numéros de ligne, utiles quand un message d'erreur te dit « erreur ligne 42 ». Et `nano +42 fichier` ouvre directement à la ligne 42.
+
+<Callout type="info">
+Dans nano, Ctrl+C n'interrompt rien et Ctrl+W ne ferme pas la fenêtre, contrairement à ce que ces raccourcis font ailleurs. En cas de doute, lis la barre du bas : elle te dit toujours ce que fait chaque touche.
+</Callout>
+
+## vim : un éditeur à modes
+
+vim (*Vi IMproved*, 1991) descend de `vi`, écrit en 1976. Sa particularité déroute tous les débutants : **les touches du clavier ne tapent pas du texte par défaut**. vim a plusieurs **modes**, et dans son mode de départ, chaque touche est une commande. Taper `dd` n'écrit pas deux « d », cela supprime la ligne.
+
+Ce choix a une raison : un éditeur conçu pour modifier plus que pour écrire. Déplacer, supprimer, copier, remplacer se font sans jamais lâcher le clavier, avec une touche ou deux. Une fois les gestes acquis, c'est très rapide. Avant, c'est déroutant, et la plaisanterie la plus connue de l'informatique porte sur des gens incapables de sortir de vim.
+
+### les quatre modes
+
+<Diagram caption="Les modes de vim et comment passer de l'un à l'autre">
+flowchart TD
+  N["Mode normal : les touches sont des commandes"] -->|"i, a, o"| I["Mode insertion : les touches écrivent du texte"]
+  I -->|"Échap"| N
+  N -->|":"| C["Ligne de commande : :w, :q, :%s..."]
+  C -->|"Entrée ou Échap"| N
+  N -->|"v"| V["Mode visuel : sélectionner"]
+  V -->|"Échap"| N
+</Diagram>
+
+- **Le mode normal** est celui de départ. On s'y déplace et on y lance des commandes d'édition.
+- **Le mode insertion** est celui où l'on tape du texte, comme dans nano. On y entre avec `i`, on en sort avec **Échap**.
+- **La ligne de commande** s'ouvre en tapant `:` en mode normal. C'est là qu'on enregistre et qu'on quitte.
+- **Le mode visuel** sert à sélectionner du texte avec `v`.
+
+La règle d'or : **en cas de doute, appuie sur Échap**. Tu reviens toujours en mode normal, d'où tout est possible. vim t'indique d'ailleurs en bas de l'écran `-- INSERT --` quand tu es en insertion.
+
+### les gestes de survie
+
+Si tu ne retiens que cette partie de la leçon, retiens celle-ci.
+
+| Tu veux | Tu tapes |
+| --- | --- |
+| Ouvrir un fichier | `vim fichier` |
+| Commencer à écrire | `i` |
+| Arrêter d'écrire | Échap |
+| Enregistrer | `:w` puis Entrée |
+| Quitter | `:q` puis Entrée |
+| Enregistrer et quitter | `:wq` (ou `:x`) puis Entrée |
+| Quitter **sans** enregistrer | `:q!` puis Entrée |
+
+Si vim refuse de quitter avec `E37: No write since last change`, c'est qu'il y a des modifications non enregistrées : `:wq` pour les garder, `:q!` pour les abandonner.
+
+### se déplacer
+
+En mode normal, les flèches marchent, mais vim a ses propres touches, sur la rangée du milieu du clavier.
+
+| Touche | Déplacement |
+| --- | --- |
+| `h` `j` `k` `l` | Gauche, bas, haut, droite |
+| `w` et `b` | Mot suivant, mot précédent |
+| `0` et `$` | Début et fin de la ligne |
+| `gg` et `G` | Première et dernière ligne du fichier |
+| `:42` puis Entrée | Ligne 42 |
+
+### modifier
+
+| Touche | Effet |
+| --- | --- |
+| `i` et `a` | Insérer avant, ou après, le curseur |
+| `A` | Insérer à la fin de la ligne |
+| `o` et `O` | Ouvrir une nouvelle ligne en dessous, ou au-dessus |
+| `x` | Supprimer le caractère sous le curseur |
+| `dd` | Supprimer (couper) la ligne |
+| `yy` | Copier la ligne |
+| `p` | Coller après le curseur |
+| `u` | Annuler |
+| Ctrl+R | Rétablir |
+
+Les commandes se combinent avec des nombres : `3dd` supprime trois lignes, `5j` descend de cinq lignes. C'est cette grammaire, verbe plus mouvement plus nombre, qui fait la puissance de vim : `dw` supprime jusqu'au mot suivant, `d$` jusqu'à la fin de la ligne.
+
+### chercher et remplacer
+
+- `/texte` puis Entrée cherche vers le bas, `n` passe à l'occurrence suivante, `N` à la précédente. C'est la même recherche que dans `man` et `less` : tu l'as déjà apprise.
+- `:%s/ancien/nouveau/g` remplace toutes les occurrences dans le fichier. Le `%` désigne tout le fichier, le `g` final toutes les occurrences de chaque ligne. Ajoute `c` (`/gc`) pour que vim demande confirmation à chaque remplacement.
+
+Enfin, `:set number` affiche les numéros de ligne. Et pour apprendre en pratiquant, vim fournit un tutoriel interactif d'une trentaine de minutes : tape `vimtutor` dans un terminal.
+
+<Callout type="warning">
+Sur beaucoup de systèmes minimaux, seul `vi` est installé, parfois dans sa version BusyBox. Les gestes de survie, les déplacements, `dd`, `yy`, `p`, `/` et `:%s` y fonctionnent tous. L'annulation est parfois limitée à une seule action, et Ctrl+R n'existe pas : raison de plus pour sauvegarder avant d'éditer.
+</Callout>
+
+## modifier un fichier système avec méthode
+
+Les fichiers de `/etc` appartiennent à root. Les modifier demande des droits d'administration, et une erreur peut arrêter un service. Voici la méthode à suivre à chaque fois, quel que soit l'éditeur.
+
+**1. Faire une copie de sauvegarde.**
+
+```bash
+sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+```
+
+Si la modification tourne mal, tu restaures en une commande.
+
+**2. Éditer avec les bons droits.** Deux possibilités :
+
+- `sudo nano /etc/nginx/nginx.conf` lance l'éditeur entier en root. Simple, mais l'éditeur et tout ce qu'il peut faire tournent avec tous les droits ;
+- `sudoedit /etc/nginx/nginx.conf` (ou `sudo -e`) est préférable : il copie le fichier dans un emplacement temporaire, ouvre la copie avec **ton** éditeur (celui de `EDITOR`) sous **ton** compte, puis remet le fichier en place quand tu quittes. L'éditeur ne tourne jamais en root.
+
+**3. Vérifier la syntaxe avant d'appliquer.** La plupart des services savent tester leur configuration sans redémarrer :
+
+```bash
+sudo nginx -t
+```
+
+```text
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+Même principe avec `sudo sshd -t` pour SSH, `sudo apachectl configtest` pour Apache. Pour le fichier des droits `sudo`, on n'utilise même jamais un éditeur directement : la commande `sudo visudo` ouvre le fichier et refuse d'enregistrer une syntaxe invalide.
+
+**4. Appliquer, puis vérifier que le service tourne.** On recharge le service (tu verras `systemctl` au module 8) et on vérifie qu'il répond.
+
+<Diagram caption="Modifier une configuration sans prendre de risque">
+flowchart LR
+  A["Sauvegarder : cp fichier fichier.bak"] --> B["Éditer : sudoedit fichier"]
+  B --> C["Tester : nginx -t, sshd -t, visudo"]
+  C -->|"erreur"| B
+  C -->|"syntaxe OK"| D["Recharger le service"]
+  D --> E["Vérifier qu'il répond"]
+</Diagram>
+
+<Callout type="danger">
+Quand tu modifies la configuration de SSH sur un serveur distant, **garde une deuxième session ouverte** jusqu'à avoir vérifié qu'une nouvelle connexion fonctionne. Si la modification t'enferme dehors, la session encore ouverte est ta seule porte pour réparer. Sans elle, il faut passer par la console de l'hébergeur, quand elle existe.
+</Callout>
+
+## choisir son éditeur par défaut
+
+Plusieurs commandes ouvrent un éditeur pour toi : `crontab -e`, `sudoedit`, `git commit`, `visudo`. Elles lisent la variable `EDITOR` (parfois `VISUAL`), vue à la leçon précédente. Pour choisir nano partout, ajoute à ton `~/.profile` :
+
+```bash
+export EDITOR=nano
+export VISUAL=nano
+```
+
+Debian et Ubuntu ont aussi un réglage pour tout le système : `sudo update-alternatives --config editor` propose la liste des éditeurs installés.
+
+## démonstration : changer un réglage de nginx avec vim
+
+Il faut augmenter la taille maximale des fichiers envoyés au site, réglée par la directive `client_max_body_size`. Voici la séquence complète, touche par touche.
+
+```bash
+sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+sudoedit /etc/nginx/nginx.conf
+```
+
+Dans vim, en mode normal :
+
+1. `/client_max` puis Entrée : le curseur saute à la ligne `client_max_body_size 1m;`.
+2. `0` pour revenir au début de la ligne, puis `w` pour sauter au mot suivant : le curseur est sur `1m`.
+3. `cw` (*change word*) supprime le mot `1m` et passe en insertion. Tape `20m`. Le point-virgule, qui ne fait pas partie du mot, reste en place.
+4. Échap, puis `:wq` et Entrée.
+
+Puis on vérifie avant d'appliquer :
+
+```bash
+sudo nginx -t
+```
+
+Si le test échoue, on relit le message, qui donne le numéro de ligne, et on corrige. S'il réussit, on recharge. Et si tout est cassé malgré tout, la sauvegarde permet de revenir en arrière :
+
+```bash
+sudo cp /etc/nginx/nginx.conf.bak /etc/nginx/nginx.conf
+```
+
+## à toi de jouer
+
+Les éditeurs plein écran ne tournent pas dans ce terminal d'exercice, mais la méthode autour de l'édition, si. Tu dois modifier la configuration de nginx : fais d'abord la copie de sauvegarde, puis, une fois l'édition supposée faite, vérifie la syntaxe. Enfin, affiche la différence entre la sauvegarde et le fichier modifié avec `diff`.
+
+<SimulatedTerminal shell="bash" title="Modifier nginx sans risque" expectedCommands={["sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak", "sudo nginx -t", "diff /etc/nginx/nginx.conf.bak /etc/nginx/nginx.conf"]} hints={["La sauvegarde : cp du fichier vers le même nom suivi de .bak, avec sudo.", "nginx sait tester sa configuration avec l'option -t.", "diff prend l'ancien fichier puis le nouveau."]} commands={{ "sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak": "", "sudoedit /etc/nginx/nginx.conf": "(l'éditeur s'ouvrirait ici ; on suppose la modification faite et enregistrée)", "sudo nginx -t": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful", "diff /etc/nginx/nginx.conf.bak /etc/nginx/nginx.conf": "23c23\n< \tclient_max_body_size 1m;\n---\n> \tclient_max_body_size 20m;", "ls /etc/nginx": "conf.d  mime.types  modules-enabled  nginx.conf  nginx.conf.bak  sites-available  sites-enabled", "echo $EDITOR": "nano" }} />
+
+La sortie de `diff` se lit ainsi : la ligne 23 a changé (`23c23`), `<` montre l'ancienne version, `>` la nouvelle. Relire un `diff` avant d'appliquer est le dernier filet de sécurité : tu vois exactement ce que tu as modifié, et rien d'autre.
+
+## les pièges
+
+- **Taper du texte en mode normal de vim.** Chaque lettre est une commande, et quelques lettres au hasard peuvent supprimer ou déplacer du texte. Échap, puis `u` autant de fois que nécessaire pour annuler.
+- **Ne pas savoir sortir de vim.** Échap, puis `:q!` et Entrée pour quitter sans rien garder.
+- **Éditer sans sauvegarde.** Une copie `.bak` prend deux secondes et évite des heures de reconstruction.
+- **Appliquer sans tester.** `nginx -t`, `sshd -t`, `visudo` : le test de syntaxe évite de couper un service.
+- **Modifier `/etc/sudoers` avec un éditeur ordinaire.** Une erreur de syntaxe et `sudo` refuse de fonctionner pour tout le monde. Toujours `visudo`.
+- **Fermer sa seule session SSH après avoir modifié la configuration de SSH.** Garde une session de secours ouverte.
+- **Lancer tout l'éditeur en root par habitude.** `sudoedit` fait le même travail sans donner les pleins pouvoirs à l'éditeur.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.nano-editor.org/docs.php" description="La documentation officielle de nano">nano : documentation</ExternalLink>
+
+<ExternalLink href="https://www.vim.org/docs.php" description="La documentation de vim, dont le guide de l'utilisateur">vim : documentation</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/sudo.8.html" description="La page de sudo, dont l'option -e (sudoedit)">sudo(8)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans nano, comment enregistrer le fichier ?" options={["Ctrl+S", "Ctrl+O puis Entrée", ":w puis Entrée", "Ctrl+X uniquement"]} correct={1} explanation="Ctrl+O (Write Out) enregistre, Entrée confirme le nom. Ctrl+X quitte et propose d'enregistrer s'il y a des modifications. :w est la commande de vim." />
+  <Quiz id="q-2" question="Tu as modifié un fichier dans vim et tu veux quitter en abandonnant les modifications. Que tapes-tu, depuis le mode normal ?" options={[":wq puis Entrée", ":q! puis Entrée", "Ctrl+C", ":x puis Entrée"]} correct={1} explanation=":q! quitte sans enregistrer. :wq et :x enregistrent avant de quitter, et Ctrl+C ne quitte pas vim." />
+  <Quiz id="q-3" question="Tu tapes du texte dans vim et rien ne s'écrit, mais le texte change de façon imprévue. Que se passe-t-il ?" options={["Le fichier est en lecture seule", "Tu es en mode normal, où chaque touche est une commande", "Le clavier est mal configuré", "vim est en train d'enregistrer"]} correct={1} explanation="Au démarrage, vim est en mode normal. Il faut appuyer sur i pour passer en mode insertion. Pour annuler les dégâts : Échap puis u." />
+  <Quiz id="q-4" question="Quelle commande de vim remplace toutes les occurrences de http par https dans tout le fichier ?" options={[":s/http/https", ":%s/http/https/g", "/http/https", ":replace http https"]} correct={1} explanation="Le % désigne toutes les lignes et le g final toutes les occurrences de chaque ligne. Sans %, seule la ligne courante serait concernée." />
+  <Quiz id="q-5" question="Avant de recharger nginx après avoir modifié sa configuration, que faut-il faire ?" options={["Redémarrer le serveur", "Tester la syntaxe avec nginx -t", "Supprimer la sauvegarde", "Vider l'historique"]} correct={1} explanation="nginx -t vérifie la configuration sans l'appliquer. Une erreur détectée à ce stade ne coupe pas le site." />
+  <Quiz id="q-6" question="Quel est l'avantage de sudoedit sur sudo nano ?" options={["Il est plus rapide", "L'éditeur tourne sous ton compte, pas en root, et travaille sur une copie", "Il vérifie la syntaxe du fichier", "Il crée automatiquement une sauvegarde .bak"]} correct={1} explanation="sudoedit copie le fichier, ouvre la copie avec ton éditeur sous ton compte, puis remet le fichier en place. L'éditeur n'a jamais les droits root. Il ne vérifie pas la syntaxe et ne garde pas de .bak." />
+  <Quiz id="q-7" question="Pourquoi faut-il toujours modifier le fichier des droits sudo avec visudo ?" options={["Parce que c'est le seul éditeur autorisé en root", "Parce qu'il refuse d'enregistrer une syntaxe invalide qui bloquerait sudo pour tout le monde", "Parce qu'il chiffre le fichier", "Parce qu'il envoie une notification aux administrateurs"]} correct={1} explanation="Une erreur de syntaxe dans ce fichier empêche sudo de fonctionner. visudo vérifie la syntaxe avant d'enregistrer." />
+</QuizGroup>
+
+## à retenir
+
+- **nano** : on tape directement. Ctrl+O enregistre, Ctrl+X quitte, Ctrl+W cherche, `^` veut dire Ctrl.
+- **vim** a des modes. `i` pour écrire, Échap pour revenir au mode normal, `:w` enregistrer, `:q` quitter, `:wq` les deux, `:q!` quitter sans enregistrer. En cas de doute : Échap.
+- En mode normal : `dd` supprime une ligne, `yy` copie, `p` colle, `u` annule, `/mot` cherche, `:%s/a/b/g` remplace partout.
+- Fichier système : **sauvegarder** (`.bak`), **éditer** avec `sudoedit`, **tester** (`nginx -t`, `sshd -t`, `visudo`), puis appliquer et vérifier.
+- `EDITOR` et `VISUAL` décident de l'éditeur que lancent `crontab -e`, `sudoedit` ou `git`.

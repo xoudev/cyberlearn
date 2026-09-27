@@ -1,0 +1,231 @@
+---
+refCode: CL-LSN-02001-V01
+slug: linux-gnu-et-distributions
+title: "Linux, GNU et les distributions"
+description: "D'où vient Linux, ce que fait exactement un noyau, pourquoi on parle de GNU/Linux, et comment choisir entre Debian, Ubuntu, Red Hat, Arch ou Alpine selon ce qu'on veut faire."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: []
+---
+
+Tu t'apprêtes à passer une soixantaine d'heures sur Linux. Avant de taper la première commande, il faut savoir de quoi on parle, parce que le mot « Linux » désigne trois choses différentes selon qui l'emploie : un noyau, un système complet, et une famille de produits qui ne se ressemblent pas toujours. Quelqu'un qui confond les trois se perd dès qu'il change de machine.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un noyau et ce qu'il fait, par opposition au reste du système ;
+- raconter en quelques phrases comment Unix, GNU et Linux se sont rencontrés, et pourquoi certains disent « GNU/Linux » ;
+- nommer les grandes familles de distributions et leur gestionnaire de paquets ;
+- identifier la distribution, sa version et la version du noyau d'une machine inconnue, en deux commandes.
+
+## pourquoi ça compte
+
+Ouvre n'importe quel site web : il y a de fortes chances que le serveur qui te répond tourne sous Linux. C'est aussi le cas de l'immense majorité des machines virtuelles du cloud, des conteneurs Docker, des box internet, des routeurs, des téléviseurs et des téléphones Android. Depuis novembre 2017, les 500 superordinateurs les plus puissants du monde tournent tous sous Linux, sans exception.
+
+Pour un administrateur système, un développeur back-end, un ingénieur DevOps ou un analyste en sécurité, Linux n'est pas une option : c'est le terrain. Et sur ce terrain, la première question à se poser en arrivant sur une machine est toujours la même : **sur quoi suis-je tombé ?** Une Debian ne s'administre pas tout à fait comme une Red Hat, un conteneur Alpine n'a pas les mêmes outils qu'une Ubuntu. Savoir répondre à cette question en dix secondes, c'est l'objet de cette leçon.
+
+## d'Unix à Linux : une histoire en trois actes
+
+**Premier acte, 1969.** Aux laboratoires Bell, Ken Thompson et Dennis Ritchie écrivent Unix. Le système apporte des idées qui sont encore là aujourd'hui : tout est fichier, les programmes sont petits et font une seule chose, et on les combine entre eux. Unix devient commercial, se divise en variantes (BSD, System V, AIX, Solaris...) et coûte cher.
+
+**Deuxième acte, 1983.** Richard Stallman lance le projet GNU (un acronyme récursif : *GNU's Not Unix*). Le but est de réécrire un système complet compatible avec Unix, mais libre : chacun peut l'utiliser, l'étudier, le modifier et le redistribuer. En quelques années, GNU produit presque tout ce qu'il faut : un compilateur (GCC), une bibliothèque C, un shell (Bash), les outils de base (`ls`, `cp`, `grep`...). Il manque une pièce, la plus difficile : le noyau.
+
+**Troisième acte, 1991.** Linus Torvalds, étudiant à Helsinki, annonce sur un forum qu'il écrit un noyau « juste pour le loisir ». Il le publie peu après sous la licence de GNU, la GPL. Le noyau Linux et les outils GNU s'assemblent : le système complet et libre existe enfin.
+
+<Diagram caption="Trois projets, un système">
+flowchart LR
+  A["Unix (1969) : les idées"] --> C["Système GNU/Linux"]
+  B["GNU (1983) : les outils, le shell, la bibliothèque C"] --> C
+  D["Linux (1991) : le noyau"] --> C
+</Diagram>
+
+C'est pour cette raison que le projet GNU demande qu'on dise « GNU/Linux » pour parler du système complet : Linux n'en est qu'une partie. Dans l'usage courant, tout le monde dit « Linux », et c'est ce qu'on fera dans ce parcours. Mais retiens la nuance, elle explique une chose très concrète : Android utilise le noyau Linux sans les outils GNU, ce qui fait qu'un téléphone Android « est » Linux sans se comporter du tout comme un serveur Linux.
+
+## le noyau et le reste du système
+
+Le **noyau** (*kernel*) est le programme qui démarre en premier et qui ne s'arrête jamais tant que la machine tourne. Il est le seul à parler directement au matériel. Tout le reste passe par lui. Ses responsabilités principales :
+
+- **les processus** : il décide quel programme utilise le processeur, et pendant combien de temps ;
+- **la mémoire** : il attribue la mémoire à chaque programme et empêche un programme de lire celle d'un autre ;
+- **les périphériques** : disques, carte réseau, clavier, carte graphique, via des pilotes ;
+- **les systèmes de fichiers** : il transforme des blocs sur un disque en fichiers et en répertoires ;
+- **le réseau** : il reçoit et envoie les paquets, gère TCP et IP ;
+- **la sécurité** : il vérifie les droits à chaque accès à un fichier ou à une ressource.
+
+Les programmes ordinaires, eux, vivent dans l'**espace utilisateur**. Ils ne touchent jamais le matériel directement. Quand un programme veut lire un fichier, il demande au noyau par un **appel système** (`open`, `read`, `write`...), et le noyau vérifie qu'il en a le droit avant d'agir.
+
+<Diagram caption="Les couches d'un système Linux">
+flowchart TD
+  U["Toi, au clavier"] --> S["Shell (bash) et programmes : ls, nginx, python..."]
+  S --> L["Bibliothèque C (glibc ou musl)"]
+  L -->|"appels système"| K["Noyau Linux"]
+  K --> H["Matériel : processeur, mémoire, disques, réseau"]
+</Diagram>
+
+Cette séparation n'est pas un détail d'architecture : c'est ce qui rend le système stable et sûr. Un programme qui plante ne fait pas tomber la machine, et un programme malveillant qui tourne avec les droits d'un utilisateur ordinaire ne peut pas lire les fichiers des autres. Tu retrouveras cette frontière partout : dans les permissions (module 4), dans les processus (module 5), et plus tard en sécurité, où l'objectif d'un attaquant est souvent de franchir justement cette barrière.
+
+<Callout type="info">
+La version du noyau et la version de la distribution sont deux numéros différents. Une Debian 12 embarque un noyau 6.1, une Ubuntu 24.04 un noyau 6.8. Quand quelqu'un te dit « on est en Linux 6 », il parle du noyau, pas de la distribution.
+</Callout>
+
+## la licence : pourquoi tout le monde peut faire sa distribution
+
+Le noyau Linux est publié sous la licence GPL version 2. En résumé : tu peux utiliser, étudier, modifier et redistribuer le code, à une condition. Si tu redistribues une version modifiée, tu dois la redistribuer sous la même licence, avec son code source. C'est ce qu'on appelle le *copyleft*.
+
+Deux conséquences pratiques. D'abord, n'importe qui peut assembler un noyau, des outils et des réglages, et publier le tout : c'est exactement ce qu'est une distribution. Ensuite, les améliorations reviennent au pot commun : une entreprise qui modifie le noyau pour son matériel doit publier ses modifications. C'est une des raisons pour lesquelles Linux gère aujourd'hui presque tout le matériel existant.
+
+## ce qu'est une distribution
+
+Un noyau seul ne sert à rien : il faut des programmes, un shell, un moyen d'installer des logiciels, des réglages par défaut. Une **distribution** est ce paquet complet. Elle se caractérise par :
+
+- **son gestionnaire de paquets**, l'outil qui installe et met à jour les logiciels (`apt`, `dnf`, `pacman`, `apk`, `zypper`) ;
+- **son format de paquets** (`.deb`, `.rpm`...) ;
+- **son rythme de publication** : des versions figées maintenues longtemps, ou une mise à jour continue ;
+- **ses choix par défaut** : quelle bibliothèque C, quel système d'initialisation, quels outils installés d'office ;
+- **sa gouvernance** : une communauté bénévole, une entreprise, ou les deux.
+
+Il existe des centaines de distributions, mais presque toutes descendent de quelques familles.
+
+| Famille | Distributions connues | Gestionnaire | Format | Pour quoi |
+| --- | --- | --- | --- | --- |
+| Debian | Debian, Ubuntu, Linux Mint, Kali | `apt` | `.deb` | Serveurs, postes de travail, apprentissage |
+| Red Hat | RHEL, Fedora, Rocky Linux, AlmaLinux, CentOS Stream | `dnf` | `.rpm` | Serveurs d'entreprise, certifications Red Hat |
+| Arch | Arch Linux, Manjaro, EndeavourOS | `pacman` | `.pkg.tar.zst` | Postes de passionnés, toujours à jour |
+| Alpine | Alpine Linux | `apk` | `.apk` | Conteneurs, systèmes embarqués |
+| SUSE | openSUSE, SUSE Linux Enterprise | `zypper` | `.rpm` | Entreprises, surtout en Europe |
+
+### versions figées ou mise à jour continue
+
+C'est la différence la plus importante entre distributions.
+
+- **Les versions figées** (Debian, Ubuntu LTS, RHEL) sortent une version, puis n'y apportent plus que des correctifs de sécurité et de bugs pendant des années. Une Ubuntu LTS reçoit cinq ans de support standard, une RHEL dix ans. Les logiciels y sont parfois vieux, mais ils ne changent pas sous tes pieds : c'est ce qu'on veut sur un serveur de production.
+- **La mise à jour continue** (*rolling release* : Arch, openSUSE Tumbleweed) n'a pas de versions : tu reçois en permanence les dernières versions de tout. Idéal pour découvrir les nouveautés, risqué pour un serveur qui doit tourner sans surprise.
+
+### Alpine, le cas à part
+
+Alpine mérite un mot parce que tu la croiseras partout dans le monde des conteneurs. Elle remplace la bibliothèque C de GNU (glibc) par une autre plus petite (musl), et la plupart des outils GNU par BusyBox, un seul programme qui imite des centaines de commandes. Résultat : une image de quelques mégaoctets au lieu de plusieurs dizaines. Le revers : certaines options de commandes que tu connais n'existent pas, et certains programmes compilés pour glibc ne tournent pas tels quels. Si une commande se comporte bizarrement dans un conteneur, vérifie d'abord si tu n'es pas sur Alpine.
+
+## comment choisir
+
+Il n'y a pas de meilleure distribution, il y a la bonne pour un usage.
+
+- **Pour apprendre et suivre ce parcours** : Debian ou Ubuntu. Ce sont les plus documentées, et les exemples de ce parcours utilisent `apt`. Quand une commande diffère sur la famille Red Hat, on le dira.
+- **Pour un serveur** : Debian stable ou Ubuntu LTS, ou une distribution de la famille Red Hat (Rocky, AlmaLinux, RHEL) si l'entreprise l'impose. Le critère décisif est la durée du support de sécurité.
+- **Pour un conteneur** : une image Debian *slim* ou Alpine, selon que tu privilégies la compatibilité ou la taille.
+- **Pour la sécurité offensive** : Kali Linux, une Debian livrée avec des centaines d'outils de test d'intrusion. Ce n'est pas une distribution de tous les jours, et on ne l'utilise que sur des cibles qu'on a le droit de tester.
+
+<Callout type="warning">
+Ne choisis jamais une distribution de serveur en fonction de son apparence ou de sa popularité sur les forums. Pose-toi deux questions : combien d'années de correctifs de sécurité, et qui les publie ? Une machine exposée à Internet qui ne reçoit plus de correctifs est une machine qui finira compromise.
+</Callout>
+
+## démonstration : identifier une machine inconnue
+
+Tu te connectes à un serveur qu'on vient de te confier. Voici, pas à pas, comment savoir où tu es.
+
+**Étape 1 : la distribution et sa version.** Toutes les distributions modernes décrivent leur identité dans le fichier `/etc/os-release`.
+
+```bash
+cat /etc/os-release
+```
+
+```text
+PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+NAME="Debian GNU/Linux"
+VERSION_ID="12"
+VERSION="12 (bookworm)"
+VERSION_CODENAME=bookworm
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+```
+
+Lis-le ligne par ligne. `PRETTY_NAME` est le nom lisible. `VERSION_ID` est le numéro de version, celui dont dépend la durée du support. `ID` est l'identifiant court que les scripts utilisent pour savoir sur quelle distribution ils tournent. Sur une Ubuntu, tu verrais aussi une ligne `ID_LIKE=debian` : Ubuntu se déclare elle-même de la famille Debian, ce qui te dit immédiatement que `apt` sera là.
+
+**Étape 2 : le noyau.** La commande `uname` interroge le noyau lui-même.
+
+```bash
+uname -r
+```
+
+```text
+6.1.0-18-amd64
+```
+
+`6.1.0` est la version du noyau, `18` la révision du paquet Debian qui l'embarque, `amd64` l'architecture du processeur (64 bits, famille x86). L'option `-a` affiche tout d'un coup :
+
+```bash
+uname -a
+```
+
+```text
+Linux srv-web-01 6.1.0-18-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.76-1 (2024-02-01) x86_64 GNU/Linux
+```
+
+Dans l'ordre : le nom du noyau (`Linux`), le nom de la machine (`srv-web-01`), la version, la date de compilation, l'architecture, et le système (`GNU/Linux`, justement).
+
+**Étape 3, facultative : `hostnamectl`.** Sur les distributions qui utilisent systemd (presque toutes aujourd'hui), cette commande résume tout en un écran : nom de machine, distribution, noyau, et même si tu es dans une machine virtuelle.
+
+```bash
+hostnamectl
+```
+
+```text
+ Static hostname: srv-web-01
+       Icon name: computer-vm
+         Chassis: vm
+  Virtualization: kvm
+Operating System: Debian GNU/Linux 12 (bookworm)
+          Kernel: Linux 6.1.0-18-amd64
+    Architecture: x86-64
+```
+
+La ligne `Virtualization: kvm` t'apprend que tu es dans une machine virtuelle. Dans un conteneur, `hostnamectl` est souvent absent : c'est un indice en soi.
+
+## à toi de jouer
+
+Tu viens de te connecter à un serveur dont personne ne t'a rien dit. Identifie la distribution, puis la version du noyau, dans cet ordre. Le terminal valide chaque bonne commande.
+
+<SimulatedTerminal shell="bash" title="Serveur inconnu" expectedCommands={["cat /etc/os-release", "uname -r"]} hints={["La carte d'identité de la distribution est un fichier dans /etc.", "Pour le noyau seul, uname prend l'option -r (release)."]} commands={{ "cat /etc/os-release": "PRETTY_NAME=\"Ubuntu 24.04.1 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"", "uname -r": "6.8.0-45-generic", "uname -a": "Linux app-prod-03 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 x86_64 x86_64 GNU/Linux", "hostnamectl": " Static hostname: app-prod-03\n  Virtualization: kvm\nOperating System: Ubuntu 24.04.1 LTS\n          Kernel: Linux 6.8.0-45-generic\n    Architecture: x86-64" }} />
+
+Avant de passer à la suite, réponds à ces questions pour toi-même à partir de ce que le terminal t'a montré : quelle distribution, de quelle famille, avec quel gestionnaire de paquets, et quelle version du noyau ? Si tu as trouvé « Ubuntu 24.04, famille Debian, donc `apt`, noyau 6.8 », tu as fait exactement ce qu'un administrateur fait en arrivant sur une machine.
+
+## les pièges
+
+- **Confondre noyau et distribution.** « Linux 6.8 » et « Ubuntu 24.04 » ne parlent pas de la même chose. Quand tu demandes de l'aide sur un forum, donne les deux.
+- **Croire que toutes les distributions se pilotent pareil.** Les commandes de base (`ls`, `cd`, `grep`) sont les mêmes partout, mais l'installation de logiciels, l'emplacement de certains fichiers de configuration et les outils par défaut changent d'une famille à l'autre. Un tutoriel écrit pour Fedora ne marche pas tel quel sur Debian.
+- **Oublier la fin de support.** Une distribution en fin de vie ne reçoit plus de correctifs de sécurité. C'est la cause d'un grand nombre de compromissions de serveurs. Note toujours la date de fin de support de ce que tu installes.
+- **Prendre Kali comme système de tous les jours.** Kali est une boîte à outils pour des tests autorisés, pas une distribution de bureau ni de serveur.
+- **Supposer que `uname` dit la distribution.** `uname` interroge le noyau, qui ne sait rien de la distribution. Pour la distribution, c'est `/etc/os-release`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.kernel.org/" description="Les versions du noyau Linux, publiées et maintenues">kernel.org</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/gnu/linux-and-gnu.fr.html" description="Le point de vue du projet GNU sur le nom du système">Linux et le système GNU</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/os-release.5.html" description="La description officielle de chaque champ du fichier">La page de manuel d'os-release</ExternalLink>
+
+<ExternalLink href="https://www.debian.org/releases/" description="Les versions de Debian et leurs dates de fin de support">Les versions de Debian</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le rôle du noyau Linux ?" options={["Afficher le bureau graphique et les fenêtres", "Gérer le matériel, la mémoire et les processus, et servir d'intermédiaire entre les programmes et la machine", "Installer et mettre à jour les logiciels", "Interpréter les commandes tapées au clavier"]} correct={1} explanation="Le noyau est le seul programme qui parle directement au matériel. L'installation de logiciels est le rôle du gestionnaire de paquets, et l'interprétation des commandes celui du shell." />
+  <Quiz id="q-2" question="Pourquoi le projet GNU parle-t-il de « GNU/Linux » ?" options={["Parce que Linux a été écrit par le projet GNU", "Parce que le système complet associe le noyau Linux aux outils du projet GNU", "Parce que GNU est la version payante de Linux", "Parce que Linux ne fonctionne que sur les ordinateurs de la marque GNU"]} correct={1} explanation="Linux est le noyau écrit par Linus Torvalds ; GNU a fourni le shell, le compilateur, la bibliothèque C et les outils de base. Le système qu'on utilise sur un serveur est l'assemblage des deux." />
+  <Quiz id="q-3" question="Sur une machine dont le fichier /etc/os-release contient ID_LIKE=debian, quel gestionnaire de paquets s'attend-on à trouver ?" options={["dnf", "pacman", "apt", "apk"]} correct={2} explanation="ID_LIKE indique la famille. La famille Debian utilise apt et le format .deb. dnf est celui de la famille Red Hat, pacman celui d'Arch, apk celui d'Alpine." />
+  <Quiz id="q-4" question="Quelle commande donne la version du noyau, et non celle de la distribution ?" options={["cat /etc/os-release", "uname -r", "apt --version", "lsb_release"]} correct={1} explanation="uname interroge le noyau lui-même. /etc/os-release et lsb_release décrivent la distribution." />
+  <Quiz id="q-5" question="Pour un serveur de production qui doit tourner plusieurs années sans surprise, quel modèle de publication privilégier ?" options={["Une distribution à mise à jour continue, pour avoir toujours les dernières versions", "Une distribution à versions figées avec un long support de sécurité", "Peu importe, tant que la distribution est populaire", "La distribution la plus légère possible"]} correct={1} explanation="Sur un serveur, on veut des logiciels qui ne changent pas sous nos pieds et des correctifs de sécurité pendant longtemps : c'est exactement ce qu'offrent Debian stable, Ubuntu LTS ou RHEL." />
+  <Quiz id="q-6" question="Une commande habituelle se comporte bizarrement dans un conteneur, et certaines de ses options n'existent pas. Quelle est l'explication la plus probable ?" options={["Le noyau du conteneur est trop ancien", "Le conteneur tourne sur Alpine, dont les commandes viennent de BusyBox et non des outils GNU", "Les conteneurs ne permettent pas d'utiliser des options", "Il faut redémarrer le conteneur"]} correct={1} explanation="Alpine remplace les outils GNU par BusyBox, plus léger mais avec moins d'options. C'est le premier réflexe à avoir : vérifier /etc/os-release dans le conteneur." />
+</QuizGroup>
+
+## à retenir
+
+- Le **noyau** gère le matériel, la mémoire, les processus, les fichiers et le réseau. Les programmes lui parlent par des **appels système**.
+- Le système qu'on appelle Linux associe le **noyau Linux** (1991) aux **outils GNU** (depuis 1983), sur les idées d'**Unix** (1969).
+- Une **distribution** = noyau + outils + gestionnaire de paquets + réglages + rythme de publication. Familles principales : Debian (`apt`), Red Hat (`dnf`), Arch (`pacman`), Alpine (`apk`), SUSE (`zypper`).
+- **Versions figées** pour les serveurs (support long), **mise à jour continue** pour suivre les nouveautés.
+- Sur une machine inconnue : `cat /etc/os-release` pour la distribution, `uname -r` pour le noyau, `hostnamectl` pour un résumé.

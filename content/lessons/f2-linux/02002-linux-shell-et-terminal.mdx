@@ -1,0 +1,336 @@
+---
+refCode: CL-LSN-02002-V01
+slug: linux-shell-et-terminal
+title: "Le shell et le terminal"
+description: "Terminal, console, shell : qui fait quoi, quels shells existent, comment lire l'invite de commande, et tout ce qui se passe entre le moment où tu tapes une commande et celui où elle s'exécute."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02001-V01"]
+---
+
+Tu as ouvert une fenêtre noire, un curseur clignote. Trois programmes différents sont déjà en train de travailler pour toi, et la plupart des gens n'en voient qu'un. Cette leçon les sépare, puis suit une commande de la touche Entrée jusqu'à son résultat. Ce trajet, tu le feras des milliers de fois : autant savoir ce qui s'y passe.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer le terminal, le shell et la commande, et dire lequel fait quoi ;
+- nommer les shells courants (sh, bash, dash, zsh, fish) et trouver celui que tu utilises ;
+- lire une invite de commande et savoir si tu es administrateur ;
+- décrire les étapes par lesquelles passe une commande avant de s'exécuter ;
+- distinguer une commande intégrée au shell d'un programme, avec `type` ;
+- lire le code de retour d'une commande avec `$?`.
+
+## pourquoi ça compte
+
+Un serveur n'a ni écran ni souris. On l'administre à distance, par SSH, et ce qu'on obtient au bout de la connexion, c'est un shell. Les pipelines d'intégration continue, les conteneurs, les scripts de déploiement : tout cela exécute des commandes de shell. Même quand tu cliques dans une interface web d'hébergeur, il y a souvent un shell qui travaille derrière.
+
+Comprendre la mécanique du shell a une conséquence immédiate : tu arrêtes de subir les erreurs. « command not found », une commande qui ne fait pas la même chose qu'hier, un script qui marche dans ton terminal mais pas dans une tâche planifiée : chacun de ces problèmes s'explique par une des étapes que tu vas voir ici.
+
+## terminal, console, shell : trois rôles
+
+À l'origine, un **terminal** était un appareil physique : un clavier et une imprimante, puis un écran, reliés par un câble à un ordinateur central. Il ne calculait rien. Il envoyait les touches frappées et affichait ce que la machine répondait. Le nom Unix de ces appareils, *teletype*, a donné l'abréviation `tty` que tu retrouves encore partout.
+
+Aujourd'hui, le terminal est un programme : un **émulateur de terminal**. GNOME Terminal, Konsole, Windows Terminal, iTerm2 sur Mac, ou le terminal intégré à ton éditeur de code. Son travail n'a pas changé : afficher du texte, gérer les couleurs, la police, le copier-coller, et transmettre ce que tu tapes. Il ne comprend pas un mot des commandes.
+
+La **console** désigne le terminal branché directement à la machine : l'écran que tu vois sur un serveur physique quand l'interface graphique n'est pas démarrée, ou la console web que te propose un hébergeur quand SSH ne répond plus.
+
+Le **shell**, enfin, est le programme qui lit ce que tu tapes, le comprend et le fait exécuter. C'est lui l'interprète. Le terminal lui transmet tes touches, il répond avec du texte, le terminal l'affiche.
+
+<Diagram caption="Qui fait quoi quand tu tapes une commande">
+flowchart LR
+  A["Toi"] -->|"touches"| B["Émulateur de terminal"]
+  B -->|"texte saisi"| C["Shell (bash)"]
+  C -->|"lance"| D["Programme : ls, grep, python..."]
+  D -->|"sortie"| C
+  C -->|"texte à afficher"| B
+  B -->|"affichage"| A
+</Diagram>
+
+Entre le terminal et le shell, le noyau intercale un **pseudo-terminal**, un faux câble logiciel. Tu peux voir le tien :
+
+```bash
+tty
+```
+
+```text
+/dev/pts/0
+```
+
+`pts` veut dire *pseudo-terminal slave* : ta fenêtre est le pseudo-terminal numéro 0. Une deuxième fenêtre serait `/dev/pts/1`. Sur la console physique, tu verrais `/dev/tty1`.
+
+<Callout type="info">
+Un détail qui sauve des heures : le terminal gère ce qui s'affiche, le shell ce qui s'exécute. Des caractères bizarres, des couleurs cassées, un copier-coller qui ne marche pas, c'est le terminal. Une commande introuvable ou une variable vide, c'est le shell.
+</Callout>
+
+## les shells que tu vas croiser
+
+Il n'y a pas un shell mais une famille, et ils se ressemblent assez pour qu'on les confonde.
+
+| Shell | Origine | Où tu le trouves |
+| --- | --- | --- |
+| `sh` | Le shell Bourne, Unix, 1979 | Le nom standard ; sur les systèmes modernes, c'est un lien vers un autre shell |
+| `bash` | Projet GNU, 1989 (*Bourne Again SHell*) | Le shell interactif par défaut de la plupart des distributions |
+| `dash` | Version légère et rapide | Le `/bin/sh` de Debian et d'Ubuntu, utilisé pour les scripts système |
+| `zsh` | 1990 | Le shell par défaut de macOS depuis 2019, apprécié pour sa complétion |
+| `fish` | 2005 | Pensé pour être agréable, mais incompatible avec la syntaxe des scripts sh |
+
+Tous les exemples de ce parcours utilisent **bash**, parce que c'est celui que tu trouveras sur presque tous les serveurs. Presque tout ce qui marche en bash marche en zsh. L'inverse n'est pas vrai, et fish a sa propre syntaxe.
+
+Pour savoir quel shell a été choisi pour ton compte :
+
+```bash
+echo $SHELL
+```
+
+```text
+/bin/bash
+```
+
+Et la liste des shells installés et autorisés sur la machine :
+
+```bash
+cat /etc/shells
+```
+
+```text
+/bin/sh
+/bin/bash
+/usr/bin/bash
+/bin/dash
+/usr/bin/dash
+```
+
+<Callout type="warning">
+`$SHELL` donne le shell **de connexion** configuré pour ton compte, pas forcément celui qui tourne en ce moment. Si tu as tapé `zsh` dans un terminal bash, `$SHELL` dit toujours `/bin/bash`. Pour savoir quel shell exécute réellement tes commandes, c'est `echo $0`.
+</Callout>
+
+## le shell d'une machine distante
+
+Tout ce qui précède vaut aussi quand la machine est à l'autre bout du monde. Tu en auras la plupart du temps besoin ainsi : un serveur dans un centre de données, une machine virtuelle dans le cloud. La commande `ssh` ouvre une connexion chiffrée et, au bout, lance un shell sur la machine distante :
+
+```bash
+ssh alice@srv-web-01
+```
+
+```text
+alice@srv-web-01's password:
+Linux srv-web-01 6.1.0-18-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.76-1 x86_64
+Last login: Sat Sep 26 17:42:03 2026 from 192.0.2.15
+alice@srv-web-01:~$
+```
+
+Le terminal n'a pas changé, c'est toujours ta fenêtre. Ce qui a changé, c'est le shell qui reçoit tes touches : il tourne désormais sur `srv-web-01`. Chaque commande que tu tapes s'exécute là-bas, avec les fichiers et les droits de là-bas. C'est exactement pour cela que l'invite affiche le nom de la machine : avec trois fenêtres ouvertes vers trois serveurs, c'est la seule chose qui t'évite de redémarrer le mauvais.
+
+Pour quitter un shell, local ou distant, trois moyens équivalents : la commande `exit`, la commande `logout` dans un shell de connexion, ou la combinaison Ctrl+D, qui signale au shell la fin de ce que tu as à lui dire. Sur une connexion SSH, quitter le shell ferme la connexion et te ramène à l'invite de ta propre machine. Tu apprendras au module 10 à te connecter par clé plutôt que par mot de passe, et à durcir ce service.
+
+## lire l'invite de commande
+
+Avant chaque commande, le shell affiche une **invite** (*prompt*). Sur une Debian ou une Ubuntu, elle ressemble à ceci :
+
+```text
+alice@srv-web-01:~/projets$
+```
+
+Elle se lit de gauche à droite :
+
+- `alice` : l'utilisateur sous lequel tu travailles ;
+- `srv-web-01` : le nom de la machine. Indispensable quand tu as des connexions ouvertes vers cinq serveurs ;
+- `~/projets` : le répertoire courant. Le tilde `~` est un raccourci pour ton répertoire personnel, ici `/home/alice` ;
+- `$` : tu es un utilisateur ordinaire.
+
+Si le dernier caractère est `#`, tu es **root**, l'administrateur, qui a tous les droits. Chaque commande peut alors tout casser, y compris le système lui-même.
+
+```text
+root@srv-web-01:/etc#
+```
+
+L'invite est entièrement configurable (c'est la variable `PS1`, que tu personnaliseras dans le projet de ce module), ce qui veut dire qu'elle peut aussi mentir. Si tu as un doute sur qui tu es, `whoami` répond sans ambiguïté.
+
+## ce qui se passe quand tu appuies sur Entrée
+
+Tapons une commande ordinaire :
+
+```bash
+ls -l /etc
+```
+
+Entre la touche Entrée et l'affichage, bash enchaîne une série d'étapes précises.
+
+1. **Lire la ligne.** Tant que tu n'as pas appuyé sur Entrée, bash ne fait qu'éditer ta ligne (effacer, se déplacer, compléter). Entrée la valide.
+2. **La découper en mots.** Les espaces séparent les mots : `ls`, `-l`, `/etc`. Les guillemets empêchent ce découpage : `"mon fichier"` reste un seul mot.
+3. **Développer.** Bash remplace ce qui doit l'être : `~` devient `/home/alice`, `$HOME` devient sa valeur, `*.txt` devient la liste des fichiers correspondants. Tu verras ces développements en détail au module 2.
+4. **Trouver ce qu'est le premier mot.** Bash cherche, dans cet ordre : un **alias** (un raccourci défini par l'utilisateur), un **mot-clé** du langage (`if`, `for`...), une **fonction**, une **commande intégrée** au shell, et enfin un **programme** dans les répertoires listés par la variable `PATH`.
+5. **Exécuter.** Pour une commande intégrée, bash fait le travail lui-même. Pour un programme, il demande au noyau de créer un nouveau processus (`fork`), d'y charger le programme (`exec`), puis attend qu'il se termine.
+6. **Récupérer le code de retour.** Le programme se termine en renvoyant un nombre : 0 si tout s'est bien passé, autre chose sinon. Bash le range dans la variable spéciale `$?`, puis réaffiche l'invite.
+
+<Diagram caption="Le trajet d'une commande dans bash">
+flowchart TD
+  A["Ligne validée par Entrée"] --> B["Découpage en mots"]
+  B --> C["Développements : ~, variables, jokers"]
+  C --> D["Recherche : alias, mot-clé, fonction, intégrée, PATH"]
+  D -->|"intégrée"| E["Bash exécute lui-même"]
+  D -->|"programme trouvé"| F["fork puis exec : nouveau processus"]
+  D -->|"rien trouvé"| G["command not found, code 127"]
+  E --> H["Code de retour rangé dans $?"]
+  F --> H
+  G --> H
+</Diagram>
+
+## commandes intégrées et programmes
+
+Certaines commandes ne sont pas des programmes : elles font partie de bash. C'est le cas de `cd`, et ce n'est pas un hasard. Changer de répertoire modifie l'état du shell lui-même. Un programme séparé, qui tourne dans son propre processus, changerait son répertoire à lui puis disparaîtrait, sans rien changer pour toi.
+
+La commande `type` te dit ce qu'est un mot pour bash :
+
+```bash
+type cd
+```
+
+```text
+cd is a shell builtin
+```
+
+```bash
+type ls
+```
+
+```text
+ls is aliased to `ls --color=auto'
+```
+
+```bash
+type python3
+```
+
+```text
+python3 is /usr/bin/python3
+```
+
+Trois réponses, trois cas : `cd` est intégrée, `ls` est un alias (Debian et Ubuntu en définissent un pour avoir des couleurs), `python3` est un programme trouvé dans `/usr/bin`. L'option `-a` montre toutes les définitions dans l'ordre où bash les essaie :
+
+```bash
+type -a ls
+```
+
+```text
+ls is aliased to `ls --color=auto'
+ls is /usr/bin/ls
+ls is /bin/ls
+```
+
+On croise souvent `which` pour la même question. Méfie-toi : `which` est un programme externe qui ne connaît que le `PATH`. Il ne voit ni les alias, ni les fonctions, ni les commandes intégrées. `type` est intégrée à bash et sait tout ce que bash sait.
+
+## le code de retour
+
+Chaque commande se termine par un code de retour, entre 0 et 255. La convention est simple et universelle :
+
+- **0** : succès ;
+- **autre chose** : échec, le nombre précise souvent lequel.
+
+```bash
+ls /etc/hostname
+echo $?
+```
+
+```text
+/etc/hostname
+0
+```
+
+```bash
+ls /fichier-qui-n-existe-pas
+echo $?
+```
+
+```text
+ls: cannot access '/fichier-qui-n-existe-pas': No such file or directory
+2
+```
+
+Deux codes ont un sens réservé : **127** veut dire que la commande n'a pas été trouvée, **126** qu'elle a été trouvée mais n'est pas exécutable (un problème de permissions, le plus souvent). Et `$?` ne concerne que la toute dernière commande : dès que tu en tapes une autre, y compris `echo`, sa valeur est remplacée.
+
+Ce code paraît anodin, il est au cœur de l'automatisation. Un script décide quoi faire selon le code de la commande précédente, un pipeline de CI s'arrête au premier code différent de 0. Tu t'en serviras dès le module 7.
+
+## démonstration : enquête sur une commande introuvable
+
+Une collègue t'appelle : « la commande `deploy` marche dans mon terminal mais pas dans le tien ». Voici comment raisonner, en suivant les étapes du shell.
+
+```bash
+deploy
+```
+
+```text
+bash: deploy: command not found
+```
+
+```bash
+echo $?
+```
+
+```text
+127
+```
+
+Le code 127 confirme : bash n'a rien trouvé à l'étape de recherche. Chez ta collègue, `type` dira ce que c'est :
+
+```bash
+type deploy
+```
+
+```text
+deploy is a function
+deploy ()
+{
+    ./scripts/deploy.sh --env prod
+}
+```
+
+C'est une fonction définie dans sa configuration de bash (tu verras où au module suivant). Elle n'existe pas chez toi, voilà tout. Si `type` avait répondu `deploy is /home/claire/bin/deploy`, la cause aurait été différente : un programme dans un répertoire qui est dans son `PATH` et pas dans le tien. La leçon 6 de ce module te montre comment régler ce cas.
+
+## à toi de jouer
+
+Tu arrives sur une machine partagée. Vérifie trois choses dans l'ordre : quel shell est configuré pour toi, ce qu'est `cd` pour bash, et ce qu'est `ls`. Tu peux aussi essayer `tty`, `whoami`, `type -a ls` ou `echo $?`.
+
+<SimulatedTerminal shell="bash" title="Machine partagée" expectedCommands={["echo $SHELL", "type cd", "type ls"]} hints={["La variable qui contient ton shell de connexion s'appelle SHELL.", "type suivi du nom de la commande dit ce qu'elle est pour bash."]} commands={{ "echo $SHELL": "/bin/bash", "echo $0": "bash", "type cd": "cd is a shell builtin", "type ls": "ls is aliased to `ls --color=auto'", "type -a ls": "ls is aliased to `ls --color=auto'\nls is /usr/bin/ls\nls is /bin/ls", "type python3": "python3 is /usr/bin/python3", "which cd": "", "tty": "/dev/pts/2", "echo $?": "0", "cat /etc/shells": "/bin/sh\n/bin/bash\n/usr/bin/bash\n/bin/dash\n/usr/bin/dash" }} />
+
+Essaie aussi `which cd` : la réponse vide confirme ce qui a été dit plus haut, `which` ne voit pas les commandes intégrées.
+
+## les pièges
+
+- **Copier le `$` de l'invite.** Dans une documentation, `$ ls -l` montre l'invite, pas un caractère à taper. Copier le `$` donne une erreur, et copier un `#` transforme la ligne en commentaire qui ne fait rien.
+- **Travailler en root par confort.** Une faute de frappe en root peut effacer le système. On travaille en utilisateur ordinaire et on n'élève ses droits qu'au moment où c'est nécessaire, avec `sudo` (module 4).
+- **Faire confiance à `which`.** Il ignore alias, fonctions et commandes intégrées. Utilise `type`.
+- **Lire `$?` trop tard.** Toute commande écrase la valeur précédente, même un simple `echo`.
+- **Croire que le terminal et le shell sont la même chose.** Changer de terminal ne change pas de shell, et inversement. Quand tu cherches de l'aide, précise les deux.
+- **Supposer que tous les shells se valent.** Un script écrit pour bash peut échouer sous `sh` sur Debian, parce que `sh` y est `dash`. On en reparlera au module 7.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/" description="Le manuel de référence de bash, dont le chapitre sur l'exécution des commandes">Le manuel de GNU Bash</ExternalLink>
+
+<ExternalLink href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html" description="La norme POSIX du langage de shell, que sh, bash et dash respectent">Shell Command Language (POSIX)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/pty.7.html" description="Le fonctionnement des pseudo-terminaux">La page de manuel de pty</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Des couleurs s'affichent mal et le copier-coller ne marche pas, mais les commandes s'exécutent normalement. Où chercher le problème ?" options={["Dans le shell", "Dans l'émulateur de terminal", "Dans le noyau", "Dans la variable PATH"]} correct={1} explanation="L'affichage, les couleurs et le copier-coller sont le travail du terminal. Le shell, lui, ne s'occupe que d'interpréter et d'exécuter." />
+  <Quiz id="q-2" question="L'invite se termine par le caractère #. Qu'est-ce que cela indique ?" options={["Que la dernière commande a échoué", "Que tu es connecté en root, l'administrateur", "Que tu es dans un commentaire", "Que le shell est zsh"]} correct={1} explanation="Par convention, $ désigne un utilisateur ordinaire et # l'utilisateur root. C'est un signal pour redoubler de prudence." />
+  <Quiz id="q-3" question="Pourquoi cd est-elle une commande intégrée au shell et non un programme séparé ?" options={["Parce qu'elle est plus rapide ainsi", "Parce qu'un programme séparé changerait son propre répertoire, pas celui du shell", "Parce qu'elle a été écrite avant les autres", "Parce que les programmes ne peuvent pas lire les répertoires"]} correct={1} explanation="Un programme tourne dans son propre processus. S'il change de répertoire, seul ce processus est concerné, et il se termine aussitôt. Pour modifier l'état du shell, il faut que ce soit le shell lui-même qui agisse." />
+  <Quiz id="q-4" question="Tu tapes une commande et bash répond « command not found ». Quelle valeur contient $? juste après ?" options={["0", "1", "126", "127"]} correct={3} explanation="127 est le code réservé à une commande introuvable. 126 signifie trouvée mais non exécutable, et 0 un succès." />
+  <Quiz id="q-5" question="Pour savoir si ls est un alias, une fonction ou un programme, quelle commande utiliser ?" options={["which ls", "type ls", "echo $SHELL", "tty"]} correct={1} explanation="type est intégrée à bash et connaît les alias, fonctions et commandes intégrées. which ne consulte que le PATH." />
+  <Quiz id="q-6" question="Dans quel ordre bash cherche-t-il ce qu'est le premier mot d'une commande ?" options={["PATH, puis alias, puis commandes intégrées", "Alias, mot-clé, fonction, commande intégrée, puis PATH", "Commandes intégrées, puis PATH, puis alias", "Uniquement dans le PATH"]} correct={1} explanation="Bash essaie les alias, les mots-clés du langage, les fonctions, les commandes intégrées, et en dernier les programmes des répertoires du PATH. C'est pourquoi un alias peut masquer un programme du même nom." />
+</QuizGroup>
+
+## à retenir
+
+- Le **terminal** affiche et transmet, le **shell** interprète et exécute, la **commande** fait le travail.
+- **bash** est le shell de ce parcours et de la plupart des serveurs. Sur Debian et Ubuntu, `sh` est en réalité `dash`.
+- L'invite `utilisateur@machine:répertoire$` se termine par `$` pour un utilisateur ordinaire et `#` pour root.
+- Une commande passe par : découpage en mots, développements, recherche (alias, mot-clé, fonction, intégrée, `PATH`), exécution, code de retour.
+- `type` dit ce qu'est une commande pour bash ; `which` ne voit que le `PATH`.
+- Le code de retour est dans `$?` : 0 pour un succès, 127 pour une commande introuvable.
