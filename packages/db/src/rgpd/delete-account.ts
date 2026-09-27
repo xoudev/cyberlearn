@@ -3,6 +3,8 @@ import { pseudonymize } from "@cyberlearn/lib/pseudonymize";
 import { prisma } from "../prisma.js";
 import { createSupabaseAdminClient } from "../supabase/admin.js";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * Erasing an account, for whoever asks - the person themselves or an
  * administrator.
@@ -86,10 +88,10 @@ function defaultCleanupReporter(
   error: unknown,
   context: Record<string, unknown>,
 ): void {
-  // The format string stays constant and the area rides along as an argument:
-  // a value interpolated into it can forge the shape of a log line, and the
-  // SAST gate refuses it for that reason.
-  console.error("[rgpd] cleanup failed:", area, error, context);
+  // The message stays constant and the area rides along as a field: a value
+  // interpolated into it can forge the shape of a log line, and the SAST gate
+  // refuses it for that reason.
+  logger.error({ scope: "rgpd", area, err: errorMessage(error), ...context }, "cleanup failed");
 }
 
 export async function deleteAccount(

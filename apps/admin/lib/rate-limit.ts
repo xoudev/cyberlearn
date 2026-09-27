@@ -1,6 +1,7 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { pseudonymize } from "@cyberlearn/lib/pseudonymize";
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
 // @upstash/redis retries five times by default, sleeping `Math.exp(n) * 50`
 // between attempts - 50, 136, 369, 1004, 2730ms, about 4.2s before it gives
@@ -60,7 +61,7 @@ export async function checkAuthRateLimit(request: { headers: Headers }): Promise
     ]);
     return success;
   } catch (error) {
-    console.error("[rate-limit] auth check failed open:", error);
+    logger.error({ scope: "rate-limit", err: errorMessage(error) }, "auth check failed open");
     return true;
   } finally {
     if (timer !== undefined) clearTimeout(timer);

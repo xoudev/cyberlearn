@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@cyberlearn/db";
 import { Redis } from "@upstash/redis";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 // Vercel Cron: runs every 6 hours (see vercel.json).
 // Keeps Supabase and Upstash warm - Supabase Free pauses after 7 days of inactivity.
 
@@ -32,10 +34,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     results.postgres = "ok";
   } catch (err) {
     results.postgres = "error";
-    console.error(
-      "[keep-alive] postgres ping failed:",
-      err instanceof Error ? err.message : String(err),
-    );
+    logger.error({ scope: "keep-alive", err: errorMessage(err) }, "postgres ping failed");
   }
 
   // Ping Redis (Upstash) - minimal GET to keep the instance warm
@@ -48,10 +47,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       results.redis = "ok";
     } catch (err) {
       results.redis = "error";
-      console.error(
-        "[keep-alive] redis ping failed:",
-        err instanceof Error ? err.message : String(err),
-      );
+      logger.error({ scope: "keep-alive", err: errorMessage(err) }, "redis ping failed");
     }
   }
 

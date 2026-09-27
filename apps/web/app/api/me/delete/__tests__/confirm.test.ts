@@ -14,6 +14,8 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { logger } from "@cyberlearn/lib/logger";
+
 vi.stubEnv("IP_SALT", "delete-confirm-test-salt-that-is-at-least-32-chars");
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
@@ -203,17 +205,17 @@ describe("POST /api/me/delete/confirm - happy path", () => {
 describe("POST /api/me/delete/confirm - deleteAccount failure", () => {
   it("redirects to error?reason=internal when deleteAccount throws", async () => {
     mockDeleteAccount.mockRejectedValueOnce(new Error("DB exploded"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation((): void => undefined);
+    const logSpy = vi.spyOn(logger, "error").mockImplementation((): void => undefined);
 
     const res = await POST(makeRequest(VALID_PLAIN_TOKEN));
     expect(res.status).toBe(303);
     expect(redirectLocation(res)).toContain("reason=internal");
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[delete/confirm] deleteAccount failed:",
-      expect.any(Error),
+    expect(logSpy).toHaveBeenCalledWith(
+      { scope: "delete/confirm", err: "DB exploded" },
+      "deleteAccount failed",
     );
 
-    consoleSpy.mockRestore();
+    logSpy.mockRestore();
   });
 });
 

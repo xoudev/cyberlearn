@@ -39,11 +39,13 @@ Les erreurs de SDK externe (Resend, Supabase Admin) **ne doivent pas**
 sérialiser les paramètres de la requête originale.
 
 ```ts
-// ❌ Risque - err peut contenir { request: { to: "user@example.com" } }
-console.error("[foo] Resend failed:", err);
+import { errorMessage, logger } from "@cyberlearn/lib/logger";
 
-// ✅ Sûr - message string standardisé seulement
-console.error("[foo] Resend failed:", err instanceof Error ? err.message : String(err));
+// ❌ Risque - err peut contenir { request: { to: "user@example.com" } }
+logger.error({ scope: "foo", err }, "Resend failed");
+
+// ✅ Sûr - le message seul, via errorMessage()
+logger.error({ scope: "foo", err: errorMessage(err) }, "Resend failed");
 ```
 
 ## Pattern dev-only
@@ -85,16 +87,27 @@ Référence détaillée : `docs/security/sentry-config.md`
 Sentry sur `apps/admin` : en place (même pattern + `scrubEvent` partagé - voir
 docs/security/sentry-config.md, section « apps/admin - statut »).
 
-## Migration future - structured logger
+## Logger structuré : Pino
 
-Toutes les occurrences `console.*` en production sont fonctionnelles
-mais non structurées. Post-launch, migrer vers un structured logger
-(Pino, Bunyan, ou équivalent) pour :
+Le code serveur journalise via `logger` de `@cyberlearn/lib/logger`
+(`packages/lib/src/logger.ts`) : une ligne JSON par événement sur stdout,
+avec niveau, horodatage ISO et un champ `scope` qui remplace l'ancien
+préfixe `[scope]`. Le message reste une chaîne constante ; les valeurs
+variables vont dans l'objet, jamais interpolées dans le message.
 
-- Logs JSON structurés (niveau, timestamp, requestId)
-- Filtrage automatique des champs PII via `redact` config
-- Intégration provider externe (Datadog, Axiom, Vector)
-- Traçabilité request-scoped (middleware → handler → service)
+- `redact` masque `email`, `to`, `ip`, `password`, `token` et `displayName`
+  (au premier niveau et un niveau en dessous). C'est un filet, pas une
+  autorisation : la règle reste de ne pas les passer.
+- Pas de transport ni de pretty-printer : les transports de Pino tournent
+  dans un worker que le bundler de Next n'embarque pas.
+- Niveau : `LOG_LEVEL` s'il est défini, sinon `info` en production, `debug`
+  en dev, `silent` sous Vitest.
 
-Voir docs/backlog/post-v1.md - tâche "Migration logger structuré".
-Décision de l'outil exact à faire en temps voulu.
+Restent volontairement sur `console` :
+
+- le middleware (runtime Edge, où Pino ne tourne pas) ;
+- les composants client (avertissements de props en dev seulement) ;
+- les scripts CLI (`content-check.mjs`, scripts de seed).
+
+Reste à faire, hors périmètre de la migration : un `requestId` propagé du
+middleware aux handlers, et un drain vers un fournisseur externe.

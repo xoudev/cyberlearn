@@ -8,6 +8,8 @@ import {
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * The screen, the record of what it decided, and what happens to the content
  * afterwards.
@@ -233,7 +235,7 @@ export const moderationRepository = {
       // screen flagged still goes out of sight. It is then hidden with nothing
       // in the queue pointing at it, which is bad - and far better than
       // publishing it because a log write timed out.
-      console.error("[moderation] failed to record decision:", error);
+      logger.error({ scope: "moderation", err: errorMessage(error) }, "failed to record decision");
       return { ...result, flagged, throttled, eventId: null };
     }
   },
@@ -412,7 +414,7 @@ export const moderationRepository = {
 
     const handler = handlerFor(event.surface);
     if (!handler) {
-      console.error("[moderation] no handler for surface:", event.surface);
+      logger.error({ scope: "moderation", surface: event.surface }, "no handler for surface");
       return { claimed: true, contentTouched: false, ...subject };
     }
 

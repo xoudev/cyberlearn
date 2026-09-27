@@ -9,6 +9,8 @@ import { requireAdminAction } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * A person deciding what happens to content the screen took down - and, when it
  * was right, what happens to the account behind it.
@@ -101,7 +103,7 @@ export async function resolveModerationAction(
           siteUrl: learnerSiteUrl(),
         });
       } catch (error) {
-        console.error("[moderation] ban notice e-mail failed:", error);
+        logger.error({ scope: "moderation", err: errorMessage(error) }, "ban notice e-mail failed");
       }
     } else {
       // Already banned. The decision on the content stands; the moderator is
@@ -156,7 +158,7 @@ export async function resolveModerationAction(
         });
       }
     } catch (error) {
-      console.error("[moderation] failed to tell the author:", error);
+      logger.error({ scope: "moderation", err: errorMessage(error) }, "failed to tell the author");
     }
   }
 

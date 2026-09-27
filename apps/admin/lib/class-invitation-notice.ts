@@ -2,6 +2,7 @@ import { classRepository, prisma } from "@cyberlearn/db";
 import { sendClassInvitationEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 import { learnerUrl } from "./learner-url";
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
 
 /**
  * Invites addresses that have no account yet, and mails the ones it created.
@@ -71,7 +72,8 @@ export async function inviteAndNotify(
         });
       } catch (error) {
         mailFailed.push(email);
-        console.error("[class-invitation] mail failed:", email, error);
+        // Not the address: docs/security/logging.md keeps e-mails out of logs.
+        logger.error({ scope: "class-invitation", err: errorMessage(error) }, "mail failed");
       }
     }),
   );

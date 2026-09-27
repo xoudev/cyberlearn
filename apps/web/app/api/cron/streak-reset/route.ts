@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@cyberlearn/db";
 import { applyDayBoundary, dayKey } from "@cyberlearn/lib";
 
+import { logger } from "@cyberlearn/lib/logger";
+
 // Vercel Cron: runs daily (see vercel.json crons config).
 // For each user with a live streak who did not act yesterday, either consume a
 // freeze to preserve the streak or break it - using Europe/Paris day boundaries
@@ -69,7 +71,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const results = await Promise.allSettled(ops);
   const failed = results.filter((r) => r.status === "rejected").length;
   if (failed > 0) {
-    console.error(`[streak-reset] ${String(failed)} streak write(s) failed`);
+    logger.error({ scope: "streak-reset", failed }, "streak writes failed");
   }
 
   return NextResponse.json({

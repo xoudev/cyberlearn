@@ -3,6 +3,8 @@ import { z } from "zod";
 import { equipCosmeticForUser, unequipCosmeticForUser } from "@/lib/cosmetics/equip";
 import { userFromBearer } from "../_lib/auth";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 const schema = z.union([
   z.object({ action: z.literal("equip"), code: z.string().trim().min(1).max(40) }),
   z.object({
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           await unequipCosmeticForUser(user.id, parsed.data.type);
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   } catch (err) {
-    console.error("[mobile/loadout] error:", err instanceof Error ? err.message : String(err));
+    logger.error({ scope: "mobile/loadout", err: errorMessage(err) }, "error");
     return NextResponse.json({ ok: false, error: "Opération impossible." }, { status: 500 });
   }
 }

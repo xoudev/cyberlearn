@@ -75,7 +75,13 @@ notes privées revient, créer un sous-dossier dédié gitignoré explicitement.
 
 
 
-### Migration vers structured logger (Pino / Bunyan / etc.)
+### Migration vers structured logger (Pino / Bunyan / etc.) - RÉSOLU
+
+Fait : Pino, via `@cyberlearn/lib/logger`. Détails et exceptions dans
+docs/security/logging.md, section « Logger structuré : Pino ». Restent le
+`requestId` propagé et le drain externe.
+
+Note d'origine :
 
 Toutes les occurrences `console.*` en production sont fonctionnelles
 mais non structurées. Post-launch, migrer vers un structured logger

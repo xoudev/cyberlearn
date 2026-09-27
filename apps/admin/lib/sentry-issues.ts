@@ -1,5 +1,7 @@
 import { env } from "@/lib/env";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 /**
  * The unresolved Sentry issues, for the console's dashboard.
  *
@@ -129,7 +131,7 @@ export async function fetchSentryIssues(limit = 8): Promise<SentryIssuesResult> 
     return { state: "ok", issues };
   } catch (error) {
     // A timeout lands here too, which is the case this exists for.
-    console.error("[sentry] issues fetch failed:", error);
+    logger.error({ scope: "sentry", err: errorMessage(error) }, "issues fetch failed");
     return { state: "error", reason: "Sentry est injoignable." };
   }
 }

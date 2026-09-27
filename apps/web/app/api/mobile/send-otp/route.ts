@@ -5,6 +5,8 @@ import { sendMagicLinkEmail } from "@cyberlearn/email";
 import { env } from "@/lib/env";
 import { checkMagicLinkPerEmail, checkMagicLinkPerIp } from "@/lib/rate-limit";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 // Mobile login email. The Supabase "signInWithOtp" default email only carries a
 // magic link (rendered by Supabase's built-in SMTP), which a native app cannot
 // use. This endpoint mirrors the web login action: admin.generateLink() gives us
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Same generic error as the web login action (no account enumeration beyond
   // the existing web behavior).
   if (error ?? !data.properties.email_otp) {
-    console.error("[mobile/send-otp] generateLink error:", error);
+    logger.error({ scope: "mobile/send-otp", err: errorMessage(error) }, "generateLink error");
     return NextResponse.json(
       {
         ok: false,
@@ -72,10 +74,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       code: data.properties.email_otp,
     });
   } catch (err) {
-    console.error(
-      "[mobile/send-otp] Resend error:",
-      err instanceof Error ? err.message : String(err),
-    );
+    logger.error({ scope: "mobile/send-otp", err: errorMessage(err) }, "Resend error");
     return NextResponse.json(
       { ok: false, error: "Erreur lors de l'envoi. Réessaie." },
       { status: 500 },

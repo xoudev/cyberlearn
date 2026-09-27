@@ -9,6 +9,8 @@ import { STATUS_META } from "../tickets/ticket-meta";
 import { requireAdminAction } from "@/lib/auth";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
+import { logger, errorMessage } from "@cyberlearn/lib/logger";
+
 const updateStatusSchema = z.object({
   ticketId: z.guid(),
   status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]),
@@ -144,7 +146,7 @@ export async function replyToTicketAction(
       });
     } catch (error) {
       // The reply is written and visible on their page either way.
-      console.error("[tickets] reply e-mail failed:", error);
+      logger.error({ scope: "tickets", err: errorMessage(error) }, "reply e-mail failed");
     }
   }
 
