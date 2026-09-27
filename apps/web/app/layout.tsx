@@ -73,6 +73,10 @@ export default async function RootLayout({
   return (
     <html
       lang="fr"
+      // globals.css sets scroll-behavior: smooth; this keeps a navigation
+      // jumping to the top rather than scrolling there (Next 16 stopped doing it
+      // unasked).
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={`${jakarta.variable} ${jetbrains.variable}`}
     >

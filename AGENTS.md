@@ -3,7 +3,10 @@
 ## Stack
 
 - Monorepo: Turborepo + pnpm 9.x workspaces
-- Apps: Next.js 15 (App Router, RSC) + TypeScript 5.x strict
+- Apps: Next.js 16 (App Router, RSC) + TypeScript 5.x strict. Built and served with
+  webpack (`--webpack`): both apps carry a `webpack()` hook and Sentry's
+  webpack-only options. The middlewares stay `middleware.ts` on the Edge runtime,
+  which `proxy.ts` (Node only) would not keep
 - Styling: Tailwind CSS v4 (CSS-first, no tailwind.config.js) + shadcn/ui
 - DB: Supabase Postgres + Prisma 7.x ORM, on the `pg` driver adapter. The CLI reads
   DIRECT_URL through `packages/db/prisma.config.ts`; the app reads DATABASE_URL,

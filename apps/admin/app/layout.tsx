@@ -22,7 +22,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
   return (
-    <html lang="fr" className={`dark ${jakarta.variable} ${jetbrains.variable}`}>
+    <html
+      lang="fr"
+      data-scroll-behavior="smooth"
+      className={`dark ${jakarta.variable} ${jetbrains.variable}`}
+    >
       <body>
         <AdminSplashScreen />
         {children}
