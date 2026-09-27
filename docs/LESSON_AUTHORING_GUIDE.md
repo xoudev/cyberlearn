@@ -812,6 +812,27 @@ La valeur comparée est toujours `str(expression)` côté Python. Exemples :
 
 ---
 
+### 5.10 Pièges de syntaxe MDX
+
+Relevés en rédigeant les premiers modules du nouveau catalogue. Chacun casse la
+compilation d'une leçon, ou pire, supprime du contenu sans prévenir.
+
+| Écrit | Effet | À écrire à la place |
+|---|---|---|
+| Des accolades en prose : `la syntaxe {a,b}` | Supprimées sans erreur au rendu | Entre accents graves : `` `{a,b}` `` |
+| Un `<` nu en prose ou dans un titre : `## l'entrée : <` | Pris pour le début d'une balise : la leçon ne compile plus | Entre accents graves : `` `<` `` |
+| Une flèche double dans un `<Diagram>` : `A <--> B` | `<-` est pris pour une balise : la leçon ne compile plus | `A --- B`, ou deux flèches |
+| Deux `~` sur une même ligne d'un `<Diagram>` | Transformés en texte barré avant Mermaid | Reformuler sans tilde (« répertoire personnel ») |
+| `question="... \"texte\" ..."` | Dans un attribut entre guillemets, `\"` ferme l'attribut : la leçon ne compile plus | Des apostrophes dans le texte, ou reformuler |
+| `options={["un \"texte\""]}` | Correct : dans une expression, ce sont des chaînes JavaScript | Rien à changer |
+| Un vrai retour à la ligne dans une valeur de `commands` de `SimulatedTerminal` | La leçon ne compile plus | `
+` dans la chaîne |
+| Des entités HTML (`&quot;`) dans un attribut | Pas toujours décodées selon le lecteur (site, app) | Des apostrophes |
+
+Le test `packages/lib/src/mdx/content.test.ts` compile chaque leçon, et
+`pnpm --filter @cyberlearn/web content:diagrams` vérifie les schémas : lance-les
+avant de pousser.
+
 ## 6. Règles de contenu
 
 ### Ce qu'on DOIT avoir dans chaque leçon
