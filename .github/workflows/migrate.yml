@@ -65,8 +65,8 @@ jobs:
 
       # Migrations open one short-lived session and issue DDL, which the
       # transaction pooler cannot carry - both variables point at the direct
-      # connection. Prisma reads directUrl for migrate and url for everything
-      # else, and this job never runs a query outside migrate.
+      # connection. The Prisma CLI reads DIRECT_URL through prisma.config.ts;
+      # DATABASE_URL is set to the same for anything that would read it.
       - name: Apply pending migrations
         env:
           DATABASE_URL: ${{ secrets.DIRECT_URL }}

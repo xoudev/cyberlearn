@@ -6,9 +6,9 @@
  * Does NOT delete the user account or re-trigger onboarding.
  */
 
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma.js";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const email = process.argv[2];

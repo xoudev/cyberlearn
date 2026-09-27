@@ -14,7 +14,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma.js";
 
 const apply = process.argv.includes("--apply");
 
@@ -185,7 +185,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const prisma = new PrismaClient();
+  const prisma = createPrismaClient();
   try {
     let written = 0;
     for (const { slug, data } of valid) {

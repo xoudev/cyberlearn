@@ -10,5 +10,5 @@
       "@cyberlearn/db": ["./src/index.ts"]
     }
   },
-  "include": ["src", "prisma"]
+  "include": ["src", "prisma", "prisma.config.ts"]
 }

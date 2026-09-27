@@ -16,9 +16,10 @@ import {
   type BadgeCriterionType,
   type BadgeRarity,
   type CosmeticType,
-  PrismaClient,
   type Prisma,
 } from "@prisma/client";
+
+import { createPrismaClient } from "../src/prisma.js";
 
 const apply = process.argv.includes("--apply");
 
@@ -152,7 +153,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const prisma = new PrismaClient();
+  const prisma = createPrismaClient();
   try {
     for (const c of data) {
       // SAFETY: type/rarity/criterionType validated against the allowed sets above.

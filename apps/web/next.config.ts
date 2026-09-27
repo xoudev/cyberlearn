@@ -9,16 +9,8 @@ loadRootEnv(path.join(__dirname, "../../"));
 
 const nextConfig: NextConfig = {
   // Must point to the monorepo root so Next.js file tracing follows imports
-  // up through pnpm's node_modules/.pnpm/ tree and includes the Prisma native
-  // engine binary (libquery_engine-rhel-openssl-3.0.x.so.node) in the bundle.
+  // up through pnpm's node_modules/.pnpm/ tree.
   outputFileTracingRoot: path.join(__dirname, "../../"),
-  outputFileTracingIncludes: {
-    "/*": [
-      "../../node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/libquery_engine*",
-      "../../node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client/libquery_engine*",
-      "../../packages/db/node_modules/.prisma/client/libquery_engine*",
-    ],
-  },
   // Server source maps are uploaded to Sentry at build time and then left on
   // disk: @sentry/nextjs deletes the client ones only, deliberately, because
   // deleting the server ones broke Vercel builds (getsentry/sentry-javascript

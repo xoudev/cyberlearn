@@ -372,7 +372,9 @@ jobs:
         # drift. Targeted on DROP DEFAULT so unrelated diffs don't fail this.
         working-directory: packages/db
         run: |
-          DIFF=$(pnpm exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script)
+          # Prisma 7 reads the database from prisma.config.ts (DIRECT_URL, the
+          # same local stack here) - --from-url is gone.
+          DIFF=$(pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script)
           echo "----- migrate diff (DB -> schema) -----"
           echo "$DIFF"
           if echo "$DIFF" | grep -qiE 'DROP DEFAULT'; then

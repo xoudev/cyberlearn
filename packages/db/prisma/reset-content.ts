@@ -19,9 +19,9 @@
  *   pnpm --filter @cyberlearn/db db:reset-content --apply   (delete)
  */
 
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../src/prisma.js";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const apply = process.argv.includes("--apply");
 
 async function main(): Promise<void> {

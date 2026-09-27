@@ -18,11 +18,6 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingRoot: path.join(__dirname, "../../"),
   outputFileTracingIncludes: {
-    "/*": [
-      "../../node_modules/.pnpm/@prisma+client*/node_modules/.prisma/client/libquery_engine*",
-      "../../node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client/libquery_engine*",
-      "../../packages/db/node_modules/.prisma/client/libquery_engine*",
-    ],
     // "Mettre à jour depuis le dépôt" reads the lesson files at run time. They
     // ship with that route only, not with every function of the console.
     "/lessons/sync": ["../../content/lessons/**/*.mdx"],
