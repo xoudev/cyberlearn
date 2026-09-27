@@ -6,7 +6,7 @@ import { requireRequestUser } from "@/lib/auth";
 import { ratePathForUser, type RatePathResult } from "@/lib/paths/rate-path";
 
 const ratingSchema = z.object({
-  pathId: z.string().uuid(),
+  pathId: z.guid(),
   score: z.number().int().min(1).max(5),
   feedback: z.string().max(500).optional(),
 });

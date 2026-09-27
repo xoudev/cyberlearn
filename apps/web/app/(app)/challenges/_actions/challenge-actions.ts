@@ -15,8 +15,7 @@ export async function submitFlagAction(
   challengeId: string,
   submittedFlag: string,
 ): Promise<{ correct: boolean; error?: string }> {
-  if (!z.string().uuid().safeParse(challengeId).success)
-    return { correct: false, error: "ID invalide." };
+  if (!z.guid().safeParse(challengeId).success) return { correct: false, error: "ID invalide." };
   const flagParsed = z.string().trim().min(1).max(500).safeParse(submittedFlag);
   if (!flagParsed.success) return { correct: false, error: "Flag invalide." };
 
@@ -69,7 +68,7 @@ export async function submitFlagAction(
 // ── Complete (PUZZLE / LAB: honor system) ──────────────────────────────────────
 
 export async function completeChallengeAction(challengeId: string): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(challengeId).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(challengeId).success) return { error: "ID invalide." };
   const authUser = await requireRequestUser();
 
   const challenge = await prisma.challenge.findUnique({
@@ -96,7 +95,7 @@ export async function revealHintAction(
   hintId: string,
 ): Promise<{ content?: string; error?: string }> {
   const user = await requireRequestUser();
-  if (!z.string().uuid().safeParse(hintId).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(hintId).success) return { error: "ID invalide." };
 
   const hintLimit = await checkHintReveal(user.id);
   if (!hintLimit.success) {

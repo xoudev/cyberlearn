@@ -32,7 +32,7 @@ function pythonStr(value: string | number | boolean | null): string {
   return String(value);
 }
 
-const scalar = z.union([z.string(), z.number().finite(), z.boolean(), z.null()]);
+const scalar = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
 const testCaseSchema = z.object({
   input: scalar.transform(pythonStr),

@@ -18,8 +18,8 @@ import { announceAssignedWork } from "@/lib/classes/work-assigned-notice";
  */
 
 const assignSchema = z.object({
-  classId: z.string().uuid(),
-  lessonId: z.string().uuid(),
+  classId: z.guid(),
+  lessonId: z.guid(),
   // A date input sends "" when left empty, and an assignment with no deadline
   // is ordinary - "do this", rather than "do this by never".
   dueAt: z.string().trim().optional().or(z.literal("")),
@@ -103,8 +103,8 @@ export async function unassignLessonAction(
   lessonId: string,
 ): Promise<{ ok: boolean }> {
   const user = await requireRequestUser();
-  if (!z.string().uuid().safeParse(classId).success) return { ok: false };
-  if (!z.string().uuid().safeParse(lessonId).success) return { ok: false };
+  if (!z.guid().safeParse(classId).success) return { ok: false };
+  if (!z.guid().safeParse(lessonId).success) return { ok: false };
   if (!(await classRepository.canSetWorkFor(user.id, classId))) return { ok: false };
 
   await classRepository.unassignLesson(classId, lessonId);

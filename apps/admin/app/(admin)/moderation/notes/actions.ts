@@ -6,7 +6,7 @@ import { noteReportRepository, prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 
 const schema = z.object({
-  noteId: z.string().uuid(),
+  noteId: z.guid(),
   outcome: z.enum(["UNSHARED", "DISMISSED"]),
 });
 

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ExternalLink as ExternalLinkIcon } from "lucide-react";
 
 const externalLinkPropsSchema = z.object({
-  href: z.string().url(),
+  href: z.url(),
   children: z.string().optional(),
   /** Optional short description shown below the link label */
   description: z.string().optional(),
@@ -38,7 +38,7 @@ export function ExternalLink(rawProps: ExternalLinkProps): React.JSX.Element {
     if (process.env.NODE_ENV !== "production") {
       console.warn(
         "[ExternalLink] invalid props:",
-        result.success ? "unsafe URL" : result.error.flatten(),
+        result.success ? "unsafe URL" : z.flattenError(result.error),
       );
     }
     return (

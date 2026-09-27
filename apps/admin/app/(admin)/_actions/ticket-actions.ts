@@ -10,7 +10,7 @@ import { requireAdminAction } from "@/lib/auth";
 import { learnerSiteUrl, learnerUrl } from "@/lib/learner-url";
 
 const updateStatusSchema = z.object({
-  ticketId: z.string().uuid(),
+  ticketId: z.guid(),
   status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]),
 });
 
@@ -48,7 +48,7 @@ export async function updateTicketStatusAction(
 }
 
 const replySchema = z.object({
-  ticketId: z.string().uuid(),
+  ticketId: z.guid(),
   body: z.string().trim().min(2).max(5000),
 });
 

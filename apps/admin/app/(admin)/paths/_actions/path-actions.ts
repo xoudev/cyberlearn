@@ -21,7 +21,7 @@ const createPathSchema = z.object({
   track: z.enum(["SKILL", "CAREER"]).default("SKILL"),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]),
   estimatedHours: z.coerce.number().int().positive().max(500),
-  coverImageUrl: z.string().url().optional().or(z.literal("")),
+  coverImageUrl: z.url().optional().or(z.literal("")),
   publishNow: z.coerce.boolean().optional(),
 });
 
@@ -41,7 +41,7 @@ export async function createPathAction(
 
   if (!parsed.success) {
     const fieldErrors: CreatePathState["fieldErrors"] = {};
-    for (const [field, errs] of Object.entries(parsed.error.flatten().fieldErrors)) {
+    for (const [field, errs] of Object.entries(z.flattenError(parsed.error).fieldErrors)) {
       fieldErrors[field] = errs[0];
     }
     return { error: "Formulaire invalide.", fieldErrors };
@@ -117,7 +117,7 @@ export async function updatePathStatusAction(
   pathId: string,
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
 ): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(pathId).success) return { error: "ID invalide." };
+  if (!z.guid().safeParse(pathId).success) return { error: "ID invalide." };
   if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) return { error: "Statut invalide." };
 
   const [admin, path] = await Promise.all([
@@ -164,7 +164,7 @@ export async function deletePathAction(
 
   const pathId = formData.get("pathId");
   if (typeof pathId !== "string" || !pathId) return { error: "Identifiant invalide." };
-  const parsed = z.string().uuid().safeParse(pathId);
+  const parsed = z.guid().safeParse(pathId);
   if (!parsed.success) return { error: "Identifiant invalide." };
 
   const path = await prisma.path.findUnique({

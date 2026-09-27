@@ -6,7 +6,7 @@ import { prisma, quizReportRepository } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 
 const schema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: z.guid(),
   quizId: z.string().min(1).max(100),
 });
 

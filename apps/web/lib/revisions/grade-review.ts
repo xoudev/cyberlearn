@@ -4,7 +4,7 @@ import { computeSm2, reviewXpFor } from "@cyberlearn/lib";
 import { creditXp } from "@/lib/xp/credit";
 
 const reviewGradeSchema = z.object({
-  scheduleId: z.string().uuid(),
+  scheduleId: z.guid(),
   quality: z.union([z.literal(1), z.literal(3), z.literal(5)]),
 });
 

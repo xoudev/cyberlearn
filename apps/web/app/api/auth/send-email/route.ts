@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 
 const hookPayloadSchema = z.object({
   user: z.object({
-    email: z.string().email(),
+    email: z.email(),
   }),
   email_data: z.object({
     token: z.string().optional(), // 6-digit OTP code (used by the mobile app)

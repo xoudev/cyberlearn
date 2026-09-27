@@ -27,7 +27,7 @@ import { recordQuestProgress } from "@/lib/quests/progress";
  * that is still up. The ids come from the client.
  */
 
-const uuid = z.string().uuid();
+const uuid = z.guid();
 
 const questionSchema = z.object({
   lessonId: uuid,

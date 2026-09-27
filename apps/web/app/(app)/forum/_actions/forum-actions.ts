@@ -64,7 +64,7 @@ export async function moderateTopicAction(input: {
 }): Promise<ForumActionResult> {
   const user = await requireRequestUser();
   if (!(await isForumAdmin(user.id))) return { ok: false, error: "Action réservée." };
-  if (!z.string().uuid().safeParse(input.topicId).success) {
+  if (!z.guid().safeParse(input.topicId).success) {
     return { ok: false, error: "Sujet introuvable." };
   }
 

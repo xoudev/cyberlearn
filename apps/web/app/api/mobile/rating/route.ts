@@ -5,7 +5,7 @@ import { ratePathForUser } from "@/lib/paths/rate-path";
 import { userFromBearer } from "../_lib/auth";
 
 const schema = z.object({
-  pathId: z.string().uuid(),
+  pathId: z.guid(),
   score: z.number().int().min(1).max(5),
   feedback: z.string().max(500).optional(),
 });
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!user) {
     return NextResponse.json({ ok: false, error: "Non authentifié." }, { status: 401 });
   }
-  const pathId = z.string().uuid().safeParse(request.nextUrl.searchParams.get("pathId"));
+  const pathId = z.guid().safeParse(request.nextUrl.searchParams.get("pathId"));
   if (!pathId.success) {
     return NextResponse.json({ ok: false, error: "Requête invalide." }, { status: 400 });
   }

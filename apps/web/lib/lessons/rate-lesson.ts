@@ -2,7 +2,7 @@ import { z } from "zod";
 import { lessonRepository, ratingRepository } from "@cyberlearn/db";
 
 const ratingSchema = z.object({
-  lessonId: z.string().uuid(),
+  lessonId: z.guid(),
   score: z.number().int().min(1).max(5),
   feedback: z.string().max(500).optional(),
 });

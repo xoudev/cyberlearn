@@ -12,18 +12,18 @@ export const env = createEnv({
   emptyStringAsUndefined: true,
   server: {
     // Database (Supabase Postgres via Prisma)
-    DATABASE_URL: z.string().url(),
-    DIRECT_URL: z.string().url(),
+    DATABASE_URL: z.url(),
+    DIRECT_URL: z.url(),
 
     // Supabase service role: SERVER ONLY, never exposed to client
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
     // Transactional email (Resend)
     RESEND_API_KEY: z.string().startsWith("re_"),
-    RESEND_FROM_EMAIL: z.string().email(),
+    RESEND_FROM_EMAIL: z.email(),
 
     // Rate limiting (Upstash Redis): optional, degrades gracefully without Redis
-    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+    UPSTASH_REDIS_REST_URL: z.url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
     // Cloudflare Turnstile captcha: optional until Phase implemented
@@ -36,7 +36,7 @@ export const env = createEnv({
     SUPABASE_HOOK_SECRET: z.string().min(16),
 
     // Monitoring (Sentry): all optional, no-op when absent
-    SENTRY_DSN: z.string().url().optional(),
+    SENTRY_DSN: z.url().optional(),
     SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
     SENTRY_ORG: z.string().min(1).optional(),
     SENTRY_PROJECT: z.string().min(1).optional(),
@@ -47,25 +47,25 @@ export const env = createEnv({
 
   client: {
     // Supabase public credentials (safe to expose)
-    NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+    NEXT_PUBLIC_SUPABASE_URL: z.url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
 
     // Site URLs
-    NEXT_PUBLIC_SITE_URL: z.string().url(),
+    NEXT_PUBLIC_SITE_URL: z.url(),
 
     // Mobile distribution links (the page stays usable while a channel is unavailable)
-    NEXT_PUBLIC_ANDROID_PLAY_URL: z.string().url().optional(),
-    NEXT_PUBLIC_ANDROID_APK_URL: z.string().url().optional(),
-    NEXT_PUBLIC_IOS_APP_STORE_URL: z.string().url().optional(),
+    NEXT_PUBLIC_ANDROID_PLAY_URL: z.url().optional(),
+    NEXT_PUBLIC_ANDROID_APK_URL: z.url().optional(),
+    NEXT_PUBLIC_IOS_APP_STORE_URL: z.url().optional(),
 
     // Cloudflare Turnstile site key: optional until Phase implemented
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
 
     // Sentry public DSN (safe to expose; used in browser + server configs)
-    NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+    NEXT_PUBLIC_SENTRY_DSN: z.url().optional(),
 
     // CSP reporting endpoint (Sentry tunnel for violations)
-    NEXT_PUBLIC_SENTRY_CSP_REPORT_URI: z.string().url().optional(),
+    NEXT_PUBLIC_SENTRY_CSP_REPORT_URI: z.url().optional(),
   },
 
   runtimeEnv: {

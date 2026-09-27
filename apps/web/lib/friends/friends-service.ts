@@ -49,7 +49,7 @@ export interface FriendLists {
   outgoing: FriendEntry[];
 }
 
-const idSchema = z.string().uuid();
+const idSchema = z.guid();
 const NOT_FOUND = "Compte introuvable.";
 
 /**
