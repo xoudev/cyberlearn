@@ -1,0 +1,193 @@
+---
+refCode: CL-LSN-01013-V01
+slug: fondamentaux-images-et-sons
+title: "Images et sons"
+description: "Comment une photo et une chanson deviennent des nombres : pixels, composantes rouge, vert et bleu, profondeur de couleur et définition, puis échantillonnage et quantification du son. Calculer le poids d'une image et d'un son non compressés, découvrir les métadonnées qui trahissent un lieu, et cacher un message dans une image par stéganographie."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01012-V01"]
+---
+
+Les nombres, le texte : jusqu'ici, tout ce qu'on a représenté était déjà discret, fait d'éléments séparés qu'on peut compter. Une image ou un son, au contraire, sont continus : une photo contient une infinité de nuances, une onde sonore varie sans arrêt. Pour les faire entrer dans un ordinateur, il faut les **découper** et les **mesurer**, c'est-à-dire les **numériser**. Cette leçon explique comment, calcule ce que cela coûte en octets, et montre que ces octets peuvent en dire plus qu'on ne le croit, ou en cacher.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un pixel et comment sa couleur est codée ;
+- calculer le poids d'une image non compressée ;
+- expliquer l'échantillonnage et la quantification d'un son ;
+- calculer le poids et le débit d'un son non compressé ;
+- expliquer pourquoi la compression est indispensable ;
+- savoir que les fichiers multimédias transportent des métadonnées sensibles ;
+- expliquer le principe de la stéganographie.
+
+## pourquoi ça compte
+
+Savoir estimer le poids d'un fichier multimédia sert au quotidien : dimensionner un stockage, comprendre pourquoi une visioconférence sature une connexion, choisir un format. En sécurité, les images et les sons ne sont pas des fichiers inoffensifs. Une photo prise avec un téléphone peut contenir les coordonnées GPS exactes de l'endroit où elle a été prise, et beaucoup de gens l'ignorent en la partageant. À l'inverse, un attaquant peut cacher des données, voire des instructions pour un logiciel malveillant, dans une image d'apparence banale. Les analystes forensiques et les joueurs de CTF connaissent bien ces deux faces.
+
+## les images : une grille de pixels
+
+Une image numérique est une grille de petits carrés de couleur uniforme, les **pixels** (contraction de *picture element*). Vus de loin, ils se fondent en une image continue ; en zoomant fortement, tu les vois apparaître.
+
+La **définition** d'une image est son nombre de pixels, exprimé en largeur par hauteur. Une image « Full HD » fait 1 920 × 1 080 = 2 073 600 pixels, environ 2 millions. Un appareil photo de 12 mégapixels produit des images de 4 000 × 3 000 pixels.
+
+### la couleur d'un pixel
+
+Un écran fabrique ses couleurs en mélangeant trois lumières : **rouge**, **vert** et **bleu**. C'est le modèle **RVB** (*RGB* en anglais). Chaque pixel est donc décrit par trois nombres, un par composante. Dans le cas le plus courant, chaque composante tient sur un octet, de 0 (éteinte) à 255 (pleine intensité) : tu retrouves les couleurs `#RRVVBB` de la leçon sur l'hexadécimal.
+
+| Rouge | Vert | Bleu | Couleur |
+| --- | --- | --- | --- |
+| 255 | 0 | 0 | rouge vif |
+| 0 | 255 | 0 | vert vif |
+| 255 | 255 | 0 | jaune |
+| 0 | 0 | 0 | noir |
+| 255 | 255 | 255 | blanc |
+| 128 | 128 | 128 | gris moyen |
+
+Trois octets par pixel, soit **24 bits**, permettent 2²⁴ = **16 777 216 couleurs**, davantage que ce que l'œil humain distingue. On appelle ce nombre de bits la **profondeur de couleur**. D'autres profondeurs existent :
+
+- **1 bit** : noir ou blanc, pour un fax ou une icône ;
+- **8 bits en niveaux de gris** : 256 nuances de gris, pour une radiographie ou un document numérisé ;
+- **8 bits avec palette** : 256 couleurs choisies, comme dans les GIF ;
+- **32 bits** : les 24 bits de couleur plus 8 bits de **transparence**, le canal *alpha*, utilisé par les PNG pour les logos posés sur un fond.
+
+<Diagram caption="De la photo aux octets : une grille, trois composantes par pixel">
+flowchart LR
+  A["Photo"] --> B["Grille de pixels"]
+  B --> C["Un pixel : rouge, vert, bleu"]
+  C --> D["Trois octets, par exemple 255, 71, 87"]
+</Diagram>
+
+### le poids d'une image non compressée
+
+Le calcul découle directement de ce qui précède :
+
+**poids en octets = largeur × hauteur × profondeur en bits ÷ 8**
+
+Une image Full HD en 24 bits pèse donc 1 920 × 1 080 × 24 ÷ 8 = **6 220 800 octets**, environ 6,2 Mo. Une photo de 12 mégapixels : 36 Mo. Or la même photo, enregistrée en JPEG par ton téléphone, pèse autour de 3 à 5 Mo. La différence vient de la **compression**, sujet de la prochaine leçon. Seuls quelques formats, comme le BMP, stockent les pixels tels quels.
+
+Une vidéo n'est qu'une suite d'images. En Full HD à 30 images par seconde, sans compression, cela fait 6 220 800 × 30, soit environ **187 Mo par seconde**, et 672 Go pour une heure de film. Aucune connexion domestique ne transporterait cela : la vidéo en ligne n'existe que grâce à des compressions très poussées.
+
+## les sons : mesurer une onde
+
+Un son est une vibration de l'air, une onde de pression qui varie continuellement. Un microphone la transforme en un signal électrique qui varie de la même façon. Pour numériser ce signal, on fait deux choses.
+
+### l'échantillonnage
+
+On **mesure** la valeur du signal à intervalles réguliers, un très grand nombre de fois par seconde. Chaque mesure est un **échantillon**, et le nombre de mesures par seconde est la **fréquence d'échantillonnage**, exprimée en hertz (Hz).
+
+Quelle fréquence choisir ? Un résultat mathématique, le **théorème d'échantillonnage** (attribué à Nyquist et Shannon), répond : pour reproduire fidèlement un son, il faut échantillonner à **plus du double** de la plus haute fréquence qu'il contient. L'oreille humaine perçoit jusqu'à environ 20 000 Hz ; il faut donc échantillonner au-delà de 40 000 Hz. Le CD audio a choisi **44 100 Hz**, et la vidéo 48 000 Hz. Le téléphone classique se contente de 8 000 Hz, parce que la voix n'a pas besoin des aigus : c'est pour cela qu'une voix au téléphone sonne « étouffée ».
+
+### la quantification
+
+Chaque échantillon est ensuite arrondi à une valeur entière, sur un nombre de bits fixe : c'est la **quantification**, et ce nombre de bits est la **résolution**. Sur 8 bits, on n'a que 256 niveaux, et l'arrondi s'entend sous forme de souffle. Le CD utilise **16 bits**, soit 65 536 niveaux, et les studios travaillent souvent en 24 bits.
+
+Enfin, on multiplie par le nombre de **canaux** : un pour un son mono, deux pour la stéréo.
+
+### le poids d'un son non compressé
+
+**débit en bits par seconde = fréquence × résolution × nombre de canaux**
+
+Pour un CD : 44 100 × 16 × 2 = **1 411 200 bits par seconde**, soit 1 411 kb/s ou 176 400 octets par seconde. Une minute de musique pèse environ **10,6 Mo**, une chanson de trois minutes près de 32 Mo. Le format WAV stocke souvent le son ainsi, sans compression.
+
+Pour comparaison, un MP3 de bonne qualité à 320 kb/s occupe environ 7 Mo pour trois minutes, et un fichier à 128 kb/s moins de 3 Mo.
+
+## les métadonnées : ce que les fichiers racontent
+
+Un fichier image ou son ne contient pas que des pixels ou des échantillons. Il transporte aussi des **métadonnées**, des informations sur le contenu. Pour les photos, le format le plus répandu s'appelle **EXIF**. Il peut contenir :
+
+- la marque et le modèle de l'appareil ou du téléphone ;
+- la date et l'heure exactes de la prise de vue ;
+- les réglages (ouverture, exposition, sensibilité) ;
+- les **coordonnées GPS** du lieu de la prise de vue, si la localisation était activée ;
+- parfois le nom du propriétaire ou le numéro de série de l'appareil.
+
+Les grands réseaux sociaux suppriment généralement les données GPS à la publication, mais une photo envoyée en pièce jointe d'un courriel, déposée sur un site personnel ou transmise « en tant que fichier » dans une messagerie peut les conserver. Des enquêteurs, en sources ouvertes comme dans la police, s'en servent régulièrement pour localiser une photo ; un harceleur peut faire de même. Le réflexe à avoir : désactiver la localisation de l'appareil photo quand elle n'est pas utile, et supprimer les métadonnées avant de publier une image sensible. Les documents bureautiques et les PDF ont aussi leurs métadonnées : auteur, logiciel, historique de modification.
+
+## la stéganographie : cacher dans le bruit
+
+Change la composante rouge d'un pixel de 200 à 201 : aucun œil ne verra la différence. C'est le principe de la **stéganographie**, l'art de cacher un message dans un support d'apparence anodine. Contrairement au chiffrement, qui rend un message illisible mais visible, la stéganographie cache **l'existence même** du message.
+
+La technique la plus simple utilise le **bit de poids faible** de chaque composante, celui qui vaut 1 et qu'on a vu dans la leçon sur le binaire. En remplaçant ce bit par un bit du message, on modifie chaque valeur d'au plus 1 sur 255. Chaque pixel peut cacher trois bits, un par composante ; une image Full HD peut ainsi dissimuler 6 220 800 bits, soit plus de 770 000 octets, sans différence visible.
+
+Ce n'est pas qu'un jeu. Des logiciels malveillants ont déjà utilisé des images publiées sur des sites légitimes pour recevoir discrètement leurs instructions, et des données volées peuvent sortir d'une entreprise cachées dans des images anodines. Côté défense, les analystes disposent d'outils statistiques qui détectent ces modifications, et les challenges de stéganographie sont un grand classique des CTF.
+
+## à toi de jouer
+
+Ce bac à sable représente une petite « image » par une liste de valeurs de 0 à 255. La fonction `cacher` y dissimule un message dans les bits de poids faible ; la fonction `reveler` le récupère. Lance le programme et observe l'écart maximal entre les valeurs, puis cache ton propre message.
+
+<CodePlayground language="python" starterCode={`image = [(i * 37 + 11) % 256 for i in range(48)]
+
+def cacher(valeurs, message):
+    bits = ''.join(format(o, '08b') for o in message.encode('utf-8'))
+    resultat = list(valeurs)
+    for i, bit in enumerate(bits):
+        resultat[i] = (resultat[i] & 0b11111110) | int(bit)
+    return resultat
+
+def reveler(valeurs, nb_caracteres):
+    bits = ''.join(str(v & 1) for v in valeurs[:nb_caracteres * 8])
+    octets = bytes(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
+    return octets.decode('utf-8')
+
+modifiee = cacher(image, 'Salut')
+print('Avant  :', image[:10])
+print('Après  :', modifiee[:10])
+ecart = max(abs(a - b) for a, b in zip(image, modifiee))
+print('Écart maximal :', ecart)
+print('Message :', reveler(modifiee, 5))
+
+# À toi : combien de caractères cette image de 48 valeurs peut-elle cacher ?
+`} />
+
+`& 0b11111110` met à zéro le bit de poids faible, puis `| int(bit)` y place le bit du message : ce sont les opérations bit à bit de la documentation Python, que tu retrouveras en réseau pour les masques.
+
+Maintenant, l'exercice corrigé. Écris `solution(largeur, hauteur, bits)` qui renvoie le poids en octets d'une image non compressée, puis vérifie tes résultats avec les exemples de la leçon.
+
+<PythonChallenge id="f1-media-1" title="Le poids d'une image" description="Renvoie le poids en octets d'une image non compressée de largeur × hauteur pixels, avec bits bits par pixel." starterCode="def solution(largeur, hauteur, bits):
+    pixels = 0  # combien de pixels ?
+    return pixels" tests={[{ input: "solution(1920, 1080, 24)", expected: "6220800" }, { input: "solution(800, 600, 8)", expected: "480000" }, { input: "solution(100, 100, 32)", expected: "40000" }, { input: "solution(4000, 3000, 24)", expected: "36000000" }]} />
+
+Attention au type du résultat : si tu divises avec `/`, Python renvoie un nombre à virgule, `6220800.0`, qui ne correspond pas au résultat attendu. Utilise la division entière `//`.
+
+## les pièges
+
+- **Confondre définition et taille d'affichage.** Une image de 1 920 × 1 080 pixels peut s'afficher en petit ou en grand ; son poids dépend du nombre de pixels, pas de l'écran.
+- **Oublier de diviser par 8.** La profondeur est en bits, le poids se donne en octets.
+- **Oublier les canaux.** Un son stéréo pèse deux fois plus qu'un son mono.
+- **Échantillonner trop bas.** En dessous du double de la fréquence la plus haute, le son est déformé.
+- **Partager une photo sans penser aux métadonnées.** Date, appareil et parfois position GPS voyagent avec elle.
+- **Croire qu'une image est forcément inoffensive.** Elle peut cacher des données, ou être un autre type de fichier sous une extension d'image.
+
+## pour aller plus loin
+
+<ExternalLink href="https://exiftool.org/" description="L'outil de référence pour lire et effacer les métadonnées des images, en anglais">ExifTool</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/stdtypes.html#bitwise-operations-on-integer-types" description="Les opérations bit à bit utilisées par la démonstration de stéganographie">Documentation Python : opérations bit à bit</ExternalLink>
+
+<ExternalLink href="https://fr.wikipedia.org/wiki/Th%C3%A9or%C3%A8me_d%27%C3%A9chantillonnage" description="Le théorème de Nyquist et Shannon, avec ses illustrations">Wikipédia : théorème d'échantillonnage</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Combien de couleurs permet une profondeur de 24 bits ?" options={["24", "256", "16 777 216", "65 536"]} correct={2} explanation="24 bits donnent 2 puissance 24 combinaisons, soit 16 777 216 couleurs." />
+  <Quiz id="q-2" question="Quel est le poids d'une image non compressée de 1 000 × 500 pixels en 24 bits ?" options={["500 000 octets", "12 000 000 octets", "4 000 000 octets", "1 500 000 octets"]} correct={3} explanation="1 000 × 500 × 24 ÷ 8 = 1 500 000 octets, soit 1,5 Mo." />
+  <Quiz id="q-3" question="Pourquoi le CD audio échantillonne-t-il à 44 100 Hz ?" options={["C'est la vitesse de rotation du disque", "C'est la limite des processeurs de l'époque", "Il faut plus du double de la fréquence la plus haute audible, environ 20 000 Hz", "Pour réduire le poids des fichiers"]} correct={2} explanation="Le théorème d'échantillonnage impose plus du double de la plus haute fréquence : 44 100 Hz dépasse 40 000 Hz." />
+  <Quiz id="q-4" question="Quel est le débit d'un son non compressé en 48 000 Hz, 16 bits, mono ?" options={["1 536 000 bits par seconde", "48 000 bits par seconde", "96 000 octets par seconde", "768 000 bits par seconde"]} correct={3} explanation="48 000 × 16 × 1 = 768 000 bits par seconde, soit 96 000 octets par seconde." />
+  <Quiz id="q-5" question="Quelle information sensible une photo de téléphone peut-elle contenir dans ses métadonnées EXIF ?" options={["Le mot de passe du téléphone", "Le contenu des autres photos", "Les coordonnées GPS du lieu de la prise de vue", "Le numéro de carte bancaire"]} correct={2} explanation="Si la localisation était activée, les coordonnées GPS sont enregistrées avec la photo, en plus de la date et du modèle d'appareil." />
+  <Quiz id="q-6" question="Qu'est-ce qui distingue la stéganographie du chiffrement ?" options={["La stéganographie est plus rapide", "Le chiffrement ne fonctionne que sur du texte", "La stéganographie cache l'existence du message, le chiffrement le rend illisible", "Il n'y a aucune différence"]} correct={2} explanation="Un message chiffré se voit mais ne se lit pas. Un message caché par stéganographie ne se voit pas du tout." />
+  <Quiz id="q-7" question="En modifiant le bit de poids faible d'une composante de couleur, de combien la valeur change-t-elle au plus ?" options={["De 128", "De 8", "De 255", "De 1"]} correct={3} explanation="Le bit de poids faible vaut 1 : le modifier change la valeur d'une unité, invisible à l'œil." />
+</QuizGroup>
+
+## à retenir
+
+- Une image est une grille de **pixels** ; chaque pixel a trois composantes **rouge, vert, bleu**, souvent d'un octet chacune.
+- **Poids d'une image = largeur × hauteur × profondeur ÷ 8.** Full HD en 24 bits : environ 6,2 Mo.
+- Un son est **échantillonné** (fréquence en Hz, plus du double de la fréquence la plus haute) puis **quantifié** (résolution en bits).
+- **Débit d'un son = fréquence × résolution × canaux.** Un CD : 1 411 200 bits par seconde, environ 10,6 Mo par minute.
+- Sans compression, le multimédia est énorme : la compression est indispensable.
+- Les fichiers portent des **métadonnées** (EXIF), parfois la **position GPS**.
+- La **stéganographie** cache un message dans les bits de poids faible, invisible à l'œil.

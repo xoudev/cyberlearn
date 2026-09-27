@@ -1,0 +1,209 @@
+---
+refCode: CL-LSN-01008-V01
+slug: fondamentaux-le-bit-et-l-octet
+title: "Le bit et l'octet"
+description: "Pourquoi les ordinateurs comptent en binaire, ce que sont le bit et l'octet, combien de valeurs tiennent sur n bits, la différence entre ko et Kio qui explique les disques « plus petits qu'annoncés », et pourquoi un débit en mégabits n'est pas une vitesse en mégaoctets."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 35
+xpReward: 200
+prerequisites: ["CL-LSN-01901-V01"]
+---
+
+Tout ce qu'un ordinateur manipule, une photo, une chanson, un message, un programme, finit sous la forme d'une suite de 0 et de 1. Ce n'est pas une image : c'est littéralement ce qui circule dans ses circuits et ce qui est écrit sur ses disques. Ce module t'explique comment on passe de ces 0 et de ces 1 à des nombres, du texte, des images et des sons. Il commence par les deux unités de base : le **bit** et l'**octet**, et par une question de vocabulaire qui fait perdre des gigaoctets à tout le monde.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer pourquoi les ordinateurs utilisent le binaire ;
+- définir le bit et l'octet ;
+- calculer combien de valeurs différentes tiennent sur un nombre de bits donné ;
+- distinguer les unités décimales (ko, Mo, Go) des unités binaires (Kio, Mio, Gio) ;
+- expliquer pourquoi un disque de 1 To apparaît plus petit dans le système ;
+- convertir un débit en mégabits par seconde en mégaoctets par seconde.
+
+## pourquoi ça compte
+
+Ces notions reviennent partout. En administration, pour lire la taille d'un disque, l'espace libre, la mémoire disponible, sans se tromper d'un facteur 8 ou de 7 %. En réseau, pour comprendre qu'une connexion « à 1 Gb/s » télécharge au mieux 125 Mo par seconde. En sécurité, parce que la force d'une clé de chiffrement se mesure en bits : une clé de 128 bits n'est pas « un peu plus » qu'une clé de 64 bits, elle est des milliards de milliards de fois plus difficile à deviner.
+
+## pourquoi le binaire ?
+
+Un ordinateur est fait de milliards de minuscules interrupteurs électroniques, les **transistors**. Chacun n'a, en pratique, que deux états faciles à distinguer : le courant passe ou ne passe pas, la tension est haute ou basse. On note ces deux états **1** et **0**.
+
+On pourrait imaginer des circuits à dix états pour compter en décimal, mais distinguer dix niveaux de tension de façon fiable, à des milliards d'opérations par seconde et malgré les perturbations électriques, serait bien plus difficile et plus coûteux. Deux états, c'est la solution la plus robuste. Le même principe se retrouve partout : sur un disque dur, une zone aimantée dans un sens ou dans l'autre ; sur un CD, un creux ou une surface plate ; dans une fibre optique, de la lumière ou pas de lumière.
+
+## le bit
+
+Le **bit** (contraction de *binary digit*, chiffre binaire) est la plus petite unité d'information : **un** 0 ou **un** 1. Il répond à une question par oui ou par non.
+
+Un bit seul ne dit pas grand-chose. Mais en les combinant, on multiplie les possibilités :
+
+| Nombre de bits | Combinaisons possibles | Exemples |
+| --- | --- | --- |
+| 1 | 2 | 0, 1 |
+| 2 | 4 | 00, 01, 10, 11 |
+| 3 | 8 | 000, 001, 010, 011, 100, 101, 110, 111 |
+| 8 | 256 | de 00000000 à 11111111 |
+| 16 | 65 536 | |
+| 32 | environ 4,3 milliards | |
+| 64 | environ 18 milliards de milliards | |
+
+La règle est simple : **chaque bit ajouté double le nombre de combinaisons**. Avec n bits, on obtient 2 puissance n combinaisons, noté 2ⁿ.
+
+<Diagram caption="Chaque bit ajouté double les possibilités">
+flowchart LR
+  A["1 bit : 2 valeurs"] --> B["2 bits : 4 valeurs"]
+  B --> C["3 bits : 8 valeurs"]
+  C --> D["8 bits : 256 valeurs"]
+  D --> E["32 bits : 4,3 milliards"]
+</Diagram>
+
+Ce doublement explique beaucoup de choses que tu croiseras :
+
+- une adresse IPv4 fait 32 bits : il n'existe donc qu'environ 4,3 milliards d'adresses, ce qui est trop peu pour la planète, d'où IPv6 et ses 128 bits (parcours Réseaux) ;
+- un processeur « 32 bits » ne peut désigner directement qu'environ 4 Gio de mémoire, d'où le passage au 64 bits ;
+- une clé de chiffrement de 128 bits a 2¹²⁸ valeurs possibles, un nombre à 39 chiffres : les essayer toutes est hors de portée de tous les ordinateurs du monde réunis.
+
+## l'octet
+
+Les bits sont regroupés par **8** : ce groupe s'appelle un **octet** (*byte* en anglais). Un octet peut donc prendre 256 valeurs, de 0 à 255. C'est l'unité de base de la mémoire (leçon sur la mémoire vive : chaque case contient un octet) et du stockage.
+
+Attention à la confusion d'abréviations :
+
+| Unité | Symbole | Contient |
+| --- | --- | --- |
+| bit | **b** minuscule | 1 chiffre binaire |
+| octet | **o** en français, **B** majuscule en anglais | 8 bits |
+
+`1 Mb` (mégabit) et `1 Mo` ou `1 MB` (mégaoctet) diffèrent donc d'un facteur **8**. Cette distinction est la clé de la dernière partie de la leçon, sur les débits.
+
+### le 255 que tu croiseras partout
+
+Puisqu'un octet va de 0 à 255, ce nombre revient sans cesse dès qu'on regarde sous le capot. Une couleur à l'écran est souvent décrite par trois octets, un pour le rouge, un pour le vert, un pour le bleu : chaque composante va donc de 0 à 255, et le blanc s'écrit (255, 255, 255). Une adresse IPv4 comme `192.168.1.10` est faite de quatre octets, d'où quatre nombres qui ne dépassent jamais 255 ; le masque `255.255.255.0` que tu croiseras en réseau signifie « les trois premiers octets entiers ». Quand un champ d'une application refuse une valeur au-delà de 255, ou qu'un compteur repasse brusquement à 0 après 255, c'est presque toujours qu'il est stocké sur un seul octet. Ce dernier phénomène porte un nom, le **débordement**, et il est à l'origine de bugs et de failles de sécurité : tu le retrouveras dans la leçon sur les nombres négatifs.
+
+## les multiples : ko ou Kio ?
+
+Pour les grandes quantités, on utilise des préfixes. Et c'est là que deux systèmes coexistent, source d'une confusion universelle.
+
+**Les préfixes décimaux**, ceux du système international, multiplient par **1 000** :
+
+| Symbole | Valeur |
+| --- | --- |
+| ko (kilooctet) | 1 000 octets |
+| Mo (mégaoctet) | 1 000 000 octets |
+| Go (gigaoctet) | 1 000 000 000 octets |
+| To (téraoctet) | 1 000 000 000 000 octets |
+
+**Les préfixes binaires**, adaptés à la façon dont la mémoire est organisée, multiplient par **1 024**, soit 2¹⁰ :
+
+| Symbole | Valeur |
+| --- | --- |
+| Kio (kibioctet) | 1 024 octets |
+| Mio (mébioctet) | 1 048 576 octets |
+| Gio (gibioctet) | 1 073 741 824 octets |
+| Tio (tébioctet) | 1 099 511 627 776 octets |
+
+Le petit « i » de Kio, Mio, Gio signale le binaire. Pendant longtemps, tout le monde a écrit « Mo » pour dire « Mio », ce qui entretient la confusion.
+
+### le disque « plus petit qu'annoncé »
+
+Les fabricants de disques utilisent, à juste titre, les préfixes **décimaux** : un disque de **1 To** contient 1 000 000 000 000 octets. Windows, lui, calcule en **binaire** mais affiche « Go » et « To ». Il divise donc par 1 024 à chaque étage, et affiche environ **931 Go** (en réalité 931 Gio). Rien ne manque : c'est la même quantité, exprimée dans deux unités différentes.
+
+L'écart grandit à chaque étage : un Kio est 2,4 % plus grand qu'un ko, un Gio 7,4 % plus grand qu'un Go, un Tio près de 10 % plus grand qu'un To. Sur un petit fichier, la différence passe inaperçue ; sur un disque de plusieurs téraoctets, elle représente des centaines de gigaoctets « disparus » qui n'ont jamais existé.
+
+<Callout type="info">
+Linux et macOS affichent souvent les unités correctement. `df -h` sous Linux utilise les puissances de 1 024 et l'écrit (`G` pour Gio dans ses colonnes), et `df -H` utilise les puissances de 1 000. macOS affiche depuis longtemps les tailles de fichiers en décimal, comme les fabricants. Quand deux outils donnent deux tailles différentes pour le même fichier, vérifie d'abord l'unité.
+</Callout>
+
+## les débits : mégabits ou mégaoctets ?
+
+Les débits réseau s'expriment presque toujours en **bits par seconde** : Mb/s, Gb/s. Les tailles de fichiers, en **octets**. Pour estimer la durée d'un téléchargement, il faut donc **diviser par 8**.
+
+| Débit annoncé | En octets par seconde, au mieux |
+| --- | --- |
+| 100 Mb/s | 12,5 Mo/s |
+| 1 Gb/s (fibre courante) | 125 Mo/s |
+| 10 Gb/s (réseau de serveurs) | 1,25 Go/s |
+
+Un fichier de 5 Go sur une fibre à 1 Gb/s prend donc au moins 40 secondes (5 000 Mo divisés par 125 Mo/s), et en pratique un peu plus, à cause des en-têtes des protocoles réseau (parcours Réseaux) et des limites du serveur en face.
+
+## démonstration : les calculs en Python
+
+Python est pratique pour vérifier ces calculs. L'opérateur `**` calcule une puissance.
+
+```python
+print(2 ** 8)            # combinaisons sur 8 bits
+print(2 ** 32)           # combinaisons sur 32 bits
+print(10 ** 12 / 2 ** 30)  # un disque de 1 To exprimé en Gio
+print(5000 / (1000 / 8))   # secondes pour 5 000 Mo à 1 Gb/s
+```
+
+```text
+256
+4294967296
+931.3225746154785
+40.0
+```
+
+Le 1 To des fabricants fait bien 931 Gio, et le téléchargement 40 secondes au mieux.
+
+## à toi de jouer
+
+Complète ce petit programme. Il calcule déjà le nombre de valeurs sur n bits et convertit un disque. À toi de calculer : le nombre de valeurs sur 128 bits, la taille en Gio d'un disque de 2 To, et la durée minimale en secondes pour télécharger un fichier de 700 Mo sur une connexion à 100 Mb/s.
+
+<CodePlayground language="python" starterCode={`def valeurs(bits):
+    return 2 ** bits
+
+def to_en_gio(to):
+    return to * 10 ** 12 / 2 ** 30
+
+def duree_telechargement(taille_mo, debit_mbits):
+    # débit en mégabits par seconde, taille en mégaoctets
+    return taille_mo / (debit_mbits / 8)
+
+print("Valeurs sur 8 bits :", valeurs(8))
+print("Valeurs sur 32 bits :", valeurs(32))
+print("1 To en Gio :", round(to_en_gio(1), 1))
+print("5 000 Mo à 1 000 Mb/s :", duree_telechargement(5000, 1000), "s")
+
+# À toi : 128 bits, un disque de 2 To, 700 Mo à 100 Mb/s
+`} />
+
+Le nombre de valeurs sur 128 bits s'affiche en entier, avec ses 39 chiffres : Python sait manipuler des entiers aussi grands que la mémoire le permet, ce que beaucoup de langages ne font pas.
+
+## les pièges
+
+- **Confondre bit et octet.** `b` minuscule pour les bits, `o` ou `B` majuscule pour les octets : un facteur 8 d'écart.
+- **Croire qu'un débit en Mb/s est une vitesse de téléchargement en Mo/s.** Il faut diviser par 8.
+- **Penser qu'un disque « perd » de la place.** 1 To décimal fait 931 Gio : c'est la même quantité dans une autre unité.
+- **Sous-estimer ce qu'ajoute un bit.** Chaque bit double les possibilités : 2ⁿ grandit à une vitesse vertigineuse.
+- **Mélanger les unités de deux outils.** Vérifie si l'outil compte en puissances de 1 000 ou de 1 024 avant de comparer.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.bipm.org/fr/measurement-units/si-prefixes" description="Les préfixes officiels du système international d'unités">BIPM : les préfixes du SI</ExternalLink>
+
+<ExternalLink href="https://physics.nist.gov/cuu/Units/binary.html" description="Les préfixes binaires (kibi, mébi, gibi) et leur origine">NIST : Prefixes for binary multiples</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/introduction.html" description="Utiliser Python comme une calculatrice, dans le tutoriel officiel">Tutoriel Python : introduction informelle</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi les ordinateurs utilisent-ils le binaire ?" options={["Parce que c'est plus joli", "Parce que les humains comptent en binaire", "Parce que c'est imposé par la loi", "Parce que deux états électriques se distinguent de façon beaucoup plus fiable que dix"]} correct={3} explanation="Un transistor a deux états faciles à distinguer. Deux niveaux sont bien plus robustes face aux perturbations que dix." />
+  <Quiz id="q-2" question="Combien de valeurs différentes peut-on représenter avec 10 bits ?" options={["10", "20", "1 024", "100"]} correct={2} explanation="Avec n bits, on obtient 2 puissance n combinaisons : 2 puissance 10 vaut 1 024." />
+  <Quiz id="q-3" question="Combien de bits contient un octet ?" options={["8", "4", "10", "16"]} correct={0} explanation="Un octet est un groupe de 8 bits, qui peut prendre 256 valeurs." />
+  <Quiz id="q-4" question="Pourquoi un disque vendu 1 To apparaît-il comme 931 Go dans Windows ?" options={["Parce que le fabricant compte en puissances de 1 000 et Windows en puissances de 1 024", "Parce qu'une partie est défectueuse", "Parce que le système occupe 69 Go", "Parce que le disque est compressé"]} correct={0} explanation="1 000 000 000 000 octets divisés par 1 024 trois fois donnent environ 931. C'est la même quantité, dans une autre unité." />
+  <Quiz id="q-5" question="Avec une connexion à 200 Mb/s, quel est au mieux le débit de téléchargement en Mo/s ?" options={["25 Mo/s", "200 Mo/s", "1 600 Mo/s", "2 Mo/s"]} correct={0} explanation="Un débit réseau s'exprime en bits : on divise par 8 pour obtenir des octets, soit 25 Mo/s." />
+  <Quiz id="q-6" question="Que désigne le symbole Mio ?" options={["1 000 000 octets", "1 048 576 octets", "1 000 000 bits", "1 024 bits"]} correct={1} explanation="Le i signale un préfixe binaire : un mébioctet vaut 1 024 fois 1 024 octets." />
+  <Quiz id="q-7" question="Une clé de chiffrement passe de 64 à 65 bits. Combien de clés possibles y a-t-il en plus ?" options={["Deux fois plus", "Une seule de plus", "64 de plus", "Dix fois plus"]} correct={0} explanation="Chaque bit ajouté double le nombre de combinaisons. 128 bits, c'est 2 puissance 64 fois plus que 64 bits." />
+</QuizGroup>
+
+## à retenir
+
+- Les ordinateurs utilisent le **binaire** parce que deux états se distinguent de façon fiable.
+- Le **bit** vaut 0 ou 1 ; **n bits** donnent **2ⁿ** combinaisons, et chaque bit ajouté double le nombre.
+- L'**octet** regroupe **8 bits** et prend 256 valeurs. `b` pour bit, `o` ou `B` pour octet.
+- Préfixes **décimaux** (ko, Mo, Go, To : × 1 000) et **binaires** (Kio, Mio, Gio, Tio : × 1 024). 1 To = 931 Gio.
+- Les débits sont en **bits** par seconde : **divise par 8** pour obtenir des octets. 1 Gb/s = 125 Mo/s au mieux.

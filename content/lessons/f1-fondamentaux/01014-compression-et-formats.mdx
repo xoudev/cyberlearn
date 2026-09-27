@@ -1,0 +1,204 @@
+---
+refCode: CL-LSN-01014-V01
+slug: fondamentaux-compression-et-formats
+title: "Compression, formats et Base64"
+description: "Comment on fait tenir un film dans une connexion ordinaire : compression sans perte (répétitions, dictionnaires) et avec perte (JPEG, MP3, vidéo), la différence entre un conteneur et un codec, les bombes de décompression, puis Base64, qui transforme n'importe quels octets en texte, et pourquoi ce n'est surtout pas du chiffrement."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01013-V01"]
+---
+
+Dans la leçon précédente, une heure de vidéo Full HD non compressée pesait 672 Go, et une chanson de trois minutes 32 Mo. Pourtant, tu regardes des films en ligne sur une connexion ordinaire, et ta bibliothèque musicale tient dans ton téléphone. Entre les deux, il y a la **compression**, l'une des inventions les plus utiles de l'informatique. Cette leçon explique ses deux grandes familles, démêle la jungle des formats de fichiers, puis présente **Base64**, un encodage que tu croiseras partout, des pièces jointes aux jetons d'authentification, et qu'il faut savoir reconnaître au premier coup d'œil.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer compression sans perte et compression avec perte ;
+- expliquer deux principes de compression sans perte ;
+- expliquer pourquoi des données aléatoires ou chiffrées ne se compressent pas ;
+- distinguer un conteneur d'un codec ;
+- expliquer ce qu'est une bombe de décompression ;
+- encoder et décoder en Base64, et expliquer pourquoi ce n'est pas du chiffrement.
+
+## pourquoi ça compte
+
+La compression touche tous les métiers de l'informatique. Un administrateur compresse les sauvegardes et les journaux. Un développeur active la compression des réponses de son serveur web et choisit les bons formats d'images. En sécurité, la compression intervient à plusieurs endroits : les archives servent à faire passer des fichiers malveillants à travers les filtres, les bombes de décompression visent à saturer les antivirus, et l'ordre entre compression et chiffrement a déjà causé des failles. Quant à Base64, c'est l'encodage que les attaquants utilisent le plus pour masquer une commande, et que les défenseurs doivent savoir décoder en quelques secondes.
+
+## deux familles de compression
+
+**Compresser**, c'est représenter la même information avec moins d'octets. Il existe deux approches, aux usages très différents.
+
+La compression **sans perte** permet de retrouver exactement les données d'origine, au bit près. Elle est obligatoire pour les textes, les programmes, les bases de données, tout ce où un seul bit changé serait une erreur. Formats typiques : ZIP, gzip, 7z, PNG, FLAC.
+
+La compression **avec perte** supprime des informations jugées peu importantes, en général ce que nos sens perçoivent mal. On ne retrouve jamais l'original exact, mais on gagne énormément de place. Elle ne s'utilise que pour les images, les sons et les vidéos. Formats typiques : JPEG, MP3, AAC, H.264, AV1.
+
+<Diagram caption="Les deux familles de compression">
+flowchart TD
+  A["Données à compresser"] --> C["Chaque bit compte : sans perte, ZIP, gzip, PNG, FLAC"]
+  A --> D["Image ou son : avec perte, JPEG, MP3, H.264"]
+  C --> E["Original retrouvé exactement"]
+  D --> F["Approximation beaucoup plus légère"]
+</Diagram>
+
+## la compression sans perte
+
+Toutes les techniques sans perte reposent sur la même idée : **exploiter les répétitions et les régularités**. Deux exemples suffisent à en saisir le principe.
+
+### le codage par plages
+
+Le plus simple s'appelle le **codage par plages** (*run-length encoding*, RLE) : au lieu d'écrire douze fois la même lettre, on écrit « 12 fois cette lettre ». La ligne `WWWWWWWWWWWWBWWWWWWWWWWWWBBB`, 28 caractères, devient `12W1B12W3B`, 10 caractères. C'est ce que faisaient les fax, dont les pages sont surtout faites de longues plages blanches.
+
+Mais sur un texte sans répétitions, `ABC` devient `1A1B1C` : le résultat est **plus long** que l'original. Ce n'est pas un défaut de cette méthode en particulier : aucune méthode sans perte ne peut raccourcir toutes les données possibles. Il y a plus de fichiers de 1 000 octets que de fichiers plus courts, donc certains, forcément, ne rétrécissent pas.
+
+### le dictionnaire
+
+Les formats ZIP et gzip utilisent un algorithme appelé **DEFLATE**, qui combine deux idées. La première : quand une suite d'octets est déjà apparue plus tôt, on la remplace par une référence du type « recopie les 8 octets situés 40 positions en arrière ». La seconde : les symboles fréquents sont codés sur moins de bits que les symboles rares, comme en morse où la lettre E, la plus fréquente en anglais, est un simple point.
+
+Sur un texte naturel, ces méthodes divisent souvent le poids par trois ou quatre. Sur un texte très répétitif, le gain est spectaculaire : les 8 000 octets de « Bonjour » répété mille fois se compressent en **46 octets**.
+
+### ce qui ne se compresse pas
+
+Des octets tirés au hasard n'ont aucune régularité : 8 000 octets aléatoires passés dans le même compresseur ressortent à **8 011 octets**, un peu plus gros qu'au départ. Or des données **bien chiffrées** ressemblent précisément à du hasard. Deux conséquences pratiques :
+
+- il faut **compresser avant de chiffrer**, jamais après : une fois chiffrées, les données ne se compressent plus ;
+- un fichier qui ne se compresse pas du tout est peut-être chiffré ou déjà compressé. Les analystes utilisent cette propriété, qu'on mesure par l'**entropie**, pour repérer des données chiffrées cachées ou un programme malveillant qui dissimule son code.
+
+Compresser avant de chiffrer a pourtant un piège subtil : la taille du résultat compressé dépend du contenu. Des attaques comme CRIME et BREACH, en 2012 et 2013, ont exploité ce détail pour deviner des secrets dans des connexions HTTPS, en observant la taille des messages chiffrés. Tu les retrouveras dans les parcours de cryptographie.
+
+## la compression avec perte
+
+La compression avec perte s'appuie sur les limites de nos sens. Le **JPEG** découpe l'image en blocs de 8 × 8 pixels et élimine les détails fins que l'œil remarque peu, surtout dans les couleurs, auxquelles il est moins sensible qu'à la luminosité. Le **MP3** et l'**AAC** retirent les sons masqués par d'autres plus forts, que l'oreille n'entend pas. Les codecs vidéo comme **H.264**, **H.265** ou **AV1** ajoutent une idée décisive : d'une image à la suivante, l'essentiel ne change pas, alors on n'enregistre que les différences.
+
+Le réglage de qualité est un compromis entre poids et fidélité. Trop poussée, la compression laisse des **artefacts** visibles : blocs carrés dans un ciel, halos autour des contours, son métallique. Et chaque nouvelle compression avec perte en ajoute : enregistrer dix fois de suite un JPEG en le modifiant le dégrade à chaque fois. Pour les logos, les captures d'écran et les schémas, faits de couleurs franches et de bords nets, le **PNG** sans perte est souvent à la fois plus net et plus léger que le JPEG.
+
+## conteneur et codec
+
+Un fichier vidéo `.mp4` ou `.mkv` n'est pas un format de compression : c'est un **conteneur**, une boîte qui range plusieurs flux ensemble (une piste vidéo, une ou plusieurs pistes audio, des sous-titres, des métadonnées) et les synchronise. À l'intérieur, chaque flux est compressé par un **codec** (codeur-décodeur) : H.264 ou AV1 pour la vidéo, AAC ou Opus pour l'audio.
+
+| Conteneur | Codecs vidéo courants | Codecs audio courants |
+| --- | --- | --- |
+| MP4 | H.264, H.265, AV1 | AAC |
+| MKV | presque tous | presque tous |
+| WebM | VP9, AV1 | Opus |
+
+C'est pour cela qu'une vidéo peut refuser de se lire alors que son extension est connue : le lecteur sait ouvrir le conteneur, mais ne possède pas le codec de la piste vidéo. Même logique pour les documents : un `.docx` est en réalité une **archive ZIP** qui contient des fichiers XML et des images. Tu avais vu sa signature `PK` dans la leçon sur l'hexadécimal.
+
+## les bombes de décompression
+
+Puisque des données très répétitives se compressent énormément, on peut fabriquer une petite archive qui, une fois décompressée, devient gigantesque. Le fichier le plus célèbre, `42.zip`, pèse **42 Ko** et contient, par archives imbriquées, **4,5 pétaoctets** de données. Le but d'une telle **bombe de décompression** est de saturer le disque ou la mémoire du programme qui l'ouvre, typiquement un antivirus ou un filtre de messagerie qui inspecte les pièces jointes, pour le faire planter ou l'obliger à laisser passer le fichier sans l'analyser.
+
+Les outils sérieux se protègent en limitant la taille décompressée, le taux de compression et la profondeur d'imbrication qu'ils acceptent. Si un jour tu écris un programme qui décompresse des fichiers envoyés par des utilisateurs, c'est une vérification à prévoir.
+
+## Base64 : des octets déguisés en texte
+
+Certains canaux ne transportent que du **texte** : le corps d'un courriel, une adresse web, un fichier JSON, un en-tête HTTP. Pour y faire passer des données binaires, une image, un fichier, une clé, on les **encode en Base64**.
+
+Le principe : on prend les octets **trois par trois**, soit 24 bits, et on découpe ces 24 bits en **quatre groupes de 6 bits**. Chaque groupe vaut de 0 à 63 et est remplacé par un caractère d'un alphabet de 64 symboles : `A` à `Z`, `a` à `z`, `0` à `9`, puis `+` et `/`.
+
+<Diagram caption="Encoder le mot Man en Base64 : 3 octets donnent 4 caractères">
+flowchart LR
+  A["M a n"] --> B["4D 61 6E"]
+  B --> C["24 bits"]
+  C --> D["4 groupes de 6 bits : 19, 22, 5, 46"]
+  D --> E["T W F u"]
+</Diagram>
+
+Quand le nombre d'octets n'est pas un multiple de trois, on complète avec le signe `=` : `Ma` donne `TWE=` et `M` donne `TQ==`. Ces `=` à la fin sont un indice presque infaillible pour reconnaître du Base64.
+
+Trois conséquences à retenir :
+
+- **Base64 grossit les données d'un tiers** : 3 octets deviennent 4 caractères. 300 octets donnent 400 caractères ;
+- une variante, **Base64url**, remplace `+` et `/` par `-` et `_`, qui ne posent pas de problème dans une adresse web. C'est elle qu'utilisent les jetons JWT, faits de trois blocs en Base64url séparés par des points ;
+- et surtout : **Base64 n'est pas du chiffrement**. Il n'y a aucune clé. N'importe qui décode du Base64 en une seconde.
+
+### Base64 en sécurité
+
+Ce dernier point mérite qu'on insiste, car c'est une erreur très répandue. L'authentification HTTP dite **Basic** envoie l'identifiant et le mot de passe sous la forme `Authorization: Basic YWxpY2U6bW90ZGVwYXNzZQ==`. Cela a l'air illisible, mais ce n'est que `alice:motdepasse` encodé en Base64 : sans HTTPS, n'importe qui sur le chemin le lit en clair. De même, le contenu d'un jeton JWT est lisible par quiconque le possède ; seule sa **signature** empêche de le modifier.
+
+Côté attaque, Base64 est l'outil favori pour **masquer** une commande malveillante aux yeux d'un humain ou d'un filtre naïf : une longue ligne de lettres et de chiffres dans un script, dans un journal ou dans une macro de document doit immédiatement te donner envie de la décoder. Sous Linux, la commande `base64 -d` le fait ; en Python, le module `base64`.
+
+## démonstration en Python
+
+```python
+import base64, zlib, os
+
+repetitif = ('Bonjour ' * 1000).encode()
+aleatoire = os.urandom(8000)
+print(len(repetitif), len(zlib.compress(repetitif)))
+print(len(aleatoire), len(zlib.compress(aleatoire)))
+
+print(base64.b64encode(b'Man'))
+print(base64.b64encode('Café'.encode('utf-8')))
+print(base64.b64decode('YWxpY2U6bW90ZGVwYXNzZQ==').decode())
+```
+
+```text
+8000 46
+8000 8011
+b'TWFu'
+b'Q2Fmw6k='
+alice:motdepasse
+```
+
+La taille compressée des octets aléatoires varie légèrement d'une exécution à l'autre, mais elle reste toujours au-dessus de 8 000.
+
+## à toi de jouer
+
+Premier exercice : écris `solution(texte)` qui applique le codage par plages. Chaque suite de caractères identiques est remplacée par sa longueur suivie du caractère : `'AAABBC'` devient `'3A2B1C'`. Un texte vide renvoie un texte vide.
+
+<PythonChallenge id="f1-compression-1" title="Le codage par plages" description="Renvoie le texte compressé par plages : longueur de chaque suite, puis le caractère." starterCode="def solution(texte):
+    resultat = ''
+    i = 0
+    while i != len(texte):
+        # compte combien de fois texte[i] se répète à partir de i
+        i += 1
+    return resultat" tests={[{ input: "solution('AAABBC')", expected: "3A2B1C" }, { input: "solution('WWWWWWWWWWWWBWWWWWWWWWWWWBBB')", expected: "12W1B12W3B" }, { input: "solution('ABC')", expected: "1A1B1C" }, { input: "solution('')", expected: "" }, { input: "solution('ZZZZZZZZZZ')", expected: "10Z" }]} />
+
+Second exercice : écris `solution(code)` qui décode un texte en Base64 et renvoie le texte UTF-8 qu'il contient. Utilise le module `base64` de Python. Puis, pour t'entraîner, décode à la main le début de `Q3liZXJMZWFybg==` avec l'alphabet de la leçon.
+
+<PythonChallenge id="f1-base64-1" title="Décoder du Base64" description="Renvoie le texte UTF-8 contenu dans le code Base64 reçu." starterCode="import base64
+
+def solution(code):
+    octets = b''  # décode le Base64
+    return octets.decode('utf-8')" tests={[{ input: "solution('Qm9uam91cg==')", expected: "Bonjour" }, { input: "solution('Q2Fmw6k=')", expected: "Café" }, { input: "solution('Q3liZXJMZWFybg==')", expected: "CyberLearn" }, { input: "solution('QnJhdm8sIHR1IGFzIGTDqWNvZMOpIGxlIG1lc3NhZ2UgIQ==')", expected: "Bravo, tu as décodé le message !" }]} />
+
+## les pièges
+
+- **Recompresser avec perte à chaque modification.** Chaque enregistrement en JPEG dégrade l'image : garde un original sans perte.
+- **Chiffrer puis compresser.** Des données chiffrées ne se compressent plus : on compresse d'abord.
+- **Confondre conteneur et codec.** `.mp4` est une boîte ; ce qui compte pour la lecture, c'est le codec de chaque piste.
+- **Décompresser sans limite des fichiers reçus.** Une bombe de décompression sature disque ou mémoire.
+- **Prendre Base64 pour du chiffrement.** C'est un simple encodage, réversible par n'importe qui, sans clé.
+- **Oublier que Base64 grossit les données.** Compte un tiers de plus.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.rfc-editor.org/rfc/rfc4648" description="La norme de Base64, Base64url et de leurs cousins Base32 et Base16">RFC 4648 : les encodages Base16, Base32 et Base64</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/base64.html" description="Le module base64 de Python et ses variantes">Documentation Python : base64</ExternalLink>
+
+<ExternalLink href="https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Containers" description="Les conteneurs et codecs utilisés sur le web, en anglais">MDN : conteneurs de médias</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel type de compression faut-il pour une archive de programmes ?" options={["Avec perte, pour gagner plus de place", "Aucune, les programmes ne se compressent pas", "Sans perte, car chaque bit doit être retrouvé", "Peu importe"]} correct={2} explanation="Un programme dont un seul bit change ne fonctionne plus : seule la compression sans perte convient." />
+  <Quiz id="q-2" question="Pourquoi un fichier chiffré ne se compresse-t-il presque pas ?" options={["Parce que ses octets ressemblent à du hasard, sans régularité à exploiter", "Parce qu'il est protégé par un mot de passe", "Parce que les compresseurs refusent les fichiers chiffrés", "Il se compresse très bien"]} correct={0} explanation="La compression exploite les répétitions. Des données bien chiffrées n'en ont pas : il faut compresser avant de chiffrer." />
+  <Quiz id="q-3" question="Une vidéo .mp4 ne se lit pas alors que le lecteur reconnaît les .mp4. Quelle est la cause probable ?" options={["Le fichier est un virus", "Le lecteur ne possède pas le codec de la piste vidéo", "L'extension est fausse", "La vidéo est trop longue"]} correct={1} explanation="MP4 est un conteneur. Le lecteur sait l'ouvrir mais doit aussi disposer du codec de chaque piste." />
+  <Quiz id="q-4" question="Quel est le but d'une bombe de décompression ?" options={["Chiffrer les fichiers de la victime", "Voler des mots de passe", "Accélérer un téléchargement", "Saturer le disque ou la mémoire de l'outil qui l'ouvre, souvent un antivirus"]} correct={3} explanation="Une petite archive se décompresse en un volume énorme pour faire planter l'analyseur ou l'obliger à abandonner l'inspection." />
+  <Quiz id="q-5" question="Combien de caractères Base64 produit un fichier de 30 octets ?" options={["30", "40", "24", "60"]} correct={1} explanation="Chaque groupe de 3 octets donne 4 caractères : 30 octets donnent 10 groupes, soit 40 caractères." />
+  <Quiz id="q-6" question="Un en-tête contient Authorization: Basic dGVzdDp0ZXN0. Que peut-on en dire ?" options={["Le mot de passe est chiffré et sûr", "C'est une empreinte impossible à inverser", "Il suffit de décoder le Base64 pour lire l'identifiant et le mot de passe", "C'est une clé publique"]} correct={2} explanation="Base64 n'est pas du chiffrement : cette valeur se décode en test:test. Seul HTTPS protège un tel en-tête." />
+  <Quiz id="q-7" question="Quel indice permet souvent de reconnaître du Base64 ?" options={["Il se termine souvent par un ou deux signes =", "Il ne contient que des chiffres", "Il commence toujours par 0x", "Il contient des accents"]} correct={0} explanation="Le signe = sert de remplissage quand le nombre d'octets n'est pas un multiple de trois." />
+</QuizGroup>
+
+## à retenir
+
+- **Sans perte** (ZIP, gzip, PNG, FLAC) : on retrouve chaque bit. **Avec perte** (JPEG, MP3, H.264) : on supprime ce que les sens perçoivent mal.
+- La compression sans perte exploite les **répétitions** : plages, dictionnaire, codes courts pour les symboles fréquents.
+- Des données **aléatoires ou chiffrées** ne se compressent pas : on **compresse avant de chiffrer**.
+- Un **conteneur** (MP4, MKV) range des flux ; un **codec** (H.264, AAC) les compresse. Un `.docx` est un ZIP.
+- Une **bombe de décompression** vise à saturer l'outil qui l'ouvre : on limite toujours ce qu'on décompresse.
+- **Base64** : 3 octets donnent 4 caractères, un tiers de plus, souvent terminé par `=`. **Ce n'est pas du chiffrement.**

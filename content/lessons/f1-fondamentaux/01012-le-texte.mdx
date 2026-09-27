@@ -1,0 +1,223 @@
+---
+refCode: CL-LSN-01012-V01
+slug: fondamentaux-le-texte
+title: "Le texte : ASCII, Unicode et UTF-8"
+description: "Comment une lettre devient un nombre : la table ASCII, Unicode et ses points de code, l'encodage UTF-8 octet par octet, l'origine des « Ã© » qui défigurent les pages mal encodées, les fins de ligne Windows et Linux, et les attaques qui jouent sur les caractères, des domaines homographes aux encodages trop longs."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01011-V01"]
+---
+
+Tu as déjà reçu un courriel où « Café » s'affichait « CafÃ© », ou ouvert un fichier dont tous les accents étaient remplacés par des losanges avec un point d'interrogation. Ces défauts ont tous la même cause : un texte écrit selon une convention et relu selon une autre. Car pour la machine, un texte n'est qu'une suite d'octets, et c'est une convention, l'**encodage**, qui dit quel octet correspond à quelle lettre. Cette leçon t'explique ces conventions, de la vieille table ASCII à l'UTF-8 qui domine aujourd'hui le web, et te donne de quoi diagnostiquer et réparer les problèmes d'encodage.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un jeu de caractères et un encodage ;
+- lire un caractère ASCII à partir de son code ;
+- expliquer ce qu'est un point de code Unicode ;
+- encoder un caractère en UTF-8, à la main et en Python ;
+- diagnostiquer et réparer un texte mal décodé ;
+- expliquer les fins de ligne Windows et Linux ;
+- reconnaître deux attaques qui exploitent les caractères.
+
+## pourquoi ça compte
+
+Les problèmes d'encodage sont le quotidien du support et du développement : fichiers CSV aux accents cassés, noms de clients défigurés dans une base de données, scripts qui refusent de s'exécuter parce qu'ils ont été enregistrés sous Windows. En sécurité, les caractères sont aussi une surface d'attaque. Un nom de domaine peut sembler identique à celui de ta banque tout en utilisant une lettre cyrillique. Un filtre qui cherche `../` dans une adresse peut être contourné par une autre écriture du même caractère. Savoir ce qu'il y a vraiment derrière un texte, octet par octet, est une compétence de base.
+
+## caractères, codes et encodages
+
+Trois notions à bien séparer :
+
+- un **caractère** est un symbole abstrait : la lettre A, le chiffre 7, le signe €, l'emoji 😀 ;
+- un **jeu de caractères** attribue un **numéro** à chaque caractère ;
+- un **encodage** dit comment écrire ce numéro sous forme d'**octets**.
+
+Pour lire un texte correctement, il faut connaître l'encodage avec lequel il a été écrit. Le fichier, lui, ne contient que les octets : l'encodage n'y est généralement pas inscrit. C'est toute la source du problème.
+
+## ASCII, la table d'origine
+
+En 1963, les Américains normalisent l'**ASCII** : 128 caractères, numérotés de 0 à 127, qui tiennent sur 7 bits. On y trouve les lettres anglaises majuscules et minuscules, les chiffres, la ponctuation, l'espace et des **caractères de contrôle** hérités des téléscripteurs, comme le retour à la ligne.
+
+| Code décimal | Hexadécimal | Caractère |
+| --- | --- | --- |
+| 10 | `0A` | saut de ligne (LF) |
+| 13 | `0D` | retour chariot (CR) |
+| 32 | `20` | espace |
+| 48 à 57 | `30` à `39` | les chiffres 0 à 9 |
+| 65 à 90 | `41` à `5A` | les majuscules A à Z |
+| 97 à 122 | `61` à `7A` | les minuscules a à z |
+
+Tu reconnais les octets de la leçon sur l'hexadécimal : `42 6f 6e 6a 6f 75 72` se lit B, o, n, j, o, u, r. Quelques régularités rendent la table facile à mémoriser. Les chiffres commencent à `0x30` : le chiffre 7 a pour code `0x37`. Les majuscules commencent à `0x41`, les minuscules à `0x61`. La différence entre une majuscule et sa minuscule est toujours de 32, c'est-à-dire un seul bit, le bit de poids 32 : `A` s'écrit `01000001` et `a` s'écrit `01100001`.
+
+Le problème d'ASCII est évident pour un francophone : **aucune lettre accentuée**. Ni é, ni è, ni ç, ni à.
+
+## le chaos des pages de code
+
+Un octet a huit bits et ASCII n'en utilise que sept. Les valeurs de 128 à 255 restaient libres, et chaque région du monde les a remplies à sa façon. L'Europe de l'Ouest a eu **ISO-8859-1** (dit Latin-1), puis Windows a créé sa variante **Windows-1252**, qui ajoute notamment le signe €. La Russie, la Grèce, le Japon avaient leurs propres tables, incompatibles entre elles.
+
+Le même octet `E9` signifiait donc « é » en Latin-1, une tout autre lettre en cyrillique, et un morceau de caractère en japonais. Échanger un document entre deux pays était une loterie.
+
+## Unicode : un numéro pour chaque caractère
+
+**Unicode** a réglé le problème du jeu de caractères : un seul catalogue pour toutes les écritures du monde, plus de 150 000 caractères aujourd'hui, des alphabets anciens aux emojis. Chaque caractère reçoit un numéro unique, son **point de code**, noté `U+` suivi de sa valeur en hexadécimal :
+
+| Caractère | Point de code | Valeur décimale |
+| --- | --- | --- |
+| A | `U+0041` | 65 |
+| é | `U+00E9` | 233 |
+| € | `U+20AC` | 8 364 |
+| 😀 | `U+1F600` | 128 512 |
+
+Les 128 premiers points de code reprennent exactement ASCII. Mais Unicode ne dit pas comment écrire ces numéros en octets : pour cela, il faut un encodage. Le plus répandu, de loin, est l'UTF-8.
+
+## UTF-8, octet par octet
+
+L'**UTF-8** écrit chaque point de code sur **un à quatre octets**, selon sa taille :
+
+| Points de code | Octets | Forme binaire |
+| --- | --- | --- |
+| `U+0000` à `U+007F` | 1 | `0xxxxxxx` |
+| `U+0080` à `U+07FF` | 2 | `110xxxxx 10xxxxxx` |
+| `U+0800` à `U+FFFF` | 3 | `1110xxxx 10xxxxxx 10xxxxxx` |
+| `U+10000` à `U+10FFFF` | 4 | `11110xxx 10xxxxxx 10xxxxxx 10xxxxxx` |
+
+Les `x` reçoivent les bits du point de code. Les bits de tête indiquent le rôle de chaque octet : un octet qui commence par `0` est un caractère ASCII complet ; `110`, `1110` ou `11110` ouvrent un caractère de deux, trois ou quatre octets ; `10` marque un octet de suite.
+
+Encodons **é**, point de code `U+00E9`, à la main. `0xE9` vaut 233, soit en binaire sur 11 bits `00011101001`. Il faut deux octets : on répartit les 11 bits en 5 puis 6.
+
+<Diagram caption="Encoder é, U+00E9, en UTF-8">
+flowchart LR
+  A["U+00E9"] --> B["11 bits : 00011 et 101001"]
+  B --> C["110 00011 = C3"]
+  B --> D["10 101001 = A9"]
+  C --> E["é = C3 A9"]
+  D --> E
+</Diagram>
+
+« é » s'écrit donc `C3 A9` en UTF-8. Le signe € s'écrit sur trois octets, `E2 82 AC`, et l'emoji 😀 sur quatre, `F0 9F 98 80`.
+
+Cette conception a trois qualités qui expliquent son succès :
+
+- **compatible ASCII** : un texte anglais en ASCII est déjà un texte UTF-8 valide, octet pour octet ;
+- **économe** pour les langues à alphabet latin : la plupart des caractères n'occupent qu'un octet ;
+- **auto-synchronisante** : en tombant au milieu d'un texte, on reconnaît immédiatement le début du caractère suivant grâce aux bits de tête.
+
+Aujourd'hui, plus de 98 % des pages web sont en UTF-8. C'est l'encodage par défaut de Linux, de macOS, de Python 3 pour son code source et de la plupart des formats modernes (JSON l'impose).
+
+Conséquence pratique : **le nombre de caractères n'est pas le nombre d'octets**. « Crème brûlée » compte 12 caractères, mais occupe 15 octets en UTF-8, car è, û et é en prennent deux chacun. Un champ de base de données limité à « 20 octets » n'accepte donc pas forcément 20 lettres.
+
+## pourquoi « Ã© » ?
+
+Tu as maintenant tout pour comprendre le défaut le plus célèbre du web. Un texte est écrit en UTF-8 : « é » devient `C3 A9`. Un logiciel le relit en croyant que c'est du Windows-1252, où chaque octet est un caractère. Or dans cette table, `C3` est « Ã » et `A9` est « © ». Chaque é devient **Ã©**, chaque ç devient **Ã§**, et « Café » devient **CafÃ©**.
+
+Ce type de texte défiguré porte un nom, emprunté au japonais : le **mojibake**. En le voyant, tu peux faire le diagnostic à coup sûr : **de l'UTF-8 lu comme du Latin-1 ou du Windows-1252**. Et il se répare en refaisant le chemin à l'envers : réencoder le texte abîmé en Windows-1252 pour retrouver les octets d'origine, puis les décoder correctement en UTF-8.
+
+L'erreur inverse existe aussi : un texte en Windows-1252, où « é » est l'octet unique `E9`, lu comme de l'UTF-8. `E9` commence par `1110` : c'est le début d'un caractère de trois octets, mais les octets suivants ne commencent pas par `10`. La séquence est invalide, et le logiciel affiche le **caractère de remplacement** `�`, le losange au point d'interrogation.
+
+## les fins de ligne
+
+Autre source d'ennuis quotidienne : la fin de ligne. Linux et macOS terminent chaque ligne par un seul octet, `0A` (LF, *line feed*). Windows utilise deux octets, `0D 0A` (CR LF, *carriage return* puis *line feed*), un héritage des machines à écrire où il fallait ramener le chariot puis faire avancer le papier.
+
+Un script shell écrit sous Windows et exécuté sous Linux échoue souvent avec un message étrange comme `$'\r': command not found` : le `0D` en fin de ligne est pris pour une partie de la commande. Les éditeurs de code affichent l'encodage et la fin de ligne dans leur barre d'état, et Git sait convertir automatiquement ; c'est la première chose à vérifier devant un fichier qui se comporte bizarrement.
+
+## quand les caractères deviennent une arme
+
+### les domaines homographes
+
+Unicode contient des caractères qui se ressemblent à s'y méprendre : le « a » latin (`U+0061`) et le « а » cyrillique (`U+0430`) sont identiques à l'écran. Un attaquant peut enregistrer un nom de domaine qui ressemble exactement à celui d'une banque, avec une lettre cyrillique. Pour que ces noms circulent dans le système des noms de domaine, qui ne connaît que l'ASCII, ils sont convertis en **Punycode** : « аpple.com » avec un а cyrillique devient `xn--pple-43d.com`. Les navigateurs modernes affichent cette forme `xn--` quand un nom mélange des alphabets de façon suspecte, et c'est un signal d'alerte à connaître.
+
+### les encodages trop longs
+
+Les premières implémentations d'UTF-8 acceptaient d'écrire un caractère avec plus d'octets que nécessaire : le caractère `/`, normalement `2F`, pouvait aussi s'écrire `C0 AF`. En 2000, le serveur web IIS de Microsoft vérifiait qu'une adresse ne contenait pas `../` pour empêcher de remonter dans les dossiers, puis décodait l'UTF-8. En écrivant la barre oblique sous la forme longue, un attaquant contournait le filtre et accédait à des fichiers du système. Depuis, la norme interdit ces **formes trop longues**, et la leçon générale est restée : **on vérifie une donnée après l'avoir décodée, jamais avant**.
+
+## démonstration en Python
+
+En Python 3, le type `str` contient des caractères Unicode et le type `bytes` des octets. On passe de l'un à l'autre avec `encode()` et `decode()`, en précisant l'encodage.
+
+```python
+print('é'.encode('utf-8'))
+print(len('Crème brûlée'), len('Crème brûlée'.encode('utf-8')))
+print(bytes.fromhex('43 61 66 c3 a9').decode('utf-8'))
+print('Café'.encode('utf-8').decode('cp1252'))
+print(ord('A'), hex(ord('é')), chr(0x41))
+```
+
+```text
+b'\xc3\xa9'
+12 15
+Café
+CafÃ©
+65 0xe9 A
+```
+
+`ord()` donne le point de code d'un caractère, `chr()` fait l'inverse. `cp1252` est le nom de Windows-1252 pour Python.
+
+## à toi de jouer
+
+Explore dans ce bac à sable : change le texte, essaie d'autres caractères, provoque et répare du mojibake.
+
+<CodePlayground language="python" starterCode={`texte = 'Crème brûlée à 5 €'
+
+print('Caractères :', len(texte))
+octets = texte.encode('utf-8')
+print('Octets :', len(octets))
+print('En hexadécimal :', octets.hex(' '))
+
+for c in 'Aé€':
+    print(c, 'U+%04X' % ord(c), c.encode('utf-8').hex(' '))
+
+abime = texte.encode('utf-8').decode('cp1252', errors='replace')
+print('Mal décodé :', abime)
+
+# À toi : décode ces octets, écrits en UTF-8
+secret = bytes.fromhex('4a 27 61 69 20 74 72 6f 75 76 c3 a9')
+`} />
+
+Puis l'exercice corrigé. Écris `solution(texte)` qui répare un texte victime de mojibake, c'est-à-dire de l'UTF-8 qui a été lu comme du Windows-1252. Indice : réencode le texte abîmé avec `'cp1252'` pour retrouver les octets d'origine, puis décode-les avec `'utf-8'`.
+
+<PythonChallenge id="f1-texte-1" title="Réparer le mojibake" description="Renvoie le texte réparé : de l'UTF-8 qui avait été lu comme du Windows-1252." starterCode="def solution(texte):
+    octets = texte  # retrouve les octets d'origine
+    return octets  # puis décode-les correctement" tests={[{ input: "solution('CafÃ©')", expected: "Café" }, { input: "solution('Ã©tÃ©')", expected: "été" }, { input: "solution('franÃ§ais')", expected: "français" }, { input: "solution('texte sans accent')", expected: "texte sans accent" }]} />
+
+## les pièges
+
+- **Confondre caractères et octets.** En UTF-8, un caractère occupe de un à quatre octets : `len()` sur un `str` compte des caractères, sur des `bytes` des octets.
+- **Ouvrir un fichier sans préciser l'encodage.** Sous Windows, Python peut encore choisir l'encodage local par défaut ; écris `open(chemin, encoding='utf-8')`.
+- **Réparer le mojibake au hasard.** « Ã© » signifie de l'UTF-8 lu comme du Windows-1252 : on réencode en cp1252, puis on décode en UTF-8.
+- **Ignorer les fins de ligne.** Un script aux fins de ligne Windows échoue sous Linux avec un `\r` inattendu.
+- **Se fier à l'apparence d'un nom de domaine.** Deux lettres identiques à l'écran peuvent être deux caractères différents.
+- **Filtrer avant de décoder.** Une vérification de sécurité se fait sur la donnée décodée et normalisée.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/howto/unicode.html" description="Le guide officiel d'Unicode en Python, de str et bytes aux encodages">Python : Unicode HOWTO</ExternalLink>
+
+<ExternalLink href="https://home.unicode.org/" description="Le consortium qui maintient le standard, ses tableaux et ses rapports">Unicode Consortium</ExternalLink>
+
+<ExternalLink href="https://www.rfc-editor.org/rfc/rfc3629" description="La norme d'UTF-8, qui interdit notamment les formes trop longues">RFC 3629 : UTF-8</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle est la différence entre Unicode et UTF-8 ?" options={["Unicode numérote les caractères, UTF-8 dit comment écrire ces numéros en octets", "Aucune, ce sont deux noms pour la même chose", "UTF-8 est la version récente d'Unicode", "Unicode est réservé aux emojis"]} correct={0} explanation="Unicode est le jeu de caractères qui attribue les points de code. UTF-8 est un encodage qui les transforme en octets." />
+  <Quiz id="q-2" question="Quel caractère ASCII correspond à l'octet 0x61 ?" options={["A", "1", "=", "a"]} correct={3} explanation="Les minuscules commencent à 0x61 pour a. Les majuscules commencent à 0x41." />
+  <Quiz id="q-3" question="Combien d'octets occupe le mot été en UTF-8 ?" options={["3", "4", "6", "5"]} correct={3} explanation="Le t occupe un octet, chaque é en occupe deux : 2 + 1 + 2 = 5." />
+  <Quiz id="q-4" question="Un site affiche « rÃ©sultat » au lieu de « résultat ». Quel est le diagnostic ?" options={["Le serveur est piraté", "Un texte en Windows-1252 a été lu comme de l'UTF-8", "Un texte en UTF-8 a été lu comme du Windows-1252 ou du Latin-1", "La police de caractères est absente"]} correct={2} explanation="é s'écrit C3 A9 en UTF-8. Lus comme deux caractères Windows-1252, ces octets donnent Ã et ©." />
+  <Quiz id="q-5" question="Pourquoi un texte ASCII est-il aussi un texte UTF-8 valide ?" options={["Par hasard", "Parce qu'ASCII utilise quatre octets par caractère", "Parce qu'UTF-8 écrit les 128 premiers points de code sur un octet identique à ASCII", "Il ne l'est pas"]} correct={2} explanation="UTF-8 a été conçu compatible avec ASCII : les caractères de U+0000 à U+007F s'écrivent sur un seul octet commençant par 0." />
+  <Quiz id="q-6" question="Un script shell échoue sous Linux avec une erreur mentionnant \r. Quelle est la cause probable ?" options={["Le script est en UTF-8", "Le script a des fins de ligne Windows, CR LF", "Le script contient des accents", "Bash n'est pas installé"]} correct={1} explanation="Windows termine les lignes par 0D 0A. Sous Linux, le 0D, noté \r, est pris pour un caractère de la commande." />
+  <Quiz id="q-7" question="Le navigateur affiche une adresse commençant par xn--. Qu'est-ce que cela signifie ?" options={["Le site est chiffré", "Le site est hébergé à l'étranger", "Le certificat a expiré", "Le nom de domaine contient des caractères non ASCII, convertis en Punycode"]} correct={3} explanation="Punycode transforme les noms internationaux en ASCII. Un mélange suspect d'alphabets peut cacher un domaine homographe." />
+</QuizGroup>
+
+## à retenir
+
+- Un **jeu de caractères** numérote les caractères, un **encodage** les écrit en octets. Un fichier ne dit généralement pas son encodage.
+- **ASCII** : 128 caractères sur 7 bits, sans accents. Chiffres à `0x30`, majuscules à `0x41`, minuscules à `0x61`.
+- **Unicode** attribue un **point de code** `U+XXXX` à chaque caractère du monde.
+- **UTF-8** écrit un point de code sur **1 à 4 octets**, reste compatible ASCII et domine le web. é = `C3 A9`.
+- **« Ã© »** : de l'UTF-8 lu comme du Windows-1252. Réparation : réencoder en cp1252, décoder en UTF-8.
+- Fins de ligne : **LF** (`0A`) sous Linux et macOS, **CR LF** (`0D 0A`) sous Windows.
+- Les caractères sont une surface d'attaque : **domaines homographes**, **formes trop longues**. On vérifie après avoir décodé.

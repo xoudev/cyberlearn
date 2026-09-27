@@ -1,0 +1,159 @@
+---
+refCode: CL-LSN-01902-V01
+slug: fondamentaux-bilan-module-2
+title: "Bilan du module 2 : le message caché"
+description: "Le quiz du module Représenter l'information, puis un projet d'analyse : retrouver un message dissimulé dans un fichier en identifiant et en retirant ses couches une à une, hexadécimal, Base64, compression et UTF-8, jusqu'au dernier mot écrit en binaire."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 60
+xpReward: 350
+prerequisites: ["CL-LSN-01014-V01"]
+---
+
+Tu sais maintenant comment toute information devient une suite de bits : les nombres entiers, positifs et négatifs, les nombres à virgule, le texte, les images, les sons, et comment on les compresse ou les déguise en texte. Ce bilan vérifie ces connaissances, puis te met dans la peau d'un analyste : un fichier inconnu a été trouvé, et il faut comprendre ce qu'il contient. Pour y arriver, tu devras reconnaître chaque couche à ses indices, la retirer, et recommencer.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- convertir entre décimal, binaire et hexadécimal ;
+- raisonner sur les unités, les débordements et les nombres à virgule ;
+- expliquer comment le texte, les images et les sons sont codés ;
+- reconnaître un format à ses premiers octets et un encodage à son allure ;
+- enchaîner des décodages pour analyser un fichier inconnu.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="f1m2-q-1" question="Combien de valeurs différentes tiennent sur 12 bits ?" options={["4 096", "12", "144", "1 200"]} correct={0} explanation="Avec n bits, on obtient 2 puissance n combinaisons : 2 puissance 12 vaut 4 096." />
+  <Quiz id="f1m2-q-2" question="Un disque est vendu 2 To. Environ combien le système affiche-t-il s'il compte en puissances de 1 024 ?" options={["1 862 Gio", "2 000 Go", "2 048 Gio", "1 000 Gio"]} correct={0} explanation="2 000 000 000 000 octets divisés par 1 024 trois fois donnent environ 1 862 Gio : la quantité est la même, l'unité change." />
+  <Quiz id="f1m2-q-3" question="Une connexion affiche 400 Mb/s. Quel débit maximal peut-on espérer pour un téléchargement ?" options={["400 Mo/s", "3 200 Mo/s", "40 Mo/s", "50 Mo/s"]} correct={3} explanation="Les débits sont en bits : on divise par 8, soit 50 mégaoctets par seconde au mieux." />
+  <Quiz id="f1m2-q-4" question="Combien vaut 10101010 en décimal ?" options={["85", "160", "255", "170"]} correct={3} explanation="Les bits à 1 ont pour poids 128, 32, 8 et 2 : 128 + 32 + 8 + 2 = 170." />
+  <Quiz id="f1m2-q-5" question="Comment s'écrit 0xB7 en binaire ?" options={["11100111", "10110111", "10110011", "01111011"]} correct={1} explanation="On traduit chaque chiffre en quartet : B donne 1011, 7 donne 0111." />
+  <Quiz id="f1m2-q-6" question="Un compteur signé de 16 bits vaut 32 767. On ajoute 1. Que vaut-il ?" options={["32 768", "0", "65 535", "-32 768"]} correct={3} explanation="32 767 est le maximum sur 16 bits signés. Le débordement fait passer au minimum, -32 768." />
+  <Quiz id="f1m2-q-7" question="Quelle est l'écriture de -2 sur 8 bits en complément à deux ?" options={["11111110", "10000010", "11111101", "01111110"]} correct={0} explanation="2 = 00000010, on inverse : 11111101, on ajoute 1 : 11111110." />
+  <Quiz id="f1m2-q-8" question="Une application de facturation additionne des prix stockés en flottants et affiche un total faux d'un centime. Quelle correction faut-il ?" options={["Arrondir l'affichage uniquement", "Utiliser des flottants sur 32 bits", "Stocker et calculer les montants en centimes entiers, ou avec un type décimal exact", "Diviser chaque prix par 100"]} correct={2} explanation="Les flottants ne représentent pas exactement la plupart des décimaux. Les entiers en centimes ou un type décimal exact éliminent l'erreur." />
+  <Quiz id="f1m2-q-9" question="Combien d'octets occupe le signe € en UTF-8 ?" options={["3", "1", "2", "4"]} correct={0} explanation="Son point de code, U+20AC, se situe entre U+0800 et U+FFFF : il s'écrit sur trois octets, E2 82 AC." />
+  <Quiz id="f1m2-q-10" question="Un fichier CSV affiche « GÃ©rard » au lieu de « Gérard ». Comment le réparer ?" options={["Réencoder en Windows-1252 le texte abîmé, puis décoder les octets en UTF-8", "Le décoder deux fois en UTF-8", "Supprimer tous les accents", "Le convertir en ASCII"]} correct={0} explanation="Ã© est de l'UTF-8 lu comme du Windows-1252. On retrouve les octets d'origine en cp1252, puis on les décode correctement." />
+  <Quiz id="f1m2-q-11" question="Quel est le poids d'une image non compressée de 640 × 480 pixels en 24 bits ?" options={["307 200 octets", "921 600 octets", "7 372 800 octets", "230 400 octets"]} correct={1} explanation="640 × 480 × 24 ÷ 8 = 921 600 octets, environ 0,9 Mo." />
+  <Quiz id="f1m2-q-12" question="Une journaliste veut publier une photo sans révéler où elle a été prise. Que doit-elle faire ?" options={["La convertir en PNG", "Réduire sa définition", "Supprimer les métadonnées EXIF, qui peuvent contenir les coordonnées GPS", "La compresser en ZIP"]} correct={2} explanation="Les métadonnées EXIF peuvent inclure la position GPS, l'appareil et l'heure. Il faut les retirer avant publication." />
+  <Quiz id="f1m2-q-13" question="Pourquoi faut-il compresser des données avant de les chiffrer, et non après ?" options={["Parce que le chiffrement est plus rapide sur des données compressées", "Parce que la compression chiffre aussi", "Parce que des données chiffrées ressemblent à du hasard et ne se compressent plus", "Ce n'est pas important"]} correct={2} explanation="La compression exploite les régularités, que le chiffrement fait disparaître." />
+  <Quiz id="f1m2-q-14" question="Un script contient la chaîne cGluZyBsb2NhbGhvc3Q= . Que faut-il en penser ?" options={["C'est une empreinte SHA-256", "C'est un texte chiffré impossible à lire", "C'est de l'hexadécimal", "C'est du Base64, à décoder pour savoir ce que le script exécute"]} correct={3} explanation="L'alphabet et le signe = final trahissent du Base64. Décodé, il donne ping localhost : on vérifie toujours ce qu'une chaîne encodée cache." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées : le projet qui suit mobilise les sept.
+
+## projet
+
+### l'énoncé
+
+Lors du nettoyage d'un vieux serveur, un technicien trouve un fichier nommé `trouvaille.dat`. Aucune documentation, aucune extension parlante. Ta mission : **découvrir ce qu'il contient**, en expliquant à chaque étape quel indice t'a permis d'identifier la couche suivante. À la fin, tu dois trouver un **mot de passe final**, d'un seul mot.
+
+L'objectif n'est pas seulement de trouver le mot : c'est la démarche. Un analyste qui décode « au hasard » jusqu'à ce que quelque chose de lisible apparaisse perd du temps et passe à côté des pièges. Un bon analyste observe, formule une hypothèse, la vérifie, puis passe à la couche suivante.
+
+### le fichier
+
+Voici le vidage hexadécimal complet du fichier, tel que le produit `xxd trouvaille.dat` :
+
+```text
+00000000: 4834 7349 4141 4141 4141 4143 2f7a 324a  H4sIAAAAAAAC/z2J
+00000010: 5551 7244 4d41 7844 2f33 4d4b 3758 2b55  UQrDMAxD/3MK7X+U
+00000020: 394c 6566 5978 664a 6a47 4742 4567 2f62  9LefYxfJjGGBEg/b
+00000030: 365a 6e57 632b 5269 6378 6855 5276 684a  6ZnWc+RicxhURvhJ
+00000040: 656d 6735 3541 3776 4b41 6150 7747 726a  emg55A7vKAaPwGrj
+00000050: 6845 7433 4e75 7868 6b6b 3776 2b4c 6630  hEt3Nuxhkk7v+Lf0
+00000060: 5a47 3131 664a 5578 5469 3866 7867 614b  ZG11fJUxTi8fxgaK
+00000070: 5163 6a5a 4453 624e 5979 4374 4562 6a68  QcjZDSbNYyCtEbjh
+00000080: 5656 7570 796b 764b 6138 3572 4342 4d6d  VVupykvKa85rCBMm
+00000090: 5470 6958 2f30 3367 3161 5166 7562 575a  TpiX/03g1aQfubWZ
+000000a0: 4c5a 4141 4141 413d                      LZAAAAA=
+```
+
+### la méthode
+
+À chaque couche, pose-toi les mêmes trois questions :
+
+1. **À quoi ressemblent ces données ?** Des caractères imprimables ou des octets quelconques ? Quel alphabet ? Un signe particulier au début ou à la fin ?
+2. **Quels sont les premiers octets ?** Correspondent-ils à un nombre magique connu (leçon sur l'hexadécimal) ?
+3. **Quelle transformation inverse faut-il appliquer ?** Et le résultat ressemble-t-il à quelque chose de plus simple qu'avant ?
+
+<Diagram caption="La démarche d'analyse, répétée à chaque couche">
+flowchart LR
+  A["Observer les données"] --> B["Reconnaître un indice"]
+  B --> C["Appliquer le décodage inverse"]
+  C --> D["Vérifier le résultat"]
+  D --> A
+</Diagram>
+
+Quelques rappels utiles, tous vus dans le module : le Base64 n'utilise que des lettres, des chiffres, `+` et `/`, et se termine souvent par `=` ; un fichier compressé au format gzip commence par les octets `1F 8B` ; un texte UTF-8 avec des accents contient des paires d'octets commençant par `C3`.
+
+### l'atelier
+
+Tu peux travailler avec les outils de ton choix. Sous Linux ou Git Bash, les commandes `xxd -r -p`, `base64 -d`, `gunzip` et `file` suffisent. Sinon, ce bac à sable Python contient déjà les octets du fichier ; à toi d'écrire les étapes.
+
+<CodePlayground language="python" starterCode={`import base64, gzip
+
+fichier = bytes.fromhex(
+    '4834734941414141414141432f7a324a555172444d4178442f334d4b37582b55'
+    '394c65665978664a6a47474245672f62365a6e57632b5269637868555276684a'
+    '656d6735354137764b4161507747726a684574334e7578686b6b37762b4c6630'
+    '5a473131664a5578546938667867614b51636a5a4453624e5979437445626a68'
+    '56567570796b764b6138357243424d6d547069582f303367316151667562575a'
+    '4c5a41414141413d'
+)
+
+print('Taille :', len(fichier), 'octets')
+print('Début :', fichier[:16])
+
+# Couche 1 : que sont ces octets ? Décode-les.
+# Couche 2 : regarde les premiers octets du résultat en hexadécimal.
+# Couche 3 : décompresse, puis décode le texte.
+# Couche 4 : lis la dernière ligne.
+`} />
+
+### les critères de réussite
+
+| Critère | Attendu |
+| --- | --- |
+| Identification | Chaque couche est nommée correctement |
+| Justification | Pour chaque couche, l'indice qui a permis de l'identifier est cité |
+| Exécution | Chaque décodage est effectivement réalisé, avec l'outil ou le code utilisé |
+| Résultat | Le mot de passe final est trouvé |
+| Recul | Une phrase explique pourquoi ces couches ne protègent pas un secret |
+
+### la correction commentée
+
+Ne lis cette partie qu'après avoir cherché. Elle montre le raisonnement attendu, couche par couche.
+
+**Couche 1 : du Base64.** La colonne de droite du vidage ne montre que des caractères imprimables : des lettres majuscules et minuscules, des chiffres, des `+` et des `/`, et un `=` final. C'est exactement l'alphabet de Base64, avec son remplissage. Autre indice que les analystes connaissent par cœur : un texte Base64 qui commence par `H4sI` est presque toujours du gzip encodé, car ces quatre caractères correspondent aux octets `1F 8B 08`. On décode : `base64.b64decode(fichier)`. On obtient 125 octets qui, eux, ne sont plus imprimables.
+
+**Couche 2 : de la compression gzip.** Les deux premiers octets du résultat valent `1F 8B` : c'est le nombre magique du format gzip. Le reste ressemble à du hasard, ce qui est normal pour des données compressées. On décompresse : `gzip.decompress(octets)`. On obtient 144 octets, plus nombreux que les 125 compressés.
+
+**Couche 3 : du texte en UTF-8.** Les nouveaux octets sont presque tous dans l'intervalle ASCII, avec quelques paires qui commencent par `C3` : la signature des lettres accentuées en UTF-8. On décode avec `.decode('utf-8')` et un message en français apparaît. Il félicite l'analyste et annonce une dernière étape : une ligne de cinq groupes de huit chiffres binaires.
+
+**Couche 4 : du binaire.** Chaque groupe de huit bits est un octet, et chaque octet un caractère ASCII. `01001111` vaut 64 + 8 + 4 + 2 + 1 = 79, soit `0x4F`, la lettre O. En procédant de même pour les quatre autres, on obtient **OCTET**, le mot de passe final.
+
+En Python, la solution complète tient en quelques lignes :
+
+```python
+texte = gzip.decompress(base64.b64decode(fichier)).decode('utf-8')
+print(texte)
+ligne = texte.strip().split('\n')[-1]
+print(''.join(chr(int(groupe, 2)) for groupe in ligne.split()))
+```
+
+**Le recul.** Aucune de ces couches n'est un chiffrement : Base64, gzip, UTF-8 et binaire sont des **représentations**, réversibles par n'importe qui, sans clé. Empiler des encodages rend un contenu illisible au premier coup d'œil, et c'est précisément pour cela que des logiciels malveillants le font : pour échapper à un regard humain pressé ou à un filtre qui cherche des mots précis. Mais ils ne protègent rien face à quelqu'un qui connaît les formats. Pour protéger un secret, il faut du chiffrement, sujet de parcours entiers plus loin.
+
+### pour aller plus loin
+
+Les analystes utilisent un outil libre, **CyberChef**, publié par le service de renseignement britannique, qui enchaîne ces opérations dans le navigateur sous forme de « recettes ». Recrée ce projet avec lui : les opérations *From Hex*, *From Base64*, *Gunzip* et *From Binary* suffisent. Puis fabrique ton propre fichier à plusieurs couches pour un camarade, en inversant les étapes, et vérifie qu'il retrouve ton message.
+
+## à retenir
+
+- Toute information est une suite d'octets ; seule une **convention** dit comment la lire : base, signe, encodage, format.
+- Pour analyser un fichier inconnu : **observer**, reconnaître un **indice** (alphabet, nombre magique, signature), **décoder**, **vérifier**, et recommencer.
+- Indices à connaître : Base64 (alphabet, `=` final, `H4sI` pour du gzip), gzip (`1F 8B`), UTF-8 (`C3` devant les accents), programmes Windows (`MZ`), PDF (`%PDF`), ZIP (`PK`).
+- **Encoder n'est pas chiffrer** : Base64, compression et binaire se défont sans clé.
+- Le module 3 t'emmène dans le système d'exploitation, qui organise tous ces octets en fichiers, processus et utilisateurs.
