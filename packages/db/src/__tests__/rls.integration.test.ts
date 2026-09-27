@@ -42,7 +42,9 @@ describe("RLS policies (integration)", () => {
     adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    anonClient = createClient(supabaseUrl, supabaseAnonKey);
+    anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     // Cleanup leftover test users from a previous interrupted run (idempotent)
     for (const email of [TEST_USER_A_EMAIL, TEST_USER_B_EMAIL]) {
@@ -239,7 +241,14 @@ describe("RLS policies (integration)", () => {
   });
 
   async function signInAs(email: string): Promise<SupabaseClient> {
-    const { data, error } = await anonClient.auth.signInWithPassword({
+    // A throwaway client signs in. Signing in through anonClient left it holding
+    // the session, so every "anon" assertion after the first signInAs ran as
+    // that user - unnoticed while those assertions were about columns nobody
+    // may read, caught once one was about rows only their owner may.
+    const signer = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await signer.auth.signInWithPassword({
       email,
       password: TEST_PASSWORD,
     });

@@ -117,7 +117,12 @@ describe("Storage RLS - certificates bucket (integration)", () => {
 
   // Helper: return a client authenticated as the test user
   async function signInAsTestUser(): Promise<SupabaseClient> {
-    const { data, error } = await anonClient.auth.signInWithPassword({
+    // A throwaway client signs in, so anonClient stays anonymous for the tests
+    // that assert what anon cannot do (see rls.integration.test.ts).
+    const signer = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await signer.auth.signInWithPassword({
       email: TEST_USER_EMAIL,
       password: TEST_PASSWORD,
     });
