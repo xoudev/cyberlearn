@@ -4,6 +4,8 @@ import { isActionableEvent, moderationRepository, noteReportRepository } from "@
 import { Card, EmptyState, GhostLink, KpiCard, PageHeader, Tag, UI } from "../_components/admin-ui";
 import { ReviewButtons } from "./_components/review-buttons";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Modération" };
 export const dynamic = "force-dynamic";
 
@@ -61,6 +63,7 @@ function formatDate(d: Date): string {
  * evidence.
  */
 export default async function AdminModerationPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const [pending, resolved, counts, reportedNotes] = await Promise.all([
     moderationRepository.listPending(100),
     moderationRepository.listResolved(30),

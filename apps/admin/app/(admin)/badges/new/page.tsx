@@ -1,9 +1,12 @@
 import { CATALOGUE_LESSON, prisma } from "@cyberlearn/db";
 import { NewBadgeForm } from "./_components/new-badge-form";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const dynamic = "force-dynamic";
 
 export default async function NewBadgePage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const [lessons, paths] = await Promise.all([
     prisma.lesson.findMany({
       // CATALOGUE_LESSON, not just published: a lesson a teacher wrote for one

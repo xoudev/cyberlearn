@@ -8,6 +8,8 @@ import { loadRootEnv } from "../../scripts/load-root-env.mjs";
 loadRootEnv(path.join(__dirname, "../../"));
 
 const nextConfig: NextConfig = {
+  // No X-Powered-By: naming the framework only saves an attacker a lookup.
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       // The multi-file lesson import sends batches up to 4 MB (zod-capped in

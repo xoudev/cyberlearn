@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { prisma } from "@cyberlearn/db";
 import { Card, PageHeader, Tag, UI } from "../_components/admin-ui";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Paramètres" };
 
 function DefRow({
@@ -21,6 +23,7 @@ function DefRow({
 }
 
 export default async function AdminSettingsPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const [userCount, lessonCount, pathCount, badgeCount, certCount, ticketCount, logCount] =
     await Promise.all([
       prisma.user.count(),

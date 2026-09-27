@@ -4,6 +4,8 @@ import { prisma } from "@cyberlearn/db";
 import { Monogram, PageHeader, Tag, UI, type Tone } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Audit log" };
 
 const ACTION_TONES: Record<string, Tone> = {
@@ -35,6 +37,7 @@ function formatTs(d: Date): string {
 }
 
 export default async function AdminAuditPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const logs = await prisma.auditLog.findMany({
     take: 500,
     orderBy: { createdAt: "desc" },

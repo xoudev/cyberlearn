@@ -4,6 +4,8 @@ import { classRepository } from "@cyberlearn/db";
 import { GhostLink, KpiCard, PageHeader, PrimaryLink } from "../../_components/admin-ui";
 import { StructureEditor } from "./_components/structure-editor";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Structure" };
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,7 @@ export const dynamic = "force-dynamic";
  * includes bringing something back cannot filter out the thing to bring back.
  */
 export default async function AdminStructurePage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const establishments = await classRepository.listStructure();
 
   const promotions = establishments.flatMap((e) => e.promotions);

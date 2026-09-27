@@ -6,6 +6,8 @@ import { PageHeader, PrimaryLink, Tag, UI, type Tone } from "../_components/admi
 import { DataGrid, type GridRow } from "../_components/data-grid";
 import { ActiveToggle } from "./_components/active-toggle";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Challenges" };
 
 const DIFF_META: Record<string, { tone: Tone; label: string }> = {
@@ -28,6 +30,7 @@ const CAT_LABEL: Record<string, string> = {
 };
 
 export default async function AdminChallengesPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const challenges = await prisma.challenge.findMany({
     orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
     select: {

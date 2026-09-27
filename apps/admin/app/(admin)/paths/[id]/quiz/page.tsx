@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma, quizRepository } from "@cyberlearn/db";
 import { QuizManager } from "./_components/quiz-manager";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Quiz du parcours" };
 
 interface Option {
@@ -15,6 +17,7 @@ export default async function PathQuizPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.JSX.Element> {
+  await requireAdminPage();
   const { id } = await params;
 
   const path = await prisma.path.findUnique({

@@ -8,6 +8,8 @@ import {
 import { EmptyState, GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
 import { resolveNoteReportsAction } from "./actions";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Notes signalées" };
 export const dynamic = "force-dynamic";
 
@@ -94,6 +96,7 @@ function ReportedNoteCard({ note }: { note: ReportedNote }): React.ReactElement 
  * until somebody here has read the note.
  */
 export default async function NoteReportsPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const notes = await noteReportRepository.openByNote();
   const total = notes.reduce((n, g) => n + g.reports.length, 0);
 

@@ -8,6 +8,10 @@ vi.mock("@cyberlearn/db", () => ({
   prisma: { lesson: { findMany: lessonFindMany } },
 }));
 vi.mock("../actions", () => ({ resolveQuizReportsAction: vi.fn() }));
+// The page checks its caller first (requireAdminPage); here the caller is an admin.
+vi.mock("@/lib/auth", () => ({
+  requireAdminPage: vi.fn().mockResolvedValue({ id: "admin", email: undefined, role: "ADMIN" }),
+}));
 
 const { default: QuizReportsPage } = await import("../page");
 

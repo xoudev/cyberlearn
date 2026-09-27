@@ -6,6 +6,8 @@ import { EditChallengeForm } from "./_components/edit-challenge-form";
 import { HintsManager } from "./_components/hints-manager";
 import type { ChallengeOption } from "../../new/_components/new-challenge-form";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Éditer le challenge" };
 
 interface Props {
@@ -13,6 +15,7 @@ interface Props {
 }
 
 export default async function EditChallengePage({ params }: Props): Promise<React.ReactElement> {
+  await requireAdminPage();
   const { id } = await params;
 
   const [challenge, allChallenges] = await Promise.all([

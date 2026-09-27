@@ -5,6 +5,8 @@ import { CATALOGUE_LESSON, prisma, ratingRepository } from "@cyberlearn/db";
 import { Card, EmptyState, UI } from "../../../_components/admin-ui";
 import { EditPathClient } from "./_components/EditPathClient";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Éditer le parcours" };
 
 export default async function EditPathPage({
@@ -12,6 +14,7 @@ export default async function EditPathPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
+  await requireAdminPage();
   const { id } = await params;
 
   const [path, availableLessons, ratings] = await Promise.all([

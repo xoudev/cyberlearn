@@ -11,7 +11,7 @@ import { AdminSplashScreen } from "../splash-screen";
  */
 
 function html(): string {
-  return renderToStaticMarkup(AdminSplashScreen());
+  return renderToStaticMarkup(AdminSplashScreen({ nonce: "test-nonce" }));
 }
 
 /**
@@ -76,5 +76,13 @@ describe("the console splash is in the first frame", () => {
     const rendered = html();
     expect(rendered).toContain("sessionStorage");
     expect(rendered).not.toContain("localStorage");
+  });
+});
+
+describe("the splash script under the console's nonce-based policy", () => {
+  it("carries the request's nonce, without which the policy drops it", () => {
+    expect(renderToStaticMarkup(AdminSplashScreen({ nonce: "abc123" }))).toContain(
+      'nonce="abc123"',
+    );
   });
 });

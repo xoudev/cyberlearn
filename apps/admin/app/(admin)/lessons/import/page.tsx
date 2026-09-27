@@ -2,9 +2,12 @@ import React from "react";
 import type { Metadata } from "next";
 import { ImportClient } from "./_components/import-client";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Importer une leçon MDX" };
 
-export default function ImportLessonPage(): React.ReactElement {
+export default async function ImportLessonPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   return (
     <div className="admin-page-content">
       {/* Header */}

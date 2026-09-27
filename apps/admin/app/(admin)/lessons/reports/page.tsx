@@ -10,6 +10,8 @@ import {
 import { EmptyState, GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
 import { resolveQuizReportsAction } from "./actions";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Questions signalées" };
 export const dynamic = "force-dynamic";
 
@@ -100,6 +102,7 @@ function ReportedQuizCard({
 }
 
 export default async function QuizReportsPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const groups = await quizReportRepository.openByQuiz();
   const lessons = await prisma.lesson.findMany({
     where: { id: { in: [...new Set(groups.map((g) => g.lessonId))] } },

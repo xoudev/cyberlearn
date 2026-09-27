@@ -20,6 +20,8 @@ import {
   type Tone,
 } from "../_components/admin-ui";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Aperçu" };
 
 const WEEKS = 8;
@@ -68,6 +70,7 @@ function relativeDate(date: Date): string {
 }
 
 export default async function DashboardPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const now = Date.now();
   const horizon = new Date(now - WEEKS * WEEK_MS);
   const oneWeekAgo = new Date(now - WEEK_MS);

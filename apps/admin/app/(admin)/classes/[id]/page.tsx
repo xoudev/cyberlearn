@@ -6,6 +6,8 @@ import { GhostLink, PageHeader, Tag } from "../../_components/admin-ui";
 import { ClassDetailsForm } from "../_components/class-details-form";
 import { ClassRoster } from "../_components/class-roster";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Classe" };
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,7 @@ export default async function AdminClassPage({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<React.ReactElement> {
+  await requireAdminPage();
   const { id } = await params;
 
   const [klass, teacherPool, directory, invitations] = await Promise.all([

@@ -4,9 +4,12 @@ import { prisma, quizReportRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader, PrimaryLink } from "../_components/admin-ui";
 import { LessonsTable, type LessonRow } from "./_components/lessons-table";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Leçons" };
 
 export default async function AdminLessonsPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const [lessons, openReports] = await Promise.all([
     prisma.lesson.findMany({
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],

@@ -5,6 +5,8 @@ import { classRepository } from "@cyberlearn/db";
 import { GhostLink, KpiCard, PageHeader, PrimaryLink, Tag, UI } from "../_components/admin-ui";
 import { DataGrid, type GridRow } from "../_components/data-grid";
 
+import { requireAdminPage } from "@/lib/auth";
+
 export const metadata: Metadata = { title: "Classes" };
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,7 @@ export const dynamic = "force-dynamic";
  * the second.
  */
 export default async function AdminClassesPage(): Promise<React.ReactElement> {
+  await requireAdminPage();
   const [hierarchy, classes] = await Promise.all([
     classRepository.listHierarchy(),
     classRepository.listAll(),
