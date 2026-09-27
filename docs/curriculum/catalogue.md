@@ -252,7 +252,7 @@ INTERMÉDIAIRE · ~45 h · 10 modules · 60 leçons
 10. La cryptographie post-quantique et le projet de fin de parcours
 
 ### C3 · Sécurité des applications web
-INTERMÉDIAIRE → AVANCÉ · ~80 h · 14 modules · 95 leçons · labs hébergés (T7)
+INTERMÉDIAIRE → AVANCÉ · ~80 h · 14 modules · 95 leçons · labs dans la page (niveau 1)
 
 1. Le web du point de vue de la sécurité
 2. Les outils : proxy d'interception, outils du navigateur
@@ -270,7 +270,7 @@ INTERMÉDIAIRE → AVANCÉ · ~80 h · 14 modules · 95 leçons · labs héberg�
 14. Projet : l'audit complet d'une application et son rapport
 
 ### C4 · Tests d'intrusion
-AVANCÉ · ~90 h · 13 modules · 100 leçons · labs hébergés (T7)
+AVANCÉ · ~90 h · 13 modules · 100 leçons · labs niveaux 2 et 3
 
 1. Le cadre : loi, contrat, périmètre, règles d'engagement
 2. Les méthodologies (PTES, OSSTMM) et l'organisation d'une mission

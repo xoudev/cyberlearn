@@ -15,8 +15,8 @@ de l'ANSSI « Recommandations de configuration d'un système GNU/Linux » pour l
 module 11.
 
 **Pratique** : les modules 1 à 4 tiennent avec le terminal simulé actuel. À
-partir du module 5, les exercices supposent le terminal Linux réel (chantier
-T6) ; sans lui, ces modules ne sont pas publiés.
+partir du module 5, les exercices supposent le Linux réel dans le navigateur
+(chantier T6, labs de niveau 2) ; sans lui, ces modules ne sont pas publiés.
 
 Chaque leçon est notée : **titre**, ce qu'on sait faire à la fin, *la
 pratique*.

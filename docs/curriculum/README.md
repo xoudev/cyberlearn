@@ -87,12 +87,58 @@ s'ouvre sur ce cadre avant toute technique.
 | T3 | **Cursus** : regrouper des parcours (`track = CAREER` existe, il faut la relation cursus → parcours) et un certificat de cursus | Le métier comme objectif | Moyenne |
 | T4 | **refCodes** : passer à `CL-LSN-PPNNN-V01` (parcours sur 2 chiffres, leçon sur 3) | L'ancien format plafonne à 999 leçons | Petite (regex + docs) |
 | T5 | **Import par module** : le lot de 30 fichiers suffit si on importe un module à la fois ; `seed-paths` apprend les modules | 1 500 fichiers | Petite |
-| T6 | **Terminal Linux réel** (WebVM, `docs/backlog/terminal-v2-webvm.md`) | Linux, admin, DevOps et SOC ne s'apprennent pas sur un terminal simulé | Grosse |
-| T7 | **Labs hébergés** pour le web et les tests d'intrusion : cibles vulnérables isolées, une par apprenant, sans accès sortant | C'est ce qui fait TryHackMe et Hack The Box. Sans ça, les parcours offensifs restent théoriques | Très grosse : infrastructure, coût, abus |
+| T6 | **Linux réel dans le navigateur** : une machine virtuelle x86 émulée en WebAssembly, qui tourne sur l'ordinateur de l'apprenant (voir « Les labs ») | Linux, admin, DevOps et SOC ne s'apprennent pas sur un terminal simulé | Grosse |
+| T7 | **Labs de sécurité sans serveur** : applications vulnérables et machines cibles qui tournent dans le navigateur, ou chez l'apprenant (voir « Les labs ») | Sans cibles, les parcours offensifs restent théoriques | Grosse |
 
 T1 à T5 conditionnent la vague 1. T6 peut arriver pendant la vague 1 (les
 premiers modules de Linux tiennent avec le terminal simulé). T7 conditionne la
 vague 3.
+
+## Les labs, sans serveur à payer
+
+Le site est hébergé sur Vercel, qui exécute des fonctions courtes : il ne peut
+pas faire tourner une machine par apprenant, et louer des serveurs pour ça
+coûte de l'argent qu'on n'engage pas maintenant. La règle est donc : **un lab
+tourne sur l'ordinateur de l'apprenant, jamais chez nous.** Vercel ne sert que
+les fichiers et reçoit la validation.
+
+Trois niveaux, du plus léger au plus complet :
+
+| Niveau | Comment | Pour quoi | Coût pour nous |
+| --- | --- | --- | --- |
+| **1. Dans la page** | Des moteurs compilés en WebAssembly : une vraie base SQLite (sql.js) pour les injections SQL, une application vulnérable dont le « serveur » tourne dans un Service Worker et s'affiche dans une iframe isolée, Pyodide pour Python | Sécurité web (injections, XSS, contrôle d'accès, logique métier), SQL, crypto, analyse de journaux et de captures | Aucun : des fichiers statiques |
+| **2. Une machine dans le navigateur** | Un émulateur x86 en WebAssembly qui démarre un vrai Linux, avec un réseau privé interne à l'émulateur (plusieurs machines peuvent se parler, rien ne sort) | Linux, scripts, services, élévation de privilèges, énumération d'un petit réseau de lab | Aucun : l'image disque est un fichier statique téléchargé une fois (50 à 200 Mo) |
+| **3. Chez l'apprenant** | Des labs publiés en images Docker ou en machines virtuelles, qu'on lance sur son propre ordinateur avec une commande, à la manière de VulnHub | Active Directory, réseaux complets, projets de fin de parcours offensifs | Aucun : images publiques hébergées gratuitement (registre GitHub) |
+
+Dans les trois cas, l'apprenant récupère un **drapeau** dans la cible et le
+soumet sur le site, qui vérifie son empreinte : c'est la seule chose qui passe
+par Vercel. La progression, l'XP et les badges suivent comme pour un quiz.
+
+**Une cible vulnérable ne tourne jamais avec les droits du site.** L'application
+de lab s'affiche dans une iframe `sandbox` sans `allow-same-origin`, donc sans
+accès à la session de l'apprenant ni aux cookies de cyberlearn.fr : une XSS
+réussie dans le lab reste dans le lab. Les machines émulées n'ont pas d'accès
+réseau vers l'extérieur. Chaque type de lab passe une revue de sécurité avant
+sa première leçon.
+
+Les limites, à connaître :
+
+- **Un drapeau identique pour tous peut circuler.** Pour les niveaux 1 et 2, le
+  drapeau peut être dérivé de l'identifiant de l'apprenant ; pour le niveau 3, il
+  est commun. C'est acceptable : on vérifie qu'on a appris, pas un concours.
+- **Le niveau 2 demande une machine correcte** (quelques Go de mémoire) et un
+  premier téléchargement lent. Chaque lab de niveau 2 a une version de niveau 1
+  ou une correction commentée pour ceux qui ne peuvent pas le lancer.
+- **Le niveau 3 demande d'installer Docker ou VirtualBox.** Il est réservé aux
+  parcours avancés, avec une leçon d'installation guidée.
+- **Les émulateurs ont des licences différentes.** v86 est libre (BSD) ;
+  CheerpX, prévu dans le backlog, est gratuit pour un usage personnel mais
+  payant pour un usage commercial. Le choix de la bibliothèque sera soumis
+  avant de l'ajouter.
+
+Des machines hébergées chez nous, une par apprenant comme TryHackMe, restent
+possibles plus tard, quand le projet aura des revenus. Le plan n'en dépend
+pas.
 
 ## Remplacer l'ancien catalogue
 
@@ -114,7 +160,7 @@ vague 3.
 | 0 | Chantiers T1 à T5, gabarit de leçon, contrôle CI des sections | — | — |
 | 1 | Tronc commun : Fondamentaux, Linux, Réseaux | ~170 h, ~230 leçons | Vague 0 |
 | 2 | Python, Cybersécurité fondamentale, SQL, Cryptographie, GRC, OSINT | ~290 h | T6 pour Python système |
-| 3 | Web front et back, Sécurité web, Tests d'intrusion, Windows et AD | ~380 h | T7 pour les labs offensifs |
+| 3 | Web front et back, Sécurité web, Tests d'intrusion, Windows et AD | ~380 h | T7 (labs de niveaux 1 à 3) |
 | 4 | SOC, Forensic, DevOps, Cloud, C, Assembleur | ~380 h | T6 |
 
 À la fin de chaque vague, les cursus dont tous les parcours sont publiés
