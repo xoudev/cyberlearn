@@ -9,14 +9,19 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { envMock } = vi.hoisted(() => ({
-  envMock: {
-    SENTRY_ORG: "cyberlearn" as string | undefined,
-    SENTRY_PROJECT: "web" as string | undefined,
-    SENTRY_AUTH_TOKEN: "tok" as string | undefined,
-    SENTRY_ISSUES_TOKEN: undefined as string | undefined,
-  },
-}));
+const { envMock } = vi.hoisted(() => {
+  // Typed, so each test can clear a variable back to undefined.
+  const envMock: Record<
+    "SENTRY_ORG" | "SENTRY_PROJECT" | "SENTRY_AUTH_TOKEN" | "SENTRY_ISSUES_TOKEN",
+    string | undefined
+  > = {
+    SENTRY_ORG: "cyberlearn",
+    SENTRY_PROJECT: "web",
+    SENTRY_AUTH_TOKEN: "tok",
+    SENTRY_ISSUES_TOKEN: undefined,
+  };
+  return { envMock };
+});
 vi.mock("@/lib/env", () => ({ env: envMock }));
 
 const { fetchSentryIssues } = await import("../sentry-issues");

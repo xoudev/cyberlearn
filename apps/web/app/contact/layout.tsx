@@ -8,6 +8,8 @@ export const metadata: Metadata = {
 
 export default function ContactLayout({
   children,
-}: { children: React.ReactNode }): React.JSX.Element {
+}: {
+  children: React.ReactNode;
+}): React.JSX.Element {
   return <>{children}</>;
 }

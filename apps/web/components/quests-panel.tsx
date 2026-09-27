@@ -193,7 +193,9 @@ function QuestRow({ q }: { q: QuestWithProgress }): React.ReactElement {
  */
 export async function QuestsPanel({
   userId,
-}: { userId: string }): Promise<React.ReactElement | null> {
+}: {
+  userId: string;
+}): Promise<React.ReactElement | null> {
   const now = new Date();
   const quests = await questRepository.findWeek(userId, isoWeekKey(now));
   if (quests.length === 0) return null;

@@ -137,7 +137,9 @@ export function DraftControls({
 /** The French hint under a Python error. */
 export function ErrorHint({
   hint,
-}: { hint: string | null | undefined }): React.ReactElement | null {
+}: {
+  hint: string | null | undefined;
+}): React.ReactElement | null {
   if (!hint) return null;
   return (
     <div style={{ ...MONO, marginTop: 6, color: "#B8B5D1" }}>

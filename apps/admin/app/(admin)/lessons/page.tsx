@@ -43,7 +43,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
     title: l.title,
     category: l.category,
     difficulty: l.difficulty,
-    status: l.status as LessonRow["status"],
+    status: l.status,
     xpReward: l.xpReward,
     estimatedMinutes: l.estimatedMinutes,
     audience: l.audience,

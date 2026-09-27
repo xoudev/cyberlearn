@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import type { CosmeticType } from "@cyberlearn/db";
 import { equipCosmeticForUser, unequipCosmeticForUser } from "@/lib/cosmetics/equip";
 import { userFromBearer } from "../_lib/auth";
 
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       parsed.data.action === "equip"
         ? await equipCosmeticForUser(user.id, parsed.data.code)
         : // SAFETY: z.enum above matches COSMETIC_TYPES values exactly
-          await unequipCosmeticForUser(user.id, parsed.data.type as CosmeticType);
+          await unequipCosmeticForUser(user.id, parsed.data.type);
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   } catch (err) {
     console.error("[mobile/loadout] error:", err instanceof Error ? err.message : String(err));

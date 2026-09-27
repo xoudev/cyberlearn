@@ -18,16 +18,15 @@
 }
 
 .ob-shell__glow {
-  background: radial-gradient(
-      ellipse 1100px 600px at 20% 10%,
-      rgba(0, 36, 255, 0.22),
-      transparent 60%
-    ), radial-gradient(ellipse 900px 500px at 85% 80%, rgba(10, 255, 212, 0.08), transparent 65%),
+  background:
+    radial-gradient(ellipse 1100px 600px at 20% 10%, rgba(0, 36, 255, 0.22), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 85% 80%, rgba(10, 255, 212, 0.08), transparent 65%),
     radial-gradient(ellipse 700px 500px at 50% 110%, rgba(0, 36, 255, 0.14), transparent 60%);
 }
 
 .ob-shell__grid {
-  background-image: linear-gradient(to right, rgba(42, 37, 96, 0.16) 1px, transparent 1px),
+  background-image:
+    linear-gradient(to right, rgba(42, 37, 96, 0.16) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(42, 37, 96, 0.16) 1px, transparent 1px);
   background-size: 48px 48px;
   -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 40%, transparent 85%);

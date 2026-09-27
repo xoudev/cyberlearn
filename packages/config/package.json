@@ -11,11 +11,15 @@
     "./eslint/next": "./eslint/next.js"
   },
   "devDependencies": {
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "@eslint/js": "catalog:",
     "typescript-eslint": "catalog:",
     "eslint-plugin-react": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
     "@next/eslint-plugin-next": "catalog:"
+  },
+  "peerDependencies": {
+    "eslint": "catalog:"
   }
 }

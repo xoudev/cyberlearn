@@ -49,7 +49,9 @@ body::before {
 
 /* Sidebar sign-out hover */
 .admin-signout {
-  transition: color 150ms ease, border-color 150ms ease;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
 }
 .admin-signout:hover {
   color: #ff4d6d;

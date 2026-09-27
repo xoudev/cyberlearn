@@ -110,9 +110,7 @@ export async function reiconFolderAction(input: {
 }
 
 /** Delete a folder the user owns. Its notes are ungrouped, not deleted. */
-export async function deleteFolderAction(input: {
-  folderId: string;
-}): Promise<{ ok: boolean }> {
+export async function deleteFolderAction(input: { folderId: string }): Promise<{ ok: boolean }> {
   const user = await requireRequestUser();
   const parsed = deleteSchema.safeParse(input);
   if (!parsed.success) return { ok: false };

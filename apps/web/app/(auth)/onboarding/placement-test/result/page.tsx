@@ -18,7 +18,11 @@ function ScoreBar({
   label,
   score,
   color,
-}: { label: string; score: number; color: string }): React.ReactElement {
+}: {
+  label: string;
+  score: number;
+  color: string;
+}): React.ReactElement {
   const level = placementLevelFor(score);
   return (
     <div style={{ padding: "20px 24px", borderBottom: "1px solid #2A2560" }}>

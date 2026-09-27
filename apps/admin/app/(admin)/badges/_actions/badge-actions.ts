@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { prisma, type BadgeRarity, type BadgeCriterionType } from "@cyberlearn/db";
+import { prisma } from "@cyberlearn/db";
 import { requireAdminAction } from "@/lib/auth";
 
 // ── Per-type criterion data builders ──────────────────────────────────────────
@@ -144,8 +144,8 @@ export async function createBadgeAction(
         description: parsed.data.description,
         iconUrl: parsed.data.iconUrl,
         // SAFETY: Zod enum values match Prisma enum values exactly
-        rarity: parsed.data.rarity as BadgeRarity,
-        criterionType: parsed.data.criterionType as BadgeCriterionType,
+        rarity: parsed.data.rarity,
+        criterionType: parsed.data.criterionType,
         // SAFETY: validated by per-type builder above
         criterionData: criterionData as Parameters<
           typeof prisma.badge.create
@@ -217,8 +217,8 @@ export async function updateBadgeAction(
         description: parsed.data.description,
         iconUrl: parsed.data.iconUrl,
         // SAFETY: Zod enum values match Prisma enum values exactly
-        rarity: parsed.data.rarity as BadgeRarity,
-        criterionType: parsed.data.criterionType as BadgeCriterionType,
+        rarity: parsed.data.rarity,
+        criterionType: parsed.data.criterionType,
         // SAFETY: validated by per-type builder above; NonNullable strips the optional undefined
         criterionData: criterionData as NonNullable<
           Parameters<typeof prisma.badge.update>[0]["data"]["criterionData"]

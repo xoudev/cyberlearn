@@ -23,8 +23,8 @@
   align-items: center;
   justify-content: center;
   gap: 24px;
-  background: radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0, 36, 255, 0.16), transparent 65%),
-    #030219;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 30%, rgba(0, 36, 255, 0.16), transparent 65%), #030219;
   /* `both` holds the last frame: hidden and inert, never reappearing. */
   animation: cl-splash-out var(--cl-splash-fade) ease var(--cl-splash-enter) both;
 }

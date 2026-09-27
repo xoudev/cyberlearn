@@ -61,7 +61,10 @@ function MiniStat({ value, label }: { value: string; label: string }): React.JSX
 function FinalCard({
   payload,
   handle,
-}: { payload: WrappedPayload; handle: string }): React.JSX.Element {
+}: {
+  payload: WrappedPayload;
+  handle: string;
+}): React.JSX.Element {
   const top = payload.lessons.topDomain;
   const season = payload.season;
   const pct =

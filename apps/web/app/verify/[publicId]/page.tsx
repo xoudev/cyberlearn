@@ -9,7 +9,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export async function generateMetadata({
   params,
-}: { params: Promise<{ publicId: string }> }): Promise<Metadata> {
+}: {
+  params: Promise<{ publicId: string }>;
+}): Promise<Metadata> {
   const { publicId } = await params;
   if (!UUID_RE.test(publicId)) return { title: "Certificat introuvable" };
   const cert = await prisma.certificate.findUnique({
@@ -57,7 +59,9 @@ function CornerBrackets({ color = "#0AFFD4", size = 14 }: { color?: string; size
 
 export default async function CertVerifyPage({
   params,
-}: { params: Promise<{ publicId: string }> }): Promise<React.ReactElement> {
+}: {
+  params: Promise<{ publicId: string }>;
+}): Promise<React.ReactElement> {
   const { publicId } = await params;
 
   if (!UUID_RE.test(publicId)) notFound();

@@ -45,7 +45,11 @@ function PodiumCard({
   entry,
   rank,
   isMe,
-}: { entry: LeaderboardEntry; rank: number; isMe: boolean }) {
+}: {
+  entry: LeaderboardEntry;
+  rank: number;
+  isMe: boolean;
+}) {
   const rk = isMe
     ? {
         color: "var(--cosmetic-accent)",

@@ -48,7 +48,9 @@ function StatusBar(): React.JSX.Element {
 
 function BottomNav({
   active,
-}: { active: "home" | "paths" | "lessons" | "profile" }): React.JSX.Element {
+}: {
+  active: "home" | "paths" | "lessons" | "profile";
+}): React.JSX.Element {
   const items: Array<{ key: typeof active; icon: string; label: string }> = [
     { key: "home", icon: "⌂", label: "Accueil" },
     { key: "paths", icon: "⌁", label: "Parcours" },
@@ -158,7 +160,11 @@ function Pill({
   label,
   color = palette.brandTurquoise,
   active = false,
-}: { label: string; color?: string; active?: boolean }): React.JSX.Element {
+}: {
+  label: string;
+  color?: string;
+  active?: boolean;
+}): React.JSX.Element {
   return (
     <div
       style={{
@@ -181,7 +187,11 @@ function SectionTitle({
   eyebrow,
   title,
   right,
-}: { eyebrow?: string; title: string; right?: string }): React.JSX.Element {
+}: {
+  eyebrow?: string;
+  title: string;
+  right?: string;
+}): React.JSX.Element {
   return (
     <div style={{ margin: "16px 0 10px" }}>
       {eyebrow ? (

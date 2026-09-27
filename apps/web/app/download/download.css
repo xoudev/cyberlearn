@@ -200,7 +200,8 @@
   position: absolute;
   z-index: 0;
   inset: 6% 0;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       56% 46% at 50% 40%,
       color-mix(in srgb, var(--color-brand-blue) 42%, transparent),
       transparent 72%
@@ -231,9 +232,10 @@
   overflow: hidden;
   background: linear-gradient(160deg, var(--color-border-default), var(--color-bg-overlay));
   border-radius: 40px;
-  box-shadow: 0 34px 90px -34px rgba(0, 0, 0, 0.78), 0 0 0 1px
-    color-mix(in srgb, var(--color-brand-turquoise) 22%, transparent), inset 0 0 0 1px
-    color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+  box-shadow:
+    0 34px 90px -34px rgba(0, 0, 0, 0.78),
+    0 0 0 1px color-mix(in srgb, var(--color-brand-turquoise) 22%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
 }
 
 .mobile-preview__screen {

@@ -106,7 +106,9 @@
   border: 1px solid #2a2560;
   color: #b8b5d1;
   cursor: pointer;
-  transition: color 150ms ease, border-color 150ms ease;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
 }
 .ws-icon:hover {
   color: #f5f5fa;
@@ -362,7 +364,9 @@
   text-transform: uppercase;
   color: #b8b5d1;
   cursor: pointer;
-  transition: color 150ms ease, border-color 150ms ease;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
 }
 .ws-step:hover:not(:disabled) {
   color: #f5f5fa;

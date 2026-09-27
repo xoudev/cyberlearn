@@ -114,11 +114,7 @@ export default async function AdminTicketsPage(): Promise<React.ReactElement> {
           {formatDate(t.createdAt)}
         </span>,
         isActive ? (
-          <TicketStatusSelect
-            key="st"
-            ticketId={t.id}
-            currentStatus={t.status as "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"}
-          />
+          <TicketStatusSelect key="st" ticketId={t.id} currentStatus={t.status} />
         ) : (
           <span
             key="st"

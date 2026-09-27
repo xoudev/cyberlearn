@@ -80,23 +80,23 @@ catalog:
   "@sentry/nextjs": "^9.14.0"
 
   # Testing
-  vitest: "^3.2.7"
-  "@vitest/coverage-v8": "^3.2.7"
+  vitest: "^5.0.2"
+  "@vitest/coverage-v8": "^5.0.2"
   "@testing-library/react": "^16.3.3"
-  "@testing-library/jest-dom": "^6.6.3"
-  "jsdom": "^26.1.0"
+  "@testing-library/jest-dom": "^7.0.1"
+  "jsdom": "^30.1.1"
 
   # Linting & formatting
-  eslint: "^9.25.1"
-  "@eslint/js": "^9.25.1"
-  "typescript-eslint": "^8.30.1"
+  eslint: "^10.11.0"
+  "@eslint/js": "^10.0.1"
+  "typescript-eslint": "^8.70.1"
   "eslint-plugin-react": "^7.37.5"
-  "eslint-plugin-react-hooks": "^5.2.0"
+  "eslint-plugin-react-hooks": "^7.1.1"
   "@next/eslint-plugin-next": "^15.5.26"
-  "@biomejs/biome": "^1.9.4"
+  "@biomejs/biome": "^2.5.14"
 
   # Git hooks
   husky: "^9.1.7"
-  "lint-staged": "^15.5.1"
-  "@commitlint/cli": "^19.8.0"
-  "@commitlint/config-conventional": "^19.8.0"
+  "lint-staged": "^17.6.0"
+  "@commitlint/cli": "^21.2.3"
+  "@commitlint/config-conventional": "^21.2.3"

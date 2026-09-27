@@ -34,7 +34,11 @@ function Label({
   children,
   hint,
   req,
-}: { children: React.ReactNode; hint?: string; req?: boolean }) {
+}: {
+  children: React.ReactNode;
+  hint?: string;
+  req?: boolean;
+}) {
   return (
     <label
       style={{

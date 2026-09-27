@@ -53,7 +53,9 @@ function Stat({
  */
 export async function StreakPanel({
   userId,
-}: { userId: string }): Promise<React.ReactElement | null> {
+}: {
+  userId: string;
+}): Promise<React.ReactElement | null> {
   const o = await streakRepository.getOverview(userId);
   if (!o) return null;
 

@@ -47,11 +47,13 @@ const { GET, POST } = await import("../confirm/route");
 function containing<T extends Record<string, unknown>>(sample: T): T {
   // SAFETY: T satisfies DeeplyAllowMatchers<T> at runtime; `never` bypasses the
   // structural mismatch between T and Vitest's widened DeeplyAllowMatchers<T>.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- expect.* returns any; the cast types it for the caller, and dropping it trips no-unsafe-*.
   return expect.objectContaining(sample as never) as unknown as T;
 }
 
 function anyStr(): string {
   // SAFETY: expect.any(String) is a Vitest asymmetric matcher that matches any string.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- expect.* returns any; the cast types it for the caller, and dropping it trips no-unsafe-*.
   return expect.any(String) as unknown as string;
 }
 
@@ -155,6 +157,7 @@ describe("POST /api/me/delete/confirm - happy path", () => {
     expect(mockPrisma.accountDeletionToken.update).toHaveBeenCalledWith(
       containing({
         where: { id: "tok-1" },
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- expect.* returns any; the cast types it for the caller, and dropping it trips no-unsafe-*.
         data: containing({ usedAt: expect.any(Date) as unknown as Date }),
       }),
     );

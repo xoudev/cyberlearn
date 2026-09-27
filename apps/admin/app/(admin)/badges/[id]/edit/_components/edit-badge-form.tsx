@@ -95,7 +95,7 @@ function Field({
 }
 
 // exactOptionalPropertyTypes: pass fieldError only when defined
-function fe(v: string | undefined): { error: string } | Record<never, never> {
+function fe(v: string | undefined): { error?: string } {
   return v !== undefined ? { error: v } : {};
 }
 

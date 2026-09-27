@@ -500,13 +500,7 @@ function Subsection({
   );
 }
 
-function LegalTable({
-  headers,
-  rows,
-}: {
-  headers: string[];
-  rows: string[][];
-}): React.JSX.Element {
+function LegalTable({ headers, rows }: { headers: string[]; rows: string[][] }): React.JSX.Element {
   return (
     <div style={{ overflowX: "auto" }}>
       <table

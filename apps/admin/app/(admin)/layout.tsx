@@ -32,7 +32,9 @@ const getSidebarCounts = unstable_cache(
 
 export default async function AdminLayout({
   children,
-}: { children: React.ReactNode }): Promise<React.ReactElement> {
+}: {
+  children: React.ReactNode;
+}): Promise<React.ReactElement> {
   const supabase = await getSupabaseServerClient();
 
   const {

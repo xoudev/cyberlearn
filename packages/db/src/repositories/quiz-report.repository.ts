@@ -10,7 +10,10 @@ export const QUIZ_REPORT_REASONS = [
 export type QuizReportReasonValue = (typeof QUIZ_REPORT_REASONS)[number];
 
 // Fails to compile when the schema gains a reason this list does not have.
-const everyReasonListed: Record<Exclude<QuizReportReason, QuizReportReasonValue>, never> = {};
+const everyReasonListed: [Exclude<QuizReportReason, QuizReportReasonValue>] extends [never]
+  ? true
+  : never = true;
+// eslint-disable-next-line @typescript-eslint/no-meaningless-void-operator -- marks the compile-time check as used; it has no runtime value to discard.
 void everyReasonListed;
 
 /** One question's open reports, as the console lists them. */

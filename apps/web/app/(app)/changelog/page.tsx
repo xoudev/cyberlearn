@@ -14,7 +14,10 @@ export const metadata: Metadata = { title: "Nouveautés" };
 function EntryCard({
   entry,
   isLatest,
-}: { entry: ChangelogEntry; isLatest: boolean }): React.ReactElement {
+}: {
+  entry: ChangelogEntry;
+  isLatest: boolean;
+}): React.ReactElement {
   return (
     <article style={{ position: "relative", paddingLeft: 34, paddingBottom: 40 }}>
       {/* timeline rail */}
