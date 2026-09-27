@@ -1,0 +1,314 @@
+---
+refCode: CL-LSN-02017-V01
+slug: linux-tubes-xargs
+title: "Les tubes : composer des commandes"
+description: "Brancher la sortie d'une commande sur l'entrée d'une autre, la philosophie Unix des petits outils, ce qui passe et ne passe pas dans un tube, le code de retour d'une chaîne et pipefail, et xargs pour transformer un flux en arguments."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02016-V01"]
+---
+
+Voici la question : « quelles sont les dix adresses IP qui ont fait le plus de requêtes sur mon site aujourd'hui ? ». Aucune commande ne sait y répondre seule. Mais cinq commandes simples, branchées les unes derrière les autres, y répondent en une ligne. C'est l'idée la plus féconde d'Unix : des outils qui font chacun une seule chose, et un moyen de les enchaîner. Ce moyen, c'est le **tube** (*pipe*), la barre verticale `|`.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- relier la sortie d'une commande à l'entrée de la suivante avec `|` ;
+- construire une chaîne de commandes étape par étape, en vérifiant chaque étape ;
+- expliquer ce qui passe dans un tube (la sortie standard) et ce qui n'y passe pas (les erreurs) ;
+- connaître le code de retour d'une chaîne, et le rendre fiable avec `pipefail` ;
+- transformer un flux de noms en arguments de commande avec `xargs`, y compris avec des noms qui contiennent des espaces.
+
+## pourquoi ça compte
+
+Les tubes sont ce qui rend la ligne de commande plus puissante qu'une interface graphique pour l'analyse. Trier les processus par mémoire consommée, compter les connexions par adresse, extraire les erreurs d'un journal de plusieurs gigaoctets, trouver les fichiers les plus lourds : chaque fois, c'est une chaîne de trois ou quatre commandes. Les analystes d'un centre de supervision de sécurité passent leurs journées à construire ce genre de chaînes sur des journaux, avant même d'ouvrir un outil spécialisé.
+
+Et comprendre le fonctionnement d'un tube évite des erreurs vicieuses : un script qui croit qu'une étape a réussi parce que la dernière de la chaîne a réussi, ou une commande qui s'applique au mauvais fichier parce qu'un nom contenait un espace.
+
+## le principe
+
+```bash
+ls -l /etc | less
+```
+
+Le tube relie la **sortie standard** de `ls` à l'**entrée standard** de `less`. `ls` écrit sa liste, `less` la reçoit et l'affiche page par page. Aucun fichier intermédiaire n'est créé.
+
+<Diagram caption="Un tube branche la sortie d'une commande sur l'entrée de la suivante">
+flowchart LR
+  A["ls -l /etc"] -->|"stdout vers stdin"| B["grep conf"]
+  B -->|"stdout vers stdin"| C["wc -l"]
+  C --> D["Écran : 42"]
+</Diagram>
+
+On peut chaîner autant de commandes qu'on veut. Chacune lit ce que la précédente produit, le transforme, et le passe à la suivante :
+
+```bash
+ls -l /etc | grep "\.conf" | wc -l
+```
+
+```text
+42
+```
+
+« Liste `/etc`, garde les lignes qui contiennent `.conf`, compte-les. » `grep` (leçon 3) filtre et `wc -l` compte les lignes. Chacun ne sait faire qu'une chose ; ensemble, ils répondent à une question précise.
+
+### les commandes tournent en même temps
+
+Un détail qui a son importance : les commandes d'un tube ne s'exécutent pas l'une après l'autre, mais **simultanément**. Dès que la première produit une ligne, la suivante peut la traiter. C'est ce qui permet de filtrer un journal de 50 Go sans jamais le charger en mémoire : les données circulent en flux, par petits morceaux.
+
+Conséquence pratique : `head` peut arrêter toute une chaîne. Dans `find / | head -5`, dès que `head` a ses cinq lignes, il se termine ; `find` reçoit alors un signal qui l'arrête à son tour, au lieu de parcourir tout le disque pour rien.
+
+## construire une chaîne étape par étape
+
+On ne tape pas une chaîne de cinq commandes d'un coup. On la **construit**, en regardant le résultat à chaque étape, avant d'ajouter la suivante. Reprenons la question de départ sur un journal d'accès nginx, dont chaque ligne ressemble à ceci :
+
+```text
+203.0.113.42 - - [27/Sep/2026:10:14:02 +0200] "GET /index.html HTTP/1.1" 200 5120 "-" "Mozilla/5.0"
+```
+
+**Étape 1 : regarder les données.**
+
+```bash
+head -3 /var/log/nginx/access.log
+```
+
+**Étape 2 : extraire l'adresse IP**, le premier champ de chaque ligne, avec `cut` (leçon 5) :
+
+```bash
+cut -d ' ' -f 1 /var/log/nginx/access.log | head -3
+```
+
+```text
+203.0.113.42
+198.51.100.7
+203.0.113.42
+```
+
+Le `| head -3` en fin de ligne limite l'affichage pendant la mise au point.
+
+**Étape 3 : regrouper et compter.** `uniq -c` compte les lignes identiques **consécutives**, il faut donc trier d'abord :
+
+```bash
+cut -d ' ' -f 1 /var/log/nginx/access.log | sort | uniq -c | head -3
+```
+
+```text
+     12 192.0.2.10
+    431 198.51.100.7
+   2204 203.0.113.42
+```
+
+**Étape 4 : trier par nombre décroissant et garder les dix premiers.**
+
+```bash
+cut -d ' ' -f 1 /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -10
+```
+
+```text
+   2204 203.0.113.42
+    431 198.51.100.7
+     12 192.0.2.10
+```
+
+Cinq commandes, une réponse. La même chaîne, avec un autre champ, donne les pages les plus demandées ou les codes d'erreur les plus fréquents. Et une adresse qui a fait 2 204 requêtes quand les autres en font quelques dizaines mérite qu'on regarde ce qu'elle cherche.
+
+<Callout type="info">
+Beaucoup de gens écrivent `cat fichier | grep motif`. Ça marche, mais le `cat` est inutile : `grep motif fichier` lit le fichier directement. Les anglophones parlent de *useless use of cat*. Ce n'est pas grave en interactif, mais c'est un processus de trop dans un script qui tourne des milliers de fois.
+</Callout>
+
+## garder une trace au milieu, lire tranquillement à la fin
+
+Deux commandes se placent souvent dans une chaîne sans rien transformer.
+
+**`tee` au milieu** enregistre les données à une étape donnée, tout en les laissant continuer vers la suite. Tu veux garder la liste brute des adresses IP avant de les compter, pour pouvoir y revenir plus tard :
+
+```bash
+cut -d ' ' -f 1 access.log | tee adresses.txt | sort | uniq -c | sort -rn | head
+```
+
+`adresses.txt` contient la liste complète, et l'écran affiche le classement. C'est un bon réflexe pendant une enquête : conserver les étapes intermédiaires, pour ne pas avoir à refaire un long traitement si une question nouvelle apparaît.
+
+**`less` à la fin** permet de parcourir une longue sortie page par page, avec les mêmes touches que `man` : Espace pour avancer, `b` pour reculer, `/` pour chercher, `q` pour quitter. Toute commande bavarde peut se terminer par `| less`. Pour garder les couleurs de `grep` ou de `ls` dans `less`, on force la couleur d'un côté (`--color=always`) et on demande à `less` de l'interpréter de l'autre (`less -R`) :
+
+```bash
+grep --color=always -n "error" /var/log/syslog | less -R
+```
+
+Sans ces options, `grep` détecte qu'il n'écrit pas directement dans un terminal et coupe les couleurs de lui-même : c'est voulu, pour ne pas polluer un fichier ou un autre programme avec des codes de couleur.
+
+## ce qui passe dans un tube, et ce qui n'y passe pas
+
+Un tube ne transporte que la **sortie standard** (flux 1). Les messages d'erreur (flux 2), eux, continuent d'aller à l'écran :
+
+```bash
+find / -name "*.conf" | wc -l
+```
+
+Les « Permission denied » s'affichent au milieu, et ne sont pas comptés. C'est généralement ce qu'on veut : les erreurs ne polluent pas les données. Si l'on veut vraiment faire passer les erreurs dans le tube, on les redirige vers la sortie standard avant (leçon précédente), ou on utilise le raccourci de bash `|&` :
+
+```bash
+./script.sh 2>&1 | tee script.log
+./script.sh |& tee script.log
+```
+
+## le code de retour d'une chaîne
+
+Quel est le code de retour d'une chaîne de commandes ? Par défaut, **celui de la dernière**, et seulement elle.
+
+```bash
+grep "motif" fichier-inexistant.txt | sort
+echo $?
+```
+
+```text
+grep: fichier-inexistant.txt: No such file or directory
+0
+```
+
+`grep` a échoué, mais `sort` a réussi (trier rien, c'est réussir), et la chaîne renvoie 0. Dans un script, `commande | tee journal.log && echo "OK"` affichera toujours « OK », puisque `tee` réussit presque toujours, même si la commande principale a échoué.
+
+Deux outils pour s'en sortir :
+
+- **`set -o pipefail`** : la chaîne renvoie le code de la **dernière commande qui a échoué**, ou 0 si toutes ont réussi. On le met en tête de presque tous les scripts sérieux (module 7) ;
+- **`PIPESTATUS`** : un tableau qui contient les codes de chaque commande de la dernière chaîne.
+
+```bash
+grep "motif" fichier-inexistant.txt | sort
+echo "${PIPESTATUS[@]}"
+```
+
+```text
+2 0
+```
+
+## xargs : du flux aux arguments
+
+Certaines commandes ne lisent pas leur entrée standard : elles attendent des **arguments**. `rm`, `cp`, `mkdir` ou `chmod` n'ont rien à faire d'un flux de noms qui arrive dans un tube. `xargs` fait le pont : il lit des mots sur son entrée et les passe comme arguments à une commande.
+
+```bash
+find /tmp/app -name "*.tmp" | xargs rm
+```
+
+`find` produit une liste de noms ; `xargs` construit `rm nom1 nom2 nom3...` et l'exécute, en découpant en plusieurs appels si la liste est très longue.
+
+<Diagram caption="xargs transforme des lignes en arguments">
+flowchart LR
+  A["find : a.tmp, b.tmp, c.tmp (une ligne chacun)"] -->|"tube"| B["xargs rm"]
+  B --> C["rm a.tmp b.tmp c.tmp"]
+</Diagram>
+
+### le piège des espaces, et sa solution
+
+Par défaut, `xargs` découpe aux espaces et aux retours à la ligne. Un fichier nommé `rapport final.tmp` devient deux arguments, `rapport` et `final.tmp`, et `rm` supprime autre chose ou échoue. La solution est de séparer les noms par un caractère qui ne peut **jamais** apparaître dans un nom de fichier : le caractère nul. `find` sait le produire avec `-print0`, et `xargs` le lire avec `-0` :
+
+```bash
+find /tmp/app -name "*.tmp" -print0 | xargs -0 rm
+```
+
+C'est la forme sûre, à utiliser systématiquement dès qu'on combine `find` et `xargs`.
+
+### quelques options utiles
+
+| Option | Effet |
+| --- | --- |
+| `-0` | Noms séparés par le caractère nul (avec `find -print0`) |
+| `-n 1` | Un seul argument par appel de la commande |
+| `-I MOT` | Remplacer `MOT` par chaque élément, où qu'il soit dans la commande |
+| `-P 4` | Lancer jusqu'à quatre commandes en parallèle |
+| `-r` | Ne rien lancer si l'entrée est vide |
+| `-p` | Demander confirmation avant chaque commande |
+
+```bash
+cat serveurs.txt | xargs -I SRV ping -c 1 SRV
+```
+
+Pour chaque ligne de `serveurs.txt`, `ping -c 1` est lancé avec le nom du serveur. L'option `-r` est une bonne habitude : sans elle, `xargs rm` avec une entrée vide lance quand même `rm` sans argument.
+
+<Callout type="warning">
+`xargs` exécute des commandes construites à partir de données. Si ces données viennent de l'extérieur (un fichier reçu, des noms choisis par des utilisateurs), elles peuvent contenir des noms piégés. Utilise toujours `-0` avec `find -print0`, et regarde la liste avant de brancher un `xargs rm` : remplace `rm` par `echo` pour voir ce qui serait exécuté.
+</Callout>
+
+## démonstration : qui consomme la mémoire ?
+
+Un serveur ralentit. On veut les cinq processus qui consomment le plus de mémoire, lisibles d'un coup d'œil.
+
+```bash
+ps aux | head -3
+```
+
+```text
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.3 168620 13220 ?        Ss   sept.21   0:04 /sbin/init
+root           2  0.0  0.0      0     0 ?        S    sept.21   0:00 [kthreadd]
+```
+
+La colonne `%MEM` est la quatrième. On trie sur elle, en nombres, du plus grand au plus petit, en gardant la ligne d'en-tête hors du tri :
+
+```bash
+ps aux --sort=-%mem | head -6
+```
+
+`ps` sait trier seul avec `--sort`. Mais si l'on veut une présentation plus compacte, seulement l'utilisateur, la mémoire et la commande, on compose :
+
+```bash
+ps aux | sort -k4 -rn | head -5 | awk '{print $1, $4 "%", $11}'
+```
+
+```text
+postgres 18.4% /usr/lib/postgresql/15/bin/postgres
+www-data 6.2% php-fpm:
+www-data 5.9% php-fpm:
+root 2.1% /usr/bin/dockerd
+alice 1.4% /usr/bin/python3
+```
+
+`sort -k4 -rn` trie sur le quatrième champ, en nombres, à l'envers ; `head -5` garde les cinq premiers ; `awk` (leçon 7) choisit les colonnes à afficher. On lit immédiatement que PostgreSQL occupe près d'un cinquième de la mémoire. Le module 5 te montrera les outils dédiés à la surveillance des processus, mais la logique du tube reste la même partout.
+
+## à toi de jouer
+
+Compte d'abord combien de lignes de `/etc/passwd` contiennent `/bin/bash`, en reliant `grep` et `wc -l`. Puis affiche les cinq plus gros éléments de `/var/log`, en reliant `du -sh /var/log/*`, `sort -h` et `tail -5`. Enfin, supprime sans risque les fichiers `.tmp` de `/tmp/app`, en reliant `find` et `xargs` avec la forme sûre pour les espaces.
+
+<SimulatedTerminal shell="bash" title="Composer des commandes" expectedCommands={["grep /bin/bash /etc/passwd | wc -l", "du -sh /var/log/* | sort -h | tail -5", "find /tmp/app -name \"*.tmp\" -print0 | xargs -0 rm"]} hints={["grep filtre, wc -l compte : un tube entre les deux.", "sort -h sait trier les tailles lisibles comme 12M ou 1.4G.", "find -print0 d'un côté, xargs -0 de l'autre."]} commands={{ "grep /bin/bash /etc/passwd": "root:x:0:0:root:/root:/bin/bash\nalice:x:1000:1000:Alice,,,:/home/alice:/bin/bash\nbob:x:1001:1001:Bob,,,:/home/bob:/bin/bash", "grep /bin/bash /etc/passwd | wc -l": "3", "du -sh /var/log/* | sort -h | tail -5": "12M\t/var/log/dpkg.log\n48M\t/var/log/auth.log\n210M\t/var/log/syslog\n1.4G\t/var/log/journal\n2.1G\t/var/log/app", "find /tmp/app -name \"*.tmp\"": "/tmp/app/cache.tmp\n/tmp/app/rapport final.tmp", "find /tmp/app -name \"*.tmp\" | xargs rm": "rm: cannot remove '/tmp/app/rapport': No such file or directory\nrm: cannot remove 'final.tmp': No such file or directory", "find /tmp/app -name \"*.tmp\" -print0 | xargs -0 rm": "", "find /tmp/app -name \"*.tmp\" -print0 | xargs -0 echo rm": "rm /tmp/app/cache.tmp /tmp/app/rapport final.tmp" }} />
+
+Essaie aussi la version sans `-print0` et `-0` : le fichier `rapport final.tmp` est coupé en deux, et `rm` échoue sur des noms qui n'existent pas.
+
+## les pièges
+
+- **Taper une chaîne entière d'un coup.** On la construit étape par étape, en regardant le résultat, avec `| head` pendant la mise au point.
+- **Oublier que `uniq` ne regroupe que les lignes consécutives.** Toujours `sort | uniq`.
+- **Croire que les erreurs passent dans le tube.** Seule la sortie standard y passe ; `2>&1 |` ou `|&` pour y joindre les erreurs.
+- **Se fier au code de retour d'une chaîne.** C'est celui de la dernière commande. `set -o pipefail` dans les scripts.
+- **`find | xargs` avec des noms à espaces.** `-print0` et `-0`, toujours.
+- **`xargs rm` sur une entrée vide.** `-r` évite de lancer la commande pour rien.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Pipelines.html" description="Les tubes, leur code de retour et pipefail dans le manuel de bash">Bash : Pipelines</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/findutils/manual/html_node/find_html/Invoking-xargs.html" description="Toutes les options de xargs">GNU findutils : xargs</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/pipe.7.html" description="Le fonctionnement des tubes dans le noyau">pipe(7)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que transmet un tube | entre deux commandes ?" options={["La sortie standard de la première vers l'entrée standard de la seconde", "Les erreurs de la première vers la seconde", "Les arguments de la première", "Le code de retour de la première"]} correct={0} explanation="Un tube relie stdout à stdin. Les erreurs, sur stderr, continuent d'aller à l'écran, sauf redirection explicite." />
+  <Quiz id="q-2" question="Pourquoi écrire sort | uniq -c et non uniq -c seul pour compter les occurrences ?" options={["Parce que uniq ne fonctionne qu'après sort", "Parce que uniq ne regroupe que les lignes identiques consécutives", "Parce que sort compte les lignes", "Pour que le résultat soit trié par nombre"]} correct={1} explanation="uniq compare chaque ligne à la précédente. Trier d'abord place les lignes identiques côte à côte." />
+  <Quiz id="q-3" question="Dans grep motif absent.txt | sort, grep échoue. Quel est le code de retour de la chaîne sans option particulière ?" options={["Celui de grep, donc une erreur", "Celui de sort, donc 0", "Toujours 1", "La somme des deux codes"]} correct={1} explanation="Par défaut, une chaîne renvoie le code de sa dernière commande. set -o pipefail changerait cela." />
+  <Quiz id="q-4" question="À quoi sert set -o pipefail ?" options={["À accélérer les tubes", "À faire échouer la chaîne si une de ses commandes échoue", "À afficher les erreurs dans le tube", "À interdire les tubes dans les scripts"]} correct={1} explanation="Avec pipefail, la chaîne renvoie le code de la dernière commande en échec, ce qui rend son résultat fiable dans un script." />
+  <Quiz id="q-5" question="Pourquoi a-t-on besoin de xargs pour find | xargs rm ?" options={["Parce que rm ne lit pas son entrée standard : il attend des arguments", "Parce que find ne sait pas afficher de noms", "Parce que xargs vérifie les permissions", "Parce que rm est interdit dans un tube"]} correct={0} explanation="rm, cp ou mkdir ignorent leur entrée standard. xargs lit les noms qui arrivent dans le tube et les passe comme arguments." />
+  <Quiz id="q-6" question="Quelle forme gère correctement les noms de fichiers qui contiennent des espaces ?" options={["find . -name '*.log' | xargs rm", "find . -name '*.log' -print0 | xargs -0 rm", "find . -name '*.log' | xargs -n 1 rm", "find . -name '*.log' | rm"]} correct={1} explanation="-print0 sépare les noms par le caractère nul, qui ne peut pas figurer dans un nom de fichier, et xargs -0 découpe sur ce même caractère." />
+  <Quiz id="q-7" question="Pourquoi find / | head -5 se termine-t-il vite, alors que find parcourrait tout le disque ?" options={["Parce que head accélère find", "Parce que dès que head a ses cinq lignes, il se termine, et find reçoit un signal qui l'arrête", "Parce que find ne cherche que dans cinq répertoires", "Parce que le tube a une taille limitée à cinq lignes"]} correct={1} explanation="Les commandes d'un tube tournent en même temps. Quand la lecture s'arrête, l'écriture échoue et le programme qui écrit est arrêté." />
+</QuizGroup>
+
+## à retenir
+
+- `|` relie la **sortie standard** d'une commande à l'**entrée standard** de la suivante. Les commandes tournent en même temps, en flux.
+- On construit une chaîne **étape par étape**, avec `| head` pendant la mise au point.
+- La recette d'analyse : extraire (`cut`, `awk`), `sort`, `uniq -c`, `sort -rn`, `head`.
+- Les erreurs ne passent pas dans le tube : `2>&1 |` ou `|&` pour les y joindre.
+- Le code d'une chaîne est celui de la dernière commande ; `set -o pipefail` et `PIPESTATUS` pour savoir qui a échoué.
+- `xargs` transforme un flux en arguments. Avec `find` : `-print0 | xargs -0`, et `-r` contre les entrées vides.

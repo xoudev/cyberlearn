@@ -1,0 +1,157 @@
+---
+refCode: CL-LSN-02902-V01
+slug: linux-bilan-module-2
+title: "Bilan du module 2 : mettre de l'ordre sur un serveur"
+description: "Le quiz du module Fichiers et arborescence, puis un projet : retrouver, trier, archiver et nettoyer les fichiers d'un serveur selon des critères précis, sans rien perdre, avec des critères de réussite et une correction commentée."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-02015-V01"]
+---
+
+Le module 2 t'a donné la carte du système et tous les outils pour y travailler : se déplacer, créer, copier, déplacer, supprimer, désigner des groupes de fichiers, comprendre les liens, chercher dans toute une arborescence, archiver, et lire les métadonnées. Ce bilan vérifie les connaissances, puis te met dans une situation que tout administrateur rencontre : un serveur en désordre, à remettre d'aplomb sans rien perdre d'important.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- situer n'importe quel fichier dans la hiérarchie standard et savoir ce qui se sauvegarde ;
+- manipuler fichiers et répertoires avec les options qui protègent ;
+- prévisualiser ce que désigne un joker avant d'agir ;
+- trouver des fichiers selon plusieurs critères et agir sur eux en sécurité ;
+- créer une archive restaurable et vérifier ce qu'elle contient ;
+- lire les métadonnées d'un fichier pour décider quoi en faire.
+
+## quiz
+
+Quatorze questions sur les huit leçons du module.
+
+<QuizGroup>
+  <Quiz id="m2-q-1" question="Où chercher la configuration du serveur SSH ?" options={["/usr/share/ssh", "/etc/ssh", "/var/lib/ssh", "/opt/ssh"]} correct={1} explanation="La configuration du système est dans /etc, dans un fichier ou un répertoire au nom du service." />
+  <Quiz id="m2-q-2" question="Quel répertoire faut-il surveiller en priorité pour éviter qu'un disque se remplisse ?" options={["/etc", "/usr", "/var", "/boot"]} correct={2} explanation="/var contient les journaux, les bases de données et les caches, tout ce qui grossit pendant que le système tourne." />
+  <Quiz id="m2-q-3" question="Tu es dans /srv/app/releases. Quel chemin relatif désigne /srv/app/shared ?" options={["./shared", "../shared", "/shared", "../../shared"]} correct={1} explanation=".. remonte à /srv/app, et shared y est un sous-répertoire." />
+  <Quiz id="m2-q-4" question="Quelle commande affiche les fichiers de /var/log du plus ancien au plus récent, le plus récent en bas ?" options={["ls -lt /var/log", "ls -ltr /var/log", "ls -lS /var/log", "ls -la /var/log"]} correct={1} explanation="-t trie par date, le plus récent en premier, et -r inverse l'ordre." />
+  <Quiz id="m2-q-5" question="Pour une sauvegarde fidèle d'un répertoire, avec ses propriétaires, droits et dates, quelle commande utiliser ?" options={["cp -r", "cp -a", "mv", "ln -s"]} correct={1} explanation="-a (archive) conserve tous les attributs ; -r copie récursivement mais crée des fichiers neufs." />
+  <Quiz id="m2-q-6" question="Le répertoire archive n'existe pas. Que fait mv notes.txt archive ?" options={["Il échoue", "Il renomme notes.txt en archive", "Il crée le répertoire archive", "Il supprime notes.txt"]} correct={1} explanation="Sans répertoire de destination, mv comprend un renommage. Écrire archive/ avec la barre finale le ferait échouer proprement." />
+  <Quiz id="m2-q-7" question="Comment voir ce que recevrait rm *.log.[0-9] avant de l'exécuter ?" options={["rm -n *.log.[0-9]", "echo rm *.log.[0-9]", "find rm *.log.[0-9]", "ls -d rm"]} correct={1} explanation="echo affiche la ligne après les développements de bash, sans rien exécuter." />
+  <Quiz id="m2-q-8" question="Le joker * dans cp * sauvegarde/ copie-t-il les fichiers cachés ?" options={["Oui", "Non, * ignore les noms qui commencent par un point", "Seulement avec sudo", "Seulement s'ils sont récents"]} correct={1} explanation="Par défaut, les jokers ne correspondent pas aux fichiers dont le nom commence par un point." />
+  <Quiz id="m2-q-9" question="current est un lien symbolique vers releases/v7. Tu supprimes releases/v7. Que devient current ?" options={["Il est supprimé automatiquement", "Il devient un lien cassé", "Il pointe vers la version précédente", "Il devient un répertoire vide"]} correct={1} explanation="Un lien symbolique contient seulement un chemin ; si la cible disparaît, le lien reste mais ne mène plus nulle part." />
+  <Quiz id="m2-q-10" question="Quelle commande liste les fichiers de /etc modifiés au cours des 30 dernières minutes ?" options={["find /etc -mtime -30", "sudo find /etc -type f -mmin -30", "ls -lt /etc | head -30", "locate /etc -30"]} correct={1} explanation="-mmin compte en minutes, -mtime en jours. sudo permet de parcourir les répertoires fermés aux utilisateurs ordinaires." />
+  <Quiz id="m2-q-11" question="Où placer -delete dans une commande find ?" options={["En premier", "En dernier, après avoir vérifié la commande sans lui", "N'importe où", "Juste après le répertoire de départ"]} correct={1} explanation="find évalue ses éléments dans l'ordre : placé avant les critères, -delete supprimerait tout." />
+  <Quiz id="m2-q-12" question="Quelle commande crée une archive compressée avec gzip du répertoire docs/ ?" options={["tar -xzf docs.tar.gz docs/", "tar -czf docs.tar.gz docs/", "tar -tzf docs.tar.gz docs/", "gzip docs/"]} correct={1} explanation="c crée, z compresse avec gzip, f désigne le fichier d'archive, suivi de ce qu'on archive." />
+  <Quiz id="m2-q-13" question="Un fichier nommé rapport.pdf est identifié par file comme ELF 64-bit executable. Que faut-il en conclure ?" options={["Le PDF est simplement volumineux", "C'est un programme exécutable déguisé, pas un document", "La commande file se trompe souvent sur les PDF", "Le fichier est compressé"]} correct={1} explanation="file lit le contenu réel. ELF est le format des programmes Linux : l'extension .pdf est trompeuse." />
+  <Quiz id="m2-q-14" question="Root ne parvient pas à supprimer un fichier et reçoit « Operation not permitted ». Quelle commande vérifier ?" options={["stat", "lsattr", "du", "readlink"]} correct={1} explanation="Un attribut d'immuabilité i bloque toute modification ou suppression, même en root." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées : le module 3 enchaînera directement sur `find`, les jokers et les archives.
+
+## projet
+
+### la situation
+
+Tu reprends un serveur d'application laissé en désordre par l'équipe précédente. Tout se passe dans un répertoire d'exercice que tu vas créer toi-même, pour pouvoir le refaire autant de fois que nécessaire sans rien risquer sur un vrai système.
+
+### préparer le terrain
+
+Crée le répertoire d'exercice et les fichiers de départ avec ces commandes. Lis-les avant de les exécuter : tu dois pouvoir expliquer chacune.
+
+```bash
+mkdir -p ~/serveur/{app/releases/v1,app/releases/v2,logs,uploads,tmp}
+touch ~/serveur/app/releases/v1/index.html ~/serveur/app/releases/v2/index.html
+ln -s ~/serveur/app/releases/v1 ~/serveur/app/current
+for i in 1 2 3 4 5 6; do echo "journal $i" > ~/serveur/logs/app.log.$i; done
+touch -d "40 days ago" ~/serveur/logs/app.log.{4,5,6}
+head -c 5M /dev/urandom > ~/serveur/uploads/video-brute.mp4
+touch ~/serveur/uploads/{photo1,photo2}.jpg ~/serveur/tmp/{a,b,c}.tmp
+touch -d "10 days ago" ~/serveur/tmp/{a,b}.tmp
+```
+
+La boucle `for` crée six journaux ; le module 7 expliquera sa syntaxe. `/dev/urandom` fournit des octets aléatoires, et `head -c 5M` en garde 5 Mo : de quoi simuler un gros fichier.
+
+### le cahier des charges
+
+1. **Basculer l'application** sur la version `v2` : le lien `current` doit désigner `releases/v2`, sans supprimer `v1`.
+2. **Archiver les vieux journaux** : ceux de `logs/` non modifiés depuis plus de 30 jours vont dans une archive compressée `~/archives/logs-AAAA-MM-JJ.tar.gz` (la date du jour, obtenue par une commande, pas tapée à la main), puis sont supprimés de `logs/`.
+3. **Repérer les gros fichiers** : liste, dans un fichier `~/rapport-gros-fichiers.txt`, les fichiers de plus de 1 Mo de tout `~/serveur`.
+4. **Nettoyer le temporaire** : supprime de `tmp/` les fichiers `.tmp` de plus de 7 jours, **et eux seuls**.
+5. **Vérifier l'archive** sans l'extraire, puis restaurer un seul des journaux archivés dans `~/restauration/` pour prouver que l'archive est utilisable.
+
+### les critères de réussite
+
+| Vérification | Résultat attendu |
+| --- | --- |
+| `readlink ~/serveur/app/current` | Se termine par `releases/v2` |
+| `ls ~/serveur/app/releases` | `v1` et `v2` sont toujours là |
+| `ls ~/serveur/logs` | Seulement `app.log.1`, `app.log.2`, `app.log.3` |
+| `tar -tzf ~/archives/logs-*.tar.gz` | Les trois anciens journaux, et rien d'autre |
+| `cat ~/rapport-gros-fichiers.txt` | Le chemin de `video-brute.mp4` |
+| `ls ~/serveur/tmp` | Seulement `c.tmp` |
+| `ls ~/restauration` | Contient un journal restauré depuis l'archive |
+
+### la correction commentée
+
+À lire après avoir essayé. D'autres solutions sont valables si les critères passent.
+
+**1. La bascule**, avec `-sfn` pour remplacer un lien vers un répertoire sans créer de lien à l'intérieur :
+
+```bash
+ln -sfn ~/serveur/app/releases/v2 ~/serveur/app/current
+readlink ~/serveur/app/current
+```
+
+**2. Les vieux journaux.** On les désigne avec `find`, on regarde avant d'agir, puis on archive en donnant la liste à `tar` :
+
+```bash
+find ~/serveur/logs -type f -mtime +30
+mkdir -p ~/archives
+tar -czf ~/archives/logs-$(date +%F).tar.gz -C ~/serveur/logs \
+    $(cd ~/serveur/logs && find . -type f -mtime +30)
+```
+
+`-C ~/serveur/logs` enregistre des chemins relatifs à `logs/`, sans le chemin complet de ton répertoire personnel ; la substitution de commande fournit la liste des fichiers vus juste avant. Puis on vérifie l'archive **avant** de supprimer les originaux :
+
+```bash
+tar -tzf ~/archives/logs-$(date +%F).tar.gz
+find ~/serveur/logs -type f -mtime +30 -delete
+```
+
+L'ordre compte : archiver, vérifier, **puis** supprimer. Supprimer d'abord, c'est parier sur une archive qu'on n'a pas regardée.
+
+**3. Les gros fichiers**, dans un fichier grâce à la redirection `>` (module 3) :
+
+```bash
+find ~/serveur -type f -size +1M > ~/rapport-gros-fichiers.txt
+```
+
+**4. Le temporaire**, en combinant nom et âge, avec la vérification préalable habituelle :
+
+```bash
+find ~/serveur/tmp -type f -name "*.tmp" -mtime +7
+find ~/serveur/tmp -type f -name "*.tmp" -mtime +7 -delete
+```
+
+`c.tmp`, créé aujourd'hui, reste en place : le critère d'âge le protège.
+
+**5. La restauration** d'un seul fichier, dans un répertoire neutre :
+
+```bash
+mkdir -p ~/restauration
+tar -xzf ~/archives/logs-$(date +%F).tar.gz -C ~/restauration ./app.log.4
+cat ~/restauration/app.log.4
+```
+
+Le nom à extraire s'écrit exactement comme dans la liste de `tar -t`, ici avec le `./` initial produit par `find .`.
+
+### pour aller plus loin
+
+Refais tout l'exercice en écrivant les commandes des étapes 2 à 4 dans un fichier texte, que tu relis ligne par ligne avant de l'exécuter avec `bash` : c'est un premier script de maintenance. Au module 7, tu le rendras robuste, paramétrable et planifiable.
+
+## à retenir
+
+- La hiérarchie standard dit où chercher et quoi sauvegarder ; `/var` est ce qui remplit les disques.
+- Avant d'agir sur un groupe de fichiers : `echo` ou `ls` avec le même motif, ou `find` sans action.
+- Archiver, **vérifier l'archive**, puis seulement supprimer les originaux. Restaurer dans un répertoire neutre.
+- `find` combine nom, type, taille, âge, droits ; `-delete` toujours en dernier.
+- Les liens symboliques basculent une version en une commande ; les métadonnées révèlent l'âge et la nature réelle d'un fichier.
+- Le module 3 t'apprend à traiter le contenu des fichiers : filtrer, transformer, et enchaîner les commandes.

@@ -1,0 +1,348 @@
+---
+refCode: CL-LSN-02009-V01
+slug: linux-naviguer-efficacement
+title: "Naviguer efficacement dans l'arborescence"
+description: "Chemins absolus et relatifs, les raccourcis . .. ~ et -, lire chaque colonne de ls -l, trier et filtrer ce qu'on liste, les fichiers cachés, et la pile de répertoires pour jongler entre plusieurs endroits."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02008-V01"]
+---
+
+Tu connais maintenant la carte du système. Reste à s'y déplacer, et à lire ce qu'on y trouve. `cd` et `ls` sont les deux commandes que tu taperas le plus souvent de toute ta vie d'administrateur : autant les maîtriser complètement, y compris leurs raccourcis et chaque colonne de leur affichage. Ce qu'une ligne de `ls -l` contient, tu en auras besoin dans tous les modules qui suivent.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- écrire un chemin absolu ou relatif, et choisir le bon selon la situation ;
+- utiliser les raccourcis `.`, `..`, `~`, `~utilisateur` et `cd -` ;
+- lire chaque colonne de `ls -l` : type, permissions, liens, propriétaire, groupe, taille, date, nom ;
+- trier et filtrer une liste avec les options de `ls` ;
+- afficher les fichiers cachés, et savoir pourquoi ils le sont ;
+- te déplacer entre plusieurs répertoires avec `pushd` et `popd`.
+
+## pourquoi ça compte
+
+Une erreur de chemin est une des erreurs les plus coûteuses de la ligne de commande. `rm -r old/` exécuté dans le mauvais répertoire ne supprime pas le même `old`. Un script qui utilise un chemin relatif marche quand on le lance depuis son répertoire, et fait n'importe quoi quand une tâche planifiée le lance depuis `/`. Savoir à tout instant où on est, et ce que désigne exactement un chemin, c'est la base de la sûreté en ligne de commande.
+
+Quant à `ls -l`, c'est l'outil d'enquête élémentaire. Qui possède ce fichier ? Depuis quand n'a-t-il pas changé ? Est-il exécutable ? Est-ce un vrai fichier ou un lien ? Tout est sur une ligne, à condition de savoir la lire.
+
+## chemins absolus et relatifs
+
+Un **chemin absolu** commence par `/` : il part de la racine et désigne le même fichier, où que tu sois.
+
+```bash
+cat /etc/hostname
+```
+
+Un **chemin relatif** ne commence pas par `/` : il part du **répertoire courant**, celui que `pwd` affiche.
+
+```bash
+pwd
+```
+
+```text
+/home/alice
+```
+
+```bash
+cat projets/notes.txt
+```
+
+Ici, `projets/notes.txt` désigne `/home/alice/projets/notes.txt`. Le même chemin tapé depuis `/tmp` désignerait `/tmp/projets/notes.txt`, un tout autre fichier, ou aucun.
+
+Deux noms spéciaux existent dans chaque répertoire :
+
+- **`.`** désigne le répertoire lui-même ;
+- **`..`** désigne son parent, le répertoire au-dessus.
+
+```bash
+cd /var/log/nginx
+cd ..
+pwd
+```
+
+```text
+/var/log
+```
+
+On les combine : `../..` remonte de deux niveaux, `../lib` va dans le répertoire `lib` voisin.
+
+<Diagram caption="Le même fichier, trois façons de l'atteindre depuis /home/alice/projets">
+flowchart LR
+  A["Depuis /home/alice/projets"] --> B["Absolu : /home/alice/notes.txt"]
+  A --> C["Relatif : ../notes.txt"]
+  A --> D["Depuis ton répertoire : ~/notes.txt"]
+  B --> F["/home/alice/notes.txt"]
+  C --> F
+  D --> F
+</Diagram>
+
+**Quand utiliser lequel ?** En interactif, le relatif est plus court. Dans un script, une tâche planifiée ou une configuration, on utilise des chemins **absolus** : le répertoire courant d'un script lancé par `cron` ou par `systemd` n'est pas celui que tu imagines.
+
+## les raccourcis du déplacement
+
+| Commande | Effet |
+| --- | --- |
+| `cd` seul | Retour au répertoire personnel |
+| `cd ~` | Idem, explicitement |
+| `cd ~bob` | Le répertoire personnel de l'utilisateur bob |
+| `cd -` | Retour au répertoire précédent, d'où l'on vient |
+| `cd ..` | Le répertoire parent |
+| `cd /` | La racine |
+
+`cd -` est le plus utile des moins connus. Tu travailles dans `/etc/nginx/sites-available`, tu vas voir un journal dans `/var/log/nginx`, et `cd -` te ramène d'un coup dans `sites-available`. Un deuxième `cd -` te renvoie dans les journaux. C'est la variable `OLDPWD` (module 1) qui retient l'endroit précédent.
+
+<Callout type="info">
+La complétion (Tab) marche avec `cd` : tape `cd /etc/ngi` puis Tab. Si rien ne se complète, le répertoire n'existe pas sous ce nom : inutile de valider pour recevoir une erreur.
+</Callout>
+
+## lire ls -l, colonne par colonne
+
+`ls` seul affiche des noms. `ls -l` (*long*) affiche une ligne détaillée par fichier :
+
+```bash
+ls -l /etc/ssh
+```
+
+```text
+total 580
+-rw-r--r-- 1 root root 573928 févr. 8  2024 moduli
+-rw-r--r-- 1 root root   1650 févr. 8  2024 ssh_config
+drwxr-xr-x 2 root root   4096 févr. 8  2024 ssh_config.d
+-rw-r--r-- 1 root root   3223 sept. 12 14:02 sshd_config
+drwxr-xr-x 2 root root   4096 févr. 8  2024 sshd_config.d
+-rw------- 1 root root    411 mars  4  2024 ssh_host_ed25519_key
+-rw-r--r-- 1 root root    103 mars  4  2024 ssh_host_ed25519_key.pub
+```
+
+Prenons la ligne de `sshd_config` et découpons-la.
+
+| Morceau | Valeur | Sens |
+| --- | --- | --- |
+| Premier caractère | `-` | Le **type** : `-` fichier ordinaire, `d` répertoire, `l` lien symbolique |
+| Neuf caractères suivants | `rw-r--r--` | Les **permissions** : propriétaire, groupe, autres (module 4) |
+| Nombre | `1` | Le nombre de **liens physiques** (leçon 5) |
+| Premier nom | `root` | Le **propriétaire** |
+| Second nom | `root` | Le **groupe** |
+| Nombre | `3223` | La **taille** en octets |
+| Date | `sept. 12 14:02` | La date de **dernière modification** du contenu |
+| Fin de ligne | `sshd_config` | Le **nom** |
+
+Deux détails de lecture :
+
+- la date affiche l'heure si le fichier a moins de six mois environ, et l'année sinon (`févr. 8 2024`) ;
+- la ligne `total 580` en tête donne l'espace disque occupé, en blocs de 1 Kio, par les fichiers listés.
+
+Et déjà, une lecture de sécurité : la clé privée `ssh_host_ed25519_key` a les permissions `rw-------` (lisible par root seul), alors que la clé publique `.pub` est lisible par tous. C'est exactement ce qu'on attend. Une clé privée lisible par tout le monde serait un incident.
+
+## trier et filtrer
+
+`ls` a beaucoup d'options. Voici celles qui servent vraiment, combinables entre elles (module 1, leçon 3).
+
+| Option | Effet |
+| --- | --- |
+| `-a` | Inclure les fichiers **cachés** (ceux dont le nom commence par un point) |
+| `-A` | Pareil, sans les entrées `.` et `..` |
+| `-h` | Tailles **lisibles** : `3.2K`, `561K`, `1.4G` (avec `-l`) |
+| `-t` | Trier par date de modification, le plus récent d'abord |
+| `-S` | Trier par taille, le plus gros d'abord |
+| `-r` | Inverser l'ordre du tri |
+| `-d` | Afficher le répertoire lui-même, pas son contenu |
+| `-R` | Descendre récursivement dans les sous-répertoires |
+| `-1` | Un nom par ligne, pratique pour les scripts |
+| `-F` | Ajouter un indicateur : `/` répertoire, `*` exécutable, `@` lien |
+
+Quelques combinaisons à connaître par cœur :
+
+```bash
+ls -lah            # tout, en détail, tailles lisibles
+ls -lt /var/log    # ce qui a bougé récemment en premier
+ls -ltr /var/log   # l'inverse : le plus récent en dernier, près de l'invite
+ls -lhS ~/Downloads | head   # les plus gros fichiers
+ls -ld /tmp        # les droits de /tmp lui-même, pas son contenu
+```
+
+`ls -ltr` mérite une mention : en enquête, on veut voir **les derniers fichiers modifiés**, et avec `-r` ils s'affichent en bas, juste au-dessus de l'invite, sans avoir à remonter.
+
+## les fichiers cachés
+
+Sous Linux, un fichier est « caché » simplement parce que **son nom commence par un point** : `.bashrc`, `.ssh`, `.git`. Il n'y a pas d'attribut spécial, pas de protection : c'est une convention d'affichage, pour que `ls` ne montre pas par défaut les fichiers de configuration qui encombrent chaque répertoire personnel.
+
+```bash
+ls -A ~
+```
+
+```text
+.bash_history  .bash_logout  .bashrc  .profile  .ssh  projets
+```
+
+<Callout type="warning">
+Caché ne veut pas dire protégé. N'importe qui ayant le droit de lire le répertoire voit `.ssh` avec `ls -a`. Et c'est aussi pour cela que les attaquants aiment nommer leurs fichiers avec un point, ou même `...` (trois points), qui passe inaperçu à côté de `.` et `..` : en enquête, on liste toujours avec `-a`.
+</Callout>
+
+## le chemin réel : realpath et pwd -P
+
+Un même fichier peut s'atteindre par plusieurs chemins : `/bin/ls` et `/usr/bin/ls` sur une Debian récente, `../notes.txt` et `/home/alice/notes.txt`, ou un raccourci créé par un lien. Parfois, il faut savoir quel est **le** chemin, sans détour. `realpath` le donne :
+
+```bash
+realpath ../notes.txt
+realpath /bin/ls
+```
+
+```text
+/home/alice/notes.txt
+/usr/bin/ls
+```
+
+`realpath` résout les `.`, les `..` et les liens, et rend un chemin absolu et canonique. C'est utile dans un script qui reçoit un chemin relatif et doit le noter dans un journal, et en sécurité, où l'on vérifie qu'un chemin fourni par un utilisateur reste bien dans le répertoire prévu, même s'il contient des `../` ou passe par un lien.
+
+Même logique pour le répertoire courant. Si tu es entré dans un répertoire en passant par un lien, `pwd` affiche le chemin **tel que tu l'as suivi**, tandis que `pwd -P` affiche le chemin **physique** :
+
+```bash
+cd /srv/app/current
+pwd
+pwd -P
+```
+
+```text
+/srv/app/current
+/srv/app/releases/20260927080150
+```
+
+Ici, `current` est un lien vers la dernière version déployée de l'application. `pwd` répond `current`, le chemin suivi ; `pwd -P` dit dans quelle version tu te trouves réellement. Tant que tu ne passes par aucun lien, les deux commandes répondent la même chose. La leçon 5 de ce module explique les liens en détail.
+
+## la pile de répertoires
+
+Quand tu jongles entre trois ou quatre répertoires, `cd -` ne suffit plus. Bash offre une **pile** :
+
+- `pushd rep` va dans `rep` et empile l'endroit d'où tu viens ;
+- `popd` dépile et te ramène au répertoire précédent ;
+- `dirs -v` affiche la pile, numérotée.
+
+```bash
+pushd /etc/nginx
+pushd /var/log/nginx
+dirs -v
+```
+
+```text
+ 0  /var/log/nginx
+ 1  /etc/nginx
+ 2  ~
+```
+
+```bash
+popd
+pwd
+```
+
+```text
+/etc/nginx
+```
+
+Dans un script, `pushd` et `popd` permettent aussi d'aller travailler ailleurs puis de revenir exactement d'où l'on était parti.
+
+## voir une arborescence : tree
+
+`tree` affiche une arborescence sous forme d'arbre. Il n'est pas toujours installé (`sudo apt install tree`), mais il est très pratique pour comprendre un répertoire inconnu :
+
+```bash
+tree -L 2 /etc/nginx
+```
+
+```text
+/etc/nginx
+├── conf.d
+├── mime.types
+├── nginx.conf
+├── sites-available
+│   └── default
+└── sites-enabled
+    └── default -> /etc/nginx/sites-available/default
+
+4 directories, 4 files
+```
+
+`-L 2` limite la profondeur à deux niveaux. La flèche indique un lien symbolique : tu sauras à la leçon 5 pourquoi nginx en utilise.
+
+## démonstration : se repérer dans un projet inconnu
+
+On te donne accès à un serveur où tourne une application dont tu ne sais rien, installée dans `/srv/app`. Voici une exploration méthodique.
+
+```bash
+cd /srv/app
+ls -lA
+```
+
+```text
+total 16
+drwxr-xr-x 8 deploy deploy 4096 sept. 27 08:02 .git
+-rw-r----- 1 deploy deploy  311 sept. 20 11:40 .env
+lrwxrwxrwx 1 deploy deploy   32 sept. 27 08:02 current -> /srv/app/releases/20260927080150
+drwxr-xr-x 6 deploy deploy 4096 sept. 27 08:02 releases
+drwxr-xr-x 3 deploy deploy 4096 mars  2  2025 shared
+```
+
+Déjà quatre informations : l'application appartient à un compte `deploy`, elle est versionnée avec Git (`.git`), `current` est un lien (le `l` en tête de ligne) vers une des versions de `releases`, et un fichier `.env`, caché, contient sans doute sa configuration et ses secrets. Ses permissions `rw-r-----` le rendent illisible pour les autres utilisateurs : c'est une bonne chose.
+
+```bash
+ls -lt releases | head -4
+```
+
+```text
+total 16
+drwxr-xr-x 5 deploy deploy 4096 sept. 27 08:02 20260927080150
+drwxr-xr-x 5 deploy deploy 4096 sept. 24 17:31 20260924173022
+drwxr-xr-x 5 deploy deploy 4096 sept. 18 09:12 20260918091055
+```
+
+Les versions déployées, la plus récente en haut grâce à `-t` : la dernière mise en production date de ce matin, 8 h 02. Si un problème a commencé ce matin, c'est une piste. En quatre commandes, sans documentation, tu sais qui possède l'application, comment elle est déployée, où est sa configuration et quand elle a changé pour la dernière fois.
+
+## à toi de jouer
+
+Tu arrives dans ton répertoire personnel sur un serveur. Liste tout son contenu, fichiers cachés compris, avec les détails et des tailles lisibles. Puis va dans `/var/log`, affiche les fichiers du plus ancien au plus récent (le plus récent en bas), et reviens d'où tu viens avec le raccourci prévu pour ça.
+
+<SimulatedTerminal shell="bash" title="Se déplacer et lire" expectedCommands={["ls -lah", "cd /var/log", "ls -ltr", "cd -"]} hints={["ls avec trois options : l, a et h.", "cd suivi d'un chemin absolu.", "Tri par date avec t, inversé avec r.", "Le raccourci qui ramène au répertoire précédent est un simple tiret."]} commands={{ "pwd": "/home/alice", "ls -lah": "total 32K\ndrwxr-xr-x 4 alice alice 4.0K sept. 27 09:14 .\ndrwxr-xr-x 4 root  root  4.0K mars   2  2025 ..\n-rw------- 1 alice alice 2.1K sept. 27 09:13 .bash_history\n-rw-r--r-- 1 alice alice  220 mars   2  2025 .bash_logout\n-rw-r--r-- 1 alice alice 3.7K sept. 21 18:05 .bashrc\n-rw-r--r-- 1 alice alice  807 sept. 21 18:05 .profile\ndrwx------ 2 alice alice 4.0K mars   2  2025 .ssh\ndrwxr-xr-x 3 alice alice 4.0K sept. 25 10:40 projets", "ls -la": "total 32\ndrwxr-xr-x 4 alice alice 4096 sept. 27 09:14 .\ndrwxr-xr-x 4 root  root  4096 mars   2  2025 ..\n-rw------- 1 alice alice 2150 sept. 27 09:13 .bash_history\n-rw-r--r-- 1 alice alice 3771 sept. 21 18:05 .bashrc\ndrwx------ 2 alice alice 4096 mars   2  2025 .ssh\ndrwxr-xr-x 3 alice alice 4096 sept. 25 10:40 projets", "cd /var/log": "", "ls -ltr": "total 2140\n-rw-r--r-- 1 root root    3890 mars   4  2024 alternatives.log\n-rw-r----- 1 root adm   184201 sept. 20 03:10 dpkg.log\ndrwxr-x--- 2 root adm     4096 sept. 26 00:00 nginx\n-rw-r----- 1 root adm   512330 sept. 27 09:14 auth.log\n-rw-r----- 1 root adm  1410022 sept. 27 09:17 syslog", "cd -": "/home/alice", "cd ~": "", "dirs -v": " 0  ~" }} />
+
+Remarque la sortie de `cd -` : bash affiche le répertoire où il te ramène, pour que tu saches où tu es.
+
+## les pièges
+
+- **Un chemin relatif dans un script ou une tâche planifiée.** Le répertoire courant n'y est pas celui que tu crois. Chemins absolus.
+- **Oublier où l'on est avant une commande destructrice.** Avant un `rm -r` sur un chemin relatif, un coup de `pwd` coûte une seconde.
+- **Lire la taille sans `-h`.** `1410022` octets, c'est 1,4 Mo ; sans `-h`, les ordres de grandeur trompent.
+- **Confondre la date affichée avec la date de création.** `ls -l` montre la date de dernière **modification** du contenu. La leçon 8 détaille les trois dates d'un fichier.
+- **Croire qu'un fichier caché est protégé.** C'est une convention d'affichage, pas une permission.
+- **Lister sans `-a` pendant une enquête.** Les fichiers déposés par un intrus commencent souvent par un point.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/ls-invocation.html" description="Toutes les options de ls, dans la documentation de GNU coreutils">GNU coreutils : ls</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/The-Directory-Stack.html" description="pushd, popd et dirs dans le manuel de bash">Bash : The Directory Stack</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/path_resolution.7.html" description="Comment le noyau résout un chemin, absolu ou relatif">path_resolution(7)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Tu es dans /home/alice/projets. Quel chemin désigne /home/alice/notes.txt ?" options={["./notes.txt", "../notes.txt", "/notes.txt", "notes.txt"]} correct={1} explanation=".. désigne le répertoire parent, ici /home/alice. /notes.txt serait à la racine, et notes.txt ou ./notes.txt dans projets." />
+  <Quiz id="q-2" question="Que fait cd - ?" options={["Remonte d'un niveau", "Ramène au répertoire précédent", "Va à la racine", "Affiche une erreur car - n'est pas un répertoire"]} correct={1} explanation="cd - utilise la variable OLDPWD pour revenir au répertoire où l'on était juste avant." />
+  <Quiz id="q-3" question="Dans la ligne drwxr-x--- 2 root adm 4096 sept. 26 00:00 nginx, que signifie le premier caractère ?" options={["Que le fichier est supprimé", "Que nginx est un répertoire", "Que le fichier est un lien", "Que le fichier est exécutable"]} correct={1} explanation="Le premier caractère donne le type : d pour un répertoire, - pour un fichier ordinaire, l pour un lien symbolique." />
+  <Quiz id="q-4" question="Quelle commande affiche les fichiers d'un répertoire du plus ancien au plus récent, le plus récent en bas ?" options={["ls -lt", "ls -ltr", "ls -lS", "ls -lR"]} correct={1} explanation="-t trie par date, le plus récent d'abord ; -r inverse ce tri, ce qui place le plus récent en dernier." />
+  <Quiz id="q-5" question="Pourquoi un script lancé par une tâche planifiée doit-il utiliser des chemins absolus ?" options={["Parce que les chemins relatifs sont interdits dans les scripts", "Parce que son répertoire courant n'est pas celui où se trouve le script", "Parce que les chemins absolus sont plus rapides", "Parce que cron ne connaît pas la commande cd"]} correct={1} explanation="Un chemin relatif part du répertoire courant. Celui d'une tâche planifiée est en général le répertoire personnel ou la racine, pas celui du script." />
+  <Quiz id="q-6" question="Comment voir les droits du répertoire /tmp lui-même, et non la liste de son contenu ?" options={["ls -l /tmp", "ls -ld /tmp", "ls -la /tmp", "cd /tmp && ls"]} correct={1} explanation="-d fait afficher le répertoire comme un élément, au lieu de lister ce qu'il contient." />
+  <Quiz id="q-7" question="Qu'est-ce qui rend un fichier « caché » sous Linux ?" options={["Un attribut spécial posé par root", "Un nom qui commence par un point", "Des permissions qui empêchent la lecture", "Son emplacement dans /tmp"]} correct={1} explanation="C'est une simple convention d'affichage : ls n'affiche pas les noms commençant par un point sans l'option -a. Cela ne protège rien." />
+</QuizGroup>
+
+## à retenir
+
+- Absolu = commence par `/`, pareil partout. Relatif = part du répertoire courant (`pwd`). Dans les scripts : absolu.
+- `.` le répertoire courant, `..` le parent, `~` ton répertoire personnel, `cd -` le répertoire précédent, `cd` seul pour rentrer.
+- `ls -l` : type, permissions, liens, propriétaire, groupe, taille, date de modification, nom.
+- Options utiles : `-a` cachés, `-h` lisible, `-t` par date, `-S` par taille, `-r` inverser, `-d` le répertoire lui-même. En enquête : `ls -lat` ou `ls -latr`.
+- Caché = nom qui commence par un point, rien de plus.
+- `pushd`, `popd` et `dirs -v` pour jongler entre plusieurs répertoires.

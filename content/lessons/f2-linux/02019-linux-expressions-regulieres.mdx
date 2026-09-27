@@ -1,0 +1,299 @@
+---
+refCode: CL-LSN-02019-V01
+slug: linux-expressions-regulieres
+title: "Les expressions régulières"
+description: "Décrire un motif plutôt qu'un texte : ancres, point, classes de caractères, quantificateurs, groupes et alternatives, syntaxes basique et étendue, comment construire et tester un motif pas à pas, et les pièges de validation qui deviennent des failles."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 300
+prerequisites: ["CL-LSN-02018-V01"]
+---
+
+Chercher le mot `error`, c'est facile. Chercher « toutes les adresses IP », « les lignes qui commencent par une date », « les codes HTTP de la famille 500 » ou « les noms d'utilisateurs après le mot `for` », c'est une autre affaire : on ne cherche plus un texte, mais une **forme** de texte. Les **expressions régulières** (*regular expressions*, souvent abrégées *regex*) sont le langage qui décrit ces formes. Il paraît cryptique au premier abord, mais il repose sur une dizaine de briques seulement, et tu le retrouveras partout : `grep`, `sed`, `awk`, les éditeurs, et tous les langages de programmation.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- ancrer un motif au début ou à la fin d'une ligne ;
+- utiliser le point, les classes de caractères et leurs négations ;
+- répéter un élément avec les quantificateurs `*`, `+`, `?` et les accolades ;
+- grouper des éléments et proposer des alternatives ;
+- choisir entre la syntaxe basique de `grep` et la syntaxe étendue de `grep -E` ;
+- construire un motif pas à pas et le tester avant de t'en servir ;
+- reconnaître les erreurs de validation qui transforment une expression régulière en faille de sécurité.
+
+## pourquoi ça compte
+
+Les expressions régulières sont l'outil d'extraction par excellence. Sortir des adresses, des dates, des identifiants ou des codes d'erreur d'un journal ; repérer une forme d'attaque dans des requêtes web ; valider qu'un champ saisi par un utilisateur a le bon format ; renommer des centaines de fichiers selon une règle. Dans le parcours SOC, les règles de détection en sont pleines.
+
+Côté développement et sécurité, elles ont une particularité : une expression mal écrite ne produit pas d'erreur, elle produit un **mauvais résultat**. Un filtre de validation qui oublie ses ancres laisse passer des entrées dangereuses sans que personne ne s'en aperçoive. Écrire une expression régulière, c'est donc aussi savoir la tester.
+
+## les briques de base
+
+Une expression régulière est un texte où certains caractères ont un sens particulier. Tous les autres se représentent eux-mêmes : le motif `error` correspond au texte « error ».
+
+### les ancres
+
+| Élément | Correspond à |
+| --- | --- |
+| `^` | Le **début** de la ligne |
+| `$` | La **fin** de la ligne |
+
+```bash
+grep "^root" /etc/passwd        # les lignes qui commencent par root
+grep "nologin$" /etc/passwd     # celles qui finissent par nologin
+grep "^$" fichier.txt           # les lignes vides
+```
+
+Sans ancre, un motif est cherché **n'importe où** dans la ligne. C'est la source de la moitié des erreurs, comme on le verra à la fin de la leçon.
+
+### le point
+
+Le **point** `.` correspond à **n'importe quel caractère**, un seul. `h.t` correspond à `hat`, `hot`, `h1t`, `h t`. Pour chercher un vrai point, on le protège avec une barre oblique inverse : `\.`.
+
+```bash
+grep "192\.168\.1\." /var/log/syslog
+```
+
+### les classes de caractères
+
+Les crochets désignent **un caractère parmi une liste** :
+
+| Élément | Correspond à |
+| --- | --- |
+| `[aeiou]` | Une voyelle |
+| `[0-9]` | Un chiffre |
+| `[a-zA-Z]` | Une lettre, minuscule ou majuscule |
+| `[^0-9]` | Un caractère qui n'est **pas** un chiffre |
+| `[[:digit:]]`, `[[:alpha:]]`, `[[:space:]]` | Les classes nommées, déjà vues avec les jokers |
+
+Attention au double sens de `^` : **en tête d'une classe**, il signifie « sauf » ; **en tête du motif**, il signifie « début de ligne ». `^[^#]` veut donc dire « une ligne qui commence par autre chose qu'un `#` ».
+
+### les quantificateurs
+
+Un quantificateur s'applique à **l'élément qui le précède immédiatement** et dit combien de fois il peut se répéter.
+
+| Quantificateur | Nombre de répétitions |
+| --- | --- |
+| `*` | Zéro ou plus |
+| `+` | Une ou plus |
+| `?` | Zéro ou une (élément facultatif) |
+| `{3}` | Exactement 3 |
+| `{2,4}` | De 2 à 4 |
+| `{2,}` | Au moins 2 |
+
+Quelques combinaisons à lire :
+
+- `[0-9]+` : un nombre, d'au moins un chiffre ;
+- `colou?r` : `color` ou `colour` ;
+- `[0-9]{4}-[0-9]{2}-[0-9]{2}` : une date au format `2026-09-27` ;
+- `.*` : n'importe quoi, y compris rien. L'élément le plus utilisé, et le plus dangereux, comme on le verra.
+
+<Callout type="warning">
+Le `*` des expressions régulières n'est pas celui des jokers de bash. En bash, `*.log` veut dire « n'importe quoi suivi de `.log` ». En expression régulière, `*` répète l'élément **précédent** : `a*` veut dire « zéro ou plusieurs `a` », et l'équivalent de `*.log` s'écrit `.*\.log`. Confondre les deux est l'erreur la plus fréquente des débutants.
+</Callout>
+
+### groupes et alternatives
+
+Les **parenthèses** regroupent plusieurs éléments, auxquels on peut alors appliquer un quantificateur : `(ab)+` correspond à `ab`, `abab`, `ababab`. La **barre verticale** propose des **alternatives** : `GET|POST` correspond à l'un ou à l'autre.
+
+```bash
+grep -E "(GET|POST) /admin" /var/log/nginx/access.log
+```
+
+Les parenthèses **capturent** aussi ce qu'elles ont trouvé, qu'on peut réutiliser plus loin dans le motif (`\1` désigne la première capture) ou, surtout, dans un remplacement avec `sed`, à la leçon 6.
+
+## basique ou étendue : grep et grep -E
+
+Il existe deux syntaxes historiques, et c'est ce qui rend les expressions régulières déroutantes au début.
+
+- **La syntaxe basique** (BRE), celle de `grep` sans option et de `sed` sans option. Les caractères `+`, `?`, `|`, les parenthèses et les accolades y sont **ordinaires** : pour leur donner leur sens spécial, il faut les protéger avec une barre oblique inverse (`\+`, `\|`, `\(`...).
+- **La syntaxe étendue** (ERE), celle de `grep -E` et `sed -E`. Tous ces caractères ont leur sens spécial directement ; c'est pour les prendre littéralement qu'il faut les protéger.
+
+```bash
+grep "[0-9]\+ requests" fichier.log      # basique : il faut \+
+grep -E "[0-9]+ requests" fichier.log    # étendue : + fonctionne tel quel
+```
+
+**Prends l'habitude de `grep -E`** : les motifs y sont plus lisibles, et c'est la syntaxe la plus proche de celle des langages de programmation. Il existe une troisième syntaxe, celle de Perl (`grep -P`), qui ajoute des raccourcis comme `\d` (un chiffre) et `\s` (un espace), et que Python, JavaScript et la plupart des langages utilisent. Elle n'est pas disponible dans toutes les versions de `grep`.
+
+<Diagram caption="Lire un motif de gauche à droite">
+flowchart LR
+  A["^ : début de ligne"] --> B["[0-9]+ : un nombre"]
+  B --> C["espace littéral"]
+  C --> D["(GET ou POST) : un groupe à deux choix"]
+  D --> E["reste de la ligne, n'importe quoi"]
+</Diagram>
+
+## construire un motif pas à pas
+
+On ne rédige pas une expression régulière d'un bloc. On la construit, en testant chaque étape sur des données réelles, avec deux aides : `--color` pour voir ce qui est trouvé dans la ligne, et `-o` pour n'afficher que la partie trouvée.
+
+Objectif : extraire les **adresses IPv4** d'un journal.
+
+**Étape 1 : un nombre.**
+
+```bash
+grep -oE "[0-9]+" access.log | head -3
+```
+
+```text
+203
+0
+113
+```
+
+Trop large : chaque morceau de nombre sort seul.
+
+**Étape 2 : quatre nombres séparés par des points.**
+
+```bash
+grep -oE "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" access.log | head -3
+```
+
+```text
+203.0.113.42
+198.51.100.7
+203.0.113.42
+```
+
+C'est déjà juste. On peut resserrer en limitant chaque nombre à trois chiffres :
+
+**Étape 3 : de un à trois chiffres par nombre.**
+
+```bash
+grep -oE "([0-9]{1,3}\.){3}[0-9]{1,3}" access.log | head -3
+```
+
+Le groupe `([0-9]{1,3}\.)` (un à trois chiffres suivis d'un point) est répété exactement 3 fois, puis vient le dernier nombre. Ce motif accepte encore `999.999.999.999`, qui n'est pas une adresse valide. Pour extraire des adresses d'un journal, c'est suffisant : on ne trouvera que ce qui y est. Pour **valider** une saisie, il faudrait aller plus loin, ou mieux, utiliser une bibliothèque faite pour ça.
+
+## la gourmandise
+
+Les quantificateurs sont **gourmands** : ils prennent **le plus possible** de texte tout en permettant au reste du motif de correspondre.
+
+```bash
+echo '<a href="/accueil">Accueil</a> <a href="/contact">Contact</a>' | grep -oE 'href=".*"'
+```
+
+```text
+href="/accueil">Accueil</a> <a href="/contact"
+```
+
+On voulait `href="/accueil"`, on a obtenu tout jusqu'au **dernier** guillemet de la ligne. La correction classique : remplacer « n'importe quoi » par « tout sauf un guillemet », `[^"]*`.
+
+```bash
+echo '<a href="/accueil">Accueil</a> <a href="/contact">Contact</a>' | grep -oE 'href="[^"]*"'
+```
+
+```text
+href="/accueil"
+href="/contact"
+```
+
+`[^X]*X` (« tout sauf X, puis X ») est un des schémas les plus utiles à connaître. La syntaxe de Perl a aussi des quantificateurs non gourmands (`.*?`), absents de `grep -E`.
+
+## quand une expression régulière devient une faille
+
+### les ancres oubliées
+
+Un développeur veut n'accepter que des noms d'utilisateur faits de lettres et de chiffres. Il écrit, dans son code, un test qui vérifie que la saisie correspond à `[a-z0-9]+`. Le nom `alice` passe, bien sûr. Mais `alice; rm -rf /` passe **aussi** : le motif, sans ancre, est trouvé au début de la chaîne, et le reste n'est jamais examiné. La validation correcte est `^[a-z0-9]+$` : du début à la fin, rien d'autre que des lettres et des chiffres.
+
+Le même défaut, sur un filtre d'adresses autorisées, laisse passer `https://evil.example/?x=https://monsite.fr` quand on vérifie seulement que l'adresse **contient** `https://monsite.fr`. Une validation par expression régulière est **toujours ancrée des deux côtés**.
+
+### le point non protégé
+
+Un filtre qui accepte les domaines correspondant à `monsite.fr` accepte aussi `monsiteXfr` ou `monsite-fr`, puisque le point veut dire « n'importe quel caractère ». Un attaquant qui enregistre `monsite-fr.com`... et un filtre `^monsite.fr` sans `$` le laissera passer. Chaque point littéral s'écrit `\.`.
+
+### l'explosion du temps de calcul
+
+Certaines expressions, avec des quantificateurs imbriqués comme `(a+)+$`, mettent un temps qui **explose** sur des entrées bien choisies : quelques dizaines de caractères suffisent à occuper un processeur pendant des minutes. Si ce genre de motif valide des données envoyées par des utilisateurs, c'est un déni de service à portée de n'importe qui. On l'appelle ReDoS. Tu le retrouveras dans le parcours de sécurité web ; la règle pour l'instant : pas de quantificateur appliqué à un groupe qui contient déjà un quantificateur, sur des entrées externes.
+
+<Callout type="danger">
+Une expression régulière de validation se teste avec des entrées **qui doivent être refusées**, pas seulement avec celles qui doivent passer. `alice` qui passe ne prouve rien ; c'est `alice; ls`, `ALICE`, une chaîne vide ou une chaîne de dix mille caractères qu'il faut essayer.
+</Callout>
+
+## démonstration : les erreurs serveur d'un site
+
+Question : **quelles pages de ce site renvoient des erreurs serveur (codes 500 à 599), et combien de fois ?**
+
+Une ligne du journal d'accès, pour rappel :
+
+```text
+198.51.100.7 - - [27/Sep/2026:10:15:44 +0200] "POST /api/commande HTTP/1.1" 502 166 "-" "curl/8.5.0"
+```
+
+Le code de statut suit le guillemet fermant de la requête, entouré d'espaces. On le décrit ainsi : un guillemet, une espace, un 5, deux chiffres, une espace.
+
+**1. Les lignes concernées :**
+
+```bash
+grep -E '" 5[0-9]{2} ' /var/log/nginx/access.log | wc -l
+```
+
+```text
+137
+```
+
+**2. La méthode et la page de chaque erreur**, en capturant ce qui est entre les guillemets de la requête. On extrait avec `-o` la partie qui va du guillemet ouvrant jusqu'au code :
+
+```bash
+grep -oE '"(GET|POST|PUT|DELETE) [^ ]+ [^"]*" 5[0-9]{2}' /var/log/nginx/access.log \
+  | cut -d ' ' -f 1,2,4 | sort | uniq -c | sort -rn | head -3
+```
+
+```text
+    121 "POST /api/commande 502
+     12 "GET /recherche 504
+      4 "GET /compte 500
+```
+
+La lecture est immédiate : presque toutes les erreurs viennent d'une seule route, `POST /api/commande`, avec un code 502, signe que le service qui traite les commandes derrière nginx ne répond pas. Une seule expression régulière a transformé un journal de plusieurs centaines de milliers de lignes en une réponse de trois lignes.
+
+## à toi de jouer
+
+Dans `/etc/passwd`, affiche les comptes dont le shell est `/bin/bash`, en ancrant le motif en fin de ligne. Puis extrais avec `grep -oE` les dates au format année-mois-jour du fichier `sauvegardes.log`. Enfin, affiche les lignes de `access.log` dont la requête est un GET ou un POST vers `/admin`.
+
+<SimulatedTerminal shell="bash" title="Décrire une forme de texte" expectedCommands={["grep \"/bin/bash$\" /etc/passwd", "grep -oE \"[0-9]{4}-[0-9]{2}-[0-9]{2}\" sauvegardes.log", "grep -E \"(GET|POST) /admin\" access.log"]} hints={["Le dollar ancre le motif en fin de ligne.", "Quatre chiffres, un tiret, deux chiffres, un tiret, deux chiffres : les accolades donnent le nombre de répétitions.", "Les parenthèses regroupent les deux méthodes, la barre verticale les sépare."]} commands={{ "grep \"/bin/bash$\" /etc/passwd": "root:x:0:0:root:/root:/bin/bash\nalice:x:1000:1000:Alice,,,:/home/alice:/bin/bash", "grep bash /etc/passwd": "root:x:0:0:root:/root:/bin/bash\nalice:x:1000:1000:Alice,,,:/home/alice:/bin/bash\nbashbot:x:1003:1003::/srv/bashbot:/usr/sbin/nologin", "grep -oE \"[0-9]{4}-[0-9]{2}-[0-9]{2}\" sauvegardes.log": "2026-09-25\n2026-09-26\n2026-09-27", "grep -E \"(GET|POST) /admin\" access.log": "203.0.113.77 - - [27/Sep/2026:03:12:44 +0200] \"GET /admin HTTP/1.1\" 403 162\n203.0.113.77 - - [27/Sep/2026:03:12:45 +0200] \"POST /admin/login HTTP/1.1\" 403 162", "grep \"(GET|POST) /admin\" access.log": "", "grep \"\\(GET\\|POST\\) /admin\" access.log": "203.0.113.77 - - [27/Sep/2026:03:12:44 +0200] \"GET /admin HTTP/1.1\" 403 162\n203.0.113.77 - - [27/Sep/2026:03:12:45 +0200] \"POST /admin/login HTTP/1.1\" 403 162" }} />
+
+Essaie aussi la dernière recherche sans `-E` : en syntaxe basique, les parenthèses et la barre sont des caractères ordinaires, et rien n'est trouvé.
+
+## les pièges
+
+- **Confondre jokers et expressions régulières.** `*` répète l'élément précédent ; « n'importe quoi » s'écrit `.*`.
+- **Oublier de protéger le point.** `\.` pour un vrai point, sinon n'importe quel caractère passe.
+- **Oublier `-E`.** En syntaxe basique, `+`, `?`, `|`, les parenthèses et les accolades sont ordinaires.
+- **Valider sans ancres.** `^...$` pour toute validation, sinon le motif est trouvé au milieu d'une entrée piégée.
+- **La gourmandise de `.*`.** Elle prend jusqu'au dernier délimiteur ; `[^X]*` s'arrête au premier.
+- **Oublier les guillemets simples.** Entre guillemets doubles, le shell interprète `$` et quelques autres caractères du motif avant `grep`.
+- **Ne tester qu'avec des entrées valides.** Une validation se juge sur ce qu'elle refuse.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/grep/manual/html_node/Regular-Expressions.html" description="Les expressions régulières basiques et étendues telles que GNU grep les comprend">GNU grep : Regular Expressions</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/regex.7.html" description="Les expressions régulières POSIX">regex(7)</ExternalLink>
+
+<ExternalLink href="https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS" description="Les expressions régulières qui deviennent des dénis de service">OWASP : ReDoS</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="À quoi correspond l'expression régulière ^#?$ ?" options={["Aux lignes qui contiennent un dièse", "Aux lignes vides ou qui ne contiennent qu'un dièse", "Aux lignes qui commencent par un dièse", "À n'importe quelle ligne"]} correct={1} explanation="^ et $ encadrent toute la ligne, et #? signifie un dièse facultatif : la ligne est soit vide, soit réduite à un seul dièse." />
+  <Quiz id="q-2" question="En expression régulière, que signifie log* ?" options={["Le mot log suivi de n'importe quoi", "lo suivi de zéro ou plusieurs g", "N'importe quel fichier de journal", "log suivi d'au moins un caractère"]} correct={1} explanation="* s'applique à l'élément qui le précède, ici g. Pour « log suivi de n'importe quoi », on écrit log.*" />
+  <Quiz id="q-3" question="Pourquoi grep 10.0.0.1 peut-il trouver la ligne 10a0b0c1 ?" options={["Parce que grep ignore les points", "Parce que le point correspond à n'importe quel caractère", "Parce que les chiffres sont facultatifs", "Parce que grep cherche aussi en hexadécimal"]} correct={1} explanation="Le point est un caractère spécial. Pour un point littéral, on écrit \. ou on utilise grep -F." />
+  <Quiz id="q-4" question="Quelle commande trouve les lignes contenant GET ou POST ?" options={["grep \"GET|POST\" fichier", "grep -E \"GET|POST\" fichier", "grep \"GET POST\" fichier", "grep -v \"GET|POST\" fichier"]} correct={1} explanation="En syntaxe étendue, la barre verticale sépare des alternatives. En syntaxe basique, sans -E, il faudrait écrire GET\|POST." />
+  <Quiz id="q-5" question="Un filtre accepte un nom d'utilisateur s'il correspond à [a-z]+. Pourquoi est-ce dangereux ?" options={["Parce qu'il refuse les majuscules", "Parce que, sans ancres, une entrée comme alice;rm passe : le motif est trouvé en début de chaîne", "Parce que + est invalide", "Parce qu'il est trop lent"]} correct={1} explanation="Sans ^ et $, il suffit qu'une partie de l'entrée corresponde. Une validation s'écrit ^[a-z]+$, pour exiger que toute l'entrée soit conforme." />
+  <Quiz id="q-6" question="Sur la ligne a='1' b='2', que trouve le motif ='.*' avec grep -o ?" options={["='1' seulement", "='1' b='2', jusqu'à la dernière apostrophe", "Rien", "='2' seulement"]} correct={1} explanation="Le quantificateur * est gourmand : il prend le plus de texte possible. Le motif ='[^']*' s'arrêterait à la première apostrophe fermante." />
+  <Quiz id="q-7" question="Que signifie [0-9]{2,4} en syntaxe étendue ?" options={["Les nombres 2 et 4", "De deux à quatre chiffres consécutifs", "Deux ou quatre chiffres exactement", "Un chiffre entre 2 et 4"]} correct={1} explanation="Les accolades donnent un nombre de répétitions : ici au moins deux et au plus quatre chiffres." />
+</QuizGroup>
+
+## à retenir
+
+- Ancres : `^` début, `$` fin de ligne. Toute **validation** est ancrée des deux côtés.
+- `.` n'importe quel caractère (`\.` pour un vrai point), `[abc]` un caractère parmi, `[^abc]` un caractère sauf.
+- Quantificateurs sur l'élément précédent : `*` zéro ou plus, `+` un ou plus, `?` facultatif, et les accolades `{n}`, `{n,m}`.
+- Parenthèses pour grouper et capturer, `|` pour les alternatives.
+- `grep -E` (syntaxe étendue) plutôt que `grep` : `+`, `?`, `|`, parenthèses et accolades y fonctionnent directement.
+- Construire pas à pas avec `-o` et `--color` ; `.*` est gourmand, `[^X]*X` s'arrête au premier X ; tester avec des entrées qui doivent être refusées.

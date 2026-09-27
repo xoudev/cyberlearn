@@ -1,0 +1,309 @@
+---
+refCode: CL-LSN-02022-V01
+slug: linux-analyser-awk
+title: "Analyser des données avec awk"
+description: "Le petit langage des colonnes : champs et enregistrements, séparateurs, filtres par condition ou par motif, calculs de sommes et de moyennes, blocs BEGIN et END, printf, et les tableaux associatifs qui comptent et agrègent en une ligne."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 300
+prerequisites: ["CL-LSN-02021-V01"]
+---
+
+`cut` extrait des colonnes, `sort` et `uniq` comptent. Mais dès qu'il faut **calculer** (additionner des octets, faire une moyenne de temps de réponse, garder les lignes où la troisième colonne dépasse un seuil) ces outils ne suffisent plus. `awk` fait tout cela, et plus. Ce n'est pas vraiment une commande : c'est un petit langage de programmation, conçu en 1977 pour traiter des fichiers en colonnes. Tu n'en utiliseras qu'une petite partie, mais cette partie-là remplace à elle seule des dizaines de lignes de script.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer comment `awk` découpe un texte en enregistrements et en champs ;
+- afficher des colonnes choisies, dans l'ordre voulu, avec le séparateur voulu ;
+- filtrer des lignes selon une condition sur une colonne ou selon un motif ;
+- calculer des sommes, des moyennes, des maximums, avec les blocs `BEGIN` et `END` ;
+- formater une sortie avec `printf` ;
+- compter et agréger par valeur avec les tableaux associatifs.
+
+## pourquoi ça compte
+
+Les journaux, les sorties de commandes (`ps`, `df`, `ss`), les fichiers CSV et les exports de bases de données sont tous des données en colonnes. `awk` les interroge comme une petite base de données : « la somme des octets servis par adresse IP », « les processus qui consomment plus de 10 % de processeur », « le temps de réponse moyen par page ». Les analystes de sécurité l'utilisent pour résumer rapidement des journaux sur une machine où ils n'ont rien d'autre que le shell.
+
+Et `awk` corrige le défaut de `cut` vu à la leçon précédente : il découpe par défaut sur **n'importe quelle suite d'espaces**, ce qui le rend directement utilisable sur toutes les sorties alignées en colonnes.
+
+## le modèle : enregistrements et champs
+
+`awk` lit son entrée **ligne par ligne**. Chaque ligne est un **enregistrement**, découpé en **champs** selon un séparateur, par défaut les espaces et les tabulations.
+
+| Variable | Contenu |
+| --- | --- |
+| `$0` | La ligne entière |
+| `$1`, `$2`, ... | Le premier champ, le deuxième... |
+| `NF` | Le nombre de champs de la ligne (*number of fields*) |
+| `$NF` | Le dernier champ |
+| `NR` | Le numéro de la ligne en cours (*number of records*) |
+
+Un programme `awk` est une suite de règles de la forme `motif { action }` : pour chaque ligne qui correspond au motif, l'action est exécutée. Sans motif, l'action s'applique à toutes les lignes ; sans action, la ligne est affichée.
+
+<Diagram caption="Comment awk exécute un programme">
+flowchart TD
+  A["Bloc BEGIN : une fois, avant la première ligne"] --> B["Ligne suivante, découpée en champs"]
+  B --> C["Pour chaque règle : la ligne correspond-elle au motif ?"]
+  C -->|"oui"| D["Exécuter l'action"]
+  C -->|"non"| E["Règle suivante"]
+  D --> F["Reste-t-il des lignes ?"]
+  E --> F
+  F -->|"oui"| B
+  F -->|"non"| G["Bloc END : une fois, après la dernière ligne"]
+</Diagram>
+
+On met toujours le programme entre **apostrophes**, pour que le shell ne touche ni aux `$` ni aux accolades.
+
+## afficher des colonnes
+
+```bash
+df -h | awk '{ print $1, $5 }'
+```
+
+```text
+Filesystem Use%
+/dev/vda1 97%
+tmpfs 1%
+/dev/vdb1 42%
+```
+
+La virgule dans `print` insère un espace entre les champs. Sans virgule, ils sont collés. On peut mélanger champs et texte :
+
+```bash
+awk -F ':' '{ print $1 " utilise " $NF }' /etc/passwd | head -2
+```
+
+```text
+root utilise /bin/bash
+daemon utilise /usr/sbin/nologin
+```
+
+`-F ':'` change le séparateur, comme `-d` pour `cut`. `$NF` désigne le dernier champ, quel que soit leur nombre : pratique quand il varie d'une ligne à l'autre.
+
+### changer le séparateur de sortie
+
+`FS` est le séparateur d'entrée, que `-F` règle. Son pendant, `OFS` (*output field separator*), est le séparateur qu'`awk` place entre les champs à l'affichage, un espace par défaut. Un petit détail rend le couple très utile : quand on modifie un champ, `awk` reconstruit toute la ligne avec `OFS`. L'affectation `$1 = $1`, qui semble ne rien faire, suffit donc à convertir un format dans un autre :
+
+```bash
+awk 'BEGIN { FS = ":"; OFS = "," } { $1 = $1; print }' /etc/passwd | head -2
+```
+
+```text
+root,x,0,0,root,/root,/bin/bash
+daemon,x,1,1,daemon,/usr/sbin,/usr/sbin/nologin
+```
+
+Le fichier des comptes est devenu un CSV, prêt à être ouvert dans un tableur. La même technique convertit une sortie alignée par des espaces en valeurs séparées par des tabulations, avec `OFS = "\t"`.
+
+## filtrer des lignes
+
+### par condition
+
+Le motif peut être une condition sur un champ. Les comparaisons s'écrivent comme dans la plupart des langages : `==`, `!=`, `<`, `>`, `<=`, `>=`, combinables avec `&&` (et), `||` (ou) et `!` (non).
+
+```bash
+awk -F ':' '$3 >= 1000' /etc/passwd
+```
+
+« Les comptes dont l'identifiant (troisième champ) est au moins 1000 », c'est-à-dire, sur Debian, les comptes humains. Pas d'action : les lignes retenues sont affichées entières.
+
+```bash
+df -h | awk 'NR > 1 && $5+0 > 80 { print $6, "est à", $5 }'
+```
+
+```text
+/ est à 97%
+```
+
+`NR > 1` saute la ligne d'en-tête. `$5+0` convertit `97%` en nombre (awk lit les chiffres du début et ignore le reste), ce qui permet la comparaison. En une ligne, une alerte « disque presque plein ».
+
+### par motif
+
+Un motif entre barres obliques est une expression régulière, en syntaxe étendue, cherchée dans la ligne :
+
+```bash
+awk '/Failed password/ { print $(NF-3) }' /var/log/auth.log | head -3
+```
+
+L'opérateur `~` applique une expression régulière à un seul champ, et `!~` en est la négation :
+
+```bash
+awk '$9 ~ /^5/' /var/log/nginx/access.log
+```
+
+« Les lignes dont le neuvième champ, le code de statut HTTP, commence par 5. » Plus précis qu'un `grep`, qui pourrait trouver un 5 n'importe où dans la ligne.
+
+## calculer
+
+`awk` a des variables, qu'on n'a pas besoin de déclarer : elles valent zéro ou une chaîne vide au départ. Combinées au bloc `END`, exécuté une fois après la dernière ligne, elles permettent tous les calculs d'agrégat.
+
+**Une somme** : le total des octets servis, dixième champ du journal d'accès.
+
+```bash
+awk '{ total += $10 } END { print total }' /var/log/nginx/access.log
+```
+
+**Une moyenne** :
+
+```bash
+awk '{ total += $10 } END { print total / NR }' /var/log/nginx/access.log
+```
+
+**Un maximum**, avec une condition dans l'action :
+
+```bash
+awk '$10 > max { max = $10; ligne = $0 } END { print max; print ligne }' access.log
+```
+
+Le bloc `BEGIN`, lui, s'exécute **avant** la première ligne : on s'en sert pour régler le séparateur ou afficher un en-tête.
+
+```bash
+awk 'BEGIN { FS = ":"; print "Compte   Shell" } $3 >= 1000 { print $1, $7 }' /etc/passwd
+```
+
+### formater : printf
+
+`print` sépare les valeurs par un espace. Pour aligner des colonnes ou limiter les décimales, `printf`, emprunté au langage C :
+
+```bash
+awk '{ total += $10 } END { printf "%.1f Mo servis\n", total / 1024 / 1024 }' access.log
+```
+
+```text
+812.4 Mo servis
+```
+
+`%.1f` affiche un nombre à virgule avec une décimale, `%s` une chaîne, `%d` un entier, `%-15s` une chaîne alignée à gauche sur 15 caractères. Contrairement à `print`, `printf` n'ajoute pas de retour à la ligne : il faut écrire `\n`.
+
+## compter et agréger : les tableaux associatifs
+
+C'est la fonctionnalité qui rend `awk` irremplaçable. Un **tableau associatif** associe des valeurs à des clés quelconques, ici des adresses, des pages ou des utilisateurs. Le schéma général : on accumule pendant la lecture, et on affiche dans `END` avec une boucle `for (cle in tableau)`.
+
+**Compter** les requêtes par adresse IP, en une seule commande :
+
+```bash
+awk '{ nb[$1]++ } END { for (ip in nb) print nb[ip], ip }' access.log | sort -rn | head -3
+```
+
+```text
+2204 203.0.113.42
+431 198.51.100.7
+12 192.0.2.10
+```
+
+`nb[$1]++` ajoute 1 à la case du tableau dont la clé est l'adresse de la ligne. C'est la même réponse que `cut | sort | uniq -c`, en une étape. Mais `awk` va plus loin : il peut **additionner** par clé, ce que `uniq` ne sait pas faire.
+
+**Additionner** les octets par adresse :
+
+```bash
+awk '{ octets[$1] += $10 } END { for (ip in octets) printf "%10.1f Mo  %s\n", octets[ip]/1048576, ip }' access.log | sort -rn | head -3
+```
+
+```text
+     640.2 Mo  203.0.113.42
+      98.7 Mo  198.51.100.7
+       0.3 Mo  192.0.2.10
+```
+
+Une adresse a téléchargé 640 Mo : c'est peut-être un robot d'indexation, peut-être quelqu'un qui aspire le site entier. Dans les deux cas, la question se pose, et elle a été posée en une ligne.
+
+<Callout type="info">
+L'ordre de parcours de `for (cle in tableau)` n'est pas défini : les clés sortent dans un ordre arbitraire. C'est pourquoi on termine presque toujours par un `sort`. GNU awk sait trier lui-même, mais `sort` en fin de chaîne marche avec tous les awk, y compris `mawk`, installé par défaut sur Debian et Ubuntu à la place de `gawk`.
+</Callout>
+
+## transmettre une valeur du shell
+
+Pour utiliser une variable du shell dans un programme `awk`, on ne la colle pas dans le texte du programme : on la passe proprement avec `-v`.
+
+```bash
+seuil=80
+df -h | awk -v s="$seuil" 'NR > 1 && $5+0 > s { print $6, $5 }'
+```
+
+Coller la valeur dans le programme (`"... > $seuil ..."` entre guillemets doubles) marche en apparence, mais oblige à tout protéger à la main et devient une injection de code si la valeur vient de l'extérieur. `-v` passe une donnée, jamais du code.
+
+## grep, sed ou awk : lequel choisir ?
+
+Les trois outils se recouvrent en partie, et beaucoup de tâches peuvent s'écrire avec l'un ou l'autre. Une règle simple permet de choisir sans hésiter :
+
+- **`grep`** quand la question est « quelles lignes ? ». Il sélectionne, rien de plus, et il le fait très vite.
+- **`sed`** quand la question est « comment modifier ce texte ? ». Remplacer, supprimer, réorganiser une ligne, modifier un fichier sur place.
+- **`awk`** dès qu'il y a des **colonnes** ou des **calculs** : extraire des champs d'une sortie alignée, filtrer sur une valeur numérique, additionner, faire des moyennes, regrouper par clé.
+
+Au-delà, quand un traitement dépasse une ligne ou deux, qu'il faut des fonctions, gérer des erreurs ou lire des formats structurés comme le JSON, on passe à un vrai langage : un script Python, que le parcours de développement Python t'apprendra à écrire, ou l'outil dédié `jq` pour le JSON. Les petits outils restent imbattables pour l'exploration rapide, directement sur le serveur, et c'est souvent par eux que commence une analyse, avant même de savoir quelles questions poser.
+
+## démonstration : le temps de réponse par page
+
+Le journal de l'application a été configuré pour enregistrer, en dernier champ, le temps de réponse en millisecondes :
+
+```text
+2026-09-27T10:14:02 GET /accueil 200 34
+2026-09-27T10:14:03 POST /api/commande 502 3004
+2026-09-27T10:14:05 GET /recherche 200 812
+```
+
+Question : **quelles pages sont les plus lentes en moyenne, et combien de fois ont-elles été appelées ?**
+
+```bash
+awk '{ total[$3] += $NF; nb[$3]++ }
+     END { for (p in total) printf "%8.0f ms  %5d appels  %s\n", total[p]/nb[p], nb[p], p }' app.log \
+  | sort -rn | head -4
+```
+
+```text
+    2981 ms    121 appels  /api/commande
+     796 ms    843 appels  /recherche
+     112 ms   4102 appels  /compte
+      31 ms  18830 appels  /accueil
+```
+
+Deux tableaux, indexés par la page : l'un additionne les temps, l'autre compte les appels ; le bloc `END` divise l'un par l'autre. On voit d'un coup que `/api/commande` met trois secondes en moyenne, et que `/recherche`, beaucoup plus appelée, mériterait une optimisation. Avec `cut`, `sort` et `uniq`, cette question-là n'avait pas de réponse simple.
+
+## à toi de jouer
+
+Affiche le nom et le shell de chaque compte de `/etc/passwd`, séparés par une espace. Puis affiche seulement les comptes dont l'identifiant est au moins 1000. Enfin, calcule le total des octets du dixième champ de `access.log`.
+
+<SimulatedTerminal shell="bash" title="Interroger des colonnes" expectedCommands={["awk -F ':' '{ print $1, $7 }' /etc/passwd", "awk -F ':' '$3 >= 1000' /etc/passwd", "awk '{ total += $10 } END { print total }' access.log"]} hints={["-F ':' pour le séparateur, puis print des champs 1 et 7.", "Une condition sur le troisième champ, sans action : les lignes retenues sont affichées.", "Une variable qu'on augmente à chaque ligne, puis un bloc END qui l'affiche."]} commands={{ "awk -F ':' '{ print $1, $7 }' /etc/passwd": "root /bin/bash\ndaemon /usr/sbin/nologin\nwww-data /usr/sbin/nologin\nalice /bin/bash\nbob /bin/bash\nnobody /usr/sbin/nologin", "awk -F ':' '$3 >= 1000' /etc/passwd": "alice:x:1000:1000:Alice,,,:/home/alice:/bin/bash\nbob:x:1001:1001:Bob,,,:/home/bob:/bin/bash\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin", "awk '{ total += $10 } END { print total }' access.log": "851853312", "awk '{ nb[$1]++ } END { for (ip in nb) print nb[ip], ip }' access.log | sort -rn": "2204 203.0.113.42\n431 198.51.100.7\n12 192.0.2.10", "df -h | awk '{ print $1, $5 }'": "Filesystem Use%\n/dev/vda1 97%\ntmpfs 1%\n/dev/vdb1 42%" }} />
+
+Tu remarqueras que `nobody`, avec l'identifiant 65534, passe le filtre `>= 1000` : c'est un compte système particulier, qu'un vrai filtre de comptes humains exclurait avec une seconde condition, `$3 < 65534`.
+
+## les pièges
+
+- **Le programme entre guillemets doubles.** Le shell remplace `$1` par son propre premier argument, souvent vide. Toujours des apostrophes.
+- **Oublier `-F` sur un fichier à séparateur.** Sans lui, `awk` découpe aux espaces, et `/etc/passwd` n'a qu'un seul champ par ligne.
+- **Comparer une valeur avec son unité.** `97%` ou `12K` ne sont pas des nombres ; `$5+0` convertit le début numérique.
+- **Oublier `NR > 1` sur une sortie avec en-tête.** La ligne de titres entre dans les calculs.
+- **Attendre un ordre de `for (k in t)`.** Il est arbitraire : `sort` en fin de chaîne.
+- **Coller une variable du shell dans le programme.** `-v nom="$valeur"`.
+- **`printf` sans `\n`.** Tout s'affiche sur une seule ligne.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/gawk/manual/gawk.html" description="Le manuel de GNU awk, avec un long tutoriel">GNU awk : The GNU Awk User's Guide</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/awk.1p.html" description="awk tel que le définit la norme POSIX">awk(1p)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/gawk/manual/html_node/Arrays.html" description="Les tableaux associatifs en détail">GNU awk : Arrays</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans awk, que désigne $NF ?" options={["Le nombre de champs", "Le dernier champ de la ligne", "Le numéro de la ligne", "La ligne entière"]} correct={1} explanation="NF est le nombre de champs ; $NF est donc le champ dont le numéro est ce nombre, c'est-à-dire le dernier." />
+  <Quiz id="q-2" question="Pourquoi awk convient-il mieux que cut pour extraire la cinquième colonne de df -h ?" options={["Parce que awk est plus rapide", "Parce que awk considère toute suite d'espaces comme un seul séparateur", "Parce que cut ne lit pas les tubes", "Parce que awk trie automatiquement"]} correct={1} explanation="Les colonnes de df sont alignées avec plusieurs espaces. cut compte chaque espace comme séparateur, awk les fusionne." />
+  <Quiz id="q-3" question="Que fait awk -F ':' '$3 >= 1000' /etc/passwd ?" options={["Il affiche le troisième champ de chaque ligne", "Il affiche les lignes dont le troisième champ vaut au moins 1000", "Il remplace le troisième champ par 1000", "Il compte les lignes"]} correct={1} explanation="Une condition sans action : les lignes pour lesquelles elle est vraie sont affichées entières." />
+  <Quiz id="q-4" question="Quand s'exécute le bloc END d'un programme awk ?" options={["Avant la première ligne", "Pour chaque ligne", "Une fois, après la dernière ligne", "Uniquement en cas d'erreur"]} correct={2} explanation="BEGIN s'exécute avant la lecture, les règles pour chaque ligne, END une fois toute l'entrée lue : c'est là qu'on affiche les totaux." />
+  <Quiz id="q-5" question="Que calcule awk '{ n[$1]++ } END { for (k in n) print n[k], k }' ?" options={["La somme du premier champ", "Le nombre d'occurrences de chaque valeur du premier champ", "Le nombre de champs de chaque ligne", "La première ligne du fichier"]} correct={1} explanation="n[$1]++ incrémente une case par valeur du premier champ. Le bloc END affiche chaque valeur avec son compteur." />
+  <Quiz id="q-6" question="Pourquoi écrire le programme awk entre apostrophes plutôt qu'entre guillemets doubles ?" options={["Pour qu'il s'exécute plus vite", "Pour que le shell ne remplace pas $1, $NF ou les accolades avant awk", "Parce que awk refuse les guillemets doubles", "Pour ignorer la casse"]} correct={1} explanation="Entre guillemets doubles, le shell remplace $1 par son propre argument, souvent vide, et le programme reçu par awk n'est plus le bon." />
+  <Quiz id="q-7" question="Comment passer proprement la variable du shell seuil à un programme awk ?" options={["En l'écrivant dans le programme entre guillemets doubles", "Avec l'option -v s=\"$seuil\"", "Avec export seuil", "C'est impossible"]} correct={1} explanation="-v transmet une valeur comme donnée. La coller dans le texte du programme oblige à tout protéger et peut permettre d'injecter du code." />
+</QuizGroup>
+
+## à retenir
+
+- `awk` lit ligne par ligne et découpe en champs : `$0` la ligne, `$1`... les champs, `NF` leur nombre, `$NF` le dernier, `NR` le numéro de ligne. `-F` change le séparateur.
+- Programme = règles `motif { action }`, toujours entre apostrophes. Motif : condition (`$3 >= 1000`), expression régulière (`/re/`), ou champ (`$9 ~ /^5/`).
+- Calculs : variables accumulées pendant la lecture, résultat dans `END`. `BEGIN` avant la lecture. `printf` pour formater.
+- Tableaux associatifs : `nb[$1]++` pour compter, `total[$1] += $10` pour additionner par clé, `for (k in t)` puis `sort`.
+- `-v nom="$valeur"` pour passer une donnée du shell. `$5+0` pour convertir `97%` en nombre.

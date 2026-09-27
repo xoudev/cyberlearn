@@ -1,0 +1,286 @@
+---
+refCode: CL-LSN-02014-V01
+slug: linux-archiver-compresser
+title: "Archiver et compresser"
+description: "La différence entre archiver et compresser, tar en profondeur (créer, lister, extraire, exclure), gzip, bzip2, xz et zstd comparés, zip pour échanger avec Windows, et les précautions avant d'ouvrir une archive qui vient d'ailleurs."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02013-V01"]
+---
+
+Sauvegarder une configuration, envoyer un répertoire à un collègue, livrer une application, récupérer le code source d'un logiciel : tout passe par des archives. Sous Linux, le format roi est l'archive `tar`, compressée ou non, qui porte des noms comme `.tar.gz` ou `.tar.xz`. Les options de `tar` ont la réputation d'être impossibles à retenir ; elles suivent pourtant une logique simple, qu'on voit ici, avec les précautions à prendre avant d'ouvrir une archive dont on ne connaît pas le contenu.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer la différence entre archiver et compresser, et lire une extension comme `.tar.gz` ;
+- créer une archive `tar`, compressée ou non, en excluant ce qui ne doit pas y figurer ;
+- lister le contenu d'une archive sans l'extraire, puis l'extraire à l'endroit voulu ;
+- choisir entre gzip, bzip2, xz et zstd selon le besoin ;
+- échanger des fichiers avec Windows au format `zip` ;
+- vérifier l'intégrité d'une archive et l'ouvrir sans risque quand elle vient d'ailleurs.
+
+## pourquoi ça compte
+
+Une sauvegarde qu'on ne sait pas restaurer n'est pas une sauvegarde. Beaucoup d'administrateurs l'apprennent le jour où ils en ont besoin : archive créée avec des chemins absolus qui écrasent le système à l'extraction, permissions perdues, répertoire oublié. Maîtriser `tar`, c'est savoir faire des sauvegardes qui se restaurent.
+
+Côté sécurité, une archive est un vecteur classique. Elle peut contenir des chemins qui sortent du répertoire d'extraction, des milliers de fichiers qui se répandent là où on ne les attendait pas, ou un fichier minuscule qui se décompresse en plusieurs téraoctets. Lister avant d'extraire n'est pas une précaution de principe : c'est la base.
+
+## archiver et compresser : deux opérations
+
+**Archiver**, c'est regrouper plusieurs fichiers et répertoires en **un seul fichier**, en conservant l'arborescence, les noms, les permissions, les propriétaires et les dates. C'est le rôle de `tar` (pour *tape archive* : il servait à l'origine à écrire sur des bandes magnétiques). Une archive `tar` seule n'est pas plus petite que ce qu'elle contient.
+
+**Compresser**, c'est réduire la taille d'**un** fichier en exploitant ses répétitions. C'est le rôle de `gzip`, `bzip2`, `xz` ou `zstd`. Ils ne savent compresser qu'un fichier à la fois.
+
+Sous Linux, on combine donc les deux : on archive, puis on compresse l'archive. D'où les doubles extensions.
+
+<Diagram caption="Archiver, puis compresser">
+flowchart LR
+  A["Répertoire site/ : 300 fichiers, 48 Mo"] -->|"tar : regrouper"| B["site.tar : 1 fichier, 48 Mo"]
+  B -->|"gzip : compresser"| C["site.tar.gz : 1 fichier, 11 Mo"]
+</Diagram>
+
+| Extension | Ce que c'est |
+| --- | --- |
+| `.tar` | Archive seule, non compressée |
+| `.tar.gz` ou `.tgz` | Archive compressée avec gzip |
+| `.tar.bz2` | Archive compressée avec bzip2 |
+| `.tar.xz` | Archive compressée avec xz |
+| `.tar.zst` | Archive compressée avec zstd |
+| `.gz`, `.xz` seuls | Un seul fichier compressé, sans archive |
+| `.zip` | Archive et compression en un, le format courant sous Windows |
+
+## tar en pratique
+
+`tar` n'a que quelques options à retenir. Une lettre choisit **l'opération**, les autres la précisent.
+
+| Option | Sens |
+| --- | --- |
+| `c` | **Créer** une archive |
+| `t` | **Lister** le contenu (*table*) |
+| `x` | **Extraire** |
+| `f fichier` | Le **fichier** d'archive à utiliser (toujours présent) |
+| `v` | **Verbeux** : afficher chaque fichier traité |
+| `z`, `j`, `J`, `--zstd` | Compresser ou décompresser avec gzip, bzip2, xz, zstd |
+| `-C rep` | Se placer dans `rep` avant d'agir |
+
+Une astuce de mémoire : **c**réer, lis**t**er, e**x**traire, et **f** pour le fichier. `f` doit être suivi immédiatement du nom de l'archive, c'est pourquoi on l'écrit en dernier dans le groupe de lettres.
+
+### créer
+
+```bash
+tar -czf site-2026-09-27.tar.gz site/
+```
+
+« **C**rée une archive compressée avec g**z**ip, dans le **f**ichier `site-2026-09-27.tar.gz`, à partir du répertoire `site/`. » Ajoute `v` (`-czvf`) pour voir défiler chaque fichier.
+
+Pour exclure ce qui n'a rien à faire dans l'archive, comme des caches ou des dépendances qui se réinstallent :
+
+```bash
+tar -czf projet.tar.gz --exclude="node_modules" --exclude="*.log" projet/
+```
+
+### lister sans extraire
+
+```bash
+tar -tzf site-2026-09-27.tar.gz | head
+```
+
+```text
+site/
+site/index.html
+site/assets/
+site/assets/css/
+site/assets/css/style.css
+site/assets/images/logo.png
+```
+
+Toujours, avant d'extraire une archive qu'on n'a pas créée soi-même.
+
+### extraire
+
+```bash
+tar -xzf site-2026-09-27.tar.gz
+```
+
+L'archive est extraite **dans le répertoire courant**, en recréant son arborescence. Pour extraire ailleurs, `-C` :
+
+```bash
+tar -xzf site-2026-09-27.tar.gz -C /srv/restauration/
+```
+
+On peut n'extraire qu'une partie, en donnant les chemins voulus tels qu'ils apparaissent dans la liste :
+
+```bash
+tar -xzf site-2026-09-27.tar.gz site/assets/css/style.css
+```
+
+<Callout type="info">
+Les versions récentes de GNU tar reconnaissent la compression toutes seules à l'extraction et à la liste : `tar -xf archive.tar.xz` marche sans `J`. À la création, en revanche, il faut préciser l'algorithme, ou utiliser `-a` (*auto-compress*), qui le choisit d'après l'extension du fichier : `tar -caf sauvegarde.tar.zst rep/`.
+</Callout>
+
+### chemins relatifs et absolus
+
+Si tu archives `/etc` avec un chemin absolu, GNU tar enlève la barre initiale et prévient :
+
+```bash
+sudo tar -czf etc.tar.gz /etc
+```
+
+```text
+tar: Removing leading `/' from member names
+```
+
+Les fichiers sont enregistrés sous `etc/hostname`, `etc/passwd`... À l'extraction, ils seront recréés **sous le répertoire courant** (`./etc/...`), et non par-dessus le vrai `/etc`. C'est une protection : on restaure dans un répertoire de travail, on compare, puis on remet en place ce qu'on veut. Pour archiver le contenu d'un répertoire sans son chemin, on combine `-C` à la création : `tar -czf etc.tar.gz -C / etc`.
+
+### conserver les propriétaires et les permissions
+
+`tar` enregistre toujours propriétaires, permissions et dates. À l'extraction, un utilisateur ordinaire devient propriétaire de tout ce qu'il extrait ; **root**, lui, restaure les propriétaires d'origine. Pour une restauration fidèle d'une sauvegarde système, on extrait donc avec `sudo`, et l'option `-p` (*preserve-permissions*, active par défaut pour root) conserve les permissions exactes.
+
+## choisir la compression
+
+Les algorithmes font des compromis différents entre taille, vitesse de compression et vitesse de décompression.
+
+| Outil | Option tar | Taux | Vitesse | Usage typique |
+| --- | --- | --- | --- | --- |
+| gzip | `z` | Correct | Rapide | Le choix par défaut, compris partout |
+| bzip2 | `j` | Meilleur que gzip | Lent | Ancien, remplacé par xz dans la plupart des usages |
+| xz | `J` | Le meilleur des quatre | Très lent à compresser | Distribution de logiciels, archivage long terme |
+| zstd | `--zstd` | Proche de xz | Très rapide dans les deux sens | Sauvegardes, paquets récents, usage moderne |
+
+Pour une sauvegarde quotidienne, **zstd** ou **gzip** : la vitesse compte plus que les derniers pourcents. Pour publier une archive téléchargée des milliers de fois, **xz** : on compresse une fois, on gagne sur chaque téléchargement. Les fichiers déjà compressés (images JPEG, vidéos, archives) ne rétrécissent presque plus : inutile d'insister.
+
+Chaque outil s'utilise aussi seul, sur un fichier :
+
+```bash
+gzip gros-journal.log          # produit gros-journal.log.gz et supprime l'original
+gunzip gros-journal.log.gz     # l'inverse
+zcat gros-journal.log.gz | head   # lire sans décompresser sur le disque
+```
+
+`zcat`, et ses cousins `zgrep` et `zless`, permettent de lire et de chercher dans des journaux compressés sans les décompresser : très utile pour les anciens journaux de `/var/log`, qui sont justement stockés en `.gz`.
+
+## zip, pour échanger avec Windows
+
+Windows ouvre nativement les `.zip`, pas les `.tar.gz`. Pour un collègue sous Windows :
+
+```bash
+zip -r rapport.zip rapport/
+unzip -l rapport.zip          # lister
+unzip rapport.zip -d dest/    # extraire dans dest/
+```
+
+`zip` ne conserve pas les propriétaires Unix : ce n'est pas un format de sauvegarde système. Les paquets `zip` et `unzip` ne sont pas toujours installés par défaut.
+
+## ouvrir une archive qui vient d'ailleurs
+
+Une archive téléchargée ou reçue peut être piégée, volontairement ou non. Trois risques et leurs parades.
+
+**1. Des fichiers qui se répandent partout.** Une archive dont le contenu n'est pas rangé dans un répertoire unique déverse ses fichiers directement dans le répertoire courant, en écrasant éventuellement les tiens. Les anglophones appellent cela une *tarbomb*. Parade : lister d'abord, et extraire dans un répertoire vide créé pour l'occasion (`mkdir extrait && tar -xf archive.tar -C extrait`).
+
+**2. Des chemins qui sortent du répertoire.** Une archive peut contenir des noms comme `../../home/alice/.bashrc`. GNU tar refuse par défaut les chemins qui remontent au-dessus du répertoire d'extraction, mais d'autres outils ou d'anciennes versions ne le font pas, et c'est une famille de vulnérabilités bien connue sous le nom de *Zip Slip*. Parade : lister, repérer tout `..` ou tout chemin absolu, et refuser l'archive.
+
+**3. Une bombe de décompression.** Quelques kilo-octets qui se décompressent en téraoctets, pour remplir un disque. Parade : regarder la taille décompressée annoncée (`unzip -l` l'affiche, `gzip -l` aussi) avant d'extraire, et extraire sur un espace qui peut se permettre de se remplir.
+
+<Callout type="danger">
+N'extrais jamais en root une archive dont tu ne connais pas la provenance. En root, tar restaure les propriétaires et les permissions enregistrés dans l'archive, y compris des programmes setuid (leçon 6 de ce module) ; un fichier qu'un inconnu a préparé se retrouve alors sur ton système avec les droits qu'il a choisis. Extrais en utilisateur ordinaire, dans un répertoire vide, et inspecte.
+</Callout>
+
+### vérifier l'intégrité
+
+Les logiciels publiés en archive sont presque toujours accompagnés d'une **empreinte** (*checksum*) SHA-256, et souvent d'une signature. On calcule l'empreinte du fichier téléchargé et on la compare à celle publiée :
+
+```bash
+sha256sum outil-2.4.1-linux-x64.tar.xz
+```
+
+```text
+83bf07dd343002a26211cf1fcd46a9d9534219aad42ee02847816940bf610a72  outil-2.4.1-linux-x64.tar.xz
+```
+
+Si le fichier publié s'appelle `SHASUMS256.txt`, `sha256sum -c` fait la comparaison tout seul pour les fichiers présents. Une empreinte différente veut dire un fichier corrompu ou modifié : on ne l'ouvre pas. Tu verras au parcours de cryptographie ce qu'une empreinte garantit exactement, et pourquoi une signature va plus loin.
+
+## démonstration : sauvegarder et restaurer une configuration
+
+**1. Sauvegarder** la configuration de nginx, avec la date dans le nom, en zstd :
+
+```bash
+sudo tar --zstd -cf "/var/backups/nginx-$(date +%F).tar.zst" -C /etc nginx
+```
+
+**2. Vérifier** ce que contient la sauvegarde, sans l'extraire :
+
+```bash
+tar -tf /var/backups/nginx-2026-09-27.tar.zst | head -5
+```
+
+```text
+nginx/
+nginx/nginx.conf
+nginx/sites-available/
+nginx/sites-available/default
+nginx/conf.d/
+```
+
+Les chemins commencent par `nginx/`, sans `/etc` : grâce à `-C /etc`, la restauration pourra se faire où l'on veut.
+
+**3. Restaurer** dans un répertoire de travail, comparer, puis remettre en place un seul fichier :
+
+```bash
+mkdir -p /tmp/restauration
+sudo tar -xf /var/backups/nginx-2026-09-27.tar.zst -C /tmp/restauration
+diff /tmp/restauration/nginx/nginx.conf /etc/nginx/nginx.conf
+sudo cp -a /tmp/restauration/nginx/nginx.conf /etc/nginx/nginx.conf
+```
+
+On restaure dans un endroit neutre, on regarde ce qui diffère, et on ne remet en place que ce qu'on a décidé. Puis, comme au module 1, `sudo nginx -t` avant de recharger.
+
+## à toi de jouer
+
+Crée une archive compressée avec gzip du répertoire `site/`, nommée `site.tar.gz`. Liste ensuite son contenu sans l'extraire. Enfin, extrais-la dans le répertoire `restauration/`.
+
+<SimulatedTerminal shell="bash" title="Une archive de bout en bout" expectedCommands={["tar -czf site.tar.gz site/", "tar -tzf site.tar.gz", "tar -xzf site.tar.gz -C restauration/"]} hints={["c pour créer, z pour gzip, f suivi du nom de l'archive, puis le répertoire.", "t pour lister, avec z et f.", "x pour extraire, puis -C et le répertoire de destination."]} commands={{ "ls": "restauration  site", "tar -czf site.tar.gz site/": "", "tar -czvf site.tar.gz site/": "site/\nsite/index.html\nsite/assets/\nsite/assets/style.css\nsite/assets/logo.png", "ls -lh site.tar.gz": "-rw-r--r-- 1 alice alice 11M sept. 27 11:02 site.tar.gz", "tar -tzf site.tar.gz": "site/\nsite/index.html\nsite/assets/\nsite/assets/style.css\nsite/assets/logo.png", "tar -xzf site.tar.gz -C restauration/": "", "ls restauration/site": "assets  index.html", "tar -xf site.tar.gz -C restauration/": "", "sha256sum site.tar.gz": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a  site.tar.gz" }} />
+
+Vérifie ensuite avec `ls restauration/site` que l'arborescence a bien été recréée.
+
+## les pièges
+
+- **Oublier `f` ou le placer au milieu.** `-cfz archive.tar.gz` prend `z` pour le nom de l'archive. `f` en dernier, suivi du nom.
+- **Inverser l'ordre des arguments à la création.** `tar -czf site/ site.tar.gz` essaie d'écrire l'archive dans `site/`. D'abord l'archive, ensuite ce qu'on archive.
+- **Extraire sans lister.** Une archive peut déverser des centaines de fichiers dans le répertoire courant.
+- **Extraire en root une archive inconnue.** Propriétaires et droits spéciaux sont restaurés tels quels.
+- **Croire que zip sauvegarde un système.** Il ne conserve pas les propriétaires Unix.
+- **Compresser ce qui l'est déjà.** Images, vidéos, archives : on ne gagne presque rien.
+- **Ne jamais tester la restauration.** Une sauvegarde se vérifie en la restaurant, pas en regardant sa taille.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/tar/manual/tar.html" description="Le manuel complet de GNU tar">GNU tar manual</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/sha256sum.1.html" description="Calculer et vérifier des empreintes SHA-256">sha256sum(1)</ExternalLink>
+
+<ExternalLink href="https://facebook.github.io/zstd/" description="Les performances de zstd comparées aux autres algorithmes">Zstandard</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle est la différence entre tar et gzip ?" options={["Aucune, ce sont deux noms du même outil", "tar regroupe des fichiers en une archive, gzip compresse un fichier", "tar compresse, gzip archive", "tar est pour Linux, gzip pour Windows"]} correct={1} explanation="tar archive sans compresser ; gzip compresse un seul fichier. On combine les deux pour obtenir un .tar.gz." />
+  <Quiz id="q-2" question="Quelle commande liste le contenu de sauvegarde.tar.gz sans rien extraire ?" options={["tar -xzf sauvegarde.tar.gz", "tar -tzf sauvegarde.tar.gz", "tar -czf sauvegarde.tar.gz", "gzip -d sauvegarde.tar.gz"]} correct={1} explanation="t liste, x extrait, c crée. f désigne l'archive et z la décompression gzip." />
+  <Quiz id="q-3" question="Tu as archivé /etc avec sudo tar -czf etc.tar.gz /etc. Où seront recréés les fichiers si tu extrais l'archive depuis /tmp ?" options={["Dans /etc, en écrasant la configuration", "Dans /tmp/etc", "Dans /", "Dans le répertoire personnel"]} correct={1} explanation="GNU tar retire la barre initiale des chemins à la création. L'extraction recrée etc/ sous le répertoire courant." />
+  <Quiz id="q-4" question="Pour une sauvegarde quotidienne volumineuse, quel algorithme est souvent le meilleur compromis ?" options={["xz, parce qu'il compresse le plus", "zstd, rapide à compresser et à décompresser avec un bon taux", "bzip2", "Aucun, il ne faut pas compresser les sauvegardes"]} correct={1} explanation="Pour une opération répétée chaque jour, la vitesse compte. zstd offre un taux proche de xz pour une fraction du temps." />
+  <Quiz id="q-5" question="Tu reçois une archive d'une source inconnue. Quelle est la bonne démarche ?" options={["L'extraire en root dans / pour gagner du temps", "La lister, puis l'extraire en utilisateur ordinaire dans un répertoire vide", "La renommer en .zip", "L'extraire directement dans ton répertoire personnel"]} correct={1} explanation="Lister révèle les chemins suspects et les archives qui se répandent. Extraire sans droits root dans un répertoire vide limite les dégâts possibles." />
+  <Quiz id="q-6" question="L'empreinte SHA-256 d'un logiciel téléchargé diffère de celle publiée par l'éditeur. Que faire ?" options={["L'installer quand même, les empreintes changent souvent", "Ne pas l'ouvrir : le fichier est corrompu ou a été modifié", "Recalculer l'empreinte avec md5sum", "Décompresser le fichier puis recalculer"]} correct={1} explanation="Une empreinte différente signifie que le fichier n'est pas celui publié. Il faut le retélécharger depuis la source officielle, et ne rien exécuter entre-temps." />
+  <Quiz id="q-7" question="Comment chercher un mot dans un journal compressé app.log.2.gz sans le décompresser sur le disque ?" options={["grep mot app.log.2.gz", "zgrep mot app.log.2.gz", "tar -tzf app.log.2.gz | grep mot", "unzip -l app.log.2.gz"]} correct={1} explanation="zgrep décompresse à la volée pour chercher. grep seul chercherait dans les octets compressés, et tar ne s'applique pas à un simple fichier .gz." />
+</QuizGroup>
+
+## à retenir
+
+- **Archiver** (tar) regroupe, **compresser** (gzip, xz, zstd) réduit. `.tar.gz` = les deux.
+- tar : **c**réer, lis**t**er, e**x**traire, **f** + nom de l'archive en dernier, `z`/`J`/`--zstd` pour la compression, `-C` pour changer de répertoire, `--exclude` pour écarter.
+- GNU tar retire le `/` initial : on restaure dans un répertoire de travail, on compare, on remet en place.
+- gzip partout, zstd pour les sauvegardes, xz pour publier. `zcat`, `zgrep`, `zless` pour lire sans décompresser.
+- zip pour échanger avec Windows, pas pour sauvegarder un système.
+- Archive inconnue : lister, extraire sans root dans un répertoire vide, vérifier l'empreinte avant tout.

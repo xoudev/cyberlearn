@@ -1,0 +1,342 @@
+---
+refCode: CL-LSN-02020-V01
+slug: linux-couper-trier-compter
+title: "Couper, trier, compter"
+description: "Les petits outils qui font les grandes analyses : cut pour extraire des colonnes, sort sous toutes ses formes, uniq pour dédoublonner et compter, wc, tr pour transformer des caractères, head et tail, dont tail -f pour suivre un journal en direct."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02019-V01"]
+---
+
+`grep` sélectionne des lignes. Mais pour répondre à la plupart des questions, il faut aller plus loin : ne garder qu'une colonne, trier, regrouper, compter. Unix fournit pour cela une série de petits outils très simples, que tu as déjà croisés dans les chaînes des leçons précédentes : `cut`, `sort`, `uniq`, `wc`, `tr`, `head`, `tail`. Chacun tient en quelques options. Ensemble, ce sont eux qui transforment un journal illisible en tableau de bord.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- extraire des colonnes d'un fichier avec `cut`, et savoir quand il ne suffit pas ;
+- trier alphabétiquement, numériquement, par taille lisible, par version, sur une colonne choisie ;
+- dédoublonner, compter les doublons, ou n'afficher que les lignes uniques avec `uniq` ;
+- compter lignes, mots et caractères avec `wc` ;
+- remplacer, supprimer ou fusionner des caractères avec `tr` ;
+- afficher le début ou la fin d'un fichier, et suivre un journal en direct avec `tail -f`.
+
+## pourquoi ça compte
+
+Ces outils sont le vocabulaire de base de l'analyse en ligne de commande. Un administrateur qui les maîtrise répond en une minute à « quels sont les utilisateurs qui ont un shell de connexion ? », « quelles extensions de fichiers occupent ce répertoire ? », « quels services redémarrent le plus souvent ? ». Et un analyste de sécurité s'en sert pour résumer des journaux avant de les charger dans un outil plus lourd, ou quand il n'a rien d'autre sous la main qu'un accès SSH à la machine suspecte.
+
+Ils ont aussi l'avantage d'être **présents partout** : dans le conteneur le plus minimal, sur le serveur le plus ancien, dans un mode de secours. Là où Python ou un tableur ne sont pas installés, `sort` et `uniq` le sont.
+
+## cut : extraire des colonnes
+
+`cut` découpe chaque ligne et ne garde que certains morceaux. Deux modes.
+
+**Par champs**, avec un séparateur (`-d`) et les numéros des champs à garder (`-f`) :
+
+```bash
+cut -d ':' -f 1,7 /etc/passwd | head -3
+```
+
+```text
+root:/bin/bash
+daemon:/usr/sbin/nologin
+bin:/usr/sbin/nologin
+```
+
+Dans `/etc/passwd`, les champs sont séparés par des deux-points : le premier est le nom du compte, le septième son shell. On peut donner une liste (`1,7`), un intervalle (`1-3`) ou un intervalle ouvert (`5-`, du cinquième jusqu'au bout).
+
+**Par caractères**, avec `-c` et des positions :
+
+```bash
+cut -c 1-10 /var/log/syslog | head -2
+```
+
+Utile pour les fichiers en colonnes de largeur fixe, où chaque information est toujours à la même place.
+
+<Callout type="warning">
+`cut` ne sait pas gérer plusieurs espaces consécutifs : avec `-d ' '`, chaque espace sépare un champ, et une colonne alignée avec trois espaces produit deux champs vides au milieu. Pour les sorties de commandes alignées en colonnes, comme `ps` ou `df`, on utilise `awk` (leçon 7), qui considère n'importe quelle suite d'espaces comme un seul séparateur. On peut aussi fusionner les espaces avec `tr -s ' '` avant `cut`.
+</Callout>
+
+## sort : trier
+
+`sort` trie des lignes. Par défaut, dans l'ordre alphabétique, selon la langue du système. Ses options changent le critère et le sens.
+
+| Option | Effet |
+| --- | --- |
+| `-n` | Tri **numérique** : 9 avant 10 |
+| `-h` | Tri des tailles **lisibles** : 900K avant 1.2M avant 3G |
+| `-V` | Tri de **versions** : 1.9 avant 1.10 |
+| `-r` | Ordre **inverse** |
+| `-k N` | Trier sur la colonne N |
+| `-t X` | Séparateur de colonnes X (espaces par défaut) |
+| `-u` | Supprimer les doublons après le tri |
+| `-f` | Ignorer la casse |
+| `-o fichier` | Écrire le résultat dans un fichier, qui peut être le fichier d'origine |
+
+### alphabétique ou numérique
+
+C'est l'erreur de tri la plus fréquente :
+
+```bash
+printf "10\n9\n100\n" | sort
+```
+
+```text
+10
+100
+9
+```
+
+Dans l'ordre alphabétique, `1` vient avant `9`, donc `10` et `100` passent avant `9`. Avec `-n`, `sort` compare des nombres :
+
+```bash
+printf "10\n9\n100\n" | sort -n
+```
+
+```text
+9
+10
+100
+```
+
+### trier sur une colonne
+
+`-k` choisit la colonne, `-t` le séparateur. Trier les comptes de `/etc/passwd` par identifiant numérique (troisième champ) :
+
+```bash
+sort -t ':' -k 3 -n /etc/passwd | cut -d ':' -f 1,3 | tail -3
+```
+
+```text
+alice:1000
+bob:1001
+nobody:65534
+```
+
+Pour trier sur une colonne précise **et seulement elle**, on écrit `-k 3,3` : `-k 3` seul veut dire « de la colonne 3 jusqu'à la fin de la ligne », ce qui peut changer l'ordre des égalités.
+
+### trier des tailles et des versions
+
+Avec `du -h` ou `ls -lh`, les tailles sont écrites `12K`, `3.4M`, `1.1G`. Un tri numérique les trierait mal ; `-h` les comprend :
+
+```bash
+du -sh /var/* 2>/dev/null | sort -h | tail -3
+```
+
+Et `-V` trie correctement des numéros de version, ce que l'ordre alphabétique rate :
+
+```bash
+printf "linux-6.10\nlinux-6.9\nlinux-6.1\n" | sort -V
+```
+
+```text
+linux-6.1
+linux-6.9
+linux-6.10
+```
+
+<Callout type="info">
+L'ordre alphabétique de `sort` dépend de la langue du système : les majuscules, les accents et la ponctuation ne sont pas classés de la même façon selon les réglages. Pour un résultat identique sur toutes les machines, notamment dans un script ou avant un `comm` (leçon 8), on fixe la langue : `LC_ALL=C sort`, qui trie dans l'ordre des octets. C'est aussi nettement plus rapide sur de gros fichiers.
+</Callout>
+
+## uniq : dédoublonner et compter
+
+`uniq` traite les lignes identiques **consécutives**. C'est pourquoi on le place presque toujours après `sort`, qui rassemble les lignes identiques.
+
+| Option | Effet |
+| --- | --- |
+| aucune | Garder un seul exemplaire de chaque groupe de lignes identiques |
+| `-c` | Précéder chaque ligne de son nombre d'occurrences |
+| `-d` | N'afficher que les lignes qui apparaissent plusieurs fois |
+| `-u` | N'afficher que les lignes qui n'apparaissent qu'une fois |
+| `-i` | Ignorer la casse |
+
+<Diagram caption="La recette du comptage : sort, uniq -c, sort -rn">
+flowchart LR
+  A["Lignes en désordre : b a b c a b"] -->|"sort"| B["a a b b b c"]
+  B -->|"uniq -c"| C["2 a, 3 b, 1 c"]
+  C -->|"sort -rn"| D["3 b, 2 a, 1 c"]
+</Diagram>
+
+Quels shells de connexion sont utilisés sur ce système, et par combien de comptes ?
+
+```bash
+cut -d ':' -f 7 /etc/passwd | sort | uniq -c | sort -rn
+```
+
+```text
+     26 /usr/sbin/nologin
+      3 /bin/bash
+      1 /bin/sync
+      1 /bin/false
+```
+
+Vingt-six comptes de service ne peuvent pas se connecter (`nologin`), trois comptes ont un vrai shell. Sur un serveur, cette liste mérite d'être connue par cœur : un nouveau compte avec `/bin/bash` que personne n'a créé est un signal d'alerte.
+
+`sort -u` fait la même chose que `sort | uniq`, en une commande. Mais seul `uniq` sait compter (`-c`) ou isoler les doublons (`-d`).
+
+## wc : compter
+
+`wc` (*word count*) compte les lignes, les mots et les octets :
+
+```bash
+wc /etc/passwd
+```
+
+```text
+  32   48 1843 /etc/passwd
+```
+
+32 lignes, 48 mots, 1 843 octets. On demande souvent un seul compte : `-l` pour les lignes, `-w` pour les mots, `-c` pour les octets, `-m` pour les caractères (qui diffèrent des octets dès qu'il y a des accents, codés sur deux octets en UTF-8).
+
+`wc -l` est de loin le plus utilisé, en fin de chaîne : `grep ... | wc -l` pour compter les lignes trouvées, `ls | wc -l` pour compter des fichiers.
+
+## tr : transformer des caractères
+
+`tr` (*translate*) remplace des caractères par d'autres. Particularité : il ne lit **que** son entrée standard, jamais un fichier donné en argument. On l'alimente donc par un tube ou une redirection.
+
+```bash
+echo "Bonjour" | tr 'a-z' 'A-Z'
+```
+
+```text
+BONJOUR
+```
+
+Chaque caractère de la première liste est remplacé par celui de même position dans la seconde. Deux options étendent son usage :
+
+- `-d` **supprime** les caractères listés : `tr -d '\r' < fichier-windows.txt > fichier-unix.txt` retire les retours chariot des fins de ligne Windows, une cause fréquente de scripts qui échouent mystérieusement ;
+- `-s` **fusionne** les répétitions : `tr -s ' '` remplace toute suite d'espaces par une seule, ce qui rend une sortie en colonnes utilisable par `cut`.
+
+```bash
+echo "PATH=$PATH" | tr ':' '\n'
+```
+
+Cette dernière forme affiche chaque répertoire du `PATH` sur sa propre ligne, bien plus lisible que la version d'origine.
+
+## head et tail : le début et la fin
+
+`head` affiche les premières lignes d'un fichier (10 par défaut), `tail` les dernières. `-n` en choisit le nombre :
+
+```bash
+head -n 5 /etc/passwd
+tail -n 20 /var/log/syslog
+```
+
+Deux variantes utiles : `tail -n +2` affiche **à partir de** la ligne 2, ce qui retire une ligne d'en-tête ; `head -n -1` affiche tout **sauf** la dernière ligne.
+
+### suivre un journal en direct : tail -f
+
+`tail -f` (*follow*) affiche la fin du fichier, puis **reste ouvert** et affiche chaque nouvelle ligne au moment où elle est écrite :
+
+```bash
+tail -f /var/log/nginx/access.log
+```
+
+C'est l'outil pour observer un service pendant qu'on le teste : tu lances une requête dans un navigateur, et la ligne correspondante apparaît aussitôt dans le terminal. Ctrl+C arrête le suivi. On le combine souvent avec un filtre :
+
+```bash
+tail -f /var/log/auth.log | grep --line-buffered "sshd"
+```
+
+`--line-buffered` oblige `grep` à transmettre chaque ligne immédiatement au lieu de les regrouper, sans quoi l'affichage arriverait par à-coups.
+
+Une précaution : quand un journal est **renouvelé** (le fichier est renommé et un nouveau créé, ce qu'on appelle la rotation, au module 8), `tail -f` continue de suivre l'ancien fichier. `tail -F` (majuscule) détecte le renouvellement et bascule sur le nouveau : c'est la forme à préférer pour un suivi long.
+
+## démonstration : l'inventaire d'un répertoire de téléchargements
+
+Question : **quelles extensions de fichiers occupent le répertoire partagé, et combien de fichiers de chaque ?**
+
+```bash
+ls /srv/partage | head -5
+```
+
+```text
+bilan-2025.pdf
+budget.XLSX
+compte-rendu.docx
+photo-equipe.JPG
+photo-seminaire.jpg
+```
+
+**1. Isoler l'extension.** On coupe au point et on garde le dernier champ. `cut` ne sait pas prendre « le dernier » champ, mais une astuce existe : retourner chaque ligne avec `rev`, couper le premier champ, retourner à nouveau.
+
+```bash
+ls /srv/partage | rev | cut -d '.' -f 1 | rev | head -3
+```
+
+```text
+pdf
+XLSX
+docx
+```
+
+**2. Uniformiser la casse**, pour que `JPG` et `jpg` soient comptés ensemble :
+
+```bash
+ls /srv/partage | rev | cut -d '.' -f 1 | rev | tr 'A-Z' 'a-z' | head -3
+```
+
+**3. Compter et classer**, avec la recette habituelle :
+
+```bash
+ls /srv/partage | rev | cut -d '.' -f 1 | rev | tr 'A-Z' 'a-z' | sort | uniq -c | sort -rn
+```
+
+```text
+    412 jpg
+    138 pdf
+     61 docx
+     22 xlsx
+      3 exe
+```
+
+Trois fichiers `.exe` dans un partage de documents : ils méritent un coup d'œil avec `file` (leçon 8 du module 2). Six petits outils, aucun script, et une question métier réglée.
+
+## à toi de jouer
+
+À partir de `/etc/passwd`, affiche la liste des shells de connexion avec le nombre de comptes pour chacun, du plus fréquent au moins fréquent. Puis compte le nombre de lignes de `/etc/passwd`. Enfin, affiche les répertoires du `PATH` un par ligne.
+
+<SimulatedTerminal shell="bash" title="Couper, trier, compter" expectedCommands={["cut -d ':' -f 7 /etc/passwd | sort | uniq -c | sort -rn", "wc -l /etc/passwd", "echo $PATH | tr ':' '\\n'"]} hints={["Le septième champ, séparé par des deux-points ; puis la recette sort, uniq -c, sort -rn.", "wc avec l'option qui compte les lignes.", "tr remplace les deux-points par des retours à la ligne, notés \\n."]} commands={{ "cut -d ':' -f 7 /etc/passwd": "/bin/bash\n/usr/sbin/nologin\n/usr/sbin/nologin\n/bin/sync\n/usr/sbin/nologin", "cut -d ':' -f 7 /etc/passwd | sort | uniq -c | sort -rn": "     26 /usr/sbin/nologin\n      3 /bin/bash\n      1 /bin/sync\n      1 /bin/false", "cut -d ':' -f 7 /etc/passwd | uniq -c": "      1 /bin/bash\n      2 /usr/sbin/nologin\n      1 /bin/sync\n      1 /usr/sbin/nologin", "wc -l /etc/passwd": "32 /etc/passwd", "wc -l < /etc/passwd": "32", "echo $PATH | tr ':' '\\n'": "/usr/local/sbin\n/usr/local/bin\n/usr/sbin\n/usr/bin\n/sbin\n/bin", "printf \"10\\n9\\n100\\n\" | sort": "10\n100\n9", "printf \"10\\n9\\n100\\n\" | sort -n": "9\n10\n100" }} />
+
+Essaie aussi `cut -d ':' -f 7 /etc/passwd | uniq -c` sans `sort` : les lignes identiques non consécutives ne sont pas regroupées.
+
+## les pièges
+
+- **`uniq` sans `sort`.** Il ne regroupe que les lignes consécutives.
+- **Trier des nombres sans `-n`.** 10 passe avant 9. `-h` pour les tailles lisibles, `-V` pour les versions.
+- **`-k 3` au lieu de `-k 3,3`.** Le tri porte de la colonne 3 jusqu'à la fin de la ligne.
+- **`cut` sur des colonnes alignées par plusieurs espaces.** Des champs vides apparaissent ; `awk` ou `tr -s ' '` d'abord.
+- **`tr` avec un nom de fichier en argument.** Il ne lit que son entrée standard : `tr ... < fichier`.
+- **`sort fichier > fichier`.** Le fichier est vidé avant d'être lu (leçon 1). `sort -o fichier fichier` fait le tri sur place en toute sécurité.
+- **`tail -f` sur un journal qui tourne.** Il reste sur l'ancien fichier ; `tail -F` suit le nouveau.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/sort-invocation.html" description="Toutes les options de sort, dont les clés de tri">GNU coreutils : sort</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/uniq-invocation.html" description="Les options de uniq">GNU coreutils : uniq</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/tr-invocation.html" description="Les listes et classes de caractères de tr">GNU coreutils : tr</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle commande affiche le nom de chaque compte de /etc/passwd, premier champ séparé par des deux-points ?" options={["cut -f 1 /etc/passwd", "cut -d ':' -f 1 /etc/passwd", "cut -c 1 /etc/passwd", "sort -k 1 /etc/passwd"]} correct={1} explanation="-d choisit le séparateur, ici le deux-points, et -f le champ. Sans -d, cut utilise la tabulation comme séparateur." />
+  <Quiz id="q-2" question="Pourquoi sort place-t-il 100 avant 9 sans option ?" options={["Parce que sort ne sait pas trier les nombres", "Parce que le tri par défaut est alphabétique : 1 vient avant 9", "Parce que 100 est plus long", "Parce que le fichier est mal encodé"]} correct={1} explanation="Le tri par défaut compare les caractères un à un. -n compare des valeurs numériques." />
+  <Quiz id="q-3" question="Quelle option de sort trie correctement 900K, 1.2M et 3G ?" options={["-n", "-h", "-V", "-r"]} correct={1} explanation="-h comprend les suffixes des tailles lisibles produites par du -h ou ls -lh." />
+  <Quiz id="q-4" question="Quelle chaîne compte combien de fois chaque ligne apparaît, de la plus fréquente à la moins fréquente ?" options={["uniq -c | sort", "sort | uniq -c | sort -rn", "sort -rn | uniq", "uniq | sort -n"]} correct={1} explanation="sort rassemble les lignes identiques, uniq -c les compte, sort -rn classe par nombre décroissant." />
+  <Quiz id="q-5" question="Un fichier texte venu de Windows fait échouer un script avec des erreurs étranges en fin de ligne. Quelle commande le corrige ?" options={["tr -d '\\r' < fichier > fichier-corrige", "sort -u fichier", "cut -c 1-80 fichier", "wc -l fichier"]} correct={0} explanation="Les fins de ligne Windows ajoutent un retour chariot avant chaque saut de ligne. tr -d le supprime." />
+  <Quiz id="q-6" question="Tu veux suivre en direct un journal qui sera renouvelé cette nuit par la rotation. Quelle commande ?" options={["tail -n 100", "tail -f", "tail -F", "head -f"]} correct={2} explanation="tail -f suit le fichier ouvert, qui devient l'ancien journal après la rotation. tail -F détecte le nouveau fichier et bascule dessus." />
+  <Quiz id="q-7" question="Pourquoi cut -d ' ' -f 2 donne-t-il des résultats vides sur la sortie de ps aux ?" options={["Parce que ps aux n'a qu'une colonne", "Parce que les colonnes sont alignées avec plusieurs espaces, et chaque espace est un séparateur pour cut", "Parce que cut ne lit pas les tubes", "Parce que -f 2 désigne la deuxième ligne"]} correct={1} explanation="cut considère chaque espace comme un séparateur, et plusieurs espaces consécutifs créent des champs vides. awk, ou tr -s ' ' avant cut, règle le problème." />
+</QuizGroup>
+
+## à retenir
+
+- `cut -d X -f N` extrait des champs, `-c` des positions. Plusieurs espaces : `tr -s ' '` d'abord, ou `awk`.
+- `sort` : `-n` nombres, `-h` tailles, `-V` versions, `-r` inverse, `-k N,N` une colonne, `-t` séparateur, `-u` sans doublons. `LC_ALL=C` pour un ordre stable.
+- `uniq` après `sort` : `-c` compter, `-d` doublons, `-u` uniques. La recette : `sort | uniq -c | sort -rn | head`.
+- `wc -l` compte les lignes. `tr` remplace (`a-z A-Z`), supprime (`-d`) ou fusionne (`-s`) des caractères, en lisant l'entrée standard.
+- `head` et `tail` pour le début et la fin, `tail -n +2` pour sauter un en-tête, **`tail -F`** pour suivre un journal en direct.

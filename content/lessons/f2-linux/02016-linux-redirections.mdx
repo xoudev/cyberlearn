@@ -1,0 +1,319 @@
+---
+refCode: CL-LSN-02016-V01
+slug: linux-entrees-sorties-redirections
+title: "Entrées, sorties, erreurs : les redirections"
+description: "Les trois flux de chaque programme, envoyer une sortie dans un fichier ou la jeter, séparer les erreurs, l'ordre piégeux de 2>&1, lire depuis un fichier, les here-documents, et tee pour voir et enregistrer à la fois."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02902-V01"]
+---
+
+Tout programme lancé depuis le shell reçoit trois canaux de communication : un par lequel il lit, un par lequel il écrit ses résultats, un par lequel il signale ses problèmes. Par défaut, les trois sont branchés sur ton terminal. Mais le shell peut les rebrancher ailleurs : vers un fichier, depuis un fichier, vers le néant. Cette mécanique, les **redirections**, est à la base de tout ce qui suit dans ce module, et de presque tous les scripts que tu écriras.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- nommer les trois flux standard d'un programme et leur numéro ;
+- envoyer la sortie d'une commande dans un fichier, en écrasant ou en ajoutant ;
+- séparer les messages d'erreur de la sortie normale, les enregistrer ou les jeter ;
+- rediriger les deux flux vers le même endroit, dans le bon ordre ;
+- donner un fichier ou un texte en entrée à une commande ;
+- voir une sortie à l'écran tout en l'enregistrant, y compris dans un fichier qui appartient à root.
+
+## pourquoi ça compte
+
+Les redirections servent à tout : garder une trace de ce qu'a fait une commande, produire un rapport dans un fichier, écrire un fichier de configuration depuis un script, faire taire une commande bavarde, récupérer uniquement les erreurs d'une tâche planifiée pour les envoyer par e-mail. Une tâche `cron` sans redirections, c'est une tâche dont on ne sait jamais si elle a échoué.
+
+Elles ont aussi leur piège le plus coûteux : `>` écrase un fichier sans prévenir. Une redirection mal tapée vers un fichier de configuration le vide en une fraction de seconde. Savoir exactement ce que fait chaque symbole n'est pas un luxe.
+
+## les trois flux standard
+
+Chaque programme démarre avec trois **flux**, identifiés par un numéro, qu'on appelle **descripteur de fichier** :
+
+| Numéro | Nom | Rôle | Par défaut |
+| --- | --- | --- | --- |
+| 0 | **stdin** (entrée standard) | Ce que le programme lit | Le clavier |
+| 1 | **stdout** (sortie standard) | Ses résultats | L'écran |
+| 2 | **stderr** (sortie d'erreur) | Ses erreurs et avertissements | L'écran |
+
+Sortie et erreurs arrivent toutes deux à l'écran, si bien qu'on ne voit pas la différence. Elle existe pourtant, et elle est précieuse : on peut traiter les résultats d'un côté et les erreurs de l'autre.
+
+<Diagram caption="Les trois flux d'un programme">
+flowchart LR
+  K["Clavier ou fichier"] -->|"0 : stdin"| P["Programme"]
+  P -->|"1 : stdout (résultats)"| O["Écran ou fichier"]
+  P -->|"2 : stderr (erreurs)"| E["Écran ou autre fichier"]
+</Diagram>
+
+Une démonstration simple : `ls` sur un répertoire qui existe et un qui n'existe pas.
+
+```bash
+ls /etc/hostname /inexistant
+```
+
+```text
+ls: cannot access '/inexistant': No such file or directory
+/etc/hostname
+```
+
+La première ligne est passée par stderr, la seconde par stdout. À l'écran, elles se mélangent. Les redirections vont les séparer.
+
+## rediriger la sortie : `>` et `>>`
+
+`>` envoie la sortie standard dans un fichier, qu'il **crée ou écrase** :
+
+```bash
+ls /etc > liste-etc.txt
+```
+
+Rien ne s'affiche : la liste est dans `liste-etc.txt`. Si le fichier existait, son ancien contenu a disparu.
+
+`>>` **ajoute** à la fin du fichier, sans effacer ce qu'il contient :
+
+```bash
+date >> journal.txt
+echo "Sauvegarde terminée" >> journal.txt
+```
+
+C'est la forme à utiliser pour un journal qu'on complète au fil du temps.
+
+<Callout type="danger">
+`>` ne demande jamais confirmation. `sort fichier.txt > fichier.txt` est un piège classique : le shell ouvre et vide `fichier.txt` **avant** de lancer `sort`, qui lit donc un fichier vide. Le résultat est un fichier vide, et les données sont perdues. Écris toujours vers un autre fichier, puis renomme avec `mv`. L'option `set -o noclobber` fait refuser à bash l'écrasement d'un fichier existant par `>` ; `>|` passe outre quand c'est voulu.
+</Callout>
+
+## rediriger les erreurs : `2>`
+
+Le numéro devant le `>` choisit le flux. `>` seul vaut `1>`. Pour les erreurs, c'est `2>` :
+
+```bash
+find / -name "sshd_config" 2> erreurs.txt
+```
+
+```text
+/etc/ssh/sshd_config
+```
+
+Le résultat s'affiche proprement, et les centaines de « Permission denied » sont allées dans `erreurs.txt`.
+
+### /dev/null, le trou noir
+
+Souvent, on ne veut pas garder les erreurs : on veut juste qu'elles disparaissent. On les envoie vers `/dev/null`, un fichier spécial qui avale tout ce qu'on y écrit (vu à la leçon 1 du module 2) :
+
+```bash
+find / -name "sshd_config" 2>/dev/null
+```
+
+C'est la ligne que tu as vue à la leçon sur `find`. On peut aussi faire taire complètement une commande dont seul le code de retour compte :
+
+```bash
+grep -q "alice" /etc/passwd > /dev/null 2>&1 && echo "présente"
+```
+
+## les deux flux au même endroit : l'ordre de `2>&1`
+
+Pour tout envoyer dans un seul fichier, résultats et erreurs mêlés :
+
+```bash
+./sauvegarde.sh > sauvegarde.log 2>&1
+```
+
+`2>&1` se lit « envoie le flux 2 **là où va actuellement** le flux 1 ». L'esperluette indique qu'il s'agit d'un numéro de flux et non d'un fichier nommé `1`. Et le mot important est « actuellement » : les redirections sont traitées **de gauche à droite**.
+
+<Diagram caption="Pourquoi l'ordre de 2>&1 compte">
+flowchart TD
+  A["commande > fichier 2>&1"] --> B["1 part vers le fichier, puis 2 rejoint 1 : tout va dans le fichier"]
+  C["commande 2>&1 > fichier"] --> D["2 rejoint 1 alors qu'il est encore sur l'écran, puis 1 part vers le fichier : les erreurs restent à l'écran"]
+</Diagram>
+
+Bash a un raccourci qui évite de se tromper : `&>` redirige les deux flux d'un coup.
+
+```bash
+./sauvegarde.sh &> sauvegarde.log
+./sauvegarde.sh &>> sauvegarde.log
+```
+
+`&>` est propre à bash (et zsh). Dans un script qui doit tourner sous `sh`, on garde la forme portable `> fichier 2>&1`.
+
+### séparer les deux
+
+L'inverse est tout aussi utile : résultats dans un fichier, erreurs dans un autre.
+
+```bash
+./traitement.sh > resultats.txt 2> erreurs.txt
+```
+
+Une tâche planifiée écrite ainsi te laisse deux fichiers : ce qu'elle a produit, et ce qui a mal tourné. Un fichier d'erreurs vide est une bonne nouvelle qu'on vérifie d'un coup d'œil.
+
+## rediriger l'entrée : `<`
+
+`<` fait lire l'entrée standard depuis un fichier au lieu du clavier :
+
+```bash
+wc -l < /etc/passwd
+```
+
+```text
+32
+```
+
+La différence avec `wc -l /etc/passwd` est subtile mais réelle : ici, `wc` ne reçoit pas de nom de fichier, seulement un flux de données. Il affiche donc le nombre seul, sans le nom, ce qui est plus pratique dans un script. Certaines commandes, comme `tr` (leçon 5), ne savent lire **que** leur entrée standard : `<` est alors le seul moyen de leur donner un fichier.
+
+### le here-document
+
+Un **here-document** fournit plusieurs lignes de texte en entrée, directement dans la commande. Il commence par `<<` suivi d'un mot de fin de ton choix, et se termine par une ligne qui ne contient que ce mot :
+
+```bash
+cat > /tmp/config-test.conf << FIN
+serveur = srv-db-01
+port = 5432
+utilisateur = $USER
+FIN
+```
+
+Tout ce qui est entre les deux `FIN` part dans `cat`, qui l'écrit dans le fichier. C'est la façon standard de **générer un fichier de configuration depuis un script**. Les variables y sont développées (`$USER` devient ton nom) ; pour garder le texte strictement tel quel, on met le mot de fin entre apostrophes : `<< 'FIN'`.
+
+### la here-string
+
+Pour une seule ligne, `<<<` donne une chaîne en entrée :
+
+```bash
+wc -w <<< "combien de mots dans cette phrase"
+```
+
+```text
+6
+```
+
+## voir et enregistrer à la fois : tee
+
+Une redirection détourne la sortie : on ne la voit plus. `tee` la **duplique** : elle l'affiche à l'écran et l'écrit dans un fichier en même temps. Il s'utilise avec un tube, que la leçon suivante détaille :
+
+```bash
+./deploiement.sh | tee deploiement.log
+```
+
+Tu suis le déploiement en direct, et tout est conservé dans `deploiement.log`. Avec `-a`, `tee` ajoute au fichier au lieu de l'écraser.
+
+### écrire dans un fichier de root
+
+Un piège que tout le monde rencontre :
+
+```bash
+sudo echo "8.8.8.8 dns-test" >> /etc/hosts
+```
+
+```text
+bash: /etc/hosts: Permission denied
+```
+
+`sudo` s'applique à `echo`, mais la redirection `>>` est faite par **ton** shell, avant même que `sudo` ne soit lancé, et ton shell n'a pas le droit d'écrire dans `/etc/hosts`. La solution est de confier l'écriture à un programme lancé avec `sudo`. `tee` convient parfaitement :
+
+```bash
+echo "8.8.8.8 dns-test" | sudo tee -a /etc/hosts > /dev/null
+```
+
+`sudo tee -a` ajoute au fichier avec les droits root ; `> /dev/null` évite de réafficher la ligne à l'écran.
+
+## une sortie à la place d'un fichier : la substitution de processus
+
+Certaines commandes n'acceptent que des **noms de fichiers**, pas un flux. C'est le cas de `diff`, qui compare deux fichiers. Comment comparer la liste de deux répertoires sans créer deux fichiers temporaires ? Bash propose la **substitution de processus**, `<(commande)` : il lance la commande et la présente comme un fichier qu'on peut lire.
+
+```bash
+diff <(ls /srv/app/releases/v1) <(ls /srv/app/releases/v2)
+```
+
+```text
+3a4
+> nouvelle-page.html
+```
+
+Chaque `<( )` devient un chemin du genre `/dev/fd/63`, un pseudo-fichier dont le contenu est la sortie de la commande. `diff` croit lire deux fichiers, et aucun fichier temporaire n'a été créé ni oublié sur le disque. Tu t'en serviras souvent avec `diff` et `comm`, à la leçon 8 de ce module.
+
+## quand la redirection échoue
+
+Les redirections sont mises en place **avant** le lancement de la commande. Si l'une d'elles échoue, la commande n'est même pas exécutée :
+
+```bash
+ls /etc > /repertoire-inexistant/liste.txt
+```
+
+```text
+bash: /repertoire-inexistant/liste.txt: No such file or directory
+```
+
+`ls` n'a jamais tourné, et le code de retour vaut 1. C'est le même mécanisme que le piège de `sudo` vu plus haut : tout ce qui concerne l'ouverture des fichiers de redirection est l'affaire du shell, avec ses propres droits et dans le répertoire courant, pas celle de la commande. Dans un script, vérifie donc que le répertoire d'un fichier journal existe avant d'y rediriger, ou crée-le avec `mkdir -p`.
+
+## démonstration : une tâche planifiée qui laisse des traces
+
+Un script de sauvegarde tourne chaque nuit. Voici comment on l'appelle pour savoir, le matin, ce qui s'est passé.
+
+```bash
+/usr/local/bin/sauvegarde.sh >> /var/log/sauvegarde.log 2>> /var/log/sauvegarde-erreurs.log
+```
+
+Chaque nuit, les messages normaux s'ajoutent au journal principal, et les erreurs à un journal séparé. Le matin :
+
+```bash
+tail -n 3 /var/log/sauvegarde.log
+```
+
+```text
+2026-09-27 02:00:01 Début de la sauvegarde
+2026-09-27 02:03:47 14 fichiers sauvegardés, 2,1 Go
+2026-09-27 02:03:47 Fin de la sauvegarde
+```
+
+```bash
+cat /var/log/sauvegarde-erreurs.log
+```
+
+Aucune sortie : le fichier d'erreurs est vide, la nuit s'est bien passée. Le jour où il ne l'est pas, tu sais exactement quoi lire, sans chercher les erreurs noyées dans des centaines de lignes normales. Au module 8, tu verras que systemd récupère lui-même ces deux flux dans son journal, ce qui simplifie encore les choses.
+
+## à toi de jouer
+
+Liste le contenu de `/etc` dans le fichier `etc.txt`, puis ajoute la date à la fin du fichier `journal.txt`. Enfin, cherche `sshd_config` dans tout le système en jetant les messages d'erreur.
+
+<SimulatedTerminal shell="bash" title="Brancher les flux" expectedCommands={["ls /etc > etc.txt", "date >> journal.txt", "find / -name sshd_config 2>/dev/null"]} hints={["Un seul chevron écrit la sortie dans un fichier, en l'écrasant.", "Deux chevrons ajoutent à la fin.", "2> redirige les erreurs ; /dev/null les fait disparaître."]} commands={{ "ls /etc > etc.txt": "", "cat etc.txt": "adduser.conf\nalternatives\napt\nbash.bashrc\ncron.d\nhostname\nhosts\nnginx\npasswd\nssh", "date >> journal.txt": "", "cat journal.txt": "Sat Sep 26 18:02:11 CEST 2026\nSun Sep 27 12:14:05 CEST 2026", "find / -name sshd_config": "find: '/root': Permission denied\nfind: '/proc/1/task/1/fd': Permission denied\n/etc/ssh/sshd_config\nfind: '/var/lib/private': Permission denied", "find / -name sshd_config 2>/dev/null": "/etc/ssh/sshd_config", "wc -l < /etc/passwd": "32", "sudo echo test >> /etc/hosts": "bash: /etc/hosts: Permission denied" }} />
+
+Lance aussi `find / -name sshd_config` sans redirection pour voir tout ce que `2>/dev/null` fait disparaître, puis `sudo echo test >> /etc/hosts` pour constater le piège de la redirection faite par ton shell.
+
+## les pièges
+
+- **`>` au lieu de `>>`.** Un journal effacé au lieu d'être complété. Et `>` ne demande jamais rien.
+- **Lire et écrire le même fichier.** `commande fichier > fichier` vide le fichier avant de le lire. Passe par un fichier temporaire.
+- **Écrire `2>&1` avant `>`.** Les erreurs restent à l'écran. L'ordre est `> fichier 2>&1`, ou `&>` en bash.
+- **Écrire `2>1`.** Sans l'esperluette, bash crée un fichier nommé `1`.
+- **`sudo` avec une redirection.** La redirection est faite par ton shell, sans les droits root. `| sudo tee`.
+- **Jeter les erreurs par réflexe.** `2>/dev/null` masque aussi les vraies erreurs. Réserve-le aux messages que tu sais sans intérêt.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/bash/manual/html_node/Redirections.html" description="Toutes les formes de redirection de bash, dont les here-documents">Bash : Redirections</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man3/stdin.3.html" description="Les trois flux standard vus par le système">stdin(3)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/tee-invocation.html" description="La commande tee et ses options">GNU coreutils : tee</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le numéro de la sortie d'erreur standard ?" options={["0", "1", "2", "3"]} correct={2} explanation="0 est l'entrée standard, 1 la sortie standard, 2 la sortie d'erreur." />
+  <Quiz id="q-2" question="Quelle est la différence entre commande > f.txt et commande >> f.txt ?" options={["Aucune", "Le premier écrase f.txt, le second ajoute à la fin", "Le premier ajoute, le second écrase", "Le second redirige aussi les erreurs"]} correct={1} explanation="> crée ou écrase le fichier, >> ajoute à la fin sans effacer." />
+  <Quiz id="q-3" question="Que fait sort donnees.txt > donnees.txt ?" options={["Il trie le fichier sur place", "Il vide le fichier, car le shell l'ouvre en écriture avant que sort le lise", "Il affiche une erreur et ne change rien", "Il crée une copie triée"]} correct={1} explanation="La redirection est préparée par le shell avant le lancement de sort : le fichier est tronqué, puis sort lit un fichier vide." />
+  <Quiz id="q-4" question="Quelle ligne envoie à la fois les résultats et les erreurs dans journal.log ?" options={["commande 2>&1 > journal.log", "commande > journal.log 2>&1", "commande 2> journal.log", "commande > journal.log 2>1"]} correct={1} explanation="Les redirections sont traitées de gauche à droite : 1 part d'abord vers le fichier, puis 2 rejoint 1. Dans l'autre ordre, les erreurs restent à l'écran, et 2>1 crée un fichier nommé 1." />
+  <Quiz id="q-5" question="Pourquoi sudo echo ligne >> /etc/hosts échoue-t-il avec Permission denied ?" options={["Parce que echo ne fonctionne pas avec sudo", "Parce que la redirection est faite par ton shell, qui n'a pas les droits root", "Parce que /etc/hosts est immuable", "Parce que >> est interdit dans /etc"]} correct={1} explanation="sudo ne s'applique qu'à echo. L'ouverture du fichier par >> est faite avant, par ton propre shell. La solution : echo ligne | sudo tee -a /etc/hosts." />
+  <Quiz id="q-6" question="À quoi sert /dev/null dans find / -name x 2>/dev/null ?" options={["À enregistrer les erreurs dans un fichier caché", "À faire disparaître les messages d'erreur", "À accélérer la recherche", "À chercher aussi dans les fichiers supprimés"]} correct={1} explanation="/dev/null avale tout ce qu'on y écrit. Les erreurs redirigées vers lui ne s'affichent plus et ne sont conservées nulle part." />
+  <Quiz id="q-7" question="Quel outil permet de voir une sortie à l'écran tout en l'enregistrant dans un fichier ?" options={["cat", "tee", "echo", "wc"]} correct={1} explanation="tee lit son entrée, l'affiche sur sa sortie standard et l'écrit en même temps dans le ou les fichiers donnés." />
+</QuizGroup>
+
+## à retenir
+
+- Trois flux : **0 stdin** (entrée), **1 stdout** (résultats), **2 stderr** (erreurs).
+- `>` écrase, `>>` ajoute. `2>` pour les erreurs. `/dev/null` pour jeter.
+- Tout au même endroit : `> fichier 2>&1` (dans cet ordre) ou `&>` en bash. Séparés : `> resultats 2> erreurs`.
+- `<` lit depuis un fichier, `<< FIN` fournit un bloc de texte (here-document), `<<<` une chaîne.
+- `tee` affiche et enregistre à la fois. Pour écrire dans un fichier de root : `| sudo tee -a fichier`.
+- Jamais `commande fichier > fichier` : le fichier est vidé avant d'être lu.

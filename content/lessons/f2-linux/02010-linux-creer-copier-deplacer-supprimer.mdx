@@ -1,0 +1,297 @@
+---
+refCode: CL-LSN-02010-V01
+slug: linux-creer-copier-deplacer-supprimer
+title: "Créer, copier, déplacer, supprimer"
+description: "mkdir, touch, cp, mv, rm et rmdir en profondeur : les options qui protègent, ce que fait vraiment un déplacement, pourquoi rm ne pardonne pas, et les réflexes qui évitent de perdre des données."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02009-V01"]
+---
+
+Créer un répertoire, copier un fichier, en renommer un autre, supprimer ce qui ne sert plus : ces gestes ont l'air élémentaires, et ils le sont, jusqu'au jour où une copie écrase un fichier sans prévenir ou un `rm` part dans le mauvais répertoire. En ligne de commande, il n'y a pas de corbeille et rarement de confirmation. Cette leçon couvre les commandes, mais surtout les options et les réflexes qui protègent tes données.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- créer des répertoires, y compris toute une arborescence d'un coup, et des fichiers vides ;
+- copier des fichiers et des répertoires, en conservant ou non leurs propriétaires, droits et dates ;
+- déplacer et renommer, et expliquer pourquoi un déplacement est parfois instantané et parfois long ;
+- supprimer des fichiers et des répertoires en limitant le risque d'erreur ;
+- utiliser les options `-i`, `-n` et `-v` pour éviter d'écraser ou de supprimer par accident.
+
+## pourquoi ça compte
+
+Les pertes de données les plus courantes en administration ne viennent pas d'attaques, mais d'une commande de nettoyage tapée trop vite. Les récits sont nombreux et se ressemblent : une variable vide dans un script qui transforme `rm -rf "$REPERTOIRE/"` en `rm -rf /`, une copie de configuration qui écrase la version de production, un `mv` vers un répertoire qui n'existait pas et qui a renommé le fichier au lieu de le déplacer. Chacune de ces erreurs s'évite avec une option ou un réflexe que tu vas voir ici.
+
+## créer
+
+### des répertoires : mkdir
+
+```bash
+mkdir sauvegardes
+```
+
+Pour créer toute une arborescence d'un coup, y compris les répertoires intermédiaires qui n'existent pas encore, l'option `-p` (*parents*) :
+
+```bash
+mkdir -p projets/site/assets/images
+```
+
+Sans `-p`, `mkdir` refuse si `projets/site/assets` n'existe pas déjà. Avec `-p`, il crée tout ce qui manque, et ne se plaint pas si le répertoire existe déjà : c'est pour cela qu'on l'utilise systématiquement dans les scripts, qu'on peut relancer sans erreur.
+
+### des fichiers vides : touch
+
+```bash
+touch notes.txt
+```
+
+`touch` crée un fichier vide s'il n'existe pas. S'il existe, il ne touche pas au contenu mais **met à jour sa date de modification** à maintenant. C'est d'ailleurs son rôle premier : des outils de compilation et de synchronisation décident quoi refaire d'après les dates, et `touch` sert à forcer ou éviter ces actions. On peut aussi fixer une date précise avec `-d`.
+
+## copier : cp
+
+La forme de base copie une source vers une destination :
+
+```bash
+cp rapport.txt rapport-copie.txt
+```
+
+Si la destination est un **répertoire existant**, la copie y est placée avec le même nom :
+
+```bash
+cp rapport.txt archives/
+```
+
+Et on peut copier plusieurs sources dans un répertoire en une fois : `cp a.txt b.txt c.txt archives/`.
+
+### copier un répertoire
+
+`cp` refuse de copier un répertoire sans l'option `-r` (*récursif*) :
+
+```bash
+cp -r site/ site-sauvegarde/
+```
+
+### conserver les attributs : -a
+
+Une copie ordinaire crée un fichier **neuf** : il appartient à celui qui copie, a la date du moment et des permissions recalculées. Pour une sauvegarde, c'est souvent faux : on veut garder le propriétaire, les droits, les dates, les liens. C'est l'option `-a` (*archive*), qui inclut `-r` :
+
+```bash
+sudo cp -a /etc /sauvegardes/etc-2026-09-27
+```
+
+Avec `-a`, la copie est fidèle. Sans, restaurer la sauvegarde remettrait des fichiers aux mauvais droits et aux mauvaises dates.
+
+### ne pas écraser par accident
+
+C'est le comportement de `cp` qui surprend le plus : **si la destination existe, elle est écrasée sans prévenir**. Trois options changent cela :
+
+| Option | Effet |
+| --- | --- |
+| `-i` | Demander confirmation avant d'écraser (*interactive*) |
+| `-n` | Ne jamais écraser un fichier existant (*no clobber*) |
+| `-u` | N'écraser que si la source est plus récente (*update*) |
+| `-v` | Afficher chaque copie effectuée (*verbose*) |
+| `--backup` | Garder une copie de l'ancienne destination, suffixée par `~` |
+
+```bash
+cp -iv nouveau.conf /etc/app/app.conf
+```
+
+```text
+cp: overwrite '/etc/app/app.conf'? n
+```
+
+<Callout type="info">
+Sur certaines distributions de la famille Red Hat, le `.bashrc` de root contient des alias `cp='cp -i'`, `mv='mv -i'` et `rm='rm -i'`. Debian et Ubuntu ne le font pas. Ne compte pas sur ces alias : ils n'existent pas dans les scripts, ni sur une autre machine. Ajoute toi-même `-i` ou `-n` quand l'écrasement serait grave.
+</Callout>
+
+## déplacer et renommer : mv
+
+`mv` sert aux deux, parce que pour le système c'est la même opération : changer le chemin d'un fichier.
+
+```bash
+mv brouillon.txt rapport.txt     # renommer
+mv rapport.txt archives/         # déplacer dans un répertoire
+mv *.log anciens-journaux/       # déplacer plusieurs fichiers
+```
+
+Contrairement à `cp`, `mv` n'a pas besoin de `-r` pour un répertoire : il déplace tout le répertoire d'un coup. Et comme `cp`, il **écrase sans prévenir** une destination existante ; les mêmes `-i`, `-n` et `-v` s'appliquent.
+
+### pourquoi un déplacement est parfois instantané
+
+Déplacer un fichier de 50 Go prend parfois un millième de seconde, et parfois vingt minutes. La différence tient au système de fichiers.
+
+<Diagram caption="Ce que fait vraiment mv">
+flowchart TD
+  A["mv source destination"] --> B["Même système de fichiers ?"]
+  B -->|"Oui"| C["Renommage : on change seulement l'entrée du répertoire. Instantané, quelle que soit la taille"]
+  B -->|"Non (autre disque, autre partition)"| D["Copie complète des données, puis suppression de la source. Aussi long qu'une copie"]
+</Diagram>
+
+Sur le même système de fichiers, les données ne bougent pas : seul le nom, dans le répertoire, change. C'est aussi **atomique** : à tout instant, le fichier existe soit sous l'ancien nom, soit sous le nouveau, jamais à moitié. Beaucoup de logiciels en profitent pour écrire un fichier de configuration en toute sécurité : ils écrivent une copie temporaire, puis la renomment par-dessus l'originale.
+
+Entre deux systèmes de fichiers, `mv` doit copier toutes les données, puis supprimer la source. Si l'opération est interrompue au milieu, tu peux te retrouver avec une copie partielle.
+
+### le piège du répertoire absent
+
+```bash
+mv rapport.txt archive
+```
+
+Si `archive/` existe, `rapport.txt` y est déplacé. S'il n'existe pas, `rapport.txt` est **renommé** en `archive`, un fichier. Aucune erreur. Pour lever l'ambiguïté, termine le nom de destination par une barre oblique : `mv rapport.txt archive/` échoue proprement si le répertoire n'existe pas.
+
+## bien nommer ce qu'on crée
+
+Linux accepte presque tout dans un nom de fichier : espaces, accents, caractères spéciaux, et même des retours à la ligne. Ce n'est pas une raison pour s'en servir. Chaque caractère particulier devra être protégé à chaque commande (module 1, leçon 3), et un seul oubli dans un script suffit à le casser. Quelques règles qui évitent des heures de débogage :
+
+- **pas d'espace** : `rapport-final.txt` ou `rapport_final.txt`, pas `rapport final.txt` ;
+- **pas de tiret en premier caractère** : un nom comme `-v` sera pris pour une option ;
+- **des minuscules** : Linux distingue `Rapport.txt` et `rapport.txt`, qui peuvent coexister dans le même répertoire, alors que Windows et macOS les confondent. Des fichiers copiés d'un système à l'autre peuvent donc s'écraser mutuellement ;
+- **pas d'accents ni de caractères spéciaux** (`*`, `?`, `$`, `&`, `;`) dans les noms qui passeront par des scripts ;
+- **des dates au format année-mois-jour** : `sauvegarde-2026-09-27` se trie tout seul dans l'ordre chronologique avec `ls`, là où `27-09-2026` se trie n'importe comment.
+
+## copier beaucoup, ou à distance : un mot sur rsync
+
+`cp` suffit pour des copies locales ponctuelles. Dès qu'il s'agit de gros volumes, de copies répétées ou d'une autre machine, on passe à `rsync`, que tu étudieras au module 10. Son principe : ne copier que ce qui a changé depuis la dernière fois. Relancer `rsync -a source/ destination/` après une interruption reprend là où la copie s'était arrêtée, au lieu de tout recommencer, et une sauvegarde quotidienne ne transfère que les fichiers modifiés dans la journée. `rsync -a` conserve les mêmes attributs que `cp -a`.
+
+## supprimer : rm et rmdir
+
+```bash
+rm ancien.txt
+```
+
+**Il n'y a pas de corbeille.** Un fichier supprimé avec `rm` n'est pas déplacé quelque part : son entrée disparaît, et l'espace qu'il occupait sera réutilisé. La récupération est parfois possible avec des outils spécialisés, jamais garantie, et d'autant moins probable que le disque continue de travailler.
+
+- `rmdir rep` supprime un répertoire **vide**, et refuse sinon. C'est une sécurité appréciable : il ne peut rien détruire par surprise.
+- `rm -r rep` supprime un répertoire **et tout son contenu**, récursivement.
+- `rm -f` (*force*) ne demande jamais rien et ne se plaint pas des fichiers absents.
+
+`rm -rf` combine les deux : tout, sans confirmation, sans message. C'est la commande la plus dangereuse que tu taperas régulièrement.
+
+### les options qui protègent
+
+| Option | Effet |
+| --- | --- |
+| `-i` | Confirmation pour **chaque** fichier |
+| `-I` | Une seule confirmation si on supprime plus de trois fichiers ou récursivement |
+| `-v` | Afficher chaque suppression |
+| `--one-file-system` | Ne pas descendre dans d'autres systèmes de fichiers montés dedans |
+
+`-I` est un bon compromis au quotidien : `rm -rI vieux-projet/` demande une seule fois `rm: descend into directory 'vieux-projet'?` avant de tout supprimer.
+
+<Callout type="danger">
+Le cas classique de destruction totale vient d'un script : `rm -rf "$DOSSIER/"`. Si `DOSSIER` est vide, parce qu'une étape précédente a échoué ou qu'il y a une faute de frappe dans son nom, la commande devient `rm -rf "/"`. GNU `rm` refuse aujourd'hui de supprimer `/` lui-même (`--preserve-root`, actif par défaut), mais `rm -rf "$DOSSIER/"*` n'est pas protégé et vide la racine. En bash, écris `"${DOSSIER:?}"` : si la variable est vide, bash s'arrête avec une erreur au lieu d'exécuter la commande. Tu le reverras au module 7.
+</Callout>
+
+### le réflexe avant de supprimer
+
+Avant tout `rm` avec un joker ou un `-r`, **remplace `rm` par `ls`** et regarde ce qui s'affiche :
+
+```bash
+ls /var/log/app/*.log.1
+```
+
+Si la liste est exactement ce que tu voulais supprimer, rappelle la commande avec la flèche du haut (module 1), remplace `ls` par `rm`, et valide. Tu supprimes ainsi ce que tu as vu, et rien d'autre.
+
+## démonstration : réorganiser un répertoire de projet
+
+Un répertoire de travail en désordre, à remettre d'aplomb sans rien perdre.
+
+```bash
+ls -l ~/site
+```
+
+```text
+-rw-r--r-- 1 alice alice  2048 sept. 20 10:12 index.html
+-rw-r--r-- 1 alice alice  2011 sept. 18 16:40 index-old.html
+-rw-r--r-- 1 alice alice 81920 sept. 20 10:15 logo.png
+-rw-r--r-- 1 alice alice  4410 sept. 20 10:14 style.css
+-rw-r--r-- 1 alice alice    30 sept. 12 09:01 test.tmp
+```
+
+**1. Une sauvegarde fidèle d'abord**, avec `-a` pour tout conserver :
+
+```bash
+cp -a ~/site ~/site-sauvegarde-2026-09-27
+```
+
+**2. L'arborescence cible, en une commande**, avec `-p` :
+
+```bash
+mkdir -p ~/site/assets/css ~/site/assets/images ~/site/archives
+```
+
+**3. Les déplacements, avec `-v` pour voir ce qui se passe et `-n` pour ne rien écraser :**
+
+```bash
+mv -nv ~/site/style.css ~/site/assets/css/
+mv -nv ~/site/logo.png ~/site/assets/images/
+mv -nv ~/site/index-old.html ~/site/archives/
+```
+
+```text
+renamed '/home/alice/site/style.css' -> '/home/alice/site/assets/css/style.css'
+renamed '/home/alice/site/logo.png' -> '/home/alice/site/assets/images/logo.png'
+renamed '/home/alice/site/index-old.html' -> '/home/alice/site/archives/index-old.html'
+```
+
+Le mot `renamed` le confirme : même système de fichiers, simple renommage.
+
+**4. La suppression, vérifiée avant :**
+
+```bash
+ls ~/site/*.tmp
+rm -v ~/site/test.tmp
+```
+
+Si tout est correct, la sauvegarde de l'étape 1 pourra être supprimée plus tard. D'ici là, elle ne coûte que de l'espace.
+
+## à toi de jouer
+
+Dans ton répertoire personnel, crée d'un coup l'arborescence `projet/docs/brouillons`, copie le fichier `plan.txt` dans `projet/docs/` en demandant confirmation s'il existe déjà, puis vérifie avec `ls` les fichiers `.tmp` du répertoire courant avant de les supprimer.
+
+<SimulatedTerminal shell="bash" title="Ranger sans rien perdre" expectedCommands={["mkdir -p projet/docs/brouillons", "cp -i plan.txt projet/docs/", "ls *.tmp", "rm *.tmp"]} hints={["mkdir avec l'option qui crée les répertoires intermédiaires.", "cp avec l'option qui demande confirmation avant d'écraser.", "Avant de supprimer avec un joker, on regarde ce qu'il désigne avec ls."]} commands={{ "ls": "cache.tmp  notes.txt  plan.txt  session.tmp", "mkdir projet/docs/brouillons": "mkdir: cannot create directory 'projet/docs/brouillons': No such file or directory", "mkdir -p projet/docs/brouillons": "", "cp -i plan.txt projet/docs/": "", "cp plan.txt projet/docs/": "", "ls projet/docs": "brouillons  plan.txt", "ls *.tmp": "cache.tmp  session.tmp", "rm *.tmp": "", "rm -v *.tmp": "removed 'cache.tmp'\nremoved 'session.tmp'", "rmdir projet": "rmdir: failed to remove 'projet': Directory not empty" }} />
+
+Essaie aussi `mkdir projet/docs/brouillons` sans `-p` pour voir l'erreur, et `rmdir projet` pour constater que `rmdir` refuse un répertoire non vide.
+
+## les pièges
+
+- **Croire que `cp` et `mv` préviennent.** Par défaut, ils écrasent la destination en silence. `-i` ou `-n` quand c'est important.
+- **Sauvegarder avec `cp -r` au lieu de `cp -a`.** La copie perd propriétaires, droits et dates.
+- **`mv fichier nom` vers un répertoire qui n'existe pas.** Le fichier est renommé. Termine les répertoires de destination par `/`.
+- **`rm -rf` avec une variable.** Une variable vide et la commande vise la racine. `"${VAR:?}"` dans les scripts.
+- **Supprimer avec un joker sans regarder.** `ls` d'abord, `rm` ensuite, sur la même ligne rappelée.
+- **Compter sur une corbeille.** Il n'y en a pas en ligne de commande. Une sauvegarde est la seule garantie.
+- **Interrompre un `mv` entre deux disques.** C'est une copie suivie d'une suppression : une interruption peut laisser des données partielles.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/cp-invocation.html" description="Toutes les options de cp, dont -a, -n, -u et --backup">GNU coreutils : cp</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/mv-invocation.html" description="Le comportement de mv, dont les déplacements entre systèmes de fichiers">GNU coreutils : mv</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/rm-invocation.html" description="Les options de rm et la protection de la racine">GNU coreutils : rm</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle commande crée projets/site/css même si projets n'existe pas encore ?" options={["mkdir projets/site/css", "mkdir -p projets/site/css", "touch projets/site/css", "mkdir -r projets/site/css"]} correct={1} explanation="-p crée tous les répertoires intermédiaires manquants, et ne signale pas d'erreur si le répertoire existe déjà." />
+  <Quiz id="q-2" question="Tu sauvegardes /etc avant une mise à jour. Pourquoi utiliser cp -a plutôt que cp -r ?" options={["Parce que -a est plus rapide", "Parce que -a conserve propriétaires, droits, dates et liens", "Parce que -r ne copie pas les sous-répertoires", "Parce que -a compresse la copie"]} correct={1} explanation="Une copie ordinaire crée des fichiers neufs, appartenant à celui qui copie et datés du moment. -a produit une copie fidèle, restaurable telle quelle." />
+  <Quiz id="q-3" question="La destination d'un cp existe déjà. Que se passe-t-il par défaut ?" options={["cp demande confirmation", "cp refuse et affiche une erreur", "La destination est écrasée sans avertissement", "cp crée une copie nommée avec un numéro"]} correct={2} explanation="C'est le comportement par défaut de cp et de mv. Les options -i (confirmer) et -n (ne jamais écraser) le changent." />
+  <Quiz id="q-4" question="Pourquoi déplacer un fichier de 40 Go dans le même système de fichiers est-il instantané ?" options={["Parce que mv compresse le fichier", "Parce que seule l'entrée du répertoire change : les données ne bougent pas", "Parce que mv travaille en arrière-plan", "Parce que le fichier est copié en mémoire"]} correct={1} explanation="Sur le même système de fichiers, mv est un simple renommage. Entre deux systèmes de fichiers, il doit copier les données puis supprimer la source." />
+  <Quiz id="q-5" question="Le répertoire archive n'existe pas. Que fait mv rapport.txt archive ?" options={["Il échoue avec une erreur", "Il crée le répertoire archive et y range le fichier", "Il renomme rapport.txt en un fichier nommé archive", "Il ne fait rien"]} correct={2} explanation="Sans répertoire de ce nom, la destination est prise pour un nouveau nom de fichier. Écrire archive/ avec la barre finale ferait échouer la commande proprement." />
+  <Quiz id="q-6" question="Quel est le bon réflexe avant rm /var/tmp/app-*.cache ?" options={["Ajouter -f pour éviter les questions", "Lancer d'abord ls /var/tmp/app-*.cache pour voir ce que le joker désigne", "Redémarrer le service", "Ajouter sudo par sécurité"]} correct={1} explanation="ls avec le même motif montre exactement les fichiers visés. Ensuite, on rappelle la ligne et on remplace ls par rm." />
+  <Quiz id="q-7" question="Dans un script, pourquoi écrire rm -rf ${DOSSIER:?}/ plutôt que rm -rf $DOSSIER/ ?" options={["Pour que la commande soit plus rapide", "Pour que bash s'arrête avec une erreur si DOSSIER est vide, au lieu de viser la racine", "Pour supprimer aussi les fichiers cachés", "Pour demander une confirmation"]} correct={1} explanation="Avec :?, une variable vide ou absente provoque une erreur et la commande n'est pas exécutée. Sans cela, une variable vide transforme la cible en /." />
+</QuizGroup>
+
+## à retenir
+
+- `mkdir -p` crée toute une arborescence ; `touch` crée un fichier vide ou met sa date à jour.
+- `cp` copie, `cp -r` un répertoire, **`cp -a` pour une sauvegarde fidèle**.
+- `mv` déplace et renomme : instantané sur le même système de fichiers, copie puis suppression sinon.
+- `cp` et `mv` **écrasent sans prévenir** : `-i` pour confirmer, `-n` pour ne jamais écraser, `-v` pour voir.
+- `rm` est définitif, sans corbeille. `rmdir` pour un répertoire vide, `rm -r` pour un répertoire plein, `-I` pour une confirmation unique.
+- Avant un `rm` avec joker : `ls` d'abord. Dans un script : `"${VAR:?}"`.
