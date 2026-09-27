@@ -143,34 +143,6 @@ function toResult(r: {
   };
 }
 
-/** 5 magic link requests per email per 10 minutes. */
-export async function checkMagicLinkPerEmail(email: string): Promise<RateLimitResult> {
-  if (IS_DEV) return PASS_THROUGH;
-  const limiter = getLimiter(
-    "ml:email",
-    (r) =>
-      new Ratelimit({
-        redis: r,
-        limiter: Ratelimit.slidingWindow(5, "10 m"),
-        prefix: "rl:ml:email",
-      }),
-  );
-  if (!limiter) return PASS_THROUGH;
-  return toResult(await limiter.limit(pseudonymize(email.trim().toLowerCase())));
-}
-
-/** 20 magic link requests per IP per 10 minutes (burst/enumeration protection). */
-export async function checkMagicLinkPerIp(rawIp: string): Promise<RateLimitResult> {
-  if (IS_DEV) return PASS_THROUGH;
-  const limiter = getLimiter(
-    "ml:ip",
-    (r) =>
-      new Ratelimit({ redis: r, limiter: Ratelimit.slidingWindow(20, "10 m"), prefix: "rl:ml:ip" }),
-  );
-  if (!limiter) return PASS_THROUGH;
-  return toResult(await limiter.limit(pseudonymize(rawIp)));
-}
-
 /** 3 contact form submissions per IP per 10 minutes. */
 export async function checkContactForm(rawIp: string): Promise<RateLimitResult> {
   if (IS_DEV) return PASS_THROUGH;

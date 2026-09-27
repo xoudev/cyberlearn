@@ -122,6 +122,11 @@ deploying; an old or already-used code cannot be reused.
 
 ### Legacy mobile builds
 
-`/api/mobile/send-otp` and the web implicit-token confirmation route remain
-temporarily available for already-installed mobile builds. New clients do not
-link to them. Remove both after the supported legacy build window has ended.
+The web implicit-token confirmation route remains temporarily available for
+already-installed mobile builds. New clients do not link to it. Remove it after
+the supported legacy build window has ended.
+
+`/api/mobile/send-otp`, the legacy sign-in code route, was removed on
+27 September 2026. No build in use called it any more, and it was an
+unauthenticated endpoint holding the service-role key that mailed a sign-in
+code to any address it was given.

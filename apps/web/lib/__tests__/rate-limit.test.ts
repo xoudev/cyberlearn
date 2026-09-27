@@ -84,8 +84,6 @@ vi.mock("@upstash/ratelimit", () => {
 // ── Import after mocks ───────────────────────────────────────────────────────
 // Dynamic import ensures the mock is registered before the module initialises.
 const {
-  checkMagicLinkPerEmail,
-  checkMagicLinkPerIp,
   checkContactForm,
   checkQaSubmission,
   checkHintReveal,
@@ -106,42 +104,6 @@ function uid(): string {
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe("checkMagicLinkPerEmail - 5 / 10 min", () => {
-  it("allows first 5 requests", async () => {
-    const email = `${uid()}@example.com`;
-    for (let i = 0; i < 5; i++) {
-      const r = await checkMagicLinkPerEmail(email);
-      expect(r.success).toBe(true);
-    }
-  });
-
-  it("blocks the 6th request and returns retryAfterSeconds > 0", async () => {
-    const email = `${uid()}@example.com`;
-    for (let i = 0; i < 5; i++) await checkMagicLinkPerEmail(email);
-    const r = await checkMagicLinkPerEmail(email);
-    expect(r.success).toBe(false);
-    expect(r.retryAfterSeconds).toBeGreaterThan(0);
-  });
-});
-
-describe("checkMagicLinkPerIp - 20 / 10 min", () => {
-  it("allows first 20 requests", async () => {
-    const ip = uid();
-    for (let i = 0; i < 20; i++) {
-      const r = await checkMagicLinkPerIp(ip);
-      expect(r.success).toBe(true);
-    }
-  });
-
-  it("blocks the 21st request", async () => {
-    const ip = uid();
-    for (let i = 0; i < 20; i++) await checkMagicLinkPerIp(ip);
-    const r = await checkMagicLinkPerIp(ip);
-    expect(r.success).toBe(false);
-    expect(r.retryAfterSeconds).toBeGreaterThan(0);
-  });
-});
 
 describe("checkContactForm - 3 / 10 min", () => {
   it("allows first 3 requests", async () => {
@@ -215,38 +177,16 @@ describe("checkDataExport - 1 / 24h", () => {
 });
 
 describe("isolation - different identifiers don't share counters", () => {
-  it("two emails have independent counters", async () => {
-    const emailA = `${uid()}@example.com`;
-    const emailB = `${uid()}@example.com`;
-    for (let i = 0; i < 5; i++) await checkMagicLinkPerEmail(emailA);
-    // emailA is now blocked
-    const blockedA = await checkMagicLinkPerEmail(emailA);
+  it("two addresses have independent counters", async () => {
+    const ipA = uid();
+    const ipB = uid();
+    for (let i = 0; i < 3; i++) await checkContactForm(ipA);
+    // ipA is now blocked
+    const blockedA = await checkContactForm(ipA);
     expect(blockedA.success).toBe(false);
-    // emailB is untouched
-    const passB = await checkMagicLinkPerEmail(emailB);
+    // ipB is untouched
+    const passB = await checkContactForm(ipB);
     expect(passB.success).toBe(true);
-  });
-});
-
-describe("email case normalization - bypass prevention", () => {
-  it("Jordan@EXAMPLE.com and jordan@example.com share the same counter", async () => {
-    const base = uid();
-    const emailMixed = `Jordan-${base}@EXAMPLE.com`;
-    const emailLower = `jordan-${base}@example.com`;
-    // Exhaust the limit using mixed-case
-    for (let i = 0; i < 5; i++) await checkMagicLinkPerEmail(emailMixed);
-    // Lowercase variant must see the same exhausted counter
-    const r = await checkMagicLinkPerEmail(emailLower);
-    expect(r.success).toBe(false);
-  });
-
-  it("trailing whitespace does not create a separate counter", async () => {
-    const base = uid();
-    const emailClean = `user-${base}@example.com`;
-    const emailPadded = `  user-${base}@example.com  `;
-    for (let i = 0; i < 5; i++) await checkMagicLinkPerEmail(emailClean);
-    const r = await checkMagicLinkPerEmail(emailPadded);
-    expect(r.success).toBe(false);
   });
 });
 
@@ -254,16 +194,12 @@ describe("getSalt() - missing or invalid IP_SALT throws", () => {
   // Temporarily override IP_SALT per test; restore afterward so other suites are unaffected
   it("throws when IP_SALT is not set", async () => {
     vi.stubEnv("IP_SALT", "");
-    await expect(checkMagicLinkPerEmail("probe@example.com")).rejects.toThrow(
-      "IP_SALT must be set",
-    );
+    await expect(checkContactForm("203.0.113.9")).rejects.toThrow("IP_SALT must be set");
   });
 
   it("throws when IP_SALT is shorter than 32 chars", async () => {
     vi.stubEnv("IP_SALT", "tooshort");
-    await expect(checkMagicLinkPerEmail("probe@example.com")).rejects.toThrow(
-      "IP_SALT must be set",
-    );
+    await expect(checkContactForm("203.0.113.9")).rejects.toThrow("IP_SALT must be set");
   });
 
   afterEach(() => {
