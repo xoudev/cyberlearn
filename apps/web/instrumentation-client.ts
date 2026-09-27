@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { SENTRY_DATA_COLLECTION } from "@/lib/sentry/data-collection";
 import { filterBreadcrumb, scrubEvent } from "@/lib/sentry/scrub-event";
 
 Sentry.init({
@@ -7,6 +8,9 @@ Sentry.init({
 
   // Init only when DSN is configured; no-op in local dev without .env.local.
   enabled: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
+
+  // Sentry 11 collects bodies, cookies and IPs unless told not to: see data-collection.ts.
+  dataCollection: SENTRY_DATA_COLLECTION,
 
   // 10% of transactions in prod; none in dev (reduces noise and quota).
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,

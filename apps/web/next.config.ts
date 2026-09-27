@@ -1,6 +1,6 @@
 import path from "path";
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { loadRootEnv } from "../../scripts/load-root-env.mjs";
 
 // Load the monorepo-root .env files so NEXT_PUBLIC_* vars are inlined at build
@@ -151,11 +151,13 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
   },
-  // Remove Sentry logger statements from the production bundle
-  disableLogger: true,
   // Keep browser telemetry same-origin so privacy filters and Cloudflare's
   // ingest cookies cannot block or pollute client-side error reporting.
   tunnelRoute: "/monitoring",
-  // Don't auto-create Vercel Cron monitors (we manage cron separately)
-  automaticVercelMonitors: false,
+  webpack: {
+    // Remove Sentry logger statements from the production bundle
+    treeshake: { removeDebugLogging: true },
+    // Don't auto-create Vercel Cron monitors (we manage cron separately)
+    automaticVercelMonitors: false,
+  },
 });
