@@ -1,0 +1,199 @@
+---
+refCode: CL-LSN-01004-V01
+slug: fondamentaux-le-stockage
+title: "Le stockage : disques durs et SSD"
+description: "Où vivent les données quand l'ordinateur est éteint : le disque dur et ses plateaux, le SSD et sa mémoire flash, SATA et NVMe, la hiérarchie des mémoires et ses ordres de grandeur, et ce que veut vraiment dire supprimer un fichier."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 220
+prerequisites: ["CL-LSN-01003-V01"]
+---
+
+La mémoire vive oublie tout à l'extinction. Il faut donc un autre endroit, permanent, pour garder le système d'exploitation, les programmes, les documents, les photos : le **stockage**. Pendant des décennies, c'était un disque qui tourne ; aujourd'hui, c'est le plus souvent une puce de mémoire flash. Les deux ne fonctionnent pas du tout de la même façon, et cette différence a des conséquences sur la vitesse, sur la durée de vie, et même sur la façon d'effacer des données confidentielles.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le fonctionnement d'un disque dur et d'un SSD, et leurs points forts respectifs ;
+- distinguer les interfaces SATA et NVMe ;
+- situer registres, cache, mémoire vive, SSD, disque dur et réseau dans la **hiérarchie des mémoires**, avec leurs ordres de grandeur ;
+- expliquer ce qui se passe réellement quand on supprime un fichier ;
+- dire pourquoi l'effacement sécurisé et le chiffrement du stockage comptent.
+
+## pourquoi ça compte
+
+Le stockage est l'endroit où les données **restent**. C'est donc là qu'elles se perdent (une panne de disque sans sauvegarde), qu'elles se volent (un ordinateur portable oublié dans un train, un disque jeté sans être effacé) et qu'elles se retrouvent (un enquêteur qui récupère des fichiers supprimés). Comprendre comment un fichier est réellement écrit et effacé permet de protéger ce qui doit l'être, et de ne pas croire effacé ce qui ne l'est pas.
+
+Pour un administrateur, c'est aussi une question de performance : une base de données sur un disque dur ou sur un SSD NVMe, c'est parfois un facteur cent sur le temps de réponse d'une application.
+
+## le disque dur
+
+Le **disque dur** (HDD, *Hard Disk Drive*) stocke les données sur des **plateaux** recouverts d'une couche magnétique, qui tournent très vite, typiquement 5 400 ou 7 200 tours par minute. Une **tête de lecture**, montée sur un bras, se déplace au-dessus des plateaux, à quelques nanomètres de leur surface, pour lire et écrire.
+
+Pour lire une donnée, le disque doit **déplacer le bras** jusqu'à la bonne piste, puis **attendre que la bonne zone passe sous la tête**. Ces deux mouvements mécaniques prennent, en moyenne, quelques millisecondes. C'est une éternité pour un processeur, et cela pénalise surtout les accès **dispersés** : lire mille petits fichiers éparpillés est bien plus lent que lire un gros fichier d'un seul tenant.
+
+Ses atouts : un **coût au gigaoctet très bas** et de très grandes capacités (plus de 20 To par disque). Ses faiblesses : la lenteur des accès dispersés, la sensibilité aux chocs (une tête qui touche le plateau abîme les données), le bruit et la consommation.
+
+## le SSD
+
+Le **SSD** (*Solid State Drive*) n'a **aucune pièce mobile**. Il stocke les données dans de la **mémoire flash**, des puces électroniques qui conservent leur contenu sans alimentation, un peu comme une clé USB, en beaucoup plus rapide. Il n'y a ni bras à déplacer ni plateau à attendre : lire une donnée, où qu'elle soit, prend quelques dizaines de microsecondes.
+
+La mémoire flash a une particularité qui explique beaucoup de choses : on ne peut pas y **réécrire** une case directement. Il faut d'abord **effacer** tout un bloc, puis l'écrire, et chaque bloc ne supporte qu'un nombre limité d'effacements. Le SSD a donc son propre **contrôleur**, un petit ordinateur avec son micrologiciel, qui :
+
+- **répartit** les écritures sur toutes les puces pour les user uniformément ;
+- écrit les nouvelles versions des données **ailleurs**, et marque les anciennes comme obsolètes ;
+- **nettoie** en arrière-plan les blocs obsolètes pour les rendre à nouveau utilisables.
+
+Ses atouts : la **vitesse**, surtout sur les accès dispersés, la résistance aux chocs, le silence, la faible consommation. Ses faiblesses : un coût au gigaoctet plus élevé, et une usure limitée, largement suffisante pour un usage normal, mais à surveiller pour des serveurs qui écrivent beaucoup.
+
+## SATA et NVMe
+
+Un stockage se branche à la carte mère par une **interface**, qui limite aussi sa vitesse.
+
+| Interface | Principe | Débit typique | Pour |
+| --- | --- | --- | --- |
+| **SATA** | Conçue pour les disques durs, dans les années 2000 | Environ 550 Mo/s au maximum | Disques durs, SSD d'entrée de gamme |
+| **NVMe** | Conçue pour la mémoire flash, sur le bus PCIe | De 3 000 à plus de 10 000 Mo/s | SSD rapides, format M.2 le plus souvent |
+
+Un SSD SATA est limité par son interface : il ne peut pas dépasser environ 550 Mo/s, même si ses puces le pourraient. Un SSD NVMe communique directement sur le bus PCIe, que tu verras dans la leçon sur la carte mère, et va plusieurs fois plus vite. Sous Linux, un disque SATA apparaît sous le nom `/dev/sda`, un SSD NVMe sous le nom `/dev/nvme0n1`.
+
+## la hiérarchie des mémoires
+
+Tu connais maintenant tous les étages où une donnée peut se trouver. Ils forment une **hiérarchie** : plus on s'éloigne du processeur, plus c'est grand, bon marché et permanent, mais aussi plus lent.
+
+<Diagram caption="La hiérarchie des mémoires, du plus rapide au plus lent">
+flowchart TD
+  A["Registres : moins d'une nanoseconde"] --> B["Cache L1, L2, L3 : de 1 à quelques dizaines de nanosecondes"]
+  B --> C["Mémoire vive : environ 100 nanosecondes"]
+  C --> D["SSD NVMe : quelques dizaines de microsecondes"]
+  D --> E["Disque dur : quelques millisecondes"]
+  E --> F["Réseau vers un autre continent : environ 100 millisecondes"]
+</Diagram>
+
+Ces chiffres sont abstraits. Une façon classique de les rendre parlants est d'imaginer qu'une nanoseconde dure **une seconde** :
+
+| Opération | Durée réelle | Si 1 ns durait 1 s |
+| --- | --- | --- |
+| Lire un registre | Moins de 1 ns | Moins d'une seconde |
+| Lire en cache L1 | Environ 1 ns | Une seconde |
+| Lire en mémoire vive | Environ 100 ns | Presque deux minutes |
+| Lire sur un SSD NVMe | Environ 20 à 100 µs | De 6 heures à plus d'une journée |
+| Lire sur un disque dur | Environ 5 à 10 ms | De 2 à 4 mois |
+| Aller-retour réseau transatlantique | Environ 80 ms | Environ 2 ans et demi |
+
+Ces valeurs sont des ordres de grandeur, qui varient selon le matériel. Mais les rapports entre elles, eux, sont stables et expliquent l'essentiel des performances d'un système : **chaque étage est de dix à mille fois plus lent que le précédent**. C'est pour cela qu'on multiplie les caches, que les bases de données gardent le plus possible en mémoire vive, et qu'un site web lent l'est bien plus souvent à cause d'accès disque ou réseau qu'à cause du processeur.
+
+## ce que veut dire « supprimer »
+
+Quand tu supprimes un fichier et que tu vides la corbeille, le système d'exploitation ne passe pas sur le disque pour effacer ses données. Il fait beaucoup moins : il retire le fichier de la liste des fichiers et marque son emplacement comme **libre**, réutilisable. Les données, elles, restent en place **jusqu'à ce qu'autre chose soit écrit dessus**.
+
+<Diagram caption="Supprimer n'est pas effacer">
+flowchart LR
+  A["Fichier supprimé"] --> B["Retiré de la liste des fichiers"]
+  B --> C["Emplacement marqué libre"]
+  C --> D["Les données sont toujours là, jusqu'à être écrasées"]
+</Diagram>
+
+C'est ce qui permet aux outils de **récupération** de retrouver des fichiers supprimés par erreur, et aux **enquêteurs** de retrouver des fichiers qu'un suspect croyait avoir fait disparaître. C'est aussi pourquoi un disque vendu ou jeté sans précaution peut livrer des données confidentielles à son nouveau propriétaire.
+
+Sur un SSD, la situation est différente et plus difficile à maîtriser : le contrôleur déplace les données à sa guise, et le système signale les zones libérées au SSD (commande **TRIM**), qui les efface ensuite lui-même. Les données supprimées disparaissent donc souvent plus vite que sur un disque dur, mais on ne peut pas **garantir** leur effacement en écrivant par-dessus depuis le système, puisque le contrôleur écrit ailleurs.
+
+## effacer vraiment, et chiffrer
+
+Pour se débarrasser d'un support qui a contenu des données sensibles, on ne se contente jamais de supprimer les fichiers ou de reformater :
+
+- pour un **disque dur**, un effacement complet en réécrivant toute sa surface ;
+- pour un **SSD**, la commande d'**effacement sécurisé** prévue par le fabricant, qui fait effacer toutes les puces par le contrôleur lui-même ;
+- pour des données très sensibles, la **destruction physique** du support.
+
+La meilleure protection reste de **chiffrer le stockage dès le départ** : BitLocker sous Windows, FileVault sous macOS, LUKS sous Linux, et le chiffrement intégré des téléphones. Les données sont alors illisibles sans la clé. Un portable volé ou un disque jeté ne livre rien, et pour effacer, il suffit de détruire la clé.
+
+<Callout type="warning">
+Le chiffrement du stockage ne protège que la machine **éteinte** (ou verrouillée selon les cas). Une fois le système démarré et la session ouverte, les données sont déchiffrées à la volée, et un programme malveillant qui tourne sur la machine les lit comme n'importe quel autre. Le chiffrement du disque protège contre le vol du matériel, pas contre une infection.
+</Callout>
+
+## démonstration : le stockage d'une machine Linux
+
+Sous Linux, `lsblk` liste les supports de stockage et leurs partitions, et `df -h` montre l'espace utilisé sur chacun.
+
+```bash
+lsblk -o NAME,SIZE,TYPE,ROTA,MOUNTPOINT
+```
+
+```text
+NAME        SIZE TYPE ROTA MOUNTPOINT
+nvme0n1   476.9G disk    0
+├─nvme0n1p1   1G part    0 /boot/efi
+└─nvme0n1p2 475.9G part  0 /
+sda         3.6T disk    1
+└─sda1      3.6T part    1 /srv/archives
+```
+
+Deux supports : un SSD NVMe de 477 Gio, qui contient le système, et un disque de 3,6 Tio, monté sur `/srv/archives`. La colonne `ROTA` (*rotational*) le confirme : 0 pour le SSD, 1 pour le disque dur, qui tourne. Un choix classique : le système et les données actives sur le SSD rapide, les archives volumineuses et rarement lues sur le disque dur, bien moins cher au téraoctet.
+
+## à toi de jouer
+
+Dans le terminal, liste les supports de stockage de ce serveur, puis l'espace utilisé sur chaque système de fichiers.
+
+<SimulatedTerminal shell="bash" title="Le stockage d'un serveur" expectedCommands={["lsblk -o NAME,SIZE,TYPE,ROTA,MOUNTPOINT", "df -h"]} hints={["lsblk avec l'option -o et la liste des colonnes à afficher.", "df avec l'option des tailles lisibles."]} commands={{ "lsblk -o NAME,SIZE,TYPE,ROTA,MOUNTPOINT": "NAME        SIZE TYPE ROTA MOUNTPOINT\nnvme0n1   476.9G disk    0\n├─nvme0n1p1   1G part    0 /boot/efi\n└─nvme0n1p2 475.9G part  0 /\nsda         3.6T disk    1\n└─sda1      3.6T part    1 /srv/archives", "lsblk": "NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS\nnvme0n1     259:0    0 476.9G  0 disk\n├─nvme0n1p1 259:1    0     1G  0 part /boot/efi\n└─nvme0n1p2 259:2    0 475.9G  0 part /\nsda           8:0    0   3.6T  0 disk\n└─sda1        8:1    0   3.6T  0 part /srv/archives", "df -h": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/nvme0n1p2  468G  121G  324G  28% /\n/dev/nvme0n1p1  1.0G  6.1M 1018M   1% /boot/efi\n/dev/sda1       3.6T  2.9T  551G  85% /srv/archives" }} />
+
+Ensuite, pour sentir les ordres de grandeur, complète ce petit programme : il convertit les durées réelles de la hiérarchie en durées « à l'échelle humaine », en supposant qu'une nanoseconde dure une seconde.
+
+<CodePlayground language="python" starterCode={`# Durées réelles, en nanosecondes (ordres de grandeur)
+operations = [
+    ("cache L1", 1),
+    ("mémoire vive", 100),
+    ("SSD NVMe", 50_000),
+    ("disque dur", 8_000_000),
+    ("réseau transatlantique", 80_000_000),
+]
+
+for nom, ns in operations:
+    secondes = ns  # si 1 ns durait 1 s
+    heures = secondes / 3600
+    jours = heures / 24
+    print(f"{nom:<24} {secondes:>12} s  ~ {jours:10.2f} jours")
+
+# À toi : ajoute la lecture d'un registre (0.5 ns) et une lecture en mémoire vive à 80 ns
+`} />
+
+Tu constates que le disque dur, à cette échelle, prend plus de trois mois, là où la mémoire vive répond en moins de deux minutes : c'est tout le sens de la hiérarchie.
+
+## les pièges
+
+- **Confondre stockage et mémoire vive.** Le SSD de 512 Go garde tes fichiers ; les 16 Gio de mémoire vive font tourner les programmes.
+- **Croire qu'un fichier supprimé est effacé.** Sur un disque dur, il reste en place jusqu'à être écrasé.
+- **Reformater un disque avant de le jeter ou de le vendre.** Les données restent récupérables. Effacement complet, effacement sécurisé du fabricant, ou destruction.
+- **Réécrire un SSD pour l'effacer.** Le contrôleur écrit ailleurs ; utilise l'effacement sécurisé.
+- **Penser que le chiffrement du disque protège d'un virus.** Il protège la machine éteinte, pas les données d'une session ouverte.
+- **Juger un stockage à sa capacité seule.** Un disque dur de 4 To et un SSD NVMe de 1 To ne jouent pas dans la même catégorie de vitesse.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications" description="Les guides et recommandations de l'ANSSI, à consulter pour le chiffrement et la fin de vie des supports">ANSSI : publications</ExternalLink>
+
+<ExternalLink href="https://www.cnil.fr/fr/securite-archiver-de-maniere-securisee" description="La CNIL sur la conservation et la destruction sécurisée des données">CNIL : archiver et détruire de manière sécurisée</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/lsblk.8.html" description="Lister les supports de stockage sous Linux">lsblk(8)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi un disque dur est-il lent pour lire beaucoup de petits fichiers dispersés ?" options={["Parce que sa mémoire flash s'use", "Parce qu'il doit déplacer un bras et attendre la rotation des plateaux pour chaque accès", "Parce qu'il est limité à 550 Mo/s", "Parce qu'il chiffre les données"]} correct={1} explanation="Chaque accès demande des mouvements mécaniques de quelques millisecondes. Un SSD, sans pièce mobile, n'a pas cette pénalité." />
+  <Quiz id="q-2" question="Quel est le rôle du contrôleur d'un SSD ?" options={["Refroidir les puces", "Répartir les écritures, gérer l'usure et nettoyer les blocs obsolètes", "Faire tourner les plateaux", "Chiffrer le réseau"]} correct={1} explanation="La mémoire flash impose d'effacer par blocs et s'use. Le contrôleur, avec son micrologiciel, gère ces contraintes." />
+  <Quiz id="q-3" question="Pourquoi un SSD SATA ne dépasse-t-il pas environ 550 Mo/s ?" options={["Parce que ses puces sont lentes", "Parce que l'interface SATA est limitée à ce débit", "Parce qu'il est plus vieux qu'un disque dur", "Parce qu'il n'a pas de cache"]} correct={1} explanation="SATA a été conçue pour les disques durs. Un SSD NVMe, sur le bus PCIe, va plusieurs fois plus vite." />
+  <Quiz id="q-4" question="Dans la hiérarchie des mémoires, lequel de ces accès est le plus lent ?" options={["Mémoire vive", "Cache L1", "Disque dur", "SSD NVMe"]} correct={2} explanation="Le disque dur, mécanique, répond en millisecondes, bien plus lentement que le SSD (microsecondes) et la mémoire vive (nanosecondes)." />
+  <Quiz id="q-5" question="Que se passe-t-il quand on supprime un fichier et qu'on vide la corbeille, sur un disque dur ?" options={["Ses données sont immédiatement effacées", "Il est retiré de la liste des fichiers et sa place est marquée libre, mais les données restent jusqu'à être écrasées", "Il est envoyé dans le cloud", "Il est chiffré"]} correct={1} explanation="C'est ce qui rend la récupération possible, et ce qui impose un vrai effacement avant de se débarrasser d'un disque." />
+  <Quiz id="q-6" question="Quelle est la meilleure protection des données d'un ordinateur portable contre le vol ?" options={["Un mot de passe de session seul", "Le chiffrement complet du stockage", "Supprimer ses fichiers régulièrement", "Un disque dur plutôt qu'un SSD"]} correct={1} explanation="Avec le chiffrement du stockage, un voleur qui extrait le disque ne peut rien lire sans la clé." />
+  <Quiz id="q-7" question="Pourquoi écrire des zéros sur tout un SSD ne garantit-il pas l'effacement de toutes les anciennes données ?" options={["Parce que les zéros ne sont pas des données", "Parce que le contrôleur écrit ailleurs et peut garder d'anciennes copies dans des blocs qu'on ne voit pas", "Parce que les SSD refusent d'écrire des zéros", "Parce que c'est trop lent"]} correct={1} explanation="Le contrôleur gère lui-même l'emplacement réel des données. Seul l'effacement sécurisé prévu par le fabricant agit sur toutes les puces." />
+</QuizGroup>
+
+## à retenir
+
+- Le **stockage** est **non volatile** : il garde les données sans courant. Disque dur (mécanique, grand, bon marché, lent) ou SSD (flash, rapide, sans pièce mobile).
+- **SATA** plafonne vers 550 Mo/s ; **NVMe**, sur PCIe, va plusieurs fois plus vite.
+- Hiérarchie : registres, cache, mémoire vive, SSD, disque dur, réseau. Chaque étage est de **dix à mille fois** plus lent que le précédent.
+- **Supprimer n'est pas effacer** : les données restent jusqu'à être écrasées, et restent récupérables.
+- Pour se débarrasser d'un support : effacement complet (disque dur), effacement sécurisé (SSD), ou destruction. Et **chiffrer** le stockage dès le départ.

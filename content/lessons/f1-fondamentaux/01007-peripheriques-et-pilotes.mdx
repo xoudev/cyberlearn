@@ -1,0 +1,237 @@
+---
+refCode: CL-LSN-01007-V01
+slug: fondamentaux-peripheriques-et-pilotes
+title: "Périphériques et pilotes"
+description: "Ce qu'est un pilote, pourquoi il tourne au cœur du système avec tous les privilèges, comment un périphérique est reconnu à son branchement, les modules du noyau Linux, les pilotes signés, et pourquoi un pilote vulnérable est une porte d'entrée de choix pour les attaquants."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 220
+prerequisites: ["CL-LSN-01006-V01"]
+---
+
+Il existe des milliers de modèles de cartes réseau, de cartes graphiques, d'imprimantes, de webcams et de contrôleurs de disque, chacun avec sa façon de fonctionner. Le système d'exploitation ne peut pas les connaître tous. Il délègue donc le dialogue avec chaque matériel à un petit programme spécialisé : le **pilote** (*driver*). Les pilotes sont indispensables, souvent invisibles, et très puissants, puisqu'ils fonctionnent au cœur du système. C'est ce qui en fait à la fois une source fréquente de pannes et une cible de choix pour les attaquants.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un pilote et pourquoi le système en a besoin ;
+- dire pourquoi un pilote fonctionne avec les privilèges du noyau, et ce que cela implique ;
+- décrire ce qui se passe quand on branche un périphérique ;
+- lister et identifier les pilotes chargés sur une machine Linux ;
+- expliquer le rôle de la signature des pilotes, et le risque des pilotes vulnérables.
+
+## pourquoi ça compte
+
+Pour un administrateur, les pilotes expliquent une grande partie des problèmes matériels : une carte réseau non reconnue, un écran en basse résolution, un plantage complet du système après une mise à jour. Savoir identifier quel pilote gère quel matériel, et en lire les messages, fait gagner des heures.
+
+En sécurité, un pilote est du code qui s'exécute **avec tous les droits**, au cœur du système. Un pilote malveillant peut tout voir et tout cacher ; un pilote légitime mais vulnérable peut servir de tremplin à un attaquant pour obtenir ces droits. Plusieurs familles de logiciels malveillants, dont des rançongiciels, installent volontairement un ancien pilote signé mais vulnérable pour désactiver les protections de la machine. On appelle cette technique *Bring Your Own Vulnerable Driver*.
+
+## le rôle d'un pilote
+
+Chaque matériel se pilote par des **commandes** qui lui sont propres : écrire telle valeur à telle adresse pour allumer la carte réseau, lire tel registre pour savoir si un paquet est arrivé. Le pilote traduit les demandes générales du système (« envoie ces données sur le réseau », « affiche cette image ») en commandes précises pour **son** matériel.
+
+<Diagram caption="Le pilote traduit entre le système et le matériel">
+flowchart TD
+  A["Application : envoie un message"] --> B["Système d'exploitation : demande générale, envoyer des données"]
+  B --> C["Pilote de la carte réseau : commandes propres à ce modèle"]
+  C --> D["Carte réseau"]
+</Diagram>
+
+Grâce à ce découpage, une application n'a pas besoin de savoir quelle carte réseau est installée : elle demande au système, qui passe par le bon pilote. Changer de carte réseau revient à changer de pilote, sans toucher aux applications.
+
+## au cœur du système : les privilèges du noyau
+
+Le système d'exploitation fonctionne sur deux niveaux de privilège, que le processeur fait respecter (tu les verras en détail au module 3) :
+
+- l'**espace utilisateur**, où tournent les applications, avec des droits limités ;
+- l'**espace noyau**, où tourne le cœur du système, avec **tous** les droits sur le matériel et la mémoire.
+
+La plupart des pilotes tournent dans l'**espace noyau**, parce qu'ils doivent parler directement au matériel et réagir très vite. Conséquences :
+
+- **un pilote défectueux peut faire tomber tout le système**, là où une application qui plante ne fait tomber qu'elle-même. Les fameux écrans bleus de Windows, et les *kernel panics* de Linux, viennent souvent d'un pilote ;
+- **un pilote malveillant a tous les pouvoirs** : lire la mémoire de n'importe quel programme, intercepter les frappes au clavier, se cacher de l'antivirus et de l'administrateur. C'est le principe des **rootkits** qui s'installent sous forme de pilote ;
+- **un pilote vulnérable est une élévation de privilèges** : si un programme ordinaire peut lui envoyer des demandes mal formées qu'il traite mal, il peut lui faire exécuter du code avec les droits du noyau.
+
+<Callout type="info">
+En juillet 2024, une mise à jour défectueuse d'un composant de sécurité fonctionnant comme un pilote sur Windows a fait planter des millions d'ordinateurs dans le monde, immobilisant des aéroports, des hôpitaux et des banques. L'incident n'était pas une attaque, mais il illustre parfaitement ce qu'implique un code qui tourne dans le noyau : une seule erreur, et c'est la machine entière qui tombe.
+</Callout>
+
+## brancher un périphérique : la reconnaissance automatique
+
+Quand tu branches une clé USB, tout se passe sans que tu aies rien à installer. Voici ce qui se produit :
+
+1. le contrôleur USB détecte un nouvel appareil et le signale au noyau ;
+2. le noyau interroge l'appareil, qui s'**identifie** : un code de fabricant, un code de produit, une **classe** (stockage de masse, clavier, audio...) ;
+3. le noyau cherche un pilote qui correspond à ces identifiants, et le charge s'il n'est pas déjà actif ;
+4. un gestionnaire de périphériques (**udev** sous Linux) crée l'entrée correspondante dans `/dev`, par exemple `/dev/sdb` pour un disque, et prévient le reste du système ;
+5. l'interface graphique monte le disque et l'affiche.
+
+<Diagram caption="De la prise USB au fichier de périphérique">
+flowchart LR
+  A["Branchement"] --> B["L'appareil s'identifie : fabricant, produit, classe"]
+  B --> C["Le noyau charge le pilote correspondant"]
+  C --> D["udev crée /dev/sdb"]
+  D --> E["Le disque est monté et affiché"]
+</Diagram>
+
+Tu reconnais les identifiants de la leçon sur les bus : c'étaient les deux nombres après `ID` dans la sortie de `lsusb`. C'est aussi ce mécanisme qui fait qu'une fausse clé USB se déclarant comme **clavier** reçoit sans discussion le pilote de clavier, et peut taper des commandes.
+
+## les modules du noyau Linux
+
+Sous Linux, la plupart des pilotes sont des **modules du noyau** : des morceaux de code qu'on charge et décharge sans redémarrer. Quelques commandes permettent de les observer.
+
+`lsmod` liste les modules chargés :
+
+```bash
+lsmod | head -6
+```
+
+```text
+Module                  Size  Used by
+iwlmvm                802816  0
+iwlwifi               548864  1 iwlmvm
+nvme                   57344  3
+nvme_core             217088  5 nvme
+usb_storage            86016  1
+```
+
+On y reconnaît le pilote Wi-Fi Intel (`iwlwifi`), le pilote des SSD NVMe (`nvme`) et celui des clés USB (`usb_storage`). La colonne *Used by* indique quels autres modules en dépendent.
+
+`lspci -k` fait le lien entre un matériel et son pilote :
+
+```bash
+lspci -k -s 02:00.0
+```
+
+```text
+02:00.0 Network controller: Intel Corporation Wi-Fi 6E(802.11ax) AX211 160MHz
+	Subsystem: Intel Corporation Device 0094
+	Kernel driver in use: iwlwifi
+	Kernel modules: iwlwifi
+```
+
+`modinfo` décrit un module, dont sa licence et sa signature :
+
+```bash
+modinfo iwlwifi | grep -E "^(description|license|signer)"
+```
+
+```text
+description:    Intel(R) Wireless WiFi driver for Linux
+license:        GPL
+signer:         Debian Secure Boot CA
+```
+
+Et `dmesg` affiche les messages du noyau, dont ceux des pilotes au moment où ils reconnaissent un matériel ou rencontrent une erreur :
+
+```bash
+sudo dmesg | grep -i usb | tail -3
+```
+
+```text
+[ 8123.402] usb 1-2: new high-speed USB device number 9 using xhci_hcd
+[ 8123.531] usb-storage 1-2:1.0: USB Mass Storage device detected
+[ 8124.587] sd 2:0:0:0: [sdb] 31266816 512-byte logical blocks: (16.0 GB/14.9 GiB)
+```
+
+Une clé de 16 Go vient d'être branchée, reconnue par le pilote `usb-storage`, et apparaît sous le nom `sdb`.
+
+### et sous Windows ?
+
+Le principe est identique, seuls les outils changent. Le **Gestionnaire de périphériques** (clic droit sur le menu Démarrer) affiche chaque matériel, classé par catégorie ; un appareil sans pilote apparaît avec un point d'exclamation jaune, sous « Autres périphériques ». Ses propriétés indiquent le pilote utilisé, sa version, son éditeur et sa signature. En ligne de commande, `pnputil /enum-drivers` liste les pilotes installés, et `driverquery` ceux qui sont chargés. Windows Update fournit la plupart des pilotes : c'est la source à privilégier, avant le site du fabricant, et bien avant n'importe quel site tiers.
+
+## pilotes signés et pilotes vulnérables
+
+Pour limiter les pilotes malveillants, les systèmes exigent de plus en plus que les pilotes soient **signés** :
+
+- **Windows** refuse de charger un pilote du noyau qui n'est pas signé par Microsoft, sur les versions 64 bits récentes ;
+- **Linux**, avec Secure Boot actif (leçon précédente), refuse les modules non signés par une clé de confiance ; c'est la ligne `signer` de `modinfo`.
+
+La signature garantit qu'un pilote vient d'un éditeur identifié et n'a pas été modifié. Elle ne garantit **pas** qu'il est sans défaut. D'où la technique décrite plus haut : un attaquant qui a déjà les droits d'administrateur installe un **ancien pilote, légitimement signé, mais vulnérable**, puis exploite sa faille pour exécuter son code dans le noyau et désactiver les protections. La parade consiste à tenir des **listes de pilotes interdits** (Microsoft en publie une, que Windows peut appliquer) et à maintenir ses pilotes à jour.
+
+<Callout type="warning">
+Installe les pilotes depuis la source officielle : le gestionnaire de paquets sous Linux, Windows Update ou le site du fabricant sous Windows. Un « pack de pilotes » téléchargé sur un site tiers pour faire marcher une carte récalcitrante est un moyen classique de faire entrer un logiciel malveillant, avec, par définition, les droits du noyau.
+</Callout>
+
+## le micrologiciel des périphériques
+
+Beaucoup de périphériques ont eux-mêmes un **micrologiciel** : SSD, cartes réseau, cartes Wi-Fi, webcams, claviers. Ce sont de petits ordinateurs dans l'ordinateur (leçon 1). Sous Linux, une partie de ces micrologiciels est chargée par le pilote au démarrage, depuis `/lib/firmware`, et fournie par des paquets dédiés. Ils ont leurs défauts et leurs mises à jour, comme les autres logiciels, et l'outil **fwupd** permet de mettre à jour sous Linux le micrologiciel de nombreux appareils, dont celui de la carte mère.
+
+## démonstration : une carte Wi-Fi qui ne fonctionne pas
+
+Un ordinateur portable sous Linux n'a pas de Wi-Fi. Démarche :
+
+**1. Le matériel est-il vu ?**
+
+```bash
+lspci -k | grep -A 3 -i network
+```
+
+```text
+02:00.0 Network controller: Intel Corporation Wi-Fi 6E(802.11ax) AX211 160MHz
+	Subsystem: Intel Corporation Device 0094
+	Kernel modules: iwlwifi
+```
+
+La carte est détectée sur le bus, et le système connaît le module qui lui correspond, mais la ligne `Kernel driver in use` **manque** : aucun pilote n'est actif.
+
+**2. Que dit le noyau ?**
+
+```bash
+sudo dmesg | grep -i iwlwifi
+```
+
+```text
+[    3.412] iwlwifi 0000:02:00.0: Direct firmware load for iwlwifi-so-a0-gf-a0-86.ucode failed with error -2
+```
+
+Le pilote s'est chargé mais n'a pas trouvé le **micrologiciel** de la carte : le fichier `.ucode` manque dans `/lib/firmware`. L'erreur `-2` signifie « fichier introuvable ».
+
+**3. La correction** : installer le paquet de micrologiciels correspondant (sur Debian, `firmware-iwlwifi`), puis recharger le pilote ou redémarrer. Trois commandes ont mené de « pas de Wi-Fi » à la cause exacte, en suivant la chaîne matériel, pilote, micrologiciel.
+
+## à toi de jouer
+
+Liste les premiers modules chargés, affiche le pilote utilisé par la carte réseau `02:00.0`, puis consulte les derniers messages du noyau concernant l'USB.
+
+<SimulatedTerminal shell="bash" title="Qui pilote quoi ?" expectedCommands={["lsmod | head -6", "lspci -k -s 02:00.0", "sudo dmesg | grep -i usb | tail -3"]} hints={["lsmod liste les modules ; head -6 limite l'affichage.", "lspci -k affiche le pilote ; -s choisit l'adresse du périphérique.", "dmesg filtré par grep sur usb, puis tail -3."]} commands={{ "lsmod | head -6": "Module                  Size  Used by\niwlmvm                802816  0\niwlwifi               548864  1 iwlmvm\nnvme                   57344  3\nnvme_core             217088  5 nvme\nusb_storage            86016  1", "lspci -k -s 02:00.0": "02:00.0 Network controller: Intel Corporation Wi-Fi 6E(802.11ax) AX211 160MHz\n\tSubsystem: Intel Corporation Device 0094\n\tKernel driver in use: iwlwifi\n\tKernel modules: iwlwifi", "sudo dmesg | grep -i usb | tail -3": "[ 8123.402] usb 1-2: new high-speed USB device number 9 using xhci_hcd\n[ 8123.531] usb-storage 1-2:1.0: USB Mass Storage device detected\n[ 8124.587] sd 2:0:0:0: [sdb] 31266816 512-byte logical blocks: (16.0 GB/14.9 GiB)", "modinfo iwlwifi | grep -E \"^(description|license|signer)\"": "description:    Intel(R) Wireless WiFi driver for Linux\nlicense:        GPL\nsigner:         Debian Secure Boot CA", "dmesg": "dmesg: read kernel buffer failed: Operation not permitted" }} />
+
+Essaie aussi `dmesg` sans `sudo` : sur Debian récent, lire les messages du noyau est réservé à root, pour ne pas révéler aux utilisateurs ordinaires des informations utiles à une attaque.
+
+## les pièges
+
+- **Chercher la panne dans l'application alors qu'elle est dans le pilote.** Un matériel non reconnu se diagnostique avec `lspci -k`, `lsusb` et `dmesg`.
+- **Oublier le micrologiciel du périphérique.** Un pilote chargé sans son micrologiciel ne fait rien fonctionner.
+- **Installer des pilotes depuis des sites tiers.** Ils ont les droits du noyau. Source officielle uniquement.
+- **Croire qu'un pilote signé est sûr.** La signature garantit l'origine, pas l'absence de faille. Les pilotes vulnérables se désactivent et se mettent à jour.
+- **Désactiver la vérification des signatures pour charger un pilote.** On ouvre la porte à tous les pilotes non signés, y compris malveillants.
+- **Ignorer un pilote qui n'est plus maintenu.** Un vieux matériel dont le fabricant ne publie plus de mises à jour garde ses failles pour toujours : sur une machine exposée, il vaut mieux le remplacer.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.kernel.org/doc/html/latest/admin-guide/module-signing.html" description="La signature des modules du noyau Linux">Linux : Kernel module signing facility</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/security/application-security/application-control/app-control-for-business/design/microsoft-recommended-driver-block-rules" description="La liste des pilotes vulnérables que Microsoft recommande de bloquer">Microsoft : règles de blocage des pilotes recommandées</ExternalLink>
+
+<ExternalLink href="https://fwupd.org/" description="L'outil de mise à jour des micrologiciels sous Linux">fwupd</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le rôle d'un pilote ?" options={["Accélérer le processeur", "Traduire les demandes générales du système en commandes propres à un matériel précis", "Sauvegarder les fichiers", "Afficher l'interface graphique"]} correct={1} explanation="Chaque matériel a ses propres commandes ; le pilote fait le lien entre le système et ce matériel." />
+  <Quiz id="q-2" question="Pourquoi un pilote défectueux peut-il faire planter tout le système, alors qu'une application ne le peut pas ?" options={["Parce qu'il est plus gros", "Parce qu'il tourne dans l'espace noyau, avec tous les droits, sans la protection qui isole les applications", "Parce qu'il utilise plus de mémoire", "Parce qu'il est écrit dans un autre langage"]} correct={1} explanation="Une erreur dans le noyau n'est contenue par rien : c'est tout le système qui s'arrête, avec un écran bleu ou un kernel panic." />
+  <Quiz id="q-3" question="Que fait udev sous Linux quand on branche une clé USB ?" options={["Il formate la clé", "Il crée l'entrée correspondante dans /dev et prévient le reste du système", "Il installe un antivirus", "Il chiffre la clé"]} correct={1} explanation="Une fois le pilote chargé, udev crée le fichier de périphérique, par exemple /dev/sdb, et déclenche les actions suivantes." />
+  <Quiz id="q-4" question="Quelle commande montre quel pilote est utilisé par chaque périphérique PCIe ?" options={["lsmod", "lspci -k", "lsblk", "free -h"]} correct={1} explanation="lspci -k ajoute, pour chaque matériel, le pilote en cours d'utilisation et les modules possibles." />
+  <Quiz id="q-5" question="Un pilote Wi-Fi est chargé mais la carte ne fonctionne pas, et dmesg parle de firmware introuvable. Que manque-t-il ?" options={["Le noyau", "Le micrologiciel de la carte, dans /lib/firmware", "Un câble", "Le compte root"]} correct={1} explanation="Beaucoup de pilotes doivent charger le micrologiciel du périphérique. Sans lui, le matériel reste inutilisable." />
+  <Quiz id="q-6" question="Qu'est-ce que la technique Bring Your Own Vulnerable Driver ?" options={["Installer ses propres pilotes pour aller plus vite", "Installer un ancien pilote signé mais vulnérable pour exploiter sa faille et obtenir les droits du noyau", "Brancher son propre ordinateur au réseau de l'entreprise", "Télécharger des pilotes sur Internet"]} correct={1} explanation="La signature laisse passer le pilote ; sa faille donne ensuite à l'attaquant l'exécution de code dans le noyau, par exemple pour désactiver les protections." />
+  <Quiz id="q-7" question="Que garantit la signature d'un pilote ?" options={["Qu'il ne contient aucune faille", "Qu'il vient d'un éditeur identifié et n'a pas été modifié", "Qu'il est gratuit", "Qu'il est plus rapide"]} correct={1} explanation="La signature prouve l'origine et l'intégrité, pas la qualité du code. Un pilote signé peut être vulnérable." />
+</QuizGroup>
+
+## à retenir
+
+- Un **pilote** traduit les demandes du système en commandes pour **un** matériel. Les applications n'ont pas à connaître le matériel.
+- La plupart des pilotes tournent dans l'**espace noyau**, avec tous les droits : un pilote défectueux fait tomber le système, un pilote malveillant a tous les pouvoirs.
+- Au branchement, l'appareil **s'identifie**, le noyau charge le bon pilote, **udev** crée l'entrée dans `/dev`.
+- Sous Linux : `lsmod`, `lspci -k`, `modinfo`, `dmesg`. Beaucoup de périphériques ont aussi un **micrologiciel**, dans `/lib/firmware`.
+- Les pilotes **signés** limitent les pilotes malveillants, mais un pilote signé peut être **vulnérable** : source officielle, mises à jour, listes de blocage.

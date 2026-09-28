@@ -1,0 +1,207 @@
+---
+refCode: CL-LSN-01002-V01
+slug: fondamentaux-le-processeur
+title: "Le processeur"
+description: "Ce que fait vraiment un processeur : les instructions et le langage machine, les registres, le cycle chargement, décodage, exécution, la fréquence, les cœurs, la mémoire cache, et les deux grandes familles x86 et ARM. Avec un simulateur de processeur à faire tourner soi-même."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01001-V01"]
+---
+
+Le processeur est la pièce qui exécute les programmes. Tout le reste de l'ordinateur existe pour l'alimenter en instructions et en données, et pour recueillir ses résultats. On en parle souvent par des chiffres (« 8 cœurs à 4,5 GHz ») sans savoir ce qu'ils veulent dire. Dans cette leçon, tu vas ouvrir la boîte : voir ce qu'est une instruction, comment le processeur les enchaîne, et ce que mesurent vraiment la fréquence, les cœurs et le cache. Tu feras même tourner un petit processeur imaginaire, instruction par instruction.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est une instruction et ce qu'est le langage machine ;
+- nommer les parties d'un processeur : unité de calcul, unité de contrôle, registres, compteur de programme ;
+- décrire le cycle chargement, décodage, exécution ;
+- dire ce que mesurent la fréquence et le nombre de cœurs, et pourquoi ils ne suffisent pas à comparer deux processeurs ;
+- expliquer le rôle de la mémoire cache ;
+- distinguer les architectures x86-64 et ARM, et savoir pourquoi un programme conçu pour l'une ne tourne pas sur l'autre.
+
+## pourquoi ça compte
+
+Comprendre le processeur, c'est comprendre ce que « exécuter un programme » veut dire. Cela éclaire le développement (pourquoi certains programmes sont lents), l'administration (pourquoi un serveur est saturé, pourquoi un programme téléchargé refuse de se lancer sur une autre machine) et la sécurité. De nombreuses attaques visent directement le fonctionnement du processeur : prendre le contrôle de la prochaine instruction exécutée, ou même, comme les failles Spectre et Meltdown révélées en 2018, profiter de ses optimisations internes pour lire des données qui devraient rester inaccessibles.
+
+## des instructions très simples
+
+Un processeur ne sait faire qu'un petit nombre d'opérations élémentaires, qu'on appelle des **instructions** :
+
+- **déplacer** une donnée : de la mémoire vers le processeur, ou l'inverse ;
+- **calculer** : additionner, soustraire, multiplier, comparer, faire des opérations logiques ;
+- **sauter** : aller exécuter une autre instruction que la suivante, éventuellement selon le résultat d'une comparaison (c'est ainsi que se font les « si » et les boucles).
+
+C'est tout. Un navigateur web, un jeu vidéo ou une intelligence artificielle ne sont, pour le processeur, que des milliards de ces opérations élémentaires, enchaînées très vite. Toute la complexité est dans le programme, pas dans le processeur.
+
+Chaque instruction est codée par un **nombre**. L'ensemble de ces codes s'appelle le **langage machine**. Un programme compilé, comme ceux de `/usr/bin` sous Linux ou les `.exe` de Windows, est une longue suite de ces nombres. Personne n'écrit directement en langage machine : on écrit dans un langage lisible (Python, C, JavaScript), et des outils le traduisent. Le langage le plus proche du langage machine, lisible par un humain, s'appelle l'**assembleur** ; un parcours entier lui est consacré.
+
+## l'intérieur d'un processeur
+
+<Diagram caption="Les parties d'un processeur">
+flowchart TD
+  UC["Unité de contrôle : lit et décode les instructions"] --> UAL["Unité de calcul (UAL) : additions, comparaisons, opérations logiques"]
+  R["Registres : quelques cases de mémoire ultra-rapides"] --- UAL
+  PC["Compteur de programme : adresse de la prochaine instruction"] --- UC
+  UC --- MEM["Mémoire vive : programme et données"]
+</Diagram>
+
+- **L'unité de contrôle** va chercher les instructions, les déchiffre et commande les autres parties.
+- **L'unité arithmétique et logique** (UAL, ou ALU en anglais) fait les calculs et les comparaisons.
+- **Les registres** sont quelques cases de mémoire situées dans le processeur lui-même, extrêmement rapides, où il range les valeurs sur lesquelles il travaille. Un processeur moderne en a quelques dizaines, de 64 bits chacun.
+- **Le compteur de programme** (*program counter*) est un registre particulier : il contient l'adresse, en mémoire, de la **prochaine instruction** à exécuter. C'est lui qui fait avancer le programme.
+
+## le cycle : chargement, décodage, exécution
+
+Le processeur répète sans fin le même cycle, des milliards de fois par seconde :
+
+1. **Chargement** (*fetch*) : il lit en mémoire l'instruction dont l'adresse est dans le compteur de programme, et avance ce compteur.
+2. **Décodage** (*decode*) : il identifie l'instruction et ses données.
+3. **Exécution** (*execute*) : il la réalise, par exemple une addition, et range le résultat.
+
+Puis il recommence avec l'instruction suivante.
+
+<Diagram caption="Le cycle d'instruction">
+flowchart LR
+  A["Chargement : lire l'instruction pointée par le compteur"] --> B["Décodage : quelle opération, sur quelles données ?"]
+  B --> C["Exécution : calculer, déplacer ou sauter"]
+  C --> A
+</Diagram>
+
+Une instruction de **saut** ne fait que modifier le compteur de programme : au lieu de passer à l'instruction suivante, le processeur ira chercher ailleurs. C'est tout le mécanisme des conditions, des boucles et des appels de fonctions.
+
+<Callout type="info">
+Le compteur de programme est l'enjeu de nombreuses attaques. Celui qui parvient à y écrire l'adresse de son choix décide de la prochaine instruction exécutée, et donc de ce que fait la machine. Les attaques par dépassement de mémoire, que tu étudieras dans le parcours sur l'assembleur, cherchent exactement cela, et les protections modernes des systèmes cherchent à l'empêcher.
+</Callout>
+
+## la fréquence
+
+Le processeur avance au rythme d'une **horloge**, un signal électrique qui bat à fréquence fixe. Cette fréquence s'exprime en **hertz** : un processeur à 3 GHz reçoit 3 milliards de battements par seconde.
+
+Mais « 3 GHz » ne veut pas dire « 3 milliards d'instructions par seconde ». Selon l'instruction et la conception du processeur, une instruction peut demander plusieurs battements, ou au contraire plusieurs instructions peuvent être traitées dans le même battement : les processeurs modernes travaillent en **chaîne** (*pipeline*), comme une chaîne de montage, où une instruction est décodée pendant que la précédente s'exécute. Deux processeurs à la même fréquence peuvent donc avoir des performances très différentes. La fréquence ne compare que des processeurs de la même famille.
+
+## les cœurs
+
+Depuis le milieu des années 2000, on ne sait plus augmenter beaucoup la fréquence sans que le processeur chauffe trop. Les fabricants ont donc mis **plusieurs processeurs complets dans une même puce** : ce sont les **cœurs**. Un processeur à 8 cœurs peut exécuter 8 programmes, ou 8 parties d'un même programme, **vraiment en même temps**.
+
+Beaucoup de processeurs ajoutent un dédoublement supplémentaire : chaque cœur peut suivre **deux fils d'exécution** en profitant des moments où l'un attend (technique appelée *hyper-threading* chez Intel, SMT de façon générale). Un « 8 cœurs, 16 threads » présente donc 16 processeurs logiques au système.
+
+Plus de cœurs n'accélère pas tout : un programme qui fait ses calculs l'un après l'autre n'utilisera qu'un seul cœur. Les serveurs, qui traitent des milliers de requêtes indépendantes, profitent pleinement de nombreux cœurs ; un vieux jeu, beaucoup moins.
+
+## la mémoire cache
+
+Le processeur est bien plus rapide que la mémoire vive. Aller chercher une donnée en mémoire peut lui faire perdre l'équivalent de centaines d'instructions. Pour limiter cette attente, il garde les données récemment utilisées dans une petite mémoire très rapide, intégrée à la puce : la **mémoire cache**.
+
+| Niveau | Taille typique | Vitesse |
+| --- | --- | --- |
+| L1 | Quelques dizaines de Kio par cœur | La plus rapide |
+| L2 | Quelques centaines de Kio à quelques Mio par cœur | Très rapide |
+| L3 | Plusieurs dizaines de Mio, partagée entre les cœurs | Rapide |
+| Mémoire vive | Plusieurs Gio | Beaucoup plus lente |
+
+Le cache fonctionne parce que les programmes réutilisent souvent les mêmes données, et utilisent souvent des données voisines. Tu retrouveras cette hiérarchie, du plus rapide et plus petit au plus lent et plus grand, dans la leçon sur le stockage.
+
+## deux grandes familles : x86-64 et ARM
+
+Tous les processeurs ne comprennent pas le même langage machine. Chaque famille a son **jeu d'instructions** :
+
+- **x86-64** (aussi appelé amd64) : la famille d'Intel et d'AMD, qui équipe la grande majorité des PC et des serveurs ;
+- **ARM** (aarch64 en 64 bits) : économe en énergie, présente dans presque tous les téléphones et tablettes, dans les Mac récents, et de plus en plus dans les serveurs du cloud.
+
+Un programme compilé pour x86-64 est une suite de nombres qui n'ont **aucun sens** pour un processeur ARM, et inversement. C'est pourquoi un logiciel est souvent proposé en plusieurs versions, et pourquoi une image de conteneur ou un programme téléchargé refuse parfois de démarrer avec une erreur de format. Les langages interprétés, comme Python, échappent à cette contrainte : c'est l'interpréteur, lui-même compilé pour la bonne famille, qui exécute le programme.
+
+## démonstration : un processeur imaginaire
+
+Pour voir le cycle à l'œuvre, voici un processeur imaginaire, écrit en Python. Il n'a qu'**un registre**, `A`, un **compteur de programme**, `pc`, et **quatre instructions** :
+
+| Instruction | Effet |
+| --- | --- |
+| `CHARGER n` | Met la valeur n dans le registre A |
+| `AJOUTER n` | Ajoute n au registre A |
+| `AFFICHER` | Affiche le contenu du registre A |
+| `STOP` | Arrête le processeur |
+
+Le programme à exécuter est rangé dans une liste qui joue le rôle de la mémoire. La boucle `while` est le cycle d'instruction : elle **charge** l'instruction pointée par `pc`, avance `pc`, **décode** l'instruction en regardant son nom, et l'**exécute**.
+
+## à toi de jouer
+
+Lance le simulateur et suis la trace : à chaque ligne, le compteur de programme et l'instruction exécutée. Puis modifie le programme en mémoire : fais-lui calculer 10 + 20 + 12, et affiche le résultat. Pour aller plus loin, ajoute une instruction `SOUSTRAIRE` au processeur lui-même.
+
+<CodePlayground language="python" starterCode={`# Un processeur imaginaire : un registre (A), un compteur de programme (pc),
+# et quatre instructions : CHARGER, AJOUTER, AFFICHER, STOP.
+
+memoire = [
+    ("CHARGER", 7),
+    ("AJOUTER", 5),
+    ("AFFICHER", 0),
+    ("STOP", 0),
+]
+
+A = 0
+pc = 0
+
+while True:
+    # 1. Chargement : lire l'instruction pointée par le compteur, puis l'avancer
+    instruction, valeur = memoire[pc]
+    print("pc =", pc, "->", instruction, valeur)
+    pc = pc + 1
+
+    # 2. Décodage et 3. exécution
+    if instruction == "CHARGER":
+        A = valeur
+    elif instruction == "AJOUTER":
+        A = A + valeur
+    elif instruction == "AFFICHER":
+        print("   registre A =", A)
+    elif instruction == "STOP":
+        print("   arrêt du processeur")
+        break
+`} />
+
+Tu viens de faire, à toute petite échelle, ce que fait un vrai processeur : charger, décoder, exécuter, recommencer. La seule différence est l'échelle : quelques dizaines d'instructions possibles, des dizaines de registres, et des milliards de cycles par seconde.
+
+Tu peux aussi regarder le vrai processeur d'une machine Linux avec la commande `lscpu`, dans le terminal ci-dessous : son architecture, son nombre de cœurs et de fils d'exécution, et la taille de ses caches.
+
+<SimulatedTerminal shell="bash" title="Le processeur d'un serveur" expectedCommands={["lscpu", "nproc"]} hints={["lscpu décrit le processeur.", "nproc donne le nombre de processeurs logiques utilisables."]} commands={{ "lscpu": "Architecture:            x86_64\n  CPU op-mode(s):        32-bit, 64-bit\n  Byte Order:            Little Endian\nCPU(s):                  8\n  On-line CPU(s) list:   0-7\nModel name:              AMD EPYC 7763 64-Core Processor\n  Thread(s) per core:    2\n  Core(s) per socket:    4\n  Socket(s):             1\nCaches (sum of all):\n  L1d:                   128 KiB (4 instances)\n  L2:                    2 MiB (4 instances)\n  L3:                    32 MiB (1 instance)", "nproc": "8", "uname -m": "x86_64" }} />
+
+Lis la sortie : 4 cœurs, 2 fils d'exécution par cœur, soit 8 processeurs logiques, ce que confirme `nproc`, et trois niveaux de cache de tailles croissantes.
+
+## les pièges
+
+- **Comparer des processeurs à la seule fréquence.** Elle ne compare que des modèles d'une même famille. Une génération plus récente fait plus de travail par battement.
+- **Croire que plus de cœurs accélère tout.** Un programme qui travaille de façon séquentielle n'utilise qu'un cœur.
+- **Confondre cœurs et fils d'exécution.** 8 fils sur 4 cœurs, ce n'est pas 8 cœurs.
+- **Télécharger un programme sans regarder l'architecture.** Un binaire x86-64 ne tourne pas sur ARM, et inversement : vérifie avec `uname -m`.
+- **Penser que le processeur « comprend » le programme.** Il exécute des nombres, sans savoir ce qu'ils représentent.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.computerhistory.org/revolution/digital-logic/12/273" description="L'histoire du microprocesseur, par le Computer History Museum">Computer History Museum : le microprocesseur</ExternalLink>
+
+<ExternalLink href="https://meltdownattack.com/" description="Le site de référence des failles Spectre et Meltdown, qui visent le fonctionnement interne des processeurs">Meltdown et Spectre</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/lscpu.1.html" description="Toutes les informations que lscpu peut afficher">lscpu(1)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que contient le compteur de programme ?" options={["Le nombre de programmes lancés", "L'adresse de la prochaine instruction à exécuter", "Le résultat du dernier calcul", "La fréquence du processeur"]} correct={1} explanation="Le compteur de programme désigne la prochaine instruction. Une instruction de saut ne fait que le modifier." />
+  <Quiz id="q-2" question="Dans quel ordre se déroule le cycle d'instruction ?" options={["Exécution, décodage, chargement", "Chargement, décodage, exécution", "Décodage, chargement, exécution", "Chargement, exécution, décodage"]} correct={1} explanation="Le processeur lit l'instruction, la déchiffre, puis la réalise, avant de recommencer avec la suivante." />
+  <Quiz id="q-3" question="Deux processeurs sont à 3 GHz. Ont-ils forcément les mêmes performances ?" options={["Oui, la fréquence fait tout", "Non : selon leur conception, ils font plus ou moins de travail par battement d'horloge", "Oui, s'ils ont la même couleur", "Non, car 3 GHz n'est pas une vraie mesure"]} correct={1} explanation="La fréquence donne le rythme de l'horloge. Le travail fait à chaque battement dépend de la conception du processeur." />
+  <Quiz id="q-4" question="À quoi sert la mémoire cache ?" options={["À stocker les fichiers de façon permanente", "À garder près du processeur les données récemment utilisées, pour éviter d'attendre la mémoire vive", "À refroidir le processeur", "À accélérer la connexion Internet"]} correct={1} explanation="La mémoire vive est beaucoup plus lente que le processeur. Le cache, petit et très rapide, limite ces attentes." />
+  <Quiz id="q-5" question="Un processeur est annoncé avec 6 cœurs et 12 threads. Combien de processeurs logiques voit le système ?" options={["6", "12", "18", "72"]} correct={1} explanation="Chaque cœur suit deux fils d'exécution : le système voit 12 processeurs logiques, pour 6 cœurs physiques." />
+  <Quiz id="q-6" question="Pourquoi un programme compilé pour un PC x86-64 ne fonctionne-t-il pas sur un téléphone ARM ?" options={["Parce que le téléphone est trop lent", "Parce que les deux familles de processeurs n'ont pas le même langage machine", "Parce que le programme est trop gros", "Parce que le téléphone n'a pas de clavier"]} correct={1} explanation="Chaque famille a son jeu d'instructions. Les nombres d'un programme x86-64 n'ont pas de sens pour un processeur ARM." />
+  <Quiz id="q-7" question="Pourquoi les attaquants cherchent-ils à contrôler le compteur de programme ?" options={["Pour accélérer la machine", "Parce qu'il décide de la prochaine instruction exécutée", "Pour lire la fréquence", "Pour changer de système d'exploitation"]} correct={1} explanation="Écrire l'adresse de son choix dans le compteur de programme, c'est choisir ce que la machine exécute ensuite." />
+</QuizGroup>
+
+## à retenir
+
+- Un processeur exécute des **instructions** très simples (déplacer, calculer, sauter), codées par des nombres : le **langage machine**.
+- Il contient une **unité de contrôle**, une **unité de calcul**, des **registres** et un **compteur de programme** qui désigne la prochaine instruction.
+- Il répète le cycle **chargement, décodage, exécution**. Un saut modifie le compteur de programme.
+- **Fréquence** : le rythme de l'horloge, qui ne compare que des processeurs d'une même famille. **Cœurs** : plusieurs processeurs dans une puce, utiles pour les travaux parallèles.
+- **Cache** L1, L2, L3 : de petites mémoires très rapides qui évitent d'attendre la mémoire vive.
+- **x86-64** et **ARM** n'ont pas le même langage machine : un programme compilé ne passe pas de l'un à l'autre.

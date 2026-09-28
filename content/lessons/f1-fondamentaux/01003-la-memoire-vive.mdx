@@ -1,0 +1,195 @@
+---
+refCode: CL-LSN-01003-V01
+slug: fondamentaux-la-memoire-vive
+title: "La mémoire vive"
+description: "Ce qu'est la mémoire vive, comment elle est organisée en cases numérotées par des adresses, pourquoi elle s'efface à l'extinction, ce qui se passe quand elle est pleine, et ce que tout cela implique pour la sécurité des données qu'elle contient."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 220
+prerequisites: ["CL-LSN-01002-V01"]
+---
+
+Le processeur exécute des instructions, mais il ne peut garder en lui que quelques dizaines de valeurs dans ses registres. Le programme en cours, ses données, la page web que tu lis, les onglets ouverts, la partie de la photo que tu retouches : tout cela attend dans la **mémoire vive**, à portée immédiate du processeur. Quand on dit d'un ordinateur qu'il « rame » parce qu'il a trop d'onglets ouverts, c'est souvent d'elle qu'on parle. Cette leçon explique comment elle est organisée, et pourquoi son fonctionnement compte aussi pour la sécurité.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le rôle de la mémoire vive entre le processeur et le stockage ;
+- décrire la mémoire comme une suite de cases d'un octet, numérotées par des **adresses** ;
+- expliquer ce que veut dire « volatile » et en tirer les conséquences ;
+- lire les quantités de mémoire en Gio et estimer ce qu'elles représentent ;
+- dire ce qui se passe quand la mémoire est pleine ;
+- citer les risques de sécurité liés aux données présentes en mémoire.
+
+## pourquoi ça compte
+
+La mémoire vive est l'endroit où les données sont **en clair** pendant qu'on les utilise. Un fichier peut être chiffré sur le disque, un mot de passe peut circuler chiffré sur le réseau : au moment où un programme les manipule, ils sont en mémoire, lisibles. C'est pour cela que les attaquants cherchent à lire la mémoire des processus, que les enquêteurs capturent la mémoire d'une machine compromise avant de l'éteindre, et que les développeurs soigneux effacent les secrets de la mémoire dès qu'ils n'en ont plus besoin.
+
+C'est aussi une ressource limitée qu'un administrateur doit surveiller : un serveur qui manque de mémoire ralentit brutalement, puis se met à arrêter des programmes pour survivre.
+
+## le rôle de la mémoire vive
+
+On l'appelle aussi **RAM** (*Random Access Memory*, mémoire à accès direct). Elle se situe entre le processeur, très rapide mais qui ne retient presque rien, et le stockage (disque, SSD), qui retient tout mais est beaucoup plus lent.
+
+<Diagram caption="La mémoire vive, entre le processeur et le stockage">
+flowchart LR
+  S["Stockage : SSD ou disque, lent, permanent"] -->|"chargement du programme et des fichiers"| R["Mémoire vive : rapide, temporaire"]
+  R -->|"instructions et données"| P["Processeur"]
+  P -->|"résultats"| R
+  R -->|"enregistrement"| S
+</Diagram>
+
+Quand tu lances un programme, le système d'exploitation copie ses instructions du stockage vers la mémoire vive, où le processeur peut les lire. Quand tu ouvres un fichier, son contenu est chargé en mémoire. Quand tu enregistres, il est recopié vers le stockage.
+
+« À accès direct » signifie qu'on peut lire n'importe quelle case en un temps à peu près constant, sans parcourir les précédentes : exactement ce dont un processeur a besoin, puisqu'il saute d'une donnée à l'autre en permanence.
+
+## des cases numérotées : les adresses
+
+La mémoire vive se représente comme une immense suite de **cases**, chacune contenant **un octet** (8 bits, soit un nombre de 0 à 255). Chaque case a un **numéro**, son **adresse**, qui commence à 0.
+
+| Adresse | 1000 | 1001 | 1002 | 1003 | 1004 | 1005 | 1006 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Contenu | 66 | 111 | 110 | 106 | 111 | 117 | 114 |
+
+Ces sept octets, lus comme du texte, forment le mot « Bonjour » : 66 est le code du B majuscule, 111 celui du o, et ainsi de suite. Tu verras au module 2 comment le texte, les images et les nombres sont tous codés ainsi. Une donnée plus grande qu'un octet, comme un nombre entier de 64 bits, occupe **plusieurs cases consécutives**, et on la désigne par l'adresse de la première.
+
+Quand le processeur exécute une instruction comme « charge la valeur située à l'adresse 1000 », l'unité de contrôle envoie ce numéro à la mémoire, qui renvoie le contenu de la case. Tout ce que fait un programme se traduit, au bout du compte, par des lectures et des écritures à des adresses.
+
+<Callout type="info">
+En programmation, on manipule rarement les adresses directement : on donne des noms aux données (`prix`, `quantite`), et le langage se charge de les ranger. Mais certains langages, comme le C, permettent de manipuler les adresses elles-mêmes. C'est ce qui les rend puissants, et c'est la source d'erreurs célèbres : écrire à la mauvaise adresse, ou déborder d'une zone sur la suivante. Le parcours de programmation en C y consacre plusieurs leçons.
+</Callout>
+
+## volatile : tout disparaît à l'extinction
+
+La mémoire vive est **volatile** : elle a besoin d'être alimentée en électricité pour conserver son contenu. À l'extinction, ou lors d'une coupure de courant, **tout ce qu'elle contient disparaît**.
+
+C'est la raison de deux habitudes que tu connais sans forcément savoir pourquoi :
+
+- **enregistrer** son travail régulièrement : tant qu'il n'est qu'en mémoire vive, une coupure le fait disparaître ;
+- **redémarrer** pour régler un problème : cela vide la mémoire, et donc tous les états incohérents que des programmes y avaient laissés.
+
+Le stockage, lui, est **non volatile** : ce qui y est écrit reste, même sans courant. C'est le sujet de la leçon suivante.
+
+## combien de mémoire ?
+
+Les quantités de mémoire s'expriment en multiples de l'octet. Tu verras au module 2 la différence subtile entre les ko et les Kio ; retiens pour l'instant les ordres de grandeur.
+
+| Quantité | Ce qu'elle représente à peu près |
+| --- | --- |
+| 1 octet | Un caractère de texte simple |
+| 1 Kio (environ mille octets) | Une demi-page de texte |
+| 1 Mio (environ un million) | Un livre de poche entier, en texte brut |
+| 1 Gio (environ un milliard) | Une heure de vidéo de qualité moyenne |
+
+Ordres de grandeur de mémoire vive : un téléphone récent en a de 6 à 12 Gio, un ordinateur personnel de 8 à 32 Gio, un serveur de 64 Gio à plusieurs To. Chaque programme en utilise une part : un navigateur avec de nombreux onglets peut en occuper plusieurs Gio à lui seul.
+
+## quand la mémoire est pleine
+
+Si les programmes demandent plus de mémoire qu'il n'en existe, le système d'exploitation dispose de deux mécanismes :
+
+1. **L'espace d'échange** (*swap*) : il déplace vers le stockage les données de la mémoire qui servent le moins, pour libérer de la place. Mais le stockage est des milliers de fois plus lent : dès que ces données sont à nouveau nécessaires, il faut les recharger. La machine devient alors très lente, et le disque travaille sans arrêt.
+2. **L'arrêt forcé** : quand il n'y a vraiment plus de place, le système **arrête** un programme pour récupérer sa mémoire. Sous Linux, c'est le rôle d'un mécanisme appelé *OOM killer* (*Out Of Memory*). Tu l'as croisé dans le parcours Linux : c'est ce qui arrête brutalement une base de données ou un serveur web sur un serveur saturé.
+
+<Diagram caption="Ce qui se passe quand la mémoire manque">
+flowchart TD
+  A["Un programme demande de la mémoire"] --> B["Reste-t-il de la place en mémoire vive ?"]
+  B -->|"oui"| C["La mémoire est attribuée"]
+  B -->|"non"| D["Déplacer des données peu utilisées vers l'espace d'échange"]
+  D -->|"encore insuffisant"| E["Arrêter un programme pour récupérer sa mémoire"]
+</Diagram>
+
+Un détail important : chaque programme ne voit que **sa propre mémoire**. Le système d'exploitation et le processeur empêchent un programme de lire ou d'écrire dans la mémoire d'un autre. Le module 3 explique ce mécanisme, la **mémoire virtuelle**, qui est un des piliers de la sécurité d'un système.
+
+## la mémoire et la sécurité
+
+Parce que les données y sont en clair pendant leur utilisation, la mémoire vive est une cible et une source de preuves.
+
+- **Les secrets y passent en clair.** Mots de passe tapés, clés de chiffrement, jetons de session : un programme qui peut lire la mémoire d'un autre peut les récupérer. C'est pourquoi lire la mémoire d'un autre processus est réservé, sous Linux comme sous Windows, aux comptes les plus privilégiés.
+- **Elle se capture en enquête.** Après un incident, les enquêteurs **copient la mémoire vive avant d'éteindre** la machine : on y trouve les programmes en cours, les connexions réseau, parfois des clés de chiffrement. L'éteindre d'abord détruirait ces preuves. Le parcours de réponse à incident y consacre un module.
+- **Elle ne s'efface pas instantanément.** Juste après l'extinction, le contenu de certaines mémoires persiste quelques secondes, davantage si elles sont refroidies. Des démonstrations de recherche ont montré qu'on pouvait ainsi récupérer des clés de chiffrement de disque sur une machine qu'on venait d'éteindre. C'est une attaque qui demande un accès physique, mais elle rappelle qu'« éteint » ne veut pas dire « effacé » dans la seconde.
+- **Elle peut se retrouver sur le disque.** L'espace d'échange et les fichiers de mise en veille prolongée copient la mémoire sur le stockage. Un mot de passe présent en mémoire peut donc finir écrit sur le disque. Les systèmes sérieux chiffrent aussi ces zones.
+
+<Callout type="warning">
+Ne laisse jamais un ordinateur déverrouillé sans surveillance, même quelques minutes : tout ce qui est ouvert est en mémoire, déchiffré et accessible. Et pour un ordinateur portable qui contient des données sensibles, préfère l'extinction complète ou la mise en veille avec chiffrement du disque, plutôt qu'une simple mise en veille, pendant les déplacements.
+</Callout>
+
+## démonstration : ranger un mot en mémoire
+
+Voici une mémoire simulée en Python : une suite de 16 cases d'un octet, toutes à zéro au départ. On y range le mot « Oui » à partir de l'adresse 4, en écrivant le code de chaque lettre dans une case, puis on relit les cases pour retrouver le mot.
+
+```python
+memoire = bytearray(16)          # 16 cases d'un octet, à zéro
+mot = "Oui"
+adresse = 4
+for i, lettre in enumerate(mot):
+    memoire[adresse + i] = ord(lettre)   # ord donne le code de la lettre
+print(list(memoire))
+```
+
+```text
+[0, 0, 0, 0, 79, 117, 105, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+```
+
+Les cases 4, 5 et 6 contiennent 79, 117 et 105, les codes de O, u et i. Pour la mémoire, ce ne sont que des nombres : c'est le programme qui décide de les lire comme du texte.
+
+## à toi de jouer
+
+Lance la simulation. Puis : range ton prénom à partir de l'adresse 8, affiche le contenu de la mémoire, et relis ton prénom à partir des cases. Que se passe-t-il si ton prénom est trop long pour la place restante ? Essaie avec un mot de 12 lettres à l'adresse 8.
+
+<CodePlayground language="python" starterCode={`# Une mémoire simulée : 16 cases d'un octet, toutes à zéro
+memoire = bytearray(16)
+
+def ecrire(adresse, texte):
+    for i, lettre in enumerate(texte):
+        memoire[adresse + i] = ord(lettre)
+
+def lire(adresse, longueur):
+    return "".join(chr(memoire[adresse + i]) for i in range(longueur))
+
+ecrire(4, "Oui")
+print("Contenu :", list(memoire))
+print("Lecture à l'adresse 4 :", lire(4, 3))
+
+# À toi : écris ton prénom à l'adresse 8, puis relis-le
+`} />
+
+Si le mot dépasse la fin de la mémoire, Python refuse avec une erreur `IndexError` : il vérifie chaque adresse. Un programme en C, lui, ne vérifierait rien, et écrirait **au-delà** de la zone prévue, sur ce qui se trouve à côté. C'est exactement ce qu'on appelle un **dépassement de tampon**, l'une des failles les plus exploitées de l'histoire de l'informatique.
+
+## les pièges
+
+- **Confondre mémoire vive et stockage.** La mémoire vive est rapide et temporaire, le stockage lent et permanent. « J'ai 512 Go de mémoire » parle presque toujours du stockage.
+- **Croire qu'un travail est à l'abri avant de l'avoir enregistré.** Il n'est qu'en mémoire vive jusqu'à l'enregistrement.
+- **Éteindre une machine compromise avant d'avoir capturé sa mémoire.** Les preuves qu'elle contenait disparaissent.
+- **Penser que les données chiffrées sur disque sont chiffrées pendant l'utilisation.** En mémoire, elles sont en clair.
+- **Ajouter de l'espace d'échange pour « avoir plus de mémoire ».** Il évite les arrêts brutaux, mais une machine qui s'en sert beaucoup devient très lente. La vraie réponse est plus de mémoire vive, ou des programmes plus sobres.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.kernel.org/doc/html/latest/admin-guide/mm/concepts.html" description="Les concepts de la gestion de la mémoire dans le noyau Linux">Linux : Concepts overview (mémoire)</ExternalLink>
+
+<ExternalLink href="https://citp.princeton.edu/our-work/memory/" description="La recherche de Princeton sur la persistance de la mémoire après extinction">Princeton : Lest We Remember (cold boot attacks)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/free.1.html" description="La commande qui affiche l'utilisation de la mémoire sous Linux">free(1)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que signifie qu'une mémoire est volatile ?" options={["Qu'elle est très rapide", "Qu'elle perd son contenu quand elle n'est plus alimentée", "Qu'elle peut être retirée de l'ordinateur", "Qu'elle est chiffrée"]} correct={1} explanation="La mémoire vive a besoin de courant pour conserver ses données. À l'extinction, elles disparaissent." />
+  <Quiz id="q-2" question="Qu'est-ce qu'une adresse mémoire ?" options={["L'emplacement d'un fichier sur le disque", "Le numéro d'une case de la mémoire", "L'adresse IP de l'ordinateur", "Le nom d'une variable"]} correct={1} explanation="La mémoire est une suite de cases d'un octet, numérotées à partir de 0. Ce numéro est l'adresse." />
+  <Quiz id="q-3" question="Pourquoi un programme lancé est-il copié du stockage vers la mémoire vive ?" options={["Pour le compresser", "Parce que le processeur lit ses instructions en mémoire vive, beaucoup plus rapide que le stockage", "Pour le sauvegarder", "Pour le rendre invisible"]} correct={1} explanation="Le processeur travaille avec la mémoire vive. Lire chaque instruction directement sur le stockage serait des milliers de fois trop lent." />
+  <Quiz id="q-4" question="Que fait Linux quand la mémoire vive et l'espace d'échange sont épuisés ?" options={["Il éteint la machine", "Il arrête un programme pour récupérer sa mémoire", "Il compresse le disque", "Il ignore les demandes"]} correct={1} explanation="Le mécanisme OOM killer choisit un processus et l'arrête. C'est souvent un gros consommateur, comme une base de données." />
+  <Quiz id="q-5" question="Après un incident de sécurité, pourquoi capture-t-on la mémoire avant d'éteindre la machine ?" options={["Pour accélérer le redémarrage", "Parce que la mémoire contient des preuves (programmes, connexions, clés) qui disparaissent à l'extinction", "Parce que c'est obligatoire légalement", "Pour libérer de la place"]} correct={1} explanation="La mémoire vive est volatile : éteindre la machine détruit tout ce qu'elle contenait, y compris les traces de l'attaque." />
+  <Quiz id="q-6" question="Un fichier est chiffré sur le disque. Quand un programme l'ouvre, sous quelle forme est-il en mémoire ?" options={["Toujours chiffré", "En clair, pour que le programme puisse l'utiliser", "Compressé", "Il ne passe pas par la mémoire"]} correct={1} explanation="Pour utiliser des données, le programme doit les avoir en clair en mémoire. Le chiffrement protège le stockage, pas l'utilisation." />
+  <Quiz id="q-7" question="Dans la simulation, écrire un mot trop long provoque une erreur en Python. Que se passerait-il dans un programme en C sans vérification ?" options={["La même erreur", "Le programme écrirait au-delà de la zone prévue, sur des données voisines", "Le mot serait coupé automatiquement", "Le programme s'arrêterait proprement"]} correct={1} explanation="Le C ne vérifie pas les limites : l'écriture déborde sur la mémoire voisine. C'est le principe du dépassement de tampon." />
+</QuizGroup>
+
+## à retenir
+
+- La **mémoire vive** (RAM) contient les programmes en cours et leurs données, à portée immédiate du processeur. Elle est **volatile** : tout disparaît à l'extinction.
+- Elle est organisée en **cases d'un octet**, numérotées par des **adresses**. Toute donnée n'y est qu'une suite de nombres.
+- Ordres de grandeur : Kio, Mio, Gio. Un ordinateur a quelques Gio à quelques dizaines de Gio de mémoire vive.
+- Mémoire pleine : **espace d'échange** (lent), puis **arrêt forcé** d'un programme.
+- Chaque programme ne voit que sa propre mémoire (module 3).
+- Sécurité : les données y sont **en clair**, on la **capture avant d'éteindre** en enquête, et un débordement de zone est la base d'une grande famille de failles.

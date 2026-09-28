@@ -1,0 +1,198 @@
+---
+refCode: CL-LSN-01006-V01
+slug: fondamentaux-le-demarrage
+title: "Le démarrage d'un ordinateur"
+description: "Tout ce qui se passe entre l'appui sur le bouton et l'écran de connexion : le micrologiciel BIOS ou UEFI, l'autotest, l'ordre de démarrage, le chargeur, le noyau, le premier processus, et la chaîne de confiance de Secure Boot qui empêche un programme malveillant de s'installer avant le système."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 220
+prerequisites: ["CL-LSN-01005-V01"]
+---
+
+Tu appuies sur le bouton. Quelques secondes plus tard, un écran de connexion s'affiche. Entre les deux, une cascade de programmes se sont passé le relais, chacun chargeant le suivant, du tout petit micrologiciel gravé dans la carte mère jusqu'au système d'exploitation complet. Cette chaîne est fascinante à comprendre, utile pour réparer une machine qui ne démarre plus, et essentielle en sécurité : un programme malveillant qui s'installe **avant** le système d'exploitation échappe à presque toutes les protections de celui-ci.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- décrire les étapes du démarrage, du micrologiciel au premier processus du système ;
+- distinguer BIOS et UEFI ;
+- expliquer le rôle du chargeur de démarrage et de la partition système EFI ;
+- expliquer ce que protège Secure Boot et comment fonctionne sa chaîne de signatures ;
+- dire ce qu'ajoute la mesure du démarrage par la puce TPM ;
+- lire quelques informations de démarrage sur une machine Linux.
+
+## pourquoi ça compte
+
+Quand une machine ne démarre plus, savoir à quelle étape la chaîne s'est rompue est la moitié du diagnostic : un écran noir sans rien, un message du micrologiciel, un menu de chargeur, un noyau qui s'arrête avec une erreur, un système qui démarre mais pas un service. Chaque symptôme désigne une étape.
+
+Côté sécurité, le démarrage est un moment critique. Un programme malveillant installé dans le micrologiciel ou dans le chargeur (on parle de *bootkit*) s'exécute avant l'antivirus, avant le système, et peut se cacher de tout ce qui vient après. C'est pour s'en protéger qu'ont été inventés Secure Boot et le démarrage mesuré, et c'est aussi pour cela qu'on protège l'accès physique aux machines et la possibilité de démarrer sur une clé USB.
+
+## vue d'ensemble
+
+<Diagram caption="La chaîne du démarrage">
+flowchart TD
+  A["Mise sous tension"] --> B["Micrologiciel (UEFI) : autotest du matériel"]
+  B --> C["Choix du support de démarrage selon l'ordre configuré"]
+  C --> D["Chargeur de démarrage : GRUB, Windows Boot Manager"]
+  D --> E["Noyau du système d'exploitation, et image de démarrage initiale"]
+  E --> F["Premier processus : systemd sous Linux"]
+  F --> G["Services, puis écran de connexion"]
+</Diagram>
+
+Chaque étape a une seule mission : initialiser ce qu'elle peut, puis **trouver, charger et lancer l'étape suivante**. C'est pourquoi on parle de **chaîne** de démarrage.
+
+## étape 1 : le micrologiciel
+
+À la mise sous tension, le processeur commence à exécuter des instructions à une adresse fixe, où se trouve le **micrologiciel** de la carte mère, stocké dans une puce de mémoire flash. Historiquement, ce micrologiciel s'appelait le **BIOS** (*Basic Input/Output System*) ; depuis les années 2010, c'est presque toujours l'**UEFI** (*Unified Extensible Firmware Interface*), plus moderne, qu'on continue souvent d'appeler « BIOS » par habitude.
+
+Le micrologiciel commence par l'**autotest** (*POST*, *Power-On Self-Test*) : il vérifie que le processeur, la mémoire et les composants essentiels répondent. Une panne à ce stade se signale par des bips ou des voyants, avant même que l'écran ne s'allume.
+
+Il initialise ensuite le matériel, puis consulte l'**ordre de démarrage** : la liste des supports à essayer, dans l'ordre (le SSD interne, une clé USB, le réseau...). C'est dans ses réglages, accessibles par une touche au démarrage (souvent F2, Suppr ou Échap), qu'on change cet ordre.
+
+| | BIOS (ancien) | UEFI (actuel) |
+| --- | --- | --- |
+| Époque | Années 1980 à 2010 | Depuis les années 2010 |
+| Où il cherche le chargeur | Dans le tout premier secteur du disque | Dans une partition dédiée, la partition système EFI |
+| Taille des disques | Limitée à 2 To avec le partitionnement MBR | Pas de limite pratique, partitionnement GPT |
+| Sécurité | Aucune vérification | Secure Boot : vérification des signatures |
+
+## étape 2 : le chargeur de démarrage
+
+Avec l'UEFI, le micrologiciel lit une petite partition du disque, formatée en FAT32, la **partition système EFI** (souvent montée sous `/boot/efi` sous Linux). Elle contient les **chargeurs de démarrage** (*bootloaders*) des systèmes installés.
+
+Le chargeur a pour mission de trouver le noyau du système d'exploitation, de le charger en mémoire vive, et de lui passer la main. C'est lui qui affiche éventuellement un **menu** pour choisir entre plusieurs systèmes, ou entre plusieurs versions du noyau. Sous Linux, c'est le plus souvent **GRUB** ; sous Windows, le **Windows Boot Manager**.
+
+## étape 3 : le noyau
+
+Le **noyau** (module 3 de ce parcours) est chargé en mémoire et prend le contrôle de la machine. Il initialise à son tour le matériel avec ses propres pilotes : processeurs, mémoire, disques, réseau.
+
+Sous Linux, le noyau est accompagné d'une **image de démarrage initiale** (`initrd` ou `initramfs`), un petit système de fichiers temporaire en mémoire. Elle contient les pilotes et outils nécessaires pour **accéder au vrai disque système** : si ce disque est chiffré, c'est à ce moment qu'on te demande la phrase de passe, ou que le TPM la fournit. Une fois le disque accessible, le noyau y bascule.
+
+## étape 4 : le premier processus
+
+Le noyau lance enfin le **premier processus** du système, qui porte le numéro 1. Sur presque toutes les distributions Linux actuelles, c'est **systemd**. Il démarre, dans le bon ordre et souvent en parallèle, tous les **services** : réseau, journalisation, serveur SSH, interface graphique. Le dernier affiche l'écran de connexion. Sous Windows, le rôle équivalent est tenu par une série de processus système qui démarrent les services Windows.
+
+Tout processus de la machine descend, directement ou non, de ce premier processus. Le module 5 du parcours Linux explore cette arborescence.
+
+## Secure Boot : une chaîne de confiance
+
+Sans protection, chaque étape charge et exécute l'étape suivante **sans vérifier** ce qu'elle est. Un attaquant qui remplace le chargeur ou le noyau sur le disque fait exécuter son code avant le système, avec tous les droits.
+
+**Secure Boot**, une fonction de l'UEFI, ajoute une vérification à chaque passage de relais : chaque élément doit être **signé** numériquement par un éditeur de confiance, et le micrologiciel refuse d'exécuter ce dont la signature est absente ou invalide.
+
+<Diagram caption="Chaque maillon vérifie la signature du suivant">
+flowchart LR
+  A["Micrologiciel UEFI : clés de confiance enregistrées"] -->|"vérifie la signature"| B["Chargeur (shim, GRUB)"]
+  B -->|"vérifie la signature"| C["Noyau"]
+  C -->|"vérifie la signature"| D["Modules du noyau, pilotes"]
+</Diagram>
+
+Le micrologiciel contient une liste de **clés de confiance**, souvent celles de Microsoft et du fabricant. Les distributions Linux utilisent un petit chargeur intermédiaire, **shim**, signé par Microsoft, qui vérifie à son tour les signatures de la distribution. Si un maillon a été modifié, sa signature ne correspond plus, et le démarrage s'arrête avec un message d'erreur, au lieu d'exécuter un code inconnu.
+
+Tu comprendras en détail ce qu'est une signature numérique dans le parcours de cryptographie. Retiens pour l'instant qu'elle permet de vérifier **qui** a produit un fichier et qu'il **n'a pas été modifié** depuis.
+
+<Callout type="info">
+Secure Boot n'est pas infaillible. Une faille dans un chargeur signé, ou le vol d'une clé de signature, peut permettre de le contourner, et des vulnérabilités de ce type ont été publiées. C'est pourquoi les listes de signatures révoquées du micrologiciel sont mises à jour, et pourquoi les mises à jour du micrologiciel comptent autant que celles du système.
+</Callout>
+
+## le démarrage mesuré
+
+Le TPM de la carte mère (leçon précédente) ajoute un second mécanisme, complémentaire : le **démarrage mesuré**. À chaque étape, avant de passer la main, on calcule une **empreinte** de l'étape suivante et on l'enregistre dans le TPM. À la fin, le TPM contient un résumé fidèle de tout ce qui a été exécuté.
+
+Ce résumé sert à deux choses :
+
+- **libérer une clé seulement si rien n'a changé** : le TPM peut garder la clé de déchiffrement du disque et ne la fournir que si les empreintes sont celles attendues. Un chargeur modifié, et le disque reste chiffré ;
+- **prouver l'état de la machine** à un service distant, qui peut refuser l'accès à un poste dont le démarrage a été altéré.
+
+Secure Boot **empêche** d'exécuter un maillon non signé ; le démarrage mesuré **constate** ce qui a été exécuté. Les deux ensemble rendent les attaques sur la chaîne de démarrage beaucoup plus difficiles.
+
+## l'accès physique et les réglages du micrologiciel
+
+Toutes ces protections supposent qu'on ne puisse pas simplement désactiver Secure Boot ou changer l'ordre de démarrage pour lancer un système sur une clé USB. Sur les machines sensibles, on protège donc les réglages du micrologiciel par un **mot de passe**, on désactive le démarrage sur les supports externes, et on chiffre le disque. Une machine sans ces précautions, laissée sans surveillance, peut être démarrée sur la clé d'un attaquant, qui lira alors tout le disque s'il n'est pas chiffré.
+
+### et dans le cloud ?
+
+Une machine virtuelle louée chez un hébergeur démarre exactement de la même façon, avec un micrologiciel **virtuel** fourni par l'hyperviseur, le logiciel qui fait tourner les machines virtuelles. Tu n'as pas d'écran ni de touche F2 : l'hébergeur propose à la place une **console web** qui affiche l'écran de la machine pendant son démarrage, et des options pour activer Secure Boot ou un TPM virtuel. Quand un serveur distant ne répond plus après une mise à jour du noyau, c'est cette console qui permet de voir à quelle étape la chaîne s'est arrêtée, et souvent de choisir l'ancien noyau dans le menu du chargeur.
+
+## démonstration : le démarrage d'une machine Linux
+
+Quelques commandes montrent la chaîne sur un système Linux démarré. `ls /boot` montre les noyaux et images initiales installés :
+
+```bash
+ls /boot
+```
+
+```text
+config-6.1.0-18-amd64  efi  grub  initrd.img-6.1.0-18-amd64  System.map-6.1.0-18-amd64  vmlinuz-6.1.0-18-amd64
+```
+
+`vmlinuz-...` est le noyau, `initrd.img-...` l'image de démarrage initiale, `grub` la configuration du chargeur, `efi` le point de montage de la partition système EFI.
+
+`mokutil --sb-state` dit si Secure Boot est actif :
+
+```bash
+mokutil --sb-state
+```
+
+```text
+SecureBoot enabled
+```
+
+Et `systemd-analyze` mesure le temps passé dans chaque grande étape :
+
+```bash
+systemd-analyze
+```
+
+```text
+Startup finished in 4.211s (firmware) + 2.180s (loader) + 1.902s (kernel) + 6.338s (userspace) = 14.632s
+graphical.target reached after 6.301s in userspace.
+```
+
+On retrouve exactement les étapes de la leçon : micrologiciel, chargeur, noyau, puis l'espace utilisateur, où systemd démarre les services.
+
+## à toi de jouer
+
+Sur ce serveur, affiche le contenu de `/boot`, vérifie si Secure Boot est actif, puis mesure le temps de démarrage de chaque étape.
+
+<SimulatedTerminal shell="bash" title="La chaîne du démarrage" expectedCommands={["ls /boot", "mokutil --sb-state", "systemd-analyze"]} hints={["Les noyaux et le chargeur sont dans /boot.", "mokutil avec l'option qui donne l'état de Secure Boot.", "systemd-analyze sans argument résume le démarrage."]} commands={{ "ls /boot": "config-6.1.0-18-amd64  efi  grub  initrd.img-6.1.0-18-amd64  System.map-6.1.0-18-amd64  vmlinuz-6.1.0-18-amd64", "mokutil --sb-state": "SecureBoot enabled", "systemd-analyze": "Startup finished in 4.211s (firmware) + 2.180s (loader) + 1.902s (kernel) + 6.338s (userspace) = 14.632s\ngraphical.target reached after 6.301s in userspace.", "systemd-analyze blame": "3.104s NetworkManager-wait-online.service\n1.212s apt-daily-upgrade.service\n  812ms docker.service\n  402ms ssh.service", "ls /boot/efi/EFI": "BOOT  debian", "ps -p 1 -o pid,comm": "    PID COMMAND\n      1 systemd" }} />
+
+Essaie aussi `ps -p 1 -o pid,comm` pour voir le premier processus, et `systemd-analyze blame` pour savoir quels services ont ralenti le démarrage.
+
+## les pièges
+
+- **Appeler « BIOS » tout micrologiciel.** Sur une machine actuelle, c'est de l'UEFI, avec des fonctions de sécurité que le BIOS n'avait pas.
+- **Désactiver Secure Boot pour « que ça marche ».** On perd la vérification de toute la chaîne. Cherche plutôt pourquoi un élément n'est pas signé.
+- **Laisser le démarrage sur clé USB et les réglages sans mot de passe.** N'importe qui avec un accès physique peut démarrer son propre système.
+- **Négliger les mises à jour du micrologiciel.** Elles corrigent des failles de la toute première étape et mettent à jour les listes de révocation.
+- **Chercher la panne au mauvais endroit.** Bips sans image : matériel et autotest. Message « no bootable device » : ordre de démarrage ou partition EFI. Erreur du noyau : pilote ou image initiale. Service en échec : espace utilisateur.
+
+## pour aller plus loin
+
+<ExternalLink href="https://uefi.org/specifications" description="Les spécifications officielles de l'UEFI">UEFI Forum : spécifications</ExternalLink>
+
+<ExternalLink href="https://wiki.debian.org/SecureBoot" description="Le fonctionnement de Secure Boot sous Debian, dont le rôle de shim">Debian Wiki : Secure Boot</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/systemd-analyze.1.html" description="Analyser le démarrage et le temps passé dans chaque service">systemd-analyze(1)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le premier programme exécuté à la mise sous tension ?" options={["Le noyau", "Le micrologiciel UEFI de la carte mère", "Le chargeur GRUB", "systemd"]} correct={1} explanation="Le processeur commence par exécuter le micrologiciel stocké dans une puce de la carte mère, qui lance ensuite le reste de la chaîne." />
+  <Quiz id="q-2" question="Dans quel ordre se déroulent ces étapes ?" options={["Noyau, micrologiciel, chargeur, systemd", "Micrologiciel, chargeur, noyau, systemd", "Chargeur, micrologiciel, noyau, systemd", "systemd, noyau, chargeur, micrologiciel"]} correct={1} explanation="Chaque étape charge la suivante : le micrologiciel lance le chargeur, qui lance le noyau, qui lance le premier processus." />
+  <Quiz id="q-3" question="Où un micrologiciel UEFI cherche-t-il le chargeur de démarrage ?" options={["Dans le premier secteur du disque", "Dans la partition système EFI", "Dans /home", "Sur Internet"]} correct={1} explanation="L'UEFI lit une petite partition FAT32 dédiée, montée sous /boot/efi sous Linux. C'est l'ancien BIOS qui lisait le premier secteur." />
+  <Quiz id="q-4" question="Que vérifie Secure Boot ?" options={["Que le disque n'est pas plein", "Que chaque élément de la chaîne de démarrage est signé par un éditeur de confiance", "Que le mot de passe est correct", "Que la connexion Internet fonctionne"]} correct={1} explanation="Chaque maillon vérifie la signature du suivant et refuse d'exécuter un élément non signé ou modifié." />
+  <Quiz id="q-5" question="Quel est le rôle de l'image de démarrage initiale (initramfs) sous Linux ?" options={["Afficher l'écran de connexion", "Fournir au noyau les pilotes et outils nécessaires pour accéder au vrai disque système, par exemple le déchiffrer", "Remplacer le micrologiciel", "Sauvegarder le système"]} correct={1} explanation="Le noyau a parfois besoin de pilotes ou d'un déchiffrement pour atteindre le disque système : l'image initiale les fournit." />
+  <Quiz id="q-6" question="Qu'apporte le démarrage mesuré par le TPM ?" options={["Il accélère le démarrage", "Il enregistre les empreintes de ce qui a été exécuté et peut refuser de libérer une clé si la chaîne a changé", "Il remplace Secure Boot", "Il efface le disque en cas d'erreur"]} correct={1} explanation="Le TPM constate ce qui a démarré ; si les empreintes ne sont pas celles attendues, la clé de déchiffrement du disque n'est pas fournie." />
+  <Quiz id="q-7" question="Pourquoi protège-t-on par mot de passe les réglages du micrologiciel d'une machine sensible ?" options={["Pour économiser de l'énergie", "Pour empêcher qu'on désactive Secure Boot ou qu'on démarre sur une clé USB", "Pour accélérer les mises à jour", "Parce que c'est obligatoire pour installer Linux"]} correct={1} explanation="Sans cette protection, quelqu'un qui a accès à la machine peut démarrer son propre système et lire un disque non chiffré." />
+</QuizGroup>
+
+## à retenir
+
+- Le démarrage est une **chaîne** : micrologiciel (**UEFI**, autotest, ordre de démarrage), **chargeur** (GRUB), **noyau** et image initiale, **premier processus** (systemd), services, connexion.
+- L'UEFI lit le chargeur dans la **partition système EFI** et remplace l'ancien BIOS.
+- **Secure Boot** vérifie la **signature** de chaque maillon ; le **démarrage mesuré** enregistre dans le TPM ce qui a été exécuté.
+- Un code malveillant installé avant le système (*bootkit*) échappe à ses protections : d'où Secure Boot, les mises à jour du micrologiciel, le mot de passe des réglages et le chiffrement du disque.
+- Sous Linux : `ls /boot`, `mokutil --sb-state`, `systemd-analyze`.
