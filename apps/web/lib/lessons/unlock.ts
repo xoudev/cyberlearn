@@ -47,6 +47,15 @@ export interface LessonPlacement<L> {
   next: L | null;
 }
 
+export interface PlacementOptions {
+  /**
+   * Opens every lesson that is not completed yet. For administrators, who
+   * review the catalogue and cannot be asked to work through a path to reach
+   * the lesson they are checking. Completed lessons still read as completed.
+   */
+  unlockAll?: boolean;
+}
+
 /**
  * Index every lesson of the given paths by id.
  *
@@ -59,6 +68,7 @@ export interface LessonPlacement<L> {
 export function indexPlacements<L extends { id: string }>(
   paths: PathWithLessons<L>[],
   completedLessonIds: Iterable<string>,
+  options: PlacementOptions = {},
 ): Map<string, LessonPlacement<L>> {
   const completed = new Set(completedLessonIds);
   const placements = new Map<string, LessonPlacement<L>>();
@@ -72,7 +82,7 @@ export function indexPlacements<L extends { id: string }>(
 
       const state: LockState = completed.has(entry.lesson.id)
         ? "completed"
-        : previous === null || completed.has(previous.id)
+        : options.unlockAll === true || previous === null || completed.has(previous.id)
           ? "unlocked"
           : "locked";
 

@@ -7,6 +7,7 @@ import type { Category, Difficulty, ProgressStatus } from "@cyberlearn/db";
 import { LessonsBodySkeleton } from "./_components/lessons-body-skeleton";
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements } from "@/lib/lessons/unlock";
+import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { availableFirst } from "@/lib/lessons/catalog-order";
 import { LessonsSearchBar } from "./_components/lessons-search-bar";
 import { resolveLessonCoverSrcMany } from "@/lib/lesson-cover/storage";
@@ -142,11 +143,16 @@ async function LessonsBody({ p }: { p: RawParams }): Promise<React.ReactElement>
 
   // Resolve availability across the matching catalogue before paginating.
   // Sign cover URLs only for the cards on the resulting page.
-  const pathContexts = await lessonRepository.findPathContexts(
-    authUser.id,
-    matchingLessons.map((l) => l.id),
-  );
-  const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds);
+  const [pathContexts, unlockAll] = await Promise.all([
+    lessonRepository.findPathContexts(
+      authUser.id,
+      matchingLessons.map((l) => l.id),
+    ),
+    unlocksEveryLesson(authUser.id),
+  ]);
+  const placements = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
+    unlockAll,
+  });
   const lessons = availableFirst(matchingLessons, placements).slice(
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE,

@@ -315,6 +315,22 @@ export async function searchApi(term: string): Promise<SearchGroupItem[]> {
   return body.groups;
 }
 
+// ── Lesson access (the path lock, as the site applies it) ────────────────────
+
+/**
+ * Whether the reader skips the path lock: true for an administrator, who opens
+ * any lesson to review it. Decided by the server from the role in the
+ * database, which the app's client cannot read.
+ */
+export async function fetchLessonAccessApi(): Promise<{ unlockAll: boolean }> {
+  const res = await authedFetch("/api/mobile/lesson-access");
+  const body = (await res.json()) as
+    | { ok: true; unlockAll: boolean }
+    | { ok: false; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Chargement impossible");
+  return { unlockAll: body.unlockAll };
+}
+
 // ── Rank (the site's dashboard figure) ────────────────────────────────────────
 
 /**
