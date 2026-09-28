@@ -1,0 +1,294 @@
+---
+refCode: CL-LSN-02029-V01
+slug: linux-listes-controle-acces
+title: "Les listes de contrôle d'accès (ACL)"
+description: "Quand un propriétaire et un seul groupe ne suffisent plus : donner un droit à une personne ou à un groupe de plus, lire getfacl, le masque qui plafonne tout, les ACL par défaut qui s'héritent, et les précautions pour ne pas les perdre à la copie ou à la sauvegarde."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 40
+xpReward: 320
+prerequisites: ["CL-LSN-02028-V01"]
+---
+
+Le modèle de permissions classique a une limite structurelle : un fichier a **un** propriétaire et **un** groupe. Or la réalité est souvent plus fine. Le répertoire comptable appartient au groupe `compta`, mais l'auditrice externe doit pouvoir le **lire** pendant un mois, sans rejoindre le groupe et sans rien pouvoir modifier. Le journal d'une application doit être lisible par l'équipe de supervision, qui n'a rien à voir avec le groupe de l'application. Créer un groupe pour chaque combinaison devient vite ingérable. Les **listes de contrôle d'accès** (*Access Control Lists*, ACL) répondent à ce besoin : des droits supplémentaires, pour des comptes et des groupes précis, en plus des droits habituels.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- repérer un fichier qui porte une ACL dans la sortie de `ls -l` ;
+- lire la sortie de `getfacl` ;
+- donner, modifier et retirer un droit à un utilisateur ou à un groupe avec `setfacl` ;
+- expliquer le rôle du masque, et pourquoi un `chmod` peut restreindre des ACL ;
+- définir des ACL par défaut sur un répertoire pour que les nouveaux fichiers en héritent ;
+- conserver les ACL lors d'une copie ou d'une sauvegarde.
+
+## pourquoi ça compte
+
+Les ACL permettent d'appliquer le **moindre privilège** avec précision : donner exactement un droit à exactement un compte, sans ouvrir à tout un groupe ni à tout le monde. C'est aussi un point d'attention en audit : un fichier sensible peut sembler protégé d'après ses neuf caractères de permission, alors qu'une ACL donne en plus l'accès à un compte inattendu. Qui ne sait pas repérer une ACL passe à côté de ces droits cachés.
+
+La notion dépasse d'ailleurs Linux. Les droits des fichiers Windows (NTFS), des partages réseau Samba ou des espaces de stockage du cloud reposent tous sur des listes d'entrées « tel compte, tel droit ». Les détails diffèrent, mais le raisonnement est le même : lister qui a accès, vérifier que chaque entrée a une raison d'être, retirer ce qui ne sert plus. Ce que tu apprends ici te servira au parcours Windows et Active Directory comme au parcours cloud.
+
+## repérer une ACL
+
+Un fichier qui porte une ACL affiche un **`+`** à la fin de ses permissions dans `ls -l` :
+
+```bash
+ls -l /srv/compta/bilan-2026.ods
+```
+
+```text
+-rw-rw----+ 1 claire compta 48210 sept. 27 14:02 /srv/compta/bilan-2026.ods
+```
+
+Ce `+` signifie : les neuf caractères ne disent pas tout. Il faut regarder l'ACL.
+
+## lire une ACL : getfacl
+
+```bash
+getfacl /srv/compta/bilan-2026.ods
+```
+
+```text
+# file: srv/compta/bilan-2026.ods
+# owner: claire
+# group: compta
+user::rw-
+user:auditrice:r--
+group::rw-
+mask::rw-
+other::---
+```
+
+Ligne par ligne :
+
+| Entrée | Signification |
+| --- | --- |
+| `user::rw-` | Le propriétaire (sans nom : c'est `claire`) |
+| `user:auditrice:r--` | Une entrée **nommée** : le compte `auditrice` peut lire |
+| `group::rw-` | Le groupe propriétaire (`compta`) |
+| `mask::rw-` | Le **masque** : le maximum que peuvent obtenir les entrées nommées et le groupe |
+| `other::---` | Tous les autres |
+
+Les entrées sans nom correspondent aux droits classiques ; les entrées **nommées** (`user:auditrice`, `group:supervision`) sont les ajouts de l'ACL.
+
+## modifier une ACL : setfacl
+
+`setfacl -m` (*modify*) ajoute ou modifie une entrée :
+
+```bash
+sudo setfacl -m u:auditrice:r /srv/compta/bilan-2026.ods       # un utilisateur
+sudo setfacl -m g:supervision:r /var/log/app/app.log           # un groupe
+sudo setfacl -m u:auditrice:rx /srv/compta                     # un répertoire : r et x
+```
+
+`u:` désigne un utilisateur, `g:` un groupe. Pour un répertoire, n'oublie pas le `x`, sans lequel on ne peut pas le traverser (leçon 3).
+
+Retirer :
+
+```bash
+sudo setfacl -x u:auditrice /srv/compta/bilan-2026.ods    # une entrée
+sudo setfacl -b /srv/compta/bilan-2026.ods                # toute l'ACL
+```
+
+Et pour toute une arborescence, `-R` :
+
+```bash
+sudo setfacl -R -m u:auditrice:rX /srv/compta
+```
+
+Le `X` majuscule a le même sens qu'avec `chmod` : `x` pour les répertoires seulement. L'auditrice peut parcourir tout le répertoire et lire chaque fichier, sans pouvoir exécuter ce qui ne doit pas l'être.
+
+## comment le noyau vérifie une ACL
+
+Avec les permissions classiques, le noyau choisit une seule catégorie (leçon 3). Avec une ACL, le principe est le même, avec des étapes intermédiaires. Pour un processus donné, il examine dans l'ordre :
+
+1. si c'est le **propriétaire** : les droits de l'entrée `user::`, et c'est tout ;
+2. sinon, s'il existe une entrée **nommée** pour ce compte (`user:auditrice:`) : ses droits, limités par le masque ;
+3. sinon, si le processus appartient au **groupe propriétaire** ou à un ou plusieurs **groupes nommés** : il obtient l'accès si **au moins une** de ces entrées accorde le droit demandé, toujours limitée par le masque ;
+4. sinon, les droits de `other::`.
+
+Deux conséquences pratiques. Une entrée nommée pour un utilisateur **l'emporte** sur les droits de ses groupes : on peut ainsi retirer un droit à une personne précise d'un groupe, en lui donnant une entrée nommée plus restrictive. Et pour les groupes, c'est l'union qui compte : appartenir à un groupe qui donne la lecture suffit, même si un autre de ses groupes ne donne rien.
+
+## le masque
+
+Le **masque** est la partie des ACL qui surprend le plus. C'est un plafond : les droits **effectifs** des entrées nommées et du groupe propriétaire sont limités à ceux du masque. Le propriétaire et les autres n'y sont pas soumis.
+
+<Diagram caption="Le masque plafonne les entrées nommées et le groupe">
+flowchart LR
+  A["user:auditrice:rw-"] --> M["mask::r--"]
+  B["group::rw-"] --> M
+  M --> C["Droits effectifs : r-- pour l'auditrice et le groupe"]
+  D["user:: et other::"] --> E["Non concernés par le masque"]
+</Diagram>
+
+`setfacl` recalcule le masque automatiquement quand on ajoute une entrée. Mais **`chmod` modifie le masque**, et c'est là que les surprises arrivent. Sur un fichier avec une ACL, la partie « groupe » des neuf caractères affichée par `ls -l` **est** le masque. Un `chmod g-w` ne retire donc pas l'écriture au seul groupe : il abaisse le plafond de **toutes** les entrées nommées.
+
+```bash
+sudo chmod 640 /srv/compta/bilan-2026.ods
+getfacl /srv/compta/bilan-2026.ods
+```
+
+```text
+user::rw-
+user:gestionnaire:rw-		#effective:r--
+group::rw-			#effective:r--
+mask::r--
+other::---
+```
+
+`getfacl` signale l'écart avec `#effective:` : l'entrée donne `rw-`, mais le masque ramène les droits effectifs à `r--`. Le compte `gestionnaire` ne peut plus modifier le fichier, sans que son entrée ait changé. Quand un droit d'ACL ne semble pas fonctionner, le premier réflexe est de regarder le masque.
+
+## les ACL par défaut : l'héritage
+
+Une ACL posée sur un répertoire ne concerne que ce répertoire. Les fichiers **créés ensuite** dedans ne l'héritent pas... sauf si le répertoire porte une ACL **par défaut**, qu'on pose avec `-d` :
+
+```bash
+sudo setfacl -d -m g:supervision:r /var/log/app
+getfacl /var/log/app
+```
+
+```text
+# file: var/log/app
+# owner: app
+# group: app
+user::rwx
+group::r-x
+other::---
+default:user::rw-
+default:group::r--
+default:group:supervision:r--
+default:mask::r--
+default:other::---
+```
+
+Les lignes `default:` ne s'appliquent pas au répertoire lui-même : elles servent de **modèle** à tout fichier ou sous-répertoire créé dedans. Chaque nouveau journal écrit par l'application sera donc lisible par le groupe `supervision`, sans intervention. C'est la bonne façon de régler durablement un partage : poser les droits sur l'existant avec `-R`, et sur le futur avec `-d`.
+
+Les ACL par défaut complètent bien un répertoire d'équipe en setgid (leçon précédente) : le setgid fixe le groupe des nouveaux fichiers, l'ACL par défaut leur donne les droits d'écriture du groupe, quel que soit l'`umask` de celui qui les crée.
+
+## ne pas perdre les ACL
+
+Les ACL sont stockées dans des **attributs étendus** du système de fichiers (module 2). Elles ne survivent pas à toutes les manipulations :
+
+| Opération | Les ACL sont-elles conservées ? |
+| --- | --- |
+| `cp` simple | Non |
+| `cp -a` ou `cp --preserve=all` | Oui |
+| `mv` sur le même système de fichiers | Oui (c'est un renommage) |
+| `tar` sans option | Non |
+| `tar --acls` à la création **et** à l'extraction | Oui |
+| `rsync -a` | Non ; `rsync -aA` les conserve |
+| `zip` | Non |
+
+Pour sauvegarder ou restaurer seulement les ACL d'une arborescence, `getfacl` et `setfacl` s'utilisent aussi comme un format d'export :
+
+```bash
+getfacl -R /srv/compta > acl-compta.txt
+sudo setfacl --restore=acl-compta.txt
+```
+
+<Callout type="warning">
+Une restauration de sauvegarde qui « perd » les ACL ne fait pas d'erreur : les fichiers sont là, avec leurs droits classiques, et plus personne n'a les accès particuliers qu'on avait donnés. C'est souvent découvert des jours plus tard, quand l'équipe de supervision ne voit plus les journaux. Si tes serveurs utilisent des ACL, tes sauvegardes doivent utiliser `--acls` ou `-A`, et ta procédure de test de restauration doit les vérifier.
+</Callout>
+
+## auditer les ACL d'une arborescence
+
+Puisque les ACL donnent des droits invisibles dans `ls -l`, un audit doit les rechercher explicitement. `getfacl` sait parcourir une arborescence (`-R`) et n'afficher que les fichiers qui portent réellement une ACL, en sautant ceux qui n'ont que les droits classiques (`-s`, pour *skip base*) :
+
+```bash
+sudo getfacl -R -s -p /srv 2>/dev/null | grep "^# file"
+```
+
+```text
+# file: /srv/compta
+# file: /srv/compta/bilan-2026.ods
+# file: /srv/equipe-web
+```
+
+`-p` conserve les chemins absolus. On obtient la liste de tous les fichiers de `/srv` qui ont des droits supplémentaires ; il reste à relire chacune de leurs ACL et à vérifier que chaque entrée nommée correspond à un besoin réel, encore d'actualité. Un compte parti depuis des mois qui figure toujours dans l'ACL d'un répertoire sensible est un résultat d'audit classique, et facile à corriger avec `setfacl -x`.
+
+## démonstration : un accès temporaire pour une auditrice
+
+Une auditrice externe doit lire, pendant un mois, le répertoire `/srv/compta`, qui appartient au groupe `compta` et est fermé aux autres. Elle ne doit rien pouvoir modifier, et l'accès doit disparaître proprement à la fin.
+
+**1. Le compte**, avec une date d'expiration (leçon 2) :
+
+```bash
+sudo adduser auditrice
+sudo chage -E 2026-10-27 auditrice
+```
+
+**2. L'accès en lecture**, sur l'existant et sur les fichiers qui seront créés pendant l'audit :
+
+```bash
+sudo setfacl -R -m u:auditrice:rX /srv/compta
+sudo setfacl -R -d -m u:auditrice:rX /srv/compta
+```
+
+**3. La vérification**, en se mettant à sa place :
+
+```bash
+sudo -u auditrice ls /srv/compta
+sudo -u auditrice touch /srv/compta/test
+```
+
+```text
+bilan-2026.ods  factures  notes-de-frais
+touch: cannot touch '/srv/compta/test': Permission denied
+```
+
+Elle liste et lit, mais ne peut rien créer. `sudo -u` (leçon 7) permet de tester des droits exactement comme le compte concerné les aura, sans connaître son mot de passe.
+
+**4. À la fin de l'audit**, on retire ses entrées, sans toucher au reste des ACL :
+
+```bash
+sudo setfacl -R -x u:auditrice /srv/compta
+sudo setfacl -R -d -x u:auditrice /srv/compta
+```
+
+Le compte, lui, aura expiré tout seul à la date prévue.
+
+## à toi de jouer
+
+Affiche l'ACL du fichier `bilan-2026.ods`. Puis donne au compte `auditrice` le droit de lecture sur ce fichier. Enfin, affiche à nouveau l'ACL pour vérifier l'entrée ajoutée.
+
+<SimulatedTerminal shell="bash" title="Des droits sur mesure" expectedCommands={["getfacl bilan-2026.ods", "sudo setfacl -m u:auditrice:r bilan-2026.ods", "sudo getfacl bilan-2026.ods"]} hints={["getfacl suivi du nom du fichier.", "setfacl -m, puis u: le nom du compte : les droits, puis le fichier.", "Relis l'ACL avec sudo getfacl pour voir la nouvelle ligne."]} commands={{ "ls -l bilan-2026.ods": "-rw-rw---- 1 claire compta 48210 sept. 27 14:02 bilan-2026.ods", "getfacl bilan-2026.ods": "# file: bilan-2026.ods\n# owner: claire\n# group: compta\nuser::rw-\ngroup::rw-\nother::---", "sudo setfacl -m u:auditrice:r bilan-2026.ods": "", "sudo getfacl bilan-2026.ods": "# file: bilan-2026.ods\n# owner: claire\n# group: compta\nuser::rw-\nuser:auditrice:r--\ngroup::rw-\nmask::rw-\nother::---", "sudo setfacl -x u:auditrice bilan-2026.ods": "" }} />
+
+Après la modification, deux lignes sont apparues : l'entrée nommée `user:auditrice:r--`, et le masque `mask::rw-`, que `setfacl` a calculé automatiquement. Sur un vrai système, `ls -l` afficherait désormais un `+` à la fin des permissions.
+
+## les pièges
+
+- **Ne pas voir le `+` de `ls -l`.** Les neuf caractères ne disent pas tout : `getfacl`.
+- **Oublier le `x` sur les répertoires.** Une entrée `r` seule sur un répertoire ne permet pas de le traverser. `rX`.
+- **Un `chmod` sur un fichier avec ACL.** Il modifie le masque, et peut réduire les droits de toutes les entrées nommées. `getfacl` montre les droits effectifs.
+- **Oublier les ACL par défaut.** Les fichiers créés ensuite n'ont pas l'accès. `-d` en plus de `-R`.
+- **Des sauvegardes qui perdent les ACL.** `tar --acls`, `rsync -aA`, `cp -a`.
+- **Multiplier les entrées individuelles.** Au-delà de quelques comptes, un groupe dédié dans l'ACL est plus simple à gérer et à auditer.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/acl.5.html" description="Le fonctionnement des ACL POSIX, dont le masque et l'algorithme de vérification">acl(5)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/setfacl.1.html" description="Toutes les options de setfacl">setfacl(1)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/tar/manual/html_node/Extended-File-Attributes.html" description="Conserver les ACL et attributs étendus avec tar">GNU tar : Extended File Attributes</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que signifie le + à la fin de -rw-rw----+ dans ls -l ?" options={["Le fichier est en cours de modification", "Le fichier porte une ACL : les neuf caractères ne décrivent pas tous les droits", "Le fichier est plus gros que prévu", "Le fichier est setuid"]} correct={1} explanation="Le + signale une ACL. getfacl montre les droits supplémentaires qu'elle contient." />
+  <Quiz id="q-2" question="Quelle commande donne la lecture du fichier rapport.pdf au seul compte bob, sans changer le groupe ni les autres ?" options={["chmod o+r rapport.pdf", "setfacl -m u:bob:r rapport.pdf", "chown bob rapport.pdf", "usermod -aG rapport bob"]} correct={1} explanation="setfacl -m ajoute une entrée nommée pour bob. chmod o+r ouvrirait la lecture à tout le monde." />
+  <Quiz id="q-3" question="Dans la sortie de getfacl, user:gestionnaire:rw- est suivi de #effective:r--. Pourquoi ?" options={["Le compte gestionnaire est désactivé", "Le masque ne contient que r, et plafonne les droits de l'entrée", "L'ACL est corrompue", "Le fichier est en lecture seule sur le disque"]} correct={1} explanation="Le masque limite les droits effectifs des entrées nommées et du groupe. Un chmod l'a sans doute abaissé." />
+  <Quiz id="q-4" question="Pourquoi un chmod 640 peut-il retirer l'écriture à un compte qui avait une entrée d'ACL en rw- ?" options={["Parce que chmod supprime toutes les ACL", "Parce que sur un fichier avec ACL, les droits du groupe affichés sont le masque, que chmod modifie", "Parce que 640 est interdit avec les ACL", "Ce n'est pas possible"]} correct={1} explanation="chmod agit sur le masque, qui plafonne toutes les entrées nommées. L'entrée ne change pas, mais ses droits effectifs baissent." />
+  <Quiz id="q-5" question="Comment faire pour que les fichiers créés à l'avenir dans /srv/rapports soient lisibles par le groupe direction ?" options={["setfacl -m g:direction:r /srv/rapports", "setfacl -d -m g:direction:r /srv/rapports", "chmod g+r /srv/rapports", "chgrp direction /srv/rapports"]} correct={1} explanation="-d pose une ACL par défaut, qui sert de modèle aux fichiers créés ensuite dans le répertoire." />
+  <Quiz id="q-6" question="Quelle commande de sauvegarde conserve les ACL ?" options={["tar -czf sauvegarde.tar.gz /srv", "tar --acls -czf sauvegarde.tar.gz /srv", "zip -r sauvegarde.zip /srv", "cp -r /srv /sauvegarde"]} correct={1} explanation="tar ne conserve les ACL qu'avec --acls, à la création comme à l'extraction. zip et cp -r les perdent." />
+  <Quiz id="q-7" question="Pour donner à un compte la lecture de toute une arborescence sans rendre les fichiers exécutables, quelle entrée utiliser ?" options={["u:compte:rx", "u:compte:rX", "u:compte:rwx", "u:compte:r"]} correct={1} explanation="X majuscule ne donne x qu'aux répertoires, qui en ont besoin pour être traversés. r seul empêcherait de parcourir les répertoires." />
+</QuizGroup>
+
+## à retenir
+
+- Une ACL ajoute des droits pour des **utilisateurs et groupes nommés**. Repère : un `+` dans `ls -l`.
+- `getfacl` pour lire ; `setfacl -m u:nom:rX` ou `g:nom:r` pour ajouter, `-x` pour retirer une entrée, `-b` pour tout retirer, `-R` pour une arborescence.
+- Le **masque** plafonne les entrées nommées et le groupe ; **`chmod` le modifie**. `#effective:` dans `getfacl` signale un droit bridé.
+- ACL **par défaut** (`-d`) sur un répertoire : les nouveaux fichiers en héritent. Existant avec `-R`, futur avec `-d`.
+- Copier et sauvegarder avec les ACL : `cp -a`, `tar --acls`, `rsync -aA`, ou `getfacl -R` et `setfacl --restore`.

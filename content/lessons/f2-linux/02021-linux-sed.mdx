@@ -1,0 +1,328 @@
+---
+refCode: CL-LSN-02021-V01
+slug: linux-transformer-sed
+title: "Transformer du texte avec sed"
+description: "L'éditeur de flux : substituer avec s///, cibler des lignes par numéro ou par motif, supprimer, afficher une partie d'un fichier, réutiliser ce qu'on a capturé, et modifier des fichiers de configuration sur place, avec une sauvegarde et sans casser les liens."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02020-V01"]
+---
+
+Changer la valeur d'une option dans cinquante fichiers de configuration. Retirer les commentaires d'un fichier avant de l'envoyer. Remplacer un nom de serveur partout dans un projet. Extraire les lignes 120 à 180 d'un journal géant. Tu pourrais ouvrir chaque fichier dans un éditeur et tout faire à la main. Ou tu peux décrire la modification une fois, et la laisser appliquer par `sed`, l'**éditeur de flux** (*stream editor*). C'est l'outil des modifications automatiques, celui qu'on retrouve dans tous les scripts de déploiement et de configuration.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- remplacer un texte par un autre avec la commande de substitution `s`, sur la première occurrence ou sur toutes ;
+- cibler les lignes à traiter par leur numéro, par un intervalle ou par un motif ;
+- supprimer des lignes, n'en afficher qu'une partie, en ajouter ;
+- réutiliser le texte trouvé dans le remplacement, avec les captures et `&` ;
+- modifier un fichier sur place en gardant une sauvegarde, et éviter les pièges de cette modification.
+
+## pourquoi ça compte
+
+La configuration automatique des serveurs repose en grande partie sur ce genre de modification : activer une option, changer un port, commenter une ligne. Même les outils d'automatisation modernes que tu verras dans le parcours DevOps font, en dessous, ce que fait `sed`. Savoir écrire une substitution correcte, et surtout sûre, t'évitera de modifier à la main des dizaines de machines.
+
+Et la sûreté compte : une substitution trop large peut modifier ce qu'elle ne devait pas toucher. Remplacer `port` par `port 2222` dans une configuration SSH peut aussi transformer `GatewayPorts` en quelque chose d'invalide. Une modification automatique doit être aussi précise qu'une modification à la main.
+
+## le principe
+
+`sed` lit son entrée **ligne par ligne**, applique à chaque ligne les commandes qu'on lui donne, et écrit le résultat sur sa sortie. Par défaut, **le fichier d'origine n'est pas modifié** : on voit le résultat à l'écran.
+
+<Diagram caption="sed traite un flux ligne par ligne">
+flowchart LR
+  A["Fichier ou flux d'entrée"] --> B["Ligne suivante"]
+  B --> C["La ligne est-elle visée par l'adresse ?"]
+  C -->|"oui"| D["Appliquer la commande : s, d, p..."]
+  C -->|"non"| E["Ligne inchangée"]
+  D --> F["Sortie"]
+  E --> F
+</Diagram>
+
+C'est une excellente propriété : on peut **essayer** une modification autant de fois qu'on veut, en regardant le résultat, avant de l'appliquer réellement au fichier.
+
+## la substitution : s
+
+La commande la plus utilisée, et de loin, est `s` (*substitute*) :
+
+```bash
+sed 's/ancien/nouveau/' fichier.txt
+```
+
+Sur chaque ligne, la **première** occurrence de `ancien` est remplacée par `nouveau`. Le motif `ancien` est une expression régulière, avec la syntaxe basique vue à la leçon 4.
+
+```bash
+echo "le chat voit le chat" | sed 's/chat/chien/'
+```
+
+```text
+le chien voit le chat
+```
+
+### les drapeaux
+
+Une lettre après la dernière barre modifie le comportement :
+
+| Drapeau | Effet |
+| --- | --- |
+| `g` | Remplacer **toutes** les occurrences de la ligne |
+| `2` | Remplacer seulement la deuxième occurrence (tout nombre fonctionne) |
+| `I` | Ignorer la casse (GNU sed) |
+| `p` | Afficher la ligne si un remplacement a eu lieu (avec `-n`, voir plus bas) |
+
+```bash
+echo "le chat voit le chat" | sed 's/chat/chien/g'
+```
+
+```text
+le chien voit le chien
+```
+
+### changer de délimiteur
+
+Les barres obliques deviennent pénibles quand le texte lui-même en contient, ce qui est le cas de tous les chemins : `s/\/var\/www/\/srv\/site/`. `sed` accepte n'importe quel caractère comme délimiteur, celui qui suit immédiatement le `s` :
+
+```bash
+sed 's|/var/www|/srv/site|g' site.conf
+sed 's#/var/www#/srv/site#g' site.conf
+```
+
+Les deux lignes font la même chose, et se lisent bien mieux.
+
+## cibler les lignes : les adresses
+
+Sans précision, une commande s'applique à **toutes** les lignes. On peut la limiter en la faisant précéder d'une **adresse** :
+
+| Adresse | Lignes visées |
+| --- | --- |
+| `5` | La ligne 5 |
+| `$` | La dernière ligne |
+| `10,20` | Les lignes 10 à 20 |
+| `/motif/` | Les lignes qui contiennent le motif |
+| `/debut/,/fin/` | De la première ligne contenant `debut` jusqu'à la suivante contenant `fin` |
+| `/motif/!` | Les lignes qui **ne** contiennent **pas** le motif |
+
+```bash
+sed '/^Port /s/22/2222/' /etc/ssh/sshd_config
+```
+
+Cette substitution ne s'applique **que** sur la ligne qui commence par `Port `. C'est exactement la précision qui manquait à l'exemple de l'introduction : `GatewayPorts` et toutes les autres lignes contenant `22` sont laissées tranquilles.
+
+## supprimer, afficher, ajouter
+
+### supprimer : d
+
+```bash
+sed '/^#/d' fichier.conf          # supprime les commentaires
+sed '/^$/d' fichier.conf          # supprime les lignes vides
+sed '1d' donnees.csv              # supprime la ligne d'en-tête
+```
+
+On peut enchaîner plusieurs commandes avec `-e`, ou en les séparant par des points-virgules :
+
+```bash
+sed -e '/^#/d' -e '/^$/d' /etc/ssh/sshd_config
+```
+
+C'est l'équivalent en une commande des deux `grep -v` de la leçon 3.
+
+### afficher une partie : -n et p
+
+Par défaut, `sed` affiche toutes les lignes. L'option `-n` supprime cet affichage automatique ; seules les lignes explicitement demandées avec `p` sont alors affichées. On obtient ainsi un extracteur de lignes très pratique :
+
+```bash
+sed -n '120,180p' /var/log/app/app.log
+sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' bundle.pem
+```
+
+La première affiche les lignes 120 à 180 d'un journal, quelle que soit sa taille. La seconde extrait le premier bloc de certificat d'un fichier qui en contient plusieurs, une situation courante avec les certificats TLS.
+
+### ajouter, insérer, remplacer une ligne
+
+| Commande | Effet |
+| --- | --- |
+| `a texte` | Ajouter une ligne **après** la ligne visée |
+| `i texte` | Insérer une ligne **avant** |
+| `c texte` | Remplacer la ligne entière |
+
+```bash
+sed '/^#PermitRootLogin/a PermitRootLogin no' /etc/ssh/sshd_config
+```
+
+Une ligne `PermitRootLogin no` est ajoutée juste après la ligne commentée d'origine, qui reste en place comme documentation.
+
+## réutiliser ce qu'on a trouvé
+
+### le texte trouvé entier : &
+
+Dans le remplacement, `&` représente **tout le texte trouvé** par le motif :
+
+```bash
+echo "erreur 404" | sed 's/[0-9]\+/[&]/'
+```
+
+```text
+erreur [404]
+```
+
+### les captures : \1, \2
+
+Les parenthèses capturent des morceaux du motif, qu'on réutilise dans le remplacement avec `\1`, `\2`, et ainsi de suite. En syntaxe étendue (`sed -E`), les parenthèses n'ont pas besoin d'être protégées :
+
+```bash
+echo "2026-09-27" | sed -E 's/([0-9]+)-([0-9]+)-([0-9]+)/\3\/\2\/\1/'
+```
+
+```text
+27/09/2026
+```
+
+Les trois nombres sont capturés, puis réécrits dans l'ordre inverse, séparés par des barres. C'est la façon de **réorganiser** un texte, pas seulement de le remplacer.
+
+<Callout type="info">
+Comme pour `grep`, prends l'habitude de `sed -E` : les `+`, `?`, `|` et parenthèses y fonctionnent sans barre oblique inverse, et les motifs sont les mêmes que ceux de `grep -E`. Tu peux ainsi mettre au point un motif avec `grep -oE`, puis le réutiliser tel quel dans une substitution `sed -E`.
+</Callout>
+
+## modifier un fichier sur place : -i
+
+Tout ce qui précède affiche le résultat sans toucher au fichier. Pour **modifier le fichier lui-même**, l'option `-i` (*in place*) :
+
+```bash
+sed -i 's/^#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+```
+
+Il n'y a ni confirmation ni annulation. La méthode sûre, que tu connais depuis le module 1 pour l'édition manuelle, s'applique ici aussi :
+
+1. **Essayer** sans `-i`, et lire le résultat, ou mieux, le comparer à l'original :
+
+```bash
+sed 's/^#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config | diff /etc/ssh/sshd_config -
+```
+
+2. **Appliquer avec une sauvegarde**, en collant un suffixe à `-i` :
+
+```bash
+sudo sed -i.bak 's/^#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+```
+
+`sed` crée `sshd_config.bak` avec le contenu d'avant, puis modifie le fichier.
+
+3. **Tester la configuration** avant d'appliquer au service : `sudo sshd -t`.
+
+<Callout type="danger">
+`sed -i` ne modifie pas le fichier existant : il écrit un **nouveau** fichier, puis le renomme par-dessus l'ancien. Deux conséquences. Si le fichier était un **lien symbolique**, GNU sed remplace le lien par un fichier ordinaire, et la cible n'est pas modifiée ; ajoute `--follow-symlinks` pour modifier la cible. Et l'**inode change** : un service qui avait le fichier ouvert continue de voir l'ancienne version jusqu'à son rechargement. Sur macOS, enfin, la syntaxe diffère : `sed -i ''` exige un argument, même vide.
+</Callout>
+
+## une modification qu'on peut relancer sans risque
+
+Une commande de configuration a toutes les chances d'être relancée : un script de déploiement exécuté deux fois, une automatisation qui repasse chaque nuit, une collègue qui refait la procédure. Une bonne modification doit donc donner **le même résultat qu'on l'applique une fois ou dix fois**. On dit qu'elle est **idempotente**.
+
+La substitution `s/^#PermitRootLogin.*/PermitRootLogin no/` l'est : la deuxième fois, il n'y a plus de ligne commentée à remplacer, et rien ne change. La commande `a` de tout à l'heure, en revanche, ne l'est pas : `sed -i '/^#PermitRootLogin/a PermitRootLogin no'` ajoute une ligne **à chaque exécution**, et dix passages laissent dix lignes identiques dans le fichier.
+
+La forme idempotente classique combine un test et une modification : si la directive existe, on la remplace ; sinon, on l'ajoute à la fin.
+
+```bash
+if grep -q '^PermitRootLogin' /etc/ssh/sshd_config; then
+  sudo sed -i.bak 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+else
+  echo 'PermitRootLogin no' | sudo tee -a /etc/ssh/sshd_config > /dev/null
+fi
+```
+
+Relancée autant de fois qu'on veut, cette séquence laisse exactement une ligne `PermitRootLogin no`. C'est ce principe, appliqué à grande échelle, qui fonde les outils de gestion de configuration comme Ansible, au programme du parcours DevOps : décrire **l'état voulu**, plutôt qu'une suite d'actions à rejouer.
+
+## démonstration : préparer un fichier de configuration pour un nouvel environnement
+
+Un fichier de configuration d'application a été écrit pour l'environnement de test. Il faut en faire la version de production : changer l'adresse de la base de données, passer le niveau de journalisation de `debug` à `warn`, désactiver le mode débogage, et retirer les commentaires.
+
+```bash
+cat app.conf
+```
+
+```text
+# Configuration de l'application (environnement de test)
+db_host = db-test.interne
+db_port = 5432
+
+# Journalisation
+log_level = debug
+debug = true
+```
+
+On écrit toutes les modifications dans une seule commande, et on regarde le résultat **sans** `-i` :
+
+```bash
+sed -E -e 's/^db_host = .*/db_host = db-prod.interne/' \
+       -e 's/^log_level = .*/log_level = warn/' \
+       -e 's/^debug = true/debug = false/' \
+       -e '/^#/d' -e '/^$/d' app.conf
+```
+
+```text
+db_host = db-prod.interne
+db_port = 5432
+log_level = warn
+debug = false
+```
+
+Chaque substitution est **ancrée** en début de ligne (`^`) et vise une clé précise : aucune autre ligne ne peut être touchée par erreur. Le résultat est correct ; on l'écrit dans un nouveau fichier, sans toucher au modèle de test :
+
+```bash
+sed -E -e 's/^db_host = .*/db_host = db-prod.interne/' \
+       -e 's/^log_level = .*/log_level = warn/' \
+       -e 's/^debug = true/debug = false/' \
+       -e '/^#/d' -e '/^$/d' app.conf > app-prod.conf
+```
+
+Écrire dans un **nouveau** fichier plutôt qu'avec `-i` laisse l'original intact et permet de comparer les deux avec `diff` à la leçon suivante.
+
+## à toi de jouer
+
+Affiche le contenu de `app.conf` en remplaçant `debug` par `warn` sur la ligne qui commence par `log_level`. Puis affiche seulement les lignes 2 à 4 du fichier. Enfin, affiche le fichier sans ses commentaires ni ses lignes vides, en une seule commande `sed`.
+
+<SimulatedTerminal shell="bash" title="Éditer un flux" expectedCommands={["sed '/^log_level/s/debug/warn/' app.conf", "sed -n '2,4p' app.conf", "sed -e '/^#/d' -e '/^$/d' app.conf"]} hints={["Une adresse /^log_level/ devant la commande s/debug/warn/.", "-n pour ne rien afficher par défaut, puis l'intervalle 2,4 et la commande p.", "Deux commandes d, chacune avec -e : une pour les lignes qui commencent par #, une pour les lignes vides."]} commands={{ "cat app.conf": "# Configuration de l'application (environnement de test)\ndb_host = db-test.interne\ndb_port = 5432\n\n# Journalisation\nlog_level = debug\ndebug = true", "sed '/^log_level/s/debug/warn/' app.conf": "# Configuration de l'application (environnement de test)\ndb_host = db-test.interne\ndb_port = 5432\n\n# Journalisation\nlog_level = warn\ndebug = true", "sed 's/debug/warn/g' app.conf": "# Configuration de l'application (environnement de test)\ndb_host = db-test.interne\ndb_port = 5432\n\n# Journalisation\nlog_level = warn\nwarn = true", "sed -n '2,4p' app.conf": "db_host = db-test.interne\ndb_port = 5432\n", "sed -e '/^#/d' -e '/^$/d' app.conf": "db_host = db-test.interne\ndb_port = 5432\nlog_level = debug\ndebug = true" }} />
+
+Essaie aussi `sed 's/debug/warn/g' app.conf` : sans adresse, la ligne `debug = true` devient `warn = true`, une clé qui n'existe pas. C'est exactement l'erreur qu'une adresse évite.
+
+## les pièges
+
+- **Une substitution sans adresse ni ancre.** Elle touche toutes les lignes où le motif apparaît, y compris celles qu'on ne visait pas.
+- **Oublier `g`.** Seule la première occurrence de chaque ligne est remplacée.
+- **Utiliser `-i` sans avoir essayé.** Essaie sans `-i`, compare avec `diff`, puis applique avec `-i.bak`.
+- **`sed -i` sur un lien symbolique.** Le lien est remplacé par un fichier. `--follow-symlinks`.
+- **Des barres obliques dans le motif.** Change de délimiteur : `s|a/b|c/d|`.
+- **Confondre syntaxe basique et étendue.** Sans `-E`, `+` et les parenthèses sont ordinaires.
+- **Une commande `a` dans un script relancé.** Elle ajoute la ligne à chaque passage. Teste avec `grep -q` avant d'ajouter, pour que la modification reste idempotente.
+- **Des guillemets doubles autour du script.** Le shell interprète `$` et quelques caractères ; les apostrophes protègent tout.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/sed/manual/sed.html" description="Le manuel complet de GNU sed">GNU sed manual</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/sed.1.html" description="La page de manuel de sed">sed(1)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/sed/manual/html_node/The-_0022s_0022-Command.html" description="Tous les détails de la commande de substitution">GNU sed : la commande s</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que produit echo 'a a a' | sed 's/a/b/' ?" options={["b b b", "b a a", "a a b", "a a a"]} correct={1} explanation="Sans le drapeau g, seule la première occurrence de chaque ligne est remplacée." />
+  <Quiz id="q-2" question="sed 's/port/port 2222/' fichier : quel est le risque ?" options={["Aucun, la commande est précise", "Elle modifie toute ligne contenant port, y compris des mots comme GatewayPorts ou transport", "Elle supprime les lignes contenant port", "Elle ne fait rien sans -i"]} correct={1} explanation="Sans adresse ni ancre, le motif est cherché partout. /^Port /s/.../.../ ne vise que la ligne voulue." />
+  <Quiz id="q-3" question="Quelle commande affiche uniquement les lignes 50 à 60 d'un fichier ?" options={["sed '50,60d' fichier", "sed -n '50,60p' fichier", "sed '50,60p' fichier", "sed -i '50,60p' fichier"]} correct={1} explanation="-n supprime l'affichage automatique et p affiche les lignes visées. Sans -n, toutes les lignes s'afficheraient, et celles de 50 à 60 deux fois." />
+  <Quiz id="q-4" question="Pour remplacer /var/www par /srv/site, quelle écriture est la plus lisible ?" options={["sed 's//var/www//srv/site/g'", "sed 's|/var/www|/srv/site|g'", "sed 's/var/www/srv/site/g'", "sed -d '/var/www'"]} correct={1} explanation="sed accepte n'importe quel délimiteur après s. Avec |, les barres obliques du chemin n'ont pas à être protégées." />
+  <Quiz id="q-5" question="Que fait sed -i.bak 's/a/b/' config.txt ?" options={["Il affiche le résultat sans rien modifier", "Il modifie config.txt et garde l'ancienne version dans config.txt.bak", "Il crée config.txt.bak modifié et laisse config.txt intact", "Il supprime config.txt"]} correct={1} explanation="-i modifie le fichier sur place ; un suffixe collé à -i demande une sauvegarde du contenu d'avant sous ce nom." />
+  <Quiz id="q-6" question="Dans sed -E 's/([a-z]+)@([a-z.]+)/\2 : \1/', que représente \2 dans le remplacement ?" options={["Le deuxième caractère de la ligne", "Le texte capturé par le deuxième groupe de parenthèses", "La deuxième ligne du fichier", "Deux espaces"]} correct={1} explanation="Chaque paire de parenthèses capture un morceau du texte trouvé ; \1, \2... le réinsèrent dans le remplacement." />
+  <Quiz id="q-7" question="config.conf est un lien symbolique. Que fait sed -i dessus avec GNU sed, sans option particulière ?" options={["Il modifie la cible du lien", "Il remplace le lien par un fichier ordinaire modifié, sans toucher à la cible", "Il refuse de travailler", "Il modifie le lien et la cible"]} correct={1} explanation="sed -i écrit un nouveau fichier et le renomme par-dessus : le lien disparaît. --follow-symlinks fait modifier la cible." />
+</QuizGroup>
+
+## à retenir
+
+- `sed` traite un flux ligne par ligne et **affiche** le résultat ; le fichier n'est modifié qu'avec `-i`.
+- `s/motif/remplacement/` : première occurrence ; `g` toutes ; `I` sans casse. Délimiteur libre : `s|a|b|`.
+- Adresses : numéro, `$`, intervalle `10,20`, motif `/re/`, négation `!`. Toujours viser précisément les lignes.
+- `d` supprime, `-n` avec `p` extrait, `a` `i` `c` ajoutent, insèrent, remplacent une ligne.
+- `&` réinsère tout le texte trouvé, `\1` `\2` les captures ; `sed -E` pour la syntaxe étendue.
+- Sur place : essayer sans `-i`, comparer avec `diff`, appliquer avec `-i.bak`, tester la configuration. `--follow-symlinks` pour les liens.

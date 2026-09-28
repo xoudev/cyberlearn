@@ -1,0 +1,267 @@
+---
+refCode: CL-LSN-02030-V01
+slug: linux-su-sudo
+title: "Devenir administrateur : su et sudo"
+description: "La différence entre su et sudo, les droits d'une personne sur la machine avec sudo -l, la syntaxe du fichier sudoers, donner une seule commande plutôt que tout, les règles qui ouvrent sans le vouloir un shell root, et où retrouver la trace de chaque élévation."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 50
+xpReward: 350
+prerequisites: ["CL-LSN-02029-V01"]
+---
+
+On ne travaille pas en root au quotidien : une erreur de frappe y a des conséquences sans limite, et une session root laissée ouverte est une invitation. Mais il faut bien, régulièrement, installer un paquet, redémarrer un service, lire un journal protégé. Linux offre deux moyens de prendre ponctuellement les droits d'administration : `su`, l'ancien, et `sudo`, qui l'a largement remplacé. Bien configuré, `sudo` permet de donner à chaque personne **exactement** ce dont elle a besoin, et de savoir qui a fait quoi. Mal configuré, il donne root à qui ne devait pas l'avoir.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer la différence entre `su` et `sudo`, et pourquoi on préfère `sudo` ;
+- lancer une commande, un shell ou une commande sous un autre compte avec `sudo` ;
+- lister tes propres droits avec `sudo -l` ;
+- lire et écrire une règle du fichier `sudoers`, avec `visudo` et le répertoire `/etc/sudoers.d` ;
+- limiter une personne à quelques commandes précises ;
+- reconnaître les règles qui permettent, sans le vouloir, d'obtenir un shell root ;
+- retrouver dans les journaux la trace de chaque utilisation de `sudo`.
+
+## pourquoi ça compte
+
+`sudo` est la porte d'entrée de l'administration, et donc une cible. Pour un attaquant qui a obtenu un compte ordinaire, `sudo -l` est l'une des toutes premières commandes : elle lui dit si ce compte peut devenir root, et comment. Une règle trop large (« tout, sans mot de passe »), ou une règle qui semble limitée mais autorise un programme permettant de lancer un shell, suffit à transformer une petite compromission en prise de contrôle totale.
+
+Côté défense, `sudo` apporte ce que `su` n'a pas : une **trace nominative**. Chaque commande lancée avec `sudo` est journalisée avec le nom de la personne, ce qui rend possible l'audit et l'enquête.
+
+## su : devenir un autre
+
+`su` (*substitute user*) ouvre un shell sous un autre compte, root par défaut, en demandant **le mot de passe de ce compte** :
+
+```bash
+su -
+```
+
+```text
+Password:
+root@srv-web-01:~#
+```
+
+Le tiret (`su -`, ou `su --login`) ouvre un vrai shell de connexion : l'environnement, le `PATH` et le répertoire sont ceux de root. Sans tiret, on garde une partie de son propre environnement, source de comportements étranges. `exit` revient au compte d'origine.
+
+Le problème de `su` tient à son principe : pour devenir root, il faut **connaître le mot de passe de root**. Tous les administrateurs partagent donc le même secret ; on ne peut pas retirer l'accès à une personne sans changer le mot de passe pour tous ; et les journaux indiquent qu'**un** administrateur est devenu root, sans dire lequel a fait quoi ensuite.
+
+## sudo : agir en administrateur, en son propre nom
+
+`sudo` (*superuser do*) exécute **une commande** avec les droits d'un autre compte, root par défaut, en demandant **ton propre mot de passe**, et seulement si une règle t'y autorise :
+
+```bash
+sudo systemctl restart nginx
+```
+
+```text
+[sudo] password for alice:
+```
+
+Le mot de passe est ensuite gardé en mémoire quelques minutes (15 par défaut) : les commandes `sudo` suivantes ne le redemandent pas. `sudo -k` oublie ce délai tout de suite, utile avant de s'éloigner de son poste.
+
+<Diagram caption="Ce que vérifie sudo avant d'exécuter">
+flowchart TD
+  A["alice tape sudo commande"] --> B["Une règle de sudoers autorise-t-elle alice à lancer cette commande ?"]
+  B -->|"non"| C["Refus, et incident journalisé"]
+  B -->|"oui"| D["Mot de passe d'alice (sauf NOPASSWD ou délai en cours)"]
+  D --> E["Commande exécutée en root, avec un environnement nettoyé"]
+  E --> F["Journal : alice, depuis quel terminal, quelle commande, sous quel compte"]
+</Diagram>
+
+Les formes utiles :
+
+| Commande | Effet |
+| --- | --- |
+| `sudo commande` | La commande en root |
+| `sudo -u postgres psql` | La commande sous un autre compte, ici `postgres` |
+| `sudo -i` | Un shell de connexion root (équivalent de `su -`) |
+| `sudo -s` | Un shell root qui garde ton répertoire courant |
+| `sudo -l` | Ce que tu as le droit de faire |
+| `sudo -e fichier` | Éditer un fichier avec ton éditeur, sans lancer l'éditeur en root (module 1) |
+| `sudo -k` | Oublier le mot de passe mémorisé |
+
+Sur Ubuntu, le compte root n'a même pas de mot de passe utilisable (`!` dans `/etc/shadow`) : on ne peut pas faire `su -`, et tout passe par `sudo`. C'est un choix de sécurité : aucun secret partagé, et une trace pour chaque personne.
+
+## qui a le droit : sudo -l
+
+```bash
+sudo -l
+```
+
+```text
+Matching Defaults entries for alice on srv-web-01:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin, use_pty
+
+User alice may run the following commands on srv-web-01:
+    (ALL : ALL) ALL
+```
+
+`(ALL : ALL) ALL` : Alice peut lancer n'importe quelle commande, sous n'importe quel compte et n'importe quel groupe. Elle est administratrice complète. Une personne qui n'a qu'un droit limité verrait par exemple :
+
+```text
+User bob may run the following commands on srv-web-01:
+    (root) /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx
+```
+
+La ligne `Defaults` montre aussi des protections actives : `env_reset` nettoie les variables d'environnement, et `secure_path` impose un `PATH` sûr, ce qui explique le comportement vu au module 1 (tes scripts de `~/bin` introuvables avec `sudo`).
+
+## le fichier sudoers
+
+Les règles sont dans `/etc/sudoers` et dans les fichiers du répertoire `/etc/sudoers.d/`. On ne les modifie **jamais** avec un éditeur ordinaire, mais avec **`visudo`**, qui vérifie la syntaxe avant d'enregistrer : une erreur dans ce fichier empêche `sudo` de fonctionner pour tout le monde, et si root n'a pas de mot de passe, il n'y a plus de moyen simple de réparer.
+
+```bash
+sudo visudo                               # le fichier principal
+sudo visudo -f /etc/sudoers.d/equipe-web  # un fichier dédié
+sudo visudo -c                            # vérifier la syntaxe de tout
+```
+
+La bonne pratique est de **ne pas toucher au fichier principal** et d'ajouter ses règles dans des fichiers séparés de `/etc/sudoers.d/`, un par besoin, faciles à relire et à retirer. Ces fichiers doivent être en `0440` et appartenir à root.
+
+### la syntaxe d'une règle
+
+```text
+qui   machine = (sous_quel_compte) commandes
+```
+
+| Exemple | Sens |
+| --- | --- |
+| `alice ALL=(ALL:ALL) ALL` | Alice peut tout faire, partout, sous n'importe quel compte |
+| `%sudo ALL=(ALL:ALL) ALL` | Les membres du groupe `sudo` (le `%` désigne un groupe) peuvent tout faire |
+| `bob ALL=(root) /usr/bin/systemctl restart nginx` | Bob peut seulement redémarrer nginx, en root |
+| `%supervision ALL=(root) NOPASSWD: /usr/bin/journalctl -u app*` | Le groupe `supervision` lit les journaux de l'application, sans mot de passe |
+| `deploy ALL=(www-data) /usr/local/bin/deployer` | Le compte `deploy` lance le script de déploiement sous le compte `www-data` |
+
+Trois règles d'écriture :
+
+- **chemins complets** pour les commandes : `/usr/bin/systemctl`, jamais `systemctl`, qui dépendrait du `PATH` ;
+- **arguments précis** quand c'est possible : `systemctl restart nginx` et non `systemctl`, qui permettrait aussi d'arrêter tous les services ;
+- `NOPASSWD:` seulement pour des comptes de service ou des commandes inoffensives. Une règle `ALL` en `NOPASSWD` pour une personne veut dire : quiconque s'empare de sa session devient root sans aucun obstacle.
+
+## les règles qui donnent root sans le vouloir
+
+Autoriser une seule commande semble sûr. Ce ne l'est pas si cette commande permet de **lancer autre chose**. De nombreux programmes courants le permettent :
+
+| Commande autorisée | Pourquoi elle donne un shell root |
+| --- | --- |
+| `vim`, `nano`, `less`, `more`, `man` | On peut lancer une commande depuis l'éditeur ou le visualiseur |
+| `find` | L'option `-exec` lance n'importe quelle commande |
+| `tar`, `zip`, `rsync` | Des options permettent d'exécuter un programme |
+| `python3`, `perl`, `bash`, `awk` | Ce sont des langages : ils exécutent ce qu'on leur donne |
+| `cp`, `tee`, `mv` vers un chemin libre | On peut écraser `/etc/sudoers` ou `/etc/passwd` |
+| Un script modifiable par l'utilisateur | Il suffit de le modifier pour lui faire faire autre chose |
+
+Des bases publiques recensent pour chaque programme ces moyens de sortie ; elles servent aussi bien aux attaquants qu'aux administrateurs qui vérifient leurs règles. La règle défensive tient en une phrase : **n'autorise par `sudo` que des commandes qui ne permettent pas d'en lancer d'autres**, avec des arguments figés.
+
+<Callout type="danger">
+Pour permettre à quelqu'un de modifier un fichier système précis, n'autorise pas `sudo vim /etc/nginx/nginx.conf` : depuis vim, une commande donne un shell root. Autorise `sudoedit /etc/nginx/nginx.conf` : l'éditeur tourne sous le compte de la personne, sur une copie, et seul le fichier final est remis en place avec les droits root (module 1, leçon 7). De même, un script autorisé par `sudo` doit appartenir à root et se trouver dans un répertoire que personne d'autre ne peut modifier (leçon 3).
+</Callout>
+
+## la trace de chaque élévation
+
+Chaque utilisation de `sudo`, acceptée ou refusée, est journalisée. Sur Debian et Ubuntu, dans `/var/log/auth.log` et dans le journal de systemd :
+
+```bash
+sudo grep "sudo:" /var/log/auth.log | tail -3
+```
+
+```text
+2026-09-27T14:12:40 srv-web-01 sudo:    alice : TTY=pts/0 ; PWD=/home/alice ; USER=root ; COMMAND=/usr/bin/systemctl restart nginx
+2026-09-27T14:15:02 srv-web-01 sudo:      bob : TTY=pts/1 ; PWD=/tmp ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow
+2026-09-27T14:15:02 srv-web-01 sudo:      bob : command not allowed ; TTY=pts/1 ; PWD=/tmp ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow
+```
+
+Qui, depuis quel terminal, dans quel répertoire, sous quel compte, quelle commande. La troisième ligne montre un **refus** : Bob a tenté de lire `/etc/shadow` alors que ses droits ne le permettent pas. Des refus répétés sont un signal à surveiller : quelqu'un cherche ce qu'il peut faire. Avec `journalctl`, la même information s'obtient par `journalctl _COMM=sudo` (module 8).
+
+Une limite à connaître : une fois un shell root ouvert avec `sudo -i`, les commandes tapées **dans** ce shell ne sont plus journalisées une à une par `sudo`. C'est une raison de plus pour préférer des commandes `sudo` individuelles, et pour réserver `sudo -i` aux vraies séances d'administration.
+
+## démonstration : des droits limités pour l'équipe de supervision
+
+L'équipe de supervision (groupe `supervision`) doit pouvoir consulter les journaux de l'application et vérifier l'état de ses services, sans pouvoir rien modifier, et sans mot de passe pour pouvoir l'automatiser.
+
+**1. Un fichier dédié**, édité avec `visudo` :
+
+```bash
+sudo visudo -f /etc/sudoers.d/supervision
+```
+
+```text
+# Lecture seule sur l'application, pour l'équipe de supervision
+%supervision ALL=(root) NOPASSWD: /usr/bin/journalctl -u app-factures *, /usr/bin/systemctl status app-factures
+```
+
+Chemins complets, service nommé, verbes en lecture seule : `status` et non `restart` ou `stop`. Pas d'éditeur, pas de visualiseur, pas d'interpréteur.
+
+**2. La vérification de syntaxe** et des droits du fichier :
+
+```bash
+sudo visudo -c
+ls -l /etc/sudoers.d/supervision
+```
+
+```text
+/etc/sudoers: parsed OK
+/etc/sudoers.d/supervision: parsed OK
+-r--r----- 1 root root 142 sept. 27 14:30 /etc/sudoers.d/supervision
+```
+
+**3. Le test**, en se mettant à la place d'un membre de l'équipe :
+
+```bash
+sudo -l -U lea
+```
+
+```text
+User lea may run the following commands on srv-web-01:
+    (root) NOPASSWD: /usr/bin/journalctl -u app-factures *, /usr/bin/systemctl status app-factures
+```
+
+Une précision de sécurité : `journalctl` affiche ses résultats dans un visualiseur (`less`) quand la sortie est un terminal, et `less` permet de lancer une commande. Pour une règle tout à fait fermée, les membres de l'équipe doivent utiliser `journalctl --no-pager`, et on écrit la règle en conséquence. C'est exactement le genre de détail qu'une relecture de règle `sudo` doit chercher.
+
+## à toi de jouer
+
+Affiche d'abord les droits `sudo` de ton compte. Puis consulte les trois dernières lignes du journal d'authentification qui concernent `sudo`. Enfin, vérifie la syntaxe de toute la configuration de `sudo`.
+
+<SimulatedTerminal shell="bash" title="Les droits d'administration" expectedCommands={["sudo -l", "sudo grep \"sudo:\" /var/log/auth.log | tail -3", "sudo visudo -c"]} hints={["sudo avec l'option qui liste tes droits.", "grep sur le motif sudo: dans /var/log/auth.log, puis tail -3.", "visudo avec l'option de vérification."]} commands={{ "sudo -l": "Matching Defaults entries for bob on srv-web-01:\n    env_reset, mail_badpass, secure_path=/usr/local/sbin\\:/usr/local/bin\\:/usr/sbin\\:/usr/bin\\:/sbin\\:/bin, use_pty\n\nUser bob may run the following commands on srv-web-01:\n    (root) /usr/bin/systemctl restart nginx, /usr/bin/systemctl reload nginx\n    (root) NOPASSWD: /usr/bin/vim /etc/nginx/nginx.conf", "sudo grep \"sudo:\" /var/log/auth.log | tail -3": "2026-09-27T14:12:40 srv-web-01 sudo:    alice : TTY=pts/0 ; PWD=/home/alice ; USER=root ; COMMAND=/usr/bin/systemctl restart nginx\n2026-09-27T14:15:02 srv-web-01 sudo:      bob : TTY=pts/1 ; PWD=/tmp ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow\n2026-09-27T14:15:02 srv-web-01 sudo:      bob : command not allowed ; TTY=pts/1 ; PWD=/tmp ; USER=root ; COMMAND=/usr/bin/cat /etc/shadow", "sudo visudo -c": "/etc/sudoers: parsed OK\n/etc/sudoers.d/README: parsed OK\n/etc/sudoers.d/equipe-web: parsed OK", "sudo cat /etc/shadow": "Sorry, user bob is not allowed to execute '/usr/bin/cat /etc/shadow' as root on srv-web-01." }} />
+
+Relis la sortie de `sudo -l` : une des règles de Bob permet de lancer `vim` en root, sans mot de passe. Pourquoi est-ce, en réalité, un accès root complet ? Et par quoi la remplacer ?
+
+## les pièges
+
+- **Partager le mot de passe root.** Aucune trace nominative, aucun retrait individuel possible. `sudo` pour chacun.
+- **Modifier `/etc/sudoers` sans `visudo`.** Une erreur de syntaxe bloque `sudo` pour tout le monde.
+- **Autoriser un éditeur, un visualiseur, un interpréteur ou `find`.** Chacun permet de lancer un shell root. `sudoedit` pour éditer, des commandes aux arguments figés.
+- **Des commandes sans chemin complet.** Elles dépendent du `PATH`. Toujours `/usr/bin/...`.
+- **`NOPASSWD: ALL` pour une personne.** Une session volée donne root immédiatement.
+- **Un script autorisé que d'autres peuvent modifier.** Il appartient à root, dans un répertoire protégé.
+- **Rester dans `sudo -i`.** Les commandes n'y sont plus journalisées une à une.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.sudo.ws/docs/man/sudoers.man/" description="La documentation officielle du fichier sudoers">sudoers(5)</ExternalLink>
+
+<ExternalLink href="https://www.sudo.ws/docs/man/sudo.man/" description="Toutes les options de sudo">sudo(8)</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-de-securite-relatives-un-systeme-gnulinux" description="Les recommandations de l'ANSSI, dont celles qui portent sur sudo">ANSSI : recommandations pour un système GNU/Linux</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle est la principale différence entre su et sudo ?" options={["su est plus rapide", "su demande le mot de passe du compte visé, sudo celui de l'utilisateur et journalise chaque commande à son nom", "sudo ne fonctionne que pour root", "su est réservé aux scripts"]} correct={1} explanation="Avec su, tous les administrateurs partagent le mot de passe root. sudo s'appuie sur le mot de passe de chacun, des règles individuelles et une trace nominative." />
+  <Quiz id="q-2" question="Quelle commande liste ce que ton compte a le droit de faire avec sudo ?" options={["sudo -i", "sudo -l", "sudo -k", "sudo -s"]} correct={1} explanation="sudo -l affiche les règles qui s'appliquent au compte. -i ouvre un shell root, -k oublie le mot de passe mémorisé." />
+  <Quiz id="q-3" question="Pourquoi faut-il modifier les règles de sudo avec visudo ?" options={["Parce que c'est le seul éditeur autorisé en root", "Parce qu'il vérifie la syntaxe avant d'enregistrer, et qu'une erreur bloquerait sudo pour tous", "Parce qu'il chiffre le fichier", "Parce qu'il envoie la règle aux autres serveurs"]} correct={1} explanation="Une faute dans sudoers rend sudo inutilisable. visudo refuse d'enregistrer un fichier invalide." />
+  <Quiz id="q-4" question="Que signifie la règle %web ALL=(root) /usr/bin/systemctl reload nginx ?" options={["L'utilisateur web peut tout faire", "Les membres du groupe web peuvent recharger nginx en root, et rien d'autre", "nginx tourne sous le compte web", "Le groupe web est supprimé"]} correct={1} explanation="Le % désigne un groupe. La règle autorise une seule commande, avec ses arguments, exécutée en root." />
+  <Quiz id="q-5" question="Une règle autorise un utilisateur à lancer sudo less /var/log/syslog. Pourquoi est-ce dangereux ?" options={["Parce que less affiche des données sensibles", "Parce que less permet de lancer une commande, qui s'exécutera en root", "Parce que le journal est trop gros", "Ce n'est pas dangereux"]} correct={1} explanation="Depuis less, on peut lancer une commande shell. Autoriser less en root revient à autoriser un shell root." />
+  <Quiz id="q-6" question="Comment permettre à quelqu'un de modifier /etc/nginx/nginx.conf sans lui donner un shell root ?" options={["sudo vim /etc/nginx/nginx.conf", "Une règle sudoedit /etc/nginx/nginx.conf", "chmod 777 /etc/nginx/nginx.conf", "L'ajouter au groupe root"]} correct={1} explanation="sudoedit fait tourner l'éditeur sous le compte de la personne, sur une copie. Seule la remise en place du fichier se fait en root." />
+  <Quiz id="q-7" question="Où retrouver la trace des commandes lancées avec sudo sur Debian ?" options={["Dans ~/.bash_history uniquement", "Dans /var/log/auth.log et le journal systemd", "Dans /etc/sudoers", "Nulle part"]} correct={1} explanation="sudo journalise chaque utilisation, acceptée ou refusée, avec le compte, le terminal et la commande." />
+</QuizGroup>
+
+## à retenir
+
+- On ne travaille pas en root : on élève ses droits **pour une commande**, avec `sudo`.
+- `su -` demande le mot de passe de root et ne trace pas qui fait quoi ; `sudo` demande le tien, applique des règles et journalise tout.
+- `sudo -l` pour tes droits, `-u compte` pour un autre compte, `-i` pour un shell root (à limiter), `-e` pour éditer, `-k` pour oublier.
+- Règles dans `/etc/sudoers.d/`, toujours avec **`visudo`** : `qui machine=(compte) /chemin/complet arguments`, `%groupe` pour un groupe.
+- N'autoriser que des commandes qui ne lancent rien d'autre : ni éditeur, ni visualiseur, ni interpréteur, ni `find`. `sudoedit` pour modifier un fichier.
+- La trace : `/var/log/auth.log` et `journalctl _COMM=sudo`. Des refus répétés sont un signal.

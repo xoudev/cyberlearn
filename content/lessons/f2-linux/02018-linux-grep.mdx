@@ -1,0 +1,318 @@
+---
+refCode: CL-LSN-02018-V01
+slug: linux-filtrer-grep
+title: "Filtrer avec grep"
+description: "Trouver des lignes dans des fichiers ou dans un flux : casse, inversion, numéros de ligne, comptage, mots entiers, contexte autour d'un résultat, recherche récursive dans une arborescence, motifs littéraux, codes de retour, et grep au service de l'analyse de journaux."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02017-V01"]
+---
+
+Si une seule commande de traitement de texte devait rester, ce serait `grep`. Elle affiche les lignes qui contiennent un motif, dans un fichier, dans des milliers de fichiers ou dans un flux qui arrive d'un tube. C'est l'outil qu'on dégaine pour trouver une option dans une configuration, une erreur dans un journal, un appel de fonction dans du code, une tentative d'intrusion dans les traces d'authentification. Cette leçon couvre ses options utiles et ses pièges ; la suivante, les expressions régulières, lui donnera toute sa puissance.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- chercher un texte dans un ou plusieurs fichiers, ou dans la sortie d'une autre commande ;
+- ignorer la casse, inverser la recherche, numéroter et compter les lignes trouvées ;
+- chercher un mot entier ou une ligne entière, et n'afficher que la partie trouvée ;
+- afficher les lignes autour d'un résultat pour comprendre son contexte ;
+- chercher récursivement dans une arborescence en filtrant les fichiers parcourus ;
+- utiliser le code de retour de `grep` dans un enchaînement ou un script.
+
+## pourquoi ça compte
+
+Un serveur produit des journaux par centaines de mégaoctets chaque jour. Personne ne les lit ligne à ligne : on y cherche. « Quand ce service a-t-il redémarré ? », « combien de connexions SSH ont échoué cette nuit ? », « quelle erreur est apparue juste avant le plantage ? ». Chaque fois, c'est `grep`, seul ou dans une chaîne.
+
+C'est aussi un outil de sécurité quotidien. Les analystes d'un centre de supervision l'utilisent pour trier des alertes avant d'ouvrir un outil plus lourd ; les développeurs pour vérifier qu'aucun mot de passe n'a été laissé dans le code avant une publication ; les administrateurs pour contrôler une option de durcissement sur cinquante fichiers de configuration d'un coup.
+
+## la forme de base
+
+```bash
+grep "PermitRootLogin" /etc/ssh/sshd_config
+```
+
+```text
+#PermitRootLogin prohibit-password
+```
+
+`grep` affiche **chaque ligne entière** qui contient le motif. Ici, une seule, commentée par un `#`, ce qui veut dire que c'est la valeur par défaut qui s'applique. Le motif vient en premier, puis un ou plusieurs fichiers. Sans fichier, `grep` lit son entrée standard, ce qui permet de filtrer n'importe quelle commande :
+
+```bash
+ps aux | grep nginx
+```
+
+Avec plusieurs fichiers, chaque ligne est précédée du nom du fichier où elle a été trouvée :
+
+```bash
+grep "Listen" /etc/apache2/ports.conf /etc/apache2/sites-enabled/*.conf
+```
+
+<Callout type="info">
+Mets toujours le motif entre guillemets, et de préférence entre apostrophes s'il contient des caractères spéciaux. Sans protection, le shell peut interpréter un `*`, un `$` ou un espace avant que `grep` ne voie le motif, exactement comme pour `find` à la leçon précédente.
+</Callout>
+
+## comment grep travaille
+
+`grep` lit son entrée **ligne par ligne**. Pour chaque ligne, une seule question : le motif y apparaît-il ? La réponse, combinée aux options, décide de ce qui sort.
+
+<Diagram caption="Ce que grep fait de chaque ligne">
+flowchart TD
+  A["Ligne suivante du fichier ou du flux"] --> B["Le motif est-il dans la ligne ?"]
+  B -->|"oui, sans -v ; ou non, avec -v"| C["La ligne est retenue"]
+  B -->|"sinon"| D["La ligne est ignorée"]
+  C --> E["Sans option : la ligne est affichée"]
+  C --> F["-c : un compteur augmente"]
+  C --> G["-l : le nom du fichier est affiché, puis on passe au fichier suivant"]
+  C --> H["-o : seule la partie trouvée est affichée"]
+</Diagram>
+
+Ce fonctionnement ligne par ligne a deux conséquences à garder en tête. D'abord, `grep` ne voit jamais un motif **à cheval sur deux lignes** : un message d'erreur coupé en deux dans un journal ne sera trouvé que par l'un de ses morceaux. Ensuite, la mémoire utilisée ne dépend pas de la taille du fichier : `grep` traite un journal de 30 Go aussi tranquillement qu'un fichier de dix lignes, en flux, ce qui en fait l'outil idéal en tête d'une chaîne de tubes. C'est aussi pour cela qu'il est si rapide : il ne fait rien d'autre que lire et comparer, sans rien garder de ce qui ne l'intéresse pas.
+
+## les options du quotidien
+
+| Option | Effet |
+| --- | --- |
+| `-i` | Ignorer la casse : `error`, `Error` et `ERROR` correspondent tous |
+| `-v` | Inverser : afficher les lignes qui **ne** contiennent **pas** le motif |
+| `-n` | Afficher le numéro de chaque ligne trouvée |
+| `-c` | Compter les lignes trouvées au lieu de les afficher |
+| `-l` | Afficher seulement le nom des fichiers qui contiennent le motif |
+| `-L` | Afficher le nom des fichiers qui ne le contiennent pas |
+| `-w` | Ne trouver que des mots entiers |
+| `-x` | Ne trouver que des lignes entières |
+| `-o` | N'afficher que la partie trouvée, pas toute la ligne |
+| `-m N` | S'arrêter après N lignes trouvées |
+| `-h` et `-H` | Masquer, ou forcer, le nom du fichier devant chaque ligne |
+
+Quelques combinaisons qui reviennent sans cesse :
+
+```bash
+grep -in "error" /var/log/syslog          # les erreurs, quelle que soit la casse, numérotées
+grep -c "Failed password" /var/log/auth.log   # combien de tentatives échouées
+grep -v "^#" /etc/ssh/sshd_config | grep -v "^$"   # la configuration réelle, sans commentaires ni lignes vides
+```
+
+La dernière mérite une explication : `^#` désigne les lignes qui **commencent** par un `#`, et `^$` les lignes **vides** (début et fin de ligne collés). En les retirant, il ne reste que les directives actives d'un fichier de configuration, souvent une dizaine de lignes sur plusieurs centaines. Ces symboles `^` et `$` sont des éléments d'expression régulière, qui sont au programme de la leçon suivante.
+
+### le piège du mot partiel
+
+Sans `-w`, `grep` trouve le motif **n'importe où**, y compris au milieu d'un mot :
+
+```bash
+grep "root" /etc/passwd
+```
+
+```text
+root:x:0:0:root:/root:/bin/bash
+chrooted:x:1004:1004::/home/chrooted:/usr/sbin/nologin
+```
+
+La seconde ligne contient `root` à l'intérieur de `chrooted`. Avec `-w`, seuls les mots entiers correspondent, et elle disparaît. C'est une source classique de faux positifs quand on compte ou qu'on filtre.
+
+## voir le contexte
+
+Une ligne d'erreur seule ne dit souvent pas grand-chose : ce qui compte, c'est ce qui s'est passé juste avant. Trois options affichent des lignes autour de chaque résultat.
+
+| Option | Effet |
+| --- | --- |
+| `-A N` | N lignes **après** (*after*) |
+| `-B N` | N lignes **avant** (*before*) |
+| `-C N` | N lignes avant et après (*context*) |
+
+```bash
+grep -B 3 "Out of memory" /var/log/syslog
+```
+
+```text
+Sep 27 03:12:40 srv-app-01 kernel: [812345.101] php-fpm invoked oom-killer
+Sep 27 03:12:40 srv-app-01 kernel: [812345.102] Mem-Info:
+Sep 27 03:12:40 srv-app-01 kernel: [812345.230] Tasks state (memory values in pages):
+Sep 27 03:12:40 srv-app-01 kernel: [812345.414] Out of memory: Killed process 18422 (php-fpm)
+```
+
+Les trois lignes précédentes montrent que c'est `php-fpm` qui a déclenché le mécanisme de protection du noyau contre le manque de mémoire. Quand plusieurs résultats sont proches, `grep` fusionne leurs contextes ; il sépare les blocs distincts par une ligne `--`.
+
+## chercher dans toute une arborescence
+
+`-r` parcourt un répertoire et tous ses sous-répertoires :
+
+```bash
+grep -rn "client_max_body_size" /etc/nginx/
+```
+
+```text
+/etc/nginx/nginx.conf:23:	client_max_body_size 20m;
+/etc/nginx/sites-available/api:14:	client_max_body_size 100m;
+```
+
+En une commande, tu sais où la directive est définie, à quelle ligne et avec quelle valeur, dans toute la configuration. Quelques options pour affiner une recherche récursive :
+
+| Option | Effet |
+| --- | --- |
+| `--include="*.conf"` | Ne regarder que les fichiers dont le nom correspond |
+| `--exclude="*.log"` | Ignorer ces fichiers |
+| `--exclude-dir=node_modules` | Ne pas descendre dans ces répertoires |
+| `-I` | Ignorer les fichiers binaires |
+| `-R` | Comme `-r`, mais en suivant les liens symboliques |
+
+```bash
+grep -rnI --exclude-dir={.git,node_modules} "TODO" ~/projets/site
+```
+
+Sur une grosse arborescence de code, des outils plus récents comme `ripgrep` (`rg`) font la même chose beaucoup plus vite et ignorent tout seuls ce que Git ignore. Ils ne sont pas installés partout ; `grep -r` l'est.
+
+## les motifs littéraux : -F
+
+Pour `grep`, beaucoup de caractères ont un sens spécial : `.`, `*`, `[`, `^`, `$`. Chercher une adresse IP comme `10.0.0.1` fonctionne par chance, car le point veut dire « n'importe quel caractère », et trouverait aussi `10a0b0c1`. Pour chercher un texte **exactement tel qu'il est écrit**, `-F` (*fixed strings*) désactive tout sens spécial :
+
+```bash
+grep -F "10.0.0.1" /var/log/nginx/access.log
+grep -F "[error]" /var/log/nginx/error.log
+```
+
+`-F` est aussi plus rapide, ce qui compte sur des journaux de plusieurs gigaoctets. Et `-f fichier` lit une **liste** de motifs dans un fichier, un par ligne : combiné avec `-F`, c'est la façon de chercher en une passe des centaines d'adresses IP suspectes publiées dans un bulletin d'alerte.
+
+## le code de retour
+
+`grep` renvoie un code de retour qui a un sens précis :
+
+| Code | Signification |
+| --- | --- |
+| 0 | Au moins une ligne trouvée |
+| 1 | Aucune ligne trouvée |
+| 2 | Erreur (fichier introuvable, motif invalide...) |
+
+Avec `-q` (*quiet*), `grep` n'affiche rien du tout : seul compte le code. C'est la forme idéale pour tester une condition :
+
+```bash
+grep -q "^alice:" /etc/passwd && echo "le compte existe"
+```
+
+```bash
+if ! grep -q "PasswordAuthentication no" /etc/ssh/sshd_config; then
+  echo "ALERTE : l'authentification par mot de passe n'est pas désactivée"
+fi
+```
+
+C'est ainsi que sont écrits beaucoup de contrôles de conformité : une série de `grep -q` sur des fichiers de configuration, chacun vérifiant qu'une règle de durcissement est bien appliquée. Tu écriras les tiens au module 7.
+
+<Callout type="warning">
+Un piège fréquent dans les chaînes : `ps aux | grep nginx` trouve aussi… la commande `grep nginx` elle-même, qui apparaît dans la liste des processus. Pour la chercher sans se trouver soi-même, on utilise l'outil dédié, `pgrep nginx`, ou l'astuce `grep "[n]ginx"` : le motif correspond à « nginx », mais la ligne de commande de grep contient `[n]ginx`, qui ne correspond pas.
+</Callout>
+
+## grep et les journaux compressés
+
+Les anciens journaux de `/var/log` sont compressés (`.gz`). `grep` ne sait pas lire à l'intérieur, mais `zgrep` oui, avec les mêmes options :
+
+```bash
+zgrep -h "Failed password" /var/log/auth.log.*.gz | wc -l
+```
+
+`-h` supprime le nom du fichier devant chaque ligne, ce qui est plus propre quand on compte ou qu'on enchaîne vers d'autres commandes.
+
+## démonstration : les échecs de connexion SSH
+
+Question : **quelles adresses tentent de se connecter en SSH à ce serveur sans y parvenir, et combien de fois ?**
+
+**1. Regarder la forme des lignes.** Toujours commencer par là :
+
+```bash
+grep -m 3 "Failed password" /var/log/auth.log
+```
+
+```text
+Sep 27 03:41:12 srv-web-01 sshd[51022]: Failed password for root from 203.0.113.77 port 51234 ssh2
+Sep 27 03:41:15 srv-web-01 sshd[51022]: Failed password for root from 203.0.113.77 port 51234 ssh2
+Sep 27 03:42:02 srv-web-01 sshd[51060]: Failed password for invalid user admin from 198.51.100.23 port 40022 ssh2
+```
+
+`-m 3` s'arrête après trois résultats : largement assez pour voir la structure. L'adresse suit toujours le mot `from`.
+
+**2. Combien d'échecs au total ?**
+
+```bash
+grep -c "Failed password" /var/log/auth.log
+```
+
+```text
+2841
+```
+
+**3. Par adresse.** On extrait la partie `from` suivie de l'adresse avec `-o`, puis on compte avec la recette de la leçon précédente :
+
+```bash
+grep -o "from [0-9.]*" /var/log/auth.log | sort | uniq -c | sort -rn | head -5
+```
+
+```text
+   2204 from 203.0.113.77
+    412 from 198.51.100.23
+    160 from 192.0.2.201
+     41 from 203.0.113.9
+     24 from 198.51.100.140
+```
+
+**4. Quels comptes sont visés ?**
+
+```bash
+grep "Failed password" /var/log/auth.log | grep -o "for \(invalid user \)\?[a-z0-9]*" | sort | uniq -c | sort -rn | head -3
+```
+
+```text
+   2311 for root
+    205 for invalid user admin
+    118 for invalid user ubuntu
+```
+
+Le portrait est clair : une attaque par essais de mots de passe, surtout sur le compte root, depuis quelques adresses. Les réponses durables sont au module 10 : interdire la connexion de root en SSH, n'accepter que les clés, et bloquer les adresses qui insistent. Les parcours SOC et réponse à incident reprendront cette analyse à grande échelle.
+
+## à toi de jouer
+
+Sur ce serveur, affiche les lignes de `/etc/ssh/sshd_config` qui ne sont ni des commentaires ni des lignes vides. Puis compte les échecs de connexion dans `/var/log/auth.log`. Enfin, vérifie en silence si le compte `bob` existe dans `/etc/passwd`, et affiche un message s'il existe.
+
+<SimulatedTerminal shell="bash" title="Chercher dans les fichiers" expectedCommands={["grep -v \"^#\" /etc/ssh/sshd_config | grep -v \"^$\"", "grep -c \"Failed password\" /var/log/auth.log", "grep -q \"^bob:\" /etc/passwd && echo \"bob existe\""]} hints={["Deux grep -v enchaînés : un pour les lignes qui commencent par #, un pour les lignes vides.", "-c compte les lignes au lieu de les afficher.", "-q ne montre rien : le && n'agit que si le motif est trouvé."]} commands={{ "grep -v \"^#\" /etc/ssh/sshd_config | grep -v \"^$\"": "Include /etc/ssh/sshd_config.d/*.conf\nKbdInteractiveAuthentication no\nUsePAM yes\nX11Forwarding yes\nPrintMotd no\nAcceptEnv LANG LC_*\nSubsystem\tsftp\t/usr/lib/openssh/sftp-server", "grep -c \"Failed password\" /var/log/auth.log": "2841", "grep \"Failed password\" /var/log/auth.log": "grep: /var/log/auth.log: Permission denied", "sudo grep -c \"Failed password\" /var/log/auth.log": "2841", "grep -q \"^bob:\" /etc/passwd && echo \"bob existe\"": "bob existe", "grep -w root /etc/passwd": "root:x:0:0:root:/root:/bin/bash", "grep root /etc/passwd": "root:x:0:0:root:/root:/bin/bash\nchrooted:x:1004:1004::/home/chrooted:/usr/sbin/nologin", "grep -rn client_max_body_size /etc/nginx/": "/etc/nginx/nginx.conf:23:\tclient_max_body_size 20m;\n/etc/nginx/sites-available/api:14:\tclient_max_body_size 100m;" }} />
+
+Compare aussi `grep root /etc/passwd` et `grep -w root /etc/passwd` pour voir le faux positif disparaître.
+
+## les pièges
+
+- **Oublier les guillemets autour du motif.** Le shell l'interprète avant `grep`.
+- **Chercher un mot sans `-w`.** `root` trouve aussi `chrooted`, et fausse les comptes.
+- **Chercher un texte contenant des points ou des crochets sans `-F`.** Ces caractères ont un sens spécial ; `-F` cherche le texte tel quel.
+- **`ps aux | grep` qui se trouve lui-même.** `pgrep`, ou `grep "[n]ginx"`.
+- **Lire `grep -c` comme un nombre d'occurrences.** Il compte des **lignes** : une ligne qui contient trois fois le motif compte pour une. `grep -o motif | wc -l` compte les occurrences.
+- **Oublier les journaux compressés.** Les anciens journaux sont en `.gz` : `zgrep`.
+- **Conclure à l'absence sans les droits.** Un journal illisible donne une erreur, pas un résultat. Relis la sortie, ou utilise `sudo`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/grep/manual/grep.html" description="Le manuel complet de GNU grep">GNU grep manual</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/grep.1.html" description="La page de manuel de grep">grep(1)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/pgrep.1.html" description="Trouver des processus par leur nom sans passer par ps et grep">pgrep(1)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle commande affiche les lignes de syslog qui contiennent error, quelle que soit la casse, avec leur numéro ?" options={["grep error /var/log/syslog", "grep -in error /var/log/syslog", "grep -vn error /var/log/syslog", "grep -c error /var/log/syslog"]} correct={1} explanation="-i ignore la casse et -n numérote les lignes. -v inverserait la recherche et -c compterait au lieu d'afficher." />
+  <Quiz id="q-2" question="grep root /etc/passwd affiche aussi la ligne du compte chrooted. Comment l'éviter ?" options={["grep -v root /etc/passwd", "grep -w root /etc/passwd", "grep -c root /etc/passwd", "grep -l root /etc/passwd"]} correct={1} explanation="-w ne retient que les correspondances qui forment un mot entier : root dans chrooted ne compte plus." />
+  <Quiz id="q-3" question="Tu veux voir les cinq lignes qui précèdent chaque message Segmentation fault. Quelle option ?" options={["-A 5", "-B 5", "-C 5", "-m 5"]} correct={1} explanation="-B (before) affiche les lignes avant chaque résultat, -A (after) celles d'après, -C les deux. -m limite le nombre de résultats." />
+  <Quiz id="q-4" question="Quelle commande liste les fichiers de /etc/nginx qui contiennent ssl_certificate, sans afficher les lignes ?" options={["grep -r ssl_certificate /etc/nginx", "grep -rl ssl_certificate /etc/nginx", "grep -rc ssl_certificate /etc/nginx", "grep -rv ssl_certificate /etc/nginx"]} correct={1} explanation="-r parcourt l'arborescence, -l n'affiche que le nom des fichiers qui contiennent le motif." />
+  <Quiz id="q-5" question="Pourquoi utiliser grep -F pour chercher 192.168.1.10 ?" options={["Pour chercher plus lentement mais plus précisément", "Parce que le point a un sens spécial et correspondrait à n'importe quel caractère", "Parce que grep ne sait pas lire les chiffres sans -F", "Pour chercher dans les fichiers compressés"]} correct={1} explanation="Dans un motif, le point veut dire n'importe quel caractère. -F cherche le texte tel quel, et plus vite." />
+  <Quiz id="q-6" question="Quel code de retour renvoie grep quand il ne trouve aucune ligne ?" options={["0", "1", "2", "127"]} correct={1} explanation="0 signifie au moins une ligne trouvée, 1 aucune, 2 une erreur. C'est ce qui permet d'utiliser grep -q dans une condition." />
+  <Quiz id="q-7" question="ps aux | grep nginx affiche une ligne en trop. Laquelle, et comment l'éviter ?" options={["La ligne de nginx lui-même ; en utilisant grep -v", "La ligne de la commande grep nginx ; en utilisant pgrep nginx ou grep [n]ginx", "La ligne d'en-tête de ps ; en utilisant head", "Aucune ligne n'est en trop"]} correct={1} explanation="La commande grep nginx apparaît elle-même dans la liste des processus. pgrep est fait pour cela, et le motif [n]ginx ne correspond pas à sa propre ligne de commande." />
+</QuizGroup>
+
+## à retenir
+
+- `grep motif fichiers` affiche les lignes qui contiennent le motif ; sans fichier, il filtre son entrée standard. Motif entre guillemets.
+- Options : `-i` casse, `-v` inverser, `-n` numéros, `-c` compter les lignes, `-l` noms de fichiers, `-w` mot entier, `-o` partie trouvée, `-m` limite.
+- Contexte : `-A`, `-B`, `-C`. Récursif : `-r` avec `--include`, `--exclude-dir`, `-I`.
+- `-F` pour un texte exact (points, crochets), `-f` pour une liste de motifs.
+- Code de retour : 0 trouvé, 1 rien, 2 erreur. `-q` pour tester en silence.
+- La configuration active d'un fichier : `grep -v "^#" fichier | grep -v "^$"`. Les journaux compressés : `zgrep`.

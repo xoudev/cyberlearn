@@ -1,0 +1,245 @@
+---
+refCode: CL-LSN-02026-V01
+slug: linux-permissions
+title: "Les permissions : lire, écrire, exécuter"
+description: "Ce que veulent vraiment dire r, w et x, et pourquoi ce n'est pas la même chose sur un fichier et sur un répertoire, comment le système choisit entre propriétaire, groupe et autres, ce que root peut faire, et pourquoi supprimer un fichier ne dépend pas de ses propres droits."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02025-V01"]
+---
+
+Les neuf caractères `rwxr-xr--` que tu vois dans chaque ligne de `ls -l` sont le premier rempart de la sécurité d'un système Linux. Ils décident qui peut lire la configuration d'une base de données, qui peut modifier un script lancé par root, qui peut effacer les fichiers d'un collègue. Leur principe tient en une phrase, mais leurs règles exactes réservent des surprises, surtout sur les répertoires. Cette leçon explique ce qu'ils signifient ; la suivante, comment les modifier.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire les neuf caractères de permission et dire à qui s'applique chaque groupe de trois ;
+- expliquer le sens de `r`, `w` et `x` sur un **fichier** et sur un **répertoire**, qui diffère ;
+- décrire comment le noyau choisit la catégorie qui s'applique, et pourquoi il n'en regarde qu'une ;
+- expliquer ce qui permet de supprimer ou de renommer un fichier ;
+- dire ce que root peut faire malgré les permissions, et où s'arrêtent ses pouvoirs ;
+- traduire des permissions en notation octale.
+
+## pourquoi ça compte
+
+Une grande partie des failles d'un système Linux, en dehors des bugs logiciels, sont des **erreurs de permissions**. Un fichier de configuration qui contient un mot de passe et que tout le monde peut lire. Un script exécuté chaque nuit par root, mais que n'importe quel utilisateur peut modifier. Un répertoire partagé où chacun peut supprimer le travail des autres. Pour un attaquant qui a pris pied avec un compte ordinaire, chercher ce genre d'erreur est la première étape pour obtenir plus de droits ; pour un défenseur, les trouver avant lui est la base du durcissement.
+
+## trois catégories, trois droits
+
+Chaque fichier a un **propriétaire** et un **groupe**, et définit des droits pour trois catégories de personnes :
+
+| Catégorie | Lettre | Qui |
+| --- | --- | --- |
+| Propriétaire | `u` (*user*) | Le compte propriétaire du fichier |
+| Groupe | `g` (*group*) | Les membres du groupe du fichier |
+| Autres | `o` (*others*) | Tous les autres comptes |
+
+Pour chaque catégorie, trois droits : **lire** (`r`), **écrire** (`w`), **exécuter** (`x`). Un tiret indique l'absence du droit.
+
+```bash
+ls -l /etc/app/app.conf
+```
+
+```text
+-rw-r----- 1 root app 412 sept. 27 10:40 /etc/app/app.conf
+```
+
+<Diagram caption="Lire les neuf caractères de permission">
+flowchart LR
+  T["- : type (fichier)"] --> U["rw- : propriétaire root, lire et écrire"]
+  U --> G["r-- : groupe app, lire seulement"]
+  G --> O["--- : les autres, rien"]
+</Diagram>
+
+Root peut lire et modifier la configuration ; les membres du groupe `app`, et donc le service qui tourne sous ce compte, peuvent la lire ; personne d'autre ne peut rien en faire. C'est exactement ce qu'on veut pour un fichier qui contient un mot de passe de base de données.
+
+## sur un fichier
+
+Pour un fichier, les droits ont le sens qu'on devine :
+
+| Droit | Sur un fichier |
+| --- | --- |
+| `r` | Lire son contenu |
+| `w` | Modifier son contenu |
+| `x` | L'exécuter comme un programme ou un script |
+
+Deux précisions. Pour exécuter un **script** (un fichier texte interprété par bash ou Python), il faut `x` **et** `r` : l'interpréteur doit pouvoir le lire. Un programme compilé, lui, peut s'exécuter avec `x` seul. Et `w` sur un fichier permet de modifier ou de **vider** son contenu, mais pas de le supprimer, comme on va le voir.
+
+## sur un répertoire : le piège
+
+Un répertoire est une liste de noms associés à des inodes (module 2). Ses droits portent donc sur **cette liste**, ce qui change complètement leur sens :
+
+| Droit | Sur un répertoire |
+| --- | --- |
+| `r` | Lister les **noms** qu'il contient (`ls`) |
+| `w` | **Créer, supprimer et renommer** des entrées (à condition d'avoir aussi `x`) |
+| `x` | **Traverser** le répertoire : accéder à ce qu'il contient, par un nom qu'on connaît déjà |
+
+Le droit `x` est le plus important et le moins intuitif. Sans lui, on ne peut **rien atteindre** dans le répertoire, même un fichier dont on a les droits de lecture, même dans un sous-répertoire ouvert à tous. Pour lire `/srv/app/config/app.conf`, il faut `x` sur `/srv`, sur `/srv/app` et sur `/srv/app/config`, en plus de `r` sur le fichier.
+
+Les combinaisons ont des effets précis :
+
+- `r` sans `x` : on voit les noms avec `ls`, mais on ne peut ouvrir aucun fichier, ni même obtenir sa taille ;
+- `x` sans `r` : on ne peut pas lister le contenu, mais on peut ouvrir un fichier **si l'on connaît son nom exact**. C'est ce qui permet, par exemple, de publier un fichier dans son répertoire personnel sans révéler les autres ;
+- `w` et `x` : on peut créer et supprimer des fichiers dans le répertoire.
+
+### supprimer un fichier dépend du répertoire
+
+Voici la règle qui surprend le plus : **supprimer ou renommer un fichier ne dépend pas des droits du fichier**, mais de ceux du **répertoire** qui le contient. Supprimer, c'est retirer un nom de la liste du répertoire ; il faut donc `w` et `x` sur le répertoire.
+
+```bash
+ls -ld /srv/partage
+ls -l /srv/partage/rapport.pdf
+```
+
+```text
+drwxrwxrwx 2 root root 4096 sept. 27 11:00 /srv/partage
+-r--r--r-- 1 claire claire 81920 sept. 27 10:12 /srv/partage/rapport.pdf
+```
+
+Le fichier de Claire est en lecture seule pour tout le monde. Pourtant, comme le répertoire donne `w` à tous, **n'importe qui peut le supprimer**, ou le remplacer par un autre fichier du même nom. La lecture seule du fichier ne protège que son contenu, pas sa présence. La leçon 5 montre le bit spécial qui corrige ce problème pour les répertoires partagés.
+
+<Callout type="danger">
+Cette règle a une conséquence de sécurité majeure. Si un script lancé par root se trouve dans un répertoire où un utilisateur ordinaire peut écrire, cet utilisateur peut **remplacer le script** par le sien, même si le script lui-même est protégé en écriture. À la prochaine exécution, root lancera le code de l'utilisateur. En audit, on vérifie donc les droits du fichier **et** de tous les répertoires qui le contiennent.
+</Callout>
+
+## comment le noyau choisit la catégorie
+
+Quand un processus veut accéder à un fichier, le noyau détermine **une seule** catégorie, dans cet ordre :
+
+1. si le processus appartient au **propriétaire** du fichier, ce sont les droits du propriétaire qui s'appliquent, et eux seuls ;
+2. sinon, si le processus appartient au **groupe** du fichier, ce sont les droits du groupe ;
+3. sinon, ce sont les droits des **autres**.
+
+<Diagram caption="Une seule catégorie est examinée">
+flowchart TD
+  A["Accès demandé par un processus"] --> B["Est-il le propriétaire ?"]
+  B -->|"oui"| C["Droits du propriétaire, et rien d'autre"]
+  B -->|"non"| D["Est-il membre du groupe ?"]
+  D -->|"oui"| E["Droits du groupe, et rien d'autre"]
+  D -->|"non"| F["Droits des autres"]
+</Diagram>
+
+La conséquence est contre-intuitive : **le noyau ne cumule pas les droits**. Un fichier en `----r--r--` appartenant à Claire peut être lu par tout le monde **sauf** Claire : c'est la catégorie propriétaire qui s'applique à elle, et elle ne donne rien. Elle ne « retombe » pas sur les droits des autres. Ce cas est rare en pratique, mais il montre bien que le noyau s'arrête à la première catégorie qui correspond.
+
+## et root ?
+
+Root n'est pas soumis aux vérifications de lecture et d'écriture : il peut lire et modifier n'importe quel fichier, quelles que soient ses permissions. Deux limites tout de même :
+
+- pour **exécuter** un fichier, root a besoin qu'au moins **un** des trois bits `x` soit présent. Un fichier sans aucun `x` n'est exécutable par personne, pas même root ;
+- l'attribut d'**immuabilité** vu au module 2 (`chattr +i`) s'impose aussi à root, tant qu'il n'est pas retiré.
+
+C'est pour cela qu'on ne travaille pas en root au quotidien : aucune permission ne le protège d'une erreur de frappe.
+
+## la notation octale
+
+Les permissions s'écrivent aussi en **chiffres**, sous forme de trois chiffres de 0 à 7, un par catégorie. Chaque droit a une valeur, et on les additionne :
+
+| Droit | Valeur |
+| --- | --- |
+| `r` | 4 |
+| `w` | 2 |
+| `x` | 1 |
+
+| Symbolique | Calcul | Octal |
+| --- | --- | --- |
+| `rwx` | 4 + 2 + 1 | 7 |
+| `rw-` | 4 + 2 | 6 |
+| `r-x` | 4 + 1 | 5 |
+| `r--` | 4 | 4 |
+| `---` | 0 | 0 |
+
+`rw-r-----` s'écrit donc **640**, `rwxr-xr-x` **755**, `rw-------` **600**. `stat -c '%a %n'` (module 2) affiche directement la forme octale. Quelques valeurs à connaître par cœur :
+
+| Octal | Symbolique | Usage typique |
+| --- | --- | --- |
+| 644 | `rw-r--r--` | Fichier ordinaire lisible par tous |
+| 640 | `rw-r-----` | Configuration lisible par un groupe de service |
+| 600 | `rw-------` | Secret : clé privée, fichier `.env` |
+| 755 | `rwxr-xr-x` | Programme, script, répertoire ouvert en lecture |
+| 750 | `rwxr-x---` | Répertoire réservé à une équipe |
+| 700 | `rwx------` | Répertoire privé, comme `~/.ssh` |
+
+<Callout type="warning">
+777 (`rwxrwxrwx`), « tout le monde peut tout faire », est presque toujours une erreur. On le voit souvent proposé comme solution rapide à un « Permission denied » sur un forum. Il corrige le symptôme en supprimant toute protection. La bonne réponse est de comprendre **qui** a besoin **de quel** droit, et de ne donner que celui-là, à ce compte ou à ce groupe.
+</Callout>
+
+## démonstration : pourquoi le service ne lit pas sa configuration
+
+Le service `app-factures` refuse de démarrer. Son journal dit :
+
+```text
+Error: open /srv/factures/config/app.conf: permission denied
+```
+
+Le service tourne sous le compte `app-factures`. On vérifie le fichier, puis chaque répertoire du chemin, avec `namei -l`, qui décompose un chemin et affiche les droits de chaque élément :
+
+```bash
+namei -l /srv/factures/config/app.conf
+```
+
+```text
+f: /srv/factures/config/app.conf
+drwxr-xr-x root         root         /
+drwxr-xr-x root         root         srv
+drwxr-x--- root         root         factures
+drwxr-xr-x app-factures app-factures config
+-rw-r----- app-factures app-factures app.conf
+```
+
+Le fichier appartient bien au service et lui donne `r`. Le répertoire `config` aussi. Mais `factures` est en `drwxr-x---`, propriété de `root` et du groupe `root` : le compte `app-factures`, qui n'est ni l'un ni l'autre, tombe dans la catégorie « autres », qui n'a **aucun** droit, et en particulier pas `x`. Il ne peut pas **traverser** `factures`, et n'atteint donc jamais son fichier. La correction la plus précise donne le répertoire au groupe du service, sans rien ouvrir à tout le monde :
+
+```bash
+sudo chgrp app-factures /srv/factures
+```
+
+`drwxr-x---` avec le groupe `app-factures` donne désormais `r-x` au service, et toujours rien aux autres. Le service démarre. La leçon suivante détaille `chgrp`, `chown` et `chmod`.
+
+## à toi de jouer
+
+Affiche les droits du répertoire `/srv/partage` lui-même, puis ceux du fichier `/srv/partage/rapport.pdf`. Enfin, décompose le chemin `/srv/factures/config/app.conf` avec `namei -l` pour voir les droits de chaque répertoire traversé.
+
+<SimulatedTerminal shell="bash" title="Lire les droits" expectedCommands={["ls -ld /srv/partage", "ls -l /srv/partage/rapport.pdf", "namei -l /srv/factures/config/app.conf"]} hints={["ls -ld affiche le répertoire lui-même.", "ls -l sur le fichier.", "namei -l suivi du chemin complet."]} commands={{ "ls -ld /srv/partage": "drwxrwxrwx 2 root root 4096 sept. 27 11:00 /srv/partage", "ls -l /srv/partage/rapport.pdf": "-r--r--r-- 1 claire claire 81920 sept. 27 10:12 /srv/partage/rapport.pdf", "namei -l /srv/factures/config/app.conf": "f: /srv/factures/config/app.conf\ndrwxr-xr-x root         root         /\ndrwxr-xr-x root         root         srv\ndrwxr-x--- root         root         factures\ndrwxr-xr-x app-factures app-factures config\n-rw-r----- app-factures app-factures app.conf", "stat -c '%a %n' /srv/partage/rapport.pdf": "444 /srv/partage/rapport.pdf", "rm /srv/partage/rapport.pdf": "rm: remove write-protected regular file '/srv/partage/rapport.pdf'? " }} />
+
+Réfléchis à ce que révèle la première commande : un répertoire en `rwxrwxrwx` permet à n'importe quel compte de supprimer `rapport.pdf`, malgré sa lecture seule. `rm` ne fait que demander confirmation, par politesse.
+
+## les pièges
+
+- **Croire que `r--` sur un fichier le protège de la suppression.** La suppression dépend de `w` et `x` sur le répertoire.
+- **Oublier le `x` des répertoires.** Sans lui, rien n'est accessible dans le répertoire, même avec `r` sur les fichiers. Vérifie tout le chemin avec `namei -l`.
+- **Penser que les droits se cumulent.** Une seule catégorie s'applique : propriétaire, sinon groupe, sinon autres.
+- **Régler un « Permission denied » avec 777.** Tout le monde obtient tous les droits. Donne le droit précis à la bonne catégorie.
+- **Un script de root dans un répertoire modifiable par d'autres.** Le script peut être remplacé.
+- **Oublier que root passe outre.** Les permissions ne protègent pas des erreurs faites en root.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/path_resolution.7.html" description="Comment le noyau vérifie les droits de chaque élément d'un chemin">path_resolution(7)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/namei.1.html" description="Afficher les droits de chaque élément d'un chemin">namei(1)</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/File-permissions.html" description="Le chapitre sur les permissions de la documentation de GNU coreutils">GNU coreutils : File permissions</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que signifie le droit x sur un répertoire ?" options={["Exécuter tous les fichiers du répertoire", "Traverser le répertoire pour accéder à ce qu'il contient", "Lister les noms qu'il contient", "Supprimer le répertoire"]} correct={1} explanation="Sur un répertoire, x permet d'y accéder par un nom. La liste des noms, c'est r ; la création et la suppression d'entrées, c'est w." />
+  <Quiz id="q-2" question="Un fichier est en r--r--r-- dans un répertoire en rwxrwxrwx. Un utilisateur quelconque peut-il le supprimer ?" options={["Non, le fichier est en lecture seule", "Oui, car la suppression dépend des droits du répertoire", "Seulement root", "Seulement le propriétaire"]} correct={1} explanation="Supprimer revient à retirer une entrée du répertoire. Avec w et x sur le répertoire, n'importe qui peut le faire, quels que soient les droits du fichier." />
+  <Quiz id="q-3" question="Claire est propriétaire d'un fichier en ---r--r--. Peut-elle le lire ?" options={["Oui, grâce aux droits des autres", "Non : la catégorie propriétaire s'applique à elle, et elle ne donne rien", "Oui, grâce aux droits du groupe", "Seulement avec sudo"]} correct={1} explanation="Le noyau choisit une seule catégorie, la première qui correspond. Claire est le propriétaire : seuls les droits du propriétaire comptent." />
+  <Quiz id="q-4" question="Quelle est la notation octale de rw-r----- ?" options={["640", "644", "750", "604"]} correct={0} explanation="rw- vaut 4+2 = 6, r-- vaut 4, --- vaut 0 : 640." />
+  <Quiz id="q-5" question="Quelle permission convient à un fichier .env qui contient des mots de passe et ne doit être lu que par son propriétaire ?" options={["777", "644", "600", "755"]} correct={2} explanation="600 donne la lecture et l'écriture au propriétaire, et rien à personne d'autre." />
+  <Quiz id="q-6" question="Un fichier appartient au service et lui donne r, mais le service reçoit Permission denied. Quelle est la cause la plus probable ?" options={["Le fichier est vide", "Un des répertoires du chemin ne lui donne pas le droit x", "Le service n'est pas root", "Le fichier est trop gros"]} correct={1} explanation="Pour atteindre un fichier, il faut pouvoir traverser tous les répertoires du chemin. namei -l affiche les droits de chacun." />
+  <Quiz id="q-7" question="Root peut-il exécuter un fichier en rw-rw-rw- ?" options={["Oui, root peut tout faire", "Non : pour exécuter, il faut qu'au moins un bit x soit présent, même pour root", "Oui, mais seulement un script", "Seulement si le fichier lui appartient"]} correct={1} explanation="Root passe outre les droits de lecture et d'écriture, mais l'exécution exige qu'au moins une catégorie ait x." />
+</QuizGroup>
+
+## à retenir
+
+- Trois catégories (**u** propriétaire, **g** groupe, **o** autres), trois droits (**r**, **w**, **x**). Le noyau n'examine **qu'une** catégorie : propriétaire, sinon groupe, sinon autres.
+- Sur un fichier : lire, modifier, exécuter. Sur un répertoire : `r` lister, `w` créer et supprimer des entrées, `x` traverser.
+- **Supprimer un fichier dépend du répertoire**, pas du fichier. Un script de root dans un répertoire modifiable par d'autres peut être remplacé.
+- Accès refusé : vérifier le fichier **et** chaque répertoire du chemin, avec `namei -l`.
+- Octal : r = 4, w = 2, x = 1. 644, 640, 600, 755, 750, 700. Jamais 777 par facilité.
+- Root ignore les droits de lecture et d'écriture, mais a besoin d'au moins un `x` pour exécuter.

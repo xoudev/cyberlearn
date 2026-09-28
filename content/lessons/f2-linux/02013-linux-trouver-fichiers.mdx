@@ -1,0 +1,303 @@
+---
+refCode: CL-LSN-02013-V01
+slug: linux-trouver-fichiers
+title: "Trouver des fichiers : find et locate"
+description: "Chercher par nom, type, taille, date, propriétaire ou permissions avec find, combiner les critères, agir sur chaque résultat avec -exec, et quand préférer locate. L'outil d'enquête de base de tout administrateur."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 280
+prerequisites: ["CL-LSN-02012-V01"]
+---
+
+« Où est le fichier de configuration de ce service ? », « qu'est-ce qui a été modifié dans `/etc` depuis hier ? », « quels fichiers font plus d'un gigaoctet ? », « qui a laissé des fichiers lisibles par tout le monde dans son répertoire ? ». Ces questions reviennent sans cesse, en administration comme en sécurité, et une seule commande y répond : `find`. Sa syntaxe déroute un peu au début, parce qu'elle ne ressemble pas aux autres. Une fois comprise, c'est un des outils les plus puissants du système.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- chercher des fichiers par nom, type, taille, date de modification, propriétaire et permissions ;
+- combiner plusieurs critères, avec des ET, des OU et des négations ;
+- limiter la profondeur de la recherche et rester sur un seul système de fichiers ;
+- agir sur chaque fichier trouvé avec `-exec` ou `-delete`, en toute sécurité ;
+- utiliser `locate` pour une recherche instantanée par nom, et savoir quand il ne suffit pas.
+
+## pourquoi ça compte
+
+La recherche de fichiers est au cœur de trois activités. En **administration**, pour retrouver une configuration, nettoyer les vieux fichiers, trouver ce qui remplit un disque. En **sécurité défensive**, pour contrôler les permissions dangereuses, lister les fichiers modifiés après une date suspecte, repérer les programmes avec des droits spéciaux. En **enquête** après un incident, pour reconstituer ce qu'un intrus a déposé ou modifié.
+
+Les jokers de la leçon 4 ne suffisent pas pour tout cela : ils restent dans un seul répertoire et ne connaissent que les noms. `find` parcourt toute une arborescence et teste n'importe quelle propriété d'un fichier.
+
+## la forme d'une commande find
+
+```bash
+find /etc -name "*.conf"
+```
+
+`find` prend trois sortes d'éléments, toujours dans cet ordre :
+
+1. **où chercher** : un ou plusieurs répertoires de départ (`/etc`). Sans indication, le répertoire courant ;
+2. **quels critères** : des tests qui commencent par un tiret, comme `-name`, `-type`, `-size` ;
+3. **quoi faire** : une action. Sans action, `find` affiche simplement le chemin de chaque résultat (`-print`).
+
+<Diagram caption="find parcourt l'arborescence et teste chaque fichier">
+flowchart LR
+  A["Point de départ : /etc"] --> B["Chaque fichier et répertoire, en descendant"]
+  B --> C["Les critères sont-ils tous vrais ?"]
+  C -->|"oui"| D["Action : afficher, supprimer, exécuter une commande"]
+  C -->|"non"| E["Fichier suivant"]
+</Diagram>
+
+<Callout type="warning">
+Mets toujours le motif de `-name` entre guillemets. Sans guillemets, bash développerait `*.conf` avant de lancer `find` (leçon 4) : s'il existe un fichier `.conf` dans le répertoire courant, `find` recevrait son nom au lieu du motif, et chercherait autre chose que ce que tu crois.
+</Callout>
+
+## les critères
+
+### par nom
+
+| Test | Effet |
+| --- | --- |
+| `-name "motif"` | Le nom correspond au motif (sensible à la casse) |
+| `-iname "motif"` | Pareil, insensible à la casse |
+| `-path "motif"` | Le chemin complet correspond au motif |
+
+Les motifs utilisent les mêmes jokers que bash : `*`, `?`, `[...]`.
+
+```bash
+find / -xdev -name "sshd_config" 2>/dev/null
+```
+
+```text
+/etc/ssh/sshd_config
+```
+
+La fin de la ligne, `2>/dev/null`, jette les messages d'erreur « Permission denied » qu'un utilisateur ordinaire reçoit en parcourant les répertoires qui ne lui sont pas ouverts. Les redirections sont au module 3 ; retiens pour l'instant qu'elle nettoie l'affichage.
+
+### par type
+
+`-type` filtre sur la nature : `f` fichier ordinaire, `d` répertoire, `l` lien symbolique.
+
+```bash
+find /srv/app -type d -name "node_modules"
+```
+
+### par taille
+
+`-size` compare la taille, avec un préfixe `+` (plus de) ou `-` (moins de) et une unité : `k`, `M`, `G`.
+
+```bash
+find /var -xdev -type f -size +500M
+```
+
+```text
+/var/lib/docker/overlay2/3f1c.../merged/data/dump.sql
+/var/log/app/app.log
+```
+
+C'est la commande qui résout la plupart des alertes « disque plein » en une ligne, en complément de `du` (leçon 1).
+
+### par date
+
+Trois tests par jours, et trois par minutes, selon la date regardée :
+
+| Test | Date comparée |
+| --- | --- |
+| `-mtime n` et `-mmin n` | Modification du contenu |
+| `-ctime n` et `-cmin n` | Changement de l'inode (droits, propriétaire, contenu) |
+| `-atime n` et `-amin n` | Dernier accès en lecture |
+
+Le nombre se lit avec son signe : `-mtime -1` veut dire « modifié il y a **moins** d'un jour », `-mtime +30` « il y a **plus** de 30 jours ».
+
+```bash
+sudo find /etc -type f -mmin -60
+```
+
+Cette commande liste ce qui a été modifié dans la configuration du système **au cours de la dernière heure**. En enquête, c'est une des premières questions posées. La leçon 8 détaille les trois dates d'un fichier, et pourquoi on ne peut pas toujours leur faire confiance.
+
+On peut aussi comparer à un fichier de référence : `-newer repere.txt` trouve tout ce qui a été modifié après `repere.txt`.
+
+### par propriétaire et par permissions
+
+| Test | Effet |
+| --- | --- |
+| `-user nom` et `-group nom` | Appartient à cet utilisateur, à ce groupe |
+| `-nouser` | Appartient à un identifiant qui ne correspond plus à aucun compte |
+| `-perm mode` | Permissions exactement égales à `mode` |
+| `-perm -mode` | Au moins tous les bits de `mode` sont présents |
+| `-perm /mode` | Au moins un des bits de `mode` est présent |
+
+Les permissions sont au module 4, mais deux recherches de sécurité méritent d'être connues dès maintenant :
+
+```bash
+find /home -type f -perm -o+w
+```
+
+Elle liste les fichiers **modifiables par n'importe qui** dans les répertoires personnels, ce qui n'a presque jamais de bonne raison d'exister.
+
+```bash
+sudo find / -xdev -type f -perm -4000
+```
+
+Elle liste les programmes **setuid**, qui s'exécutent avec les droits de leur propriétaire, souvent root. Leur liste est courte et stable sur un système sain ; un programme setuid inattendu est un signal d'alerte majeur. Tu comprendras pourquoi au module 4.
+
+## combiner les critères
+
+Plusieurs critères à la suite sont reliés par un **ET** implicite : tous doivent être vrais.
+
+```bash
+find /var/log -type f -name "*.log" -size +100M -mtime +7
+```
+
+« Les fichiers ordinaires, de nom en `.log`, de plus de 100 Mo, non modifiés depuis plus de 7 jours. »
+
+Pour un **OU**, `-o`, et pour une **négation**, `!` (ou `-not`). Les parenthèses regroupent, et doivent être protégées du shell par une barre oblique inverse :
+
+```bash
+find . \( -name "*.jpg" -o -name "*.png" \) ! -path "./archives/*"
+```
+
+« Les images JPEG ou PNG, en dehors du répertoire `archives`. »
+
+## limiter la recherche
+
+- `-maxdepth n` descend au plus de n niveaux ; `-mindepth n` ignore les n premiers. `find . -maxdepth 1` ne regarde que le répertoire courant.
+- `-xdev` ne quitte pas le système de fichiers de départ : indispensable avec `find /` pour ne pas parcourir `/proc`, les disques réseau ou les clés USB montés dedans.
+
+Ces deux options sont à écrire **avant** les autres critères.
+
+## agir sur les résultats
+
+### -delete
+
+```bash
+find /tmp/app -type f -mtime +7 -delete
+```
+
+Supprime chaque fichier trouvé. Pratique, et dangereux pour la même raison que `rm -r`.
+
+<Callout type="danger">
+Place toujours `-delete` en dernier, et **lance d'abord la même commande sans lui**. `find` évalue ses éléments dans l'ordre : `find . -delete -name "*.tmp"` supprime **tout**, avant même de tester le nom. La version sûre se construit en deux temps : `find ... -name "*.tmp"` pour voir, puis flèche du haut et ajout de `-delete` à la fin.
+</Callout>
+
+### -exec
+
+`-exec` lance une commande sur chaque résultat. Les accolades vides y représentent le fichier trouvé, et la commande se termine par un point-virgule protégé :
+
+```bash
+find /etc/nginx -name "*.conf" -exec grep -l "ssl_certificate" {} \;
+```
+
+Pour chaque fichier `.conf`, `grep -l` est lancé et affiche le nom si le fichier contient `ssl_certificate`. Terminer par `+` au lieu de `\;` regroupe les fichiers et lance la commande une seule fois avec toute la liste, ce qui est beaucoup plus rapide sur des milliers de fichiers :
+
+```bash
+find /srv/site -type f -name "*.html" -exec chmod 644 {} +
+```
+
+`-ok` fonctionne comme `-exec`, mais demande confirmation pour chaque fichier : utile pour une opération délicate sur une petite liste.
+
+## locate : la recherche instantanée
+
+`find` parcourt réellement le disque à chaque fois, ce qui peut prendre des minutes sur une grosse arborescence. `locate` cherche dans une **base de données** des noms de fichiers, reconstruite en général une fois par jour. La réponse est instantanée :
+
+```bash
+locate sshd_config
+```
+
+```text
+/etc/ssh/sshd_config
+/usr/share/man/man5/sshd_config.5.gz
+```
+
+Ses limites découlent de son principe :
+
+- elle ne connaît que les **noms**, pas les tailles, dates ou droits ;
+- elle ne voit pas les fichiers créés **depuis la dernière mise à jour** de la base (`sudo updatedb` la reconstruit) ;
+- elle n'est pas toujours installée : paquet `plocate` sur Debian et Ubuntu récents.
+
+Règle pratique : `locate` pour retrouver vite un fichier dont tu connais le nom ; `find` pour tout le reste, et pour tout ce qui doit refléter l'état **actuel** du disque.
+
+## démonstration : une petite enquête
+
+Un collègue signale qu'un comportement étrange a commencé sur un serveur vers 14 h. Voici comment `find` aide à reconstituer ce qui a changé.
+
+**1. Ce qui a été modifié dans la configuration du système cet après-midi** :
+
+```bash
+sudo find /etc -type f -newermt "2026-09-27 13:30"
+```
+
+```text
+/etc/cron.d/maintenance
+/etc/passwd
+/etc/shadow
+```
+
+`-newermt` compare à une date écrite en clair. Trois fichiers : une tâche planifiée et les deux fichiers des comptes. Quelqu'un a créé une tâche et modifié un compte, ou en a créé un.
+
+**2. Des exécutables récents dans les répertoires où tout le monde écrit** :
+
+```bash
+sudo find /tmp /var/tmp /dev/shm -type f -newermt "2026-09-27 13:30" -perm /111
+```
+
+```text
+/dev/shm/.x/update
+```
+
+Un fichier exécutable (`-perm /111` : au moins un bit d'exécution), dans un répertoire caché de `/dev/shm`, créé cet après-midi. C'est un indice sérieux de compromission.
+
+**3. Les programmes setuid, à comparer avec la liste habituelle du système** :
+
+```bash
+sudo find / -xdev -type f -perm -4000 -newermt "2026-09-27 13:30"
+```
+
+Aucun résultat : pas de nouveau programme setuid, c'est une bonne nouvelle. En trois commandes, l'enquête a une piste. La suite (lire la tâche planifiée, identifier le compte, isoler la machine) relève du parcours de réponse à incident, mais c'est `find` qui a ouvert la porte.
+
+## à toi de jouer
+
+Sur ce serveur, trouve d'abord tous les fichiers `.conf` sous `/etc/nginx`. Puis cherche, sous `/var/log`, les fichiers de plus de 100 Mo. Enfin, liste les fichiers de `/etc` modifiés il y a moins de 60 minutes.
+
+<SimulatedTerminal shell="bash" title="Chercher sur tout le disque" expectedCommands={["find /etc/nginx -name \"*.conf\"", "find /var/log -type f -size +100M", "sudo find /etc -type f -mmin -60"]} hints={["find, le répertoire de départ, puis -name et le motif entre guillemets.", "-type f pour les fichiers ordinaires, -size +100M pour plus de 100 Mo.", "-mmin -60 : modifié il y a moins de 60 minutes. Il faut sudo pour tout lire dans /etc."]} commands={{ "find /etc/nginx -name \"*.conf\"": "/etc/nginx/nginx.conf\n/etc/nginx/conf.d/gzip.conf\n/etc/nginx/conf.d/security-headers.conf", "find /etc/nginx -name *.conf": "find: paths must precede expression: `mime.conf'\nfind: possible unquoted pattern after predicate `-name'?", "find /var/log -type f -size +100M": "find: '/var/log/private': Permission denied\n/var/log/app/app.log\n/var/log/journal/7c1e/system@0005a2.journal", "find /var/log -type f -size +100M 2>/dev/null": "/var/log/app/app.log\n/var/log/journal/7c1e/system@0005a2.journal", "sudo find /etc -type f -mmin -60": "/etc/nginx/conf.d/security-headers.conf\n/etc/cron.d/logrotate-app", "find /etc -type f -mmin -60": "find: '/etc/ssl/private': Permission denied\n/etc/nginx/conf.d/security-headers.conf", "locate sshd_config": "/etc/ssh/sshd_config\n/usr/share/man/man5/sshd_config.5.gz" }} />
+
+Essaie aussi la recherche sans guillemets, `find /etc/nginx -name *.conf` : l'erreur montre que le shell a développé le joker avant `find`.
+
+## les pièges
+
+- **Un motif sans guillemets.** Le shell le développe avant `find`. Toujours `-name "*.conf"`.
+- **`-delete` mal placé.** Il agit dès qu'il est atteint. En dernier, et après un essai sans lui.
+- **Oublier `-xdev` avec `find /`.** La recherche parcourt `/proc`, les partages réseau et les supports montés, et peut durer très longtemps.
+- **Confondre `-mtime -1` et `-mtime +1`.** Moins, c'est récent ; plus, c'est ancien.
+- **Faire confiance à `locate` pour un fichier récent.** Sa base date de la dernière mise à jour.
+- **`-exec ... \;` sur des milliers de fichiers.** Une commande par fichier. `+` les regroupe.
+- **Chercher en utilisateur ordinaire et conclure à l'absence.** Les répertoires qui te sont fermés ne sont pas parcourus. Pour une recherche exhaustive, `sudo`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/findutils/manual/html_mono/find.html" description="Le manuel complet de find, avec tous les tests et les actions">GNU findutils : Finding Files</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/find.1.html" description="La page de manuel de find">find(1)</ExternalLink>
+
+<ExternalLink href="https://plocate.sesse.net/" description="L'implémentation actuelle de locate sur Debian et Ubuntu">plocate</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi écrire find /etc -name '*.conf' avec des guillemets autour du motif ?" options={["Parce que find ne comprend pas les jokers", "Pour empêcher bash de développer le joker avant de lancer find", "Pour rendre la recherche insensible à la casse", "Parce que les guillemets accélèrent la recherche"]} correct={1} explanation="Sans guillemets, bash remplace *.conf par les fichiers .conf du répertoire courant, et find reçoit un nom au lieu du motif." />
+  <Quiz id="q-2" question="Que trouve find /var/log -mtime +30 ?" options={["Les fichiers modifiés il y a moins de 30 jours", "Les fichiers modifiés il y a plus de 30 jours", "Les fichiers de plus de 30 Mo", "Les fichiers modifiés exactement il y a 30 minutes"]} correct={1} explanation="Le + signifie plus de, le - moins de. mtime compte en jours, mmin en minutes." />
+  <Quiz id="q-3" question="Quelle commande liste les fichiers de plus de 1 Go sur le système de fichiers racine seulement ?" options={["find / -size +1G", "find / -xdev -type f -size +1G", "locate -size +1G", "ls -lS / | head"]} correct={1} explanation="-xdev empêche de parcourir les autres systèmes de fichiers montés, dont /proc ; -type f garde les fichiers ordinaires." />
+  <Quiz id="q-4" question="Que fait find . -delete -name '*.tmp' ?" options={["Il supprime les fichiers .tmp", "Il supprime tout ce qui est sous le répertoire courant", "Il affiche une erreur de syntaxe", "Il ne fait rien"]} correct={1} explanation="find évalue ses éléments dans l'ordre : -delete agit avant que le nom soit testé. -delete doit être en dernier." />
+  <Quiz id="q-5" question="Dans -exec grep -l motif {} \;, que représentent les accolades vides ?" options={["Une erreur de syntaxe", "Le fichier trouvé par find", "Le répertoire de départ", "Le résultat de grep"]} correct={1} explanation="find remplace les accolades vides par le chemin de chaque fichier trouvé avant de lancer la commande." />
+  <Quiz id="q-6" question="Tu viens de créer un fichier, et locate ne le trouve pas. Pourquoi ?" options={["locate ne cherche que dans /etc", "La base de locate n'a pas été mise à jour depuis la création du fichier", "Le fichier est caché", "locate ne trouve que les répertoires"]} correct={1} explanation="locate cherche dans une base reconstruite périodiquement. sudo updatedb la met à jour ; find, lui, parcourt le disque réel." />
+  <Quiz id="q-7" question="Pourquoi la recherche des fichiers setuid avec -perm -4000 intéresse-t-elle la sécurité ?" options={["Parce que ces fichiers sont trop gros", "Parce qu'ils s'exécutent avec les droits de leur propriétaire, souvent root : un setuid inattendu est un signal d'alerte", "Parce qu'ils sont toujours des virus", "Parce qu'ils empêchent les sauvegardes"]} correct={1} explanation="Un programme setuid appartenant à root donne ses droits à quiconque l'exécute. La liste est courte et stable sur un système sain ; toute nouveauté mérite une explication." />
+</QuizGroup>
+
+## à retenir
+
+- `find départ critères action`. Sans action : affichage. Motifs entre guillemets.
+- Critères : `-name`/`-iname`, `-type f|d|l`, `-size +100M`, `-mtime -1` / `-mmin -60` / `-newermt "date"`, `-user`, `-perm`.
+- Combinaisons : ET implicite, `-o` pour OU, `!` pour NON, `\( \)` pour grouper. `-maxdepth` et `-xdev` en tête.
+- Actions : `-delete` **en dernier et après un essai à blanc**, `-exec cmd {} \;` ou `{} +` pour regrouper, `-ok` pour confirmer.
+- `locate` : instantané, par nom seulement, base parfois en retard (`sudo updatedb`).
+- Recherches de sécurité : fichiers modifiés récemment dans `/etc`, exécutables dans `/tmp` et `/dev/shm`, fichiers modifiables par tous, programmes setuid.

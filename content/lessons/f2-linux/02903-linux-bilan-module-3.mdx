@@ -1,0 +1,169 @@
+---
+refCode: CL-LSN-02903-V01
+slug: linux-bilan-module-3
+title: "Bilan du module 3 : le rapport d'activité d'un site"
+description: "Le quiz du module Travailler le texte, puis un projet : produire, à partir d'un journal d'accès web, un rapport d'activité complet (volumes, adresses, codes, erreurs, trafic par heure) avec des chaînes de commandes, des critères de réussite et une correction commentée."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 75
+xpReward: 450
+prerequisites: ["CL-LSN-02023-V01"]
+---
+
+Le module 3 t'a donné la boîte à outils du texte : rediriger les flux, enchaîner les commandes, filtrer avec `grep`, décrire des formes avec les expressions régulières, couper, trier et compter, transformer avec `sed`, calculer avec `awk`, comparer avec `diff` et `comm`. Ce bilan vérifie les connaissances, puis te fait produire un vrai livrable : le rapport d'activité d'un site web, tiré de son journal d'accès, le genre de document qu'on demande à un administrateur chaque lundi matin, ou à un analyste après un incident.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- séparer résultats et erreurs, et écrire un rapport dans un fichier ;
+- construire une chaîne de commandes étape par étape ;
+- extraire des informations précises d'un journal avec `grep`, `cut` et `awk` ;
+- compter, classer et agréger avec `sort`, `uniq` et les tableaux d'`awk` ;
+- générer un document lisible à partir de plusieurs commandes.
+
+## quiz
+
+Quatorze questions sur les huit leçons du module.
+
+<QuizGroup>
+  <Quiz id="m3-q-1" question="Quelle ligne envoie résultats et erreurs dans le même fichier ?" options={["commande 2>&1 > log", "commande > log 2>&1", "commande 2> log > log", "commande | log"]} correct={1} explanation="Les redirections sont traitées de gauche à droite : la sortie standard part vers le fichier, puis les erreurs rejoignent la sortie standard." />
+  <Quiz id="m3-q-2" question="Pourquoi sudo echo texte >> /etc/fichier échoue-t-il ?" options={["Parce que echo ne marche pas avec sudo", "Parce que la redirection est ouverte par ton shell, sans les droits root", "Parce que >> est interdit dans /etc", "Parce que le fichier est immuable"]} correct={1} explanation="sudo ne s'applique qu'à echo. La redirection est faite avant, par ton shell. echo texte | sudo tee -a /etc/fichier règle le problème." />
+  <Quiz id="m3-q-3" question="Que renvoie une chaîne a | b | c sans option, quand a échoue et c réussit ?" options={["Le code de a", "Le code de c, donc un succès", "Toujours 1", "La somme des codes"]} correct={1} explanation="Par défaut, c'est le code de la dernière commande. set -o pipefail le change." />
+  <Quiz id="m3-q-4" question="Quelle forme de find et xargs résiste aux noms de fichiers avec des espaces ?" options={["find . | xargs rm", "find . -print0 | xargs -0 rm", "find . | xargs -n 1 rm", "xargs find . rm"]} correct={1} explanation="Le caractère nul, qui ne peut pas figurer dans un nom, sert de séparateur des deux côtés." />
+  <Quiz id="m3-q-5" question="Quelle option de grep affiche seulement le nom des fichiers qui contiennent le motif ?" options={["-c", "-l", "-n", "-o"]} correct={1} explanation="-l liste les fichiers, -c compte les lignes, -n numérote, -o affiche seulement la partie trouvée." />
+  <Quiz id="m3-q-6" question="Quelle expression régulière valide qu'une chaîne entière n'est faite que de chiffres ?" options={["[0-9]+", "^[0-9]+$", "[0-9]*", "^[0-9]"]} correct={1} explanation="Sans les ancres ^ et $, il suffit qu'une partie de la chaîne corresponde. Une validation est ancrée des deux côtés." />
+  <Quiz id="m3-q-7" question="Que signifie le point dans l'expression régulière 10.0.0.1 ?" options={["Un point littéral", "N'importe quel caractère", "La fin de ligne", "Un chiffre"]} correct={1} explanation="Le point correspond à n'importe quel caractère. Pour un point littéral : \. ou grep -F." />
+  <Quiz id="m3-q-8" question="Pourquoi faut-il sort avant uniq -c ?" options={["Pour aller plus vite", "Parce que uniq ne regroupe que les lignes identiques consécutives", "Parce que uniq trie à l'envers", "Ce n'est pas nécessaire"]} correct={1} explanation="uniq compare chaque ligne à la précédente. sort rassemble les lignes identiques." />
+  <Quiz id="m3-q-9" question="Quelle option de sort trie correctement 2K, 900M et 1G ?" options={["-n", "-h", "-V", "-u"]} correct={1} explanation="-h comprend les suffixes des tailles lisibles." />
+  <Quiz id="m3-q-10" question="Que fait sed -n '/ERROR/p' app.log ?" options={["Il supprime les lignes ERROR", "Il affiche seulement les lignes qui contiennent ERROR", "Il remplace ERROR par p", "Il compte les lignes ERROR"]} correct={1} explanation="-n désactive l'affichage automatique ; la commande p affiche les lignes qui correspondent à l'adresse /ERROR/." />
+  <Quiz id="m3-q-11" question="Comment modifier un fichier avec sed en gardant une copie de l'original ?" options={["sed -n", "sed -i.bak", "sed -E", "sed --dry-run"]} correct={1} explanation="-i modifie sur place ; le suffixe collé à -i garde l'ancien contenu sous ce nom." />
+  <Quiz id="m3-q-12" question="Que calcule awk '{ s += $10 } END { print s }' access.log ?" options={["Le nombre de lignes", "La somme du dixième champ de toutes les lignes", "Le dixième caractère", "La valeur maximale du dixième champ"]} correct={1} explanation="La variable s accumule le dixième champ à chaque ligne ; le bloc END l'affiche une fois tout lu." />
+  <Quiz id="m3-q-13" question="Dans un diff unifié, que représente une ligne qui commence par un espace ?" options={["Une ligne ajoutée", "Une ligne retirée", "Une ligne de contexte, inchangée", "Une erreur de format"]} correct={2} explanation="Les lignes de contexte situent la modification ; - marque une ligne retirée et + une ligne ajoutée." />
+  <Quiz id="m3-q-14" question="Deux listes de comptes sont triées. Quelle commande affiche les comptes présents seulement dans la seconde ?" options={["comm -12 a b", "comm -13 a b", "comm -23 a b", "diff -q a b"]} correct={1} explanation="-1 masque ce qui est propre au premier fichier, -3 ce qui est commun : reste ce qui est propre au second." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées avant le module 4 : les scripts du module 7 utiliseront tous ces outils.
+
+## projet
+
+### la situation
+
+Ton responsable te demande, chaque lundi, un rapport d'activité du site de l'entreprise : combien de requêtes, qui les fait, avec quel résultat, quelles pages posent problème, à quelles heures le site est le plus chargé. Tu vas le produire à partir du journal d'accès, uniquement avec les outils du module.
+
+### générer le journal
+
+Pour travailler sur des données réalistes sans serveur web, génère un journal d'accès fictif de 5 000 lignes au format de nginx. La commande ci-dessous est un petit programme `awk` : relis-le, tu en comprends maintenant chaque élément (`BEGIN`, tableaux, boucle, `printf`).
+
+```bash
+awk 'BEGIN {
+  srand(42)
+  split("203.0.113.42 198.51.100.7 192.0.2.10 203.0.113.77 198.51.100.23", ips, " ")
+  split("/ /accueil /recherche /api/commande /compte /admin", pages, " ")
+  split("200 200 200 200 304 404 500 502", codes, " ")
+  for (i = 1; i <= 5000; i++) {
+    ip = ips[int(rand() * 5) + 1]
+    page = pages[int(rand() * 6) + 1]
+    code = codes[int(rand() * 8) + 1]
+    printf "%s - - [27/Sep/2026:%02d:%02d:00 +0200] \"GET %s HTTP/1.1\" %s %d \"-\" \"Mozilla/5.0\"\n", ip, int(rand() * 24), int(rand() * 60), page, code, int(rand() * 50000)
+  }
+}' > ~/access.log
+```
+
+`srand(42)` fixe le point de départ du générateur aléatoire : avec la même version d'`awk`, tout le monde obtient exactement le même journal. Les chiffres peuvent varier légèrement d'une implémentation à l'autre (`gawk`, `mawk`), mais pas la forme des résultats, et les critères de réussite n'en dépendent pas.
+
+### le cahier des charges
+
+Le rapport, un fichier texte `~/rapport-AAAA-MM-JJ.txt` daté du jour par une commande, doit contenir dans cet ordre :
+
+1. **Le volume** : le nombre total de requêtes, et le volume servi en mégaoctets, avec une décimale.
+2. **Les cinq adresses les plus actives**, avec leur nombre de requêtes, de la plus active à la moins active.
+3. **La répartition des codes HTTP**, du plus fréquent au moins fréquent.
+4. **Les pages en erreur serveur** (codes 5xx), avec leur nombre d'erreurs, de la plus touchée à la moins touchée.
+5. **Le trafic par heure**, de 00 à 23, dans l'ordre des heures.
+
+Chaque partie commence par un titre. Les éventuels messages d'erreur des commandes ne doivent **pas** se retrouver dans le rapport, mais dans un fichier `~/rapport-erreurs.log`.
+
+### les critères de réussite
+
+| Vérification | Résultat attendu |
+| --- | --- |
+| `ls ~/rapport-*.txt` | Un fichier daté du jour |
+| Partie 1 | 5000 requêtes, et un volume cohérent avec `awk` sur le dixième champ |
+| Partie 2 | Cinq lignes, triées par nombre décroissant |
+| Partie 3 | Les cinq codes du journal (200, 304, 404, 500, 502), triés par fréquence : 200 en tête |
+| Partie 4 | Uniquement des pages, avec des comptes qui ne concernent que 500 et 502 |
+| Partie 5 | Vingt-quatre lignes au plus, de 00 à 23 dans l'ordre |
+| `cat ~/rapport-erreurs.log` | Vide si tout s'est bien passé |
+
+### la correction commentée
+
+À lire après avoir essayé. Construis chaque chaîne étape par étape, avec `| head`, avant de l'intégrer au rapport.
+
+**Le nom du fichier**, calculé une fois et gardé dans une variable :
+
+```bash
+rapport=~/rapport-$(date +%F).txt
+journal=~/access.log
+```
+
+**Partie 1 : le volume.** `wc -l` avec une redirection d'entrée pour avoir le nombre seul, et `awk` pour la somme des octets :
+
+```bash
+echo "== Volume ==" > "$rapport"
+echo "Requêtes : $(wc -l < "$journal")" >> "$rapport"
+awk '{ o += $10 } END { printf "Volume servi : %.1f Mo\n", o / 1048576 }' "$journal" >> "$rapport"
+```
+
+Le premier `echo` utilise `>` pour créer le rapport à neuf ; tous les suivants utilisent `>>` pour ajouter.
+
+**Partie 2 : les adresses.** La recette classique :
+
+```bash
+echo "== Adresses les plus actives ==" >> "$rapport"
+cut -d ' ' -f 1 "$journal" | sort | uniq -c | sort -rn | head -5 >> "$rapport"
+```
+
+**Partie 3 : les codes.** Le code de statut est le neuvième champ :
+
+```bash
+echo "== Codes HTTP ==" >> "$rapport"
+awk '{ print $9 }' "$journal" | sort | uniq -c | sort -rn >> "$rapport"
+```
+
+**Partie 4 : les pages en erreur serveur.** On filtre sur le code avec `awk` et un motif ancré, plutôt qu'avec un `grep` qui pourrait trouver un 5 ailleurs dans la ligne, puis on compte par page, le septième champ :
+
+```bash
+echo "== Pages en erreur serveur ==" >> "$rapport"
+awk '$9 ~ /^5/ { n[$7]++ } END { for (p in n) print n[p], p }' "$journal" | sort -rn >> "$rapport"
+```
+
+**Partie 5 : le trafic par heure.** L'heure est dans le quatrième champ, `[27/Sep/2026:14:37:00` : on la découpe sur les deux-points, c'est le deuxième morceau. Puis on trie **par heure** et non par nombre :
+
+```bash
+echo "== Trafic par heure ==" >> "$rapport"
+cut -d ':' -f 2 "$journal" | sort | uniq -c | awk '{ print $2 "h : " $1 }' >> "$rapport"
+```
+
+Ici, pas de `sort -rn` final : le tri alphabétique de `sort` range déjà `00` à `23` dans l'ordre, grâce au zéro initial produit par `%02d`.
+
+**Les erreurs à part.** Pour que les messages d'erreur éventuels aillent dans leur propre fichier, on peut regrouper toutes les commandes et rediriger leur sortie d'erreur une seule fois. Enregistre les commandes ci-dessus dans un fichier `rapport.sh`, puis lance :
+
+```bash
+bash rapport.sh 2> ~/rapport-erreurs.log
+cat ~/rapport-$(date +%F).txt
+```
+
+Un fichier d'erreurs vide et un rapport complet : c'est terminé. Au passage, tu viens d'écrire ton premier script de production de rapport ; au module 7, tu le rendras paramétrable (le journal et la date en arguments), robuste (`set -euo pipefail`) et planifiable pour qu'il arrive tout seul chaque lundi.
+
+### pour aller plus loin
+
+Ajoute deux parties au rapport : les **adresses qui ont tenté d'accéder à `/admin`**, avec leur nombre de tentatives, et la **comparaison avec la semaine précédente** : génère un second journal avec `srand(7)`, produis les deux listes d'adresses triées, et utilise `comm` pour lister les adresses nouvelles cette semaine.
+
+## à retenir
+
+- Un rapport se construit partie par partie : `>` pour créer, `>>` pour ajouter, `2>` pour tenir les erreurs à l'écart.
+- Chaque question est une chaîne : extraire (`cut`, `awk`), filtrer (`grep`, motif `awk` ancré), compter (`sort | uniq -c`), classer (`sort -rn`), limiter (`head`).
+- `awk` et ses tableaux quand il faut agréger par clé ou calculer ; `cut` quand une colonne suffit.
+- Un motif ancré sur le bon champ (`$9 ~ /^5/`) est plus sûr qu'un `grep` sur toute la ligne.
+- Le module 4 passe des fichiers à leurs propriétaires : utilisateurs, groupes et permissions.

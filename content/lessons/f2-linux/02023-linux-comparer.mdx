@@ -1,0 +1,289 @@
+---
+refCode: CL-LSN-02023-V01
+slug: linux-comparer-fichiers
+title: "Comparer des fichiers : diff, patch, comm"
+description: "Voir exactement ce qui a changé entre deux fichiers ou deux répertoires, lire le format unifié de diff, appliquer une modification avec patch, comparer deux listes avec comm, et contrôler l'intégrité d'un système en le comparant à une référence."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-02022-V01"]
+---
+
+« Qu'est-ce qui a changé ? » C'est peut-être la question la plus fréquente de l'administration et de la sécurité. Qu'est-ce qui a changé dans cette configuration depuis la sauvegarde d'hier ? Entre la version de test et celle de production ? Quels comptes ont été ajoutés depuis le mois dernier ? Ce fichier système est-il bien celui que la distribution a installé ? Lire deux fichiers côte à côte en cherchant les différences à l'œil ne marche pas au-delà de dix lignes. Les outils de cette leçon, eux, trouvent chaque différence et la montrent de façon exacte.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- comparer deux fichiers avec `diff` et lire son format unifié, celui qu'utilisent Git et toutes les revues de code ;
+- comparer deux répertoires entiers ;
+- produire un correctif et l'appliquer à un autre fichier avec `patch` ;
+- comparer deux listes triées avec `comm` pour trouver ce qui est commun, ajouté ou retiré ;
+- savoir si deux fichiers sont identiques, y compris des fichiers binaires, avec `cmp` et les empreintes ;
+- vérifier que les fichiers d'un paquet n'ont pas été modifiés.
+
+## pourquoi ça compte
+
+La comparaison est au cœur de trois pratiques. En **exploitation**, avant d'appliquer une modification : on compare la nouvelle configuration à l'ancienne, et on ne recharge le service qu'après avoir vu exactement ce qui change. En **développement**, parce que toute la collaboration sur le code repose sur des différences : un commit, une demande de fusion, une revue, ce sont des `diff`. En **sécurité**, parce que détecter une compromission, c'est souvent détecter un changement : un binaire modifié, une ligne ajoutée à un fichier de configuration, un compte apparu.
+
+## diff : les différences entre deux fichiers
+
+```bash
+diff nginx.conf.bak nginx.conf
+```
+
+```text
+23c23
+< 	client_max_body_size 1m;
+---
+> 	client_max_body_size 20m;
+```
+
+C'est le format par défaut, le plus ancien. `23c23` veut dire : la ligne 23 du premier fichier a été **changée** (*c*) en ligne 23 du second. Les lignes précédées de `<` viennent du premier fichier, celles précédées de `>` du second. On y trouve aussi `a` (*add*, lignes ajoutées) et `d` (*delete*, lignes supprimées).
+
+L'ordre des arguments compte : **l'ancien d'abord, le nouveau ensuite**. `diff` décrit comment passer du premier au second.
+
+### le format unifié : diff -u
+
+Le format par défaut ne montre pas le contexte : sur une ligne isolée, on ne sait pas où l'on est dans le fichier. Le **format unifié**, avec `-u`, est celui que tout le monde utilise aujourd'hui :
+
+```bash
+diff -u nginx.conf.bak nginx.conf
+```
+
+```text
+--- nginx.conf.bak	2026-09-26 18:02:11.000000000 +0200
++++ nginx.conf	2026-09-27 10:40:02.000000000 +0200
+@@ -20,7 +20,7 @@
+ 	sendfile on;
+ 	tcp_nopush on;
+ 	types_hash_max_size 2048;
+-	client_max_body_size 1m;
++	client_max_body_size 20m;
+ 	server_tokens off;
+ 
+ 	include /etc/nginx/mime.types;
+```
+
+<Diagram caption="Lire un diff unifié">
+flowchart TD
+  A["--- l'ancien fichier, +++ le nouveau"] --> B["@@ -20,7 +20,7 @@ : un bloc, 7 lignes à partir de la ligne 20 dans chaque version"]
+  B --> C["Ligne qui commence par un espace : inchangée, montrée pour le contexte"]
+  B --> D["Ligne qui commence par - : retirée"]
+  B --> E["Ligne qui commence par + : ajoutée"]
+</Diagram>
+
+Une modification s'affiche donc comme une ligne retirée suivie d'une ligne ajoutée. Les trois lignes avant et après sont le **contexte**, qui situe le changement. Tu retrouveras ce format tel quel dans `git diff`, dans les demandes de fusion et dans tous les outils de revue : savoir le lire est indispensable pour relire le code des autres.
+
+### les options utiles
+
+| Option | Effet |
+| --- | --- |
+| `-u` | Format unifié, avec contexte |
+| `-q` | Dire seulement **si** les fichiers diffèrent, sans détailler |
+| `-r` | Comparer deux **répertoires**, récursivement |
+| `-i` | Ignorer la casse |
+| `-w` | Ignorer toutes les différences d'espaces |
+| `-B` | Ignorer les lignes vides ajoutées ou retirées |
+| `-y` | Affichage côte à côte, en deux colonnes |
+| `--color` | Couleurs : rouge pour ce qui est retiré, vert pour ce qui est ajouté |
+
+Le code de retour de `diff` suit une logique utile en script : **0** si les fichiers sont identiques, **1** s'ils diffèrent, **2** en cas d'erreur.
+
+```bash
+diff -q /etc/ssh/sshd_config /root/reference/sshd_config > /dev/null || echo "La configuration SSH a changé"
+```
+
+### relire confortablement
+
+Pour une relecture à l'écran, deux présentations aident beaucoup. `diff --color -u` colore les lignes retirées en rouge et les lignes ajoutées en vert, comme le font Git et les plateformes de revue de code. Et `diff -y` affiche les deux fichiers **côte à côte**, en deux colonnes, avec un symbole au milieu : `|` pour une ligne modifiée, `<` pour une ligne qui n'existe qu'à gauche, `>` pour une ligne qui n'existe qu'à droite. Ajoute `--suppress-common-lines` pour ne garder que les lignes qui diffèrent, et `-W 160` pour élargir l'affichage sur un grand écran. Pour une vraie session de relecture interactive, `vimdiff ancien nouveau` ouvre les deux fichiers côte à côte dans vim, avec les différences surlignées et la possibilité de reporter une modification d'un côté à l'autre.
+
+### comparer des répertoires
+
+```bash
+diff -rq site-v1/ site-v2/
+```
+
+```text
+Files site-v1/index.html and site-v2/index.html differ
+Only in site-v2/assets: nouvelle-image.png
+Only in site-v1: ancienne-page.html
+```
+
+`-r` descend dans les sous-répertoires, `-q` résume : fichiers différents, fichiers présents d'un seul côté. Retire `-q` pour voir le détail de chaque différence.
+
+## patch : appliquer une différence
+
+Un `diff -u` enregistré dans un fichier est un **correctif** (*patch*). Il décrit une modification de façon assez précise pour qu'un autre puisse l'appliquer à sa propre copie du fichier, avec la commande `patch`.
+
+```bash
+diff -u nginx.conf.origine nginx.conf.modifie > taille-upload.patch
+```
+
+Sur un autre serveur, qui a le même fichier d'origine :
+
+```bash
+patch --dry-run /etc/nginx/nginx.conf < taille-upload.patch
+patch -b /etc/nginx/nginx.conf < taille-upload.patch
+```
+
+`--dry-run` vérifie que le correctif s'applique proprement, sans rien modifier. `-b` garde une sauvegarde `.orig` du fichier avant modification. Si le fichier cible a un peu changé ailleurs, `patch` s'adapte grâce au contexte ; s'il a trop changé à l'endroit concerné, il refuse et écrit la partie qui n'a pas pu s'appliquer dans un fichier `.rej`. On annule un correctif appliqué avec `patch -R`.
+
+C'est ainsi que les modifications du noyau Linux circulent encore aujourd'hui, par e-mail, sous forme de correctifs. Git automatise ce mécanisme, mais le principe reste le même.
+
+## comm : comparer deux listes
+
+`diff` compare des fichiers ligne à ligne, dans l'ordre. Pour comparer deux **listes** (des noms de comptes, des paquets installés, des adresses), où l'ordre n'a pas d'importance, `comm` est plus adapté. Il affiche trois colonnes :
+
+1. les lignes présentes **seulement** dans le premier fichier ;
+2. les lignes présentes **seulement** dans le second ;
+3. les lignes présentes **dans les deux**.
+
+On masque les colonnes inutiles avec `-1`, `-2`, `-3`. Condition indispensable : **les deux fichiers doivent être triés**, de la même façon.
+
+```bash
+comm -13 <(sort comptes-hier.txt) <(sort comptes-aujourdhui.txt)
+```
+
+```text
+svc-backup
+```
+
+« Ce qui est seulement dans aujourd'hui », c'est-à-dire les comptes **ajoutés** depuis hier. La substitution de processus de la leçon 1 trie les deux listes à la volée. `comm -23` donnerait les comptes **supprimés**, `comm -12` ceux qui existent des deux côtés.
+
+<Callout type="warning">
+`comm` sur des fichiers non triés donne des résultats faux, avec au mieux un avertissement. Et l'ordre de tri doit être identique des deux côtés : un fichier trié selon la langue française et l'autre selon l'ordre des octets ne se comparent pas correctement. Dans un script, trie les deux avec `LC_ALL=C sort`.
+</Callout>
+
+## cmp et les empreintes : identiques ou pas ?
+
+`diff` travaille sur des lignes de texte. Pour des fichiers **binaires** (programmes, images, archives), la bonne question est simplement : sont-ils identiques, octet pour octet ?
+
+```bash
+cmp /usr/bin/ls /tmp/ls-suspect
+```
+
+```text
+/usr/bin/ls /tmp/ls-suspect differ: byte 2141, line 7
+```
+
+`cmp` s'arrête à la première différence et indique où elle se trouve. Sans rien afficher, avec `-s`, il ne renvoie qu'un code de retour.
+
+Pour comparer des fichiers qui ne sont **pas sur la même machine**, on compare leurs **empreintes** : `sha256sum` calcule un résumé de 64 caractères hexadécimaux, qui change complètement à la moindre modification du fichier.
+
+```bash
+sha256sum /usr/bin/ls
+```
+
+```text
+8c5fdcb1a1ab0a8b3e9f2b4a0c1d9e5f7a6b3c2d1e0f9a8b7c6d5e4f3a2b1c0d  /usr/bin/ls
+```
+
+Si l'empreinte du fichier sur ton serveur est égale à celle du même fichier sur une machine de référence, les fichiers sont identiques. Tu as vu à la leçon sur les archives comment `sha256sum -c` vérifie toute une liste d'empreintes d'un coup.
+
+### vérifier les fichiers d'un paquet
+
+Le gestionnaire de paquets connaît l'empreinte de chaque fichier qu'il a installé. On peut donc lui demander quels fichiers ont été modifiés depuis l'installation :
+
+```bash
+sudo dpkg --verify openssh-server
+```
+
+```text
+??5??????   /usr/sbin/sshd
+```
+
+Pas de sortie veut dire : aucun fichier modifié. Ici, le `5` en troisième position signale que l'empreinte de `/usr/sbin/sshd` ne correspond plus à celle du paquet. Pour un fichier de configuration, c'est normal, puisqu'on l'a modifié. Pour le **binaire** du serveur SSH, c'est une alerte grave : quelqu'un l'a remplacé. Sur la famille Red Hat, l'équivalent est `rpm -V`. Et le paquet `debsums` fait la même vérification sur tout le système.
+
+<Callout type="danger">
+Ces vérifications comparent le système à une base que le système lui-même conserve. Un attaquant qui a les droits root peut modifier aussi cette base, et `sha256sum` lui-même. Pour une vérification digne de confiance après une compromission, on compare à une référence **extérieure** : les empreintes publiées par la distribution, calculées depuis une machine saine ou depuis un système démarré sur un support externe. Le parcours de réponse à incident y revient en détail.
+</Callout>
+
+## démonstration : relire une modification avant de l'appliquer
+
+Tu as préparé à la leçon précédente un fichier `app-prod.conf` à partir de la configuration de test. Avant de le déployer, on regarde exactement ce qui change par rapport à la configuration actuellement en production :
+
+```bash
+diff -u /etc/app/app.conf app-prod.conf
+```
+
+```text
+--- /etc/app/app.conf	2026-08-14 09:12:40.000000000 +0200
++++ app-prod.conf	2026-09-27 11:02:15.000000000 +0200
+@@ -1,4 +1,4 @@
+ db_host = db-prod.interne
+ db_port = 5432
+-log_level = info
++log_level = warn
+-debug = false
++debug = false
+```
+
+Surprise : la ligne `debug = false` apparaît retirée puis ajoutée, alors qu'elle semble identique. Une différence **invisible** existe. On la rend visible :
+
+```bash
+diff <(cat -A /etc/app/app.conf) <(cat -A app-prod.conf)
+```
+
+```text
+4c4
+< debug = false$
+---
+> debug = false^M$
+```
+
+`cat -A` affiche les caractères invisibles : `$` marque la fin de ligne, et `^M` est un retour chariot, la fin de ligne à la mode Windows. Le fichier a été retouché dans un éditeur Windows. Selon l'application, `false^M` peut ne pas être compris comme `false`, et le mode débogage s'activer en production. La correction vient de la leçon 5 :
+
+```bash
+tr -d '\r' < app-prod.conf > app-prod-propre.conf
+diff -u /etc/app/app.conf app-prod-propre.conf
+```
+
+Il ne reste plus que le changement voulu, `log_level`. Sans `diff`, ce retour chariot serait passé en production.
+
+## à toi de jouer
+
+Compare au format unifié la sauvegarde `nginx.conf.bak` et le fichier `nginx.conf`. Puis compare les répertoires `site-v1` et `site-v2` en résumant seulement les différences. Enfin, trouve les comptes ajoutés entre `comptes-hier.txt` et `comptes-aujourdhui.txt`, deux fichiers déjà triés.
+
+<SimulatedTerminal shell="bash" title="Qu'est-ce qui a changé ?" expectedCommands={["diff -u nginx.conf.bak nginx.conf", "diff -rq site-v1/ site-v2/", "comm -13 comptes-hier.txt comptes-aujourdhui.txt"]} hints={["diff avec l'option du format unifié, l'ancien fichier d'abord.", "-r pour les répertoires, -q pour résumer.", "comm masque les colonnes avec -1, -2, -3 : on ne garde que ce qui est seulement dans le second fichier."]} commands={{ "diff nginx.conf.bak nginx.conf": "23c23\n< \tclient_max_body_size 1m;\n---\n> \tclient_max_body_size 20m;", "diff -u nginx.conf.bak nginx.conf": "--- nginx.conf.bak\t2026-09-26 18:02:11.000000000 +0200\n+++ nginx.conf\t2026-09-27 10:40:02.000000000 +0200\n@@ -20,7 +20,7 @@\n \tsendfile on;\n \ttcp_nopush on;\n \ttypes_hash_max_size 2048;\n-\tclient_max_body_size 1m;\n+\tclient_max_body_size 20m;\n \tserver_tokens off;\n \n \tinclude /etc/nginx/mime.types;", "diff -rq site-v1/ site-v2/": "Files site-v1/index.html and site-v2/index.html differ\nOnly in site-v2/assets: nouvelle-image.png\nOnly in site-v1: ancienne-page.html", "cat comptes-hier.txt": "alice\nbob\nwww-data", "cat comptes-aujourdhui.txt": "alice\nbob\nsvc-backup\nwww-data", "comm comptes-hier.txt comptes-aujourdhui.txt": "\t\talice\n\t\tbob\n\tsvc-backup\n\t\twww-data", "comm -13 comptes-hier.txt comptes-aujourdhui.txt": "svc-backup", "comm -23 comptes-hier.txt comptes-aujourdhui.txt": "" }} />
+
+Essaie aussi `comm` sans option pour voir les trois colonnes décalées par des tabulations, et `comm -23` pour vérifier qu'aucun compte n'a été supprimé.
+
+## les pièges
+
+- **Inverser l'ordre des fichiers.** `diff ancien nouveau` : les `+` sont ce qui a été ajouté. Dans l'autre sens, tout est à l'envers.
+- **Relire une modification sans `-u`.** Sans contexte, on ne sait pas où l'on est.
+- **Des différences invisibles.** Fins de ligne Windows, espaces en fin de ligne, tabulations : `cat -A` les montre, `diff -w` les ignore quand elles ne comptent pas.
+- **`comm` sur des listes non triées.** Le résultat est faux. `sort` des deux côtés, avec le même ordre.
+- **Appliquer un correctif sans essai.** `patch --dry-run` d'abord, `-b` pour garder l'original.
+- **Faire confiance à une vérification locale sur une machine compromise.** La référence doit venir d'ailleurs.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/diffutils/manual/diffutils.html" description="Le manuel de diff, cmp, diff3 et patch">GNU diffutils manual</ExternalLink>
+
+<ExternalLink href="https://www.gnu.org/software/coreutils/manual/html_node/comm-invocation.html" description="Les options de comm">GNU coreutils : comm</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/dpkg.1.html" description="La vérification des fichiers installés avec dpkg --verify">dpkg(1)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans un diff unifié, que signifie une ligne qui commence par + ?" options={["Une ligne inchangée", "Une ligne présente dans le nouveau fichier et pas dans l'ancien", "Une ligne en double", "Un commentaire"]} correct={1} explanation="Les lignes préfixées par + sont ajoutées, celles préfixées par - sont retirées, celles préfixées par un espace sont le contexte inchangé." />
+  <Quiz id="q-2" question="Quelle commande dit seulement si deux répertoires diffèrent, fichier par fichier, sans détailler le contenu ?" options={["diff -u rep1 rep2", "diff -rq rep1 rep2", "comm rep1 rep2", "cmp rep1 rep2"]} correct={1} explanation="-r parcourt récursivement les répertoires et -q se contente de signaler les fichiers différents ou présents d'un seul côté." />
+  <Quiz id="q-3" question="Quel est le code de retour de diff quand les deux fichiers sont identiques ?" options={["0", "1", "2", "127"]} correct={0} explanation="0 signifie identiques, 1 différents, 2 une erreur. C'est ce qui permet diff -q ... || echo changé dans un script." />
+  <Quiz id="q-4" question="Quelle condition faut-il respecter pour que comm donne un résultat juste ?" options={["Les fichiers doivent avoir la même taille", "Les deux fichiers doivent être triés de la même façon", "Les fichiers doivent être binaires", "Il faut l'exécuter en root"]} correct={1} explanation="comm parcourt les deux fichiers en parallèle en supposant qu'ils sont triés. Sinon, il se trompe." />
+  <Quiz id="q-5" question="Que donne comm -13 ancienne-liste nouvelle-liste ?" options={["Les lignes communes aux deux listes", "Les lignes présentes seulement dans nouvelle-liste", "Les lignes présentes seulement dans ancienne-liste", "Toutes les lignes"]} correct={1} explanation="-1 masque la colonne propre au premier fichier et -3 celle des lignes communes : il reste ce qui est seulement dans le second, donc ce qui a été ajouté." />
+  <Quiz id="q-6" question="Avant d'appliquer un correctif à une configuration de production, quelle option de patch utiliser en premier ?" options={["-R", "--dry-run", "-p0", "-q"]} correct={1} explanation="--dry-run vérifie que le correctif s'applique sans rien modifier. -R annulerait un correctif déjà appliqué." />
+  <Quiz id="q-7" question="dpkg --verify signale que l'empreinte du binaire /usr/sbin/sshd ne correspond plus à celle du paquet. Qu'en penser ?" options={["C'est normal après une modification de configuration", "C'est une alerte grave : le programme a été remplacé ou modifié", "Cela signifie que le paquet doit être mis à jour", "Cela vient du cache de dpkg"]} correct={1} explanation="Un fichier de configuration modifié est attendu. Un binaire modifié ne l'est pas, et un serveur SSH remplacé est un grand classique des portes dérobées." />
+</QuizGroup>
+
+## à retenir
+
+- `diff ancien nouveau`, et surtout `diff -u` : `-` retiré, `+` ajouté, espace = contexte, `@@` situe le bloc. C'est le format de Git et des revues de code.
+- `diff -rq` pour des répertoires, `-w` pour ignorer les espaces, code de retour 0 si identiques.
+- `diff -u > fichier.patch` produit un correctif ; `patch --dry-run` puis `patch -b` l'applique, `patch -R` l'annule.
+- `comm` compare deux listes **triées** : `-13` ajouts, `-23` suppressions, `-12` éléments communs.
+- `cmp` et `sha256sum` pour savoir si des fichiers binaires sont identiques ; `dpkg --verify` pour les fichiers d'un paquet.
+- `cat -A` révèle les différences invisibles, comme les fins de ligne Windows.
