@@ -1,0 +1,179 @@
+---
+refCode: CL-LSN-01026-V01
+slug: fondamentaux-le-dns
+title: "Le DNS : du nom à l'adresse"
+description: "Comment cyberlearn.fr devient une adresse IP : la hiérarchie des noms, les résolveurs et les serveurs faisant autorité, le cache et sa durée de vie, les types d'enregistrements, le fichier hosts, puis ce que le DNS révèle et les attaques qui le visent, des faux domaines à l'empoisonnement de cache. Avec nslookup dans le terminal et un exercice sur le fichier hosts."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01025-V01"]
+---
+
+Les routeurs acheminent les paquets d'après des adresses IP, comme tu l'as vu dans les leçons précédentes. Mais personne ne tape `203.0.113.80` pour aller sur un site : on tape un **nom**, comme `cyberlearn.fr`. Entre les deux, un service discret fait la traduction des milliards de fois par jour : le **DNS** (*Domain Name System*, système de noms de domaine). C'est l'annuaire d'Internet. Quand il tombe, Internet semble tomber avec lui, même si tous les serveurs fonctionnent. Et quand il ment, on se retrouve sur le mauvais site sans rien remarquer. Cette leçon explique comment il fonctionne et pourquoi il intéresse autant les attaquants et les défenseurs.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer à quoi sert le DNS ;
+- lire un nom de domaine et sa hiérarchie ;
+- décrire le chemin d'une résolution, du résolveur au serveur qui fait autorité ;
+- expliquer le rôle du cache et de la durée de vie ;
+- citer les principaux types d'enregistrements ;
+- utiliser `nslookup` pour interroger le DNS ;
+- expliquer le rôle du fichier hosts ;
+- citer les risques liés au DNS et les protections.
+
+## pourquoi ça compte
+
+« Le site ne répond pas » vient souvent du DNS : un nom mal configuré, un changement pas encore visible, un résolveur en panne. Savoir interroger le DNS est l'un des premiers réflexes de diagnostic d'un technicien. Les administrateurs configurent les noms de leurs services, de leur messagerie, de leurs certificats. Et en sécurité, le DNS est partout : les campagnes d'hameçonnage enregistrent des domaines qui imitent de vrais sites, les logiciels malveillants interrogent le DNS pour trouver leur serveur de commande, et les équipes de défense surveillent et filtrent les requêtes DNS, parce qu'elles montrent à quoi chaque machine essaie de se connecter.
+
+## des noms pour les humains, des adresses pour les machines
+
+Une adresse IP est faite pour les machines : difficile à retenir, et susceptible de changer quand un site déménage chez un autre hébergeur. Un nom est fait pour les humains : il se retient, il dit quelque chose, et il reste le même quand l'adresse change. Le DNS fait le lien entre les deux.
+
+Aux débuts d'Internet, cette correspondance tenait dans un seul fichier texte, `HOSTS.TXT`, que chaque machine téléchargeait régulièrement. Avec la croissance du réseau, ce fichier est devenu ingérable. Le DNS l'a remplacé en 1983 par un système **distribué** : aucune machine ne connaît tous les noms, mais chacune sait à qui demander.
+
+## la hiérarchie des noms
+
+Un nom de domaine se lit **de droite à gauche**, du plus général au plus précis. Prenons `www.cyberlearn.fr` :
+
+- tout à droite, invisible, se trouve la **racine**, notée par un point final : le nom complet est en réalité `www.cyberlearn.fr.` ;
+- `fr` est le **domaine de premier niveau** (TLD, *top-level domain*). Il en existe des centaines : nationaux comme `fr`, `be`, `ca`, et génériques comme `com`, `org`, `net`, ou plus récents comme `dev` ou `paris` ;
+- `cyberlearn` est le **domaine** enregistré par son propriétaire auprès d'un **bureau d'enregistrement** (*registrar*), qui le déclare au gestionnaire du TLD, l'Afnic pour `.fr` ;
+- `www` est un **sous-domaine**, que le propriétaire crée librement : `www`, `admin`, `mail`, `api`…
+
+Chaque niveau **délègue** la responsabilité du niveau suivant. La racine sait quels serveurs gèrent `fr`, les serveurs de `fr` savent quels serveurs gèrent `cyberlearn.fr`, et ces derniers connaissent l'adresse de `www.cyberlearn.fr`. Ces serveurs, qui détiennent la réponse officielle pour un domaine, sont dits **faisant autorité**.
+
+Cette lecture de droite à gauche est essentielle en sécurité. `cyberlearn.fr.connexion-securisee.example` n'appartient **pas** à `cyberlearn.fr` : c'est un sous-domaine de `connexion-securisee.example`, que n'importe qui peut avoir enregistré. Les attaquants comptent sur les gens qui lisent de gauche à droite.
+
+## la résolution, étape par étape
+
+Quand ton navigateur a besoin de l'adresse de `www.cyberlearn.fr`, il ne parcourt pas lui-même toute la hiérarchie. Il pose la question à un **résolveur** : un serveur DNS dont le métier est de trouver les réponses pour les autres. C'est généralement celui de ta box ou de ton fournisseur d'accès, indiqué par le DHCP comme tu l'as vu dans la leçon sur les adresses. Il existe aussi des résolveurs publics, comme `1.1.1.1` (Cloudflare), `8.8.8.8` (Google) ou `9.9.9.9` (Quad9, qui bloque les domaines malveillants connus).
+
+<Diagram caption="Une résolution DNS complète, quand rien n'est en cache">
+sequenceDiagram
+  participant N as Navigateur
+  participant R as Résolveur
+  participant Ra as Serveur racine
+  participant T as Serveurs de .fr
+  participant A as Serveurs de cyberlearn.fr
+  N->>R: Adresse de www.cyberlearn.fr ?
+  R->>Ra: www.cyberlearn.fr ?
+  Ra-->>R: Demande aux serveurs de .fr
+  R->>T: www.cyberlearn.fr ?
+  T-->>R: Demande aux serveurs de cyberlearn.fr
+  R->>A: www.cyberlearn.fr ?
+  A-->>R: 203.0.113.80
+  R-->>N: 203.0.113.80
+</Diagram>
+
+Le résolveur interroge d'abord un **serveur racine**, qui ne connaît pas la réponse mais sait qui gère `.fr`. Il interroge ensuite ces serveurs, qui l'envoient vers ceux de `cyberlearn.fr`, lesquels donnent enfin l'adresse. Le résolveur la transmet au navigateur. Tout cela prend souvent quelques dizaines de millisecondes, et passe le plus souvent par de petits messages UDP sur le port 53, le port attitré du DNS.
+
+## le cache et la durée de vie
+
+Refaire tout ce chemin pour chaque page serait lent et surchargerait les serveurs. Chaque réponse est donc gardée en **cache** : par le résolveur, par le système d'exploitation, par le navigateur. La plupart des requêtes reçoivent leur réponse immédiatement, sans quitter ta machine ou ta box.
+
+Chaque réponse porte une **durée de vie**, le **TTL** (*time to live*, à ne pas confondre avec le TTL des paquets de la leçon précédente), en secondes. Tant qu'elle n'est pas écoulée, la réponse en cache est réutilisée. Le propriétaire du domaine choisit ce TTL : long pour réduire les requêtes, court s'il prévoit de changer d'adresse.
+
+C'est ce qui explique la fameuse « propagation DNS » : quand on change l'adresse d'un nom, les caches du monde entier gardent l'ancienne jusqu'à expiration de leur TTL. Pendant ce temps, certains visiteurs arrivent sur l'ancien serveur et d'autres sur le nouveau. Sous Windows, `ipconfig /flushdns` vide le cache local, utile quand un changement tarde à apparaître sur une machine.
+
+## les types d'enregistrements
+
+Le DNS ne stocke pas que des adresses. Chaque information est un **enregistrement** d'un certain type :
+
+| Type | Contient | Exemple d'usage |
+| --- | --- | --- |
+| `A` | une adresse IPv4 | le serveur web de `www` |
+| `AAAA` | une adresse IPv6 | la même chose en IPv6 |
+| `CNAME` | un autre nom, un alias | `www` renvoie vers `cyberlearn.fr` |
+| `MX` | le serveur de messagerie d'un domaine | où livrer les courriels à `@cyberlearn.fr` |
+| `NS` | les serveurs faisant autorité d'un domaine | la délégation |
+| `TXT` | du texte libre | preuves de propriété, règles anti-usurpation du courriel |
+
+Les enregistrements `TXT` méritent une mention : c'est là que se publient les règles **SPF**, **DKIM** et **DMARC**, qui permettent aux serveurs de messagerie de vérifier qu'un courriel prétendant venir d'un domaine en vient vraiment. Un domaine sans ces règles est bien plus facile à usurper dans un courriel d'hameçonnage. Tu les retrouveras en sécurité.
+
+## le fichier hosts
+
+Avant même d'interroger le DNS, le système consulte un petit fichier local, héritier direct du `HOSTS.TXT` d'origine : `/etc/hosts` sous Linux et macOS, `C:\Windows\System32\drivers\etc\hosts` sous Windows. Chaque ligne associe une adresse à un ou plusieurs noms, et ce fichier a **priorité** sur le DNS.
+
+```text
+127.0.0.1       localhost
+192.168.1.20    nas.maison
+```
+
+Il sert aux développeurs pour tester un site sous son vrai nom avant sa mise en ligne, et aux administrateurs pour quelques cas particuliers. Mais il est aussi une cible : un logiciel malveillant qui ajoute la ligne `203.0.113.66 www.banque.example` envoie toute la machine vers un faux site, sans que le DNS soit en cause. C'est pour cela que ce fichier ne se modifie qu'avec les droits d'administrateur, et que sa modification inattendue est un signal d'alerte.
+
+## sécurité : ce que le DNS révèle, et ce qu'on lui fait faire
+
+**Le DNS parle en clair.** Les requêtes DNS classiques ne sont pas chiffrées : ton fournisseur d'accès, l'exploitant d'un Wi-Fi public ou un attaquant sur le réseau voient tous les noms que tu consultes, même quand les pages elles-mêmes sont protégées par HTTPS. Des versions chiffrées existent, **DNS over HTTPS** (DoH) et **DNS over TLS** (DoT), que les navigateurs et les systèmes récents savent utiliser.
+
+**Le DNS peut mentir.** Un attaquant qui parvient à glisser une fausse réponse dans le cache d'un résolveur envoie tous ses utilisateurs vers la mauvaise adresse : c'est l'**empoisonnement de cache**. Une box piratée dont on a changé le résolveur fait de même pour toute une maison. **DNSSEC** permet de signer les réponses pour qu'un résolveur vérifie leur authenticité ; HTTPS, que tu verras bientôt, apporte une seconde barrière, car le faux site ne possède pas le certificat du vrai.
+
+**Les noms trompent.** Les attaquants enregistrent des domaines qui ressemblent aux vrais : une lettre changée (`cyberlearm.fr`), un tiret ajouté, un autre TLD (`cyberlearn.co`), un faux sous-domaine lu à l'envers comme vu plus haut, ou des caractères d'un autre alphabet comme dans la leçon sur le texte. Vérifier le **domaine réel**, lu de droite à gauche, est un réflexe de base.
+
+**Le DNS aide aussi à se défendre.** Comme presque toute connexion commence par une requête DNS, le filtrage DNS bloque l'accès aux domaines malveillants connus, et les journaux DNS permettent de repérer une machine infectée qui contacte son serveur de commande, souvent à intervalles réguliers ou vers des noms générés au hasard.
+
+## à toi de jouer : interroger le DNS
+
+La commande `nslookup` existe sous Windows, Linux et macOS. Demande l'adresse de `boutique.example`, puis son serveur de messagerie avec l'option `-type=mx`. Regarde aussi ce que répond le DNS pour un nom qui n'existe pas.
+
+<SimulatedTerminal shell="bash" title="nslookup, l'annuaire en ligne de commande" expectedCommands={["nslookup boutique.example", "nslookup -type=mx boutique.example"]} hints={["nslookup suivi d'un nom demande son adresse au résolveur configuré.", "L'option -type=mx demande le serveur de messagerie du domaine."]} commands={{ "nslookup boutique.example": "Server:\t\t192.168.1.1\nAddress:\t192.168.1.1#53\n\nNon-authoritative answer:\nName:\tboutique.example\nAddress: 203.0.113.80\nName:\tboutique.example\nAddress: 2001:db8::80", "nslookup www.boutique.example": "Server:\t\t192.168.1.1\nAddress:\t192.168.1.1#53\n\nNon-authoritative answer:\nwww.boutique.example\tcanonical name = boutique.example.\nName:\tboutique.example\nAddress: 203.0.113.80", "nslookup -type=mx boutique.example": "Server:\t\t192.168.1.1\nAddress:\t192.168.1.1#53\n\nNon-authoritative answer:\nboutique.example\tmail exchanger = 10 mx1.hebergeur-mail.example.\nboutique.example\tmail exchanger = 20 mx2.hebergeur-mail.example.", "nslookup -type=txt boutique.example": "Server:\t\t192.168.1.1\nAddress:\t192.168.1.1#53\n\nNon-authoritative answer:\nboutique.example\ttext = \"v=spf1 include:hebergeur-mail.example -all\"", "nslookup existe-pas.example": "Server:\t\t192.168.1.1\nAddress:\t192.168.1.1#53\n\n** server can't find existe-pas.example: NXDOMAIN", "cat /etc/hosts": "127.0.0.1\tlocalhost\n127.0.1.1\tpc-alice\n::1\t\tlocalhost ip6-localhost ip6-loopback" }} />
+
+Plusieurs choses à remarquer. Le résolveur interrogé est la box, `192.168.1.1`, sur le port 53. La mention **Non-authoritative answer** signifie que la réponse vient d'un cache, pas directement du serveur qui fait autorité. Le nom a deux adresses, une IPv4 et une IPv6. `www.boutique.example` est un alias (`canonical name`) de `boutique.example`. Pour la messagerie, deux serveurs sont déclarés avec une priorité : le plus petit nombre est essayé en premier. Enfin, un nom inexistant reçoit la réponse **NXDOMAIN**, « ce domaine n'existe pas ». Essaie aussi `nslookup -type=txt boutique.example` pour voir une règle SPF.
+
+## exercice noté : lire un fichier hosts
+
+Écris `solution(hosts, nom)` qui reçoit le contenu d'un fichier hosts et un nom, et renvoie l'adresse associée à ce nom, ou `None` s'il n'y figure pas. Règles à respecter :
+
+- tout ce qui suit un `#` sur une ligne est un commentaire ;
+- une ligne peut associer plusieurs noms à la même adresse ;
+- les noms ne tiennent pas compte des majuscules : `BANQUE.example` et `banque.example` sont le même nom ;
+- si un nom apparaît plusieurs fois, c'est la première ligne qui compte.
+
+<PythonChallenge id="f1-dns-1" title="Lire un fichier hosts" description="Renvoie l'adresse associée au nom dans le fichier hosts, ou None." starterCode="def solution(hosts, nom):
+    for ligne in hosts.splitlines():
+        pass  # retirer le commentaire, découper, comparer les noms
+    return None" tests={[{ input: "solution('127.0.0.1 localhost\\n203.0.113.66 www.banque.example banque.example # ajout\\n', 'localhost')", expected: "127.0.0.1" }, { input: "solution('127.0.0.1 localhost\\n203.0.113.66 www.banque.example banque.example # ajout\\n', 'BANQUE.example')", expected: "203.0.113.66" }, { input: "solution('127.0.0.1 localhost\\n#192.168.1.9 vieux.nas\\n', 'vieux.nas')", expected: "None" }, { input: "solution('127.0.0.1 localhost\\n', 'inconnu.example')", expected: "None" }, { input: "solution('192.168.1.20 nas.maison\\n192.168.1.30 nas.maison\\n', 'nas.maison')", expected: "192.168.1.20" }]} />
+
+Le troisième test est celui d'une ligne mise en commentaire : elle ne compte plus. Et regarde le deuxième : si tu trouves cette ligne dans le fichier hosts de quelqu'un, sans qu'il l'y ait mise, sa banque en ligne pointe vers un serveur qui n'est pas celui de sa banque.
+
+## les pièges
+
+- **Lire un nom de gauche à droite.** Le domaine réel est à droite : `banque.fr.securite.example` appartient à `securite.example`.
+- **Accuser le serveur quand c'est le DNS.** Si `nslookup` ne trouve pas le nom, le site n'y est pour rien.
+- **Oublier le cache.** Après un changement, l'ancienne réponse reste valable jusqu'à la fin de son TTL.
+- **Croire que HTTPS cache les noms consultés.** Les requêtes DNS classiques passent en clair.
+- **Ignorer le fichier hosts.** Il passe avant le DNS : une ligne ajoutée détourne un nom sans laisser de trace dans le DNS.
+- **Confondre les deux TTL.** Celui d'un paquet compte des routeurs, celui d'une réponse DNS compte des secondes.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.afnic.fr/noms-de-domaine/tout-savoir/" description="L'Afnic, gestionnaire du .fr, explique les noms de domaine et leur fonctionnement">Afnic : tout savoir sur les noms de domaine</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/bonnes-pratiques-pour-lacquisition-et-lexploitation-de-noms-de-domaine" description="Les recommandations de l'ANSSI pour acquérir et exploiter un nom de domaine">ANSSI : bonnes pratiques pour les noms de domaine</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows-server/administration/windows-commands/nslookup" description="La commande nslookup et ses options">Microsoft : nslookup</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="À quoi sert le DNS ?" options={["À traduire des noms de domaine en adresses IP, et à publier d'autres informations sur les domaines", "À chiffrer les pages web", "À attribuer les adresses IP aux machines d'un réseau local", "À accélérer les téléchargements"]} correct={0} explanation="Le DNS est l'annuaire d'Internet : un nom lisible par un humain y devient une adresse utilisable par les routeurs." />
+  <Quiz id="q-2" question="À quel domaine appartient le nom banque.fr.verification.example ?" options={["banque.fr", "fr", "verification.example", "banque"]} correct={2} explanation="On lit un nom de droite à gauche : le domaine enregistré est verification.example, et banque.fr n'en est qu'un sous-domaine trompeur." />
+  <Quiz id="q-3" question="Quel est le rôle d'un résolveur DNS ?" options={["Détenir la réponse officielle pour un domaine", "Vendre des noms de domaine", "Chercher la réponse pour ses clients en interrogeant la hiérarchie, puis la garder en cache", "Bloquer tous les sites étrangers"]} correct={2} explanation="Le résolveur fait le parcours racine, TLD, serveurs faisant autorité, et mémorise les réponses selon leur TTL." />
+  <Quiz id="q-4" question="Un site a changé d'hébergeur il y a dix minutes. Certains visiteurs arrivent encore sur l'ancien serveur. Pourquoi ?" options={["Le nouveau serveur est en panne", "Le navigateur est trop ancien", "Des caches DNS gardent l'ancienne adresse jusqu'à la fin de sa durée de vie", "Le fichier hosts du site est faux"]} correct={2} explanation="Chaque réponse DNS a un TTL ; tant qu'il n'est pas écoulé, les caches réutilisent l'ancienne adresse." />
+  <Quiz id="q-5" question="Quel type d'enregistrement indique le serveur de messagerie d'un domaine ?" options={["A", "CNAME", "AAAA", "MX"]} correct={3} explanation="MX, mail exchanger : les serveurs à qui livrer les courriels, avec une priorité." />
+  <Quiz id="q-6" question="Un fichier hosts contient la ligne 203.0.113.66 www.banque.example, que personne n'a ajoutée. Quel est le risque ?" options={["Aucun, le DNS corrigera", "La banque est piratée", "Internet est coupé", "La machine est envoyée vers un faux site de la banque, car le fichier hosts passe avant le DNS"]} correct={3} explanation="Le fichier hosts a priorité sur le DNS : cette ligne détourne le nom sur cette machine, signe probable d'un logiciel malveillant." />
+  <Quiz id="q-7" question="Pourquoi le DNS classique pose-t-il un problème de confidentialité, même avec HTTPS ?" options={["Parce qu'il transmet les mots de passe", "Parce qu'il enregistre l'historique sur le serveur du site", "Parce que ses requêtes circulent en clair et révèlent les noms consultés", "Il ne pose aucun problème"]} correct={2} explanation="Les requêtes DNS classiques ne sont pas chiffrées ; DNS over HTTPS ou over TLS les protègent." />
+</QuizGroup>
+
+## à retenir
+
+- Le **DNS** traduit les **noms** en **adresses IP** ; c'est un annuaire **distribué**, créé en 1983.
+- Un nom se lit **de droite à gauche** : racine, **TLD**, domaine, sous-domaines. Le domaine réel est à droite.
+- Le **résolveur** parcourt la hiérarchie jusqu'aux serveurs **faisant autorité**, en UDP sur le port **53**.
+- Chaque réponse est mise en **cache** pendant son **TTL** : d'où les délais de « propagation ».
+- Enregistrements : **A**, **AAAA**, **CNAME**, **MX**, **NS**, **TXT** (dont SPF, DKIM, DMARC).
+- Le fichier **hosts** passe avant le DNS ; une ligne ajoutée détourne un nom.
+- Risques : requêtes **en clair**, **empoisonnement de cache**, **domaines trompeurs**. Protections : DoH et DoT, DNSSEC, HTTPS, filtrage DNS.

@@ -1,0 +1,165 @@
+---
+refCode: CL-LSN-01027-V01
+slug: fondamentaux-client-et-serveur
+title: "Client et serveur : ports et services"
+description: "Qui parle à qui sur Internet : le modèle client-serveur, les ports qui désignent un programme sur une machine, les ports connus à reconnaître, ce qu'est vraiment un serveur web, et pourquoi chaque port ouvert est une porte d'entrée. Avec la lecture des ports d'écoute d'un serveur et un exercice pour trouver ce qu'il expose."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01026-V01"]
+---
+
+Grâce au DNS, ton navigateur connaît l'adresse IP du site. Grâce à IP, les paquets savent rejoindre la machine. Mais sur cette machine tournent peut-être un serveur web, un serveur de messagerie, une base de données et un service de connexion à distance. À lequel parler ? C'est le rôle des **ports**. Cette leçon présente le modèle qui organise presque tout Internet, le **client** qui demande et le **serveur** qui répond, explique ce qu'est un port, et montre pourquoi la liste des ports ouverts d'une machine est l'une des premières choses que regarde un attaquant, et donc un défenseur.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- décrire le modèle client-serveur ;
+- expliquer ce qu'est un port et ce qu'est un service ;
+- reconnaître les ports les plus courants ;
+- expliquer ce qui identifie une connexion ;
+- décrire ce que fait un serveur web ;
+- lire la liste des ports d'écoute d'une machine ;
+- expliquer la notion de surface d'attaque.
+
+## pourquoi ça compte
+
+Un administrateur ouvre et ferme des ports toute la journée : pour publier un site, autoriser la connexion à distance, isoler une base de données. Un développeur lance des serveurs sur sa machine en permanence, `localhost:3000` ou `localhost:8080`. Et en sécurité, les ports sont le vocabulaire de base : un pare-feu filtre par port, un scanner de ports cartographie ce qu'une machine expose, et de nombreuses attaques massives commencent par un service laissé ouvert sur Internet alors qu'il n'aurait jamais dû l'être. Les rançongiciels, par exemple, entrent très souvent par un service de bureau à distance exposé.
+
+## client et serveur
+
+La plupart des échanges sur un réseau suivent le même schéma à deux rôles :
+
+- le **serveur** est un programme qui **attend** des demandes, en permanence, et y **répond** : un serveur web qui renvoie des pages, un serveur de messagerie qui reçoit des courriels, un serveur de base de données qui exécute des requêtes ;
+- le **client** est un programme qui **prend l'initiative** : il envoie une demande et attend la réponse. Ton navigateur, ton application de messagerie, l'application mobile d'une banque sont des clients.
+
+Le mot « serveur » désigne donc d'abord un **programme**, et par extension la machine qui l'héberge. Une même machine peut faire tourner plusieurs serveurs, et ton ordinateur peut être serveur : quand tu partages un dossier sur le réseau local, il répond aux autres.
+
+Ce modèle a une conséquence structurante : le serveur doit être **joignable** et **toujours à l'écoute**, alors que le client peut être n'importe où, derrière une box, et ne se manifester que quand il en a besoin. C'est pour cela que les serveurs vivent dans des centres de données, avec des adresses publiques fixes et des noms dans le DNS.
+
+## les ports
+
+Une adresse IP désigne une **machine**. Pour désigner un **programme** sur cette machine, on ajoute un **port** : un numéro de 0 à 65 535, porté dans l'en-tête TCP ou UDP de chaque paquet, la couche transport de la leçon sur les paquets. Si l'adresse IP est l'adresse d'un immeuble, le port est le numéro de l'appartement.
+
+Un serveur **écoute** sur un port fixe, connu à l'avance, pour que les clients sachent où le trouver. Quand ton navigateur contacte un site en HTTPS, il envoie ses paquets à l'adresse du serveur, **port 443**. Le client, lui, utilise un port choisi au hasard par son système parmi les numéros élevés, un **port éphémère**, juste le temps de la conversation.
+
+Une connexion est donc identifiée par **quatre informations** : l'adresse et le port du client, l'adresse et le port du serveur, auxquels s'ajoute le protocole. C'est ce qui permet à un serveur web de tenir des milliers de conversations simultanées sur le même port 443 : chaque client a une adresse ou un port éphémère différent. Et c'est ainsi que la box de la leçon sur les adresses distingue, dans sa table de traduction, les connexions de tes différents appareils.
+
+## les ports à connaître
+
+Les ports de 0 à 1 023 sont dits **bien connus** : ils sont réservés aux services standard, et sous Linux seul l'administrateur peut y placer un serveur. Voici ceux que tu croiseras sans cesse :
+
+| Port | Protocole | Service |
+| --- | --- | --- |
+| 22 | TCP | **SSH**, connexion à distance chiffrée à un shell |
+| 25 | TCP | **SMTP**, envoi de courriel entre serveurs |
+| 53 | UDP, TCP | **DNS** |
+| 80 | TCP | **HTTP**, le web sans chiffrement |
+| 443 | TCP | **HTTPS**, le web chiffré |
+| 445 | TCP | **SMB**, partage de fichiers Windows |
+| 3306 | TCP | **MySQL** et MariaDB, bases de données |
+| 3389 | TCP | **RDP**, bureau à distance Windows |
+| 5432 | TCP | **PostgreSQL**, base de données |
+
+Retiens surtout 22, 53, 80, 443 et 3389 : ils reviennent dans presque toutes les situations. Un numéro de port n'est cependant qu'une **convention** : rien n'empêche de faire tourner un serveur web sur le port 8080, ou SSH sur le port 2222. C'est d'ailleurs courant en développement.
+
+## ce qu'est un serveur web
+
+Un **serveur web** est un programme qui écoute sur les ports 80 et 443, reçoit des requêtes HTTP (sujet de la leçon suivante) et renvoie des réponses. Les plus répandus s'appellent **nginx** et **Apache**. Ils font essentiellement deux choses :
+
+- **servir des fichiers** tels quels : pages HTML, feuilles de style, scripts, images ;
+- **transmettre** les requêtes qui demandent un calcul à une **application** : le code du site, écrit en Python, PHP, JavaScript ou autre, qui interroge une base de données et fabrique la page à la volée.
+
+<Diagram caption="Derrière une adresse web : un serveur web, une application, une base de données">
+flowchart LR
+  A["Navigateur, client"] -->|"HTTPS, port 443"| B["Serveur web : nginx"]
+  B -->|"fichiers statiques"| A
+  B -->|"requête transmise"| C["Application du site"]
+  C -->|"SQL, port 5432, réseau interne"| D["Base de données"]
+</Diagram>
+
+Dans une architecture bien faite, seul le serveur web est joignable depuis Internet. L'application et la base de données n'écoutent que sur le réseau interne ou sur la machine elle-même : personne dehors ne doit pouvoir leur parler directement.
+
+## écouter où ?
+
+Un serveur n'écoute pas seulement sur un port : il écoute aussi sur une **adresse**. C'est un détail décisif pour la sécurité :
+
+- `127.0.0.1:5432` : la base de données n'écoute que sur la **boucle locale**. Seuls les programmes de la machine elle-même peuvent la joindre ;
+- `192.168.1.10:8080` : le service écoute sur l'adresse du réseau local, joignable par les machines de ce réseau ;
+- `0.0.0.0:80`, ou `[::]:80` en IPv6 : le service écoute sur **toutes** les adresses de la machine. Si la machine est sur Internet et qu'aucun pare-feu ne s'interpose, il est joignable depuis le monde entier.
+
+Sous Linux, la commande `ss -tlnp` (ou l'ancienne `netstat -tlnp`) liste les ports TCP en écoute, avec leur adresse et le programme concerné. Sous Windows, `netstat -ano` donne une liste équivalente, et PowerShell propose `Get-NetTCPConnection -State Listen`.
+
+## la surface d'attaque
+
+Chaque port ouvert est une **porte d'entrée** : un programme qui accepte des données venues de l'extérieur, et donc un endroit où une faille peut être exploitée. L'ensemble de ces portes forme la **surface d'attaque** d'une machine. La règle d'hygiène est simple : **n'exposer que ce qui doit l'être**, et le protéger.
+
+Les incidents réels le montrent sans cesse :
+
+- des **bureaux à distance** (RDP, port 3389) ouverts sur Internet, attaqués en permanence par des programmes qui essaient des mots de passe, sont l'une des principales portes d'entrée des rançongiciels ;
+- des **bases de données** exposées sans mot de passe, découvertes par des moteurs de recherche spécialisés qui balaient Internet, ont fuité des millions de fiches clients ;
+- des **interfaces d'administration** d'objets connectés, laissées accessibles avec leur mot de passe d'usine, ont nourri des réseaux de machines zombies comme Mirai.
+
+Les défenses tiennent en quelques principes : fermer ou désactiver ce qui ne sert pas, faire écouter les services internes sur `127.0.0.1` ou sur le réseau interne, filtrer avec un **pare-feu** qui n'autorise que les ports nécessaires, et mettre à jour ce qui reste exposé. Pour l'administration à distance, on passe par un **VPN** ou un **bastion** plutôt que d'exposer SSH ou RDP à tout Internet.
+
+Un mot sur les **scanners de ports** : ces outils, dont le plus connu s'appelle **nmap**, testent quels ports répondent sur une machine. Ils sont indispensables pour vérifier ce qu'on expose soi-même. Mais scanner les machines de quelqu'un d'autre sans son autorisation peut constituer, en France, une tentative d'accès frauduleux à un système : on ne scanne que ce qu'on administre, ou ce qu'on a l'autorisation écrite de tester.
+
+## à toi de jouer : ce qu'expose ce serveur
+
+Tu administres un petit serveur web. Liste les ports en écoute avec `ss -tlnp`, puis vérifie que le site répond localement avec `curl -I http://localhost`.
+
+<SimulatedTerminal shell="bash" title="Qui écoute sur ce serveur ?" expectedCommands={["ss -tlnp", "curl -I http://localhost"]} hints={["ss -tlnp : t pour TCP, l pour les ports en écoute, n pour les numéros, p pour les programmes.", "curl -I demande seulement les en-têtes de la réponse HTTP."]} commands={{ "ss -tlnp": "State  Recv-Q Send-Q  Local Address:Port  Peer Address:Port Process\nLISTEN 0      511           0.0.0.0:80         0.0.0.0:*     users:((\"nginx\",pid=812,fd=6))\nLISTEN 0      511           0.0.0.0:443        0.0.0.0:*     users:((\"nginx\",pid=812,fd=8))\nLISTEN 0      128           0.0.0.0:22         0.0.0.0:*     users:((\"sshd\",pid=640,fd=3))\nLISTEN 0      200         127.0.0.1:5432       0.0.0.0:*     users:((\"postgres\",pid=733,fd=5))\nLISTEN 0      511              [::]:80            [::]:*     users:((\"nginx\",pid=812,fd=7))\nLISTEN 0      4096          0.0.0.0:3389       0.0.0.0:*     users:((\"xrdp\",pid=1204,fd=11))", "curl -I http://localhost": "HTTP/1.1 301 Moved Permanently\nServer: nginx\nDate: Mon, 28 Sep 2026 09:12:44 GMT\nContent-Type: text/html\nContent-Length: 162\nConnection: keep-alive\nLocation: https://boutique.example/", "whoami": "alice", "systemctl status xrdp": "● xrdp.service - xrdp daemon\n     Loaded: loaded (/lib/systemd/system/xrdp.service; enabled; preset: enabled)\n     Active: active (running) since Mon 2026-09-28 08:02:10 CEST; 1h 10min ago" }} />
+
+Lis la liste comme un auditeur. nginx écoute sur 80 et 443 sur toutes les adresses : normal, c'est le serveur web. SSH sur le port 22, sur toutes les adresses : acceptable s'il est protégé par des clés et, idéalement, limité par un pare-feu. PostgreSQL n'écoute que sur `127.0.0.1` : parfait, seule l'application locale peut le joindre. Mais `xrdp`, un serveur de bureau à distance, écoute sur `0.0.0.0:3389` : sur un serveur web, rien ne le justifie, et c'est exactement le genre de porte qu'on retrouve dans les rapports d'incident. Quant à la réponse `301` de nginx, elle renvoie les visiteurs du port 80 vers la version HTTPS du site : c'est la leçon suivante.
+
+## exercice noté : les ports exposés
+
+Écris `solution(ecoutes)` qui reçoit une liste d'adresses d'écoute sous la forme `adresse:port` et renvoie la **liste triée, sans doublon, des ports exposés**, c'est-à-dire de ceux qui n'écoutent pas seulement sur la boucle locale. Une adresse de boucle locale commence par `127.` en IPv4, ou vaut `[::1]` en IPv6. Attention : en IPv6, l'adresse elle-même contient des deux-points, il faut donc couper sur le **dernier**.
+
+<PythonChallenge id="f1-ports-1" title="Les ports exposés" description="Renvoie la liste triée, sans doublon, des ports qui n'écoutent pas seulement sur la boucle locale." starterCode="def solution(ecoutes):
+    exposes = set()
+    for ecoute in ecoutes:
+        pass  # séparer l'adresse du port, écarter la boucle locale
+    return sorted(exposes)" tests={[{ input: "solution(['0.0.0.0:80', '127.0.0.1:3306', '[::]:80', '0.0.0.0:22'])", expected: "[22, 80]" }, { input: "solution(['127.0.0.1:5432', '[::1]:5432'])", expected: "[]" }, { input: "solution(['192.168.1.10:8080', '0.0.0.0:3389', '127.0.0.53:53'])", expected: "[3389, 8080]" }, { input: "solution([])", expected: "[]" }]} />
+
+Indice : la méthode `rsplit(':', 1)` coupe une chaîne sur son dernier deux-points, et `int()` transforme le port en nombre, pour que le tri se fasse dans l'ordre numérique.
+
+## les pièges
+
+- **Croire qu'un serveur est forcément une grosse machine.** C'est d'abord un programme qui écoute ; ton ordinateur en fait tourner plusieurs.
+- **Confondre adresse et port.** L'adresse désigne la machine, le port désigne le programme.
+- **Faire écouter un service interne sur `0.0.0.0`.** Une base de données ou un outil d'administration écoute sur `127.0.0.1` ou sur le réseau interne.
+- **Exposer RDP ou SSH à tout Internet.** On passe par un VPN, un bastion ou au minimum un filtrage d'adresses.
+- **Se fier au numéro de port.** Un service peut tourner sur n'importe quel port ; c'est ce qui répond qui compte.
+- **Scanner ce qui ne nous appartient pas.** Un scan de ports sans autorisation peut être poursuivi.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml" description="Le registre officiel qui attribue les numéros de ports aux services, en anglais">IANA : registre des ports</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/ss.8.html" description="La commande ss et ses options pour lister connexions et ports d'écoute">Page de manuel de ss</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/rancongiciels-ransomwares" description="Les rançongiciels, leurs portes d'entrée habituelles et les réflexes à avoir">Cybermalveillance.gouv.fr : les rançongiciels</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans le modèle client-serveur, qui prend l'initiative de l'échange ?" options={["Le serveur", "Le routeur", "Le DNS", "Le client"]} correct={3} explanation="Le serveur attend et répond ; le client envoie la demande quand il en a besoin." />
+  <Quiz id="q-2" question="À quoi sert un numéro de port ?" options={["À désigner une machine sur Internet", "À désigner un programme, un service, sur une machine", "À chiffrer une connexion", "À mesurer le débit"]} correct={1} explanation="L'adresse IP désigne la machine, le port désigne le programme qui doit recevoir les données." />
+  <Quiz id="q-3" question="Sur quel port un navigateur contacte-t-il un site en HTTPS ?" options={["22", "80", "3389", "443"]} correct={3} explanation="443 est le port de HTTPS ; 80 celui de HTTP sans chiffrement." />
+  <Quiz id="q-4" question="Comment un serveur web tient-il des milliers de connexions sur le même port 443 ?" options={["Chaque connexion est identifiée par les adresses et les ports des deux côtés, et le port du client diffère", "Il n'en traite qu'une à la fois", "Il ouvre un port différent pour chaque client", "Grâce au DNS"]} correct={0} explanation="Adresse et port du client, adresse et port du serveur : cette combinaison est unique pour chaque connexion." />
+  <Quiz id="q-5" question="Une base de données écoute sur 127.0.0.1:5432. Qui peut la joindre ?" options={["Tout Internet", "Les machines du réseau local", "Personne", "Seulement les programmes de la machine elle-même"]} correct={3} explanation="127.0.0.1 est la boucle locale : c'est la bonne configuration pour une base que seule l'application locale utilise." />
+  <Quiz id="q-6" question="Pourquoi un bureau à distance (RDP, port 3389) exposé sur Internet est-il dangereux ?" options={["Il ralentit la machine", "Il consomme trop de bande passante", "Il est attaqué en permanence et c'est une porte d'entrée fréquente des rançongiciels", "Il n'est pas dangereux"]} correct={2} explanation="Des programmes balaient Internet et testent les mots de passe des services exposés ; on passe par un VPN ou un bastion." />
+  <Quiz id="q-7" question="Qu'appelle-t-on la surface d'attaque d'une machine ?" options={["La taille de son disque", "Le nombre de ses utilisateurs", "Son adresse IP publique", "L'ensemble des points par lesquels elle accepte des données de l'extérieur, comme ses ports ouverts"]} correct={3} explanation="Chaque service exposé est une porte potentielle : la réduire, c'est fermer ce qui ne sert pas et filtrer le reste." />
+</QuizGroup>
+
+## à retenir
+
+- Le **serveur** écoute et répond, le **client** prend l'initiative ; « serveur » désigne d'abord un **programme**.
+- Un **port** (0 à 65 535) désigne un programme sur une machine ; une connexion est identifiée par les **adresses et ports** des deux côtés.
+- Ports à connaître : **22** SSH, **53** DNS, **80** HTTP, **443** HTTPS, **3389** RDP, et 25, 445, 3306, 5432.
+- Un **serveur web** (nginx, Apache) sert des fichiers et transmet le reste à l'**application**, qui parle à la **base de données**.
+- `127.0.0.1` : joignable par la machine seule ; `0.0.0.0` : joignable par tous. `ss -tlnp` ou `netstat -ano` le montrent.
+- Chaque port ouvert agrandit la **surface d'attaque** : n'exposer que le nécessaire, filtrer, mettre à jour, et ne scanner que ce qu'on administre.
