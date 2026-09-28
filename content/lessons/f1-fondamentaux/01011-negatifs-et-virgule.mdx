@@ -1,0 +1,246 @@
+---
+refCode: CL-LSN-01011-V01
+slug: fondamentaux-negatifs-et-virgule
+title: "Les nombres négatifs et à virgule"
+description: "Comment une machine qui ne connaît que des 0 et des 1 représente -5 et 3,14 : le complément à deux, les entiers signés et non signés, le débordement et ses catastrophes réelles, puis les nombres à virgule flottante et pourquoi 0.1 + 0.2 ne vaut pas 0.3. Avec les bons réflexes pour l'argent et les comparaisons."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01010-V01"]
+---
+
+Jusqu'ici, tous nos nombres étaient des entiers positifs. Mais un programme doit bien représenter une température de -12 degrés, un solde bancaire négatif, le nombre pi ou un prix de 19,99 €. Or la machine n'a toujours que des bits : pas de signe moins, pas de virgule. Cette leçon montre les deux astuces qu'utilisent tous les processeurs du monde, le **complément à deux** pour les négatifs et la **virgule flottante** pour les nombres décimaux, et surtout leurs limites. Ces limites ont fait exploser une fusée, tué des soldats et figé un compteur de YouTube : elles valent la peine d'être comprises.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer un entier signé d'un entier non signé ;
+- écrire un nombre négatif en complément à deux ;
+- donner l'intervalle de valeurs d'un entier signé sur n bits ;
+- expliquer le débordement d'entier et citer ses conséquences réelles ;
+- expliquer ce qu'est un nombre à virgule flottante ;
+- expliquer pourquoi `0.1 + 0.2` ne donne pas exactement `0.3` ;
+- choisir la bonne représentation pour de l'argent et comparer des nombres à virgule sans piège.
+
+## pourquoi ça compte
+
+Les bugs de représentation des nombres sont parmi les plus sournois qui existent : le programme ne plante pas, il calcule faux, en silence. En sécurité, le **débordement d'entier** est une classe de vulnérabilités à part entière : un calcul de taille qui déborde peut amener un programme à réserver trop peu de mémoire, puis à écrire au-delà. Côté développement, un total de panier faux d'un centime, une comparaison qui échoue sans raison apparente ou un compteur qui devient négatif sont presque toujours des erreurs de représentation. Comprendre ce qui se passe sous le capot, c'est savoir les éviter et les reconnaître.
+
+## signé ou non signé
+
+Un octet peut représenter 256 valeurs. Jusqu'ici, on les a utilisées de 0 à 255 : c'est un entier **non signé**, qui ne peut pas être négatif. Si on veut des négatifs, on doit partager ces 256 valeurs entre les positifs et les négatifs : c'est un entier **signé**. On ne gagne aucune valeur, on les répartit autrement.
+
+La première idée qui vient est de réserver le bit de gauche au signe : 0 pour positif, 1 pour négatif, et les sept autres bits pour la valeur. `00000101` vaudrait 5 et `10000101` vaudrait -5. Cette idée, appelée **signe et valeur absolue**, a deux défauts gênants. Elle produit deux zéros, `00000000` et `10000000`, soit « plus zéro » et « moins zéro ». Et l'addition ne fonctionne plus comme en binaire ordinaire : 5 + (-5) donnerait `10001010`, soit -10. Il faudrait un circuit spécial pour chaque cas.
+
+## le complément à deux
+
+La solution universelle s'appelle le **complément à deux**. Pour obtenir l'écriture de -n sur 8 bits :
+
+1. écrire n en binaire sur 8 bits ;
+2. inverser tous les bits (les 0 deviennent 1 et inversement) ;
+3. ajouter 1.
+
+<Diagram caption="Écrire -5 en complément à deux sur 8 bits">
+flowchart LR
+  A["5 = 00000101"] --> B["Inverser : 11111010"]
+  B --> C["Ajouter 1 : 11111011"]
+  C --> D["-5 = 11111011"]
+</Diagram>
+
+Vérifions que ça marche en additionnant 5 et -5 comme des nombres binaires ordinaires :
+
+```text
+     00000101     (5)
+  +  11111011    (-5)
+  ------------
+   1 00000000     (0, la retenue finale sort de l'octet)
+```
+
+Le résultat sur 8 bits est bien 0. C'est toute la force du complément à deux : **l'addition ordinaire fonctionne sans modification**, pour les positifs comme pour les négatifs. Le processeur n'a besoin que d'un seul circuit d'addition, et la soustraction a - b devient simplement a + (-b).
+
+Quelques propriétés à retenir :
+
+- le bit de gauche indique toujours le signe : 0 pour un positif, 1 pour un négatif ;
+- il n'y a qu'un seul zéro ;
+- `11111111` vaut **-1** ;
+- `10000000` vaut **-128**, la plus petite valeur, qui n'a pas d'opposé positif sur 8 bits.
+
+Une autre façon de lire un nombre en complément à deux, souvent plus rapide : le bit de gauche a un poids **négatif**. Sur 8 bits, ses poids sont -128, 64, 32, 16, 8, 4, 2, 1. `11111011` vaut -128 + 64 + 32 + 16 + 8 + 2 + 1 = **-5**.
+
+### les intervalles
+
+Sur n bits, un entier signé en complément à deux va de moins 2ⁿ⁻¹ à 2ⁿ⁻¹ moins 1 :
+
+| Taille | Non signé | Signé |
+| --- | --- | --- |
+| 8 bits | 0 à 255 | -128 à 127 |
+| 16 bits | 0 à 65 535 | -32 768 à 32 767 |
+| 32 bits | 0 à environ 4,3 milliards | environ -2,1 à +2,1 milliards |
+| 64 bits | 0 à environ 18 milliards de milliards | environ -9,2 à +9,2 milliards de milliards |
+
+Le nombre **2 147 483 647**, le plus grand entier signé sur 32 bits, est à reconnaître : quand un compteur, une taille ou un identifiant se bloque à cette valeur, ou devient brutalement très négatif juste après, tu sais ce qui s'est passé.
+
+## le débordement d'entier
+
+Sur un nombre fixe de bits, un calcul dont le résultat sort de l'intervalle **déborde**. En complément à deux, 127 + 1 sur 8 bits donne `10000000`, soit **-128** : le plus grand positif plus un devient le plus petit négatif. Le compteur fait le tour, comme le compteur kilométrique d'une vieille voiture qui repasse de 99 999 à 00 000.
+
+Ce n'est pas une curiosité théorique :
+
+- **Ariane 5, 1996.** Trente-sept secondes après son premier décollage, la fusée se désintègre. Un logiciel de navigation repris d'Ariane 4 convertissait une valeur de vitesse horizontale, stockée en virgule flottante sur 64 bits, en entier signé sur 16 bits. Ariane 5 allait plus vite qu'Ariane 4 : la valeur dépassait 32 767, la conversion a échoué, et le système de guidage s'est arrêté.
+- **YouTube, 2014.** Le clip Gangnam Style approche 2 147 483 647 vues, la limite d'un compteur signé sur 32 bits. YouTube passe le compteur sur 64 bits avant qu'il ne déborde, et l'annonce avec humour.
+- **L'an 2038.** Beaucoup de systèmes comptent le temps en secondes écoulées depuis le 1ᵉʳ janvier 1970, sur un entier signé de 32 bits. Ce compteur atteint sa limite le **19 janvier 2038 à 3 h 14 min 07 s** (temps universel). Une seconde plus tard, les systèmes qui n'ont pas été migrés vers 64 bits se croiront en décembre 1901. Les systèmes modernes sont passés à 64 bits, mais des équipements embarqués anciens seront encore en service.
+
+En sécurité, le scénario typique est le suivant : un programme calcule la taille d'une zone mémoire à réserver en multipliant un nombre d'éléments fourni par l'utilisateur par une taille d'élément. Si l'attaquant fournit un nombre énorme, la multiplication déborde et donne une toute petite taille. Le programme réserve une petite zone, puis y copie les éléments un par un, bien au-delà de sa fin. C'est le point de départ de nombreuses exploitations, étudiées dans les parcours de sécurité applicative.
+
+Python ne connaît pas ce problème pour ses propres entiers : ils grandissent autant que nécessaire. Mais dès que Python échange avec le monde extérieur, un fichier binaire, un protocole réseau, une base de données, une bibliothèque écrite en C, les tailles fixes reviennent.
+
+## les nombres à virgule
+
+Pour les nombres décimaux, les ordinateurs utilisent la **virgule flottante**, normalisée par le standard **IEEE 754**. L'idée est celle de la notation scientifique que tu as peut-être vue en physique : on écrit 299 792 458 comme 2,99792458 × 10⁸. Un nombre est décomposé en trois parties : un **signe**, une **mantisse** (les chiffres significatifs) et un **exposant** (où placer la virgule). La virgule « flotte » selon l'exposant, d'où le nom.
+
+Un nombre à virgule flottante en double précision, le type `float` de Python et `number` de JavaScript, occupe **64 bits** : 1 bit de signe, 11 bits d'exposant, 52 bits de mantisse. Cela donne environ **15 à 17 chiffres significatifs** et des valeurs allant d'environ 10⁻³⁰⁸ à 10³⁰⁸. C'est énorme, mais ce n'est pas infini, et surtout ce n'est **pas exact**.
+
+## pourquoi 0.1 + 0.2 ne vaut pas 0.3
+
+En décimal, certaines fractions ne s'écrivent pas avec un nombre fini de chiffres : un tiers donne 0,3333…, à l'infini. On est obligé de s'arrêter quelque part, et on perd un peu de précision.
+
+En binaire, c'est la même chose, mais pour d'autres fractions. Un dixième, 0,1, qui est si simple en décimal, s'écrit en binaire `0,0001100110011…` avec un motif qui se répète à l'infini. Avec 52 bits de mantisse, il faut couper : le `0.1` stocké dans la machine est en réalité **0,1000000000000000055511151231257827…**, très proche de 0,1 mais pas égal. Même chose pour 0,2. En les additionnant, les deux petites erreurs se cumulent et le résultat arrondi n'est pas le nombre le plus proche de 0,3.
+
+```python
+print(0.1 + 0.2)
+print(0.1 + 0.2 == 0.3)
+print(f'{0.1:.20f}')
+```
+
+```text
+0.30000000000000004
+False
+0.10000000000000000555
+```
+
+Ce n'est pas un bug de Python : JavaScript, Java, C, Excel dans certains cas, tous les langages qui utilisent IEEE 754 donnent le même résultat. C'est une propriété de la représentation.
+
+L'erreur est minuscule, mais elle s'accumule. Additionner 0,1 dix fois dans une boucle ne donne pas 1 :
+
+```python
+total = 0.0
+for _ in range(10):
+    total += 0.1
+print(total, total == 1.0)
+```
+
+```text
+0.9999999999999999 False
+```
+
+Un cas réel illustre ce que coûte une telle accumulation. En **1991**, pendant la guerre du Golfe, une batterie de missiles Patriot comptait le temps en dixièmes de seconde, et le dixième, stocké sur 24 bits, était légèrement tronqué. Après environ cent heures de fonctionnement sans redémarrage, l'erreur accumulée atteignait un tiers de seconde. Pour un missile qui parcourt plus d'un kilomètre et demi par seconde, cela suffisait à regarder au mauvais endroit : le missile entrant n'a pas été intercepté, et vingt-huit soldats ont été tués.
+
+## les bons réflexes
+
+### comparer avec une tolérance
+
+Ne compare jamais deux nombres à virgule avec `==`. Vérifie qu'ils sont **suffisamment proches**. Python fournit `math.isclose` :
+
+```python
+import math
+print(math.isclose(0.1 + 0.2, 0.3))
+```
+
+```text
+True
+```
+
+### compter l'argent en entiers
+
+Pour de l'argent, n'utilise pas de nombres à virgule flottante. Deux solutions sûres :
+
+- compter en **centimes**, avec des entiers : 19,99 € devient 1 999. Les additions et multiplications sont exactes ;
+- utiliser un type **décimal exact**, comme `Decimal` en Python ou `NUMERIC` dans une base de données PostgreSQL, qui calcule en base 10.
+
+```python
+from decimal import Decimal
+print(Decimal('0.1') + Decimal('0.2'))
+print(1999 * 3)
+```
+
+```text
+0.3
+5997
+```
+
+Note que `Decimal` se construit à partir d'un **texte** : `Decimal(0.1)` recevrait le 0.1 déjà arrondi en binaire, et afficherait fidèlement toute son erreur.
+
+### connaître les limites de précision
+
+Au-delà de 2⁵³, soit 9 007 199 254 740 992, un `float` ne peut plus représenter tous les entiers : il en saute. C'est pour cela que certaines API renvoient les grands identifiants sous forme de texte plutôt que de nombre : un identifiant numérique de 64 bits, lu par un programme JavaScript, peut être silencieusement modifié.
+
+## à toi de jouer
+
+Expérimente les deux mondes dans ce bac à sable : le débordement d'un octet signé, simulé avec l'arithmétique modulo 256, et l'imprécision des nombres à virgule. Modifie les valeurs et observe.
+
+<CodePlayground language="python" starterCode={`import math
+from decimal import Decimal
+
+def octet_signe(n):
+    # ramène n dans l'intervalle -128..127, comme un octet signé
+    return (n + 128) % 256 - 128
+
+print('127 + 1 sur un octet signé :', octet_signe(127 + 1))
+print('-128 - 1 :', octet_signe(-128 - 1))
+print('-5 en complément à deux :', format(-5 & 0xFF, '08b'))
+
+print('0.1 + 0.2 =', 0.1 + 0.2)
+print('égal à 0.3 ?', 0.1 + 0.2 == 0.3)
+print('proche de 0.3 ?', math.isclose(0.1 + 0.2, 0.3))
+print('avec Decimal :', Decimal('0.1') + Decimal('0.2'))
+print('2**53 + 1 en float :', float(2**53 + 1))
+
+# À toi : calcule 3 articles à 24,90 € en float, puis en centimes
+`} />
+
+Et maintenant, un exercice corrigé. Écris `solution(n)` qui reçoit un entier entre -128 et 127 et renvoie son écriture en complément à deux sur 8 bits, sous forme de texte. Indice : ajouter 256 aux négatifs donne l'entier non signé qui a la même écriture ; `format(valeur, '08b')` est autorisé ici.
+
+<PythonChallenge id="f1-complement-1" title="Le complément à deux" description="Renvoie l'écriture sur 8 bits de n, entre -128 et 127, en complément à deux." starterCode="def solution(n):
+    if n < 0:
+        pass  # trouve l'entier non signé qui a la même écriture
+    return format(n, '08b')" tests={[{ input: "solution(5)", expected: "00000101" }, { input: "solution(-5)", expected: "11111011" }, { input: "solution(-1)", expected: "11111111" }, { input: "solution(-128)", expected: "10000000" }, { input: "solution(127)", expected: "01111111" }]} />
+
+## les pièges
+
+- **Oublier qu'un type a une taille.** Tout entier de taille fixe finit par déborder ; un compteur signé sur 32 bits s'arrête à 2 147 483 647.
+- **Croire que -128 a un opposé sur 8 bits.** L'intervalle est dissymétrique : de -128 à 127.
+- **Comparer des flottants avec `==`.** Utilise une tolérance, par exemple `math.isclose`.
+- **Stocker de l'argent en flottant.** Compte en centimes entiers ou utilise un type décimal exact.
+- **Construire un `Decimal` à partir d'un flottant.** `Decimal('0.1')`, pas `Decimal(0.1)`.
+- **Penser que c'est propre à un langage.** Tous les langages qui suivent IEEE 754 donnent `0.30000000000000004`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/floatingpoint.html" description="Le chapitre du tutoriel officiel consacré aux problèmes de la virgule flottante">Tutoriel Python : arithmétique en virgule flottante</ExternalLink>
+
+<ExternalLink href="https://0.30000000000000004.com/" description="Le même calcul dans des dizaines de langages, en anglais">0.30000000000000004.com</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/decimal.html" description="Le module decimal pour les calculs décimaux exacts">Documentation Python : decimal</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est l'intervalle d'un entier signé sur 8 bits en complément à deux ?" options={["-128 à 127", "0 à 255", "-127 à 127", "-255 à 255"]} correct={0} explanation="Sur n bits, on va de moins 2 puissance n-1 à 2 puissance n-1 moins 1 : de -128 à 127." />
+  <Quiz id="q-2" question="Comment s'écrit -1 sur 8 bits en complément à deux ?" options={["11111111", "10000001", "00000001", "11111110"]} correct={0} explanation="1 = 00000001, on inverse : 11111110, on ajoute 1 : 11111111." />
+  <Quiz id="q-3" question="Quel est le principal avantage du complément à deux ?" options={["Il utilise moins de bits", "L'addition ordinaire fonctionne pour les positifs comme pour les négatifs", "Il permet de représenter les nombres à virgule", "Il empêche tout débordement"]} correct={1} explanation="Le processeur additionne les négatifs avec le même circuit que les positifs, et la soustraction devient une addition." />
+  <Quiz id="q-4" question="Sur un entier signé de 8 bits, que donne 127 + 1 ?" options={["128", "-128", "0", "Une erreur systématique"]} correct={1} explanation="Le résultat 10000000 se lit -128 en complément à deux : c'est un débordement, souvent silencieux." />
+  <Quiz id="q-5" question="Pourquoi 0.1 + 0.2 ne donne-t-il pas exactement 0.3 en Python ?" options={["Parce que Python a un bug", "Parce que Python arrondit volontairement", "Parce que 0,1 ne s'écrit pas de façon finie en binaire et est arrondi", "Parce que les flottants n'ont que 8 bits"]} correct={2} explanation="0,1 a une écriture binaire infinie : la valeur stockée est arrondie, et les erreurs d'arrondi s'additionnent." />
+  <Quiz id="q-6" question="Quelle est la meilleure façon de stocker un prix de 19,99 € dans un programme ?" options={["Le flottant 19.99", "L'entier 1999, en centimes", "Le texte 19,99 et le convertir à chaque calcul en flottant", "Deux flottants, un pour les euros et un pour les centimes"]} correct={1} explanation="Les entiers sont exacts : compter en centimes évite les erreurs d'arrondi. Un type décimal exact convient aussi." />
+  <Quiz id="q-7" question="Pourquoi le 19 janvier 2038 pose-t-il problème à certains systèmes ?" options={["C'est la fin du calendrier grégorien", "Le compteur de secondes depuis 1970, sur 32 bits signés, déborde", "Les certificats expirent tous ce jour-là", "Les processeurs 64 bits cessent de fonctionner"]} correct={1} explanation="Le temps Unix sur 32 bits signés atteint 2 147 483 647 secondes ce jour-là, puis repasse en négatif, en 1901." />
+</QuizGroup>
+
+## à retenir
+
+- Un entier **non signé** n'a que des valeurs positives ; un entier **signé** partage ses valeurs entre positifs et négatifs.
+- **Complément à deux** : inverser les bits puis ajouter 1. Le bit de gauche donne le signe, l'addition ordinaire fonctionne.
+- Sur n bits signés : de **moins 2ⁿ⁻¹** à **2ⁿ⁻¹ moins 1**. Sur 8 bits, de -128 à 127 ; sur 32 bits, jusqu'à 2 147 483 647.
+- Le **débordement** fait faire le tour au compteur, souvent en silence. Il a détruit Ariane 5 et menace les systèmes 32 bits en 2038.
+- La **virgule flottante** (IEEE 754) stocke signe, mantisse et exposant. Elle est vaste mais **approximative** : `0.1 + 0.2` donne `0.30000000000000004`.
+- Compare les flottants avec une **tolérance** et compte l'**argent en entiers** ou avec un type décimal exact.

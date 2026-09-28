@@ -1,0 +1,258 @@
+---
+refCode: CL-LSN-01009-V01
+slug: fondamentaux-compter-en-binaire
+title: "Compter en binaire"
+description: "La numération de position, d'abord en décimal puis en base 2 : lire un nombre binaire, convertir dans les deux sens à la main, additionner avec des retenues, décaler pour multiplier par deux. Avec une série d'exercices corrigés automatiquement où tu écris toi-même les conversions."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01008-V01"]
+---
+
+Tu sais qu'un octet est fait de 8 bits et qu'il peut prendre 256 valeurs. Mais quelle valeur exactement représente `00101101` ? Et comment écrire 200 avec des 0 et des 1 ? Cette leçon t'apprend à compter en binaire, à la main, sans calculatrice. Ce n'est pas un exercice d'école : c'est la compétence qui te permettra, plus tard, de lire un masque de sous-réseau, des droits Unix en octal, un drapeau dans un en-tête de paquet ou une valeur dans un vidage mémoire.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le principe de la numération de position ;
+- convertir un nombre binaire en décimal ;
+- convertir un nombre décimal en binaire, par deux méthodes ;
+- additionner deux nombres binaires avec les retenues ;
+- expliquer pourquoi un décalage à gauche multiplie par deux ;
+- utiliser Python pour vérifier tes conversions.
+
+## pourquoi ça compte
+
+Le binaire est la langue maternelle de la machine. Tant que tu restes dans une interface graphique, tu ne le vois jamais. Dès que tu passes de l'autre côté, il est partout. En réseau, un masque `255.255.255.192` ne se comprend qu'en l'écrivant en binaire : c'est lui qui dit combien de machines tiennent dans un sous-réseau. Sous Linux, les droits `chmod 750` sont trois groupes de trois bits. En sécurité, les drapeaux d'un paquet TCP (SYN, ACK, FIN) sont des bits individuels, et un scanner de ports joue précisément avec eux. Savoir convertir de tête les petites valeurs te fera gagner un temps énorme et t'évitera des erreurs de lecture.
+
+## la numération de position, en décimal
+
+Commence par ce que tu connais déjà sans y penser. Dans le nombre **352**, les trois chiffres n'ont pas la même importance : le 3 vaut trois centaines, le 5 cinq dizaines, le 2 deux unités.
+
+| Position | Centaines | Dizaines | Unités |
+| --- | --- | --- | --- |
+| Poids | 100 | 10 | 1 |
+| Chiffre | 3 | 5 | 2 |
+| Valeur | 300 | 50 | 2 |
+
+352 = 300 + 50 + 2. Chaque position vaut **dix fois** la position à sa droite, parce que nous comptons en **base 10** : dix chiffres différents, de 0 à 9. Quand on dépasse 9 dans une position, on repasse à 0 et on ajoute 1 à la position de gauche : c'est la **retenue**. C'est ce qu'on appelle la numération de position : la valeur d'un chiffre dépend de sa place.
+
+Les poids sont les puissances de 10 : 10⁰ = 1, 10¹ = 10, 10² = 100, 10³ = 1 000.
+
+## la même chose en base 2
+
+Le binaire fonctionne exactement pareil, avec deux différences :
+
+- il n'y a que **deux chiffres**, 0 et 1 ;
+- chaque position vaut **deux fois** la position à sa droite.
+
+Les poids sont donc les puissances de 2. Pour un octet, de droite à gauche :
+
+| Position | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Poids | 128 | 64 | 32 | 16 | 8 | 4 | 2 | 1 |
+
+Apprends cette ligne par cœur : **128, 64, 32, 16, 8, 4, 2, 1**. Elle sert dans tout le reste du parcours, et surtout en réseau.
+
+On numérote les positions à partir de **0**, en partant de la droite. Le bit de droite, celui qui vaut 1, s'appelle le **bit de poids faible** ; celui de gauche, qui vaut 128 dans un octet, le **bit de poids fort**. Tu croiseras ces termes, ou leurs abréviations anglaises LSB et MSB (*least* et *most significant bit*), dans les documentations.
+
+Pour éviter les confusions avec le décimal, on signale souvent qu'un nombre est en binaire : `0b1011` en Python et dans beaucoup de langages, 1011₂ dans les manuels, ou simplement en précisant « en binaire ». Sans indication, `10` peut valoir dix ou deux.
+
+## lire un nombre binaire
+
+Pour convertir un binaire en décimal, on additionne les poids des positions qui contiennent un 1.
+
+Prends `00101101` :
+
+| Poids | 128 | 64 | 32 | 16 | 8 | 4 | 2 | 1 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Bit | 0 | 0 | 1 | 0 | 1 | 1 | 0 | 1 |
+
+On garde 32, 8, 4 et 1 : 32 + 8 + 4 + 1 = **45**.
+
+Quelques valeurs à reconnaître d'un coup d'œil, parce qu'elles reviennent sans cesse :
+
+| Binaire | Décimal | Où tu la croises |
+| --- | --- | --- |
+| 11111111 | 255 | octet plein, masque réseau |
+| 10000000 | 128 | bit de poids fort seul |
+| 11000000 | 192 | masque `/26`, premier octet de `192.168` |
+| 11110000 | 240 | masque `/28` |
+| 00001111 | 15 | demi-octet plein |
+| 111 | 7 | droits `rwx` sous Linux |
+
+Remarque au passage : un octet où tous les bits sont à 1 vaut 255, soit 256 moins 1. C'est général : n bits à 1 valent 2ⁿ moins 1. Trois bits à 1 valent 7, huit bits à 1 valent 255, seize bits à 1 valent 65 535.
+
+## écrire un nombre en binaire
+
+Deux méthodes, qui donnent le même résultat. Choisis celle qui te parle le plus.
+
+### méthode 1 : retirer les puissances de 2
+
+On part du plus grand poids et on se demande à chaque fois : « est-ce que ce poids tient dans ce qui reste ? ». Si oui, on écrit 1 et on le retire ; sinon, on écrit 0.
+
+Pour **200** :
+
+| Poids | Tient dans le reste ? | Bit | Reste |
+| --- | --- | --- | --- |
+| 128 | oui (200) | 1 | 72 |
+| 64 | oui (72) | 1 | 8 |
+| 32 | non (8) | 0 | 8 |
+| 16 | non (8) | 0 | 8 |
+| 8 | oui (8) | 1 | 0 |
+| 4 | non | 0 | 0 |
+| 2 | non | 0 | 0 |
+| 1 | non | 0 | 0 |
+
+200 s'écrit **11001000**. Vérification : 128 + 64 + 8 = 200.
+
+Cette méthode est la plus rapide de tête pour les nombres jusqu'à 255, une fois la ligne des poids mémorisée. C'est celle qu'utilisent les administrateurs réseau pour les masques.
+
+### méthode 2 : les divisions successives
+
+On divise le nombre par 2, on note le reste (0 ou 1), et on recommence avec le quotient jusqu'à arriver à 0. Les restes, **lus de bas en haut**, donnent le nombre binaire.
+
+<Diagram caption="Convertir 13 par divisions successives : on lit les restes de bas en haut">
+flowchart TD
+  A["13 divisé par 2 = 6, reste 1"] --> B["6 divisé par 2 = 3, reste 0"]
+  B --> C["3 divisé par 2 = 1, reste 1"]
+  C --> D["1 divisé par 2 = 0, reste 1"]
+  D --> E["Lecture de bas en haut : 1101"]
+</Diagram>
+
+13 s'écrit **1101** : 8 + 4 + 1 = 13. Le premier reste obtenu est le bit de poids faible, c'est pour cela qu'on lit à l'envers.
+
+Cette méthode a un avantage : elle ne demande pas de connaître les puissances de 2 à l'avance, et elle fonctionne pour n'importe quelle base. En remplaçant 2 par 16, tu obtiens l'hexadécimal, sujet de la prochaine leçon. C'est aussi celle qu'un programme applique, comme tu vas le faire dans l'exercice.
+
+## additionner en binaire
+
+L'addition se pose comme en décimal, en colonnes, de droite à gauche, avec des retenues. Il n'y a que quatre cas à connaître :
+
+| Calcul | Résultat | Retenue |
+| --- | --- | --- |
+| 0 + 0 | 0 | non |
+| 0 + 1 | 1 | non |
+| 1 + 1 | 0 | 1 |
+| 1 + 1 + 1 (avec retenue) | 1 | 1 |
+
+« 1 + 1 = 10 » : c'est deux, écrit en binaire. On pose 0 et on retient 1, exactement comme 5 + 5 = 10 en décimal.
+
+Exemple, 45 + 29 :
+
+```text
+  retenues     1 1 1 1   1
+             0 0 1 0 1 1 0 1    (45)
+          +  0 0 0 1 1 1 0 1    (29)
+          ------------------
+             0 1 0 0 1 0 1 0    (74)
+```
+
+Vérification : 64 + 8 + 2 = 74. Correct.
+
+Que se passe-t-il si le résultat ne tient plus sur 8 bits ? 200 + 100 = 300, or un octet s'arrête à 255. La retenue finale « tombe » à gauche, faute de place, et l'octet contient 300 moins 256, soit **44**. C'est le **débordement** dont on a parlé dans la leçon précédente. Le processeur le signale par un indicateur spécial, mais si le programme ne le vérifie pas, il continue avec une valeur fausse. Des failles de sécurité célèbres sont nées ainsi : une taille calculée qui déborde, devient minuscule, et un programme réserve trop peu de mémoire pour les données qu'il va y écrire.
+
+## décaler pour multiplier par deux
+
+En décimal, ajouter un 0 à droite multiplie par 10 : 35 devient 350. En binaire, ajouter un 0 à droite multiplie par **2**. `101` (5) devient `1010` (10), puis `10100` (20).
+
+Cette opération s'appelle un **décalage à gauche**. Dans l'autre sens, un décalage à droite, qui fait tomber le bit de poids faible, divise par 2 en arrondissant vers le bas : `1101` (13) devient `110` (6).
+
+Les processeurs savent décaler en une seule opération très rapide, et les programmeurs s'en servent. En Python, les opérateurs s'écrivent `<<` et `>>` :
+
+```python
+print(5 << 1)   # décalage à gauche d'une position
+print(5 << 3)   # trois positions : multiplier par 8
+print(13 >> 1)  # décalage à droite : diviser par 2
+```
+
+```text
+10
+40
+6
+```
+
+## démonstration : Python comme vérificateur
+
+Python sait convertir dans les deux sens. `bin()` écrit un nombre en binaire, avec le préfixe `0b`. `int(texte, 2)` lit un texte comme un nombre en base 2. Et `format(n, '08b')` donne une écriture sur 8 chiffres, en complétant avec des zéros à gauche.
+
+```python
+print(bin(200))
+print(int('00101101', 2))
+print(format(13, '08b'))
+print(0b101101 + 0b11101)
+print((200 + 100) % 256)
+```
+
+```text
+0b11001000
+45
+00001101
+74
+44
+```
+
+La dernière ligne reproduit le débordement : l'opérateur `%` donne le reste de la division par 256, ce que ferait un octet. Python lui-même ne déborde jamais sur ses entiers, il agrandit simplement le nombre : il faut simuler l'octet pour voir le phénomène.
+
+## à toi de jouer
+
+Dans cet exercice, les fonctions toutes faites `bin()` et `int(texte, 2)` sont interdites : c'est toi qui écris les conversions, avec les méthodes de la leçon.
+
+Écris la fonction `solution(n)` qui reçoit un entier positif ou nul et renvoie son écriture binaire sous forme de texte, sans préfixe. Pour 13, elle renvoie `'1101'` ; pour 0, elle renvoie `'0'`. Indice : la méthode des divisions successives, avec `n % 2` pour le reste et `n // 2` pour le quotient ; pense à mettre les restes dans le bon ordre.
+
+<PythonChallenge id="f1-binaire-1" title="Du décimal au binaire" description="Renvoie l'écriture binaire de n, sans préfixe, sans utiliser bin() ni format()." starterCode="def solution(n):
+    if n == 0:
+        return '0'
+    bits = ''
+    # divisions successives : ajoute chaque reste au bon endroit
+    return bits" tests={[{ input: "solution(13)", expected: "1101" }, { input: "solution(0)", expected: "0" }, { input: "solution(200)", expected: "11001000" }, { input: "solution(255)", expected: "11111111" }, { input: "solution(1024)", expected: "10000000000" }]} />
+
+Maintenant l'autre sens. Écris `solution(bits)` qui reçoit un texte fait de 0 et de 1 et renvoie la valeur décimale. Indice : parcours les chiffres de gauche à droite ; à chaque chiffre, multiplie le total par 2 (un décalage à gauche) puis ajoute le chiffre.
+
+<PythonChallenge id="f1-binaire-2" title="Du binaire au décimal" description="Renvoie la valeur décimale du texte binaire, sans utiliser int(texte, 2)." starterCode="def solution(bits):
+    total = 0
+    for chiffre in bits:
+        pass  # décale le total, puis ajoute le chiffre
+    return total" tests={[{ input: "solution('1101')", expected: "13" }, { input: "solution('00101101')", expected: "45" }, { input: "solution('11111111')", expected: "255" }, { input: "solution('0')", expected: "0" }]} />
+
+Une fois les deux fonctions écrites, remarque qu'elles se défont l'une l'autre : convertir 45 en binaire puis relire le résultat redonne 45. C'est la meilleure façon de tester ce genre de code.
+
+## les pièges
+
+- **Lire les restes dans le mauvais sens.** Avec les divisions successives, le premier reste est le bit de poids faible : on lit de bas en haut.
+- **Numéroter les bits à partir de 1.** Les positions commencent à 0, à droite. Le bit 7 d'un octet est celui de gauche, qui vaut 128.
+- **Oublier la retenue de 1 + 1 + 1.** Elle donne 1, avec une retenue de 1.
+- **Ignorer le débordement.** Sur un nombre fixe de bits, la retenue finale disparaît et le résultat est faux sans erreur visible.
+- **Confondre 10 en binaire et 10 en décimal.** Sans préfixe ni précision, un nombre fait de 0 et de 1 est ambigu.
+- **Croire que les zéros à gauche changent la valeur.** `00001101` et `1101` valent tous deux 13 ; les zéros servent seulement à remplir l'octet.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/library/functions.html#bin" description="La fonction bin() et ses voisines dans la documentation officielle">Documentation Python : bin()</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/stdtypes.html#bitwise-operations-on-integer-types" description="Décalages et opérations bit à bit sur les entiers">Documentation Python : opérations bit à bit</ExternalLink>
+
+<ExternalLink href="https://fr.wikipedia.org/wiki/Syst%C3%A8me_binaire" description="Histoire du système binaire, de Leibniz aux ordinateurs">Wikipédia : système binaire</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Combien vaut 00110010 en décimal ?" options={["25", "100", "50", "48"]} correct={2} explanation="Les bits à 1 ont pour poids 32, 16 et 2 : 32 + 16 + 2 = 50." />
+  <Quiz id="q-2" question="Comment s'écrit 100 en binaire sur 8 bits ?" options={["01100100", "10000000", "01010101", "00110100"]} correct={0} explanation="100 = 64 + 32 + 4 : les bits de poids 64, 32 et 4 sont à 1, soit 01100100." />
+  <Quiz id="q-3" question="Avec la méthode des divisions successives, dans quel ordre lit-on les restes ?" options={["Du premier au dernier", "Peu importe", "Du dernier au premier", "On ne garde que le dernier"]} correct={2} explanation="Le premier reste est le bit de poids faible, tout à droite : on lit donc les restes de bas en haut." />
+  <Quiz id="q-4" question="Combien font 1 + 1 en binaire ?" options={["2", "11", "10", "0, sans retenue"]} correct={2} explanation="Deux s'écrit 10 en binaire : on pose 0 et on retient 1." />
+  <Quiz id="q-5" question="Que devient 00010110 (22) après un décalage d'une position vers la gauche ?" options={["00001011, soit 11", "00101100, soit 44", "00010111, soit 23", "11101001"]} correct={1} explanation="Un décalage à gauche multiplie par 2 : 22 devient 44." />
+  <Quiz id="q-6" question="Sur un octet, on calcule 250 + 10. Que contient l'octet ?" options={["260", "255", "0", "4"]} correct={3} explanation="260 ne tient pas sur 8 bits : la retenue finale disparaît et il reste 260 moins 256, soit 4. C'est un débordement." />
+  <Quiz id="q-7" question="Combien vaut un nombre de 10 bits tous à 1 ?" options={["1 024", "1 023", "512", "10"]} correct={1} explanation="n bits à 1 valent 2 puissance n moins 1 : 1 024 moins 1 = 1 023." />
+</QuizGroup>
+
+## à retenir
+
+- En numération de position, la valeur d'un chiffre dépend de sa place. En binaire, chaque position vaut **deux fois** celle de droite.
+- Les poids d'un octet : **128, 64, 32, 16, 8, 4, 2, 1**. Les positions se numérotent à partir de 0, à droite.
+- **Binaire vers décimal** : additionner les poids des bits à 1.
+- **Décimal vers binaire** : retirer les puissances de 2 de la plus grande à la plus petite, ou diviser par 2 et lire les restes de bas en haut.
+- **Addition** : 1 + 1 = 10, on pose 0 et on retient 1. Sur un nombre fixe de bits, la retenue finale peut déborder.
+- **Décalage à gauche** : multiplie par 2. **Décalage à droite** : divise par 2.
+- n bits à 1 valent **2ⁿ moins 1**.

@@ -1,0 +1,202 @@
+---
+refCode: CL-LSN-01010-V01
+slug: fondamentaux-l-hexadecimal
+title: "L'hexadécimal"
+description: "La base 16, écriture compacte du binaire : pourquoi un chiffre hexadécimal vaut exactement quatre bits, convertir dans tous les sens, et où on le croise (couleurs, adresses MAC, IPv6, empreintes, vidages mémoire). Avec la lecture d'un vidage hexadécimal pour démasquer un fichier dont l'extension ment."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01009-V01"]
+---
+
+Écrire un octet en binaire prend huit chiffres. Une adresse mémoire de 64 bits en prendrait soixante-quatre, et une empreinte SHA-256 deux cent cinquante-six : illisible pour un humain. Le décimal est plus court, mais il ne se découpe pas proprement en bits. La solution qu'utilisent tous les informaticiens s'appelle l'**hexadécimal**, la base 16. Tu l'as déjà croisé sans forcément le reconnaître : dans une couleur `#FF4757`, dans une adresse MAC, dans une empreinte de fichier. Dans cette leçon, tu apprends à le lire, à le convertir, et à t'en servir pour inspecter le contenu brut d'un fichier.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer pourquoi on utilise la base 16 ;
+- convertir entre hexadécimal, binaire et décimal ;
+- reconnaître l'hexadécimal dans ses usages courants ;
+- lire un vidage hexadécimal produit par `xxd` ;
+- identifier le vrai type d'un fichier grâce à ses premiers octets ;
+- situer l'octal, la base 8, utilisée par les droits Unix.
+
+## pourquoi ça compte
+
+En sécurité, l'hexadécimal est omniprésent. Les empreintes qui garantissent l'intégrité d'un téléchargement s'écrivent en hexadécimal. Les analystes qui examinent un logiciel malveillant lisent ses octets en hexadécimal. Les outils d'analyse réseau affichent le contenu des paquets de la même façon. Et un fichier qui se fait passer pour un PDF alors qu'il s'agit d'un programme se démasque en regardant ses quatre premiers octets. Un technicien, un développeur ou un administrateur qui lit l'hexadécimal couramment gagne un outil de diagnostic que les autres n'ont pas.
+
+## seize chiffres
+
+En base 16, il faut seize chiffres. On garde les dix chiffres habituels et on ajoute six lettres :
+
+| Hexadécimal | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Décimal | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |
+
+Les lettres s'écrivent indifféremment en majuscules ou en minuscules : `ff` et `FF` sont le même nombre. Comme en binaire, on signale souvent la base par un préfixe : `0xFF` dans la plupart des langages de programmation, `#FF` dans une couleur web, parfois un `h` final dans les documentations matérielles (`FFh`).
+
+Le principe de position est le même que pour les autres bases : chaque position vaut **seize fois** celle de droite. Les poids sont 1, 16, 256, 4 096, et ainsi de suite.
+
+`0x2F` vaut donc 2 × 16 + 15 = **47**. `0xFF` vaut 15 × 16 + 15 = **255**. `0x100` vaut 256.
+
+## le secret : quatre bits par chiffre
+
+Ce qui rend l'hexadécimal si pratique, c'est que 16 = 2⁴. **Un chiffre hexadécimal correspond exactement à quatre bits**, un groupe qu'on appelle un **quartet** (*nibble* en anglais). Et un octet, huit bits, s'écrit donc toujours avec **exactement deux chiffres hexadécimaux**.
+
+| Hexa | Binaire | Hexa | Binaire |
+| --- | --- | --- | --- |
+| 0 | 0000 | 8 | 1000 |
+| 1 | 0001 | 9 | 1001 |
+| 2 | 0010 | A | 1010 |
+| 3 | 0011 | B | 1011 |
+| 4 | 0100 | C | 1100 |
+| 5 | 0101 | D | 1101 |
+| 6 | 0110 | E | 1110 |
+| 7 | 0111 | F | 1111 |
+
+La conversion entre binaire et hexadécimal ne demande donc **aucun calcul** : on découpe le binaire en paquets de quatre bits en partant de la droite, et on remplace chaque paquet par son chiffre.
+
+<Diagram caption="Du binaire à l'hexadécimal : couper en quartets, traduire chaque quartet">
+flowchart LR
+  A["11001000"] --> B["1100 et 1000"]
+  B --> C["C et 8"]
+  C --> D["0xC8, soit 200"]
+</Diagram>
+
+Et dans l'autre sens, `0x3A` donne 3 = `0011` et A = `1010`, soit `00111010`. C'est pour cette raison que l'hexadécimal est l'écriture naturelle des octets : il est aussi compact que le décimal, mais chaque chiffre reste lisible bit par bit.
+
+Pour passer du décimal à l'hexadécimal, la méthode des divisions successives de la leçon précédente fonctionne en divisant par 16. Pour un octet, c'est encore plus simple : le quotient de la division par 16 donne le chiffre de gauche, le reste celui de droite. 200 divisé par 16 donne 12 reste 8 : C et 8, soit `0xC8`.
+
+## où on le rencontre
+
+### les couleurs
+
+Une couleur web s'écrit `#RRVVBB` : trois octets, rouge, vert et bleu, chacun de `00` à `FF`. La couleur d'alerte rouge de ce site, `#FF4757`, se lit rouge `FF` (255), vert `47` (71), bleu `57` (87) : beaucoup de rouge, un peu de vert et de bleu. `#000000` est le noir, `#FFFFFF` le blanc, `#808080` un gris moyen.
+
+### les adresses MAC
+
+Chaque carte réseau possède une adresse matérielle de 48 bits, soit six octets, écrite en hexadécimal : `3C:52:82:1A:9F:04`. Les trois premiers octets identifient le fabricant ; tu retrouveras cette adresse dans le parcours Réseaux.
+
+### les adresses IPv6
+
+Une adresse IPv6 fait 128 bits, écrits en huit groupes de quatre chiffres hexadécimaux : `2001:0db8:0000:0000:0000:0000:0000:0001`, qu'on abrège en `2001:db8::1`.
+
+### les empreintes
+
+Une empreinte SHA-256 fait 256 bits, soit 32 octets, soit **64 chiffres hexadécimaux**. Quand un site publie l'empreinte d'un fichier à télécharger, c'est cette suite de 64 caractères que tu compares avec celle que tu calcules.
+
+### les adresses mémoire et les codes d'erreur
+
+Les adresses mémoire, dans un plantage ou un débogueur, s'affichent en hexadécimal : `0x7ffd5e8a2c40`. Les codes d'erreur de Windows aussi : un écran bleu affiche des valeurs comme `0x0000007E`, et beaucoup de codes d'erreur de mises à jour commencent par `0x8`.
+
+## lire un vidage hexadécimal
+
+Un **vidage hexadécimal** (*hex dump*) montre les octets bruts d'un fichier. Sous Linux et dans Git Bash, la commande `xxd` le produit. Voici un petit fichier texte :
+
+```text
+00000000: 426f 6e6a 6f75 7220 4379 6265 724c 6561  Bonjour CyberLea
+00000010: 726e 2021 0a                             rn !.
+```
+
+Chaque ligne a trois parties :
+
+- à gauche, le **décalage** : la position du premier octet de la ligne dans le fichier, en hexadécimal. `00000010` signifie 16 : la deuxième ligne commence au dix-septième octet, puisqu'on compte à partir de 0 ;
+- au milieu, les **octets** eux-mêmes, par groupes de deux : seize octets par ligne ;
+- à droite, les mêmes octets **interprétés comme du texte**. Les octets qui ne correspondent pas à un caractère imprimable sont remplacés par un point.
+
+On lit que `42` correspond à la lettre B, `6f` à o, `20` à l'espace, et le `0a` final au retour à la ligne, affiché comme un point. Cette correspondance entre octets et caractères est le sujet de la leçon sur le texte ; retiens pour l'instant qu'un texte simple est une suite d'octets.
+
+### les nombres magiques
+
+La plupart des formats de fichiers commencent par une signature fixe, appelée **nombre magique** (*magic number*). Les systèmes et les outils s'en servent pour reconnaître un format, quelle que soit l'extension du nom.
+
+| Premiers octets | Texte visible | Format |
+| --- | --- | --- |
+| `89 50 4E 47 0D 0A 1A 0A` | `.PNG....` | image PNG |
+| `FF D8 FF` | illisible | image JPEG |
+| `25 50 44 46` | `%PDF` | document PDF |
+| `50 4B 03 04` | `PK..` | archive ZIP, mais aussi les fichiers `.docx`, `.xlsx`, `.jar`, `.apk` qui sont des ZIP |
+| `4D 5A` | `MZ` | programme Windows (`.exe`, `.dll`) |
+| `7F 45 4C 46` | `.ELF` | programme Linux |
+
+L'extension d'un fichier n'est qu'une partie de son nom : n'importe qui peut la changer. Le contenu, lui, ne ment pas. Un fichier nommé `facture.pdf` qui commence par `MZ` est un programme Windows déguisé, technique classique des courriels piégés. La commande `file`, sous Linux, fait exactement cette vérification pour toi.
+
+## à toi de jouer : démasquer un fichier
+
+Un collègue a reçu deux pièces jointes, `rapport.pdf` et `facture.pdf`, et une image. Examine d'abord le texte `note.txt` avec `xxd`, puis regarde les seize premiers octets de `facture.pdf` avec l'option `-l 16`, qui limite la lecture. Compare avec `rapport.pdf`, puis confirme avec `file`.
+
+<SimulatedTerminal shell="bash" title="Les octets ne mentent pas" expectedCommands={["xxd note.txt", "xxd -l 16 facture.pdf"]} hints={["Tape xxd suivi du nom du fichier texte.", "xxd -l 16 limite la lecture aux seize premiers octets : essaie-le sur facture.pdf."]} commands={{ "ls": "facture.pdf  note.txt  photo.png  rapport.pdf", "xxd note.txt": "00000000: 426f 6e6a 6f75 7220 4379 6265 724c 6561  Bonjour CyberLea\n00000010: 726e 2021 0a                             rn !.", "xxd -l 16 photo.png": "00000000: 8950 4e47 0d0a 1a0a 0000 000d 4948 4452  .PNG........IHDR", "xxd -l 16 rapport.pdf": "00000000: 2550 4446 2d31 2e37 0a25 e2e3 cfd3 0a31  %PDF-1.7.%.....1", "xxd -l 16 facture.pdf": "00000000: 4d5a 9000 0300 0000 0400 0000 ffff 0000  MZ..............", "file facture.pdf": "facture.pdf: MS-DOS executable, MZ for MS-DOS", "file rapport.pdf": "rapport.pdf: PDF document, version 1.7", "file photo.png": "photo.png: PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced", "file note.txt": "note.txt: ASCII text", "file *": "facture.pdf: MS-DOS executable, MZ for MS-DOS\nnote.txt:    ASCII text\nphoto.png:   PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced\nrapport.pdf: PDF document, version 1.7" }} />
+
+`rapport.pdf` commence bien par `%PDF`. `facture.pdf` commence par `4d5a`, soit `MZ` : c'est un programme Windows. Windows choisit l'application d'après l'extension, donc un double-clic ouvrirait ici le lecteur de PDF, qui échouerait. Mais ce fichier n'a rien à faire là : quelqu'un a voulu faire passer un programme à travers un filtre de messagerie qui ne regarde que les extensions, et il suffit de le renommer pour qu'il s'exécute. La variante la plus répandue, `facture.pdf.exe`, compte sur le fait que Windows masque par défaut les extensions connues et n'affiche que `facture.pdf`. Dans un vrai incident, on ne l'ouvre pas : on le signale.
+
+## démonstration : l'hexadécimal en Python
+
+```python
+print(hex(200))              # décimal vers hexadécimal
+print(int('ff', 16))         # hexadécimal vers décimal
+print(format(71, '02x'))     # sur deux chiffres, minuscules
+print(bytes.fromhex('4d5a')) # des octets à partir d'un texte hexa
+print('Bonjour'.encode().hex())
+```
+
+```text
+0xc8
+255
+47
+b'MZ'
+426f6e6a6f7572
+```
+
+## exercice noté : un octet en hexadécimal
+
+Écris `solution(n)` qui reçoit un octet, un entier de 0 à 255, et renvoie son écriture hexadécimale en minuscules sur **exactement deux chiffres**, sans utiliser `hex()` ni `format()`. Pour 200, elle renvoie `'c8'` ; pour 10, `'0a'`. Indice : le quotient de la division par 16 donne le chiffre de gauche, le reste celui de droite, et le texte `'0123456789abcdef'` permet de retrouver le chiffre correspondant à une valeur.
+
+<PythonChallenge id="f1-hexa-1" title="Un octet en hexadécimal" description="Renvoie l'octet n sur deux chiffres hexadécimaux minuscules, sans hex() ni format()." starterCode="CHIFFRES = '0123456789abcdef'
+
+def solution(n):
+    gauche = 0  # à calculer
+    droite = 0  # à calculer
+    return CHIFFRES[gauche] + CHIFFRES[droite]" tests={[{ input: "solution(200)", expected: "c8" }, { input: "solution(10)", expected: "0a" }, { input: "solution(255)", expected: "ff" }, { input: "solution(0)", expected: "00" }, { input: "solution(71)", expected: "47" }]} />
+
+## et l'octal ?
+
+Une autre base, la base 8 ou **octal**, survit dans un usage précis : les droits des fichiers Unix, que tu as vus dans le parcours Linux ou que tu verras. Un chiffre octal vaut exactement **trois bits** (8 = 2³), et les droits sont justement trois groupes de trois bits : lecture, écriture, exécution. `chmod 750` se lit `111 101 000` : tous les droits pour le propriétaire, lecture et exécution pour le groupe, rien pour les autres. En Python, l'octal se préfixe par `0o` : `0o750` vaut 488. Hors des droits Unix, l'octal a pratiquement disparu au profit de l'hexadécimal.
+
+## les pièges
+
+- **Confondre `10` en hexadécimal et `10` en décimal.** `0x10` vaut 16. Sans préfixe, vérifie toujours la base.
+- **Découper le binaire par la gauche.** Les quartets se forment en partant de la droite ; on complète à gauche avec des zéros si besoin.
+- **Oublier le zéro de tête.** Un octet s'écrit sur deux chiffres : 10 donne `0a`, pas `a`, sinon les octets collés deviennent illisibles.
+- **Faire confiance à l'extension.** Seuls les premiers octets disent le vrai format d'un fichier.
+- **Lire le décalage de `xxd` en décimal.** Il est en hexadécimal : `00000010` est la position 16.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/file.1.html" description="Comment la commande file reconnaît les formats à partir de leur contenu">Page de manuel de file</ExternalLink>
+
+<ExternalLink href="https://en.wikipedia.org/wiki/List_of_file_signatures" description="Une liste très complète de nombres magiques, en anglais">Wikipedia : List of file signatures</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/stdtypes.html#bytes.hex" description="Convertir des octets en texte hexadécimal et inversement">Documentation Python : bytes.hex et bytes.fromhex</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Combien de bits représente un chiffre hexadécimal ?" options={["4", "2", "8", "16"]} correct={0} explanation="16 vaut 2 puissance 4 : un chiffre hexadécimal correspond exactement à quatre bits, un quartet." />
+  <Quiz id="q-2" question="Combien vaut 0x3C en décimal ?" options={["36", "60", "312", "48"]} correct={1} explanation="3 × 16 + 12 = 60. C vaut 12." />
+  <Quiz id="q-3" question="Comment s'écrit 10110110 en hexadécimal ?" options={["6B", "B6", "A6", "D5"]} correct={1} explanation="On coupe en quartets depuis la droite : 1011 donne B, 0110 donne 6, soit 0xB6." />
+  <Quiz id="q-4" question="Dans la couleur #00FF00, quelle composante est au maximum ?" options={["Le vert", "Le rouge", "Le bleu", "Aucune"]} correct={0} explanation="Les trois octets sont rouge, vert et bleu : seul le vert vaut FF, soit 255." />
+  <Quiz id="q-5" question="Un fichier nommé devis.pdf commence par les octets 4D 5A. Qu'est-ce que c'est ?" options={["Un PDF normal", "Un programme Windows déguisé", "Une image JPEG", "Un fichier texte"]} correct={1} explanation="4D 5A, soit MZ, est la signature des programmes Windows. L'extension .pdf est trompeuse." />
+  <Quiz id="q-6" question="Combien de chiffres hexadécimaux compte une empreinte SHA-256 ?" options={["32", "128", "256", "64"]} correct={3} explanation="256 bits divisés par 4 bits par chiffre donnent 64 chiffres hexadécimaux." />
+  <Quiz id="q-7" question="Dans un vidage xxd, une ligne commence par 00000020. À quelle position commence-t-elle ?" options={["20", "2", "32", "200"]} correct={2} explanation="Le décalage est en hexadécimal : 0x20 vaut 2 × 16, soit 32." />
+</QuizGroup>
+
+## à retenir
+
+- L'**hexadécimal** est la base 16 : chiffres 0 à 9 puis A à F. Préfixe `0x`.
+- **Un chiffre hexadécimal = 4 bits** ; **un octet = 2 chiffres hexadécimaux**. La conversion avec le binaire se fait par quartets, sans calcul.
+- On le croise dans les **couleurs**, les **adresses MAC**, l'**IPv6**, les **empreintes**, les **adresses mémoire** et les **codes d'erreur**.
+- Un **vidage hexadécimal** montre le décalage, les octets et leur interprétation en texte. `xxd` le produit.
+- Les premiers octets d'un fichier, son **nombre magique**, révèlent son vrai format : l'extension peut mentir.
+- L'**octal** (base 8, 3 bits par chiffre) survit dans les droits Unix.
