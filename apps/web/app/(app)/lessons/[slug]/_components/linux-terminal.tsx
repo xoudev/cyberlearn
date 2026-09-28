@@ -180,16 +180,30 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const checksRef = useRef(checks);
   checksRef.current = checks;
 
-  /** Looks at /mnt in the machine and records which checks hold now. */
+  /**
+   * Looks at /mnt in the machine and records which checks hold now.
+   *
+   * Looks can overlap - a learner types faster than the machine runs - and
+   * each one awaits the filesystem, so an older look could finish after a
+   * newer one and put back a state that no longer is. Only the latest look
+   * started gets to write.
+   */
+  const lookSeq = useRef(0);
   const evaluate = useCallback(async (): Promise<void> => {
     const emulator = emulatorRef.current;
     if (!emulator || checksRef.current.length === 0) return;
+    const seq = ++lookSeq.current;
     const holding: string[] = [];
     for (const check of checksRef.current) {
-      const { state, text } = await probe(emulator, check.path);
-      if (checkHolds(check, state, text)) holding.push(check.label);
+      try {
+        const { state, text } = await probe(emulator, check.path);
+        if (checkHolds(check, state, text)) holding.push(check.label);
+      } catch {
+        // A path the filesystem cannot answer for does not hold, and does not
+        // stop the checks after it.
+      }
     }
-    setPassed(holding);
+    if (seq === lookSeq.current) setPassed(holding);
   }, []);
 
   /**
@@ -205,6 +219,15 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
       let stage: "boot" | "setup" | "live" = "boot";
       let pending: number[] = [];
       let flushing = false;
+      // The live output, decoded, to see the prompt come back: that is when
+      // the command has finished and the files are worth looking at.
+      const liveDecoder = new TextDecoder();
+      let liveTail = "";
+      let lookTimer: ReturnType<typeof setTimeout> | undefined;
+      const scheduleLook = (delay: number): void => {
+        clearTimeout(lookTimer);
+        lookTimer = setTimeout(() => void evaluate(), delay);
+      };
 
       const flush = (): void => {
         flushing = false;
@@ -232,6 +255,13 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
             flushing = true;
             setTimeout(flush, 0);
           }
+          liveTail = (
+            liveTail + liveDecoder.decode(new Uint8Array([byte]), { stream: true })
+          ).slice(-200);
+          if (endsWithPrompt(liveTail)) {
+            liveTail = "";
+            scheduleLook(100);
+          }
           return;
         }
         tail = (tail + decoder.decode(new Uint8Array([byte]), { stream: true })).slice(-200);
@@ -253,9 +283,10 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
           if (!expectedRef.current.includes(line)) return;
           setDone((prev) => (prev.includes(line) ? prev : [...prev, line]));
         },
-        // The command has just been sent; give it a moment to run, then look.
+        // Normally the prompt coming back triggers the look. A command that
+        // keeps the screen, like less, never shows it: look anyway, later.
         () => {
-          setTimeout(() => void evaluate(), 800);
+          scheduleLook(1500);
         },
       );
       term.onData((data) => {
