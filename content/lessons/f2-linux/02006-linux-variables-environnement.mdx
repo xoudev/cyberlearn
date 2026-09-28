@@ -176,8 +176,8 @@ Tout ce qu'on fait dans un shell disparaît à sa fermeture. Pour qu'un réglage
 <Diagram caption="Quels fichiers bash lit-il au démarrage ?">
 flowchart TD
   A["Shell de connexion (SSH, console)"] --> B["/etc/profile"]
-  B --> C["~/.bash_profile, sinon ~/.bash_login, sinon ~/.profile"]
-  C -->|"sur Debian et Ubuntu, ~/.profile charge"| D["~/.bashrc"]
+  B --> C["Dans le répertoire personnel : .bash_profile, sinon .bash_login, sinon .profile"]
+  C -->|"sur Debian et Ubuntu, .profile charge"| D[".bashrc du répertoire personnel"]
   E["Nouveau terminal, ou bash tapé à la main"] --> D
 </Diagram>
 

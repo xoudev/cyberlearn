@@ -88,7 +88,7 @@ describe.skipIf(LESSONS.length === 0)("the new catalogue's lesson standard", () 
     for (const heading of ["## objectifs", "## quiz", "## à retenir"]) {
       if (!body.includes(`\n${heading}\n`)) problems.push(`section manquante : ${heading}`);
     }
-    if (!/<QuizGroup>/.test(body)) problems.push("pas de QuizGroup");
+    if (!body.includes("<QuizGroup>")) problems.push("pas de QuizGroup");
     const quizzes = (body.match(/<Quiz\s/g) ?? []).length;
     if (quizzes < 5) problems.push(`${String(quizzes)} questions, il en faut au moins 5`);
     if (/<Quiz\s(?![^>]*explanation=)[^>]*\/>/.test(body)) {
