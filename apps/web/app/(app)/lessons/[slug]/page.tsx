@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { requireRequestUser } from "@/lib/auth";
 import { indexPlacements, isReadable } from "@/lib/lessons/unlock";
+import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { extractToc, splitMdxSections } from "@cyberlearn/lib";
 import {
   lessonQuizRepository,
@@ -132,6 +133,7 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     note,
     quizAnswers,
     reportedQuizIds,
+    unlockAll,
   ] = await Promise.all([
     lessonRepository.findProgress(authUser.id, lesson.id),
     // "Next" used to mean the next lesson published anywhere in the catalogue,
@@ -153,14 +155,16 @@ export default async function LessonPage({ params }: Props): Promise<React.React
     // between a deploy and its migration, no table means nothing preloaded,
     // not a crashed lesson.
     quizReportRepository.openQuizIdsFor(authUser.id, lesson.id).catch(() => []),
+    // Administrators review the catalogue: no path lock stands in their way.
+    unlocksEveryLesson(authUser.id),
   ]);
   const initialQuizAnswers: Record<string, QuizAnswer> = Object.fromEntries(
     quizAnswers.map((a) => [a.quizId, { selected: a.selected, correct: a.correct }]),
   );
 
-  const placement = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds).get(
-    lesson.id,
-  );
+  const placement = indexPlacements(pathContexts.paths, pathContexts.completedLessonIds, {
+    unlockAll,
+  }).get(lesson.id);
 
   // The gate is here, before any progress is written: hiding the card on the
   // catalogue would leave the lesson one guessed URL away, and starting it

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import "./path-detail.css";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { indexPlacements, type LockState } from "@/lib/lessons/unlock";
+import { unlocksEveryLesson } from "@/lib/lessons/access";
 import { requireUser } from "@cyberlearn/lib";
 import { groupIntoModules, moduleLabel } from "@cyberlearn/lib/paths/modules";
 import { pathsVisibleTo, prisma, ratingRepository } from "@cyberlearn/db";
@@ -276,6 +277,7 @@ export default async function PathDetailPage({
   const placements = indexPlacements(
     [{ id: path.id, slug: path.slug, title: path.title, lessons: path.lessons }],
     completedLessonIds,
+    { unlockAll: await unlocksEveryLesson(authUser.id) },
   );
   const nodeStates: NodeState[] = path.lessons.map(
     (pl) => placements.get(pl.lesson.id)?.state ?? "locked",

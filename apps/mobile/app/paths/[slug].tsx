@@ -9,26 +9,13 @@ import { Screen } from "@/components/screen";
 import { ErrorState, ListSkeleton } from "@/components/states";
 import { Card, Pill, SectionLabel, Text } from "@/components/ui";
 import { CATEGORY_COLOR, CATEGORY_LABEL, DIFFICULTY_LABEL } from "@/lib/db";
-import { usePathDetail, type PathMission } from "@/lib/queries";
+import { usePathDetail } from "@/lib/queries";
+import { missionStates } from "@/lib/missions";
 import { PathFinalCard } from "@/components/path-final-card";
 import { PathRatingCard } from "@/components/path-rating";
 import { averageLine } from "@/lib/rating";
 import { useSession } from "@/lib/session";
 import { groupIntoModules, moduleLabel, type ModuleGroup } from "@cyberlearn/lib/paths/modules";
-
-type MissionState = "done" | "current" | "locked";
-
-function missionStates(missions: PathMission[]): MissionState[] {
-  let currentAssigned = false;
-  return missions.map((m) => {
-    if (m.status === "COMPLETED") return "done";
-    if (!currentAssigned) {
-      currentAssigned = true;
-      return "current";
-    }
-    return "locked";
-  });
-}
 
 export default function PathDetail(): React.JSX.Element {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -73,7 +60,7 @@ function PathBody({
   const cat = CATEGORY_COLOR[data.category];
   const total = data.missions.length;
   const pct = total > 0 ? Math.round((data.completedCount / total) * 100) : 0;
-  const states = missionStates(data.missions);
+  const states = missionStates(data.missions, data.unlockAll);
   // A header before the first mission of each of the path's own modules. A path
   // without modules stays one list, as it always was here.
   const moduleStarts = new Map<number, ModuleGroup>();
@@ -162,7 +149,9 @@ function PathBody({
                 ? colors.success
                 : state === "current"
                   ? colors.accent
-                  : colors.textDisabled;
+                  : state === "open"
+                    ? colors.textSecondary
+                    : colors.textDisabled;
             const moduleStart = moduleStarts.get(i);
             return (
               <React.Fragment key={m.lessonId}>

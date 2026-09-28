@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { randomUUID } from "expo-crypto";
 import { computeLevel } from "@cyberlearn/lib/xp";
 import { computeTier, type TierStatus } from "@cyberlearn/lib/gamification/tier";
-import { fetchMyRankApi } from "@/lib/api";
+import { fetchLessonAccessApi, fetchMyRankApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import {
   fetchExamStatusApi,
@@ -533,6 +533,8 @@ export interface PathDetail {
   completedCount: number;
   avgRating: number | null;
   ratingsCount: number;
+  /** True for an administrator: every mission is open, as on the site. */
+  unlockAll: boolean;
 }
 
 export function usePathDetail(userId: string | undefined, slug: string | undefined) {
@@ -540,6 +542,10 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
     queryKey: ["path", slug, userId],
     enabled: Boolean(slug),
     queryFn: async (): Promise<PathDetail> => {
+      // Signed out, or the server unreachable: the lock stays, as for anyone.
+      const accessPromise = userId
+        ? fetchLessonAccessApi().catch(() => ({ unlockAll: false }))
+        : Promise.resolve({ unlockAll: false });
       const pathRes = await supabase
         .from("paths")
         .select(
@@ -618,6 +624,7 @@ export function usePathDetail(userId: string | undefined, slug: string | undefin
         missions,
         modules: [...(raw.path_modules ?? [])].sort((a, b) => a.position - b.position),
         completedCount: missions.filter((m) => m.status === "COMPLETED").length,
+        unlockAll: (await accessPromise).unlockAll,
       };
     },
   });

@@ -88,6 +88,21 @@ describe("indexPlacements", () => {
   it("returns nothing for a lesson in no path", () => {
     expect(indexPlacements([PYTHON], []).get("orphan")).toBeUndefined();
   });
+
+  it("opens every lesson when told to, and still reports completions", () => {
+    const placements = indexPlacements([PYTHON], ["b"], { unlockAll: true });
+    expect(placements.get("a")?.state).toBe("unlocked");
+    expect(placements.get("b")?.state).toBe("completed");
+    expect(placements.get("c")?.state).toBe("unlocked");
+    expect(placements.get("d")?.state).toBe("unlocked");
+    // Neighbours and rank do not depend on the option.
+    expect(placements.get("d")?.previous?.id).toBe("c");
+    expect(placements.get("d")?.rank).toBe(4);
+  });
+
+  it("keeps the strict rule when the option is off", () => {
+    expect(indexPlacements([PYTHON], [], { unlockAll: false }).get("b")?.state).toBe("locked");
+  });
 });
 
 describe("isReadable", () => {
