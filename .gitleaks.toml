@@ -22,6 +22,10 @@ paths = [
   # The "crypto failures" lesson deliberately hardcodes a fake API key as a
   # bad example (teaching "never commit secrets in code"); not a real credential.
   '''content/lessons/cyber-web/09-crypto-failures\.mdx''',
+  # Vendored third-party runtimes (Pyodide, JSCPP, v86): minified code whose
+  # identifiers read as keys to the generic rule (v86's atapi_add_sense=...).
+  # Not ours, not secrets, and pinned byte for byte by verify-runtimes.sh.
+  '''apps/web/public/runtimes/.*''',
 ]
 regexes = [
   # The CI Build job writes a placeholder .env (ci.yml); every fake value
