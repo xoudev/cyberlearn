@@ -7,7 +7,7 @@ import { prisma } from "@cyberlearn/db";
 import { extractLessonQuizzes } from "@cyberlearn/lib/mdx-quizzes";
 import { importLessonMetadataSchema, type ImportValidationError } from "@cyberlearn/types";
 import { diffHunks, diffLines, diffStats, type DiffHunk } from "@/lib/text-diff";
-import { checkLessonFile } from "./lesson-import.service";
+import { checkLessonFile, orderBatchByPrerequisites } from "./lesson-import.service";
 
 /**
  * Updating lessons already in the database from their files in the repository.
@@ -120,6 +120,7 @@ export interface SyncOverview {
   available: boolean;
   unchanged: number;
   updates: LessonUpdate[];
+  /** In an order where each lesson follows its prerequisites: the import order. */
   notImported: { file: string; refCode: string; title: string }[];
   unreadable: { file: string; message: string }[];
 }
@@ -274,18 +275,30 @@ export async function lessonSyncOverview(dir = findLessonsDir()): Promise<SyncOv
   const byRefCode = new Map(rows.map((r) => [r.refCode, r]));
 
   let unchanged = 0;
-  const notImported: SyncOverview["notImported"] = [];
+  const missing: ParsedFile[] = [];
   const pending: { file: ParsedFile; row: LessonRow; before: LessonFields }[] = [];
   for (const file of readable) {
     const row = byRefCode.get(file.refCode);
     if (!row) {
-      notImported.push({ file: file.file, refCode: file.refCode, title: file.fields.title });
+      missing.push(file);
       continue;
     }
     const before = fieldsOf(row);
     if (lessonHash(before) === lessonHash(file.fields)) unchanged++;
     else pending.push({ file, row, before });
   }
+
+  // Imported one by one, a lesson whose prerequisite is not in yet would be
+  // refused: list them so that each comes after the lessons it needs. A cycle
+  // cannot be ordered; its lessons come last, where their import will say why.
+  const { ordered, cyclic } = orderBatchByPrerequisites(
+    missing.map((f) => ({ id: f.file, refCode: f.refCode, prerequisites: f.fields.prerequisites })),
+  );
+  const byFile = new Map(missing.map((f) => [f.file, f]));
+  const notImported = [...ordered, ...cyclic].flatMap((id) => {
+    const f = byFile.get(id);
+    return f ? [{ file: f.file, refCode: f.refCode, title: f.fields.title }] : [];
+  });
 
   const ids = pending.map((p) => p.row.id);
   const [answerCounts, history] =

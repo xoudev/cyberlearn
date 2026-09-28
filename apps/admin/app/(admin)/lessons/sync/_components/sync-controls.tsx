@@ -1,17 +1,26 @@
 "use client";
 
-// Client: the buttons call the action one lesson at a time and show progress.
-// Updating everything in one request would run the full lesson check ~190
-// times inside a single function call, past any sensible timeout.
+// Client: the buttons call the action one item at a time and show progress.
+// Doing everything in one request would run the full lesson check ~190 times
+// inside a single function call, past any sensible timeout.
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateLessonFromRepositoryAction, type SyncActionResult } from "../actions";
+import {
+  importLessonFromRepositoryAction,
+  syncPathFromRepositoryAction,
+  updateLessonFromRepositoryAction,
+  type SyncActionResult,
+} from "../actions";
+
+/** What a button does: update a lesson, import a new one, or write a path. */
+export type SyncKind = "update" | "import" | "path";
 
 export interface SyncTarget {
   refCode: string;
-  hash: string;
   title: string;
+  /** The fingerprint the admin saw, for an update only. */
+  hash?: string;
 }
 
 interface Failure {
@@ -21,9 +30,58 @@ interface Failure {
   details: string[];
 }
 
-async function run(target: SyncTarget): Promise<SyncActionResult> {
+const COPY: Record<
+  SyncKind,
+  {
+    one: string;
+    running: string;
+    done: string;
+    all: (count: string) => string;
+    confirm: (count: number) => string;
+    progress: string;
+  }
+> = {
+  update: {
+    one: "Mettre à jour",
+    running: "Mise à jour…",
+    done: "Mise à jour faite",
+    all: (count) => `Tout mettre à jour (${count})`,
+    confirm: (count) =>
+      `${String(count)} leçon${count > 1 ? "s seront réécrites" : " sera réécrite"} avec le contenu du dépôt. Les modifications faites dans l'éditeur sur ces leçons seront remplacées.`,
+    progress: "Mise à jour",
+  },
+  import: {
+    one: "Importer",
+    running: "Import…",
+    done: "Importée",
+    all: (count) => `Tout importer (${count})`,
+    confirm: (count) =>
+      `${String(count)} leçon${count > 1 ? "s seront importées" : " sera importée"} en brouillon, dans l'ordre de leurs prérequis. Tu les publieras depuis la liste des leçons.`,
+    progress: "Import",
+  },
+  path: {
+    one: "Synchroniser",
+    running: "Synchronisation…",
+    done: "Synchronisé",
+    all: (count) => `Synchroniser les parcours (${count})`,
+    confirm: (count) =>
+      `${String(count)} parcours ${count > 1 ? "seront écrits" : "sera écrit"} depuis content/paths : titre, modules et ordre des leçons déjà importées. Un nouveau parcours arrive en brouillon ; un parcours existant garde son statut.`,
+    progress: "Synchronisation",
+  },
+};
+
+async function run(kind: SyncKind, target: SyncTarget): Promise<SyncActionResult> {
   try {
-    return await updateLessonFromRepositoryAction({ refCode: target.refCode, hash: target.hash });
+    if (kind === "update") {
+      return await updateLessonFromRepositoryAction({
+        refCode: target.refCode,
+        hash: target.hash ?? "",
+      });
+    }
+    if (kind === "import") {
+      return await importLessonFromRepositoryAction({ refCode: target.refCode });
+    }
+    return await syncPathFromRepositoryAction({ refCode: target.refCode });
   } catch {
     return { ok: false, message: "La requête a échoué. Réessaie.", details: [] };
   }
@@ -49,15 +107,22 @@ function Failures({ failures }: { failures: Failure[] }): React.ReactElement | n
   );
 }
 
-export function UpdateOneButton({ target }: { target: SyncTarget }): React.ReactElement {
+export function RunOneButton({
+  kind,
+  target,
+}: {
+  kind: SyncKind;
+  target: SyncTarget;
+}): React.ReactElement {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "running" | "done">("idle");
   const [failure, setFailure] = useState<Failure | null>(null);
+  const copy = COPY[kind];
 
   const onClick = async (): Promise<void> => {
     setState("running");
     setFailure(null);
-    const result = await run(target);
+    const result = await run(kind, target);
     if (result.ok) {
       setState("done");
       router.refresh();
@@ -75,29 +140,36 @@ export function UpdateOneButton({ target }: { target: SyncTarget }): React.React
         disabled={state !== "idle"}
         onClick={() => void onClick()}
       >
-        {state === "running"
-          ? "Mise à jour…"
-          : state === "done"
-            ? "Mise à jour faite"
-            : "Mettre à jour"}
+        {state === "running" ? copy.running : state === "done" ? copy.done : copy.one}
       </button>
       <Failures failures={failure ? [failure] : []} />
     </div>
   );
 }
 
-export function UpdateAllButton({ targets }: { targets: SyncTarget[] }): React.ReactElement {
+/**
+ * Runs every target in the order given, one request each. For an import that
+ * order is the prerequisites' order, so a lesson follows the ones it needs.
+ */
+export function RunAllButton({
+  kind,
+  targets,
+}: {
+  kind: SyncKind;
+  targets: SyncTarget[];
+}): React.ReactElement {
   const router = useRouter();
   const [step, setStep] = useState<"idle" | "confirm" | "running" | "done">("idle");
   const [done, setDone] = useState(0);
   const [failures, setFailures] = useState<Failure[]>([]);
+  const copy = COPY[kind];
 
   const start = async (): Promise<void> => {
     setStep("running");
     setDone(0);
     setFailures([]);
     for (const target of targets) {
-      const result = await run(target);
+      const result = await run(kind, target);
       if (!result.ok) {
         const failure = { ...target, message: result.message, details: result.details };
         setFailures((prev) => [...prev, failure]);
@@ -119,16 +191,12 @@ export function UpdateAllButton({ targets }: { targets: SyncTarget[] }): React.R
             setStep("confirm");
           }}
         >
-          Tout mettre à jour ({count})
+          {copy.all(count)}
         </button>
       ) : null}
       {step === "confirm" ? (
         <div className="a-sync-confirm">
-          <p>
-            {count} leçon{targets.length > 1 ? "s seront réécrites" : " sera réécrite"} avec le
-            contenu du dépôt. Les modifications faites dans l&apos;éditeur sur ces leçons seront
-            remplacées.
-          </p>
+          <p>{copy.confirm(targets.length)}</p>
           <div className="a-head-actions">
             <button type="button" className="a-btn a-btn--primary" onClick={() => void start()}>
               Confirmer
@@ -156,8 +224,8 @@ export function UpdateAllButton({ targets }: { targets: SyncTarget[] }): React.R
             />
           </div>
           <p>
-            {step === "running" ? "Mise à jour" : "Terminé"} : {done} / {count}
-            {failures.length > 0 ? `, ${String(failures.length)} refusée(s)` : ""}
+            {step === "running" ? copy.progress : "Terminé"} : {done} / {count}
+            {failures.length > 0 ? `, ${String(failures.length)} refusé(s)` : ""}
           </p>
         </div>
       ) : null}

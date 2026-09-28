@@ -162,7 +162,7 @@ export async function validateMdxContent(
   if (existingRefCode) {
     errors.push({
       field: "refCode",
-      message: `Conflit: une leçon avec ce refCode existe déjà (ID: ${existingRefCode.id}). Pour la remplacer par son fichier du dépôt : Leçons, « Mettre à jour depuis le dépôt ».`,
+      message: `Conflit: une leçon avec ce refCode existe déjà (ID: ${existingRefCode.id}). Pour la remplacer par son fichier du dépôt : Leçons, « Synchroniser avec le dépôt ».`,
     });
   }
 

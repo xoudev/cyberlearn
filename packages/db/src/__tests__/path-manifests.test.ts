@@ -3,7 +3,7 @@ import {
   checkPathManifests,
   loadPathManifests,
   manifestLessons,
-} from "../../prisma/path-manifests";
+} from "../catalogue/path-manifests";
 
 function manifest(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {

@@ -20,9 +20,10 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingRoot: path.join(__dirname, "../../"),
   outputFileTracingIncludes: {
-    // "Mettre à jour depuis le dépôt" reads the lesson files at run time. They
-    // ship with that route only, not with every function of the console.
-    "/lessons/sync": ["../../content/lessons/**/*.mdx"],
+    // "Synchroniser avec le dépôt" reads the lesson files and the path
+    // manifests at run time. They ship with that route only, not with every
+    // function of the console.
+    "/lessons/sync": ["../../content/lessons/**/*.mdx", "../../content/paths/*.json"],
   },
   // Same as apps/web: Sentry uploads the server source maps and then leaves
   // them on disk - it deletes the client ones only, deliberately - and Next.js

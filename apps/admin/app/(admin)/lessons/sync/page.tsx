@@ -10,12 +10,17 @@ import {
   type Tone,
 } from "../../_components/admin-ui";
 import { lessonSyncOverview, type LessonUpdate } from "@/lib/services/lesson-sync.service";
+import {
+  pathSyncOverview,
+  type PathSyncOverview,
+  type PathSyncState,
+} from "@/lib/services/repository-import.service";
 import type { DiffHunk } from "@/lib/text-diff";
-import { UpdateAllButton, UpdateOneButton } from "./_components/sync-controls";
+import { RunAllButton, RunOneButton } from "./_components/sync-controls";
 
 import { requireAdminPage } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Mettre à jour depuis le dépôt" };
+export const metadata: Metadata = { title: "Synchroniser avec le dépôt" };
 export const dynamic = "force-dynamic";
 // Reads and compares every lesson file: a few seconds, more than the default.
 export const maxDuration = 60;
@@ -67,7 +72,7 @@ function UpdateCard({ u }: { u: LessonUpdate }): React.ReactElement {
             {u.added + u.removed > 1 ? "s" : ""}
           </div>
         </div>
-        <UpdateOneButton target={{ refCode: u.refCode, hash: u.hash, title: u.title }} />
+        <RunOneButton kind="update" target={{ refCode: u.refCode, hash: u.hash, title: u.title }} />
       </div>
       <div className="a-card-pad a-sync-body">
         {u.editedInConsoleAt !== null ? (
@@ -125,16 +130,87 @@ function UpdateCard({ u }: { u: LessonUpdate }): React.ReactElement {
   );
 }
 
+function pathState(p: PathSyncState): { label: string; tone: Tone } {
+  if (p.database === null) return { label: "Nouveau", tone: "info" };
+  if (!p.upToDate) return { label: "À synchroniser", tone: "warning" };
+  return { label: "À jour", tone: "accent" };
+}
+
+function PathsSection({ overview }: { overview: PathSyncOverview }): React.ReactElement | null {
+  if (!overview.available) {
+    return (
+      <EmptyState
+        title="Manifestes des parcours introuvables"
+        text="Ce déploiement n'embarque pas content/paths. Vérifie outputFileTracingIncludes dans apps/admin/next.config.ts."
+      />
+    );
+  }
+  if (overview.paths.length === 0 && overview.errors.length === 0) return null;
+  const pending = overview.paths.filter((p) => !p.upToDate);
+  return (
+    <section className="a-card a-sync-extra">
+      <div className="a-card-head">
+        <h2 className="a-card-title">Parcours du dépôt</h2>
+        <Link href="/paths" className="a-card-link">
+          Tous les parcours →
+        </Link>
+      </div>
+      <div className="a-card-pad a-sync-body">
+        <p className="a-sync-file">
+          Chaque manifeste de content/paths décrit un parcours, ses modules et l&apos;ordre de ses
+          leçons. Importe d&apos;abord les leçons : seules celles déjà en base sont rattachées, les
+          autres le seront à la prochaine synchronisation.
+        </p>
+        {overview.errors.length > 0 ? (
+          <ul className="a-sync-failures" role="alert">
+            {overview.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        ) : null}
+        {pending.length > 0 && overview.errors.length === 0 ? (
+          <RunAllButton
+            kind="path"
+            targets={pending.map((p) => ({ refCode: p.refCode, title: p.title }))}
+          />
+        ) : null}
+        <ul className="a-sync-plain">
+          {overview.paths.map((p) => {
+            const state = pathState(p);
+            const status = p.database ? (STATUS[p.database.status] ?? null) : null;
+            return (
+              <li key={p.refCode}>
+                <span className="a-sync-ref">{p.refCode}</span>{" "}
+                {p.database ? (
+                  <Link href={`/paths/${p.database.id}/edit`}>{p.title}</Link>
+                ) : (
+                  p.title
+                )}{" "}
+                <Tag tone={state.tone}>{state.label}</Tag>{" "}
+                {status ? <Tag tone={status.tone}>{status.label}</Tag> : null}{" "}
+                <span className="a-sync-file">
+                  content/paths/{p.file} · {p.modules} module{p.modules > 1 ? "s" : ""} ·{" "}
+                  {p.importedLessons}/{p.lessons} leçons en base
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 export default async function LessonSyncPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const overview = await lessonSyncOverview();
+  const [overview, paths] = await Promise.all([lessonSyncOverview(), pathSyncOverview()]);
 
   return (
     <main className="admin-page-content">
       <PageHeader
         eyebrow="Contenu"
-        title="Mettre à jour depuis le dépôt"
-        description="Chaque fichier de content/lessons est comparé à sa leçon en base. Rien n'est écrit sans confirmation. Le slug, le statut et l'image de couverture ne changent jamais."
+        title="Synchroniser avec le dépôt"
+        description="Les leçons de content/lessons et les parcours de content/paths, comparés à la base. Rien n'est écrit sans confirmation, et rien n'est publié : les nouvelles leçons et les nouveaux parcours arrivent en brouillon. Le slug, le statut et l'image de couverture d'une leçon existante ne changent jamais."
         actions={<GhostLink href="/lessons">Retour aux leçons</GhostLink>}
       />
 
@@ -158,11 +234,48 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
               tone="info"
             />
             <KpiCard
+              label="Parcours à synchroniser"
+              value={String(paths.paths.filter((p) => !p.upToDate).length)}
+              tone="info"
+            />
+            <KpiCard
               label="Fichiers illisibles"
               value={String(overview.unreadable.length)}
               tone="danger"
             />
           </div>
+
+          {overview.notImported.length > 0 ? (
+            <section className="a-card a-sync-extra">
+              <div className="a-card-head">
+                <h2 className="a-card-title">Nouvelles leçons du dépôt</h2>
+              </div>
+              <div className="a-card-pad a-sync-body">
+                <p className="a-sync-file">
+                  Importées en brouillon avec les mêmes contrôles que l&apos;import d&apos;un
+                  fichier, dans l&apos;ordre de leurs prérequis. Publie-les ensuite depuis la liste
+                  des leçons.
+                </p>
+                <RunAllButton
+                  kind="import"
+                  targets={overview.notImported.map((n) => ({
+                    refCode: n.refCode,
+                    title: n.title,
+                  }))}
+                />
+                <ul className="a-sync-plain">
+                  {overview.notImported.map((n) => (
+                    <li key={n.file}>
+                      <span className="a-sync-ref">{n.refCode}</span> {n.title}{" "}
+                      <span className="a-sync-file">content/lessons/{n.file}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          ) : null}
+
+          <PathsSection overview={paths} />
 
           {overview.updates.length === 0 ? (
             <EmptyState
@@ -171,7 +284,8 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
             />
           ) : (
             <>
-              <UpdateAllButton
+              <RunAllButton
+                kind="update"
                 targets={overview.updates.map((u) => ({
                   refCode: u.refCode,
                   hash: u.hash,
@@ -185,25 +299,6 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
               </div>
             </>
           )}
-
-          {overview.notImported.length > 0 ? (
-            <section className="a-card a-sync-extra">
-              <div className="a-card-head">
-                <h2 className="a-card-title">Pas encore importées</h2>
-                <Link href="/lessons/import" className="a-card-link">
-                  Importer →
-                </Link>
-              </div>
-              <ul className="a-card-pad a-sync-plain">
-                {overview.notImported.map((n) => (
-                  <li key={n.file}>
-                    <span className="a-sync-ref">{n.refCode}</span> {n.title}{" "}
-                    <span className="a-sync-file">content/lessons/{n.file}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
 
           {overview.unreadable.length > 0 ? (
             <section className="a-card a-sync-extra">
