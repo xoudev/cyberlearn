@@ -1,0 +1,206 @@
+---
+refCode: CL-LSN-01028-V01
+slug: fondamentaux-http
+title: "HTTP : requêtes et réponses"
+description: "La langue du web : l'anatomie d'une adresse, la requête et la réponse ligne par ligne, les méthodes GET et POST, les codes d'état de 200 à 503, les en-têtes, l'absence de mémoire du protocole, puis comment observer tout cela dans les outils du navigateur et avec curl. Avec ce qu'il ne faut jamais mettre dans une adresse, et un exercice pour lire une réponse brute."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01027-V01"]
+---
+
+Le navigateur a trouvé l'adresse du serveur grâce au DNS et ouvert une connexion vers son port 443. Il lui reste à dire ce qu'il veut. Il le fait dans une langue très simple, presque lisible par un humain : **HTTP** (*HyperText Transfer Protocol*). Chaque page, chaque image, chaque clic sur un bouton « Envoyer » est une **requête** HTTP, suivie d'une **réponse**. Cette leçon démonte ce dialogue ligne par ligne. C'est la base de tout le développement web, et de toute la sécurité web : presque toutes les attaques contre les sites consistent à envoyer des requêtes que le développeur n'avait pas prévues.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- décomposer une adresse web en ses parties ;
+- lire une requête et une réponse HTTP ;
+- citer les principales méthodes et leur usage ;
+- interpréter les codes d'état les plus courants ;
+- expliquer le rôle des en-têtes ;
+- expliquer pourquoi HTTP est « sans état » ;
+- observer les requêtes d'une page dans les outils du navigateur et avec `curl` ;
+- citer les erreurs de sécurité courantes liées à HTTP.
+
+## pourquoi ça compte
+
+Un développeur web passe ses journées dans HTTP : il conçoit des adresses, choisit des méthodes, renvoie des codes d'état, et débogue en lisant des requêtes. Un technicien qui sait qu'une erreur `502` vient du serveur et une erreur `404` d'une adresse fausse gagne un temps précieux. En sécurité, le **test d'intrusion web** consiste pour l'essentiel à intercepter, lire et modifier des requêtes HTTP ; et les journaux des serveurs web, faits de lignes de requêtes, sont la première source de l'analyste qui enquête sur une attaque.
+
+## l'anatomie d'une adresse
+
+Une adresse web, une **URL**, rassemble tout ce dont le navigateur a besoin :
+
+```text
+https://boutique.example:443/produits/clavier?couleur=noir&page=2#avis
+└─┬──┘  └──────┬───────┘└┬┘└──────┬───────┘└─────────┬────────┘└─┬─┘
+schéma        hôte     port    chemin             requête    fragment
+```
+
+- le **schéma** dit quel protocole utiliser : `https` ou `http` ;
+- l'**hôte** est le nom que le DNS traduira en adresse ;
+- le **port** est souvent omis : 443 par défaut en HTTPS, 80 en HTTP ;
+- le **chemin** désigne la ressource demandée sur le serveur ;
+- la **chaîne de requête**, après le `?`, porte des paramètres `nom=valeur` séparés par `&` ;
+- le **fragment**, après le `#`, désigne un endroit de la page. Il n'est **jamais envoyé** au serveur : seul le navigateur s'en sert.
+
+Certains caractères ne peuvent pas figurer tels quels dans une URL : l'espace devient `%20`, le « é » `%C3%A9`. Tu reconnais les octets UTF-8 du module 2, écrits en hexadécimal : c'est l'**encodage pourcent**.
+
+## la requête
+
+Voici, presque tel que le navigateur l'envoie, ce qu'il écrit pour cette adresse :
+
+```text
+GET /produits/clavier?couleur=noir&page=2 HTTP/1.1
+Host: boutique.example
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/131.0
+Accept: text/html
+Accept-Language: fr-FR,fr;q=0.9
+Cookie: session=8f3a2c91e0
+```
+
+La première ligne, la **ligne de requête**, contient trois éléments : la **méthode** (`GET`), la **cible** (le chemin et la chaîne de requête) et la **version** du protocole. Suivent des **en-têtes**, une information par ligne sous la forme `Nom: valeur`. L'en-tête `Host` est obligatoire : un même serveur héberge souvent des dizaines de sites, et c'est lui qui dit lequel on veut. Une ligne vide termine les en-têtes ; après elle peut venir un **corps**, par exemple le contenu d'un formulaire.
+
+## les méthodes
+
+La méthode dit ce que le client veut faire de la ressource :
+
+| Méthode | Sens | Exemple |
+| --- | --- | --- |
+| `GET` | lire une ressource, sans rien modifier | afficher une page, une image |
+| `POST` | envoyer des données pour créer ou déclencher quelque chose | envoyer un formulaire, se connecter |
+| `PUT` | remplacer une ressource | enregistrer une fiche entière |
+| `PATCH` | modifier une partie d'une ressource | changer seulement l'adresse de livraison |
+| `DELETE` | supprimer une ressource | supprimer un commentaire |
+| `HEAD` | comme `GET`, mais seulement les en-têtes | vérifier qu'une page existe |
+
+La différence entre `GET` et `POST` est la plus importante en pratique. Avec `GET`, les paramètres sont **dans l'adresse** : ils s'affichent dans la barre du navigateur, restent dans l'historique, dans les favoris et dans les **journaux du serveur**. Avec `POST`, les données voyagent **dans le corps** de la requête. Un mot de passe ou un numéro de carte ne doit donc **jamais** passer dans une adresse, même en HTTPS.
+
+## la réponse
+
+Le serveur répond dans la même forme : une ligne d'état, des en-têtes, une ligne vide, puis le corps.
+
+```text
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Content-Length: 18412
+Cache-Control: max-age=300
+Set-Cookie: panier=3; Secure; HttpOnly
+
+<!DOCTYPE html>
+<html lang="fr">
+...
+```
+
+La **ligne d'état** donne la version, un **code d'état** à trois chiffres et une courte phrase. `Content-Type` dit ce que contient le corps (une page HTML en UTF-8), `Content-Length` sa taille en octets, `Cache-Control` combien de temps le navigateur peut la garder, et `Set-Cookie` demande au navigateur de retenir une information, sujet de la dernière leçon du module.
+
+## les codes d'état
+
+Le premier chiffre du code en donne la famille :
+
+| Famille | Sens | Codes à connaître |
+| --- | --- | --- |
+| **1xx** | information | rares à voir directement |
+| **2xx** | succès | `200` OK, `201` créé, `204` réussi sans contenu |
+| **3xx** | redirection | `301` déplacé définitivement, `302` temporairement, `304` pas modifié depuis ta copie en cache |
+| **4xx** | erreur **du client** | `400` requête mal formée, `401` authentification requise, `403` interdit, `404` introuvable, `429` trop de requêtes |
+| **5xx** | erreur **du serveur** | `500` erreur interne, `502` passerelle en erreur, `503` service indisponible |
+
+La distinction 4xx et 5xx est un outil de diagnostic précieux : un `404` signifie que la demande vise quelque chose qui n'existe pas, un `500` que le serveur a planté en la traitant, un `502` que le serveur web n'a pas obtenu de réponse de l'application derrière lui, comme dans le schéma de la leçon précédente. Et `401` et `403` ne disent pas la même chose : le premier signifie « je ne sais pas qui tu es », le second « je sais qui tu es, et c'est non ».
+
+## un protocole sans mémoire
+
+HTTP est **sans état** : chaque requête est indépendante, et le serveur ne se souvient de rien entre deux requêtes. Pour lui, ta deuxième page est la demande d'un inconnu. Pour qu'un site sache que tu es connecté ou ce que contient ton panier, il faut ajouter une mémoire par-dessus : c'est le rôle des **cookies**, que le serveur dépose avec `Set-Cookie` et que le navigateur renvoie à chaque requête avec l'en-tête `Cookie`. Tu les étudieras dans la leçon sur le navigateur.
+
+<Diagram caption="Une page, c'est des dizaines de requêtes">
+sequenceDiagram
+  participant N as Navigateur
+  participant S as Serveur
+  N->>S: GET /produits/clavier
+  S-->>N: 200 OK, la page HTML
+  N->>S: GET /style.css
+  S-->>N: 200 OK, la feuille de style
+  N->>S: GET /app.js
+  S-->>N: 200 OK, le script
+  N->>S: GET /images/clavier.webp
+  S-->>N: 304 Not Modified, garde ta copie
+</Diagram>
+
+Une page ne se charge d'ailleurs presque jamais en une seule requête : le HTML désigne des feuilles de style, des scripts, des images, des polices, que le navigateur demande ensuite, chacun par sa propre requête. Une page d'actualité ordinaire en déclenche facilement plus d'une centaine.
+
+HTTP a aussi évolué pour aller plus vite : **HTTP/2** fait passer toutes ces requêtes dans une seule connexion, en parallèle, et **HTTP/3** remplace TCP par un transport bâti sur UDP, appelé QUIC, pour limiter les attentes. Le sens des requêtes, des méthodes et des codes reste le même.
+
+## observer les requêtes
+
+**Dans le navigateur.** Appuie sur **F12** (ou Ctrl + Maj + I) pour ouvrir les **outils de développement**, choisis l'onglet **Réseau**, puis recharge la page. Chaque ligne est une requête : méthode, adresse, code d'état, type, taille, durée. Un clic sur une ligne montre ses **en-têtes** de requête et de réponse, et le contenu reçu. Fais l'essai sur un site que tu connais : compte les requêtes, repère la page HTML elle-même, les images, et cherche un code `304`. C'est l'outil que les développeurs ouvrent le plus souvent après leur éditeur.
+
+**En ligne de commande.** `curl` envoie des requêtes HTTP depuis un terminal, sous Linux, macOS et Windows. `curl -i` affiche la réponse avec ses en-têtes, `curl -I` seulement les en-têtes (une requête `HEAD`), et `curl -v` montre aussi la requête envoyée.
+
+## sécurité : ce qu'on apprend en lisant HTTP
+
+- **HTTP sans S circule en clair.** Tout ce qui passe en `http://`, y compris un formulaire de connexion, est lisible par quiconque se trouve sur le chemin. C'est l'objet de la leçon suivante.
+- **Pas de secrets dans les adresses.** Un paramètre `?token=` ou `?motdepasse=` finit dans l'historique, les journaux du serveur et parfois chez d'autres sites via l'en-tête `Referer`.
+- **Le client ment quand il veut.** Tout ce que contient une requête, les paramètres, les en-têtes, les cookies, le corps, est choisi par le client, et un attaquant les modifie à volonté avec des outils comme `curl` ou un proxy d'interception. Un prix ou un rôle envoyé par le navigateur ne doit jamais être cru par le serveur : il se vérifie côté serveur. C'est la règle numéro un de la sécurité web.
+- **Les en-têtes bavardent.** Un en-tête `Server: Apache/2.4.29` annonce une version précise, et avec elle ses failles connues. On évite d'afficher les versions.
+- **Les journaux racontent les attaques.** Une rafale de `404` sur des adresses comme `/wp-admin` ou `/.env` trahit un robot qui cherche des failles connues ; une suite de `401` sur la page de connexion, un essai de mots de passe.
+
+## à toi de jouer : curl
+
+Demande la page d'accueil de `boutique.example` avec `curl -i`, puis essaie d'accéder à la page d'administration, `/admin`, et à une page qui n'existe pas.
+
+<SimulatedTerminal shell="bash" title="curl, un navigateur sans image" expectedCommands={["curl -i https://boutique.example/", "curl -i https://boutique.example/admin"]} hints={["curl -i affiche la ligne d'état et les en-têtes, puis le corps de la réponse.", "Ajoute /admin à la fin de l'adresse pour demander la page d'administration."]} commands={{ "curl -i https://boutique.example/": "HTTP/2 200\ncontent-type: text/html; charset=utf-8\ncontent-length: 4412\ncache-control: max-age=300\nset-cookie: session=f1e2d3c4b5; Path=/; Secure; HttpOnly; SameSite=Lax\nstrict-transport-security: max-age=31536000\n\n<!DOCTYPE html>\n<html lang=\"fr\">\n<head><title>Boutique</title></head>\n...", "curl -I https://boutique.example/": "HTTP/2 200\ncontent-type: text/html; charset=utf-8\ncontent-length: 4412\ncache-control: max-age=300", "curl -i https://boutique.example/admin": "HTTP/2 302\nlocation: /connexion?retour=/admin\ncontent-length: 0", "curl -i https://boutique.example/existe-pas": "HTTP/2 404\ncontent-type: text/html; charset=utf-8\ncontent-length: 1311\n\n<!DOCTYPE html>\n<html lang=\"fr\"><body><h1>Page introuvable</h1></body></html>", "curl -i http://boutique.example/": "HTTP/1.1 301 Moved Permanently\nServer: nginx\nLocation: https://boutique.example/\nContent-Length: 162", "curl -v https://boutique.example/": "*   Trying 203.0.113.80:443...\n* Connected to boutique.example (203.0.113.80) port 443\n* SSL connection using TLSv1.3 / TLS_AES_128_GCM_SHA256\n> GET / HTTP/2\n> Host: boutique.example\n> User-Agent: curl/8.14.1\n> Accept: */*\n>\n< HTTP/2 200\n< content-type: text/html; charset=utf-8\n< content-length: 4412" }} />
+
+La page d'accueil répond `200` et dépose un cookie de session, marqué `Secure` et `HttpOnly`. La page d'administration répond `302` : une redirection vers la page de connexion, avec l'adresse de retour en paramètre, parce que tu n'es pas connecté. Une adresse inexistante donne `404`. Essaie aussi `curl -i http://boutique.example/`, sans le S : le serveur redirige aussitôt vers HTTPS. Et `curl -v` montre la requête envoyée, précédée de `>`, et la réponse, précédée de `<` : tu reconnais l'en-tête `Host` et la connexion au port 443, que tu as rencontrés dans les deux leçons précédentes.
+
+## exercice noté : lire une réponse brute
+
+Écris `solution(reponse, nom)` qui reçoit une réponse HTTP brute et le nom d'un en-tête, et renvoie la **valeur** de cet en-tête, ou `None` s'il est absent. Dans une réponse brute, les lignes se terminent par `\r\n` (retour chariot puis saut de ligne, le CR LF de la leçon sur le texte), les en-têtes s'arrêtent à la première ligne vide, et leurs noms ne tiennent pas compte des majuscules. Attention : le corps peut contenir du texte qui ressemble à un en-tête, il ne doit pas être lu.
+
+<PythonChallenge id="f1-http-1" title="Lire un en-tête" description="Renvoie la valeur de l'en-tête demandé dans une réponse HTTP brute, ou None." starterCode="def solution(reponse, nom):
+    entete = reponse  # garder seulement ce qui précède la ligne vide
+    for ligne in entete.split('\r\n')[1:]:
+        pass  # séparer le nom de la valeur, comparer sans tenir compte de la casse
+    return None" tests={[{ input: "solution('HTTP/1.1 301 Moved Permanently\\r\\nServer: nginx\\r\\nLocation: https://boutique.example/\\r\\nContent-Length: 162\\r\\n\\r\\n<html>Location: piege</html>', 'Location')", expected: "https://boutique.example/" }, { input: "solution('HTTP/1.1 301 Moved Permanently\\r\\nServer: nginx\\r\\n\\r\\n', 'server')", expected: "nginx" }, { input: "solution('HTTP/1.1 200 OK\\r\\nContent-Type: text/html; charset=utf-8\\r\\n\\r\\n', 'content-type')", expected: "text/html; charset=utf-8" }, { input: "solution('HTTP/1.1 200 OK\\r\\nServer: nginx\\r\\n\\r\\nSet-Cookie: faux', 'Set-Cookie')", expected: "None" }]} />
+
+Indice : `split('\r\n\r\n', 1)[0]` garde la partie avant la ligne vide, et `partition(':')` coupe une ligne au **premier** deux-points, ce qui préserve ceux de la valeur, comme dans `https://`.
+
+## les pièges
+
+- **Mettre un secret dans une adresse.** Paramètres `GET`, historique, journaux : les données sensibles passent dans le corps d'un `POST`, en HTTPS.
+- **Confondre 4xx et 5xx.** Le premier accuse la demande, le second le serveur.
+- **Confondre 401 et 403.** Non identifié d'un côté, identifié mais refusé de l'autre.
+- **Croire ce qu'envoie le client.** Paramètres, en-têtes et cookies se modifient librement : tout se vérifie côté serveur.
+- **Croire que le fragment part au serveur.** Tout ce qui suit `#` reste dans le navigateur.
+- **Afficher les versions des logiciels.** L'en-tête `Server` n'a pas à annoncer une version précise.
+
+## pour aller plus loin
+
+<ExternalLink href="https://developer.mozilla.org/fr/docs/Web/HTTP/Guides/Overview" description="Une vue d'ensemble de HTTP, par la documentation de référence du web">MDN : aperçu du protocole HTTP</ExternalLink>
+
+<ExternalLink href="https://developer.mozilla.org/fr/docs/Web/HTTP/Reference/Status" description="Tous les codes d'état HTTP, avec leur sens et leurs usages">MDN : codes de réponse HTTP</ExternalLink>
+
+<ExternalLink href="https://curl.se/docs/tutorial.html" description="Le tutoriel officiel de curl, en anglais">curl : tutoriel</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans https://boutique.example/produits?page=2#avis, quelle partie n'est jamais envoyée au serveur ?" options={["/produits", "page=2", "#avis", "boutique.example"]} correct={2} explanation="Le fragment, après #, reste dans le navigateur : il sert à se placer dans la page." />
+  <Quiz id="q-2" question="Pourquoi ne faut-il jamais transmettre un mot de passe dans les paramètres d'une requête GET ?" options={["Parce que GET est plus lent", "Parce que GET ne fonctionne pas en HTTPS", "Parce que le serveur ne lit pas les paramètres", "Parce que l'adresse finit dans l'historique, les favoris et les journaux du serveur"]} correct={3} explanation="Les paramètres GET font partie de l'adresse : ils sont affichés, mémorisés et journalisés, même quand la connexion est chiffrée." />
+  <Quiz id="q-3" question="Un site répond 502. Que faut-il en conclure ?" options={["L'adresse est fausse", "Tu n'es pas connecté", "Tout va bien", "Le serveur web n'a pas obtenu de réponse valable de l'application derrière lui"]} correct={3} explanation="Les codes 5xx accusent le serveur ; 502 signale une passerelle, souvent le serveur web, qui n'a pas pu joindre l'application." />
+  <Quiz id="q-4" question="Quelle est la différence entre 401 et 403 ?" options={["Aucune", "401 : authentification requise ; 403 : identifié mais accès refusé", "401 : page introuvable ; 403 : serveur en panne", "401 : redirection ; 403 : succès"]} correct={1} explanation="401 dit « je ne sais pas qui tu es », 403 dit « je sais qui tu es, et c'est non »." />
+  <Quiz id="q-5" question="Que veut dire que HTTP est sans état ?" options={["Qu'il ne transporte pas de données", "Qu'il ne fonctionne pas sans Internet", "Que le serveur ne se souvient de rien entre deux requêtes, d'où le recours aux cookies", "Qu'il n'a pas de codes d'état"]} correct={2} explanation="Chaque requête est indépendante ; les cookies ajoutent une mémoire en étant renvoyés à chaque requête." />
+  <Quiz id="q-6" question="Un formulaire envoie le prix d'un article dans la requête. Que doit faire le serveur ?" options={["Utiliser ce prix tel quel", "Ignorer ce prix et relire le vrai prix de son côté", "Diviser le prix par deux", "Refuser tout formulaire"]} correct={1} explanation="Tout ce qu'envoie le client peut être modifié ; le serveur ne fait confiance qu'à ses propres données." />
+  <Quiz id="q-7" question="Dans l'onglet Réseau des outils du navigateur, une image apparaît avec le code 304. Qu'est-ce que cela signifie ?" options={["Le serveur confirme que la copie en cache du navigateur est à jour, sans renvoyer l'image", "L'image est introuvable", "L'image est interdite", "Le serveur a planté"]} correct={0} explanation="304 Not Modified : le navigateur réutilise sa copie, ce qui économise du temps et de la bande passante." />
+</QuizGroup>
+
+## à retenir
+
+- Une **URL** : schéma, hôte, port, chemin, requête (`?`), fragment (`#`, jamais envoyé). Les caractères spéciaux sont **encodés pourcent**.
+- Une **requête** : méthode, cible et version, puis des **en-têtes** (dont `Host`), une ligne vide, un corps éventuel. Une **réponse** : ligne d'état, en-têtes, corps.
+- **GET** lit, avec les paramètres dans l'adresse ; **POST** envoie des données dans le corps. Pas de secret dans une adresse.
+- Codes : **2xx** succès, **3xx** redirection, **4xx** erreur du client (401, 403, 404), **5xx** erreur du serveur (500, 502, 503).
+- HTTP est **sans état** : les **cookies** apportent la mémoire.
+- On observe HTTP avec l'onglet **Réseau** (F12) et avec **curl**.
+- Tout ce que le client envoie peut être **modifié** : le serveur vérifie tout.

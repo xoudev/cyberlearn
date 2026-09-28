@@ -1,0 +1,203 @@
+---
+refCode: CL-LSN-01030-V01
+slug: fondamentaux-le-navigateur
+title: "Le navigateur : HTML, CSS, JavaScript et cookies"
+description: "Ce que fait le navigateur de la réponse reçue : HTML pour la structure, CSS pour l'apparence, JavaScript pour le comportement, la page construite en arbre, puis tout ce qu'un site garde chez toi, cookies, stockage local et cache. La règle de même origine qui cloisonne les sites, les attributs qui protègent un cookie, et comment tout inspecter dans les outils du navigateur."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01029-V01"]
+---
+
+La réponse HTTP est arrivée, déchiffrée par TLS. Elle ne contient pourtant pas une page, mais du **texte** : du HTML. Transformer ce texte en une page qu'on lit, sur laquelle on clique et qui réagit, c'est le travail du **navigateur**, sans doute le logiciel le plus complexe que tu utilises chaque jour. C'est aussi celui qui te protège le plus, en cloisonnant les sites les uns des autres, et celui qui en sait le plus sur toi, à travers ce que les sites y conservent. Cette dernière leçon du module referme le voyage commencé avec les réseaux : on arrive enfin à l'écran.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le rôle respectif de HTML, CSS et JavaScript ;
+- décrire comment le navigateur construit une page ;
+- définir une origine et expliquer la règle de même origine ;
+- expliquer ce qu'est un cookie, à quoi il sert et comment on le protège ;
+- citer les autres formes de stockage d'un site dans le navigateur ;
+- inspecter une page, ses requêtes et ses cookies dans les outils du navigateur ;
+- citer les principaux risques liés au navigateur.
+
+## pourquoi ça compte
+
+Tout développeur web écrit du HTML, du CSS et du JavaScript, et passe ses journées dans les outils du navigateur. Pour le support, « videz le cache et les cookies » résout une quantité étonnante de problèmes, à condition de savoir pourquoi. En sécurité, le navigateur est un champ de bataille : les failles les plus fréquentes des sites web, comme l'injection de script, visent le navigateur des visiteurs, et un cookie de session volé vaut souvent un mot de passe. Enfin, la question de ce que les sites stockent sur toi touche directement ta vie privée et le droit, avec les bannières de consentement que tu vois partout.
+
+## trois langages, trois rôles
+
+Une page web repose sur trois langages complémentaires :
+
+- **HTML** (*HyperText Markup Language*) décrit la **structure** et le contenu : titres, paragraphes, liens, images, formulaires. Il se compose de **balises** comme `<h1>`, `<p>` ou `<a href="...">` ;
+- **CSS** (*Cascading Style Sheets*) décrit l'**apparence** : couleurs, polices, marges, mise en page, adaptation aux écrans de téléphone ;
+- **JavaScript** décrit le **comportement** : c'est un vrai langage de programmation, exécuté par le navigateur, qui réagit aux clics, modifie la page, envoie des requêtes au serveur sans recharger la page.
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <title>Boutique</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <h1>Claviers</h1>
+    <p class="prix">49,90 €</p>
+    <button id="ajouter">Ajouter au panier</button>
+    <script src="/app.js"></script>
+  </body>
+</html>
+```
+
+Ce petit document annonce qu'il est en français, charge une feuille de style et un script, et affiche un titre, un prix et un bouton. Tu reconnais les requêtes supplémentaires de la leçon sur HTTP : `style.css` et `app.js` seront demandés au serveur une fois le HTML lu.
+
+## comment une page se construit
+
+À la réception du HTML, le navigateur enchaîne plusieurs étapes :
+
+<Diagram caption="Du texte reçu à la page affichée">
+flowchart LR
+  A["HTML reçu"] --> B["Arbre DOM : la structure"]
+  C["CSS reçu"] --> D["Règles de style"]
+  B --> E["Mise en page : taille et position de chaque élément"]
+  D --> E
+  E --> F["Affichage à l'écran"]
+  G["JavaScript"] -->|"lit et modifie"| B
+</Diagram>
+
+Le HTML est transformé en un arbre d'objets, le **DOM** (*Document Object Model*) : la page contient un corps, qui contient un titre, un paragraphe, un bouton. Le CSS dit comment chaque élément doit apparaître. Le navigateur calcule alors la **mise en page**, la taille et la position de chaque élément, puis **dessine** le résultat. JavaScript peut à tout moment lire et modifier le DOM : ajouter une ligne au panier, afficher un message, masquer un bloc. Le navigateur recalcule alors ce qui a changé.
+
+Le JavaScript d'un site s'exécute **sur ta machine**, avec tes cookies et tout ce que la page affiche. C'est ce qui rend le web si riche, et ce qui explique l'importance du cloisonnement qui suit.
+
+## l'origine et la règle de même origine
+
+Des onglets de ta banque, de ta messagerie et d'un site douteux sont ouverts en même temps dans le même navigateur. Qu'est-ce qui empêche le script du site douteux de lire tes messages ? La **règle de même origine** (*same-origin policy*), fondement de la sécurité du web.
+
+L'**origine** d'une page, c'est la combinaison de trois éléments de son adresse : le **schéma**, l'**hôte** et le **port**. `https://boutique.example/panier` et `https://boutique.example/compte` ont la même origine. Mais `http://boutique.example` (autre schéma), `https://boutique.example:8443` (autre port) et `https://www.boutique.example` (autre hôte) sont chacune une origine **différente**.
+
+La règle : un script ne peut lire que ce qui appartient à **sa propre origine**. Il peut afficher une image venue d'ailleurs, mais pas lire le contenu d'une page, ni les réponses d'un autre site, ni son stockage. Les exceptions sont explicites : un serveur peut autoriser d'autres origines à lire ses réponses, par un mécanisme appelé **CORS**, que tu croiseras en développement web.
+
+## les cookies
+
+Tu l'as vu, HTTP n'a pas de mémoire. Les **cookies** en fournissent une : un serveur dépose une petite donnée nommée avec l'en-tête `Set-Cookie`, et le navigateur la renvoie automatiquement dans l'en-tête `Cookie` de chaque requête suivante vers ce site.
+
+Ils servent à trois grandes choses :
+
+- la **session** : après ta connexion, le serveur te donne un identifiant de session, qui prouve à chaque requête que c'est toi. C'est pourquoi un cookie de session volé permet souvent d'usurper un compte **sans connaître le mot de passe** ;
+- les **préférences** : langue, thème sombre, contenu du panier ;
+- le **suivi** : mesure d'audience, publicité ciblée.
+
+Un cookie porte des **attributs** qui encadrent son usage. Trois comptent particulièrement pour la sécurité :
+
+| Attribut | Effet |
+| --- | --- |
+| `Secure` | le cookie n'est envoyé qu'en HTTPS, jamais en clair |
+| `HttpOnly` | JavaScript ne peut pas le lire : un script injecté ne peut pas le voler |
+| `SameSite` | le cookie n'accompagne pas les requêtes déclenchées depuis d'autres sites (`Strict`, `Lax`, ou `None` pour l'autoriser) |
+
+S'y ajoutent `Expires` ou `Max-Age`, qui fixent sa durée de vie (sans elles, le cookie disparaît à la fermeture du navigateur), et `Domain` et `Path`, qui fixent les adresses auxquelles il est renvoyé. Un cookie de session bien configuré ressemble donc à ceci : `session=f1e2d3c4b5; Path=/; Secure; HttpOnly; SameSite=Lax`, celui que tu as vu passer dans la leçon sur HTTP.
+
+Les cookies déposés par des domaines tiers, par exemple une régie publicitaire présente sur de nombreux sites, permettent de suivre une personne de site en site. C'est pourquoi le droit européen, appliqué en France par la **CNIL**, exige ton consentement préalable pour les cookies qui ne sont pas strictement nécessaires : d'où les bannières, qui doivent permettre de refuser aussi facilement que d'accepter. Les navigateurs, de leur côté, bloquent de plus en plus ces cookies tiers.
+
+## ce qu'un site garde encore chez toi
+
+Les cookies ne sont pas le seul stockage :
+
+- le **stockage local** (`localStorage`) et le **stockage de session** (`sessionStorage`) gardent des données plus volumineuses, accessibles en JavaScript par l'origine qui les a écrites, mais jamais envoyées automatiquement au serveur ;
+- **IndexedDB**, une véritable petite base de données, pour les applications web qui fonctionnent même hors ligne ;
+- le **cache**, qui conserve les fichiers déjà téléchargés (images, scripts, feuilles de style) pour ne pas les redemander : c'est lui qui produit les réponses `304` de la leçon sur HTTP.
+
+Une règle en découle pour les développeurs : un secret, comme un jeton d'authentification, n'a rien à faire dans le stockage local, où n'importe quel script de la page peut le lire. Et pour les utilisateurs : « vider le cache et les cookies » efface tout cela pour un site, ce qui corrige un fichier obsolète resté en cache, mais te déconnecte aussi.
+
+## les risques côté navigateur
+
+- **L'injection de script** (XSS, *cross-site scripting*) : si un site affiche sans précaution un texte fourni par un utilisateur, par exemple un commentaire, un attaquant peut y glisser du JavaScript, qui s'exécutera dans le navigateur de chaque visiteur **avec l'origine du site**. Il peut alors agir en leur nom, lire la page, voler un cookie sans `HttpOnly`. C'est l'une des failles web les plus répandues ; les parcours de sécurité web y reviendront longuement.
+- **Les extensions** : une extension de navigateur peut souvent lire et modifier toutes les pages que tu visites. On n'installe que celles dont on a vraiment besoin, depuis le magasin officiel, et on se méfie de celles qui changent de propriétaire.
+- **Les mots de passe enregistrés et les sessions ouvertes** : sur un ordinateur partagé, le navigateur garde des accès à tous tes comptes. On se déconnecte, et on utilise la navigation privée, qui efface cookies et historique à la fermeture sans pour autant rendre anonyme.
+- **Un navigateur pas à jour** : c'est le logiciel le plus exposé de la machine, d'où ses mises à jour automatiques et fréquentes, vues dans la leçon sur les mises à jour.
+
+## à toi de jouer : inspecter une page
+
+Ouvre un site que tu utilises, où tu es connecté, puis ouvre les outils du navigateur avec **F12** :
+
+1. onglet **Éléments** (ou **Inspecteur**) : survole l'arbre, c'est le DOM. Modifie le texte d'un titre : la page change, mais seulement chez toi, jusqu'au rechargement. Ce que le navigateur affiche t'appartient, ce n'est pas une preuve ;
+2. onglet **Réseau** : recharge, et retrouve la première requête, celle du HTML, ses en-têtes et ses cookies ;
+3. onglet **Application** (Chrome, Edge) ou **Stockage** (Firefox) : ouvre **Cookies**. Pour chacun, regarde les colonnes `Secure`, `HttpOnly` et `SameSite`. Repère le cookie qui ressemble à une session, et note s'il est bien protégé. Regarde aussi le stockage local.
+
+Pour voir la règle de même origine à l'œuvre, ce programme compare des adresses à celle d'une boutique, en calculant leur origine : schéma, hôte, port, avec le port par défaut quand il est omis.
+
+<CodePlayground language="python" starterCode={`from urllib.parse import urlsplit
+
+PORTS_PAR_DEFAUT = {'http': 80, 'https': 443}
+
+def origine(url):
+    u = urlsplit(url)
+    port = u.port or PORTS_PAR_DEFAUT.get(u.scheme)
+    return (u.scheme, u.hostname, port)
+
+reference = 'https://boutique.example/panier'
+for autre in [
+    'https://boutique.example/compte?onglet=commandes',
+    'http://boutique.example/panier',
+    'https://boutique.example:8443/panier',
+    'https://www.boutique.example/panier',
+    'https://boutique.example.pirate.example/panier',
+]:
+    meme = origine(reference) == origine(autre)
+    print('même origine' if meme else 'autre origine', ':', autre, origine(autre))
+`} />
+
+Seule la première adresse partage l'origine de la boutique : un autre chemin ne change rien. Un autre schéma, un autre port, un sous-domaine, ou un domaine qui ne fait que **contenir** le bon nom, comme le dernier, et le cloisonnement s'applique.
+
+## exercice noté : auditer un cookie
+
+Écris `solution(set_cookie)` qui reçoit la valeur d'un en-tête `Set-Cookie` et renvoie la liste des attributs de sécurité **absents**, parmi `Secure`, `HttpOnly` et `SameSite`, dans cet ordre. Les noms d'attributs ne tiennent pas compte des majuscules. Attention au piège : le **nom** et la **valeur** du cookie, avant le premier point-virgule, ne sont pas des attributs, et un chemin comme `Path=/secure-zone` ne rend pas le cookie `Secure`.
+
+<PythonChallenge id="f1-cookies-1" title="Auditer un cookie" description="Renvoie la liste, dans l'ordre Secure, HttpOnly, SameSite, des attributs de sécurité absents du cookie." starterCode="def solution(set_cookie):
+    parties = set_cookie.split(';')
+    attributs = []  # noms des attributs, en minuscules, sans le nom=valeur du cookie
+    return [a for a in ['Secure', 'HttpOnly', 'SameSite'] if a.lower() not in attributs]" tests={[{ input: "solution('session=f1e2d3; Path=/; Secure; HttpOnly; SameSite=Lax')", expected: "[]" }, { input: "solution('session=abc; Path=/; HttpOnly')", expected: "['Secure', 'SameSite']" }, { input: "solution('theme=sombre')", expected: "['Secure', 'HttpOnly', 'SameSite']" }, { input: "solution('panier=3; secure; samesite=Strict')", expected: "['HttpOnly']" }, { input: "solution('id=1; Path=/secure-zone')", expected: "['Secure', 'HttpOnly', 'SameSite']" }]} />
+
+Un cookie de préférence comme `theme=sombre` n'a pas besoin de toutes ces protections. Un cookie de **session**, lui, doit les avoir toutes les trois : c'est l'une des premières vérifications d'un audit de site web.
+
+## les pièges
+
+- **Confondre les trois langages.** HTML structure, CSS habille, JavaScript agit.
+- **Croire ce qu'affiche le navigateur.** Les outils de développement modifient la page à volonté : une capture d'écran ne prouve rien.
+- **Penser qu'un sous-domaine partage l'origine.** `www.boutique.example` et `boutique.example` sont deux origines.
+- **Laisser un cookie de session sans `HttpOnly` ni `Secure`.** Un script injecté ou un réseau en clair suffit à le voler.
+- **Ranger un secret dans le stockage local.** Tout script de la page peut le lire.
+- **Prendre la navigation privée pour de l'anonymat.** Elle efface les traces locales, pas ce que voient les sites et le réseau.
+
+## pour aller plus loin
+
+<ExternalLink href="https://developer.mozilla.org/fr/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works" description="Comment le web fonctionne, de la requête à la page, par MDN">MDN : comment fonctionne le web</ExternalLink>
+
+<ExternalLink href="https://developer.mozilla.org/fr/docs/Web/HTTP/Guides/Cookies" description="Les cookies HTTP, leurs attributs et leurs usages">MDN : les cookies HTTP</ExternalLink>
+
+<ExternalLink href="https://www.cnil.fr/fr/cookies-et-autres-traceurs" description="Ce que dit la loi sur les cookies et le consentement, par la CNIL">CNIL : cookies et autres traceurs</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel langage décrit le comportement d'une page, par exemple ce qui se passe au clic sur un bouton ?" options={["HTML", "JavaScript", "CSS", "HTTP"]} correct={1} explanation="HTML structure, CSS gère l'apparence, JavaScript programme le comportement." />
+  <Quiz id="q-2" question="Qu'est-ce que le DOM ?" options={["Un nom de domaine", "Un type de cookie", "Un protocole réseau", "L'arbre d'objets que le navigateur construit à partir du HTML, et que JavaScript peut modifier"]} correct={3} explanation="Le DOM représente la page en mémoire ; le navigateur l'affiche et les scripts le modifient." />
+  <Quiz id="q-3" question="Laquelle de ces adresses a la même origine que https://boutique.example/panier ?" options={["http://boutique.example/panier", "https://www.boutique.example/panier", "https://boutique.example/compte", "https://boutique.example:8443/panier"]} correct={2} explanation="L'origine combine schéma, hôte et port ; seul le chemin diffère ici, ce qui ne change pas l'origine." />
+  <Quiz id="q-4" question="Pourquoi un cookie de session volé est-il si dangereux ?" options={["Il contient le mot de passe en clair", "Il efface le compte", "Il prouve au serveur qu'on est l'utilisateur connecté, sans avoir besoin du mot de passe", "Il n'est pas dangereux"]} correct={2} explanation="Le cookie de session remplace l'authentification à chaque requête : le posséder, c'est être connecté à la place de la victime." />
+  <Quiz id="q-5" question="Que fait l'attribut HttpOnly d'un cookie ?" options={["Il le réserve à HTTP sans chiffrement", "Il le supprime à la fermeture", "Il empêche JavaScript de le lire, ce qui protège contre le vol par un script injecté", "Il le rend visible par tous les sites"]} correct={2} explanation="Un cookie HttpOnly reste envoyé au serveur, mais aucun script de la page ne peut le lire." />
+  <Quiz id="q-6" question="Un site affiche les commentaires des visiteurs sans précaution, et l'un d'eux contient un script. Comment s'appelle cette faille ?" options={["Empoisonnement de cache DNS", "Débordement d'entier", "Traversée de répertoires", "Injection de script, ou XSS"]} correct={3} explanation="Le script de l'attaquant s'exécute dans le navigateur de chaque visiteur avec l'origine du site : c'est le cross-site scripting." />
+  <Quiz id="q-7" question="Pourquoi un site doit-il demander ton consentement pour certains cookies ?" options={["Parce que les cookies ralentissent le site", "Parce que le droit européen l'impose pour les cookies non nécessaires, notamment de suivi", "Parce que les navigateurs le refusent sinon", "Ce n'est pas obligatoire"]} correct={1} explanation="Les traceurs non indispensables, comme la publicité ciblée, exigent un consentement préalable, qu'on doit pouvoir refuser aussi facilement." />
+</QuizGroup>
+
+## à retenir
+
+- **HTML** structure, **CSS** habille, **JavaScript** agit. Le navigateur construit le **DOM**, calcule la mise en page, puis dessine.
+- Le JavaScript d'un site s'exécute **sur ta machine**, d'où l'importance du cloisonnement.
+- **Origine** = schéma + hôte + port. La **règle de même origine** empêche un site de lire les données d'un autre.
+- Les **cookies** donnent une mémoire à HTTP : **session**, préférences, suivi. Un cookie de session se protège avec **Secure**, **HttpOnly** et **SameSite**.
+- Autres stockages : **localStorage**, **sessionStorage**, **IndexedDB**, **cache**. Pas de secret dans le stockage local.
+- Risques : **XSS**, **extensions**, sessions ouvertes, navigateur pas à jour.
+- Les outils du navigateur (**F12**) montrent le DOM, les requêtes et les cookies.

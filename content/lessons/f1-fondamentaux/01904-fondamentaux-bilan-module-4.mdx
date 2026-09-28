@@ -1,0 +1,132 @@
+---
+refCode: CL-LSN-01904-V01
+slug: fondamentaux-bilan-module-4
+title: "Bilan du module 4 : que se passe-t-il quand on ouvre une page web ?"
+description: "Le quiz du module Internet et le web vus de l'intérieur, puis le projet : raconter, étape par étape et preuves à l'appui, tout ce qui se passe entre la saisie d'une adresse et l'affichage de la page, des adresses de ta machine jusqu'aux cookies, en relevant chaque étape avec les outils du module."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 90
+xpReward: 400
+prerequisites: ["CL-LSN-01030-V01"]
+---
+
+« Que se passe-t-il quand tu tapes une adresse dans ton navigateur et que tu appuies sur Entrée ? » C'est l'une des questions les plus posées en entretien d'embauche, pour un poste de développeur, d'administrateur ou d'analyste en sécurité. Elle n'a rien d'un piège : elle vérifie qu'on sait relier des briques qu'on a apprises séparément. C'est exactement ce que tu as fait dans ce module : le réseau local et Internet, les adresses, les paquets, le DNS, les ports, HTTP, HTTPS, le navigateur. Ce bilan vérifie chaque brique, puis te demande de raconter le voyage complet, en le prouvant avec tes propres relevés.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- expliquer le rôle de chaque étape du chargement d'une page web ;
+- relier les adresses, le DNS, TCP, TLS et HTTP dans le bon ordre ;
+- observer chaque étape avec un outil et en interpréter le résultat ;
+- repérer, à chaque étape, ce qui peut échouer et ce qui peut être attaqué ;
+- rédiger une explication technique claire, structurée et illustrée.
+
+## quiz
+
+Quatorze questions sur les huit leçons du module.
+
+<QuizGroup>
+  <Quiz id="f1m4-q-1" question="Quel équipement de la box fait passer les données entre le réseau local et Internet ?" options={["Le commutateur", "Le routeur", "Le point d'accès Wi-Fi", "Le décodeur télé"]} correct={1} explanation="Le commutateur relie les appareils d'un même réseau ; le routeur relie des réseaux entre eux, ici la maison et Internet." />
+  <Quiz id="f1m4-q-2" question="Une page de 1 Mo se charge lentement sur une fibre à 1 Gb/s depuis un serveur à l'autre bout du monde. Quelle grandeur est probablement en cause ?" options={["La latence, car une page demande de nombreux allers-retours", "Le débit", "La taille de l'écran", "Le nombre de cœurs du processeur"]} correct={0} explanation="La distance impose une latence incompressible, et chaque petit échange la paie ; le débit n'y change rien." />
+  <Quiz id="f1m4-q-3" question="Ton ordinateur a l'adresse 192.168.1.42. Qu'en sait un serveur web sur Internet ?" options={["Il voit 192.168.1.42", "Il voit ton adresse MAC", "Il ne voit aucune adresse", "Il voit l'adresse publique de ta box, que la traduction d'adresses a mise à la place"]} correct={3} explanation="Les adresses privées ne sortent pas de la maison : la box les remplace par son adresse publique." />
+  <Quiz id="f1m4-q-4" question="Un poste a l'adresse 169.254.37.8 et n'accède à rien. Que vérifier en premier ?" options={["Le navigateur", "Le certificat du site", "Que le DHCP de la box répond, car le poste n'a reçu aucune configuration", "Le pare-feu du serveur"]} correct={2} explanation="Une adresse en 169.254 est attribuée automatiquement faute de réponse DHCP." />
+  <Quiz id="f1m4-q-5" question="Dans quel ordre un message est-il emballé avant de partir sur le câble ?" options={["Ethernet, IP, TCP, HTTP", "IP dans HTTP, dans TCP", "HTTP dans TCP, dans IP, dans Ethernet", "TCP dans Ethernet, dans HTTP"]} correct={2} explanation="Chaque couche encapsule la précédente : les données HTTP dans un segment TCP, dans un paquet IP, dans une trame Ethernet ou Wi-Fi." />
+  <Quiz id="f1m4-q-6" question="Pourquoi le web utilise-t-il TCP plutôt qu'UDP ?" options={["Parce que TCP est plus rapide", "Parce qu'UDP n'existe pas sur Internet", "Parce qu'une page doit arriver entière et dans l'ordre, ce que garantit TCP", "Parce que TCP chiffre les données"]} correct={2} explanation="TCP numérote, remet en ordre et renvoie ce qui se perd ; il ne chiffre rien, c'est le rôle de TLS." />
+  <Quiz id="f1m4-q-7" question="À quel domaine appartient www.cyberlearn.fr.compte-client.example ?" options={["cyberlearn.fr", "compte-client.example", "fr", "www"]} correct={1} explanation="Un nom se lit de droite à gauche : le domaine enregistré est compte-client.example." />
+  <Quiz id="f1m4-q-8" question="Après un changement d'hébergeur, un site s'affiche encore depuis l'ancien serveur chez certains visiteurs. Pourquoi ?" options={["Des caches DNS gardent l'ancienne adresse jusqu'à la fin de sa durée de vie", "Le nouveau serveur est en panne", "Le certificat a expiré", "Les visiteurs ont un vieux navigateur"]} correct={0} explanation="Chaque réponse DNS a un TTL pendant lequel les caches la réutilisent." />
+  <Quiz id="f1m4-q-9" question="Un serveur de base de données écoute sur 0.0.0.0:5432 alors que seule l'application locale l'utilise. Que faut-il faire ?" options={["Rien", "Le faire écouter sur 127.0.0.1 et filtrer le port au pare-feu", "Changer le port pour 5433", "Redémarrer la base chaque nuit"]} correct={1} explanation="0.0.0.0 expose le service sur toutes les adresses ; une base interne n'écoute que sur la boucle locale." />
+  <Quiz id="f1m4-q-10" question="Un formulaire de connexion envoie identifiant et mot de passe en GET. Quel est le problème ?" options={["Aucun en HTTPS", "GET ne transporte pas de texte", "Les identifiants se retrouvent dans l'adresse, donc dans l'historique et les journaux du serveur", "Le serveur ne peut pas les lire"]} correct={2} explanation="Les paramètres GET font partie de l'adresse : les données sensibles passent dans le corps d'un POST." />
+  <Quiz id="f1m4-q-11" question="Le serveur web répond 502 à toutes les pages. Où chercher ?" options={["Dans le navigateur du visiteur", "Dans le DNS", "Dans le certificat", "Du côté de l'application ou du service derrière le serveur web, qui ne répond pas"]} correct={3} explanation="502 : le serveur web, en passerelle, n'a pas obtenu de réponse valable de l'application." />
+  <Quiz id="f1m4-q-12" question="Que garantit le cadenas de HTTPS ?" options={["Que le site est honnête", "Que le site n'a pas de virus", "Que personne ne sait quel site tu visites", "Que la connexion est chiffrée avec le serveur qui détient un certificat valide pour le nom affiché"]} correct={3} explanation="Le cadenas dit à qui tu parles ; il ne dit rien de l'honnêteté du site, et le nom du site reste visible." />
+  <Quiz id="f1m4-q-13" question="https://boutique.example et https://api.boutique.example ont-ils la même origine ?" options={["Oui, c'est le même site", "Oui, car le schéma est le même", "Non, l'hôte diffère, donc l'origine aussi", "Seulement en HTTP"]} correct={2} explanation="Origine = schéma + hôte + port ; un sous-domaine est une autre origine." />
+  <Quiz id="f1m4-q-14" question="Quels attributs doit porter un cookie de session ?" options={["Aucun", "Seulement Expires", "Secure, HttpOnly et SameSite", "Domain et Path uniquement"]} correct={2} explanation="Secure l'interdit en clair, HttpOnly le cache aux scripts, SameSite le retient sur les requêtes venues d'autres sites." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées : le projet les enchaîne toutes.
+
+## projet
+
+### l'énoncé
+
+Rédige le **récit technique complet** de ce qui se passe quand tu tapes `https://fr.wikipedia.org/wiki/Internet` dans ton navigateur, chez toi, et que tu appuies sur Entrée, jusqu'à l'affichage de la page. Tu choisis librement un autre site public si tu préfères, à condition de t'y tenir du début à la fin.
+
+Le récit doit être **prouvé** : pour chaque étape, tu relèves sur ta propre machine ce qui se passe réellement, avec la commande ou l'outil du module qui le montre, et tu joins le résultat, ou une capture d'écran. Il doit être **illustré** par un schéma d'ensemble, fait à la main, avec un outil de dessin ou en Mermaid comme dans les leçons.
+
+### les étapes à couvrir
+
+<Diagram caption="Le voyage à raconter">
+flowchart TD
+  A["Étape 1, ta machine : adresse, passerelle, résolveur"] --> B["Étape 2, le DNS : du nom à l'adresse"]
+  B --> C["Étape 3, le chemin : de la box au serveur"]
+  C --> D["Étape 4, la connexion TCP vers le port 443"]
+  D --> E["Étape 5, TLS : certificat et chiffrement"]
+  E --> F["Étape 6, la requête et la réponse HTTP"]
+  F --> G["Étape 7, les autres ressources de la page"]
+  G --> H["Étape 8, le navigateur : DOM, affichage, cookies"]
+</Diagram>
+
+Pour chaque étape, ton récit répond à trois questions : **que se passe-t-il**, **comment l'as-tu observé**, et **qu'est-ce qui pourrait échouer ou être attaqué** à cet endroit.
+
+### les outils de relevé
+
+| Étape | Sous Windows | Sous Linux ou macOS | Dans le navigateur |
+| --- | --- | --- | --- |
+| 1. Ta machine | `ipconfig /all` | `ip a`, `ip route` | |
+| 2. Le DNS | `nslookup fr.wikipedia.org` | `nslookup` ou `dig` | |
+| 3. Le chemin | `tracert fr.wikipedia.org` | `traceroute fr.wikipedia.org` | |
+| 4. et 5. TCP et TLS | `curl -vI https://fr.wikipedia.org/` | la même commande | le cadenas, puis le certificat |
+| 6. HTTP | `curl -i` | la même commande | F12, onglet Réseau |
+| 7. Les ressources | | | onglet Réseau, nombre de requêtes |
+| 8. Le navigateur | | | onglets Éléments et Application |
+
+`curl` est installé par défaut sur Windows 10 et 11, sur macOS et sur la plupart des distributions Linux ; tu peux aussi utiliser la machine virtuelle Debian du module 3.
+
+<Callout type="warning">
+Tes relevés contiennent l'adresse privée et l'adresse MAC de ta machine, et parfois l'adresse publique de ta box. Si tu partages ton récit, masque-les. Et n'interroge que des sites publics, sans chercher à scanner quoi que ce soit : le projet consiste à observer, pas à tester des défenses.
+</Callout>
+
+### les critères de réussite
+
+| Critère | Attendu |
+| --- | --- |
+| Complétude | Les huit étapes sont présentes, dans le bon ordre |
+| Preuves | Chaque étape s'appuie sur un relevé réel, commenté |
+| Exactitude | Le vocabulaire est juste : résolveur, passerelle, port, poignée de main, code d'état, origine, cookie |
+| Liens | Le récit montre comment chaque étape dépend de la précédente |
+| Sécurité | Au moins un risque et une protection sont cités pour chaque étape |
+| Schéma | Un schéma d'ensemble lisible accompagne le récit |
+
+### la correction commentée : un récit modèle
+
+Voici le niveau attendu, sur une version condensée du récit. Tes valeurs seront différentes : ce sont tes relevés qui comptent.
+
+**1. Ta machine.** `ipconfig /all` montre l'adresse privée `192.168.1.42/24`, la passerelle `192.168.1.1` et le serveur DNS `192.168.1.1`, tous trois reçus par DHCP. Le navigateur ne sait encore rien de Wikipédia : il sait seulement à qui demander, la box, et par où sortir, la box aussi. *Risque* : une box compromise qui distribue un faux résolveur détourne toute la maison. *Protection* : le mot de passe d'administration de la box et ses mises à jour.
+
+**2. Le DNS.** Le navigateur consulte son cache, puis le système son propre cache et le fichier hosts, puis interroge le résolveur de la box, qui interroge si besoin la racine, les serveurs de `.org`, puis ceux de `wikipedia.org`. `nslookup fr.wikipedia.org` renvoie une adresse IPv4, une adresse IPv6 et révèle un alias (`dyna.wikimedia.org`) : le nom pointe vers l'infrastructure de la fondation Wikimedia. La réponse est « non autoritaire » : elle vient d'un cache. *Risque* : empoisonnement du cache, requêtes en clair qui révèlent le site visité. *Protection* : DNSSEC, DNS chiffré, et surtout TLS à l'étape 5, qui démasquerait un faux serveur.
+
+**3. Le chemin.** `tracert` montre une dizaine de sauts : la box, le réseau du fournisseur d'accès, puis un point d'échange ou un transitaire, et enfin le réseau de Wikimedia, dont un centre de données en Europe répond en quelques dizaines de millisecondes. Chaque routeur ne choisit que le saut suivant. *Risque* : chaque intermédiaire voit les en-têtes des paquets. *Protection* : le chiffrement de TLS rend le contenu illisible, mais pas la destination.
+
+**4. La connexion TCP.** `curl -v` affiche `Connected to fr.wikipedia.org (…) port 443` : le système a choisi un port éphémère côté client, et l'échange en trois temps de TCP a eu lieu avec le port 443 du serveur. *Risque* : un service exposé sur un port inutile. *Protection* : chez Wikipédia, seuls les ports web répondent.
+
+**5. TLS.** `curl -v` montre `TLSv1.3`, un algorithme symétrique AES ou ChaCha20, puis le certificat : sujet `*.wikipedia.org`, émetteur, dates de validité, et `subjectAltName ... matched`. Le joker couvre bien `fr.wikipedia.org`, un seul niveau. Le navigateur a vérifié la chaîne jusqu'à une autorité racine qu'il connaît. *Risque* : un certificat pour un autre nom, ou un avertissement ignoré. *Protection* : la vérification du nom, et HSTS, que Wikipédia envoie.
+
+**6. HTTP.** Le navigateur envoie `GET /wiki/Internet HTTP/2` avec l'en-tête `Host`, et reçoit `200` avec `content-type: text/html; charset=UTF-8`. Dans l'onglet Réseau, les en-têtes de réponse montrent aussi des indications de cache. *Risque* : des données sensibles dans l'adresse. *Protection* : ici, rien de sensible ; un formulaire de connexion utiliserait `POST`.
+
+**7. Les ressources.** L'onglet Réseau compte des dizaines de requêtes : feuilles de style, scripts, logo, images de l'article, polices. Certaines répondent `304` au second chargement, grâce au cache. *Risque* : un script chargé depuis un domaine compromis. *Protection* : la règle de même origine, et le fait de n'inclure que des ressources de confiance.
+
+**8. Le navigateur.** Le HTML devient un DOM, le CSS le met en forme, le JavaScript ajoute les menus. L'onglet Application montre les cookies de `wikipedia.org`, dont certains marqués `Secure`, et un stockage local utilisé pour les préférences d'affichage. *Risque* : une extension malveillante qui lit toutes les pages. *Protection* : peu d'extensions, toutes de confiance, et un navigateur à jour.
+
+Le schéma d'ensemble montre la machine, la box, le résolveur, la hiérarchie DNS, les routeurs du chemin, et le serveur de Wikimedia, avec les échanges numérotés de 1 à 8. Remarque que le récit modèle ne se contente pas de nommer les étapes : il **relie** chacune à la suivante (sans passerelle pas de DNS, sans DNS pas d'adresse, sans adresse pas de connexion, sans certificat vérifié pas de requête). C'est cette chaîne de causes qui fait la différence en entretien.
+
+### pour aller plus loin
+
+Refais le récit en changeant une seule condition, puis décris ce qui change : sur le Wi-Fi d'un café, avec un résolveur public comme `9.9.9.9`, ou en visitant `http://` au lieu de `https://`. Puis installe **Wireshark** sur ta machine, capture pendant le chargement de la page, et retrouve dans la capture la requête DNS, l'échange en trois temps de TCP et le début de la poignée de main TLS, où le nom du site apparaît encore en clair. Le parcours Réseaux t'apprendra à lire une telle capture en détail.
+
+## à retenir
+
+- Ouvrir une page, c'est une **chaîne** : configuration de la machine, **DNS**, **routage**, **TCP**, **TLS**, **HTTP**, **ressources**, **rendu**. Chaque maillon dépend du précédent.
+- Chaque étape s'**observe** : `ipconfig` ou `ip`, `nslookup`, `tracert` ou `traceroute`, `curl -v`, et les outils du navigateur.
+- Chaque étape a ses **risques** et ses **protections** : box et résolveur, DNS en clair, intermédiaires, ports exposés, certificats, données dans l'adresse, scripts et extensions.
+- **HTTPS** protège le contenu et authentifie le serveur ; le nom du site et les métadonnées restent visibles.
+- Savoir raconter ce voyage, preuves à l'appui, est une compétence attendue de tout professionnel de l'informatique. Le module 5 t'apprend à piloter ta machine en ligne de commande.

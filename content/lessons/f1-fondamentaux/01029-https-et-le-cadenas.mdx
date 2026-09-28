@@ -1,0 +1,172 @@
+---
+refCode: CL-LSN-01029-V01
+slug: fondamentaux-https-et-le-cadenas
+title: "HTTPS et le cadenas"
+description: "Ce que protège vraiment le S de HTTPS : les trois garanties de TLS, le chiffrement symétrique et asymétrique en une image, les certificats et les autorités qui les signent, la poignée de main, puis ce que le cadenas ne garantit pas, pourquoi un site d'hameçonnage peut l'afficher, et pourquoi on ne passe jamais outre un avertissement de certificat."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01028-V01"]
+---
+
+Tu as vu dans la leçon précédente que HTTP circule **en clair** : le fournisseur d'accès, l'exploitant du Wi-Fi du café, ou un attaquant branché sur le même réseau peuvent lire, et même modifier, tout ce qui passe. Aujourd'hui, presque tout le web passe pourtant par **HTTPS**, et le navigateur affiche un petit cadenas à côté de l'adresse. Que garantit ce cadenas, exactement ? Beaucoup plus qu'on ne le croit sur la connexion, et beaucoup moins qu'on ne le croit sur le site. Cette leçon explique le mécanisme, **TLS**, et apprend à lire le cadenas sans se laisser rassurer à tort.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- citer les trois garanties apportées par TLS ;
+- distinguer chiffrement symétrique et asymétrique, dans leurs grandes lignes ;
+- expliquer ce qu'est un certificat et le rôle d'une autorité de certification ;
+- décrire les étapes d'une connexion HTTPS ;
+- dire ce que le cadenas garantit et ce qu'il ne garantit pas ;
+- réagir correctement à un avertissement de certificat ;
+- vérifier à quel nom un certificat s'applique.
+
+## pourquoi ça compte
+
+HTTPS protège les mots de passe, les paiements, les messages et les données de santé de milliards de personnes. Pour un administrateur, installer et renouveler des certificats fait partie du métier, et un certificat expiré peut rendre un site entier inaccessible du jour au lendemain. Pour tout utilisateur, savoir ce que dit vraiment le cadenas est une protection contre l'hameçonnage : la très grande majorité des sites d'hameçonnage affichent aujourd'hui un cadenas parfaitement valide. Et en sécurité, les protocoles TLS, les certificats et leurs erreurs de configuration sont un domaine à part entière, que les parcours de cryptographie approfondiront.
+
+## les trois garanties de TLS
+
+**HTTPS**, c'est simplement HTTP transporté à l'intérieur d'une connexion **TLS** (*Transport Layer Security*, successeur de SSL, un nom qu'on entend encore). Les requêtes et les réponses sont exactement celles de la leçon précédente ; TLS les enveloppe et leur apporte trois garanties :
+
+- la **confidentialité** : tout est chiffré, personne sur le chemin ne peut lire le contenu ;
+- l'**intégrité** : personne ne peut modifier les données en route sans que ce soit détecté ;
+- l'**authentification du serveur** : le navigateur vérifie qu'il parle bien au serveur du domaine demandé, et pas à un imposteur placé au milieu.
+
+Les deux premières ne valent rien sans la troisième. Un chiffrement parfait avec un imposteur reste une conversation avec l'imposteur. C'est pour cette troisième garantie qu'existent les certificats.
+
+## deux sortes de chiffrement
+
+Le **chiffrement symétrique** utilise une seule clé, qui sert à chiffrer et à déchiffrer. Il est très rapide, et c'est lui qui chiffre les données d'une connexion HTTPS, avec des algorithmes comme AES. Son problème : les deux parties doivent partager la même clé secrète, alors qu'elles ne se sont jamais rencontrées, et que tout ce qu'elles s'envoient passe sur un réseau qu'on sait espionné.
+
+Le **chiffrement asymétrique** résout ce problème avec une **paire de clés** liées mathématiquement : une **clé publique**, que l'on distribue à tout le monde, et une **clé privée**, que l'on garde pour soi. Ce qu'une clé fait, seule l'autre peut le défaire. On s'en sert de deux façons :
+
+- pour **se mettre d'accord sur un secret** sans jamais l'envoyer sur le réseau ;
+- pour **signer** : ce qu'on signe avec sa clé privée, chacun peut le vérifier avec la clé publique, et personne d'autre n'a pu le signer.
+
+Une connexion HTTPS combine les deux : l'asymétrique pour s'authentifier et établir une clé commune, puis le symétrique, rapide, pour tout le reste de la conversation. Tu verras les mathématiques de tout cela dans le parcours de cryptographie ; pour l'instant, retiens les rôles.
+
+## le certificat
+
+Le serveur possède une paire de clés. Mais quand il présente sa clé publique, comment savoir qu'elle appartient bien à `boutique.example`, et pas à un attaquant qui prétend l'être ? C'est le rôle du **certificat** : un document électronique qui dit, en substance, « cette clé publique appartient au domaine `boutique.example` », valable pour une période donnée, et **signé** par un tiers de confiance, une **autorité de certification** (AC, ou CA en anglais).
+
+Un certificat contient notamment :
+
+- le ou les **noms** de domaine qu'il couvre, dont éventuellement un nom générique comme `*.boutique.example`, qui couvre les sous-domaines d'un niveau ;
+- la **clé publique** du serveur ;
+- les dates de **début et de fin de validité**, aujourd'hui de quelques mois au plus ;
+- l'**émetteur**, l'autorité qui l'a signé, et sa **signature**.
+
+Avant de signer, l'autorité vérifie que le demandeur contrôle bien le domaine, par exemple en lui demandant de publier une valeur précise sur son site ou dans son DNS. Depuis 2015, l'autorité à but non lucratif **Let's Encrypt** délivre ces certificats gratuitement et automatiquement, ce qui a fait passer le web à HTTPS en quelques années.
+
+## la chaîne de confiance
+
+Pourquoi le navigateur ferait-il confiance à l'autorité ? Parce que chaque système d'exploitation et chaque navigateur embarque une liste d'**autorités racines** de confiance, sélectionnées et contrôlées. Le plus souvent, une racine signe une **autorité intermédiaire**, qui signe à son tour le certificat du site. Le navigateur remonte cette **chaîne** jusqu'à une racine qu'il connaît.
+
+<Diagram caption="La chaîne de confiance d'un certificat">
+flowchart TD
+  A["Autorité racine, déjà dans le navigateur et le système"] -->|"signe"| B["Autorité intermédiaire"]
+  B -->|"signe"| C["Certificat de boutique.example"]
+  C -->|"contient"| D["Clé publique du serveur"]
+  E["Navigateur"] -->|"vérifie chaque signature, les dates et le nom"| C
+</Diagram>
+
+Le navigateur vérifie trois choses : chaque **signature** de la chaîne est valide jusqu'à une racine de confiance ; les **dates** de validité sont respectées ; le **nom** demandé figure dans le certificat. Si une seule vérification échoue, il affiche un avertissement en pleine page.
+
+## la connexion, étape par étape
+
+Avant le moindre échange HTTP, client et serveur procèdent à une **poignée de main** TLS, qui ne prend qu'un aller-retour avec TLS 1.3, la version actuelle :
+
+1. le navigateur annonce les versions et algorithmes qu'il connaît, et le **nom** du site qu'il veut joindre ;
+2. le serveur choisit, et envoie son **certificat** ;
+3. les deux parties établissent une **clé de session** commune, grâce au chiffrement asymétrique, sans qu'elle circule sur le réseau ;
+4. le navigateur vérifie le certificat : chaîne, dates, nom ;
+5. tout le reste, requêtes et réponses HTTP, est chiffré avec la clé de session.
+
+Une propriété précieuse de TLS 1.3 : même si la clé privée du serveur était volée un jour, les conversations passées enregistrées par un espion resteraient indéchiffrables, car chaque session a sa propre clé éphémère.
+
+## ce que le cadenas garantit, et ce qu'il ne garantit pas
+
+Le cadenas garantit que la connexion est **chiffrée** et que le serveur au bout possède un certificat valide **pour le nom affiché dans la barre d'adresse**. C'est tout, et c'est beaucoup.
+
+Il ne garantit **pas** :
+
+- que le site est **honnête** : un escroc qui enregistre `boutique-remboursement.example` obtient un certificat valide en quelques minutes pour son propre domaine. Le cadenas affiché par un site d'hameçonnage est parfaitement légitime : il prouve seulement que tu parles au serveur de l'escroc ;
+- que le site est **sécurisé** : ses serveurs peuvent être mal protégés, ses données mal stockées ;
+- que ta **machine** est saine : un logiciel malveillant sur ton ordinateur voit tout avant le chiffrement ;
+- que tout est **caché** : le nom du site demandé, les adresses IP, les horaires et la taille des échanges restent visibles des intermédiaires, comme les requêtes DNS de la leçon sur le DNS si elles ne sont pas chiffrées.
+
+La bonne lecture est donc : le cadenas dit **à qui** tu parles, de façon fiable ; à toi de vérifier que ce **qui**, le domaine, est bien celui que tu voulais, en le lisant de droite à gauche. Les navigateurs récents ont d'ailleurs discrètement retiré ou atténué le cadenas, justement parce que trop de gens y lisaient « site de confiance ».
+
+## les avertissements de certificat
+
+Quand la vérification échoue, le navigateur affiche une page d'alerte : certificat expiré, émis pour un autre nom, signé par une autorité inconnue. Deux situations très différentes peuvent en être la cause : une **erreur de configuration** du site, fréquente, ou une **attaque** en cours, où quelqu'un s'est placé entre toi et le site avec un faux certificat, par exemple sur un Wi-Fi piégé.
+
+Depuis ton poste, tu ne peux pas faire la différence. La règle est donc simple : **on ne passe pas outre** un avertissement de certificat pour un site où l'on saisit quoi que ce soit, surtout sur un réseau public. On quitte la page, on vérifie l'adresse, on réessaie plus tard ou sur un autre réseau.
+
+Les sites peuvent aider : l'en-tête **HSTS** (*Strict-Transport-Security*), que tu as croisé dans la leçon précédente, demande au navigateur de n'utiliser que HTTPS pour ce domaine pendant une durée donnée, et de **refuser** de passer outre une erreur de certificat. Enfin, en entreprise, certains pare-feu déchiffrent et rechiffrent le trafic pour l'inspecter, avec une autorité interne installée sur les postes : c'est une pratique légitime mais encadrée, qui doit être connue des salariés.
+
+## à toi de jouer : lire un certificat
+
+`curl -v` affiche les détails de la poignée de main et du certificat. Examine celui de `boutique.example`, puis tente une connexion à `ancien.boutique.example`, un nom que ce certificat ne couvre pas.
+
+<SimulatedTerminal shell="bash" title="Ce que dit un certificat" expectedCommands={["curl -vI https://boutique.example/", "curl -I https://ancien.boutique.example/"]} hints={["curl -vI affiche la poignée de main TLS et le certificat, puis les en-têtes de la réponse.", "Essaie le même type de requête sur ancien.boutique.example."]} commands={{ "curl -vI https://boutique.example/": "*   Trying 203.0.113.80:443...\n* Connected to boutique.example (203.0.113.80) port 443\n* ALPN: curl offers h2,http/1.1\n* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / x25519 / id-ecPublicKey\n* ALPN: server accepted h2\n* Server certificate:\n*  subject: CN=boutique.example\n*  start date: Sep  1 08:14:02 2026 GMT\n*  expire date: Nov 30 08:14:01 2026 GMT\n*  subjectAltName: host \"boutique.example\" matched cert's \"boutique.example\"\n*  issuer: C=US; O=Let's Encrypt; CN=E7\n*  SSL certificate verify ok.\n> HEAD / HTTP/2\n> Host: boutique.example\n>\n< HTTP/2 200\n< content-type: text/html; charset=utf-8\n< strict-transport-security: max-age=31536000", "curl -I https://ancien.boutique.example/": "curl: (60) SSL: no alternative certificate subject name matches target host name 'ancien.boutique.example'\nMore details here: https://curl.se/docs/sslcerts.html", "curl -I https://expire.boutique.example/": "curl: (60) SSL certificate problem: certificate has expired\nMore details here: https://curl.se/docs/sslcerts.html", "curl -I http://boutique.example/": "HTTP/1.1 301 Moved Permanently\nServer: nginx\nLocation: https://boutique.example/" }} />
+
+Dans le premier résultat, retrouve chaque élément de la leçon : la version TLS 1.3 et l'algorithme symétrique AES, le **sujet** du certificat (`boutique.example`), ses **dates** (trois mois de validité), la vérification du **nom** (`matched`), l'**émetteur** (une autorité intermédiaire de Let's Encrypt), puis `verify ok`. Seulement ensuite vient la requête HTTP, déjà chiffrée. Le second résultat est un refus : le certificat présenté ne couvre pas le nom demandé, et `curl`, comme un navigateur, refuse de continuer. Essaie aussi `expire.boutique.example`.
+
+## exercice noté : le nom couvre-t-il l'hôte ?
+
+Écris `solution(nom_certificat, hote)` qui renvoie `True` si un nom inscrit dans un certificat couvre le nom d'hôte demandé, `False` sinon. Les règles sont celles des navigateurs :
+
+- sans joker, les deux noms doivent être **identiques**, sans tenir compte des majuscules ;
+- un joker `*.` ne couvre qu'**un seul niveau** : `*.boutique.example` couvre `www.boutique.example`, mais ni `boutique.example` lui-même, ni `a.b.boutique.example`.
+
+<PythonChallenge id="f1-tls-1" title="Un certificat pour quel nom ?" description="Renvoie True si le nom du certificat couvre l'hôte demandé, en respectant la règle du joker sur un seul niveau." starterCode="def solution(nom_certificat, hote):
+    nom = nom_certificat.lower()
+    hote = hote.lower()
+    if nom.startswith('*.'):
+        pass  # un seul niveau à gauche, le reste identique
+    return nom == hote" tests={[{ input: "solution('boutique.example', 'boutique.example')", expected: "True" }, { input: "solution('BOUTIQUE.example', 'boutique.EXAMPLE')", expected: "True" }, { input: "solution('*.boutique.example', 'www.boutique.example')", expected: "True" }, { input: "solution('*.boutique.example', 'boutique.example')", expected: "False" }, { input: "solution('*.boutique.example', 'a.b.boutique.example')", expected: "False" }, { input: "solution('*.boutique.example', 'www.boutique.example.pirate.example')", expected: "False" }, { input: "solution('boutique.example', 'www.boutique.example')", expected: "False" }]} />
+
+Le sixième test est une tentative de tromperie classique : un nom qui **contient** `boutique.example`, mais appartient en réalité à `pirate.example`. Comparer la fin exacte du nom, niveau par niveau, déjoue ce piège, là où une simple recherche de texte s'y laisserait prendre.
+
+## les pièges
+
+- **Lire le cadenas comme un label de confiance.** Il dit à qui tu parles, pas si ce quelqu'un est honnête.
+- **Passer outre un avertissement de certificat.** Depuis ton poste, une erreur de configuration et une attaque se ressemblent.
+- **Saisir des données sur un site en `http://`.** Tout circule en clair.
+- **Croire que HTTPS cache tout.** Le nom du site, les adresses et les volumes restent visibles.
+- **Laisser expirer ses certificats.** Un certificat expiré coupe le site aussi sûrement qu'une panne : on automatise le renouvellement.
+- **Vérifier un nom par simple inclusion de texte.** `boutique.example.pirate.example` contient le bon texte et le mauvais domaine.
+
+## pour aller plus loin
+
+<ExternalLink href="https://letsencrypt.org/fr/how-it-works/" description="Comment Let's Encrypt vérifie un domaine et délivre un certificat">Let's Encrypt : comment ça marche</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/hameconnage-phishing" description="Reconnaître et réagir face à l'hameçonnage">Cybermalveillance.gouv.fr : l'hameçonnage</ExternalLink>
+
+<ExternalLink href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security" description="L'en-tête HSTS et ce qu'il impose au navigateur, en anglais">MDN : Strict-Transport-Security</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelles sont les trois garanties apportées par TLS ?" options={["Rapidité, gratuité, anonymat", "Confidentialité, intégrité, authentification du serveur", "Sauvegarde, compression, cache", "Honnêteté du site, absence de virus, anonymat"]} correct={1} explanation="Le contenu est chiffré, ne peut être modifié sans détection, et le serveur prouve qu'il est bien celui du domaine demandé." />
+  <Quiz id="q-2" question="Pourquoi HTTPS combine-t-il chiffrement asymétrique et symétrique ?" options={["L'asymétrique sert à s'authentifier et à établir une clé commune, le symétrique, plus rapide, chiffre ensuite les données", "Par tradition", "Le symétrique est plus sûr mais interdit", "Pour doubler la taille des messages"]} correct={0} explanation="L'asymétrique résout le partage de la clé ; le symétrique chiffre efficacement tout le reste." />
+  <Quiz id="q-3" question="Que certifie une autorité de certification en signant un certificat ?" options={["Que le site est honnête", "Que le site n'a pas de faille", "Que le site est une entreprise française", "Que la clé publique appartient bien au domaine indiqué, dont le demandeur a prouvé le contrôle"]} correct={3} explanation="L'autorité vérifie le contrôle du domaine, pas la probité de son propriétaire." />
+  <Quiz id="q-4" question="Un courriel mène à un site avec un cadenas valide à l'adresse remboursement-impots.example. Que faut-il en penser ?" options={["C'est sûr, il y a le cadenas", "Le cadenas est forcément faux", "Il faut désactiver HTTPS pour vérifier", "Le cadenas prouve seulement qu'on parle au serveur de ce domaine, qui n'est pas celui des impôts"]} correct={3} explanation="Les sites d'hameçonnage obtiennent des certificats valides pour leurs propres domaines : c'est le domaine qu'il faut vérifier." />
+  <Quiz id="q-5" question="Sur le Wi-Fi d'une gare, ta banque affiche un avertissement de certificat. Que fais-tu ?" options={["Tu cliques sur « Continuer quand même »", "Tu quittes la page et réessaies plus tard, sur un autre réseau", "Tu désactives l'antivirus", "Tu redémarres le téléphone et continues"]} correct={1} explanation="Un avertissement peut signaler une attaque de l'homme du milieu ; on ne passe jamais outre sur un site sensible." />
+  <Quiz id="q-6" question="Le certificat *.boutique.example couvre-t-il boutique.example ?" options={["Oui", "Non, le joker couvre exactement un niveau de sous-domaine", "Oui, mais seulement en HTTP", "Seulement le dimanche"]} correct={1} explanation="Le joker remplace un seul niveau à gauche : il couvre www.boutique.example, pas le domaine nu." />
+  <Quiz id="q-7" question="Que peut encore voir un intermédiaire sur une connexion HTTPS ?" options={["Les mots de passe", "Le contenu des pages", "Rien du tout", "Le nom du site, les adresses IP et le volume des échanges"]} correct={3} explanation="Le contenu est chiffré, mais les métadonnées de la connexion restent visibles." />
+</QuizGroup>
+
+## à retenir
+
+- **HTTPS** = HTTP dans **TLS** : **confidentialité**, **intégrité**, **authentification du serveur**.
+- **Asymétrique** (clé publique, clé privée) pour s'authentifier et s'accorder sur une clé ; **symétrique** (AES) pour chiffrer les données.
+- Un **certificat** lie une clé publique à un **nom de domaine**, pour une durée limitée, signé par une **autorité**. Le navigateur vérifie la **chaîne**, les **dates** et le **nom**.
+- Le **cadenas** dit **à qui** tu parles, pas si ce site est honnête : les sites d'hameçonnage ont des cadenas valides.
+- On ne passe **jamais outre** un avertissement de certificat sur un site sensible. **HSTS** l'interdit même au navigateur.
+- Le joker `*.` couvre **un seul niveau** ; un nom se vérifie niveau par niveau, jamais par inclusion de texte.
