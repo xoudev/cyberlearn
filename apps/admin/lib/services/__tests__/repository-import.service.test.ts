@@ -8,6 +8,8 @@ import type * as LessonImport from "../lesson-import.service";
 const m = vi.hoisted(() => ({
   lessonFindMany: vi.fn(),
   pathFindMany: vi.fn(),
+  lessonUpdateMany: vi.fn(),
+  pathUpdateMany: vi.fn(),
   auditCreate: vi.fn(),
   validateMdxContent: vi.fn(),
   importValidatedLesson: vi.fn(),
@@ -16,9 +18,10 @@ const m = vi.hoisted(() => ({
 
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
-    lesson: { findMany: m.lessonFindMany },
-    path: { findMany: m.pathFindMany },
+    lesson: { findMany: m.lessonFindMany, updateMany: m.lessonUpdateMany },
+    path: { findMany: m.pathFindMany, updateMany: m.pathUpdateMany },
     auditLog: { create: m.auditCreate },
+    $transaction: (operations: Promise<unknown>[]) => Promise.all(operations),
   },
 }));
 
@@ -33,9 +36,13 @@ vi.mock("../lesson-import.service", async (importOriginal) => ({
   importValidatedLesson: m.importValidatedLesson,
 }));
 
-const { importLessonFromRepository, pathSyncOverview, syncPathFromRepository } = await import(
-  "../repository-import.service"
-);
+const {
+  catalogueDrafts,
+  importLessonFromRepository,
+  pathSyncOverview,
+  publishCatalogueDrafts,
+  syncPathFromRepository,
+} = await import("../repository-import.service");
 
 let root: string;
 
@@ -342,5 +349,76 @@ describe("syncPathFromRepository", () => {
     expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
       data: { actorId: "admin-1", action: "path.sync", targetType: "path", targetId: "path-1" },
     });
+  });
+});
+
+describe("catalogue publication", () => {
+  it("looks for drafts among what the manifests list, and nothing else", async () => {
+    write("paths/reseaux.json", manifest());
+    m.lessonFindMany.mockResolvedValue([
+      { id: "l-1", refCode: "CL-LSN-03001-V01", title: "Un réseau" },
+    ]);
+    m.pathFindMany.mockResolvedValue([{ id: "p-1", refCode: "CL-PATH-103-V01", title: "Réseaux" }]);
+
+    const drafts = await catalogueDrafts(path.join(root, "paths"));
+
+    expect(drafts.lessons.map((l) => l.refCode)).toEqual(["CL-LSN-03001-V01"]);
+    expect(m.lessonFindMany.mock.calls[0]?.[0]).toMatchObject({
+      where: {
+        refCode: { in: ["CL-LSN-03001-V01", "CL-LSN-03002-V01", "CL-LSN-03003-V01"] },
+        status: "DRAFT",
+      },
+    });
+    expect(m.pathFindMany.mock.calls[0]?.[0]).toMatchObject({
+      where: { refCode: { in: ["CL-PATH-103-V01"] }, status: "DRAFT" },
+    });
+  });
+
+  it("finds no draft to publish while a manifest fails its check", async () => {
+    write("paths/reseaux.json", manifest({ slug: "autre" }));
+    expect(await catalogueDrafts(path.join(root, "paths"))).toEqual({ lessons: [], paths: [] });
+    expect(m.lessonFindMany).not.toHaveBeenCalled();
+  });
+
+  it("publishes the drafts it found, only while they are still drafts, and records it", async () => {
+    write("paths/reseaux.json", manifest());
+    m.lessonFindMany.mockResolvedValue([
+      { id: "l-1", refCode: "CL-LSN-03001-V01", title: "Un réseau" },
+    ]);
+    m.pathFindMany.mockResolvedValue([{ id: "p-1", refCode: "CL-PATH-103-V01", title: "Réseaux" }]);
+    m.lessonUpdateMany.mockResolvedValue({ count: 1 });
+    m.pathUpdateMany.mockResolvedValue({ count: 1 });
+
+    expect(await publishCatalogueDrafts("admin-1", path.join(root, "paths"))).toEqual({
+      lessons: 1,
+      paths: 1,
+    });
+    expect(m.lessonUpdateMany.mock.calls[0]?.[0]).toMatchObject({
+      where: { id: { in: ["l-1"] }, status: "DRAFT" },
+      data: { status: "PUBLISHED" },
+    });
+    expect(m.pathUpdateMany.mock.calls[0]?.[0]).toMatchObject({
+      where: { id: { in: ["p-1"] }, status: "DRAFT" },
+      data: { status: "PUBLISHED" },
+    });
+    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
+      data: {
+        actorId: "admin-1",
+        action: "catalogue.publish",
+        metadata: { lessons: ["CL-LSN-03001-V01"], paths: ["CL-PATH-103-V01"] },
+      },
+    });
+  });
+
+  it("writes nothing when there is nothing to publish", async () => {
+    write("paths/reseaux.json", manifest());
+    m.lessonFindMany.mockResolvedValue([]);
+    m.pathFindMany.mockResolvedValue([]);
+    expect(await publishCatalogueDrafts("admin-1", path.join(root, "paths"))).toEqual({
+      lessons: 0,
+      paths: 0,
+    });
+    expect(m.lessonUpdateMany).not.toHaveBeenCalled();
+    expect(m.auditCreate).not.toHaveBeenCalled();
   });
 });

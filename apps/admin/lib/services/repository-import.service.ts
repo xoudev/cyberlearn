@@ -333,3 +333,87 @@ export async function syncPathFromRepository(
     missing: result.missing.length,
   };
 }
+
+// ── Publication ──────────────────────────────────────────────────────────────
+
+export interface CatalogueDraft {
+  id: string;
+  refCode: string;
+  title: string;
+}
+
+export interface CatalogueDrafts {
+  lessons: CatalogueDraft[];
+  paths: CatalogueDraft[];
+}
+
+/**
+ * The catalogue's lessons and paths still in DRAFT: those a content/paths
+ * manifest lists, and nothing else. The first catalogue, and anything a
+ * teacher or an admin left in draft on purpose outside the manifests, is
+ * never part of it; an ARCHIVED row is not a draft and stays archived.
+ */
+export async function catalogueDrafts(dir = findPathManifestDir()): Promise<CatalogueDrafts> {
+  if (dir === null) return { lessons: [], paths: [] };
+  const { manifests, errors } = loadPathManifests(dir);
+  if (errors.length > 0) return { lessons: [], paths: [] };
+  const lessonRefCodes = manifests.flatMap(({ manifest }) =>
+    manifestLessons(manifest).map((l) => l.refCode),
+  );
+  const pathRefCodes = manifests.map(({ manifest }) => manifest.refCode);
+  const select = { id: true, refCode: true, title: true } as const;
+  const [lessons, paths] = await Promise.all([
+    prisma.lesson.findMany({
+      where: { refCode: { in: lessonRefCodes }, status: "DRAFT" },
+      orderBy: { refCode: "asc" },
+      select,
+    }),
+    prisma.path.findMany({
+      where: { refCode: { in: pathRefCodes }, status: "DRAFT" },
+      orderBy: { refCode: "asc" },
+      select,
+    }),
+  ]);
+  return { lessons, paths };
+}
+
+/**
+ * Publishes every draft catalogueDrafts finds, lessons and paths together.
+ *
+ * The list is read again here, on the server, rather than taken from the
+ * page: what gets published is what the manifests list at this moment. The
+ * status filter sits in the update itself, so a row archived since the page
+ * was drawn is not published by it.
+ */
+export async function publishCatalogueDrafts(
+  actorId: string,
+  dir = findPathManifestDir(),
+): Promise<{ lessons: number; paths: number }> {
+  const drafts = await catalogueDrafts(dir);
+  if (drafts.lessons.length === 0 && drafts.paths.length === 0) return { lessons: 0, paths: 0 };
+
+  const publishedAt = new Date();
+  const [lessons, paths] = await prisma.$transaction([
+    prisma.lesson.updateMany({
+      where: { id: { in: drafts.lessons.map((l) => l.id) }, status: "DRAFT" },
+      data: { status: "PUBLISHED", publishedAt },
+    }),
+    prisma.path.updateMany({
+      where: { id: { in: drafts.paths.map((p) => p.id) }, status: "DRAFT" },
+      data: { status: "PUBLISHED", publishedAt },
+    }),
+    prisma.auditLog.create({
+      data: {
+        actorId,
+        action: "catalogue.publish",
+        targetType: "catalogue",
+        targetId: null,
+        metadata: {
+          lessons: drafts.lessons.map((l) => l.refCode),
+          paths: drafts.paths.map((p) => p.refCode),
+        },
+      },
+    }),
+  ]);
+  return { lessons: lessons.count, paths: paths.count };
+}

@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   importLessonFromRepositoryAction,
+  publishCatalogueFromRepositoryAction,
   syncPathFromRepositoryAction,
   updateLessonFromRepositoryAction,
   type SyncActionResult,
@@ -230,6 +231,79 @@ export function RunAllButton({
         </div>
       ) : null}
       <Failures failures={failures} />
+    </div>
+  );
+}
+
+/** Publishes the catalogue's drafts in one request: a status change, nothing heavier. */
+export function PublishCatalogueButton({
+  lessons,
+  paths,
+}: {
+  lessons: number;
+  paths: number;
+}): React.ReactElement {
+  const router = useRouter();
+  const [step, setStep] = useState<"idle" | "confirm" | "running" | "done" | "failed">("idle");
+  const [result, setResult] = useState<{ lessons: number; paths: number } | null>(null);
+
+  const start = async (): Promise<void> => {
+    setStep("running");
+    try {
+      setResult(await publishCatalogueFromRepositoryAction());
+      setStep("done");
+      router.refresh();
+    } catch {
+      setStep("failed");
+    }
+  };
+
+  return (
+    <div className="a-sync-all">
+      {step === "idle" || step === "failed" ? (
+        <button
+          type="button"
+          className="a-btn a-btn--primary"
+          onClick={() => {
+            setStep("confirm");
+          }}
+        >
+          Publier le catalogue du dépôt
+        </button>
+      ) : null}
+      {step === "confirm" ? (
+        <div className="a-sync-confirm">
+          <p>
+            {lessons} leçon{lessons > 1 ? "s" : ""} et {paths} parcours passeront en publié et
+            seront visibles sur le site et dans l&apos;app.
+          </p>
+          <div className="a-head-actions">
+            <button type="button" className="a-btn a-btn--primary" onClick={() => void start()}>
+              Confirmer
+            </button>
+            <button
+              type="button"
+              className="a-btn a-btn--ghost"
+              onClick={() => {
+                setStep("idle");
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {step === "running" ? <p aria-live="polite">Publication…</p> : null}
+      {step === "done" && result ? (
+        <p aria-live="polite">
+          Publié : {result.lessons} leçon{result.lessons > 1 ? "s" : ""} et {result.paths} parcours.
+        </p>
+      ) : null}
+      {step === "failed" ? (
+        <ul className="a-sync-failures" role="alert">
+          <li>La publication a échoué. Réessaie.</li>
+        </ul>
+      ) : null}
     </div>
   );
 }
