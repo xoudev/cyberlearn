@@ -47,6 +47,15 @@ check_file "${PYODIDE}/python_stdlib.zip"   "6030964967e447c887abc46c5f0967c5568
 JSCPP="${RUNTIMES}/jscpp"
 check_file "${JSCPP}/bundle.js"             "326e3d3c6aef358db734f8d8a1b053e13054d339ca694663d637a603b16d6d07" "jscpp/bundle.js"
 
+# ── v86 0.5.462 + Buildroot Linux (the real terminal of the Linux lessons) ────
+# Update with download-runtimes.sh (V86_VERSION, V86_BIOS_COMMIT, image)
+V86="${RUNTIMES}/v86"
+check_file "${V86}/libv86.js"                "8715206b8c5ab0a206f6e8913c5f705a15547df51d3e0c032e3d00439303c94c" "v86/libv86.js"
+check_file "${V86}/v86.wasm"                 "aa0d0e149d6b60063b85de4871e78505637ce92821e14a9f9802c4008ba2336e" "v86/v86.wasm"
+check_file "${V86}/seabios.bin"              "73e3f359102e3a9982c35fce98eb7cd08f18303ac7f1ba6ebfbe6cdc1c244d98" "v86/seabios.bin"
+check_file "${V86}/vgabios.bin"              "a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880" "v86/vgabios.bin"
+check_file "${V86}/buildroot-bzimage68.bin"  "507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c" "v86/buildroot-bzimage68.bin"
+
 # ─────────────────────────────────────────────────────────────────────────────
 if [[ $FAILED -ne 0 ]]; then
   echo ""

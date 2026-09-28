@@ -101,7 +101,7 @@ describe.skipIf(LESSONS.length === 0)("the new catalogue's lesson standard", () 
       if (!body.includes("\n## projet")) problems.push("section manquante : ## projet");
     } else {
       if (words(body) < MIN_WORDS) problems.push(`moins de ${String(MIN_WORDS)} mots`);
-      if (!/<(SimulatedTerminal|CodePlayground|PythonChallenge)\s/.test(body)) {
+      if (!/<(SimulatedTerminal|LinuxTerminal|CodePlayground|PythonChallenge)\s/.test(body)) {
         problems.push("aucun exercice exécutable");
       }
       for (const heading of ["## pourquoi ça compte", "## les pièges", "## pour aller plus loin"]) {

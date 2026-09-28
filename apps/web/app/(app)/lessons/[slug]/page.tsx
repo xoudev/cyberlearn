@@ -26,6 +26,7 @@ import { SectionPane } from "./_components/section-pane";
 import { Quiz } from "./_components/quiz";
 import { CodePlayground } from "./_components/code-playground";
 import { SimulatedTerminal } from "./_components/simulated-terminal";
+import { LinuxTerminal } from "./_components/linux-terminal";
 import { LessonVideo } from "./_components/lesson-video";
 import { LessonImage } from "./_components/lesson-image";
 import { ExternalLink } from "./_components/external-link";
@@ -46,6 +47,7 @@ const MDX_COMPONENTS = {
   Quiz,
   CodePlayground,
   SimulatedTerminal,
+  LinuxTerminal,
   LessonVideo,
   LessonImage,
   ExternalLink,

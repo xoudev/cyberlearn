@@ -197,6 +197,10 @@ function preprocess(mdx: string): { text: string; store: Map<string, Block> } {
     });
   text = text.replace(/<SimulatedTerminal[\s\S]*?\/>/g, terminalToBlock);
   text = text.replace(/<SimulatedTerminal[\s\S]*?<\/SimulatedTerminal>/g, terminalToBlock);
+  // LinuxTerminal boots a real Linux in the browser: on the site only (see
+  // docs/MOBILE_PARITY.md). Here it reads as the same card, the commands and
+  // hints the lesson asks for, so the lesson still says what to practise.
+  text = text.replace(/<LinuxTerminal[\s\S]*?\/>/g, terminalToBlock);
   // Remaining web-only components (Diagram, media) → labelled placeholder.
   for (const name of ["Diagram", "LessonVideo", "LessonImage"]) {
     const paired = new RegExp(`<${name}[\\s\\S]*?<\\/${name}>`, "g");

@@ -80,4 +80,21 @@ const safe = true;
       { kind: "placeholder", label: "Diagramme" },
     ]);
   });
+
+  it("reads a real Linux terminal as the card of what to type", () => {
+    const lesson = parseLesson(`
+## Pratiquer
+
+<LinuxTerminal title="Tes premiers droits" files={{ "notes.txt": "a" }} expectedCommands={["ls -l", "chmod 600 notes.txt"]} hints={["ls -l montre les droits."]} />
+`);
+
+    expect(lesson.sections[0]?.blocks).toEqual([
+      {
+        kind: "terminal",
+        title: "Tes premiers droits",
+        commands: ["ls -l", "chmod 600 notes.txt"],
+        hints: ["ls -l montre les droits."],
+      },
+    ]);
+  });
 });

@@ -82,6 +82,7 @@ export const LESSON_COMPONENT_NAMES = [
   "QuizGroup",
   "CodePlayground",
   "SimulatedTerminal",
+  "LinuxTerminal",
   "LessonVideo",
   "LessonImage",
   "ExternalLink",
