@@ -548,6 +548,46 @@ Les commandes du `scenario` + les commandes `commands` sont fusionnées - `comma
 
 ---
 
+### 5.4b LinuxTerminal - Un vrai Linux dans la leçon
+
+Un vrai système Linux (noyau 6.8, BusyBox, shell root) qui démarre dans le
+navigateur de l'élève grâce à l'émulateur v86. Contrairement à
+`SimulatedTerminal`, **toutes les commandes marchent** et font ce qu'elles font
+sur une vraie machine, qui vit dans l'onglet et disparaît avec lui. Rien ne
+tourne sur nos serveurs.
+
+```mdx
+<LinuxTerminal
+  title="Tes premiers droits"
+  files={{ "notes.txt": "Réunion lundi 9 h\n", "projet/lisezmoi.txt": "Bonjour\n" }}
+  expectedCommands={["ls -l", "chmod 600 notes.txt"]}
+  hints={["ls -l affiche les droits.", "chmod 600 : lecture et écriture pour le propriétaire seul."]}
+/>
+```
+
+| Prop | Rôle |
+| --- | --- |
+| `title` | Titre de la barre du terminal (défaut : `Linux · root@cyberlearn`) |
+| `files` | Fichiers déposés avant que l'élève prenne la main : chemin relatif → contenu texte. Ils apparaissent dans `/mnt`, le dossier où le shell démarre. Noms simples séparés par `/`, sans `..` ni point initial ; au plus 40 fichiers de 64 Ko |
+| `expectedCommands` | Commandes demandées, cochées quand l'élève les tape (espaces normalisés). Une commande rappelée avec les flèches ne compte pas : il faut la retaper |
+| `hints` | Indices affichés sous le terminal |
+| `height` | Hauteur en pixels, de 200 à 900 (défaut 380) |
+
+À savoir en écrivant :
+
+- La machine ne démarre qu'au clic sur **Démarrer la machine** : le premier
+  démarrage télécharge environ 12 Mo, gardés ensuite par le navigateur.
+  Quelques secondes de démarrage.
+- L'élève est **root** et il n'y a **pas de réseau**. Les commandes sont celles
+  de BusyBox (`ls`, `chmod`, `chown`, `adduser`, `su`, `grep`, `sed`, `awk`,
+  `find`, `tar`, `ps`, `top`, `vi`…) : pas de `apt`, pas de `systemd`, pas de
+  `sudo`. Pour ces sujets, `SimulatedTerminal` reste le bon outil.
+- Le composant ne bloque pas la suite de la leçon, comme `SimulatedTerminal`.
+- Sur l'app mobile, il devient la fiche des commandes et des indices : la
+  machine elle-même est réservée au site (voir `docs/MOBILE_PARITY.md`).
+
+---
+
 ### 5.5 LessonVideo - Vidéo pédagogique
 
 Intègre une vidéo hébergée sur Supabase Storage (ou toute URL `.mp4`/`.webm`).

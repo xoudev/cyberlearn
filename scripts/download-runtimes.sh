@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
-# download-runtimes.sh - Download and verify Pyodide runtime files
+# download-runtimes.sh - Download and verify the bundled runtime files
 #
-# Run this script whenever you upgrade Pyodide or need to (re)populate
-# apps/web/public/runtimes/pyodide/ from scratch.
+# Run this script whenever you upgrade Pyodide or v86, or need to (re)populate
+# apps/web/public/runtimes/pyodide/ and apps/web/public/runtimes/v86/ from
+# scratch.
 #
 # After downloading, re-run verify-runtimes.sh to confirm integrity.
 # Update RUNTIMES_VERSIONS.md and the hashes in verify-runtimes.sh if you
@@ -65,3 +66,52 @@ fi
 
 echo ""
 echo "All files verified. Pyodide ${PYODIDE_VERSION} ready in ${DEST} (5 files)"
+
+# ── v86 + Buildroot Linux ────────────────────────────────────────────────────
+# The emulator comes from its npm tarball, the BIOS from the v86 repository at
+# a pinned commit (never master), the Linux image from the project's image
+# host. Every file is checked against its hash before anything is kept.
+V86_VERSION="0.5.462"
+V86_TARBALL_SHA="1384ad8bbe80aa4f6cd43f43bd16ddbd7495931df833f038a27fcdc8b9a31351"
+V86_BIOS_COMMIT="b8a39b11dd2076870699e6cac053556271b9bfab"
+V86_IMAGE="buildroot-bzimage68.bin"
+V86_DEST="$(dirname "$0")/../apps/web/public/runtimes/v86"
+
+declare -A V86_HASHES=(
+  [libv86.js]="8715206b8c5ab0a206f6e8913c5f705a15547df51d3e0c032e3d00439303c94c"
+  [v86.wasm]="aa0d0e149d6b60063b85de4871e78505637ce92821e14a9f9802c4008ba2336e"
+  [seabios.bin]="73e3f359102e3a9982c35fce98eb7cd08f18303ac7f1ba6ebfbe6cdc1c244d98"
+  [vgabios.bin]="a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880"
+  [${V86_IMAGE}]="507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c"
+)
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+mkdir -p "$V86_DEST"
+
+echo ""
+echo "=== Downloading v86 ${V86_VERSION} and ${V86_IMAGE} ==="
+curl -fsSL "https://registry.npmjs.org/v86/-/v86-${V86_VERSION}.tgz" -o "${WORK}/v86.tgz"
+if [[ "$(sha256sum "${WORK}/v86.tgz" | cut -d' ' -f1)" != "$V86_TARBALL_SHA" ]]; then
+  echo "INTEGRITY CHECK FAILED - v86 tarball"
+  exit 1
+fi
+tar -xzf "${WORK}/v86.tgz" -C "$WORK"
+cp "${WORK}/package/build/libv86.js" "${WORK}/package/build/v86.wasm" "$V86_DEST/"
+cp "${WORK}/package/LICENSE" "${V86_DEST}/LICENSE-v86.txt"
+for bios in seabios.bin vgabios.bin; do
+  curl -fsSL "https://raw.githubusercontent.com/copy/v86/${V86_BIOS_COMMIT}/bios/${bios}" -o "${V86_DEST}/${bios}"
+done
+curl -fsSL "https://i.copy.sh/${V86_IMAGE}" -o "${V86_DEST}/${V86_IMAGE}"
+
+for file in "${!V86_HASHES[@]}"; do
+  actual=$(sha256sum "${V86_DEST}/${file}" | cut -d' ' -f1)
+  if [[ "$actual" != "${V86_HASHES[$file]}" ]]; then
+    echo "INTEGRITY CHECK FAILED - v86/${file}"
+    echo "  expected: ${V86_HASHES[$file]}"
+    echo "  actual:   ${actual}"
+    exit 1
+  fi
+  echo "  ✓ v86/${file}"
+done
+echo "v86 ${V86_VERSION} ready in ${V86_DEST}"

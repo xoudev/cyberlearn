@@ -88,3 +88,47 @@ JSCPP.run(
    - This file (table above)
 5. Run `bash scripts/verify-runtimes.sh` to confirm
 6. Commit `bundle.js` + `verify-runtimes.sh` + this file together
+
+## v86 0.5.462 and a Buildroot Linux image
+
+The real terminal of the Linux lessons (`<LinuxTerminal>`): an x86 emulator in
+WebAssembly that boots a small Linux in the learner's browser. Nothing runs on
+our servers; these files are only downloaded, on the learner's first click on
+"Démarrer la machine", then cached by the browser.
+
+**Served at**: `/runtimes/v86/`
+**Date captured**: 2026-09-28
+
+| File | Source | Size | SHA-256 |
+|------|--------|------|---------|
+| `libv86.js` | npm `v86@0.5.462`, `build/libv86.js` | 359 591 B | `8715206b8c5ab0a206f6e8913c5f705a15547df51d3e0c032e3d00439303c94c` |
+| `v86.wasm` | npm `v86@0.5.462`, `build/v86.wasm` | 2 101 621 B | `aa0d0e149d6b60063b85de4871e78505637ce92821e14a9f9802c4008ba2336e` |
+| `seabios.bin` | github.com/copy/v86 `bios/`, commit `b8a39b11dd2076870699e6cac053556271b9bfab` | 131 072 B | `73e3f359102e3a9982c35fce98eb7cd08f18303ac7f1ba6ebfbe6cdc1c244d98` |
+| `vgabios.bin` | same commit | 36 352 B | `a4bc0d80cc3ca028c73dafa8fee396b8d054ce87ebd8abfbd31b06b437607880` |
+| `buildroot-bzimage68.bin` | https://i.copy.sh/buildroot-bzimage68.bin | 10 068 480 B | `507a759c70ab7a490a233be454d0b5b88bc667956a410b531cb4edc091e2eb1c` |
+
+**npm tarball SHA-256**: `1384ad8bbe80aa4f6cd43f43bd16ddbd7495931df833f038a27fcdc8b9a31351`
+**Total**: ~12.7 MB
+
+The image is a Linux 6.8.12 kernel (i686) with an embedded Buildroot 2024.05.2
+root filesystem: BusyBox, a root shell on the serial console, no network. It
+boots to a `~%` prompt in a few seconds.
+
+### Licences
+
+- v86: BSD-2-Clause, `LICENSE-v86.txt` next to the files.
+- SeaBIOS (`seabios.bin`): LGPL-3.0. VGA BIOS (`vgabios.bin`): LGPL.
+- The image contains the Linux kernel and BusyBox, both GPL-2.0, assembled with
+  Buildroot. We redistribute them unmodified, as published by the v86 project;
+  their corresponding sources are those of Linux 6.8.12 (kernel.org), BusyBox
+  and Buildroot 2024.05.2 (buildroot.org), with the configuration published in
+  the v86 repository. A written source offer must accompany the image if it
+  is ever distributed in any other form than this public repository.
+
+### Upgrade procedure
+
+1. Change `V86_VERSION`, `V86_BIOS_COMMIT` or `V86_IMAGE` in
+   `scripts/download-runtimes.sh`.
+2. Run it: it fails on the first hash mismatch, printing the new hash.
+3. Report the new hashes in `download-runtimes.sh`, `verify-runtimes.sh` and
+   this table, then boot a lesson terminal before committing.

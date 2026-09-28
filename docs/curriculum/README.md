@@ -96,7 +96,7 @@ s'ouvre sur ce cadre avant toute technique.
 | T3 | **Cursus** : regrouper des parcours (`track = CAREER` existe, il faut la relation cursus → parcours) et un certificat de cursus | Le métier comme objectif | Moyenne |
 | T4 | ✅ **refCodes** : passer à `CL-LSN-PPNNN-V01` (parcours sur 2 chiffres, leçon sur 3) | L'ancien format plafonne à 999 leçons | Petite (regex + docs) |
 | T5 | ✅ **Import par module** : le lot de 30 fichiers suffit si on importe un module à la fois ; `seed-paths` lit `content/paths/*.json` et crée les modules | 1 500 fichiers | Petite |
-| T6 | **Terminal Linux réel** (WebVM, `docs/backlog/terminal-v2-webvm.md`) | Linux, admin, DevOps et SOC ne s'apprennent pas sur un terminal simulé | Grosse |
+| T6 | ✅ **Terminal Linux réel** : composant `LinuxTerminal`, un Linux BusyBox démarré par v86 dans le navigateur (`apps/web/public/runtimes/v86`, guide §5.4b). Pas de réseau ni de gestionnaire de paquets : `SimulatedTerminal` reste l'outil pour `apt`, `systemd` et `sudo` | Linux, admin, DevOps et SOC ne s'apprennent pas sur un terminal simulé | Grosse |
 | T7 | **Labs hébergés** pour le web et les tests d'intrusion : cibles vulnérables isolées, une par apprenant, sans accès sortant | C'est ce qui fait TryHackMe et Hack The Box. Sans ça, les parcours offensifs restent théoriques | Très grosse : infrastructure, coût, abus |
 
 T1 à T5 conditionnent la vague 1. T6 peut arriver pendant la vague 1 (les
