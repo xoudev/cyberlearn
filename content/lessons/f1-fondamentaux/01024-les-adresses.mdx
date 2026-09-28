@@ -1,0 +1,176 @@
+---
+refCode: CL-LSN-01024-V01
+slug: fondamentaux-les-adresses
+title: "Les adresses : IP, MAC, publique et privée"
+description: "Comment on désigne une machine sur un réseau : l'adresse MAC de la carte réseau, l'adresse IP en version 4 et 6, le masque et la passerelle, les adresses privées et la traduction d'adresses de la box, le DHCP qui distribue tout cela, et les adresses spéciales à reconnaître. Avec les commandes pour trouver les siennes, sous Windows et dans ta machine virtuelle."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01023-V01"]
+---
+
+Pour envoyer une lettre, il faut une adresse. Sur un réseau, c'est pareil : chaque message indique qui l'envoie et à qui il est destiné. Mais une machine a en réalité **plusieurs** adresses, qui servent à des niveaux différents : une adresse matérielle gravée dans sa carte réseau, une adresse IP qui dépend du réseau où elle se trouve, et souvent une adresse publique partagée avec toute la maison. Cette leçon démêle ces adresses, explique qui les attribue et comment les lire, et te montre comment trouver les tiennes. C'est la base de tout diagnostic réseau.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer l'adresse MAC de l'adresse IP et dire à quoi sert chacune ;
+- lire une adresse IPv4 et reconnaître une adresse IPv6 ;
+- expliquer le rôle du masque et de la passerelle par défaut ;
+- distinguer adresses privées et publiques, et expliquer la traduction d'adresses ;
+- expliquer le rôle du DHCP ;
+- reconnaître les adresses spéciales ;
+- trouver tes propres adresses sous Windows et sous Linux.
+
+## pourquoi ça compte
+
+« Quelle est ton adresse IP ? » est la première question de presque tout dépannage réseau. Une adresse en `169.254` révèle immédiatement un problème de DHCP ; une passerelle absente explique pourquoi Internet est inaccessible alors que le réseau local fonctionne. En sécurité, les adresses sont partout : dans les journaux, où elles identifient l'origine d'une connexion ; dans les règles de pare-feu ; dans les enquêtes, où une adresse publique mène à un fournisseur d'accès et, sur réquisition judiciaire, à un abonné. Savoir lire une adresse et comprendre ce qu'elle révèle, ou ne révèle pas, est indispensable.
+
+## l'adresse MAC
+
+Chaque carte réseau, Ethernet ou Wi-Fi, possède une **adresse MAC** (*media access control*) : 48 bits, soit six octets, écrits en hexadécimal comme tu l'as vu au module 2, par exemple `3C:52:82:1A:9F:04`. Les trois premiers octets identifient le **fabricant** de la carte ; les trois suivants sont un numéro choisi par ce fabricant.
+
+L'adresse MAC sert à désigner une machine **à l'intérieur d'un même réseau local**. C'est elle qu'utilise le commutateur de la leçon précédente pour remettre chaque message au bon appareil. Elle ne voyage pas au-delà du routeur : un serveur sur Internet ne voit jamais l'adresse MAC de ton ordinateur.
+
+Longtemps considérée comme fixe, l'adresse MAC a un défaut pour la vie privée : un appareil qui garde toujours la même permet de le **suivre** d'un Wi-Fi public à l'autre. C'est pourquoi les téléphones et Windows utilisent aujourd'hui des **adresses MAC aléatoires**, différentes pour chaque réseau Wi-Fi. Une adresse MAC peut aussi se modifier par logiciel : elle ne prouve donc pas l'identité d'un appareil.
+
+## l'adresse IP
+
+L'**adresse IP** (*Internet Protocol*) désigne une machine **à travers les réseaux**, de bout en bout. C'est elle que les routeurs lisent pour acheminer un message d'un réseau à l'autre jusqu'à sa destination. Contrairement à l'adresse MAC, elle dépend du réseau où se trouve la machine : ton portable n'a pas la même adresse IP chez toi et au café.
+
+### IPv4
+
+Une adresse **IPv4** fait **32 bits**, soit quatre octets, et s'écrit en **notation décimale pointée** : les quatre octets en décimal, séparés par des points, chacun de 0 à 255. `192.168.1.42` est en binaire `11000000.10101000.00000001.00101010`. Tu comprends maintenant pourquoi aucun des quatre nombres ne dépasse 255.
+
+32 bits ne donnent qu'environ **4,3 milliards** d'adresses, comme tu l'as calculé au module 2. C'est moins que le nombre d'appareils connectés sur la planète : les dernières adresses IPv4 libres ont été distribuées au cours des années 2010. Deux réponses ont été apportées : la traduction d'adresses, qu'on va voir, et IPv6.
+
+### IPv6
+
+Une adresse **IPv6** fait **128 bits**, écrits en huit groupes de quatre chiffres hexadécimaux : `2001:0db8:0000:0000:0000:0000:0000:0001`. On l'abrège en supprimant les zéros de tête de chaque groupe et en remplaçant une suite de groupes nuls par `::`, soit `2001:db8::1`. 2¹²⁸ adresses, c'est un nombre à 39 chiffres : assez pour ne plus jamais manquer. IPv6 est déjà largement déployé en France, notamment sur la fibre et les réseaux mobiles, et ta machine a probablement déjà une adresse IPv6 en plus de son adresse IPv4.
+
+## masque et passerelle
+
+Une adresse IP se découpe en deux parties : la partie **réseau**, commune à toutes les machines du même réseau local, et la partie **machine**, propre à chacune. Le **masque de sous-réseau** dit où passe la frontière. Le masque `255.255.255.0` signifie que les trois premiers octets désignent le réseau et le dernier la machine : `192.168.1.42` et `192.168.1.7` sont sur le même réseau local, `192.168.2.7` n'y est pas. On écrit aussi ce masque `/24`, le nombre de bits à 1 : `192.168.1.42/24`. Le parcours Réseaux t'apprendra à découper des réseaux avec d'autres masques, en utilisant le binaire du module 2.
+
+Quand une machine veut joindre une adresse **hors de son réseau local**, elle ne peut pas l'atteindre directement : elle confie le message à sa **passerelle par défaut**, le routeur de son réseau, en pratique ta box, souvent à l'adresse `192.168.1.1` ou `192.168.1.254`. Sans passerelle correcte, une machine joint les autres appareils de la maison, mais pas Internet.
+
+## privées, publiques et traduction d'adresses
+
+Certaines plages d'adresses IPv4 sont réservées aux **réseaux privés**. Elles ne sont jamais utilisées sur Internet, et chacun peut s'en servir chez soi :
+
+| Plage | Écriture courte | Où on la croise |
+| --- | --- | --- |
+| `10.0.0.0` à `10.255.255.255` | `10.0.0.0/8` | grandes entreprises, machines virtuelles |
+| `172.16.0.0` à `172.31.255.255` | `172.16.0.0/12` | entreprises, conteneurs |
+| `192.168.0.0` à `192.168.255.255` | `192.168.0.0/16` | presque toutes les box domestiques |
+
+Toutes les autres adresses, à quelques exceptions près, sont **publiques** : uniques au monde, attribuées aux fournisseurs d'accès et aux hébergeurs.
+
+Chez toi, tous les appareils ont une adresse privée, comme `192.168.1.42`, mais la box n'a qu'**une seule adresse publique** vers Internet. Comment tout le monde partage-t-il cette adresse ? Grâce à la **traduction d'adresses** (NAT, *network address translation*). Quand ton ordinateur envoie un message vers Internet, la box remplace l'adresse privée de l'expéditeur par son adresse publique, et note dans une table qui a envoyé quoi. Quand la réponse revient, elle consulte sa table et la remet au bon appareil.
+
+<Diagram caption="La traduction d'adresses de la box">
+flowchart LR
+  A["Ordinateur 192.168.1.42"] --> C["Box : adresse privée 192.168.1.1, adresse publique 203.0.113.57"]
+  B["Téléphone 192.168.1.43"] --> C
+  C --> D["Internet : le serveur ne voit que 203.0.113.57"]
+</Diagram>
+
+Conséquence : un serveur sur Internet ne voit pas ton adresse privée, seulement l'adresse publique de ta box, partagée par toute la maison. Et comme la box ne sait pas à qui remettre une connexion qu'elle n'a pas vue partir, les connexions venues d'Internet sont bloquées par défaut. Attention : c'est un effet de bord utile, **pas un pare-feu** ; le pare-feu de la box et celui de chaque machine restent nécessaires, d'autant qu'IPv6 donne souvent à chaque appareil une adresse publique, sans traduction.
+
+## le DHCP : qui distribue les adresses ?
+
+Personne ne tape son adresse IP à la main en se connectant au Wi-Fi. À la connexion, l'appareil demande une configuration à un serveur **DHCP** (*dynamic host configuration protocol*), en général la box. Celui-ci lui prête, pour une durée limitée appelée **bail**, quatre informations : une **adresse IP**, le **masque**, la **passerelle** par défaut et les **serveurs DNS** à utiliser (leçon 4).
+
+Si aucun serveur DHCP ne répond, Windows et d'autres systèmes s'attribuent tout seuls une adresse de la plage `169.254.0.0/16`. Une adresse en `169.254` est donc un **signal de panne** : l'appareil n'a pas reçu de configuration, et n'accédera pas à Internet. Les serveurs, eux, reçoivent généralement une adresse **fixe**, configurée à la main ou réservée dans le DHCP, pour qu'on sache toujours où les trouver.
+
+## les adresses spéciales
+
+| Adresse | Signification |
+| --- | --- |
+| `127.0.0.1` (et `::1` en IPv6) | la **boucle locale** : la machine elle-même, appelée *localhost* |
+| `169.254.x.x` | adresse automatique : aucun DHCP n'a répondu |
+| `0.0.0.0` | selon le contexte, « toutes les adresses de la machine » ou « aucune adresse » |
+| `x.x.x.255` sur un réseau `/24` | la diffusion : tous les appareils du réseau local |
+| `192.0.2.x`, `198.51.100.x`, `203.0.113.x` | réservées à la **documentation** et aux exemples, comme dans cette leçon |
+
+`localhost` mérite une remarque : un programme qui n'écoute que sur `127.0.0.1` n'est joignable que depuis la machine elle-même. C'est une protection simple, et c'est pour cela que les outils de développement ouvrent souvent leurs serveurs sur cette adresse.
+
+## ce qu'une adresse révèle
+
+Une adresse IP publique indique le **fournisseur d'accès** et, approximativement, la **région** : des services de géolocalisation l'estiment, souvent à la ville près, parfois avec une grosse erreur. Elle ne donne ni ton nom ni ton adresse postale. Seul le fournisseur d'accès sait quel abonné utilisait quelle adresse à quel moment, et en France il ne le communique que sur réquisition de la justice ou de certaines autorités. C'est ainsi que les enquêteurs remontent parfois jusqu'à l'auteur d'une attaque, et c'est pour masquer cette piste que les attaquants passent par des machines intermédiaires, des VPN ou le réseau Tor.
+
+## trouver ses adresses
+
+**Sous Windows**, la commande `ipconfig /all`, dans PowerShell ou l'invite de commandes, affiche pour chaque carte réseau son adresse physique (MAC), ses adresses IPv4 et IPv6, le masque, la passerelle, le serveur DHCP et les serveurs DNS. En voici un extrait :
+
+```text
+Carte réseau sans fil Wi-Fi :
+
+   Adresse physique . . . . . . . . . . . : 3C-52-82-1A-9F-04
+   DHCP activé. . . . . . . . . . . . . . : Oui
+   Adresse IPv4. . . . . . . . . . . . . .: 192.168.1.42(préféré)
+   Masque de sous-réseau. . . . . . . . . : 255.255.255.0
+   Bail obtenu. . . . . . . . . . . . . . : dimanche 27 septembre 2026 08:12:41
+   Passerelle par défaut. . . . . . . . . : 192.168.1.1
+   Serveur DHCP . . . . . . . . . . . . . : 192.168.1.1
+   Serveurs DNS. . .  . . . . . . . . . . : 192.168.1.1
+```
+
+**Sous Linux**, `ip a` (abréviation de `ip address`) affiche les adresses et `ip route` la passerelle. L'**adresse publique**, elle, n'apparaît nulle part sur la machine, puisqu'elle appartient à la box : on la découvre en interrogeant un service extérieur, qui renvoie simplement l'adresse depuis laquelle il voit arriver la demande.
+
+## à toi de jouer : les adresses de ta machine virtuelle
+
+Tu es dans la machine virtuelle Debian du module 3, réglée en NAT. Affiche ses adresses avec `ip a`, puis sa passerelle avec `ip route`, et enfin son adresse publique avec `curl -s https://ifconfig.me`.
+
+<SimulatedTerminal shell="bash" title="Les adresses de la machine virtuelle" expectedCommands={["ip a", "ip route", "curl -s https://ifconfig.me"]} hints={["ip a affiche toutes les cartes réseau et leurs adresses.", "ip route affiche les routes, dont la route par défaut vers la passerelle.", "curl -s interroge un site qui renvoie l'adresse publique vue depuis Internet."]} commands={{ "ip a": "1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000\n    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00\n    inet 127.0.0.1/8 scope host lo\n       valid_lft forever preferred_lft forever\n    inet6 ::1/128 scope host noprefixroute\n       valid_lft forever preferred_lft forever\n2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000\n    link/ether 08:00:27:5e:1c:9a brd ff:ff:ff:ff:ff:ff\n    inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic noprefixroute enp0s3\n       valid_lft 86013sec preferred_lft 86013sec\n    inet6 fe80::a00:27ff:fe5e:1c9a/64 scope link noprefixroute\n       valid_lft forever preferred_lft forever", "ip route": "default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 100\n10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15 metric 100", "curl -s https://ifconfig.me": "203.0.113.57", "hostname -I": "10.0.2.15" }} />
+
+Lis les résultats avec ce que tu sais. `lo` est la boucle locale, `127.0.0.1`. La carte `enp0s3` a l'adresse MAC `08:00:27:5e:1c:9a` : le préfixe `08:00:27` est celui des cartes virtuelles de VirtualBox. Son adresse IPv4 est `10.0.2.15/24`, une adresse **privée**, distribuée par le petit serveur DHCP intégré au mode NAT de VirtualBox (`proto dhcp`), et sa passerelle est `10.0.2.2`, le routeur virtuel de VirtualBox. Quant à l'adresse publique, `203.0.113.57`, c'est celle de ta box, que la machine virtuelle partage avec tout le reste de la maison : il y a ici **deux** traductions d'adresses successives, celle de VirtualBox, puis celle de la box.
+
+## exercice noté : privée ou publique ?
+
+Écris `solution(ip)` qui reçoit une adresse IPv4 sous forme de texte et renvoie `'locale'` pour une adresse de boucle locale (premier octet 127), `'privée'` pour une adresse des trois plages privées, et `'publique'` sinon. Attention à la plage du milieu : elle va de `172.16` à `172.31`, pas au-delà.
+
+<PythonChallenge id="f1-adresses-1" title="Privée, publique ou locale" description="Classe une adresse IPv4 : locale, privée ou publique." starterCode="def solution(ip):
+    a, b, c, d = [int(octet) for octet in ip.split('.')]
+    # boucle locale, puis les trois plages privées
+    return 'publique'" tests={[{ input: "solution('192.168.1.42')", expected: "privée" }, { input: "solution('8.8.8.8')", expected: "publique" }, { input: "solution('172.20.0.5')", expected: "privée" }, { input: "solution('172.32.0.1')", expected: "publique" }, { input: "solution('10.200.3.4')", expected: "privée" }, { input: "solution('127.0.0.1')", expected: "locale" }]} />
+
+## les pièges
+
+- **Confondre adresse MAC et adresse IP.** La MAC sert dans le réseau local, l'IP de bout en bout à travers les réseaux.
+- **Croire que l'adresse MAC identifie un appareil à coup sûr.** Elle se modifie par logiciel et les téléphones la changent d'un Wi-Fi à l'autre.
+- **Chercher l'adresse publique dans `ipconfig`.** Elle appartient à la box ; seul un service extérieur la révèle.
+- **Ignorer une adresse en `169.254`.** C'est le signe qu'aucun DHCP n'a répondu.
+- **Prendre la traduction d'adresses pour un pare-feu.** Elle bloque les connexions entrantes par effet de bord, pas par règle, et IPv6 s'en passe souvent.
+- **Oublier la frontière de la plage `172.16.0.0/12`.** Elle s'arrête à `172.31.255.255`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.rfc-editor.org/rfc/rfc1918" description="La norme qui réserve les trois plages d'adresses privées IPv4, en anglais">RFC 1918 : adresses pour les réseaux privés</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/ipaddress.html" description="Le module ipaddress de Python, qui sait classer les adresses">Documentation Python : ipaddress</ExternalLink>
+
+<ExternalLink href="https://www.arcep.fr/la-regulation/grands-dossiers-internet-et-numerique/lipv6.html" description="L'état du déploiement d'IPv6 en France, suivi par le régulateur">Arcep : la transition vers IPv6</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="À quoi sert l'adresse MAC ?" options={["À désigner une machine à travers Internet", "À désigner une carte réseau à l'intérieur d'un même réseau local", "À chiffrer les communications", "À identifier le fournisseur d'accès"]} correct={1} explanation="L'adresse MAC sert au commutateur pour remettre les messages dans le réseau local ; elle ne dépasse pas le routeur." />
+  <Quiz id="q-2" question="Combien de bits compte une adresse IPv4 ?" options={["16", "32", "48", "128"]} correct={1} explanation="Quatre octets, soit 32 bits, d'où environ 4,3 milliards d'adresses possibles." />
+  <Quiz id="q-3" question="Laquelle de ces adresses est privée ?" options={["8.8.8.8", "172.25.10.3", "193.51.24.1", "172.40.0.1"]} correct={1} explanation="172.25 est dans la plage privée de 172.16 à 172.31. 172.40 est en dehors." />
+  <Quiz id="q-4" question="Un ordinateur a l'adresse 169.254.12.7. Que faut-il en conclure ?" options={["Il est parfaitement configuré", "Il n'a reçu aucune configuration du DHCP", "Il est connecté en IPv6", "C'est l'adresse de la box"]} correct={1} explanation="Faute de réponse DHCP, le système s'attribue une adresse automatique en 169.254 : il n'aura pas accès à Internet." />
+  <Quiz id="q-5" question="Que fait la traduction d'adresses (NAT) de la box ?" options={["Elle chiffre le trafic", "Elle remplace les adresses privées de la maison par l'unique adresse publique de la box, et inversement pour les réponses", "Elle attribue les adresses MAC", "Elle traduit les pages web"]} correct={1} explanation="La box partage son adresse publique entre tous les appareils et garde une table pour renvoyer chaque réponse au bon appareil." />
+  <Quiz id="q-6" question="Quelles informations le DHCP fournit-il à un appareil qui se connecte ?" options={["Un mot de passe Wi-Fi", "Une adresse IP, un masque, une passerelle et des serveurs DNS", "Une adresse MAC", "Un certificat"]} correct={1} explanation="Ces quatre informations suffisent à un appareil pour communiquer sur le réseau local et au-delà." />
+  <Quiz id="q-7" question="Que peut-on apprendre de l'adresse IP publique d'un visiteur ?" options={["Son nom et son adresse postale", "Son fournisseur d'accès et une localisation approximative", "Son mot de passe", "Le modèle de son ordinateur"]} correct={1} explanation="Seul le fournisseur sait quel abonné utilisait l'adresse, et il ne le révèle que sur réquisition." />
+</QuizGroup>
+
+## à retenir
+
+- **MAC** : 48 bits en hexadécimal, gravée dans la carte réseau, utile **dans le réseau local** ; souvent aléatoire sur les téléphones.
+- **IP** : désigne une machine **de bout en bout**. **IPv4** sur 32 bits (`192.168.1.42`), **IPv6** sur 128 bits (`2001:db8::1`).
+- Le **masque** (`/24`) sépare réseau et machine ; la **passerelle** par défaut mène hors du réseau local.
+- Adresses **privées** : `10/8`, `172.16/12`, `192.168/16`. La **box** les traduit vers son unique adresse **publique** (NAT), ce qui n'est pas un pare-feu.
+- Le **DHCP** prête adresse, masque, passerelle et DNS ; une adresse en **169.254** signale son absence.
+- `ipconfig /all` sous Windows, `ip a` et `ip route` sous Linux ; l'adresse publique se découvre depuis l'extérieur.

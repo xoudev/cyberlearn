@@ -1,0 +1,198 @@
+---
+refCode: CL-LSN-01025-V01
+slug: fondamentaux-les-paquets
+title: "Les paquets et les protocoles"
+description: "Comment un message traverse Internet : découpé en paquets, emballé couche après couche comme des enveloppes dans des enveloppes, acheminé routeur après routeur, puis réassemblé dans l'ordre à l'arrivée. Les couches du modèle TCP/IP, TCP et UDP, la durée de vie d'un paquet et la commande traceroute, avec une simulation où des paquets arrivent dans le désordre et se perdent."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01024-V01"]
+---
+
+Quand tu envoies une photo à un ami, elle ne part pas d'un seul bloc. Elle est découpée en centaines de petits morceaux, les **paquets**, qui voyagent chacun de leur côté, parfois par des chemins différents, arrivent parfois dans le désordre, se perdent parfois, et sont pourtant réassemblés sans erreur à l'arrivée. Cette leçon explique ce mécanisme, le cœur même d'Internet, et la notion qui le rend possible : les **protocoles** empilés en **couches**. C'est la leçon la plus abstraite du module, mais tout le reste s'appuie dessus.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer pourquoi les données sont découpées en paquets ;
+- définir un protocole ;
+- décrire les quatre couches du modèle TCP/IP et le principe d'encapsulation ;
+- expliquer comment un paquet est acheminé de routeur en routeur ;
+- distinguer TCP et UDP ;
+- lire le résultat d'un traceroute.
+
+## pourquoi ça compte
+
+Les paquets sont l'unité de base de tout ce qui circule sur un réseau. Les outils de diagnostic les mesurent (paquets perdus, délais), les pare-feu les filtrent un par un selon leurs en-têtes, les systèmes de détection d'intrusion les inspectent, et les analystes les capturent pour comprendre une attaque, avec des outils comme Wireshark que tu découvriras dans le parcours Réseaux. Comprendre ce qu'est un paquet, ce qu'il contient et comment il voyage, c'est comprendre ce que ces outils manipulent.
+
+## pourquoi découper ?
+
+Imagine qu'une vidéo de 1 Go soit envoyée d'un seul bloc. Pendant tout son transfert, elle occuperait seule chaque liaison traversée : personne d'autre ne pourrait rien envoyer. Et la moindre erreur de transmission obligerait à tout renvoyer.
+
+Le découpage en **paquets** règle ces deux problèmes :
+
+- **le partage** : les paquets de milliers d'échanges différents s'entremêlent sur les mêmes liaisons, chacun à son tour, comme des voitures sur une autoroute ;
+- **la reprise** : si un paquet est perdu ou abîmé, on ne renvoie que lui ;
+- **la souplesse** : chaque paquet est acheminé indépendamment ; si une liaison tombe, les suivants passent par ailleurs.
+
+Un paquet est petit : sur un réseau Ethernet ou Wi-Fi classique, il ne dépasse pas **1 500 octets** de données, une limite appelée MTU. Une page web de 2 Mo représente donc plus d'un millier de paquets.
+
+## les protocoles
+
+Un **protocole** est un ensemble de règles qui fixent comment deux machines communiquent : le format des messages, leur ordre, ce qu'on répond à quoi, ce qu'on fait en cas d'erreur. C'est l'équivalent des conventions d'une conversation téléphonique : on décroche, on dit « allô », on se présente, on raccroche en se saluant.
+
+Les protocoles d'Internet sont décrits dans des documents publics, les **RFC**, que n'importe qui peut lire et implémenter. C'est ce qui permet à un téléphone Android de parler à un serveur Linux à travers un routeur d'un autre constructeur : tous suivent les mêmes règles écrites.
+
+## les couches et l'encapsulation
+
+Envoyer un message sur Internet pose des problèmes de natures très différentes : que veut dire le message ? comment s'assurer qu'il arrive entier ? par où le faire passer ? comment l'envoyer sur ce câble ou cette onde radio ? Plutôt qu'un seul protocole géant, on a découpé le travail en **couches**, chacune résolvant un problème et s'appuyant sur celle du dessous. Le modèle **TCP/IP**, celui d'Internet, en compte quatre :
+
+| Couche | Rôle | Exemples |
+| --- | --- | --- |
+| **Application** | le sens du message, pour les programmes | HTTP pour le web, DNS pour les noms, SMTP pour le courriel |
+| **Transport** | la conversation entre deux programmes, fiable ou non | TCP, UDP |
+| **Internet** | l'acheminement de machine à machine à travers les réseaux | IP (v4 et v6) |
+| **Accès réseau** | la transmission sur un support physique, dans le réseau local | Ethernet, Wi-Fi |
+
+Tu entendras aussi parler du **modèle OSI**, en sept couches, plus détaillé et souvent utilisé pour l'enseignement et le vocabulaire (on parle de « couche 2 » pour Ethernet ou de « couche 7 » pour les applications). Le parcours Réseaux fait la correspondance entre les deux.
+
+L'idée clé est l'**encapsulation**. Quand un programme envoie un message, chaque couche l'emballe en ajoutant devant un **en-tête**, avec les informations dont elle a besoin, comme une lettre qu'on glisse dans une enveloppe, elle-même glissée dans une autre enveloppe :
+
+<Diagram caption="L'encapsulation : chaque couche ajoute son en-tête autour de la précédente">
+flowchart LR
+  A["Données HTTP : la demande de page"] --> B["+ en-tête TCP : ports, numéro d'ordre"]
+  B --> C["+ en-tête IP : adresses IP source et destination"]
+  C --> D["+ en-tête Ethernet ou Wi-Fi : adresses MAC"]
+  D --> E["Signaux sur le câble ou les ondes"]
+</Diagram>
+
+À l'arrivée, chaque couche retire son enveloppe et passe le contenu à la couche du dessus, jusqu'au programme destinataire. Et chaque équipement intermédiaire n'ouvre que les enveloppes dont il a besoin : un commutateur lit l'en-tête Ethernet, un routeur lit aussi l'en-tête IP, mais aucun des deux n'a besoin de comprendre HTTP.
+
+Tu retrouves au passage les adresses de la leçon précédente : les adresses **MAC** sont dans l'enveloppe extérieure, qui change à chaque réseau traversé ; les adresses **IP** sont dans l'enveloppe du dessous, qui reste la même de bout en bout, sauf traduction d'adresses par une box.
+
+## l'acheminement, de routeur en routeur
+
+Un paquet ne connaît pas le chemin complet jusqu'à sa destination. Aucun équipement ne le connaît d'ailleurs. Chaque **routeur** consulte simplement sa **table de routage**, qui lui dit, pour chaque grande plage d'adresses de destination, à quel routeur voisin transmettre le paquet. Le paquet avance ainsi **de saut en saut**, chaque routeur faisant un choix local, comme un colis qui passe de centre de tri en centre de tri. Les tables de routage d'Internet sont tenues à jour automatiquement par des protocoles entre opérateurs.
+
+Pour éviter qu'un paquet mal aiguillé tourne en rond indéfiniment, son en-tête IP contient une **durée de vie**, le **TTL** (*time to live*) : un nombre, souvent 64 ou 128 au départ, que chaque routeur diminue de 1. Arrivé à 0, le paquet est détruit, et le routeur prévient l'expéditeur par un petit message d'erreur.
+
+La commande **traceroute** (`tracert` sous Windows) détourne astucieusement ce mécanisme : elle envoie des paquets avec un TTL de 1, puis 2, puis 3, et ainsi de suite. Chaque routeur du chemin, en détruisant un paquet arrivé à 0, révèle son adresse. On obtient la liste des sauts jusqu'à la destination, avec le temps de réponse de chacun :
+
+```text
+traceroute to site.example (203.0.113.80), 30 hops max, 60 byte packets
+ 1  box.home (192.168.1.1)  1.214 ms  1.187 ms  1.160 ms
+ 2  collecte-lyon.fai.example (198.51.100.1)  3.402 ms  3.377 ms  3.351 ms
+ 3  coeur-paris.fai.example (198.51.100.17)  8.915 ms  8.890 ms  8.871 ms
+ 4  * * *
+ 5  peering-paris.hebergeur.example (192.0.2.33)  9.842 ms  9.801 ms  9.779 ms
+ 6  site.example (203.0.113.80)  10.310 ms  10.287 ms  10.265 ms
+```
+
+On lit la box, le réseau du fournisseur d'accès de Lyon à Paris, puis l'arrivée chez l'hébergeur par un point d'échange parisien. Les étoiles de la ligne 4 signifient qu'un routeur n'a pas répondu, ce qui est fréquent et pas forcément un problème : certains équipements ne signalent pas les paquets expirés, par choix de sécurité. Les adresses de cet exemple appartiennent aux plages réservées à la documentation.
+
+## TCP et UDP
+
+Au-dessus d'IP, qui achemine les paquets sans aucune garantie, la couche transport propose deux protocoles aux caractères opposés.
+
+**TCP** (*transmission control protocol*) offre une conversation **fiable**. Avant d'échanger des données, les deux machines établissent une **connexion** par un échange en trois temps. Ensuite, chaque paquet est **numéroté** : le destinataire remet les données dans l'ordre, signale ce qu'il a reçu, et l'expéditeur **renvoie** ce qui s'est perdu. TCP adapte aussi son rythme pour ne pas saturer le réseau. Le web, le courriel, les transferts de fichiers utilisent TCP : une page ou un fichier doivent arriver entiers et dans l'ordre.
+
+**UDP** (*user datagram protocol*) envoie des paquets **sans connexion, sans numéro d'ordre ni renvoi**. C'est plus simple et plus rapide, mais rien ne garantit l'arrivée. On l'utilise quand la rapidité compte plus qu'une perte occasionnelle : la voix et la vidéo en direct (un morceau perdu ne sert plus à rien une seconde plus tard), les jeux en ligne, et les petites questions-réponses comme celles du DNS, où l'on repose simplement la question en l'absence de réponse.
+
+| | TCP | UDP |
+| --- | --- | --- |
+| Connexion préalable | oui | non |
+| Ordre garanti | oui | non |
+| Pertes rattrapées | oui, par renvoi | non |
+| Usages | web, courriel, fichiers, SSH | visio, jeux, DNS, diffusion en direct |
+
+## sécurité : ce que révèlent et permettent les paquets
+
+- **Les en-têtes voyagent en clair.** Même quand le contenu est chiffré, les adresses IP, les ports et la taille des paquets restent lisibles par chaque équipement traversé : on sait qui parle à qui, quand et combien.
+- **Les en-têtes peuvent mentir.** Rien n'empêche une machine de fabriquer un paquet avec une fausse adresse d'expéditeur : c'est l'**usurpation d'adresse IP**. Avec UDP, qui n'établit pas de connexion, c'est la base des attaques par amplification, où un attaquant fait envoyer par des serveurs de grosses réponses vers une victime dont il a usurpé l'adresse.
+- **Les pare-feu filtrent paquet par paquet**, selon les adresses, les protocoles et les ports lus dans les en-têtes : c'est le sujet de la leçon sur les clients et les serveurs.
+- **Capturer les paquets**, c'est tout voir de ce qui n'est pas chiffré. C'est ce que font les analystes pour diagnostiquer, et les attaquants présents sur un réseau pour espionner. Le chiffrement, que tu verras avec HTTPS, rend le contenu illisible, mais pas les en-têtes.
+
+## à toi de jouer : des paquets dans le désordre
+
+Ce programme découpe un message en paquets de 12 octets, chacun avec ses adresses et son numéro. Le « réseau » les mélange et en perd un. Le destinataire repère le numéro manquant, le redemande, puis remet tout dans l'ordre. C'est, en très simplifié, le travail de TCP. Lance-le, puis change la graine du hasard, `random.seed(4)`, ou la taille des paquets.
+
+<CodePlayground language="python" starterCode={`import random
+
+random.seed(4)
+TAILLE = 12  # octets de données par paquet, minuscule pour l'exemple
+
+message = 'Bonjour, voici la page que tu as demandée.'
+donnees = message.encode('utf-8')
+
+paquets = []
+for numero, debut in enumerate(range(0, len(donnees), TAILLE)):
+    paquets.append({'de': '192.168.1.42', 'vers': '203.0.113.80',
+                    'numero': numero, 'donnees': donnees[debut:debut + TAILLE]})
+print(len(donnees), 'octets découpés en', len(paquets), 'paquets')
+
+# Le réseau livre les paquets dans le désordre, et en perd un.
+en_route = paquets[:]
+random.shuffle(en_route)
+perdu = en_route.pop()
+print('Arrivés dans cet ordre :', [p['numero'] for p in en_route])
+print('Perdu en chemin : le paquet', perdu['numero'])
+
+# Le destinataire repère le trou et redemande le paquet manquant.
+recus = {p['numero']: p['donnees'] for p in en_route}
+manquants = [n for n in range(len(paquets)) if n not in recus]
+print('Paquets à redemander :', manquants)
+for n in manquants:
+    recus[n] = paquets[n]['donnees']
+
+texte = b''.join(recus[n] for n in sorted(recus)).decode('utf-8')
+print('Message reconstitué :', texte)
+`} />
+
+Avec la graine 4, tu dois voir les paquets arriver dans l'ordre 2, 0, 3, le paquet 1 perdu puis redemandé, et le message reconstitué intact. Remarque que le découpage se fait sur les **octets** : le « é » de « demandée », écrit sur deux octets en UTF-8, pourrait être coupé entre deux paquets. Ce n'est pas grave, car on ne décode le texte qu'une fois tous les octets remis dans l'ordre.
+
+Maintenant l'exercice corrigé. Écris `solution(paquets)` qui reçoit une liste de paquets arrivés dans le désordre, chacun sous la forme d'un couple `(numero, texte)`, et renvoie le message reconstitué dans l'ordre des numéros. Indice : `sorted()` trie une liste de couples d'après leur premier élément.
+
+<PythonChallenge id="f1-paquets-1" title="Remettre les paquets dans l'ordre" description="Renvoie le message reconstitué à partir des paquets (numero, texte) arrivés dans le désordre." starterCode="def solution(paquets):
+    message = ''
+    # trie les paquets par numéro, puis assemble les textes
+    return message" tests={[{ input: "solution([(2, 'le '), (0, 'Bon'), (1, 'jour '), (3, 'monde')])", expected: "Bonjour le monde" }, { input: "solution([(1, 'b'), (0, 'a')])", expected: "ab" }, { input: "solution([(0, 'seul')])", expected: "seul" }, { input: "solution([])", expected: "" }]} />
+
+## les pièges
+
+- **Croire qu'un message voyage d'un bloc.** Tout est découpé en paquets de quelques centaines d'octets à 1 500 octets environ.
+- **Penser qu'un routeur connaît tout le chemin.** Chacun ne choisit que le saut suivant, d'après sa table de routage.
+- **S'inquiéter des étoiles d'un traceroute.** Un routeur qui ne répond pas n'est pas forcément en panne.
+- **Confondre TCP et UDP.** TCP garantit l'ordre et l'arrivée ; UDP non, et c'est voulu.
+- **Croire que le chiffrement cache tout.** Les en-têtes, avec les adresses, restent lisibles.
+- **Faire confiance à l'adresse source d'un paquet.** Elle peut être usurpée.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.rfc-editor.org/rfc/rfc9293" description="La norme actuelle de TCP, qui décrit connexion, numérotation et renvois, en anglais">RFC 9293 : Transmission Control Protocol</ExternalLink>
+
+<ExternalLink href="https://www.wireshark.org/docs/" description="La documentation de Wireshark, l'outil de référence pour capturer et lire les paquets">Documentation de Wireshark</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows-server/administration/windows-commands/tracert" description="La commande tracert de Windows et ses options">Microsoft : tracert</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi découpe-t-on les données en paquets ?" options={["Pour les chiffrer", "Pour partager les liaisons entre de nombreux échanges et ne renvoyer que ce qui se perd", "Pour les compresser", "Parce que les câbles sont courts"]} correct={1} explanation="Les paquets de milliers d'échanges s'entremêlent sur les liaisons, et une perte ne coûte que le renvoi d'un paquet." />
+  <Quiz id="q-2" question="Qu'est-ce qu'un protocole ?" options={["Un câble réseau", "Un ensemble de règles qui fixent comment deux machines communiquent", "Un logiciel de sécurité", "Un type d'adresse"]} correct={1} explanation="Format des messages, ordre des échanges, conduite en cas d'erreur : c'est ce qui permet à des machines différentes de se comprendre." />
+  <Quiz id="q-3" question="Dans quelle couche du modèle TCP/IP se trouve le protocole IP ?" options={["Application", "Transport", "Internet", "Accès réseau"]} correct={2} explanation="IP achemine les paquets de machine à machine à travers les réseaux : c'est la couche Internet." />
+  <Quiz id="q-4" question="Qu'est-ce que l'encapsulation ?" options={["Le chiffrement des paquets", "L'ajout, par chaque couche, de son en-tête autour des données de la couche du dessus", "La compression des en-têtes", "La perte de paquets"]} correct={1} explanation="Comme des enveloppes dans des enveloppes : HTTP dans TCP, dans IP, dans Ethernet." />
+  <Quiz id="q-5" question="À quoi sert le TTL d'un paquet ?" options={["À chiffrer le paquet", "À limiter le nombre de routeurs traversés pour éviter qu'un paquet tourne en rond", "À mesurer le débit", "À choisir le port"]} correct={1} explanation="Chaque routeur le diminue de 1 ; à 0, le paquet est détruit. traceroute s'en sert pour découvrir le chemin." />
+  <Quiz id="q-6" question="Pourquoi une visioconférence utilise-t-elle plutôt UDP que TCP ?" options={["Parce qu'UDP chiffre les images", "Parce qu'un morceau perdu ne sert plus une seconde plus tard : mieux vaut continuer que renvoyer", "Parce que TCP ne transporte pas la vidéo", "Par habitude"]} correct={1} explanation="Le temps réel préfère une perte occasionnelle à un retard : UDP n'attend pas les renvois." />
+  <Quiz id="q-7" question="Une connexion est chiffrée. Que peut encore voir un équipement sur le chemin ?" options={["Rien du tout", "Les adresses IP, les ports et la taille des paquets", "Le contenu des messages", "Les mots de passe"]} correct={1} explanation="Le chiffrement protège le contenu, pas les en-têtes nécessaires à l'acheminement." />
+</QuizGroup>
+
+## à retenir
+
+- Les données voyagent en **paquets** d'au plus 1 500 octets environ, qui partagent les liaisons et se renvoient individuellement.
+- Un **protocole** fixe les règles d'une communication ; ceux d'Internet sont publiés dans les **RFC**.
+- Modèle **TCP/IP** : **application**, **transport**, **Internet**, **accès réseau**. Chaque couche **encapsule** la précédente dans son en-tête.
+- Les **routeurs** acheminent **saut par saut** grâce à leur table de routage ; le **TTL** empêche les boucles ; **traceroute** révèle le chemin.
+- **TCP** : connexion, ordre, renvois, pour le web et les fichiers. **UDP** : rapide et sans garantie, pour le temps réel et le DNS.
+- Les **en-têtes** restent lisibles même quand le contenu est chiffré, et l'adresse source peut être **usurpée**.

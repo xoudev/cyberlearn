@@ -1,0 +1,180 @@
+---
+refCode: CL-LSN-01023-V01
+slug: fondamentaux-ce-qu-est-un-reseau
+title: "Ce qu'est un réseau"
+description: "Ce qu'est un réseau informatique, du réseau local de la maison à Internet, ce réseau de réseaux : la box et ses rôles cachés, le commutateur et le routeur, les fournisseurs d'accès, les câbles sous-marins, et les deux grandeurs qui décrivent une connexion, le débit et la latence. Avec un calcul de latence qui montre que la vitesse de la lumière est une vraie limite."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01903-V01"]
+---
+
+Tu tapes une adresse dans ton navigateur, et une fraction de seconde plus tard une page s'affiche, venue d'un serveur situé peut-être à l'autre bout du monde. Entre les deux, des dizaines d'équipements se sont passé des milliers de messages. Ce module raconte ce voyage, étape par étape, jusqu'à ce que tu puisses l'expliquer de bout en bout : c'est d'ailleurs le projet final. Cette première leçon plante le décor : ce qu'est un réseau, comment ta maison est reliée à Internet, et pourquoi Internet n'est pas un réseau, mais des dizaines de milliers de réseaux qui ont accepté de se parler.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- définir un réseau et distinguer réseau local et réseau étendu ;
+- citer les rôles cachés dans une box internet ;
+- distinguer un commutateur d'un routeur ;
+- expliquer pourquoi Internet est un réseau de réseaux ;
+- expliquer le rôle d'un fournisseur d'accès ;
+- distinguer le débit de la latence et estimer une latence minimale.
+
+## pourquoi ça compte
+
+Presque tout ce qu'on fait avec un ordinateur passe aujourd'hui par un réseau : la messagerie, les documents partagés, les applications, les mises à jour. Et presque toutes les attaques aussi. Un technicien qui dépanne « Internet ne marche pas » doit savoir si le problème vient du poste, du Wi-Fi, de la box ou du fournisseur. Un administrateur conçoit et protège des réseaux. Un analyste de sécurité suit les traces qu'un attaquant laisse en passant d'une machine à l'autre. Ce module donne les bases que le parcours Réseaux approfondira ensuite.
+
+## un réseau, c'est quoi ?
+
+Un **réseau informatique** est un ensemble d'appareils reliés entre eux pour échanger des données. Il faut trois ingrédients :
+
+- des **équipements** qui communiquent : ordinateurs, téléphones, serveurs, imprimantes, caméras, et les équipements qui les relient ;
+- des **liaisons** qui transportent les signaux : câbles en cuivre, fibres optiques, ondes radio ;
+- des **règles communes**, les **protocoles**, qui disent comment formuler, envoyer et comprendre les messages. Deux machines qui ne parlent pas le même protocole ne se comprennent pas, même reliées par un câble.
+
+On distingue les réseaux par leur étendue. Un **réseau local** (LAN, *local area network*) couvre une maison, un bureau, un bâtiment : les appareils sont proches et appartiennent au même propriétaire. Un **réseau étendu** (WAN, *wide area network*) relie des sites éloignés, entre villes ou entre pays, et utilise des liaisons louées à des opérateurs.
+
+## ta maison : un petit réseau local
+
+Chez toi, le réseau local se résume en apparence à une **box**. En réalité, ce petit boîtier cumule plusieurs équipements distincts :
+
+- un **modem**, qui convertit les signaux de la ligne de ton fournisseur (fibre, cuivre, 4G ou 5G) en données exploitables ;
+- un **routeur**, qui fait passer les données entre ton réseau local et Internet ;
+- un **commutateur** (*switch*), derrière les prises Ethernet à l'arrière, qui relie les appareils branchés par câble ;
+- un **point d'accès Wi-Fi**, qui relie les appareils sans fil ;
+- un **pare-feu**, qui bloque par défaut les connexions venues d'Internet vers tes appareils ;
+- souvent aussi un serveur qui distribue automatiquement les adresses (leçon suivante), et parfois un décodeur télé et un téléphone.
+
+Retiens bien la différence entre les deux équipements centraux. Le **commutateur** relie des appareils **d'un même réseau local** et transmet chaque message au bon destinataire à l'intérieur de ce réseau. Le **routeur** relie **des réseaux différents entre eux** et choisit par où envoyer un message pour qu'il atteigne un autre réseau. Ta box est le routeur qui sépare ton réseau local d'Internet : toute donnée qui entre ou sort passe par elle.
+
+<Diagram caption="De la maison au serveur : les grands maillons">
+flowchart LR
+  A["Ordinateur, téléphone"] --> B["Box : Wi-Fi, commutateur, routeur, pare-feu"]
+  B --> C["Réseau du fournisseur d'accès"]
+  C --> D["Internet : d'autres opérateurs, points d'échange, câbles sous-marins"]
+  D --> E["Réseau de l'hébergeur"]
+  E --> F["Serveur du site web"]
+</Diagram>
+
+## Internet, un réseau de réseaux
+
+Le mot le dit : **Internet** vient de *interconnected networks*, réseaux interconnectés. Personne ne possède Internet. Il est fait de plus de **75 000 réseaux** indépendants, appartenant à des fournisseurs d'accès, des opérateurs, des hébergeurs, des universités, des entreprises, qui ont accepté de s'échanger du trafic en suivant les mêmes protocoles. Chacun de ces réseaux, appelé **système autonome**, gère ses équipements comme il l'entend, mais annonce aux autres les adresses qu'il sait joindre.
+
+Ces réseaux se relient de deux façons :
+
+- par des **contrats de transit**, où un petit opérateur paie un plus grand pour acheminer son trafic vers le reste d'Internet ;
+- dans des **points d'échange** (IXP), de grands centres où des centaines de réseaux branchent leurs routeurs les uns aux autres pour échanger du trafic directement. Paris, Francfort, Amsterdam et Londres en accueillent parmi les plus importants d'Europe.
+
+Entre les continents, le trafic passe presque entièrement par des **câbles sous-marins** en fibre optique, posés au fond des océans : plusieurs centaines sillonnent la planète. Les satellites n'en transportent qu'une infime partie. Ces câbles sont une infrastructure critique : une coupure accidentelle, par l'ancre d'un navire par exemple, peut ralentir tout un pays, et leur protection est devenue un enjeu de sécurité nationale.
+
+## le fournisseur d'accès
+
+Le **fournisseur d'accès à Internet** (FAI) est l'opérateur qui relie ta maison à Internet : Orange, SFR, Free et Bouygues Telecom en France, et bien d'autres dans le monde. Il possède ou loue la ligne qui arrive chez toi, le réseau qui collecte le trafic de ses abonnés, et les liaisons qui le relient au reste d'Internet.
+
+La ligne entre chez toi et le fournisseur, souvent appelée le « dernier kilomètre », peut prendre plusieurs formes :
+
+- la **fibre optique** jusqu'au domicile (FTTH), de la lumière dans un fil de verre : débits très élevés et latence faible ;
+- la **paire de cuivre** du téléphone (ADSL, VDSL), en voie d'extinction en France : débit qui baisse avec la distance au central ;
+- les **réseaux mobiles** 4G et 5G, avec une box ou le téléphone lui-même ;
+- le **satellite**, pour les zones isolées : les satellites géostationnaires, très hauts, donnent une latence élevée ; les constellations en orbite basse la réduisent beaucoup.
+
+Retiens que ton fournisseur d'accès **voit passer tout ton trafic**. Il ne lit pas forcément le contenu, surtout quand il est chiffré, comme tu le verras avec HTTPS, mais il sait avec quels serveurs tu communiques et quand. C'est aussi vrai de l'exploitant de n'importe quel réseau Wi-Fi que tu utilises.
+
+## débit et latence
+
+Deux grandeurs décrivent une connexion, et on les confond souvent.
+
+Le **débit** (ou bande passante) est la **quantité de données** transportée par seconde, en bits par seconde : 1 Gb/s pour une fibre courante. Tu as appris au module 2 à le diviser par 8 pour obtenir des octets. C'est la largeur du tuyau.
+
+La **latence** est le **temps que met un message** à faire l'aller-retour entre deux machines, en millisecondes. C'est la longueur du tuyau. On la mesure avec la commande `ping`, qui envoie un petit message et chronomètre la réponse.
+
+Les deux jouent des rôles différents. Pour télécharger un gros fichier, c'est le débit qui compte. Pour un jeu en ligne, une visioconférence ou l'affichage d'une page web, qui demande des dizaines de petits échanges successifs, c'est souvent la latence qui fait la différence : même avec un débit énorme, chaque aller-retour coûte son temps.
+
+La latence a une limite physique incompressible : la **vitesse de la lumière**. Dans une fibre optique, la lumière avance à environ 200 000 km par seconde, soit deux tiers de sa vitesse dans le vide. Un aller-retour entre Paris et New York, environ 5 800 km, prend donc **au moins 58 ms**, même avec un matériel parfait. Aucune amélioration technique ne fera mieux : c'est pour cela que les grands sites placent des copies de leurs contenus dans des centres de données proches de leurs utilisateurs.
+
+## sécurité : le réseau est un chemin
+
+Un réseau relie, et donc expose. Quelques principes, que la suite de la formation développe :
+
+- **tout appareil branché est joignable** par les autres appareils du même réseau local. Une caméra connectée mal protégée, sur le même Wi-Fi que ton ordinateur, peut devenir une porte d'entrée. D'où l'intérêt d'un réseau Wi-Fi « invités » séparé pour les objets connectés et les visiteurs ;
+- **un réseau Wi-Fi public est partagé** avec des inconnus, et son exploitant voit passer le trafic. Sur un tel réseau, on vérifie que les connexions sont chiffrées ;
+- **la box est la frontière** entre ton réseau et Internet : son mot de passe d'administration, ses mises à jour et les ports qu'elle ouvre comptent ;
+- **en entreprise**, les attaquants qui ont pris pied sur une machine cherchent à se **déplacer latéralement** vers les autres à travers le réseau. On découpe donc les réseaux en zones séparées, pour qu'une machine compromise n'atteigne pas tout.
+
+## à toi de jouer
+
+Ce programme calcule la latence minimale imposée par la vitesse de la lumière pour quelques trajets, puis la durée de chargement d'une page de 2 Mo selon la connexion. Lance-le, puis ajoute tes propres trajets. Tu verras qu'un satellite géostationnaire, perché à 36 000 km, impose presque une demi-seconde de latence, quel que soit son débit.
+
+<CodePlayground language="python" starterCode={`VITESSE_FIBRE = 200_000   # km/s, environ deux tiers de la vitesse de la lumière
+VITESSE_VIDE = 300_000    # km/s, dans l'espace
+
+def aller_retour_fibre(distance_km):
+    return 2 * distance_km / VITESSE_FIBRE * 1000
+
+trajets = {'Paris - Lyon': 400, 'Paris - New York': 5_800, 'Paris - Sydney': 17_000}
+for nom, km in trajets.items():
+    print(f'{nom:18} {aller_retour_fibre(km):6.1f} ms au minimum')
+
+# Satellite géostationnaire à 36 000 km : la question monte et descend,
+# la réponse aussi, soit quatre fois l'altitude.
+satellite = 4 * 36_000 / VITESSE_VIDE * 1000
+print(f'{"Satellite géo.":18} {satellite:6.1f} ms au minimum')
+
+def duree_transfert(taille_mo, debit_mbits, latence_ms):
+    return latence_ms / 1000 + taille_mo * 8 / debit_mbits
+
+print('Page de 2 Mo, fibre 1 Gb/s, 10 ms :', round(duree_transfert(2, 1000, 10), 3), 's')
+print('Page de 2 Mo, satellite 50 Mb/s, 600 ms :', round(duree_transfert(2, 50, 600), 3), 's')
+`} />
+
+Tu dois lire 58,0 ms pour Paris - New York et 480,0 ms pour le satellite. Et la page de 2 Mo se charge en 0,026 s sur la fibre, contre 0,92 s par satellite. En réalité, une page demande des dizaines d'allers-retours, et l'écart est encore bien plus grand.
+
+Maintenant l'exercice corrigé. Écris `solution(taille_mo, debit_mbits, latence_ms)` qui renvoie la durée en secondes pour recevoir un fichier : la latence, convertie en secondes, plus le temps de transfert, la taille en mégaoctets convertie en mégabits et divisée par le débit. Arrondis le résultat à deux décimales avec `round(valeur, 2)`.
+
+<PythonChallenge id="f1-reseau-1" title="Débit et latence" description="Renvoie la durée en secondes, arrondie à deux décimales, pour recevoir un fichier." starterCode="def solution(taille_mo, debit_mbits, latence_ms):
+    latence_s = 0     # millisecondes vers secondes
+    transfert_s = 0   # mégaoctets vers mégabits, divisé par le débit
+    return round(latence_s + transfert_s, 2)" tests={[{ input: "solution(100, 100, 20)", expected: "8.02" }, { input: "solution(1, 1000, 50)", expected: "0.06" }, { input: "solution(0.01, 1000, 150)", expected: "0.15" }, { input: "solution(700, 100, 0)", expected: "56.0" }, { input: "solution(5, 20, 600)", expected: "2.6" }]} />
+
+Remarque le troisième test : pour un tout petit fichier, la durée est presque entièrement due à la latence. C'est le cas de la plupart des échanges sur le web.
+
+## les pièges
+
+- **Confondre commutateur et routeur.** Le commutateur relie les appareils d'un même réseau ; le routeur relie des réseaux entre eux.
+- **Croire qu'Internet appartient à quelqu'un.** C'est un assemblage de dizaines de milliers de réseaux indépendants.
+- **Confondre débit et latence.** Un gros débit ne compense pas une latence élevée pour les petits échanges.
+- **Penser que les satellites portent Internet.** L'essentiel du trafic intercontinental passe par des câbles sous-marins.
+- **Oublier que l'exploitant d'un réseau voit le trafic.** Ton fournisseur d'accès, comme le gérant d'un Wi-Fi public, voit avec qui tu communiques.
+- **Brancher les objets connectés sur le même réseau que les ordinateurs.** Un réseau invités les tient à l'écart.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.submarinecablemap.com/" description="La carte interactive des câbles sous-marins qui relient les continents">Submarine Cable Map</ExternalLink>
+
+<ExternalLink href="https://www.franceix.net/fr" description="Le principal point d'échange internet français, qui relie des centaines de réseaux">France-IX</ExternalLink>
+
+<ExternalLink href="https://www.arcep.fr/" description="Le régulateur français des télécoms : couverture fibre et mobile, qualité des services">Arcep</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quels sont les trois ingrédients d'un réseau ?" options={["Un écran, un clavier et une souris", "Des équipements, des liaisons et des protocoles communs", "Un serveur, un routeur et un antivirus", "Un abonnement, une box et un mot de passe"]} correct={1} explanation="Il faut des appareils qui communiquent, des liaisons pour transporter les signaux et des règles communes pour se comprendre." />
+  <Quiz id="q-2" question="Quelle est la différence entre un commutateur et un routeur ?" options={["Le commutateur relie les appareils d'un même réseau, le routeur relie des réseaux entre eux", "Le routeur est plus rapide", "Le commutateur fait le Wi-Fi", "Il n'y a aucune différence"]} correct={0} explanation="Le commutateur distribue les messages à l'intérieur du réseau local ; le routeur les fait passer d'un réseau à un autre." />
+  <Quiz id="q-3" question="Pourquoi dit-on qu'Internet est un réseau de réseaux ?" options={["Parce qu'il a été inventé par plusieurs personnes", "Parce qu'il est fait de dizaines de milliers de réseaux indépendants qui s'échangent du trafic", "Parce qu'il utilise plusieurs câbles", "Parce qu'il a plusieurs sites web"]} correct={1} explanation="Fournisseurs, hébergeurs, entreprises et universités relient leurs réseaux par des contrats de transit et des points d'échange." />
+  <Quiz id="q-4" question="Par où passe l'essentiel du trafic internet entre l'Europe et l'Amérique ?" options={["Par satellite", "Par des câbles sous-marins en fibre optique", "Par ondes radio", "Par les lignes électriques"]} correct={1} explanation="Les câbles sous-marins transportent la quasi-totalité du trafic intercontinental ; les satellites n'en portent qu'une infime part." />
+  <Quiz id="q-5" question="Une connexion par satellite a un bon débit, mais les jeux en ligne sont injouables. Pourquoi ?" options={["Le débit est trop faible", "La latence est très élevée à cause de la distance jusqu'au satellite", "Le satellite bloque les jeux", "La box est mal configurée"]} correct={1} explanation="Un satellite géostationnaire impose près d'une demi-seconde d'aller-retour : chaque action du joueur arrive en retard." />
+  <Quiz id="q-6" question="Quelle latence minimale impose la vitesse de la lumière pour un aller-retour Paris - New York, environ 5 800 km par fibre ?" options={["Environ 5 ms", "Environ 58 ms", "Environ 580 ms", "Aucune, c'est instantané"]} correct={1} explanation="2 × 5 800 km à 200 000 km/s donnent 0,058 s, soit 58 ms, avant tout traitement." />
+  <Quiz id="q-7" question="Pourquoi mettre les objets connectés sur un réseau Wi-Fi invités séparé ?" options={["Pour qu'ils aillent plus vite", "Pour qu'un objet mal protégé ne puisse pas atteindre les ordinateurs du réseau principal", "Parce qu'ils ne fonctionnent pas autrement", "Pour économiser de l'électricité"]} correct={1} explanation="Tout appareil d'un réseau local peut joindre les autres : séparer les réseaux limite la portée d'un objet compromis." />
+</QuizGroup>
+
+## à retenir
+
+- Un **réseau** : des **équipements**, des **liaisons**, des **protocoles** communs. **LAN** pour le local, **WAN** pour les longues distances.
+- La **box** cumule modem, **routeur**, **commutateur**, point d'accès **Wi-Fi** et **pare-feu**.
+- Le **commutateur** relie les appareils d'un réseau ; le **routeur** relie des réseaux.
+- **Internet** est un **réseau de réseaux** : plus de 75 000 réseaux reliés par transit et **points d'échange**, et des **câbles sous-marins** entre continents.
+- Le **fournisseur d'accès** relie ta maison à Internet et voit passer ton trafic.
+- **Débit** = quantité par seconde ; **latence** = temps d'aller-retour. La lumière impose une latence minimale : 58 ms pour Paris - New York.
