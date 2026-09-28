@@ -568,8 +568,9 @@ tourne sur nos serveurs.
 | Prop | Rôle |
 | --- | --- |
 | `title` | Titre de la barre du terminal (défaut : `Linux · root@cyberlearn`) |
-| `files` | Fichiers déposés avant que l'élève prenne la main : chemin relatif → contenu texte. Ils apparaissent dans `/mnt`, le dossier où le shell démarre. Noms simples séparés par `/`, sans `..` ni point initial ; au plus 40 fichiers de 64 Ko |
+| `files` | Fichiers déposés avant que l'élève prenne la main : chemin relatif → contenu texte. Ils apparaissent dans `/mnt`, le dossier où le shell démarre. Noms simples séparés par `/`, sans `.` ni `..` ; un nom peut commencer par un point, pour un fichier caché ; au plus 40 fichiers de 64 Ko |
 | `expectedCommands` | Commandes demandées, cochées quand l'élève les tape (espaces normalisés). Une commande rappelée avec les flèches ne compte pas : il faut la retaper |
+| `checks` | Ce que l'élève doit laisser dans `/mnt`, vérifié dans la machine après chaque commande : `{ label, path, expect: "file" \| "dir" \| "absent", contains? }`. Peu importe comment il y arrive : c'est l'état final qui compte. Idéal pour un exercice de rangement ou de configuration |
 | `hints` | Indices affichés sous le terminal |
 | `height` | Hauteur en pixels, de 200 à 900 (défaut 380) |
 
@@ -582,6 +583,7 @@ tourne sur nos serveurs.
   de BusyBox (`ls`, `chmod`, `chown`, `adduser`, `su`, `grep`, `sed`, `awk`,
   `find`, `tar`, `ps`, `top`, `vi`…) : pas de `apt`, pas de `systemd`, pas de
   `sudo`. Pour ces sujets, `SimulatedTerminal` reste le bon outil.
+- Exemple de `checks` : `checks={[{ "label": "Le rapport est dans docs", "path": "docs/rapport.txt", "expect": "file", "contains": "Bilan" }, { "label": "Le brouillon est supprimé", "path": "brouillon.tmp", "expect": "absent" }]}`. L'exercice est complété quand toutes les commandes demandées ont été tapées et toutes les vérifications tiennent.
 - Le composant ne bloque pas la suite de la leçon, comme `SimulatedTerminal`.
 - Sur l'app mobile, il devient la fiche des commandes et des indices : la
   machine elle-même est réservée au site (voir `docs/MOBILE_PARITY.md`).

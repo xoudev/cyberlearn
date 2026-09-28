@@ -13,12 +13,13 @@ export const LESSON_DIR = "/mnt";
 
 /**
  * A lesson file path, relative to LESSON_DIR: plain names separated by
- * slashes. No "..", no leading slash, nothing a shell would read as more than
- * a name - the setup command quotes the directories, but a path that needs
- * quoting to be safe is not one a lesson should use.
+ * slashes. No "." or "..", no leading slash, nothing a shell would read as
+ * more than a name - the setup command quotes the directories, but a path
+ * that needs quoting to be safe is not one a lesson should use. A name may
+ * start with a dot: hidden files are part of what the lessons teach.
  */
 export function isLessonFilePath(path: string): boolean {
-  if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]*(?:\/[A-Za-z0-9_][A-Za-z0-9_.-]*)*$/.test(path)) return false;
+  if (!/^[A-Za-z0-9_.][A-Za-z0-9_.-]*(?:\/[A-Za-z0-9_.][A-Za-z0-9_.-]*)*$/.test(path)) return false;
   return path.split("/").every((part) => part !== "." && part !== "..");
 }
 
@@ -75,7 +76,11 @@ export function toSerial(text: string): string {
  * reconstructed from keystrokes alone, so such a line is not reported rather
  * than reported wrong; retyping it counts.
  */
-export function createLineTracker(onLine: (line: string) => void): (data: string) => void {
+export function createLineTracker(
+  onLine: (line: string) => void,
+  /** Called on every Enter, reliable line or not: the moment to look again. */
+  onEnter?: () => void,
+): (data: string) => void {
   let line = "";
   let reliable = true;
   return (data: string) => {
@@ -84,6 +89,7 @@ export function createLineTracker(onLine: (line: string) => void): (data: string
       if (ch === "\r" || ch === "\n") {
         const submitted = normalizeCommand(line);
         if (reliable && submitted !== "") onLine(submitted);
+        onEnter?.();
         line = "";
         reliable = true;
       } else if (ch === "\x7f" || ch === "\b") {
@@ -103,4 +109,29 @@ export function createLineTracker(onLine: (line: string) => void): (data: string
       }
     }
   };
+}
+
+// ── Checking the state the learner leaves ────────────────────────────────────
+
+/** What a path of the lesson directory turned out to be. */
+export type PathState = "file" | "dir" | "absent";
+
+/**
+ * One thing the exercise asks the learner to leave behind: a path that must
+ * be a file (optionally containing a text), a directory, or nothing at all.
+ * Checked in the machine itself, so any way of getting there counts.
+ */
+export interface StateCheck {
+  label: string;
+  path: string;
+  expect: PathState;
+  /** For a file: a text it must contain. */
+  contains?: string | undefined;
+}
+
+/** Whether a check holds, given what the path is and, for a file, its text. */
+export function checkHolds(check: StateCheck, state: PathState, text: string | null): boolean {
+  if (state !== check.expect) return false;
+  if (check.expect !== "file" || check.contains === undefined) return true;
+  return text?.includes(check.contains) === true;
 }
