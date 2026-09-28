@@ -6,7 +6,18 @@ vi.mock("@/lib/auth", () => ({ requireAdminAction }));
 const applyLessonUpdate = vi.fn();
 vi.mock("@/lib/services/lesson-sync.service", () => ({ applyLessonUpdate }));
 
-const { updateLessonFromRepositoryAction } = await import("../actions");
+const importLessonFromRepository = vi.fn();
+const syncPathFromRepository = vi.fn();
+vi.mock("@/lib/services/repository-import.service", () => ({
+  importLessonFromRepository,
+  syncPathFromRepository,
+}));
+
+const {
+  importLessonFromRepositoryAction,
+  syncPathFromRepositoryAction,
+  updateLessonFromRepositoryAction,
+} = await import("../actions");
 
 const HASH = "a".repeat(64);
 
@@ -59,6 +70,87 @@ describe("updateLessonFromRepositoryAction", () => {
       ok: false,
       message: "python/05.mdx ne passe pas les contrôles de l'import.",
       details: ["contentMdx : Section 2 : balise non fermée", "Autre"],
+    });
+  });
+});
+
+describe("importLessonFromRepositoryAction", () => {
+  it("checks the caller is an admin before anything else", async () => {
+    requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(importLessonFromRepositoryAction({ refCode: "CL-LSN-01008-V01" })).rejects.toThrow(
+      "NEXT_REDIRECT",
+    );
+    expect(importLessonFromRepository).not.toHaveBeenCalled();
+  });
+
+  it("refuses a refCode that is not one", async () => {
+    expect(await importLessonFromRepositoryAction({ refCode: "../content/x.mdx" })).toEqual({
+      ok: false,
+      message: "Demande invalide.",
+      details: [],
+    });
+    expect(importLessonFromRepository).not.toHaveBeenCalled();
+  });
+
+  it("imports on behalf of the admin, from the refCode only", async () => {
+    importLessonFromRepository.mockResolvedValue({ ok: true, lessonId: "l-1" });
+    const input = { refCode: "CL-LSN-01008-V01", content: "<script>" };
+    expect(await importLessonFromRepositoryAction(input)).toEqual({ ok: true });
+    expect(importLessonFromRepository).toHaveBeenCalledWith("CL-LSN-01008-V01", "admin-1");
+  });
+
+  it("passes on why an import was refused, field by field", async () => {
+    importLessonFromRepository.mockResolvedValue({
+      ok: false,
+      reason: "invalid",
+      message: "f1/01008.mdx ne passe pas les contrôles de l'import.",
+      errors: [{ field: "prerequisites", message: "Prerequis introuvable: CL-LSN-01901-V01" }],
+    });
+    expect(await importLessonFromRepositoryAction({ refCode: "CL-LSN-01008-V01" })).toEqual({
+      ok: false,
+      message: "f1/01008.mdx ne passe pas les contrôles de l'import.",
+      details: ["prerequisites : Prerequis introuvable: CL-LSN-01901-V01"],
+    });
+  });
+});
+
+describe("syncPathFromRepositoryAction", () => {
+  it("checks the caller is an admin before anything else", async () => {
+    requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(syncPathFromRepositoryAction({ refCode: "CL-PATH-101-V01" })).rejects.toThrow(
+      "NEXT_REDIRECT",
+    );
+    expect(syncPathFromRepository).not.toHaveBeenCalled();
+  });
+
+  it("refuses a lesson refCode where a path one is expected", async () => {
+    expect(await syncPathFromRepositoryAction({ refCode: "CL-LSN-01008-V01" })).toEqual({
+      ok: false,
+      message: "Demande invalide.",
+      details: [],
+    });
+    expect(syncPathFromRepository).not.toHaveBeenCalled();
+  });
+
+  it("writes the path on behalf of the admin", async () => {
+    syncPathFromRepository.mockResolvedValue({ ok: true, created: true, attached: 8, missing: 0 });
+    expect(await syncPathFromRepositoryAction({ refCode: "CL-PATH-101-V01" })).toEqual({
+      ok: true,
+    });
+    expect(syncPathFromRepository).toHaveBeenCalledWith("CL-PATH-101-V01", "admin-1");
+  });
+
+  it("passes on the manifest errors that stopped the sync", async () => {
+    syncPathFromRepository.mockResolvedValue({
+      ok: false,
+      reason: "invalid",
+      message: "Les manifestes de content/paths ne passent pas leurs contrôles.",
+      details: ["linux.json : slug linux déjà utilisé par autre.json."],
+    });
+    expect(await syncPathFromRepositoryAction({ refCode: "CL-PATH-102-V01" })).toEqual({
+      ok: false,
+      message: "Les manifestes de content/paths ne passent pas leurs contrôles.",
+      details: ["linux.json : slug linux déjà utilisé par autre.json."],
     });
   });
 });

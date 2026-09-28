@@ -16,22 +16,34 @@ difficulté, XP, prérequis) + corps MDX. Le format complet est documenté dans
 
 ## Workflow d'import
 
-1. **Importer les leçons** : admin → `/lessons/import`, glisser tout le dossier
-   d'un parcours. Le lot est plafonné à 30 fichiers (`BATCH_MAX_FILES` dans
-   `apps/admin/app/(admin)/lessons/import/actions.ts`), donc un parcours de 12
-   passe d'un coup. Les prérequis internes au lot sont gérés automatiquement
-   (ordre topologique). Les leçons arrivent en **DRAFT**.
-2. **Créer les parcours** : `pnpm --filter @cyberlearn/db db:seed-paths`. Le
-   script crée chaque parcours et y rattache ses leçons par refCode, dans
-   l'ordre. Idempotent : ré-exécutable après l'import de nouvelles leçons.
-3. **Publier** : relire dans l'admin, puis passer leçons et parcours en
-   PUBLISHED.
+Tout se fait depuis admin → Leçons → **Synchroniser avec le dépôt**
+(`/lessons/sync`), une fois la PR fusionnée et la console redéployée : la page
+lit les fichiers de ce dossier et de `content/paths` tels qu'ils sont déployés.
+
+1. **Importer les nouvelles leçons** : section « Nouvelles leçons du dépôt »,
+   bouton **Tout importer**. Chaque fichier passe les mêmes contrôles qu'un
+   import manuel, dans l'ordre de ses prérequis. Les leçons arrivent en
+   **DRAFT**, et l'import est journalisé (`lesson.import.success`, source
+   `repository`).
+2. **Synchroniser les parcours** : section « Parcours du dépôt », bouton
+   **Synchroniser les parcours**. Chaque manifeste de `content/paths` crée ou
+   met à jour son parcours, ses modules et l'ordre de ses leçons déjà
+   importées (journalisé `path.sync`). Un nouveau parcours arrive en DRAFT ;
+   un parcours existant garde son statut. Resynchroniser après l'import d'un
+   nouveau module.
+3. **Publier** : relire, puis passer leçons (liste des leçons, sélection
+   multiple) et parcours en PUBLISHED.
+
+L'import manuel (`/lessons/import`, lots de 30 fichiers) et le script
+`pnpm --filter @cyberlearn/db db:seed-paths` restent disponibles, pour une base
+locale notamment ; le script et la console écrivent un parcours avec le même
+code (`packages/db/src/catalogue/path-sync.ts`).
 
 ## Mettre à jour une leçon déjà importée
 
 L'import refuse un refCode qui existe déjà. Une correction faite ici après
-l'import n'arrive donc pas seule sur le site : elle passe par admin →
-Leçons → **Mettre à jour depuis le dépôt** (`/lessons/sync`).
+l'import n'arrive donc pas seule sur le site : elle passe par la même page,
+section des mises à jour.
 
 - La page compare chaque fichier de ce dossier à sa leçon en base et montre les
   différences : champs du frontmatter, puis passages du contenu.
@@ -140,9 +152,10 @@ par un manifeste, `content/paths/<slug>.json` : ses métadonnées et ses
   refuse un manifeste mal formé, un fichier qui ne porte pas le nom de son slug,
   une leçon listée deux fois ou dans deux parcours, et une leçon dont le numéro
   ne correspond pas à son parcours.
-- **Seed** : `db:seed-paths` crée le parcours, ses modules, et range chaque
-  leçon importée dans le sien. Une leçon pas encore importée est signalée et
-  sautée ; relancer le seed après chaque import de module.
+- **Synchronisation** : la console (« Synchroniser avec le dépôt ») ou
+  `db:seed-paths` crée le parcours, ses modules, et range chaque leçon importée
+  dans le sien. Une leçon pas encore importée est signalée et sautée ;
+  resynchroniser après chaque import de module.
 - **Quiz de module** : c'est la dernière leçon du module, écrite avec
   `QuizGroup` (voir le guide d'écriture). Aucun mécanisme à part.
 

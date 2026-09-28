@@ -1,10 +1,11 @@
 /**
  * Reads and checks the catalogue's path manifests, content/paths/<slug>.json.
  *
- * Used by seed-paths (to create the paths, their modules and their lesson
- * links) and by a unit test that fails the build on a manifest that would
- * seed wrong - so a mistake is caught when it is written, not when the seed
- * runs against production.
+ * Used by seed-paths and by the console's "Synchroniser avec le dépôt" page
+ * (to create the paths, their modules and their lesson links, through
+ * ./path-sync.ts), and by a unit test that fails the build on a manifest that
+ * would sync wrong - so a mistake is caught when it is written, not when it
+ * reaches production.
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";

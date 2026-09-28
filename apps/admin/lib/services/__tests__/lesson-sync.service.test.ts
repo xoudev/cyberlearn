@@ -181,6 +181,17 @@ describe("lessonSyncOverview", () => {
     expect(o.unreadable[0]?.file).toBe("b.mdx");
   });
 
+  it("lists the files not imported yet so that each follows its prerequisites", async () => {
+    const needs = (refCode: string, prereq: string): string =>
+      file(refCode).replace("prerequisites: []", `prerequisites: ["${prereq}"]`);
+    // Alphabetical order would import 01 before the 02 it needs.
+    write("01-suite.mdx", needs("CL-LSN-003-V01", "CL-LSN-002-V01"));
+    write("02-base.mdx", file("CL-LSN-002-V01"));
+    m.findMany.mockResolvedValue([]);
+    const o = await lessonSyncOverview(dir);
+    expect(o.notImported.map((n) => n.refCode)).toEqual(["CL-LSN-002-V01", "CL-LSN-003-V01"]);
+  });
+
   it("warns about a quiz whose answer changes when learners already answered it", async () => {
     write("python/05.mdx", file("CL-LSN-005-V01", BODY.replace("correct={1}", "correct={0}")));
     m.findMany.mockResolvedValue([row("CL-LSN-005-V01")]);
