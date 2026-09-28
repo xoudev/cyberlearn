@@ -39,6 +39,23 @@ describe("the lessons in content/", () => {
     expect(result).toEqual({ ok: true });
   });
 
+  it("each declare a refCode and a slug no other file declares", () => {
+    // The database refuses a second lesson with a taken slug or refCode, and
+    // the import says so only once the file reaches it. CL-LSN-02026 took
+    // the slug of the older linux/05-permissions and was refused in production.
+    const patterns = { refCode: /^refCode:\s*(\S+)\s*$/m, slug: /^slug:\s*(\S+)\s*$/m };
+    for (const [key, pattern] of Object.entries(patterns)) {
+      const owners = new Map<string, string[]>();
+      for (const file of FILES) {
+        const value = pattern.exec(readFileSync(file, "utf8"))?.[1];
+        if (value === undefined) continue;
+        owners.set(value, [...(owners.get(value) ?? []), path.relative(ROOT, file)]);
+      }
+      const duplicates = [...owners].filter(([, files]) => files.length > 1);
+      expect(duplicates, key).toEqual([]);
+    }
+  });
+
   it("have every quiz scorable: the server reads as many as the lesson shows", () => {
     // The answer key is read off the syntax tree. A quiz the reader missed
     // would be one the page shows and the server refuses to score.
