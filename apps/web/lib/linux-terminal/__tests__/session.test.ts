@@ -11,12 +11,16 @@ import {
 } from "../session";
 
 describe("isLessonFilePath", () => {
-  it.each(["notes.txt", "projet/rapport-final.txt", "a/b/c.sh", "journal.2026-09.log"])(
-    "accepts %s",
-    (path) => {
-      expect(isLessonFilePath(path)).toBe(true);
-    },
-  );
+  it.each([
+    "notes.txt",
+    "projet/rapport-final.txt",
+    "a/b/c.sh",
+    "journal.2026-09.log",
+    ".bashrc",
+    ".cache/indice.txt",
+  ])("accepts %s", (path) => {
+    expect(isLessonFilePath(path)).toBe(true);
+  });
 
   it.each([
     "../etc/passwd",
@@ -26,7 +30,8 @@ describe("isLessonFilePath", () => {
     "a b",
     "a;rm -rf /",
     "$(id)",
-    ".bashrc",
+    "./notes.txt",
+    "..",
     "",
   ])("refuses %s", (path) => {
     expect(isLessonFilePath(path)).toBe(false);

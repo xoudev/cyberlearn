@@ -13,12 +13,13 @@ export const LESSON_DIR = "/mnt";
 
 /**
  * A lesson file path, relative to LESSON_DIR: plain names separated by
- * slashes. No "..", no leading slash, nothing a shell would read as more than
- * a name - the setup command quotes the directories, but a path that needs
- * quoting to be safe is not one a lesson should use.
+ * slashes. No "." or "..", no leading slash, nothing a shell would read as
+ * more than a name - the setup command quotes the directories, but a path
+ * that needs quoting to be safe is not one a lesson should use. A name may
+ * start with a dot: hidden files are part of what the lessons teach.
  */
 export function isLessonFilePath(path: string): boolean {
-  if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]*(?:\/[A-Za-z0-9_][A-Za-z0-9_.-]*)*$/.test(path)) return false;
+  if (!/^[A-Za-z0-9_.][A-Za-z0-9_.-]*(?:\/[A-Za-z0-9_.][A-Za-z0-9_.-]*)*$/.test(path)) return false;
   return path.split("/").every((part) => part !== "." && part !== "..");
 }
 
