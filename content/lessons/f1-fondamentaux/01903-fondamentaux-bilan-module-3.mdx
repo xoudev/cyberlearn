@@ -1,0 +1,144 @@
+---
+refCode: CL-LSN-01903-V01
+slug: fondamentaux-bilan-module-3
+title: "Bilan du module 3 : ta première machine virtuelle Linux"
+description: "Le quiz du module Les systèmes d'exploitation, puis un projet concret : installer une machine virtuelle Debian dans VirtualBox en vérifiant l'image téléchargée, la configurer avec un compte non privilégié, la mettre à jour, la protéger par un instantané, et rédiger le guide d'installation commenté qui relie chaque étape aux notions du module."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 120
+xpReward: 400
+prerequisites: ["CL-LSN-01022-V01"]
+---
+
+Tu connais maintenant le système d'exploitation de l'intérieur : le noyau et les appels système, les processus et l'ordonnanceur, la mémoire virtuelle, les fichiers, les comptes et les droits, les mises à jour, les différences entre Windows, Linux et macOS, et la virtualisation. Ce bilan vérifie ces connaissances, puis te fait construire l'outil qui t'accompagnera dans tous les parcours suivants : ta propre **machine virtuelle Linux**. Et comme un professionnel documente ce qu'il fait, tu en rédigeras le **guide d'installation commenté**.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- expliquer le rôle du noyau, des processus, de la mémoire virtuelle et du système de fichiers ;
+- appliquer le moindre privilège aux comptes d'un système ;
+- vérifier l'authenticité d'un logiciel téléchargé et tenir un système à jour ;
+- créer, configurer et protéger une machine virtuelle ;
+- observer un système Linux avec les commandes du module ;
+- rédiger une documentation technique claire et justifiée.
+
+## quiz
+
+Quatorze questions sur les huit leçons du module.
+
+<QuizGroup>
+  <Quiz id="f1m3-q-1" question="Qu'est-ce qu'un appel système ?" options={["Un redémarrage du système", "Une demande qu'un programme adresse au noyau pour accéder à une ressource", "Un message d'erreur", "Une mise à jour automatique"]} correct={1} explanation="C'est la seule porte entre l'espace utilisateur et le noyau : le programme demande, le noyau vérifie puis agit." />
+  <Quiz id="f1m3-q-2" question="Pourquoi le plantage d'un programme n'emporte-t-il pas toute la machine ?" options={["Parce que le processeur l'exécute en mode restreint et le noyau n'arrête que lui", "Parce que l'antivirus le relance", "Parce que la mémoire est vidée", "Il emporte toujours toute la machine"]} correct={0} explanation="Le mode utilisateur du processeur confine le programme ; le noyau termine le seul processus fautif." />
+  <Quiz id="f1m3-q-3" question="Que contient le PPID d'un processus ?" options={["Le PID de son parent", "Sa priorité", "Son temps de processeur", "Le nom de son utilisateur"]} correct={0} explanation="Le PPID permet de reconstituer l'arbre des processus, un outil clé pour repérer une chaîne de lancement anormale." />
+  <Quiz id="f1m3-q-4" question="winword.exe lance powershell.exe, qui ouvre une connexion vers une adresse inconnue. Qu'est-ce que cela évoque ?" options={["Une mise à jour d'Office", "Un fonctionnement normal de Word", "Un document piégé dont la macro a lancé une commande", "Une sauvegarde automatique"]} correct={2} explanation="Un traitement de texte n'a pas à lancer un interpréteur de commandes : c'est un arbre de processus typique d'une attaque par document." />
+  <Quiz id="f1m3-q-5" question="Avec des pages de 4 096 octets, quel est le décalage de l'adresse virtuelle 0x7C2A dans sa page ?" options={["0x7C2A", "0xC2A", "0x7", "0x2A"]} correct={1} explanation="Les trois derniers chiffres hexadécimaux forment le décalage : 0xC2A, dans la page 7." />
+  <Quiz id="f1m3-q-6" question="Le gestionnaire des tâches montre 90 % de mémoire utilisée, mais beaucoup de mémoire en cache et disponible. Faut-il s'inquiéter ?" options={["Oui, il faut acheter de la mémoire", "Oui, c'est un virus", "Il faut vider le cache chaque jour", "Non, le cache est rendu aux programmes dès qu'ils en ont besoin"]} correct={3} explanation="La mémoire libre sert de cache ; c'est la mémoire disponible qui compte, et un échange sur disque intense." />
+  <Quiz id="f1m3-q-7" question="Pourquoi une clé USB en exFAT ne protège-t-elle pas les fichiers d'un utilisateur contre un autre ?" options={["Parce qu'elle est trop petite", "Parce qu'exFAT est chiffré", "Elle les protège", "Parce qu'exFAT n'a aucune notion de propriétaire ni de droits"]} correct={3} explanation="FAT32 et exFAT ne stockent ni propriétaire ni droits : toute personne qui a la clé lit et modifie tout." />
+  <Quiz id="f1m3-q-8" question="Quelle défense arrête une traversée de répertoires ?" options={["Normaliser le chemin puis vérifier qu'il reste dans le dossier autorisé", "Filtrer les caractères ../", "Mettre les fichiers en lecture seule", "Cacher le dossier"]} correct={0} explanation="Un filtre se contourne par des encodages ; un chemin résolu puis vérifié ne sort pas du dossier." />
+  <Quiz id="f1m3-q-9" question="Que signifient les droits 750 sur un script ?" options={["rwxrwxrwx", "rwxr-x--- : le propriétaire fait tout, le groupe lit et exécute, les autres rien", "rw-r-----", "r-xr-x---"]} correct={1} explanation="7 = 4 + 2 + 1, 5 = 4 + 1, 0 = rien : rwx, r-x, ---." />
+  <Quiz id="f1m3-q-10" question="Pourquoi travailler au quotidien avec un compte standard plutôt qu'administrateur ?" options={["Parce que c'est plus rapide", "Parce qu'un programme malveillant hérite des droits du compte qui le lance", "Parce que les comptes administrateurs expirent", "Ce n'est pas utile"]} correct={1} explanation="C'est le moindre privilège : moins le compte a de droits, moins une erreur ou une attaque va loin." />
+  <Quiz id="f1m3-q-11" question="Une faille de Windows est corrigée par Microsoft. Combien de temps peut-on attendre pour appliquer le correctif ?" options={["Des mois, sans risque", "Le moins possible : les attaquants étudient le correctif pour exploiter la faille", "On n'a jamais besoin de l'appliquer", "Jusqu'à la prochaine version de Windows"]} correct={1} explanation="WannaCry a frappé en 2017 des machines dont le correctif existait depuis deux mois." />
+  <Quiz id="f1m3-q-12" question="Où se range la configuration du système sous Linux ?" options={["Dans le registre", "Principalement dans des fichiers texte du dossier /etc", "Dans le BIOS", "Dans /home"]} correct={1} explanation="Linux n'a pas de registre : la configuration est faite de fichiers texte, surtout dans /etc." />
+  <Quiz id="f1m3-q-13" question="Quel mode réseau choisir pour une machine virtuelle volontairement vulnérable ?" options={["Pont, pour la tester depuis tout le réseau", "NAT avec redirection de ports ouverte à Internet", "Réseau interne ou privé hôte", "Aucun, les VM n'ont pas de réseau"]} correct={2} explanation="Un laboratoire reste isolé : seules les machines du laboratoire se voient entre elles." />
+  <Quiz id="f1m3-q-14" question="Pourquoi analyser un fichier dangereux dans une machine virtuelle plutôt que dans un conteneur ?" options={["Parce que les conteneurs ne lancent pas de programmes", "Parce que les VM sont plus rapides", "Parce qu'un conteneur partage le noyau de l'hôte, donc son isolation est plus faible", "Il n'y a aucune différence"]} correct={2} explanation="S'échapper d'un conteneur demande une faille du noyau partagé ; s'échapper d'une VM demande une faille de l'hyperviseur, bien plus rare." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées avant le projet : il les mobilise presque toutes.
+
+## projet
+
+### l'énoncé
+
+Installe une **machine virtuelle Debian** dans **VirtualBox**, sur ton propre ordinateur, et rédige le **guide d'installation commenté** qui permettrait à quelqu'un d'autre de refaire exactement la même chose. Ce guide doit contenir des **captures d'écran** des étapes clés et, pour chaque étape, une ou deux phrases qui expliquent **pourquoi** on la fait, en reliant ce choix aux notions du module.
+
+Cette machine te servira dans la suite de la formation : prends le temps de bien la faire.
+
+### ce qu'il te faut
+
+- un ordinateur avec au moins **8 Gio de mémoire vive** et **30 Go** d'espace disque libre ;
+- la **virtualisation matérielle activée** dans l'UEFI (leçon 8) ;
+- **VirtualBox**, téléchargé depuis son site officiel, `virtualbox.org` ;
+- l'image d'installation de **Debian** dite *netinst*, téléchargée depuis le site officiel, `debian.org`, avec le fichier des empreintes `SHA256SUMS` publié à côté.
+
+### les étapes
+
+<Diagram caption="Les étapes du projet">
+flowchart LR
+  A["Télécharger et vérifier l'image"] --> B["Créer la VM"]
+  B --> C["Installer Debian"]
+  C --> D["Mettre à jour"]
+  D --> E["Instantané propre"]
+  E --> F["Observer le système"]
+</Diagram>
+
+**1. Vérifier l'image.** Avant tout, calcule l'empreinte SHA-256 de l'image téléchargée (`Get-FileHash` sous Windows, `shasum -a 256` sous macOS, `sha256sum` sous Linux) et compare-la à la ligne correspondante du fichier `SHA256SUMS`. Pour aller plus loin, Debian signe ce fichier : la signature se vérifie avec GnuPG et les clés publiées sur la page de vérification de Debian.
+
+**2. Créer la machine virtuelle.** Réglages conseillés : 2 processeurs virtuels, **4 Gio** de mémoire, un disque virtuel de **25 Go** qui grandit à la demande, réseau en **NAT**. Note pour chaque réglage pourquoi tu l'as choisi, en tenant compte de ton hôte.
+
+**3. Installer Debian.** Choisis l'installation classique, sans environnement de bureau si ton ordinateur est modeste, ou avec un bureau léger. Lors de la création des comptes, **laisse vide le mot de passe de root** : l'installateur désactive alors le compte root et donne à ton utilisateur le droit d'utiliser `sudo`. Choisis un mot de passe solide pour ton compte.
+
+**4. Mettre à jour.** Au premier démarrage, applique les mises à jour avec `sudo apt update` puis `sudo apt full-upgrade`, et redémarre si le noyau a été mis à jour.
+
+**5. Prendre un instantané.** Machine éteinte, prends un instantané nommé `propre-mise-a-jour` dans VirtualBox. C'est ton point de retour en cas d'erreur.
+
+**6. Observer le système.** Lance les commandes suivantes et fais une capture de leur résultat, en expliquant chaque sortie en une phrase :
+
+| Commande | Ce qu'elle montre | Leçon |
+| --- | --- | --- |
+| `uname -r` | la version du noyau Linux | 1 |
+| `ps -ef --forest` | l'arbre des processus, avec systemd en PID 1 | 2 |
+| `free -h` | la mémoire, le cache et l'échange | 3 |
+| `df -hT` | les systèmes de fichiers montés et leur type | 4 |
+| `id` | ton UID et tes groupes, dont `sudo` | 5 |
+| `apt list --upgradable` | ce qui reste à mettre à jour | 6 |
+| `systemd-detect-virt` | le type de virtualisation détecté | 8 |
+
+### ce que le guide doit contenir
+
+1. Une **introduction** : le but de la machine et la configuration de l'hôte.
+2. Les **six étapes**, chacune avec au moins une capture et son explication.
+3. Un **tableau des réglages** de la VM et de leur justification.
+4. Les **sorties commentées** des sept commandes d'observation.
+5. Une **section sécurité** : ce qui protège cette machine, et ce qui resterait à faire.
+
+### les critères de réussite
+
+| Critère | Attendu |
+| --- | --- |
+| Fonctionnement | La VM démarre, est à jour, et un instantané propre existe |
+| Vérification | L'empreinte de l'image est vérifiée et la capture le montre |
+| Moindre privilège | Root est désactivé, le compte utilisateur passe par `sudo` |
+| Explications | Chaque étape et chaque réglage sont justifiés par une notion du module |
+| Observation | Les sept commandes sont exécutées et leurs sorties expliquées |
+| Reproductibilité | Quelqu'un d'autre pourrait refaire l'installation avec le seul guide |
+
+### la correction commentée : des extraits de guide attendus
+
+Voici le niveau d'explication visé, sur quelques passages. Ton guide aura tes propres valeurs.
+
+> **Vérification de l'image.** L'empreinte SHA-256 calculée avec `Get-FileHash` est identique à celle du fichier `SHA256SUMS` publié par Debian. Le fichier n'a donc pas été modifié ni abîmé pendant le téléchargement. L'empreinte seule ne prouve pas que `SHA256SUMS` vient de Debian : c'est la signature de ce fichier qui le garantit (module 3, leçon 6).
+
+> **Mémoire : 4 Gio.** Mon hôte a 16 Gio. J'en laisse 12 au système hôte et aux applications que j'utilise en même temps. Donner trop de mémoire à la VM ferait passer l'hôte en échange sur disque et ralentirait tout (leçon 3).
+
+> **Réseau : NAT.** La VM a besoin d'Internet pour ses mises à jour, mais n'a pas à être visible sur mon réseau domestique. Quand j'y installerai des outils ou des services vulnérables, je passerai en réseau interne (leçon 8).
+
+> **Root désactivé.** En laissant vide le mot de passe de root, le compte root ne peut plus se connecter directement, et mon compte obtient les droits d'administration par `sudo`, commande par commande, avec une trace dans le journal (leçon 5).
+
+> **`free -h`.** 3,8 Gio au total, dont 2,9 Gio disponibles alors que 0,6 Gio seulement sont libres : la différence est surtout du cache, que le système rend aux programmes à la demande. Aucun échange utilisé : la VM a assez de mémoire (leçon 3).
+
+> **`systemd-detect-virt`** affiche `oracle` : le système sait qu'il tourne dans VirtualBox, édité par Oracle. C'est aussi ce type d'indice qu'un logiciel malveillant consulte pour savoir s'il est observé (leçon 8).
+
+La section sécurité attendue cite au minimum : l'image vérifiée, root désactivé, la VM à jour, le réseau en NAT, l'instantané. Et comme points à améliorer : activer les mises à jour de sécurité automatiques (paquet `unattended-upgrades`), désactiver les dossiers partagés et le presse-papiers commun tant qu'ils ne servent pas, et chiffrer le disque de l'hôte, qui contient le fichier du disque virtuel.
+
+### pour aller plus loin
+
+Crée une **seconde** machine virtuelle, par exemple en clonant la première, place les deux sur un **réseau interne** VirtualBox, et vérifie qu'elles se voient entre elles mais ne voient plus Internet. Tu viens de construire ton premier laboratoire isolé. Le module 4 t'apprendra ce qui circule entre elles.
+
+## à retenir
+
+- Un système d'exploitation, c'est un **noyau** qui abstrait, partage et protège ; des **processus** ordonnancés ; une **mémoire virtuelle** ; des **fichiers** ; des **comptes** et des **droits**.
+- Les réflexes du module, appliqués à ta VM : **vérifier** ce que tu télécharges, **moindre privilège** (root désactivé, `sudo`), **mettre à jour** et redémarrer, **isoler** le réseau, **instantané** avant de prendre des risques.
+- Les mêmes notions existent sous **Windows**, **Linux** et **macOS** ; seuls les noms et les outils changent.
+- Un bon guide **explique pourquoi**, pas seulement comment : c'est ce qui le rend utile à quelqu'un d'autre, et à toi dans six mois.
+- Ta machine virtuelle Debian est désormais ton terrain d'entraînement pour toute la suite.

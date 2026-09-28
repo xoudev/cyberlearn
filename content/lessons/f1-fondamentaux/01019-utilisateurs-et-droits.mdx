@@ -1,0 +1,174 @@
+---
+refCode: CL-LSN-01019-V01
+slug: fondamentaux-utilisateurs-et-droits
+title: "Les utilisateurs et les droits"
+description: "Pourquoi un système a des comptes, ce qui distingue un utilisateur ordinaire d'un administrateur, comment Windows et Linux décrivent les droits sur un fichier, le principe du moindre privilège, et la comparaison entre l'UAC de Windows et sudo sous Linux. Avec un terminal pour éprouver ses propres droits et un exercice de lecture des permissions Unix."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01018-V01"]
+---
+
+Tu as vu que le noyau contrôle chaque demande d'un processus : peut-il ouvrir ce fichier, lire cette mémoire, arrêter ce programme ? Pour répondre, il a besoin de savoir **au nom de qui** agit le processus. C'est le rôle des **comptes utilisateurs** et des **droits**. Cette leçon explique comment Windows et Linux les organisent, pourquoi le compte administrateur est à la fois indispensable et dangereux, et pourquoi le principe du **moindre privilège** est sans doute la règle de sécurité la plus rentable qui soit.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer à quoi servent les comptes et les groupes ;
+- distinguer un compte standard, un compte administrateur et un compte de service ;
+- lire les droits d'un fichier sous Linux et comprendre les autorisations NTFS ;
+- énoncer et appliquer le principe du moindre privilège ;
+- comparer l'UAC de Windows et `sudo` sous Linux ;
+- expliquer ce qu'est une élévation de privilèges.
+
+## pourquoi ça compte
+
+Dans presque tous les incidents de sécurité, la question des droits est centrale. Un logiciel malveillant ouvert par un utilisateur ordinaire reste confiné à ses fichiers ; ouvert par un administrateur, il prend toute la machine, puis souvent tout le réseau. Les rançongiciels qui paralysent des entreprises entières ont presque toujours obtenu, à un moment, des droits d'administration. À l'inverse, retirer les droits d'administrateur aux postes de travail des utilisateurs bloque une grande partie des attaques courantes. Pour un technicien, un administrateur ou un auditeur, savoir qui a quels droits, et pourquoi, fait partie du travail de base.
+
+## pourquoi des comptes
+
+Un **compte utilisateur** représente une personne, ou un service, auprès du système. Il sert à trois choses :
+
+- **identifier** : savoir qui est connecté et au nom de qui chaque processus s'exécute ;
+- **autoriser** : décider ce que ce compte a le droit de faire ;
+- **tracer** : attribuer chaque action à un compte dans les journaux.
+
+Pour le système, un compte est avant tout un **numéro**. Sous Linux, c'est l'**UID** (*user identifier*) : 0 pour l'administrateur, et à partir de 1 000 pour les personnes, sur la plupart des distributions. Sous Windows, c'est le **SID** (*security identifier*), une longue suite comme `S-1-5-21-…-1001`. Le nom affiché n'est qu'une étiquette : renommer un compte ne change pas ses droits.
+
+Les **groupes** rassemblent des comptes pour leur attribuer des droits en une fois. On donne l'accès au dossier Comptabilité au groupe `comptabilite`, pas à chacun de ses membres : quand quelqu'un arrive ou part, il suffit de l'ajouter ou de le retirer du groupe. Chaque processus porte l'identité de son utilisateur et la liste de ses groupes, et c'est ce que le noyau consulte à chaque vérification.
+
+## les types de comptes
+
+**L'administrateur** a tous les pouvoirs sur la machine. Sous Linux, c'est **root**, l'UID 0, pour qui le noyau saute presque toutes les vérifications de droits. Sous Windows, ce sont les membres du groupe **Administrateurs**, et au-dessus d'eux le compte **SYSTEM**, avec lequel tournent les services les plus privilégiés.
+
+**Le compte standard** peut utiliser la machine, lancer des programmes, modifier ses propres fichiers, mais pas installer de logiciels pour tout le monde, modifier les réglages du système ni toucher aux fichiers des autres.
+
+**Les comptes de service** ne correspondent à aucune personne : ils servent à faire tourner un service avec des droits limités. Sous Linux, le serveur web tourne souvent sous `www-data`, la base de données sous `postgres`. Tu as vu dans la leçon sur les processus pourquoi c'est utile : le mineur de cryptomonnaie déposé par une faille du site tournait sous `www-data`, et ne pouvait donc toucher qu'aux fichiers de ce compte, pas au reste du système. Si le serveur web avait tourné en root, l'attaquant aurait eu la machine entière.
+
+## les droits sur les fichiers
+
+### sous Linux : trois fois trois bits
+
+Chaque fichier Linux a un **propriétaire**, un **groupe**, et trois séries de droits : pour le propriétaire, pour les membres du groupe, et pour tous les **autres**. Chaque série comporte trois droits : **lecture** (`r`), **écriture** (`w`) et **exécution** (`x`, qui pour un dossier signifie le droit d'y entrer). `ls -l` les affiche ainsi :
+
+```text
+-rw-r----- 1 root shadow 1342 sept. 12 09:30 /etc/shadow
+```
+
+Le premier caractère donne le type (`-` pour un fichier ordinaire, `d` pour un dossier). Suivent `rw-` pour le propriétaire `root`, qui peut lire et écrire ; `r--` pour le groupe `shadow`, qui peut lire ; `---` pour les autres, qui ne peuvent rien. Ce fichier contient les empreintes des mots de passe : il est normal que personne d'autre ne puisse le lire.
+
+Tu reconnais trois groupes de trois bits : c'est pour cela que les droits s'écrivent aussi en **octal**, comme tu l'as vu au module 2. Chaque chiffre est la somme de lecture (4), écriture (2) et exécution (1). `640` se lit `rw-r-----`, `755` se lit `rwxr-xr-x`. Le parcours Linux consacre un module entier à ces droits et à leurs subtilités.
+
+### sous Windows : des listes de contrôle d'accès
+
+NTFS utilise un modèle plus riche : chaque fichier et chaque dossier a une **liste de contrôle d'accès** (ACL), faite d'entrées qui accordent ou refusent des autorisations à un utilisateur ou à un groupe. Les autorisations courantes sont **Lecture**, **Lecture et exécution**, **Écriture**, **Modification** et **Contrôle total**. Elles se consultent dans l'onglet **Sécurité** des propriétés d'un fichier, ou avec la commande `icacls`.
+
+Deux notions à retenir : les autorisations sont **héritées**, un dossier transmettant les siennes à ce qu'il contient, et un **refus explicite** l'emporte sur une autorisation. Linux sait aussi faire des ACL, en complément de ses trois séries de droits, mais le modèle de base reste plus simple.
+
+## le principe du moindre privilège
+
+Le **principe du moindre privilège** tient en une phrase : chaque personne, chaque programme, chaque service ne doit avoir **que les droits nécessaires à sa tâche, et seulement le temps nécessaire**.
+
+Ses applications sont partout :
+
+- on travaille au quotidien avec un **compte standard**, et on n'utilise les droits d'administrateur que pour les opérations qui l'exigent ;
+- un service tourne sous un **compte dédié**, jamais en root ou en SYSTEM sans raison ;
+- un employé n'accède qu'aux dossiers de son service ;
+- une application ne reçoit que les permissions dont elle a besoin (ton téléphone te demande si une lampe de poche peut accéder à tes contacts : la réponse est non).
+
+Le raisonnement est simple : on ne peut pas empêcher toutes les erreurs ni toutes les intrusions, mais on peut **limiter ce qu'elles permettent**. Un programme malveillant hérite des droits de celui qui le lance. Moins ce compte a de droits, moins l'attaque va loin.
+
+## élever ses droits : UAC et sudo
+
+Travailler avec un compte standard pose une question pratique : que faire quand on a vraiment besoin des droits d'administrateur ? Windows et Linux répondent chacun à leur manière.
+
+**Sous Windows, l'UAC** (*User Account Control*, contrôle de compte d'utilisateur). Même un membre du groupe Administrateurs travaille normalement avec des droits réduits. Quand un programme demande des droits d'administration, Windows affiche une fenêtre de confirmation sur un **bureau sécurisé**, assombri, que les autres programmes ne peuvent pas manipuler. Un administrateur clique sur Oui ; un utilisateur standard doit taper le mot de passe d'un administrateur. Le programme est alors lancé avec tous les droits.
+
+**Sous Linux, sudo.** On préfixe une commande par `sudo` ; le système demande **le mot de passe de l'utilisateur lui-même** et vérifie dans sa configuration, le fichier `/etc/sudoers`, s'il a le droit de lancer cette commande en tant que root. La réponse peut être très fine : tel utilisateur peut seulement redémarrer le serveur web, tel autre peut tout faire.
+
+<Diagram caption="Deux façons d'élever ses droits pour une seule action">
+flowchart LR
+  A["Action d'administration demandée"] --> B["Windows : fenêtre UAC sur le bureau sécurisé"]
+  A --> C["Linux : sudo et mot de passe de l'utilisateur"]
+  B --> D["Programme lancé avec les droits d'administrateur"]
+  C --> E["Commande exécutée en root, inscrite au journal"]
+</Diagram>
+
+| | UAC (Windows) | sudo (Linux) |
+| --- | --- | --- |
+| Déclenchement | un programme demande des droits élevés | l'utilisateur tape `sudo` devant une commande |
+| Mot de passe demandé | celui d'un administrateur, ou un simple clic pour un administrateur | celui de l'utilisateur lui-même |
+| Finesse des règles | le compte est administrateur ou non | par utilisateur, par groupe et par commande |
+| Traces | journal des événements Windows | journal d'authentification (`/var/log/auth.log` ou journal de systemd) |
+| Durée | le temps d'exécution du programme élevé | la commande ; le mot de passe est retenu quelques minutes |
+
+Les deux mécanismes partagent le même esprit : ne donner les pleins pouvoirs que pour **une action précise**, avec une **confirmation consciente**, et en laisser une **trace**. Leur limite est la même aussi : une personne qui clique sur Oui ou tape son mot de passe par réflexe, sans lire ce qu'elle autorise, annule la protection. Une fenêtre UAC qui apparaît alors qu'on n'a rien demandé doit être refusée.
+
+## l'élévation de privilèges
+
+Obtenir plus de droits que ceux qu'on a reçus s'appelle une **élévation de privilèges**. C'est une étape presque obligatoire des attaques : l'intrus entre souvent par un compte limité (un utilisateur piégé par un courriel, un service web vulnérable), puis cherche à devenir administrateur. Pour cela, il exploite :
+
+- une **faille** du noyau, d'un pilote ou d'un programme privilégié ;
+- une **erreur de configuration** : un fichier sensible lisible par tous, un script exécuté par root mais modifiable par un utilisateur, une règle `sudo` trop large ;
+- des **identifiants** trouvés sur la machine : un mot de passe d'administrateur dans un script, dans l'historique des commandes, dans la mémoire.
+
+La défense est la même que partout dans cette leçon : moins de comptes privilégiés, des droits au plus juste, des mises à jour, et des journaux que quelqu'un regarde.
+
+## à toi de jouer : tes propres droits
+
+Tu es connecté au serveur en tant qu'`alice`. Découvre qui tu es et à quels groupes tu appartiens avec `id`, regarde les droits du fichier des mots de passe avec `ls -l /etc/shadow`, essaie de le lire avec `cat`, puis vérifie ce que `sudo` t'autorise avec `sudo -l`.
+
+<SimulatedTerminal shell="bash" title="Qui suis-je, et qu'ai-je le droit de faire ?" expectedCommands={["id", "ls -l /etc/shadow", "sudo -l"]} hints={["La commande id affiche ton UID, ton groupe principal et tous tes groupes.", "ls -l suivi du chemin montre le propriétaire, le groupe et les droits.", "sudo -l liste ce que ta configuration sudo t'autorise."]} commands={{ "whoami": "alice", "id": "uid=1000(alice) gid=1000(alice) groupes=1000(alice),27(sudo),100(users)", "groups": "alice sudo users", "ls -l /etc/shadow": "-rw-r----- 1 root shadow 1342 sept. 12 09:30 /etc/shadow", "cat /etc/shadow": "cat: /etc/shadow: Permission non accordée", "sudo -l": "Entrées par défaut pour alice sur srv-web :\n    env_reset, mail_badpass, secure_path=/usr/local/sbin\\:/usr/local/bin\\:/usr/sbin\\:/usr/bin\\:/sbin\\:/bin, use_pty\n\nL'utilisateur alice peut utiliser les commandes suivantes sur srv-web :\n    (ALL : ALL) ALL", "sudo wc -l /etc/shadow": "31 /etc/shadow", "ls -l /etc/passwd": "-rw-r--r-- 1 root root 1789 sept. 12 09:30 /etc/passwd" }} />
+
+`alice` appartient au groupe `sudo`, et la ligne `(ALL : ALL) ALL` signifie qu'elle peut tout lancer en tant que n'importe qui : c'est un compte d'administration complet, à protéger en conséquence. Remarque aussi que `/etc/passwd`, qui décrit les comptes, est lisible par tous, alors que `/etc/shadow`, qui contient les empreintes des mots de passe, ne l'est pas : cette séparation date justement de l'époque où l'on s'est aperçu que des empreintes lisibles par tous se cassaient hors ligne.
+
+## exercice noté : lire des droits en octal
+
+Écris `solution(mode)` qui reçoit des droits en octal sous forme de texte, comme `'750'`, et renvoie leur forme symbolique, `'rwxr-x---'`. Indice : pour chaque chiffre, teste les bits de valeur 4, 2 et 1 avec l'opérateur `&` vu au module 2.
+
+<PythonChallenge id="f1-droits-1" title="Des droits octaux aux droits symboliques" description="Renvoie la forme symbolique des droits, par exemple rwxr-x--- pour 750." starterCode="def solution(mode):
+    resultat = ''
+    for chiffre in mode:
+        valeur = int(chiffre)
+        # ajoute r ou -, w ou -, x ou -
+    return resultat" tests={[{ input: "solution('750')", expected: "rwxr-x---" }, { input: "solution('755')", expected: "rwxr-xr-x" }, { input: "solution('640')", expected: "rw-r-----" }, { input: "solution('700')", expected: "rwx------" }, { input: "solution('000')", expected: "---------" }]} />
+
+## les pièges
+
+- **Travailler en administrateur au quotidien.** Tout programme lancé hérite de ces droits, y compris une pièce jointe piégée.
+- **Accepter une demande UAC ou taper son mot de passe par réflexe.** Lis ce que tu autorises ; une demande inattendue se refuse.
+- **Donner les droits à des personnes plutôt qu'à des groupes.** Les accès deviennent vite impossibles à suivre.
+- **Faire tourner un service en root ou en SYSTEM.** Une faille du service livrerait toute la machine.
+- **Ouvrir les droits « pour que ça marche ».** Un `chmod 777` ou un Contrôle total pour Tout le monde règle un problème en créant une faille.
+- **Croire que renommer un compte change ses droits.** Le système raisonne sur l'UID ou le SID, pas sur le nom.
+
+## pour aller plus loin
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/security/application-security/application-control/user-account-control/how-it-works" description="Le fonctionnement de l'UAC expliqué par Microsoft">Microsoft : fonctionnement du contrôle de compte d'utilisateur</ExternalLink>
+
+<ExternalLink href="https://www.sudo.ws/docs/man/sudoers.man/" description="La configuration de sudo et ses règles, en anglais">Manuel de sudoers</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Le guide de l'ANSSI, dont les règles sur les comptes d'administration">ANSSI : guide d'hygiène informatique</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Sur quoi le système se base-t-il pour vérifier les droits d'un compte ?" options={["Sur le nom affiché", "Sur son identifiant numérique, UID sous Linux ou SID sous Windows", "Sur son mot de passe", "Sur l'adresse de la machine"]} correct={1} explanation="Le nom n'est qu'une étiquette : le noyau raisonne sur l'UID ou le SID et sur les groupes." />
+  <Quiz id="q-2" question="Que signifient les droits rw-r----- ?" options={["Tout le monde peut lire", "Le propriétaire exécute, le groupe écrit", "Personne ne peut écrire", "Le propriétaire lit et écrit, le groupe lit, les autres n'ont aucun droit"]} correct={3} explanation="Trois séries de trois droits : rw- pour le propriétaire, r-- pour le groupe, --- pour les autres. En octal : 640." />
+  <Quiz id="q-3" question="Qu'énonce le principe du moindre privilège ?" options={["Supprimer tous les comptes administrateurs", "Donner à chacun uniquement les droits nécessaires à sa tâche, le temps nécessaire", "Donner les mêmes droits à tout le monde", "Changer les mots de passe chaque mois"]} correct={1} explanation="On limite ce qu'une erreur ou une intrusion peut faire en limitant les droits au strict nécessaire." />
+  <Quiz id="q-4" question="Quel mot de passe sudo demande-t-il par défaut ?" options={["Celui de l'utilisateur qui lance la commande", "Celui de root", "Aucun", "Celui du dernier administrateur connecté"]} correct={0} explanation="sudo vérifie que c'est bien l'utilisateur qui est là, puis consulte /etc/sudoers pour savoir s'il a le droit." />
+  <Quiz id="q-5" question="Une fenêtre UAC apparaît alors que tu n'as rien lancé. Que faire ?" options={["La refuser et chercher quel programme l'a demandée", "Cliquer sur Oui pour ne pas bloquer Windows", "Redémarrer immédiatement", "Désactiver l'UAC"]} correct={0} explanation="Une demande d'élévation inattendue peut venir d'un programme malveillant : on refuse et on enquête." />
+  <Quiz id="q-6" question="Pourquoi faire tourner un serveur web sous un compte dédié comme www-data ?" options={["Pour qu'il soit plus rapide", "Pour qu'une faille du site ne donne accès qu'aux fichiers de ce compte, pas à toute la machine", "Parce que root est interdit sur un serveur", "Pour économiser de la mémoire"]} correct={1} explanation="Le compte de service limite la portée d'une intrusion : c'est le moindre privilège appliqué aux services." />
+  <Quiz id="q-7" question="Qu'est-ce qu'une élévation de privilèges ?" options={["Le fait pour un attaquant d'obtenir plus de droits que ceux de son point d'entrée", "Une promotion professionnelle", "Une mise à jour du système", "L'ajout d'un utilisateur à un groupe par l'administrateur"]} correct={0} explanation="L'attaquant entre souvent avec un compte limité, puis exploite une faille, une erreur de configuration ou des identifiants pour devenir administrateur." />
+</QuizGroup>
+
+## à retenir
+
+- Un compte sert à **identifier**, **autoriser** et **tracer** ; le système raisonne sur un **numéro** (UID, SID) et sur les **groupes**.
+- **Administrateur** (root, Administrateurs, SYSTEM), **compte standard**, **compte de service** : trois niveaux de pouvoir.
+- Linux : **propriétaire, groupe, autres** × **lecture, écriture, exécution** ; en octal, 4 + 2 + 1. Windows : des **ACL** héritées, où un refus l'emporte.
+- **Moindre privilège** : les droits nécessaires, le temps nécessaire. On travaille en compte standard.
+- **UAC** et **sudo** élèvent les droits pour une action, avec confirmation et trace ; sudo permet des règles par commande.
+- L'**élévation de privilèges** est une étape clé des attaques ; on la freine par des droits au plus juste, des mises à jour et des journaux surveillés.

@@ -1,0 +1,198 @@
+---
+refCode: CL-LSN-01022-V01
+slug: fondamentaux-la-virtualisation
+title: "La virtualisation"
+description: "Faire tourner plusieurs ordinateurs dans un seul : machines virtuelles, hyperviseurs de type 1 et de type 2, matériel virtuel, instantanés, modes réseau, puis une première approche des conteneurs et de ce qui les distingue des machines virtuelles. Et pourquoi la virtualisation est l'outil de base de tout laboratoire de sécurité."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01021-V01"]
+---
+
+Tout ce module a décrit un système d'exploitation qui règne seul sur une machine. Et si on faisait tourner plusieurs systèmes, Windows, Linux, un vieux Windows XP, sur un même ordinateur, en même temps, chacun croyant avoir sa propre machine ? C'est ce que permet la **virtualisation**. Elle fait tourner l'essentiel d'Internet, puisque le cloud n'est rien d'autre que des machines virtuelles louées à la demande. Et c'est l'outil de base de tout apprentissage en sécurité : c'est dans une machine virtuelle que tu installeras ton laboratoire, que tu testeras des attaques sans risque, et que les analystes ouvrent des fichiers suspects. Le projet de ce module consiste justement à en installer une.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est une machine virtuelle et un hyperviseur ;
+- distinguer les hyperviseurs de type 1 et de type 2 ;
+- décrire le matériel virtuel d'une machine virtuelle ;
+- utiliser les instantanés à bon escient ;
+- choisir un mode réseau adapté à un laboratoire ;
+- expliquer la différence entre une machine virtuelle et un conteneur ;
+- citer les usages de la virtualisation en sécurité, et ses limites.
+
+## pourquoi ça compte
+
+Un administrateur d'aujourd'hui gère beaucoup plus de machines virtuelles que de machines physiques. Un développeur lance des conteneurs plusieurs fois par jour. Un technicien de support teste une mise à jour dans une machine virtuelle avant de la déployer. Et en sécurité, la virtualisation est partout : laboratoires d'entraînement, bacs à sable d'analyse de logiciels malveillants, environnements de test isolés, et aussi la sécurité du cloud, qui est devenue une spécialité à part entière. Sans ces notions, la suite de ta formation serait impossible à pratiquer.
+
+## la machine virtuelle
+
+Une **machine virtuelle** (VM) est un ordinateur simulé par logiciel, qui tourne à l'intérieur d'un ordinateur réel. Elle a son propre processeur virtuel, sa mémoire, son disque, sa carte réseau, et on y installe un système d'exploitation complet, exactement comme sur une vraie machine. Ce système, appelé **invité**, ne sait généralement pas qu'il est virtualisé ; la machine réelle qui l'accueille est l'**hôte**.
+
+Le logiciel qui crée et fait tourner les machines virtuelles s'appelle l'**hyperviseur**. Il joue pour les systèmes invités le rôle que le noyau joue pour les processus : il partage entre eux le vrai processeur, la vraie mémoire et les vrais périphériques, et il les isole les uns des autres.
+
+Les processeurs modernes aident l'hyperviseur grâce à des instructions spécialisées, appelées **VT-x** chez Intel et **AMD-V** chez AMD. Elles permettent aux systèmes invités de s'exécuter directement sur le processeur, presque à pleine vitesse, tout en restant sous le contrôle de l'hyperviseur. Sur beaucoup de machines, cette fonction doit être **activée dans les réglages de l'UEFI**, que tu as vus au module 1 : c'est la première chose à vérifier quand un logiciel de virtualisation refuse de démarrer une machine virtuelle.
+
+## deux types d'hyperviseurs
+
+**Le type 1**, ou hyperviseur **natif**, s'installe directement sur le matériel, à la place d'un système d'exploitation classique. C'est lui qui fait tourner les serveurs des entreprises et du cloud : VMware ESXi, Microsoft Hyper-V, Xen, et **KVM**, intégré au noyau Linux, qui fait tourner une grande partie du cloud. Proxmox, une solution libre très répandue, s'appuie sur KVM.
+
+**Le type 2**, ou hyperviseur **hébergé**, est une application qu'on installe sur son système habituel, comme n'importe quel logiciel : **VirtualBox**, gratuit, **VMware Workstation**, UTM sur les Mac. C'est ce qu'on utilise sur un ordinateur personnel pour un laboratoire.
+
+<Diagram caption="Hyperviseur de type 1 et de type 2">
+flowchart TD
+  subgraph T1["Type 1 : serveurs et cloud"]
+    A1["VM Linux"] --> H1["Hyperviseur : ESXi, Hyper-V, KVM"]
+    A2["VM Windows"] --> H1
+    H1 --> M1["Matériel"]
+  end
+  subgraph T2["Type 2 : poste de travail"]
+    B1["VM de laboratoire"] --> H2["VirtualBox, VMware Workstation"]
+    H2 --> S2["Système hôte : Windows, macOS ou Linux"]
+    S2 --> M2["Matériel"]
+  end
+</Diagram>
+
+La frontière est un peu floue en pratique : quand on active Hyper-V sur Windows, Windows lui-même se met à tourner au-dessus de l'hyperviseur. Mais la distinction reste utile pour comprendre où chacun s'utilise.
+
+## le matériel virtuel
+
+Créer une machine virtuelle, c'est choisir son matériel :
+
+- un nombre de **processeurs virtuels** (vCPU), qui ne peut pas dépasser le nombre de processeurs logiques de l'hôte ;
+- une quantité de **mémoire vive**, prise sur celle de l'hôte : c'est souvent la ressource la plus limitante. Il faut toujours en laisser assez au système hôte ;
+- un **disque virtuel**, qui n'est qu'un gros **fichier** sur le disque de l'hôte : `.vdi` pour VirtualBox, `.vmdk` pour VMware, `.qcow2` pour KVM, `.vhdx` pour Hyper-V. Il peut être alloué d'un coup, ou grandir à mesure qu'on le remplit ;
+- une ou plusieurs **cartes réseau** virtuelles ;
+- un lecteur virtuel dans lequel on insère l'**image ISO** d'installation du système.
+
+Puisqu'une machine virtuelle n'est qu'un ensemble de fichiers, on peut la **copier**, la **déplacer** vers un autre hôte, l'**exporter** pour la partager (au format OVA par exemple) : c'est ainsi que les plateformes d'entraînement distribuent des machines vulnérables à télécharger.
+
+## les instantanés
+
+Un **instantané** (*snapshot*) enregistre l'état complet d'une machine virtuelle à un moment donné : son disque, et éventuellement sa mémoire. On peut ensuite faire n'importe quoi dans la machine, puis **revenir** à l'instantané en quelques secondes, comme si rien ne s'était passé.
+
+C'est l'outil qui rend la virtualisation si précieuse pour apprendre et pour tester : on prend un instantané de la machine propre, on essaie une configuration risquée, une mise à jour, une attaque, un fichier suspect, puis on restaure. Plus besoin de tout réinstaller après chaque erreur.
+
+Deux précautions. Un instantané **n'est pas une sauvegarde** : il est stocké à côté du disque de la machine, sur le même support, et disparaît avec lui si ce disque est perdu. Et accumuler les instantanés ralentit la machine et occupe de la place, car chacun garde toutes les différences depuis le précédent.
+
+## le réseau des machines virtuelles
+
+Le réglage réseau d'une machine virtuelle détermine qui elle peut joindre et qui peut la joindre. C'est le réglage le plus important d'un laboratoire de sécurité. Les hyperviseurs de type 2 proposent généralement :
+
+- **NAT** : la machine virtuelle sort sur Internet en passant par l'hôte, mais les autres machines du réseau ne la voient pas. C'est le mode par défaut, adapté à une machine d'usage courant ;
+- **accès par pont** (*bridge*) : la machine virtuelle apparaît sur le réseau local comme une machine physique de plus, avec sa propre adresse. Pratique pour un serveur, mais elle est alors exposée à tout le réseau, et le réseau à elle ;
+- **réseau interne** ou **réseau privé hôte** : les machines virtuelles ne communiquent qu'entre elles, et éventuellement avec l'hôte, sans accès à Internet ni au réseau local.
+
+Pour un laboratoire où l'on fait tourner des machines **volontairement vulnérables** ou des fichiers **malveillants**, on choisit un **réseau interne** ou privé hôte : ce qui se passe dans le laboratoire doit y rester. Brancher une machine vulnérable en mode pont sur le réseau familial ou, pire, sur un réseau d'entreprise, c'est offrir une porte d'entrée à n'importe qui.
+
+## les conteneurs, une première approche
+
+Un **conteneur** isole une application et tout ce dont elle a besoin (bibliothèques, configuration) dans un environnement à part, **sans simuler de matériel ni lancer un second noyau**. Tous les conteneurs d'une machine partagent le **noyau de l'hôte** ; c'est le noyau qui leur donne à chacun une vue séparée des processus, des fichiers et du réseau. **Docker** a popularisé cette approche, et c'est aujourd'hui la façon standard de livrer des applications web.
+
+| | Machine virtuelle | Conteneur |
+| --- | --- | --- |
+| Ce qu'on simule | un ordinateur complet | un environnement pour une application |
+| Noyau | le sien, dans chaque VM | celui de l'hôte, partagé |
+| Démarrage | en dizaines de secondes | en une fraction de seconde |
+| Taille | des gigaoctets | souvent quelques dizaines de mégaoctets |
+| Isolation | forte : la frontière est l'hyperviseur | plus faible : la frontière est le noyau partagé |
+| Système invité | n'importe lequel | le même type de noyau que l'hôte |
+
+Conséquence directe : on ne fait pas tourner un conteneur Windows sur un noyau Linux. Docker Desktop, sous Windows et macOS, fait d'ailleurs discrètement tourner une petite machine virtuelle Linux pour héberger ses conteneurs.
+
+Côté sécurité, la différence d'isolation compte : une faille du noyau permet de s'échapper d'un conteneur vers l'hôte, alors que s'échapper d'une machine virtuelle exige une faille de l'hyperviseur, bien plus rare. Pour analyser un fichier dangereux, on choisit donc une **machine virtuelle**, pas un conteneur. Les conteneurs sont étudiés en détail dans les parcours d'administration et de sécurité du cloud.
+
+## la virtualisation en sécurité
+
+- **Les laboratoires** : un ensemble de machines virtuelles isolées pour s'entraîner à attaquer et à défendre, sans risque et sans rien casser de réel. C'est ce que tu construiras au fil des parcours.
+- **L'analyse de logiciels malveillants** : on exécute le fichier suspect dans une machine virtuelle isolée, instrumentée pour tout observer, puis on la restaure. Les bacs à sable automatiques des solutions de sécurité fonctionnent ainsi.
+- **L'isolation au quotidien** : certains systèmes font tourner chaque activité dans sa propre machine virtuelle, et Windows peut ouvrir les documents ou les sites douteux dans un environnement virtualisé jetable, le bac à sable Windows.
+- **Le cloud** : chaque client loue des machines virtuelles qui cohabitent sur les mêmes serveurs physiques ; toute la confiance repose sur l'isolation de l'hyperviseur.
+
+Il faut en connaître les limites. Des **évasions** de machine virtuelle existent, rares mais réelles, qui permettent à un code exécuté dans l'invité d'agir sur l'hôte : on tient donc l'hyperviseur à jour comme tout le reste. Certains logiciels malveillants **détectent** qu'ils sont dans une machine virtuelle, grâce aux noms des pilotes virtuels, et restent sages pour échapper à l'analyse. Et les **dossiers partagés** ou le presse-papiers commun entre l'hôte et l'invité percent l'isolation : on les désactive dans une machine d'analyse.
+
+## à toi de jouer : les instantanés
+
+Ce programme simule une machine virtuelle et ses instantanés. On prend un instantané de la machine propre, on « teste » un rançongiciel qui chiffre les fichiers, puis on restaure. Lance-le, puis ajoute un second instantané après une modification légitime et vérifie que tu peux revenir à l'un ou à l'autre.
+
+<CodePlayground language="python" starterCode={`import copy
+
+class MachineVirtuelle:
+    def __init__(self, nom):
+        self.nom = nom
+        self.disque = {'/etc/hostname': nom, '/home/alice/notes.txt': 'À faire : installer nginx'}
+        self.instantanes = {}
+
+    def instantane(self, etiquette):
+        self.instantanes[etiquette] = copy.deepcopy(self.disque)
+        print(f'Instantané « {etiquette} » pris ({len(self.disque)} fichiers)')
+
+    def restaurer(self, etiquette):
+        self.disque = copy.deepcopy(self.instantanes[etiquette])
+        print(f'Retour à « {etiquette} »')
+
+    def afficher(self):
+        for chemin, contenu in sorted(self.disque.items()):
+            print(f'  {chemin} : {contenu}')
+
+vm = MachineVirtuelle('labo-debian')
+vm.instantane('propre')
+
+# On teste un fichier suspect dans la machine virtuelle...
+vm.disque['/home/alice/notes.txt'] = 'CHIFFRÉ PAR UN RANÇONGICIEL'
+vm.disque['/home/alice/LISEZ-MOI.txt'] = 'Payez pour récupérer vos fichiers'
+print('Après le test :')
+vm.afficher()
+
+vm.restaurer('propre')
+print('Après la restauration :')
+vm.afficher()
+`} />
+
+Et un exercice corrigé de dimensionnement. Écris `solution(ram_hote, ram_vm)` qui renvoie le nombre maximal de machines virtuelles de `ram_vm` Gio qu'on peut lancer sur un hôte de `ram_hote` Gio, en **gardant 4 Gio pour le système hôte**. Si l'hôte n'a pas plus de 4 Gio, la réponse est 0.
+
+<PythonChallenge id="f1-virtu-1" title="Combien de machines virtuelles ?" description="Renvoie le nombre de VM de ram_vm Gio qui tiennent sur l'hôte, en gardant 4 Gio pour lui." starterCode="def solution(ram_hote, ram_vm):
+    disponible = ram_hote  # garde 4 Gio pour l'hôte
+    return 0  # combien de VM entières tiennent ?" tests={[{ input: "solution(16, 2)", expected: "6" }, { input: "solution(8, 4)", expected: "1" }, { input: "solution(32, 3)", expected: "9" }, { input: "solution(4, 2)", expected: "0" }, { input: "solution(6, 4)", expected: "0" }]} />
+
+## les pièges
+
+- **Oublier d'activer la virtualisation dans l'UEFI.** Sans VT-x ou AMD-V, l'hyperviseur refuse de démarrer les machines ou les rend très lentes.
+- **Donner toute la mémoire aux machines virtuelles.** L'hôte a besoin de la sienne, sinon tout ralentit.
+- **Prendre un instantané pour une sauvegarde.** Il disparaît avec le disque qui le porte.
+- **Mettre une machine vulnérable en mode pont.** Un laboratoire se branche sur un réseau interne ou privé hôte.
+- **Analyser un fichier dangereux dans un conteneur.** L'isolation d'un conteneur repose sur le noyau partagé ; on utilise une machine virtuelle.
+- **Laisser les dossiers partagés actifs dans une machine d'analyse.** Ils ouvrent un chemin vers l'hôte.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.virtualbox.org/manual/" description="Le manuel de VirtualBox, dont les modes réseau et les instantanés, en anglais">Manuel de VirtualBox</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/security/application-security/application-isolation/windows-sandbox/" description="Le bac à sable Windows, un environnement jetable pour ouvrir un fichier douteux">Microsoft : le bac à sable Windows</ExternalLink>
+
+<ExternalLink href="https://docs.docker.com/get-started/docker-overview/" description="Les principes de Docker et des conteneurs, en anglais">Docker : vue d'ensemble</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le rôle d'un hyperviseur ?" options={["Accélérer Internet", "Chiffrer le disque", "Remplacer le processeur", "Créer et faire tourner des machines virtuelles en partageant et en isolant le matériel réel"]} correct={3} explanation="L'hyperviseur est aux machines virtuelles ce que le noyau est aux processus : il partage le matériel et isole les invités." />
+  <Quiz id="q-2" question="VirtualBox, installé sur un Windows 11, est un hyperviseur de quel type ?" options={["Type 1", "Ce n'est pas un hyperviseur", "Type 3", "Type 2"]} correct={3} explanation="VirtualBox est une application installée sur un système hôte : c'est un hyperviseur hébergé, de type 2." />
+  <Quiz id="q-3" question="Un logiciel de virtualisation refuse de démarrer une machine virtuelle 64 bits. Quelle est la première chose à vérifier ?" options={["La carte graphique", "La connexion Internet", "Que la virtualisation matérielle, VT-x ou AMD-V, est activée dans l'UEFI", "Le fond d'écran"]} correct={2} explanation="Beaucoup de machines livrent la virtualisation matérielle désactivée : elle s'active dans les réglages du micrologiciel." />
+  <Quiz id="q-4" question="Qu'est-ce qu'un instantané de machine virtuelle ?" options={["Une capture d'écran", "L'état enregistré de la machine, auquel on peut revenir", "Une sauvegarde sur un autre disque", "Une copie du système hôte"]} correct={1} explanation="L'instantané permet de revenir à un état antérieur. Stocké avec le disque de la VM, ce n'est pas une sauvegarde." />
+  <Quiz id="q-5" question="Quel mode réseau choisir pour une machine volontairement vulnérable dans un laboratoire ?" options={["Accès par pont, pour qu'elle soit joignable par tous", "Peu importe", "Une connexion directe à Internet", "Réseau interne ou privé hôte, pour l'isoler"]} correct={3} explanation="Un laboratoire doit rester fermé : un réseau interne empêche la machine vulnérable d'être atteinte depuis le réseau local ou Internet." />
+  <Quiz id="q-6" question="Qu'est-ce qui distingue un conteneur d'une machine virtuelle ?" options={["Le conteneur partage le noyau de l'hôte au lieu d'avoir le sien", "Le conteneur est toujours plus sûr", "Le conteneur simule un ordinateur complet", "Il n'y a aucune différence"]} correct={0} explanation="Les conteneurs partagent le noyau de l'hôte : ils sont légers et rapides, mais leur isolation est plus faible que celle d'une VM." />
+  <Quiz id="q-7" question="Pourquoi certains logiciels malveillants cherchent-ils à savoir s'ils tournent dans une machine virtuelle ?" options={["Pour s'installer plus vite", "Pour réparer la machine", "Pour consommer moins de mémoire", "Pour rester inactifs pendant une analyse et échapper à la détection"]} correct={3} explanation="Une VM signale souvent un bac à sable d'analyse : le logiciel malveillant fait alors le mort pour paraître inoffensif." />
+</QuizGroup>
+
+## à retenir
+
+- Une **machine virtuelle** est un ordinateur simulé ; l'**hyperviseur** partage le matériel entre les **invités** et les isole. VT-x ou AMD-V doit être **activé dans l'UEFI**.
+- **Type 1** (ESXi, Hyper-V, KVM) : sur le matériel, pour les serveurs et le cloud. **Type 2** (VirtualBox, VMware Workstation) : sur un poste de travail.
+- Une VM a des **vCPU**, de la **mémoire** prise à l'hôte, un **disque virtuel** qui n'est qu'un fichier.
+- Les **instantanés** permettent de revenir en arrière, mais **ne sont pas des sauvegardes**.
+- Réseau : **NAT** par défaut, **pont** pour être visible, **réseau interne** pour un laboratoire isolé.
+- Un **conteneur** partage le **noyau de l'hôte** : léger, mais moins isolé qu'une VM.
+- La virtualisation sert aux **laboratoires**, à l'**analyse de logiciels malveillants** et au **cloud** ; ses limites : évasions, détection, dossiers partagés.

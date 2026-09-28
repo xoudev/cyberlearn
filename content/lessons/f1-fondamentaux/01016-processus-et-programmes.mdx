@@ -1,0 +1,198 @@
+---
+refCode: CL-LSN-01016-V01
+slug: fondamentaux-processus-et-programmes
+title: "Processus et programmes"
+description: "La différence entre un programme et un processus, ce que le système sait de chaque processus, l'arbre des parents et des enfants, les états d'un processus, le multitâche et l'ordonnanceur, les threads, et comment observer et arrêter des processus sous Windows et Linux. Avec une enquête : trouver le processus qui fait chauffer un serveur."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01015-V01"]
+---
+
+Ouvre le gestionnaire des tâches de Windows, ou tape `ps aux` sous Linux : tu verras des dizaines, parfois des centaines de lignes, alors que tu n'as lancé que trois ou quatre applications. Qui sont tous ces processus ? D'où viennent-ils ? Comment un processeur de huit cœurs peut-il faire tourner trois cents programmes « en même temps » ? Et comment repérer, dans cette foule, celui qui n'a rien à faire là ? Cette leçon répond à ces questions, qui sont le quotidien du support, de l'administration et de la réponse à incident.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer un programme d'un processus ;
+- citer ce que le système connaît d'un processus : PID, parent, utilisateur, état ;
+- expliquer l'arbre des processus et le rôle du processus numéro 1 ;
+- décrire les états d'un processus et le rôle de l'ordonnanceur ;
+- distinguer un processus d'un thread ;
+- observer et arrêter des processus sous Windows et sous Linux ;
+- repérer les indices d'un processus suspect.
+
+## pourquoi ça compte
+
+« L'ordinateur rame », « le serveur est à 100 % », « l'application ne répond plus » : ces trois phrases, que tout technicien entend chaque semaine, se diagnostiquent en regardant les processus. En sécurité, c'est encore plus central : un logiciel malveillant qui s'exécute est un processus, et il essaie de passer inaperçu parmi les autres. Les analystes qui répondent à un incident commencent presque toujours par la même question : quels processus tournent, qui les a lancés, et depuis où ? Savoir lire une liste de processus est une compétence de base de tous les parcours qui suivent.
+
+## programme et processus
+
+Un **programme** est un fichier : une suite d'instructions enregistrée sur le disque, qui ne fait rien tant qu'on ne la lance pas. `firefox.exe`, `/usr/bin/python3`, `notepad.exe` sont des programmes.
+
+Un **processus** est un programme **en cours d'exécution**. Quand tu lances un programme, le système crée un processus : il charge les instructions en mémoire, lui attribue des ressources et le fait exécuter par le processeur. La comparaison classique : le programme est la recette, le processus est la cuisine en train de se faire, avec ses ustensiles, ses ingrédients et son avancement.
+
+Un même programme peut donner **plusieurs processus**. Ouvre trois fenêtres du bloc-notes : trois processus, un seul programme. Les navigateurs modernes vont plus loin : Chrome, Edge ou Firefox lancent un processus séparé pour chaque groupe d'onglets, pour les extensions, pour le rendu graphique. C'est pour cela qu'un seul navigateur ouvert apparaît souvent comme une vingtaine de lignes dans le gestionnaire des tâches. Cette séparation est voulue : si une page plante ou est piégée, elle reste enfermée dans son processus.
+
+## ce que le système sait d'un processus
+
+Pour chaque processus, le noyau tient une fiche. On y trouve notamment :
+
+- le **PID** (*process identifier*), un numéro unique qui le désigne tant qu'il existe ;
+- le **PPID**, le PID de son **parent**, c'est-à-dire du processus qui l'a créé ;
+- l'**utilisateur** au nom duquel il tourne, qui détermine ses droits (leçon 5) ;
+- son **état** : en cours d'exécution, prêt, en attente, terminé ;
+- sa **mémoire** : le code, les données, la pile, le tas (leçon 3) ;
+- ses **fichiers ouverts**, désignés par leurs descripteurs, et ses connexions réseau ;
+- sa **ligne de commande** : le chemin du programme et les options avec lesquelles il a été lancé ;
+- le **temps de processeur** qu'il a déjà consommé et sa **priorité**.
+
+Sous Linux, toutes ces informations sont visibles dans un dossier spécial, `/proc`, qui contient un sous-dossier par PID. `/proc/1234/cmdline` donne la ligne de commande du processus 1234, `/proc/1234/exe` pointe vers le programme qu'il exécute. Ce ne sont pas de vrais fichiers sur le disque : c'est le noyau qui fabrique leur contenu à la demande.
+
+## l'arbre des processus
+
+Chaque processus est créé par un autre. Les processus forment donc un **arbre** généalogique, dont la racine est lancée par le noyau lui-même au démarrage.
+
+Sous Linux, cette racine est le processus **numéro 1**, aujourd'hui presque toujours **systemd** sur les distributions courantes. C'est lui qui lance les services (serveur web, planificateur de tâches, journalisation), puis l'écran de connexion, qui lance ta session, qui lance ton terminal, qui lance le shell, qui lance les commandes que tu tapes. Sous Windows, l'arbre part de processus du système comme `wininit.exe` et `services.exe`, et ta session graphique est portée par `explorer.exe`, le parent de la plupart des applications que tu ouvres.
+
+<Diagram caption="Une branche de l'arbre des processus sous Linux">
+flowchart TD
+  A["PID 1 : systemd"] --> B["sshd : le service de connexion à distance"]
+  A --> C["nginx : le serveur web"]
+  B --> D["bash : le shell d'alice"]
+  D --> E["python3 script.py"]
+  D --> F["ps aux"]
+</Diagram>
+
+Sous Linux, la création passe par deux appels système que tu as croisés dans la leçon précédente : `fork` (ou `clone`), qui **duplique** le processus appelant, puis `execve`, par lequel la copie **remplace** son programme par un autre. C'est ainsi que le shell lance une commande : il se duplique, et la copie devient la commande.
+
+Deux cas particuliers à connaître. Un processus dont le parent se termine avant lui devient **orphelin** : il est alors adopté par le processus 1, ou par un processus désigné pour cela. Et un processus terminé dont le parent n'a pas encore lu le code de retour reste un moment dans la liste sous forme de **zombie**, noté `Z` : il n'occupe plus de mémoire, seulement une ligne dans la table des processus.
+
+## les états d'un processus
+
+À tout instant, un processus est dans l'un de ces états :
+
+- **en cours d'exécution** : un cœur du processeur exécute ses instructions en ce moment ;
+- **prêt** : il pourrait s'exécuter, mais tous les cœurs sont occupés, il attend son tour ;
+- **en attente** (ou bloqué, ou endormi) : il attend un événement, une lecture sur le disque, un paquet réseau, une frappe au clavier ;
+- **terminé**.
+
+La grande majorité des processus passent l'essentiel de leur temps **en attente**. Ton traitement de texte attend que tu tapes ; ton client de messagerie attend un nouveau message ; un service attend une requête. C'est pour cela qu'une machine peut héberger des centaines de processus avec un processeur qui travaille à 5 %.
+
+## le multitâche et l'ordonnanceur
+
+Il y a bien plus de processus prêts que de cœurs. L'**ordonnanceur** (*scheduler*), une partie du noyau, décide lequel s'exécute sur quel cœur et pendant combien de temps. Il le fait selon le principe du **multitâche préemptif** : chaque processus reçoit une petite tranche de temps, de l'ordre de quelques millisecondes, puis le noyau l'interrompt, même s'il n'a pas fini, et passe au suivant. Cette interruption forcée est la **préemption**.
+
+Passer d'un processus à un autre s'appelle une **commutation de contexte** : le noyau enregistre l'état des registres du processus interrompu et recharge ceux du suivant. Cela se produit des milliers de fois par seconde, assez vite pour que tout semble simultané. Sur plusieurs cœurs, plusieurs processus avancent vraiment en même temps, un par cœur.
+
+L'ordonnanceur ne traite pas tout le monde de la même façon. Chaque processus a une **priorité** : un lecteur audio qui doit fournir du son sans coupure passe avant une sauvegarde qui peut attendre. Sous Linux, la priorité se règle avec une valeur appelée *nice*, de -20 (le plus prioritaire) à 19 (le plus gentil avec les autres) ; sous Windows, le gestionnaire des tâches permet de la modifier dans l'onglet Détails.
+
+Le principe le plus simple d'ordonnancement s'appelle le **tourniquet** (*round robin*) : les processus prêts font la queue, chacun reçoit une tranche, et celui qui n'a pas fini retourne en fin de file. Les ordonnanceurs réels sont bien plus sophistiqués, mais ils reposent sur la même idée.
+
+## processus et threads
+
+Un processus peut lui-même faire plusieurs choses à la fois grâce aux **threads** (fils d'exécution). Tous les threads d'un processus partagent sa mémoire et ses fichiers ouverts, mais chacun a son propre avancement et peut s'exécuter sur un cœur différent. Un navigateur utilise un thread pour l'interface, d'autres pour le réseau, d'autres pour décoder une vidéo.
+
+La différence est importante : deux **processus** sont isolés l'un de l'autre par le noyau ; deux **threads** d'un même processus ne le sont pas. Un thread qui corrompt la mémoire peut faire tomber tout son processus.
+
+## observer et arrêter les processus
+
+**Sous Windows**, le **gestionnaire des tâches** (Ctrl + Maj + Échap) montre les applications et les processus en arrière-plan. L'onglet **Détails** affiche une ligne par processus, avec son PID, son utilisateur, son usage du processeur et de la mémoire ; un clic droit sur l'en-tête permet d'ajouter la colonne **Ligne de commande**, très utile. L'outil **Process Explorer** de Sysinternals va plus loin et affiche l'arbre des processus. En ligne de commande, `tasklist` liste les processus et PowerShell propose `Get-Process`.
+
+**Sous Linux**, la commande `ps` photographie les processus à un instant donné. `ps aux` les montre tous, avec leur utilisateur, leur usage du processeur (`%CPU`) et de la mémoire (`%MEM`), leur état (`STAT`) et leur commande. `top`, ou sa version plus lisible `htop`, les affiche en continu, triés par consommation.
+
+Pour **arrêter** un processus, il y a deux manières. La manière polie lui demande de se terminer, ce qui lui laisse le temps d'enregistrer son travail : c'est le signal `SIGTERM` sous Linux, envoyé par défaut par la commande `kill` suivie du PID, et le bouton **Fin de tâche** sous Windows pour une application. La manière forte le tue immédiatement, sans lui laisser le choix : `kill -9`, qui envoie `SIGKILL`, sous Linux, ou `taskkill /F` sous Windows. On commence toujours par la manière polie. Et on ne peut arrêter que ses propres processus, sauf à être administrateur.
+
+## repérer un processus suspect
+
+Un logiciel malveillant qui tourne est un processus comme un autre, et il fait tout pour s'y fondre : il prend le nom d'un processus légitime, se lance au démarrage, consomme discrètement. Le nom ne prouve rien. Les analystes regardent plutôt quatre indices.
+
+**Le chemin du programme.** Le vrai `svchost.exe` de Windows se trouve dans `C:\Windows\System32`. Un `svchost.exe` qui s'exécute depuis le dossier Téléchargements ou un dossier temporaire est un imposteur. Sous Linux, un programme lancé depuis `/tmp`, `/dev/shm` ou un dossier caché (dont le nom commence par un point) mérite toujours une vérification.
+
+**L'utilisateur.** Un processus système qui tourne au nom d'un utilisateur ordinaire, ou un programme inconnu qui tourne au nom du compte du serveur web, sont anormaux.
+
+**Le parent.** Le vrai `svchost.exe` est lancé par `services.exe`. Un traitement de texte comme `winword.exe` qui lance un `powershell.exe` est un classique des documents piégés : une macro malveillante vient de s'exécuter. Les arbres de processus anormaux sont l'un des signaux favoris des outils de détection.
+
+**La consommation et le réseau.** Un processus inconnu qui utilise un cœur entier en permanence est souvent un **mineur de cryptomonnaie**, installé par un attaquant pour faire travailler la machine à son profit. Un processus qui ouvre des connexions vers des adresses inhabituelles, surtout à intervalles réguliers, peut être en train de contacter son serveur de commande.
+
+Un piège propre à Linux : les **threads du noyau** apparaissent dans `ps` avec leur nom entre crochets, comme `[kworker/0:1]`. Certains logiciels malveillants imitent ces noms pour se faire oublier. Un vrai thread du noyau n'a pas de programme sur le disque : si `/proc/PID/exe` pointe vers un fichier, ce n'en est pas un.
+
+## à toi de jouer : l'ordonnanceur
+
+Ce petit programme simule un ordonnanceur en tourniquet : trois processus ont besoin de 5, 2 et 4 unités de temps, et chacun reçoit des tranches de 2 unités. Lance-le et lis la frise. Puis change la taille de la tranche, `quantum`, pour 1 puis pour 10 : que devient l'ordre de fin des processus ?
+
+<CodePlayground language="python" starterCode={`from collections import deque
+
+def tourniquet(processus, quantum):
+    file = deque(processus.items())
+    temps = 0
+    frise = []
+    fin = {}
+    while file:
+        nom, reste = file.popleft()
+        tranche = min(quantum, reste)
+        frise.append(f'{temps:>2}-{temps + tranche:<2} {nom}')
+        temps += tranche
+        reste -= tranche
+        if reste:
+            file.append((nom, reste))
+        else:
+            fin[nom] = temps
+    return frise, fin
+
+frise, fin = tourniquet({'navigateur': 5, 'musique': 2, 'antivirus': 4}, quantum=2)
+for ligne in frise:
+    print(ligne)
+print('Fin de chaque processus :', fin)
+`} />
+
+Avec une tranche de 2, la musique, qui ne demande que 2 unités, finit dès l'instant 4 au lieu d'attendre que le navigateur ait tout terminé. Avec une tranche de 10, on retombe sur un traitement « chacun son tour jusqu'au bout » : le premier arrivé monopolise le processeur, et un processus court peut attendre longtemps. Des tranches courtes rendent le système réactif ; trop courtes, elles multiplient les commutations de contexte, qui coûtent du temps. Tout l'art d'un ordonnanceur est dans ce compromis.
+
+## à toi de jouer : l'enquête
+
+Le serveur web de l'entreprise est anormalement lent et ses ventilateurs tournent à fond. Tu es connecté en tant qu'`alice`, qui a le droit d'utiliser `sudo`. Trouve le processus responsable : liste les processus triés par consommation de processeur avec `ps aux --sort=-%cpu | head -5`, puis regarde d'où vient le programme suspect avec `sudo ls -l /proc/4242/exe`.
+
+<SimulatedTerminal shell="bash" title="Qui fait chauffer le serveur ?" expectedCommands={["ps aux --sort=-%cpu | head -5", "sudo ls -l /proc/4242/exe"]} hints={["ps aux liste tous les processus ; --sort=-%cpu les trie du plus gourmand au moins gourmand, head -5 garde le début.", "Le lien /proc/4242/exe indique le programme exécuté par le processus 4242 ; il faut sudo pour regarder le processus d'un autre utilisateur."]} commands={{ "ps": "    PID TTY          TIME CMD\n   2841 pts/0    00:00:00 bash\n   3310 pts/0    00:00:00 ps", "ps aux --sort=-%cpu | head -5": "USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nwww-data    4242 97.3  2.1 612344 43120 ?        Rl   08:14 156:40 ./kworkerd -o pool.example.net:3333\nwww-data     815  1.1  0.4  56140  8828 ?        S    sept.26  11:52 nginx: worker process\nroot         812  0.0  0.1  55588  2016 ?        Ss   sept.26   0:00 nginx: master process /usr/sbin/nginx\nroot           1  0.0  0.6 167724 12896 ?        Ss   sept.26   0:09 /sbin/init", "ps -o pid,ppid,user,cmd -p 4242": "    PID    PPID USER     CMD\n   4242       1 www-data ./kworkerd -o pool.example.net:3333", "ls -l /proc/4242/exe": "ls: impossible de lire le lien symbolique '/proc/4242/exe': Permission non accordée", "sudo ls -l /proc/4242/exe": "lrwxrwxrwx 1 www-data www-data 0 sept. 27 10:58 /proc/4242/exe -> /tmp/.cache/kworkerd", "kill 4242": "bash: kill: (4242) - Opération non permise", "sudo kill 4242": "", "whoami": "alice" }} />
+
+Relis les indices : un programme nommé `kworkerd`, qui imite les threads du noyau mais n'est pas entre crochets ; il tourne au nom de `www-data`, le compte du serveur web ; il vient d'un dossier caché de `/tmp` ; il consomme 97 % d'un cœur depuis plus de deux heures et demie ; et sa ligne de commande désigne un « pool », l'adresse typique d'un service de minage. C'est un mineur de cryptomonnaie, probablement déposé par une faille de l'application web. L'arrêter avec `sudo kill 4242` ne suffit pas : il faut surtout comprendre comment il est arrivé là, sinon il reviendra. C'est le travail de la réponse à incident, que tu étudieras plus tard.
+
+## les pièges
+
+- **Confondre programme et processus.** Un programme est un fichier ; chaque lancement crée un processus, avec son propre PID.
+- **Se fier au nom d'un processus.** Vérifie le chemin, l'utilisateur, le parent et la ligne de commande.
+- **Tuer d'emblée avec `kill -9`.** Le processus n'a pas le temps d'enregistrer : commence par un `kill` simple.
+- **Croire qu'un processeur à 5 % signifie peu de processus.** La plupart des processus attendent et ne consomment rien.
+- **Oublier qu'un PID est réutilisé.** Une fois un processus terminé, son numéro peut être attribué à un autre ; vérifie avant d'agir sur un PID noté plus tôt.
+- **S'arrêter au symptôme.** Arrêter un processus malveillant ne supprime ni son fichier ni la faille par laquelle il est entré.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/ps.1.html" description="Toutes les options de ps et la signification des colonnes, en anglais">Page de manuel de ps</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/sysinternals/downloads/process-explorer" description="L'outil de Microsoft qui affiche l'arbre des processus, leurs chemins et leurs signatures">Sysinternals : Process Explorer</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/signal.7.html" description="Les signaux comme SIGTERM et SIGKILL, et leur effet par défaut">Page de manuel signal(7)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle est la différence entre un programme et un processus ?" options={["Aucune", "Un processus est un programme plus gros", "Un programme tourne dans le noyau, un processus dans l'espace utilisateur", "Un programme est un fichier d'instructions, un processus est un programme en cours d'exécution"]} correct={3} explanation="Le programme est la recette, le processus la cuisine en cours : chaque lancement crée un processus distinct." />
+  <Quiz id="q-2" question="Que désigne le PPID d'un processus ?" options={["Le PID de son processus parent", "Sa priorité", "Son utilisateur", "Sa consommation de mémoire"]} correct={0} explanation="Le PPID est le numéro du processus qui l'a créé : il permet de reconstituer l'arbre des processus." />
+  <Quiz id="q-3" question="Dans quel état un processus passe-t-il l'essentiel de son temps, le plus souvent ?" options={["En attente d'un événement : clavier, disque, réseau", "En cours d'exécution", "Zombie", "Terminé"]} correct={0} explanation="La plupart des processus attendent quelque chose. C'est pour cela que des centaines de processus peuvent cohabiter avec un processeur peu chargé." />
+  <Quiz id="q-4" question="Qu'est-ce que la préemption ?" options={["La création d'un processus enfant", "L'arrêt forcé d'un processus malveillant", "Le chargement d'un programme en mémoire", "Le fait pour le noyau d'interrompre un processus à la fin de sa tranche de temps pour passer à un autre"]} correct={3} explanation="Dans le multitâche préemptif, le noyau reprend la main à intervalles réguliers, même si le processus n'a pas fini." />
+  <Quiz id="q-5" question="Qu'est-ce qui distingue deux threads d'un même processus de deux processus différents ?" options={["Les threads sont plus lents", "Les processus ne peuvent pas tourner en même temps", "Rien", "Les threads partagent la même mémoire, les processus sont isolés"]} correct={3} explanation="Les threads d'un processus partagent sa mémoire et ses fichiers ; le noyau isole les processus les uns des autres." />
+  <Quiz id="q-6" question="Un processus nommé svchost.exe s'exécute depuis C:\Users\paul\Downloads. Que faut-il en penser ?" options={["C'est normal, svchost est un processus de Windows", "C'est un pilote", "C'est une mise à jour", "C'est très suspect : le vrai svchost.exe se trouve dans C:\Windows\System32"]} correct={3} explanation="Le nom ne prouve rien : un programme système hors de son dossier habituel est un imposteur probable." />
+  <Quiz id="q-7" question="Quelle est la bonne façon de commencer pour arrêter un processus sous Linux ?" options={["kill -9 PID, pour être sûr", "Redémarrer la machine", "kill PID, qui lui demande poliment de se terminer", "Supprimer le programme du disque"]} correct={2} explanation="kill envoie SIGTERM, qui laisse le processus terminer proprement. SIGKILL, avec -9, est le dernier recours." />
+</QuizGroup>
+
+## à retenir
+
+- Un **programme** est un fichier ; un **processus** est un programme en cours d'exécution, identifié par son **PID**.
+- Chaque processus a un **parent** (PPID) : ils forment un **arbre** dont la racine sous Linux est le **PID 1**, systemd.
+- États : **en cours**, **prêt**, **en attente**, **terminé** ; la plupart des processus attendent.
+- L'**ordonnanceur** partage les cœurs par **tranches de temps** et **préemption** ; les **priorités** modulent ce partage.
+- Les **threads** d'un processus partagent sa mémoire ; les processus sont isolés.
+- Observer : **gestionnaire des tâches**, Process Explorer, `ps aux`, `top`. Arrêter : poliment d'abord (`kill`, Fin de tâche), de force ensuite.
+- Un processus suspect se juge sur son **chemin**, son **utilisateur**, son **parent** et sa **consommation**, jamais sur son nom.

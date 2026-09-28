@@ -1,0 +1,196 @@
+---
+refCode: CL-LSN-01017-V01
+slug: fondamentaux-la-memoire-vue-par-le-systeme
+title: "La mémoire vue par le système"
+description: "Comment le système partage la mémoire vive entre des centaines de processus sans qu'ils se gênent : la mémoire virtuelle, les pages et la table des pages, les défauts de page, l'échange sur disque, la mémoire utilisée par les caches, et les protections qui en découlent, de l'isolation des processus à l'ASLR. Avec une traduction d'adresses à programmer."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01016-V01"]
+---
+
+Au module 1, tu as vu la mémoire vive comme une longue suite de cases numérotées, chacune contenant un octet. C'est vrai du point de vue du matériel. Mais aucun programme ne voit la mémoire ainsi. Chaque processus croit disposer d'un immense espace de mémoire pour lui tout seul, qui commence à zéro, sans aucun voisin. Cette illusion, entretenue par le noyau et le processeur ensemble, s'appelle la **mémoire virtuelle**. Elle explique pourquoi un processus ne peut pas lire la mémoire d'un autre, pourquoi l'ordinateur ralentit brutalement quand la mémoire manque, et pourquoi une machine « presque pleine » ne l'est souvent pas du tout.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le principe de la mémoire virtuelle et ses avantages ;
+- décrire le découpage en pages et le rôle de la table des pages ;
+- traduire une adresse virtuelle en adresse physique ;
+- expliquer ce qu'est un défaut de page et l'échange sur disque ;
+- lire correctement l'occupation de la mémoire sous Linux et sous Windows ;
+- citer les protections de sécurité qui reposent sur la mémoire virtuelle.
+
+## pourquoi ça compte
+
+Un technicien qui voit « 95 % de mémoire utilisée » et conseille d'acheter de la mémoire alors qu'il s'agit surtout de cache fait perdre de l'argent. Un administrateur qui ne comprend pas l'échange sur disque ne comprend pas pourquoi son serveur devient soudain dix fois plus lent. Et en sécurité, la mémoire est le terrain de jeu d'une grande partie des attaques : les failles de corruption mémoire, les protections qui les rendent difficiles à exploiter, et les outils qui lisent la mémoire d'un processus pour y voler des mots de passe. Tout cela repose sur les mécanismes de cette leçon.
+
+## le problème à résoudre
+
+Imagine que les processus utilisent directement les adresses physiques de la mémoire vive. Trois problèmes apparaissent aussitôt.
+
+**Pas d'isolation.** Un processus pourrait lire ou écrire à n'importe quelle adresse, y compris dans la mémoire d'un autre programme ou du noyau. Un navigateur piégé pourrait lire la mémoire de ton gestionnaire de mots de passe.
+
+**Des conflits d'adresses.** Deux programmes compilés pour s'installer à la même adresse ne pourraient pas tourner en même temps. Il faudrait décider, pour chaque programme, où il se placera, en fonction de tous les autres.
+
+**Une mémoire en miettes.** À force de lancer et d'arrêter des programmes, la mémoire libre serait éparpillée en petits morceaux, et un programme qui a besoin d'un grand bloc continu ne trouverait pas de place, même avec assez de mémoire libre au total.
+
+La mémoire virtuelle règle les trois problèmes d'un coup.
+
+## la mémoire virtuelle
+
+Chaque processus reçoit son propre **espace d'adressage virtuel** : une plage d'adresses qui commence à zéro et qui, sur un système 64 bits, est gigantesque, bien plus grande que la mémoire réellement installée. Le processus ne manipule **que** des adresses virtuelles. À chaque accès, un composant du processeur, la **MMU** (*memory management unit*, unité de gestion de la mémoire), traduit l'adresse virtuelle en adresse physique, selon des tables tenues par le noyau.
+
+Deux processus peuvent donc utiliser la même adresse virtuelle, par exemple `0x400000`, et désigner deux cases physiques totalement différentes. Chacun vit dans son propre monde, et ne **peut pas nommer** la mémoire de l'autre : elle n'existe tout simplement pas dans son espace. C'est la base de l'isolation des processus que tu as vue dans les deux leçons précédentes.
+
+## pages et cadres
+
+Traduire chaque octet séparément demanderait des tables démesurées. La mémoire est donc découpée en blocs de taille fixe, le plus souvent **4 Kio** (4 096 octets) :
+
+- côté virtuel, ces blocs s'appellent des **pages** ;
+- côté physique, des **cadres** (*frames*).
+
+Le noyau tient pour chaque processus une **table des pages**, qui dit, pour chaque page virtuelle, dans quel cadre physique elle se trouve, ou si elle n'est pas en mémoire. Une adresse virtuelle se découpe alors en deux parties : le **numéro de page**, et le **décalage** à l'intérieur de la page. Seul le numéro de page est traduit ; le décalage reste le même.
+
+<Diagram caption="Traduire une adresse virtuelle : seul le numéro de page change">
+flowchart LR
+  A["Adresse virtuelle 0x1234"] --> B["Page 1, décalage 0x234"]
+  B --> C["Table des pages : page 1 dans le cadre 3"]
+  C --> D["Adresse physique 0x3234"]
+</Diagram>
+
+Avec des pages de 4 096 octets, c'est-à-dire `0x1000`, le calcul est simple : le numéro de page est l'adresse divisée par 4 096, le décalage est le reste. En hexadécimal, c'est encore plus visible : les trois derniers chiffres hexadécimaux sont le décalage, tout ce qui précède est le numéro de page. `0x1234` est la page 1, décalage `0x234`. Si la page 1 est rangée dans le cadre 3, l'adresse physique est `0x3234`. Tu retrouves l'intérêt de l'hexadécimal vu au module 2 : 4 096 est une puissance de 2, et la coupure tombe pile entre deux chiffres.
+
+Pour que cette traduction ne ralentisse pas chaque accès, le processeur garde les traductions récentes dans un petit cache spécialisé, le **TLB**. Tu retrouves l'idée de la mémoire cache du module 1.
+
+La table des pages contient aussi des **droits** pour chaque page : lecture, écriture, exécution, et accès réservé au noyau. Une page de code est en lecture et exécution, mais pas en écriture ; une page de données est en lecture et écriture, mais pas en exécution. Toute violation déclenche une erreur que le noyau traite, souvent en arrêtant le processus : c'est la `Segmentation fault` de la leçon précédente.
+
+## défauts de page et échange sur disque
+
+Une page virtuelle n'est pas forcément en mémoire vive. Quand un processus accède à une page absente, la MMU déclenche un **défaut de page** (*page fault*) et passe la main au noyau. Ce n'est pas nécessairement une erreur. Le noyau regarde pourquoi la page manque :
+
+- la page n'a **jamais été chargée** : le programme vient de démarrer et le noyau charge ses pages à la demande, seulement quand elles servent. C'est ce qui permet de lancer un gros programme sans lire tout son fichier ;
+- la page a été **mise de côté sur le disque** pour faire de la place : le noyau la relit, la place dans un cadre libre, met la table à jour et relance l'instruction ;
+- l'adresse ne correspond à **rien de valide** : là, c'est une vraie erreur, et le processus est arrêté.
+
+Le deuxième cas s'appelle l'**échange sur disque** (*swap*). Quand la mémoire vive est pleine, le noyau choisit des pages peu utilisées et les copie dans une zone du disque : une partition ou un fichier d'échange sous Linux, le **fichier d'échange** `pagefile.sys` sous Windows. Cela permet de faire tourner plus de programmes que la mémoire ne pourrait en contenir.
+
+Mais souviens-toi de l'échelle des latences du module 1 : lire en mémoire vive prend une centaine de nanosecondes, lire sur un SSD des dizaines de microsecondes, soit des centaines de fois plus. Tant que l'échange concerne des pages rarement utilisées, on ne s'en aperçoit pas. Quand la mémoire est vraiment insuffisante, le système passe son temps à écrire des pages sur le disque et à les relire aussitôt : c'est l'**effondrement** (*thrashing*). La machine devient d'une lenteur extrême, le disque est occupé en permanence, et c'est le moment où ajouter de la mémoire vive change vraiment tout.
+
+Si même l'échange ne suffit plus, Linux dispose d'un mécanisme de dernier recours, l'**OOM killer** (*out of memory*), qui choisit un processus gourmand et le tue pour sauver le reste du système. Un service qui disparaît sans raison apparente sur un serveur chargé est souvent sa victime ; les journaux du noyau le confirment.
+
+## lire l'occupation de la mémoire
+
+Un principe surprend souvent : **de la mémoire libre est de la mémoire gaspillée**. Le système utilise donc la mémoire inoccupée comme **cache** pour les fichiers récemment lus. Si un programme a besoin de cette mémoire, le cache est libéré instantanément. Ce cache fait paraître la mémoire « pleine » alors qu'elle est en réalité disponible.
+
+Sous Linux, la commande `free -h` montre ceci :
+
+```text
+               total        utilisé      libre     partagé tamp/cache   disponible
+Mem:            15Gi       5,3Gi       1,2Gi       412Mi       8,5Gi       9,2Gi
+Échange:       2,0Gi          0B       2,0Gi
+```
+
+La colonne à regarder est **disponible** : 9,2 Gio peuvent être donnés aux programmes, même si seulement 1,2 Gio sont totalement libres. Les 8,5 Gio de la colonne `tamp/cache` sont surtout du cache de fichiers, qui sera rendu dès qu'on en aura besoin. Et l'échange inutilisé, `0B`, confirme qu'il n'y a aucune pression.
+
+Sous Windows, le gestionnaire des tâches, onglet **Performances**, puis **Mémoire**, distingue de la même façon la mémoire **en cours d'utilisation**, la mémoire **en cache** et la mémoire **disponible**. La valeur **Validée** indique combien de mémoire les programmes ont réservée au total, mémoire vive et fichier d'échange compris, face à la limite possible.
+
+Les bons indices d'un vrai manque de mémoire sont donc : une mémoire **disponible** très faible, un échange qui grossit et, surtout, une activité disque importante liée à l'échange.
+
+## sécurité : ce que la mémoire virtuelle protège
+
+**L'isolation des processus.** Un processus ne peut lire la mémoire d'un autre que si le noyau l'y autorise explicitement, ce qui est réservé à l'administrateur ou au propriétaire du processus. C'est exactement ce que font les outils de vol d'identifiants comme Mimikatz : avec les droits d'administrateur sous Windows, ils lisent la mémoire du processus `lsass.exe`, qui garde des secrets de connexion. D'où des protections supplémentaires, comme le mode protégé de LSASS ou Credential Guard, qui refusent cette lecture même à un administrateur.
+
+**Pas d'exécution des données.** Grâce aux droits par page, une zone de données n'est pas exécutable : c'est la protection **NX** (*no execute*), appelée **DEP** sous Windows. Un attaquant qui réussit à écrire du code dans une zone de données ne peut pas le faire exécuter directement.
+
+**Des adresses imprévisibles.** Pour exploiter une faille mémoire, un attaquant a souvent besoin de savoir à quelle adresse se trouve tel morceau de code. L'**ASLR** (*address space layout randomization*) place le programme, ses bibliothèques, sa pile et son tas à des adresses virtuelles aléatoires, différentes à chaque lancement. L'attaquant doit alors deviner, ou trouver une seconde faille qui divulgue une adresse.
+
+**Les secrets qui traînent.** Un mot de passe tapé reste en mémoire, et une page contenant ce mot de passe peut être écrite dans le fichier d'échange, sur le disque. C'est une raison de plus de chiffrer le disque entier, fichier d'échange compris, et c'est pour cela que les logiciels sensibles effacent leurs secrets de la mémoire dès qu'ils n'en ont plus besoin. Les analystes forensiques, eux, font des **copies de la mémoire vive** d'une machine compromise : on y trouve des processus, des connexions et des clés qui n'ont jamais touché le disque.
+
+## à toi de jouer
+
+Ce programme simule une table des pages de 4 pages, avec des pages de 4 096 octets, et traduit quelques adresses. La seconde partie compte les défauts de page d'une suite d'accès quand la mémoire ne contient que quelques cadres et qu'on remplace la page la plus ancienne (méthode dite FIFO). Lance-le, puis ajoute des adresses et modifie le nombre de cadres.
+
+<CodePlayground language="python" starterCode={`TAILLE_PAGE = 4096
+
+table_des_pages = {0: 7, 1: 3, 2: None, 3: 12}
+
+def traduire(adresse_virtuelle):
+    page = adresse_virtuelle // TAILLE_PAGE
+    decalage = adresse_virtuelle % TAILLE_PAGE
+    cadre = table_des_pages.get(page)
+    if cadre is None:
+        return f'{adresse_virtuelle:#07x} : défaut de page (page {page} absente de la mémoire)'
+    physique = cadre * TAILLE_PAGE + decalage
+    return f'{adresse_virtuelle:#07x} -> page {page}, décalage {decalage} -> cadre {cadre} -> {physique:#07x}'
+
+for adresse in [0x0010, 0x1234, 0x2F00, 0x3ABC]:
+    print(traduire(adresse))
+
+def defauts_fifo(acces, nb_cadres):
+    en_memoire = []
+    defauts = 0
+    for page in acces:
+        if page not in en_memoire:
+            defauts += 1
+            if len(en_memoire) == nb_cadres:
+                en_memoire.pop(0)
+            en_memoire.append(page)
+    return defauts
+
+acces = [1, 2, 3, 1, 4, 1, 2, 5, 1, 2]
+for cadres in (2, 3, 4):
+    print(cadres, 'cadres :', defauts_fifo(acces, cadres), 'défauts de page')
+`} />
+
+Tu dois obtenir, par exemple, `0x01234 -> page 1, décalage 564 -> cadre 3 -> 0x03234`, et 9, 7 puis 7 défauts de page. Remarque qu'avec 4 cadres, on ne gagne rien par rapport à 3 : la méthode FIFO chasse la page 1 alors qu'elle sert sans arrêt. Les systèmes réels préfèrent chasser les pages **les moins récemment utilisées**, ce qui colle mieux à la façon dont les programmes travaillent.
+
+Maintenant, l'exercice corrigé. Écris `solution(adresse, table)` qui traduit une adresse virtuelle en adresse physique, avec des pages de 4 096 octets. `table` est un dictionnaire qui associe un numéro de page à un numéro de cadre. Si la page n'est pas dans la table, renvoie `-1`.
+
+<PythonChallenge id="f1-pages-1" title="Traduire une adresse" description="Renvoie l'adresse physique correspondant à l'adresse virtuelle, ou -1 si la page est absente." starterCode="TAILLE_PAGE = 4096
+
+def solution(adresse, table):
+    page = 0      # à calculer
+    decalage = 0  # à calculer
+    if page not in table:
+        return -1
+    return 0  # cadre, puis décalage" tests={[{ input: "solution(100, {0: 5, 1: 9, 2: 1})", expected: "20580" }, { input: "solution(4096, {0: 5, 1: 9, 2: 1})", expected: "36864" }, { input: "solution(8200, {0: 5, 1: 9, 2: 1})", expected: "4104" }, { input: "solution(12288, {0: 5, 1: 9, 2: 1})", expected: "-1" }, { input: "solution(5000, {0: 5, 1: 9, 2: 1})", expected: "37768" }]} />
+
+## les pièges
+
+- **Confondre mémoire utilisée et mémoire indisponible.** Le cache occupe la mémoire libre mais se libère à la demande : regarde la mémoire **disponible**.
+- **Croire que le fichier d'échange remplace la mémoire vive.** Il évite les plantages, pas la lenteur : un disque est des centaines de fois plus lent.
+- **Prendre tout défaut de page pour une erreur.** La plupart sont normaux : chargement à la demande, relecture depuis l'échange.
+- **Oublier que les secrets peuvent finir sur le disque.** Le fichier d'échange contient des morceaux de mémoire : chiffre le disque entier.
+- **Désactiver l'ASLR ou la DEP pour « faire marcher » un vieux logiciel.** Ce sont des protections essentielles contre l'exploitation des failles.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/free.1.html" description="Les colonnes de free, dont la mémoire disponible, en anglais">Page de manuel de free</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/win32/memory/data-execution-prevention" description="La prévention de l'exécution des données (DEP) expliquée par Microsoft">Microsoft : prévention de l'exécution des données</ExternalLink>
+
+<ExternalLink href="https://www.kernel.org/doc/html/latest/admin-guide/mm/concepts.html" description="Les concepts de gestion mémoire du noyau Linux : pages, table des pages, échange">Documentation du noyau Linux : concepts de la mémoire</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi deux processus peuvent-ils utiliser la même adresse sans se gêner ?" options={["Parce qu'ils ne tournent jamais en même temps", "Parce que ce sont des adresses virtuelles, traduites vers des cadres physiques différents", "Parce que le noyau copie la mémoire à chaque fois", "Ils ne le peuvent pas"]} correct={1} explanation="Chaque processus a sa propre table des pages : une même adresse virtuelle mène à des cadres physiques différents." />
+  <Quiz id="q-2" question="Avec des pages de 4 096 octets, dans quelle page se trouve l'adresse virtuelle 0x5A10 ?" options={["Page 10", "Page 5", "Page 90", "Page 0"]} correct={1} explanation="Les trois derniers chiffres hexadécimaux sont le décalage, 0xA10. Ce qui précède, 5, est le numéro de page." />
+  <Quiz id="q-3" question="Qu'est-ce qu'un défaut de page ?" options={["Une barrette de mémoire défectueuse", "Une erreur d'impression", "L'accès à une page qui n'est pas en mémoire vive, que le noyau doit traiter", "Un fichier corrompu"]} correct={2} explanation="Le processeur signale au noyau qu'une page manque. Le plus souvent, le noyau la charge et le programme continue." />
+  <Quiz id="q-4" question="free -h affiche 1,2 Gio libres et 9,2 Gio disponibles. Faut-il ajouter de la mémoire ?" options={["Non, l'essentiel de la mémoire occupée est du cache libérable à la demande", "Oui, il ne reste presque rien", "Oui, car l'échange est vide", "Impossible à dire sans redémarrer"]} correct={0} explanation="La colonne disponible compte le cache qui sera rendu dès qu'un programme en a besoin. 9,2 Gio restent utilisables." />
+  <Quiz id="q-5" question="Qu'est-ce que l'effondrement, ou thrashing ?" options={["Une panne du processeur", "Un système qui passe son temps à échanger des pages avec le disque faute de mémoire vive", "La suppression du cache", "Un plantage du noyau"]} correct={1} explanation="Quand la mémoire manque vraiment, les pages vont et viennent sans cesse entre mémoire et disque, et tout ralentit." />
+  <Quiz id="q-6" question="Que fait l'ASLR ?" options={["Il chiffre la mémoire vive", "Il supprime les pages inutilisées", "Il accélère la traduction des adresses", "Il place le code et les données à des adresses aléatoires à chaque lancement"]} correct={3} explanation="En rendant les adresses imprévisibles, l'ASLR complique l'exploitation des failles de corruption mémoire." />
+  <Quiz id="q-7" question="Pourquoi faut-il chiffrer aussi le fichier d'échange ?" options={["Parce que des pages de mémoire contenant des secrets peuvent y être écrites", "Pour gagner de la place", "Parce qu'il contient le système", "Ce n'est pas utile"]} correct={0} explanation="Une page contenant un mot de passe ou une clé peut être déplacée sur le disque : elle y serait lisible sans chiffrement." />
+</QuizGroup>
+
+## à retenir
+
+- Chaque processus a son **espace d'adressage virtuel** ; la **MMU** traduit chaque adresse virtuelle en adresse physique.
+- La mémoire est découpée en **pages** (virtuelles) et **cadres** (physiques) de **4 Kio** ; la **table des pages** fait le lien et porte les **droits** de chaque page.
+- Adresse virtuelle = **numéro de page** + **décalage** ; seul le numéro de page est traduit.
+- Un **défaut de page** est souvent normal ; l'**échange sur disque** permet de dépasser la mémoire vive au prix de la vitesse, jusqu'à l'**effondrement**.
+- La mémoire « utilisée » contient beaucoup de **cache** : regarde la mémoire **disponible**.
+- Sécurité : **isolation** des processus, **NX/DEP**, **ASLR**, et secrets qui peuvent finir dans l'échange ou dans une copie de la mémoire.
