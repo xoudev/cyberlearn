@@ -6,6 +6,7 @@ import { requireAdminAction } from "@/lib/auth";
 import { applyLessonUpdate } from "@/lib/services/lesson-sync.service";
 import {
   importLessonFromRepository,
+  publishCatalogueDrafts,
   syncPathFromRepository,
 } from "@/lib/services/repository-import.service";
 
@@ -85,4 +86,16 @@ export async function syncPathFromRepositoryAction(input: {
   const result = await syncPathFromRepository(parsed.data.refCode, admin.id);
   if (!result.ok) return { ok: false, message: result.message, details: result.details };
   return { ok: true };
+}
+
+/**
+ * Publishes the catalogue's drafts: the lessons and paths content/paths lists.
+ * Nothing comes from the browser; the server reads the manifests again.
+ */
+export async function publishCatalogueFromRepositoryAction(): Promise<{
+  lessons: number;
+  paths: number;
+}> {
+  const admin = await requireAdminAction();
+  return publishCatalogueDrafts(admin.id);
 }

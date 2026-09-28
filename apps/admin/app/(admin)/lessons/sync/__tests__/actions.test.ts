@@ -8,13 +8,16 @@ vi.mock("@/lib/services/lesson-sync.service", () => ({ applyLessonUpdate }));
 
 const importLessonFromRepository = vi.fn();
 const syncPathFromRepository = vi.fn();
+const publishCatalogueDrafts = vi.fn();
 vi.mock("@/lib/services/repository-import.service", () => ({
   importLessonFromRepository,
   syncPathFromRepository,
+  publishCatalogueDrafts,
 }));
 
 const {
   importLessonFromRepositoryAction,
+  publishCatalogueFromRepositoryAction,
   syncPathFromRepositoryAction,
   updateLessonFromRepositoryAction,
 } = await import("../actions");
@@ -152,5 +155,19 @@ describe("syncPathFromRepositoryAction", () => {
       message: "Les manifestes de content/paths ne passent pas leurs contrôles.",
       details: ["linux.json : slug linux déjà utilisé par autre.json."],
     });
+  });
+});
+
+describe("publishCatalogueFromRepositoryAction", () => {
+  it("checks the caller is an admin before publishing anything", async () => {
+    requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(publishCatalogueFromRepositoryAction()).rejects.toThrow("NEXT_REDIRECT");
+    expect(publishCatalogueDrafts).not.toHaveBeenCalled();
+  });
+
+  it("publishes on behalf of the admin and reports the counts", async () => {
+    publishCatalogueDrafts.mockResolvedValue({ lessons: 60, paths: 2 });
+    expect(await publishCatalogueFromRepositoryAction()).toEqual({ lessons: 60, paths: 2 });
+    expect(publishCatalogueDrafts).toHaveBeenCalledWith("admin-1");
   });
 });

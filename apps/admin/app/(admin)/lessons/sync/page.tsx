@@ -11,12 +11,14 @@ import {
 } from "../../_components/admin-ui";
 import { lessonSyncOverview, type LessonUpdate } from "@/lib/services/lesson-sync.service";
 import {
+  catalogueDrafts,
   pathSyncOverview,
+  type CatalogueDrafts,
   type PathSyncOverview,
   type PathSyncState,
 } from "@/lib/services/repository-import.service";
 import type { DiffHunk } from "@/lib/text-diff";
-import { RunAllButton, RunOneButton } from "./_components/sync-controls";
+import { PublishCatalogueButton, RunAllButton, RunOneButton } from "./_components/sync-controls";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -201,9 +203,42 @@ function PathsSection({ overview }: { overview: PathSyncOverview }): React.React
   );
 }
 
+function PublishSection({ drafts }: { drafts: CatalogueDrafts }): React.ReactElement | null {
+  if (drafts.lessons.length === 0 && drafts.paths.length === 0) return null;
+  return (
+    <section className="a-card a-sync-extra">
+      <div className="a-card-head">
+        <h2 className="a-card-title">Publication</h2>
+      </div>
+      <div className="a-card-pad a-sync-body">
+        <p className="a-sync-file">
+          Le site et l&apos;app n&apos;affichent que ce qui est publié. Encore en brouillon, parmi
+          ce que listent les manifestes de content/paths : {drafts.lessons.length} leçon
+          {drafts.lessons.length > 1 ? "s" : ""} et {drafts.paths.length} parcours. Ni l&apos;ancien
+          catalogue, ni une leçon archivée ne sont concernés.
+        </p>
+        <PublishCatalogueButton lessons={drafts.lessons.length} paths={drafts.paths.length} />
+        {drafts.paths.length > 0 ? (
+          <ul className="a-sync-plain">
+            {drafts.paths.map((p) => (
+              <li key={p.id}>
+                <span className="a-sync-ref">{p.refCode}</span> {p.title}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default async function LessonSyncPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const [overview, paths] = await Promise.all([lessonSyncOverview(), pathSyncOverview()]);
+  const [overview, paths, drafts] = await Promise.all([
+    lessonSyncOverview(),
+    pathSyncOverview(),
+    catalogueDrafts(),
+  ]);
 
   return (
     <main className="admin-page-content">
@@ -276,6 +311,8 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
           ) : null}
 
           <PathsSection overview={paths} />
+
+          <PublishSection drafts={drafts} />
 
           {overview.updates.length === 0 ? (
             <EmptyState
