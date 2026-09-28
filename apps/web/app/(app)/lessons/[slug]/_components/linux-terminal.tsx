@@ -5,12 +5,15 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import type { Terminal as TerminalType } from "@xterm/xterm";
 import {
+  checkHolds,
   createLineTracker,
   endsWithPrompt,
   isLessonFilePath,
   normalizeCommand,
   setupCommand,
   toSerial,
+  type PathState,
+  type StateCheck,
 } from "@/lib/linux-terminal/session";
 
 /**
@@ -38,6 +41,22 @@ const propsSchema = z.object({
     .optional(),
   /** Commands the learner is asked to type, checked as they submit them. */
   expectedCommands: z.array(z.string().max(200)).max(30).optional(),
+  /**
+   * What the learner must leave behind in /mnt, checked in the machine after
+   * each command: a file (with a text in it, if given), a directory, or no
+   * trace of a path.
+   */
+  checks: z
+    .array(
+      z.object({
+        label: z.string().max(200),
+        path: z.string().refine(isLessonFilePath, "Chemin de vérification invalide."),
+        expect: z.enum(["file", "dir", "absent"]),
+        contains: z.string().max(500).optional(),
+      }),
+    )
+    .max(30)
+    .optional(),
   hints: z.array(z.string().max(500)).max(20).optional(),
 });
 
@@ -49,8 +68,38 @@ interface V86Emulator {
   add_listener(event: "serial0-output-byte", listener: (byte: number) => void): void;
   serial0_send(data: string): void;
   create_file(path: string, data: Uint8Array): Promise<void>;
+  /** Rejects for a directory as for a missing path. */
+  read_file(path: string): Promise<Uint8Array>;
   restart(): void;
   destroy(): Promise<void>;
+  /**
+   * The 9p filesystem behind /mnt. Not in v86's typings, so optional here: it
+   * is the only way to tell a directory from a missing path, and without it a
+   * directory check simply does not pass.
+   */
+  fs9p?: {
+    SearchPath(path: string): { id: number };
+    IsDirectory(id: number): boolean;
+  };
+}
+
+/** What a path of /mnt is, and a file's text when there is one. */
+async function probe(
+  emulator: V86Emulator,
+  path: string,
+): Promise<{ state: PathState; text: string | null }> {
+  const fs = emulator.fs9p;
+  if (fs) {
+    const { id } = fs.SearchPath(path);
+    if (id === -1) return { state: "absent", text: null };
+    if (fs.IsDirectory(id)) return { state: "dir", text: null };
+  }
+  try {
+    const bytes = await emulator.read_file(path);
+    return { state: "file", text: new TextDecoder().decode(bytes) };
+  } catch {
+    return { state: "absent", text: null };
+  }
 }
 
 type V86Constructor = new (options: Record<string, unknown>) => V86Emulator;
@@ -114,6 +163,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const height = props.height ?? 380;
   const files = props.files ?? {};
   const expected = (props.expectedCommands ?? []).map(normalizeCommand);
+  const checks: StateCheck[] = props.checks ?? [];
   const hints = props.hints ?? [];
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -121,11 +171,26 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const emulatorRef = useRef<V86Emulator | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [done, setDone] = useState<string[]>([]);
+  const [passed, setPassed] = useState<string[]>([]);
 
   const filesRef = useRef(files);
   filesRef.current = files;
   const expectedRef = useRef(expected);
   expectedRef.current = expected;
+  const checksRef = useRef(checks);
+  checksRef.current = checks;
+
+  /** Looks at /mnt in the machine and records which checks hold now. */
+  const evaluate = useCallback(async (): Promise<void> => {
+    const emulator = emulatorRef.current;
+    if (!emulator || checksRef.current.length === 0) return;
+    const holding: string[] = [];
+    for (const check of checksRef.current) {
+      const { state, text } = await probe(emulator, check.path);
+      if (checkHolds(check, state, text)) holding.push(check.label);
+    }
+    setPassed(holding);
+  }, []);
 
   /**
    * Waits for the shell's prompt, then types the setup line, waits for the
@@ -133,65 +198,74 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
    * Until that point the output is kept off it: boot messages and the setup
    * line are the page's business, not the learner's.
    */
-  const prepare = useCallback((emulator: V86Emulator, term: TerminalType) => {
-    const decoder = new TextDecoder();
-    let tail = "";
-    let stage: "boot" | "setup" | "live" = "boot";
-    let pending: number[] = [];
-    let flushing = false;
+  const prepare = useCallback(
+    (emulator: V86Emulator, term: TerminalType) => {
+      const decoder = new TextDecoder();
+      let tail = "";
+      let stage: "boot" | "setup" | "live" = "boot";
+      let pending: number[] = [];
+      let flushing = false;
 
-    const flush = (): void => {
-      flushing = false;
-      if (pending.length === 0) return;
-      term.write(new Uint8Array(pending));
-      pending = [];
-    };
+      const flush = (): void => {
+        flushing = false;
+        if (pending.length === 0) return;
+        term.write(new Uint8Array(pending));
+        pending = [];
+      };
 
-    const goLive = async (): Promise<void> => {
-      const encoder = new TextEncoder();
-      for (const [path, content] of Object.entries(filesRef.current)) {
-        await emulator.create_file(path, encoder.encode(content));
-      }
-      stage = "live";
-      setPhase("ready");
-      term.focus();
-      // Redraws a clean prompt, now that the screen shows the output.
-      emulator.serial0_send("clear\n");
-    };
-
-    emulator.add_listener("serial0-output-byte", (byte) => {
-      if (stage === "live") {
-        pending.push(byte);
-        if (!flushing) {
-          flushing = true;
-          setTimeout(flush, 0);
+      const goLive = async (): Promise<void> => {
+        const encoder = new TextEncoder();
+        for (const [path, content] of Object.entries(filesRef.current)) {
+          await emulator.create_file(path, encoder.encode(content));
         }
-        return;
-      }
-      tail = (tail + decoder.decode(new Uint8Array([byte]), { stream: true })).slice(-200);
-      if (!endsWithPrompt(tail)) return;
-      tail = "";
-      if (stage === "boot") {
-        stage = "setup";
-        emulator.serial0_send(setupCommand(Object.keys(filesRef.current), term.cols, term.rows));
-      } else {
         stage = "live";
-        void goLive().catch(() => {
-          setPhase("error");
-        });
-      }
-    });
+        setPhase("ready");
+        term.focus();
+        // Redraws a clean prompt, now that the screen shows the output.
+        emulator.serial0_send("clear\n");
+      };
 
-    const track = createLineTracker((line) => {
-      if (!expectedRef.current.includes(line)) return;
-      setDone((prev) => (prev.includes(line) ? prev : [...prev, line]));
-    });
-    term.onData((data) => {
-      if (stage !== "live") return;
-      track(data);
-      emulator.serial0_send(toSerial(data));
-    });
-  }, []);
+      emulator.add_listener("serial0-output-byte", (byte) => {
+        if (stage === "live") {
+          pending.push(byte);
+          if (!flushing) {
+            flushing = true;
+            setTimeout(flush, 0);
+          }
+          return;
+        }
+        tail = (tail + decoder.decode(new Uint8Array([byte]), { stream: true })).slice(-200);
+        if (!endsWithPrompt(tail)) return;
+        tail = "";
+        if (stage === "boot") {
+          stage = "setup";
+          emulator.serial0_send(setupCommand(Object.keys(filesRef.current), term.cols, term.rows));
+        } else {
+          stage = "live";
+          void goLive().catch(() => {
+            setPhase("error");
+          });
+        }
+      });
+
+      const track = createLineTracker(
+        (line) => {
+          if (!expectedRef.current.includes(line)) return;
+          setDone((prev) => (prev.includes(line) ? prev : [...prev, line]));
+        },
+        // The command has just been sent; give it a moment to run, then look.
+        () => {
+          setTimeout(() => void evaluate(), 800);
+        },
+      );
+      term.onData((data) => {
+        if (stage !== "live") return;
+        track(data);
+        emulator.serial0_send(toSerial(data));
+      });
+    },
+    [evaluate],
+  );
 
   const start = useCallback(async (): Promise<void> => {
     if (!containerRef.current || emulatorRef.current) return;
@@ -269,6 +343,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
   const restart = useCallback((): void => {
     stop();
     setDone([]);
+    setPassed([]);
     setPhase("idle");
     // The container is empty again once React has re-rendered the idle state.
     setTimeout(() => void start(), 0);
@@ -276,8 +351,12 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
 
   useEffect(() => stop, [stop]);
 
-  const total = expected.length;
-  const allDone = total > 0 && expected.every((c) => done.includes(c));
+  const total = expected.length + checks.length;
+  const count = done.length + checks.filter((c) => passed.includes(c.label)).length;
+  const allDone =
+    total > 0 &&
+    expected.every((c) => done.includes(c)) &&
+    checks.every((c) => passed.includes(c.label));
 
   if (!parsed.success) {
     return (
@@ -335,9 +414,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
             flexShrink: 0,
           }}
         >
-          {total > 0
-            ? `${allDone ? "✓ " : ""}${String(done.length)}/${String(total)} cmd`
-            : "vrai Linux"}
+          {total > 0 ? `${allDone ? "✓ " : ""}${String(count)}/${String(total)}` : "vrai Linux"}
         </span>
         {phase === "ready" || phase === "error" ? (
           <button
@@ -453,6 +530,27 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
               );
             })}
           </ul>
+          {checks.length > 0 ? (
+            <ul
+              style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 4 }}
+            >
+              {checks.map((check) => {
+                const ok = passed.includes(check.label);
+                return (
+                  <li
+                    key={check.label}
+                    style={{
+                      fontFamily: "var(--font-mono, monospace)",
+                      fontSize: 12,
+                      color: ok ? "var(--cosmetic-accent)" : "#6B6890",
+                    }}
+                  >
+                    {ok ? "✓" : "○"} {check.label}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
           {allDone ? (
             <p
               style={{
@@ -462,7 +560,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
                 color: "var(--cosmetic-accent)",
               }}
             >
-              ✓ Exercice complété : tu as tapé toutes les commandes demandées.
+              ✓ Exercice complété : tout ce qui était demandé est fait.
             </p>
           ) : null}
         </div>

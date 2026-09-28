@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  checkHolds,
   createLineTracker,
   directoriesOf,
   endsWithPrompt,
@@ -106,5 +107,44 @@ describe("createLineTracker", () => {
 
   it("does not guess a line recalled or edited with the arrows", () => {
     expect(track("\x1b[A", "\r", "ls\x1b[D", "x\r", "id\r")).toEqual(["id"]);
+  });
+});
+
+describe("createLineTracker, on Enter", () => {
+  it("signals every Enter, even for a line it cannot report", () => {
+    let enters = 0;
+    const feed = createLineTracker(
+      () => undefined,
+      () => {
+        enters++;
+      },
+    );
+    feed("ls\r");
+    feed("\x1b[A\r");
+    feed("\r");
+    expect(enters).toBe(3);
+  });
+});
+
+describe("checkHolds", () => {
+  const file = { label: "Le rapport", path: "docs/rapport.txt", expect: "file" as const };
+
+  it("holds when the path is what the check expects", () => {
+    expect(checkHolds(file, "file", "texte")).toBe(true);
+    expect(checkHolds({ ...file, expect: "dir" }, "dir", null)).toBe(true);
+    expect(checkHolds({ ...file, expect: "absent" }, "absent", null)).toBe(true);
+  });
+
+  it("fails when the path is something else", () => {
+    expect(checkHolds(file, "absent", null)).toBe(false);
+    expect(checkHolds(file, "dir", null)).toBe(false);
+    expect(checkHolds({ ...file, expect: "absent" }, "file", "x")).toBe(false);
+  });
+
+  it("looks for the expected text in a file", () => {
+    const withText = { ...file, contains: "Bilan" };
+    expect(checkHolds(withText, "file", "Bilan du trimestre")).toBe(true);
+    expect(checkHolds(withText, "file", "Brouillon")).toBe(false);
+    expect(checkHolds(withText, "file", null)).toBe(false);
   });
 });
