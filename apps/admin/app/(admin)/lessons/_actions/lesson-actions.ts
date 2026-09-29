@@ -151,6 +151,7 @@ export async function updateLessonStatusAction(
   ]);
 
   revalidatePath("/lessons");
+  revalidatePath("/lessons/archives");
   return {};
 }
 
@@ -199,6 +200,7 @@ export async function bulkUpdateLessonStatusAction(
   ]);
 
   revalidatePath("/lessons");
+  revalidatePath("/lessons/archives");
   return { count: result.count };
 }
 
@@ -259,5 +261,6 @@ export async function deleteLessonAction(
   }
 
   revalidatePath("/lessons");
+  revalidatePath("/lessons/archives");
   return { success: true };
 }

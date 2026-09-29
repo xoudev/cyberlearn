@@ -19,6 +19,16 @@ export const lessonRefCodeSchema = z
   .string()
   .regex(LESSON_REF_CODE, "Format attendu : CL-LSN-001-V01 ou CL-LSN-01001-V01");
 
+/**
+ * Whether a lesson belongs to the first catalogue: its refCode has the old
+ * three-digit shape. The console uses it to find, and archive in one go, the
+ * lessons the new catalogue replaces. A teacher's class lesson (`CL-CLS-…`) is
+ * neither, and answers false.
+ */
+export function isFirstCatalogueLesson(refCode: string): boolean {
+  return /^CL-LSN-\d{3}-V\d{2}$/.test(refCode);
+}
+
 export const pathRefCodeSchema = z
   .string()
   .regex(PATH_REF_CODE, "Format attendu : CL-PATH-001-V01");

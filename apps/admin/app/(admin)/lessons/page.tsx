@@ -1,8 +1,9 @@
 import React from "react";
 import type { Metadata } from "next";
-import { prisma, quizReportRepository } from "@cyberlearn/db";
+import { quizReportRepository } from "@cyberlearn/db";
 import { GhostLink, PageHeader, PrimaryLink } from "../_components/admin-ui";
-import { LessonsTable, type LessonRow } from "./_components/lessons-table";
+import { LessonsTable } from "./_components/lessons-table";
+import { listLessons } from "@/lib/services/lesson-list.service";
 
 import { requireAdminPage } from "@/lib/auth";
 
@@ -10,58 +11,20 @@ export const metadata: Metadata = { title: "Leçons" };
 
 export default async function AdminLessonsPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const [lessons, openReports] = await Promise.all([
-    prisma.lesson.findMany({
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      select: {
-        id: true,
-        refCode: true,
-        slug: true,
-        title: true,
-        category: true,
-        difficulty: true,
-        status: true,
-        audience: true,
-        xpReward: true,
-        estimatedMinutes: true,
-        createdAt: true,
-        _count: {
-          select: {
-            progress: { where: { status: "COMPLETED" } },
-            pathLessons: true,
-          },
-        },
-      },
-    }),
+  const [{ rows, counts }, openReports] = await Promise.all([
+    listLessons("active"),
     quizReportRepository.countOpen(),
   ]);
-
-  const publishedCount = lessons.filter((l) => l.status === "PUBLISHED").length;
-  const draftCount = lessons.filter((l) => l.status === "DRAFT").length;
-
-  const rows: LessonRow[] = lessons.map((l) => ({
-    id: l.id,
-    refCode: l.refCode,
-    slug: l.slug,
-    title: l.title,
-    category: l.category,
-    difficulty: l.difficulty,
-    status: l.status,
-    xpReward: l.xpReward,
-    estimatedMinutes: l.estimatedMinutes,
-    audience: l.audience,
-    completions: l._count.progress,
-    pathLessonsCount: l._count.pathLessons,
-  }));
 
   return (
     <main className="admin-page-content">
       <PageHeader
         eyebrow="Contenu"
-        title={`Leçons (${String(lessons.length)})`}
-        description={`${String(publishedCount)} publiée${publishedCount !== 1 ? "s" : ""} · ${String(draftCount)} brouillon${draftCount !== 1 ? "s" : ""}.`}
+        title={`Leçons (${String(rows.length)})`}
+        description={`${String(counts.published)} publiée${counts.published !== 1 ? "s" : ""} · ${String(counts.draft)} brouillon${counts.draft !== 1 ? "s" : ""}. Les leçons archivées sont rangées à part.`}
         actions={
           <>
+            <GhostLink href="/lessons/archives">Archives ({String(counts.archived)})</GhostLink>
             <GhostLink href="/lessons/sync">Synchroniser avec le dépôt</GhostLink>
             <GhostLink href="/lessons/reports">
               Questions signalées{openReports > 0 ? ` (${String(openReports)})` : ""}
@@ -72,7 +35,7 @@ export default async function AdminLessonsPage(): Promise<React.ReactElement> {
         }
       />
 
-      <LessonsTable lessons={rows} />
+      <LessonsTable lessons={rows} folder="active" />
     </main>
   );
 }
