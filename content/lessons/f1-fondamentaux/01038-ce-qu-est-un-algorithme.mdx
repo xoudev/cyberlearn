@@ -1,0 +1,225 @@
+---
+refCode: CL-LSN-01038-V01
+slug: fondamentaux-ce-qu-est-un-algorithme
+title: "Ce qu'est un algorithme"
+description: "Ce qui fait d'une suite d'instructions un algorithme : une entrée, des étapes précises, une sortie, et la garantie de s'arrêter. Comment décomposer un problème, l'écrire en pseudo-code, le vérifier sur des exemples et les cas limites, puis le traduire en Python. Avec un premier algorithme à écrire soi-même : trouver le plus grand nombre d'une liste."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01037-V01"]
+---
+
+Tu suis des algorithmes tous les jours sans les appeler ainsi. Une recette de cuisine, l'itinéraire donné par un GPS, la notice de montage d'un meuble, la méthode apprise à l'école pour poser une division : chaque fois, une suite d'étapes qui, appliquée à des données de départ, mène à un résultat. Un ordinateur ne fait rien d'autre qu'exécuter de telles suites d'étapes, des milliards de fois par seconde. Mais il a une particularité qui change tout : il ne devine jamais ce que tu voulais dire. Cette leçon t'apprend à penser comme lui, c'est-à-dire à décrire un traitement assez précisément pour qu'une machine puisse le suivre sans comprendre. C'est la compétence de base du programmeur, et elle ne dépend d'aucun langage.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- définir un algorithme par ses quatre ingrédients : entrée, étapes, sortie, terminaison ;
+- distinguer un algorithme d'une simple intention ;
+- décomposer un problème en sous-problèmes plus simples ;
+- écrire un algorithme en pseudo-code ;
+- le vérifier sur des exemples, dont les cas limites ;
+- le traduire en quelques lignes de Python.
+
+## pourquoi ça compte
+
+Les débutants pensent souvent que programmer, c'est connaître un langage. En réalité, la syntaxe s'apprend en quelques semaines ; ce qui prend du temps, c'est d'apprendre à **décrire un raisonnement** étape par étape, sans trou ni ambiguïté. Un développeur passe plus de temps à réfléchir à l'algorithme qu'à le taper. Un administrateur système qui écrit un script de sauvegarde, un analyste qui automatise le tri de milliers de lignes de journaux, un pentesteur qui teste des centaines d'adresses : tous commencent par la même question, « quelles sont les étapes, exactement ? ». Et en sécurité, beaucoup de failles viennent d'un algorithme qui oublie un cas : une liste vide, une valeur négative, une entrée plus longue que prévu. Savoir penser les cas limites, c'est déjà penser comme un attaquant.
+
+## une définition
+
+Un **algorithme** est une suite finie d'instructions précises qui, à partir de données d'**entrée**, produit un résultat en **sortie**, et qui s'arrête toujours. Le mot vient du nom d'un mathématicien persan du IXe siècle, al-Khwârizmî, dont les ouvrages ont fait connaître en Europe les méthodes de calcul avec les chiffres indiens.
+
+Quatre ingrédients, donc :
+
+- **l'entrée** : les données sur lesquelles on travaille. Une liste de notes, un mot de passe à vérifier, un fichier de journal. Il peut y en avoir plusieurs, ou aucune.
+- **les étapes** : des instructions élémentaires, chacune assez simple pour être exécutée sans réfléchir, et un ordre clair pour les enchaîner.
+- **la sortie** : le résultat attendu. Une moyenne, un « oui » ou un « non », une liste triée.
+- **la terminaison** : quelle que soit l'entrée, l'algorithme finit par s'arrêter. Une méthode qui peut tourner indéfiniment n'est pas un algorithme, c'est un bug.
+
+On y ajoute une exigence qui va de soi mais qu'on oublie souvent : l'algorithme doit être **correct**, c'est-à-dire donner la bonne sortie pour **toutes** les entrées prévues, pas seulement pour l'exemple auquel on pensait en l'écrivant.
+
+## intention ou algorithme ?
+
+« Trouve le plus grand nombre de cette liste » n'est pas un algorithme : c'est une **intention**. Elle dit ce qu'on veut, pas comment l'obtenir. Un humain s'en contente, parce qu'il remplit les trous tout seul : il parcourt la liste des yeux et repère le plus grand. Une machine, elle, a besoin qu'on lui dise **comment** parcourir, **quoi** retenir et **quand** s'arrêter.
+
+Voici la même demande sous forme d'algorithme :
+
+```text
+entrée : une liste de nombres, non vide
+sortie : le plus grand nombre de la liste
+
+1. retenir le premier nombre de la liste comme « plus grand provisoire »
+2. pour chaque nombre suivant de la liste :
+     si ce nombre est plus grand que le plus grand provisoire,
+     alors il devient le nouveau plus grand provisoire
+3. quand la liste est terminée, renvoyer le plus grand provisoire
+```
+
+Chaque étape est élémentaire : lire un nombre, comparer deux nombres, retenir une valeur. Aucune ne demande d'intelligence. L'ordre est clair. La sortie est définie. Et l'algorithme s'arrête forcément, puisque la liste a une fin et qu'on avance d'un nombre à chaque tour.
+
+Remarque aussi la précision « non vide » dans l'entrée. Que ferait l'étape 1 avec une liste vide ? Il n'y a pas de premier nombre. L'algorithme n'a pas de sens dans ce cas : soit on l'interdit, comme ici, soit on décide d'une réponse spéciale. Ce genre de décision fait partie de l'algorithme.
+
+## le pseudo-code
+
+Le texte ci-dessus est écrit en **pseudo-code** : un français structuré, à mi-chemin entre la langue naturelle et un langage de programmation. Il n'existe pas de norme officielle ; chaque manuel a ses habitudes. Les règles qui comptent sont simples :
+
+- une instruction par ligne ;
+- des mots-clés réguliers pour les structures : **si ... alors ... sinon**, **pour chaque ... dans ...**, **tant que ...**, **renvoyer** ;
+- l'**indentation** (le décalage vers la droite) montre ce qui fait partie d'un bloc : ce qui est décalé sous « pour chaque » se répète ;
+- des noms de variables parlants, comme `plus_grand` ou `total`, plutôt que `x` ou `a`.
+
+Pourquoi ne pas écrire directement en Python ? Parce que le pseudo-code permet de réfléchir au **raisonnement** sans se battre avec la syntaxe : un deux-points oublié, une parenthèse de trop. Une fois l'algorithme juste sur le papier, la traduction dans n'importe quel langage devient presque mécanique. Les entretiens d'embauche techniques demandent d'ailleurs souvent d'écrire au tableau en pseudo-code.
+
+## le schéma de l'algorithme
+
+On peut aussi dessiner un algorithme sous forme d'**organigramme** : des boîtes pour les actions, des questions pour les décisions, des flèches pour l'ordre. C'est moins compact que le pseudo-code, mais très lisible pour montrer une boucle.
+
+<Diagram caption="L'algorithme du plus grand nombre, en organigramme">
+flowchart TD
+  A["Entrée : une liste non vide"] --> B["plus_grand = premier nombre"]
+  B --> C["Reste-t-il un nombre à lire ?"]
+  C -->|"oui"| D["Lire le nombre suivant"]
+  D --> E["Est-il plus grand que plus_grand ?"]
+  E -->|"oui"| F["plus_grand = ce nombre"]
+  E -->|"non"| C
+  F --> C
+  C -->|"non"| G["Sortie : plus_grand"]
+</Diagram>
+
+Suis le chemin avec la liste 4, 9, 2, 7. On retient 4. On lit 9 : plus grand, on retient 9. On lit 2 : non. On lit 7 : non. Plus rien à lire : on renvoie 9. Ce que tu viens de faire s'appelle **tracer** l'algorithme à la main, et c'est l'outil numéro un pour le vérifier. La leçon sur le débogage y reviendra en détail.
+
+## décomposer un problème
+
+Un vrai problème est rarement aussi simple. La méthode consiste à le **découper** en sous-problèmes, jusqu'à ce que chacun soit assez petit pour s'écrire en quelques étapes élémentaires. Prenons une demande plus réaliste : « À partir d'un journal de connexions, signale les utilisateurs qui ont échoué plus de trois fois. »
+
+Découpons :
+
+1. **lire** le journal ligne par ligne ;
+2. pour chaque ligne, **reconnaître** si c'est un échec, et **extraire** le nom d'utilisateur ;
+3. **compter** les échecs par utilisateur ;
+4. **sélectionner** ceux dont le compte dépasse trois ;
+5. **afficher** la liste.
+
+Chaque sous-problème est plus facile que le tout. Certains, comme compter ou sélectionner, reviennent dans des milliers de programmes ; tu apprendras à les écrire une fois pour toutes. Tu as d'ailleurs déjà résolu une partie de ce problème au module précédent avec `grep` et `wc` : les commandes du terminal sont des algorithmes tout faits qu'on enchaîne. Programmer, c'est pouvoir écrire ses propres briques quand les commandes existantes ne suffisent plus.
+
+Cette démarche a un nom classique : **diviser pour régner**. Elle a un second avantage : chaque morceau peut être vérifié séparément. Si le résultat final est faux, on teste les morceaux un par un pour trouver le coupable.
+
+## vérifier un algorithme
+
+Un algorithme qui marche sur l'exemple auquel on pensait n'est pas pour autant correct. Pour le vérifier, on le teste sur plusieurs catégories d'entrées :
+
+- **un cas normal** : 4, 9, 2, 7, qui doit donner 9 ;
+- **le maximum en premier** : 9, 4, 2, qui vérifie qu'on ne remplace pas à tort ;
+- **le maximum en dernier** : 4, 2, 9, qui vérifie qu'on lit bien jusqu'au bout ;
+- **des doublons** : 5, 5, 5, qui doit donner 5 ;
+- **des nombres négatifs** : -3, -8, -1, qui doit donner -1 ;
+- **un seul élément** : 42, qui doit donner 42 ;
+- **la liste vide**, qu'on a exclue dans l'entrée, mais qu'il faut avoir envisagée.
+
+Les négatifs piègent une version très répandue de cet algorithme : celle qui commence avec `plus_grand = 0` au lieu du premier nombre. Sur -3, -8, -1, elle renvoie 0, un nombre qui n'est même pas dans la liste ! Elle marche sur tous les exemples « naturels » et échoue sur un cas limite. C'est exactement le genre d'erreur que les tests systématiques débusquent.
+
+Pour les cas limites, pense toujours aux questions suivantes : et si l'entrée est **vide** ? S'il n'y a qu'**un seul** élément ? Si tout est **identique** ? Si les valeurs sont **négatives**, **nulles**, **énormes** ? Si le texte contient des **espaces**, des **accents**, rien du tout ? Un attaquant se pose les mêmes questions, dans l'espoir que tu les aies oubliées.
+
+## la terminaison
+
+La quatrième propriété mérite qu'on s'y arrête. Un algorithme doit s'arrêter pour toute entrée. Pour celui du plus grand nombre, c'est évident : on avance d'une case à chaque tour dans une liste finie. Mais considère cette méthode pour trouver un nombre pair :
+
+```text
+n = 7
+tant que n est impair :
+    n = n + 2
+```
+
+7, 9, 11, 13 : ajouter 2 à un nombre impair donne toujours un impair. La boucle ne s'arrête jamais. C'est une **boucle infinie**, et c'est l'un des bugs les plus courants. Le programme ne plante pas, il ne dit rien : il tourne, consomme le processeur, et ne répond plus. Pour s'assurer qu'une boucle termine, on cherche une quantité qui **progresse** à chaque tour vers la condition d'arrêt : le nombre d'éléments restant à lire, la distance au but. Si rien ne progresse, méfiance.
+
+Il existe même des problèmes pour lesquels on a démontré qu'aucun algorithme ne peut exister. Le plus célèbre, prouvé par Alan Turing en 1936, est justement celui de l'arrêt : il est impossible d'écrire un programme qui, pour n'importe quel programme donné, dise à coup sûr s'il finira par s'arrêter. Ce résultat fonde l'informatique théorique, et il a une conséquence pratique en sécurité : aucun antivirus ne peut décider parfaitement, pour tout programme, s'il est malveillant. Tous travaillent avec des approximations.
+
+## de l'algorithme au programme
+
+Un **programme**, c'est un algorithme écrit dans un langage que la machine sait exécuter. Voici l'algorithme du plus grand nombre traduit en Python, ligne pour ligne :
+
+```python
+def plus_grand(nombres):
+    resultat = nombres[0]            # 1. le premier nombre
+    for n in nombres[1:]:            # 2. pour chaque nombre suivant
+        if n > resultat:             #    s'il est plus grand
+            resultat = n             #    il devient le nouveau plus grand
+    return resultat                  # 3. renvoyer le résultat
+```
+
+Tu ne connais pas encore cette syntaxe, et ce n'est pas grave : les leçons suivantes la détaillent pièce par pièce. Remarque simplement que chaque ligne correspond à une ligne du pseudo-code. Le travail de réflexion était fait avant ; la traduction est presque mot à mot. `def` déclare une fonction, `for` parcourt, `if` décide, `return` renvoie le résultat.
+
+Python dispose évidemment d'une fonction toute faite, `max`, qui fait la même chose. Dans un vrai projet, on l'utiliserait. Mais savoir l'écrire soi-même, c'est comprendre ce qu'elle fait, ce qu'elle coûte, et dans quel cas elle échoue : `max` sur une liste vide lève une erreur, exactement pour la raison qu'on a vue.
+
+## à toi de jouer
+
+Dans l'éditeur ci-dessous, observe d'abord l'algorithme qui s'exécute sur plusieurs listes, dont une liste de nombres négatifs. Modifie ensuite la première ligne de la fonction pour qu'elle commence à 0, relance, et regarde ce qui se passe sur la dernière liste.
+
+<CodePlayground language="python" starterCode={`def plus_grand(nombres):
+    resultat = nombres[0]
+    for n in nombres[1:]:
+        if n > resultat:
+            resultat = n
+    return resultat
+
+listes = [
+    [4, 9, 2, 7],
+    [9, 4, 2],
+    [4, 2, 9],
+    [5, 5, 5],
+    [42],
+    [-3, -8, -1],
+]
+
+for liste in listes:
+    print(liste, '->', plus_grand(liste))`} />
+
+À toi maintenant d'écrire un algorithme complet. On veut le **plus petit** nombre d'une liste non vide, et la **position** où il apparaît pour la première fois (en comptant à partir de 0, comme Python). Par exemple, dans 7, 3, 9, 3, le plus petit est 3, et sa première position est 1. Commence par écrire le pseudo-code sur une feuille, trace-le sur l'exemple, puis traduis-le. Interdit d'utiliser `min` ou `index` : c'est ton algorithme qu'on veut.
+
+<PythonChallenge id="f1-algo-min" title="Le plus petit et sa position" description="Renvoie un couple (plus_petit, position) : la plus petite valeur de la liste non vide, et l'indice de sa première apparition. Sans min() ni index()." starterCode="def solution(nombres):
+    plus_petit = nombres[0]
+    position = 0
+    # parcours les indices suivants avec range(1, len(nombres))
+    return (plus_petit, position)" tests={[{ input: "solution([7, 3, 9, 3])", expected: "(3, 1)" }, { input: "solution([1, 2, 3])", expected: "(1, 0)" }, { input: "solution([5, 4, 3, 2])", expected: "(2, 3)" }, { input: "solution([-2, -9, 0, -9])", expected: "(-9, 1)" }, { input: "solution([12])", expected: "(12, 0)" }, { input: "solution([6, 6, 6])", expected: "(6, 0)", label: "Tout identique : la première position" }]} />
+
+Le dernier test vérifie un détail de l'énoncé : « la première apparition ». Si ton programme renvoie la position 2 pour 6, 6, 6, c'est que tu remplaces aussi quand la valeur est **égale**. La différence entre « plus petit » et « plus petit ou égal » est un grand classique : lis l'énoncé comme un contrat.
+
+## les pièges
+
+- **Confondre l'intention et l'algorithme.** « Trier la liste » dit quoi, pas comment. Tant qu'une étape demande de réfléchir, elle n'est pas assez détaillée.
+- **Tester sur un seul exemple.** Un algorithme juste sur 4, 9, 2, 7 peut être faux sur une liste négative, vide ou à un seul élément.
+- **Initialiser avec une valeur arbitraire.** Partir de 0 pour un maximum, ou de 1000 pour un minimum, suppose quelque chose sur les données. Partir du premier élément ne suppose rien.
+- **Oublier la terminaison.** Une boucle dont rien ne progresse vers la condition d'arrêt tourne pour toujours.
+- **Coder avant de réfléchir.** Écrire directement du Python sans avoir clarifié les étapes mène à du code qu'on corrige au hasard. Cinq minutes de pseudo-code en font gagner trente.
+- **Laisser des cas non décidés.** Que faire d'une liste vide, d'une égalité, d'un texte sans espace ? Si l'algorithme ne le dit pas, le programme fera quelque chose d'imprévu.
+
+## pour aller plus loin
+
+<ExternalLink href="https://interstices.info/quest-ce-quun-algorithme/" description="Une introduction claire et illustrée, par des chercheurs de l'Inria">Interstices : qu'est-ce qu'un algorithme ?</ExternalLink>
+
+<ExternalLink href="https://pixees.fr/informatiquelycee/" description="Les cours d'informatique de lycée, avec de nombreux exercices d'algorithmique">Pixees : informatique au lycée</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/index.html" description="Le tutoriel officiel de Python, traduit en français">Le tutoriel Python</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Lequel de ces éléments n'est PAS un ingrédient obligatoire d'un algorithme ?" options={["Des étapes précises", "Une sortie", "Un langage de programmation", "La garantie de s'arrêter"]} correct={2} explanation="Un algorithme existe indépendamment de tout langage : on peut l'écrire en pseudo-code, le dessiner ou le suivre à la main. Le langage n'intervient que pour en faire un programme." />
+  <Quiz id="q-2" question="Pourquoi « trie cette liste » n'est-il pas un algorithme ?" options={["Parce qu'il n'a pas d'entrée", "Parce qu'il dit ce qu'on veut sans dire comment l'obtenir", "Parce qu'une liste ne se trie pas", "Parce qu'il est trop court"]} correct={1} explanation="C'est une intention : elle décrit le résultat souhaité, pas les étapes élémentaires qui y mènent." />
+  <Quiz id="q-3" question="Un maximum initialisé à 0 donne quel résultat sur la liste -3, -8, -1 ?" options={["-1", "0", "-8", "Une erreur"]} correct={1} explanation="Aucun nombre de la liste ne dépasse 0 : la variable n'est jamais remplacée et l'algorithme renvoie 0, qui n'est même pas dans la liste. D'où la règle : partir du premier élément." />
+  <Quiz id="q-4" question="Que signifie la terminaison d'un algorithme ?" options={["Qu'il affiche un message à la fin", "Qu'il s'exécute en moins d'une seconde", "Qu'il se termine par renvoyer", "Qu'il s'arrête pour toute entrée prévue"]} correct={3} explanation="Quelle que soit l'entrée, l'algorithme doit finir par s'arrêter. Une méthode qui peut tourner indéfiniment n'est pas un algorithme." />
+  <Quiz id="q-5" question="Quel test est le plus utile pour débusquer une erreur de cas limite dans un algorithme de maximum ?" options={["Une liste de dix nombres positifs", "La même liste deux fois", "Une liste de nombres négatifs", "Une liste déjà triée"]} correct={2} explanation="Les négatifs piègent l'initialisation à 0. Les listes à un élément, vides ou identiques sont aussi de bons candidats." />
+  <Quiz id="q-6" question="Que fait-on quand on décompose un problème ?" options={["On le réécrit en anglais", "On supprime les cas difficiles", "On le traduit directement en Python", "On le découpe en sous-problèmes assez simples pour être résolus séparément"]} correct={3} explanation="Diviser pour régner : chaque morceau est plus facile à écrire et à vérifier que le tout." />
+  <Quiz id="q-7" question="La boucle « tant que n est impair, ajouter 2 à n », partant de 7, s'arrête-t-elle ?" options={["Non, jamais", "Oui, après un tour", "Oui, quand n dépasse 100", "Oui, après deux tours"]} correct={0} explanation="Un impair plus 2 reste impair : la condition reste vraie pour toujours. C'est une boucle infinie." />
+</QuizGroup>
+
+## à retenir
+
+- Un **algorithme** : une **entrée**, des **étapes** précises et élémentaires, une **sortie**, et il **s'arrête** toujours. Il doit être **correct** pour toutes les entrées prévues.
+- Une **intention** dit quoi ; un algorithme dit **comment**.
+- On l'écrit en **pseudo-code** avant de coder : le raisonnement d'abord, la syntaxe ensuite.
+- On **décompose** un gros problème en sous-problèmes simples.
+- On **vérifie** sur plusieurs entrées, surtout les **cas limites** : vide, un seul élément, identiques, négatifs.
+- Une boucle termine si quelque chose **progresse** à chaque tour vers la condition d'arrêt.

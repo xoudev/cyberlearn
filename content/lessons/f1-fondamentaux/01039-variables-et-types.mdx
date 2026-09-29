@@ -1,0 +1,218 @@
+---
+refCode: CL-LSN-01039-V01
+slug: fondamentaux-variables-et-types
+title: "Variables et types"
+description: "Première rencontre avec Python : ce qu'est une variable, l'affectation, les règles de nommage, les types de base (entiers, décimaux, textes, booléens, None), ce que chaque type permet, les conversions entre types et les erreurs qu'elles provoquent. Avec un éditeur Python dans la page pour tout essayer, et un premier exercice de conversion."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01038-V01"]
+---
+
+Un algorithme manipule des données : les nombres d'une liste, un nom d'utilisateur, un compteur d'échecs. Pour les manipuler, il faut pouvoir les **nommer** et s'en souvenir d'une étape à l'autre. C'est le rôle des **variables**. Et toutes les données ne se manipulent pas de la même façon : on additionne des nombres, on met en majuscules un texte, on teste si une condition est vraie. C'est le rôle des **types**. Cette leçon est ta première vraie rencontre avec Python : chaque exemple peut être exécuté dans l'éditeur de la page, sans rien installer. Garde-le ouvert et essaie tout ce qui te passe par la tête : c'est comme ça qu'on apprend un langage.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- créer une variable et lui donner une nouvelle valeur ;
+- choisir un nom de variable valide et lisible ;
+- reconnaître les types de base de Python : `int`, `float`, `str`, `bool` et `None` ;
+- prévoir ce que fait une opération selon le type de ses données ;
+- convertir une valeur d'un type à un autre ;
+- lire les erreurs les plus courantes liées aux types.
+
+## pourquoi ça compte
+
+La moitié des bugs de débutant, et une bonne partie de ceux des professionnels, sont des erreurs de type : un nombre lu comme du texte, un texte qu'on croit être un nombre, une valeur absente qu'on utilise comme si elle existait. Ces erreurs ont aussi un versant sécurité. Toute donnée qui arrive de l'extérieur, un formulaire, un fichier, une requête réseau, arrive sous forme de **texte**. Le programme doit la convertir et la vérifier. Oublier cette étape, c'est laisser un utilisateur envoyer « -5 » comme quantité commandée, ou un texte là où on attendait un nombre, et observer ce qui casse. Comprendre les types, c'est comprendre où ces contrôles doivent se faire.
+
+## pourquoi Python
+
+Tout ce module utilise **Python**, et ce n'est pas un hasard. C'est un langage à la syntaxe lisible, proche du pseudo-code de la leçon précédente, et c'est l'un des plus utilisés au monde : en administration système pour automatiser, en science des données, en intelligence artificielle, et énormément en sécurité, où la plupart des outils d'audit, d'analyse de journaux ou d'exploitation de failles sont écrits en Python. Ce que tu apprends ici sert dans tous ces domaines, et se transpose sans peine aux autres langages : les variables, les types, les conditions et les boucles existent partout.
+
+L'éditeur des leçons exécute un vrai Python 3 directement dans ton navigateur. Tu tapes du code, tu cliques sur le bouton d'exécution, et ce que le programme affiche avec `print` apparaît en dessous.
+
+## une variable, c'est un nom
+
+En Python, on crée une variable en lui **affectant** une valeur avec le signe `=` :
+
+```python
+age = 31
+prenom = "Alice"
+print(prenom, "a", age, "ans")
+```
+
+La première ligne se lit « age reçoit 31 », et surtout pas « age égale 31 ». Le signe `=` n'est pas une égalité mathématique : c'est un **ordre**. On calcule ce qui est à droite, puis on attache le résultat au nom qui est à gauche. C'est pourquoi la ligne suivante, absurde en mathématiques, est parfaitement normale en programmation :
+
+```python
+compteur = 0
+compteur = compteur + 1
+```
+
+On prend la valeur actuelle de `compteur` (0), on lui ajoute 1, et on attache le résultat (1) au nom `compteur`. L'ancienne valeur est oubliée. Cette forme revient si souvent qu'elle a un raccourci : `compteur += 1`.
+
+Une bonne image mentale, en Python, est celle de l'**étiquette** plutôt que de la boîte. La valeur existe quelque part en mémoire, et le nom est une étiquette collée dessus. Réaffecter, c'est décoller l'étiquette pour la coller ailleurs.
+
+<Diagram caption="Des noms comme étiquettes sur des valeurs">
+flowchart LR
+  A["prenom"] --> V1["'Alice' (str)"]
+  B["age"] --> V2["31 (int)"]
+  C["majeur"] --> V3["True (bool)"]
+  D["compteur"] -.->|"avant"| V4["0 (int)"]
+  D -->|"après compteur += 1"| V5["1 (int)"]
+</Diagram>
+
+Une variable doit être créée **avant** d'être utilisée. Si tu écris `print(score)` sans jamais avoir affecté `score`, Python s'arrête avec l'erreur `NameError: name 'score' is not defined`. C'est souvent une simple faute de frappe : `Prenom` et `prenom` sont deux noms différents, car Python distingue majuscules et minuscules.
+
+## bien nommer
+
+Un nom de variable peut contenir des lettres, des chiffres et le tiret bas `_`, mais ne peut pas commencer par un chiffre ni contenir d'espace ou de tiret. `total_ttc` est valide ; `2eme_essai`, `total ttc` et `total-ttc` ne le sont pas. Certains mots sont réservés au langage et interdits comme noms : `if`, `for`, `while`, `def`, `return`, `True`, `None` et une trentaine d'autres.
+
+Au-delà des règles, il y a les conventions. En Python, on écrit les noms de variables en minuscules, les mots séparés par des tirets bas : c'est le style dit *snake_case*. Et surtout, on choisit des noms qui **disent ce que contient la variable** : `nb_echecs` plutôt que `n`, `adresse_ip` plutôt que `x`. Le code est lu bien plus souvent qu'il n'est écrit, par tes collègues et par toi-même dans six mois. Les accents sont techniquement autorisés, mais on les évite par habitude, parce que beaucoup d'outils et de langages ne les acceptent pas.
+
+## les types de base
+
+Chaque valeur a un **type**, qui dit ce qu'elle est et ce qu'on peut en faire. La fonction `type` l'affiche. Voici les cinq que tu rencontreras partout.
+
+| Type | Nom | Exemples | Sert à |
+|---|---|---|---|
+| `int` | entier | `42`, `-7`, `0` | compter, numéroter |
+| `float` | nombre à virgule | `3.14`, `-0.5`, `2.0` | mesurer, calculer des moyennes |
+| `str` | chaîne de caractères | `"Alice"`, `'192.168.1.1'`, `""` | tout ce qui est texte |
+| `bool` | booléen | `True`, `False` | vrai ou faux |
+| `NoneType` | absence de valeur | `None` | « rien », « pas encore connu » |
+
+Quelques remarques sur chacun.
+
+**Les entiers** de Python n'ont pas de limite de taille : `2 ** 100` (2 puissance 100) se calcule sans problème. Ce n'est pas le cas dans la plupart des langages, où un entier tient sur 32 ou 64 bits et peut **déborder**, comme tu l'as vu au module 2.
+
+**Les nombres à virgule** s'écrivent avec un **point**, jamais une virgule : `3.14`. Ils sont stockés en binaire avec une précision limitée, ce qui donne des surprises célèbres : `0.1 + 0.2` affiche `0.30000000000000004`. Ce n'est pas un bug de Python, c'est la représentation en virgule flottante du module 2. Conséquence pratique : on ne compare jamais deux décimaux avec une égalité stricte, et on ne manipule pas des montants d'argent en `float` dans un vrai logiciel.
+
+**Les chaînes** s'écrivent entre guillemets simples ou doubles, au choix : `'Alice'` et `"Alice"` sont identiques. On choisit selon le contenu : `"l'adresse"` évite de devoir protéger l'apostrophe. `len` donne leur longueur, et on accède à un caractère par sa position, en commençant à 0 : dans `mot = "réseau"`, `mot[0]` vaut `"r"` et `mot[-1]`, le dernier, vaut `"u"`. Une chaîne peut être vide : `""`, de longueur 0.
+
+**Les booléens** n'ont que deux valeurs, `True` et `False`, avec une majuscule. Ils sont le résultat de toute comparaison : `age >= 18` vaut `True` ou `False`. La leçon suivante leur est consacrée.
+
+**None** représente l'absence de valeur. Une fonction qui ne renvoie rien renvoie `None`. Une variable qui attend une information pas encore connue peut valoir `None`. Utiliser `None` comme s'il s'agissait d'un nombre ou d'un texte est l'une des erreurs les plus fréquentes, dans tous les langages : c'est le fameux « null » que son inventeur, Tony Hoare, a appelé son « erreur à un milliard de dollars ».
+
+## ce que font les opérations dépend du type
+
+Le même symbole ne fait pas la même chose selon le type de ses données :
+
+```python
+print(3 + 4)          # 7 : addition de deux entiers
+print("3" + "4")      # 34 : mise bout à bout de deux textes
+print("ab" * 3)       # ababab : répétition d'un texte
+print(7 / 2)          # 3.5 : la division donne toujours un float
+print(7 // 2)         # 3 : division entière
+print(7 % 2)          # 1 : reste de la division
+```
+
+`+` additionne des nombres mais **concatène** des textes. `/` donne toujours un décimal, même quand la division tombe juste : `6 / 2` vaut `3.0`. `//` donne la division entière et `%`, le **modulo**, donne le reste. Le modulo est bien plus utile qu'il n'en a l'air : `n % 2 == 0` teste si un nombre est pair, et tu l'as déjà croisé en disant qu'un octet déborde « modulo 256 ».
+
+Et quand on mélange ? Un entier et un décimal se combinent sans problème : `2 + 0.5` vaut `2.5`. Mais un nombre et un texte, non :
+
+```python
+age = 31
+print("J'ai " + age + " ans")
+```
+
+Python s'arrête : `TypeError: can only concatenate str (not "int") to str`. Il refuse de deviner si tu voulais additionner ou concaténer. On dit que Python est **fortement typé** : il ne convertit pas en silence. D'autres langages, comme JavaScript, choisissent de convertir tout seuls, et `"3" + 4` y donne `"34"` sans prévenir, une source inépuisable de bugs.
+
+Python est aussi **dynamiquement typé** : une variable n'a pas de type fixé à l'avance, c'est la valeur qui en a un. `x = 5` puis `x = "cinq"` est permis. C'est souple, mais cela veut dire que les erreurs de type n'apparaissent qu'à l'exécution, quand la ligne fautive est atteinte.
+
+## afficher proprement : les f-strings
+
+Pour fabriquer un texte à partir de variables, la façon moderne est la **f-string** : on préfixe la chaîne d'un `f` et on place les variables entre accolades, comme dans `f"{prenom} a {age} ans"`. Python remplace chaque accolade par la valeur, convertie en texte. On peut même y mettre un calcul, comme `f"dans un an : {age + 1}"`, ou un format : `f"{prix:.2f}"` affiche un nombre avec deux chiffres après la virgule. C'est plus lisible que d'enchaîner des `+` et des conversions, et c'est ce que tu verras dans presque tout le code Python récent.
+
+## convertir d'un type à l'autre
+
+Chaque type a une fonction du même nom qui **convertit** une valeur vers lui :
+
+```python
+int("42")         # 42 : texte vers entier
+float("3.5")      # 3.5 : texte vers décimal
+str(42)           # '42' : entier vers texte
+int(4.9)          # 4 : décimal vers entier, en TRONQUANT
+bool(0)           # False
+bool("non")       # True : tout texte non vide est vrai
+```
+
+Trois comportements méritent l'attention. D'abord, `int(4.9)` donne 4 : la conversion **coupe** la partie décimale, elle n'arrondit pas ; pour arrondir, il existe `round`. Ensuite, la conversion d'un texte échoue s'il ne représente pas un nombre valide : `int("douze")`, `int("4.5")` et `float("12,50")` lèvent une `ValueError`. Le dernier est un piège bien français : Python attend un **point** décimal. Enfin, la conversion en booléen suit une règle simple : zéro, le texte vide, la liste vide et `None` sont faux ; tout le reste est vrai, y compris le texte `"False"` ou `"non"`.
+
+Pourquoi tout cela compte-t-il autant ? Parce que dans un vrai programme, les données entrent en texte. La fonction `input`, qui lit ce que l'utilisateur tape au clavier, renvoie **toujours** une chaîne, même s'il a tapé des chiffres. Il faut donc convertir, et prévoir le cas où la conversion échoue. Même chose pour une ligne lue dans un fichier ou un paramètre reçu dans une adresse web.
+
+Un exemple de ce qui arrive quand on oublie : comparer des textes qui contiennent des nombres. `"10" > "9"` vaut `False`, parce que les textes se comparent caractère par caractère, comme dans un dictionnaire, et que « 1 » vient avant « 9 ». Un tri de numéros de version, de ports ou de montants resté en texte donne ainsi un ordre faux, sans aucune erreur visible.
+
+## à toi de jouer
+
+Exécute le programme ci-dessous, puis modifie-le librement. Quelques idées : affiche le type de `7 / 2` ; essaie `int("4.5")` et lis l'erreur ; remplace le point de `3.5` par une virgule ; compare `"10" > "9"` et `10 > 9`.
+
+<CodePlayground language="python" starterCode={`prenom = 'Alice'
+age = 31
+taille = 1.68
+majeur = age >= 18
+telephone = None
+
+for valeur in [prenom, age, taille, majeur, telephone]:
+    print(repr(valeur), 'est de type', type(valeur).__name__)
+
+print(f'{prenom} a {age} ans, et {age + 1} dans un an')
+print('7 / 2 =', 7 / 2, ' et 7 // 2 =', 7 // 2, ' et 7 % 2 =', 7 % 2)
+print('0.1 + 0.2 =', 0.1 + 0.2)
+print('texte + texte :', '3' + '4', ' et nombre + nombre :', 3 + 4)
+print('comparaison de textes, 10 > 9 :', '10' > '9')
+print('conversion, int(4.9) :', int(4.9), ' et round(4.9) :', round(4.9))`} />
+
+`repr` affiche une valeur telle qu'on l'écrirait dans le code, avec ses guillemets pour un texte : pratique pour distinguer le nombre 31 du texte `'31'`.
+
+Maintenant un vrai petit problème de conversion, du genre qu'on rencontre en lisant un fichier exporté d'un tableur. On reçoit un prix sous forme de texte, **à la française**, avec une virgule, et une quantité sous forme d'entier. Écris `solution(prix_texte, quantite)` qui renvoie le total, en `float`, arrondi à deux décimales. Pour remplacer la virgule par un point, les chaînes ont une méthode toute prête : `texte.replace(',', '.')`.
+
+<PythonChallenge id="f1-types-prix" title="Un prix à la française" description="Convertis le prix texte (avec une virgule décimale) en nombre, multiplie-le par la quantité, et renvoie le total arrondi à deux décimales avec round(total, 2)." starterCode="def solution(prix_texte, quantite):
+    # 1. remplace la virgule par un point
+    # 2. convertis en float
+    # 3. multiplie et arrondis à deux décimales
+    return 0.0" tests={[{ input: "solution('12,50', 3)", expected: "37.5" }, { input: "solution('0,99', 10)", expected: "9.9" }, { input: "solution('1250', 2)", expected: "2500.0", label: "Sans virgule : le résultat reste un float" }, { input: "solution('19,99', 0)", expected: "0.0", label: "Quantité nulle" }, { input: "solution('0,10', 3)", expected: "0.3", label: "Le piège du flottant, corrigé par round" }]} />
+
+Le dernier test montre pourquoi on arrondit : sans `round`, 0.1 fois 3 donne `0.30000000000000004`, et le test échoue. Et le troisième montre que le type compte autant que la valeur : `2500.0` et `2500` ne s'écrivent pas pareil, parce que l'un est un `float` et l'autre un `int`.
+
+## les pièges
+
+- **Lire `=` comme une égalité.** C'est une affectation : « reçoit ». Le test d'égalité s'écrit `==`, et on le verra à la leçon suivante.
+- **Mélanger texte et nombre.** `"Total : " + 12` est une `TypeError`. Convertis avec `str`, ou utilise une f-string.
+- **Oublier que les entrées sont du texte.** `input` et la lecture de fichiers donnent des chaînes : `"5" + "5"` fait `"55"`.
+- **Écrire une virgule décimale.** `3,5` n'est pas un nombre en Python ; `float("3,5")` échoue.
+- **Croire que `int` arrondit.** `int(4.9)` vaut 4. Pour arrondir, `round`.
+- **Comparer des décimaux avec `==`.** `0.1 + 0.2 == 0.3` est faux.
+- **Utiliser une variable `None` comme une vraie valeur.** `None + 1` est une erreur ; vérifie avant d'utiliser.
+- **Donner des noms d'une lettre.** Le code est relu bien plus souvent qu'écrit.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/introduction.html" description="Nombres, chaînes et premières opérations, dans le tutoriel officiel">Tutoriel Python : introduction informelle</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/stdtypes.html" description="La référence complète des types de base et de leurs opérations">Les types natifs de Python</ExternalLink>
+
+<ExternalLink href="https://peps.python.org/pep-0008/" description="Les conventions d'écriture du code Python, dont le nommage, en anglais">PEP 8 : le guide de style</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Après compteur = 5 puis compteur = compteur + 1, que vaut compteur ?" options={["5", "Une erreur, car 5 ne peut pas égaler 6", "6", "51"]} correct={2} explanation="= est une affectation : on calcule compteur + 1, soit 6, puis on attache ce résultat au nom compteur." />
+  <Quiz id="q-2" question="Quel nom de variable est valide en Python ?" options={["2eme_essai", "nb_echecs", "nb-echecs", "nb echecs"]} correct={1} explanation="Lettres, chiffres et tiret bas, sans commencer par un chiffre, sans espace ni tiret." />
+  <Quiz id="q-3" question="Que vaut '3' + '4' ?" options={["7", "'34'", "Une erreur", "'7'"]} correct={1} explanation="Entre deux textes, + concatène : on met les textes bout à bout, sans calcul." />
+  <Quiz id="q-4" question="Quel est le type du résultat de 6 / 2 ?" options={["int", "float", "str", "bool"]} correct={1} explanation="La division / donne toujours un float, ici 3.0. Pour une division entière, on écrit //." />
+  <Quiz id="q-5" question="Que vaut int(4.9) ?" options={["5", "4", "4.9", "Une erreur"]} correct={1} explanation="La conversion en entier coupe la partie décimale, elle n'arrondit pas. round(4.9) donnerait 5." />
+  <Quiz id="q-6" question="Pourquoi '10' > '9' vaut-il False ?" options={["Parce que Python compare des textes caractère par caractère, et que 1 vient avant 9", "Parce que 10 est plus petit que 9", "Parce que la comparaison de textes est interdite", "Parce que Python arrondit 10 à 1"]} correct={0} explanation="Deux chaînes se comparent comme dans un dictionnaire. Pour comparer des nombres, il faut d'abord les convertir avec int." />
+  <Quiz id="q-7" question="Que renvoie la fonction input quand l'utilisateur tape 42 ?" options={["L'entier 42", "Le décimal 42.0", "None", "Le texte '42'"]} correct={3} explanation="input renvoie toujours une chaîne. Il faut la convertir avec int, et prévoir le cas où ce n'est pas un nombre." />
+</QuizGroup>
+
+## à retenir
+
+- Une **variable** est un nom attaché à une valeur. `=` veut dire **reçoit**, pas « égale ».
+- Noms en **snake_case**, parlants, sans commencer par un chiffre ; majuscules et minuscules comptent.
+- Types de base : `int`, `float` (avec un **point**), `str`, `bool` (`True` et `False`), `None`.
+- Une opération dépend du type : `+` additionne des nombres et **concatène** des textes. `/` donne un `float`, `//` une division entière, `%` le reste.
+- Python est **fortement typé** : il ne mélange pas texte et nombre sans conversion explicite.
+- On convertit avec `int`, `float`, `str`, `bool` ; `int` **tronque** ; une conversion impossible lève une `ValueError`.
+- Les données qui viennent de l'extérieur sont du **texte** : convertir et vérifier est ton travail.

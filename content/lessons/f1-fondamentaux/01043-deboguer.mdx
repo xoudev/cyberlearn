@@ -1,0 +1,223 @@
+---
+refCode: CL-LSN-01043-V01
+slug: fondamentaux-deboguer
+title: "Déboguer : lire une erreur, tracer à la main"
+description: "Trouver et corriger les bugs avec méthode : les trois familles d'erreurs (syntaxe, exécution, logique), la lecture d'un message d'erreur Python de bas en haut, les exceptions les plus courantes, le traçage à la main dans un tableau, les affichages de contrôle, et pourquoi un message d'erreur ne doit jamais atteindre l'utilisateur. Avec trois programmes cassés à réparer."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 55
+xpReward: 300
+prerequisites: ["CL-LSN-01042-V01"]
+---
+
+Tout le monde écrit des bugs. Les débutants, les experts, les équipes qui envoient des sondes dans l'espace : en 1999, la NASA a perdu un satellite martien parce qu'une partie du logiciel calculait en unités anglo-saxonnes et une autre en unités métriques. Ce qui distingue un programmeur expérimenté d'un débutant, ce n'est pas l'absence de bugs, c'est la **méthode** pour les trouver. Le débutant relit son code en espérant voir l'erreur, change une ligne au hasard, relance, recommence. L'expérimenté lit le message d'erreur, formule une hypothèse, la vérifie, et corrige en connaissant la cause. Cette leçon t'apprend cette méthode, puis te confie trois programmes cassés.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer erreurs de syntaxe, erreurs d'exécution et erreurs de logique ;
+- lire un message d'erreur Python et trouver la ligne en cause ;
+- reconnaître les exceptions les plus courantes et leur cause habituelle ;
+- tracer un programme à la main dans un tableau ;
+- utiliser des affichages de contrôle et des assertions ;
+- appliquer une démarche de débogage méthodique ;
+- expliquer pourquoi les messages d'erreur détaillés ne doivent pas être montrés aux utilisateurs.
+
+## pourquoi ça compte
+
+Un développeur passe une part considérable de son temps à déboguer, souvent plus qu'à écrire du code neuf. Savoir le faire vite et bien est ce qui rend productif. Mais le débogage est aussi, au sens large, le cœur de la sécurité offensive et défensive : trouver une faille, c'est trouver un bug que personne n'avait vu, un cas où le programme ne fait pas ce que son auteur croyait ; analyser un incident, c'est remonter d'un symptôme à sa cause, exactement comme on remonte d'un message d'erreur à la ligne fautive. Et un message d'erreur mal géré est lui-même une faille, parce qu'il en dit trop à qui sait le lire.
+
+## trois familles d'erreurs
+
+**Les erreurs de syntaxe** empêchent le programme de démarrer. Python lit tout le fichier avant de l'exécuter, et s'il trouve une phrase qu'il ne sait pas analyser, il refuse : un deux-points oublié après un `if`, une parenthèse non refermée, une indentation incohérente. Ce sont les plus faciles à corriger, car Python indique la ligne, souvent avec une petite flèche sous l'endroit exact. Attention toutefois : l'erreur est parfois signalée à la ligne **suivante**, quand c'est là que Python s'aperçoit que quelque chose manquait, par exemple une parenthèse ouverte trois lignes plus haut.
+
+**Les erreurs d'exécution** surviennent pendant que le programme tourne, quand une instruction ne peut pas être exécutée : diviser par zéro, lire le dixième élément d'une liste qui en a trois, additionner un texte et un nombre. Python lève alors une **exception**, affiche un message et s'arrête. Le programme a pu tourner longtemps avant : l'erreur n'apparaît que lorsque la ligne fautive est atteinte avec les données qui la font échouer.
+
+**Les erreurs de logique** sont les plus dangereuses : le programme tourne, ne dit rien, et donne un **résultat faux**. Une moyenne qui oublie le premier élément, une borne `>` au lieu de `>=`, un `or` au lieu d'un `and`. Aucun message ne t'aide ; seuls des **tests** avec des résultats attendus connus, et le traçage à la main, les révèlent. C'est dans cette famille que se trouvent la plupart des failles de sécurité : un contrôle d'accès qui laisse passer un cas, une validation qui oublie un format.
+
+## lire un message d'erreur
+
+Voici un programme et l'erreur qu'il produit :
+
+```python
+def moyenne(notes):
+    return sum(notes) / len(notes)
+
+def bulletin(eleves):
+    for nom, notes in eleves:
+        print(nom, moyenne(notes))
+
+bulletin([("alice", [12, 15]), ("bob", [])])
+```
+
+```text
+alice 13.5
+Traceback (most recent call last):
+  File "main.py", line 8, in <module>
+    bulletin([("alice", [12, 15]), ("bob", [])])
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "main.py", line 6, in bulletin
+    print(nom, moyenne(notes))
+               ~~~~~~~^^^^^^^
+  File "main.py", line 2, in moyenne
+    return sum(notes) / len(notes)
+           ~~~~~~~~~~~^~~~~~~~~~~~
+ZeroDivisionError: division by zero
+```
+
+Ce bloc s'appelle une **trace d'appels** (*traceback*). Il intimide, mais il se lit toujours de la même façon : **de bas en haut**.
+
+1. **La dernière ligne** donne le **type** d'exception et un **message** : `ZeroDivisionError: division by zero`. C'est le « quoi ».
+2. **Juste au-dessus**, la ligne où l'erreur s'est produite : ligne 2, dans la fonction `moyenne`. C'est le « où ».
+3. **En remontant**, la pile d'appels de la leçon précédente : `moyenne` a été appelée par `bulletin` à la ligne 6, elle-même appelée par le programme principal à la ligne 8. C'est le « comment on en est arrivé là ».
+
+Les lignes de tildes et d'accents circonflexes, ajoutées par les versions récentes de Python, soulignent l'expression exacte en cause sur chaque ligne : ici, la division. La mention *most recent call last* le rappelle : l'appel le plus récent est en dernier, donc en bas. La ligne où Python a planté n'est pas toujours celle du bug : ici, `moyenne` fait correctement son travail, c'est l'élève `bob` sans notes qui pose problème. La trace permet de remonter jusqu'à la donnée fautive. Remarque aussi que `alice 13.5` s'est affiché avant l'erreur : le programme a bien tourné jusqu'au deuxième élève.
+
+## les exceptions les plus courantes
+
+| Exception | Ce qu'elle signifie | Cause habituelle |
+|---|---|---|
+| `SyntaxError` | phrase invalide | deux-points, parenthèse ou guillemet oublié |
+| `IndentationError` | indentation incohérente | mélange d'espaces et de tabulations, bloc mal aligné |
+| `NameError` | nom inconnu | faute de frappe, variable utilisée avant d'être créée, variable locale lue dehors |
+| `TypeError` | opération impossible sur ce type | texte plus nombre, appel avec le mauvais nombre d'arguments, `None` utilisé comme une valeur |
+| `ValueError` | bon type, mauvaise valeur | `int("douze")`, `float("3,5")` |
+| `IndexError` | position hors de la liste | erreur de un, liste vide |
+| `KeyError` | clé absente d'un dictionnaire | faute de frappe dans la clé, donnée manquante |
+| `ZeroDivisionError` | division par zéro | moyenne d'une liste vide |
+| `AttributeError` | méthode ou attribut inexistant | `None.lower()`, méthode mal orthographiée |
+
+Avec ce tableau et la trace, la plupart des erreurs d'exécution se diagnostiquent en une minute. Le message qui accompagne le type est souvent très précis : `NameError: name 'totl' is not defined. Did you mean: 'total'?` va jusqu'à proposer la correction. Et si le message reste obscur, le copier dans un moteur de recherche est un réflexe tout à fait professionnel, en retirant les noms propres à ton programme.
+
+## tracer à la main
+
+Pour une erreur de logique, il n'y a pas de message. L'outil principal est le **traçage** : exécuter le programme à la main, ligne par ligne, en notant la valeur de chaque variable dans un tableau. Prenons une fonction censée compter les nombres positifs d'une liste :
+
+```python
+def positifs(nombres):
+    compte = 0
+    for n in nombres:
+        if n > 0:
+            compte = compte + 1
+        else:
+            compte = 0
+    return compte
+```
+
+Traçons-la sur la liste `[3, -1, 5, 7]`, pour laquelle on attend 3 :
+
+| Tour | n | n > 0 ? | compte après le tour |
+|---|---|---|---|
+| avant | | | 0 |
+| 1 | 3 | oui | 1 |
+| 2 | -1 | non | 0 |
+| 3 | 5 | oui | 1 |
+| 4 | 7 | oui | 2 |
+
+Résultat : 2 au lieu de 3. Le tableau montre exactement où ça déraille : au tour 2, le `else` remet le compteur à zéro. Il fallait simplement ne rien faire quand le nombre n'est pas positif, donc supprimer le `else`. Tracer paraît lent, mais c'est souvent le chemin le plus court vers la cause : on arrête de supposer ce que fait le code, et on **regarde** ce qu'il fait.
+
+## faire parler le programme
+
+Quand le programme est trop long pour être tracé à la main, on le fait tracer par lui-même. Le moyen le plus simple est l'**affichage de contrôle** : quelques `print` placés aux endroits stratégiques pour montrer la valeur des variables.
+
+```python
+for n in nombres:
+    print("DEBUG n =", n, "compte =", compte)
+```
+
+Le préfixe `DEBUG` permet de retrouver ces lignes pour les **retirer** une fois le bug corrigé. Les **assertions** vont plus loin : `assert compte >= 0` ne dit rien tant que tout va bien, et arrête le programme avec une `AssertionError` dès que l'hypothèse est violée. Les outils de développement proposent aussi des **débogueurs**, qui arrêtent le programme sur une ligne choisie (un point d'arrêt) et permettent d'avancer pas à pas en observant les variables. Tu les découvriras dans les parcours de développement ; la logique est la même que celle du traçage.
+
+Un dernier outil, étonnamment efficace, a un nom amusant : le **canard en plastique**. On explique son code, ligne par ligne et à voix haute, à un objet, un collègue ou un canard posé sur le bureau. En formulant ce que chaque ligne est censée faire, on tombe très souvent sur celle qui ne le fait pas.
+
+## une méthode
+
+<Diagram caption="La boucle du débogage">
+flowchart TD
+  A["Reproduire : obtenir le bug à coup sûr"] --> B["Lire : le message, la trace, les données"]
+  B --> C["Localiser : réduire à la plus petite zone suspecte"]
+  C --> D["Formuler une hypothèse sur la cause"]
+  D --> E["La vérifier : tracer, afficher, tester"]
+  E -->|"hypothèse fausse"| C
+  E -->|"hypothèse confirmée"| F["Corriger la cause, pas le symptôme"]
+  F --> G["Vérifier, et garder un test pour ce cas"]
+</Diagram>
+
+Quelques commentaires sur chaque étape. **Reproduire** : un bug qui n'arrive « que parfois » se corrige mal ; cherche d'abord les données qui le déclenchent à chaque fois. **Localiser** : réduis le problème, en retirant la moitié des données ou du code tant que le bug persiste, comme la recherche dichotomique de la prochaine leçon. **Corriger la cause** : si la moyenne plante sur une liste vide, ajouter un `try` qui cache l'erreur n'est pas une correction ; décider de ce que vaut la moyenne d'une liste vide, si. **Garder un test** : le cas qui a révélé le bug devient un test automatique, pour qu'il ne revienne jamais sans que tu le saches. Enfin, un conseil qui résume tout : **change une seule chose à la fois**. Modifier trois lignes d'un coup, c'est ne plus savoir laquelle a réglé le problème, ou lequel des trois changements en a créé un nouveau.
+
+## les messages d'erreur et la sécurité
+
+Une trace d'appels est précieuse pour le développeur, et tout aussi précieuse pour un attaquant. Elle révèle les chemins des fichiers sur le serveur, les noms des fonctions, parfois la version des bibliothèques utilisées ou des morceaux de requêtes à la base de données. Autant d'indices pour préparer une attaque ciblée. C'est pourquoi une application en production ne montre **jamais** une trace brute à l'utilisateur : elle affiche un message générique, « une erreur est survenue », et **enregistre** les détails dans un journal réservé aux équipes techniques. L'OWASP range la mauvaise gestion des erreurs parmi les causes classiques de fuite d'information, et les règles de développement de cette plateforme même l'interdisent explicitement. Déboguer en local avec tous les détails, oui ; publier ces détails, non.
+
+## à toi de jouer
+
+Voici trois programmes cassés. Pour chacun : lis l'énoncé, lance les tests, lis ce qui échoue, trace à la main si besoin, puis corrige. Chaque programme contient **au moins deux** bugs ; les tests sont là pour te les révéler un par un.
+
+Premier programme : la moyenne d'une liste de notes, qui doit valoir `0.0` pour une liste vide.
+
+<PythonChallenge id="f1-debug-moyenne" title="Programme cassé 1 : la moyenne" description="Renvoie la moyenne des notes, et 0.0 si la liste est vide. Le code fourni contient deux bugs." starterCode="def solution(notes):
+    total = 0
+    for i in range(1, len(notes)):
+        total += notes[i]
+    return total / len(notes)" tests={[{ input: "solution([10, 20])", expected: "15.0" }, { input: "solution([8, 12, 16])", expected: "12.0" }, { input: "solution([12])", expected: "12.0", label: "Une seule note" }, { input: "solution([])", expected: "0.0", label: "Liste vide" }]} />
+
+Deuxième programme : compter les voyelles d'un texte, `a`, `e`, `i`, `o`, `u` et `y`, en majuscules comme en minuscules. Trace-le à la main sur le mot `bonjour` avant de toucher à quoi que ce soit.
+
+<PythonChallenge id="f1-debug-voyelles" title="Programme cassé 2 : les voyelles" description="Renvoie le nombre de voyelles (a, e, i, o, u, y), majuscules comprises. Le code fourni contient trois bugs." starterCode="def solution(texte):
+    for lettre in texte:
+        compte = 0
+        if lettre in 'aeiouy':
+            compte = compte + 1
+        return compte" tests={[{ input: "solution('bonjour')", expected: "3" }, { input: "solution('rythme')", expected: "2" }, { input: "solution('AEIOU')", expected: "5", label: "Majuscules" }, { input: "solution('Python')", expected: "2" }, { input: "solution('')", expected: "0", label: "Texte vide" }]} />
+
+Troisième programme : une règle de mot de passe. Un mot de passe est accepté s'il fait **au moins 12 caractères** et contient **au moins un chiffre**. Celui-ci en accepte certains qu'il devrait refuser, et en refuse d'autres qu'il devrait accepter, ce qui est pire en sécurité que de simplement planter.
+
+<PythonChallenge id="f1-debug-mdp" title="Programme cassé 3 : la règle de mot de passe" description="Renvoie True si le mot de passe fait au moins 12 caractères et contient au moins un chiffre. Le code fourni contient trois bugs." starterCode="def solution(mdp):
+    a_chiffre = False
+    for c in mdp:
+        if c.isdigit():
+            a_chiffre = True
+        else:
+            a_chiffre = False
+    return len(mdp) > 12 or a_chiffre" tests={[{ input: "solution('correcthorse1')", expected: "True" }, { input: "solution('cheval1batterie')", expected: "True", label: "Chiffre au milieu" }, { input: "solution('abcdefghijk1')", expected: "True", label: "Pile 12 caractères" }, { input: "solution('abcdefghijklmnop')", expected: "False", label: "Aucun chiffre" }, { input: "solution('a1')", expected: "False", label: "Trop court" }]} />
+
+Si tu bloques sur le troisième, trace la boucle sur `cheval1batterie` : que vaut `a_chiffre` après le `1`, puis après le `b` qui le suit ? Tu retrouves le bug du compteur remis à zéro, sous une autre forme.
+
+## les pièges
+
+- **Lire la trace de haut en bas.** L'information essentielle, le type et la ligne de l'erreur, est **en bas**.
+- **Croire que la ligne qui plante est la ligne du bug.** Elle est souvent la victime : remonte jusqu'à la donnée fautive.
+- **Corriger au hasard.** Changer des lignes sans hypothèse, c'est ajouter des bugs. Une hypothèse, un test, une seule modification à la fois.
+- **Masquer l'erreur au lieu de la corriger.** Attraper une exception pour la faire taire laisse le programme dans un état faux.
+- **Oublier les affichages de contrôle.** Des `print` de débogage laissés dans le code finissent en production, parfois avec des données sensibles.
+- **Montrer la trace à l'utilisateur.** Message générique à l'écran, détails dans un journal protégé.
+- **Ne pas garder de test.** Un bug corrigé sans test revient tôt ou tard.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/errors.html" description="Erreurs de syntaxe, exceptions, et comment les gérer, dans le tutoriel officiel">Tutoriel Python : erreurs et exceptions</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/exceptions.html" description="La liste de toutes les exceptions natives et de leur signification">Les exceptions natives de Python</ExternalLink>
+
+<ExternalLink href="https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html" description="Comment gérer les erreurs sans révéler d'informations, en anglais">OWASP : la gestion des erreurs</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle famille d'erreurs est la plus difficile à détecter ?" options={["Les erreurs de logique", "Les erreurs de syntaxe", "Les erreurs d'exécution", "Elles se valent"]} correct={0} explanation="Une erreur de logique ne produit aucun message : le programme tourne et donne un résultat faux. Seuls les tests et le traçage la révèlent." />
+  <Quiz id="q-2" question="Dans quel sens lit-on une trace d'appels Python ?" options={["De haut en bas", "De bas en haut", "Seulement la première ligne", "Dans n'importe quel ordre"]} correct={1} explanation="La dernière ligne donne le type et le message de l'erreur, juste au-dessus la ligne fautive, et en remontant la chaîne des appels." />
+  <Quiz id="q-3" question="Quelle exception provoque int('douze') ?" options={["TypeError", "ValueError", "NameError", "IndexError"]} correct={1} explanation="Le type est correct (un texte), mais sa valeur ne représente pas un nombre : ValueError." />
+  <Quiz id="q-4" question="Quelle exception provoque liste[3] sur une liste de trois éléments ?" options={["IndexError", "KeyError", "ValueError", "ZeroDivisionError"]} correct={0} explanation="Les positions vont de 0 à 2 : la position 3 n'existe pas. C'est souvent une erreur de un." />
+  <Quiz id="q-5" question="Qu'est-ce que tracer un programme à la main ?" options={["L'exécuter ligne par ligne en notant la valeur des variables dans un tableau", "Le recopier sur papier", "Dessiner son organigramme", "Le lancer plusieurs fois"]} correct={0} explanation="Le tableau de trace montre ce que fait réellement le code, tour après tour, et révèle l'endroit où il s'écarte de ce qu'on attendait." />
+  <Quiz id="q-6" question="Pourquoi ne faut-il pas afficher une trace d'appels à l'utilisateur d'une application en ligne ?" options={["Parce qu'elle est trop longue", "Parce qu'elle révèle des chemins, des noms de fonctions et des versions utiles à un attaquant", "Parce qu'elle ralentit le serveur", "Parce qu'elle est en anglais"]} correct={1} explanation="On affiche un message générique et on enregistre les détails dans un journal réservé à l'équipe technique." />
+  <Quiz id="q-7" question="Pourquoi changer une seule chose à la fois quand on débogue ?" options={["Pour aller plus vite", "Parce que Python ne permet qu'une modification", "Pour économiser la mémoire", "Pour savoir quelle modification a eu quel effet"]} correct={3} explanation="Avec plusieurs changements simultanés, on ne sait plus lequel a corrigé le bug, ni lequel en a introduit un nouveau." />
+</QuizGroup>
+
+## à retenir
+
+- Trois familles : **syntaxe** (le programme ne démarre pas), **exécution** (une exception l'arrête), **logique** (il donne un résultat faux, sans rien dire).
+- Une trace d'appels se lit **de bas en haut** : le type et le message, puis la ligne, puis la chaîne des appels.
+- Connaître les exceptions courantes : `NameError`, `TypeError`, `ValueError`, `IndexError`, `KeyError`, `ZeroDivisionError`.
+- **Tracer à la main** dans un tableau, **faire parler** le programme avec des `print` et des `assert`.
+- La méthode : **reproduire, lire, localiser, supposer, vérifier, corriger la cause, garder un test**. Une modification à la fois.
+- Jamais de trace brute pour l'utilisateur : un message générique, et les détails dans un **journal protégé**.

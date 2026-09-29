@@ -1,0 +1,220 @@
+---
+refCode: CL-LSN-01040-V01
+slug: fondamentaux-conditions
+title: "Conditions et logique booléenne"
+description: "Faire prendre des décisions à un programme : les comparaisons, les instructions if, elif et else, les opérateurs et, ou, non, leurs tables de vérité, les lois de De Morgan, l'évaluation paresseuse, et les erreurs de logique qui ouvrent des failles de contrôle d'accès. Avec deux exercices : les années bissextiles et une règle d'accès."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01039-V01"]
+---
+
+Jusqu'ici, nos programmes exécutaient leurs lignes l'une après l'autre, toujours dans le même ordre, quelles que soient les données. Un vrai programme doit **décider** : autoriser ou refuser une connexion, afficher un message d'erreur ou le résultat, signaler une adresse suspecte ou la laisser passer. Toutes ces décisions reposent sur un petit nombre d'outils : des **comparaisons** qui donnent vrai ou faux, des **conditions** qui choisissent quel bloc exécuter, et trois opérateurs logiques, **et**, **ou**, **non**, pour combiner les critères. Cette logique, dite booléenne en hommage au mathématicien George Boole, est aussi celle des circuits du processeur : les transistors du module 2, assemblés en portes ET, OU et NON, calculent exactement ces opérations. Elle est simple, mais une seule erreur dans une condition peut ouvrir une porte qui devait rester fermée.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- écrire une comparaison et prévoir son résultat ;
+- faire choisir un programme avec `if`, `elif` et `else` ;
+- combiner des critères avec `and`, `or` et `not` ;
+- dresser la table de vérité d'une expression ;
+- appliquer les lois de De Morgan pour simplifier ou inverser une condition ;
+- repérer les erreurs de logique les plus courantes, dont celles qui créent des failles.
+
+## pourquoi ça compte
+
+Le **contrôle d'accès** d'une application, c'est-à-dire la partie qui décide qui a le droit de faire quoi, n'est rien d'autre qu'un ensemble de conditions. Et le contrôle d'accès défaillant est, depuis 2021, la catégorie de failles numéro un du classement de l'OWASP, la référence mondiale en sécurité des applications web. Derrière beaucoup de ces failles, il y a une condition mal écrite : un `ou` à la place d'un `et`, un cas oublié, une vérification faite dans le mauvais ordre. Savoir lire et écrire une condition sans ambiguïté, c'est à la fois une compétence de développeur et une compétence d'auditeur.
+
+## les comparaisons
+
+Une **comparaison** confronte deux valeurs et donne un booléen, `True` ou `False`. Python en a six :
+
+| Opérateur | Signification | Exemple | Résultat |
+|---|---|---|---|
+| `==` | égal à | `3 == 3` | `True` |
+| `!=` | différent de | `"alice" != "Alice"` | `True` |
+| `<` | strictement inférieur | `2 < 2` | `False` |
+| `<=` | inférieur ou égal | `2 <= 2` | `True` |
+| `>` | strictement supérieur | `10 > 9` | `True` |
+| `>=` | supérieur ou égal | `17 >= 18` | `False` |
+
+Le test d'égalité s'écrit avec **deux** signes égal. Un seul, tu le sais, est une affectation. Python refuse d'ailleurs `if age = 18:` avec une `SyntaxError`, ce qui évite un bug célèbre du langage C, où cette ligne est acceptée et affecte 18 à `age` au lieu de le comparer.
+
+Les textes se comparent **exactement** : `"alice" == "Alice"` est faux, et `"alice " == "alice"` aussi, à cause de l'espace final. Quand on compare une saisie utilisateur, on la nettoie souvent d'abord avec `.strip()`, qui enlève les espaces autour, et `.lower()`, qui met tout en minuscules.
+
+Python permet d'**enchaîner** les comparaisons comme en mathématiques : `0 <= note <= 20` vérifie que la note est entre 0 et 20 inclus. La plupart des autres langages imposent d'écrire les deux moitiés séparément.
+
+## if, elif, else
+
+L'instruction `if` exécute un bloc seulement si une condition est vraie :
+
+```python
+tentatives = 5
+if tentatives >= 3:
+    print("Compte verrouillé")
+print("Fin de la vérification")
+```
+
+Trois détails de syntaxe comptent. La ligne du `if` se termine par un **deux-points**. Le bloc qui en dépend est **indenté**, par convention de quatre espaces. Et c'est l'indentation, et elle seule, qui marque la fin du bloc : la dernière ligne, revenue à gauche, s'exécute dans tous les cas. En Python, l'indentation n'est pas une question de présentation, elle fait partie du sens.
+
+`else` donne le bloc à exécuter sinon, et `elif` (contraction de *else if*) enchaîne d'autres conditions :
+
+```python
+if note >= 16:
+    mention = "très bien"
+elif note >= 14:
+    mention = "bien"
+elif note >= 12:
+    mention = "assez bien"
+elif note >= 10:
+    mention = "passable"
+else:
+    mention = "ajourné"
+```
+
+Python teste les conditions **dans l'ordre** et exécute **uniquement** le premier bloc dont la condition est vraie ; les autres sont ignorés. Pour une note de 17, la première condition suffit, même si `note >= 14` est vraie aussi. C'est pourquoi l'ordre compte : si l'on testait `note >= 10` en premier, tout le monde aurait « passable ».
+
+<Diagram caption="Une chaîne if, elif, else : la première condition vraie gagne">
+flowchart TD
+  A["note"] --> B["note >= 16 ?"]
+  B -->|"oui"| R1["très bien"]
+  B -->|"non"| C["note >= 14 ?"]
+  C -->|"oui"| R2["bien"]
+  C -->|"non"| D["note >= 12 ?"]
+  D -->|"oui"| R3["assez bien"]
+  D -->|"non"| E["note >= 10 ?"]
+  E -->|"oui"| R4["passable"]
+  E -->|"non"| R5["ajourné"]
+</Diagram>
+
+## et, ou, non
+
+Une décision dépend souvent de plusieurs critères. Trois opérateurs les combinent.
+
+**`and`** (et) est vrai seulement si **les deux** côtés sont vrais. « Le compte est actif et le mot de passe est correct. »
+
+**`or`** (ou) est vrai si **au moins un** des côtés est vrai. « L'utilisateur est administrateur ou propriétaire du document. » C'est un ou **inclusif** : si les deux sont vrais, le résultat est vrai aussi.
+
+**`not`** (non) inverse une valeur : `not True` vaut `False`.
+
+On résume leur comportement dans des **tables de vérité**, qui listent toutes les combinaisons possibles :
+
+| A | B | A and B | A or B | not A |
+|---|---|---|---|---|
+| False | False | False | False | True |
+| False | True | False | True | True |
+| True | False | False | True | False |
+| True | True | True | True | False |
+
+Avec deux variables, il y a quatre lignes ; avec trois, huit ; avec n variables, 2 puissance n. Dresser la table de vérité d'une condition compliquée est le moyen le plus sûr de vérifier qu'elle fait ce qu'on croit, et c'est exactement ce que font les concepteurs de circuits.
+
+Comme en arithmétique, il y a des **priorités** : `not` s'applique en premier, puis `and`, puis `or`. Ainsi `a or b and c` se lit `a or (b and c)`. Plutôt que de retenir ces règles, mets des **parenthèses** dès qu'une condition mélange `and` et `or` : c'est plus sûr, et le lecteur n'a pas à réfléchir.
+
+## les lois de De Morgan
+
+Il arrive souvent qu'on doive **inverser** une condition : on a écrit quand accepter, on veut écrire quand refuser. Les lois de De Morgan donnent la règle :
+
+- `not (A and B)` équivaut à `(not A) or (not B)` ;
+- `not (A or B)` équivaut à `(not A) and (not B)`.
+
+En français : « il est faux que les deux soient vrais » équivaut à « au moins un est faux ». Quand on fait entrer le `not` dans la parenthèse, le `and` devient `or` et réciproquement.
+
+Exemple concret. On accepte une connexion si le compte est actif **et** le mot de passe correct. Quand la refuser ? Quand `not (actif and mdp_ok)`, c'est-à-dire quand le compte est **inactif ou** le mot de passe **faux**. Un seul des deux suffit. L'erreur classique consiste à écrire `not actif and not mdp_ok`, qui ne refuse que si les deux échouent : un compte désactivé avec le bon mot de passe passerait. Voilà une faille de contrôle d'accès en une ligne.
+
+## l'évaluation paresseuse
+
+Python évalue `and` et `or` de gauche à droite et **s'arrête dès que le résultat est connu**. Dans `A and B`, si `A` est faux, le résultat est faux quoi que vaille `B`, et `B` n'est même pas calculé. Dans `A or B`, si `A` est vrai, `B` est ignoré. On parle d'évaluation paresseuse, ou de **court-circuit**.
+
+Ce n'est pas un détail : on s'en sert pour protéger une vérification. `utilisateur is not None and utilisateur.actif` ne consulte `actif` que si `utilisateur` existe ; dans l'autre ordre, le programme planterait sur un utilisateur absent. De même, `len(liste) > 0 and liste[0] == "admin"` n'accède au premier élément que si la liste n'est pas vide. L'ordre des critères d'un `and` n'est donc pas indifférent : on place d'abord ceux qui garantissent que les suivants ont un sens.
+
+## les pièges de logique qui deviennent des failles
+
+Le plus célèbre ressemble à ceci :
+
+```python
+if role == "admin" or "moderateur":
+    print("Accès au panneau d'administration")
+```
+
+L'intention est claire : autoriser les administrateurs et les modérateurs. Mais Python lit `(role == "admin") or ("moderateur")`. Or un texte non vide est considéré comme vrai, tu l'as vu à la leçon précédente. La condition est donc **toujours vraie**, et n'importe qui accède au panneau. La bonne écriture répète la comparaison : `role == "admin" or role == "moderateur"`, ou plus élégamment `role in ("admin", "moderateur")`, qui teste l'appartenance à une liste de valeurs.
+
+Deuxième piège : l'**autorisation par défaut**. Comparons deux façons d'écrire la même règle :
+
+```python
+# fragile : on refuse les cas connus, tout le reste passe
+if role == "invite" or role == "banni":
+    acces = False
+else:
+    acces = True
+
+# robuste : on autorise les cas connus, tout le reste est refusé
+if role == "admin" or role == "editeur":
+    acces = True
+else:
+    acces = False
+```
+
+Le jour où quelqu'un crée un nouveau rôle, disons `"stagiaire"`, ou qu'un attaquant envoie un rôle inventé, la première version l'autorise et la seconde le refuse. C'est le principe du **refus par défaut** : en sécurité, le `else` doit être le cas le plus prudent.
+
+Troisième piège : les **bornes**. `if age > 18` exclut les personnes de 18 ans ; `if age >= 18` les inclut. Le texte de la règle dit presque toujours lequel des deux on veut, et c'est l'un des premiers endroits où chercher un bug. On teste donc systématiquement les valeurs **juste avant**, **pile sur** et **juste après** chaque borne : 17, 18 et 19.
+
+## à toi de jouer
+
+Premier exercice, un classique de toutes les formations : les **années bissextiles**, celles qui ont un 29 février. La règle du calendrier grégorien est la suivante : une année est bissextile si elle est divisible par 4, **sauf** si elle est divisible par 100, **à moins qu'elle** ne soit aussi divisible par 400. Ainsi 2024 est bissextile, 1900 ne l'est pas, 2000 l'est. Rappel : `n % 4 == 0` teste la divisibilité par 4. Commence par traduire la règle en une condition avec `and`, `or` et `not`, et vérifie-la sur 1900 et 2000 avant de lancer les tests.
+
+<PythonChallenge id="f1-cond-bissextile" title="Les années bissextiles" description="Renvoie True si l'année est bissextile, False sinon : divisible par 4, sauf les années divisibles par 100 qui ne le sont pas par 400." starterCode="def solution(annee):
+    # divisible par 4, et (pas divisible par 100, ou divisible par 400)
+    return False" tests={[{ input: "solution(2024)", expected: "True" }, { input: "solution(2023)", expected: "False" }, { input: "solution(1900)", expected: "False", label: "Divisible par 100 mais pas par 400" }, { input: "solution(2000)", expected: "True", label: "Divisible par 400" }, { input: "solution(2100)", expected: "False" }, { input: "solution(1600)", expected: "True" }]} />
+
+Second exercice, une vraie règle de contrôle d'accès. Écris `solution(role, actif, double_auth)` qui renvoie `'autorisé'` ou `'refusé'` selon la politique suivante : un compte **inactif** est toujours refusé ; un `'admin'` actif n'est autorisé que s'il a validé la **double authentification** ; un `'editeur'` actif est autorisé ; **tout autre rôle** est refusé. Pense au refus par défaut.
+
+<PythonChallenge id="f1-cond-acces" title="Une règle d'accès" description="Renvoie 'autorisé' ou 'refusé'. Inactif : refusé. Admin actif : autorisé seulement avec la double authentification. Editeur actif : autorisé. Tout autre rôle : refusé." starterCode="def solution(role, actif, double_auth):
+    if not actif:
+        return 'refusé'
+    # traite l'admin, puis l'éditeur, puis refuse tout le reste
+    return 'autorisé'" tests={[{ input: "solution('admin', True, True)", expected: "autorisé" }, { input: "solution('admin', True, False)", expected: "refusé", label: "Admin sans double authentification" }, { input: "solution('admin', False, True)", expected: "refusé", label: "Admin désactivé" }, { input: "solution('editeur', True, False)", expected: "autorisé" }, { input: "solution('editeur', False, False)", expected: "refusé" }, { input: "solution('stagiaire', True, True)", expected: "refusé", label: "Rôle inconnu : refus par défaut" }, { input: "solution('Admin', True, True)", expected: "refusé", label: "La casse compte" }]} />
+
+Le code de départ se termine par `return 'autorisé'` : c'est volontairement la mauvaise valeur par défaut. Si tu laisses cette ligne, le test du rôle inconnu échoue. C'est exactement le piège de l'autorisation par défaut.
+
+## les pièges
+
+- **Écrire `=` au lieu de `==`.** Python le refuse dans un `if`, mais l'erreur de raisonnement reste fréquente dans d'autres langages.
+- **Écrire `x == "a" or "b"`.** Le second morceau est un texte non vide, donc toujours vrai. Répète la comparaison, ou utilise `in`.
+- **Mal ordonner les `elif`.** Seule la première condition vraie compte : du plus restrictif au plus large.
+- **Se tromper de borne.** `>` ou `>=` : teste la valeur juste avant, pile sur et juste après.
+- **Inverser une condition sans De Morgan.** `not (A and B)` n'est pas `not A and not B`.
+- **Autoriser par défaut.** Le `else` d'un contrôle d'accès doit refuser.
+- **Ignorer l'ordre d'un `and`.** Vérifie d'abord que la donnée existe, ensuite ce qu'elle contient.
+- **Oublier les deux-points ou l'indentation.** C'est une `SyntaxError` ou une `IndentationError`, ou pire, une ligne qui sort du bloc sans prévenir.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/controlflow.html" description="if, elif, else et les autres outils de contrôle, dans le tutoriel officiel">Tutoriel Python : contrôle du flux</ExternalLink>
+
+<ExternalLink href="https://owasp.org/Top10/fr/A01_2021-Broken_Access_Control/" description="La catégorie de failles la plus répandue selon l'OWASP, en français">OWASP : contrôle d'accès défaillant</ExternalLink>
+
+<ExternalLink href="https://fr.wikipedia.org/wiki/Lois_de_De_Morgan" description="L'énoncé, les démonstrations et l'usage en électronique">Wikipédia : les lois de De Morgan</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que vaut True and False ?" options={["True", "False", "None", "Une erreur"]} correct={1} explanation="and n'est vrai que si les deux côtés sont vrais." />
+  <Quiz id="q-2" question="Avec note = 17, quel bloc s'exécute si la chaîne teste d'abord if note >= 10, puis elif note >= 16 ?" options={["Le bloc de note >= 16", "Les deux blocs", "Le bloc de note >= 10", "Aucun bloc"]} correct={2} explanation="Seule la première condition vraie est exécutée. Ici note >= 10 est testée en premier et elle est vraie : il fallait ordonner du plus restrictif au plus large." />
+  <Quiz id="q-3" question="Pourquoi if role == 'admin' or 'moderateur': laisse-t-il passer tout le monde ?" options={["Parce que or est exclusif", "Parce que == compare mal les textes", "Parce que le texte 'moderateur', non vide, est toujours vrai", "Parce que role est toujours admin"]} correct={2} explanation="Python lit (role == 'admin') or 'moderateur'. Le second morceau est un texte non vide, donc vrai : toute la condition est vraie." />
+  <Quiz id="q-4" question="D'après De Morgan, not (actif and mdp_ok) équivaut à :" options={["not actif and not mdp_ok", "actif or mdp_ok", "not actif or not mdp_ok", "actif and not mdp_ok"]} correct={2} explanation="En faisant entrer le not dans la parenthèse, and devient or : il suffit qu'un des deux critères échoue pour refuser." />
+  <Quiz id="q-5" question="Dans utilisateur is not None and utilisateur.actif, pourquoi l'ordre compte-t-il ?" options={["Parce que and est plus rapide dans ce sens", "Parce que Python évalue de droite à gauche", "Il ne compte pas", "Parce que si utilisateur est None, le second test n'est pas évalué et ne plante pas"]} correct={3} explanation="Évaluation paresseuse : si le premier côté d'un and est faux, le second n'est pas calculé. On protège ainsi l'accès à actif." />
+  <Quiz id="q-6" question="Combien de lignes compte la table de vérité d'une condition à trois variables ?" options={["3", "8", "6", "9"]} correct={1} explanation="Chaque variable vaut vrai ou faux : 2 × 2 × 2 = 8 combinaisons." />
+  <Quiz id="q-7" question="Qu'est-ce que le refus par défaut ?" options={["N'autoriser que les cas explicitement prévus, et refuser tout le reste", "Refuser les mots de passe trop courts", "Refuser la première tentative de connexion", "Bloquer un compte après trois échecs"]} correct={0} explanation="Le else d'un contrôle d'accès refuse : un rôle nouveau ou inventé n'obtient rien tant qu'on ne l'a pas prévu." />
+</QuizGroup>
+
+## à retenir
+
+- Une **comparaison** donne `True` ou `False`. L'égalité s'écrit `==`, la différence `!=`.
+- `if` exécute un bloc si la condition est vraie ; `elif` et `else` enchaînent les cas. **Seule la première** condition vraie compte : l'ordre importe.
+- Le **deux-points** et l'**indentation** délimitent les blocs.
+- `and` : les deux ; `or` : au moins un ; `not` : l'inverse. Des **parenthèses** dès qu'on les mélange.
+- **De Morgan** : `not (A and B)` = `not A or not B`, et inversement.
+- **Court-circuit** : on vérifie d'abord que la donnée existe, ensuite ce qu'elle vaut.
+- En sécurité : répéter les comparaisons (ou `in`), soigner les **bornes**, **refuser par défaut**.

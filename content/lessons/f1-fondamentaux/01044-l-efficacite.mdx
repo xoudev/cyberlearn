@@ -1,0 +1,212 @@
+---
+refCode: CL-LSN-01044-V01
+slug: fondamentaux-l-efficacite
+title: "L'efficacité : pourquoi certains algorithmes sont lents"
+description: "Mesurer le coût d'un algorithme en comptant ses opérations plutôt qu'en secondes, comparer la recherche linéaire et la recherche dichotomique, découvrir les grandes familles de croissance (constante, logarithmique, linéaire, quadratique, exponentielle) et la notation grand O, et voir comment la sécurité s'appuie sur la lenteur des attaques. Avec un comparateur à faire tourner et deux exercices sur la dichotomie."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 300
+prerequisites: ["CL-LSN-01043-V01"]
+---
+
+Deux programmes corrects peuvent donner exactement le même résultat, et pourtant l'un répond en un clin d'œil pendant que l'autre fait attendre l'utilisateur une heure. Ce n'est pas une question de langage ni de processeur : c'est une question d'**algorithme**. Chercher un nom dans un annuaire de dix mille pages en lisant toutes les pages une à une, ou en l'ouvrant au milieu pour savoir dans quelle moitié continuer, ce n'est pas du tout le même travail. Cette leçon te donne les outils pour estimer le coût d'un algorithme avant même de le lancer, et pour comprendre pourquoi cette question est au cœur de la cryptographie.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer pourquoi on mesure un algorithme en nombre d'opérations, pas en secondes ;
+- écrire et comparer la recherche linéaire et la recherche dichotomique ;
+- expliquer ce que signifie « diviser par deux à chaque étape » ;
+- classer des algorithmes selon leur croissance : constante, logarithmique, linéaire, quadratique, exponentielle ;
+- lire la notation grand O ;
+- relier la lenteur de certains calculs à la sécurité des mots de passe et du chiffrement.
+
+## pourquoi ça compte
+
+Un programme qui marche sur dix lignes de test peut s'effondrer sur les dix millions de lignes d'un vrai journal. C'est une situation que tout développeur et tout analyste rencontre un jour : un script d'analyse lancé le soir qui n'a toujours pas fini le lendemain matin, une page web qui devient inutilisable quand la base de données grossit. Savoir estimer le coût d'un algorithme, c'est savoir **avant** de lancer si l'attente sera d'une seconde ou d'une semaine. En sécurité, cette question est centrale dans les deux sens : le défenseur veut que ses traitements soient rapides, et que ceux de l'attaquant soient **impossiblement** lents. Toute la solidité d'un mot de passe ou d'une clé de chiffrement repose sur un calcul de coût.
+
+## compter plutôt que chronométrer
+
+On pourrait mesurer un algorithme avec un chronomètre. Mais le temps dépend de tout : du processeur, de la mémoire, des autres programmes qui tournent, du langage. Le même code prend une seconde sur un ordinateur récent et dix sur un vieux portable. Pour comparer des **algorithmes**, on compte plutôt le nombre d'**opérations élémentaires** qu'ils effectuent, comme des comparaisons, en fonction de la **taille de l'entrée**, qu'on note habituellement n.
+
+Et on s'intéresse surtout au **pire cas** : le nombre d'opérations dans la situation la plus défavorable. C'est lui qui garantit que le programme ne dépassera jamais un certain coût, et c'est lui qu'un attaquant cherchera à provoquer en choisissant ses entrées.
+
+## la recherche linéaire
+
+Le moyen le plus simple de chercher une valeur dans une liste est de regarder chaque élément, du premier au dernier, jusqu'à la trouver :
+
+```python
+def recherche_lineaire(liste, cible):
+    for i in range(len(liste)):
+        if liste[i] == cible:
+            return i
+    return -1
+```
+
+La fonction renvoie la position de la cible, ou -1 si elle est absente. Combien de comparaisons ? Si la cible est en première position, une seule. Mais au pire, si elle est à la fin ou absente, il faut **toutes** les regarder : n comparaisons pour une liste de n éléments. Une liste deux fois plus longue demande deux fois plus de travail. On dit que le coût est **linéaire**, proportionnel à la taille de l'entrée. Pour mille éléments, mille comparaisons ; pour un milliard, un milliard.
+
+C'est aussi ce que fait `grep` quand il cherche un mot dans un fichier, ou l'opérateur `in` de Python sur une liste. Ce n'est pas un défaut : quand la liste n'est pas triée, on ne peut pas faire mieux, puisque la valeur cherchée peut se trouver n'importe où.
+
+## la recherche dichotomique
+
+Mais si la liste est **triée**, on peut faire beaucoup mieux. C'est le jeu du nombre mystère : « je pense à un nombre entre 1 et 100 ». La meilleure stratégie n'est pas de proposer 1, puis 2, puis 3 : c'est de proposer **50**. Si on te répond « plus grand », tu sais que le nombre est entre 51 et 100, et tu as éliminé la moitié des possibilités d'un seul coup. Tu proposes alors 75, puis 63 ou 88, et ainsi de suite. C'est la **recherche dichotomique** (du grec « couper en deux »), aussi appelée recherche binaire.
+
+<Diagram caption="Chercher 42 dans les entiers de 1 à 100, en coupant en deux">
+flowchart TD
+  A["Intervalle 1 à 100 : on regarde 50"] -->|"42 est plus petit"| B["Intervalle 1 à 49 : on regarde 25"]
+  B -->|"42 est plus grand"| C["Intervalle 26 à 49 : on regarde 37"]
+  C -->|"42 est plus grand"| D["Intervalle 38 à 49 : on regarde 43"]
+  D -->|"42 est plus petit"| E["Intervalle 38 à 42 : on regarde 40"]
+  E -->|"42 est plus grand"| F["Intervalle 41 à 42 : on regarde 41"]
+  F -->|"42 est plus grand"| G["Intervalle 42 à 42 : trouvé en 7 étapes"]
+</Diagram>
+
+En Python, on garde deux bornes, `debut` et `fin`, qui délimitent la zone où la cible peut encore se trouver, et on regarde au milieu :
+
+```python
+def recherche_dichotomique(liste, cible):
+    debut, fin = 0, len(liste) - 1
+    while debut <= fin:
+        milieu = (debut + fin) // 2
+        if liste[milieu] == cible:
+            return milieu
+        elif liste[milieu] < cible:
+            debut = milieu + 1      # la cible est à droite
+        else:
+            fin = milieu - 1        # la cible est à gauche
+    return -1
+```
+
+Tu reconnais tout ce que le module t'a appris : des variables, une boucle `while` avec une condition d'arrêt et une progression (la zone rétrécit à chaque tour), des conditions, une fonction qui renvoie un résultat. Les `+ 1` et `- 1` ne sont pas décoratifs : sans eux, la zone peut cesser de rétrécir et la boucle devient infinie. La dichotomie est célèbre pour être facile à comprendre et difficile à écrire juste du premier coup ; même des versions publiées dans des bibliothèques réputées ont contenu des bugs pendant des années.
+
+Combien d'étapes au pire ? À chaque étape, la zone est **divisée par deux**. Partant de n éléments, on arrive à un seul élément après environ log2(n) étapes, où log2 est le **logarithme en base 2** : le nombre de fois qu'on peut diviser n par 2 avant d'atteindre 1. Tu l'as déjà rencontré à l'envers au module 2 : avec k bits, on écrit 2 puissance k valeurs ; inversement, pour distinguer n valeurs, il faut environ log2(n) questions à réponse oui ou non.
+
+Les chiffres sont spectaculaires :
+
+| Taille de la liste | Recherche linéaire, pire cas | Recherche dichotomique, pire cas |
+|---|---|---|
+| 100 | 100 | 7 |
+| 1 000 | 1 000 | 10 |
+| 1 000 000 | 1 000 000 | 20 |
+| 1 000 000 000 | 1 000 000 000 | 30 |
+
+Pour un milliard d'éléments, trente comparaisons au lieu d'un milliard. Et doubler la taille de la liste n'ajoute qu'**une seule** étape. C'est grâce à ce principe, sous des formes plus élaborées, que les bases de données retrouvent une ligne parmi des milliards en quelques millisecondes.
+
+Le prix à payer : la liste doit être **triée**, et trier coûte plus cher qu'une recherche linéaire. Ça vaut donc la peine quand on cherche **souvent** dans les mêmes données : on trie une fois, on cherche des milliers de fois.
+
+## les familles de croissance
+
+Ce qui compte n'est pas le nombre exact d'opérations, mais la façon dont il **grandit** quand l'entrée grandit. On range les algorithmes en grandes familles, qu'on note avec la notation **grand O** : O(n) se lit « de l'ordre de n ».
+
+| Famille | Notation | Exemple | n = 10 | n = 1 000 | n = 1 000 000 |
+|---|---|---|---|---|---|
+| constante | O(1) | lire le premier élément d'une liste | 1 | 1 | 1 |
+| logarithmique | O(log n) | recherche dichotomique | 4 | 10 | 20 |
+| linéaire | O(n) | recherche linéaire, somme d'une liste | 10 | 1 000 | 1 000 000 |
+| quasi linéaire | O(n log n) | un bon algorithme de tri | 33 | 10 000 | 20 000 000 |
+| quadratique | O(n²) | comparer chaque élément à tous les autres | 100 | 1 000 000 | 1 000 000 000 000 |
+| exponentielle | O(2 puissance n) | essayer toutes les combinaisons de n bits | 1 024 | un nombre de 302 chiffres | inimaginable |
+
+Lis ce tableau colonne par colonne. Pour dix éléments, tout est instantané, et c'est pourquoi les tests sur de petits exemples ne révèlent jamais un algorithme lent. Pour un million, la différence entre O(n) et O(n²) est celle entre un millième de seconde et un quart d'heure de calcul, pour un ordinateur qui fait un milliard d'opérations par seconde. Et l'exponentielle devient impraticable dès quelques dizaines d'éléments.
+
+Le cas quadratique mérite un exemple, car il apparaît sans qu'on s'en rende compte. Pour savoir si une liste contient des doublons, l'idée naturelle est de comparer chaque élément à tous les autres, avec deux boucles imbriquées : n fois n comparaisons. Tu l'as vu à la leçon sur les boucles, les tours des boucles imbriquées se multiplient. Sur un fichier de cent mille adresses, cela fait dix milliards de comparaisons. Il existe des structures, comme les ensembles de Python, qui répondent à la question « ai-je déjà vu cet élément ? » en temps quasi constant, et font tomber le même travail à cent mille opérations. Choisir la bonne structure de données est souvent le moyen le plus simple de rendre un programme rapide.
+
+## la lenteur au service de la sécurité
+
+La sécurité informatique repose en grande partie sur cette idée : rendre le travail de l'attaquant **exponentiel**, et celui du défenseur **raisonnable**.
+
+Une clé de chiffrement de 128 bits a 2 puissance 128 valeurs possibles, un nombre de 39 chiffres. Même en essayant mille milliards de clés par seconde, parcourir toutes les possibilités prendrait des centaines de millions de fois l'âge de l'univers. Le défenseur, lui, qui connaît la clé, déchiffre en une fraction de seconde. Chaque bit ajouté à la clé **double** le travail de l'attaquant, tandis qu'il ne change presque rien pour l'utilisateur légitime.
+
+Même logique pour les mots de passe. Un site sérieux ne stocke pas ton mot de passe, mais son **empreinte**, calculée par une fonction volontairement **lente**, comme bcrypt ou Argon2. Pour toi, attendre un dixième de seconde à la connexion est invisible. Pour un attaquant qui a volé la base et veut essayer des milliards de mots de passe, chaque essai coûte ce même dixième de seconde, et son attaque passe de quelques heures à plusieurs siècles. Ici, l'inefficacité est une **qualité**, calculée avec soin.
+
+À l'inverse, un algorithme lent côté défenseur est une faille. Si un serveur utilise un traitement quadratique sur des données envoyées par l'utilisateur, un attaquant peut fabriquer une entrée qui déclenche le pire cas et occuper le processeur pendant des minutes avec une seule requête : c'est une **attaque par déni de service algorithmique**. Des vulnérabilités de ce type ont touché des expressions régulières mal écrites, et même les dictionnaires de plusieurs langages de programmation, corrigés depuis. Penser au pire cas n'est donc pas une coquetterie théorique.
+
+## à toi de jouer
+
+Le programme ci-dessous compte les comparaisons des deux recherches, dans le pire cas, pour des listes de plus en plus grandes. Exécute-le, puis ajoute une taille de dix millions et observe les deux colonnes.
+
+<CodePlayground language="python" starterCode={`def lineaire(liste, cible):
+    comparaisons = 0
+    for valeur in liste:
+        comparaisons += 1
+        if valeur == cible:
+            break
+    return comparaisons
+
+def dichotomique(liste, cible):
+    comparaisons = 0
+    debut, fin = 0, len(liste) - 1
+    while debut <= fin:
+        milieu = (debut + fin) // 2
+        comparaisons += 1
+        if liste[milieu] == cible:
+            break
+        elif liste[milieu] < cible:
+            debut = milieu + 1
+        else:
+            fin = milieu - 1
+    return comparaisons
+
+print('taille', 'linéaire', 'dichotomique', sep='  |  ')
+for taille in [10, 100, 1000, 10000, 100000, 1000000]:
+    liste = list(range(taille))
+    cible = taille - 1          # le dernier élément : le pire cas du linéaire
+    print(taille, lineaire(liste, cible), dichotomique(liste, cible), sep='  |  ')`} />
+
+Premier exercice : écris toi-même la recherche dichotomique. `solution(liste, cible)` reçoit une liste **triée** et renvoie la position de la cible, ou -1 si elle est absente. Pas de `in` ni de `index` : c'est la dichotomie qu'on veut. Attention aux bornes et aux `+ 1` et `- 1`.
+
+<PythonChallenge id="f1-efficacite-dicho" title="La recherche dichotomique" description="Renvoie la position de cible dans la liste triée, ou -1 si elle est absente, en divisant la zone de recherche par deux à chaque étape." starterCode="def solution(liste, cible):
+    debut = 0
+    fin = len(liste) - 1
+    # tant que la zone n'est pas vide : regarde le milieu, puis garde la bonne moitié
+    return -1" tests={[{ input: "solution([2, 5, 8, 12, 16, 23, 38, 56, 72, 91], 23)", expected: "5" }, { input: "solution([2, 5, 8, 12, 16, 23, 38, 56, 72, 91], 2)", expected: "0", label: "Le premier élément" }, { input: "solution([2, 5, 8, 12, 16, 23, 38, 56, 72, 91], 91)", expected: "9", label: "Le dernier élément" }, { input: "solution([2, 5, 8, 12, 16, 23, 38, 56, 72, 91], 40)", expected: "-1", label: "Absent" }, { input: "solution([], 7)", expected: "-1", label: "Liste vide" }, { input: "solution(list(range(0, 2000000, 2)), 1234566)", expected: "617283", label: "Un million d'éléments" }]} />
+
+Second exercice : dans le jeu du nombre mystère entre 1 et n, combien de questions faut-il **au pire** avec la meilleure stratégie ? C'est le nombre de fois qu'on peut diviser n par deux (division entière) avant d'arriver à zéro. Écris `solution(n)` qui le calcule avec une boucle `while`. Pour n = 100, on trouve 7 : 100, 50, 25, 12, 6, 3, 1, puis 0.
+
+<PythonChallenge id="f1-efficacite-questions" title="Combien de questions ?" description="Renvoie le nombre de divisions entières par 2 nécessaires pour ramener n à zéro, soit le nombre maximal de questions pour deviner un nombre entre 1 et n." starterCode="def solution(n):
+    questions = 0
+    # tant que n est positif : divise-le par 2 (division entière) et compte
+    return questions" tests={[{ input: "solution(100)", expected: "7" }, { input: "solution(1)", expected: "1", label: "Un seul nombre possible : une question pour confirmer" }, { input: "solution(1000)", expected: "10" }, { input: "solution(1000000)", expected: "20" }, { input: "solution(1000000000)", expected: "30" }]} />
+
+Ce second résultat servira dans le projet du bilan : un jeu du nombre mystère entre 1 et 1 000 se gagne toujours en dix questions au plus, si l'on joue bien.
+
+## les pièges
+
+- **Juger un algorithme sur de petits tests.** Sur dix éléments, tout est rapide. Pense à ce qui se passe pour un million.
+- **Chronométrer au lieu de compter.** Le temps dépend de la machine ; le nombre d'opérations dépend de l'algorithme.
+- **Appliquer la dichotomie à une liste non triée.** Elle donne alors des réponses fausses, sans erreur.
+- **Oublier les `+ 1` et `- 1` de la dichotomie.** La zone ne rétrécit plus : boucle infinie.
+- **Ne pas voir le quadratique.** Une boucle dans une boucle sur les mêmes données, c'est n fois n.
+- **Croire que l'efficacité est toujours souhaitable.** Pour stocker des mots de passe, on veut une fonction **lente**, exprès.
+- **Ignorer le pire cas.** Un attaquant choisit ses entrées pour le provoquer.
+
+## pour aller plus loin
+
+<ExternalLink href="https://fr.wikipedia.org/wiki/Recherche_dichotomique" description="L'algorithme, ses variantes et son histoire">Wikipédia : la recherche dichotomique</ExternalLink>
+
+<ExternalLink href="https://interstices.info/les-algorithmes-de-tri/" description="Pourquoi certains tris sont plus rapides que d'autres, avec des animations">Interstices : les algorithmes de tri</ExternalLink>
+
+<ExternalLink href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html" description="Pourquoi les mots de passe se stockent avec des fonctions volontairement lentes, en anglais">OWASP : le stockage des mots de passe</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi compte-t-on les opérations plutôt que les secondes pour comparer deux algorithmes ?" options={["Parce que les secondes sont trop longues", "Parce qu'un ordinateur ne sait pas mesurer le temps", "Parce que le temps dépend de la machine, alors que le nombre d'opérations dépend de l'algorithme", "Parce que c'est plus facile à afficher"]} correct={2} explanation="Le même code est plus ou moins rapide selon le processeur ; le nombre d'opérations, lui, caractérise l'algorithme." />
+  <Quiz id="q-2" question="Quelle condition la recherche dichotomique impose-t-elle ?" options={["La liste doit être triée", "La liste doit être courte", "La liste doit contenir des nombres pairs", "Aucune"]} correct={0} explanation="Elle élimine une moitié en comparant avec le milieu : cela n'a de sens que si les éléments sont dans l'ordre." />
+  <Quiz id="q-3" question="Environ combien de comparaisons faut-il au pire pour une recherche dichotomique dans un million d'éléments ?" options={["1 000", "20", "500 000", "1 000 000"]} correct={1} explanation="On divise par deux à chaque étape : 2 puissance 20 vaut environ un million, donc une vingtaine d'étapes suffisent." />
+  <Quiz id="q-4" question="Un algorithme compare chaque élément d'une liste à tous les autres. Quelle est sa croissance ?" options={["Quadratique", "Constante", "Logarithmique", "Linéaire"]} correct={0} explanation="Deux boucles imbriquées sur n éléments font n fois n comparaisons : O(n²)." />
+  <Quiz id="q-5" question="Que se passe-t-il pour la recherche linéaire quand la liste double de taille ?" options={["Le pire cas augmente d'une étape", "Rien ne change", "Le pire cas double", "Le pire cas est multiplié par quatre"]} correct={2} explanation="Le coût est proportionnel à la taille : deux fois plus d'éléments, deux fois plus de comparaisons au pire." />
+  <Quiz id="q-6" question="Pourquoi stocke-t-on les mots de passe avec une fonction volontairement lente comme bcrypt ?" options={["Pour économiser de la place", "Parce que les fonctions rapides n'existent pas", "Pour rendre les essais massifs d'un attaquant extrêmement coûteux", "Pour que l'utilisateur tape moins vite"]} correct={2} explanation="Un dixième de seconde est invisible pour l'utilisateur, mais multiplié par des milliards d'essais, il rend l'attaque impraticable." />
+  <Quiz id="q-7" question="Qu'ajoute un bit supplémentaire à une clé de chiffrement pour l'attaquant qui essaie toutes les clés ?" options={["Une clé de plus à essayer", "Rien", "Il divise le travail par deux", "Il double le nombre de clés à essayer"]} correct={3} explanation="Avec k bits, il y a 2 puissance k clés. Un bit de plus double ce nombre : c'est la croissance exponentielle, au service du défenseur." />
+</QuizGroup>
+
+## à retenir
+
+- On mesure un algorithme en **nombre d'opérations** selon la taille n de l'entrée, surtout dans le **pire cas**.
+- Recherche **linéaire** : n comparaisons au pire, O(n). Recherche **dichotomique** sur une liste **triée** : environ log2(n), O(log n). Un milliard d'éléments : 30 étapes.
+- Familles : **constante**, **logarithmique**, **linéaire**, **n log n**, **quadratique** (boucles imbriquées), **exponentielle** (toutes les combinaisons).
+- Les petits tests ne révèlent pas un algorithme lent : pense à un million.
+- La sécurité rend le travail de l'attaquant **exponentiel** (longueur des clés et des mots de passe) et **ralentit exprès** les essais (bcrypt, Argon2).
+- Un traitement lent sur des données de l'utilisateur est une faille : **déni de service algorithmique**.

@@ -1,0 +1,214 @@
+---
+refCode: CL-LSN-01906-V01
+slug: fondamentaux-bilan-module-6
+title: "Bilan du module 6 : programmer un petit jeu"
+description: "Le quiz du module Penser comme un programmeur, puis le projet : écrire en Python le jeu du nombre mystère et celui du pendu, découpés en petites fonctions vérifiées par des tests automatiques, avec un joueur automatique qui gagne toujours grâce à la dichotomie."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 90
+xpReward: 400
+prerequisites: ["CL-LSN-01044-V01"]
+---
+
+Il y a sept leçons, tu n'avais jamais écrit une ligne de Python. Tu sais maintenant décrire un algorithme, manipuler des variables et des types, faire décider un programme, le faire répéter, le découper en fonctions, le déboguer, et estimer son coût. C'est exactement la boîte à outils avec laquelle les programmeurs écrivent leurs premiers jeux depuis des décennies. Ce bilan vérifie chaque notion, puis te fait construire deux jeux classiques, le nombre mystère et le pendu, à la manière d'un professionnel : pièce par pièce, chaque pièce vérifiée par des tests automatiques avant de passer à la suivante.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- décomposer un problème en fonctions courtes, chacune avec une responsabilité ;
+- écrire des conditions et des boucles correctes, bornes comprises ;
+- faire passer une série de tests automatiques, cas limites compris ;
+- réutiliser une fonction dans une autre ;
+- appliquer la recherche dichotomique à un problème concret ;
+- lire un test qui échoue pour trouver le bug qu'il révèle.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="f1m6-q-1" question="Lequel de ces textes est un algorithme, et pas une simple intention ?" options={["Retiens le premier nombre, compare-le à chacun des suivants et garde le plus grand, puis renvoie-le", "Trouve le plus grand nombre de la liste", "Fais en sorte que la liste soit correcte", "Calcule vite"]} correct={0} explanation="Un algorithme décrit des étapes élémentaires, dans un ordre clair, avec une sortie. Les autres disent seulement ce qu'on veut." />
+  <Quiz id="f1m6-q-2" question="Pourquoi initialiser un maximum avec le premier élément plutôt qu'avec 0 ?" options={["Parce que 0 est interdit en Python", "Parce que c'est plus rapide", "Parce qu'avec 0, une liste de nombres négatifs donnerait un résultat faux", "Parce que le premier élément est toujours le plus grand"]} correct={2} explanation="Sur -3, -8, -1, un maximum parti de 0 n'est jamais remplacé et renvoie 0, qui n'est pas dans la liste." />
+  <Quiz id="f1m6-q-3" question="Que vaut '5' + '5' en Python ?" options={["'55'", "10", "Une TypeError", "'10'"]} correct={0} explanation="Entre deux textes, + concatène. C'est le piège des saisies clavier, qui arrivent toujours en texte." />
+  <Quiz id="f1m6-q-4" question="Que vaut float('12,50') ?" options={["Une ValueError", "12.5", "12.50", "1250.0"]} correct={0} explanation="Python attend un point décimal. Il faut d'abord remplacer la virgule." />
+  <Quiz id="f1m6-q-5" question="Pourquoi if role == 'admin' or 'invite': est-il toujours vrai ?" options={["Parce que le texte 'invite', non vide, est considéré comme vrai", "Parce que or est prioritaire sur ==", "Parce que role vaut toujours admin", "Il ne l'est pas"]} correct={0} explanation="Python lit (role == 'admin') or 'invite', et un texte non vide est vrai. Il faut répéter la comparaison, ou écrire role in ('admin', 'invite')." />
+  <Quiz id="f1m6-q-6" question="Selon De Morgan, à quoi équivaut not (a or b) ?" options={["not a or not b", "a and b", "not a and not b", "a or not b"]} correct={2} explanation="En faisant entrer le not, or devient and : ni a, ni b." />
+  <Quiz id="f1m6-q-7" question="Combien de tours fait for i in range(3, 10) ?" options={["7", "10", "6", "8"]} correct={0} explanation="De 3 inclus à 10 exclu : 3, 4, 5, 6, 7, 8, 9, soit 7 tours." />
+  <Quiz id="f1m6-q-8" question="Un code à 5 chiffres est essayé par force brute. Combien de combinaisons au pire ?" options={["50", "100 000", "500", "5 000"]} correct={1} explanation="10 possibilités par chiffre, cinq chiffres : 10 puissance 5, soit 100 000." />
+  <Quiz id="f1m6-q-9" question="Une fonction calcule un total et l'affiche avec print, sans return. Que vaut total = f() + 1 ?" options={["Le total plus 1", "1", "Une erreur, car f() renvoie None", "Le total"]} correct={2} explanation="Sans return, la fonction renvoie None, et None + 1 est une TypeError. Afficher n'est pas renvoyer." />
+  <Quiz id="f1m6-q-10" question="Pourquoi faire entrer dans une fonction tout ce dont elle a besoin par ses paramètres ?" options={["Parce que les variables globales sont interdites", "Pour qu'elle ne dépende pas d'un contexte invisible et se teste facilement", "Pour qu'elle s'exécute plus vite", "Parce que Python l'exige"]} correct={1} explanation="Une fonction qui reçoit tout par ses paramètres et rend tout par return donne toujours le même résultat pour les mêmes arguments : elle se teste en une ligne." />
+  <Quiz id="f1m6-q-11" question="Où se trouve le type de l'erreur dans une trace d'appels Python ?" options={["Sur la première ligne", "Au milieu", "Il n'est pas affiché", "Sur la dernière ligne"]} correct={3} explanation="On lit une trace de bas en haut : la dernière ligne donne le type et le message, juste au-dessus la ligne fautive." />
+  <Quiz id="f1m6-q-12" question="Quelle famille d'erreurs ne produit aucun message ?" options={["Les erreurs de logique", "Les erreurs de syntaxe", "Les erreurs d'exécution", "Les erreurs d'indentation"]} correct={0} explanation="Le programme tourne et donne un résultat faux. Seuls des tests avec des résultats attendus la révèlent." />
+  <Quiz id="f1m6-q-13" question="Combien d'étapes au pire pour une recherche dichotomique dans une liste triée d'un milliard d'éléments ?" options={["Environ 1 000", "Environ 30", "Environ 500 millions", "Un milliard"]} correct={1} explanation="On divise la zone par deux à chaque étape : 2 puissance 30 vaut environ un milliard." />
+  <Quiz id="f1m6-q-14" question="Pourquoi les mots de passe sont-ils stockés avec une fonction volontairement lente ?" options={["Pour économiser de la mémoire", "Pour ralentir les utilisateurs", "Parce qu'aucune fonction rapide n'existe", "Pour rendre très coûteux les milliards d'essais d'un attaquant qui aurait volé la base"]} correct={3} explanation="Un dixième de seconde est invisible pour un utilisateur, mais multiplié par des milliards d'essais, il rend l'attaque impraticable." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées avant le projet : il les mobilise toutes.
+
+## projet
+
+### l'énoncé
+
+Tu vas programmer deux jeux. Le **nombre mystère** : l'ordinateur choisit un nombre entre 1 et n, le joueur propose des nombres, et l'ordinateur répond « plus grand », « plus petit » ou « gagné ». Puis le **pendu** : un mot est caché, le joueur propose des lettres, les lettres trouvées se dévoilent, et chaque lettre absente du mot rapproche le joueur de la défaite.
+
+Comme dans un vrai projet, tu ne vas pas écrire un gros programme d'un seul bloc. Chaque jeu est découpé en **fonctions pures**, qui reçoivent tout par leurs paramètres et renvoient leur résultat, et chaque fonction est vérifiée par des **tests automatiques** avant qu'on passe à la suivante. C'est la méthode des leçons 1 et 5 du module : décomposer, puis tester chaque morceau.
+
+<Diagram caption="Le découpage du projet">
+flowchart TD
+  A["Nombre mystère"] --> B["indice : compare une proposition au secret"]
+  B --> C["partie : rejoue une liste de propositions"]
+  B --> D["joueur_auto : gagne par dichotomie"]
+  E["Pendu"] --> F["masquer : montre les lettres trouvées"]
+  F --> G["etat : gagné, perdu ou en cours"]
+</Diagram>
+
+Une remarque sur les entrées. Un vrai jeu lit les propositions au clavier avec `input`. Les tests automatiques, eux, ne peuvent pas taper au clavier : c'est pourquoi les fonctions reçoivent les propositions en **paramètre**, sous forme de liste. Séparer la **logique** du jeu de la **saisie** est une excellente habitude : c'est ce qui rend la logique testable. À la fin, tu verras comment brancher un clavier sur ces fonctions.
+
+Pour chaque étape : écris d'abord le pseudo-code, trace-le sur un exemple, puis code, et lance les tests. Quand un test échoue, lis son libellé : il te dit quel cas tu as oublié.
+
+### étape 1 : l'indice
+
+`solution(secret, proposition)` renvoie `'plus grand'` si le secret est plus grand que la proposition, `'plus petit'` s'il est plus petit, et `'gagné'` s'ils sont égaux. Attention au sens : c'est le **secret** qui est plus grand ou plus petit.
+
+<PythonChallenge id="f1m6-projet-indice" title="Étape 1 : l'indice" description="Renvoie 'plus grand', 'plus petit' ou 'gagné' en comparant le secret à la proposition." starterCode="def solution(secret, proposition):
+    return 'gagné'" tests={[{ input: "solution(42, 50)", expected: "plus petit" }, { input: "solution(42, 10)", expected: "plus grand" }, { input: "solution(42, 42)", expected: "gagné" }, { input: "solution(1, 2)", expected: "plus petit", label: "Borne basse" }, { input: "solution(100, 99)", expected: "plus grand", label: "Borne haute" }]} />
+
+### étape 2 : rejouer une partie
+
+`solution(secret, propositions)` rejoue une partie à partir de la liste des propositions du joueur, dans l'ordre, et renvoie le **nombre d'essais** qu'il a fallu pour gagner, ou `-1` si aucune proposition n'est la bonne. Les propositions faites après la victoire ne comptent pas. Le code de départ contient une fonction `indice` : réutilise-la au lieu de réécrire la comparaison.
+
+<PythonChallenge id="f1m6-projet-partie" title="Étape 2 : rejouer une partie" description="Renvoie le numéro de l'essai gagnant (en comptant à partir de 1), ou -1 si le joueur ne trouve jamais. Utilise la fonction indice." starterCode="def indice(secret, proposition):
+    if proposition < secret:
+        return 'plus grand'
+    if proposition > secret:
+        return 'plus petit'
+    return 'gagné'
+
+def solution(secret, propositions):
+    essais = 0
+    # pour chaque proposition : compte l'essai, et arrête-toi si indice renvoie gagné
+    return -1" tests={[{ input: "solution(42, [50, 25, 42])", expected: "3" }, { input: "solution(42, [42])", expected: "1", label: "Du premier coup" }, { input: "solution(42, [10, 20, 30])", expected: "-1", label: "Jamais trouvé" }, { input: "solution(42, [])", expected: "-1", label: "Aucune proposition" }, { input: "solution(7, [7, 7, 7])", expected: "1", label: "Les essais après la victoire ne comptent pas" }]} />
+
+### étape 3 : un joueur qui gagne toujours
+
+Maintenant, fais jouer l'ordinateur contre lui-même. `solution(secret, n)` simule un joueur qui cherche un secret entre 1 et n par **dichotomie** : il propose le milieu de l'intervalle encore possible, calculé avec `(bas + haut) // 2`, réduit l'intervalle selon l'indice, et recommence. La fonction renvoie le nombre d'essais. D'après la leçon sur l'efficacité, il ne devrait jamais dépasser dix essais entre 1 et 1 000 : le dernier test le vérifie sur les mille secrets possibles.
+
+<PythonChallenge id="f1m6-projet-auto" title="Étape 3 : le joueur automatique" description="Renvoie le nombre d'essais d'un joueur qui cherche le secret entre 1 et n en proposant toujours le milieu de l'intervalle restant." starterCode="def solution(secret, n):
+    bas = 1
+    haut = n
+    essais = 0
+    # tant que l'intervalle n'est pas vide : propose le milieu, compte l'essai,
+    # renvoie essais si c'est gagné, sinon garde la bonne moitié
+    return essais" tests={[{ input: "solution(50, 100)", expected: "1", label: "Le milieu du premier coup" }, { input: "solution(42, 100)", expected: "7" }, { input: "solution(1, 100)", expected: "6", label: "Borne basse" }, { input: "solution(100, 100)", expected: "7", label: "Borne haute" }, { input: "solution(1, 1)", expected: "1", label: "Un seul nombre possible" }, { input: "max(solution(s, 1000) for s in range(1, 1001))", expected: "10", label: "Jamais plus de 10 essais entre 1 et 1 000" }]} />
+
+Si le dernier test tourne sans fin, ta boucle ne progresse pas : vérifie que `bas` devient `milieu + 1` et `haut` devient `milieu - 1`, et non `milieu`.
+
+### étape 4 : masquer le mot du pendu
+
+Passons au pendu. `solution(mot, lettres)` renvoie le mot où chaque lettre **pas encore proposée** est remplacée par un tiret bas. `lettres` est un texte qui contient toutes les lettres proposées jusqu'ici. Le mot et les lettres sont en minuscules, sans accents.
+
+<PythonChallenge id="f1m6-projet-masquer" title="Étape 4 : masquer le mot" description="Renvoie le mot avec un tiret bas à la place de chaque lettre qui n'est pas dans lettres." starterCode="def solution(mot, lettres):
+    affichage = ''
+    # pour chaque lettre du mot : ajoute-la si elle a été proposée, sinon ajoute _
+    return affichage" tests={[{ input: "solution('python', '')", expected: "______", label: "Rien proposé" }, { input: "solution('python', 'pyt')", expected: "pyt___" }, { input: "solution('banane', 'an')", expected: "_anan_", label: "Lettres répétées" }, { input: "solution('python', 'zxw')", expected: "______", label: "Que des erreurs" }, { input: "solution('python', 'nohtyp')", expected: "python", label: "Tout trouvé, dans le désordre" }]} />
+
+### étape 5 : l'état de la partie
+
+Dernière pièce. `solution(mot, lettres, max_erreurs)` renvoie l'état de la partie : `'gagné'` si toutes les lettres du mot ont été proposées, `'perdu'` si le nombre d'**erreurs** a atteint `max_erreurs`, et `'en cours'` sinon. Une erreur, c'est une lettre proposée qui n'est pas dans le mot ; une même mauvaise lettre proposée deux fois ne compte qu'une fois. Découpe : une petite fonction qui compte les erreurs distinctes, une autre qui dit si le mot est trouvé.
+
+<PythonChallenge id="f1m6-projet-etat" title="Étape 5 : gagné, perdu ou en cours" description="Renvoie 'gagné' si toutes les lettres du mot sont dans lettres, 'perdu' si le nombre de mauvaises lettres distinctes atteint max_erreurs, 'en cours' sinon." starterCode="def erreurs(mot, lettres):
+    # compte les lettres distinctes de lettres qui ne sont pas dans mot
+    return 0
+
+def trouve(mot, lettres):
+    # True si chaque lettre du mot est dans lettres
+    return False
+
+def solution(mot, lettres, max_erreurs):
+    return 'en cours'" tests={[{ input: "solution('chat', 'tahc', 6)", expected: "gagné" }, { input: "solution('chat', 'xyz', 3)", expected: "perdu" }, { input: "solution('chat', 'cxz', 6)", expected: "en cours" }, { input: "solution('chat', 'xxxx', 2)", expected: "en cours", label: "Une erreur répétée ne compte qu'une fois" }, { input: "solution('chat', '', 6)", expected: "en cours", label: "Début de partie" }, { input: "solution('chat', 'cxyh', 2)", expected: "perdu", label: "Pile le maximum" }]} />
+
+### brancher le clavier
+
+Tes fonctions sont testées : il ne reste qu'à les relier à un vrai joueur. Avec Python installé sur ta machine, ou dans la machine virtuelle Debian du module 3, enregistre ceci dans un fichier `mystere.py` à côté de tes fonctions, puis lance `python3 mystere.py` dans un terminal :
+
+```python
+import random
+
+secret = random.randint(1, 100)
+essais = 0
+while True:
+    texte = input("Ta proposition entre 1 et 100 : ")
+    if not texte.isdigit():
+        print("Il faut un nombre entier positif.")
+        continue
+    essais += 1
+    reponse = indice(secret, int(texte))
+    print(reponse)
+    if reponse == "gagné":
+        print("Trouvé en", essais, "essais")
+        break
+```
+
+Remarque la vérification de la saisie avant la conversion : c'est la leçon sur les types. Sans elle, le premier joueur qui tape `abc` fait planter le jeu avec une `ValueError`. La logique, déjà testée, n'a pas eu à changer : seule la saisie est nouvelle.
+
+### les critères de réussite
+
+| Critère | Attendu |
+| --- | --- |
+| Tests | Les cinq étapes passent tous leurs tests |
+| Découpage | Chaque fonction fait une seule chose ; `partie` réutilise `indice`, `etat` s'appuie sur deux petites fonctions |
+| Boucles | Aucune boucle infinie ; les bornes de la dichotomie sont justes |
+| Lisibilité | Des noms de variables parlants, pas de code copié-collé |
+| Robustesse | Les cas limites passent : listes vides, bornes, doublons |
+| Bonus | Le jeu au clavier fonctionne et refuse une saisie non numérique sans planter |
+
+### la correction commentée
+
+Ne lis cette partie qu'après avoir essayé : c'est en cherchant qu'on apprend. Voici les deux étapes les plus délicates.
+
+```python
+def partie(secret, propositions):
+    essais = 0
+    for proposition in propositions:
+        essais += 1
+        if indice(secret, proposition) == "gagné":
+            return essais          # on sort dès la victoire
+    return -1                      # la boucle s'est terminée sans victoire
+```
+
+Le `return` à l'intérieur de la boucle règle d'un coup le cas des propositions après la victoire : la fonction s'arrête au premier « gagné ». Le `return -1` après la boucle ne s'exécute que si aucune proposition n'a gagné, liste vide comprise.
+
+```python
+def joueur_auto(secret, n):
+    bas, haut = 1, n
+    essais = 0
+    while bas <= haut:
+        milieu = (bas + haut) // 2
+        essais += 1
+        reponse = indice(secret, milieu)
+        if reponse == "gagné":
+            return essais
+        elif reponse == "plus grand":
+            bas = milieu + 1       # le secret est au-dessus du milieu
+        else:
+            haut = milieu - 1      # le secret est en dessous
+    return essais
+```
+
+C'est la recherche dichotomique de la leçon 7, où la comparaison avec la liste est remplacée par l'indice du jeu. L'intervalle rétrécit d'au moins un élément à chaque tour, donc la boucle termine ; et il est divisé par deux, donc dix essais suffisent pour mille nombres.
+
+Pour `etat`, l'ordre des tests compte. Un mot trouvé est gagné même si le joueur a fait des erreurs en chemin ; on teste donc `trouve` avant `erreurs`. Et pour compter les erreurs distinctes, on parcourt les lettres proposées en ignorant celles déjà comptées, par exemple en les ajoutant à un texte `deja_vues` : c'est le motif du filtre, avec un test d'appartenance.
+
+### pour aller plus loin
+
+Améliore le jeu, une fonction à la fois, avec ses tests : limiter le nombre d'essais du nombre mystère, afficher le dessin du pendu selon le nombre d'erreurs, choisir le mot au hasard dans une liste, refuser une lettre déjà proposée. Puis pose-toi une question d'efficacité : si le pendu devait deviner un mot parmi les trois cent mille mots d'un dictionnaire, quelle lettre proposer en premier pour éliminer le plus de mots possible ? C'est, en miniature, le raisonnement des outils qui cassent les mots de passe en essayant d'abord les plus probables.
+
+## à retenir
+
+- Un projet se construit **pièce par pièce** : une fonction, ses tests, puis la suivante.
+- Des **fonctions pures**, sans saisie ni affichage, se testent automatiquement ; la **saisie** se branche à la fin.
+- Réutiliser une fonction testée (`indice` dans `partie` et `joueur_auto`) évite de réécrire, et de réintroduire des bugs.
+- La **dichotomie** garantit au plus dix essais pour mille nombres, parce que l'intervalle est divisé par deux à chaque tour.
+- Un test qui échoue n'est pas un échec : son libellé indique le **cas oublié**.
+- Toute saisie est **vérifiée** avant d'être convertie.

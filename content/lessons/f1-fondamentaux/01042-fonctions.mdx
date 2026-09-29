@@ -1,0 +1,245 @@
+---
+refCode: CL-LSN-01042-V01
+slug: fondamentaux-fonctions
+title: "Les fonctions : découper un problème"
+description: "Donner un nom à un morceau de programme pour le réutiliser : définir une fonction avec def, les paramètres et les arguments, la différence essentielle entre renvoyer et afficher, les valeurs par défaut, la portée des variables, et l'art de découper un problème en petites fonctions faciles à tester. Avec un exercice : un validateur d'adresses IPv4 construit pièce par pièce."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01041-V01"]
+---
+
+Tu utilises des fonctions depuis le début du module : `print`, `len`, `int`, `range`, `round`. Chacune cache quelques lignes, parfois des centaines, derrière un nom simple : tu écris `len(liste)` sans te demander comment Python compte les éléments. C'est tout l'intérêt d'une fonction : **nommer** un traitement pour s'en servir sans y repenser. Dans cette leçon, tu vas écrire les tiennes. C'est l'outil qui permet de passer de programmes de dix lignes à des programmes de dix mille, en appliquant la méthode de la première leçon du module : découper un gros problème en petits problèmes, et donner à chacun sa fonction.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- définir une fonction avec `def` et l'appeler ;
+- distinguer paramètres et arguments ;
+- renvoyer un résultat avec `return`, et ne pas le confondre avec un affichage ;
+- donner des valeurs par défaut aux paramètres ;
+- expliquer la portée d'une variable : où elle existe, et où elle n'existe pas ;
+- découper un problème en petites fonctions, et tester chacune séparément.
+
+## pourquoi ça compte
+
+Un programme sans fonctions est un long bloc où tout dépend de tout : pour corriger une ligne, il faut tout relire, et le même calcul copié-collé à cinq endroits doit être corrigé cinq fois, en espérant n'en oublier aucun. C'est d'ailleurs ainsi que naissent beaucoup de failles : une vérification d'entrée corrigée à un endroit, mais pas dans la copie d'à côté. Une fonction, c'est **un seul endroit** pour une règle. Si la validation des adresses IP ou le contrôle des droits est écrit une fois, dans une fonction appelée partout, une correction s'applique partout. Les bonnes pratiques de développement sécurisé le recommandent explicitement : centraliser les contrôles plutôt que les disperser.
+
+## définir et appeler
+
+Une fonction se **définit** avec le mot-clé `def`, son nom, ses **paramètres** entre parenthèses, et un deux-points. Son corps est indenté, comme celui d'un `if` ou d'une boucle :
+
+```python
+def aire_rectangle(largeur, hauteur):
+    return largeur * hauteur
+```
+
+Définir une fonction ne l'exécute pas : cela crée seulement le nom `aire_rectangle`, prêt à servir. Pour l'exécuter, on l'**appelle** en lui passant des valeurs :
+
+```python
+a = aire_rectangle(4, 3)
+print(a)                     # 12
+print(aire_rectangle(2, 10)) # 20
+```
+
+À l'appel, Python associe chaque valeur à un paramètre, dans l'ordre : `largeur` reçoit 4, `hauteur` reçoit 3. Les valeurs passées s'appellent des **arguments** ; les noms qui les reçoivent, des **paramètres**. Puis le corps s'exécute, et `return` renvoie le résultat à l'endroit de l'appel, où il prend la place de l'appel : `aire_rectangle(4, 3)` « devient » 12.
+
+On peut aussi nommer les arguments à l'appel, ce qui rend le code plus lisible et l'ordre indifférent : `aire_rectangle(hauteur=3, largeur=4)`.
+
+<Diagram caption="Un appel de fonction : les arguments partent, le résultat revient">
+sequenceDiagram
+  participant P as Programme principal
+  participant F as moyenne(notes)
+  participant S as somme(valeurs)
+  P->>F: appel avec notes = 12, 15, 9
+  F->>S: appel avec valeurs = 12, 15, 9
+  S-->>F: renvoie 36
+  F-->>P: renvoie 36 / 3 = 12.0
+  Note over P: la suite du programme reprend avec 12.0
+</Diagram>
+
+Le schéma montre un point important : une fonction peut en appeler une autre. Le programme principal attend que `moyenne` lui réponde ; `moyenne` attend elle-même `somme`. Chaque appel est posé sur les précédents, comme une assiette sur une pile, puis retiré au retour. Cette **pile d'appels** est rangée en mémoire vive, et tu la reverras dans la prochaine leçon : c'est elle que Python affiche quand une erreur survient.
+
+## renvoyer n'est pas afficher
+
+C'est **la** confusion des débutants, et elle mérite une section entière. Compare ces deux fonctions :
+
+```python
+def double_affiche(n):
+    print(n * 2)
+
+def double_renvoie(n):
+    return n * 2
+```
+
+Appelées seules, elles semblent identiques : `double_affiche(5)` montre 10 à l'écran, et dans l'éditeur, `print(double_renvoie(5))` aussi. Mais essaie de **réutiliser** le résultat :
+
+```python
+x = double_affiche(5) + 1    # affiche 10, puis TypeError
+y = double_renvoie(5) + 1    # y vaut 11
+```
+
+`double_affiche` montre 10 à l'humain qui regarde l'écran, mais **ne rend rien** au programme. Une fonction sans `return` renvoie `None`, et `None + 1` est une erreur. `print` s'adresse à l'utilisateur ; `return` s'adresse au code qui a appelé la fonction. Une fonction de calcul doit **renvoyer** son résultat, et laisser l'appelant décider s'il veut l'afficher, l'enregistrer ou s'en servir pour un autre calcul. C'est aussi ce que vérifient les exercices : les tests comparent ce que ta fonction **renvoie**, pas ce qu'elle affiche.
+
+Deux précisions sur `return`. Il **termine** immédiatement la fonction : les lignes qui suivent ne sont pas exécutées. On s'en sert pour sortir tôt quand un cas est réglé, comme dans le contrôle d'accès de la leçon sur les conditions. Et une fonction peut renvoyer plusieurs valeurs à la fois, sous forme de couple : `return plus_petit, position`, que tu as utilisé dans le premier exercice du module.
+
+## les valeurs par défaut
+
+Un paramètre peut avoir une **valeur par défaut**, utilisée quand l'appelant ne le précise pas :
+
+```python
+def verrouiller(tentatives, seuil=3):
+    return tentatives >= seuil
+
+verrouiller(4)            # True : le seuil vaut 3
+verrouiller(4, seuil=5)   # False : seuil choisi par l'appelant
+```
+
+C'est très courant : `print` a ainsi un paramètre `sep`, le séparateur, qui vaut une espace par défaut, et `round` a un nombre de décimales qui vaut 0 si on ne le donne pas. Les paramètres avec valeur par défaut se placent après les autres.
+
+## la portée des variables
+
+Les paramètres et les variables créées **dans** une fonction sont **locaux** : ils n'existent que pendant l'exécution de la fonction, et disparaissent au retour.
+
+```python
+def taxer(prix):
+    taux = 0.2
+    return prix * (1 + taux)
+
+print(taxer(100))   # 120.0
+print(taux)         # NameError : taux n'existe pas ici
+```
+
+C'est une protection, pas une contrainte. Chaque fonction a son propre espace de noms : une variable `total` dans une fonction ne risque pas d'écraser la variable `total` d'une autre. On peut ainsi écrire et comprendre une fonction **sans connaître le reste** du programme. À l'inverse, une fonction peut **lire** une variable définie en dehors d'elle, une variable globale, mais c'est une mauvaise habitude : la fonction dépend alors d'un contexte invisible, et son résultat peut changer sans que ses arguments changent. La règle saine : **tout ce dont une fonction a besoin entre par ses paramètres, et tout ce qu'elle produit sort par `return`**. Une telle fonction est dite **pure**, et elle se teste en une ligne.
+
+## découper un problème
+
+Revenons au problème de la première leçon : signaler les utilisateurs qui ont échoué plus de trois fois. Découpé en fonctions, il devient :
+
+```python
+def est_echec(ligne):
+    return ligne.startswith("ECHEC")
+
+def utilisateur(ligne):
+    # "ECHEC connexion utilisateur=bob ip=..." donne "bob"
+    for morceau in ligne.split():
+        if morceau.startswith("utilisateur="):
+            return morceau[len("utilisateur="):]
+    return None
+
+def suspects(lignes, seuil=3):
+    compte = {}
+    for ligne in lignes:
+        if est_echec(ligne):
+            nom = utilisateur(ligne)
+            compte[nom] = compte.get(nom, 0) + 1
+    return [nom for nom, n in compte.items() if n > seuil]
+```
+
+Chaque fonction fait **une seule chose**, porte un nom qui dit laquelle, et tient en quelques lignes. La dernière utilise un **dictionnaire**, une structure qui associe des clés à des valeurs, ici chaque nom à son nombre d'échecs ; tu le découvriras en détail dans le parcours Python. Ce qui compte ici, c'est la forme : le programme principal se lit comme le pseudo-code, et chaque brique peut être testée isolément :
+
+```python
+assert est_echec("ECHEC connexion utilisateur=bob")
+assert not est_echec("OK connexion utilisateur=bob")
+assert utilisateur("ECHEC connexion utilisateur=bob ip=10.0.0.1") == "bob"
+```
+
+`assert` vérifie qu'une condition est vraie et arrête le programme sinon. C'est la forme la plus simple d'un **test automatique**, le même principe que les tests des exercices de la plateforme. Quand une fonction est courte et pure, on peut la tester sur tous ses cas limites en quelques lignes, et la réutiliser en confiance.
+
+Comment savoir où couper ? Quelques signaux : un morceau de code qu'on a envie de copier-coller ; un commentaire qui annonce « maintenant, on calcule ceci », qui est en réalité le nom d'une fonction ; une boucle dans une boucle dans une condition ; une fonction qu'on ne peut plus lire d'un seul coup d'œil. Une bonne fonction tient souvent à l'écran, et se décrit en une phrase sans « et ».
+
+## documenter
+
+Une fonction réutilisée doit dire ce qu'elle attend et ce qu'elle renvoie. En Python, on place pour cela une **docstring**, une chaîne entre triples guillemets, juste sous la ligne `def` :
+
+```python
+def verrouiller(tentatives, seuil=3):
+    """Renvoie True si le nombre de tentatives atteint le seuil de verrouillage."""
+    return tentatives >= seuil
+```
+
+Les éditeurs de code l'affichent quand on survole un appel, et `help(verrouiller)` l'imprime. C'est le même mécanisme qui fournit l'aide intégrée de Python, comme `--help` pour les commandes du terminal au module 5.
+
+## les fonctions des autres
+
+Tu n'écris pas toutes les fonctions toi-même. Python est livré avec une **bibliothèque standard** de plusieurs centaines de modules, chacun rempli de fonctions testées par des milliers de développeurs : `math` pour les calculs, `random` pour le hasard, `hashlib` pour les empreintes que tu as vues au module 3, `ipaddress` pour manipuler les adresses réseau. On les rend disponibles avec `import`, puis on les appelle comme les tiennes : `import math` puis `math.sqrt(16)`.
+
+Faut-il alors écrire soi-même ce qui existe déjà ? Pour apprendre, oui : c'est en écrivant un validateur d'adresses qu'on comprend ce qu'il doit vérifier. Dans un vrai projet, en revanche, une fonction éprouvée de la bibliothèque standard est presque toujours plus sûre que la tienne, surtout en sécurité, où les cas limites sont nombreux et subtils. Le réflexe professionnel : chercher d'abord si la fonction existe, lire sa documentation, puis l'utiliser.
+
+## à toi de jouer
+
+Dans l'éditeur, observe la différence entre renvoyer et afficher, puis la portée. Retire ensuite le `return` de `double_renvoie` et relance : l'erreur que tu obtiens est celle que tu rencontreras le plus souvent en début de carrière.
+
+<CodePlayground language="python" starterCode={`def double_affiche(n):
+    print('  (dans double_affiche :', n * 2, ')')
+
+def double_renvoie(n):
+    return n * 2
+
+r1 = double_affiche(5)
+r2 = double_renvoie(5)
+print('double_affiche a renvoyé :', r1)
+print('double_renvoie a renvoyé :', r2)
+print('r2 + 1 =', r2 + 1)
+
+def taxer(prix, taux=0.2):
+    montant = prix * (1 + taux)
+    return round(montant, 2)
+
+print(taxer(100))
+print(taxer(100, taux=0.055))
+print('montant existe-t-il ici ?', 'montant' in globals())`} />
+
+Maintenant, construis un vrai outil par morceaux. Une adresse IPv4, tu l'as vu au module 4, s'écrit en **quatre nombres de 0 à 255**, séparés par des points : `192.168.1.10`. Écris une fonction qui dit si un texte est une adresse IPv4 valide. Le code de départ découpe le problème en deux : une fonction `octet_valide` pour un seul nombre, et `solution` qui découpe le texte avec `texte.split('.')` et vérifie les morceaux. Deux méthodes utiles : `morceau.isdigit()` dit si un texte n'est fait que de chiffres (le texte vide donne `False`), et `int(morceau)` le convertit.
+
+<PythonChallenge id="f1-fonctions-ipv4" title="Un validateur d'adresses IPv4" description="Renvoie True si le texte est une adresse IPv4 : exactement quatre morceaux séparés par des points, chacun fait uniquement de chiffres et compris entre 0 et 255." starterCode="def octet_valide(morceau):
+    # que des chiffres, et une valeur entre 0 et 255
+    return False
+
+def solution(texte):
+    morceaux = texte.split('.')
+    # il faut exactement 4 morceaux, tous valides
+    return False" tests={[{ input: "solution('192.168.1.10')", expected: "True" }, { input: "solution('0.0.0.0')", expected: "True" }, { input: "solution('255.255.255.255')", expected: "True" }, { input: "solution('256.1.1.1')", expected: "False", label: "Un octet trop grand" }, { input: "solution('10.0.1')", expected: "False", label: "Trois morceaux" }, { input: "solution('1.2.3.4.5')", expected: "False", label: "Cinq morceaux" }, { input: "solution('10.0.0.a')", expected: "False", label: "Une lettre" }, { input: "solution('10..0.1')", expected: "False", label: "Un morceau vide" }]} />
+
+Remarque comme `octet_valide` rend `solution` presque triviale. Remarque aussi le cas `-1` : `'-1'.isdigit()` vaut `False`, donc un nombre négatif est refusé avant même la conversion. Une validation d'entrée efficace commence par le **format**, avant de s'intéresser aux **valeurs**.
+
+## les pièges
+
+- **Afficher au lieu de renvoyer.** Une fonction de calcul sans `return` renvoie `None`, et tout calcul fait ensuite avec son résultat échoue.
+- **Oublier les parenthèses à l'appel.** `total = somme` attache la fonction elle-même au nom `total`, sans l'exécuter. Il faut `somme(valeurs)`.
+- **Du code après `return`.** Il n'est jamais exécuté.
+- **Compter sur une variable globale.** La fonction marche tant que le contexte ne change pas, puis casse sans raison apparente. Passe ce dont elle a besoin en paramètre.
+- **Chercher une variable locale à l'extérieur.** Elle a disparu au retour de la fonction : `NameError`.
+- **Des fonctions qui font tout.** Une fonction de quatre-vingts lignes qui lit, calcule, affiche et enregistre ne se teste pas. Une chose par fonction.
+- **Des noms vagues.** `traiter`, `faire`, `fonction2` ne disent rien ; `est_echec`, `extraire_utilisateur` disent tout.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/controlflow.html#defining-functions" description="def, return, valeurs par défaut et arguments nommés, dans le tutoriel officiel">Tutoriel Python : définir des fonctions</ExternalLink>
+
+<ExternalLink href="https://peps.python.org/pep-0257/" description="Les conventions d'écriture des docstrings, en anglais">PEP 257 : les docstrings</ExternalLink>
+
+<ExternalLink href="https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html" description="Pourquoi et comment valider les entrées, d'abord le format puis les valeurs, en anglais">OWASP : valider les entrées</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Dans def aire(largeur, hauteur) appelée par aire(4, 3), que sont 4 et 3 ?" options={["Des paramètres", "Des arguments", "Des variables globales", "Des docstrings"]} correct={1} explanation="Les valeurs passées à l'appel sont des arguments ; les noms qui les reçoivent, largeur et hauteur, sont des paramètres." />
+  <Quiz id="q-2" question="Que renvoie une fonction qui n'a pas d'instruction return ?" options={["0", "La dernière valeur calculée", "None", "Une erreur"]} correct={2} explanation="Sans return, une fonction renvoie None. Utiliser ce résultat dans un calcul provoque une erreur." />
+  <Quiz id="q-3" question="Quelle est la différence entre print et return dans une fonction ?" options={["Aucune", "print montre une valeur à l'utilisateur, return la rend au code appelant", "return affiche en couleur", "print est plus rapide"]} correct={1} explanation="print s'adresse à l'humain devant l'écran ; return rend la valeur au programme, qui peut la réutiliser." />
+  <Quiz id="q-4" question="Avec def verrouiller(tentatives, seuil=3), que vaut verrouiller(2) ?" options={["True", "False", "Une erreur : seuil manque", "None"]} correct={1} explanation="seuil prend sa valeur par défaut, 3, et 2 >= 3 est faux." />
+  <Quiz id="q-5" question="Une variable créée dans une fonction est-elle utilisable après l'appel, dans le programme principal ?" options={["Non : elle est locale et disparaît au retour", "Oui, toujours", "Oui, si elle a été renvoyée", "Seulement si elle s'appelle comme la fonction"]} correct={0} explanation="Les variables locales n'existent que pendant l'exécution de la fonction. Pour récupérer une valeur, on la renvoie avec return." />
+  <Quiz id="q-6" question="Que se passe-t-il pour les lignes placées après un return exécuté ?" options={["Elles ne s'exécutent pas", "Elles s'exécutent après le retour", "Elles s'exécutent avant", "Elles provoquent une erreur"]} correct={0} explanation="return termine immédiatement la fonction." />
+  <Quiz id="q-7" question="Pourquoi centraliser une vérification de sécurité dans une seule fonction ?" options={["Parce que c'est plus rapide à l'exécution", "Parce qu'une correction s'applique alors partout où elle est appelée", "Parce que Python l'exige", "Parce que les fonctions sont chiffrées"]} correct={1} explanation="Une règle écrite à un seul endroit se corrige une seule fois. Les copies dispersées finissent par diverger, et l'une d'elles reste vulnérable." />
+</QuizGroup>
+
+## à retenir
+
+- `def nom(parametres):` **définit** une fonction ; `nom(arguments)` l'**appelle**.
+- `return` **renvoie** une valeur au code appelant et termine la fonction. Sans `return`, c'est `None`. **Renvoyer n'est pas afficher.**
+- Des **valeurs par défaut** rendent des paramètres facultatifs ; des **arguments nommés** rendent l'appel lisible.
+- Les variables d'une fonction sont **locales**. Tout entre par les **paramètres**, tout sort par **`return`**.
+- **Découper** : une fonction fait une chose, porte un nom qui la décrit, tient à l'écran, et se **teste** isolément avec `assert`.
+- Une règle de sécurité écrite **une seule fois** se corrige une seule fois.
