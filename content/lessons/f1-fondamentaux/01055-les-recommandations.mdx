@@ -1,0 +1,159 @@
+---
+refCode: CL-LSN-01055-V01
+slug: fondamentaux-les-recommandations
+title: "Projet final : les recommandations de sécurité"
+description: "Quatrième étape du projet : transformer les constats de l'inventaire et du diagnostic en recommandations que l'association peut suivre. La structure d'une recommandation (constat, risque, mesure, effort), l'évaluation du risque par la vraisemblance et l'impact, la priorisation, les solutions sans budget, et la rédaction pour des non-spécialistes. Avec la liste complète des recommandations des Jardins de la Butte, et un outil de priorisation à programmer."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 300
+prerequisites: ["CL-LSN-01054-V01"]
+---
+
+Le portable a de nouveau Internet, l'inventaire est fait, et ton journal de bord s'est rempli de constats inquiétants : un système qui ne reçoit plus de correctifs, un document de mots de passe, une clé Wi-Fi affichée au mur, aucune sauvegarde digne de ce nom. La tentation est grande de tout corriger d'un coup, ou de rendre une liste de vingt problèmes rédigée en jargon. Ni l'un ni l'autre n'aide l'association. Ce qu'elle attend de toi, c'est un **plan** : quoi faire, dans quel ordre, pourquoi, et comment, avec ses moyens de bénévoles sans budget. Cette leçon t'apprend à passer du constat à la recommandation, à hiérarchiser les risques, et à écrire pour être compris et suivi.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- rédiger une recommandation complète : constat, risque, mesure, effort ;
+- évaluer un risque par sa vraisemblance et son impact ;
+- classer des recommandations par priorité, en tenant compte de l'effort ;
+- proposer des mesures réalistes pour une structure sans budget ;
+- écrire pour des lecteurs qui ne sont pas des spécialistes.
+
+## pourquoi ça compte
+
+Un audit ne vaut que par ce qu'on en fait. Les équipes de sécurité le constatent sans cesse : des rapports épais, exacts, et jamais suivis, parce que trop longs, trop techniques, ou sans priorité claire. Savoir **prioriser** est la compétence qui distingue un technicien d'un conseiller. Et c'est une compétence exigée dans tous les métiers de la sécurité : un analyste priorise des alertes, un responsable de la sécurité priorise des projets, un auditeur priorise des écarts. Dans tous les cas, avec la même logique : on traite d'abord ce qui est à la fois probable et grave.
+
+## de constat à recommandation
+
+Une bonne recommandation a toujours quatre parties.
+
+- **Le constat** : ce que tu as observé, factuel et vérifiable. « Le portable du trésorier fonctionne sous Windows 10, qui ne reçoit plus de correctifs de sécurité depuis octobre 2025. »
+- **Le risque** : ce qui pourrait arriver, en termes concrets pour l'association. « Une faille découverte demain ne sera jamais corrigée ; un courriel piégé ou un site compromis pourrait suffire à prendre le contrôle du portable, qui contient la comptabilité et le fichier des adhérents. »
+- **La mesure** : ce qu'il faut faire, précisément. « Passer la comptabilité sur une machine à jour : un portable reconditionné sous Windows 11, ou le PC-ACCUEIL si le logiciel de comptabilité le permet. En attendant, ne plus utiliser le portable pour naviguer sur Internet, sauf pour la banque. »
+- **L'effort** : ce que cela coûte en temps, en argent et en compétences. « Environ 200 euros pour un reconditionné, une demi-journée de migration avec un bénévole. »
+
+Le constat vient de l'inventaire ; il doit pouvoir être vérifié par quelqu'un d'autre. Le risque justifie la mesure : sans lui, la recommandation ressemble à un caprice de technicien. La mesure doit être **actionnable** : « améliorer la sécurité » ne l'est pas, « activer la double authentification sur la messagerie de l'association » l'est. Et l'effort permet à l'association de décider en connaissance de cause.
+
+## évaluer le risque
+
+Pour comparer des risques très différents, on les évalue selon deux axes, notés par exemple de 1 à 4.
+
+La **vraisemblance** : quelle est la probabilité que cela arrive ? 1 : peu probable ; 2 : possible ; 3 : probable ; 4 : quasi certain, ou déjà en cours. Le module 7 aide à la noter : les attaques opportunistes, l'hameçonnage, les pannes de disque et les vols d'ordinateur portable sont fréquents ; une attaque ciblée contre une association de jardiniers ne l'est pas.
+
+L'**impact** : si cela arrive, quelle est la gravité ? 1 : négligeable ; 2 : gênant ; 3 : grave, perte de temps ou d'argent importante ; 4 : critique, perte définitive de données, fuite de données personnelles, arrêt de l'association.
+
+Le **niveau de risque** est le produit des deux, de 1 à 16. Ce calcul est simple, volontairement : il ne prétend pas mesurer le risque avec précision, il sert à **comparer** et à **discuter**. Les grandes méthodes d'analyse de risque, comme EBIOS Risk Manager publiée par l'ANSSI, reposent sur la même idée, avec beaucoup plus de finesse.
+
+<Diagram caption="Du constat à la priorité">
+flowchart LR
+  A["Constat de l'inventaire"] --> B["Risque : ce qui pourrait arriver"]
+  B --> C["Vraisemblance de 1 à 4"]
+  B --> D["Impact de 1 à 4"]
+  C --> E["Niveau = vraisemblance × impact"]
+  D --> E
+  E --> F["Priorité, puis effort pour départager"]
+</Diagram>
+
+Une fois le niveau calculé, on **départage par l'effort** : entre deux risques de même niveau, on commence par la mesure la plus simple. Ce sont les fameuses **victoires rapides** : une mesure qui prend dix minutes et supprime un risque grave passe avant un chantier d'un mois.
+
+## les constats des Jardins de la Butte
+
+Voici les constats de la mission, évalués. V est la vraisemblance, I l'impact, N le niveau.
+
+| Constat | V | I | N | Effort |
+|---|:-:|:-:|:-:|---|
+| Aucune sauvegarde fiable de la comptabilité et du fichier des adhérents | 3 | 4 | 12 | faible : un disque externe, une heure |
+| Portable du trésorier sous Windows 10, hors support | 3 | 4 | 12 | élevé : remplacement ou migration |
+| Logiciels obsolètes sur le portable : navigateur, lecteur PDF, suite bureautique | 3 | 3 | 9 | faible : mises à jour |
+| Disque du portable non chiffré, avec des données personnelles | 2 | 4 | 8 | faible : BitLocker est inclus dans l'édition Professionnel |
+| Document de mots de passe en clair sur le portable | 2 | 4 | 8 | faible : gestionnaire de mots de passe |
+| TeamViewer 13 installé, d'origine inconnue | 2 | 3 | 6 | faible : désinstallation |
+| Le trésorier travaille avec un compte administrateur | 2 | 3 | 6 | moyen : créer un compte standard |
+| Ancienne copie du fichier des adhérents qui traîne | 2 | 3 | 6 | faible : suppression après accord |
+| Mot de passe d'administration de la box resté celui d'usine | 2 | 3 | 6 | faible : le changer |
+| Clé Wi-Fi affichée au mur du local | 2 | 2 | 4 | faible : réseau invité pour les visiteurs |
+| Session bénévole sans mot de passe sur le PC-ACCUEIL | 2 | 2 | 4 | faible : un code de session |
+
+Deux remarques sur cette évaluation. D'abord, elle est **discutable**, et c'est normal : un autre intervenant noterait peut-être l'impact du compte administrateur à 4. L'important est de justifier chaque note, pour que la discussion porte sur des arguments. Ensuite, certaines mesures en **conditionnent** d'autres : on ne remplace pas le portable avant d'avoir sauvegardé ses données, et on ne supprime pas l'ancienne copie du fichier des adhérents avant d'être sûr que la nouvelle est sauvegardée. La sauvegarde passe donc en premier, même à niveau égal avec le remplacement.
+
+## des solutions sans budget
+
+L'association n'a presque pas de moyens. Heureusement, la plupart des mesures ne coûtent rien d'autre que du temps :
+
+- les **mises à jour**, la **désinstallation** de TeamViewer, le **changement** du mot de passe de la box, le **réseau invité** : gratuits ;
+- un **gestionnaire de mots de passe** libre et gratuit, comme KeePassXC, ou celui intégré au navigateur ;
+- la **double authentification** sur la messagerie : gratuite ;
+- le **chiffrement BitLocker**, inclus dans l'édition Professionnel de Windows déjà installée ;
+- un **compte standard** pour le travail quotidien du trésorier : gratuit ;
+- la **sauvegarde** : le seul achat, un disque externe, que la présidente a déjà proposé.
+
+Reste le remplacement du portable, le seul vrai coût. Des solutions existent pour les associations : ordinateurs reconditionnés à bas prix, dons d'entreprises qui renouvellent leur parc, ateliers solidaires de réemploi. Ta recommandation peut les citer, et proposer une mesure d'attente : réserver le portable à la comptabilité et à la banque, sans navigation ni messagerie, jusqu'à son remplacement.
+
+## écrire pour être suivi
+
+Le bureau de l'association lira ton dossier. Ses membres sont jardiniers, retraités, étudiants : pas informaticiens. Quelques règles :
+
+- **Commencer par l'essentiel** : une synthèse de quelques lignes, avec les trois priorités, avant le détail.
+- **Expliquer le risque en termes concrets** : « si le portable est volé, n'importe qui peut lire les adresses des soixante adhérents », plutôt que « absence de chiffrement du volume système ».
+- **Donner des mesures actionnables**, avec qui fait quoi : « le trésorier », « un bénévole volontaire », « la présidente, qui a les accès de la box ».
+- **Éviter le jargon**, ou l'expliquer en une phrase la première fois.
+- **Rester factuel et bienveillant** : personne n'est coupable d'avoir hérité d'une configuration bancale. Un rapport qui accuse n'est pas suivi.
+- **Séparer ce qui est fait de ce qui reste à faire** : le portable réparé est une réussite à mentionner, qui donne confiance dans le reste.
+
+## à toi de jouer
+
+Programme l'outil de priorisation. `solution(constats)` reçoit une liste de constats, chacun sous la forme `(titre, vraisemblance, impact, effort)`, l'effort allant de 1 (faible) à 3 (élevé), et renvoie la liste des **titres** dans l'ordre de traitement : niveau de risque décroissant, puis effort croissant à niveau égal, puis ordre alphabétique du titre pour départager les derniers ex æquo. La fonction `sorted` accepte une clé qui est un couple ou un triplet : `sorted(liste, key=lambda c: (a, b, c))` trie d'abord selon `a`, puis selon `b`, puis selon `c`. Pour un tri décroissant sur un nombre, on trie sur son opposé.
+
+<PythonChallenge id="f1-reco-priorites" title="L'ordre de traitement" description="Trie les constats par niveau (vraisemblance × impact) décroissant, puis effort croissant, puis titre alphabétique, et renvoie la liste des titres." starterCode="def solution(constats):
+    # chaque constat : (titre, vraisemblance, impact, effort)
+    ordre = sorted(constats, key=lambda c: (0,))
+    return [c[0] for c in ordre]" tests={[{ input: "solution([('cle wifi', 2, 2, 1), ('windows 10', 3, 4, 3), ('teamviewer', 2, 3, 1), ('sauvegarde', 3, 4, 1), ('chiffrement', 2, 4, 1)])", expected: "['sauvegarde', 'windows 10', 'chiffrement', 'teamviewer', 'cle wifi']" }, { input: "solution([('b', 2, 2, 2), ('a', 2, 2, 2), ('c', 1, 4, 1)])", expected: "['c', 'a', 'b']", label: "Même niveau : l'effort, puis le titre" }, { input: "solution([('x', 4, 1, 3), ('y', 1, 4, 1)])", expected: "['y', 'x']", label: "Même niveau, efforts différents" }, { input: "solution([])", expected: "[]", label: "Aucun constat" }]} />
+
+Deuxième outil : le **niveau de priorité** à afficher dans le rapport. `solution(vraisemblance, impact)` renvoie `'immédiate'` si le niveau atteint 9, `'court terme'` s'il atteint 4, et `'moyen terme'` sinon.
+
+<PythonChallenge id="f1-reco-niveau" title="Le niveau de priorité" description="Renvoie 'immédiate' si vraisemblance × impact vaut au moins 9, 'court terme' s'il vaut au moins 4, 'moyen terme' sinon." starterCode="def solution(vraisemblance, impact):
+    niveau = vraisemblance * impact
+    return 'moyen terme'" tests={[{ input: "solution(3, 4)", expected: "immédiate" }, { input: "solution(3, 3)", expected: "immédiate", label: "Pile 9" }, { input: "solution(2, 4)", expected: "court terme" }, { input: "solution(2, 2)", expected: "court terme", label: "Pile 4" }, { input: "solution(1, 3)", expected: "moyen terme" }, { input: "solution(1, 1)", expected: "moyen terme" }]} />
+
+Les bornes « au moins 9 » et « au moins 4 » rappellent la leçon sur les conditions : `>=` et non `>`, et les tests « pile 9 » et « pile 4 » sont là pour le vérifier. Avec ces deux fonctions, le tableau des constats devient une liste ordonnée, prête pour le rapport de la prochaine leçon.
+
+## les pièges
+
+- **Tout mettre en priorité haute.** Si tout est urgent, rien ne l'est ; l'association ne saura pas par où commencer.
+- **Oublier le risque.** Une mesure sans risque expliqué ressemble à une lubie et n'est pas suivie.
+- **Des mesures vagues.** « Renforcer la sécurité » n'est pas une mesure ; « activer BitLocker sur le portable » en est une.
+- **Ignorer l'effort et le budget.** Recommander un pare-feu professionnel à une association sans budget, c'est être sûr de ne pas être suivi.
+- **Ignorer les dépendances.** On sauvegarde avant de migrer ou de supprimer quoi que ce soit.
+- **Écrire pour des informaticiens.** Le lecteur est le bureau de l'association.
+- **Accuser.** Les constats décrivent des situations, pas des fautes.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/la-methode-ebios-risk-manager" description="La méthode d'analyse de risque de l'ANSSI, pour aller au-delà de la simple matrice">ANSSI : la méthode EBIOS Risk Manager</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/10-mesures-essentielles-assurer-securite-numerique" description="Les mesures prioritaires pour une petite structure, qui recoupent la liste de la mission">Cybermalveillance.gouv.fr : les 10 mesures essentielles</ExternalLink>
+
+<ExternalLink href="https://keepassxc.org/" description="Un gestionnaire de mots de passe libre et gratuit, qui fonctionne sans serveur, en anglais">KeePassXC</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelles sont les quatre parties d'une recommandation complète ?" options={["Titre, date, auteur, signature", "Constat, risque, mesure, effort", "Problème, solution, prix, délai", "Machine, logiciel, version, correctif"]} correct={1} explanation="Le constat est vérifiable, le risque justifie, la mesure est actionnable, l'effort permet de décider." />
+  <Quiz id="q-2" question="Comment calcule-t-on le niveau de risque dans cette méthode ?" options={["Vraisemblance + impact", "Impact moins effort", "Nombre de machines touchées", "Vraisemblance × impact"]} correct={3} explanation="Le produit, de 1 à 16, sert à comparer et à discuter les risques entre eux." />
+  <Quiz id="q-3" question="Deux risques ont le même niveau. Lequel traiter en premier ?" options={["Le plus ancien", "Celui qui touche le PC fixe", "Au hasard", "Celui dont la mesure demande le moins d'effort"]} correct={3} explanation="Les victoires rapides : une mesure simple qui réduit un risque important passe avant un long chantier." />
+  <Quiz id="q-4" question="Pourquoi la sauvegarde passe-t-elle avant le remplacement du portable, à niveau égal ?" options={["Parce qu'elle est moins chère", "Parce que le portable est trop vieux", "Parce qu'on ne migre ni ne supprime rien avant d'avoir sauvegardé les données", "Ce n'est pas le cas"]} correct={2} explanation="Les dépendances comptent : une migration sans sauvegarde préalable peut faire perdre la comptabilité." />
+  <Quiz id="q-5" question="Laquelle de ces mesures est actionnable ?" options={["Activer la double authentification sur la messagerie de l'association", "Améliorer la sécurité du portable", "Être plus prudent", "Renforcer la cybersécurité"]} correct={0} explanation="Une mesure actionnable dit précisément quoi faire, sur quoi : on peut la réaliser et vérifier qu'elle est faite." />
+  <Quiz id="q-6" question="Comment formuler le risque d'un disque non chiffré pour le bureau de l'association ?" options={["Si le portable est volé, n'importe qui peut lire les adresses des adhérents", "Absence de chiffrement du volume système", "BitLocker off", "Non-conformité au chiffrement AES"]} correct={0} explanation="Le risque s'exprime en conséquences concrètes, compréhensibles par des non-spécialistes." />
+  <Quiz id="q-7" question="Quelle mesure demande un vrai budget dans la liste de la mission ?" options={["Remplacer le portable sous Windows 10", "Désinstaller TeamViewer", "Changer le mot de passe de la box", "Activer BitLocker"]} correct={0} explanation="Presque toutes les mesures sont gratuites ; le remplacement du portable est le seul vrai coût, avec des solutions de reconditionnement ou de don." />
+</QuizGroup>
+
+## à retenir
+
+- Une recommandation : **constat** vérifiable, **risque** concret, **mesure** actionnable, **effort** estimé.
+- Niveau de risque = **vraisemblance × impact**, de 1 à 16 : un outil pour comparer et discuter.
+- On priorise par **niveau**, puis par **effort** (les victoires rapides), en respectant les **dépendances** : sauvegarder d'abord.
+- La plupart des mesures sont **gratuites** ; on propose des solutions adaptées au budget, et une mesure d'attente pour le reste.
+- On écrit pour le **lecteur** : synthèse d'abord, risques concrets, qui fait quoi, sans jargon et sans accuser.

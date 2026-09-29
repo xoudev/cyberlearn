@@ -1,0 +1,164 @@
+---
+refCode: CL-LSN-01056-V01
+slug: fondamentaux-le-rendu
+title: "Projet final : le rendu"
+description: "Dernière étape du projet de fin de parcours : assembler le dossier technique des Jardins de la Butte, le relire avec une grille de critères, en retirer tout secret, le présenter au bureau de l'association et organiser le suivi. La structure d'un dossier technique, la synthèse pour les décideurs, la restitution orale, et une correction commentée du dossier complet. Avec l'assemblage du rapport final sur un vrai Linux."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-01055-V01"]
+---
+
+Troisième samedi. Le portable fonctionne, les constats sont évalués, les recommandations sont écrites et ordonnées. Il reste à livrer ce que l'association a demandé : un **dossier technique** qu'elle peut lire, comprendre et suivre sans toi, et une **restitution** devant son bureau. C'est l'étape que les débutants bâclent et que les professionnels soignent, parce que c'est la seule que le client voit vraiment. Tout le travail des semaines précédentes n'existe, pour l'association, qu'à travers ce document. Cette dernière leçon du parcours t'apprend à le construire, à le relire avec une grille de critères et à le présenter, puis te donne une correction commentée du dossier complet.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- structurer un dossier technique, de la synthèse aux annexes ;
+- rédiger une synthèse pour des décideurs non spécialistes ;
+- relire un dossier avec une grille de critères ;
+- retirer d'un dossier toute information qui ne doit pas y figurer ;
+- préparer une restitution orale ;
+- organiser le suivi après la mission.
+
+## pourquoi ça compte
+
+Dans tous les métiers techniques, une grande partie du travail consiste à **écrire** : rapports d'intervention, dossiers d'architecture, comptes rendus d'incident, rapports d'audit ou de test d'intrusion. Un pentesteur qui a trouvé une faille critique mais rend un rapport illisible a raté sa mission ; un technicien dont les interventions sont documentées peut être remplacé sans que tout s'écroule. Pour une association, c'est encore plus vrai : les bénévoles changent, et le dossier que tu laisses sera peut-être la seule mémoire de son informatique quand tu ne seras plus là.
+
+## la structure du dossier
+
+<Diagram caption="Le plan d'un dossier technique">
+flowchart TD
+  A["Page de garde : titre, date, diffusion restreinte"] --> B["1. Synthèse : une page pour les décideurs"]
+  B --> C["2. Contexte et périmètre : la demande, le cahier des charges"]
+  C --> D["3. Inventaire : une fiche par machine"]
+  D --> E["4. Diagnostic : la panne, sa cause, sa correction"]
+  E --> F["5. Recommandations : ordonnées, justifiées"]
+  F --> G["6. Plan d'action : qui, quoi, quand"]
+  G --> H["Annexes : relevés bruts, journal de bord"]
+</Diagram>
+
+Le plan suit une logique précise : **du plus important au plus détaillé**. La présidente lira la synthèse, peut-être le plan d'action ; le bénévole qui reprendra l'informatique lira tout, jusqu'aux annexes. Chacun doit trouver ce qu'il cherche sans lire ce qui ne le concerne pas.
+
+**La page de garde** porte le titre, la date, l'auteur et une mention de **diffusion restreinte** : ce dossier décrit les faiblesses de l'association, il ne se transmet qu'au bureau.
+
+**La synthèse** tient en une page, et c'est la partie la plus difficile à écrire. Elle dit ce qui a été fait, ce qui a été trouvé, et les trois priorités, sans aucun jargon. Si le bureau ne lit que cette page, il doit savoir quoi décider.
+
+**Le contexte et le périmètre** reprennent le cahier des charges validé : la demande, les objectifs, ce qui était inclus et exclu. Ils rappellent aussi l'autorisation obtenue.
+
+**L'inventaire**, le **diagnostic** et les **recommandations** reprennent les trois leçons précédentes, mis en forme : des fiches lisibles, un récit clair de la panne, un tableau ordonné puis une fiche par recommandation.
+
+**Le plan d'action** transforme les recommandations en calendrier : qui fait quoi, et quand. Sans responsable ni date, une recommandation reste un vœu.
+
+**Les annexes**, enfin, contiennent les relevés bruts et le journal de bord : la preuve de ce qui est affirmé dans le corps du dossier.
+
+## ce qui ne doit pas y figurer
+
+Un dossier d'audit est un document sensible : c'est littéralement la liste des portes mal fermées d'une organisation. Avant de le rendre, on le relit en cherchant ce qui ne doit **jamais** y apparaître :
+
+- aucun **mot de passe**, aucune **clé Wi-Fi**, aucun **code** : on écrit « la clé Wi-Fi est affichée au mur », jamais la clé elle-même ;
+- aucune **donnée personnelle** des adhérents : on écrit « le fichier des adhérents, non chiffré », jamais un nom ou une adresse ;
+- aucune **capture d'écran** qui montrerait, dans un coin, un courriel, un relevé bancaire ou un mot de passe enregistré ;
+- aucune information **hors périmètre** glanée par hasard.
+
+Les relevés bruts sont le piège principal : une sortie de commande copiée telle quelle peut contenir un secret que personne n'a remarqué. On les relit ligne par ligne, et on peut s'aider d'une recherche : `grep -i -n "mot de passe\|clé\|password"` sur les annexes fait remonter les lignes suspectes en quelques secondes. Le dossier se transmet ensuite de façon maîtrisée, en main propre ou par un canal protégé, pas en pièce jointe à toute la liste de diffusion de l'association.
+
+## la grille de relecture
+
+Avant de rendre le dossier, relis-le avec cette grille, comme le ferait un responsable exigeant. Chaque critère est noté atteint ou non atteint.
+
+| Critère | Question à se poser |
+|---|---|
+| Complétude | Les objectifs du cahier des charges ont-ils tous une réponse ? |
+| Exactitude | Chaque constat s'appuie-t-il sur un relevé présent en annexe ? |
+| Priorisation | Les recommandations sont-elles ordonnées, avec vraisemblance, impact et effort ? |
+| Actionnabilité | Chaque mesure dit-elle quoi faire, qui le fait, et quand ? |
+| Lisibilité | La synthèse est-elle compréhensible par quelqu'un qui n'est pas informaticien ? |
+| Traçabilité | Le journal de bord permet-il de retrouver et de défaire chaque modification faite ? |
+| Confidentialité | Le dossier est-il exempt de tout secret et de toute donnée personnelle ? |
+| Honnêteté | Les limites de la mission sont-elles dites : ce qui n'a pas été vérifié, ce qui reste incertain ? |
+
+Le dernier critère est souvent oublié. Un bon dossier dit aussi ce qu'il ne sait pas : « le site web, hors périmètre, n'a pas été examiné » ; « l'origine de TeamViewer n'a pas pu être établie ». C'est ce qui le rend crédible.
+
+## la restitution
+
+Le dossier se remet lors d'une courte réunion avec le bureau, un quart d'heure suffit. Une trame efficace :
+
+1. **Rappeler la demande** et ce qui a été fait, en une minute.
+2. **Annoncer la bonne nouvelle d'abord** : le portable du trésorier a de nouveau Internet, et on sait pourquoi il l'avait perdu.
+3. **Présenter les trois priorités**, avec leurs risques en termes concrets et leur coût.
+4. **Proposer le plan d'action**, et le faire valider : qui accepte de faire quoi, et pour quand.
+5. **Répondre aux questions**, puis remettre le dossier.
+
+Trois conseils. Parle des **conséquences** plutôt que des techniques : le bureau ne retiendra pas « BitLocker », il retiendra « si le portable est volé, les adresses des adhérents sont lisibles ». **Ne dramatise pas** : l'association n'a pas été négligente, elle a manqué de temps et de compétences, comme la plupart des associations. Et **finis par ce qui a été réussi** et par la prochaine étape, pour que chacun reparte avec l'envie d'agir.
+
+## le suivi
+
+Une mission n'est pas terminée quand le dossier est remis. Propose un **point d'étape** à un mois, pour vérifier que les mesures immédiates sont faites, et un **nouvel audit** à six mois, avec la même grille, pour mesurer les progrès. Laisse enfin une **fiche d'exploitation** d'une page, rangée près des machines : où sont les sauvegardes et comment les faire, qui contacter en cas de problème, les numéros utiles de la leçon sur les incidents. C'est ce document-là, bien plus que le dossier complet, qui servira au quotidien.
+
+## à toi de jouer : assembler le rapport
+
+Le dossier `mission/rendu` contient les parties du rapport, numérotées de `00` à `06`, et des annexes brutes, copiées des relevés. Assemble le rapport final :
+
+1. liste les fichiers avec `ls mission/rendu` et lis les annexes brutes avec `cat` ;
+2. cherche les lignes suspectes : `grep -i -n "clé\|mot de passe" mission/rendu/annexes-brutes.txt` ;
+3. crée des annexes propres, sans la ligne qui contient la clé Wi-Fi : `grep -v "clé Wi-Fi" mission/rendu/annexes-brutes.txt > mission/rendu/07-annexes.txt`, puis vérifie avec `grep -c "clé Wi-Fi" mission/rendu/07-annexes.txt`, qui doit répondre `0` ;
+4. range les annexes brutes hors du dossier de rendu : `mv mission/rendu/annexes-brutes.txt mission/sources/` ;
+5. assemble le rapport dans l'ordre des numéros : `cat mission/rendu/0*.txt > mission/rendu/rapport.txt`, puis relis-le avec `cat`.
+
+<LinuxTerminal title="Le rapport final" height={440} files={{"mission/sources/courriel-presidente.txt": "Demande initiale de la présidente, 26 septembre 2026.\n", "mission/rendu/00-garde.txt": "Les Jardins de la Butte\nDossier technique de la mission informatique\nOctobre 2026\nDiffusion : bureau de l'association uniquement\n\n", "mission/rendu/01-synthese.txt": "1. Synthèse\nLe portable du trésorier a de nouveau Internet : sa configuration réseau désignait l'ancienne box.\nTrois priorités : sauvegarder la comptabilité et le fichier des adhérents, remplacer le portable\nsous Windows 10, mettre à jour ses logiciels et chiffrer son disque.\n\n", "mission/rendu/02-contexte.txt": "2. Contexte et périmètre\nDeux ordinateurs (PC-ACCUEIL, PORTABLE-TRESO) et la box. Hors périmètre : téléphones, site web.\n\n", "mission/rendu/03-inventaire.txt": "3. Inventaire\nPORTABLE-TRESO : Windows 10 Professionnel 22H2, hors support ; disque non chiffré ; compte administrateur.\nPC-ACCUEIL : Linux à jour ; session bénévole sans mot de passe.\n\n", "mission/rendu/04-diagnostic.txt": "4. Diagnostic de la panne réseau\nPasserelle et DNS configurés à la main sur 192.168.1.1, l'ancienne box. Carte repassée en DHCP.\nVérification : lien, adresse, passerelle, Internet, DNS et service répondent.\n\n", "mission/rendu/05-recommandations.txt": "5. Recommandations\nImmédiate : sauvegarde 3-2-1 ; remplacement du portable ; mises à jour.\nCourt terme : chiffrement, gestionnaire de mots de passe, TeamViewer, compte standard, box.\nMoyen terme : réseau invité, code de session sur le PC-ACCUEIL.\n\n", "mission/rendu/06-plan.txt": "6. Plan d'action\nOctobre : disque externe et première sauvegarde (trésorier). Novembre : portable reconditionné.\nAvril : nouvel audit, avec la même grille.\n\n", "mission/rendu/annexes-brutes.txt": "Annexes\n== ipconfig /all avant ==\nDHCP activé : Non, passerelle 192.168.1.1, DNS 192.168.1.1\n== ipconfig /all après ==\nDHCP activé : Oui, passerelle 192.168.1.254, DNS 192.168.1.254\nclé Wi-Fi relevée sur le post-it : Radis-Poireau-2019\n== winget list ==\nFirefox 115.0.2, LibreOffice 7.2.5.2, Acrobat Reader 21.001, TeamViewer 13, VLC 3.0.16\n"}} checks={[{ "label": "des annexes propres existent", "path": "mission/rendu/07-annexes.txt", "expect": "file", "contains": "ipconfig" }, { "label": "les annexes brutes ont quitté le dossier de rendu", "path": "mission/rendu/annexes-brutes.txt", "expect": "absent" }, { "label": "elles sont rangées dans les sources", "path": "mission/sources/annexes-brutes.txt", "expect": "file" }, { "label": "le rapport contient la synthèse", "path": "mission/rendu/rapport.txt", "expect": "file", "contains": "1. Synthèse" }, { "label": "le rapport contient le plan d'action", "path": "mission/rendu/rapport.txt", "expect": "file", "contains": "6. Plan d'action" }, { "label": "le rapport contient les annexes", "path": "mission/rendu/rapport.txt", "expect": "file", "contains": "== winget list ==" }]} hints={["grep -v garde toutes les lignes SAUF celles qui contiennent le motif.", "Le motif 0*.txt désigne 00-garde.txt jusqu'à 07-annexes.txt, dans l'ordre de leurs noms.", "Crée 07-annexes.txt AVANT d'assembler, sinon le rapport n'aura pas d'annexes."]} />
+
+Remarque le rôle des **numéros** en tête des noms de fichiers : le motif `0*.txt` les développe dans l'ordre alphabétique, qui est ici l'ordre du rapport. Et vérifie ta propre vigilance : si tu avais assemblé avec `cat mission/rendu/*.txt` avant l'étape 4, la clé Wi-Fi serait partie au bureau dans le rapport.
+
+## la correction commentée
+
+Voici la synthèse du dossier modèle, telle qu'elle aurait pu être remise.
+
+> **Synthèse.** À la demande de la présidente, nous avons examiné du 3 au 17 octobre les deux ordinateurs de l'association et sa box. **Le portable du trésorier a de nouveau Internet** : sa configuration réseau, réglée à la main il y a plusieurs années, désignait l'ancienne box ; il reçoit désormais sa configuration automatiquement. L'examen a révélé trois priorités. **1. Sauvegarder** la comptabilité et le fichier des adhérents, qui n'existent aujourd'hui qu'en un exemplaire : un disque externe suffit, pour environ 60 euros. **2. Remplacer le portable**, dont le système ne reçoit plus de correctifs de sécurité depuis un an ; un ordinateur reconditionné coûte environ 200 euros. En attendant, il ne doit servir qu'à la comptabilité et à la banque. **3. Mettre à jour ses logiciels et chiffrer son disque**, pour qu'un vol ne révèle pas les données des adhérents ; c'est gratuit et prend une matinée. Huit autres mesures, toutes gratuites, sont détaillées et planifiées dans ce dossier.
+
+Ce qui fait la qualité de cette synthèse : elle commence par le **résultat obtenu**, elle donne **trois** priorités et pas dix, chacune avec son **risque** en une phrase et son **coût**, elle ne contient **aucun terme technique** non expliqué, et elle renvoie au reste du dossier pour le détail. En moins de deux cents mots, le bureau sait quoi décider.
+
+Dans le corps du dossier, le **diagnostic** raconte la panne comme la leçon précédente l'a menée : les six maillons, le premier qui échoue, la cause, la correction, la vérification, avec l'heure de chaque étape tirée du journal. Les **recommandations** reprennent le tableau des constats, ordonné par l'outil de priorisation, puis une fiche par mesure : constat, risque, mesure, effort, responsable, échéance. Le **plan d'action** tient en un tableau de onze lignes, validé en réunion : le trésorier achète le disque et fait la première sauvegarde en octobre, un bénévole volontaire prépare le portable reconditionné en novembre, la présidente change le mot de passe de la box le jour même. Les **annexes** contiennent les fiches d'inventaire, les sorties de commandes, nettoyées, et le journal de bord complet. Enfin, une section **limites** précise que le site web n'a pas été examiné, que l'origine de TeamViewer n'a pas pu être établie, et que l'évaluation des risques repose sur le jugement de l'intervenant.
+
+Avec ce dossier, tu as réinvesti tout le parcours : le matériel et les systèmes des modules 1 et 3, la représentation des données du module 2, le réseau du module 4, la ligne de commande du module 5, la rigueur de programmeur du module 6, et les réflexes de sécurité du module 7. Il reste l'examen final pour valider le parcours.
+
+## les pièges
+
+- **Commencer par le détail.** Le lecteur pressé doit trouver l'essentiel en première page.
+- **Dix priorités.** Trois priorités sont suivies ; dix sont ignorées.
+- **Laisser un secret dans les annexes.** On relit chaque relevé, et on cherche avec `grep` avant d'assembler.
+- **Oublier le responsable et la date.** Sans eux, le plan d'action n'est pas un plan.
+- **Taire les limites.** Dire ce qui n'a pas été vérifié rend le reste crédible.
+- **Diffuser trop largement.** Un dossier d'audit va au bureau, pas à toute la liste des adhérents.
+- **Disparaître après la remise.** Le point d'étape et le nouvel audit font de la mission un progrès durable.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/10-mesures-essentielles-assurer-securite-numerique" description="Une trame simple à laisser à l'association pour ses prochains audits">Cybermalveillance.gouv.fr : les 10 mesures essentielles</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/guide-dhygiene-informatique" description="Les 42 mesures de référence de l'ANSSI, pour les structures qui veulent aller plus loin">ANSSI : le guide d'hygiène informatique</ExternalLink>
+
+<ExternalLink href="https://www.cnil.fr/fr/rgpd-par-ou-commencer" description="Les premiers pas de la conformité pour une petite structure, utiles pour le fichier des adhérents">CNIL : RGPD, par où commencer ?</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi la synthèse est-elle placée au début du dossier ?" options={["Par tradition", "Parce que les décideurs doivent y trouver l'essentiel sans lire le reste", "Parce qu'elle est la plus longue", "Parce qu'elle contient les annexes"]} correct={1} explanation="Le dossier va du plus important au plus détaillé : chacun s'arrête là où ses besoins sont couverts." />
+  <Quiz id="q-2" question="Que doit-on écrire à propos de la clé Wi-Fi affichée au mur ?" options={["La clé, pour que le bureau la change", "Rien", "« La clé Wi-Fi est affichée au mur du local », sans la clé elle-même", "La clé chiffrée en base64"]} correct={2} explanation="Un dossier d'audit ne contient jamais de secret : on décrit la situation, pas la valeur." />
+  <Quiz id="q-3" question="Que fait grep -v « clé Wi-Fi » annexes-brutes.txt ?" options={["Il affiche toutes les lignes sauf celles qui contiennent le motif", "Il affiche uniquement les lignes qui contiennent la clé", "Il supprime le fichier", "Il compte les lignes"]} correct={0} explanation="-v inverse la sélection : on garde tout sauf les lignes qui correspondent." />
+  <Quiz id="q-4" question="Pourquoi numéroter les parties du rapport 00, 01, 02… dans leurs noms de fichiers ?" options={["Pour faire joli", "Pour que le motif 0*.txt les développe dans l'ordre du rapport", "Parce que Linux l'impose", "Pour les cacher"]} correct={1} explanation="Le shell développe les motifs dans l'ordre alphabétique : les numéros fixent l'ordre d'assemblage." />
+  <Quiz id="q-5" question="Pourquoi un bon dossier mentionne-t-il ses limites ?" options={["Pour s'excuser", "Parce que dire ce qui n'a pas été vérifié rend le reste crédible et évite les fausses certitudes", "Parce que c'est obligatoire", "Pour allonger le dossier"]} correct={1} explanation="Le lecteur sait alors exactement sur quoi il peut compter, et ce qui reste à examiner." />
+  <Quiz id="q-6" question="Par quoi commencer la restitution au bureau ?" options={["Par la bonne nouvelle : le portable a de nouveau Internet, et on sait pourquoi", "Par la liste des failles les plus graves", "Par les détails techniques", "Par le coût total"]} correct={0} explanation="Commencer par ce qui est réussi donne confiance dans la suite et dans les recommandations." />
+  <Quiz id="q-7" question="Qu'est-ce qui rend un plan d'action réellement suivi ?" options={["Sa longueur", "Un vocabulaire technique", "Un responsable et une date pour chaque mesure, validés en réunion", "Des captures d'écran"]} correct={2} explanation="Sans qui ni quand, une recommandation reste un vœu ; validée par ceux qui la feront, elle devient un engagement." />
+</QuizGroup>
+
+## à retenir
+
+- Un dossier technique va **du plus important au plus détaillé** : page de garde, **synthèse**, contexte, inventaire, diagnostic, recommandations, **plan d'action**, annexes.
+- La **synthèse** : le résultat, **trois priorités**, leurs risques concrets et leur coût, sans jargon.
+- **Jamais de secret** ni de donnée personnelle : on décrit, on ne recopie pas. On relit les annexes, avec `grep`.
+- Une **grille de relecture** : complétude, exactitude, priorisation, actionnabilité, lisibilité, traçabilité, confidentialité, honnêteté sur les **limites**.
+- La **restitution** : la demande, la bonne nouvelle, les priorités, le plan validé.
+- Le **suivi** : un point à un mois, un audit à six mois, une fiche d'exploitation près des machines.

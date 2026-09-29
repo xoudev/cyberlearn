@@ -1,0 +1,155 @@
+---
+refCode: CL-LSN-01054-V01
+slug: fondamentaux-le-diagnostic-reseau
+title: "Projet final : le diagnostic réseau"
+description: "Troisième étape du projet : trouver pourquoi le portable du trésorier n'a plus Internet depuis le changement de box. Une méthode de diagnostic couche par couche (lien, adresse, passerelle, Internet, DNS, service), les commandes de Windows et de Linux qui la mettent en œuvre, la lecture de leurs résultats, la comparaison avec une machine qui fonctionne, puis la correction et sa vérification. Avec l'enquête complète dans PowerShell, avant et après la réparation."
+category: NETWORK
+difficulty: BEGINNER
+estimatedMinutes: 55
+xpReward: 300
+prerequisites: ["CL-LSN-01053-V01"]
+---
+
+« Internet ne marche plus. » C'est la phrase qu'entend le plus souvent quiconque fait du support informatique, et c'est aussi la plus vague : elle peut cacher une carte Wi-Fi désactivée, un câble débranché, une box en panne, une adresse mal configurée, un serveur DNS injoignable, un site hors service, ou une dizaine d'autres causes. Face à elle, le débutant essaie tout au hasard : redémarrer, désactiver le pare-feu, réinstaller le pilote. Le professionnel suit une **méthode** qui teste chaque maillon de la chaîne, dans l'ordre, jusqu'à trouver celui qui casse. Deuxième samedi aux Jardins de la Butte : c'est l'heure de réparer le portable du trésorier, avec tout ce que le module 4 t'a appris.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- appliquer une méthode de diagnostic réseau couche par couche ;
+- utiliser `ipconfig`, `ping`, `arp`, `tracert`, `nslookup` et `Test-NetConnection` sous Windows, et leurs équivalents sous Linux ;
+- interpréter leurs résultats, y compris les messages trompeurs ;
+- comparer une machine en panne à une machine qui fonctionne ;
+- corriger la cause, vérifier la correction et la documenter.
+
+## pourquoi ça compte
+
+Le diagnostic réseau est la compétence la plus demandée en support et en administration, et une base indispensable en sécurité : un analyste qui enquête sur une connexion suspecte, un pentesteur qui cartographie un réseau, un administrateur qui comprend pourquoi un service est injoignable, tous raisonnent de la même façon, maillon par maillon. La méthode a aussi une vertu que l'intuition n'a pas : elle marche même quand on ne connaît pas la cause à l'avance, et elle produit des preuves qu'on peut noter dans un rapport.
+
+## la méthode : remonter la chaîne
+
+Tu l'as vu au module 4 : pour qu'une page s'affiche, il faut que la machine soit reliée au réseau, qu'elle ait une adresse, qu'elle joigne sa passerelle, que la passerelle la mène à Internet, que le DNS traduise le nom, et enfin que le service réponde. Chaque maillon dépend des précédents. On les teste donc **dans cet ordre**, du plus proche au plus lointain, et on s'arrête au premier qui échoue : c'est là que se trouve la panne.
+
+<Diagram caption="Le diagnostic, maillon par maillon : on s'arrête au premier qui échoue">
+flowchart TD
+  A["1. Le lien : la carte est-elle connectée au Wi-Fi ou au câble ?"] -->|"oui"| B["2. L'adresse : la machine a-t-elle une adresse cohérente avec le réseau ?"]
+  B -->|"oui"| C["3. La passerelle : la box répond-elle ?"]
+  C -->|"oui"| D["4. Internet : une adresse IP publique répond-elle ?"]
+  D -->|"oui"| E["5. Le DNS : un nom se traduit-il en adresse ?"]
+  E -->|"oui"| F["6. Le service : le site répond-il sur son port ?"]
+  A -->|"non"| X["La panne est à ce maillon"]
+  B -->|"non"| X
+  C -->|"non"| X
+  D -->|"non"| X
+  E -->|"non"| X
+</Diagram>
+
+Pour chaque maillon, une commande :
+
+| Maillon | Windows | Linux | Ce qu'on cherche |
+|---|---|---|---|
+| 1. Lien | `netsh wlan show interfaces` | `ip link` | la carte est connectée, au bon réseau |
+| 2. Adresse | `ipconfig /all` | `ip addr` | une adresse dans le réseau de la box, pas en `169.254` |
+| 3. Passerelle | `ping` de la passerelle | `ip route` puis `ping` | la box répond |
+| 4. Internet | `ping 1.1.1.1` | `ping 1.1.1.1` | une adresse publique répond, sans passer par le DNS |
+| 5. DNS | `nslookup un-nom` | `nslookup` ou `dig` | le nom se traduit en adresse |
+| 6. Service | `Test-NetConnection site -Port 443` | `curl -I https://site` | le port répond |
+
+Le quatrième maillon mérite une remarque : on teste Internet **avec une adresse IP**, pas avec un nom. Si `ping 1.1.1.1` répond mais qu'aucun site ne s'ouvre, la panne est dans le DNS ; si même `ping 1.1.1.1` échoue, elle est avant. Séparer ces deux cas d'un seul test est ce qui rend la méthode si efficace. L'adresse `1.1.1.1` est celle d'un résolveur public très utilisé, qui répond au ping ; n'importe quelle adresse publique fiable ferait l'affaire.
+
+## lire les résultats sans se faire piéger
+
+Quelques messages trompent régulièrement les débutants.
+
+**Une adresse en 169.254.** Si `ipconfig` affiche une adresse comme `169.254.12.34`, la machine a demandé une adresse en DHCP et **personne ne lui a répondu** : elle s'en est attribué une toute seule, qui ne permet de parler à personne. La panne est au maillon 1 ou 2 : câble, Wi-Fi, ou serveur DHCP de la box.
+
+**« Impossible de joindre l'hôte de destination. »** Ce message vient souvent de **ta propre machine**, qui n'a même pas réussi à envoyer le paquet : regarde l'adresse qui précède, « Réponse de 192.168.1.50 ». Et, piège classique, Windows compte alors ces réponses comme « reçues » dans ses statistiques, avec « perte 0 % ». Seules les lignes « Réponse de l'adresse visée : octets=32 temps=... » prouvent un vrai succès.
+
+**« Délai d'attente de la demande dépassé. »** Le paquet est parti, mais aucune réponse n'est revenue : la cible est éteinte, injoignable, ou elle ignore le ping. Beaucoup de serveurs et de pare-feu bloquent le ping volontairement ; un ping sans réponse n'est donc pas une preuve absolue de panne, d'où l'intérêt du test du service lui-même au maillon 6.
+
+**`arp -a`.** Cette commande liste les correspondances entre adresses IP et adresses MAC que la machine a apprises sur son réseau local, au niveau du lien. Une adresse qui n'y figure pas après un ping, c'est une machine qui n'a jamais répondu sur le réseau local : elle n'existe pas, ou pas là.
+
+## comparer avec une machine qui marche
+
+Un autre réflexe de professionnel : quand une machine est en panne et qu'une autre fonctionne sur le même réseau, on **compare leurs configurations**. Le PC-ACCUEIL, lui, a Internet. Son inventaire, fait au samedi précédent avec `ip addr` et `ip route`, montre une adresse `192.168.1.23` reçue en DHCP, et une passerelle `192.168.1.254` : la nouvelle box. Garde ces valeurs sous les yeux pendant l'enquête sur le portable. Toute différence entre les deux configurations est un suspect.
+
+## à toi de jouer : l'enquête
+
+Le trésorier t'a ouvert PowerShell sur le portable. Mène l'enquête maillon par maillon, en notant chaque résultat dans ta tête ou dans ton journal : `netsh wlan show interfaces`, `ipconfig /all`, `ping 192.168.1.1`, `ping 192.168.1.254`, `ping 1.1.1.1`, `nslookup www.jardins-butte.example`. Pour confirmer ton hypothèse, regarde aussi `arp -a` et `Get-NetRoute -DestinationPrefix 0.0.0.0/0`, qui affiche la route par défaut.
+
+<SimulatedTerminal shell="powershell" title="PORTABLE-TRESO : avant" expectedCommands={["netsh wlan show interfaces", "ipconfig /all", "ping 192.168.1.1", "ping 192.168.1.254", "ping 1.1.1.1", "nslookup www.jardins-butte.example"]} hints={["Commence par le lien : netsh wlan show interfaces. Le portable est-il connecté, au bon réseau ?", "ipconfig /all : compare la passerelle et le serveur DNS à ceux du PC-ACCUEIL.", "Quelle adresse répond au ping : 192.168.1.1 ou 192.168.1.254 ? Et laquelle le portable utilise-t-il comme passerelle ?"]} commands={{"ipconfig /all": "Configuration IP de Windows\n\n   Nom de l'hôte . . . . . . . . . . : PORTABLE-TRESO\n   Suffixe DNS principal . . . . . . :\n   Type de noeud. . . . . . . . . .  : Hybride\n   Routage IP activé . . . . . . . . : Non\n\nCarte réseau sans fil Wi-Fi :\n\n   Suffixe DNS propre à la connexion. . . :\n   Description. . . . . . . . . . . . . . : Intel(R) Dual Band Wireless-AC 8265\n   Adresse physique . . . . . . . . . . . : 34-F3-9A-6B-21-C7\n   DHCP activé. . . . . . . . . . . . . . : Non\n   Configuration automatique activée. . . : Oui\n   Adresse IPv4. . . . . . . . . . . . . .: 192.168.1.50(préféré)\n   Masque de sous-réseau. . . . . . . . . : 255.255.255.0\n   Passerelle par défaut. . . . . . . . . : 192.168.1.1\n   Serveurs DNS. . .  . . . . . . . . . . : 192.168.1.1\n   NetBIOS sur Tcpip. . . . . . . . . . . : Activé", "netsh wlan show interfaces": "Il existe 1 interface sur le système :\n\n    Nom                    : Wi-Fi\n    Description            : Intel(R) Dual Band Wireless-AC 8265\n    État                   : connecté\n    SSID                   : JardinsButte\n    Type de réseau         : Infrastructure\n    Authentification       : WPA2 - Personnel\n    Chiffrement            : CCMP\n    Bande                  : 5 GHz\n    Canal                  : 36\n    Réception (Mbits/s)    : 433\n    Transmission (Mbits/s) : 433\n    Signal                 : 86%", "ping 192.168.1.1": "Envoi d'une requête 'Ping'  192.168.1.1 avec 32 octets de données :\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\n\nStatistiques Ping pour 192.168.1.1:\n    Paquets : envoyés = 4, reçus = 4, perdus = 0 (perte 0%),", "ping 192.168.1.254": "Envoi d'une requête 'Ping'  192.168.1.254 avec 32 octets de données :\nRéponse de 192.168.1.254 : octets=32 temps=3 ms TTL=64\nRéponse de 192.168.1.254 : octets=32 temps=2 ms TTL=64\nRéponse de 192.168.1.254 : octets=32 temps=4 ms TTL=64\nRéponse de 192.168.1.254 : octets=32 temps=3 ms TTL=64\n\nStatistiques Ping pour 192.168.1.254:\n    Paquets : envoyés = 4, reçus = 4, perdus = 0 (perte 0%),\nDurée approximative des boucles en millisecondes :\n    Minimum = 2ms, Maximum = 4ms, Moyenne = 3ms", "ping 1.1.1.1": "Envoi d'une requête 'Ping'  1.1.1.1 avec 32 octets de données :\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\nRéponse de 192.168.1.50 : Impossible de joindre l'hôte de destination.\n\nStatistiques Ping pour 1.1.1.1:\n    Paquets : envoyés = 4, reçus = 4, perdus = 0 (perte 0%),", "nslookup www.jardins-butte.example": "DNS request timed out.\n    timeout was 2 seconds.\nServeur :   UnKnown\nAddress:  192.168.1.1\n\nDNS request timed out.\n    timeout was 2 seconds.\n*** Le délai de la demande à UnKnown a expiré", "tracert 1.1.1.1": "Détermination de l'itinéraire vers one.one.one.one [1.1.1.1]\navec un maximum de 30 sauts :\n\n  1  PORTABLE-TRESO [192.168.1.50]  rapports : Hôte de destination inaccessible.\n\nItinéraire déterminé.", "arp -a": "Interface : 192.168.1.50 --- 0x7\n  Adresse Internet      Adresse physique      Type\n  192.168.1.23          b8-27-eb-4f-0a-12     dynamique\n  192.168.1.254         e4-9e-12-8c-33-a0     dynamique\n  192.168.1.255         ff-ff-ff-ff-ff-ff     statique\n  224.0.0.22            01-00-5e-00-00-16     statique\n  239.255.255.250       01-00-5e-7f-ff-fa     statique", "Get-NetRoute -DestinationPrefix 0.0.0.0/0": "ifIndex DestinationPrefix NextHop      RouteMetric ifMetric PolicyStore\n------- ----------------- -------      ----------- -------- -----------\n7       0.0.0.0/0         192.168.1.1  0           35       ActiveStore", "Test-NetConnection 1.1.1.1 -Port 443": "AVERTISSEMENT : TCP connect to (1.1.1.1 : 443) failed\nAVERTISSEMENT : Ping to 1.1.1.1 failed with status: DestinationHostUnreachable\n\nComputerName           : 1.1.1.1\nRemoteAddress          : 1.1.1.1\nRemotePort             : 443\nInterfaceAlias         : Wi-Fi\nSourceAddress          : 192.168.1.50\nPingSucceeded          : False\nTcpTestSucceeded       : False"}} />
+
+Reprenons l'enquête maillon par maillon.
+
+1. **Le lien** fonctionne : le portable est connecté au Wi-Fi `JardinsButte`, avec un bon signal.
+2. **L'adresse** `192.168.1.50` est dans le bon réseau, `192.168.1.0/24`. Mais `DHCP activé : Non` : elle a été saisie à la main, tout comme la passerelle et le DNS, tous deux réglés sur `192.168.1.1`.
+3. **La passerelle** `192.168.1.1` ne répond pas : « Impossible de joindre l'hôte de destination », envoyé par le portable lui-même, et elle est absente de la table `arp`. En revanche, `192.168.1.254` répond parfaitement : c'est la nouvelle box, celle qu'utilise le PC-ACCUEIL.
+4. **Internet** est donc injoignable, puisque tout ce qui sort du réseau local est confié à une passerelle qui n'existe pas. `tracert` le confirme : il échoue dès le premier saut.
+5. **Le DNS** échoue aussi, pour la même raison : le serveur configuré est encore `192.168.1.1`.
+
+Le diagnostic tient en une phrase : **le portable a gardé une configuration réseau manuelle qui désignait l'ancienne box, à l'adresse 192.168.1.1 ; la nouvelle box, à l'adresse 192.168.1.254, n'est pas sa passerelle.** Ce n'était ni le Wi-Fi, ni la box, ni un virus. Remarque que le premier test qui échoue, le ping de la passerelle, désignait déjà la cause : c'est tout l'intérêt de la méthode.
+
+## corriger, puis vérifier
+
+La bonne correction n'est pas de remplacer `192.168.1.1` par `192.168.1.254` à la main : le jour où l'opérateur changera encore de box, la panne reviendra. La bonne correction est de **repasser la carte en DHCP**, pour que le portable reçoive automatiquement sa configuration, comme le PC-ACCUEIL. Dans les paramètres de Windows : Réseau et Internet, Wi-Fi, propriétés du réseau, Attribution d'adresse IP : **Automatique (DHCP)**, et de même pour le DNS. En PowerShell, deux commandes le font :
+
+```powershell
+Set-NetIPInterface -InterfaceAlias "Wi-Fi" -Dhcp Enabled
+Set-DnsClientServerAddress -InterfaceAlias "Wi-Fi" -ResetServerAddresses
+```
+
+Puis `ipconfig /renew` demande une nouvelle adresse. Avant de modifier quoi que ce soit, deux précautions de professionnel : l'**accord** du trésorier, et une **note** de l'ancienne configuration dans le journal, pour pouvoir revenir en arrière. Et une question à se poser : pourquoi une configuration manuelle avait-elle été faite ? Si c'était pour un besoin réel, une imprimante qui attendait cette adresse par exemple, il faudra en tenir compte. Ici, le trésorier se souvient qu'un ancien bénévole « avait réglé un problème » il y a des années.
+
+Une correction n'est terminée qu'une fois **vérifiée**, avec les mêmes tests qu'au diagnostic. Voici le portable après la correction : refais le parcours.
+
+<SimulatedTerminal shell="powershell" title="PORTABLE-TRESO : après" expectedCommands={["ipconfig /all", "ping 1.1.1.1", "nslookup www.jardins-butte.example", "Test-NetConnection 1.1.1.1 -Port 443"]} hints={["ipconfig /all : DHCP activé, et quelle passerelle ?", "ping 1.1.1.1 puis nslookup : Internet et DNS répondent-ils ?", "Test-NetConnection vérifie le dernier maillon : un port qui répond."]} commands={{"ipconfig /all": "Configuration IP de Windows\n\n   Nom de l'hôte . . . . . . . . . . : PORTABLE-TRESO\n   Suffixe DNS principal . . . . . . :\n   Type de noeud. . . . . . . . . .  : Hybride\n   Routage IP activé . . . . . . . . : Non\n\nCarte réseau sans fil Wi-Fi :\n\n   Suffixe DNS propre à la connexion. . . :\n   Description. . . . . . . . . . . . . . : Intel(R) Dual Band Wireless-AC 8265\n   Adresse physique . . . . . . . . . . . : 34-F3-9A-6B-21-C7\n   DHCP activé. . . . . . . . . . . . . . : Oui\n   Configuration automatique activée. . . : Oui\n   Adresse IPv4. . . . . . . . . . . . . .: 192.168.1.37(préféré)\n   Masque de sous-réseau. . . . . . . . . : 255.255.255.0\n   Bail obtenu. . . . . . . . . . . . . . : samedi 10 octobre 2026 10:24:51\n   Bail expirant. . . . . . . . . . . . . : dimanche 11 octobre 2026 10:24:51\n   Passerelle par défaut. . . . . . . . . : 192.168.1.254\n   Serveur DHCP . . . . . . . . . . . . . : 192.168.1.254\n   Serveurs DNS. . .  . . . . . . . . . . : 192.168.1.254\n   NetBIOS sur Tcpip. . . . . . . . . . . : Activé", "ping 192.168.1.254": "Envoi d'une requête 'Ping'  192.168.1.254 avec 32 octets de données :\nRéponse de 192.168.1.254 : octets=32 temps=2 ms TTL=64\nRéponse de 192.168.1.254 : octets=32 temps=3 ms TTL=64\nRéponse de 192.168.1.254 : octets=32 temps=2 ms TTL=64\nRéponse de 192.168.1.254 : octets=32 temps=3 ms TTL=64\n\nStatistiques Ping pour 192.168.1.254:\n    Paquets : envoyés = 4, reçus = 4, perdus = 0 (perte 0%),\nDurée approximative des boucles en millisecondes :\n    Minimum = 2ms, Maximum = 3ms, Moyenne = 2ms", "ping 1.1.1.1": "Envoi d'une requête 'Ping'  1.1.1.1 avec 32 octets de données :\nRéponse de 1.1.1.1 : octets=32 temps=9 ms TTL=57\nRéponse de 1.1.1.1 : octets=32 temps=8 ms TTL=57\nRéponse de 1.1.1.1 : octets=32 temps=11 ms TTL=57\nRéponse de 1.1.1.1 : octets=32 temps=8 ms TTL=57\n\nStatistiques Ping pour 1.1.1.1:\n    Paquets : envoyés = 4, reçus = 4, perdus = 0 (perte 0%),\nDurée approximative des boucles en millisecondes :\n    Minimum = 8ms, Maximum = 11ms, Moyenne = 9ms", "nslookup www.jardins-butte.example": "Serveur :   box.home\nAddress:  192.168.1.254\n\nRéponse ne faisant pas autorité :\nNom :    www.jardins-butte.example\nAddress:  203.0.113.80", "Test-NetConnection 1.1.1.1 -Port 443": "ComputerName     : 1.1.1.1\nRemoteAddress    : 1.1.1.1\nRemotePort       : 443\nInterfaceAlias   : Wi-Fi\nSourceAddress    : 192.168.1.37\nTcpTestSucceeded : True"}} />
+
+DHCP activé, adresse `192.168.1.37` reçue de la box, passerelle et DNS en `192.168.1.254`, Internet et DNS qui répondent, port 443 joignable : les six maillons sont verts. Il reste à le noter dans le journal, avec l'heure, l'ancienne et la nouvelle configuration, et à faire vérifier au trésorier que sa banque en ligne s'ouvre. Et une conséquence heureuse : Defender va enfin mettre à jour ses signatures, vieilles de 35 jours.
+
+## d'autres pannes, la même méthode
+
+La cause aurait pu être tout autre ; la méthode, elle, n'aurait pas changé. Trois cas fréquents, et le maillon qui les trahit :
+
+- **Le Wi-Fi est connecté à « Box-Voisin » au lieu de `JardinsButte`**, parce que le portable se souvenait d'un réseau ouvert du voisinage. Le maillon 1 le montre immédiatement : `netsh wlan show interfaces` affiche le mauvais SSID.
+- **La box est en panne ou redémarre.** Le portable obtient une adresse en `169.254`, faute de DHCP, et même le PC-ACCUEIL n'a plus Internet. Maillon 2, et la comparaison avec l'autre machine qui confirme que le problème n'est pas propre au portable.
+- **Le serveur DNS configuré est en panne**, mais le réseau fonctionne. `ping 1.1.1.1` répond, `nslookup` échoue : maillon 5. On le contourne en attendant avec un autre résolveur, et on le signale.
+
+À chaque fois, un test précis désigne un maillon précis, et chaque résultat se note dans le journal avec l'heure. C'est ce qui permet, au rapport, d'écrire non pas « j'ai réparé Internet », mais « la passerelle configurée à la main ne correspondait plus à la box ; la carte est repassée en DHCP ; les six tests sont positifs ».
+
+## les pièges
+
+- **Essayer au hasard.** Redémarrer, désactiver le pare-feu ou réinstaller un pilote sans hypothèse fait perdre du temps et peut ouvrir des failles.
+- **Tester Internet avec un nom.** On sépare réseau et DNS en testant d'abord une adresse IP.
+- **Croire les statistiques de ping.** « Perte 0 % » avec « Impossible de joindre l'hôte » n'est pas un succès.
+- **Conclure trop vite d'un ping sans réponse.** Beaucoup de machines ignorent le ping ; on teste aussi le service.
+- **Corriger le symptôme.** Remplacer une adresse fixe par une autre adresse fixe prépare la prochaine panne ; le DHCP règle la cause.
+- **Modifier sans noter.** Sans l'ancienne configuration dans le journal, impossible de revenir en arrière.
+- **Oublier de vérifier.** Une correction non vérifiée n'est qu'une hypothèse.
+
+## pour aller plus loin
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows-server/administration/windows-commands/ipconfig" description="Toutes les options d'ipconfig, dont /all, /renew et /flushdns">Microsoft : la commande ipconfig</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/powershell/module/nettcpip/test-netconnection" description="Tester un ping, une route ou un port en une commande PowerShell">Microsoft : Test-NetConnection</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man8/ip-route.8.html" description="Lire et modifier la table de routage sous Linux, en anglais">Page de manuel ip-route(8)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi teste-t-on Internet avec ping 1.1.1.1 plutôt qu'avec le nom d'un site ?" options={["Parce que c'est plus rapide", "Parce que les noms sont interdits dans ping", "Pour séparer une panne de réseau d'une panne de DNS", "Parce que 1.1.1.1 est la box"]} correct={2} explanation="Si l'adresse IP répond mais pas les noms, la panne est dans le DNS ; si même l'adresse échoue, elle est avant." />
+  <Quiz id="q-2" question="Que signifie une adresse IPv4 en 169.254.x.x ?" options={["Une adresse publique", "Que la machine n'a reçu aucune réponse du serveur DHCP et s'est attribué une adresse seule", "Que le DNS est en panne", "Que la machine est un serveur"]} correct={1} explanation="C'est une adresse automatique de secours : elle signale l'absence de DHCP, donc un problème de lien ou de box." />
+  <Quiz id="q-3" question="Un ping affiche « Réponse de 192.168.1.50 : Impossible de joindre l'hôte de destination » et « perte 0 % ». Est-ce un succès ?" options={["Oui, perte 0 %", "Oui, la destination a répondu", "Cela dépend du pare-feu", "Non : le message vient de la machine elle-même, qui n'a pas pu envoyer le paquet"]} correct={3} explanation="Windows compte ces messages comme des réponses. Seule une réponse de l'adresse visée, avec un temps, prouve le succès." />
+  <Quiz id="q-4" question="Quelle était la cause de la panne du portable ?" options={["Une configuration manuelle désignant l'ancienne box comme passerelle et comme DNS", "Un virus", "Une panne de la nouvelle box", "Un Wi-Fi trop faible"]} correct={0} explanation="La passerelle et le DNS étaient réglés à la main sur 192.168.1.1, l'adresse de l'ancienne box ; la nouvelle est en 192.168.1.254." />
+  <Quiz id="q-5" question="Quelle est la meilleure correction ?" options={["Repasser la carte en DHCP, pour que la configuration vienne de la box", "Remplacer 192.168.1.1 par 192.168.1.254 à la main", "Désactiver le pare-feu", "Réinstaller Windows"]} correct={0} explanation="Le DHCP corrige la cause : le prochain changement de box ne provoquera plus la même panne." />
+  <Quiz id="q-6" question="À quoi sert la comparaison avec le PC-ACCUEIL ?" options={["Toute différence de configuration avec une machine qui fonctionne sur le même réseau est un suspect", "À rien, ce n'est pas le même système", "À copier ses fichiers", "À tester sa vitesse"]} correct={0} explanation="Même réseau, même box : la différence de passerelle entre les deux machines désignait la cause." />
+  <Quiz id="q-7" question="Que faut-il faire avant de modifier la configuration réseau du portable ?" options={["Rien", "Éteindre la box", "Obtenir l'accord du trésorier et noter l'ancienne configuration dans le journal", "Supprimer le profil Wi-Fi"]} correct={2} explanation="L'accord respecte le cadre de la mission ; la note permet de revenir en arrière si la modification pose un problème." />
+</QuizGroup>
+
+## à retenir
+
+- On diagnostique **maillon par maillon** : **lien**, **adresse**, **passerelle**, **Internet par IP**, **DNS**, **service**. Le premier qui échoue désigne la panne.
+- Windows : `netsh wlan show interfaces`, `ipconfig /all`, `ping`, `arp -a`, `tracert`, `nslookup`, `Test-NetConnection`. Linux : `ip link`, `ip addr`, `ip route`, `ping`, `dig`, `curl`.
+- Pièges : une adresse en **169.254**, « Impossible de joindre l'hôte » compté comme reçu, un ping ignoré par la cible.
+- **Comparer** avec une machine qui marche.
+- Corriger la **cause** (ici, repasser en **DHCP**), avec **accord** et **note** de l'ancienne configuration, puis **vérifier** avec les mêmes tests.

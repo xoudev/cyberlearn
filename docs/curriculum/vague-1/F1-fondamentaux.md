@@ -2,6 +2,12 @@
 
 DÉBUTANT · ~40 h · 8 modules · 56 leçons · refCodes `CL-LSN-01001` à `CL-LSN-01056`
 
+**État** : rédigé. Les 56 leçons sont dans `content/lessons/f1-fondamentaux`,
+avec un bilan par module du 1 au 7 (`CL-LSN-01901` à `CL-LSN-01907`), le
+manifeste `content/paths/fondamentaux-informatique.json` et l'examen final
+`content/quizzes/fondamentaux-informatique.json` (120 questions, 40 tirées,
+seuil 75 %).
+
 **Pour qui** : quelqu'un qui utilise un ordinateur sans savoir ce qui se passe
 dedans. Aucun prérequis.
 
