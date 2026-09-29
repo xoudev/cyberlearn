@@ -1,0 +1,178 @@
+---
+refCode: CL-LSN-01048-V01
+slug: fondamentaux-reconnaitre-l-hameconnage
+title: "Reconnaître l'hameçonnage"
+description: "L'hameçonnage sous toutes ses formes (courriel, SMS, appel, QR code, messagerie), les leviers psychologiques qu'il exploite, les indices qui le trahissent, la lecture d'une adresse web pour démasquer les domaines trompeurs, les bons réflexes et les services de signalement. Avec une boîte de réception d'exemples à trier et un détecteur de faux domaines à programmer."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01047-V01"]
+---
+
+« Votre colis n'a pas pu être livré, réglez 1,99 € de frais de réexpédition. » « Votre compte sera suspendu dans 24 heures. » « Vous avez droit à un remboursement de 238,40 €. » Tu as certainement reçu des messages de ce genre. C'est l'**hameçonnage** (*phishing* en anglais) : une tentative de te faire agir contre ton propre intérêt, cliquer, payer, donner un mot de passe ou un code, en te faisant croire que tu parles à quelqu'un de confiance. C'est la menace numéro un en France, tous publics confondus. Elle ne vise pas une faille de ton ordinateur, mais une faille beaucoup plus universelle : la confiance et la précipitation humaines. Cette leçon t'apprend à en repérer les indices, et surtout à adopter les réflexes qui te protègent même quand le piège est parfait.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- reconnaître les différentes formes d'hameçonnage ;
+- nommer les leviers psychologiques qu'il exploite ;
+- repérer les indices d'un message frauduleux ;
+- lire une adresse web et identifier le vrai domaine ;
+- démasquer les domaines trompeurs les plus courants ;
+- réagir correctement à un message douteux, et le signaler.
+
+## pourquoi ça compte
+
+L'hameçonnage est la porte d'entrée de la plupart des autres attaques : le piratage de compte commence par un mot de passe hameçonné, la fraude bancaire par un faux conseiller, le rançongiciel en entreprise par une pièce jointe ouverte. Il frappe aussi les professionnels aguerris, parce qu'une campagne bien faite imite parfaitement un vrai message, au bon moment, avec le bon logo. Dans les entreprises, les équipes de sécurité passent une grande partie de leur temps à analyser des messages signalés, à bloquer des domaines frauduleux et à former les salariés. Savoir décortiquer un message et une adresse est une compétence de base de tous les métiers de la cybersécurité.
+
+## ses formes
+
+Le principe est toujours le même ; seul le canal change.
+
+- **Le courriel** : la forme classique, envoyée en masse ou soigneusement ciblée.
+- **Le SMS**, parfois appelé *smishing* : colis en attente, amende impayée, carte Vitale à renouveler. Le lien est court et l'écran du téléphone cache une bonne partie de l'adresse.
+- **L'appel téléphonique**, ou *vishing* : le faux conseiller bancaire, qui connaît ton nom et parfois tes dernières opérations, et te demande de « valider une annulation » dans ton application bancaire. En réalité, tu valides un virement ou un paiement.
+- **Le QR code** : collé sur une borne de stationnement ou imprimé dans un faux courrier, il mène vers une fausse page de paiement. Une image ne montre pas son adresse avant qu'on la scanne.
+- **Les messageries et réseaux sociaux** : un faux message d'un ami, dont le compte a été piraté, qui te demande un code reçu par SMS « par erreur ». Ce code sert en réalité à prendre ton propre compte.
+
+Il faut aussi distinguer l'hameçonnage **de masse**, identique pour des millions de destinataires, du **harponnage** (*spear phishing*), préparé pour une personne précise. La forme la plus coûteuse pour les entreprises est la **fraude au président** : un faux dirigeant, ou un faux fournisseur, demande en urgence et en toute discrétion un virement vers un nouveau compte.
+
+## les leviers psychologiques
+
+Un message d'hameçonnage cherche à te faire agir **avant** de réfléchir. Il appuie pour cela sur quelques ressorts universels :
+
+- **l'urgence** : « sous 24 heures », « dernier rappel », « votre compte sera supprimé » ;
+- **la peur** : amende, poursuites, piratage en cours, prélèvement inattendu ;
+- **l'autorité** : impôts, banque, police, gendarmerie, direction de l'entreprise ;
+- **l'appât du gain** : remboursement, gain à un jeu, cadeau, offre exceptionnelle ;
+- **la curiosité** : « voici les photos », « document partagé avec vous » ;
+- **la confiance** : un proche, un collègue, une marque familière.
+
+Le réflexe le plus efficace découle directement de cette liste : **quand un message te presse, ralentis**. Une vraie administration, une vraie banque ou un vrai collègue peuvent attendre les deux minutes qu'il te faut pour vérifier. Un escroc, non.
+
+## les indices
+
+Aucun indice n'est une preuve à lui seul, mais leur accumulation est un signal fort.
+
+**L'expéditeur.** Le **nom affiché**, « Service Client Ameli », se choisit librement ; seule l'**adresse** compte, et encore, elle aussi peut être imitée. Une administration française n'écrit pas depuis une adresse gratuite ni depuis un domaine sans rapport.
+
+**Le lien.** C'est l'indice le plus fiable. Sur ordinateur, survole le lien sans cliquer : l'adresse réelle s'affiche en bas de la fenêtre. Sur téléphone, un appui long la montre. Le texte d'un lien ne dit rien de sa destination : « www.impots.gouv.fr » peut mener n'importe où.
+
+**La demande.** Aucune banque ne te demande ton mot de passe, ton code de carte ou un code reçu par SMS, ni par courriel, ni par téléphone. Aucune administration ne réclame un paiement par carte cadeau ou par cryptomonnaie. Une demande de code de validation, de changement de coordonnées bancaires ou de secret est **toujours** suspecte.
+
+**La pièce jointe.** Méfiance envers les archives `.zip`, les fichiers `.html`, les documents bureautiques qui demandent d'« activer le contenu », et les doubles extensions comme `facture.pdf.exe`, où Windows masque parfois la seconde.
+
+**La forme.** Les fautes d'orthographe et les tournures bizarres étaient autrefois un bon indice. Ce l'est de moins en moins : les outils de traduction et de rédaction automatiques produisent désormais des textes impeccables. Un message bien écrit n'est **pas** une garantie.
+
+## lire une adresse web
+
+Pour démasquer un lien, il faut savoir trouver le **vrai domaine** dans une adresse. Reprenons la structure vue au module 4 :
+
+<Diagram caption="Où lire le vrai domaine d'une adresse">
+flowchart LR
+  A["https://"] --> B["assure.ameli.fr"]
+  B --> C[":443"]
+  C --> D["/connexion?retour=accueil"]
+  B -.->|"le vrai domaine : juste avant la première barre oblique, lu de droite à gauche"| E["ameli.fr"]
+</Diagram>
+
+La règle : on repère la partie située entre `://` et la **première** barre oblique `/`. C'est le nom de la machine, l'**hôte**. Puis on le lit **de droite à gauche** : `.fr`, puis `ameli`, et c'est ce couple qui désigne le propriétaire. Tout ce qui est à gauche, comme `assure.`, est un **sous-domaine**, choisi librement par le propriétaire. Et tout ce qui est après la barre oblique, le **chemin** et les paramètres, peut contenir n'importe quel texte, y compris le nom d'un autre site.
+
+Armé de cette règle, les pièges classiques se démontent :
+
+| Adresse | Vrai domaine | Le piège |
+|---|---|---|
+| `https://ameli.fr.remboursement-dossier.com/` | `remboursement-dossier.com` | le vrai nom placé en **sous-domaine** d'un domaine piégé |
+| `https://www.ameli-remboursement.fr/` | `ameli-remboursement.fr` | un domaine **ressemblant**, enregistré par n'importe qui |
+| `https://arneli.fr/` | `arneli.fr` | le **typosquattage** : `rn` imite `m` |
+| `https://amazon.fr@203.0.113.9/` | l'adresse `203.0.113.9` | ce qui précède `@` n'est qu'un identifiant, ignoré |
+| `https://bit.ly/3xYz` | un raccourcisseur | la destination est **cachée** |
+| `https://exemple.com/?retour=ameli.fr` | `exemple.com` | le vrai nom placé dans les **paramètres** |
+
+Il existe même des domaines **homographes**, qui utilisent des lettres d'autres alphabets visuellement identiques aux nôtres, comme le « а » cyrillique. Les navigateurs les affichent souvent sous une forme codée qui commence par `xn--`, ce qui est un bon signal d'alerte.
+
+Et le cadenas ? Il signifie seulement que la connexion est **chiffrée** vers le site affiché, comme tu l'as vu avec HTTPS. Il ne dit rien de l'**honnêteté** du site : les sites d'hameçonnage ont presque tous un cadenas, puisque les certificats sont gratuits.
+
+## les bons réflexes
+
+- **Ne clique pas sur le lien.** Va sur le site par tes propres moyens : ton marque-page, l'application officielle, ou l'adresse que tu tapes toi-même. Si le message était vrai, l'information y sera aussi.
+- **Rappelle par un numéro que tu connais**, celui au dos de ta carte ou sur ton contrat, jamais celui donné dans le message. Face à un « conseiller » au téléphone, raccroche et rappelle ta banque toi-même.
+- **Ne communique jamais** un mot de passe, un code reçu par SMS ou un code de carte, à personne.
+- **Méfie-toi du silence de ton gestionnaire de mots de passe** : s'il ne propose pas de remplir le formulaire, c'est souvent que l'adresse n'est pas la bonne.
+- **Vérifie par un autre canal** toute demande inhabituelle d'un proche ou d'un collègue, surtout si elle touche à l'argent ou aux codes.
+- **Signale** : les courriels frauduleux sur Signal Spam, les SMS en les transférant au **33700**, les sites frauduleux sur la plateforme Pharos du ministère de l'Intérieur. Au travail, signale au service informatique : ton signalement peut protéger tous tes collègues.
+
+Et si tu as déjà cliqué, ou pire, saisi un mot de passe ? Pas de honte, cela arrive aux meilleurs. Change immédiatement le mot de passe concerné, et partout où il était réutilisé, vérifie la double authentification, préviens ta banque si des données bancaires sont en jeu. La dernière leçon du module détaille la marche à suivre.
+
+## à toi de jouer : trier une boîte de réception
+
+Voici six messages. Pour chacun, décide : légitime ou hameçonnage ? Puis compare avec l'analyse.
+
+| N° | Message | Verdict et indices |
+|---|---|---|
+| 1 | SMS : « Colissimo : votre colis est bloqué, frais de 1,99 € à régler : `colis-suivi-fr.com/p` » | **Hameçonnage.** Petit montant pour obtenir ta carte bancaire, urgence implicite, domaine sans rapport avec La Poste. |
+| 2 | Courriel de ta banque : « Votre relevé de septembre est disponible dans votre espace client. » Aucun lien, aucune demande. | **Probablement légitime.** Il n'exige rien. Dans le doute, ouvre l'application bancaire toi-même. |
+| 3 | Courriel « Direction générale des Finances publiques » : « Remboursement de 238,40 € en attente, confirmez vos coordonnées bancaires sous 48 h. » Lien vers `impots.gouv.fr.remboursement-dgfip.net`. | **Hameçonnage.** Appât du gain, urgence, demande de coordonnées, et le vrai domaine est `remboursement-dgfip.net`. |
+| 4 | Appel : « Service fraude de votre banque. Une opération suspecte de 890 € est en cours, validez l'annulation dans votre application. » | **Hameçonnage.** Une banque ne fait jamais valider une « annulation » : tu validerais en réalité le paiement. Raccroche, rappelle le numéro de ta carte. |
+| 5 | Message d'une amie sur une messagerie : « Je t'ai envoyé un code par SMS par erreur, tu peux me le renvoyer ? » | **Hameçonnage.** Son compte a probablement été piraté ; le code sert à prendre le tien. Vérifie en l'appelant. |
+| 6 | Courriel de ton collègue, via l'outil de partage de l'entreprise, avec le document dont vous avez parlé la veille en réunion, à l'adresse habituelle de l'outil. | **Probablement légitime.** Contexte attendu, expéditeur et adresse cohérents. Si un doute persiste, un mot au collègue suffit. |
+
+Remarque que les verdicts reposent moins sur l'apparence que sur **ce que le message demande** et sur **où mène le lien**.
+
+Programme maintenant le réflexe de lecture d'adresse. `solution(url, domaine)` renvoie `True` si l'adresse mène bien au domaine officiel donné, ou à l'un de ses sous-domaines, et `False` sinon. Le code de départ propose une fonction `hote` à compléter, qui isole le nom de la machine. Pense à tous les pièges du tableau : la casse, le `@`, le port après `:`, les paramètres, et la différence entre `monameli.fr` et un vrai sous-domaine comme `assure.ameli.fr`.
+
+<PythonChallenge id="f1-phishing-domaine" title="Démasquer les faux domaines" description="Renvoie True si l'hôte de l'adresse est exactement le domaine officiel ou se termine par un point suivi de ce domaine ; False sinon." starterCode="def hote(url):
+    url = url.lower()
+    if '://' in url:
+        url = url.split('://', 1)[1]
+    # garde ce qui précède la première barre oblique, point d'interrogation ou dièse
+    # puis ce qui suit le dernier @, puis ce qui précède les deux-points du port
+    return url
+
+def solution(url, domaine):
+    h = hote(url)
+    return h == domaine" tests={[{ input: "solution('https://www.impots.gouv.fr/accueil', 'impots.gouv.fr')", expected: "True" }, { input: "solution('https://impots.gouv.fr.verification-compte.com/login', 'impots.gouv.fr')", expected: "False", label: "Le vrai nom en sous-domaine" }, { input: "solution('https://monameli.fr/remboursement', 'ameli.fr')", expected: "False", label: "Un domaine qui se termine par les mêmes lettres" }, { input: "solution('https://ameli.fr@203.0.113.9/remboursement', 'ameli.fr')", expected: "False", label: "Le piège du @" }, { input: "solution('HTTPS://WWW.Impots.Gouv.FR/espace', 'impots.gouv.fr')", expected: "True", label: "Majuscules" }, { input: "solution('http://ameli.fr.example:8080/?retour=https://ameli.fr', 'ameli.fr')", expected: "False", label: "Le vrai nom dans les paramètres" }, { input: "solution('https://assure.ameli.fr:443/connexion', 'ameli.fr')", expected: "True", label: "Un vrai sous-domaine, avec port" }]} />
+
+Le troisième test est le plus instructif : `monameli.fr` se termine bien par `ameli.fr`, mais c'est un domaine totalement différent, que n'importe qui peut acheter. D'où le **point** dans la comparaison : un sous-domaine légitime se termine par `.ameli.fr`. Les navigateurs, les filtres anti-hameçonnage et les gestionnaires de mots de passe font ce même travail, avec en plus la liste officielle des suffixes publics, qui dit par exemple que `gouv.fr` n'est pas un propriétaire mais une zone partagée.
+
+## les pièges
+
+- **Se fier au nom affiché de l'expéditeur.** Il se choisit librement.
+- **Se fier au texte du lien.** Seule l'adresse réelle compte : survol ou appui long.
+- **Lire le domaine de gauche à droite.** Le propriétaire se lit à droite, juste avant la première barre oblique.
+- **Croire le cadenas.** Il garantit le chiffrement, pas l'honnêteté.
+- **Croire qu'un message sans faute est authentique.** Les outils automatiques écrivent parfaitement.
+- **Rappeler le numéro donné dans le message.** Il mène à l'escroc.
+- **Donner un code reçu par SMS.** Qu'on te le demande par téléphone, par message ou par courriel, c'est toujours une fraude.
+- **Avoir honte après un clic.** Réagir vite compte bien plus que de ne jamais se tromper.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/hameconnage-phishing" description="La fiche réflexe du dispositif national : reconnaître, réagir, signaler">Cybermalveillance.gouv.fr : l'hameçonnage</ExternalLink>
+
+<ExternalLink href="https://www.signal-spam.fr/" description="Signaler les courriels indésirables et frauduleux">Signal Spam</ExternalLink>
+
+<ExternalLink href="https://www.internet-signalement.gouv.fr/" description="La plateforme Pharos du ministère de l'Intérieur pour signaler un contenu ou un site illicite">Pharos : signaler un contenu illicite</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le vrai domaine de l'adresse https://impots.gouv.fr.remboursement-dgfip.net/dossier ?" options={["impots.gouv.fr", "gouv.fr", "dossier", "remboursement-dgfip.net"]} correct={3} explanation="On lit l'hôte, avant la première barre oblique, de droite à gauche : .net, puis remboursement-dgfip. Le reste n'est qu'un sous-domaine choisi par le propriétaire." />
+  <Quiz id="q-2" question="Que garantit le cadenas affiché à côté d'une adresse ?" options={["Que le site est honnête", "Que le site appartient à l'État", "Que le site n'a pas de virus", "Que la connexion est chiffrée vers le site affiché"]} correct={3} explanation="HTTPS chiffre la connexion ; il ne dit rien des intentions du propriétaire. Les sites d'hameçonnage ont presque tous un cadenas." />
+  <Quiz id="q-3" question="Un « conseiller » de ta banque t'appelle et te demande de valider une annulation dans ton application. Que faire ?" options={["Valider rapidement pour bloquer la fraude", "Raccrocher et rappeler la banque au numéro inscrit sur ta carte", "Donner le code reçu par SMS", "Rappeler le numéro qu'il te donne"]} correct={1} explanation="C'est la fraude au faux conseiller : la validation autorise en réalité une opération. On raccroche et on rappelle par un numéro connu." />
+  <Quiz id="q-4" question="Pourquoi une adresse comme https://ameli.fr@203.0.113.9/ est-elle trompeuse ?" options={["Parce que @ est interdit", "Parce qu'elle n'a pas de chemin", "Elle ne l'est pas", "Parce que ce qui précède @ est un identifiant ignoré : la machine visitée est 203.0.113.9"]} correct={3} explanation="Dans une adresse, la partie avant @ sert à transmettre un identifiant ; l'hôte réellement contacté est ce qui suit." />
+  <Quiz id="q-5" question="Quel levier psychologique utilise « Votre compte sera supprimé dans 24 heures » ?" options={["L'urgence et la peur", "La curiosité", "L'appât du gain", "La confiance"]} correct={0} explanation="Le délai court et la menace poussent à agir avant de vérifier. Quand un message presse, il faut ralentir." />
+  <Quiz id="q-6" question="Comment signaler un SMS frauduleux en France ?" options={["En y répondant STOP", "En cliquant sur le lien pour vérifier", "En le transférant au 33700", "En le supprimant sans rien faire"]} correct={2} explanation="Le 33700 est le service de signalement des SMS et appels indésirables. Répondre confirme au fraudeur que le numéro est actif." />
+  <Quiz id="q-7" question="Pourquoi un texte sans aucune faute n'est-il plus un gage d'authenticité ?" options={["Parce que les vrais messages ont toujours des fautes", "Parce que les fautes sont interdites", "C'est toujours un gage", "Parce que les outils de traduction et de rédaction automatiques produisent des textes parfaits"]} correct={3} explanation="Les fraudeurs utilisent les mêmes outils que tout le monde. Il faut juger la demande et le lien, pas le style." />
+</QuizGroup>
+
+## à retenir
+
+- L'hameçonnage passe par **tous les canaux** : courriel, SMS, appel, QR code, messageries. Il cherche à te faire **agir avant de réfléchir**.
+- Leviers : **urgence**, **peur**, **autorité**, **gain**, **curiosité**, **confiance**. Quand un message presse, **ralentis**.
+- Indices : l'**adresse** de l'expéditeur, la **destination réelle** du lien, une **demande** de code, de mot de passe ou de coordonnées bancaires, une pièce jointe inattendue.
+- Le vrai domaine se lit **avant la première barre oblique, de droite à gauche**. Méfiance envers les sous-domaines piégés, les domaines ressemblants, le `@`, les raccourcisseurs.
+- Le **cadenas** ne prouve pas l'honnêteté ; un texte parfait non plus.
+- Réflexes : ne pas cliquer, **aller soi-même** sur le site, **rappeler un numéro connu**, ne jamais donner un code, **signaler** (Signal Spam, 33700, Pharos).

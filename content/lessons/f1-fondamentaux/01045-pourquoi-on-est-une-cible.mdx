@@ -1,0 +1,143 @@
+---
+refCode: CL-LSN-01045-V01
+slug: fondamentaux-pourquoi-on-est-une-cible
+title: "Pourquoi on est une cible"
+description: "« Je n'ai rien d'intéressant » : pourquoi c'est faux. Ce que valent tes comptes, ta machine et tes données pour un attaquant, qui attaque et pourquoi, la différence entre attaques opportunistes et attaques ciblées, l'automatisation qui frappe tout le monde, et comment raisonner sur ses propres risques. Avec une enquête dans le vrai journal d'un serveur exposé à Internet pendant deux heures."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01044-V01"]
+---
+
+« Pourquoi est-ce qu'on m'attaquerait ? Je ne suis personne, je n'ai rien d'intéressant. » C'est la phrase la plus répandue en sécurité numérique, et elle repose sur une erreur de raisonnement. Elle imagine un attaquant qui choisit sa victime, étudie son profil et conclut qu'elle ne vaut pas la peine. La réalité est tout autre : la plupart des attaques ne visent **personne en particulier**. Ce sont des programmes qui essaient la même chose sur des millions de comptes et de machines, et qui récoltent ce qui cède. Tu n'as pas besoin d'être intéressant, il suffit d'être **joignable**. Ce module te donne les réflexes qui écartent l'immense majorité de ces attaques ; cette première leçon explique pourquoi ils te concernent.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'un attaquant peut tirer d'un compte, d'un appareil ou de données ordinaires ;
+- citer les grandes familles d'attaquants et leurs motivations ;
+- distinguer une attaque opportuniste d'une attaque ciblée ;
+- expliquer pourquoi l'automatisation fait de chacun une cible ;
+- lire un journal de connexions pour y repérer des tentatives d'intrusion ;
+- raisonner sur ses propres risques avec trois questions simples.
+
+## pourquoi ça compte
+
+On ne protège bien que ce qu'on sait menacé. Tant qu'on se croit sans intérêt, on réutilise le même mot de passe partout, on remet les mises à jour à plus tard, on clique sans vérifier. Or, en France, le dispositif national d'assistance aux victimes, Cybermalveillance.gouv.fr, reçoit chaque année des centaines de milliers de demandes, et la grande majorité viennent de particuliers et de petites structures, pas de grandes entreprises ni de célébrités. Comprendre la logique des attaquants, c'est aussi la base de tous les métiers de la sécurité : un défenseur raisonne en permanence sur ce qu'un attaquant veut, et sur le chemin le moins coûteux pour l'obtenir.
+
+## ce que tu vaux pour un attaquant
+
+Faisons l'inventaire, du point de vue de quelqu'un qui cherche à gagner de l'argent sans se faire prendre.
+
+**Ta messagerie** est la clé de tout le reste. Presque tous tes comptes permettent de réinitialiser le mot de passe par un lien envoyé par e-mail. Qui contrôle ta boîte de réception peut donc prendre, un par un, ton compte de réseau social, ta boutique en ligne préférée, parfois ton espace bancaire ou administratif. C'est pourquoi elle mérite la meilleure protection de toutes.
+
+**Tes comptes** ont une valeur marchande. Un compte de réseau social piraté sert à escroquer tes proches, qui font confiance à ton nom : « je suis bloqué à l'étranger, peux-tu m'envoyer de l'argent ? ». Un compte de jeu avec des objets rares se revend. Un compte de livraison ou de paiement se vide. Des listes de millions d'identifiants volés s'échangent sur des marchés clandestins pour quelques euros.
+
+**Tes données** permettent l'usurpation d'identité et le chantage : une copie de pièce d'identité, un avis d'imposition ou un relevé d'identité bancaire suffisent à ouvrir un crédit ou une ligne téléphonique à ton nom. Et des photos ou des conversations privées deviennent un moyen de pression.
+
+**Ta machine et ta connexion** ont une valeur même si elles ne contiennent rien. Un ordinateur, une box, une caméra connectée ou un vieux routeur compromis rejoignent un **réseau de machines zombies**, un *botnet*, loué à d'autres criminels pour envoyer des pourriels, attaquer des sites en les saturant, ou miner de la cryptomonnaie avec ton électricité. Et ton adresse IP sert à masquer la leur.
+
+**Ton accès à d'autres** est peut-être le plus précieux. Ton ordinateur personnel, qui sert aussi au télétravail, est une porte vers ton employeur. Ta boîte mail est un moyen d'envoyer un piège crédible à tes contacts. Les attaques contre les grandes organisations passent très souvent par un individu ordinaire qui leur est relié.
+
+## qui attaque, et pourquoi
+
+Derrière le mot « pirate », on range des acteurs très différents.
+
+| Acteur | Motivation principale | Exemples |
+|---|---|---|
+| Cybercriminels | l'argent | rançongiciels, fraude bancaire, revente de comptes et de données |
+| Escrocs | l'argent, par la manipulation | faux conseillers bancaires, arnaques aux sentiments, faux supports techniques |
+| États et groupes liés à des États | le renseignement, l'influence, le sabotage | espionnage d'entreprises ou d'administrations |
+| Hacktivistes | une cause politique ou idéologique | défiguration de sites, fuites de documents |
+| Proches malveillants | le contrôle, la vengeance | surveillance d'un conjoint, harcèlement |
+| Curieux et amateurs | le défi, la réputation | outils trouvés en ligne, lancés sans comprendre |
+
+Pour un particulier, le premier groupe est de très loin le plus probable, et c'est aussi le plus rationnel : il cherche le meilleur rapport entre l'effort et le gain. C'est une bonne nouvelle, car un adversaire rationnel **passe son chemin** quand la cible résiste. Les proches malveillants forment une catégorie à part, souvent oubliée, et particulièrement dangereuse parce qu'ils connaissent tes habitudes, parfois tes codes, et ont un accès physique à tes appareils.
+
+## opportuniste ou ciblée
+
+Une **attaque ciblée** vise une victime précise, choisie à l'avance : un dirigeant d'entreprise, un journaliste, un laboratoire de recherche. L'attaquant se renseigne longuement, prépare un piège sur mesure, un message qui cite un vrai collègue ou un vrai projet, et peut y consacrer des semaines. C'est coûteux, donc réservé aux cibles qui valent cet investissement.
+
+Une **attaque opportuniste**, elle, lance un filet immense et récupère ce qui s'y prend : un million de courriels d'hameçonnage identiques, en sachant qu'une fraction infime de destinataires cliquera ; des listes d'identifiants volés essayées automatiquement sur des centaines de sites, en comptant sur ceux qui réutilisent leur mot de passe (on appelle cela le *credential stuffing*, le « bourrage d'identifiants ») ; un balayage de tout Internet à la recherche des appareils qui ont une faille connue non corrigée.
+
+<Diagram caption="La chaîne d'une attaque opportuniste">
+flowchart LR
+  A["Des programmes balaient Internet ou envoient des millions de messages"] --> B["La plupart des cibles résistent"]
+  A --> C["Quelques-unes cèdent : mot de passe réutilisé, faille non corrigée, clic"]
+  C --> D["L'accès est exploité ou revendu"]
+  D --> E["Rançon, fraude, botnet, rebond vers d'autres victimes"]
+</Diagram>
+
+Pour l'attaquant opportuniste, chaque essai ne coûte presque rien : il est automatisé. Il n'a pas besoin de te choisir, il lui suffit que tu sois dans le lot et que tu cèdes. Le rapport d'activité 2024 de Cybermalveillance.gouv.fr le confirme : l'**hameçonnage** reste la menace prédominante, tous publics confondus, et le **piratage de compte** arrive en deuxième position pour les particuliers. Deux menaces massives, automatisées, qui ne demandent aucune connaissance de la victime.
+
+C'est ce qui rend ce module efficace. Les attaques opportunistes cherchent les cibles **les plus faciles** : un mot de passe réutilisé, un compte sans double authentification, un appareil jamais mis à jour, une personne qui clique vite. Chaque réflexe que tu vas apprendre te fait sortir de ce lot. Tu ne deviens pas invulnérable, mais tu deviens **plus coûteux** que les autres, et c'est souvent suffisant pour qu'on passe à la cible suivante.
+
+## l'automatisation : personne n'est trop petit
+
+Pour mesurer à quel point tout est automatisé, il suffit de regarder le journal d'un serveur qu'on vient de brancher sur Internet. Tu l'as vu au module 4 : chaque machine connectée a une adresse, et des services qui écoutent sur des ports. Le service SSH, qui permet d'administrer une machine à distance, écoute sur le port 22. Dans les minutes qui suivent la mise en ligne d'un serveur, des programmes venus du monde entier commencent à y essayer des noms d'utilisateur et des mots de passe : `root`, `admin`, `ubuntu`, `pi`, avec les mots de passe les plus courants. Personne n'a choisi ce serveur : ces programmes essaient **toutes** les adresses d'Internet, en boucle. Les boucles et la force brute du module précédent, appliquées à l'échelle de la planète.
+
+Les noms essayés ne sont pas pris au hasard. `root` est l'administrateur de tout système Linux. `pi` était le compte par défaut des nano-ordinateurs Raspberry Pi, `ubuntu` celui de certaines machines louées dans le nuage, `oracle` et `postgres` ceux de bases de données. L'attaquant parie sur les **réglages par défaut** jamais modifiés. Les objets connectés, caméras, box, imprimantes, sont les premières victimes de ce pari : des centaines de milliers d'entre eux ont été enrôlés dans des botnets simplement parce que personne n'avait changé le mot de passe d'usine.
+
+## raisonner sur ses risques
+
+Tu ne peux pas tout protéger au maximum, et ce n'est pas nécessaire. Les professionnels construisent un **modèle de menace** ; pour un usage personnel, trois questions suffisent :
+
+1. **Qu'est-ce que je veux protéger ?** Ma messagerie, mon argent, mes photos, mon identité, l'accès à mon travail.
+2. **Contre qui ?** Pour presque tout le monde : des attaquants opportunistes, et parfois un proche. Une journaliste ou un militant ajoutent des adversaires plus déterminés.
+3. **Que se passe-t-il si je le perds ?** Une gêne passagère, une perte d'argent, une perte irréversible (les photos de famille sans sauvegarde), ou un danger pour moi ou d'autres.
+
+Les réponses fixent les priorités. Ta messagerie et ton compte bancaire passent avant ton compte de forum ; tes photos irremplaçables demandent une sauvegarde avant un antivirus haut de gamme. Les leçons suivantes suivent cet ordre de bon sens : les **mots de passe**, la **double authentification**, l'**hameçonnage**, les **mises à jour et sauvegardes**, les **réseaux publics**, et enfin **quoi faire** quand malgré tout un incident survient.
+
+## à toi de jouer : lire le journal d'un serveur
+
+Le dossier de travail contient `auth.log`, le journal des connexions SSH d'un petit serveur, sur un peu plus de deux heures, entre 3 h et 5 h du matin. Personne ne connaissait ce serveur ; il venait d'être installé. Mène l'enquête avec les outils du module 5 :
+
+1. compte les tentatives échouées et enregistre le nombre dans `echecs.txt` : `grep -c "Failed password" auth.log > echecs.txt` ;
+2. classe les adresses qui apparaissent dans le journal, de la plus active à la moins active, et enregistre le classement dans `adresses.txt`. Réutilise la chaîne de la leçon sur la recherche : `grep -o` pour extraire `from` suivi de l'adresse, puis `sort`, `uniq -c` et `sort -rn` ;
+3. cherche s'il y a eu une connexion **réussie**. Dans ce journal, elle s'écrit `Accepted`. Enregistre la ou les lignes trouvées dans `alerte.txt`.
+
+Regarde aussi quels noms d'utilisateur ont été essayés, avec `grep -o "for [a-z ]*from" auth.log | sort | uniq -c | sort -rn` par exemple, et réfléchis à ce que révèle la ligne de la connexion réussie.
+
+<LinuxTerminal title="Enquête : deux heures sur Internet" height={420} files={{ "auth.log": "Sep 28 03:05:20 serveur sshd[812]: Server listening on 0.0.0.0 port 22.\nSep 28 03:15:22 serveur sshd[1406]: Failed password for invalid user admin from 198.51.100.23 port 56961 ssh2\nSep 28 03:16:27 serveur sshd[1407]: Failed password for root from 203.0.113.14 port 50774 ssh2\nSep 28 03:20:05 serveur sshd[1416]: Failed password for invalid user admin from 203.0.113.150 port 46664 ssh2\nSep 28 03:25:28 serveur sshd[1417]: Failed password for invalid user ubuntu from 192.0.2.201 port 54489 ssh2\nSep 28 03:27:35 serveur sshd[1423]: Failed password for invalid user pi from 198.51.100.87 port 31107 ssh2\nSep 28 03:30:02 serveur sshd[1431]: Failed password for invalid user pi from 203.0.113.150 port 57788 ssh2\nSep 28 03:32:52 serveur sshd[1435]: Failed password for root from 192.0.2.201 port 55241 ssh2\nSep 28 03:36:26 serveur sshd[1438]: Failed password for invalid user admin from 203.0.113.150 port 59849 ssh2\nSep 28 03:41:29 serveur sshd[1440]: Failed password for invalid user test from 203.0.113.150 port 55193 ssh2\nSep 28 03:42:20 serveur sshd[1449]: Failed password for invalid user ubuntu from 203.0.113.150 port 31900 ssh2\nSep 28 03:47:59 serveur sshd[1458]: Failed password for root from 203.0.113.150 port 48904 ssh2\nSep 28 03:51:01 serveur sshd[1463]: Failed password for invalid user ubuntu from 198.51.100.87 port 41984 ssh2\nSep 28 03:51:26 serveur sshd[1468]: Failed password for invalid user postgres from 198.51.100.23 port 56295 ssh2\nSep 28 03:52:38 serveur sshd[1469]: Failed password for root from 203.0.113.150 port 53740 ssh2\nSep 28 03:58:15 serveur sshd[1474]: Failed password for invalid user admin from 192.0.2.201 port 58778 ssh2\nSep 28 04:00:17 serveur sshd[1480]: Failed password for invalid user user from 203.0.113.14 port 45880 ssh2\nSep 28 04:06:07 serveur sshd[1489]: Failed password for root from 198.51.100.87 port 62360 ssh2\nSep 28 04:06:41 serveur sshd[1492]: Failed password for invalid user test from 198.51.100.23 port 47215 ssh2\nSep 28 04:11:06 serveur sshd[1494]: Failed password for root from 198.51.100.87 port 44051 ssh2\nSep 28 04:11:58 serveur sshd[1496]: Failed password for invalid user ubuntu from 198.51.100.23 port 38668 ssh2\nSep 28 04:15:38 serveur sshd[1499]: Failed password for invalid user pi from 198.51.100.23 port 59280 ssh2\nSep 28 04:19:17 serveur sshd[1504]: Failed password for invalid user oracle from 192.0.2.201 port 56360 ssh2\nSep 28 04:22:50 serveur sshd[1507]: Failed password for root from 203.0.113.150 port 31970 ssh2\nSep 28 04:23:46 serveur sshd[1513]: Failed password for invalid user postgres from 203.0.113.150 port 57188 ssh2\nSep 28 04:26:05 serveur sshd[1519]: Failed password for invalid user admin from 203.0.113.14 port 58698 ssh2\nSep 28 04:31:19 serveur sshd[1523]: Failed password for invalid user oracle from 192.0.2.201 port 64096 ssh2\nSep 28 04:31:24 serveur sshd[1525]: Accepted password for deploy from 203.0.113.77 port 40022 ssh2\nSep 28 04:36:14 serveur sshd[1527]: Failed password for root from 192.0.2.201 port 32186 ssh2\nSep 28 04:42:01 serveur sshd[1532]: Failed password for root from 203.0.113.150 port 33718 ssh2\nSep 28 04:44:20 serveur sshd[1536]: Failed password for root from 198.51.100.87 port 34054 ssh2\nSep 28 04:45:05 serveur sshd[1538]: Failed password for root from 203.0.113.150 port 54269 ssh2\nSep 28 04:50:16 serveur sshd[1543]: Failed password for root from 203.0.113.14 port 59497 ssh2\nSep 28 04:55:05 serveur sshd[1550]: Failed password for invalid user user from 203.0.113.150 port 33484 ssh2\nSep 28 05:01:32 serveur sshd[1557]: Failed password for invalid user test from 192.0.2.201 port 54762 ssh2\nSep 28 05:06:41 serveur sshd[1558]: Failed password for invalid user admin from 192.0.2.201 port 46127 ssh2\n" }} checks={[{ "label": "echecs.txt contient le nombre de tentatives échouées", "path": "echecs.txt", "expect": "file", "contains": "34" }, { "label": "adresses.txt classe les adresses des attaquants", "path": "adresses.txt", "expect": "file", "contains": "203.0.113.150" }, { "label": "alerte.txt contient la connexion réussie", "path": "alerte.txt", "expect": "file", "contains": "203.0.113.77" }]} hints={["grep -c compte les lignes qui contiennent le motif ; > enregistre la sortie dans un fichier.", "grep -o \"from [0-9.]*\" auth.log | sort | uniq -c | sort -rn > adresses.txt", "grep Accepted auth.log > alerte.txt"]} />
+
+Trente-quatre tentatives en deux heures, venues de cinq adresses, sur un serveur que personne ne connaissait. `root` est le nom le plus essayé, suivi de `admin` : les réglages par défaut. Mais la ligne la plus inquiétante est ailleurs. À 4 h 31, une connexion **réussie** sur le compte `deploy`, depuis une adresse qui n'apparaît **nulle part ailleurs** dans le journal, et sans aucun échec préalable. Ce n'est pas de la force brute : l'attaquant connaissait déjà le mot de passe. Il l'a probablement trouvé dans une fuite de données, parce qu'il était réutilisé sur un autre service. C'est exactement le scénario du bourrage d'identifiants, et la raison d'être des deux leçons suivantes.
+
+## les pièges
+
+- **Se croire sans intérêt.** Les attaques opportunistes ne choisissent pas leurs victimes ; elles essaient tout le monde.
+- **Sous-estimer sa messagerie.** C'est la clé de réinitialisation de presque tous les autres comptes.
+- **Oublier les objets connectés.** Une caméra ou une box au mot de passe d'usine est une cible de choix.
+- **Imaginer uniquement l'attaquant lointain.** Un proche malveillant a souvent plus d'accès que n'importe quel pirate.
+- **Viser la sécurité parfaite.** Personne ne l'atteint. L'objectif réaliste est de ne pas être la cible la plus facile.
+- **Ne regarder que les échecs.** Dans un journal, la ligne la plus grave est souvent celle d'une réussite inhabituelle.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/rapport-activite-2024" description="Les menaces les plus fréquentes pour les particuliers, les entreprises et les collectivités">Cybermalveillance.gouv.fr : rapport d'activité 2024</ExternalLink>
+
+<ExternalLink href="https://cyber.gouv.fr/publications/panorama-de-la-cybermenace-2024" description="La vision de l'ANSSI sur les attaquants, leurs motivations et leurs méthodes">ANSSI : panorama de la cybermenace 2024</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/bonnes-pratiques" description="Les fiches pratiques du dispositif national, pour les particuliers comme pour les professionnels">Cybermalveillance.gouv.fr : les bonnes pratiques</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi la messagerie est-elle le compte le plus précieux à protéger ?" options={["Parce qu'elle contient des photos", "Parce qu'elle sert à réinitialiser le mot de passe de presque tous les autres comptes", "Parce qu'elle coûte cher", "Parce qu'elle est rarement attaquée"]} correct={1} explanation="Qui contrôle ta boîte de réception peut demander la réinitialisation de tes autres comptes et recevoir les liens à ta place." />
+  <Quiz id="q-2" question="Qu'est-ce qu'une attaque opportuniste ?" options={["Une attaque préparée longuement contre une victime choisie", "Une attaque menée par un proche", "Une attaque qui vise un grand nombre de cibles et exploite celles qui cèdent", "Une attaque qui ne réussit jamais"]} correct={2} explanation="Elle lance un filet très large, souvent automatisé, et récolte les cibles les plus faciles : mots de passe réutilisés, failles non corrigées, clics rapides." />
+  <Quiz id="q-3" question="À quoi peut servir un ordinateur compromis qui ne contient aucune donnée intéressante ?" options={["À rien", "Seulement à afficher des publicités", "À rejoindre un botnet : envoi de pourriels, attaques, minage, masquage de l'adresse des attaquants", "À ralentir Internet"]} correct={2} explanation="La puissance de calcul et la connexion ont une valeur en elles-mêmes, louées à d'autres criminels." />
+  <Quiz id="q-4" question="Qu'est-ce que le bourrage d'identifiants (credential stuffing) ?" options={["Remplir un formulaire avec de faux noms", "Deviner un mot de passe lettre par lettre", "Essayer automatiquement, sur de nombreux sites, des identifiants volés ailleurs", "Envoyer un courriel piégé"]} correct={2} explanation="Il exploite la réutilisation des mots de passe : un identifiant qui a fui d'un site ouvre les autres comptes qui utilisent le même." />
+  <Quiz id="q-5" question="Pourquoi les robots essaient-ils les noms root, admin ou pi ?" options={["Parce qu'ils parient sur les comptes et réglages par défaut jamais modifiés", "Parce que ce sont des noms courts", "Parce que la loi les y oblige", "Au hasard"]} correct={0} explanation="Ce sont des comptes d'administration ou d'usine présents sur de très nombreux systèmes et appareils." />
+  <Quiz id="q-6" question="Dans un journal SSH, quelle ligne est la plus inquiétante ?" options={["Une tentative échouée sur root", "Une connexion réussie depuis une adresse inconnue, sans échec préalable", "Le démarrage du service", "Trente échecs depuis la même adresse"]} correct={1} explanation="Les échecs montrent que le serveur résiste. Une réussite inhabituelle signale que quelqu'un connaissait déjà le mot de passe." />
+  <Quiz id="q-7" question="Quel est l'objectif réaliste de la sécurité personnelle face aux attaques opportunistes ?" options={["Ne pas être parmi les cibles les plus faciles", "Devenir invulnérable", "Ne plus utiliser Internet", "Installer trois antivirus"]} correct={0} explanation="Un attaquant opportuniste cherche le meilleur rapport effort et gain : une cible qui résiste lui coûte plus cher que la suivante." />
+</QuizGroup>
+
+## à retenir
+
+- On n'est pas attaqué parce qu'on est intéressant, mais parce qu'on est **joignable** : la plupart des attaques sont **opportunistes** et automatisées.
+- Tout a une valeur : la **messagerie** (clé de réinitialisation), les **comptes**, les **données**, la **machine** et la **connexion** (botnets), l'**accès** à d'autres.
+- Attaquants : surtout des **cybercriminels** rationnels, mais aussi des escrocs, des États, des hacktivistes et parfois des **proches**.
+- L'**hameçonnage** et le **piratage de compte** sont les menaces les plus fréquentes pour les particuliers.
+- Un serveur exposé est attaqué en quelques minutes, sur les **comptes par défaut**.
+- Trois questions : **quoi** protéger, **contre qui**, **quelle conséquence** si on le perd. L'objectif : ne pas être la cible la plus facile.

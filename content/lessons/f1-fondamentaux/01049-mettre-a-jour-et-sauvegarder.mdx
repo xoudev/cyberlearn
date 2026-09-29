@@ -1,0 +1,146 @@
+---
+refCode: CL-LSN-01049-V01
+slug: fondamentaux-mettre-a-jour-et-sauvegarder
+title: "Mettre à jour et sauvegarder"
+description: "Les deux réflexes qui rendent la plupart des accidents et des attaques réparables : appliquer les mises à jour (pourquoi elles corrigent des failles, pourquoi le délai compte, la fin de support), et sauvegarder selon la règle 3-2-1 (trois copies, deux supports, une hors site et déconnectée), sans confondre synchronisation et sauvegarde, en vérifiant l'intégrité et en testant la restauration. Avec une sauvegarde complète à réaliser et restaurer sur un vrai Linux."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01048-V01"]
+---
+
+Deux gestes sans aucun éclat, qu'on remet toujours à plus tard, et qui séparent pourtant un incident banal d'une catastrophe. Le premier, **mettre à jour**, ferme les portes que les attaquants connaissent déjà. Le second, **sauvegarder**, garantit que même si tout le reste échoue, disque en panne, ordinateur volé, rançongiciel qui chiffre tous tes fichiers, tu pourras tout récupérer. Les professionnels le résument d'une phrase : on ne se demande pas **si** on perdra des données, mais **quand**. Cette leçon explique pourquoi ces deux gestes comptent autant, et comment les faire correctement, jusqu'à la vérification que presque tout le monde oublie : restaurer pour de vrai.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce que corrige une mise à jour, et pourquoi le délai d'application est décisif ;
+- distinguer une faille inconnue d'une faille connue non corrigée ;
+- repérer un logiciel ou un appareil en fin de support ;
+- appliquer la règle de sauvegarde 3-2-1 ;
+- expliquer pourquoi une synchronisation n'est pas une sauvegarde ;
+- créer une archive, vérifier son intégrité avec une empreinte, et la restaurer.
+
+## pourquoi ça compte
+
+La grande majorité des intrusions exploitent des failles **déjà connues**, pour lesquelles un correctif existait, parfois depuis des mois ou des années. Les attaquants n'ont pas besoin de génie : il leur suffit de balayer Internet à la recherche des machines qui n'ont pas appliqué le correctif, exactement comme les robots du journal SSH de la première leçon. Côté sauvegarde, le rançongiciel a rendu la question vitale : une entreprise ou un particulier qui a une sauvegarde saine et déconnectée peut refuser de payer et tout restaurer ; sans elle, il n'a que de mauvais choix. Dans les métiers de l'informatique, la gestion des correctifs et des sauvegardes est une responsabilité quotidienne, et la première chose qu'on vérifie après un incident.
+
+## ce que corrige une mise à jour
+
+Un logiciel contient des millions de lignes de code, écrites par des humains, et donc des bugs. Certains de ces bugs sont des **failles de sécurité** : une entrée mal vérifiée, une borne oubliée, un contrôle d'accès mal écrit, tout ce que tu as vu au module précédent. Quand une faille est découverte, l'éditeur publie un **correctif** dans une mise à jour. Les mises à jour de sécurité ne sont donc pas des gadgets : chacune ferme une porte précise.
+
+Le paradoxe est que la publication d'un correctif **alerte aussi les attaquants**. En comparant l'ancienne et la nouvelle version, ils voient exactement ce qui a été corrigé, donc où se trouvait la faille, et fabriquent rapidement un moyen de l'exploiter contre ceux qui n'ont pas encore mis à jour. Le délai entre la publication d'un correctif et les premières attaques se compte parfois en jours, voire en heures pour les failles les plus graves. Chaque jour de retard est un jour d'exposition à une faille **publique**.
+
+On distingue deux situations :
+
+- une faille **inconnue de l'éditeur**, dite *zero-day* (jour zéro), exploitée avant qu'un correctif existe. Rare, chère, réservée aux attaques ciblées ; personne ne peut s'en protéger par une mise à jour ;
+- une faille **connue et corrigée**, mais pas encore appliquée chez la victime. C'est l'immense majorité des cas, et c'est entièrement évitable.
+
+## que mettre à jour, et comment
+
+Tout ce qui exécute du code : le **système d'exploitation**, le **navigateur**, qui est ta porte d'entrée sur Internet, les **applications**, les **extensions**, le **téléphone**, la **box**, les **objets connectés**, l'imprimante, et jusqu'au micrologiciel de l'ordinateur. Tu as vu au module 3 comment fonctionnent les gestionnaires de paquets et les sources officielles ; la règle est la même : les mises à jour viennent de l'éditeur, par ses canaux officiels, jamais d'un lien reçu par message ni d'une fenêtre surgissante « votre lecteur est obsolète ».
+
+La méthode la plus sûre est aussi la plus simple : **activer les mises à jour automatiques** partout où c'est possible, et redémarrer quand l'appareil le demande. Un correctif téléchargé mais pas installé, faute de redémarrage, ne protège de rien.
+
+Reste le cas des produits **en fin de support**. Un éditeur ne corrige pas un logiciel indéfiniment : Windows 10, par exemple, a cessé de recevoir des correctifs gratuits le 14 octobre 2025. Un téléphone de plus de quelques années ne reçoit souvent plus de mises à jour de son constructeur. Un système en fin de support accumule des failles publiques qui ne seront plus jamais corrigées. Il faut alors le remplacer, passer à une version supportée, ou, à défaut, le retirer des usages sensibles comme la banque en ligne.
+
+Et l'antivirus ? Il reste utile, et celui intégré aux systèmes récents, comme Microsoft Defender, suffit à la plupart des particuliers. Mais il ne remplace pas les mises à jour : il détecte des menaces connues, alors que la mise à jour supprime la faille elle-même.
+
+## sauvegarder : contre quoi ?
+
+Une sauvegarde te protège contre bien plus que les pirates :
+
+- la **panne** : un disque dur ou un SSD finit toujours par lâcher ;
+- le **vol** ou la **perte** d'un ordinateur ou d'un téléphone ;
+- l'**accident** : café renversé, chute, incendie, inondation ;
+- l'**erreur humaine** : un fichier écrasé, un dossier supprimé par mégarde ;
+- le **rançongiciel**, qui chiffre tous les fichiers accessibles et réclame une rançon pour la clé ;
+- le **compte perdu** : un service en ligne qui ferme ou un compte piraté puis supprimé.
+
+Pour chacune de ces menaces, la question est la même : si ça arrive ce soir, qu'est-ce que je perds définitivement ? Pour la plupart des gens, la réponse est « des photos et des documents irremplaçables ». Ce sont eux qu'on sauvegarde en priorité.
+
+## la règle 3-2-1
+
+La règle de référence tient en trois chiffres :
+
+- **3 copies** de tes données : l'original et deux sauvegardes ;
+- sur **2 supports différents** : par exemple le disque de l'ordinateur et un disque externe, pour qu'une même panne ne détruise pas tout ;
+- dont **1 hors site** : ailleurs que chez toi, chez un proche ou dans un service en ligne, contre le vol, l'incendie ou l'inondation.
+
+<Diagram caption="La règle 3-2-1">
+flowchart LR
+  A["Copie 1 : les originaux, sur l'ordinateur"] --> B["Copie 2 : disque externe, débranché après chaque sauvegarde"]
+  A --> C["Copie 3 : hors site, chiffrée : service en ligne ou disque chez un proche"]
+  B -.->|"deux supports différents"| A
+  C -.->|"un exemplaire à l'abri d'un sinistre local"| A
+</Diagram>
+
+Le rançongiciel ajoute une exigence : au moins une copie doit être **déconnectée**, c'est-à-dire inaccessible depuis l'ordinateur la plupart du temps. Un disque externe branché en permanence est chiffré en même temps que le reste. On branche, on sauvegarde, on débranche. Certains résument la version moderne de la règle en 3-2-1-1-0 : un exemplaire déconnecté ou non modifiable, et **zéro** erreur lors de la vérification.
+
+À quelle fréquence ? La bonne question est : combien de travail accepterais-tu de perdre ? Une semaine de photos de vacances, un mois de documents ? La fréquence des sauvegardes découle de la réponse. Pour un particulier, une sauvegarde automatique quotidienne vers un service en ligne, et une copie mensuelle sur un disque externe qu'on range ensuite, forment un bon compromis.
+
+## synchroniser n'est pas sauvegarder
+
+Beaucoup de gens pensent être sauvegardés parce que leurs fichiers sont « dans le nuage », dans un service de synchronisation. Attention : une **synchronisation** reproduit fidèlement l'état de ton ordinateur, **y compris les catastrophes**. Tu supprimes un dossier, il disparaît du nuage. Un rançongiciel chiffre tes fichiers, les versions chiffrées remplacent les bonnes dans le nuage. Une vraie **sauvegarde** garde des états **passés**, qu'on peut restaurer. Les services de synchronisation proposent souvent un historique des versions et une corbeille, ce qui aide, mais sur une durée limitée. Vérifie ce que propose le tien, et ne t'en contente pas pour les données irremplaçables.
+
+## vérifier et restaurer
+
+Une sauvegarde qu'on n'a jamais restaurée n'est qu'un espoir. Les entreprises découvrent régulièrement, le jour de l'incident, que leurs sauvegardes étaient incomplètes, corrompues ou illisibles depuis des mois. Deux vérifications s'imposent. D'abord l'**intégrité** : l'archive n'a-t-elle pas été abîmée pendant la copie ou le stockage ? Une **empreinte**, comme celles du module 3, répond en une commande : on calcule l'empreinte de l'archive au moment de la sauvegarde, puis on la recalcule plus tard ; si elles sont égales, pas un seul bit n'a changé. Ensuite, la **restauration** elle-même : de temps en temps, on restaure réellement quelques fichiers, dans un dossier à part, et on vérifie qu'ils s'ouvrent.
+
+Enfin, une sauvegarde hors site contient tes données les plus personnelles : elle doit être **chiffrée**, surtout si elle est confiée à un tiers.
+
+## à toi de jouer : une sauvegarde complète
+
+Le dossier de travail contient un dossier `documents` : un rapport de stage, des photos (simulées par des fichiers texte) et un tableau de comptes. Réalise une sauvegarde complète, puis prouve qu'elle fonctionne. Sur ce Linux minimal, `tar` crée des archives sans compression, ce qui suffit ici.
+
+1. crée une archive du dossier : `tar -cf sauvegarde.tar documents` ;
+2. calcule son empreinte et enregistre-la : `sha256sum sauvegarde.tar > sauvegarde.sha256` ;
+3. simule le disque externe : crée un dossier `disque-externe` et copie-y l'archive **et** l'empreinte avec `cp` ;
+4. vérifie l'intégrité de la copie : va dans `disque-externe`, lance `sha256sum -c sauvegarde.sha256`, qui doit répondre `OK`, puis reviens avec `cd ..` ;
+5. teste la restauration dans un dossier séparé : `mkdir restauration`, puis `tar -xf disque-externe/sauvegarde.tar -C restauration`, et vérifie le contenu avec `ls -R restauration`.
+
+<LinuxTerminal title="Sauvegarder, vérifier, restaurer" height={420} files={{ "documents/rapport-stage.txt": "Rapport de stage\n\nIntroduction : trois semaines au service informatique.\nMissions : inventaire du parc, mises à jour, sauvegardes.\nConclusion : les sauvegardes non testées ne valent rien.\n", "documents/photos/liste.txt": "vacances-2026-001.jpg\nvacances-2026-002.jpg\nanniversaire-mamie.jpg\n", "documents/photos/vacances-2026-001.txt": "(image) plage au coucher du soleil\n", "documents/comptes-2026.csv": "mois;recettes;depenses\njanvier;1850;1620\nfevrier;1850;1710\n" }} checks={[{ "label": "l'archive est sur le disque externe", "path": "disque-externe/sauvegarde.tar", "expect": "file" }, { "label": "son empreinte l'accompagne", "path": "disque-externe/sauvegarde.sha256", "expect": "file", "contains": "sauvegarde.tar" }, { "label": "le rapport de stage est restauré", "path": "restauration/documents/rapport-stage.txt", "expect": "file", "contains": "Conclusion" }, { "label": "les photos sont restaurées", "path": "restauration/documents/photos/liste.txt", "expect": "file" }]} hints={["tar -cf sauvegarde.tar documents crée l'archive ; tar -tf sauvegarde.tar en liste le contenu.", "mkdir disque-externe puis cp sauvegarde.tar sauvegarde.sha256 disque-externe/", "cd disque-externe ; sha256sum -c sauvegarde.sha256 ; cd ..", "mkdir restauration ; tar -xf disque-externe/sauvegarde.tar -C restauration"]} />
+
+Pour aller plus loin dans le terminal, provoque une corruption : ajoute une ligne à la copie de l'archive avec `echo abime >> disque-externe/sauvegarde.tar`, puis relance la vérification. `sha256sum -c` répond `FAILED` : une seule ligne ajoutée suffit à changer toute l'empreinte. C'est exactement ce que fera ta vérification le jour où un disque commencera à se dégrader.
+
+## les pièges
+
+- **Reporter les mises à jour.** Un correctif publié révèle la faille aux attaquants ; chaque jour de retard est un jour d'exposition.
+- **Oublier de redémarrer.** Beaucoup de correctifs ne s'appliquent qu'au redémarrage.
+- **Oublier la box, le téléphone et les objets connectés.** Ils exécutent du code, eux aussi.
+- **Garder un système en fin de support pour des usages sensibles.** Ses failles ne seront plus jamais corrigées.
+- **Confondre synchronisation et sauvegarde.** La synchronisation réplique aussi les suppressions et le chiffrement par un rançongiciel.
+- **Laisser le disque de sauvegarde branché.** Il sera chiffré avec le reste.
+- **Ne jamais restaurer.** Une sauvegarde non testée est un espoir, pas une garantie.
+- **Stocker hors site sans chiffrer.** La copie la plus éloignée est aussi la moins surveillée.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/mises-a-jour" description="La fiche pratique sur les mises à jour, pour les particuliers et les professionnels">Cybermalveillance.gouv.fr : les mises à jour</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/sauvegardes" description="La fiche pratique sur les sauvegardes, supports, fréquence et vérification">Cybermalveillance.gouv.fr : les sauvegardes</ExternalLink>
+
+<ExternalLink href="https://www.cert.ssi.gouv.fr/" description="Les avis de sécurité et alertes publiés par le centre gouvernemental de veille, d'alerte et de réponse aux attaques">CERT-FR : avis et alertes de sécurité</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi la publication d'un correctif augmente-t-elle le risque pour ceux qui ne l'appliquent pas ?" options={["Parce que les attaquants comparent les versions pour trouver la faille corrigée et l'exploiter", "Parce que le correctif contient un virus", "Parce que les mises à jour ralentissent l'ordinateur", "Elle ne l'augmente pas"]} correct={0} explanation="Le correctif désigne précisément l'endroit de la faille. Des attaques apparaissent ensuite contre les machines non mises à jour." />
+  <Quiz id="q-2" question="Qu'est-ce qu'une faille zero-day ?" options={["Une faille corrigée le jour même", "Une faille sans gravité", "Une faille exploitée avant que l'éditeur la connaisse ou l'ait corrigée", "Une faille qui dure zéro jour"]} correct={2} explanation="Aucune mise à jour ne peut encore la corriger. Elles sont rares ; la plupart des attaques utilisent des failles déjà corrigées." />
+  <Quiz id="q-3" question="Que signifie la règle 3-2-1 ?" options={["3 copies, sur 2 supports différents, dont 1 hors site", "3 mots de passe, 2 facteurs, 1 gestionnaire", "3 sauvegardes par jour, 2 par semaine, 1 par mois", "3 disques, 2 ordinateurs, 1 nuage"]} correct={0} explanation="Trois exemplaires des données, deux types de supports pour ne pas tout perdre sur une même panne, un exemplaire ailleurs contre les sinistres locaux." />
+  <Quiz id="q-4" question="Pourquoi un service de synchronisation de fichiers n'est-il pas une vraie sauvegarde ?" options={["Parce qu'il est trop lent", "Parce qu'il est payant", "Parce qu'il ne fonctionne qu'en Wi-Fi", "Parce qu'il reproduit aussi les suppressions et les fichiers chiffrés par un rançongiciel"]} correct={3} explanation="Une synchronisation copie l'état actuel, catastrophes comprises. Une sauvegarde conserve des états passés restaurables." />
+  <Quiz id="q-5" question="Pourquoi débrancher le disque de sauvegarde après usage ?" options={["Pour économiser l'électricité", "Pour qu'il refroidisse", "Parce que c'est obligatoire", "Pour qu'un rançongiciel ne puisse pas le chiffrer en même temps que l'ordinateur"]} correct={3} explanation="Un rançongiciel chiffre tout ce qui est accessible. Une copie déconnectée reste saine." />
+  <Quiz id="q-6" question="À quoi sert l'empreinte SHA-256 enregistrée avec l'archive ?" options={["À chiffrer l'archive", "À la compresser", "À vérifier plus tard que l'archive n'a pas été modifiée d'un seul bit", "À lui donner un nom"]} correct={2} explanation="On recalcule l'empreinte et on la compare : si elles sont égales, l'archive est intacte. sha256sum -c fait cette comparaison." />
+  <Quiz id="q-7" question="Un ordinateur sous un système en fin de support fonctionne encore très bien. Quel est le risque ?" options={["Aucun", "Il va s'éteindre tout seul", "Il deviendra plus lent", "Il ne recevra plus de correctifs : ses failles, de plus en plus nombreuses et publiques, resteront ouvertes"]} correct={3} explanation="Sans correctifs, chaque nouvelle faille découverte reste exploitable. Il faut passer à une version supportée ou l'écarter des usages sensibles." />
+</QuizGroup>
+
+## à retenir
+
+- Une **mise à jour de sécurité** ferme une faille précise ; sa publication la **révèle** aux attaquants. Appliquer vite, de préférence **automatiquement**, et **redémarrer**.
+- La plupart des attaques exploitent des failles **connues et corrigées** ; les *zero-days* sont rares.
+- Tout ce qui exécute du code se met à jour : système, navigateur, applications, téléphone, **box**, objets connectés. Un produit en **fin de support** se remplace.
+- Sauvegarder selon **3-2-1** : 3 copies, 2 supports, 1 hors site, et au moins une **déconnectée**.
+- La **synchronisation** n'est pas une sauvegarde.
+- Vérifier l'**intégrité** (une empreinte), **tester la restauration**, **chiffrer** la copie hors site.
