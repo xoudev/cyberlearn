@@ -4,9 +4,13 @@ import { prisma } from "@cyberlearn/db";
 import {
   catalogueFromManifest,
   findPathManifestDir,
+  findQuizDir,
   loadPathManifests,
+  loadQuizFiles,
   manifestLessons,
+  quizMatches,
   syncPath,
+  syncQuiz,
   type LoadedPathManifest,
 } from "@cyberlearn/db/catalogue";
 import type { ImportValidationError } from "@cyberlearn/types";
@@ -17,12 +21,13 @@ import { findLessonsDir, readRepositoryLessons } from "./lesson-sync.service";
  * Bringing what the repository holds into the database, from the console.
  *
  * Until now a lesson reached production only by being uploaded on the import
- * page, file by file, and a path of the new catalogue (content/paths) only by
- * running seed-paths against the production database from someone's machine.
- * Both files ship with the console's deployment (outputFileTracingIncludes in
- * next.config.ts), so the console can read them itself: a lesson is imported
- * through the same checks as an upload, and a path is written by the same code
- * as the seed (@cyberlearn/db/catalogue).
+ * page, file by file, and a path of the new catalogue (content/paths) or its
+ * final exam (content/quizzes) only by running seed-paths or seed-quizzes
+ * against the production database from someone's machine. These files ship
+ * with the console's deployment (outputFileTracingIncludes in next.config.ts),
+ * so the console can read them itself: a lesson is imported through the same
+ * checks as an upload, and a path or an exam is written by the same code as
+ * the seeds (@cyberlearn/db/catalogue).
  *
  * Nothing is published here. Lessons arrive as DRAFT, like any import, and a
  * new path as DRAFT too: publishing stays a decision taken in the console.
@@ -332,6 +337,159 @@ export async function syncPathFromRepository(
     attached: result.attached,
     missing: result.missing.length,
   };
+}
+
+// ── Exams ────────────────────────────────────────────────────────────────────
+
+export interface QuizSyncState {
+  /** The path's slug, which names the file. */
+  slug: string;
+  /** content/quizzes/<file> */
+  file: string;
+  questions: number;
+  questionsToDraw: number;
+  passThreshold: number;
+  /** The path the exam belongs to; null until the path is synced. */
+  path: { id: string; title: string } | null;
+  /** The path has a quiz, possibly different from the file. */
+  exists: boolean;
+  /** The database already holds what a sync would write. */
+  upToDate: boolean;
+}
+
+export interface QuizSyncOverview {
+  /** False when content/quizzes did not ship with this deployment. */
+  available: boolean;
+  /** A file that fails its check is listed here and cannot be synced. */
+  errors: string[];
+  quizzes: QuizSyncState[];
+}
+
+/** Every exam of content/quizzes against its path's quiz. Reads, writes nothing. */
+export async function quizSyncOverview(dir = findQuizDir()): Promise<QuizSyncOverview> {
+  if (dir === null) return { available: false, errors: [], quizzes: [] };
+  const { quizzes, errors } = loadQuizFiles(dir);
+  const paths = await prisma.path.findMany({
+    where: { slug: { in: quizzes.map((q) => q.slug) } },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      quiz: {
+        select: {
+          passThreshold: true,
+          questionsToDraw: true,
+          isActive: true,
+          questions: {
+            orderBy: { orderIndex: "asc" },
+            select: {
+              question: true,
+              options: true,
+              correctOptionId: true,
+              explanation: true,
+              isActive: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  const bySlug = new Map(paths.map((p) => [p.slug, p]));
+
+  return {
+    available: true,
+    errors,
+    quizzes: quizzes.map(({ slug, file, quiz }): QuizSyncState => {
+      const path = bySlug.get(slug);
+      return {
+        slug,
+        file,
+        questions: quiz.questions.length,
+        questionsToDraw: quiz.questionsToDraw,
+        passThreshold: quiz.passThreshold,
+        path: path ? { id: path.id, title: path.title } : null,
+        exists: Boolean(path?.quiz),
+        upToDate: path?.quiz ? quizMatches(path.quiz, quiz) : false,
+      };
+    }),
+  };
+}
+
+export type QuizSyncResult =
+  | { ok: true; created: boolean; questions: number }
+  | {
+      ok: false;
+      reason: "unavailable" | "invalid" | "not_found" | "no_path";
+      message: string;
+      details: string[];
+    };
+
+/**
+ * Writes the exam of one path from content/quizzes/<slug>.json: its threshold,
+ * its draw and its whole question pool. The path must exist: an exam is
+ * attached to a path, so the path is synced first.
+ */
+export async function syncQuizFromRepository(
+  slug: string,
+  actorId: string,
+  dir = findQuizDir(),
+): Promise<QuizSyncResult> {
+  if (dir === null) {
+    return {
+      ok: false,
+      reason: "unavailable",
+      message: "Les examens du dépôt ne sont pas disponibles ici.",
+      details: [],
+    };
+  }
+  const { quizzes, errors } = loadQuizFiles(dir);
+  const own = errors.filter((e) => e.startsWith(`[${slug}]`));
+  if (own.length > 0) {
+    return {
+      ok: false,
+      reason: "invalid",
+      message: `content/quizzes/${slug}.json ne passe pas ses contrôles.`,
+      details: own,
+    };
+  }
+  const loaded = quizzes.find((q) => q.slug === slug);
+  if (!loaded) {
+    return {
+      ok: false,
+      reason: "not_found",
+      message: `Aucun examen du dépôt pour le parcours ${slug}.`,
+      details: [],
+    };
+  }
+  const path = await prisma.path.findUnique({ where: { slug }, select: { id: true } });
+  if (!path) {
+    return {
+      ok: false,
+      reason: "no_path",
+      message: `Le parcours ${slug} n'existe pas encore en base : synchronise-le d'abord.`,
+      details: [],
+    };
+  }
+
+  const result = await syncQuiz(prisma, path.id, loaded.quiz);
+  await prisma.auditLog.create({
+    data: {
+      actorId,
+      action: "quiz.sync",
+      targetType: "quiz",
+      targetId: result.quizId,
+      metadata: {
+        slug,
+        file: loaded.file,
+        created: result.created,
+        questions: result.questions,
+        retired: result.retired,
+        questionsToDraw: loaded.quiz.questionsToDraw,
+        passThreshold: loaded.quiz.passThreshold,
+      },
+    },
+  });
+  return { ok: true, created: result.created, questions: result.questions };
 }
 
 // ── Publication ──────────────────────────────────────────────────────────────

@@ -13,9 +13,12 @@ import { lessonSyncOverview, type LessonUpdate } from "@/lib/services/lesson-syn
 import {
   catalogueDrafts,
   pathSyncOverview,
+  quizSyncOverview,
   type CatalogueDrafts,
   type PathSyncOverview,
   type PathSyncState,
+  type QuizSyncOverview,
+  type QuizSyncState,
 } from "@/lib/services/repository-import.service";
 import type { DiffHunk } from "@/lib/text-diff";
 import { PublishCatalogueButton, RunAllButton, RunOneButton } from "./_components/sync-controls";
@@ -203,6 +206,71 @@ function PathsSection({ overview }: { overview: PathSyncOverview }): React.React
   );
 }
 
+function quizState(q: QuizSyncState): { label: string; tone: Tone } {
+  if (q.path === null) return { label: "Parcours absent", tone: "neutral" };
+  if (!q.exists) return { label: "Nouveau", tone: "info" };
+  if (!q.upToDate) return { label: "À synchroniser", tone: "warning" };
+  return { label: "À jour", tone: "accent" };
+}
+
+function QuizzesSection({ overview }: { overview: QuizSyncOverview }): React.ReactElement | null {
+  if (!overview.available) {
+    return (
+      <EmptyState
+        title="Examens des parcours introuvables"
+        text="Ce déploiement n'embarque pas content/quizzes. Vérifie outputFileTracingIncludes dans apps/admin/next.config.ts."
+      />
+    );
+  }
+  if (overview.quizzes.length === 0 && overview.errors.length === 0) return null;
+  // An exam hangs off its path: one whose path is not in the database waits.
+  const pending = overview.quizzes.filter((q) => q.path !== null && !q.upToDate);
+  return (
+    <section className="a-card a-sync-extra">
+      <div className="a-card-head">
+        <h2 className="a-card-title">Examens de parcours du dépôt</h2>
+      </div>
+      <div className="a-card-pad a-sync-body">
+        <p className="a-sync-file">
+          Chaque fichier de content/quizzes est l&apos;examen final d&apos;un parcours, qui porte le
+          même slug : le pool de questions, le nombre tiré à chaque tentative et le seuil du
+          certificat. Synchronise d&apos;abord le parcours. Une question retirée du fichier est
+          désactivée, jamais supprimée.
+        </p>
+        {overview.errors.length > 0 ? (
+          <ul className="a-sync-failures" role="alert">
+            {overview.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        ) : null}
+        {pending.length > 0 ? (
+          <RunAllButton
+            kind="quiz"
+            targets={pending.map((q) => ({ refCode: q.slug, title: q.path?.title ?? q.slug }))}
+          />
+        ) : null}
+        <ul className="a-sync-plain">
+          {overview.quizzes.map((q) => {
+            const state = quizState(q);
+            return (
+              <li key={q.slug}>
+                <span className="a-sync-ref">{q.slug}</span>{" "}
+                {q.path ? <Link href={`/paths/${q.path.id}/quiz`}>{q.path.title}</Link> : null}{" "}
+                <Tag tone={state.tone}>{state.label}</Tag>{" "}
+                <span className="a-sync-file">
+                  content/quizzes/{q.file} · {q.questionsToDraw} questions tirées sur {q.questions}{" "}
+                  · seuil {q.passThreshold} %
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function PublishSection({ drafts }: { drafts: CatalogueDrafts }): React.ReactElement | null {
   if (drafts.lessons.length === 0 && drafts.paths.length === 0) return null;
   return (
@@ -234,9 +302,10 @@ function PublishSection({ drafts }: { drafts: CatalogueDrafts }): React.ReactEle
 
 export default async function LessonSyncPage(): Promise<React.ReactElement> {
   await requireAdminPage();
-  const [overview, paths, drafts] = await Promise.all([
+  const [overview, paths, quizzes, drafts] = await Promise.all([
     lessonSyncOverview(),
     pathSyncOverview(),
+    quizSyncOverview(),
     catalogueDrafts(),
   ]);
 
@@ -245,7 +314,7 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
       <PageHeader
         eyebrow="Contenu"
         title="Synchroniser avec le dépôt"
-        description="Les leçons de content/lessons et les parcours de content/paths, comparés à la base. Rien n'est écrit sans confirmation, et rien n'est publié : les nouvelles leçons et les nouveaux parcours arrivent en brouillon. Le slug, le statut et l'image de couverture d'une leçon existante ne changent jamais."
+        description="Les leçons de content/lessons, les parcours de content/paths et leurs examens de content/quizzes, comparés à la base. Rien n'est écrit sans confirmation, et rien n'est publié : les nouvelles leçons et les nouveaux parcours arrivent en brouillon. Le slug, le statut et l'image de couverture d'une leçon existante ne changent jamais."
         actions={<GhostLink href="/lessons">Retour aux leçons</GhostLink>}
       />
 
@@ -311,6 +380,8 @@ export default async function LessonSyncPage(): Promise<React.ReactElement> {
           ) : null}
 
           <PathsSection overview={paths} />
+
+          <QuizzesSection overview={quizzes} />
 
           <PublishSection drafts={drafts} />
 

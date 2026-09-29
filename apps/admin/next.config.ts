@@ -23,7 +23,11 @@ const nextConfig: NextConfig = {
     // "Synchroniser avec le dépôt" reads the lesson files and the path
     // manifests at run time. They ship with that route only, not with every
     // function of the console.
-    "/lessons/sync": ["../../content/lessons/**/*.mdx", "../../content/paths/*.json"],
+    "/lessons/sync": [
+      "../../content/lessons/**/*.mdx",
+      "../../content/paths/*.json",
+      "../../content/quizzes/*.json",
+    ],
   },
   // Same as apps/web: Sentry uploads the server source maps and then leaves
   // them on disk - it deletes the client ones only, deliberately - and Next.js

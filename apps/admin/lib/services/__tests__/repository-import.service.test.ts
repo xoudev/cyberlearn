@@ -14,12 +14,14 @@ const m = vi.hoisted(() => ({
   validateMdxContent: vi.fn(),
   importValidatedLesson: vi.fn(),
   syncPath: vi.fn(),
+  syncQuiz: vi.fn(),
+  pathFindUnique: vi.fn(),
 }));
 
 vi.mock("@cyberlearn/db", () => ({
   prisma: {
     lesson: { findMany: m.lessonFindMany, updateMany: m.lessonUpdateMany },
-    path: { findMany: m.pathFindMany, updateMany: m.pathUpdateMany },
+    path: { findMany: m.pathFindMany, findUnique: m.pathFindUnique, updateMany: m.pathUpdateMany },
     auditLog: { create: m.auditCreate },
     $transaction: (operations: Promise<unknown>[]) => Promise.all(operations),
   },
@@ -28,6 +30,7 @@ vi.mock("@cyberlearn/db", () => ({
 vi.mock("@cyberlearn/db/catalogue", async (importOriginal) => ({
   ...(await importOriginal<typeof Catalogue>()),
   syncPath: m.syncPath,
+  syncQuiz: m.syncQuiz,
 }));
 
 vi.mock("../lesson-import.service", async (importOriginal) => ({
@@ -41,7 +44,9 @@ const {
   importLessonFromRepository,
   pathSyncOverview,
   publishCatalogueDrafts,
+  quizSyncOverview,
   syncPathFromRepository,
+  syncQuizFromRepository,
 } = await import("../repository-import.service");
 
 let root: string;
@@ -348,6 +353,118 @@ describe("syncPathFromRepository", () => {
     );
     expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
       data: { actorId: "admin-1", action: "path.sync", targetType: "path", targetId: "path-1" },
+    });
+  });
+});
+
+// ── Exams ────────────────────────────────────────────────────────────────────
+
+const QUESTION = {
+  question: "Que vaut 2 + 2 ?",
+  options: [
+    { id: "a", text: "3" },
+    { id: "b", text: "4" },
+  ],
+  correctOptionId: "b",
+  explanation: "Deux plus deux font quatre.",
+};
+
+function exam(overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({
+    passThreshold: 75,
+    questionsToDraw: 1,
+    questions: [QUESTION],
+    ...overrides,
+  });
+}
+
+const STORED_QUIZ = {
+  passThreshold: 75,
+  questionsToDraw: 1,
+  isActive: true,
+  questions: [{ ...QUESTION, isActive: true }],
+};
+
+describe("quizSyncOverview", () => {
+  it("says so when the exams did not ship", async () => {
+    expect(await quizSyncOverview(null)).toEqual({ available: false, errors: [], quizzes: [] });
+  });
+
+  it("tells a new exam, one in sync, one out of date and one whose path is missing", async () => {
+    write("quizzes/reseaux.json", exam());
+    write("quizzes/linux.json", exam());
+    write("quizzes/python.json", exam({ passThreshold: 80 }));
+    write("quizzes/absent.json", exam());
+    m.pathFindMany.mockResolvedValue([
+      { id: "p-1", slug: "reseaux", title: "Réseaux", quiz: null },
+      { id: "p-2", slug: "linux", title: "Linux", quiz: STORED_QUIZ },
+      { id: "p-3", slug: "python", title: "Python", quiz: STORED_QUIZ },
+    ]);
+
+    const overview = await quizSyncOverview(path.join(root, "quizzes"));
+
+    const bySlug = Object.fromEntries(overview.quizzes.map((q) => [q.slug, q]));
+    expect(bySlug.reseaux).toMatchObject({ exists: false, upToDate: false, path: { id: "p-1" } });
+    expect(bySlug.linux).toMatchObject({ exists: true, upToDate: true });
+    expect(bySlug.python).toMatchObject({ exists: true, upToDate: false, passThreshold: 80 });
+    expect(bySlug.absent).toMatchObject({ path: null, upToDate: false });
+  });
+
+  it("lists a broken file instead of syncing it", async () => {
+    write("quizzes/reseaux.json", exam({ questionsToDraw: 5 }));
+    m.pathFindMany.mockResolvedValue([]);
+    const overview = await quizSyncOverview(path.join(root, "quizzes"));
+    expect(overview.quizzes).toEqual([]);
+    expect(overview.errors.join("\n")).toContain("questionsToDraw (5)");
+  });
+});
+
+describe("syncQuizFromRepository", () => {
+  it("refuses a file that fails its check, and writes nothing", async () => {
+    write("quizzes/reseaux.json", exam({ passThreshold: 150 }));
+    const result = await syncQuizFromRepository("reseaux", "admin-1", path.join(root, "quizzes"));
+    expect(result).toMatchObject({ ok: false, reason: "invalid" });
+    expect(m.syncQuiz).not.toHaveBeenCalled();
+  });
+
+  it("is not stopped by another path's broken exam", async () => {
+    write("quizzes/reseaux.json", exam());
+    write("quizzes/linux.json", "{ pas du json");
+    m.pathFindUnique.mockResolvedValue({ id: "p-1" });
+    m.syncQuiz.mockResolvedValue({ quizId: "q-1", created: true, questions: 1, retired: 0 });
+    const result = await syncQuizFromRepository("reseaux", "admin-1", path.join(root, "quizzes"));
+    expect(result).toEqual({ ok: true, created: true, questions: 1 });
+  });
+
+  it("waits for the path to exist", async () => {
+    write("quizzes/reseaux.json", exam());
+    m.pathFindUnique.mockResolvedValue(null);
+    const result = await syncQuizFromRepository("reseaux", "admin-1", path.join(root, "quizzes"));
+    expect(result).toMatchObject({ ok: false, reason: "no_path" });
+    expect(m.syncQuiz).not.toHaveBeenCalled();
+  });
+
+  it("writes the exam of its path and records it", async () => {
+    write("quizzes/reseaux.json", exam());
+    m.pathFindUnique.mockResolvedValue({ id: "p-1" });
+    m.syncQuiz.mockResolvedValue({ quizId: "q-1", created: false, questions: 1, retired: 2 });
+
+    const result = await syncQuizFromRepository("reseaux", "admin-1", path.join(root, "quizzes"));
+
+    expect(result).toEqual({ ok: true, created: false, questions: 1 });
+    expect(m.syncQuiz).toHaveBeenCalledWith(
+      expect.anything(),
+      "p-1",
+      expect.objectContaining({ passThreshold: 75, questionsToDraw: 1 }),
+    );
+    expect(m.auditCreate.mock.calls[0]?.[0]).toMatchObject({
+      data: {
+        actorId: "admin-1",
+        action: "quiz.sync",
+        targetType: "quiz",
+        targetId: "q-1",
+        metadata: { slug: "reseaux", retired: 2 },
+      },
     });
   });
 });

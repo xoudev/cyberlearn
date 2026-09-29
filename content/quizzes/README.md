@@ -30,17 +30,25 @@ Le `path-slug` du nom de fichier doit correspondre au `slug` du parcours
 }
 ```
 
-Contraintes (validées par `db:seed-quizzes`, alignées sur le schéma admin) :
+Contraintes (validées par `packages/db/src/catalogue/quiz-files.ts`, alignées
+sur le schéma admin, et vérifiées par un test unitaire en CI) :
 `passThreshold` 0-100, `questionsToDraw` 1-100 et <= nombre de questions,
 2 à 10 options par question avec des `id` uniques, `correctOptionId` qui
-pointe vers une option, `explanation` facultative. Pas de tiret cadratin.
+pointe vers une option, `explanation` facultative, pas deux fois la même
+question dans un pool. Pas de tiret cadratin.
 
 ## Charger en base
+
+En production : admin → Leçons → **Synchroniser avec le dépôt**, section
+« Examens de parcours du dépôt », après avoir synchronisé le parcours. En local :
 
 ```bash
 pnpm --filter @cyberlearn/db db:seed-quizzes          # dry run (validation)
 pnpm --filter @cyberlearn/db db:seed-quizzes --apply  # écrit en base
 ```
 
-Idempotent : le quiz du parcours est mis à jour et son pool de questions
-remplacé à chaque exécution. Lancer après `db:seed-paths`.
+Idempotent : le quiz du parcours est mis à jour et son pool aligné sur le
+fichier. Une question déjà en base garde sa ligne (reconnue à son texte), une
+nouvelle est créée, une question retirée du fichier est désactivée, jamais
+supprimée, pour qu'une tentative en cours reste notée. Lancer après
+`db:seed-paths`.

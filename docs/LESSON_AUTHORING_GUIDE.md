@@ -11,7 +11,7 @@ Chaque leçon est un fichier `.mdx` avec un frontmatter YAML + un corps en MDX (
 mon-slug.mdx
 ```
 
-Un fichier = une leçon. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths` et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible.
+Un fichier = une leçon. Une fois le fichier sur `main`, il s'importe depuis admin → Leçons → « Synchroniser avec le dépôt » (`/lessons/sync`), qui importe aussi les parcours de `content/paths`, leurs examens de `content/quizzes`, et reporte en base toute correction ultérieure du fichier (voir `content/README.md`). L'import manuel (`/lessons/import`) reste possible.
 
 ---
 
