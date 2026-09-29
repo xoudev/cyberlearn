@@ -7,25 +7,7 @@ import { StatusBadge } from "../../_components/status-badge";
 import { updateLessonStatusAction, bulkUpdateLessonStatusAction } from "../_actions/lesson-actions";
 import { DeleteLessonButton } from "./delete-lesson-button";
 import { Select } from "@cyberlearn/ui";
-
-type ContentStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
-type ContentAudience = "CATALOGUE" | "CLASS";
-
-export interface LessonRow {
-  id: string;
-  refCode: string;
-  slug: string;
-  title: string;
-  category: string;
-  difficulty: string;
-  status: ContentStatus;
-  xpReward: number;
-  estimatedMinutes: number;
-  completions: number;
-  pathLessonsCount: number;
-  /** CLASS when a teacher wrote it for their own classes rather than for the catalogue. */
-  audience: ContentAudience;
-}
+import type { ContentStatus, LessonFolder, LessonRow } from "@/lib/services/lesson-list.service";
 
 interface DiffColor {
   color: string;
@@ -44,7 +26,17 @@ const GRID = "32px minmax(0, 1fr) 110px 120px 60px 90px 110px 40px";
 
 const CATEGORIES = ["ALL", "DEV", "CYBERSEC", "NETWORK"] as const;
 const DIFFICULTIES = ["ALL", "BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"] as const;
-const STATUSES = ["ALL", "DRAFT", "PUBLISHED", "ARCHIVED"] as const;
+// The archives are their own folder: the working list filters drafts and
+// published lessons only.
+const STATUSES = ["ALL", "DRAFT", "PUBLISHED"] as const;
+const ORIGINS = ["ALL", "new", "first", "class"] as const;
+
+const ORIGIN_LABEL: Record<(typeof ORIGINS)[number], string> = {
+  ALL: "Catalogue : tous",
+  new: "Nouveau catalogue",
+  first: "Ancien catalogue",
+  class: "Leçons de classe",
+};
 
 /** Square, theme-styled checkbox (supports an indeterminate "minus" state). */
 function SquareCheckbox({
@@ -113,15 +105,22 @@ const STATUS_LABEL: Record<(typeof STATUSES)[number], string> = {
   ALL: "Statut : tous",
   DRAFT: "Brouillon",
   PUBLISHED: "Publié",
-  ARCHIVED: "Archivé",
 };
 
-export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.Element {
+export function LessonsTable({
+  lessons,
+  folder,
+}: {
+  lessons: LessonRow[];
+  folder: LessonFolder;
+}): React.JSX.Element {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("ALL");
   const [difficulty, setDifficulty] = useState<(typeof DIFFICULTIES)[number]>("ALL");
   const [status, setStatus] = useState<(typeof STATUSES)[number]>("ALL");
+  const [origin, setOrigin] = useState<(typeof ORIGINS)[number]>("ALL");
+  const [confirmArchive, setConfirmArchive] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
   const [bulkError, setBulkError] = useState<string | null>(null);
@@ -132,6 +131,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
       if (category !== "ALL" && l.category !== category) return false;
       if (difficulty !== "ALL" && l.difficulty !== difficulty) return false;
       if (status !== "ALL" && l.status !== status) return false;
+      if (origin !== "ALL" && l.origin !== origin) return false;
       if (
         q &&
         !l.title.toLowerCase().includes(q) &&
@@ -141,7 +141,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
         return false;
       return true;
     });
-  }, [lessons, query, category, difficulty, status]);
+  }, [lessons, query, category, difficulty, status, origin]);
 
   const filteredIds = useMemo(() => filtered.map((l) => l.id), [filtered]);
   const selectedInView = filteredIds.filter((id) => selected.has(id)).length;
@@ -172,6 +172,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
   function runBulk(next: ContentStatus) {
     const ids = [...selected];
     if (ids.length === 0) return;
+    setConfirmArchive(false);
     setBulkError(null);
     startTransition(async () => {
       const res = await bulkUpdateLessonStatusAction(ids, next);
@@ -185,7 +186,11 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
   }
 
   const filtersActive =
-    query !== "" || category !== "ALL" || difficulty !== "ALL" || status !== "ALL";
+    query !== "" ||
+    category !== "ALL" ||
+    difficulty !== "ALL" ||
+    status !== "ALL" ||
+    origin !== "ALL";
 
   return (
     <div>
@@ -245,14 +250,26 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
             setDifficulty(next as (typeof DIFFICULTIES)[number]);
           }}
         />
+        {folder === "active" ? (
+          <Select
+            block={false}
+            aria-label="Statut"
+            value={status}
+            triggerStyle={filterStyle}
+            options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+            onChange={(next) => {
+              setStatus(next as (typeof STATUSES)[number]);
+            }}
+          />
+        ) : null}
         <Select
           block={false}
-          aria-label="Statut"
-          value={status}
+          aria-label="Catalogue"
+          value={origin}
           triggerStyle={filterStyle}
-          options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+          options={ORIGINS.map((o) => ({ value: o, label: ORIGIN_LABEL[o] }))}
           onChange={(next) => {
-            setStatus(next as (typeof STATUSES)[number]);
+            setOrigin(next as (typeof ORIGINS)[number]);
           }}
         />
         {filtersActive && (
@@ -263,6 +280,7 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
               setCategory("ALL");
               setDifficulty("ALL");
               setStatus("ALL");
+              setOrigin("ALL");
             }}
             style={{
               background: "transparent",
@@ -318,43 +336,87 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
             {String(selected.size)} sélectionnée{selected.size > 1 ? "s" : ""}
           </span>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => {
-                runBulk("PUBLISHED");
-              }}
-              style={bulkBtn("#0AFFD4", isPending)}
-            >
-              Publier
-            </button>
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => {
-                runBulk("DRAFT");
-              }}
-              style={bulkBtn("#7F7BA9", isPending)}
-            >
-              Brouillon
-            </button>
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => {
-                runBulk("ARCHIVED");
-              }}
-              style={bulkBtn("#FF4757", isPending)}
-            >
-              Archiver
-            </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            {folder === "archives" ? (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  runBulk("DRAFT");
+                }}
+                style={bulkBtn("#0AFFD4", isPending)}
+              >
+                Remettre en brouillon
+              </button>
+            ) : confirmArchive ? (
+              <>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#FF4757" }}>
+                  {selected.size > 1
+                    ? `${String(selected.size)} leçons quitteront le site et l'app, et rejoindront les archives.`
+                    : "Cette leçon quittera le site et l'app, et rejoindra les archives."}
+                </span>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    runBulk("ARCHIVED");
+                  }}
+                  style={bulkBtn("#FF4757", isPending)}
+                >
+                  Confirmer l&apos;archivage
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    setConfirmArchive(false);
+                  }}
+                  style={bulkBtn("#7F7BA9", isPending)}
+                >
+                  Annuler
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    runBulk("PUBLISHED");
+                  }}
+                  style={bulkBtn("#0AFFD4", isPending)}
+                >
+                  Publier
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    runBulk("DRAFT");
+                  }}
+                  style={bulkBtn("#7F7BA9", isPending)}
+                >
+                  Brouillon
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    setConfirmArchive(true);
+                  }}
+                  style={bulkBtn("#FF4757", isPending)}
+                >
+                  Archiver
+                </button>
+              </>
+            )}
           </div>
 
           <button
             type="button"
             onClick={() => {
               setSelected(new Set());
+              setConfirmArchive(false);
             }}
             style={{
               marginLeft: "auto",
@@ -441,7 +503,9 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
             }}
           >
             {lessons.length === 0
-              ? "Aucune leçon. Importez votre premier fichier MDX."
+              ? folder === "archives"
+                ? "Aucune leçon archivée."
+                : "Aucune leçon. Importez votre premier fichier MDX."
               : "Aucune leçon ne correspond aux filtres."}
           </div>
         ) : (
@@ -500,7 +564,21 @@ export function LessonsTable({ lessons }: { lessons: LessonRow[] }): React.JSX.E
                   {/* Otherwise an admin scanning this list finds a lesson they
                       did not commission, cannot see in the catalogue, and has
                       no way to tell apart from one that has gone missing. */}
-                  {lesson.audience === "CLASS" && (
+                  {lesson.origin === "first" && (
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: "#FFB020",
+                        marginTop: 3,
+                      }}
+                    >
+                      Ancien catalogue
+                    </div>
+                  )}
+                  {lesson.origin === "class" && (
                     <div
                       style={{
                         fontFamily: "var(--font-mono)",

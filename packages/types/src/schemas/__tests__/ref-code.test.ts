@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { lessonRefCodeSchema, pathRefCodeSchema } from "../ref-code.schema";
+import { isFirstCatalogueLesson, lessonRefCodeSchema, pathRefCodeSchema } from "../ref-code.schema";
 import { importLessonMetadataSchema } from "../import.schema";
+
+describe("isFirstCatalogueLesson", () => {
+  it("tells the first catalogue's lessons from the new catalogue's", () => {
+    expect(isFirstCatalogueLesson("CL-LSN-085-V01")).toBe(true);
+    expect(isFirstCatalogueLesson("CL-LSN-192-V02")).toBe(true);
+    expect(isFirstCatalogueLesson("CL-LSN-01008-V01")).toBe(false);
+    expect(isFirstCatalogueLesson("CL-LSN-02901-V01")).toBe(false);
+  });
+
+  it("leaves a teacher's class lesson out", () => {
+    expect(isFirstCatalogueLesson("CL-CLS-a1b2c3-V01")).toBe(false);
+  });
+});
 
 describe("lesson refCodes", () => {
   it("accepts the first catalogue's three digits and the new catalogue's five", () => {
