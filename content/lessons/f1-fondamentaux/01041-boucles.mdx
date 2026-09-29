@@ -1,0 +1,235 @@
+---
+refCode: CL-LSN-01041-V01
+slug: fondamentaux-boucles
+title: "Les boucles : répéter, compter, parcourir"
+description: "Faire répéter un travail à la machine : la boucle while et sa condition d'arrêt, la boucle for pour parcourir une liste, un texte ou un intervalle avec range, les motifs qui reviennent partout (compteur, accumulateur, recherche, filtre), break et continue, les boucles imbriquées et ce qu'elles disent de la force brute. Avec deux exercices : compter les échecs d'un journal et additionner des multiples."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01040-V01"]
+---
+
+Un ordinateur n'est pas plus intelligent que toi, mais il est infiniment plus patient. Vérifier dix mille lignes de journal, essayer dix mille codes, recalculer une moyenne sur un million de valeurs : ce qui prendrait des jours à un humain lui prend une fraction de seconde. Encore faut-il pouvoir lui dire « recommence », sans écrire dix mille fois la même instruction. C'est le rôle des **boucles**, la deuxième grande structure de contrôle après les conditions. Avec les variables, les conditions et les boucles, tu as déjà en main tout ce qu'il faut pour écrire n'importe quel algorithme : le reste n'est qu'organisation.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- répéter un bloc tant qu'une condition est vraie, avec `while` ;
+- parcourir une liste, un texte ou un intervalle de nombres, avec `for` et `range` ;
+- reconnaître et écrire les motifs classiques : compteur, accumulateur, recherche, filtre ;
+- sortir d'une boucle avec `break` ou sauter un tour avec `continue` ;
+- éviter les boucles infinies et les erreurs de un ;
+- estimer le nombre de tours d'une boucle imbriquée, et ce que cela dit de la force brute.
+
+## pourquoi ça compte
+
+Presque tout programme utile contient une boucle : lire un fichier ligne par ligne, traiter chaque requête reçue par un serveur, afficher chaque élément d'une page. En sécurité, les boucles sont partout aussi : un analyste parcourt des millions de lignes de journaux pour y trouver les tentatives d'intrusion, un outil d'audit essaie chaque port d'une machine, et un attaquant essaie chaque mot de passe d'un dictionnaire. Comprendre combien de tours fait une boucle, c'est comprendre pourquoi un code PIN à 4 chiffres se casse en quelques secondes, et pourquoi une phrase de passe de cinq mots résiste des siècles.
+
+## la boucle while
+
+`while` (tant que) répète un bloc **tant que** sa condition est vraie. Elle est testée avant chaque tour ; dès qu'elle devient fausse, on sort et le programme continue après la boucle.
+
+```python
+compte_a_rebours = 3
+while compte_a_rebours > 0:
+    print(compte_a_rebours)
+    compte_a_rebours -= 1
+print("Décollage")
+```
+
+Le programme affiche 3, 2, 1, puis « Décollage ». À chaque tour, `compte_a_rebours` diminue de 1 ; au quatrième test, il vaut 0, la condition est fausse, on sort.
+
+<Diagram caption="Le cycle d'une boucle while">
+flowchart TD
+  A["Avant la boucle : initialiser"] --> B["La condition est-elle vraie ?"]
+  B -->|"oui"| C["Exécuter le bloc"]
+  C --> D["Faire progresser la variable"]
+  D --> B
+  B -->|"non"| E["Suite du programme"]
+</Diagram>
+
+Le schéma montre les trois ingrédients d'une boucle `while` correcte : une **initialisation** avant la boucle, une **condition** testée à chaque tour, et une **progression** dans le bloc, qui rapproche la condition de la fausseté. Oublie la dernière, et tu obtiens une **boucle infinie** : la condition reste vraie pour toujours, le programme tourne sans fin et ne répond plus. Dans l'éditeur des leçons comme dans un terminal, il faut alors l'interrompre, souvent avec Ctrl+C.
+
+On utilise `while` quand on **ne sait pas à l'avance** combien de tours il faudra : redemander un mot de passe jusqu'à ce qu'il soit correct, attendre qu'un serveur réponde, diviser un nombre par 2 jusqu'à atteindre 1. Tu reconnais la méthode des divisions successives du module 2.
+
+## la boucle for
+
+Quand on veut traiter **chaque élément** d'une collection, `for` est plus simple et plus sûre :
+
+```python
+utilisateurs = ["alice", "bob", "chloe"]
+for nom in utilisateurs:
+    print("Bonjour", nom)
+```
+
+À chaque tour, la variable `nom` prend la valeur de l'élément suivant : `"alice"`, puis `"bob"`, puis `"chloe"`. Quand la liste est épuisée, la boucle s'arrête d'elle-même. Pas de compteur à gérer, pas de condition à écrire, pas de risque de boucle infinie : c'est pourquoi on préfère `for` dès que c'est possible.
+
+`for` parcourt n'importe quelle séquence. Un **texte**, caractère par caractère : `for lettre in "réseau":` fait six tours. Une **liste**, élément par élément. Et un **intervalle de nombres**, avec `range` :
+
+| Écriture | Valeurs produites |
+|---|---|
+| `range(5)` | 0, 1, 2, 3, 4 |
+| `range(1, 6)` | 1, 2, 3, 4, 5 |
+| `range(0, 20, 5)` | 0, 5, 10, 15 |
+| `range(10, 0, -1)` | 10, 9, 8, ..., 1 |
+
+La règle à retenir : `range` inclut le début et **exclut la fin**. `range(5)` produit cinq valeurs, de 0 à 4, jamais 5. C'est cohérent avec les positions des listes, qui commencent à 0 : `range(len(liste))` donne exactement toutes les positions valides. Mais c'est la source de la plus fréquente des erreurs de boucle, l'**erreur de un** (*off-by-one*) : un tour de trop ou de moins. Pour compter de 1 à 10 inclus, on écrit `range(1, 11)`.
+
+Si l'on a besoin à la fois de la position et de l'élément, `enumerate` donne les deux : `for i, nom in enumerate(utilisateurs):` fournit 0 et `"alice"`, puis 1 et `"bob"`, et ainsi de suite.
+
+## les motifs qui reviennent partout
+
+Quatre schémas de boucle couvrent une grande partie des programmes. Apprends-les comme des briques : tu les réutiliseras sans cesse.
+
+**Le compteur** compte les éléments qui vérifient une condition. On part de 0 et on ajoute 1 à chaque élément qui convient :
+
+```python
+echecs = 0
+for ligne in journal:
+    if "ECHEC" in ligne:
+        echecs += 1
+```
+
+**L'accumulateur** combine tous les éléments en un seul résultat. Pour une somme, on part de 0 et on ajoute chaque valeur ; pour un produit, on part de 1 ; pour un texte, de la chaîne vide.
+
+```python
+total = 0
+for montant in paniers:
+    total += montant
+moyenne = total / len(paniers)
+```
+
+**La recherche** parcourt jusqu'à trouver ce qu'on cherche, puis s'arrête. On utilise `break`, qui sort immédiatement de la boucle :
+
+```python
+trouve = None
+for adresse in connexions:
+    if adresse.startswith("203.0.113."):
+        trouve = adresse
+        break
+```
+
+**Le filtre** construit une nouvelle liste avec les éléments qui conviennent. On part d'une liste vide, et `append` ajoute un élément à la fin :
+
+```python
+suspects = []
+for nom, echecs in comptes:
+    if echecs >= 5:
+        suspects.append(nom)
+```
+
+Le maximum de la leçon sur les algorithmes est une cinquième variante : on garde le meilleur candidat rencontré jusqu'ici. Remarque le point commun : chaque motif a une **variable initialisée avant** la boucle et **mise à jour dans** la boucle. La valeur initiale n'est pas un détail : 0 pour une somme, 1 pour un produit, la liste vide pour un filtre, le premier élément pour un maximum.
+
+## break et continue
+
+`break` interrompt la boucle en cours, comme dans la recherche ci-dessus. `continue` saute la **fin du tour** et passe directement au suivant. On s'en sert pour ignorer certains éléments sans imbriquer tout le reste dans un `if` :
+
+```python
+for ligne in journal:
+    if ligne.startswith("#"):
+        continue            # un commentaire : on passe à la ligne suivante
+    traiter(ligne)
+```
+
+Les deux sont utiles, mais à petite dose : une boucle avec trois `break` et deux `continue` devient difficile à suivre. Si la logique se complique, c'est souvent le signe qu'il faut découper en fonctions, le sujet de la prochaine leçon.
+
+## les boucles imbriquées et la force brute
+
+Une boucle peut en contenir une autre. Pour chaque tour de la boucle extérieure, la boucle intérieure fait **tous** ses tours :
+
+```python
+for heure in range(24):
+    for minute in range(60):
+        pass   # 24 × 60 = 1 440 tours au total
+```
+
+Le nombre total de tours est le **produit** des nombres de tours. Et c'est là que les boucles rejoignent la sécurité. Un code PIN à 4 chiffres, c'est quatre boucles imbriquées de 10 tours chacune : 10 × 10 × 10 × 10 = 10 000 combinaisons. Un ordinateur les essaie toutes en bien moins d'une seconde ; c'est une attaque par **force brute**, et c'est pourquoi un téléphone bloque la saisie après quelques erreurs. Un mot de passe de 8 caractères choisis parmi 26 minuscules, c'est 26 puissance 8, environ 200 milliards : quelques minutes pour une carte graphique dédiée. Chaque caractère ajouté multiplie le travail par la taille de l'alphabet. Voilà pourquoi la **longueur** d'un mot de passe compte plus que sa complexité, un point que le module 7 approfondira.
+
+Dans l'éditeur ci-dessous, un programme retrouve par force brute un code à 3 chiffres en comptant ses essais. Modifie le code secret, puis ajoute un quatrième chiffre (une quatrième boucle) et observe le nombre d'essais maximal.
+
+<CodePlayground language="python" starterCode={`secret = '739'
+
+essais = 0
+trouve = None
+for a in range(10):
+    for b in range(10):
+        for c in range(10):
+            essais += 1
+            candidat = str(a) + str(b) + str(c)
+            if candidat == secret:
+                trouve = candidat
+                break
+        if trouve:
+            break
+    if trouve:
+        break
+
+print('Code trouvé :', trouve, 'en', essais, 'essais')
+print('Au pire, il en faut', 10 ** 3)
+
+# Le même travail en une seule boucle : les codes vont de 000 à 999
+for n in range(1000):
+    if str(n).zfill(3) == secret:
+        print('Avec une seule boucle : trouvé au tour', n + 1)
+        break`} />
+
+Remarque qu'un `break` ne sort que de la boucle **la plus intérieure** : il en faut un à chaque niveau, d'où les tests `if trouve`. La seconde version montre une astuce fréquente : les codes de 000 à 999 ne sont rien d'autre que les nombres de 0 à 999, écrits sur trois chiffres grâce à `zfill`.
+
+## à toi de jouer
+
+Premier exercice, le motif du compteur appliqué à un journal. Écris `solution(lignes)` qui reçoit une liste de lignes de journal et renvoie le nombre de lignes qui **commencent** par `ECHEC`. Attention, une ligne peut contenir le mot ailleurs, dans un nom d'utilisateur par exemple : utilise `ligne.startswith('ECHEC')` plutôt que `'ECHEC' in ligne`.
+
+<PythonChallenge id="f1-boucles-echecs" title="Compter les échecs" description="Renvoie le nombre de lignes qui commencent par ECHEC." starterCode="def solution(lignes):
+    echecs = 0
+    # parcours les lignes et compte celles qui commencent par ECHEC
+    return echecs" tests={[{ input: "solution(['ECHEC alice', 'OK alice', 'ECHEC bob'])", expected: "2" }, { input: "solution(['OK alice', 'OK bob'])", expected: "0" }, { input: "solution([])", expected: "0", label: "Journal vide" }, { input: "solution(['OK utilisateur=ECHEC', 'ECHEC admin'])", expected: "1", label: "Le mot ailleurs dans la ligne ne compte pas" }, { input: "solution(['ECHEC x'] * 50)", expected: "50" }]} />
+
+Second exercice, le motif de l'accumulateur combiné à une condition. Écris `solution(n)` qui renvoie la **somme** de tous les entiers positifs **strictement inférieurs** à `n` qui sont multiples de 3 **ou** de 5. Pour `n = 10`, ce sont 3, 5, 6 et 9, et la somme vaut 23. Attention à ne pas compter deux fois 15, qui est multiple des deux.
+
+<PythonChallenge id="f1-boucles-multiples" title="Multiples de 3 ou de 5" description="Renvoie la somme des entiers de 1 à n - 1 divisibles par 3 ou par 5." starterCode="def solution(n):
+    total = 0
+    # pour chaque entier de 1 à n - 1 : s'il est multiple de 3 ou de 5, ajoute-le
+    return total" tests={[{ input: "solution(10)", expected: "23" }, { input: "solution(16)", expected: "60", label: "15 compté une seule fois" }, { input: "solution(1)", expected: "0", label: "Aucun entier" }, { input: "solution(0)", expected: "0" }, { input: "solution(1000)", expected: "233168" }]} />
+
+Si tu obtiens 24 au lieu de 23 pour `n = 10`, ta boucle inclut `n` lui-même : c'est l'erreur de un. Et si tu obtiens 75 au lieu de 60 pour `n = 16`, tu as ajouté 15 deux fois, avec deux `if` séparés au lieu d'un seul `or`.
+
+## les pièges
+
+- **La boucle infinie.** Dans un `while`, rien ne fait progresser la condition. Vérifie qu'une variable change à chaque tour, dans le bon sens.
+- **L'erreur de un.** `range(1, 10)` s'arrête à 9. Teste toujours le premier et le dernier tour.
+- **Une mauvaise valeur initiale.** Un produit qui part de 0 vaut toujours 0 ; un compteur initialisé **dans** la boucle repart à zéro à chaque tour.
+- **Modifier une liste pendant qu'on la parcourt.** Supprimer des éléments d'une liste dans un `for` sur cette même liste en saute certains. Construis plutôt une nouvelle liste avec un filtre.
+- **Croire que `break` sort de toutes les boucles.** Il ne sort que de la plus intérieure.
+- **Une mauvaise indentation.** Une ligne décalée d'un cran de trop se répète à chaque tour ; d'un cran de moins, elle ne s'exécute qu'une fois, après la boucle.
+- **Sous-estimer les boucles imbriquées.** Les tours se multiplient : trois boucles de mille tours, c'est un milliard.
+
+## pour aller plus loin
+
+<ExternalLink href="https://docs.python.org/fr/3/tutorial/controlflow.html#for-statements" description="for, range, break et continue, dans le tutoriel officiel">Tutoriel Python : les boucles</ExternalLink>
+
+<ExternalLink href="https://docs.python.org/fr/3/library/stdtypes.html#range" description="Tout sur range : début, fin, pas, et pourquoi la fin est exclue">La documentation de range</ExternalLink>
+
+<ExternalLink href="https://www.cnil.fr/fr/mots-de-passe-des-recommandations-de-securite-minimales-pour-les-entreprises-et-les-particuliers" description="Longueur, force brute et blocage après plusieurs échecs, selon la CNIL">CNIL : recommandations sur les mots de passe</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelles valeurs produit range(2, 6) ?" options={["2, 3, 4, 5, 6", "2, 3, 4, 5", "3, 4, 5, 6", "2, 4, 6"]} correct={1} explanation="range inclut le début et exclut la fin : de 2 à 5." />
+  <Quiz id="q-2" question="Pourquoi la boucle while n > 0: print(n) ne s'arrête-t-elle jamais quand n vaut 3 ?" options={["Parce que print ralentit la boucle", "Parce que while ne teste la condition qu'une fois", "Parce que 3 est impair", "Parce que rien ne modifie n dans le bloc"]} correct={3} explanation="Il manque la progression : n reste à 3, la condition reste vraie pour toujours." />
+  <Quiz id="q-3" question="Quelle valeur initiale pour un accumulateur qui calcule un produit ?" options={["0", "La liste vide", "1", "None"]} correct={2} explanation="1 est neutre pour la multiplication. Partir de 0 donnerait toujours 0." />
+  <Quiz id="q-4" question="Que fait continue dans une boucle ?" options={["Il sort de la boucle", "Il recommence la boucle depuis le début", "Il met le programme en pause", "Il saute la fin du tour en cours et passe au suivant"]} correct={3} explanation="continue ignore le reste du bloc pour ce tour-ci ; break, lui, sort de la boucle." />
+  <Quiz id="q-5" question="Combien de tours fait le bloc intérieur de deux boucles imbriquées de 24 et 60 tours ?" options={["84", "60", "24", "1 440"]} correct={3} explanation="Les tours se multiplient : 24 × 60 = 1 440." />
+  <Quiz id="q-6" question="Combien de codes un attaquant doit-il essayer au pire pour un PIN à 4 chiffres ?" options={["40", "400", "10 000", "4 000"]} correct={2} explanation="10 possibilités par chiffre, quatre chiffres : 10 × 10 × 10 × 10 = 10 000. D'où le blocage après quelques erreurs." />
+  <Quiz id="q-7" question="Quand préférer while à for ?" options={["Quand on ne sait pas à l'avance combien de tours il faudra", "Pour parcourir une liste", "Pour compter de 1 à 10", "Jamais"]} correct={0} explanation="for parcourt une séquence connue ; while répète jusqu'à ce qu'une condition change, sans nombre de tours prévu." />
+</QuizGroup>
+
+## à retenir
+
+- `while condition:` répète **tant que** la condition est vraie. Il faut une **initialisation**, une **condition** et une **progression**, sinon c'est la boucle infinie.
+- `for x in sequence:` parcourt chaque élément d'une liste, d'un texte ou d'un `range`. On la préfère dès que c'est possible.
+- `range(debut, fin, pas)` **exclut la fin** : attention à l'erreur de un.
+- Quatre motifs : **compteur**, **accumulateur**, **recherche** (avec `break`), **filtre** (avec `append`). La valeur initiale compte.
+- `break` sort de la boucle la plus intérieure ; `continue` passe au tour suivant.
+- Les tours des boucles imbriquées se **multiplient** : c'est ce qui rend la force brute facile sur un PIN et impossible sur une longue phrase de passe.
