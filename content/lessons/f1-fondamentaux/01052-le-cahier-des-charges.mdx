@@ -1,0 +1,145 @@
+---
+refCode: CL-LSN-01052-V01
+slug: fondamentaux-le-cahier-des-charges
+title: "Projet final : le cahier des charges"
+description: "Le lancement du projet de fin de parcours : une petite association demande qu'on inventorie, diagnostique et documente son informatique. Lire une demande, écrire un cahier des charges (contexte, objectifs, périmètre, contraintes, livrables, critères), poser le cadre légal et éthique d'une intervention, organiser ses fichiers et tenir un journal de bord. Avec la préparation du dossier de mission sur un vrai Linux."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 300
+prerequisites: ["CL-LSN-01907-V01"]
+---
+
+Tu as appris, module après module, comment fonctionne un ordinateur, comment l'information y est représentée, ce que fait un système d'exploitation, comment circulent les données sur Internet, comment on parle à une machine en ligne de commande, comment on pense un programme, et comment on se protège. Il est temps de tout réunir sur un cas réel, du genre de ceux qu'on confie à un technicien débutant dès ses premières semaines. Une petite association t'appelle à l'aide : son informatique est un peu à l'abandon, Internet ne marche plus sur un des ordinateurs, et personne ne sait vraiment ce qu'il y a sur les machines. Tu vas inventorier, diagnostiquer, recommander et rendre un dossier technique. Cette première leçon lance la mission : comprendre la demande, la transformer en cahier des charges, et poser le cadre.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire une demande et en extraire le besoin réel ;
+- rédiger un cahier des charges : contexte, objectifs, périmètre, contraintes, livrables, critères de réussite ;
+- expliquer pourquoi une intervention technique exige une autorisation écrite ;
+- identifier les données personnelles en jeu et la conduite à tenir ;
+- organiser le dossier d'une mission et tenir un journal de bord.
+
+## pourquoi ça compte
+
+En France, plus d'un million d'associations fonctionnent, pour la plupart, grâce à des bénévoles, sans service informatique ni budget. Elles gèrent pourtant des fichiers d'adhérents, de l'argent, parfois des données sensibles, et elles sont victimes des mêmes attaques que tout le monde. Aider une structure de ce genre, c'est exactement le travail d'un technicien de proximité, d'un prestataire labellisé par Cybermalveillance.gouv.fr, ou d'un bénévole un peu compétent. Et la démarche que tu vas suivre, cadrer, inventorier, diagnostiquer, recommander, documenter, est celle de tous les métiers du support, de l'administration et de l'audit : seules l'échelle et les outils changent.
+
+## la demande
+
+Voici le courriel que tu reçois de la présidente de l'association.
+
+> Bonjour,
+>
+> Je suis la présidente des Jardins de la Butte, une association de jardins partagés d'une soixantaine d'adhérents. Un adhérent m'a dit que tu t'y connaissais en informatique. Nous avons deux ordinateurs au local : un fixe qui sert aux bénévoles pour le planning et les courriels, et le portable de notre trésorier pour la comptabilité et le fichier des adhérents. Depuis que l'opérateur a changé notre box le mois dernier, le portable n'a plus Internet. Et honnêtement, personne ne sait ce qu'il y a sur ces machines, ni si c'est bien protégé. Pourrais-tu regarder tout ça et nous dire ce qu'il faudrait faire ? Nous n'avons pas de budget informatique, mais nous pouvons acheter un disque dur si c'est nécessaire.
+>
+> Merci d'avance, Nadia Ferrand
+
+Une demande n'est presque jamais un cahier des charges. Celle-ci mélange un **incident** (le portable sans Internet), un **besoin de connaissance** (« personne ne sait ce qu'il y a sur ces machines »), une **inquiétude** (« si c'est bien protégé »), et une **contrainte** (« pas de budget, mais un disque dur possible »). Ton premier travail est de démêler tout cela, puis de le reformuler pour que la présidente valide ce que tu vas faire, et surtout ce que tu ne vas pas faire.
+
+## le cahier des charges
+
+Un **cahier des charges** décrit une mission avant qu'elle commence, pour que le demandeur et l'intervenant soient d'accord sur le résultat attendu. Il en existe des versions de centaines de pages pour les grands projets ; pour une mission comme celle-ci, une page suffit, à condition de couvrir les rubriques essentielles.
+
+| Rubrique | Pour les Jardins de la Butte |
+|---|---|
+| **Contexte** | Association de 60 adhérents et 12 bénévoles, sans compétence informatique interne, local avec une box fibre changée récemment |
+| **Objectifs** | 1. Rétablir Internet sur le portable. 2. Inventorier le matériel et les logiciels. 3. Évaluer la sécurité et proposer des mesures |
+| **Périmètre** | Le PC fixe du local (PC-ACCUEIL, sous Linux), le portable du trésorier (PORTABLE-TRESO, sous Windows), la box et le Wi-Fi. **Hors périmètre** : les téléphones personnels des bénévoles, le site web hébergé chez un prestataire |
+| **Contraintes** | Budget quasi nul ; interventions le samedi matin, quand le local est ouvert ; le trésorier doit garder l'accès à sa comptabilité ; aucune donnée ne quitte le local |
+| **Livrables** | Un inventaire, un diagnostic de l'incident réseau, une liste de recommandations priorisées, un dossier technique final et une présentation au bureau |
+| **Calendrier** | Trois samedis : inventaire, puis diagnostic et correction, puis restitution |
+| **Critères de réussite** | Le portable a Internet ; l'association sait ce qu'elle possède ; elle a un plan d'action qu'elle peut suivre seule, sans jargon |
+
+Remarque trois choses. Les **objectifs sont numérotés et vérifiables** : à la fin, on peut dire pour chacun s'il est atteint. Le **périmètre dit aussi ce qui est exclu** : sans cela, tu te retrouverais à dépanner le téléphone de chaque bénévole. Et les **critères de réussite** sont écrits du point de vue de l'association, pas du technicien : un dossier impeccable que personne ne comprend n'aurait pas atteint son but.
+
+## le cadre : une autorisation écrite
+
+Avant de toucher à quoi que ce soit, il te faut une **autorisation écrite** de la personne responsable, ici la présidente, qui représente l'association. Ce n'est pas une formalité. Accéder à un système informatique sans y être autorisé, ou s'y maintenir, est un délit puni par l'article 323-1 du Code pénal, même sans intention de nuire, même pour « rendre service ». Examiner la configuration d'une machine, lister ses comptes ou ses fichiers, c'est y accéder. L'autorisation te protège, et elle protège l'association : elle fixe ce que tu as le droit de faire, sur quelles machines, et jusqu'à quand.
+
+Dans le métier, ce document s'appelle une **lettre de mission** ou un **mandat** ; en test d'intrusion, on parle de **convention d'audit**, avec un périmètre technique très précis. Pour une association, un courriel de la présidente qui reprend le cahier des charges et dit « je vous autorise à intervenir sur ces machines selon ce cahier des charges » suffit. Garde-le dans ton dossier.
+
+## les données personnelles
+
+Le portable du trésorier contient le **fichier des adhérents** : noms, adresses, téléphones, peut-être des informations de paiement. Ce sont des données personnelles, protégées par le règlement général sur la protection des données (RGPD). L'association en est responsable, et toi, en intervenant, tu dois les respecter :
+
+- tu **ne copies pas** ces données, ni sur une clé, ni dans ton rapport, ni en capture d'écran ;
+- tu **ne les consultes pas** au-delà de ce qu'exige la mission : savoir qu'un fichier des adhérents existe, où il est et comment il est protégé suffit ;
+- tu **signales** ce qui pose problème (un fichier non protégé, une copie oubliée sur une clé USB), sans le reproduire ;
+- tu **décris** ce que tu vois de façon neutre : « le dossier Documents contient le fichier des adhérents, non chiffré », pas son contenu.
+
+C'est le principe de **minimisation** : ne toucher qu'aux données strictement nécessaires. Il vaut pour toute intervention technique, et c'est aussi un réflexe de sécurité : ce que tu n'as pas copié ne peut pas fuir de chez toi.
+
+## la méthode de la mission
+
+<Diagram caption="Les quatre temps de la mission, et les leçons qui les accompagnent">
+flowchart LR
+  A["Cadrer : cahier des charges, autorisation"] --> B["Inventorier : matériel et logiciels"]
+  B --> C["Diagnostiquer : l'incident réseau"]
+  C --> D["Recommander : mesures priorisées"]
+  D --> E["Rendre : dossier technique et restitution"]
+</Diagram>
+
+L'ordre n'est pas arbitraire. On **inventorie avant de diagnostiquer**, parce qu'on ne peut pas raisonner sur une machine qu'on ne connaît pas : le diagnostic du portable s'appuiera sur ce que l'inventaire aura révélé, son système, sa configuration réseau. On **diagnostique avant de recommander**, parce que les recommandations doivent répondre aux problèmes constatés, pas à une liste générique. Et on **rend** un document, parce qu'une intervention dont il ne reste aucune trace ne peut être ni vérifiée, ni reprise par quelqu'un d'autre l'année suivante.
+
+## le journal de bord
+
+Pendant toute la mission, tu tiens un **journal de bord** : un simple fichier texte où chaque ligne commence par la date et l'heure, puis décrit ce que tu as fait ou constaté. « 2026-10-03 10:12 : ipconfig /all sur PORTABLE-TRESO, passerelle configurée à la main sur 192.168.1.1. » « 10:25 : passage de la carte réseau en DHCP, avec l'accord du trésorier. »
+
+Le journal a trois usages. Il sert de **mémoire** : trois samedis d'intervalle suffisent à oublier ce qu'on a vu. Il sert de **preuve** : si quelque chose ne marche plus après ton passage, tu peux montrer ce que tu as modifié, et le défaire. Et il sert de **matière première** au rapport final, qui ne sera que la mise en forme de ce journal. Les équipes de réponse à incident tiennent exactement ce type de chronologie, parfois à la minute près.
+
+Une convention utile : les dates au format **AAAA-MM-JJ**, la norme internationale ISO 8601. Elles se trient correctement par ordre alphabétique, ce qui n'est pas le cas de « 03/10/2026 ». C'est aussi pour cela qu'on nomme souvent les fichiers `2026-10-03-inventaire.txt` : `ls` les affiche dans l'ordre chronologique.
+
+## à toi de jouer : ouvrir le dossier de mission
+
+Le dossier de travail contient le courriel de la présidente et tes notes de la première visite. Prépare le dossier de mission avec les commandes du module 5 :
+
+1. lis les deux fichiers avec `cat` ;
+2. crée l'arborescence de la mission en une commande : `mkdir -p mission/sources mission/inventaire mission/diagnostic mission/recommandations mission/rendu` ;
+3. range le courriel et les notes dans `mission/sources` avec `mv` ;
+4. commence le journal de bord : `echo "2026-10-03 09:30 : lancement de la mission, lecture de la demande" > mission/journal.txt` ;
+5. écris le périmètre dans `mission/perimetre.txt`, une machine par ligne : `echo PC-ACCUEIL > mission/perimetre.txt`, puis `>>` pour ajouter `PORTABLE-TRESO` et `box` à la suite.
+
+<LinuxTerminal title="Le dossier de mission" height={400} files={{ "courriel-presidente.txt": "De : Nadia Ferrand, présidente des Jardins de la Butte\nObjet : notre informatique\n\nDepuis le changement de box, le portable du trésorier n'a plus Internet.\nPersonne ne sait ce qu'il y a sur nos deux ordinateurs, ni si c'est protégé.\nPas de budget, mais un disque dur est possible.\n", "notes-visite.txt": "Visite du local, samedi 26 septembre\n- PC fixe PC-ACCUEIL, Linux, session benevole sans mot de passe\n- portable PORTABLE-TRESO, Windows 10, compta et fichier adhérents\n- box fibre neuve, Wi-Fi JardinsButte, clé écrite sur un post-it au mur\n- une clé USB « SAUVEGARDE » dans le tiroir, dernière copie inconnue\n" }} checks={[{ "label": "mission/sources existe", "path": "mission/sources", "expect": "dir" }, { "label": "les quatre dossiers de travail existent", "path": "mission/rendu", "expect": "dir" }, { "label": "le courriel est rangé dans les sources", "path": "mission/sources/courriel-presidente.txt", "expect": "file" }, { "label": "les notes sont rangées dans les sources", "path": "mission/sources/notes-visite.txt", "expect": "file" }, { "label": "plus rien ne traîne à la racine", "path": "notes-visite.txt", "expect": "absent" }, { "label": "le journal de bord est commencé", "path": "mission/journal.txt", "expect": "file", "contains": "lancement" }, { "label": "le périmètre cite le portable du trésorier", "path": "mission/perimetre.txt", "expect": "file", "contains": "PORTABLE-TRESO" }]} hints={["mkdir -p crée tous les dossiers d'un coup, parents compris.", "mv courriel-presidente.txt notes-visite.txt mission/sources/", "> crée ou écrase un fichier ; >> ajoute à la fin sans effacer."]} />
+
+Relis les notes de visite : en quatre lignes, elles contiennent déjà trois problèmes de sécurité que le module 7 t'a appris à repérer. Note-les dans ton journal ; ils reviendront dans les recommandations.
+
+## les pièges
+
+- **Commencer sans autorisation écrite.** Même pour rendre service, accéder à un système sans autorisation est un délit.
+- **Prendre la demande pour le cahier des charges.** Une demande mélange incident, besoin, inquiétude et contraintes : il faut les démêler et les faire valider.
+- **Oublier ce qui est hors périmètre.** Sans limites écrites, la mission s'étend à l'infini.
+- **Copier des données personnelles.** On décrit leur existence et leur protection, jamais leur contenu.
+- **Ne rien noter.** Sans journal, pas de rapport fiable, et aucun moyen de défaire une modification.
+- **Écrire des dates à la française dans les noms de fichiers.** `AAAA-MM-JJ` se trie correctement ; `JJ/MM/AAAA` non, et la barre oblique est interdite dans un nom de fichier.
+- **Écrire pour soi.** Les critères de réussite sont ceux de l'association : elle doit pouvoir lire et suivre ton dossier.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/10-mesures-essentielles-assurer-securite-numerique" description="Les dix mesures de base pour les petites structures, une bonne grille de lecture pour la mission">Cybermalveillance.gouv.fr : les 10 mesures essentielles</ExternalLink>
+
+<ExternalLink href="https://www.cnil.fr/fr/rgpd-par-ou-commencer" description="Les premiers pas pour une petite structure qui gère des données personnelles">CNIL : RGPD, par où commencer ?</ExternalLink>
+
+<ExternalLink href="https://www.associations.gouv.fr/" description="Le portail public de la vie associative, avec ses guides pratiques">Associations.gouv.fr</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi faut-il une autorisation écrite avant d'examiner les machines de l'association ?" options={["Par politesse", "Parce que la box l'exige", "Ce n'est pas nécessaire entre bénévoles", "Parce qu'accéder à un système sans autorisation est un délit, même pour rendre service, et que le document fixe ce qu'on a le droit de faire"]} correct={3} explanation="L'article 323-1 du Code pénal punit l'accès non autorisé. L'autorisation protège l'intervenant et l'association, et délimite la mission." />
+  <Quiz id="q-2" question="Qu'est-ce qui distingue un bon objectif de cahier des charges ?" options={["Il est long", "Il est vérifiable : à la fin, on peut dire s'il est atteint", "Il contient du jargon technique", "Il est vague pour laisser de la liberté"]} correct={1} explanation="« Rétablir Internet sur le portable » se vérifie. « Améliorer l'informatique » ne se vérifie pas." />
+  <Quiz id="q-3" question="Pourquoi le périmètre doit-il aussi dire ce qui est exclu ?" options={["Pour éviter que la mission s'étende sans fin et pour que chacun sache ce qui ne sera pas traité", "Pour faire plus court", "Parce que c'est obligatoire par la loi", "Pour cacher des problèmes"]} correct={0} explanation="Les téléphones personnels des bénévoles, par exemple : sans exclusion écrite, on finit par tout dépanner, sans autorisation pour cela." />
+  <Quiz id="q-4" question="Que faire du fichier des adhérents trouvé sur le portable ?" options={["Le copier pour l'étudier chez soi", "Le joindre au rapport", "Le supprimer", "Noter qu'il existe, où il est et comment il est protégé, sans en copier le contenu"]} correct={3} explanation="Principe de minimisation : on ne touche qu'aux données nécessaires à la mission, et on décrit leur protection, pas leur contenu." />
+  <Quiz id="q-5" question="Pourquoi inventorier avant de diagnostiquer ?" options={["Parce qu'on ne peut pas raisonner sur une machine qu'on ne connaît pas : son système et sa configuration orientent le diagnostic", "Parce que c'est plus facile", "Par habitude", "Ce n'est pas nécessaire"]} correct={0} explanation="L'inventaire du portable révèle son système et sa configuration réseau, qui sont les premiers indices du diagnostic." />
+  <Quiz id="q-6" question="À quoi sert le journal de bord ?" options={["À décorer le dossier", "À garder la mémoire, à prouver et pouvoir défaire les modifications, et à préparer le rapport", "À remplacer le rapport", "À rien si on a bonne mémoire"]} correct={1} explanation="Mémoire, traçabilité et matière première du rapport : c'est la chronologie qu'utilisent aussi les équipes de réponse à incident." />
+  <Quiz id="q-7" question="Pourquoi écrire les dates au format AAAA-MM-JJ dans les noms de fichiers ?" options={["Parce que c'est plus joli", "Parce qu'ils se trient alors dans l'ordre chronologique, et qu'on évite la barre oblique interdite", "Parce que Linux l'impose", "Pour que les fichiers soient plus petits"]} correct={1} explanation="Le tri alphabétique d'AAAA-MM-JJ est aussi le tri chronologique : ls affiche les fichiers dans l'ordre des dates." />
+</QuizGroup>
+
+## à retenir
+
+- Une **demande** mélange incident, besoin, inquiétude et contraintes ; le **cahier des charges** les démêle et les fait valider.
+- Rubriques : **contexte**, **objectifs** vérifiables, **périmètre** (y compris l'**exclu**), **contraintes**, **livrables**, **calendrier**, **critères de réussite** du point de vue du demandeur.
+- Jamais d'intervention sans **autorisation écrite** : l'accès non autorisé est un délit.
+- **Données personnelles** : les décrire, jamais les copier. Principe de **minimisation**.
+- Méthode : **cadrer**, **inventorier**, **diagnostiquer**, **recommander**, **rendre**.
+- Un **journal de bord** daté, au format **AAAA-MM-JJ**, et un dossier de mission rangé.

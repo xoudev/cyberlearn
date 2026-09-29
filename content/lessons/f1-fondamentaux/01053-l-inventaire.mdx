@@ -1,0 +1,184 @@
+---
+refCode: CL-LSN-01053-V01
+slug: fondamentaux-l-inventaire
+title: "Projet final : l'inventaire matériel et logiciel"
+description: "Deuxième étape du projet : inventorier les machines de l'association en ligne de commande. Ce qu'un inventaire doit contenir (identité, matériel, système, logiciels, comptes, réseau, protections, données), les commandes qui le relèvent sous Linux et sous Windows, et comment en tirer les premiers constats de sécurité. Avec l'inventaire du PC fixe sur un vrai Linux, et celui du portable du trésorier dans PowerShell."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 55
+xpReward: 300
+prerequisites: ["CL-LSN-01052-V01"]
+---
+
+Premier samedi au local des Jardins de la Butte. La présidente t'a donné son autorisation par écrit, le trésorier est là avec son portable, et le PC fixe t'attend dans un coin, sous une pile de catalogues de graines. Avant de réparer quoi que ce soit, tu vas faire ce que fait tout administrateur qui découvre un parc : l'**inventaire**. Qu'est-ce que ces machines, quel système, quels logiciels, quels comptes, quelles protections, quelles données ? Pas avec la souris, en ouvrant dix fenêtres de réglages, mais en ligne de commande, parce que c'est plus rapide, que le résultat s'enregistre dans un fichier, et que la même méthode servira demain sur cent machines. Cette leçon mobilise les modules 1, 3 et 5.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- dire ce que doit contenir la fiche d'inventaire d'une machine ;
+- relever sous Linux le système, le processeur, la mémoire, les disques et le réseau ;
+- relever sous Windows les mêmes informations, plus les logiciels, les comptes et les protections ;
+- enregistrer ces relevés dans un fichier avec les redirections ;
+- tirer d'un inventaire les premiers constats de sécurité.
+
+## pourquoi ça compte
+
+On ne protège pas ce qu'on ne connaît pas. L'inventaire des équipements et des logiciels est la toute première mesure des référentiels de sécurité, avant les mots de passe et avant les pare-feu, et c'est la première chose que réclame une équipe d'intervention après un incident : quelles machines, quels systèmes, quelles versions ? Un logiciel oublié, jamais mis à jour, est une porte que personne ne surveille. En support informatique, l'inventaire est aussi la base de tout : impossible de choisir une mise à jour, un pilote ou un remplacement sans savoir exactement ce qu'on a devant soi.
+
+## ce que contient une fiche d'inventaire
+
+<Diagram caption="Les rubriques d'une fiche d'inventaire">
+flowchart TD
+  A["Fiche d'une machine"] --> B["Identité : nom, rôle, utilisateur, emplacement"]
+  A --> C["Matériel : modèle, processeur, mémoire, disques, âge"]
+  A --> D["Système : nom, version, architecture, fin de support"]
+  A --> E["Logiciels : liste, versions, à jour ou non"]
+  A --> F["Comptes : utilisateurs, administrateurs, mots de passe"]
+  A --> G["Réseau : interfaces, adresses, configuration"]
+  A --> H["Protections : antivirus, pare-feu, chiffrement, sauvegardes"]
+  A --> I["Données sensibles : lesquelles, où, protégées comment"]
+</Diagram>
+
+Chaque rubrique répond à une question utile pour la suite. Le **système** et sa **fin de support** disent si la machine reçoit encore des correctifs. Les **logiciels** et leurs versions disent ce qui doit être mis à jour ou désinstallé. Les **comptes** disent qui peut faire quoi, et si quelqu'un travaille en administrateur au quotidien. Le **réseau** servira au diagnostic de la prochaine leçon. Les **protections** et les **données sensibles** nourriront les recommandations. Rappel du cahier des charges : pour les données, on relève leur **existence et leur protection**, jamais leur contenu.
+
+## l'inventaire sous Linux
+
+Le PC-ACCUEIL est un ordinateur reconditionné sous Linux. Voici les commandes qui le décrivent, presque toutes vues au module 3 ou au module 5.
+
+| Rubrique | Commande | Ce qu'elle donne |
+|---|---|---|
+| Identité | `hostname` | le nom de la machine |
+| Système | `cat /etc/os-release` | le nom et la version de la distribution |
+| Noyau et architecture | `uname -a` | la version du noyau, `x86_64` ou `i686` |
+| Processeur | `grep "model name" /proc/cpuinfo` | le modèle, une ligne par cœur |
+| Mémoire | `free` ou `free -h` | la mémoire totale, utilisée, disponible |
+| Disques | `df -h` | chaque système de fichiers, sa taille et son remplissage |
+| Réseau | `ip addr` | les interfaces, leur adresse MAC et leurs adresses IP |
+| Comptes | `grep -v nologin /etc/passwd` | les comptes qui peuvent ouvrir une session |
+| Processus | `ps` | ce qui tourne en ce moment |
+| Logiciels | `dpkg -l` ou `apt list --installed` | les paquets installés, sur Debian et Ubuntu |
+
+Le dossier `/proc`, tu l'as vu au module 3, n'est pas un vrai dossier : c'est une fenêtre sur le noyau, qui fabrique à la demande des fichiers texte décrivant le matériel et les processus. `/proc/cpuinfo` et `/proc/meminfo` se lisent donc avec `cat` et se filtrent avec `grep`, comme n'importe quel fichier. C'est la philosophie d'Unix : tout est fichier, et tout fichier texte se traite avec les mêmes outils.
+
+Pour que l'inventaire serve, il faut l'**enregistrer**. Les redirections du module 5 suffisent : `>` crée le fichier, `>>` ajoute à la suite. On intercale des titres avec `echo` pour s'y retrouver :
+
+```bash
+echo "== Système ==" > inventaire.txt
+cat /etc/os-release >> inventaire.txt
+uname -a >> inventaire.txt
+echo "== Mémoire ==" >> inventaire.txt
+free >> inventaire.txt
+```
+
+Une erreur fréquente : utiliser `>` au lieu de `>>` sur la troisième ligne, et effacer tout ce qui précède. Relis toujours le fichier à la fin avec `cat`.
+
+## l'inventaire sous Windows
+
+Le portable du trésorier est sous Windows. PowerShell, rencontré au module 5, fournit les équivalents, souvent plus détaillés.
+
+| Rubrique | Commande | Ce qu'elle donne |
+|---|---|---|
+| Vue d'ensemble | `systeminfo` | système, version, modèle, processeur, mémoire, cartes réseau |
+| Version exacte | `winver` | la fenêtre « À propos de Windows », avec la version et le build |
+| Logiciels | `winget list` | les logiciels installés et leurs versions |
+| Comptes | `Get-LocalUser` | les comptes locaux, actifs ou non |
+| Administrateurs | `Get-LocalGroupMember Administrateurs` | qui a les droits d'administration |
+| Antivirus | `Get-MpComputerStatus` | l'état de Microsoft Defender et l'âge de ses signatures |
+| Chiffrement | `manage-bde -status C:` | l'état de BitLocker sur le disque système |
+| Réseau | `ipconfig /all` | la configuration de chaque carte, vue à la prochaine leçon |
+
+Certaines commandes, comme `manage-bde`, demandent une console ouverte **en tant qu'administrateur**. Et `Get-MpComputerStatus` renvoie des dizaines de propriétés : on en garde quelques-unes avec `Select-Object`, qui joue le rôle d'un `cut` pour les objets de PowerShell. Pour enregistrer, la redirection `>` fonctionne aussi, ou `Out-File` : `systeminfo > inventaire-portable.txt`.
+
+## et la box ?
+
+La box est dans le périmètre, et c'est un ordinateur comme un autre : elle a un système, des logiciels, des comptes et une configuration. Elle ne se pilote pas en ligne de commande, mais par sa **page d'administration**, qu'on ouvre dans un navigateur à l'adresse de la passerelle, par exemple `http://192.168.1.254`. Tu trouveras cette adresse dans la configuration réseau du PC-ACCUEIL, qui la reçoit par DHCP : c'est la passerelle par défaut, vue au module 4.
+
+Sur cette page, l'inventaire relève :
+
+- le **modèle** de la box et la **version de son micrologiciel**, et si les mises à jour sont automatiques ;
+- le **mot de passe d'administration** : celui d'usine, imprimé sur l'étiquette, ou un mot de passe personnalisé ? On note la réponse, pas le mot de passe ;
+- le **Wi-Fi** : son nom, le protocole de chiffrement (WPA2, WPA3), et si le WPS est activé ;
+- la **liste des appareils connectés**, avec leurs noms et leurs adresses : c'est souvent là qu'on découvre une imprimante, une caméra ou un vieux téléphone dont personne ne se souvenait ;
+- les **redirections de ports** éventuelles, qui exposent un appareil du réseau local sur Internet ;
+- la **plage DHCP** : quelles adresses la box distribue, et donc quelle est son adresse à elle.
+
+Cette dernière information comptera beaucoup pour la suite. La nouvelle box distribue ses adresses dans `192.168.1.0/24` et s'attribue elle-même l'adresse `192.168.1.254`. Garde-la en tête en lisant la configuration du portable.
+
+L'accès à la page d'administration de la box demande son mot de passe : c'est la présidente, titulaire de l'abonnement, qui te le fournit ou le saisit elle-même. Encore une raison de tenir le journal de bord : chaque accès et chaque modification y est noté.
+
+## de l'inventaire aux constats
+
+Un inventaire brut, c'est une pile de sorties de commandes. Pour le rapport, on le transforme en **fiche lisible** : une page par machine, les rubriques du schéma, et pour chaque rubrique une ou deux lignes en français clair, suivies si besoin d'un **constat**. Par exemple : « Système : Windows 10 Professionnel 22H2. Constat : hors support depuis octobre 2025, plus aucun correctif de sécurité. » Les sorties complètes vont en annexe, pour qui voudra vérifier.
+
+Garde la distinction entre **fait** et **constat**. Le fait est ce que dit la commande, vérifiable par n'importe qui. Le constat est ton interprétation, et il doit pouvoir se justifier par le fait. Cette discipline rend le rapport solide : on peut discuter une recommandation, pas une sortie de commande.
+
+## à toi de jouer : le PC-ACCUEIL
+
+Le terminal ci-dessous fait tourner un petit Linux, bien plus minimal que la Debian du vrai PC-ACCUEIL : pas de `dpkg`, pas de dossier `/home`, et un processeur émulé d'un autre âge. Les valeurs seront donc différentes, mais les commandes et la méthode sont exactement celles du terrain. Le dossier de mission de la leçon précédente t'attend.
+
+Construis la fiche `mission/inventaire/pc-accueil.txt` avec au moins ces relevés, chacun précédé d'un titre avec `echo` :
+
+1. le système : `cat /etc/os-release` et `uname -a` ;
+2. le processeur : `grep "model name" /proc/cpuinfo` ;
+3. la mémoire : `free` ;
+4. les disques : `df -h` ;
+5. le réseau : `ip addr`.
+
+Puis relis la fiche avec `cat`, et ajoute une ligne au journal de bord.
+
+<LinuxTerminal title="Inventaire du PC-ACCUEIL" height={420} files={{ "mission/journal.txt": "2026-10-03 09:30 : lancement de la mission, lecture de la demande\n", "mission/perimetre.txt": "PC-ACCUEIL\nPORTABLE-TRESO\nbox\n", "mission/inventaire/A-LIRE.txt": "Une fiche par machine : pc-accueil.txt, portable-treso.txt\nChaque relevé précédé d'un titre, par exemple : == Mémoire ==\n" }} checks={[{ "label": "la fiche contient la distribution", "path": "mission/inventaire/pc-accueil.txt", "expect": "file", "contains": "PRETTY_NAME" }, { "label": "la fiche contient le noyau et l'architecture", "path": "mission/inventaire/pc-accueil.txt", "expect": "file", "contains": "i686" }, { "label": "la fiche contient le processeur", "path": "mission/inventaire/pc-accueil.txt", "expect": "file", "contains": "model name" }, { "label": "la fiche contient la mémoire", "path": "mission/inventaire/pc-accueil.txt", "expect": "file", "contains": "Mem:" }, { "label": "la fiche contient les disques", "path": "mission/inventaire/pc-accueil.txt", "expect": "file", "contains": "Filesystem" }, { "label": "la fiche contient le réseau", "path": "mission/inventaire/pc-accueil.txt", "expect": "file", "contains": "link/ether" }]} hints={["echo \"== Système ==\" > mission/inventaire/pc-accueil.txt crée la fiche avec son premier titre.", "Ensuite, toujours >> : cat /etc/os-release >> mission/inventaire/pc-accueil.txt", "Si une vérification reste vide, tu as sans doute écrasé le fichier avec > au lieu de >>."]} />
+
+## à toi de jouer : le PORTABLE-TRESO
+
+Le trésorier t'a ouvert une session et une console PowerShell en administrateur. Relève les informations du portable avec les commandes du tableau : `systeminfo`, `winget list`, `Get-LocalUser`, `Get-LocalGroupMember Administrateurs`, `Get-MpComputerStatus`, `manage-bde -status C:`, et regarde ce que contient `Get-ChildItem C:\Users\tresorier\Documents`. Pour chaque résultat, demande-toi ce qu'il révèle.
+
+<SimulatedTerminal shell="powershell" title="Inventaire du PORTABLE-TRESO" expectedCommands={["systeminfo", "winget list", "Get-LocalUser", "Get-MpComputerStatus", "manage-bde -status C:"]} hints={["systeminfo donne la vue d'ensemble : lis la version du système et la section des cartes réseau.", "winget list montre les versions : compare-les à celles que tu connais.", "Get-MpComputerStatus : regarde l'âge des signatures, en jours."]} commands={{"systeminfo": "Nom de l'hôte:                              PORTABLE-TRESO\nNom du système d'exploitation:              Microsoft Windows 10 Professionnel\nVersion du système:                         10.0.19045 N/A version 19045\nFabricant du système d'exploitation:        Microsoft Corporation\nPropriétaire enregistré:                    tresorier\nDate d'installation originale:              14/03/2019, 18:22:41\nHeure de démarrage du système:              03/10/2026, 09:41:07\nFabricant du système:                       LENOVO\nModèle du système:                          ThinkPad T470\nType du système:                            x64-based PC\nProcesseur(s):                              1 processeur(s) installé(s).\n                                            [01] : Intel64 Family 6 Model 142 GenuineIntel ~2501 MHz\nMémoire physique totale:                    8 083 Mo\nMémoire physique disponible:                3 912 Mo\nDomaine:                                    WORKGROUP\nCarte(s) réseau:                            1 carte(s) réseau installée(s).\n                                            [01] : Intel(R) Dual Band Wireless-AC 8265\n                                                   Nom de la connexion : Wi-Fi\n                                                   DHCP activé :         Non\n                                                   Adresse(s) IP\n                                                   [01] : 192.168.1.50", "winget list": "Nom                                  ID                                 Version\n-----------------------------------------------------------------------------------------\nMozilla Firefox (x64 fr)             Mozilla.Firefox                    115.0.2\nLibreOffice 7.2.5.2                  TheDocumentFoundation.LibreOffice  7.2.5.2\nAdobe Acrobat Reader DC              Adobe.Acrobat.Reader.64-bit        21.001.20145\nTeamViewer 13                        TeamViewer.TeamViewer              13.2.26558\nVLC media player                     VideoLAN.VLC                       3.0.16\nCompta Asso 2019                     ARP\\Machine\\X64\\ComptaAsso         2019.4\n7-Zip 19.00 (x64)                    7zip.7zip                          19.00", "Get-LocalUser": "Name               Enabled Description\n----               ------- -----------\nAdministrateur     False   Compte d'utilisateur d'administration\nDefaultAccount     False   Compte utilisateur géré par le système.\nInvité             False   Compte d'utilisateur invité\ntresorier          True\nWDAGUtilityAccount False   Compte d'utilisateur géré et utilisé par le système pour les scénarios Windows Defender Application Guard.", "Get-LocalGroupMember Administrateurs": "ObjectClass Name                        PrincipalSource\n----------- ----                        ---------------\nUtilisateur PORTABLE-TRESO\\Administrateur Local\nUtilisateur PORTABLE-TRESO\\tresorier      Local", "Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureLastUpdated, AntivirusSignatureAge": "AntivirusEnabled              : True\nRealTimeProtectionEnabled     : True\nAntivirusSignatureLastUpdated : 29/08/2026 07:12:33\nAntivirusSignatureAge         : 35", "manage-bde -status C:": "BitLocker Drive Encryption: Configuration Tool version 10.0.19041\nCopyright (C) 2013 Microsoft Corporation. Tous droits réservés.\n\nVolume C: [Windows]\n[Volume du système d'exploitation]\n\n    Taille :                       237,85 Go\n    Version de BitLocker :         Aucune\n    État de la conversion :        Entièrement déchiffré\n    Pourcentage chiffré :          0,0%\n    Méthode de chiffrement :       Aucune\n    État de la protection :        Protection désactivée", "Get-ChildItem C:\\Users\\tresorier\\Documents": "    Répertoire : C:\\Users\\tresorier\\Documents\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\nd-----        02/09/2026     18:31                Compta\n-a----        02/09/2026     18:40          48128 adherents-2026.xlsx\n-a----        11/01/2024     21:05          45056 adherents-2023-COPIE.xlsx\n-a----        17/05/2025     10:12          18944 mots-de-passe-asso.docx", "hostname": "PORTABLE-TRESO", "winver": "Windows 10 Professionnel, version 22H2 (build 19045)", "Get-MpComputerStatus": "AMProductVersion              : 4.18.25080.5\nAMServiceEnabled              : True\nAntispywareEnabled            : True\nAntivirusEnabled              : True\nRealTimeProtectionEnabled     : True\nAntivirusSignatureLastUpdated : 29/08/2026 07:12:33\nAntivirusSignatureAge         : 35\nBehaviorMonitorEnabled        : True\nIsTamperProtected             : True"}} />
+
+Voici ce qu'un inventaire attentif en retient, et qui nourrira le reste de la mission :
+
+- **Windows 10**, version 22H2 : le système ne reçoit plus de correctifs gratuits depuis octobre 2025. C'est le constat le plus lourd.
+- **DHCP désactivé** et une adresse fixe, `192.168.1.50` : la configuration réseau a été faite à la main. Premier indice pour la panne d'Internet.
+- Des **logiciels anciens**, jamais mis à jour, dont **TeamViewer 13**, un logiciel de prise de contrôle à distance : qui l'a installé, et qui peut encore s'en servir ?
+- Le compte **tresorier** est **administrateur** : il travaille tous les jours avec tous les droits.
+- **Defender** fonctionne, mais ses **signatures ont 35 jours** : sans Internet depuis le changement de box, il ne se met plus à jour.
+- **BitLocker désactivé** : si le portable est volé, le fichier des adhérents est lisible par n'importe qui.
+- Dans les documents, une **ancienne copie du fichier des adhérents** et un document nommé **mots-de-passe-asso.docx**. On note leur existence, on ne les ouvre pas.
+
+## les pièges
+
+- **Réparer avant d'inventorier.** Sans vue d'ensemble, on corrige un symptôme et on rate la cause.
+- **Écraser son fichier avec `>`.** Après la première ligne, c'est `>>`.
+- **Se contenter de ce qu'on voit à l'écran.** Un relevé non enregistré est perdu ; le rapport s'écrit à partir des fichiers.
+- **Oublier les logiciels et les comptes.** Le matériel intéresse peu l'attaquant ; un vieux logiciel d'accès à distance ou un compte administrateur, beaucoup.
+- **Ouvrir les fichiers sensibles.** On note qu'un document de mots de passe existe ; on n'en lit pas le contenu.
+- **Tout attendre d'une seule commande.** `systeminfo` ne dit rien des logiciels, `winget list` rien du chiffrement : un inventaire croise plusieurs sources.
+- **Confondre la machine d'exercice et la vraie.** Les valeurs changent d'une machine à l'autre ; la méthode, non.
+
+## pour aller plus loin
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/package-manager/winget/" description="Lister, installer et mettre à jour des logiciels en ligne de commande sous Windows">Microsoft : le gestionnaire de paquets winget</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/proc.5.html" description="Tout ce que le noyau expose dans /proc, en anglais">Page de manuel proc(5)</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/lifecycle/products/windows-10-home-and-pro" description="Les dates de fin de support de Windows 10 Famille et Professionnel">Microsoft : cycle de vie de Windows 10</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Pourquoi l'inventaire vient-il avant toute autre mesure de sécurité ?" options={["Parce qu'il est obligatoire par la loi", "Parce qu'il est rapide", "Parce qu'on ne protège pas ce qu'on ne connaît pas", "Parce qu'il remplace l'antivirus"]} correct={2} explanation="Une machine ou un logiciel oublié n'est ni mis à jour ni surveillé : c'est une porte ouverte." />
+  <Quiz id="q-2" question="Quelle commande Linux donne le nom et la version de la distribution ?" options={["uname -a", "cat /etc/os-release", "free", "df -h"]} correct={1} explanation="uname -a donne le noyau et l'architecture ; /etc/os-release décrit la distribution." />
+  <Quiz id="q-3" question="Que se passe-t-il si l'on écrit free > inventaire.txt après y avoir enregistré le système ?" options={["La mémoire est ajoutée à la fin", "Une erreur s'affiche", "Rien", "Le fichier est écrasé : il ne contient plus que la mémoire"]} correct={3} explanation="> recrée le fichier ; seul >> ajoute à la suite." />
+  <Quiz id="q-4" question="Quelle commande PowerShell liste les logiciels installés et leurs versions ?" options={["winget list", "Get-LocalUser", "systeminfo", "manage-bde -status"]} correct={0} explanation="winget, le gestionnaire de paquets de Windows, liste les logiciels et leurs versions." />
+  <Quiz id="q-5" question="Qu'indique DHCP activé : Non dans le systeminfo du portable ?" options={["Que la carte réseau est en panne", "Que l'adresse IP a été configurée à la main", "Que le Wi-Fi est coupé", "Que le portable est hors ligne depuis toujours"]} correct={1} explanation="Sans DHCP, la machine ne reçoit pas sa configuration de la box : elle garde celle qu'on a saisie. C'est un premier indice pour la panne." />
+  <Quiz id="q-6" question="Pourquoi BitLocker désactivé est-il un constat important pour ce portable ?" options={["Parce que le portable est plus lent", "Parce qu'en cas de vol, le fichier des adhérents serait lisible sans mot de passe", "Parce que Windows ne démarre plus", "Ce n'est pas important"]} correct={1} explanation="Le chiffrement du disque protège les données d'un appareil perdu ou volé ; ici, des données personnelles." />
+  <Quiz id="q-7" question="Tu trouves un document nommé mots-de-passe-asso.docx. Que fais-tu ?" options={["Tu l'ouvres pour vérifier les mots de passe", "Tu le copies pour le rapport", "Tu notes son existence et son emplacement, sans l'ouvrir, et tu le signales", "Tu le supprimes"]} correct={2} explanation="Minimisation : on décrit l'existence et la protection d'une donnée sensible, jamais son contenu. La recommandation viendra ensuite." />
+</QuizGroup>
+
+## à retenir
+
+- Une fiche d'inventaire : **identité**, **matériel**, **système** (et **fin de support**), **logiciels** et versions, **comptes**, **réseau**, **protections**, **données sensibles**.
+- Linux : `hostname`, `cat /etc/os-release`, `uname -a`, `/proc/cpuinfo`, `free`, `df -h`, `ip addr`, `/etc/passwd`, `dpkg -l`.
+- Windows : `systeminfo`, `winget list`, `Get-LocalUser`, `Get-LocalGroupMember`, `Get-MpComputerStatus`, `manage-bde -status`.
+- On **enregistre** : `>` pour créer, `>>` pour ajouter, des titres avec `echo`.
+- L'inventaire du portable révèle déjà l'essentiel : **Windows 10 hors support**, **adresse fixe**, logiciels **obsolètes**, utilisateur **administrateur**, disque **non chiffré**, **fichiers sensibles** en clair.

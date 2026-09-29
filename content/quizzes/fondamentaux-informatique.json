@@ -1,0 +1,2766 @@
+{
+  "passThreshold": 75,
+  "questionsToDraw": 40,
+  "questions": [
+    {
+      "question": "Quel composant exécute les instructions des programmes ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La mémoire vive"
+        },
+        {
+          "id": "b",
+          "text": "Le processeur"
+        },
+        {
+          "id": "c",
+          "text": "Le disque dur"
+        },
+        {
+          "id": "d",
+          "text": "La carte graphique"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le processeur lit, décode et exécute les instructions, une à une, des milliards de fois par seconde."
+    },
+    {
+      "question": "Que devient le contenu de la mémoire vive quand on éteint l'ordinateur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il est copié automatiquement sur le disque"
+        },
+        {
+          "id": "b",
+          "text": "Il est conservé pendant une semaine"
+        },
+        {
+          "id": "c",
+          "text": "Il est envoyé dans le nuage"
+        },
+        {
+          "id": "d",
+          "text": "Il est perdu"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La mémoire vive est volatile : sans courant, son contenu disparaît. C'est le stockage qui conserve les données."
+    },
+    {
+      "question": "Pourquoi un SSD est-il bien plus rapide qu'un disque dur mécanique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il a une plus grande capacité"
+        },
+        {
+          "id": "b",
+          "text": "Il est connecté à Internet"
+        },
+        {
+          "id": "c",
+          "text": "Il n'a aucune pièce mobile à déplacer pour lire les données"
+        },
+        {
+          "id": "d",
+          "text": "Il utilise la mémoire vive"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Un disque mécanique doit faire tourner des plateaux et déplacer une tête ; un SSD lit de la mémoire flash électroniquement."
+    },
+    {
+      "question": "Dans le cycle d'une instruction, quelle étape vient après le chargement ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le stockage"
+        },
+        {
+          "id": "b",
+          "text": "L'affichage"
+        },
+        {
+          "id": "c",
+          "text": "Le démarrage"
+        },
+        {
+          "id": "d",
+          "text": "Le décodage"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Chargement, décodage, exécution : le processeur va chercher l'instruction, comprend ce qu'elle demande, puis l'exécute."
+    },
+    {
+      "question": "Quel est le rôle de la carte mère ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Stocker les fichiers"
+        },
+        {
+          "id": "b",
+          "text": "Exécuter les programmes"
+        },
+        {
+          "id": "c",
+          "text": "Relier entre eux tous les composants et leur permettre de communiquer"
+        },
+        {
+          "id": "d",
+          "text": "Afficher l'image"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La carte mère porte les bus et les connecteurs qui relient processeur, mémoire, stockage et périphériques."
+    },
+    {
+      "question": "Qu'est-ce que le micrologiciel (UEFI ou BIOS) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un antivirus intégré"
+        },
+        {
+          "id": "b",
+          "text": "Le système d'exploitation"
+        },
+        {
+          "id": "c",
+          "text": "Le programme lancé en premier au démarrage, qui initialise le matériel et lance le système"
+        },
+        {
+          "id": "d",
+          "text": "Un pilote de carte graphique"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Il vérifie le matériel, puis cherche et lance le chargeur du système d'exploitation."
+    },
+    {
+      "question": "Pourquoi la mémoire cache du processeur existe-t-elle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour stocker les mots de passe"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la mémoire vive est beaucoup plus lente que le processeur"
+        },
+        {
+          "id": "c",
+          "text": "Pour remplacer le disque"
+        },
+        {
+          "id": "d",
+          "text": "Pour refroidir le processeur"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le cache garde près du processeur les données utilisées récemment, pour éviter d'attendre la mémoire vive."
+    },
+    {
+      "question": "Un ordinateur a 8 cœurs. Que signifie ce chiffre ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Qu'il a 8 Go de mémoire"
+        },
+        {
+          "id": "b",
+          "text": "Qu'il fonctionne 8 fois plus longtemps"
+        },
+        {
+          "id": "c",
+          "text": "Qu'il a 8 disques"
+        },
+        {
+          "id": "d",
+          "text": "Qu'il peut exécuter réellement 8 flux d'instructions en même temps"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Chaque cœur est une unité d'exécution complète ; le système répartit les tâches entre eux."
+    },
+    {
+      "question": "Quel périphérique est à la fois d'entrée et de sortie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un clavier"
+        },
+        {
+          "id": "b",
+          "text": "Une imprimante"
+        },
+        {
+          "id": "c",
+          "text": "Un micro"
+        },
+        {
+          "id": "d",
+          "text": "Un écran tactile"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "L'écran tactile affiche (sortie) et reçoit les touchers (entrée)."
+    },
+    {
+      "question": "Quelle est la différence entre 1 Go de mémoire vive et 1 Go de stockage ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La même quantité d'octets, mais l'une est rapide et volatile, l'autre plus lente et permanente"
+        },
+        {
+          "id": "b",
+          "text": "Aucune, ce sont les mêmes puces"
+        },
+        {
+          "id": "c",
+          "text": "La mémoire vive contient mille fois plus d'octets"
+        },
+        {
+          "id": "d",
+          "text": "Le stockage est volatile"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "L'unité est la même ; ce sont la vitesse et la persistance qui diffèrent."
+    },
+    {
+      "question": "Qu'est-ce qu'un pilote (driver) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un logiciel qui permet au système d'exploitation de dialoguer avec un matériel précis"
+        },
+        {
+          "id": "b",
+          "text": "Un utilisateur administrateur"
+        },
+        {
+          "id": "c",
+          "text": "Un câble de connexion"
+        },
+        {
+          "id": "d",
+          "text": "Un type de processeur"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Chaque matériel a sa façon de communiquer ; le pilote la traduit pour le système."
+    },
+    {
+      "question": "Pourquoi un ordinateur ralentit-il quand la mémoire vive est pleine ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le système déplace des données vers le disque, beaucoup plus lent"
+        },
+        {
+          "id": "b",
+          "text": "Parce que le processeur s'arrête"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'Internet est coupé"
+        },
+        {
+          "id": "d",
+          "text": "Parce que l'écran consomme plus"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le système utilise alors une zone d'échange sur le disque, des milliers de fois plus lente que la mémoire vive."
+    },
+    {
+      "question": "Que fait un processeur quand il exécute l'instruction « AJOUTER 5 » dans le modèle vu en cours ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il affiche le nombre 5"
+        },
+        {
+          "id": "b",
+          "text": "Il ajoute 5 à la valeur de son registre"
+        },
+        {
+          "id": "c",
+          "text": "Il saute à l'instruction 5"
+        },
+        {
+          "id": "d",
+          "text": "Il stocke 5 sur le disque"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un registre est une petite case de mémoire interne au processeur, où se font les calculs."
+    },
+    {
+      "question": "Quelle affirmation sur la fréquence d'un processeur est exacte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Plus elle est haute, plus l'ordinateur a de mémoire"
+        },
+        {
+          "id": "b",
+          "text": "Elle se mesure en octets"
+        },
+        {
+          "id": "c",
+          "text": "Elle indique le nombre de cycles par seconde, mais ne suffit pas à comparer deux processeurs"
+        },
+        {
+          "id": "d",
+          "text": "Elle ne change jamais"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'architecture, le nombre de cœurs et le cache comptent autant que les gigahertz."
+    },
+    {
+      "question": "Un ordinateur est défini comme une machine qui…",
+      "options": [
+        {
+          "id": "a",
+          "text": "affiche des images"
+        },
+        {
+          "id": "b",
+          "text": "reçoit des données, les traite selon un programme et produit un résultat"
+        },
+        {
+          "id": "c",
+          "text": "se connecte à Internet"
+        },
+        {
+          "id": "d",
+          "text": "stocke des fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Entrée, traitement, sortie : c'est la définition qui vaut pour un téléphone comme pour un serveur."
+    },
+    {
+      "question": "Combien de valeurs différentes peut-on écrire avec 8 bits ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "256"
+        },
+        {
+          "id": "b",
+          "text": "8"
+        },
+        {
+          "id": "c",
+          "text": "16"
+        },
+        {
+          "id": "d",
+          "text": "255"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "2 puissance 8 vaut 256 : de 0 à 255."
+    },
+    {
+      "question": "Que vaut le nombre binaire 1011 en décimal ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "13"
+        },
+        {
+          "id": "b",
+          "text": "11"
+        },
+        {
+          "id": "c",
+          "text": "1011"
+        },
+        {
+          "id": "d",
+          "text": "9"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "8 + 0 + 2 + 1 = 11."
+    },
+    {
+      "question": "Comment s'écrit 255 en hexadécimal ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "255"
+        },
+        {
+          "id": "b",
+          "text": "EE"
+        },
+        {
+          "id": "c",
+          "text": "FF"
+        },
+        {
+          "id": "d",
+          "text": "F0"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "15 × 16 + 15 = 255, et F vaut 15."
+    },
+    {
+      "question": "Pourquoi utilise-t-on l'hexadécimal ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'un chiffre hexadécimal représente exactement 4 bits, ce qui rend les octets lisibles"
+        },
+        {
+          "id": "b",
+          "text": "Parce que les processeurs calculent en base 16"
+        },
+        {
+          "id": "c",
+          "text": "Pour chiffrer les données"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il prend moins de place sur le disque"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Un octet s'écrit en deux chiffres hexadécimaux : c'est une notation pour les humains."
+    },
+    {
+      "question": "Combien d'octets fait un kilooctet (ko) au sens du système international ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "1 024"
+        },
+        {
+          "id": "b",
+          "text": "1 000"
+        },
+        {
+          "id": "c",
+          "text": "100"
+        },
+        {
+          "id": "d",
+          "text": "8 000"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le ko vaut 1 000 octets ; le kibioctet (Kio) vaut 1 024 octets."
+    },
+    {
+      "question": "Que se passe-t-il si l'on ajoute 1 à 255 dans un octet non signé ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il vaut 256"
+        },
+        {
+          "id": "b",
+          "text": "Il déborde et revient à 0"
+        },
+        {
+          "id": "c",
+          "text": "Il se bloque à 255"
+        },
+        {
+          "id": "d",
+          "text": "Il devient négatif"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Sur 8 bits, la retenue finale disparaît : 255 + 1 donne 0. C'est le débordement."
+    },
+    {
+      "question": "Pourquoi 0.1 + 0.2 ne donne-t-il pas exactement 0.3 en informatique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que le processeur se trompe"
+        },
+        {
+          "id": "b",
+          "text": "Parce que Python est bogué"
+        },
+        {
+          "id": "c",
+          "text": "Parce que ces nombres décimaux n'ont pas de représentation exacte en binaire"
+        },
+        {
+          "id": "d",
+          "text": "Parce que les nombres sont trop grands"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Les nombres à virgule flottante sont des approximations binaires ; de petites erreurs d'arrondi apparaissent."
+    },
+    {
+      "question": "Qu'est-ce que l'UTF-8 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un format d'image"
+        },
+        {
+          "id": "b",
+          "text": "Un encodage qui représente tous les caractères Unicode sur 1 à 4 octets"
+        },
+        {
+          "id": "c",
+          "text": "Un algorithme de compression"
+        },
+        {
+          "id": "d",
+          "text": "Un protocole réseau"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Il reste compatible avec l'ASCII pour les caractères de base et encode tous les autres systèmes d'écriture."
+    },
+    {
+      "question": "Un texte affiche « Ã© » à la place de « é ». Quelle est la cause la plus probable ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le fichier est corrompu par un virus"
+        },
+        {
+          "id": "b",
+          "text": "La police est mal installée"
+        },
+        {
+          "id": "c",
+          "text": "Le disque est plein"
+        },
+        {
+          "id": "d",
+          "text": "Un texte encodé en UTF-8 lu comme s'il était dans un autre encodage"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les deux octets de « é » en UTF-8 sont interprétés comme deux caractères distincts."
+    },
+    {
+      "question": "Qu'est-ce qu'un pixel dans une image numérique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un fichier"
+        },
+        {
+          "id": "b",
+          "text": "Une ligne de texte"
+        },
+        {
+          "id": "c",
+          "text": "Un point de l'image, dont la couleur est codée par des nombres"
+        },
+        {
+          "id": "d",
+          "text": "Une unité de son"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "En RVB, chaque pixel est souvent décrit par trois octets : rouge, vert et bleu."
+    },
+    {
+      "question": "Quelle est la différence entre compression sans perte et avec perte ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sans perte, on retrouve exactement les données d'origine ; avec perte, une partie est supprimée définitivement"
+        },
+        {
+          "id": "b",
+          "text": "Il n'y en a pas"
+        },
+        {
+          "id": "c",
+          "text": "La compression avec perte est toujours plus lente"
+        },
+        {
+          "id": "d",
+          "text": "La compression sans perte ne fonctionne que sur les images"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "ZIP et PNG sont sans perte ; JPEG et MP3 sacrifient des détails peu perceptibles."
+    },
+    {
+      "question": "Comment un système reconnaît-il fiablement le type réel d'un fichier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Par son nom"
+        },
+        {
+          "id": "b",
+          "text": "Par sa taille"
+        },
+        {
+          "id": "c",
+          "text": "Par ses premiers octets, sa signature, plutôt que par son extension"
+        },
+        {
+          "id": "d",
+          "text": "Par sa date"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Une extension se change en un clic ; la signature, comme 89 50 4E 47 pour un PNG, révèle le vrai format."
+    },
+    {
+      "question": "Comment représente-t-on généralement les entiers négatifs en binaire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avec un signe moins stocké en texte"
+        },
+        {
+          "id": "b",
+          "text": "Avec le complément à deux"
+        },
+        {
+          "id": "c",
+          "text": "En hexadécimal"
+        },
+        {
+          "id": "d",
+          "text": "Avec des nombres à virgule"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le complément à deux permet d'additionner positifs et négatifs avec le même circuit."
+    },
+    {
+      "question": "Combien de bits faut-il pour écrire le nombre 1 000 en binaire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "8"
+        },
+        {
+          "id": "b",
+          "text": "10"
+        },
+        {
+          "id": "c",
+          "text": "1000"
+        },
+        {
+          "id": "d",
+          "text": "4"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "2 puissance 9 vaut 512 et 2 puissance 10 vaut 1 024 : il faut 10 bits."
+    },
+    {
+      "question": "Un octet vaut 0x41. Quel caractère représente-t-il en ASCII ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "A"
+        },
+        {
+          "id": "b",
+          "text": "a"
+        },
+        {
+          "id": "c",
+          "text": "4"
+        },
+        {
+          "id": "d",
+          "text": "1"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "0x41 vaut 65 en décimal, le code de la lettre A majuscule."
+    },
+    {
+      "question": "Quel est le rôle principal d'un système d'exploitation ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Naviguer sur Internet"
+        },
+        {
+          "id": "b",
+          "text": "Écrire des documents"
+        },
+        {
+          "id": "c",
+          "text": "Protéger contre tous les virus"
+        },
+        {
+          "id": "d",
+          "text": "Gérer le matériel et le partager entre les programmes"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Il gère processeur, mémoire, fichiers et périphériques, et offre aux programmes des services communs."
+    },
+    {
+      "question": "Quelle est la différence entre un programme et un processus ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "Un processus est un programme en cours d'exécution, avec sa mémoire et son état"
+        },
+        {
+          "id": "c",
+          "text": "Un processus est un fichier sur le disque"
+        },
+        {
+          "id": "d",
+          "text": "Un programme est toujours plus petit"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le programme est un fichier ; chaque fois qu'on le lance, le système crée un processus."
+    },
+    {
+      "question": "À quoi sert un appel système ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À appeler un numéro de téléphone"
+        },
+        {
+          "id": "b",
+          "text": "À redémarrer l'ordinateur"
+        },
+        {
+          "id": "c",
+          "text": "À afficher une fenêtre"
+        },
+        {
+          "id": "d",
+          "text": "À demander un service au noyau, comme ouvrir un fichier ou envoyer des données"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les programmes ne touchent pas directement au matériel : ils passent par le noyau."
+    },
+    {
+      "question": "Sous Linux, quel dossier contient la configuration du système ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "/home"
+        },
+        {
+          "id": "b",
+          "text": "/tmp"
+        },
+        {
+          "id": "c",
+          "text": "/bin"
+        },
+        {
+          "id": "d",
+          "text": "/etc"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "/etc rassemble les fichiers de configuration, en texte."
+    },
+    {
+      "question": "Que signifient les droits rwxr-x--- d'un fichier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tout le monde peut tout faire"
+        },
+        {
+          "id": "b",
+          "text": "Personne ne peut le lire"
+        },
+        {
+          "id": "c",
+          "text": "Le propriétaire lit, écrit et exécute ; le groupe lit et exécute ; les autres n'ont rien"
+        },
+        {
+          "id": "d",
+          "text": "Le groupe peut écrire"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Trois triplets : propriétaire, groupe, autres ; r pour lire, w pour écrire, x pour exécuter."
+    },
+    {
+      "question": "Pourquoi ne faut-il pas travailler au quotidien avec un compte administrateur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que c'est plus lent"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'un programme malveillant lancé par erreur aurait alors tous les droits sur la machine"
+        },
+        {
+          "id": "c",
+          "text": "Parce que l'administrateur n'a pas Internet"
+        },
+        {
+          "id": "d",
+          "text": "Parce que c'est interdit par la loi"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le principe du moindre privilège limite les dégâts d'une erreur ou d'une infection."
+    },
+    {
+      "question": "Comment vérifier qu'un fichier téléchargé n'a pas été modifié ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Regarder sa taille"
+        },
+        {
+          "id": "b",
+          "text": "Vérifier sa date"
+        },
+        {
+          "id": "c",
+          "text": "Ouvrir le fichier pour voir"
+        },
+        {
+          "id": "d",
+          "text": "Comparer son empreinte (par exemple SHA-256) avec celle publiée par l'éditeur"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "La moindre modification change complètement l'empreinte."
+    },
+    {
+      "question": "Qu'est-ce qu'une machine virtuelle ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un ordinateur simulé par un logiciel, avec son propre système, isolé de la machine hôte"
+        },
+        {
+          "id": "b",
+          "text": "Un ordinateur dans le nuage uniquement"
+        },
+        {
+          "id": "c",
+          "text": "Un programme de dessin"
+        },
+        {
+          "id": "d",
+          "text": "Une copie de sauvegarde"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Elle permet d'essayer un système ou un logiciel sans risque pour la machine réelle."
+    },
+    {
+      "question": "Quel signal arrête proprement un processus sous Linux, en lui laissant le temps de se terminer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "SIGTERM"
+        },
+        {
+          "id": "b",
+          "text": "SIGKILL"
+        },
+        {
+          "id": "c",
+          "text": "SIGSTOP"
+        },
+        {
+          "id": "d",
+          "text": "SIGDEL"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "SIGTERM demande l'arrêt ; SIGKILL le force, sans laisser le processus faire le ménage."
+    },
+    {
+      "question": "Qu'est-ce qu'un gestionnaire de paquets ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un service de livraison"
+        },
+        {
+          "id": "b",
+          "text": "Un outil qui installe, met à jour et supprime des logiciels depuis des sources vérifiées"
+        },
+        {
+          "id": "c",
+          "text": "Un antivirus"
+        },
+        {
+          "id": "d",
+          "text": "Un gestionnaire de fichiers"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "apt, dnf ou winget téléchargent depuis des dépôts signés et gèrent les dépendances."
+    },
+    {
+      "question": "Qu'est-ce que le noyau d'un système d'exploitation ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La partie centrale qui s'exécute avec tous les privilèges et gère le matériel"
+        },
+        {
+          "id": "b",
+          "text": "L'interface graphique"
+        },
+        {
+          "id": "c",
+          "text": "Le navigateur"
+        },
+        {
+          "id": "d",
+          "text": "Le premier fichier du disque"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Les applications s'exécutent en mode utilisateur ; seul le noyau accède directement au matériel."
+    },
+    {
+      "question": "Que contient le dossier /proc sous Linux ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les programmes installés"
+        },
+        {
+          "id": "b",
+          "text": "Les documents des utilisateurs"
+        },
+        {
+          "id": "c",
+          "text": "Des fichiers virtuels, fabriqués par le noyau, qui décrivent le matériel et les processus"
+        },
+        {
+          "id": "d",
+          "text": "Les fichiers temporaires"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "/proc/cpuinfo ou /proc/meminfo se lisent comme des fichiers texte, mais ne sont stockés nulle part."
+    },
+    {
+      "question": "Qu'est-ce qu'un système de fichiers ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La façon dont le système organise les fichiers et dossiers sur un support de stockage"
+        },
+        {
+          "id": "b",
+          "text": "Un antivirus"
+        },
+        {
+          "id": "c",
+          "text": "Un dossier particulier"
+        },
+        {
+          "id": "d",
+          "text": "Un type de câble"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "NTFS, ext4 ou APFS décident comment les données sont rangées, nommées et protégées."
+    },
+    {
+      "question": "Pourquoi les mises à jour du système doivent-elles venir des sources officielles ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elles sont plus rapides"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elles sont gratuites"
+        },
+        {
+          "id": "c",
+          "text": "Parce que c'est plus joli"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'une fausse mise à jour est un moyen classique d'installer un logiciel malveillant"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les dépôts et canaux officiels signent leurs paquets ; un lien reçu par message ne garantit rien."
+    },
+    {
+      "question": "Que fait le multitâche d'un système d'exploitation ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il ajoute des processeurs"
+        },
+        {
+          "id": "b",
+          "text": "Il supprime les programmes inutiles"
+        },
+        {
+          "id": "c",
+          "text": "Il alterne très rapidement l'exécution des processus pour qu'ils semblent tourner en même temps"
+        },
+        {
+          "id": "d",
+          "text": "Il met l'ordinateur en veille"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'ordonnanceur donne tour à tour quelques millisecondes à chaque processus."
+    },
+    {
+      "question": "Quelle est la différence entre une adresse IP privée et une adresse IP publique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une adresse privée n'est utilisable que sur un réseau local ; une publique est joignable sur Internet"
+        },
+        {
+          "id": "b",
+          "text": "Aucune"
+        },
+        {
+          "id": "c",
+          "text": "L'adresse privée est chiffrée"
+        },
+        {
+          "id": "d",
+          "text": "L'adresse publique change à chaque page"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "192.168.1.42 est privée ; la box partage son adresse publique grâce à la traduction d'adresses (NAT)."
+    },
+    {
+      "question": "À quoi sert le DNS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "À traduire un nom de domaine en adresse IP"
+        },
+        {
+          "id": "b",
+          "text": "À chiffrer les pages"
+        },
+        {
+          "id": "c",
+          "text": "À attribuer les adresses IP"
+        },
+        {
+          "id": "d",
+          "text": "À accélérer le Wi-Fi"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le navigateur ne peut contacter un serveur qu'avec son adresse ; le DNS la trouve à partir du nom."
+    },
+    {
+      "question": "Qui attribue automatiquement une adresse IP à un ordinateur qui se connecte au réseau de la maison ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le DNS"
+        },
+        {
+          "id": "b",
+          "text": "Le serveur DHCP, en général intégré à la box"
+        },
+        {
+          "id": "c",
+          "text": "Le navigateur"
+        },
+        {
+          "id": "d",
+          "text": "Le fournisseur du site visité"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "DHCP distribue adresse, masque, passerelle et serveur DNS."
+    },
+    {
+      "question": "Qu'est-ce qu'un port dans une connexion réseau ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une prise physique de la box"
+        },
+        {
+          "id": "b",
+          "text": "Un numéro qui désigne le service visé sur une machine"
+        },
+        {
+          "id": "c",
+          "text": "Un câble"
+        },
+        {
+          "id": "d",
+          "text": "Un type d'adresse IP"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Le port 443 désigne en général un serveur web en HTTPS, le port 22 un serveur SSH."
+    },
+    {
+      "question": "Que signifie un code de réponse HTTP 404 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La ressource demandée n'existe pas"
+        },
+        {
+          "id": "b",
+          "text": "Tout s'est bien passé"
+        },
+        {
+          "id": "c",
+          "text": "Le serveur est en panne"
+        },
+        {
+          "id": "d",
+          "text": "Il faut se connecter"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Les codes 2xx indiquent un succès, 4xx une erreur du client, 5xx une erreur du serveur."
+    },
+    {
+      "question": "Que garantit le cadenas HTTPS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que le site est honnête"
+        },
+        {
+          "id": "b",
+          "text": "Que le site n'a pas de virus"
+        },
+        {
+          "id": "c",
+          "text": "Que la connexion est chiffrée avec le serveur dont le nom figure dans le certificat"
+        },
+        {
+          "id": "d",
+          "text": "Que le site appartient à l'État"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "HTTPS protège le trajet ; il ne dit rien des intentions du propriétaire du site."
+    },
+    {
+      "question": "Qu'est-ce que la passerelle par défaut ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le serveur DNS"
+        },
+        {
+          "id": "b",
+          "text": "Le premier site visité"
+        },
+        {
+          "id": "c",
+          "text": "L'équipement auquel la machine confie tout ce qui sort de son réseau local"
+        },
+        {
+          "id": "d",
+          "text": "La carte réseau"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "À la maison, c'est la box : sans passerelle joignable, pas d'Internet."
+    },
+    {
+      "question": "Pourquoi les données sont-elles découpées en paquets sur un réseau ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour les chiffrer"
+        },
+        {
+          "id": "b",
+          "text": "Pour les compresser"
+        },
+        {
+          "id": "c",
+          "text": "Parce que les câbles sont courts"
+        },
+        {
+          "id": "d",
+          "text": "Pour partager les liens entre tous et pouvoir renvoyer seulement ce qui est perdu"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Chaque paquet voyage indépendamment ; TCP les remet dans l'ordre et redemande les manquants."
+    },
+    {
+      "question": "Que fait la commande traceroute (ou tracert) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elle mesure la vitesse du Wi-Fi"
+        },
+        {
+          "id": "b",
+          "text": "Elle affiche l'adresse IP locale"
+        },
+        {
+          "id": "c",
+          "text": "Elle bloque un site"
+        },
+        {
+          "id": "d",
+          "text": "Elle affiche les routeurs traversés pour atteindre une destination"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Elle révèle le chemin, saut par saut, et l'endroit où il s'interrompt."
+    },
+    {
+      "question": "Qu'est-ce qu'un cookie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un virus"
+        },
+        {
+          "id": "b",
+          "text": "Un fichier d'installation"
+        },
+        {
+          "id": "c",
+          "text": "Une publicité"
+        },
+        {
+          "id": "d",
+          "text": "Une petite donnée qu'un site demande au navigateur de garder et de lui renvoyer"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les cookies servent notamment à rester connecté ; volés, ils peuvent permettre de se faire passer pour quelqu'un."
+    },
+    {
+      "question": "Qu'est-ce que l'échange en trois temps de TCP ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le chiffrement d'une page"
+        },
+        {
+          "id": "b",
+          "text": "La résolution DNS"
+        },
+        {
+          "id": "c",
+          "text": "La fermeture d'un navigateur"
+        },
+        {
+          "id": "d",
+          "text": "L'établissement d'une connexion : SYN, SYN-ACK, ACK"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Client et serveur s'accordent avant d'échanger des données."
+    },
+    {
+      "question": "Quelle méthode HTTP utilise-t-on normalement pour envoyer un formulaire de connexion ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "GET"
+        },
+        {
+          "id": "b",
+          "text": "DELETE"
+        },
+        {
+          "id": "c",
+          "text": "HEAD"
+        },
+        {
+          "id": "d",
+          "text": "POST"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Avec GET, les données apparaîtraient dans l'adresse, donc dans l'historique et les journaux."
+    },
+    {
+      "question": "Qu'est-ce qu'une adresse MAC ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "L'adresse d'un site web"
+        },
+        {
+          "id": "b",
+          "text": "L'adresse IP publique"
+        },
+        {
+          "id": "c",
+          "text": "Le mot de passe du Wi-Fi"
+        },
+        {
+          "id": "d",
+          "text": "L'identifiant d'une carte réseau, utilisé sur le réseau local"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Elle sert à acheminer les trames au niveau du lien, à l'intérieur d'un réseau local."
+    },
+    {
+      "question": "Qu'est-ce que la règle de même origine dans un navigateur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tous les sites partagent leurs cookies"
+        },
+        {
+          "id": "b",
+          "text": "Un site ne peut afficher qu'une image"
+        },
+        {
+          "id": "c",
+          "text": "Un onglet ne peut pas en ouvrir un autre"
+        },
+        {
+          "id": "d",
+          "text": "Un script d'un site ne peut pas lire librement les données d'un autre site"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "C'est l'une des protections majeures du web, qui cloisonne les sites entre eux."
+    },
+    {
+      "question": "Que contient un certificat de site web ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le nom du site, sa clé publique et la signature d'une autorité de certification"
+        },
+        {
+          "id": "b",
+          "text": "Le mot de passe du site"
+        },
+        {
+          "id": "c",
+          "text": "La liste des visiteurs"
+        },
+        {
+          "id": "d",
+          "text": "Le code source du site"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le navigateur vérifie la signature et que le nom correspond au site visité."
+    },
+    {
+      "question": "Quelle commande affiche le dossier courant ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "ls"
+        },
+        {
+          "id": "b",
+          "text": "pwd"
+        },
+        {
+          "id": "c",
+          "text": "cd"
+        },
+        {
+          "id": "d",
+          "text": "cat"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "pwd, print working directory, affiche le chemin absolu du dossier courant."
+    },
+    {
+      "question": "Que fait cd .. ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il supprime le dossier"
+        },
+        {
+          "id": "b",
+          "text": "Il remonte au dossier parent"
+        },
+        {
+          "id": "c",
+          "text": "Il va à la racine"
+        },
+        {
+          "id": "d",
+          "text": "Il liste le contenu"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": ".. désigne toujours le parent du dossier courant."
+    },
+    {
+      "question": "Lequel de ces chemins est absolu ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "notes.txt"
+        },
+        {
+          "id": "b",
+          "text": "/home/alice/notes.txt"
+        },
+        {
+          "id": "c",
+          "text": "../notes.txt"
+        },
+        {
+          "id": "d",
+          "text": "./alice/notes.txt"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un chemin absolu commence par la racine /."
+    },
+    {
+      "question": "Que fait rm -r dossier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il renomme le dossier"
+        },
+        {
+          "id": "b",
+          "text": "Il déplace le dossier dans la corbeille"
+        },
+        {
+          "id": "c",
+          "text": "Il supprime le dossier et tout son contenu, sans corbeille"
+        },
+        {
+          "id": "d",
+          "text": "Il affiche le dossier"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La ligne de commande ne demande pas de confirmation et n'a pas de corbeille : prudence."
+    },
+    {
+      "question": "Quelle est la différence entre > et >> ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "> ajoute, >> écrase"
+        },
+        {
+          "id": "c",
+          "text": ">> supprime le fichier"
+        },
+        {
+          "id": "d",
+          "text": "> crée ou écrase le fichier, >> ajoute à la fin"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Confondre les deux efface le contenu existant."
+    },
+    {
+      "question": "Que fait le tube | dans grep ECHEC journal.log | wc -l ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il enregistre dans un fichier"
+        },
+        {
+          "id": "b",
+          "text": "Il lance les deux commandes en parallèle sans lien"
+        },
+        {
+          "id": "c",
+          "text": "Il envoie la sortie de grep en entrée de wc"
+        },
+        {
+          "id": "d",
+          "text": "Il compare deux fichiers"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le tube chaîne les commandes : ici, compter les lignes qui contiennent ECHEC."
+    },
+    {
+      "question": "Quelle commande cherche un texte dans des fichiers ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "find"
+        },
+        {
+          "id": "b",
+          "text": "cat"
+        },
+        {
+          "id": "c",
+          "text": "cd"
+        },
+        {
+          "id": "d",
+          "text": "grep"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "grep cherche un motif dans le contenu ; find cherche des fichiers par leur nom ou leurs attributs."
+    },
+    {
+      "question": "Comment afficher aussi les fichiers cachés d'un dossier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "ls -h"
+        },
+        {
+          "id": "b",
+          "text": "ls -t"
+        },
+        {
+          "id": "c",
+          "text": "ls --cache"
+        },
+        {
+          "id": "d",
+          "text": "ls -a"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Les fichiers dont le nom commence par un point sont cachés ; -a les montre."
+    },
+    {
+      "question": "Que fait tail -f journal.log ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il supprime la fin du fichier"
+        },
+        {
+          "id": "b",
+          "text": "Il trie le fichier"
+        },
+        {
+          "id": "c",
+          "text": "Il affiche le début du fichier"
+        },
+        {
+          "id": "d",
+          "text": "Il affiche la fin du fichier et continue d'afficher les nouvelles lignes au fur et à mesure"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "C'est l'outil classique pour suivre un journal en direct."
+    },
+    {
+      "question": "Comment obtenir l'aide d'une commande sur un système minimal sans pages de manuel ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Avec sudo"
+        },
+        {
+          "id": "b",
+          "text": "En redémarrant"
+        },
+        {
+          "id": "c",
+          "text": "Avec l'option --help"
+        },
+        {
+          "id": "d",
+          "text": "Avec rm"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La plupart des commandes affichent un résumé de leurs options avec --help."
+    },
+    {
+      "question": "Que désigne le motif *.log dans le shell ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un fichier nommé *.log"
+        },
+        {
+          "id": "b",
+          "text": "Les fichiers modifiés aujourd'hui"
+        },
+        {
+          "id": "c",
+          "text": "Tous les fichiers du dossier courant dont le nom se termine par .log"
+        },
+        {
+          "id": "d",
+          "text": "Les dossiers uniquement"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le shell développe le motif avant de lancer la commande."
+    },
+    {
+      "question": "Quelle est l'équivalent PowerShell de ls ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Get-Content"
+        },
+        {
+          "id": "b",
+          "text": "Set-Location"
+        },
+        {
+          "id": "c",
+          "text": "Select-String"
+        },
+        {
+          "id": "d",
+          "text": "Get-ChildItem"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Get-ChildItem liste le contenu d'un dossier ; ls en est d'ailleurs un alias."
+    },
+    {
+      "question": "Quelle est la différence essentielle entre les tubes de bash et ceux de PowerShell ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Aucune"
+        },
+        {
+          "id": "b",
+          "text": "Bash transmet du texte, PowerShell des objets avec leurs propriétés"
+        },
+        {
+          "id": "c",
+          "text": "PowerShell n'a pas de tubes"
+        },
+        {
+          "id": "d",
+          "text": "Bash transmet des images"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "C'est pourquoi PowerShell filtre avec Where-Object sur des propriétés plutôt qu'avec grep sur du texte."
+    },
+    {
+      "question": "Que fait sort | uniq -c appliqué à une liste d'adresses ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il compte combien de fois chaque adresse apparaît"
+        },
+        {
+          "id": "b",
+          "text": "Il supprime toutes les adresses"
+        },
+        {
+          "id": "c",
+          "text": "Il chiffre les adresses"
+        },
+        {
+          "id": "d",
+          "text": "Il trie les adresses au hasard"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "sort regroupe les lignes identiques, uniq -c compte chaque groupe."
+    },
+    {
+      "question": "Pourquoi ne faut-il pas coller dans un terminal une commande trouvée sur un site inconnu sans la comprendre ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elle sera trop lente"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle peut exécuter n'importe quoi avec tes droits"
+        },
+        {
+          "id": "c",
+          "text": "Parce que le terminal refuse le copier-coller"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'elle est toujours en anglais"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Une commande collée s'exécute comme si tu l'avais tapée ; les escroqueries au faux support en profitent."
+    },
+    {
+      "question": "Quels sont les ingrédients d'un algorithme ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un langage de programmation et un ordinateur"
+        },
+        {
+          "id": "b",
+          "text": "Des variables et des couleurs"
+        },
+        {
+          "id": "c",
+          "text": "Un processeur rapide"
+        },
+        {
+          "id": "d",
+          "text": "Une entrée, des étapes précises, une sortie, et la garantie de s'arrêter"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Un algorithme existe indépendamment de tout langage."
+    },
+    {
+      "question": "Que vaut '4' + '2' en Python ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "6"
+        },
+        {
+          "id": "b",
+          "text": "'6'"
+        },
+        {
+          "id": "c",
+          "text": "Une erreur"
+        },
+        {
+          "id": "d",
+          "text": "'42'"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Entre deux textes, + concatène."
+    },
+    {
+      "question": "Que vaut 7 // 2 en Python ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "3.5"
+        },
+        {
+          "id": "b",
+          "text": "3"
+        },
+        {
+          "id": "c",
+          "text": "4"
+        },
+        {
+          "id": "d",
+          "text": "1"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "// est la division entière ; 7 % 2 donnerait le reste, 1."
+    },
+    {
+      "question": "Que vaut int('12,5') en Python ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une ValueError"
+        },
+        {
+          "id": "b",
+          "text": "12"
+        },
+        {
+          "id": "c",
+          "text": "12.5"
+        },
+        {
+          "id": "d",
+          "text": "13"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le texte ne représente pas un entier valide ; Python ne devine pas."
+    },
+    {
+      "question": "Que vaut not (True and False) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "True"
+        },
+        {
+          "id": "b",
+          "text": "False"
+        },
+        {
+          "id": "c",
+          "text": "None"
+        },
+        {
+          "id": "d",
+          "text": "Une erreur"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "True and False vaut False ; not False vaut True."
+    },
+    {
+      "question": "Combien de tours fait for i in range(1, 6) ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "6"
+        },
+        {
+          "id": "b",
+          "text": "5"
+        },
+        {
+          "id": "c",
+          "text": "4"
+        },
+        {
+          "id": "d",
+          "text": "1"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "De 1 inclus à 6 exclu : 1, 2, 3, 4, 5."
+    },
+    {
+      "question": "Que renvoie une fonction Python sans instruction return ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "None"
+        },
+        {
+          "id": "b",
+          "text": "0"
+        },
+        {
+          "id": "c",
+          "text": "Une chaîne vide"
+        },
+        {
+          "id": "d",
+          "text": "Une erreur"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Sans return, la fonction renvoie None : afficher n'est pas renvoyer."
+    },
+    {
+      "question": "Pourquoi if role == 'admin' or 'invite': est-il une faille ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que 'invite', texte non vide, est toujours vrai : la condition laisse passer tout le monde"
+        },
+        {
+          "id": "b",
+          "text": "Parce que or est interdit"
+        },
+        {
+          "id": "c",
+          "text": "Parce que les textes ne se comparent pas"
+        },
+        {
+          "id": "d",
+          "text": "Ce n'est pas une faille"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Il faut répéter la comparaison ou écrire role in ('admin', 'invite')."
+    },
+    {
+      "question": "Dans une trace d'erreur Python, où se trouve le type de l'erreur ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sur la première ligne"
+        },
+        {
+          "id": "b",
+          "text": "Au milieu"
+        },
+        {
+          "id": "c",
+          "text": "Sur la dernière ligne"
+        },
+        {
+          "id": "d",
+          "text": "Il n'est pas affiché"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "On lit une trace de bas en haut."
+    },
+    {
+      "question": "Quelle famille d'erreurs ne produit aucun message ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Les erreurs de syntaxe"
+        },
+        {
+          "id": "b",
+          "text": "Les erreurs d'exécution"
+        },
+        {
+          "id": "c",
+          "text": "Les erreurs de logique"
+        },
+        {
+          "id": "d",
+          "text": "Les erreurs d'indentation"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le programme tourne et donne un résultat faux : seuls les tests la révèlent."
+    },
+    {
+      "question": "Combien d'étapes faut-il au pire à une recherche dichotomique dans un million d'éléments triés ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Environ 1 000"
+        },
+        {
+          "id": "b",
+          "text": "500 000"
+        },
+        {
+          "id": "c",
+          "text": "Environ 20"
+        },
+        {
+          "id": "d",
+          "text": "1 000 000"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "On divise par deux à chaque étape : 2 puissance 20 vaut environ un million."
+    },
+    {
+      "question": "Un algorithme compare chaque élément d'une liste à tous les autres. Quelle est sa croissance ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Constante"
+        },
+        {
+          "id": "b",
+          "text": "Quadratique"
+        },
+        {
+          "id": "c",
+          "text": "Logarithmique"
+        },
+        {
+          "id": "d",
+          "text": "Linéaire"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "n éléments comparés à n éléments : n fois n opérations."
+    },
+    {
+      "question": "Pourquoi initialise-t-on un maximum avec le premier élément de la liste plutôt qu'avec 0 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que 0 est interdit"
+        },
+        {
+          "id": "b",
+          "text": "Parce que c'est plus rapide"
+        },
+        {
+          "id": "c",
+          "text": "Parce que le premier élément est le plus grand"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'avec 0, une liste de nombres négatifs donnerait un résultat faux"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Partir du premier élément ne suppose rien sur les données."
+    },
+    {
+      "question": "Qu'est-ce qu'une boucle infinie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Une boucle très rapide"
+        },
+        {
+          "id": "b",
+          "text": "Une boucle dont la condition d'arrêt ne devient jamais vraie"
+        },
+        {
+          "id": "c",
+          "text": "Une boucle sur une liste vide"
+        },
+        {
+          "id": "d",
+          "text": "Une boucle qui s'exécute une fois"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Il manque une progression vers la condition d'arrêt."
+    },
+    {
+      "question": "Pourquoi stocke-t-on les mots de passe avec une fonction de hachage volontairement lente ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pour économiser de la place"
+        },
+        {
+          "id": "b",
+          "text": "Pour rendre très coûteux les milliards d'essais d'un attaquant qui aurait volé la base"
+        },
+        {
+          "id": "c",
+          "text": "Pour ralentir les utilisateurs"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il n'existe pas de fonction rapide"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Un dixième de seconde est invisible pour l'utilisateur, mais énorme multiplié par des milliards d'essais."
+    },
+    {
+      "question": "Pourquoi un particulier sans rien de « précieux » est-il attaqué ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que la plupart des attaques sont automatisées et visent tous ceux qui sont joignables"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'il est choisi dans l'annuaire"
+        },
+        {
+          "id": "c",
+          "text": "Il ne l'est jamais"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'il a un ordinateur récent"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Les attaques opportunistes essaient tout le monde et exploitent ceux qui cèdent."
+    },
+    {
+      "question": "Quelle est la faute la plus grave avec les mots de passe ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Réutiliser le même mot de passe sur plusieurs services"
+        },
+        {
+          "id": "b",
+          "text": "Utiliser des minuscules"
+        },
+        {
+          "id": "c",
+          "text": "Utiliser un gestionnaire"
+        },
+        {
+          "id": "d",
+          "text": "Choisir un mot de passe long"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Une fuite sur un site ouvre alors tous les autres comptes : c'est le bourrage d'identifiants."
+    },
+    {
+      "question": "Que recommande la CNIL pour un mot de passe utilisé seul ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "8 caractères avec un symbole"
+        },
+        {
+          "id": "b",
+          "text": "Le changer chaque semaine"
+        },
+        {
+          "id": "c",
+          "text": "Une entropie d'au moins 80 bits, par exemple 12 caractères de quatre familles ou une phrase de passe de 7 mots"
+        },
+        {
+          "id": "d",
+          "text": "Le prénom suivi de l'année"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La CNIL raisonne en entropie et propose plusieurs politiques équivalentes."
+    },
+    {
+      "question": "Quel second facteur résiste à une fausse page qui relaie les saisies en direct ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le SMS"
+        },
+        {
+          "id": "b",
+          "text": "Le code TOTP"
+        },
+        {
+          "id": "c",
+          "text": "Une clé physique FIDO2 ou une clé d'accès"
+        },
+        {
+          "id": "d",
+          "text": "La notification à valider"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La clé lie sa réponse à l'adresse du site vérifiée par le navigateur."
+    },
+    {
+      "question": "Comment fonctionne un code TOTP à six chiffres ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il est envoyé par SMS"
+        },
+        {
+          "id": "b",
+          "text": "Il est tiré au hasard par le téléphone"
+        },
+        {
+          "id": "c",
+          "text": "Il est calculé à partir d'un secret partagé et de l'heure, sans réseau"
+        },
+        {
+          "id": "d",
+          "text": "Il est fixe"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Téléphone et serveur font le même calcul avec le même secret toutes les trente secondes."
+    },
+    {
+      "question": "Quel est le vrai domaine de https://impots.gouv.fr.remboursement.net/dossier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "remboursement.net"
+        },
+        {
+          "id": "b",
+          "text": "impots.gouv.fr"
+        },
+        {
+          "id": "c",
+          "text": "gouv.fr"
+        },
+        {
+          "id": "d",
+          "text": "dossier"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "On lit l'hôte, avant la première barre oblique, de droite à gauche."
+    },
+    {
+      "question": "Un « conseiller bancaire » te demande de valider une annulation dans ton application. Que faire ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Valider"
+        },
+        {
+          "id": "b",
+          "text": "Donner le code reçu par SMS"
+        },
+        {
+          "id": "c",
+          "text": "Raccrocher et rappeler la banque au numéro inscrit sur ta carte"
+        },
+        {
+          "id": "d",
+          "text": "Rappeler le numéro qu'il donne"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "La validation autoriserait en réalité l'opération frauduleuse."
+    },
+    {
+      "question": "Que signifie la règle de sauvegarde 3-2-1 ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "3 copies, sur 2 supports différents, dont 1 hors site"
+        },
+        {
+          "id": "b",
+          "text": "3 sauvegardes par jour"
+        },
+        {
+          "id": "c",
+          "text": "3 mots de passe, 2 facteurs, 1 gestionnaire"
+        },
+        {
+          "id": "d",
+          "text": "3 disques, 2 ordinateurs, 1 nuage"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Au moins une copie doit aussi être déconnectée, contre les rançongiciels."
+    },
+    {
+      "question": "Pourquoi la synchronisation de fichiers dans le nuage n'est-elle pas une sauvegarde ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elle est lente"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle est payante"
+        },
+        {
+          "id": "c",
+          "text": "Elle en est une"
+        },
+        {
+          "id": "d",
+          "text": "Parce qu'elle reproduit aussi les suppressions et les fichiers chiffrés par un rançongiciel"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Une sauvegarde conserve des états passés restaurables."
+    },
+    {
+      "question": "Sur un Wi-Fi public, que voit l'opérateur d'une connexion HTTPS ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tout, y compris les mots de passe"
+        },
+        {
+          "id": "b",
+          "text": "Rien du tout"
+        },
+        {
+          "id": "c",
+          "text": "Le nom du site, l'adresse du serveur, les volumes et les horaires"
+        },
+        {
+          "id": "d",
+          "text": "Seulement le contenu des pages"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "HTTPS chiffre le contenu ; les métadonnées restent visibles."
+    },
+    {
+      "question": "Que fait réellement un VPN ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Il chiffre le trafic jusqu'au serveur du fournisseur de VPN, qui devient à son tour l'observateur"
+        },
+        {
+          "id": "b",
+          "text": "Il rend anonyme"
+        },
+        {
+          "id": "c",
+          "text": "Il bloque l'hameçonnage"
+        },
+        {
+          "id": "d",
+          "text": "Il remplace la double authentification"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Il déplace la confiance, sans protéger des comptes mal protégés ni des pièges."
+    },
+    {
+      "question": "Pourquoi appliquer rapidement une mise à jour de sécurité ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce qu'elle expire"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle accélère l'ordinateur"
+        },
+        {
+          "id": "c",
+          "text": "Parce que sa publication révèle la faille aux attaquants, qui visent ensuite les machines non mises à jour"
+        },
+        {
+          "id": "d",
+          "text": "Ce n'est pas urgent"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Comparer les versions montre ce qui a été corrigé ; les attaques suivent vite."
+    },
+    {
+      "question": "Après avoir repris une messagerie piratée, que faut-il vérifier en plus du mot de passe ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La couleur du thème"
+        },
+        {
+          "id": "b",
+          "text": "Le nombre de courriels non lus"
+        },
+        {
+          "id": "c",
+          "text": "Les règles de transfert, les options de récupération et les sessions ouvertes"
+        },
+        {
+          "id": "d",
+          "text": "Rien d'autre"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'attaquant y laisse souvent de quoi garder la main."
+    },
+    {
+      "question": "Quelle est la première action face à un rançongiciel ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Payer vite"
+        },
+        {
+          "id": "b",
+          "text": "Brancher la sauvegarde"
+        },
+        {
+          "id": "c",
+          "text": "Redémarrer"
+        },
+        {
+          "id": "d",
+          "text": "Débrancher l'appareil du réseau et des disques externes"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "On contient d'abord, pour protéger les autres appareils et les sauvegardes."
+    },
+    {
+      "question": "Quel service guide les victimes et permet de déposer plainte en ligne, avec la police et la gendarmerie ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le 33700"
+        },
+        {
+          "id": "b",
+          "text": "17Cyber"
+        },
+        {
+          "id": "c",
+          "text": "Signal Spam"
+        },
+        {
+          "id": "d",
+          "text": "Perceval"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "C'est le guichet commun de la police, de la gendarmerie et de Cybermalveillance.gouv.fr."
+    },
+    {
+      "question": "Pourquoi faut-il une autorisation écrite avant d'examiner les machines d'une organisation ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Par politesse"
+        },
+        {
+          "id": "b",
+          "text": "Parce que la box l'exige"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'accéder à un système sans autorisation est un délit, même pour rendre service"
+        },
+        {
+          "id": "d",
+          "text": "Ce n'est pas nécessaire"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "L'autorisation protège l'intervenant et l'organisation, et délimite la mission."
+    },
+    {
+      "question": "Qu'est-ce qu'un bon objectif de cahier des charges ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un objectif vague"
+        },
+        {
+          "id": "b",
+          "text": "Un objectif vérifiable : à la fin, on peut dire s'il est atteint"
+        },
+        {
+          "id": "c",
+          "text": "Un objectif rédigé en jargon"
+        },
+        {
+          "id": "d",
+          "text": "Un objectif sans date"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "« Rétablir Internet sur le portable » se vérifie ; « améliorer l'informatique » non."
+    },
+    {
+      "question": "Que faire d'un fichier de données personnelles découvert pendant une intervention ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Noter son existence et sa protection, sans en copier le contenu"
+        },
+        {
+          "id": "b",
+          "text": "Le copier pour l'étudier"
+        },
+        {
+          "id": "c",
+          "text": "Le joindre au rapport"
+        },
+        {
+          "id": "d",
+          "text": "Le supprimer"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Principe de minimisation : on ne touche qu'à ce qu'exige la mission."
+    },
+    {
+      "question": "Pourquoi inventorie-t-on avant de diagnostiquer ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Par habitude"
+        },
+        {
+          "id": "b",
+          "text": "Parce que le système et la configuration d'une machine orientent le diagnostic"
+        },
+        {
+          "id": "c",
+          "text": "Parce que c'est plus court"
+        },
+        {
+          "id": "d",
+          "text": "Ce n'est pas nécessaire"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "On ne raisonne pas sur une machine qu'on ne connaît pas."
+    },
+    {
+      "question": "Quelle commande Linux donne le nom et la version de la distribution ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "uname -m"
+        },
+        {
+          "id": "b",
+          "text": "free"
+        },
+        {
+          "id": "c",
+          "text": "df -h"
+        },
+        {
+          "id": "d",
+          "text": "cat /etc/os-release"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "uname donne le noyau et l'architecture ; /etc/os-release décrit la distribution."
+    },
+    {
+      "question": "Quelle commande PowerShell liste les logiciels installés sous Windows ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Get-LocalUser"
+        },
+        {
+          "id": "b",
+          "text": "ipconfig /all"
+        },
+        {
+          "id": "c",
+          "text": "systeminfo"
+        },
+        {
+          "id": "d",
+          "text": "winget list"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "winget, le gestionnaire de paquets de Windows, liste les logiciels et leurs versions."
+    },
+    {
+      "question": "Dans quel ordre teste-t-on les maillons d'une connexion en panne ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Lien, adresse, passerelle, Internet par IP, DNS, service"
+        },
+        {
+          "id": "b",
+          "text": "DNS, service, lien, adresse"
+        },
+        {
+          "id": "c",
+          "text": "Service d'abord, puis le reste"
+        },
+        {
+          "id": "d",
+          "text": "Au hasard"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "On va du plus proche au plus lointain et on s'arrête au premier maillon qui échoue."
+    },
+    {
+      "question": "Que signifie une adresse IPv4 en 169.254.x.x ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "La machine n'a reçu aucune réponse du serveur DHCP"
+        },
+        {
+          "id": "b",
+          "text": "Une adresse publique"
+        },
+        {
+          "id": "c",
+          "text": "Une panne de DNS"
+        },
+        {
+          "id": "d",
+          "text": "Un serveur web"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "C'est une adresse de secours, signe d'un problème de lien ou de box."
+    },
+    {
+      "question": "Pourquoi teste-t-on Internet avec ping 1.1.1.1 plutôt qu'avec un nom de site ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Parce que c'est plus rapide"
+        },
+        {
+          "id": "b",
+          "text": "Pour séparer une panne de réseau d'une panne de DNS"
+        },
+        {
+          "id": "c",
+          "text": "Parce que les noms sont interdits"
+        },
+        {
+          "id": "d",
+          "text": "Parce que 1.1.1.1 est la box"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Si l'adresse répond mais pas les noms, la panne est dans le DNS."
+    },
+    {
+      "question": "Quelle était la meilleure correction pour un portable dont la passerelle était réglée à la main sur l'ancienne box ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Saisir à la main la nouvelle adresse de la box"
+        },
+        {
+          "id": "b",
+          "text": "Désactiver le pare-feu"
+        },
+        {
+          "id": "c",
+          "text": "Repasser la carte réseau en DHCP"
+        },
+        {
+          "id": "d",
+          "text": "Réinstaller Windows"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le DHCP corrige la cause : le prochain changement de box ne recréera pas la panne."
+    },
+    {
+      "question": "Comment calcule-t-on le niveau d'un risque dans la méthode vue en cours ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Vraisemblance + impact"
+        },
+        {
+          "id": "b",
+          "text": "Impact moins effort"
+        },
+        {
+          "id": "c",
+          "text": "Vraisemblance × impact"
+        },
+        {
+          "id": "d",
+          "text": "Nombre de machines"
+        }
+      ],
+      "correctOptionId": "c",
+      "explanation": "Le produit, de 1 à 16, sert à comparer et à discuter les risques."
+    },
+    {
+      "question": "Deux risques ont le même niveau. Lequel traiter en premier ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Le plus ancien"
+        },
+        {
+          "id": "b",
+          "text": "Celui dont la mesure demande le moins d'effort"
+        },
+        {
+          "id": "c",
+          "text": "Celui qui concerne le PC fixe"
+        },
+        {
+          "id": "d",
+          "text": "Au hasard"
+        }
+      ],
+      "correctOptionId": "b",
+      "explanation": "Les victoires rapides réduisent le risque tout de suite."
+    },
+    {
+      "question": "Quelles sont les quatre parties d'une recommandation complète ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Constat, risque, mesure, effort"
+        },
+        {
+          "id": "b",
+          "text": "Titre, date, auteur, signature"
+        },
+        {
+          "id": "c",
+          "text": "Problème, solution, prix, délai"
+        },
+        {
+          "id": "d",
+          "text": "Machine, version, correctif, date"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "Le constat se vérifie, le risque justifie, la mesure s'applique, l'effort permet de décider."
+    },
+    {
+      "question": "Qu'est-ce qui ne doit jamais figurer dans un dossier d'audit ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Un mot de passe, une clé Wi-Fi ou une donnée personnelle"
+        },
+        {
+          "id": "b",
+          "text": "La date de la mission"
+        },
+        {
+          "id": "c",
+          "text": "Le plan d'action"
+        },
+        {
+          "id": "d",
+          "text": "Les limites de la mission"
+        }
+      ],
+      "correctOptionId": "a",
+      "explanation": "On décrit les situations, jamais les secrets eux-mêmes."
+    },
+    {
+      "question": "Pourquoi la synthèse est-elle en tête du dossier technique ?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Par tradition"
+        },
+        {
+          "id": "b",
+          "text": "Parce qu'elle est la plus longue"
+        },
+        {
+          "id": "c",
+          "text": "Parce qu'elle contient les annexes"
+        },
+        {
+          "id": "d",
+          "text": "Parce que les décideurs doivent y trouver l'essentiel sans lire le reste"
+        }
+      ],
+      "correctOptionId": "d",
+      "explanation": "Le dossier va du plus important au plus détaillé."
+    }
+  ]
+}
