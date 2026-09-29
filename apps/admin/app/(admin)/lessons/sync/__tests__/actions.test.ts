@@ -9,9 +9,11 @@ vi.mock("@/lib/services/lesson-sync.service", () => ({ applyLessonUpdate }));
 const importLessonFromRepository = vi.fn();
 const syncPathFromRepository = vi.fn();
 const publishCatalogueDrafts = vi.fn();
+const syncQuizFromRepository = vi.fn();
 vi.mock("@/lib/services/repository-import.service", () => ({
   importLessonFromRepository,
   syncPathFromRepository,
+  syncQuizFromRepository,
   publishCatalogueDrafts,
 }));
 
@@ -19,6 +21,7 @@ const {
   importLessonFromRepositoryAction,
   publishCatalogueFromRepositoryAction,
   syncPathFromRepositoryAction,
+  syncQuizFromRepositoryAction,
   updateLessonFromRepositoryAction,
 } = await import("../actions");
 
@@ -154,6 +157,47 @@ describe("syncPathFromRepositoryAction", () => {
       ok: false,
       message: "Les manifestes de content/paths ne passent pas leurs contrôles.",
       details: ["linux.json : slug linux déjà utilisé par autre.json."],
+    });
+  });
+});
+
+describe("syncQuizFromRepositoryAction", () => {
+  it("checks the caller is an admin before anything else", async () => {
+    requireAdminAction.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(syncQuizFromRepositoryAction({ slug: "reseaux" })).rejects.toThrow(
+      "NEXT_REDIRECT",
+    );
+    expect(syncQuizFromRepository).not.toHaveBeenCalled();
+  });
+
+  it.each([["../../etc/passwd"], ["Reseaux"], ["ab"]])("refuses the slug %s", async (slug) => {
+    expect(await syncQuizFromRepositoryAction({ slug })).toEqual({
+      ok: false,
+      message: "Demande invalide.",
+      details: [],
+    });
+    expect(syncQuizFromRepository).not.toHaveBeenCalled();
+  });
+
+  it("writes the exam on behalf of the admin", async () => {
+    syncQuizFromRepository.mockResolvedValue({ ok: true, created: true, questions: 120 });
+    expect(await syncQuizFromRepositoryAction({ slug: "fondamentaux-informatique" })).toEqual({
+      ok: true,
+    });
+    expect(syncQuizFromRepository).toHaveBeenCalledWith("fondamentaux-informatique", "admin-1");
+  });
+
+  it("passes on why the exam was refused", async () => {
+    syncQuizFromRepository.mockResolvedValue({
+      ok: false,
+      reason: "no_path",
+      message: "Le parcours reseaux n'existe pas encore en base : synchronise-le d'abord.",
+      details: [],
+    });
+    expect(await syncQuizFromRepositoryAction({ slug: "reseaux" })).toEqual({
+      ok: false,
+      message: "Le parcours reseaux n'existe pas encore en base : synchronise-le d'abord.",
+      details: [],
     });
   });
 });

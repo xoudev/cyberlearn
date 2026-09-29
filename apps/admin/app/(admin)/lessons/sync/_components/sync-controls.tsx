@@ -10,14 +10,16 @@ import {
   importLessonFromRepositoryAction,
   publishCatalogueFromRepositoryAction,
   syncPathFromRepositoryAction,
+  syncQuizFromRepositoryAction,
   updateLessonFromRepositoryAction,
   type SyncActionResult,
 } from "../actions";
 
-/** What a button does: update a lesson, import a new one, or write a path. */
-export type SyncKind = "update" | "import" | "path";
+/** What a button does: update a lesson, import a new one, write a path or its exam. */
+export type SyncKind = "update" | "import" | "path" | "quiz";
 
 export interface SyncTarget {
+  /** What the item is known by: a refCode, or a path's slug for an exam. */
   refCode: string;
   title: string;
   /** The fingerprint the admin saw, for an update only. */
@@ -69,6 +71,15 @@ const COPY: Record<
       `${String(count)} parcours ${count > 1 ? "seront écrits" : "sera écrit"} depuis content/paths : titre, modules et ordre des leçons déjà importées. Un nouveau parcours arrive en brouillon ; un parcours existant garde son statut.`,
     progress: "Synchronisation",
   },
+  quiz: {
+    one: "Synchroniser",
+    running: "Synchronisation…",
+    done: "Synchronisé",
+    all: (count) => `Synchroniser les examens (${count})`,
+    confirm: (count) =>
+      `${String(count)} examen${count > 1 ? "s seront écrits" : " sera écrit"} depuis content/quizzes : seuil, nombre de questions tirées et pool de questions. Une question retirée du fichier est désactivée, jamais supprimée : les tentatives en cours et passées restent valides.`,
+    progress: "Synchronisation",
+  },
 };
 
 async function run(kind: SyncKind, target: SyncTarget): Promise<SyncActionResult> {
@@ -81,6 +92,9 @@ async function run(kind: SyncKind, target: SyncTarget): Promise<SyncActionResult
     }
     if (kind === "import") {
       return await importLessonFromRepositoryAction({ refCode: target.refCode });
+    }
+    if (kind === "quiz") {
+      return await syncQuizFromRepositoryAction({ slug: target.refCode });
     }
     return await syncPathFromRepositoryAction({ refCode: target.refCode });
   } catch {

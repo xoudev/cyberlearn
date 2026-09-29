@@ -8,6 +8,7 @@ import {
   importLessonFromRepository,
   publishCatalogueDrafts,
   syncPathFromRepository,
+  syncQuizFromRepository,
 } from "@/lib/services/repository-import.service";
 
 const inputSchema = z.object({
@@ -84,6 +85,28 @@ export async function syncPathFromRepositoryAction(input: {
   if (!parsed.success) return { ok: false, message: "Demande invalide.", details: [] };
 
   const result = await syncPathFromRepository(parsed.data.refCode, admin.id);
+  if (!result.ok) return { ok: false, message: result.message, details: result.details };
+  return { ok: true };
+}
+
+// The slug rule of a path manifest: the file content/quizzes/<slug>.json.
+const quizSchema = z.object({
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/)
+    .min(3)
+    .max(100),
+});
+
+/** Writes one path's final exam from content/quizzes/<slug>.json. */
+export async function syncQuizFromRepositoryAction(input: {
+  slug: string;
+}): Promise<SyncActionResult> {
+  const admin = await requireAdminAction();
+  const parsed = quizSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Demande invalide.", details: [] };
+
+  const result = await syncQuizFromRepository(parsed.data.slug, admin.id);
   if (!result.ok) return { ok: false, message: result.message, details: result.details };
   return { ok: true };
 }

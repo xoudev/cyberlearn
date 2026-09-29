@@ -18,7 +18,8 @@ difficulté, XP, prérequis) + corps MDX. Le format complet est documenté dans
 
 Tout se fait depuis admin → Leçons → **Synchroniser avec le dépôt**
 (`/lessons/sync`), une fois la PR fusionnée et la console redéployée : la page
-lit les fichiers de ce dossier et de `content/paths` tels qu'ils sont déployés.
+lit les fichiers de ce dossier, de `content/paths` et de `content/quizzes` tels
+qu'ils sont déployés.
 
 1. **Importer les nouvelles leçons** : section « Nouvelles leçons du dépôt »,
    bouton **Tout importer**. Chaque fichier passe les mêmes contrôles qu'un
@@ -31,13 +32,19 @@ lit les fichiers de ce dossier et de `content/paths` tels qu'ils sont déployés
    importées (journalisé `path.sync`). Un nouveau parcours arrive en DRAFT ;
    un parcours existant garde son statut. Resynchroniser après l'import d'un
    nouveau module.
-3. **Publier** : relire, puis passer leçons (liste des leçons, sélection
-   multiple) et parcours en PUBLISHED.
+3. **Synchroniser les examens** : section « Examens de parcours du dépôt »,
+   bouton **Synchroniser les examens**. Chaque fichier de `content/quizzes`
+   écrit l'examen final du parcours de même slug : seuil, nombre de questions
+   tirées et pool (journalisé `quiz.sync`). Le parcours doit exister, donc
+   cette étape suit la précédente. Une question retirée du fichier est
+   désactivée, jamais supprimée : une tentative en cours reste notée.
+4. **Publier** : bouton **Publier le catalogue du dépôt**, ou leçon par leçon
+   depuis la liste des leçons.
 
-L'import manuel (`/lessons/import`, lots de 30 fichiers) et le script
-`pnpm --filter @cyberlearn/db db:seed-paths` restent disponibles, pour une base
-locale notamment ; le script et la console écrivent un parcours avec le même
-code (`packages/db/src/catalogue/path-sync.ts`).
+L'import manuel (`/lessons/import`, lots de 30 fichiers) et les scripts
+`pnpm --filter @cyberlearn/db db:seed-paths` et `db:seed-quizzes` restent
+disponibles, pour une base locale notamment ; les scripts et la console
+écrivent avec le même code (`packages/db/src/catalogue`).
 
 ## Mettre à jour une leçon déjà importée
 
