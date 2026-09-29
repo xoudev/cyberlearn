@@ -29,6 +29,15 @@ export function isFirstCatalogueLesson(refCode: string): boolean {
   return /^CL-LSN-\d{3}-V\d{2}$/.test(refCode);
 }
 
+/**
+ * Whether a path belongs to the first catalogue: CL-PATH-001 to CL-PATH-099,
+ * since the new catalogue numbers its paths from 101. A teacher's class path
+ * (`CL-CPATH-…`) answers false.
+ */
+export function isFirstCataloguePath(refCode: string): boolean {
+  return /^CL-PATH-0\d{2}-V\d{2}$/.test(refCode);
+}
+
 export const pathRefCodeSchema = z
   .string()
   .regex(PATH_REF_CODE, "Format attendu : CL-PATH-001-V01");

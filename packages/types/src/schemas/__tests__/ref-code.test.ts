@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isFirstCatalogueLesson, lessonRefCodeSchema, pathRefCodeSchema } from "../ref-code.schema";
+import {
+  isFirstCatalogueLesson,
+  isFirstCataloguePath,
+  lessonRefCodeSchema,
+  pathRefCodeSchema,
+} from "../ref-code.schema";
 import { importLessonMetadataSchema } from "../import.schema";
 
 describe("isFirstCatalogueLesson", () => {
@@ -12,6 +17,19 @@ describe("isFirstCatalogueLesson", () => {
 
   it("leaves a teacher's class lesson out", () => {
     expect(isFirstCatalogueLesson("CL-CLS-a1b2c3-V01")).toBe(false);
+  });
+});
+
+describe("isFirstCataloguePath", () => {
+  it("tells the first catalogue's paths, numbered below 100, from the new ones", () => {
+    expect(isFirstCataloguePath("CL-PATH-001-V01")).toBe(true);
+    expect(isFirstCataloguePath("CL-PATH-016-V01")).toBe(true);
+    expect(isFirstCataloguePath("CL-PATH-101-V01")).toBe(false);
+    expect(isFirstCataloguePath("CL-PATH-103-V01")).toBe(false);
+  });
+
+  it("leaves a teacher's class path out", () => {
+    expect(isFirstCataloguePath("CL-CPATH-a1b2c3-V01")).toBe(false);
   });
 });
 
