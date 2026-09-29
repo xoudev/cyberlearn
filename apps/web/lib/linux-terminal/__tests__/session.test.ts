@@ -20,6 +20,9 @@ describe("isLessonFilePath", () => {
     "journal.2026-09.log",
     ".bashrc",
     ".cache/indice.txt",
+    "rapport final.txt",
+    "-notes.txt",
+    "docs/-notes.txt",
   ])("accepts %s", (path) => {
     expect(isLessonFilePath(path)).toBe(true);
   });
@@ -29,8 +32,12 @@ describe("isLessonFilePath", () => {
     "/etc/passwd",
     "a/../b",
     "a//b",
-    "a b",
+    "dossier avec espace/x.txt",
+    "-dossier/x.txt",
+    "fin avec espace ",
+    " debut avec espace",
     "a;rm -rf /",
+    "nom'quote.txt",
     "$(id)",
     "./notes.txt",
     "..",

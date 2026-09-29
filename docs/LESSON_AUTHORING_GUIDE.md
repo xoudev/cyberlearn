@@ -568,7 +568,7 @@ tourne sur nos serveurs.
 | Prop | Rôle |
 | --- | --- |
 | `title` | Titre de la barre du terminal (défaut : `Linux · root@cyberlearn`) |
-| `files` | Fichiers déposés avant que l'élève prenne la main : chemin relatif → contenu texte. Ils apparaissent dans `/mnt`, le dossier où le shell démarre. Noms simples séparés par `/`, sans `.` ni `..` ; un nom peut commencer par un point, pour un fichier caché ; au plus 40 fichiers de 64 Ko |
+| `files` | Fichiers déposés avant que l'élève prenne la main : chemin relatif → contenu texte. Ils apparaissent dans `/mnt`, le dossier où le shell démarre. Noms simples séparés par `/`, sans `.` ni `..` ; un nom peut commencer par un point, pour un fichier caché. Le nom du fichier lui-même, pas celui des dossiers, peut aussi contenir des espaces ou commencer par un tiret (`rapport final.txt`, `-notes.txt`), pour les exercices sur les guillemets et `--` ; au plus 40 fichiers de 64 Ko |
 | `expectedCommands` | Commandes demandées, cochées quand l'élève les tape (espaces normalisés). Une commande rappelée avec les flèches ne compte pas : il faut la retaper |
 | `checks` | Ce que l'élève doit laisser dans `/mnt`, vérifié dans la machine après chaque commande : `{ label, path, expect: "file" \| "dir" \| "link" \| "absent", contains?, mode?, target?, links? }`. `contains` : un texte que le fichier doit contenir ; `mode` : les permissions en octal, comme chmod les écrit (`"640"`, `"4755"`) ; `target` : la cible d'un lien symbolique, telle qu'écrite par `ln -s` ; `links` : le nombre de liens physiques (`2` après `ln`). Peu importe comment il y arrive : c'est l'état final qui compte. Idéal pour un exercice de rangement, de liens ou de permissions |
 | `hints` | Indices affichés sous le terminal |
