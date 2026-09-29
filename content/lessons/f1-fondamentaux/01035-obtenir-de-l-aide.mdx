@@ -1,0 +1,193 @@
+---
+refCode: CL-LSN-01035-V01
+slug: fondamentaux-obtenir-de-l-aide
+title: "Obtenir de l'aide : --help et man"
+description: "Personne ne connaît toutes les options par cœur : ce qui compte, c'est de savoir trouver. L'aide intégrée --help, les pages de manuel et leurs sections, la lecture d'un synopsis avec ses crochets et ses points de suspension, la recherche par mot-clé, l'aide de PowerShell, puis les bonnes sources en ligne et les pièges des commandes copiées."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-01034-V01"]
+---
+
+`ls` a plus de cinquante options, `find` presque autant, et un système Linux compte des milliers de commandes. Personne ne les connaît toutes, pas même les administrateurs les plus expérimentés. Ce qui distingue un professionnel d'un débutant n'est pas la mémoire : c'est la capacité à **trouver** la bonne information, vite, et à la **lire** correctement. Le terminal contient sa propre documentation, complète et toujours accordée à la version installée. Cette leçon t'apprend à t'en servir, puis à chercher ailleurs sans tomber dans les pièges.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- afficher l'aide courte d'une commande avec `--help` ;
+- ouvrir et parcourir une page de manuel avec `man` ;
+- lire un synopsis : crochets, barres verticales, points de suspension ;
+- choisir la bonne section du manuel ;
+- chercher une commande par mot-clé ;
+- obtenir de l'aide dans PowerShell ;
+- utiliser les sources en ligne avec discernement.
+
+## pourquoi ça compte
+
+Sur un serveur, sans navigateur, la documentation intégrée est souvent la seule disponible, et c'est aussi la plus fiable : elle décrit exactement la version installée, alors qu'une page trouvée en ligne peut parler d'une autre version, d'un autre système ou d'une option disparue. En sécurité, savoir lire précisément ce que fait une option évite des erreurs coûteuses, et permet de comprendre les commandes utilisées par un attaquant, retrouvées dans un historique ou un script. Et en entretien comme au travail, « je ne sais pas, mais je sais où chercher » est une réponse de professionnel.
+
+## l'aide courte : --help
+
+Presque toutes les commandes affichent un résumé de leur usage avec l'option `--help`, parfois `-h` :
+
+```text
+$ cp --help
+Usage: cp [OPTION]... [-T] SOURCE DEST
+  or:  cp [OPTION]... SOURCE... DIRECTORY
+Copy SOURCE to DEST, or multiple SOURCE(s) to DIRECTORY.
+
+  -a, --archive                same as -dR --preserve=all
+  -i, --interactive            prompt before overwrite
+  -r, -R, --recursive          copy directories recursively
+  ...
+```
+
+C'est l'outil idéal pour **retrouver une option** dont on connaît l'existence : « comment on copie un dossier, déjà ? ». La réponse tient dans les premières lignes. Sur une longue aide, combine-la avec `less`, vu dans la leçon précédente : `cp --help | less`. Le trait vertical `|`, appelé **tube**, envoie la sortie de la première commande à la seconde ; tu le reverras dans la leçon suivante.
+
+Sur la machine de ce module, construite avec BusyBox, l'aide est plus courte et commence par le nom de BusyBox : chaque commande y existe dans une version allégée, avec les options essentielles.
+
+## le manuel : man
+
+La documentation complète d'une commande se trouve dans sa **page de manuel**, qu'on ouvre avec `man` suivi du nom : `man cp`. La page s'affiche dans `less` : tu t'y déplaces avec les mêmes touches, tu y cherches avec `/`, tu la quittes avec `q`.
+
+Une page de manuel suit toujours le même plan :
+
+| Section de la page | Contenu |
+| --- | --- |
+| **NAME** | le nom et une ligne de description |
+| **SYNOPSIS** | la forme de la commande, en notation résumée |
+| **DESCRIPTION** | le fonctionnement détaillé et la liste des options |
+| **EXAMPLES** | des exemples, quand l'auteur en a écrit (souvent la partie la plus utile) |
+| **SEE ALSO** | les commandes voisines |
+
+Le réflexe efficace : lire NAME et SYNOPSIS, puis chercher directement l'option ou le mot voulu avec `/`, plutôt que de tout lire. Et aller voir EXAMPLES s'il existe. Pour chercher une option précise, comme `-r`, tape `/-r` : la recherche t'emmène à l'endroit où elle est décrite, et `n` passe aux mentions suivantes.
+
+La machine de ce module, minimale, n'a pas de pages de manuel installées : c'est fréquent dans les conteneurs et les systèmes embarqués, où chaque mégaoctet compte. Sur une distribution complète comme la Debian du module 3, `man` fonctionne pour presque toutes les commandes, et les pages sont aussi consultables en ligne.
+
+## lire un synopsis
+
+Le SYNOPSIS utilise une notation compacte qu'il faut savoir déchiffrer :
+
+```text
+cp [OPTION]... SOURCE... DIRECTORY
+tar -c|-x [-v] [-f ARCHIVE] [FILE]...
+```
+
+| Notation | Signification |
+| --- | --- |
+| `[ ]` | élément **facultatif** |
+| `...` | élément **répétable** : un ou plusieurs |
+| `a\|b` | **l'un ou l'autre**, au choix |
+| `MAJUSCULES` ou *italique* | à **remplacer** par ta propre valeur |
+| texte normal | à taper **tel quel** |
+
+La première ligne se lit donc : `cp`, suivi d'options facultatives et répétables, puis d'une ou plusieurs sources, puis d'un dossier de destination. Tu retrouves la règle de la leçon sur les fichiers : avec plusieurs sources, le dernier argument est un dossier. La seconde : `tar` avec soit `-c` (créer), soit `-x` (extraire), éventuellement `-v`, éventuellement `-f` suivi du nom de l'archive, puis des fichiers facultatifs. Une fois cette notation maîtrisée, n'importe quelle page de manuel devient lisible.
+
+## les sections du manuel
+
+Le manuel est découpé en **sections numérotées**, car un même nom peut désigner plusieurs choses. Les plus utiles :
+
+| Section | Contenu |
+| --- | --- |
+| **1** | les commandes des utilisateurs, comme `ls` ou `cp` |
+| **5** | les formats des fichiers de configuration |
+| **8** | les commandes d'administration, comme `useradd` ou `mount` |
+
+`passwd` est à la fois une commande, pour changer de mot de passe, et un fichier, `/etc/passwd`, qui décrit les comptes. `man passwd` ouvre la section 1, la commande ; `man 5 passwd` ouvre la section 5, le fichier. Dans les documentations et les forums, on écrit d'ailleurs `passwd(5)` pour désigner précisément la seconde.
+
+## chercher une commande
+
+Quand on ne connaît pas le **nom** de la commande, on peut chercher dans les descriptions de toutes les pages avec `man -k` (ou son synonyme `apropos`) suivi d'un mot-clé, en anglais puisque les pages le sont :
+
+```text
+$ man -k "copy files"
+cp (1)               - copy files and directories
+cpio (1)             - copy files to and from archives
+install (1)          - copy files and set attributes
+```
+
+`whatis` affiche seulement la ligne de description d'une commande connue, et `which`, vu au début du module, dit où se trouve son programme. Pour les commandes intégrées au shell, comme `cd`, c'est la commande `help` du shell qui les documente : `help cd`.
+
+<Diagram caption="Où chercher, selon ce qu'on sait déjà">
+flowchart TD
+  A["Je connais la commande, je cherche une option"] --> B["commande --help, ou man commande puis /mot"]
+  C["Je ne connais pas le nom de la commande"] --> D["man -k mot-clé"]
+  E["Je veux des exemples concrets"] --> F["section EXAMPLES du manuel, puis documentation en ligne"]
+  G["C'est une commande du shell, comme cd"] --> H["help cd"]
+</Diagram>
+
+## les autres sources d'aide du terminal
+
+**Le message d'erreur.** C'est la première aide, et la plus négligée. Il nomme souvent le fichier, l'option ou le droit en cause : `cp: -r not specified; omitting directory 'projet'` dit exactement quoi ajouter. Quand un message reste obscur, le copier **tel quel, entre guillemets**, dans un moteur de recherche mène presque toujours à quelqu'un qui a eu le même problème.
+
+**Le code de retour.** Chaque commande, en se terminant, renvoie au shell un nombre : 0 si tout s'est bien passé, autre chose en cas d'échec. `echo $?` affiche le code de la dernière commande. C'est ce qui permet aux scripts de réagir à une erreur même quand la commande n'a rien affiché, et c'est ainsi que fonctionne l'enchaînement `commande1 && commande2`, qui ne lance la seconde que si la première a réussi.
+
+**La version.** `commande --version` affiche la version installée, et c'est souvent la première information qu'on demande quand on pose une question sur un forum. C'est la première chose à vérifier quand une option décrite en ligne est refusée : elle a peut-être été ajoutée dans une version plus récente, ou n'existe que dans l'implémentation GNU et pas dans BusyBox.
+
+## l'aide de PowerShell
+
+PowerShell a son propre système, cohérent et très complet. `Get-Help` suivi d'une cmdlet affiche son aide, `Get-Help Copy-Item -Examples` seulement ses exemples, et `Get-Help Copy-Item -Online` ouvre la documentation à jour dans le navigateur. `Get-Command *service*` liste les commandes dont le nom contient `service`, ce qui remplace `man -k`. Et comme sous Linux, la plupart des cmdlets acceptent `-?` pour une aide rapide. La leçon sur PowerShell, à la fin du module, t'y fera pratiquer.
+
+## chercher en ligne, avec discernement
+
+La documentation en ligne complète le manuel : les documentations officielles des projets, les pages de manuel publiées sur le web, les forums de questions-réponses comme Stack Overflow ou Super User, les sites qui proposent des exemples commentés. Quelques règles pour s'en servir sans se piéger :
+
+- **vérifier que la réponse correspond à ton système et à ta version.** Une commande pour macOS n'a pas toujours les mêmes options sous Linux, et une option vieille de dix ans a parfois disparu ;
+- **préférer la documentation officielle** quand elle existe, et regarder la date des réponses sur les forums ;
+- **comprendre avant d'exécuter.** Une commande copiée depuis Internet, surtout si elle contient `sudo`, `rm`, un téléchargement suivi de `| sh`, ou une longue chaîne encodée, peut faire exactement le contraire de ce qu'on espère. Tu sais désormais la décomposer : nom, options, arguments, et le manuel pour chaque morceau ;
+- **se méfier des réponses trop assurées**, d'où qu'elles viennent : une commande inventée ou une option qui n'existe pas se vérifient en dix secondes avec `--help`.
+
+## à toi de jouer : trouver seul
+
+Sur la machine de ce module, trouve par toi-même les réponses à ces questions, en utilisant l'aide intégrée :
+
+1. `ls --help` : quelle option trie par date de modification ?
+2. `head --help` : quelle option affiche les premiers **octets** plutôt que les premières lignes ?
+3. `busybox --help` : que dit BusyBox de lui-même, et combien de commandes propose-t-il ?
+4. `help` : quelles commandes le shell connaît-il en interne ?
+
+Puis mets ta réponse à l'épreuve : essaie l'option que tu as trouvée, par exemple sur les fichiers déjà présents.
+
+<LinuxTerminal title="Trouver l'aide soi-même" files={{ "a-lire.txt": "Un fichier à lire.\n", "notes/plan.txt": "Un plan.\n" }} expectedCommands={["ls --help", "head --help", "busybox --help", "help"]} hints={["Tape le nom de la commande, un espace, puis --help.", "Dans l'aide de ls, cherche le mot time ou le mot sort.", "busybox --help commence par la version et la licence, puis liste toutes les commandes disponibles."]} />
+
+Tu auras remarqué que l'aide de BusyBox est en anglais, comme la très grande majorité de la documentation technique. Lire l'anglais technique, même sans le parler couramment, fait partie des compétences du métier : le vocabulaire est limité et revient sans cesse, `file`, `directory`, `recursive`, `overwrite`, `prompt`.
+
+## les pièges
+
+- **Chercher à tout retenir par cœur.** Il faut retenir que l'aide existe, et comment la lire.
+- **Lire toute une page de manuel.** Cherche directement avec `/` et va voir EXAMPLES.
+- **Taper les crochets du synopsis.** `[OPTION]` signifie « option facultative », pas « taper des crochets ».
+- **Oublier les sections.** `man passwd` et `man 5 passwd` ne parlent pas de la même chose.
+- **Appliquer une réponse en ligne sans vérifier la version et le système.** Les options varient.
+- **Exécuter une commande qu'on ne comprend pas.** Décompose-la, et vérifie chaque option avant de l'exécuter.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/man.1.html" description="La page de manuel de man lui-même, avec la liste des sections, en anglais">Page de manuel de man</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/powershell/module/microsoft.powershell.core/get-help" description="L'aide de PowerShell et ses options -Examples, -Online, -Full">Microsoft : Get-Help</ExternalLink>
+
+<ExternalLink href="https://www.debian.org/doc/manuals/debian-reference/ch01.fr.html" description="Le chapitre de la référence Debian qui présente le shell et ses outils d'aide">Référence Debian : tutoriels GNU/Linux</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Tu sais que cp peut copier un dossier, mais tu as oublié l'option. Le moyen le plus rapide ?" options={["Réinstaller le système", "Demander à un collègue de le faire", "cp --help, puis chercher recursive", "Essayer toutes les lettres"]} correct={2} explanation="--help résume les options ; recursive, -r, est dans les premières lignes." />
+  <Quiz id="q-2" question="Dans un synopsis, que signifie [OPTION] ?" options={["Qu'il faut taper des crochets", "Qu'une option est obligatoire", "Qu'une option est facultative", "Que la commande est obsolète"]} correct={2} explanation="Les crochets marquent un élément facultatif ; on ne les tape pas." />
+  <Quiz id="q-3" question="Dans cp [OPTION]... SOURCE... DIRECTORY, que signifient les points de suspension après SOURCE ?" options={["Qu'il manque du texte", "Qu'on peut donner une ou plusieurs sources", "Qu'il faut taper trois points", "Que la source est facultative"]} correct={1} explanation="... marque un élément répétable : plusieurs sources vers un dossier." />
+  <Quiz id="q-4" question="Quelle commande ouvre la documentation du fichier /etc/passwd plutôt que de la commande passwd ?" options={["man passwd", "passwd --help", "man 5 passwd", "help passwd"]} correct={2} explanation="La section 5 décrit les formats de fichiers ; la section 1 les commandes." />
+  <Quiz id="q-5" question="Tu ne connais pas le nom de la commande qui compresse des fichiers. Que tapes-tu ?" options={["man compress", "compress --help", "which compress", "man -k compress"]} correct={3} explanation="man -k, ou apropos, cherche le mot-clé dans les descriptions de toutes les pages." />
+  <Quiz id="q-6" question="Quel est l'équivalent PowerShell de man ?" options={["Get-Command", "Get-Process", "Get-Help", "Show-Manual"]} correct={2} explanation="Get-Help affiche l'aide d'une cmdlet ; -Examples et -Online en sont des variantes utiles." />
+  <Quiz id="q-7" question="Une réponse trouvée en ligne propose curl https://site.example/install.sh | sh. Que faire avant de l'exécuter ?" options={["Comprendre ce qu'elle fait : elle télécharge un script et l'exécute sans que tu l'aies lu", "L'exécuter tout de suite", "L'exécuter avec sudo pour être sûr", "Rien, c'est toujours sans danger"]} correct={0} explanation="Le tube vers sh exécute un script inconnu ; on télécharge d'abord, on lit, puis on décide." />
+</QuizGroup>
+
+## à retenir
+
+- On ne retient pas tout : on sait **trouver**. `commande --help` pour l'aide courte, `man commande` pour le manuel.
+- Une page de manuel : **NAME**, **SYNOPSIS**, **DESCRIPTION**, **EXAMPLES**, **SEE ALSO**. On cherche avec `/`, on quitte avec `q`.
+- Synopsis : `[ ]` facultatif, `...` répétable, `a|b` au choix, MAJUSCULES à remplacer.
+- Sections : **1** commandes, **5** fichiers de configuration, **8** administration. `man 5 passwd`.
+- Chercher par mot-clé : `man -k` ou `apropos`. Commandes internes : `help cd`. PowerShell : `Get-Help`, `Get-Command`.
+- En ligne : bonne **version**, bon **système**, documentation **officielle**, et **comprendre avant d'exécuter**.

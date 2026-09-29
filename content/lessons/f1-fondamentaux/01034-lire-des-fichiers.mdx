@@ -1,0 +1,164 @@
+---
+refCode: CL-LSN-01034-V01
+slug: fondamentaux-lire-des-fichiers
+title: "Lire des fichiers : cat, less, head, tail"
+description: "Afficher un fichier sans éditeur ni souris : cat pour les petits fichiers, less pour les grands, head et tail pour le début et la fin, tail -f pour suivre un journal en direct, wc pour compter. Et ce qu'on fait d'un fichier binaire. Avec l'examen d'un vrai journal de connexions sur un Linux qui tourne dans la page."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-01033-V01"]
+---
+
+Sur un serveur, on lit bien plus de fichiers qu'on n'en écrit : des fichiers de configuration pour comprendre comment un service est réglé, et surtout des **journaux** (*logs*) pour comprendre ce qui s'est passé. Un journal peut faire quelques lignes ou plusieurs millions. On n'ouvre pas un fichier de deux gigaoctets comme une lettre : on regarde sa fin, on le parcourt, on le compte. Cette leçon présente les outils de lecture de la ligne de commande, chacun adapté à une situation, et te fait examiner un vrai journal de connexions, dans lequel quelque chose d'anormal s'est produit.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- afficher un fichier entier avec `cat` ;
+- parcourir un long fichier avec `less`, et y chercher un mot ;
+- afficher le début ou la fin d'un fichier avec `head` et `tail` ;
+- suivre un journal en temps réel avec `tail -f` ;
+- compter les lignes, les mots et les octets avec `wc` ;
+- reconnaître un fichier binaire et l'examiner sans casser ton terminal.
+
+## pourquoi ça compte
+
+« Qu'est-ce qui s'est passé à 14 h 23 ? » Pour un administrateur, la réponse est presque toujours dans un journal : celui du serveur web, celui des connexions, celui du système. Pour un analyste en sécurité, lire des journaux est le cœur du métier, qu'il s'agisse de comprendre une intrusion ou de repérer une attaque en cours. Et pour un développeur, les journaux de son application sont le premier outil de débogage. Savoir afficher le bon morceau du bon fichier, vite, est une compétence de tous les jours.
+
+## cat : tout afficher
+
+`cat` affiche le contenu entier d'un fichier dans le terminal : `cat notes.txt`. C'est parfait pour un fichier court : une configuration de quelques lignes, une note, un script. Son nom vient de *concatenate* : donné plusieurs fichiers, il les affiche à la suite, `cat partie1.txt partie2.txt`, et sert ainsi à les assembler.
+
+Sur un long fichier, `cat` fait défiler des milliers de lignes en une fraction de seconde, et il ne reste à l'écran que la fin. Pour un gros journal, c'est le mauvais outil. L'option `-n` numérote les lignes, utile pour désigner une ligne précise à un collègue.
+
+## less : parcourir
+
+`less` affiche un fichier **page par page**, et permet de s'y déplacer librement, sans le charger entièrement en mémoire : c'est l'outil pour lire un gros fichier. Une fois dans `less`, tu ne tapes plus des commandes du shell, mais des touches :
+
+| Touche | Effet |
+| --- | --- |
+| Espace, ou flèche bas | page suivante, ou ligne suivante |
+| `b`, ou flèche haut | page précédente, ou ligne précédente |
+| `g` et `G` | début et fin du fichier |
+| `/mot` puis Entrée | chercher `mot` vers le bas |
+| `n` et `N` | occurrence suivante et précédente |
+| `q` | quitter et revenir au shell |
+
+La touche `q` est la plus importante : tant qu'on ne la connaît pas, on se sent enfermé. La recherche avec `/` est la deuxième : dans un journal de cent mille lignes, `/ECHEC` t'emmène directement au premier échec. Le nom `less` est un jeu de mots sur un outil plus ancien, `more`, qui ne savait qu'avancer : *less is more*.
+
+## head et tail : le début et la fin
+
+`head` affiche le **début** d'un fichier, les 10 premières lignes par défaut ; `tail` en affiche la **fin**. L'option `-n` choisit le nombre de lignes :
+
+```bash
+head -n 3 journal.log     # les trois premières lignes
+tail -n 20 journal.log    # les vingt dernières
+```
+
+`tail` est l'outil de réflexe pour un journal : les événements les plus récents sont à la fin. `head` sert à jeter un coup d'œil à un fichier inconnu, pour voir sa forme sans l'afficher en entier : un fichier de données commence souvent par une ligne d'en-tête qui dit ce que contient chaque colonne.
+
+Deux variantes rendent service. `tail -n +2 donnees.csv` affiche tout **à partir** de la deuxième ligne, donc tout sauf la ligne d'en-tête, ce qui est pratique avant de compter ou de trier des données. Et `head` comme `tail` acceptent `-c` pour compter en **octets** plutôt qu'en lignes : `head -c 16 image.png` renvoie les seize premiers octets d'un fichier, ceux qui portent son nombre magique.
+
+## tail -f : suivre en direct
+
+`tail -f journal.log` affiche la fin du fichier, puis **reste ouvert** et affiche chaque nouvelle ligne au moment où elle est écrite. C'est ainsi qu'un administrateur regarde un service vivre en temps réel : il lance `tail -f` sur le journal du serveur web, recharge la page dans un navigateur, et voit sa requête apparaître. Pour arrêter de suivre, **Ctrl + C**, le réflexe de la première leçon.
+
+<Diagram caption="Quel outil pour quelle lecture ?">
+flowchart TD
+  A["Un fichier à lire"] --> B["Court : cat"]
+  A --> C["Long, à parcourir ou chercher : less"]
+  A --> D["Juste le début : head"]
+  A --> E["Juste la fin : tail"]
+  A --> F["Qui grandit en direct : tail -f"]
+</Diagram>
+
+## wc : compter
+
+`wc` (*word count*) compte les **lignes**, les **mots** et les **octets** d'un fichier. `wc -l` ne donne que le nombre de lignes, de loin l'usage le plus courant :
+
+```text
+$ wc -l journal.log
+40 journal.log
+```
+
+Dans un journal où chaque ligne est un événement, compter les lignes, c'est compter les événements. Combiné à la recherche de la leçon suivante, `wc -l` répond à des questions comme « combien d'échecs de connexion aujourd'hui ? ». Et `wc -c` donne la taille en octets, que tu sais depuis le module 2 lire en ko ou en Mio.
+
+## où vivent les journaux, et comment les lire
+
+Sous Linux, les journaux sont traditionnellement rangés dans `/var/log` : `/var/log/auth.log` pour les connexions et l'usage de `sudo` sur Debian et Ubuntu, `/var/log/syslog` pour les messages généraux, et un dossier par service, comme `/var/log/nginx/` pour le serveur web. Les systèmes récents gèrent aussi un journal central avec **journald**, qu'on consulte avec la commande `journalctl`. Sous Windows, l'**Observateur d'événements** du module 3 joue ce rôle ; un échec de connexion y porte l'identifiant **4625**, que les analystes connaissent par cœur.
+
+Lire un journal comme un analyste, c'est regarder quatre choses : **quand** (l'heure, et son fuseau, car beaucoup de serveurs écrivent en temps universel), **qui** (le compte concerné), **d'où** (l'adresse d'origine), et **combien** (une répétition, une rafale, ou au contraire un trou : un journal qui cesse brusquement d'être écrit est aussi un indice, par exemple d'un attaquant qui a tout effacé). C'est pour cette dernière raison qu'en entreprise, les journaux sont copiés en continu sur une autre machine, hors de portée d'un intrus.
+
+## les journaux archivés
+
+Un journal qui grandit sans fin finirait par remplir le disque. Les systèmes le font donc **tourner** régulièrement : le fichier courant est renommé, `auth.log` devient `auth.log.1`, puis compressé en `auth.log.2.gz`, et un nouveau fichier vide prend la relève. Pour lire un journal compressé sans le décompresser sur le disque, on utilise les variantes qui commencent par un **z** : `zcat` pour l'afficher et `zless` pour le parcourir. Une enquête sur un incident de la semaine dernière commence souvent là.
+
+## et les fichiers binaires ?
+
+Tous les fichiers ne sont pas du texte. Une image, un programme, une archive sont des **fichiers binaires** : leurs octets ne correspondent pas à des caractères lisibles. Un `cat` sur un tel fichier affiche une bouillie de symboles, et peut même dérégler le terminal, certains octets étant interprétés comme des commandes de l'écran. Si cela t'arrive, la commande `reset` remet le terminal en état.
+
+Pour examiner un fichier binaire, on utilise les outils du module 2 : `xxd` ou `hexdump -C` pour afficher ses octets en hexadécimal et repérer son nombre magique, et `strings` pour extraire les suites de caractères lisibles qu'il contient. `strings` est un grand classique de l'analyse de logiciels malveillants : les adresses, les noms de fichiers et les messages cachés dans un programme sautent souvent aux yeux.
+
+## à toi de jouer : examiner un journal
+
+La machine contient le journal des connexions d'un serveur, `journal.log`. Examine-le avec les outils de la leçon :
+
+1. `head -n 3 journal.log` : à quoi ressemble une ligne ?
+2. `wc -l journal.log` : combien d'événements ?
+3. `tail -n 5 journal.log` : que s'est-il passé en dernier ?
+4. `less journal.log`, puis cherche `/admin`, et quitte avec `q`.
+
+<LinuxTerminal title="Examiner un journal de connexions" files={{ "journal.log": "2026-09-28 08:08:09 OK connexion utilisateur=david ip=192.168.1.24\n2026-09-28 08:24:43 OK connexion utilisateur=alice ip=192.168.1.23\n2026-09-28 08:42:15 ECHEC connexion utilisateur=bob ip=192.168.1.47\n2026-09-28 08:51:19 ECHEC connexion utilisateur=bob ip=192.168.1.47\n2026-09-28 08:55:11 OK connexion utilisateur=alice ip=192.168.1.60\n2026-09-28 09:08:48 OK connexion utilisateur=alice ip=192.168.1.45\n2026-09-28 09:12:02 OK connexion utilisateur=alice ip=192.168.1.28\n2026-09-28 09:19:28 OK connexion utilisateur=bob ip=192.168.1.56\n2026-09-28 09:27:03 ECHEC connexion utilisateur=bob ip=192.168.1.56\n2026-09-28 09:40:15 ECHEC connexion utilisateur=chloe ip=192.168.1.24\n2026-09-28 09:52:18 OK connexion utilisateur=bob ip=192.168.1.54\n2026-09-28 10:02:07 OK connexion utilisateur=chloe ip=192.168.1.49\n2026-09-28 10:10:26 OK connexion utilisateur=bob ip=192.168.1.35\n2026-09-28 10:15:02 OK connexion utilisateur=chloe ip=192.168.1.41\n2026-09-28 10:29:30 OK connexion utilisateur=chloe ip=192.168.1.24\n2026-09-28 10:34:02 OK connexion utilisateur=david ip=192.168.1.41\n2026-09-28 10:40:01 OK connexion utilisateur=david ip=192.168.1.24\n2026-09-28 10:55:36 OK connexion utilisateur=chloe ip=192.168.1.42\n2026-09-28 11:08:07 ECHEC connexion utilisateur=david ip=192.168.1.25\n2026-09-28 11:15:37 ECHEC connexion utilisateur=alice ip=192.168.1.39\n2026-09-28 11:29:13 OK connexion utilisateur=david ip=192.168.1.44\n2026-09-28 11:46:55 ECHEC connexion utilisateur=chloe ip=192.168.1.49\n2026-09-28 11:55:05 OK connexion utilisateur=alice ip=192.168.1.33\n2026-09-28 12:10:23 OK connexion utilisateur=bob ip=192.168.1.45\n2026-09-28 12:20:21 ECHEC connexion utilisateur=david ip=192.168.1.48\n2026-09-28 12:29:56 OK connexion utilisateur=chloe ip=192.168.1.47\n2026-09-28 12:46:31 OK connexion utilisateur=chloe ip=192.168.1.42\n2026-09-28 13:00:27 OK connexion utilisateur=david ip=192.168.1.29\n2026-09-28 13:04:38 OK connexion utilisateur=bob ip=192.168.1.34\n2026-09-28 13:08:09 OK connexion utilisateur=bob ip=192.168.1.20\n2026-09-28 13:13:35 OK connexion utilisateur=chloe ip=192.168.1.40\n2026-09-28 13:19:19 OK connexion utilisateur=alice ip=192.168.1.55\n2026-09-28 13:28:44 OK connexion utilisateur=david ip=192.168.1.50\n2026-09-28 13:42:09 OK connexion utilisateur=alice ip=192.168.1.33\n2026-09-28 14:23:11 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:13 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:15 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:17 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:19 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:21 ECHEC connexion utilisateur=admin ip=203.0.113.66\n" }} expectedCommands={["head -n 3 journal.log", "wc -l journal.log", "tail -n 5 journal.log", "less journal.log"]} hints={["head -n 3 : les trois premières lignes.", "wc -l compte les lignes, donc les événements.", "Dans less, tape /admin puis Entrée pour chercher, n pour l'occurrence suivante, q pour quitter."]} />
+
+Qu'as-tu trouvé ? Chaque ligne donne la date, le résultat, l'utilisateur et l'adresse d'origine. Toute la journée, des connexions ordinaires depuis le réseau local, `192.168.1.x`, avec de temps en temps un échec, une faute de frappe sans doute. Puis, à 14 h 23, six échecs en dix secondes, sur un compte nommé `admin`, depuis une adresse **extérieure**. C'est la signature d'un programme qui essaie des mots de passe à la chaîne : une **attaque par force brute**. Tu viens de faire, en quatre commandes, le premier geste d'un analyste. La leçon suivante t'apprendra à extraire ces lignes automatiquement, avec `grep`.
+
+## exercice noté : écrire son propre tail
+
+Écris `solution(texte, n)` qui renvoie la liste des `n` **dernières lignes** d'un texte, comme `tail -n`. Si le texte a moins de `n` lignes, toutes sont renvoyées ; si `n` vaut 0, la liste est vide. Indice : `splitlines()` découpe un texte en lignes, et une tranche avec un indice négatif part de la fin.
+
+<PythonChallenge id="f1-tail-1" title="Écrire son propre tail" description="Renvoie la liste des n dernières lignes du texte, comme tail -n." starterCode="def solution(texte, n):
+    lignes = texte.splitlines()
+    return lignes  # garde seulement les n dernières" tests={[{ input: "solution('a\\nb\\nc\\nd\\n', 2)", expected: "['c', 'd']" }, { input: "solution('a\\nb\\n', 5)", expected: "['a', 'b']" }, { input: "solution('seule', 1)", expected: "['seule']" }, { input: "solution('a\\nb\\nc', 0)", expected: "[]" }, { input: "solution('', 3)", expected: "[]" }]} />
+
+Attention au quatrième test : en Python, `lignes[-0:]` renvoie **toute** la liste, puisque `-0` vaut `0`. Le cas `n` égal à 0 demande donc un traitement à part : c'est le genre de détail que les tests servent à débusquer.
+
+## les pièges
+
+- **Faire un `cat` sur un énorme fichier.** Il défile en entier ; `less`, `head` ou `tail` sont faits pour ça.
+- **Rester bloqué dans `less`.** La touche `q` en sort.
+- **Oublier Ctrl + C après `tail -f`.** Il suit le fichier indéfiniment.
+- **Lire le début d'un journal au lieu de la fin.** Les événements récents sont en bas : `tail`.
+- **Afficher un binaire avec `cat`.** On l'examine avec `xxd` ou `strings` ; `reset` répare un terminal déréglé.
+- **Confondre lignes et événements multilignes.** Certaines applications écrivent un événement sur plusieurs lignes : compter les lignes ne compte alors pas les événements.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/less.1.html" description="Toutes les touches et options de less, en anglais">Page de manuel de less</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/tail.1.html" description="Les options de tail, dont -f et -n, en anglais">Page de manuel de tail</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/journalctl.1.html" description="Consulter le journal central des systèmes Linux récents, en anglais">Page de manuel de journalctl</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel outil utiliser pour parcourir un fichier de plusieurs milliers de lignes et y chercher un mot ?" options={["less", "cat", "wc", "touch"]} correct={0} explanation="less affiche page par page, permet de se déplacer et de chercher avec /." />
+  <Quiz id="q-2" question="Comment quitter less ?" options={["Ctrl + C", "exit", "Échap", "La touche q"]} correct={3} explanation="q quitte less et rend la main au shell." />
+  <Quiz id="q-3" question="Quelle commande affiche les 20 dernières lignes de journal.log ?" options={["head -n 20 journal.log", "tail -n 20 journal.log", "cat -n 20 journal.log", "less -20 journal.log"]} correct={1} explanation="tail affiche la fin d'un fichier, et -n choisit le nombre de lignes." />
+  <Quiz id="q-4" question="À quoi sert tail -f ?" options={["À suivre un fichier en direct, en affichant les nouvelles lignes au fur et à mesure", "À forcer l'affichage d'un fichier protégé", "À afficher un fichier en entier", "À supprimer la fin d'un fichier"]} correct={0} explanation="-f, follow, garde le fichier ouvert et affiche chaque ligne ajoutée ; Ctrl + C arrête." />
+  <Quiz id="q-5" question="Que renvoie wc -l journal.log ?" options={["Le nombre de mots", "La taille en octets", "La dernière ligne", "Le nombre de lignes du fichier"]} correct={3} explanation="-l compte les lignes ; dans un journal, cela revient à compter les événements." />
+  <Quiz id="q-6" question="Un cat sur un programme a rempli l'écran de symboles et le terminal réagit bizarrement. Que faire ?" options={["Éteindre l'ordinateur", "Supprimer le programme", "Relancer cat", "Taper reset pour remettre le terminal en état"]} correct={3} explanation="Des octets binaires ont été pris pour des commandes d'écran ; reset réinitialise le terminal." />
+  <Quiz id="q-7" question="Six échecs de connexion en dix secondes sur le compte admin depuis une adresse extérieure évoquent :" options={["Une panne réseau", "Une attaque par force brute, qui essaie des mots de passe à la chaîne", "Une mise à jour", "Un utilisateur distrait"]} correct={1} explanation="Des tentatives rapides et répétées sur un compte privilégié, depuis l'extérieur, sont la signature d'un essai automatisé de mots de passe." />
+</QuizGroup>
+
+## à retenir
+
+- `cat` affiche un **petit** fichier en entier ; `-n` numérote les lignes.
+- `less` parcourt un **grand** fichier : Espace, `b`, `/mot`, `n`, et `q` pour quitter.
+- `head` montre le **début**, `tail` la **fin** ; `-n` choisit le nombre de lignes.
+- `tail -f` **suit** un journal en direct ; Ctrl + C l'arrête.
+- `wc -l` **compte** les lignes, donc souvent les événements.
+- Un **binaire** s'examine avec `xxd` ou `strings`, pas avec `cat` ; `reset` répare le terminal.
+- Lire un journal, c'est chercher l'**anormal** : l'heure, la répétition, l'origine.

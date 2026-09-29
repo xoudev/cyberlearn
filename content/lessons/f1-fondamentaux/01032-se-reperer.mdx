@@ -1,0 +1,199 @@
+---
+refCode: CL-LSN-01032-V01
+slug: fondamentaux-se-reperer
+title: "Se repérer : pwd, ls, cd"
+description: "Savoir où l'on est et se déplacer sans souris : le dossier courant, lister avec ls et ses options, changer de dossier avec cd, les chemins absolus et relatifs, les raccourcis ., .., ~ et -, les fichiers cachés, et les grands dossiers d'un système Linux. Avec un parcours guidé dans une arborescence, sur un vrai Linux."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-01031-V01"]
+---
+
+Dans un explorateur de fichiers, tu vois toujours où tu es : le chemin s'affiche en haut, les dossiers s'ouvrent d'un double-clic. Dans un terminal, rien de tout cela : tu es **quelque part** dans l'arborescence, et c'est à toi de le savoir, de regarder autour, puis de te déplacer. Trois commandes suffisent pour cela, `pwd`, `ls` et `cd`, et elles représentent à elles seules une bonne part de tout ce qu'on tape dans une journée. Cette leçon te les apprend, avec la notion qui les relie : le **chemin**, que tu as rencontrée au module 3.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- afficher le dossier courant avec `pwd` ;
+- lister le contenu d'un dossier avec `ls` et ses options utiles ;
+- te déplacer avec `cd` ;
+- écrire un chemin absolu et un chemin relatif ;
+- utiliser les raccourcis `.`, `..`, `~` et `-` ;
+- trouver les fichiers cachés ;
+- citer les grands dossiers d'un système Linux.
+
+## pourquoi ça compte
+
+Presque toutes les erreurs des débutants en ligne de commande viennent d'une seule confusion : ne pas savoir **où** on est. On crée un fichier au mauvais endroit, on supprime dans le mauvais dossier, on cherche un fichier qui est ailleurs. Un administrateur qui intervient sur un serveur commence toujours par se situer. Et en sécurité, savoir parcourir une arborescence, repérer les fichiers cachés et lire les détails d'un fichier est indispensable pour examiner une machine, qu'on l'administre ou qu'on enquête sur elle.
+
+## où suis-je ? pwd
+
+Le shell a toujours un **dossier courant** (on dit aussi répertoire de travail) : c'est le dossier dans lequel il se trouve, et par rapport auquel il comprend les noms de fichiers que tu tapes. La commande `pwd` (*print working directory*) l'affiche :
+
+```text
+$ pwd
+/home/alice
+```
+
+Beaucoup d'invites l'indiquent déjà, souvent en abrégé : `alice@serveur:~/projets$` signifie que le dossier courant est `projets`, dans le dossier personnel d'alice. En cas de doute, `pwd` tranche.
+
+L'invite de la machine de ce module est plus discrète encore : `mnt%` ne montre que le **dernier** nom du chemin, ici celui de `/mnt`, le dossier de travail où t'attendent les fichiers des exercices. Deux dossiers différents peuvent donc afficher la même invite, par exemple `/mnt/photos` et `/tmp/photos`. C'est exactement la situation où `pwd` évite de se tromper d'endroit.
+
+## que contient ce dossier ? ls
+
+`ls` (*list*) affiche le contenu du dossier courant, ou d'un dossier donné en argument : `ls /etc`. Ses options les plus utiles :
+
+| Commande | Ce qu'elle montre |
+| --- | --- |
+| `ls` | les noms, sur plusieurs colonnes |
+| `ls -l` | une ligne par élément, avec les droits, le propriétaire, la taille et la date |
+| `ls -a` | aussi les **fichiers cachés**, dont le nom commence par un point |
+| `ls -la` | les deux à la fois |
+| `ls -lh` | les tailles lisibles par un humain : `4.2K`, `18M` au lieu d'un nombre d'octets |
+| `ls -lt` | trié par date de modification, le plus récent en premier |
+
+Dans l'affichage détaillé, le premier caractère de chaque ligne dit ce qu'est l'élément : `d` pour un dossier (*directory*), `-` pour un fichier ordinaire, `l` pour un lien. Suivent les droits que tu as appris à lire au module 3, puis le propriétaire, le groupe, la taille et la date.
+
+```text
+drwxr-xr-x    2 root     root             0 Sep 28 10:12 photos
+-rw-r--r--    1 root     root           412 Sep 28 10:12 programme.txt
+```
+
+Beaucoup de terminaux affichent aussi les dossiers en couleur, souvent en bleu, ce qui aide à s'y retrouver d'un coup d'œil.
+
+## se déplacer : cd
+
+`cd` (*change directory*) change le dossier courant. `cd vacances` entre dans le dossier `vacances` du dossier courant ; `cd /etc` va directement dans `/etc`. Quelques formes à connaître :
+
+| Commande | Effet |
+| --- | --- |
+| `cd dossier` | entre dans un sous-dossier du dossier courant |
+| `cd ..` | remonte d'un niveau, dans le dossier parent |
+| `cd ../autre` | remonte, puis entre dans `autre` |
+| `cd /` | va à la racine |
+| `cd ~` ou `cd` tout court | revient dans ton dossier personnel |
+| `cd -` | revient au dossier où tu étais juste avant |
+
+`cd` ne répond rien quand il réussit : c'est l'invite, ou un `pwd`, qui confirme où tu es arrivé. S'il échoue, il le dit : `can't cd to ...: No such file or directory`.
+
+## chemins absolus et chemins relatifs
+
+Un **chemin absolu** commence par `/` et part de la **racine** : `/root/vacances/photos`. Il désigne toujours le même endroit, où que tu sois. Un **chemin relatif** ne commence pas par `/` : il part du **dossier courant**. Depuis `/root`, le chemin relatif `vacances/photos` désigne `/root/vacances/photos` ; depuis `/tmp`, le même chemin relatif désigne `/tmp/vacances/photos`, qui n'existe sans doute pas.
+
+<Diagram caption="Une arborescence, et deux façons d'y désigner un fichier">
+flowchart TD
+  R["/ : la racine"] --> H["root : le dossier personnel"]
+  R --> E["etc : la configuration"]
+  R --> T["tmp : les fichiers temporaires"]
+  H --> V["vacances"]
+  H --> W["travail"]
+  V --> P["photos"]
+  V --> PR["programme.txt"]
+  W --> CV["cv.txt"]
+</Diagram>
+
+Pour lire `cv.txt` quand on est dans `/root/vacances`, trois écritures fonctionnent :
+
+- le chemin absolu : `cat /root/travail/cv.txt` ;
+- le chemin relatif : `cat ../travail/cv.txt`, on remonte d'un niveau puis on descend dans `travail` ;
+- le raccourci du dossier personnel : `cat ~/travail/cv.txt`, où `~` vaut `/root` pour root, `/home/alice` pour alice.
+
+Deux noms spéciaux existent dans chaque dossier : `.` désigne le dossier lui-même, et `..` son parent. `./script.sh` veut dire « le fichier `script.sh` d'ici », une écriture qu'on utilise pour lancer un programme du dossier courant. Chemin absolu quand on veut être certain, dans un script ou une procédure ; chemin relatif pour aller vite au clavier.
+
+## la vue d'ensemble : tree
+
+`ls` montre un seul niveau. Pour voir d'un coup toute une branche de l'arborescence, la commande `tree` dessine les dossiers et leurs contenus, niveau par niveau :
+
+```text
+$ tree vacances
+vacances
+├── photos
+│   └── plage.txt
+└── programme.txt
+
+1 directories, 2 files
+```
+
+C'est l'outil idéal pour comprendre un dossier qu'on découvre, par exemple le code d'un projet ou les fichiers d'une application sur un serveur. Sur un gros dossier, la sortie peut être très longue : l'option `-L 2` limite l'affichage à deux niveaux. `tree` n'est pas installé partout ; `ls -R`, disponible sur tous les systèmes, liste aussi les sous-dossiers de manière récursive, avec un affichage moins graphique.
+
+## les noms qui posent problème
+
+Le shell sépare les arguments par des **espaces**. Un dossier nommé `mes photos` pose donc un problème : `cd mes photos` donne à `cd` deux arguments, `mes` et `photos`, et échoue. Deux solutions : mettre le nom entre guillemets, `cd "mes photos"`, ou protéger l'espace par une barre oblique inverse, `cd mes\ photos`. La touche Tab choisit d'ailleurs la seconde écriture toute seule quand elle complète un tel nom.
+
+Les **majuscules** comptent sous Linux : `Photos` et `photos` sont deux dossiers différents. Et les **accents** fonctionnent, grâce à l'UTF-8 du module 2, mais se tapent moins facilement sur certains claviers et dans certains scripts. C'est pourquoi on nomme souvent les fichiers d'un projet technique en minuscules, sans espaces ni accents, avec des tirets : `rapport-final-2026.txt`. Tu verras que la plupart des fichiers de ce parcours suivent cette convention.
+
+## les fichiers cachés
+
+Sous Linux, un fichier ou un dossier dont le nom commence par un **point** est **caché** : `ls` ne l'affiche pas, `ls -a` si. C'est une simple convention pour alléger l'affichage, pas une protection, comme tu l'as vu au module 3. Les fichiers de configuration personnels sont presque tous cachés : `.bashrc`, `.profile`, `.ssh/`. Et un logiciel malveillant qui s'installe dans un dossier comme `.cache/.x/` compte justement sur ceux qui ne tapent jamais `ls -a`. Le réflexe d'un administrateur qui examine un dossier suspect est donc `ls -la`.
+
+## les grands dossiers d'un Linux
+
+Tous les systèmes Linux rangent leurs fichiers selon le même plan, ce qui aide à s'orienter sur une machine inconnue :
+
+| Dossier | Contenu |
+| --- | --- |
+| `/` | la racine, qui contient tout le reste |
+| `/home` | les dossiers personnels des utilisateurs, comme `/home/alice` |
+| `/root` | le dossier personnel de l'administrateur root |
+| `/etc` | la configuration du système, en fichiers texte |
+| `/bin`, `/usr/bin` | les programmes, dont les commandes que tu tapes |
+| `/tmp` | les fichiers temporaires, souvent vidés au redémarrage |
+| `/var` | les données qui varient : journaux dans `/var/log`, sites web, files d'attente |
+| `/dev` | les périphériques, présentés comme des fichiers |
+| `/proc` | les informations du noyau sur les processus, que tu as vues au module 3 |
+
+Le parcours Linux consacre une leçon entière à cette hiérarchie ; pour l'instant, retiens `/home`, `/etc`, `/tmp` et `/var/log`, qui reviennent sans cesse.
+
+## à toi de jouer : un parcours guidé
+
+La machine contient une petite arborescence dans son dossier de travail, `/mnt`. Suis ce parcours, en tapant `pwd` quand tu doutes de l'endroit où tu es :
+
+1. `pwd`, puis `ls` pour voir où tu es et ce qu'il y a ;
+2. `cd vacances`, puis `ls -l` pour voir le détail ;
+3. `cat ../travail/cv.txt` pour lire un fichier d'un dossier voisin, sans t'y déplacer ;
+4. `cd ..` pour remonter, puis `ls -a` : un dossier caché apparaît. Entre dedans et lis ce qu'il contient ;
+5. `cd /` puis `ls` pour voir la racine du système, et enfin `cd -` pour revenir.
+
+<LinuxTerminal title="Se repérer dans une arborescence" files={{ "lisezmoi.txt": "Explore les dossiers vacances et travail, puis cherche ce qui est caché.\n", "vacances/programme.txt": "Lundi : plage. Mardi : randonnée. Mercredi : musée.\n", "vacances/photos/plage.txt": "Une photo, en texte : du sable, de l'eau, un parasol.\n", "travail/cv.txt": "Alice Martin - Technicienne support\nCompétences : Windows, Linux, réseaux.\n", "travail/lettres/motivation.txt": "Madame, Monsieur,\n", ".secret/indice.txt": "Bravo : tu as trouvé le dossier caché avec ls -a.\n" }} expectedCommands={["pwd", "cd vacances", "ls -l", "cat ../travail/cv.txt", "cd ..", "ls -a", "cd /", "cd -"]} hints={["pwd affiche le dossier courant ; ls liste son contenu.", "cat ../travail/cv.txt : .. remonte d'un niveau depuis vacances.", "ls -a affiche aussi les noms qui commencent par un point.", "cd - te ramène au dossier précédent, ici /mnt."]} />
+
+Une fois le parcours terminé, essaie `ls -la /etc` pour regarder la configuration de ce petit système, et `ls /proc` : chaque numéro y est un processus en cours. Tu remarqueras aussi que `cd` sans argument t'emmène dans `/root`, le dossier personnel de root.
+
+## les pièges
+
+- **Agir sans savoir où l'on est.** Un `pwd` avant une commande qui écrit ou supprime évite bien des erreurs.
+- **Confondre chemin absolu et relatif.** Le premier commence par `/`, le second dépend du dossier courant.
+- **Oublier les fichiers cachés.** Un `ls` seul n'affiche pas les noms qui commencent par un point ; `ls -la` montre tout.
+- **Croire qu'un fichier caché est protégé.** C'est une convention d'affichage, rien d'autre.
+- **Mettre un espace dans `cd..`.** Il faut `cd ..`, avec un espace entre la commande et son argument.
+- **Taper les chemins en entier.** La touche Tab complète les noms de dossiers et de fichiers.
+
+## pour aller plus loin
+
+<ExternalLink href="https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html" description="La norme qui fixe le rôle de chaque grand dossier d'un système Linux, en anglais">Filesystem Hierarchy Standard</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/ls.1.html" description="Toutes les options de ls, en anglais">Page de manuel de ls</ExternalLink>
+
+<ExternalLink href="https://linuxcommand.org/lc3_lts0020.php" description="Se déplacer dans l'arborescence, pas à pas, en anglais">LinuxCommand.org : la navigation</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle commande affiche le dossier courant ?" options={["ls", "cd", "cat", "pwd"]} correct={3} explanation="pwd, print working directory, affiche le chemin absolu du dossier dans lequel se trouve le shell." />
+  <Quiz id="q-2" question="Tu es dans /root/vacances. Où t'emmène cd .. ?" options={["/", "/root/vacances/..", "Nulle part", "/root"]} correct={3} explanation=".. désigne le dossier parent : depuis /root/vacances, c'est /root." />
+  <Quiz id="q-3" question="Lequel de ces chemins est absolu ?" options={["travail/cv.txt", "../travail/cv.txt", "./cv.txt", "/root/travail/cv.txt"]} correct={3} explanation="Un chemin absolu commence par /, la racine ; les autres partent du dossier courant." />
+  <Quiz id="q-4" question="Comment afficher aussi les fichiers cachés d'un dossier ?" options={["ls -h", "ls -t", "ls -a", "ls --caches"]} correct={2} explanation="-a, all, affiche aussi les noms qui commencent par un point." />
+  <Quiz id="q-5" question="Dans ls -l, que signifie un d en tout début de ligne ?" options={["Un dossier", "Un fichier supprimé", "Un fichier de données", "Un droit refusé"]} correct={0} explanation="Le premier caractère donne le type : d pour dossier, - pour fichier ordinaire, l pour lien." />
+  <Quiz id="q-6" question="Que fait cd - ?" options={["Il remonte d'un niveau", "Il va à la racine", "Il supprime le dossier", "Il revient au dossier où l'on était juste avant"]} correct={3} explanation="cd - bascule vers le dossier précédent ; pratique pour faire des allers-retours." />
+  <Quiz id="q-7" question="Dans quel dossier se trouve la configuration d'un système Linux ?" options={["/home", "/etc", "/tmp", "/dev"]} correct={1} explanation="/etc rassemble la configuration du système, en fichiers texte." />
+</QuizGroup>
+
+## à retenir
+
+- Le shell a un **dossier courant** : `pwd` l'affiche.
+- `ls` liste ; `-l` détaille, `-a` montre les **cachés**, `-h` rend les tailles lisibles. `ls -la` montre tout.
+- `cd` déplace : `cd ..` remonte, `cd /` va à la racine, `cd` ou `cd ~` rentre à la maison, `cd -` revient en arrière.
+- Chemin **absolu** : commence par `/`. Chemin **relatif** : part du dossier courant. `.` = ici, `..` = parent, `~` = dossier personnel.
+- Un nom qui commence par un **point** est caché, pas protégé.
+- Dossiers clés : `/home`, `/root`, `/etc`, `/bin`, `/tmp`, `/var/log`, `/proc`.

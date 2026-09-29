@@ -1,0 +1,172 @@
+---
+refCode: CL-LSN-01037-V01
+slug: fondamentaux-powershell-en-parallele
+title: "PowerShell en parallèle"
+description: "Les mêmes gestes sous Windows : se repérer, manipuler, lire et chercher avec PowerShell. Le modèle verbe-nom des cmdlets, les alias qui imitent Linux, le pipeline qui transporte des objets et non du texte, la protection -WhatIf avant une suppression, et un tableau d'équivalences complet avec bash. Avec les mêmes enquêtes que sous Linux, dans un terminal PowerShell."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01036-V01"]
+---
+
+Tout ce module s'est passé sous Linux. Mais la plupart des postes de travail des entreprises tournent sous Windows, et leurs administrateurs utilisent **PowerShell**. Bonne nouvelle : tu connais déjà les gestes. Se repérer, lister, copier, déplacer, supprimer, lire, chercher, compter : PowerShell fait tout cela, avec d'autres noms et une philosophie un peu différente. Cette leçon refait le parcours du module sous Windows, fait le tableau des équivalences, et montre ce que PowerShell apporte de plus.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer le modèle verbe-nom des cmdlets ;
+- utiliser les alias qui imitent les commandes Linux ;
+- te repérer et manipuler des fichiers en PowerShell ;
+- lire et chercher dans des fichiers en PowerShell ;
+- expliquer en quoi le pipeline de PowerShell diffère de celui de bash ;
+- utiliser `-WhatIf` pour vérifier une commande avant de l'exécuter ;
+- traduire une commande bash courante en PowerShell.
+
+## pourquoi ça compte
+
+Un technicien de support qui intervient sur un poste Windows, un administrateur qui gère des centaines de comptes Active Directory, un analyste qui examine un poste compromis : tous utilisent PowerShell. Il est installé sur chaque Windows depuis des années, il existe aussi sous Linux et macOS, et c'est l'outil d'automatisation de référence du monde Microsoft. Revers de la médaille, tu l'as vu au module 3 : c'est aussi l'un des outils préférés des attaquants sur Windows. Savoir le lire, c'est pouvoir l'utiliser, et reconnaître son usage malveillant.
+
+## des cmdlets verbe-nom
+
+Les commandes de PowerShell s'appellent des **cmdlets** et suivent toutes le même modèle : un **verbe**, un tiret, un **nom** au singulier.
+
+- `Get-ChildItem` : obtenir les éléments enfants, c'est-à-dire lister un dossier ;
+- `Set-Location` : changer d'emplacement ;
+- `Copy-Item`, `Move-Item`, `Remove-Item` : copier, déplacer, supprimer un élément ;
+- `Get-Content` : obtenir le contenu d'un fichier ;
+- `Get-Process`, `Stop-Process` : lister, arrêter des processus.
+
+Les verbes forment une liste courte et standard, `Get`, `Set`, `New`, `Remove`, `Start`, `Stop`, ce qui rend les noms devinables : si tu cherches à obtenir des services, `Get-Service` existe forcément. Les noms sont longs mais explicites, et la touche **Tab** les complète, comme dans bash. PowerShell n'est pas sensible à la casse : `get-childitem` fonctionne aussi.
+
+Les options s'appellent des **paramètres** et commencent par un seul tiret, avec un nom complet : `Get-ChildItem -Recurse -Filter *.log`. On peut les abréger tant qu'il n'y a pas d'ambiguïté.
+
+## les alias : bash au clavier
+
+Pour faciliter la transition, PowerShell définit des **alias**, des noms courts qui pointent vers des cmdlets. Beaucoup imitent les commandes Linux : `ls`, `cd`, `pwd`, `cat`, `cp`, `mv`, `rm`, `mkdir`, `clear` fonctionnent tous. `Get-Alias ls` révèle qu'il s'agit en réalité de `Get-ChildItem`.
+
+Attention cependant : l'alias reprend le **nom**, pas les **options**. `ls -la` ne marche pas en PowerShell, car `Get-ChildItem` ne connaît pas `-la` ; il faut écrire `ls -Force` pour voir les fichiers cachés. Les alias servent à dépanner au clavier ; dans un script, on écrit toujours les noms complets, lisibles par tous. Les attaquants, eux, abusent volontiers des alias et des abréviations pour rendre une commande illisible au premier coup d'œil : `iex` pour `Invoke-Expression`, qui exécute du texte comme du code, est l'un des mots qu'un analyste repère en premier.
+
+## les mêmes gestes
+
+| Geste | bash (Linux) | PowerShell | Alias PowerShell |
+| --- | --- | --- | --- |
+| Où suis-je ? | `pwd` | `Get-Location` | `pwd` |
+| Lister | `ls -la` | `Get-ChildItem -Force` | `ls`, `dir`, `gci` |
+| Se déplacer | `cd dossier` | `Set-Location dossier` | `cd` |
+| Créer un dossier | `mkdir -p a/b` | `New-Item -ItemType Directory a\b` | `mkdir` |
+| Créer un fichier vide | `touch f.txt` | `New-Item f.txt` | |
+| Copier | `cp -r a b` | `Copy-Item a b -Recurse` | `cp`, `copy` |
+| Déplacer, renommer | `mv a b` | `Move-Item a b` | `mv`, `move` |
+| Supprimer | `rm -r d` | `Remove-Item d -Recurse` | `rm`, `del` |
+| Afficher | `cat f` | `Get-Content f` | `cat`, `gc` |
+| Début, fin | `head -n 5`, `tail -n 5` | `Get-Content f -Head 5`, `-Tail 5` | |
+| Suivre un journal | `tail -f f` | `Get-Content f -Wait` | |
+| Chercher du texte | `grep motif f` | `Select-String motif f` | `sls` |
+| Chercher des fichiers | `find . -name "*.log"` | `Get-ChildItem -Recurse -Filter *.log` | |
+| Compter | `wc -l` | `Measure-Object -Line` | |
+| Aide | `man cmd`, `cmd --help` | `Get-Help cmdlet` | `help` |
+
+Les chemins suivent la convention de Windows du module 3 : lettres de lecteur et barres obliques inverses, `C:\Users\alice\Documents`. PowerShell accepte aussi les barres obliques ordinaires, ce qui aide ceux qui passent d'un système à l'autre. Et `.\` désigne le dossier courant, comme `./` sous Linux.
+
+## un pipeline d'objets
+
+Dans bash, le tube `|` transmet du **texte** : chaque commande reçoit des lignes, et c'est à toi de découper les colonnes. Dans PowerShell, le pipeline transmet des **objets** : des éléments structurés, avec des propriétés nommées. Un fichier renvoyé par `Get-ChildItem` a une propriété `Length`, sa taille, une propriété `LastWriteTime`, sa date de modification, et bien d'autres.
+
+<Diagram caption="Le même tube, deux natures">
+flowchart LR
+  A["bash : ls -l"] -->|"du texte, ligne par ligne"| B["sort, grep, awk découpent les colonnes"]
+  C["PowerShell : Get-ChildItem"] -->|"des objets fichiers"| D["Sort-Object Length : on nomme la propriété"]
+</Diagram>
+
+Conséquence : trier des fichiers par taille s'écrit simplement `Get-ChildItem | Sort-Object Length -Descending`, sans avoir à savoir dans quelle colonne se trouve la taille. `Where-Object` filtre selon une propriété, `Select-Object` garde certaines propriétés ou les premiers éléments, `Measure-Object` compte ou additionne :
+
+```powershell
+Get-ChildItem -Recurse -Filter *.log | Where-Object Length -gt 10MB
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 3
+(Select-String -Path .\journal.log -Pattern "ECHEC").Count
+```
+
+La première ligne trouve les journaux de plus de 10 Mo, la deuxième affiche les trois processus les plus gourmands, comme dans la leçon du module 3, la troisième compte les lignes d'échec. C'est plus verbeux que bash, mais très lisible, et très robuste dans un script.
+
+## -WhatIf : essayer avant de faire
+
+PowerShell offre une protection que bash n'a pas : la plupart des cmdlets qui modifient quelque chose acceptent le paramètre **`-WhatIf`**, qui décrit ce qui **serait** fait, sans le faire.
+
+```text
+PS C:\Users\alice\Documents> Remove-Item *.tmp -WhatIf
+WhatIf : Opération « Supprimer le fichier » en cours sur la cible « C:\Users\alice\Documents\brouillon.tmp ».
+```
+
+C'est la version intégrée du réflexe `ls` avant `rm` de la leçon sur les fichiers. Le paramètre **`-Confirm`** demande une confirmation pour chaque élément, comme `rm -i`. Pour une suppression en masse ou une modification de comptes, `-WhatIf` est un réflexe d'administrateur prudent.
+
+## cmd, l'ancêtre toujours présent
+
+Windows contient un second interpréteur, plus ancien : l'**invite de commandes**, `cmd.exe`, héritée de MS-DOS. Ses commandes ont d'autres noms encore : `dir` pour lister, `cd` pour se déplacer, `copy`, `move`, `del`, `type` pour afficher un fichier. Ses scripts portent l'extension `.bat` ou `.cmd`. On le croise dans de vieilles procédures, des scripts de connexion d'entreprise, et dans les attaques, où une ligne `cmd /c` lance une commande discrètement. Pour un travail nouveau, on préfère toujours PowerShell, bien plus puissant et cohérent.
+
+Il existe aussi deux PowerShell : **Windows PowerShell 5.1**, installé d'office avec Windows et figé depuis des années, et **PowerShell 7**, qui se lance avec la commande `pwsh`, fonctionne aussi sous Linux et macOS, et continue d'évoluer. Les commandes de cette leçon marchent dans les deux.
+
+## l'historique et les variables
+
+Comme bash, PowerShell garde l'**historique** des commandes : les flèches le parcourent, `Get-History` l'affiche pour la session en cours. Mais un module installé par défaut, PSReadLine, l'enregistre aussi **dans un fichier**, d'une session à l'autre, dans le profil de l'utilisateur. Les enquêteurs le connaissent bien : sur un poste compromis, ce fichier montre souvent, ligne à ligne, ce qu'un attaquant a tapé. Et un administrateur pressé y laisse parfois un mot de passe tapé en clair dans une commande, une raison de plus de ne jamais en mettre en argument.
+
+Les **variables** de PowerShell commencent par `$`. Les variables d'environnement sont accessibles par `$env:` : `$env:USERNAME` donne le nom de l'utilisateur, `$env:COMPUTERNAME` celui de la machine, `$env:Path` la liste des dossiers où sont cherchés les programmes, l'équivalent du PATH de la première leçon.
+
+## sécurité : PowerShell des deux côtés
+
+PowerShell est puissant, présent partout, et capable de télécharger et d'exécuter du code sans rien écrire sur le disque. Les attaquants l'utilisent donc beaucoup, souvent avec une commande encodée en Base64 derrière le paramètre `-EncodedCommand`, comme tu l'as vu au module 2. Côté défense, deux mécanismes à connaître :
+
+- la **politique d'exécution** (*execution policy*), qui empêche par défaut de lancer des scripts `.ps1` non signés en double-cliquant. Elle protège l'utilisateur contre une exécution accidentelle, mais **n'est pas une barrière de sécurité** : on la contourne facilement ;
+- la **journalisation des blocs de script**, qui enregistre dans l'Observateur d'événements le code réellement exécuté par PowerShell, même déchiffré. C'est l'une des premières choses que les équipes de défense activent sur un parc Windows.
+
+## à toi de jouer : les mêmes enquêtes sous Windows
+
+Tu es sur un poste Windows, dans le dossier Documents d'alice, qui contient le même journal de connexions et un fichier temporaire. Refais en PowerShell les gestes du module :
+
+1. `Get-Location` puis `Get-ChildItem` pour te situer ;
+2. `Get-Content .\journal.log -Tail 3` pour lire la fin du journal ;
+3. `Select-String -Path .\journal.log -Pattern "ECHEC"` pour trouver les échecs ;
+4. `Remove-Item .\brouillon.tmp -WhatIf` pour voir ce que ferait la suppression, sans la faire.
+
+<SimulatedTerminal shell="powershell" title="PowerShell : les gestes du module" expectedCommands={["Get-Location", "Get-ChildItem", "Get-Content .\\journal.log -Tail 3", "Select-String -Path .\\journal.log -Pattern \"ECHEC\"", "Remove-Item .\\brouillon.tmp -WhatIf"]} hints={["Get-Location affiche le dossier courant, comme pwd.", "Get-Content avec -Tail 3 affiche les trois dernières lignes, comme tail -n 3.", "Select-String cherche un motif dans un fichier, comme grep.", "-WhatIf décrit l'action sans l'exécuter."]} commands={{ "Get-Location": "\nPath\n----\nC:\\Users\\alice\\Documents\n", "pwd": "\nPath\n----\nC:\\Users\\alice\\Documents\n", "Get-ChildItem": "\n    Répertoire : C:\\Users\\alice\\Documents\n\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\nd-----        28/09/2026     10:12                projet\n-a----        28/09/2026     14:23           1085 journal.log\n-a----        28/09/2026     09:40             17 brouillon.tmp\n", "ls": "\n    Répertoire : C:\\Users\\alice\\Documents\n\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\nd-----        28/09/2026     10:12                projet\n-a----        28/09/2026     14:23           1085 journal.log\n-a----        28/09/2026     09:40             17 brouillon.tmp\n", "Get-Content .\\journal.log -Tail 3": "2026-09-28 14:23:17 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:19 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:21 ECHEC connexion utilisateur=admin ip=203.0.113.66", "Select-String -Path .\\journal.log -Pattern \"ECHEC\"": "\njournal.log:3:2026-09-28 08:42:15 ECHEC connexion utilisateur=bob ip=192.168.1.47\njournal.log:6:2026-09-28 09:29:11 ECHEC connexion utilisateur=david ip=192.168.1.24\njournal.log:8:2026-09-28 10:02:48 ECHEC connexion utilisateur=alice ip=192.168.1.23\njournal.log:11:2026-09-28 14:23:11 ECHEC connexion utilisateur=admin ip=203.0.113.66\njournal.log:12:2026-09-28 14:23:13 ECHEC connexion utilisateur=admin ip=203.0.113.66\njournal.log:13:2026-09-28 14:23:15 ECHEC connexion utilisateur=admin ip=203.0.113.66\njournal.log:14:2026-09-28 14:23:17 ECHEC connexion utilisateur=admin ip=203.0.113.66\njournal.log:15:2026-09-28 14:23:19 ECHEC connexion utilisateur=admin ip=203.0.113.66\njournal.log:16:2026-09-28 14:23:21 ECHEC connexion utilisateur=admin ip=203.0.113.66\n", "(Select-String -Path .\\journal.log -Pattern \"ECHEC\").Count": "9", "Remove-Item .\\brouillon.tmp -WhatIf": "WhatIf : Opération « Supprimer le fichier » en cours sur la cible « C:\\Users\\alice\\Documents\\brouillon.tmp ».", "Get-Alias ls": "\nCommandType     Name                                               Version    Source\n-----------     ----                                               -------    ------\nAlias           ls -> Get-ChildItem\n" }} />
+
+Remarque que `Select-String` affiche, comme `grep -n`, le nom du fichier et le **numéro de ligne** devant chaque résultat : tu retrouves les neuf échecs de la leçon précédente, dont les six sur `admin`. Essaie aussi `(Select-String -Path .\journal.log -Pattern "ECHEC").Count`, qui compte, et `Get-Alias ls`, qui révèle la vraie cmdlet derrière `ls`.
+
+## les pièges
+
+- **Taper des options Linux derrière un alias.** `ls -la` échoue : l'alias reprend le nom, pas les options.
+- **Écrire des alias dans un script.** Les noms complets sont lisibles et fonctionnent partout.
+- **Découper le texte comme dans bash.** Le pipeline transporte des objets : on nomme les propriétés.
+- **Supprimer sans `-WhatIf`.** Une seconde de vérification évite une suppression massive.
+- **Prendre la politique d'exécution pour une protection.** Elle évite les accidents, pas les attaques.
+- **Ignorer une commande `-EncodedCommand` dans un journal.** Elle se décode, et c'est souvent révélateur.
+
+## pour aller plus loin
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/powershell/scripting/learn/ps101/00-introduction" description="Le cours d'initiation officiel de PowerShell, en français">Microsoft : PowerShell 101</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/powershell/module/microsoft.powershell.utility/select-string" description="Select-String, l'équivalent de grep, et ses paramètres">Microsoft : Select-String</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/powershell/module/microsoft.powershell.core/about/about_execution_policies" description="Ce que la politique d'exécution fait, et ce qu'elle ne fait pas">Microsoft : les politiques d'exécution</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle cmdlet PowerShell correspond à ls ?" options={["Get-Location", "Set-Location", "Get-ChildItem", "Get-Content"]} correct={2} explanation="Get-ChildItem liste le contenu d'un dossier ; ls, dir et gci en sont des alias." />
+  <Quiz id="q-2" question="Pourquoi ls -la échoue-t-il dans PowerShell ?" options={["Parce que ls n'existe pas", "Parce que PowerShell est sensible à la casse", "Parce que ls est un alias de Get-ChildItem, qui ne connaît pas l'option -la", "Parce qu'il faut être administrateur"]} correct={2} explanation="L'alias reprend le nom, pas les options : il faut écrire ls -Force pour voir les fichiers cachés." />
+  <Quiz id="q-3" question="Quel est l'équivalent PowerShell de grep ?" options={["Select-String", "Find-Text", "Get-Grep", "Where-Object"]} correct={0} explanation="Select-String cherche un motif dans des fichiers ou du texte, et affiche les numéros de ligne." />
+  <Quiz id="q-4" question="Qu'est-ce qui distingue le pipeline de PowerShell de celui de bash ?" options={["Il est plus lent", "Il transporte des objets avec des propriétés, et non du texte", "Il n'existe pas", "Il ne fonctionne qu'avec deux commandes"]} correct={1} explanation="On trie ou filtre en nommant une propriété, comme Length, au lieu de découper des colonnes de texte." />
+  <Quiz id="q-5" question="Que fait Remove-Item *.tmp -WhatIf ?" options={["Il supprime les fichiers .tmp", "Il décrit les suppressions qu'il ferait, sans rien supprimer", "Il demande pourquoi supprimer", "Il déplace les fichiers dans la corbeille"]} correct={1} explanation="-WhatIf simule l'action ; -Confirm, lui, demande une confirmation pour chaque élément." />
+  <Quiz id="q-6" question="Quelle commande affiche les 5 dernières lignes d'un fichier en PowerShell ?" options={["Get-Content f -Head 5", "Select-Object -Last 5 f", "tail -n 5 f", "Get-Content f -Tail 5"]} correct={3} explanation="-Tail est l'équivalent de tail -n ; -Head celui de head." />
+  <Quiz id="q-7" question="La politique d'exécution de PowerShell est-elle une barrière de sécurité ?" options={["Oui, elle empêche toute attaque", "Oui, mais seulement pour les administrateurs", "Non, elle évite surtout les exécutions accidentelles et se contourne facilement", "Elle n'existe plus"]} correct={2} explanation="Microsoft la décrit comme une protection contre les erreurs, pas comme une frontière de sécurité." />
+</QuizGroup>
+
+## à retenir
+
+- PowerShell : des **cmdlets** **verbe-nom** (`Get-ChildItem`, `Copy-Item`), des **paramètres** à un tiret, insensible à la casse.
+- Des **alias** imitent Linux (`ls`, `cd`, `cat`, `rm`), mais pas leurs options. Noms complets dans les scripts.
+- Équivalences clés : `Get-Location`, `Set-Location`, `Get-Content -Head/-Tail/-Wait`, `Select-String`, `Get-ChildItem -Recurse -Filter`, `Measure-Object`, `Get-Help`.
+- Le pipeline transporte des **objets** : `Sort-Object`, `Where-Object`, `Select-Object`.
+- **`-WhatIf`** simule, **`-Confirm`** demande : les gardes-fous que bash n'a pas.
+- Côté sécurité : `-EncodedCommand` se décode, la **politique d'exécution** n'est pas une barrière, la **journalisation des scripts** se surveille.

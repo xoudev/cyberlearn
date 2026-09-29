@@ -1,0 +1,166 @@
+---
+refCode: CL-LSN-01031-V01
+slug: fondamentaux-pourquoi-le-terminal
+title: "Pourquoi le terminal"
+description: "Première rencontre avec la ligne de commande : ce que sont un terminal, un shell et une invite, pourquoi les professionnels tapent des commandes plutôt que de cliquer, comment se lit une commande, et les réflexes qui évitent de se perdre. Avec un vrai Linux qui démarre dans la page, pour taper tes premières commandes."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 40
+xpReward: 250
+prerequisites: ["CL-LSN-01904-V01"]
+---
+
+Depuis le début du parcours, tu as croisé des commandes : `ipconfig`, `nslookup`, `curl`, `ps`. Tu les as surtout regardées. Dans ce module, tu vas les **taper**. La ligne de commande impressionne souvent au début : un écran noir, un curseur qui clignote, aucun bouton pour guider. Pourtant, c'est l'outil que les administrateurs, les développeurs et les analystes en sécurité utilisent le plus, et on s'y sent vite chez soi une fois compris quelques principes. Cette leçon pose ces principes, puis te donne un vrai Linux, qui démarre dans la page, pour tes premiers pas.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- distinguer terminal, shell et invite de commandes ;
+- expliquer pourquoi les professionnels utilisent la ligne de commande ;
+- décomposer une commande en nom, options et arguments ;
+- taper tes premières commandes et lire leur résultat ;
+- utiliser la complétion, l'historique et l'interruption d'une commande ;
+- reconnaître les messages d'erreur les plus courants.
+
+## pourquoi ça compte
+
+Les serveurs qui font tourner Internet n'ont, pour la plupart, **aucune interface graphique** : on les administre en ligne de commande, souvent à distance. Les outils de développement, de gestion de versions, de déploiement, et la grande majorité des outils de sécurité, des scanners aux outils d'analyse, s'utilisent en ligne de commande. Et même sur un poste Windows, PowerShell est devenu l'outil d'administration de référence. Ne pas savoir s'en servir ferme la porte de la plupart des métiers techniques ; savoir s'en servir fait gagner un temps considérable.
+
+## terminal, shell, invite
+
+Trois mots désignent trois choses différentes, souvent confondues :
+
+- le **terminal** est la **fenêtre** qui affiche du texte et transmet ce que tu tapes : Windows Terminal, le Terminal de macOS, GNOME Terminal sous Linux. Il ne comprend rien aux commandes, il affiche et il transmet ;
+- le **shell** est le **programme** qui lit ta commande, la comprend et la fait exécuter : **bash** et **zsh** sous Linux et macOS, **PowerShell** sous Windows. C'est lui l'interlocuteur ;
+- l'**invite** (*prompt*) est le petit texte que le shell affiche quand il attend une commande : `alice@serveur:~$` sous bash, `PS C:\Users\alice>` sous PowerShell. Elle indique souvent l'utilisateur, la machine et le dossier courant.
+
+<Diagram caption="Du clavier au noyau">
+flowchart LR
+  A["Toi, au clavier"] --> B["Terminal : affiche et transmet"]
+  B --> C["Shell : comprend la commande"]
+  C --> D["Programme lancé, comme ls"]
+  D --> E["Noyau : appels système"]
+  E --> F["Résultat affiché dans le terminal"]
+</Diagram>
+
+Tu reconnais la chaîne du module 3 : le shell est un programme de l'espace utilisateur, qui crée un processus pour chaque commande que tu lances, et ces processus demandent tout au noyau par des appels système.
+
+Le nom de « terminal » vient d'une époque où l'on se connectait à un gros ordinateur partagé depuis un **terminal** physique : un clavier et un écran, parfois une imprimante, reliés par un câble. Les programmes de terminal d'aujourd'hui imitent ces appareils, d'où leur fonctionnement très textuel.
+
+## pourquoi taper plutôt que cliquer
+
+Une interface graphique est idéale pour découvrir et pour les tâches ponctuelles. La ligne de commande l'emporte dans quatre situations très fréquentes dans les métiers techniques.
+
+**Répéter.** Renommer 500 photos, créer 30 comptes, vérifier 200 serveurs : à la souris, c'est une journée d'erreurs ; en ligne de commande, c'est une ligne, ou un petit script qu'on réutilisera.
+
+**Agir à distance.** Un serveur dans un centre de données se pilote par une connexion SSH, qui ne transporte que du texte. Rapide, fiable, même avec une mauvaise connexion.
+
+**Être précis et reproductible.** Une commande dit exactement ce qu'on fait. On peut la noter dans une procédure, la relire, la transmettre à un collègue, la retrouver dans l'historique pour savoir ce qui a été fait. Aucune capture d'écran de clics n'offre cela.
+
+**Combiner.** Les commandes se branchent les unes aux autres : la sortie de l'une devient l'entrée de la suivante. Chercher, trier, compter, filtrer, en une ligne. C'est ce qui a fait la force des systèmes Unix, et tu en auras un aperçu dans la leçon sur la recherche.
+
+La ligne de commande a aussi sa contrepartie : elle ne demande pas de confirmation pour grand-chose. Une commande mal tapée fait exactement ce qu'elle dit, pas ce que tu voulais. On y apprend donc à lire avant d'appuyer sur Entrée.
+
+## l'anatomie d'une commande
+
+Une commande se compose de mots séparés par des espaces :
+
+```text
+ls -l /etc
+│  │  └── argument : sur quoi agir
+│  └───── option : comment agir
+└──────── nom de la commande : quel programme lancer
+```
+
+- le premier mot est le **nom** de la commande, le programme à lancer : `ls` liste le contenu d'un dossier ;
+- les **options** modifient son comportement. Sous Linux, elles commencent par un tiret : `-l` demande un affichage détaillé. Plusieurs options courtes se regroupent (`-la` vaut `-l -a`), et beaucoup existent aussi en version longue, avec deux tirets : `--all` ;
+- les **arguments** disent sur quoi agir : ici, le dossier `/etc`.
+
+Les espaces comptent : `ls -l` n'est pas `ls-l`, et un nom de fichier qui contient un espace doit être mis entre guillemets, sinon le shell le coupe en deux arguments. Les majuscules comptent aussi sous Linux : `LS` n'existe pas.
+
+## où vivent les commandes
+
+La plupart des commandes ne sont pas des mots magiques du shell : ce sont des **programmes**, des fichiers rangés dans des dossiers comme `/bin` ou `/usr/bin` sous Linux. Quand tu tapes `ls`, le shell cherche un programme nommé `ls` dans une liste de dossiers, la variable **PATH**, et lance le premier qu'il trouve. C'est pour cela qu'un programme installé ailleurs répond `command not found` tant que son dossier n'est pas dans cette liste, et c'est pour cela qu'un attaquant qui parvient à placer son propre `ls` dans un dossier consulté en premier peut détourner une commande. La commande `which` indique quel fichier sera lancé : `which ls` répond par exemple `/bin/ls`.
+
+Quelques commandes font exception : elles sont intégrées au shell lui-même, parce qu'elles doivent agir sur lui. C'est le cas de `cd`, qui change le dossier courant du shell, ou de `exit`, qui le ferme. Un programme séparé ne pourrait pas modifier le shell qui l'a lancé : tu reconnais l'isolation des processus du module 3. Le parcours Linux détaille tout cela, variables et PATH compris.
+
+## des réflexes qui changent tout
+
+Quatre gestes rendent la ligne de commande beaucoup plus agréable, et évitent la majorité des erreurs de frappe :
+
+- la touche **Tab** complète automatiquement un nom de commande, de dossier ou de fichier. Tape `cat rap` puis Tab, et le shell écrit `cat rapport.txt`. Deux Tab de suite affichent les possibilités quand il y en a plusieurs. C'est le réflexe numéro un : il évite les fautes et montre ce qui existe ;
+- les flèches **haut** et **bas** parcourent l'**historique** des commandes déjà tapées, pour les relancer ou les corriger sans tout retaper ;
+- **Ctrl + C** interrompt la commande en cours, par exemple une commande qui ne se termine pas, ou abandonne la ligne que tu étais en train de taper ;
+- **Ctrl + L**, ou la commande `clear`, efface l'écran quand il devient illisible.
+
+Attention à une surprise classique : dans un terminal, **Ctrl + C ne copie pas**, il interrompt. Pour copier et coller, on utilise Ctrl + Maj + C et Ctrl + Maj + V dans la plupart des terminaux Linux, ou la sélection à la souris.
+
+## lire les messages d'erreur
+
+Le shell te répond toujours, et ses messages sont précis, pour peu qu'on les lise. Trois reviennent sans cesse :
+
+- `command not found` : le nom de la commande est faux, ou le programme n'est pas installé. Vérifie la frappe et les majuscules ;
+- `No such file or directory` : le fichier ou le dossier indiqué n'existe pas à cet endroit. Vérifie le chemin, c'est le sujet de la leçon suivante ;
+- `Permission denied` : la commande existe, le fichier aussi, mais tu n'as pas le droit d'agir dessus. Tu reconnais les droits du module 3.
+
+Et une commande qui réussit ne dit souvent **rien** : sous Linux, le silence veut dire que tout s'est bien passé. C'est déroutant au début, mais logique : une commande combinée à d'autres ne doit pas encombrer leur travail de messages inutiles.
+
+## le terminal de ce module
+
+Pour ce module, tu disposes d'un **vrai Linux** qui démarre directement dans la page : pas une simulation qui ne connaît que quelques commandes prévues, mais un système complet, où toutes les commandes marchent. Il tourne dans ton navigateur, isolé : tu ne peux rien casser sur ton ordinateur, et un clic sur **Redémarrer** te rend une machine neuve.
+
+Deux choses à savoir sur cette machine. Tu y es **root**, l'administrateur : la leçon du module 3 sur le moindre privilège vaut pour les vrais systèmes, ici c'est un bac à sable. Et c'est un Linux minimal, construit avec **BusyBox**, qui rassemble les commandes essentielles dans un seul programme : les commandes de base sont toutes là, avec parfois moins d'options que sur une distribution complète.
+
+## à toi de jouer : premières commandes
+
+Démarre la machine, puis tape ces commandes une à une, en regardant chaque résultat :
+
+- `whoami` affiche ton nom d'utilisateur ;
+- `date` affiche la date et l'heure ;
+- `uname -a` décrit le système : noyau, version, architecture ;
+- `echo Bonjour` affiche simplement ce qu'on lui donne ;
+- `ls` liste le dossier courant, où une note t'attend.
+
+Essaie aussi de te tromper exprès, par exemple `whoamii`, pour voir le message d'erreur, et utilise la touche Tab et les flèches.
+
+<LinuxTerminal title="Premières commandes" files={{ "bienvenue.txt": "Bienvenue dans ton premier terminal Linux.\nTape : cat bienvenue.txt pour relire ce message.\n" }} expectedCommands={["whoami", "date", "uname -a", "echo Bonjour", "ls"]} hints={["Tape exactement le nom de la commande, puis Entrée.", "uname -a : un espace, puis un tiret et la lettre a.", "Après ls, essaie cat bienvenue.txt, en tapant seulement cat bi puis la touche Tab."]} />
+
+Tu as remarqué la réponse de `whoami` : `root`. Et `uname -a` annonce un noyau Linux 6.8 sur une architecture `i686`, un processeur x86 32 bits, exactement comme ceux dont parlait le module 1, émulé ici par ton navigateur. La commande `echo` semble inutile ; elle servira beaucoup, pour afficher des messages dans les scripts et pour écrire dans des fichiers.
+
+## les pièges
+
+- **Confondre terminal et shell.** Le terminal affiche ; le shell comprend et exécute.
+- **Oublier les espaces ou la casse.** `ls-l` et `LS` ne sont pas `ls -l`.
+- **Taper un nom de fichier à la main.** La touche Tab évite les fautes et montre ce qui existe.
+- **Faire Ctrl + C pour copier.** Dans un terminal, cela interrompt la commande.
+- **S'inquiéter du silence.** Une commande qui réussit ne dit souvent rien.
+- **Appuyer sur Entrée sans relire.** La ligne de commande fait ce qui est écrit, sans demander confirmation.
+
+## pour aller plus loin
+
+<ExternalLink href="https://linuxcommand.org/lc3_learning_the_shell.php" description="Un cours progressif et gratuit sur le shell, en anglais">LinuxCommand.org : apprendre le shell</ExternalLink>
+
+<ExternalLink href="https://learn.microsoft.com/fr-fr/windows/terminal/" description="Le terminal de Windows, qui accueille PowerShell, l'invite de commandes et WSL">Microsoft : Windows Terminal</ExternalLink>
+
+<ExternalLink href="https://www.busybox.net/about.html" description="BusyBox, les commandes essentielles de Linux réunies en un seul programme, en anglais">BusyBox</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel programme lit ta commande, la comprend et la fait exécuter ?" options={["Le shell", "Le terminal", "L'invite", "Le noyau"]} correct={0} explanation="Le terminal affiche et transmet ; le shell, comme bash ou PowerShell, interprète la commande et lance les programmes." />
+  <Quiz id="q-2" question="Dans la commande ls -l /etc, quel est le rôle de -l ?" options={["C'est une option qui modifie le comportement de ls", "C'est le nom de la commande", "C'est l'argument, le dossier à lister", "C'est un commentaire"]} correct={0} explanation="Le nom est ls, l'option -l demande un affichage détaillé, l'argument /etc indique quoi lister." />
+  <Quiz id="q-3" question="Pourquoi administre-t-on la plupart des serveurs en ligne de commande ?" options={["Parce que c'est plus joli", "Parce que la souris est interdite", "Parce qu'ils n'ont souvent pas d'interface graphique et se pilotent à distance, en texte", "Parce que les commandes sont gratuites"]} correct={2} explanation="Un serveur se gère à distance par SSH, qui ne transporte que du texte ; la ligne de commande permet aussi de répéter et de tracer." />
+  <Quiz id="q-4" question="Que fait la touche Tab dans un shell ?" options={["Elle insère une tabulation", "Elle efface la ligne", "Elle complète le nom de commande, de dossier ou de fichier en cours de frappe", "Elle change de fenêtre"]} correct={2} explanation="La complétion évite les fautes de frappe et montre les possibilités quand on appuie deux fois." />
+  <Quiz id="q-5" question="Une commande tourne sans fin. Comment l'interrompre ?" options={["Ctrl + C", "Ctrl + V", "Tab", "Entrée"]} correct={0} explanation="Ctrl + C envoie un signal d'interruption au programme en cours." />
+  <Quiz id="q-6" question="Le shell répond command not found. Quelle est la cause la plus probable ?" options={["Le fichier n'existe pas", "Tu n'as pas les droits", "Le nom de la commande est mal tapé, ou le programme n'est pas installé", "Le réseau est coupé"]} correct={2} explanation="command not found concerne le nom de la commande ; No such file concerne un fichier, Permission denied les droits." />
+  <Quiz id="q-7" question="Une commande Linux réussie n'affiche rien. Qu'en conclure ?" options={["Qu'elle a échoué", "Que le terminal est bloqué", "Que tout s'est probablement bien passé : le silence est la norme en cas de succès", "Qu'il faut redémarrer"]} correct={2} explanation="Beaucoup de commandes ne parlent qu'en cas de problème, pour ne pas encombrer celles qu'on enchaîne derrière." />
+</QuizGroup>
+
+## à retenir
+
+- Le **terminal** affiche, le **shell** (bash, zsh, PowerShell) comprend et exécute, l'**invite** indique qu'il attend.
+- La ligne de commande sert à **répéter**, agir **à distance**, être **précis et reproductible**, et **combiner** des outils.
+- Une commande : **nom**, **options** (`-l`, `--all`), **arguments** (`/etc`). Espaces et majuscules comptent.
+- Réflexes : **Tab** pour compléter, **flèches** pour l'historique, **Ctrl + C** pour interrompre, **Ctrl + L** ou `clear` pour effacer.
+- Erreurs à reconnaître : **command not found**, **No such file or directory**, **Permission denied**. Le **silence** signifie souvent la réussite.

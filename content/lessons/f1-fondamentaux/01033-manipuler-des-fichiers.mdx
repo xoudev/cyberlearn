@@ -1,0 +1,169 @@
+---
+refCode: CL-LSN-01033-V01
+slug: fondamentaux-manipuler-des-fichiers
+title: "Manipuler des fichiers : mkdir, cp, mv, rm"
+description: "Créer, copier, déplacer, renommer et supprimer en ligne de commande : mkdir, touch, cp, mv, rm et rmdir, leurs options utiles, et surtout ce que rm ne pardonne pas. Les habitudes qui évitent les catastrophes, et un exercice de rangement sur un vrai Linux, vérifié automatiquement dans la machine."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01032-V01"]
+---
+
+Tu sais te déplacer et regarder autour de toi. Il est temps d'agir : créer des dossiers, copier des fichiers, les renommer, les ranger, supprimer ce qui ne sert plus. Six commandes couvrent l'essentiel, et elles sont simples. Ce qui est moins simple, c'est qu'elles ne demandent **aucune confirmation** et n'ont **pas de corbeille** : un fichier supprimé en ligne de commande est supprimé pour de bon, et un fichier écrasé par une copie l'est sans un mot. Cette leçon t'apprend donc les commandes, et surtout les habitudes qui permettent de s'en servir sans crainte.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- créer des dossiers et des fichiers vides ;
+- copier des fichiers et des dossiers ;
+- déplacer et renommer ;
+- supprimer des fichiers et des dossiers ;
+- expliquer pourquoi `rm` est dangereux et comment s'en protéger ;
+- prendre les bons réflexes avant une commande destructrice.
+
+## pourquoi ça compte
+
+Organiser des fichiers, faire une copie de sauvegarde avant une modification, nettoyer un dossier de journaux, déplacer un site web vers son nouvel emplacement : ce sont des gestes quotidiens de l'administration et du développement. Ils se font souvent sur des serveurs sans interface graphique, et souvent sur des fichiers importants. Les incidents causés par une suppression malheureuse sont légendaires, des bases de données effacées en production aux sites entiers disparus. Savoir manipuler des fichiers en ligne de commande, c'est d'abord savoir le faire **prudemment**.
+
+## créer : mkdir et touch
+
+`mkdir` (*make directory*) crée un dossier :
+
+```bash
+mkdir projet
+mkdir projet/docs projet/images
+mkdir -p projet/sources/tests
+```
+
+On peut en créer plusieurs d'un coup. L'option `-p` crée aussi les dossiers intermédiaires qui manquent : sans elle, `mkdir projet/sources/tests` échoue si `projet/sources` n'existe pas encore. Avec elle, elle ne se plaint pas non plus si le dossier existe déjà.
+
+`touch` crée un **fichier vide**, ou met à jour la date de modification d'un fichier existant sans toucher à son contenu : `touch notes.txt`. Pour créer un fichier avec un contenu, la commande `echo` et une **redirection** font l'affaire : `echo "Première ligne" > notes.txt` écrit le texte dans le fichier, en le **remplaçant** s'il existait. Le signe `>` envoie la sortie d'une commande dans un fichier ; le double `>>` l'ajoute à la fin. Tu retrouveras les redirections en détail dans le parcours Linux.
+
+## copier : cp
+
+`cp` (*copy*) copie un fichier : `cp source destination`.
+
+```bash
+cp notes.txt notes-sauvegarde.txt      # une copie à côté, sous un autre nom
+cp notes.txt archives/                 # une copie dans un dossier, sous le même nom
+cp -r projet projet-copie              # un dossier entier, avec tout son contenu
+```
+
+Pour copier un **dossier**, il faut l'option `-r` (*récursif*) : sans elle, `cp` refuse. Et la règle à retenir absolument : si la destination existe déjà, `cp` **l'écrase sans prévenir**. L'option `-i` (*interactif*) fait demander une confirmation avant d'écraser : `cp -i notes.txt archives/`.
+
+La commande `cp -a` copie aussi les droits, le propriétaire et les dates ; c'est celle qu'on utilise pour une vraie sauvegarde.
+
+## déplacer et renommer : mv
+
+`mv` (*move*) déplace un fichier ou un dossier, et c'est aussi la commande pour **renommer** : renommer, c'est déplacer un fichier vers un nouveau nom dans le même dossier.
+
+```bash
+mv rapport_v3.txt rapport-final.txt    # renommer
+mv rapport-final.txt docs/             # déplacer dans un dossier
+mv docs documents                      # renommer un dossier, avec son contenu
+```
+
+Contrairement à `cp`, `mv` n'a pas besoin de `-r` pour un dossier. Mais il partage son défaut : si la destination existe, il l'écrase sans prévenir, et `-i` fait demander confirmation. Déplacer un fichier sur le même disque est instantané, même pour un fichier énorme : le système ne recopie pas les données, il change seulement l'entrée du fichier dans les dossiers, comme tu l'as vu avec les inodes au module 3.
+
+Entre deux disques ou deux partitions, en revanche, `mv` ne peut pas se contenter de changer une entrée : il **copie** les données vers la destination, puis **supprime** l'original. C'est long pour de gros fichiers, et une interruption en plein milieu, une coupure ou un Ctrl + C, peut laisser une copie incomplète à l'arrivée. Pour déplacer des données précieuses d'un disque à l'autre, on préfère souvent copier d'abord, vérifier la copie, puis supprimer l'original soi-même.
+
+## plusieurs fichiers à la fois
+
+`cp` et `mv` acceptent plusieurs sources d'un coup. Dans ce cas, le **dernier** argument doit être un **dossier existant**, qui les reçoit toutes : `cp notes.txt rapport.txt plan.txt archives/` copie les trois fichiers dans `archives`. Si le dernier argument n'est pas un dossier, la commande refuse, ce qui évite de mélanger trois fichiers dans un seul. Retenir cette forme permet de comprendre une erreur fréquente : `mv *.txt docs` échoue si `docs` n'existe pas encore, alors que `mv rapport.txt docs` réussit... en renommant le fichier en `docs` ! Pour lever toute ambiguïté, beaucoup de professionnels écrivent le dossier de destination avec une barre oblique finale, `docs/` : si le dossier n'existe pas, la commande échoue au lieu de renommer.
+
+## supprimer : rm et rmdir
+
+`rm` (*remove*) supprime des fichiers : `rm brouillon.txt`. Pour un dossier et tout son contenu, il faut `-r` : `rm -r vieux-projet`. `rmdir` supprime un dossier seulement s'il est **vide**, ce qui en fait une commande prudente.
+
+Voici ce que `rm` ne pardonne pas :
+
+- **il n'y a pas de corbeille.** Le fichier ne va nulle part où on pourrait le récupérer d'un clic. Comme tu l'as vu au module 1, les données restent parfois sur le disque, mais les récupérer demande des outils spécialisés et de la chance ;
+- **il ne demande rien.** `rm -r dossier` efface le dossier et tout ce qu'il contient, sans liste ni confirmation ;
+- **l'option `-f`** (*force*) supprime même ce qui est protégé en écriture, et fait taire les erreurs. Combinée à `-r`, elle donne le célèbre `rm -rf`, qui efface tout ce qu'on lui désigne sans aucune question ;
+- **une erreur de frappe coûte cher.** `rm -rf / tmp/essai`, avec un espace de trop, désigne deux cibles : `/tmp/essai`... et la racine `/`, c'est-à-dire tout le système. Les versions récentes de `rm` refusent de s'attaquer à `/` sans une option supplémentaire, mais un dossier personnel ou un dossier de site web ne bénéficient pas de cette protection.
+
+<Diagram caption="Avant une commande destructrice, trois vérifications">
+flowchart LR
+  A["Où suis-je ? pwd"] --> B["Qu'est-ce que je vise ? ls avec les mêmes noms"]
+  B --> C["Est-ce bien ça ? relire la ligne"]
+  C --> D["Entrée"]
+</Diagram>
+
+## supprimer, une question de droits
+
+Une surprise attend ceux qui ont retenu le module 3 : pour supprimer un fichier, il ne faut pas le droit d'écrire **dans le fichier**, mais le droit d'écrire **dans le dossier** qui le contient. Supprimer un fichier, c'est en effet retirer son nom de la liste que tient le dossier. Un utilisateur peut donc supprimer un fichier qu'il n'a pas le droit de lire, s'il a les droits sur le dossier ; `rm` demande alors seulement une confirmation. À l'inverse, un fichier très précieux dans un dossier où tout le monde peut écrire serait à la merci de tous : c'est pour cela que `/tmp`, ouvert à tous, porte un droit spécial, le *sticky bit*, qui n'autorise chacun à supprimer que ses propres fichiers. Et `root`, lui, peut tout supprimer, partout : une raison de plus de ne pas travailler en administrateur au quotidien.
+
+## après une erreur
+
+Si malgré tout un fichier important a disparu, quelques gestes limitent les dégâts :
+
+- **arrêter d'écrire sur le disque concerné** : les données supprimées restent souvent sur le disque tant que l'espace n'est pas réutilisé, comme au module 1, et chaque nouvelle écriture peut les recouvrir ;
+- **chercher une copie** : une sauvegarde, un instantané de machine virtuelle comme au module 3, une ancienne version dans un outil de gestion de versions comme Git, une pièce jointe envoyée à un collègue ;
+- **prévenir** plutôt que dissimuler, en entreprise : un administrateur qui signale vite une suppression laisse une chance de restaurer, un incident caché en laisse beaucoup moins ;
+- **en tirer une habitude** : l'erreur la plus utile est celle qui fait adopter le réflexe de la copie avant modification.
+
+## les bons réflexes
+
+Les professionnels ne sont pas plus adroits que les autres : ils ont des **habitudes**.
+
+- **Vérifier le dossier courant** avec `pwd` avant toute suppression. Un `rm -r *` lancé dans le mauvais dossier est l'incident type.
+- **Tester la cible avec `ls`** : taper d'abord `ls *.tmp`, regarder ce qui s'affiche, puis seulement remplacer `ls` par `rm`. Les jokers comme `*`, que tu verras dans la leçon sur la recherche, sont précisément ceux qui réservent des surprises.
+- **Utiliser `-i`** quand le doute existe : `rm -i`, `cp -i`, `mv -i` demandent confirmation pour chaque fichier.
+- **Faire une copie avant de modifier** un fichier important : `cp config.conf config.conf.bak`. Une seconde de frappe, et un retour en arrière toujours possible.
+- **Ne jamais copier-coller une commande `rm` sans la comprendre**, surtout trouvée sur Internet : tu as vu au module 3 ce qu'une ligne copiée peut contenir.
+- **Garder des sauvegardes.** C'est la seule vraie protection contre une suppression, un disque qui lâche ou un rançongiciel : aucune prudence au clavier ne la remplace. Et une sauvegarde qu'on n'a jamais essayé de restaurer reste une promesse, pas une garantie.
+
+## à toi de jouer : ranger un dossier
+
+Le dossier de travail de la machine contient un petit désordre. Range-le selon ce cahier des charges, avec les commandes de la leçon :
+
+1. crée un dossier `docs` et un dossier `archives` ;
+2. renomme `rapport_v3.txt` en `rapport-final.txt` et place-le dans `docs` ;
+3. copie `notes.txt` dans `archives`, en gardant l'original à sa place ;
+4. supprime le fichier `brouillon.tmp` et le dossier `vieux` avec tout son contenu.
+
+Chaque point est vérifié directement dans la machine après chacune de tes commandes : peu importe comment tu t'y prends, c'est le résultat qui compte. Commence par `ls` pour voir le désordre, et utilise `ls` et `pwd` autant que nécessaire.
+
+<LinuxTerminal title="Ranger un dossier" files={{ "rapport_v3.txt": "Rapport trimestriel, version finale.\n", "notes.txt": "Idées pour la prochaine réunion.\n", "brouillon.tmp": "texte temporaire\n", "vieux/ancien-rapport.txt": "Rapport de l'an dernier.\n", "vieux/images/logo.txt": "un logo, en texte\n" }} checks={[{ "label": "Le dossier docs existe", "path": "docs", "expect": "dir" }, { "label": "Le dossier archives existe", "path": "archives", "expect": "dir" }, { "label": "docs/rapport-final.txt contient le rapport", "path": "docs/rapport-final.txt", "expect": "file", "contains": "Rapport trimestriel" }, { "label": "rapport_v3.txt n'est plus là", "path": "rapport_v3.txt", "expect": "absent" }, { "label": "Une copie de notes.txt est dans archives", "path": "archives/notes.txt", "expect": "file", "contains": "Idées" }, { "label": "L'original notes.txt est toujours là", "path": "notes.txt", "expect": "file" }, { "label": "brouillon.tmp est supprimé", "path": "brouillon.tmp", "expect": "absent" }, { "label": "Le dossier vieux est supprimé", "path": "vieux", "expect": "absent" }]} hints={["mkdir docs archives crée les deux dossiers d'un coup.", "mv peut renommer et déplacer en une seule commande : mv rapport_v3.txt docs/rapport-final.txt", "cp notes.txt archives/ copie sans toucher à l'original.", "rm supprime un fichier ; rm -r supprime un dossier et son contenu. Vérifie avec ls avant."]} />
+
+Tu remarqueras que `mv rapport_v3.txt docs/rapport-final.txt` fait les deux choses d'un coup : déplacer et renommer. Et si tu te trompes, par exemple en supprimant `notes.txt`, le bouton **Redémarrer** te rend le désordre de départ : un luxe qu'aucun vrai serveur n'offre.
+
+## les pièges
+
+- **Supprimer sans vérifier le dossier courant.** `pwd` d'abord, toujours.
+- **Croire qu'il existe une corbeille.** `rm` supprime pour de bon.
+- **Écraser un fichier avec `cp` ou `mv`.** Ils le font sans prévenir ; `-i` demande confirmation.
+- **Oublier `-r` pour copier un dossier,** ou l'ajouter machinalement à un `rm`.
+- **Lancer `rm -rf` par habitude.** `-f` fait taire les avertissements qui auraient pu t'arrêter.
+- **Laisser traîner un espace dans un chemin.** `rm -r / tmp/essai` n'est pas `rm -r /tmp/essai`.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/rm.1.html" description="Les options de rm, dont la protection de la racine, en anglais">Page de manuel de rm</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/cp.1.html" description="Les options de cp, dont -i, -r et -a, en anglais">Page de manuel de cp</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/sauvegardes" description="Pourquoi et comment faire des sauvegardes, la seule vraie protection contre la perte de fichiers">Cybermalveillance.gouv.fr : les sauvegardes</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle commande crée le dossier projet/sources/tests même si projet/sources n'existe pas encore ?" options={["mkdir -p projet/sources/tests", "mkdir projet/sources/tests", "touch projet/sources/tests", "cp -r projet/sources/tests"]} correct={0} explanation="L'option -p crée aussi les dossiers intermédiaires manquants." />
+  <Quiz id="q-2" question="Comment renomme-t-on un fichier en ligne de commande ?" options={["Avec rename seulement", "Avec mv ancien-nom nouveau-nom", "Avec cp, puis rm", "C'est impossible"]} correct={1} explanation="Renommer, c'est déplacer vers un nouveau nom : mv s'en charge." />
+  <Quiz id="q-3" question="Que se passe-t-il si tu fais cp notes.txt archives/notes.txt alors que archives/notes.txt existe déjà ?" options={["cp refuse", "Le fichier existant est écrasé sans avertissement", "cp demande confirmation", "Une copie numérotée est créée"]} correct={1} explanation="cp et mv écrasent la destination sans prévenir ; l'option -i fait demander confirmation." />
+  <Quiz id="q-4" question="Que fait rm -r vieux ?" options={["Il supprime définitivement le dossier vieux et tout son contenu", "Il déplace vieux dans une corbeille", "Il supprime vieux seulement s'il est vide", "Il renomme vieux"]} correct={0} explanation="-r supprime récursivement tout le contenu, sans corbeille ni confirmation. rmdir, lui, ne supprime qu'un dossier vide." />
+  <Quiz id="q-5" question="Avant de lancer rm *.tmp, quelle habitude protège d'une mauvaise surprise ?" options={["Lancer rm -f à la place", "Taper d'abord ls *.tmp pour voir exactement ce qui sera visé", "Redémarrer la machine", "Fermer les autres fenêtres"]} correct={1} explanation="ls avec les mêmes noms montre la cible ; on ne remplace ls par rm qu'après avoir vérifié." />
+  <Quiz id="q-6" question="Pourquoi rm -rf est-il particulièrement dangereux ?" options={["Parce qu'il supprime tout ce qu'on lui désigne, récursivement, sans question et en taisant les erreurs", "Parce qu'il est lent", "Parce qu'il envoie les fichiers sur Internet", "Il n'est pas dangereux"]} correct={0} explanation="-r descend dans les dossiers, -f force et fait taire les avertissements : aucune barrière ne reste." />
+  <Quiz id="q-7" question="Quelle est la seule vraie protection contre la perte de fichiers ?" options={["Taper lentement", "Utiliser mv plutôt que rm", "Des sauvegardes régulières", "Donner des noms courts aux fichiers"]} correct={2} explanation="Erreur, panne ou rançongiciel : seule une sauvegarde permet de retrouver ce qui a été perdu." />
+</QuizGroup>
+
+## à retenir
+
+- **Créer** : `mkdir` (`-p` pour les intermédiaires), `touch` pour un fichier vide, `echo "texte" > fichier` pour un contenu.
+- **Copier** : `cp source destination` ; `-r` pour un dossier, `-a` pour une vraie sauvegarde.
+- **Déplacer et renommer** : `mv`.
+- **Supprimer** : `rm`, `rm -r` pour un dossier, `rmdir` pour un dossier vide.
+- `cp` et `mv` **écrasent sans prévenir**, `rm` **n'a pas de corbeille** : `-i` fait demander confirmation.
+- Réflexes : `pwd`, puis `ls` sur la cible, relire, copier avant de modifier, et **sauvegarder**.
