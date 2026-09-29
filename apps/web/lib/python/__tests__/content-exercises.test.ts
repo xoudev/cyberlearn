@@ -5,6 +5,7 @@ import path from "node:path";
 import { evaluate } from "@mdx-js/mdx";
 import * as runtime from "react/jsx-runtime";
 import { beforeAll, describe, expect, it } from "vitest";
+import { LESSON_COMPONENT_NAMES } from "@cyberlearn/lib/mdx-check";
 
 /**
  * Every Python exercise in the lessons, run twice through the harness, gives
@@ -52,20 +53,7 @@ async function exercisesIn(file: string): Promise<Exercise[]> {
       captured.push({ name, props });
       return null;
     };
-  const components = Object.fromEntries(
-    [
-      "Quiz",
-      "QuizGroup",
-      "CodePlayground",
-      "SimulatedTerminal",
-      "LessonVideo",
-      "LessonImage",
-      "ExternalLink",
-      "Callout",
-      "Diagram",
-      "PythonChallenge",
-    ].map((n) => [n, stub(n)]),
-  );
+  const components = Object.fromEntries(LESSON_COMPONENT_NAMES.map((n) => [n, stub(n)]));
   const { default: Content } = await evaluate(source, { ...runtime, development: false });
   // SAFETY: the compiled module's default export is its content function.
   const tree = (Content as (p: { components: unknown }) => unknown)({ components });
