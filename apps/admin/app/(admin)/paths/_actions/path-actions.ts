@@ -147,6 +147,7 @@ export async function updatePathStatusAction(
   ]);
 
   revalidatePath("/paths");
+  revalidatePath("/paths/archives");
   return {};
 }
 
@@ -195,5 +196,6 @@ export async function deletePathAction(
   }
 
   revalidatePath("/paths");
+  revalidatePath("/paths/archives");
   return { success: true };
 }
