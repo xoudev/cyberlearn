@@ -568,9 +568,9 @@ tourne sur nos serveurs.
 | Prop | Rôle |
 | --- | --- |
 | `title` | Titre de la barre du terminal (défaut : `Linux · root@cyberlearn`) |
-| `files` | Fichiers déposés avant que l'élève prenne la main : chemin relatif → contenu texte. Ils apparaissent dans `/mnt`, le dossier où le shell démarre. Noms simples séparés par `/`, sans `.` ni `..` ; un nom peut commencer par un point, pour un fichier caché ; au plus 40 fichiers de 64 Ko |
+| `files` | Fichiers déposés avant que l'élève prenne la main : chemin relatif → contenu texte. Ils apparaissent dans `/mnt`, le dossier où le shell démarre. Noms simples séparés par `/`, sans `.` ni `..` ; un nom peut commencer par un point, pour un fichier caché. Le nom du fichier lui-même, pas celui des dossiers, peut aussi contenir des espaces ou commencer par un tiret (`rapport final.txt`, `-notes.txt`), pour les exercices sur les guillemets et `--` ; au plus 40 fichiers de 64 Ko |
 | `expectedCommands` | Commandes demandées, cochées quand l'élève les tape (espaces normalisés). Une commande rappelée avec les flèches ne compte pas : il faut la retaper |
-| `checks` | Ce que l'élève doit laisser dans `/mnt`, vérifié dans la machine après chaque commande : `{ label, path, expect: "file" \| "dir" \| "absent", contains? }`. Peu importe comment il y arrive : c'est l'état final qui compte. Idéal pour un exercice de rangement ou de configuration |
+| `checks` | Ce que l'élève doit laisser dans `/mnt`, vérifié dans la machine après chaque commande : `{ label, path, expect: "file" \| "dir" \| "link" \| "absent", contains?, mode?, target?, links? }`. `contains` : un texte que le fichier doit contenir ; `mode` : les permissions en octal, comme chmod les écrit (`"640"`, `"4755"`) ; `target` : la cible d'un lien symbolique, telle qu'écrite par `ln -s` ; `links` : le nombre de liens physiques (`2` après `ln`). Peu importe comment il y arrive : c'est l'état final qui compte. Idéal pour un exercice de rangement, de liens ou de permissions |
 | `hints` | Indices affichés sous le terminal |
 | `height` | Hauteur en pixels, de 200 à 900 (défaut 380) |
 
@@ -583,6 +583,16 @@ tourne sur nos serveurs.
   de BusyBox (`ls`, `chmod`, `chown`, `adduser`, `su`, `grep`, `sed`, `awk`,
   `find`, `tar`, `ps`, `top`, `vi`…) : pas de `apt`, pas de `systemd`, pas de
   `sudo`. Pour ces sujets, `SimulatedTerminal` reste le bon outil.
+- Le shell est **`ash`**, celui de BusyBox, pas bash : pas de développement des
+  accolades (`{a,b}`), pas de `pushd` ni `dirs`, pas de rappel d'historique par
+  `!n`. Manquent aussi `stat`, `comm`, `getent`, `namei`, `file`, `groups`
+  (utiliser `id -Gn`), `tac`, `column` et `tar -z` (archives non compressées,
+  puis `gzip`). Sont là : `tree`, `xxd`, `od`, `readlink`, `lsattr`, `umask`,
+  `ulimit`, `touch -d`, `adduser`, `addgroup`, `passwd`, `chgrp`. Un exercice
+  qui repose sur une fonction propre à bash reste en `SimulatedTerminal`, ou
+  dit clairement ce qui diffère.
+- Les fichiers de la leçon sont créés en `rw-rw-rw-` : un exercice de
+  permissions commence donc par les régler, ou vérifie le résultat avec `mode`.
 - Exemple de `checks` : `checks={[{ "label": "Le rapport est dans docs", "path": "docs/rapport.txt", "expect": "file", "contains": "Bilan" }, { "label": "Le brouillon est supprimé", "path": "brouillon.tmp", "expect": "absent" }]}`. L'exercice est complété quand toutes les commandes demandées ont été tapées et toutes les vérifications tiennent.
 - Le composant ne bloque pas la suite de la leçon, comme `SimulatedTerminal`.
 - Sur l'app mobile, il devient la fiche des commandes et des indices : la

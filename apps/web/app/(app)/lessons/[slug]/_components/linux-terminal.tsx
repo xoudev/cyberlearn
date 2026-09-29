@@ -10,9 +10,10 @@ import {
   endsWithPrompt,
   isLessonFilePath,
   normalizeCommand,
+  octalMode,
   setupCommand,
   toSerial,
-  type PathState,
+  type PathObservation,
   type StateCheck,
 } from "@/lib/linux-terminal/session";
 
@@ -43,16 +44,23 @@ const propsSchema = z.object({
   expectedCommands: z.array(z.string().max(200)).max(30).optional(),
   /**
    * What the learner must leave behind in /mnt, checked in the machine after
-   * each command: a file (with a text in it, if given), a directory, or no
-   * trace of a path.
+   * each command: a file (with a text in it, if given), a directory, a
+   * symbolic link (to a given target), or no trace of a path; and, if given,
+   * its permissions and its number of hard links.
    */
   checks: z
     .array(
       z.object({
         label: z.string().max(200),
         path: z.string().refine(isLessonFilePath, "Chemin de vérification invalide."),
-        expect: z.enum(["file", "dir", "absent"]),
+        expect: z.enum(["file", "dir", "link", "absent"]),
         contains: z.string().max(500).optional(),
+        mode: z
+          .string()
+          .regex(/^[0-7]{3,4}$/, "Permissions en octal : 640, 750, 4755.")
+          .optional(),
+        target: z.string().max(200).optional(),
+        links: z.number().int().min(1).max(100).optional(),
       }),
     )
     .max(30)
@@ -80,25 +88,51 @@ interface V86Emulator {
   fs9p?: {
     SearchPath(path: string): { id: number };
     IsDirectory(id: number): boolean;
+    /** The inode itself: st_mode, the target of a symlink, the link count. */
+    GetInode(id: number): { mode: number; symlink: string; nlinks: number };
   };
 }
 
-/** What a path of /mnt is, and a file's text when there is one. */
-async function probe(
-  emulator: V86Emulator,
-  path: string,
-): Promise<{ state: PathState; text: string | null }> {
+const S_IFMT = 0o170000;
+const S_IFLNK = 0o120000;
+
+const NOTHING: PathObservation = {
+  state: "absent",
+  text: null,
+  mode: null,
+  target: null,
+  links: null,
+};
+
+/**
+ * What a path of /mnt is: a file and its text, a directory, a symbolic link
+ * and its target, or nothing; with its permissions and link count. SearchPath
+ * does not follow a link, so a link is seen as itself.
+ */
+async function probe(emulator: V86Emulator, path: string): Promise<PathObservation> {
   const fs = emulator.fs9p;
+  let inode: { mode: number; symlink: string; nlinks: number } | null = null;
   if (fs) {
     const { id } = fs.SearchPath(path);
-    if (id === -1) return { state: "absent", text: null };
-    if (fs.IsDirectory(id)) return { state: "dir", text: null };
+    if (id === -1) return NOTHING;
+    inode = fs.GetInode(id);
+    const meta = { mode: octalMode(inode.mode), links: inode.nlinks };
+    if ((inode.mode & S_IFMT) === S_IFLNK) {
+      return { ...NOTHING, ...meta, state: "link", target: inode.symlink };
+    }
+    if (fs.IsDirectory(id)) return { ...NOTHING, ...meta, state: "dir" };
   }
   try {
     const bytes = await emulator.read_file(path);
-    return { state: "file", text: new TextDecoder().decode(bytes) };
+    return {
+      ...NOTHING,
+      state: "file",
+      text: new TextDecoder().decode(bytes),
+      mode: inode ? octalMode(inode.mode) : null,
+      links: inode ? inode.nlinks : null,
+    };
   } catch {
-    return { state: "absent", text: null };
+    return NOTHING;
   }
 }
 
@@ -196,8 +230,7 @@ export function LinuxTerminal(rawProps: LinuxTerminalProps): React.ReactElement 
     const holding: string[] = [];
     for (const check of checksRef.current) {
       try {
-        const { state, text } = await probe(emulator, check.path);
-        if (checkHolds(check, state, text)) holding.push(check.label);
+        if (checkHolds(check, await probe(emulator, check.path))) holding.push(check.label);
       } catch {
         // A path the filesystem cannot answer for does not hold, and does not
         // stop the checks after it.

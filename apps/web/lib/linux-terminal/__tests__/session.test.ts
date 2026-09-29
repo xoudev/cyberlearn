@@ -6,8 +6,10 @@ import {
   endsWithPrompt,
   isLessonFilePath,
   normalizeCommand,
+  octalMode,
   setupCommand,
   toSerial,
+  type PathObservation,
 } from "../session";
 
 describe("isLessonFilePath", () => {
@@ -18,6 +20,9 @@ describe("isLessonFilePath", () => {
     "journal.2026-09.log",
     ".bashrc",
     ".cache/indice.txt",
+    "rapport final.txt",
+    "-notes.txt",
+    "docs/-notes.txt",
   ])("accepts %s", (path) => {
     expect(isLessonFilePath(path)).toBe(true);
   });
@@ -27,8 +32,12 @@ describe("isLessonFilePath", () => {
     "/etc/passwd",
     "a/../b",
     "a//b",
-    "a b",
+    "dossier avec espace/x.txt",
+    "-dossier/x.txt",
+    "fin avec espace ",
+    " debut avec espace",
     "a;rm -rf /",
+    "nom'quote.txt",
     "$(id)",
     "./notes.txt",
     "..",
@@ -131,25 +140,63 @@ describe("createLineTracker, on Enter", () => {
   });
 });
 
+describe("octalMode", () => {
+  it("writes permission bits the way chmod takes them", () => {
+    expect(octalMode(0o100640)).toBe("640");
+    expect(octalMode(0o40755)).toBe("755");
+    expect(octalMode(0o104755)).toBe("4755");
+    expect(octalMode(0o100007)).toBe("007");
+  });
+});
+
 describe("checkHolds", () => {
   const file = { label: "Le rapport", path: "docs/rapport.txt", expect: "file" as const };
+  const seen = (over: Partial<PathObservation>): PathObservation => ({
+    state: "file",
+    text: null,
+    mode: null,
+    target: null,
+    links: null,
+    ...over,
+  });
 
   it("holds when the path is what the check expects", () => {
-    expect(checkHolds(file, "file", "texte")).toBe(true);
-    expect(checkHolds({ ...file, expect: "dir" }, "dir", null)).toBe(true);
-    expect(checkHolds({ ...file, expect: "absent" }, "absent", null)).toBe(true);
+    expect(checkHolds(file, seen({ text: "texte" }))).toBe(true);
+    expect(checkHolds({ ...file, expect: "dir" }, seen({ state: "dir" }))).toBe(true);
+    expect(checkHolds({ ...file, expect: "link" }, seen({ state: "link" }))).toBe(true);
+    expect(checkHolds({ ...file, expect: "absent" }, seen({ state: "absent" }))).toBe(true);
   });
 
   it("fails when the path is something else", () => {
-    expect(checkHolds(file, "absent", null)).toBe(false);
-    expect(checkHolds(file, "dir", null)).toBe(false);
-    expect(checkHolds({ ...file, expect: "absent" }, "file", "x")).toBe(false);
+    expect(checkHolds(file, seen({ state: "absent" }))).toBe(false);
+    expect(checkHolds(file, seen({ state: "dir" }))).toBe(false);
+    expect(checkHolds(file, seen({ state: "link" }))).toBe(false);
+    expect(checkHolds({ ...file, expect: "absent" }, seen({ text: "x" }))).toBe(false);
   });
 
   it("looks for the expected text in a file", () => {
     const withText = { ...file, contains: "Bilan" };
-    expect(checkHolds(withText, "file", "Bilan du trimestre")).toBe(true);
-    expect(checkHolds(withText, "file", "Brouillon")).toBe(false);
-    expect(checkHolds(withText, "file", null)).toBe(false);
+    expect(checkHolds(withText, seen({ text: "Bilan du trimestre" }))).toBe(true);
+    expect(checkHolds(withText, seen({ text: "Brouillon" }))).toBe(false);
+    expect(checkHolds(withText, seen({ text: null }))).toBe(false);
+  });
+
+  it("checks the permissions, with or without a leading zero", () => {
+    expect(checkHolds({ ...file, mode: "640" }, seen({ mode: "640" }))).toBe(true);
+    expect(checkHolds({ ...file, mode: "0640" }, seen({ mode: "640" }))).toBe(true);
+    expect(checkHolds({ ...file, mode: "640" }, seen({ mode: "644" }))).toBe(false);
+    expect(checkHolds({ ...file, mode: "4755" }, seen({ mode: "4755" }))).toBe(true);
+    expect(checkHolds({ ...file, mode: "640" }, seen({ mode: null }))).toBe(false);
+  });
+
+  it("checks a link's target as written", () => {
+    const link = { ...file, expect: "link" as const, target: "releases/v2" };
+    expect(checkHolds(link, seen({ state: "link", target: "releases/v2" }))).toBe(true);
+    expect(checkHolds(link, seen({ state: "link", target: "releases/v1" }))).toBe(false);
+  });
+
+  it("checks the number of hard links", () => {
+    expect(checkHolds({ ...file, links: 2 }, seen({ links: 2 }))).toBe(true);
+    expect(checkHolds({ ...file, links: 2 }, seen({ links: 1 }))).toBe(false);
   });
 });
