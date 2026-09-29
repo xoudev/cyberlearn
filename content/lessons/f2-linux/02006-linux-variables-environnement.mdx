@@ -254,11 +254,11 @@ Reste à le rendre permanent, en ajoutant la ligne `export PATH="$HOME/bin:$PATH
 
 ## à toi de jouer
 
-Sur ce serveur, affiche d'abord le `PATH`, puis définis `nano` comme éditeur par défaut pour toi et pour tous les programmes que tu lanceras, et vérifie enfin que la variable est bien une variable d'environnement.
+Sur cette machine, affiche d'abord le `PATH`, puis définis `vi` comme éditeur par défaut pour toi et pour tous les programmes que tu lanceras, et vérifie enfin que la variable est bien une variable d'environnement. Ce Linux minimal n'a pas `nano` : c'est `vi` qui est installé.
 
-<SimulatedTerminal shell="bash" title="Régler son environnement" expectedCommands={["echo $PATH", "export EDITOR=nano", "printenv EDITOR"]} hints={["La valeur d'une variable se lit avec un $ devant son nom.", "Une variable destinée aux autres programmes s'exporte.", "printenv suivi du nom de la variable, sans $."]} commands={{ "echo $PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "export EDITOR=nano": "", "printenv EDITOR": "nano", "echo $EDITOR": "nano", "env": "SHELL=/bin/bash\nPWD=/home/alice\nLOGNAME=alice\nHOME=/home/alice\nLANG=fr_FR.UTF-8\nTERM=xterm-256color\nUSER=alice\nEDITOR=nano\nPATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "EDITOR=nano": "", "printenv HOME": "/home/alice", "type python3": "python3 is /usr/bin/python3" }} />
+<LinuxTerminal title="Régler son environnement" expectedCommands={["echo $PATH", "export EDITOR=vi", "printenv EDITOR"]} hints={["La valeur d'une variable se lit avec un $ devant son nom.", "Une variable destinée aux autres programmes s'exporte.", "printenv suivi du nom de la variable, sans $."]} />
 
-Pour voir la différence avec une variable non exportée, relis le passage sur `bash -c` : la même variable, sans `export`, n'aurait pas été vue par `printenv`, qui est un programme séparé.
+Pour voir la différence avec une variable non exportée, fais l'expérience dans ce vrai shell : `COULEUR=bleu`, puis `sh -c 'echo $COULEUR'` n'affiche qu'une ligne vide. Après `export COULEUR`, la même commande affiche `bleu`. Le programme lancé, ici un second shell, n'hérite que des variables exportées ; c'est pour la même raison que `printenv`, qui est un programme séparé, ne voit que celles-là.
 
 ## les pièges
 
