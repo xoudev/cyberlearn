@@ -1,0 +1,152 @@
+---
+refCode: CL-LSN-01050-V01
+slug: fondamentaux-reseaux-publics-et-wi-fi
+title: "Les réseaux publics et le Wi-Fi"
+description: "Ce qu'un réseau Wi-Fi public voit de ton activité, avec et sans HTTPS, les vrais risques d'un réseau partagé (faux point d'accès, portail captif piégé, appareils exposés), le chiffrement du Wi-Fi (WPA2, WPA3), ce qu'un VPN fait et ne fait pas, la sécurité du Wi-Fi de la maison, et les réflexes à adopter en déplacement. Avec un observateur de réseau à programmer."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01049-V01"]
+---
+
+Gare, hôtel, café, aéroport : partout, un réseau Wi-Fi gratuit t'attend, et ton téléphone s'y connecte parfois tout seul. Pendant des années, le conseil était simple : ne jamais s'en servir pour quoi que ce soit d'important. Ce conseil a vieilli, parce que presque tout le Web est désormais chiffré. Mais il n'est pas devenu faux pour autant : un réseau que tu ne contrôles pas reste un endroit où quelqu'un d'autre voit passer tes communications, et peut parfois les détourner. Cette leçon s'appuie sur ce que tu as appris au module 4, les paquets, le DNS, HTTPS, pour répondre précisément à la question : sur un réseau public, qu'est-ce qui est visible, qu'est-ce qui est protégé, et que faire ?
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- dire ce qu'un opérateur de réseau voit d'une connexion HTTP et d'une connexion HTTPS ;
+- décrire les principaux risques d'un réseau Wi-Fi public ;
+- expliquer ce que protège le chiffrement du Wi-Fi, et ce qu'il ne protège pas ;
+- expliquer ce que fait un VPN, et ce qu'il ne fait pas ;
+- sécuriser le Wi-Fi de ta maison ;
+- adopter les bons réflexes en déplacement.
+
+## pourquoi ça compte
+
+Les réseaux partagés sont partout, y compris au travail et dans les établissements scolaires, et beaucoup de gens y consultent leur banque, leur messagerie ou des documents professionnels. Comprendre ce qu'un réseau voit, c'est éviter deux erreurs opposées : la naïveté, qui fait accepter un avertissement de certificat sur le Wi-Fi d'un hôtel, et la paranoïa, qui fait acheter un VPN en croyant qu'il rend invulnérable. Pour un professionnel, cette analyse, qui voit quoi à chaque étape d'une communication, est la base de tout travail sur la sécurité des réseaux, et une question classique d'entretien.
+
+## ce que voit le réseau
+
+Tu l'as vu au module 4 : tes données voyagent en paquets, et chaque équipement sur le chemin, le point d'accès Wi-Fi, la box, les routeurs du fournisseur d'accès, lit au moins les en-têtes de ces paquets pour les acheminer. Sur un Wi-Fi public, le premier de ces équipements appartient à quelqu'un que tu ne connais pas. Qu'en voit-il ?
+
+<Diagram caption="Ce qu'un observateur du Wi-Fi voit, selon le protocole">
+flowchart LR
+  A["Ton téléphone"] --> B["Point d'accès du café"]
+  B --> C["Internet"]
+  C --> D["Serveur de la banque"]
+  B -.->|"en HTTP : tout, adresse complète, formulaires, mots de passe"| E["Ce que voit l'opérateur du point d'accès"]
+  B -.->|"en HTTPS : adresse IP et nom du site, volumes, horaires, mais pas le contenu"| E
+</Diagram>
+
+**Sans chiffrement, en HTTP**, tout est lisible : l'adresse complète de la page, avec son chemin et ses paramètres, le contenu des pages, les formulaires envoyés, les mots de passe, les cookies de session. Un cookie volé suffit parfois à prendre la place de quelqu'un sur un site, sans connaître son mot de passe.
+
+**Avec HTTPS**, le contenu est chiffré de bout en bout entre ton navigateur et le serveur. L'observateur ne voit ni la page, ni le chemin de l'adresse, ni les formulaires, ni les cookies. Mais il voit encore des **métadonnées** :
+
+- l'**adresse IP** du serveur contacté, indispensable pour acheminer les paquets ;
+- le **nom du site**, par deux voies : la requête DNS, qui part souvent en clair vers le résolveur, et l'indication du nom de serveur (SNI), envoyée en clair au début de la connexion TLS pour que le serveur présente le bon certificat ;
+- les **volumes** échangés et les **horaires** de chaque connexion.
+
+Il sait donc que tu as consulté le site de ta banque à 8 h 42 pendant trois minutes, mais pas ce que tu y as fait. Des évolutions en cours réduisent encore ces fuites : le **DNS chiffré** (DNS over HTTPS ou over TLS), proposé par les navigateurs et les systèmes récents, et l'**Encrypted Client Hello**, qui chiffre aussi le nom du site dans la connexion TLS, en cours de déploiement.
+
+Les métadonnées ne sont pas anodines : la liste des sites que tu visites, avec leurs horaires, en dit long sur ta santé, tes opinions ou tes habitudes. Mais elles ne donnent pas accès à tes comptes. Grâce à HTTPS, presque universel aujourd'hui, le risque d'un réseau public a surtout changé de nature.
+
+## les vrais risques d'un réseau public
+
+**Le faux point d'accès.** Rien n'empêche quelqu'un de créer un réseau nommé « Gare_WiFi_Gratuit » ou du même nom que celui du café. Ton téléphone, qui se souvient des noms de réseaux déjà utilisés, peut s'y connecter automatiquement. L'attaquant est alors le premier maillon de toutes tes communications : il voit tes métadonnées, peut te répondre de faux résultats DNS et tenter de t'emmener sur de fausses pages.
+
+**Le portail captif piégé.** Beaucoup de réseaux publics affichent une page d'accueil où il faut accepter des conditions, ou se connecter. Une fausse page de ce type peut demander ton adresse de messagerie et « ton mot de passe pour continuer », ou un paiement. C'est de l'hameçonnage, livré par le réseau lui-même.
+
+**L'avertissement de certificat.** Pour lire du trafic HTTPS, un attaquant placé sur le réseau doit présenter son propre certificat, que ton navigateur refuse avec un grand avertissement rouge. Tu as vu au module 4 que c'est l'une des seules protections qui repose sur ta décision. Sur un réseau public, un avertissement de certificat sur un site connu n'est **jamais** à ignorer. Les sites protégés par HSTS ne te laissent d'ailleurs même pas passer outre.
+
+**Les appareils exposés.** Sur un réseau local, les autres appareils peuvent contacter le tien directement : partages de fichiers, services ouverts, failles non corrigées. C'est pourquoi Windows demande, à la première connexion, si le réseau est privé ou **public** : en mode public, le pare-feu bloque ces connexions entrantes et l'ordinateur n'annonce pas sa présence.
+
+**Les sites encore en HTTP**, enfin, restent entièrement lisibles. Ils sont rares, mais existent, notamment sur de vieux équipements et certains portails.
+
+## le chiffrement du Wi-Fi
+
+Le réseau de ta box, protégé par une clé, chiffre les communications **entre ton appareil et le point d'accès**, grâce aux protocoles **WPA2** ou, plus récent et plus robuste, **WPA3**. Ce chiffrement empêche les voisins de lire ce qui passe dans les airs. Mais il s'arrête au point d'accès : au-delà, sur Internet, c'est HTTPS qui protège. Et sur un réseau public dont la clé est affichée au comptoir, tous les clients connaissent la clé : avec WPA2, cela n'empêche pas un autre client équipé de mener certaines attaques ; WPA3 améliore nettement la situation en donnant à chaque appareil ses propres clés de session. Un réseau **ouvert**, sans aucune clé, ne chiffre rien du tout dans les airs, sauf s'il utilise la variante récente appelée *Enhanced Open*.
+
+Retiens surtout ceci : le chiffrement du Wi-Fi protège le premier mètre ; **HTTPS protège tout le trajet**.
+
+## et le VPN ?
+
+Un **VPN** (réseau privé virtuel) crée un tunnel chiffré entre ton appareil et un serveur du fournisseur de VPN. Tout ton trafic passe dans ce tunnel. Sur le Wi-Fi du café, l'observateur ne voit plus qu'une seule connexion chiffrée vers le serveur du VPN : ni tes requêtes DNS, ni les noms des sites, ni leurs adresses. C'est un vrai gain sur un réseau non fiable.
+
+Mais le VPN ne fait pas disparaître l'observateur : il le **déplace**. Le fournisseur de VPN voit désormais tout ce que voyait le café, pour tous les réseaux que tu utilises. Tu remplaces la confiance dans un inconnu par la confiance dans une entreprise, qu'il faut choisir avec soin. Et il ne fait rien contre l'essentiel des menaces de ce module : il ne détecte pas l'hameçonnage, ne remplace ni les mots de passe uniques ni la double authentification, ne corrige aucune faille, et ne rend pas anonyme, puisque tes comptes, tes cookies et ton navigateur t'identifient toujours. Les publicités qui promettent une sécurité totale grâce au VPN exagèrent beaucoup.
+
+En entreprise, le VPN a un autre rôle, essentiel : il permet aux salariés en télétravail d'accéder au réseau interne de manière sécurisée. Si ton employeur en fournit un, utilise-le comme il le demande.
+
+## le Wi-Fi de la maison
+
+Ton propre réseau mérite quelques minutes d'attention :
+
+- change le **mot de passe d'administration** de la box, s'il est encore celui d'usine ;
+- utilise **WPA2 ou WPA3**, jamais l'ancien WEP, et une clé Wi-Fi longue ;
+- désactive le **WPS** par code PIN, une fonction d'appairage facile à attaquer ;
+- installe les **mises à jour** de la box, souvent automatiques chez les fournisseurs d'accès ;
+- crée un **réseau invité** pour les visiteurs et les objets connectés, séparé de tes ordinateurs.
+
+## les réflexes en déplacement
+
+- **Préfère le partage de connexion** de ton téléphone, en 4G ou 5G, à un Wi-Fi inconnu : tu en es le seul utilisateur et tu en contrôles la clé.
+- **Vérifie le nom exact** du réseau auprès de l'établissement, et méfie-toi des doublons.
+- **Désactive la connexion automatique** aux réseaux ouverts, et fais oublier à ton téléphone les réseaux publics après usage.
+- **Choisis le profil « réseau public »** sur un ordinateur Windows.
+- **Ne saisis rien d'important** sur une page de portail captif, surtout pas le mot de passe d'un compte.
+- **N'accepte jamais** un avertissement de certificat.
+- **Vérifie le cadenas et l'adresse** avant de saisir un mot de passe, et laisse faire ton gestionnaire, qui ne remplit que sur le bon site.
+- **Garde tes appareils à jour**, puisque d'autres appareils peuvent les contacter.
+
+## à toi de jouer
+
+Programme le regard d'un observateur. `solution(url)` reçoit l'adresse d'une page consultée et renvoie ce que voit l'opérateur du Wi-Fi public : pour une adresse en `https://`, seulement l'**hôte**, c'est-à-dire le nom du site (sans le port) ; pour une adresse en `http://`, **toute** l'adresse sans le préfixe `http://`, chemin et paramètres compris.
+
+<PythonChallenge id="f1-wifi-observateur" title="Ce que voit le Wi-Fi" description="Pour https://, renvoie l'hôte seul, sans port ni chemin ; pour http://, renvoie toute l'adresse sans le préfixe http://." starterCode="def solution(url):
+    if url.startswith('https://'):
+        reste = url[len('https://'):]
+        # garde l'hôte : avant la première barre oblique, point d'interrogation ou deux-points
+        return reste
+    return url" tests={[{ input: "solution('https://www.banque.fr/comptes?id=42')", expected: "www.banque.fr" }, { input: "solution('http://forum.exemple/connexion?mdp=secret')", expected: "forum.exemple/connexion?mdp=secret", label: "En clair, même le mot de passe" }, { input: "solution('https://messagerie.exemple:443/boite/recus')", expected: "messagerie.exemple", label: "Avec un port" }, { input: "solution('https://sante.exemple?page=rendez-vous')", expected: "sante.exemple", label: "Sans barre oblique avant les paramètres" }, { input: "solution('http://vieux-portail.exemple')", expected: "vieux-portail.exemple" }]} />
+
+Le deuxième test illustre pourquoi un site qui transmet quoi que ce soit d'important en HTTP est inacceptable : le mot de passe apparaît en toutes lettres pour qui regarde. Et même dans le premier, l'observateur sait que tu as visité ta banque. Si tu voulais aussi masquer ce nom, que faudrait-il ? Un DNS chiffré et l'Encrypted Client Hello, ou un VPN, qui déplace ce regard vers son fournisseur.
+
+## les pièges
+
+- **Croire que tout est lisible sur un Wi-Fi public.** Avec HTTPS, le contenu est protégé ; restent les métadonnées.
+- **Croire que rien n'est visible avec HTTPS.** Les noms des sites, les adresses, les volumes et les horaires le sont.
+- **Se connecter au premier réseau au bon nom.** N'importe qui peut créer un réseau « Gare_WiFi_Gratuit ».
+- **Accepter un avertissement de certificat.** Sur un réseau public, c'est le signe classique d'une interception.
+- **Donner un mot de passe à un portail captif.** Aucun accès Wi-Fi n'a besoin du mot de passe de ta messagerie.
+- **Attendre d'un VPN une protection totale.** Il chiffre le trajet jusqu'à son serveur, déplace la confiance, et ne fait rien contre l'hameçonnage.
+- **Oublier la box.** Mot de passe d'usine, WPS activé et micrologiciel obsolète en font une cible.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/appareils-mobiles" description="Sécuriser son téléphone et sa tablette, y compris sur les réseaux publics">Cybermalveillance.gouv.fr : les appareils mobiles</ExternalLink>
+
+<ExternalLink href="https://fr.wikipedia.org/wiki/Wi-Fi_Protected_Access" description="WPA, WPA2 et WPA3 : leur histoire et leurs faiblesses connues">Wikipédia : Wi-Fi Protected Access</ExternalLink>
+
+<ExternalLink href="https://fr.wikipedia.org/wiki/Server_Name_Indication" description="Pourquoi le nom du site reste visible dans une connexion HTTPS, et comment ECH le masque">Wikipédia : Server Name Indication</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Sur un Wi-Fi public, que voit l'opérateur du point d'accès quand tu consultes https://www.banque.fr/comptes ?" options={["Rien du tout", "Le nom du site et l'adresse du serveur, mais pas la page ni son contenu", "Toute l'adresse et le contenu de la page", "Seulement ton mot de passe"]} correct={1} explanation="HTTPS chiffre le contenu et le chemin ; le nom du site reste visible par le DNS et l'indication de nom de serveur (SNI)." />
+  <Quiz id="q-2" question="Que voit-il si le site est en http:// ?" options={["Seulement le nom du site", "Rien", "Tout : adresse complète, contenu, formulaires, mots de passe et cookies", "Seulement les images"]} correct={2} explanation="Sans chiffrement, chaque équipement sur le chemin peut lire l'intégralité des échanges." />
+  <Quiz id="q-3" question="Qu'est-ce qu'un faux point d'accès ?" options={["Une box en panne", "Un réseau sans mot de passe", "Un réseau Wi-Fi créé par un attaquant avec un nom crédible pour attirer les connexions", "Un répéteur Wi-Fi"]} correct={2} explanation="N'importe qui peut nommer un réseau comme celui d'une gare ou d'un café. L'attaquant devient alors le premier maillon de tes communications." />
+  <Quiz id="q-4" question="Un avertissement de certificat apparaît sur ta messagerie habituelle, dans le Wi-Fi d'un hôtel. Que faire ?" options={["Ne pas continuer : c'est un signe classique d'interception, se déconnecter et utiliser le partage de connexion du téléphone", "Continuer, c'est normal à l'hôtel", "Désactiver le pare-feu", "Accepter le certificat définitivement"]} correct={0} explanation="Un site connu n'a aucune raison de présenter un certificat invalide. Un intermédiaire tente probablement de lire le trafic." />
+  <Quiz id="q-5" question="Que fait réellement un VPN sur un Wi-Fi public ?" options={["Il chiffre le trafic jusqu'au serveur du fournisseur de VPN, qui devient à son tour l'observateur", "Il rend anonyme sur Internet", "Il bloque l'hameçonnage", "Il remplace la double authentification"]} correct={0} explanation="Le VPN déplace la confiance du réseau local vers son fournisseur. Il ne protège ni de l'hameçonnage ni des comptes mal protégés." />
+  <Quiz id="q-6" question="Jusqu'où protège le chiffrement WPA2 ou WPA3 du Wi-Fi ?" options={["Jusqu'au serveur du site", "Entre ton appareil et le point d'accès seulement", "Jusqu'à ton fournisseur d'accès", "Il ne protège rien"]} correct={1} explanation="Il protège le passage dans les airs. Au-delà du point d'accès, c'est HTTPS qui protège le contenu." />
+  <Quiz id="q-7" question="Quelle est la meilleure alternative à un Wi-Fi public inconnu pour une opération sensible ?" options={["Le partage de connexion 4G ou 5G de son propre téléphone", "Un autre Wi-Fi public", "Un réseau ouvert sans mot de passe", "Désactiver HTTPS"]} correct={0} explanation="Tu es le seul utilisateur de ton partage de connexion et tu en contrôles la clé." />
+</QuizGroup>
+
+## à retenir
+
+- Sur un réseau, l'opérateur voit tout en **HTTP** ; en **HTTPS**, il ne voit plus que les **métadonnées** : adresse du serveur, **nom du site** (DNS, SNI), volumes, horaires.
+- Vrais risques d'un Wi-Fi public : **faux point d'accès**, **portail captif piégé**, **avertissement de certificat** qu'on accepte, **appareil exposé** aux autres clients.
+- Le chiffrement du Wi-Fi (**WPA2**, **WPA3**) protège le premier mètre ; **HTTPS** protège tout le trajet.
+- Un **VPN** chiffre jusqu'à son serveur et **déplace** la confiance ; il ne protège pas de l'hameçonnage et ne rend pas anonyme.
+- À la maison : mot de passe d'administration changé, **WPA2 ou WPA3**, WPS désactivé, box à jour, réseau invité.
+- En déplacement : **partage de connexion** du téléphone, profil **réseau public**, jamais d'avertissement de certificat accepté.

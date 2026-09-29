@@ -1,0 +1,195 @@
+---
+refCode: CL-LSN-01046-V01
+slug: fondamentaux-les-mots-de-passe
+title: "Les mots de passe"
+description: "Comment les mots de passe sont réellement attaqués (essais en ligne, cassage hors ligne, dictionnaires et règles, fuites réutilisées), ce qui fait la force d'un mot de passe, le calcul de l'entropie et ses limites, les recommandations de la CNIL, les phrases de passe, les gestionnaires de mots de passe, et comment évaluer une politique de mots de passe. Avec un calcul d'entropie à programmer et un estimateur à mettre en défaut."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01045-V01"]
+---
+
+Le mot de passe est la serrure la plus répandue du monde numérique, et probablement la plus mal utilisée. Tout le monde a entendu les conseils : des majuscules, des chiffres, des caractères spéciaux, le changer tous les trois mois. Une partie de ces conseils est dépassée, et une autre, pourtant essentielle, est presque toujours oubliée : ne **jamais** réutiliser un mot de passe. Cette leçon part de la façon dont les attaquants s'y prennent réellement, calcule ce qui résiste et ce qui ne résiste pas, et en tire une méthode simple, applicable dès aujourd'hui à tous tes comptes.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- décrire les quatre grandes façons d'obtenir un mot de passe ;
+- expliquer la différence entre une attaque en ligne et un cassage hors ligne ;
+- calculer l'entropie d'un mot de passe aléatoire, et dire pourquoi ce calcul surestime les mots de passe choisis par des humains ;
+- appliquer les recommandations de la CNIL ;
+- construire une phrase de passe solide ;
+- expliquer le fonctionnement d'un gestionnaire de mots de passe et pourquoi il est la vraie solution ;
+- évaluer une politique de mots de passe.
+
+## pourquoi ça compte
+
+La leçon précédente s'est terminée sur une connexion réussie avec un mot de passe réutilisé. C'est le scénario le plus courant du piratage de compte, deuxième menace pour les particuliers en France. Les fuites de données sont constantes : des services connus perdent régulièrement des millions d'identifiants, qui finissent compilés dans des listes échangées entre attaquants. Si ton mot de passe de messagerie est le même que celui d'un forum qui a fui il y a trois ans, ta messagerie est ouverte à qui a téléchargé cette liste. À l'inverse, un mot de passe unique, long et aléatoire pour chaque compte rend l'essentiel de ces attaques inopérantes. Et en entreprise, rédiger ou auditer une politique de mots de passe fait partie du quotidien des équipes de sécurité.
+
+## comment on obtient un mot de passe
+
+Il y a quatre grandes voies, et seules deux dépendent de la force du mot de passe.
+
+**Le deviner en ligne.** L'attaquant essaie des mots de passe directement sur la page de connexion, comme les robots du journal SSH. Chaque essai passe par le réseau et par le serveur, qui peut ralentir les tentatives, bloquer le compte après plusieurs échecs ou exiger un test anti-robot. On parle au mieux de quelques milliers d'essais par jour sur un compte. Un mot de passe un tant soit peu original résiste ; `123456`, `azerty` ou le prénom de ton chien, non.
+
+**Le casser hors ligne.** Quand un service se fait voler sa base de données, l'attaquant ne récupère normalement pas les mots de passe eux-mêmes, mais leurs **empreintes** : le résultat d'une fonction de hachage, que tu as croisée aux modules 2 et 3. On ne peut pas « déchiffrer » une empreinte ; en revanche, on peut calculer l'empreinte de milliards de candidats et comparer. Sur sa propre machine, sans serveur pour le ralentir, avec des cartes graphiques spécialisées, l'attaquant peut essayer des **milliards** de candidats par seconde si le service a utilisé une fonction rapide. C'est ici que la force du mot de passe fait toute la différence.
+
+**Le récupérer ailleurs.** Le mot de passe a fui d'un autre service où tu l'as réutilisé : c'est le bourrage d'identifiants. Aucune force ne protège d'une réutilisation.
+
+**Te le faire donner.** Hameçonnage, faux support technique, logiciel espion qui enregistre les touches, regard par-dessus l'épaule. Là encore, la force ne sert à rien : c'est l'objet des leçons sur la double authentification et l'hameçonnage.
+
+<Diagram caption="Le cassage hors ligne après une fuite de base de données">
+flowchart LR
+  A["Le site stocke des empreintes, pas les mots de passe"] --> B["La base est volée"]
+  B --> C["L'attaquant génère des candidats : dictionnaires, fuites, règles"]
+  C --> D["Il calcule l'empreinte de chaque candidat"]
+  D --> E["Même empreinte : le mot de passe est trouvé"]
+  E --> F["Il l'essaie sur les autres services de la victime"]
+</Diagram>
+
+## les attaquants ne tapent pas au hasard
+
+Un débutant imagine un attaquant qui essaie `aaaa`, puis `aaab`, puis `aaac`. Les vrais outils de cassage sont bien plus malins. Ils commencent par les **listes** de mots de passe réels issus des fuites, des centaines de millions de mots de passe que des humains ont vraiment choisis, classés par fréquence. Puis les **dictionnaires** de toutes les langues, les prénoms, les villes, les équipes de football, les dates. Puis ils appliquent des **règles** de transformation que tout le monde utilise : une majuscule au début, un chiffre ou une année à la fin, un point d'exclamation, `a` remplacé par `@` ou `4`, `e` par `3`, `o` par `0`. La CNIL donne l'exemple de « kangourou », dont les outils testent automatiquement « k4ng0urou », « kangourou01 » ou « KaNgOuRoU ».
+
+Conséquence : `Marseille2026!` coche toutes les cases des vieilles politiques, majuscule, minuscules, chiffres, caractère spécial, et tombe pourtant en quelques secondes, parce qu'il suit exactement le modèle « mot du dictionnaire, année, ponctuation » que les règles essaient en premier. Ce qui fait la force d'un mot de passe, ce n'est pas sa **complexité apparente**, c'est son **imprévisibilité**.
+
+## mesurer la force : l'entropie
+
+Pour mesurer l'imprévisibilité, on utilise l'**entropie**, exprimée en bits. Pour un mot de passe tiré **au hasard**, chaque caractère choisi parmi un alphabet de taille A apporte log2(A) bits, et la longueur L multiplie le tout : l'entropie vaut L × log2(A). Un attaquant doit alors essayer au pire 2 puissance entropie combinaisons. Chaque bit supplémentaire double son travail : c'est la croissance exponentielle de la leçon sur l'efficacité.
+
+| Alphabet | Taille | Bits par caractère |
+|---|---|---|
+| chiffres | 10 | 3,3 |
+| minuscules | 26 | 4,7 |
+| minuscules et majuscules | 52 | 5,7 |
+| lettres et chiffres | 62 | 6,0 |
+| tous les caractères imprimables du clavier américain | 95 | 6,6 |
+
+Remarque ce que dit ce tableau : passer de 62 à 95 caractères possibles n'ajoute que 0,6 bit par caractère, alors qu'ajouter **un seul caractère** de longueur en ajoute 6. La **longueur** pèse bien plus que la variété des symboles.
+
+Mais attention : ce calcul ne vaut que pour un mot de passe **tiré au hasard**, par un programme ou par des dés. Un mot de passe choisi par un humain est beaucoup moins imprévisible que ce que dit la formule, puisque l'attaquant essaie d'abord les choix humains. `Marseille2026!` fait 14 caractères pris parmi 95, soit 92 bits selon la formule ; son entropie réelle, face à un outil de cassage, est de quelques dizaines de bits au mieux. La formule donne une **borne haute**, pas une garantie.
+
+## ce que recommande la CNIL
+
+En 2022, la CNIL a mis à jour ses recommandations. Elle raisonne justement en entropie : pour un mot de passe utilisé **seul**, sans autre protection, elle fixe un minimum de **80 bits**, et donne trois exemples de politiques qu'elle juge équivalentes :
+
+- au moins **12 caractères** avec majuscules, minuscules, chiffres et caractères spéciaux ;
+- au moins **14 caractères** avec majuscules, minuscules et chiffres, sans caractère spécial obligatoire ;
+- une **phrase de passe** d'au moins **7 mots**.
+
+Quand le service ajoute d'autres protections, comme une limitation des tentatives ou un blocage temporaire après plusieurs échecs, les exigences sur le mot de passe peuvent être allégées, parce que les essais en ligne deviennent très lents. C'est pourquoi le code à 4 chiffres d'une carte bancaire, avec ses 13 bits, suffit : la carte se bloque après trois erreurs.
+
+D'autres pratiques anciennes ont été abandonnées ou sont déconseillées par les références récentes, comme celles du NIST américain. Forcer le **changement périodique**, par exemple tous les 90 jours, pousse les utilisateurs vers des variations prévisibles, `Printemps2026!` puis `Ete2026!`, et affaiblit les mots de passe au lieu de les renforcer. On ne change un mot de passe que s'il y a une raison de le croire compromis. De même, les **indices** et les **questions secrètes** (« nom de jeune fille de votre mère ») sont des portes dérobées dont la réponse se trouve souvent sur les réseaux sociaux.
+
+## les phrases de passe
+
+Une **phrase de passe** est une suite de mots tirés **au hasard** dans une grande liste : `cactus fourchette orage brioche velours tambour navire`. Elle est longue, donc forte, et facile à retenir, parce qu'un cerveau humain retient bien mieux sept mots qu'une douzaine de symboles sans lien. Son entropie se calcule par mot, et non par caractère : avec une liste de 7 776 mots, la taille de la liste classique de la méthode *Diceware* qui se tire avec cinq dés, chaque mot apporte 12,9 bits, et sept mots en donnent 90.
+
+Le mot important est **au hasard**. Une phrase que tu inventes, une citation, des paroles de chanson, un proverbe, figurent dans les listes des attaquants. « Je pense donc je suis » est une très mauvaise phrase de passe. Il faut que les mots soient tirés par des dés ou par un générateur, pas par toi.
+
+## la vraie solution : un gestionnaire de mots de passe
+
+Un mot de passe différent, long et aléatoire pour chacun de tes cent comptes : personne ne peut retenir ça. C'est pourquoi la recommandation centrale de l'ANSSI, de la CNIL et de Cybermalveillance.gouv.fr est d'utiliser un **gestionnaire de mots de passe**.
+
+Un gestionnaire est un **coffre-fort chiffré** qui contient tous tes mots de passe. Tu n'en retiens qu'un seul, le **mot de passe maître**, qui déverrouille le coffre. Le gestionnaire génère pour chaque site un mot de passe aléatoire de 20 caractères ou plus, le mémorise et le remplit à ta place. Il a un bonus de sécurité souvent ignoré : il ne propose de remplir le mot de passe que sur le **vrai** site, celui dont l'adresse correspond. Sur une fausse page d'hameçonnage, il reste muet, et ce silence est une alerte.
+
+Les objections habituelles ont des réponses. « Tous mes œufs dans le même panier ? » Oui, mais un panier très solide, chiffré avec ton mot de passe maître, contre des dizaines de paniers percés par la réutilisation. « Et si le gestionnaire se fait pirater ? » Les bons gestionnaires chiffrent le coffre **sur ton appareil** : le serveur ne stocke qu'un bloc chiffré, inutilisable sans le mot de passe maître. Il existe des gestionnaires libres qui fonctionnent sans aucun serveur, comme KeePassXC, des services synchronisés, et les gestionnaires intégrés aux navigateurs et aux téléphones, qui sont une bonne solution de départ.
+
+Le mot de passe maître, lui, doit être excellent : une phrase de passe de sept mots tirés au hasard est un choix idéal. Et le coffre mérite la double authentification, sujet de la prochaine leçon.
+
+## évaluer une politique de mots de passe
+
+Voici trois politiques rencontrées sur de vrais sites. Évalue-les avant de lire l'analyse.
+
+| Politique | Analyse |
+|---|---|
+| « 8 caractères minimum, dont une majuscule, un chiffre et un caractère spécial, à changer tous les 90 jours » | Trop courte : environ 52 bits au mieux, bien moins en pratique. Les règles de composition poussent vers `Soleil1!`. Le changement périodique aggrave les choses. |
+| « Entre 6 et 12 caractères, lettres et chiffres uniquement » | Mauvaise, et révélatrice : une **longueur maximale** courte et des caractères interdits suggèrent que le site stocke le mot de passe tel quel, ou dans un champ trop court. Un service correct accepte les phrases longues. |
+| « 14 caractères minimum, tous caractères acceptés, comparaison avec une liste de mots de passe ayant fui, blocage temporaire après 10 échecs, double authentification proposée » | Bonne : conforme aux exemples de la CNIL, refuse les mots de passe connus des attaquants, freine les essais en ligne, et offre un second facteur. |
+
+## à toi de jouer
+
+Le programme ci-dessous estime, pour plusieurs entropies, le temps qu'il faudrait pour tout essayer à un rythme de 10 milliards d'essais par seconde, réaliste pour un cassage hors ligne d'empreintes rapides. Exécute-le, puis ajoute tes propres cas : un code PIN à 6 chiffres, une phrase de passe de 5 mots Diceware.
+
+<CodePlayground language="python" starterCode={`import math
+
+VITESSE = 10_000_000_000  # essais par seconde
+
+def duree(bits):
+    secondes = 2 ** bits / VITESSE
+    for unite, taille in [('ans', 31_557_600), ('jours', 86_400), ('heures', 3_600), ('minutes', 60)]:
+        if secondes >= taille:
+            return f'{secondes / taille:,.0f} {unite}'.replace(',', ' ')
+    return f'{secondes:.3f} secondes'
+
+cas = [
+    ('8 minuscules au hasard', 8 * math.log2(26)),
+    ('8 caractères quelconques au hasard', 8 * math.log2(95)),
+    ('12 caractères quelconques au hasard', 12 * math.log2(95)),
+    ('16 lettres et chiffres au hasard', 16 * math.log2(62)),
+    ('4 mots Diceware', 4 * math.log2(7776)),
+    ('7 mots Diceware', 7 * math.log2(7776)),
+]
+for nom, bits in cas:
+    print(f'{nom:38} {bits:6.1f} bits   {duree(bits)}')`} />
+
+À toi d'écrire le calcul. `solution(longueur, taille_alphabet)` renvoie l'entropie d'un mot de passe **aléatoire**, arrondie à une décimale. Le module `math` fournit `math.log2`.
+
+<PythonChallenge id="f1-mdp-entropie" title="L'entropie d'un mot de passe aléatoire" description="Renvoie longueur × log2(taille_alphabet), arrondi à une décimale avec round(..., 1)." starterCode="import math
+
+def solution(longueur, taille_alphabet):
+    return 0.0" tests={[{ input: "solution(8, 26)", expected: "37.6" }, { input: "solution(12, 94)", expected: "78.7" }, { input: "solution(14, 62)", expected: "83.4" }, { input: "solution(1, 2)", expected: "1.0", label: "Un bit" }, { input: "solution(0, 94)", expected: "0.0", label: "Mot de passe vide" }]} />
+
+Maintenant, un **estimateur naïf**, du genre qu'on trouve sous les champs de mot de passe. `solution(mdp)` devine la taille de l'alphabet d'après les familles de caractères présentes (26 si au moins une minuscule, plus 26 si au moins une majuscule, plus 10 si au moins un chiffre, plus 33 si au moins un autre caractère, espace compris), puis renvoie l'entropie arrondie à une décimale, ou `0.0` pour un mot de passe vide. Les méthodes `c.islower()`, `c.isupper()`, `c.isdigit()` et `c.isalnum()` t'aideront.
+
+<PythonChallenge id="f1-mdp-estimateur" title="Un estimateur naïf" description="Déduis la taille de l'alphabet des familles de caractères présentes (26, 26, 10, 33), puis renvoie len(mdp) × log2(taille), arrondi à une décimale. 0.0 si le mot de passe est vide." starterCode="import math
+
+def solution(mdp):
+    taille = 0
+    # ajoute 26, 26, 10 ou 33 selon les familles présentes
+    if taille == 0:
+        return 0.0
+    return round(len(mdp) * math.log2(taille), 1)" tests={[{ input: "solution('motdepasse')", expected: "47.0" }, { input: "solution('azerty')", expected: "28.2" }, { input: "solution('MotDePasse2026')", expected: "83.4", label: "Au-dessus de 80 bits ?" }, { input: "solution('Tr0ub4dour&3')", expected: "78.8" }, { input: "solution('7394')", expected: "13.3" }, { input: "solution('')", expected: "0.0", label: "Vide" }]} />
+
+Regarde bien le troisième test : `MotDePasse2026` obtient **83,4 bits**, au-dessus du seuil de la CNIL. Pourtant, c'est « mot de passe » avec des majuscules et une année, l'une des premières combinaisons qu'essaie un outil de cassage. Ton estimateur n'est pas faux, il mesure ce qu'il sait mesurer : la **taille de l'espace** si le mot de passe avait été tiré au hasard. Les estimateurs sérieux, comme la bibliothèque zxcvbn, cherchent en plus les mots du dictionnaire, les années, les suites du clavier et les substitutions. Retiens la leçon : aucune jauge ne remplace un mot de passe **généré**.
+
+## les pièges
+
+- **Réutiliser un mot de passe.** C'est l'erreur la plus grave, parce qu'aucune force ne protège d'une fuite ailleurs.
+- **Confondre complexité apparente et force.** `Marseille2026!` coche toutes les cases et tombe en quelques secondes.
+- **Inventer sa phrase de passe.** Citations, paroles, proverbes sont dans les listes. Les mots doivent être tirés au hasard.
+- **Faire confiance aux jauges.** Elles mesurent la forme, pas la prévisibilité.
+- **Changer régulièrement sans raison.** On obtient des variations prévisibles. On change quand il y a un doute.
+- **Répondre sincèrement aux questions secrètes.** La réponse est souvent publique. Traite-les comme un mot de passe de plus, généré et rangé dans le gestionnaire.
+- **Négliger le mot de passe maître.** C'est la seule clé à retenir : une phrase de passe tirée au hasard, et la double authentification.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.cnil.fr/fr/mots-de-passe-des-recommandations-de-securite-minimales-pour-les-entreprises-et-les-particuliers" description="Les recommandations de 2022, avec les trois exemples de politiques équivalentes">CNIL : les recommandations sur les mots de passe</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/bonnes-pratiques/mots-de-passe" description="La fiche pratique grand public, avec les gestionnaires de mots de passe">Cybermalveillance.gouv.fr : les mots de passe</ExternalLink>
+
+<ExternalLink href="https://haveibeenpwned.com/" description="Vérifier si une adresse e-mail figure dans une fuite de données connue, en anglais">Have I Been Pwned</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Contre quelle attaque la force d'un mot de passe ne sert-elle à rien ?" options={["La réutilisation d'un mot de passe qui a fui d'un autre service", "Le cassage hors ligne", "Les essais en ligne", "Les dictionnaires"]} correct={0} explanation="Si le même mot de passe a fui ailleurs, l'attaquant le connaît déjà : sa longueur ne change rien. Un mot de passe par compte est indispensable." />
+  <Quiz id="q-2" question="Pourquoi le cassage hors ligne est-il bien plus rapide que les essais en ligne ?" options={["Parce que l'attaquant calcule les empreintes sur ses propres machines, sans serveur pour le ralentir ou le bloquer", "Parce qu'Internet est lent", "Parce que les empreintes se déchiffrent", "Parce qu'il n'y a pas de mot de passe"]} correct={0} explanation="Avec la base volée, chaque essai est un simple calcul local : des milliards par seconde avec une fonction de hachage rapide." />
+  <Quiz id="q-3" question="Quelle est l'entropie d'un mot de passe de 10 chiffres tirés au hasard ?" options={["10 bits", "33 bits environ", "100 bits", "3,3 bits"]} correct={1} explanation="Chaque chiffre apporte log2(10), soit 3,3 bits : 10 × 3,3 = 33 bits environ." />
+  <Quiz id="q-4" question="Quel changement renforce le plus un mot de passe aléatoire de 12 caractères ?" options={["Remplacer un caractère par un symbole", "Mettre la première lettre en majuscule", "Ajouter l'année à la fin", "Ajouter 4 caractères de longueur"]} correct={3} explanation="Chaque caractère aléatoire ajoute environ 6 bits. La longueur pèse bien plus que la variété des symboles, et l'année est prévisible." />
+  <Quiz id="q-5" question="Laquelle de ces politiques correspond à un exemple de la CNIL ?" options={["Une phrase de passe d'au moins 7 mots", "8 caractères avec un symbole", "Un code de 6 chiffres", "12 caractères changés tous les mois"]} correct={0} explanation="La CNIL cite 12 caractères de quatre familles, 14 caractères de trois familles, ou une phrase de passe d'au moins 7 mots." />
+  <Quiz id="q-6" question="Pourquoi un gestionnaire de mots de passe aide-t-il aussi contre l'hameçonnage ?" options={["Parce qu'il ne remplit le mot de passe que sur le site dont l'adresse correspond", "Parce qu'il bloque les courriels", "Parce qu'il chiffre Internet", "Il n'aide pas"]} correct={0} explanation="Sur une fausse page, l'adresse ne correspond pas : le gestionnaire ne propose rien, ce qui doit alerter." />
+  <Quiz id="q-7" question="Un site impose entre 6 et 12 caractères, sans caractères spéciaux. Que peut-on en penser ?" options={["C'est une politique moderne", "C'est la recommandation de la CNIL", "Rien de particulier", "C'est un signe que le mot de passe est peut-être stocké de façon inadaptée, et la politique est trop faible"]} correct={3} explanation="Un service qui stocke des empreintes n'a aucune raison de limiter la longueur ni les caractères : cette contrainte est un signal d'alerte." />
+</QuizGroup>
+
+## à retenir
+
+- Quatre voies : **deviner en ligne**, **casser hors ligne** après une fuite, **réutiliser** un mot de passe qui a fui, **se le faire donner**. La force ne protège que des deux premières.
+- Les attaquants essaient d'abord les **choix humains** : fuites, dictionnaires, règles (majuscule, année, `!`, `4` pour `a`).
+- Entropie d'un mot de passe **aléatoire** : longueur × log2(alphabet). La **longueur** compte le plus. Pour un choix humain, la formule **surestime**.
+- CNIL : **80 bits** minimum pour un mot de passe seul ; 12 caractères de quatre familles, 14 de trois, ou une phrase de passe de **7 mots tirés au hasard**.
+- Pas de changement périodique sans raison, pas de questions secrètes sincères.
+- La solution : un **gestionnaire de mots de passe**, un mot de passe **unique et généré** par compte, un **mot de passe maître** en phrase de passe, et la double authentification.

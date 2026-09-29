@@ -1,0 +1,185 @@
+---
+refCode: CL-LSN-01047-V01
+slug: fondamentaux-la-double-authentification
+title: "La double authentification"
+description: "Ajouter une deuxième preuve à son mot de passe : les trois familles de facteurs, le fonctionnement des codes à six chiffres qui changent toutes les trente secondes (TOTP), les notifications à valider, les clés physiques et les clés d'accès (passkeys) qui résistent à l'hameçonnage, pourquoi le SMS est le plus faible des seconds facteurs, les codes de secours, et par quels comptes commencer. Avec un générateur TOTP à faire tourner et la vérification côté serveur à programmer."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01046-V01"]
+---
+
+Même excellent, un mot de passe reste un secret qu'on peut te voler : une fausse page de connexion, un logiciel espion, une fuite chez un prestataire. Le jour où cela arrive, qu'est-ce qui empêche l'attaquant d'entrer ? Rien, si le mot de passe est la seule porte. La **double authentification**, qu'on appelle aussi authentification à deux facteurs ou multifacteur, ajoute une deuxième porte, d'une autre nature : un objet que tu possèdes, ton téléphone ou une clé physique. Un attaquant à l'autre bout du monde peut connaître ton mot de passe ; il n'a pas ton téléphone dans sa poche. C'est, avec le gestionnaire de mots de passe, la mesure qui apporte le plus de sécurité pour le moins d'effort.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- citer les trois familles de facteurs d'authentification ;
+- expliquer comment une application génère un code à six chiffres sans connexion réseau ;
+- comparer SMS, application, notification, clé physique et clé d'accès ;
+- expliquer pourquoi certaines méthodes résistent à l'hameçonnage et d'autres non ;
+- gérer les codes de secours et la perte de son téléphone ;
+- choisir les comptes à protéger en premier.
+
+## pourquoi ça compte
+
+Les grands fournisseurs de services l'ont mesuré sur des millions de comptes : un second facteur bloque l'immense majorité des prises de contrôle automatisées, celles qui reposent sur des mots de passe volés ou réutilisés. Autrement dit, la double authentification neutralise presque entièrement le bourrage d'identifiants de la leçon précédente. En entreprise, elle est devenue une exigence de base : l'ANSSI la recommande pour tout accès sensible, et de nombreuses cyberattaques contre des organisations ont commencé par un compte qui ne l'avait pas. Comprendre ses variantes, c'est aussi comprendre pourquoi certaines ont été contournées, et lesquelles ne l'ont pas été.
+
+## trois familles de facteurs
+
+Pour prouver qui tu es, tu peux présenter trois sortes de preuves :
+
+- **ce que tu sais** : un mot de passe, un code PIN, la réponse à une question ;
+- **ce que tu possèdes** : un téléphone, une carte bancaire, une clé physique, un badge ;
+- **ce que tu es** : une empreinte digitale, ton visage, ta voix.
+
+L'authentification est **multifacteur** quand elle combine des preuves de familles **différentes**. Deux mots de passe, ce n'est pas de la double authentification : un attaquant qui a volé l'un peut voler l'autre de la même façon. Un mot de passe et un code reçu sur ton téléphone, si : il faudrait te voler un secret **et** un objet.
+
+Tu utilises déjà ce principe sans y penser. Ta carte bancaire, c'est un objet (la carte) et un savoir (le code). Le paiement en ligne avec validation dans l'application de ta banque, généralisé en Europe par la deuxième directive sur les services de paiement (DSP2), en est une autre forme.
+
+## les codes qui changent toutes les trente secondes
+
+La forme la plus répandue est l'application d'authentification, qui affiche un code à six chiffres renouvelé toutes les trente secondes. Ce mécanisme, appelé **TOTP** (*time-based one-time password*, mot de passe à usage unique basé sur le temps), est normalisé et fonctionne avec n'importe quelle application compatible. Et il est élégant : ton téléphone n'a **pas besoin de réseau** pour calculer le code.
+
+Au moment de l'activation, le site génère un **secret partagé**, une suite d'octets aléatoires, et te l'affiche sous forme de QR code. Ton application le scanne et le garde. Désormais, le site et ton téléphone connaissent tous les deux le même secret, et personne d'autre. Ensuite, à chaque connexion, les deux font le même calcul chacun de leur côté :
+
+1. prendre l'heure actuelle, en secondes depuis le 1er janvier 1970, et la diviser par 30 : on obtient un **compteur** qui augmente de 1 toutes les trente secondes ;
+2. calculer une empreinte du compteur avec le secret, grâce à une fonction appelée HMAC, un hachage « avec clé » : sans le secret, impossible de prévoir le résultat ;
+3. réduire cette empreinte à un nombre de six chiffres.
+
+Si le code que tu tapes est égal à celui que le serveur a calculé, c'est que tu possèdes le secret, donc le téléphone. Un code volé ne sert que quelques dizaines de secondes, et le secret lui-même ne circule jamais sur le réseau après l'activation.
+
+<Diagram caption="TOTP : deux calculs identiques, sans échange sur le réseau">
+flowchart TD
+  A["Activation : le site génère un secret"] -->|"QR code affiché une seule fois"| B["L'application du téléphone garde le secret"]
+  A --> C["Le serveur garde le même secret"]
+  B --> D["Téléphone : heure divisée par 30, HMAC avec le secret, 6 chiffres"]
+  C --> E["Serveur : même calcul, à la même heure"]
+  D --> F["L'utilisateur tape le code"]
+  F --> G["Les deux résultats sont-ils égaux ?"]
+  E --> G
+</Diagram>
+
+Deux conséquences pratiques. D'abord, l'horloge du téléphone doit être à l'heure : si elle dérive de plusieurs minutes, les codes sont refusés. Les serveurs tolèrent en général un décalage d'une période, en acceptant aussi le code précédent et le suivant. Ensuite, le QR code d'activation **est** le secret : quiconque le photographie peut générer tes codes. On ne le partage jamais, et on ne le laisse pas traîner dans une capture d'écran.
+
+## les autres méthodes, de la plus faible à la plus forte
+
+**Le code par SMS.** Le site t'envoie un code par message. C'est mieux que rien, et c'est parfois la seule option, mais c'est la méthode la plus faible. Le SMS voyage en clair dans le réseau téléphonique, des failles des protocoles entre opérateurs ont permis de l'intercepter, et surtout, un attaquant peut obtenir un **transfert de ta ligne** : il se fait passer pour toi auprès de ton opérateur, récupère une nouvelle carte SIM à ton numéro, et reçoit tes codes à ta place. On appelle cette fraude l'échange de carte SIM, ou *SIM swapping*. Enfin, le numéro de téléphone est souvent aussi un moyen de réinitialiser le compte, ce qui en fait une double porte d'entrée.
+
+**La notification à valider.** L'application du service affiche « Est-ce bien vous qui vous connectez ? » et tu touches Oui. C'est pratique et plus sûr que le SMS, mais un attaquant qui a ton mot de passe peut déclencher des dizaines de notifications, à 3 heures du matin, jusqu'à ce qu'une victime excédée ou endormie accepte. Cette **fatigue des notifications** a servi dans des attaques réelles contre de grandes entreprises. Les versions récentes demandent de taper un nombre affiché à l'écran de connexion, ce qui déjoue la validation machinale. Règle d'or : une demande que tu n'as pas provoquée se **refuse**, et elle signifie que ton mot de passe est connu.
+
+**Le code TOTP.** Plus solide que le SMS : pas de réseau téléphonique, pas de ligne à détourner. Mais il a une limite importante : il ne sait pas **où** tu le tapes. Sur une fausse page d'hameçonnage bien faite, tu tapes ton mot de passe **et** ton code, que l'attaquant relaie en direct sur le vrai site dans les trente secondes. Des kits d'hameçonnage automatisent ce relais.
+
+**La clé physique et la clé d'accès.** Les clés physiques, de petits objets USB ou sans contact, et les **clés d'accès** (*passkeys*), stockées dans ton téléphone ou ton ordinateur, reposent sur les normes FIDO2 et WebAuthn. Elles utilisent la cryptographie à clé publique : l'appareil garde une clé privée qui ne le quitte jamais, et prouve qu'il la possède en signant un défi envoyé par le site. Surtout, la signature inclut **l'adresse du site** qui la demande, vérifiée par le navigateur. Sur un faux site, l'adresse ne correspond pas, et la clé ne répond tout simplement pas. Ce sont les seules méthodes qui **résistent à l'hameçonnage** par construction, sans compter sur ta vigilance. Les clés d'accès vont plus loin et remplacent le mot de passe lui-même : le téléphone te demande ton empreinte ou ton code de déverrouillage, et c'est tout. Les grands services les proposent désormais, et c'est la direction que prend toute l'industrie.
+
+| Méthode | Contre un mot de passe volé | Contre une fausse page qui relaie | Points faibles |
+|---|---|---|---|
+| SMS | oui | non | échange de carte SIM, interception |
+| Notification | oui | non | fatigue des notifications |
+| Code TOTP | oui | non | relais en direct, secret à protéger |
+| Clé physique ou clé d'accès | oui | **oui** | il faut prévoir une clé de secours |
+
+## codes de secours et perte du téléphone
+
+La question qui fait hésiter tout le monde : et si je perds mon téléphone ? Les services y répondent par des **codes de secours** : une liste de codes à usage unique, fournie à l'activation, qui permettent de se connecter sans le second facteur. Imprime-les ou range-les dans ton gestionnaire de mots de passe, **pas** dans une note du téléphone que tu risques de perdre. Pour les comptes les plus importants, enregistre deux facteurs : l'application et une clé physique, ou deux clés.
+
+Certaines applications d'authentification savent sauvegarder leurs secrets de façon chiffrée, ou les synchroniser entre plusieurs appareils, ce qui facilite un changement de téléphone. C'est un compromis entre commodité et sécurité ; l'essentiel est d'avoir **un** plan de secours, testé, avant d'en avoir besoin.
+
+## par quels comptes commencer
+
+Reprends le modèle de menace de la première leçon du module. Active la double authentification d'abord là où une prise de contrôle ferait le plus de dégâts :
+
+1. **ta messagerie principale**, la clé de réinitialisation de tout le reste ;
+2. **ton gestionnaire de mots de passe**, qui contient tous les autres ;
+3. **tes comptes financiers** : banque, paiement en ligne, sites marchands qui gardent ta carte ;
+4. **tes comptes Apple, Google ou Microsoft**, qui contrôlent tes appareils et tes sauvegardes ;
+5. **tes réseaux sociaux**, qui servent à escroquer tes proches ;
+6. **tes comptes professionnels**, qui ouvrent la porte de ton employeur.
+
+Dans chaque cas, choisis la méthode la plus forte proposée : clé d'accès ou clé physique si possible, sinon application TOTP, et le SMS seulement à défaut. Et vérifie les réglages de récupération : un compte protégé par une clé physique mais récupérable par un simple SMS n'est pas plus solide que le SMS.
+
+## à toi de jouer
+
+Le programme ci-dessous est un vrai générateur TOTP, identique à ce que fait une application d'authentification, en une vingtaine de lignes. Il utilise le secret d'exemple de la norme (la RFC 6238) et affiche le code pour l'heure actuelle et les deux périodes voisines. Exécute-le plusieurs fois à quelques secondes d'intervalle : le code change quand le compteur passe à la période suivante.
+
+<CodePlayground language="python" starterCode={`import hmac, hashlib, struct, time
+
+SECRET = b'12345678901234567890'   # le secret d'exemple de la RFC 6238
+
+def hotp(compteur, chiffres=6):
+    empreinte = hmac.new(SECRET, struct.pack('>Q', compteur), hashlib.sha1).digest()
+    decalage = empreinte[-1] & 15                     # troncature dynamique
+    nombre = struct.unpack('>I', empreinte[decalage:decalage + 4])[0] & 0x7FFFFFFF
+    return str(nombre % 10 ** chiffres).zfill(chiffres)
+
+def totp(instant):
+    return hotp(int(instant) // 30)
+
+maintenant = time.time()
+print('compteur actuel :', int(maintenant) // 30)
+print('secondes restantes :', 30 - int(maintenant) % 30)
+for ecart, nom in [(-30, 'période précédente'), (0, 'maintenant'), (30, 'période suivante')]:
+    print(f'{nom:20} {totp(maintenant + ecart)}')
+
+# vérification avec la valeur publiée dans la norme pour l'instant 59
+print('instant 59 :', totp(59), '(la norme donne 287082)')`} />
+
+À toi d'écrire la partie **serveur**. `solution(code, instant)` doit accepter le code s'il correspond à la période de l'instant donné, **ou** à la période précédente, **ou** à la suivante, pour tolérer un léger décalage d'horloge, et le refuser sinon. Le code de départ contient déjà la fonction `hotp` : il ne reste qu'à calculer le compteur et à comparer.
+
+<PythonChallenge id="f1-2fa-verification" title="Vérifier un code TOTP côté serveur" description="Renvoie True si code est égal au code HOTP du compteur instant // 30, ou du compteur précédent, ou du suivant ; False sinon." starterCode="import hmac, hashlib, struct
+
+SECRET = b'12345678901234567890'
+
+def hotp(compteur, chiffres=6):
+    empreinte = hmac.new(SECRET, struct.pack('>Q', compteur), hashlib.sha1).digest()
+    decalage = empreinte[-1] & 15
+    nombre = struct.unpack('>I', empreinte[decalage:decalage + 4])[0] & 0x7FFFFFFF
+    return str(nombre % 10 ** chiffres).zfill(chiffres)
+
+def solution(code, instant):
+    compteur = instant // 30
+    # accepte le compteur, le précédent et le suivant
+    return False" tests={[{ input: "solution('287082', 59)", expected: "True", label: "Le bon code, à l'heure" }, { input: "solution('287082', 80)", expected: "True", label: "Période précédente tolérée" }, { input: "solution('287082', 100)", expected: "False", label: "Trop vieux : deux périodes" }, { input: "solution('081804', 1111111109)", expected: "True", label: "Un code qui commence par 0" }, { input: "solution('081804', 1111111049)", expected: "False", label: "Trop en avance" }, { input: "solution('000000', 59)", expected: "False", label: "Un code inventé" }]} />
+
+Remarque le quatrième test : le code `081804` commence par un zéro. Si la fonction renvoyait un nombre au lieu d'un texte complété par `zfill`, ce zéro disparaîtrait et le bon code serait refusé. Un vrai serveur ajoute encore deux protections : il refuse qu'un même code soit utilisé **deux fois**, et il limite le nombre d'essais, sans quoi un attaquant pourrait essayer le million de combinaisons.
+
+## les pièges
+
+- **Croire que deux mots de passe font deux facteurs.** Il faut deux familles différentes : savoir et posséder, par exemple.
+- **Valider une notification qu'on n'a pas demandée.** Elle signifie que ton mot de passe est connu : refuse, puis change-le.
+- **Taper son code TOTP sur une page arrivée par un lien.** Un code se relaie. Seules les clés physiques et les clés d'accès vérifient l'adresse du site.
+- **Garder les codes de secours sur le téléphone qu'ils doivent remplacer.** Range-les ailleurs : papier ou gestionnaire.
+- **Oublier les options de récupération.** Un compte récupérable par SMS garde la faiblesse du SMS.
+- **Partager le QR code d'activation.** C'est le secret lui-même.
+- **Renoncer par peur de perdre son téléphone.** Un plan de secours règle ce problème ; l'absence de second facteur, rien ne la compense.
+
+## pour aller plus loin
+
+<ExternalLink href="https://cyber.gouv.fr/publications/recommandations-relatives-lauthentification-multifacteur-et-aux-mots-de-passe" description="Le guide de référence de l'ANSSI sur les facteurs, leur robustesse et les mots de passe">ANSSI : authentification multifacteur et mots de passe</ExternalLink>
+
+<ExternalLink href="https://www.rfc-editor.org/rfc/rfc6238" description="La norme qui définit les codes TOTP, avec ses valeurs de test, en anglais">RFC 6238 : TOTP</ExternalLink>
+
+<ExternalLink href="https://passkeys.dev/" description="Le fonctionnement des clés d'accès et les services qui les proposent, en anglais">Passkeys.dev</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Laquelle de ces combinaisons est une vraie authentification à deux facteurs ?" options={["Un mot de passe et une question secrète", "Deux mots de passe différents", "Un identifiant et un mot de passe", "Un mot de passe et un code généré par une application du téléphone"]} correct={3} explanation="Il faut deux familles différentes : ce que tu sais (le mot de passe) et ce que tu possèdes (le téléphone qui génère le code)." />
+  <Quiz id="q-2" question="Comment une application TOTP peut-elle générer un code sans réseau ?" options={["Elle calcule le code à partir d'un secret partagé à l'activation et de l'heure", "Elle devine le code", "Elle reçoit les codes en avance", "Elle utilise le GPS"]} correct={0} explanation="Le téléphone et le serveur connaissent le même secret et la même heure : ils font chacun le même calcul." />
+  <Quiz id="q-3" question="Pourquoi le SMS est-il le second facteur le plus faible ?" options={["Parce qu'il est payant", "Parce qu'il arrive trop tard", "Parce qu'il contient trop de chiffres", "Parce qu'un attaquant peut détourner la ligne par un échange de carte SIM ou intercepter le message"]} correct={3} explanation="Le numéro de téléphone peut être transféré par fraude auprès de l'opérateur, et le SMS n'est pas conçu pour transporter des secrets." />
+  <Quiz id="q-4" question="Tu reçois à 3 h du matin une notification « Est-ce bien vous ? » que tu n'as pas provoquée. Que faire ?" options={["Accepter pour qu'elle s'arrête", "L'ignorer et se rendormir", "Désactiver la double authentification", "Refuser, puis changer le mot de passe du compte, qui est connu d'un attaquant"]} correct={3} explanation="Une demande non sollicitée prouve que quelqu'un a ton mot de passe. Le second facteur vient de t'en protéger : il faut maintenant changer le mot de passe." />
+  <Quiz id="q-5" question="Pourquoi une clé physique FIDO2 résiste-t-elle à l'hameçonnage, contrairement à un code TOTP ?" options={["Parce qu'elle est plus chère", "Parce qu'elle a plus de chiffres", "Parce qu'elle fonctionne sans navigateur", "Parce que sa signature inclut l'adresse du site, vérifiée par le navigateur : sur un faux site, elle ne répond pas"]} correct={3} explanation="Un code TOTP peut être tapé sur une fausse page et relayé. La clé, elle, lie sa réponse au vrai domaine." />
+  <Quiz id="q-6" question="Où ranger les codes de secours d'un compte ?" options={["Dans une note du téléphone", "Dans un courriel à soi-même", "Nulle part, ils sont inutiles", "Sur papier en lieu sûr, ou dans le gestionnaire de mots de passe"]} correct={3} explanation="Ils servent quand le téléphone est perdu : ils ne doivent donc pas dépendre de ce téléphone." />
+  <Quiz id="q-7" question="Quel compte protéger en premier avec la double authentification ?" options={["Le compte d'un forum", "Un compte de jeu", "La messagerie principale", "Le compte d'un site de recettes"]} correct={2} explanation="La messagerie permet de réinitialiser presque tous les autres comptes : c'est la priorité absolue, avec le gestionnaire de mots de passe." />
+</QuizGroup>
+
+## à retenir
+
+- Trois familles de facteurs : ce que tu **sais**, ce que tu **possèdes**, ce que tu **es**. La double authentification en combine **deux familles différentes**.
+- **TOTP** : un secret partagé à l'activation (le QR code), l'heure divisée par 30, un HMAC, six chiffres. Pas de réseau nécessaire ; le serveur tolère une période d'écart.
+- Du plus faible au plus fort : **SMS**, **notification**, **code TOTP**, **clé physique ou clé d'accès**. Seules les dernières résistent à l'hameçonnage, parce qu'elles vérifient l'adresse du site.
+- Une notification non sollicitée se **refuse**, et révèle un mot de passe compromis.
+- **Codes de secours** hors du téléphone, et un second facteur de secours pour les comptes clés.
+- Priorités : **messagerie**, **gestionnaire**, **banque**, comptes d'appareils, réseaux sociaux, comptes professionnels.

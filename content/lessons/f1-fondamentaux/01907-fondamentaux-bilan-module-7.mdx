@@ -1,0 +1,164 @@
+---
+refCode: CL-LSN-01907-V01
+slug: fondamentaux-bilan-module-7
+title: "Bilan du module 7 : l'audit de ta sécurité numérique"
+description: "Le quiz du module Les bons réflexes de sécurité numérique, puis le projet : auditer son propre usage numérique (comptes, mots de passe, double authentification, appareils, mises à jour, sauvegardes, réseaux, préparation aux incidents), en tirer un score et un plan d'action priorisé, puis l'appliquer. Avec une grille d'audit, un audit modèle commenté et un calculateur de score à programmer."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 120
+xpReward: 400
+prerequisites: ["CL-LSN-01051-V01"]
+---
+
+Tu connais maintenant les réflexes qui écartent l'immense majorité des attaques visant les particuliers : des mots de passe uniques rangés dans un gestionnaire, la double authentification, la méfiance envers les messages pressants, les mises à jour, les sauvegardes, la prudence sur les réseaux publics, et la marche à suivre quand quelque chose tourne mal. Savoir, cependant, ne protège de rien : seule l'**application** compte. Ce bilan vérifie tes connaissances, puis te demande de faire ce que font les auditeurs de sécurité pour une entreprise, mais sur toi-même : inventorier, évaluer, prioriser, corriger. À la fin, ta sécurité numérique sera réellement meilleure qu'au début.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- dresser l'inventaire de tes comptes et de tes appareils ;
+- évaluer ta situation réelle face à chaque réflexe du module ;
+- hiérarchiser les corrections selon le risque et l'effort ;
+- rédiger un plan d'action précis, daté et vérifiable ;
+- appliquer les corrections les plus urgentes ;
+- préparer ta réaction à un incident avant qu'il arrive.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="f1m7-q-1" question="Pourquoi un particulier sans rien de « précieux » est-il quand même attaqué ?" options={["Parce que les attaquants le choisissent au hasard dans l'annuaire", "Parce que la loi l'impose", "Parce que la plupart des attaques sont automatisées et visent tous ceux qui sont joignables", "Il ne l'est jamais"]} correct={2} explanation="Les attaques opportunistes essaient tout le monde et exploitent ceux qui cèdent : mots de passe réutilisés, failles non corrigées, clics." />
+  <Quiz id="f1m7-q-2" question="Quel compte faut-il protéger en premier ?" options={["La messagerie principale", "Un compte de jeu", "Un forum", "Un site de recettes"]} correct={0} explanation="La messagerie permet de réinitialiser presque tous les autres comptes." />
+  <Quiz id="f1m7-q-3" question="Contre quoi un mot de passe long et aléatoire ne protège-t-il pas ?" options={["Le cassage hors ligne", "Sa réutilisation sur un site qui a subi une fuite", "Les essais en ligne", "Les dictionnaires"]} correct={1} explanation="Un mot de passe qui a fui est connu, quelle que soit sa force : un mot de passe unique par compte est indispensable." />
+  <Quiz id="f1m7-q-4" question="Quelle est l'entropie d'un mot de passe de 12 caractères tirés au hasard parmi 62 ?" options={["Environ 12 bits", "Environ 62 bits", "Environ 71 bits", "Environ 744 bits"]} correct={2} explanation="12 × log2(62), soit 12 × 5,95, environ 71 bits." />
+  <Quiz id="f1m7-q-5" question="Que recommande la CNIL pour une phrase de passe utilisée seule ?" options={["Au moins 3 mots", "Une phrase célèbre", "Les paroles d'une chanson préférée", "Au moins 7 mots"]} correct={3} explanation="Au moins 7 mots, tirés au hasard : une citation ou des paroles figurent dans les listes des attaquants." />
+  <Quiz id="f1m7-q-6" question="Quel second facteur résiste à une fausse page qui relaie tes saisies en direct ?" options={["Le SMS", "Le code TOTP", "La clé physique FIDO2 ou la clé d'accès", "La notification à valider"]} correct={2} explanation="La clé lie sa réponse à l'adresse du site vérifiée par le navigateur : sur un faux site, elle ne répond pas." />
+  <Quiz id="f1m7-q-7" question="Tu reçois une demande de validation de connexion que tu n'as pas provoquée. Qu'est-ce que cela signifie ?" options={["Un bug du service", "Que ton téléphone est en panne", "Rien", "Que quelqu'un connaît ton mot de passe"]} correct={3} explanation="Le second facteur vient de bloquer l'attaquant : refuse, puis change le mot de passe." />
+  <Quiz id="f1m7-q-8" question="Quel est le vrai domaine de https://ameli.fr.dossier-assure.com/connexion ?" options={["ameli.fr", "connexion", "dossier-assure.com", "fr.dossier-assure"]} correct={2} explanation="On lit l'hôte, avant la première barre oblique, de droite à gauche : .com, puis dossier-assure." />
+  <Quiz id="f1m7-q-9" question="Un faux conseiller bancaire te demande de valider une annulation dans ton application. Que faire ?" options={["Valider", "Donner le code reçu par SMS", "Rappeler le numéro qu'il donne", "Raccrocher et rappeler la banque au numéro inscrit sur la carte"]} correct={3} explanation="La validation autoriserait en réalité l'opération frauduleuse." />
+  <Quiz id="f1m7-q-10" question="Pourquoi la publication d'un correctif rend-elle urgente sa mise en place ?" options={["Parce que le correctif expire", "Parce que l'éditeur l'exige", "Elle ne la rend pas urgente", "Parce qu'elle révèle la faille aux attaquants, qui visent ensuite les machines non mises à jour"]} correct={3} explanation="Comparer les versions montre ce qui a été corrigé ; les attaques suivent vite." />
+  <Quiz id="f1m7-q-11" question="Pourquoi un service de synchronisation ne suffit-il pas comme sauvegarde ?" options={["Il est trop lent", "Il ne marche qu'en Wi-Fi", "Il reproduit aussi les suppressions et les fichiers chiffrés par un rançongiciel", "Il suffit"]} correct={2} explanation="Une sauvegarde conserve des états passés ; une synchronisation copie l'état présent, même catastrophique." />
+  <Quiz id="f1m7-q-12" question="Sur un Wi-Fi public, que voit l'opérateur d'une connexion HTTPS ?" options={["Tout", "Le nom du site, l'adresse du serveur, les volumes et les horaires", "Les mots de passe", "Rien du tout"]} correct={1} explanation="HTTPS chiffre le contenu ; les métadonnées restent visibles." />
+  <Quiz id="f1m7-q-13" question="Qu'ajoute souvent un attaquant dans une messagerie piratée pour garder la main ?" options={["Une règle de transfert des courriels et de nouvelles options de récupération", "Un nouveau thème", "Des contacts", "Une signature"]} correct={0} explanation="C'est pourquoi on vérifie ces réglages, en plus de changer le mot de passe et de fermer les sessions." />
+  <Quiz id="f1m7-q-14" question="Quel est le premier geste face à un rançongiciel ?" options={["Débrancher l'appareil du réseau et des disques", "Payer", "Brancher la sauvegarde", "Redémarrer"]} correct={0} explanation="On contient d'abord, pour protéger les autres appareils et les sauvegardes." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées : le projet les applique toutes.
+
+## projet
+
+### l'énoncé
+
+Réalise l'**audit de ta propre sécurité numérique**, puis rédige et commence à appliquer ton **plan d'action**. C'est exactement la démarche d'un auditeur en entreprise : un inventaire, une grille d'évaluation, un constat chiffré, des recommandations priorisées.
+
+<Diagram caption="Les quatre temps de l'audit">
+flowchart LR
+  A["Inventorier : comptes et appareils"] --> B["Évaluer : la grille, point par point"]
+  B --> C["Prioriser : risque et effort"]
+  C --> D["Agir : le plan daté, puis vérifier"]
+  D -.->|"dans six mois"| B
+</Diagram>
+
+<Callout type="warning">
+Cet audit contient des informations sensibles : la liste de tes comptes, tes faiblesses, tes appareils. Rédige-le pour toi, ne le partage pas, et n'y écris **aucun** mot de passe ni code de secours. Si tu le conserves, range-le dans ton gestionnaire de mots de passe ou dans un fichier chiffré.
+</Callout>
+
+### étape 1 : l'inventaire
+
+Dresse la liste de tes **comptes**, en commençant par les plus importants : messagerie, banque, paiement en ligne, compte Apple, Google ou Microsoft, gestionnaire de mots de passe, administration (impôts, santé, retraite), réseaux sociaux, sites marchands, comptes professionnels ou scolaires. Pour t'aider, cherche dans ta messagerie les mots « bienvenue », « confirmez votre adresse » ou « votre compte » : ils révèlent des inscriptions oubliées. Puis la liste de tes **appareils** : ordinateurs, téléphones, tablettes, box, objets connectés.
+
+Pour chaque compte, note sa **criticité** : **haute** s'il donne accès à ton argent, à ton identité ou à d'autres comptes ; **moyenne** s'il contient des données personnelles ou peut servir à tromper tes proches ; **basse** sinon.
+
+### étape 2 : la grille
+
+Évalue chaque point de la grille par **oui** ou **non**. Sois honnête : l'audit ne sert qu'à toi.
+
+| N° | Point de contrôle | Leçon |
+|---|---|---|
+| 1 | Chaque compte de criticité haute a un mot de passe **unique** | les mots de passe |
+| 2 | J'utilise un **gestionnaire de mots de passe** | les mots de passe |
+| 3 | Mon mot de passe maître est une **phrase de passe** d'au moins 7 mots tirés au hasard | les mots de passe |
+| 4 | Ma **messagerie** a la double authentification, par application ou clé | la double authentification |
+| 5 | Mes autres comptes critiques ont la **double authentification** | la double authentification |
+| 6 | Mes **codes de secours** sont rangés hors du téléphone | la double authentification |
+| 7 | J'ai vérifié mon adresse sur **Have I Been Pwned** et changé les mots de passe concernés | les mots de passe |
+| 8 | Mes appareils installent les **mises à jour automatiquement** | mettre à jour et sauvegarder |
+| 9 | Aucun appareil utilisé pour la banque n'est **en fin de support** | mettre à jour et sauvegarder |
+| 10 | Mes données importantes suivent la règle **3-2-1**, avec une copie déconnectée | mettre à jour et sauvegarder |
+| 11 | J'ai **restauré** au moins un fichier depuis ma sauvegarde ces six derniers mois | mettre à jour et sauvegarder |
+| 12 | Mon téléphone et mon ordinateur sont verrouillés par un **code solide** et chiffrés | que faire en cas de problème |
+| 13 | La **localisation et l'effacement à distance** sont activés | que faire en cas de problème |
+| 14 | Ma **box** a un mot de passe d'administration changé, du WPA2 ou WPA3, et le WPS désactivé | les réseaux publics et le Wi-Fi |
+| 15 | Mon téléphone ne se connecte **pas automatiquement** aux réseaux ouverts | les réseaux publics et le Wi-Fi |
+| 16 | J'ai vérifié les **règles de transfert** et les options de récupération de ma messagerie | que faire en cas de problème |
+| 17 | Je connais les numéros et services à contacter en cas d'incident (opposition, 17Cyber) | que faire en cas de problème |
+
+### étape 3 : le score et les priorités
+
+Tous les points ne se valent pas. Les points 1, 2, 4, 8 et 10 sont **critiques** : chacun, à lui seul, écarte une grande famille d'attaques ou de pertes. Compte **3 points** pour chacun d'eux, et **1 point** pour chacun des autres, soit un total de 27. Programme ce calcul, comme un vrai outil d'audit.
+
+`solution(reponses)` reçoit un dictionnaire qui associe le numéro de chaque point de contrôle, de 1 à 17, à `True` ou `False`, et renvoie un couple : le **score** obtenu, et la **liste triée des points critiques manquants**, ceux qu'il faut traiter en premier.
+
+<PythonChallenge id="f1m7-projet-score" title="Le score de l'audit" description="Points 1, 2, 4, 8 et 10 : 3 points chacun s'ils sont à True. Les autres : 1 point. Renvoie (score, liste triée des points critiques à False)." starterCode="CRITIQUES = [1, 2, 4, 8, 10]
+
+def solution(reponses):
+    score = 0
+    manquants = []
+    for point, fait in reponses.items():
+        pass  # ajoute 3 ou 1 point, et note les critiques manquants
+    return (score, sorted(manquants))" tests={[{ input: "solution({n: True for n in range(1, 18)})", expected: "(27, [])", label: "Tout est fait" }, { input: "solution({n: False for n in range(1, 18)})", expected: "(0, [1, 2, 4, 8, 10])", label: "Rien n'est fait" }, { input: "solution({n: n % 2 == 0 for n in range(1, 18)})", expected: "(16, [1])" }, { input: "solution({1: True, 2: False, 3: True, 4: False})", expected: "(4, [2, 4])", label: "Audit partiel" }]} />
+
+Le score donne une idée de ton niveau, mais c'est la **liste des critiques manquants** qui fixe tes priorités. Un score de 20 sur 27 sans double authentification sur la messagerie est plus fragile qu'un 18 où tous les critiques sont en place.
+
+### étape 4 : le plan d'action
+
+Pour chaque « non », rédige une action **précise**, **datée** et **vérifiable** : pas « améliorer mes mots de passe », mais « installer un gestionnaire, puis remplacer les mots de passe de ma messagerie, de ma banque et de mon compte Google par des mots de passe générés, avant dimanche soir ». Classe les actions selon deux critères : le **risque** qu'elles réduisent, et l'**effort** qu'elles demandent. Commence par ce qui réduit beaucoup le risque pour peu d'effort : activer la double authentification sur la messagerie prend cinq minutes.
+
+Puis **applique** au moins les actions critiques, et coche-les. Un plan jamais appliqué ne protège de rien.
+
+### les critères de réussite
+
+| Critère | Attendu |
+| --- | --- |
+| Inventaire | Comptes et appareils listés, avec une criticité pour chaque compte |
+| Grille | Les 17 points évalués honnêtement |
+| Score | Calculé, avec la liste des points critiques manquants |
+| Plan | Chaque « non » a une action précise, datée et vérifiable, classée par priorité |
+| Application | Toutes les actions critiques sont faites, et vérifiées |
+| Préparation | Une fiche « en cas d'incident » avec les bons numéros et les étapes, rangée hors ligne |
+| Discrétion | Aucun mot de passe ni code dans le document |
+
+### la correction commentée : un audit modèle
+
+Voici l'audit de Camille, étudiante, tel qu'un auditeur l'aurait rédigé.
+
+**Inventaire.** 34 comptes retrouvés, dont 6 de criticité haute : messagerie Gmail, banque, PayPal, compte Apple, impots.gouv.fr, espace de l'université. Appareils : un ordinateur portable sous Windows 11, un iPhone de trois ans, une box, une enceinte connectée.
+
+**Constat.** Oui aux points 3, 8, 12, 13, 14, 15, soit 3 + 5 = 8 points sur 27. Points critiques manquants : 1, 2, 4 et 10. Camille utilise trois mots de passe en rotation, dont un est apparu dans deux fuites selon Have I Been Pwned. Sa messagerie n'a pas de double authentification. Ses photos ne sont que sur le téléphone et dans une synchronisation en ligne.
+
+**Analyse.** La combinaison est dangereuse : un mot de passe connu des attaquants, réutilisé sur une messagerie sans second facteur, qui permet de réinitialiser la banque et PayPal. C'est exactement le scénario du journal SSH de la première leçon, appliqué à un particulier. La synchronisation des photos ne protège ni d'une suppression ni d'un rançongiciel.
+
+**Plan d'action.**
+
+1. Ce soir : double authentification par application sur Gmail, codes de secours imprimés. *Risque fortement réduit, cinq minutes.*
+2. Ce week-end : installation d'un gestionnaire, phrase de passe maître de 7 mots tirés aux dés, nouveaux mots de passe générés pour les 6 comptes critiques, en commençant par ceux qui utilisaient le mot de passe ayant fui.
+3. Sous quinze jours : double authentification sur la banque, PayPal, Apple et l'université.
+4. Ce mois-ci : un disque externe pour une copie mensuelle des photos, rangé chez ses parents une fois sur deux ; restauration d'un dossier pour vérifier.
+5. D'ici trois mois : remplacement progressif des mots de passe des 28 autres comptes, au fil des connexions, et suppression des comptes inutiles.
+6. Vérification des règles de transfert de Gmail et des appareils connectés à ses comptes ; fiche « en cas d'incident » imprimée.
+
+Remarque que le plan ne cherche pas la perfection immédiate : il traite d'abord la **chaîne d'attaque la plus probable**, messagerie puis réinitialisation des comptes financiers, et étale le reste dans le temps. Après l'étape 3, Camille aura tous les points critiques sauf la sauvegarde, et son score passera à 20 sur 27 en quinze jours.
+
+### pour aller plus loin
+
+Refais l'audit dans six mois : les nouveaux comptes, les nouveaux appareils et les habitudes qui se relâchent font baisser le score. Propose ensuite la grille à un proche, en l'aidant à activer la double authentification sur sa messagerie : c'est souvent le geste de sécurité le plus utile qu'on puisse faire pour quelqu'un. Et si l'audit t'a plu, sache que c'est un métier : les auditeurs et les consultants en sécurité appliquent la même démarche, avec des référentiels comme le guide d'hygiène informatique de l'ANSSI, à des organisations entières.
+
+## à retenir
+
+- Un audit suit quatre temps : **inventorier**, **évaluer**, **prioriser**, **agir**, et il se **refait** régulièrement.
+- Les points **critiques** : mots de passe **uniques**, **gestionnaire**, double authentification sur la **messagerie**, **mises à jour** automatiques, sauvegarde **3-2-1**.
+- On priorise selon le **risque réduit** et l'**effort** : la double authentification de la messagerie passe avant tout.
+- Une action doit être **précise, datée et vérifiable**, puis **appliquée**.
+- On prépare sa réaction **avant** l'incident : numéros, étapes, codes de secours hors du téléphone.
+- Un document d'audit est **sensible** : jamais de mot de passe dedans, et il ne se partage pas.

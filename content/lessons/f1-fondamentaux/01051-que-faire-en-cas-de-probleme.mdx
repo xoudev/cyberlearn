@@ -1,0 +1,164 @@
+---
+refCode: CL-LSN-01051-V01
+slug: fondamentaux-que-faire-en-cas-de-probleme
+title: "Que faire en cas de problème"
+description: "Réagir à un incident avec méthode : les principes (garder son calme, contenir, préserver les preuves, ne pas payer, signaler), puis la marche à suivre pour un compte piraté, un appareil perdu ou volé, une fraude bancaire, un rançongiciel et un chantage, et les bons interlocuteurs en France : Cybermalveillance.gouv.fr, 17Cyber, la banque, la plainte. Avec un tri des sessions ouvertes sur un compte piraté à programmer."
+category: CYBERSEC
+difficulty: BEGINNER
+estimatedMinutes: 45
+xpReward: 250
+prerequisites: ["CL-LSN-01050-V01"]
+---
+
+Tu as appliqué tous les réflexes de ce module, et pourtant un jour, quelque chose arrive : tes amis reçoivent des messages étranges envoyés depuis ton compte, ton téléphone a disparu dans le métro, ta banque te signale un achat que tu n'as pas fait, ou un écran t'annonce que tous tes fichiers sont chiffrés. La sécurité parfaite n'existe pas ; ce qui fait la différence, c'est la **réaction**. Une réaction rapide et ordonnée limite les dégâts, et beaucoup d'incidents se règlent entièrement quand on agit dans la première heure. Cette leçon te donne une méthode générale, puis la marche à suivre pour les situations les plus fréquentes, et te dit vers qui te tourner.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- appliquer les principes d'une réaction à incident : contenir, préserver, récupérer, signaler ;
+- reprendre le contrôle d'un compte piraté, y compris ce que l'attaquant a pu y laisser ;
+- réagir à la perte ou au vol d'un appareil ;
+- réagir à une fraude bancaire ;
+- réagir à un rançongiciel et à un chantage ;
+- trouver de l'aide : Cybermalveillance.gouv.fr, 17Cyber, ta banque, la plainte.
+
+## pourquoi ça compte
+
+Dans l'urgence, on fait souvent l'inverse de ce qu'il faudrait : on paie la rançon, on supprime les messages compromettants, on attend que « ça passe », on n'ose pas en parler par honte. Chacune de ces réactions aggrave la situation. À l'inverse, un incident bien géré se termine souvent sans perte : un compte récupéré avant que l'attaquant change les options de récupération, une opposition bancaire faite dans l'heure et suivie d'un remboursement, des fichiers restaurés depuis une sauvegarde. En entreprise, la **réponse à incident** est un métier à part entière, avec ses équipes et ses procédures ; elle repose sur les mêmes principes que ceux de cette leçon.
+
+## les principes
+
+<Diagram caption="Les étapes d'une réaction à incident">
+flowchart LR
+  A["Constater : que se passe-t-il ?"] --> B["Contenir : empêcher que ça s'étende"]
+  B --> C["Préserver les preuves"]
+  C --> D["Récupérer : reprendre la main, restaurer"]
+  D --> E["Signaler : aide, banque, plainte"]
+  E --> F["Tirer les leçons : quelle porte était ouverte ?"]
+</Diagram>
+
+**Garder son calme.** Les attaquants comptent sur la panique, comme dans l'hameçonnage. Prends deux minutes pour comprendre ce qui se passe avant d'agir.
+
+**Contenir.** Empêche le problème de s'étendre : couper un appareil infecté du réseau, changer un mot de passe volé, faire opposition sur une carte.
+
+**Préserver les preuves.** Ne supprime rien : messages, courriels, captures d'écran des demandes de rançon, relevés bancaires, adresses des sites frauduleux. Note l'heure et ce que tu as constaté. Ces éléments serviront à ta banque, à ton assureur et à la plainte.
+
+**Ne pas payer.** Ni rançon, ni « frais de déblocage ». Payer ne garantit rien, finance les attaquants, et te désigne comme une cible qui paie.
+
+**Signaler et demander de l'aide.** Tu n'es pas seul, et il n'y a aucune honte à être victime : ces attaques visent justement des gens ordinaires, par millions.
+
+**Tirer les leçons.** Une fois la situation réglée, cherche la porte d'entrée : un mot de passe réutilisé, une double authentification absente, une mise à jour en retard, un clic. C'est elle qu'il faut fermer pour de bon.
+
+## un compte piraté
+
+Les signes : tu ne peux plus te connecter, tu reçois des alertes de connexion inconnues, tes contacts reçoivent des messages que tu n'as pas envoyés, des publications apparaissent en ton nom.
+
+1. **Reprends la main** au plus vite. Si ton mot de passe fonctionne encore, change-le immédiatement pour un mot de passe neuf et unique, généré par ton gestionnaire. Sinon, utilise la **procédure de récupération officielle** du service, en passant par son site ou son application, jamais par un lien reçu.
+2. **Déconnecte toutes les sessions** ouvertes : la plupart des services ont une option « se déconnecter de tous les appareils ». Changer le mot de passe ne suffit pas toujours à expulser l'attaquant déjà connecté.
+3. **Vérifie ce que l'attaquant a pu modifier.** C'est l'étape la plus souvent oubliée. Les options de récupération (adresse de secours, numéro de téléphone), les **règles de transfert** de la messagerie, qu'un attaquant ajoute pour continuer à recevoir une copie de tes courriels même après avoir été expulsé, les applications tierces autorisées, les appareils de confiance.
+4. **Active la double authentification**, si ce n'était pas fait, et range les codes de secours.
+5. **Change le mot de passe partout où il était réutilisé**, en commençant par ta messagerie.
+6. **Préviens tes contacts** qu'ils ne doivent donner suite à aucune demande reçue de ce compte pendant la période du piratage.
+7. **Surveille** tes autres comptes et tes relevés bancaires dans les semaines qui suivent.
+
+Si c'est ta **messagerie** qui a été piratée, élargis la vérification : l'attaquant a pu demander la réinitialisation d'autres comptes. Cherche dans la boîte, et dans la corbeille, les courriels de changement de mot de passe que tu n'as pas demandés.
+
+## un appareil perdu ou volé
+
+1. **Localise, verrouille et, si besoin, efface à distance** : les services « Localiser » d'Apple et « Localiser mon appareil » de Google le permettent, à condition d'avoir été activés avant. Effacer rend l'appareil inutilisable pour le voleur ; tes données reviendront de ta sauvegarde.
+2. **Fais suspendre ta ligne** auprès de ton opérateur, pour qu'on ne puisse pas recevoir tes SMS de validation.
+3. **Change les mots de passe** des comptes ouverts sur l'appareil, en commençant par la messagerie, et retire l'appareil de la liste des appareils de confiance de tes comptes.
+4. **Porte plainte** en cas de vol ; le numéro IMEI du téléphone, inscrit sur la boîte ou obtenu en tapant `*#06#`, permet à l'opérateur de le bloquer.
+
+Un appareil verrouillé par un code solide et chiffré, ce qui est le cas par défaut sur les téléphones récents, protège tes données même entre les mains d'un voleur. C'est une raison de plus de ne pas utiliser un code à quatre chiffres évident.
+
+## une fraude bancaire
+
+1. **Fais opposition** immédiatement sur ta carte, par l'application de ta banque, par son numéro d'urgence, ou par le serveur interbancaire d'opposition au **0 892 705 705**.
+2. **Contacte ta banque** pour contester les opérations que tu n'as pas faites. La loi prévoit le remboursement des paiements non autorisés, sauf négligence grave de ta part ; communiquer ton code ou valider toi-même l'opération à la demande d'un faux conseiller peut être considéré comme telle, d'où l'importance des réflexes de la leçon sur l'hameçonnage.
+3. **Signale** la fraude à la carte sur internet sur la plateforme **Perceval** du service public, si tu as toujours ta carte en ta possession.
+4. Pour une escroquerie, contacte **Info Escroqueries**, le service du ministère de l'Intérieur, au 0 805 805 817, numéro gratuit.
+
+## un rançongiciel
+
+Un écran annonce que tes fichiers sont chiffrés et réclame un paiement, souvent en cryptomonnaie, avec un compte à rebours.
+
+1. **Débranche l'appareil du réseau** : câble, Wi-Fi, disques externes, pour que le chiffrement ne gagne ni les autres appareils ni tes sauvegardes.
+2. **Ne paie pas.** Rien ne garantit que tu recevras la clé, ni que les fichiers seront intacts, ni que tu ne seras pas rançonné une seconde fois.
+3. **Photographie** l'écran de rançon, et conserve un exemple de fichier chiffré : ils aident à identifier le rançongiciel.
+4. **Consulte le site No More Ransom**, fruit d'une coopération entre polices et éditeurs de sécurité, qui propose gratuitement des outils de déchiffrement pour de nombreuses familles de rançongiciels.
+5. **Porte plainte**, puis **restaure** depuis une sauvegarde saine, après avoir réinstallé le système. C'est ici que la sauvegarde déconnectée de la leçon précédente fait toute la différence.
+
+En entreprise ou dans une collectivité, la marche à suivre est plus précise : alerter immédiatement le service informatique, ne pas éteindre la machine, dont la mémoire contient des traces utiles aux enquêteurs, mais l'isoler du réseau, et faire appel à des prestataires spécialisés.
+
+## un chantage
+
+Un classique de la boîte de réception : « J'ai piraté ta webcam et je t'ai filmé, paie 500 euros en bitcoins ou j'envoie la vidéo à tous tes contacts. » Pour paraître crédible, le message cite parfois un de tes **anciens mots de passe**, récupéré dans une fuite de données. Dans l'immense majorité des cas, c'est un **bluff** envoyé en masse : il n'y a ni piratage ni vidéo. Ne réponds pas, ne paie pas, signale le message, et si le mot de passe cité est encore utilisé quelque part, change-le.
+
+Le cas est différent si la menace est réelle, quand quelqu'un détient effectivement des images intimes échangées, par exemple, lors d'une conversation en ligne. Là aussi : ne paie pas, car le chantage recommence toujours, cesse tout échange, conserve les preuves, fais retirer les contenus via les plateformes et Pharos, et porte plainte. Les mineurs peuvent aussi appeler le 3018, le numéro national contre le cyberharcèlement.
+
+## vers qui se tourner
+
+| Besoin | Interlocuteur |
+|---|---|
+| Comprendre ce qui arrive et savoir quoi faire | **Cybermalveillance.gouv.fr** : diagnostic en ligne, fiches réflexes, mise en relation avec des prestataires |
+| Être guidé, signaler, déposer plainte en ligne | **17Cyber** : le guichet de la police, de la gendarmerie et de Cybermalveillance.gouv.fr |
+| Urgence, danger immédiat | le **17** ou le **112** |
+| Carte bancaire | ta banque, l'opposition au **0 892 705 705**, la plateforme **Perceval** |
+| Escroquerie | **Info Escroqueries** au 0 805 805 817 |
+| Contenu ou site illicite | **Pharos** |
+| SMS ou courriel frauduleux | le **33700**, **Signal Spam** |
+| Au travail | le **service informatique** ou le responsable de la sécurité, immédiatement |
+
+## à toi de jouer
+
+Après le piratage d'un compte, la liste des **sessions ouvertes** est le premier endroit où regarder. Chaque session est un couple (appareil, pays). Écris `solution(sessions, appareils_connus)` qui renvoie la liste des appareils **inconnus** à déconnecter, dans l'ordre où ils apparaissent, **sans doublon**. Un appareil connu reste connu même s'il se connecte depuis l'étranger : tu peux être en vacances.
+
+<PythonChallenge id="f1-incident-sessions" title="Les sessions à fermer" description="Renvoie la liste des appareils des sessions qui ne figurent pas dans appareils_connus, dans l'ordre d'apparition, sans doublon." starterCode="def solution(sessions, appareils_connus):
+    a_fermer = []
+    for appareil, pays in sessions:
+        pass  # ajoute l'appareil s'il est inconnu et pas déjà dans la liste
+    return a_fermer" tests={[{ input: "solution([('iPhone de Léa', 'France'), ('Windows Chrome', 'Nigeria'), ('PC du salon', 'France')], ['iPhone de Léa', 'PC du salon'])", expected: "['Windows Chrome']" }, { input: "solution([('iPhone de Léa', 'Espagne')], ['iPhone de Léa'])", expected: "[]", label: "Un appareil connu en voyage" }, { input: "solution([('Linux Firefox', 'Pays-Bas'), ('Android', 'Brésil'), ('Linux Firefox', 'Pays-Bas')], [])", expected: "['Linux Firefox', 'Android']", label: "Sans doublon, dans l'ordre" }, { input: "solution([], ['PC du salon'])", expected: "[]", label: "Aucune session" }]} />
+
+Remarque le deuxième test : le **pays** seul n'est pas un bon critère. Un vrai service combine plusieurs signaux, appareil, pays, heure, comportement, pour décider d'alerter. Et dans la vraie vie, en cas de doute, on déconnecte **toutes** les sessions, puis on se reconnecte depuis ses propres appareils.
+
+## les pièges
+
+- **Paniquer et payer.** Ni rançon, ni frais de déblocage : payer ne garantit rien et désigne une cible.
+- **Supprimer les preuves.** Messages, captures et relevés servent à la banque, à l'assureur et à la plainte.
+- **Se contenter de changer le mot de passe.** Il faut aussi fermer les sessions et vérifier les options de récupération et les règles de transfert.
+- **Oublier les comptes où le mot de passe était réutilisé.**
+- **Rallumer un appareil infecté sur le réseau.** On isole d'abord, on restaure ensuite depuis une sauvegarde saine.
+- **Garder le silence par honte.** Les attaques visent tout le monde ; signaler aide aussi les autres victimes.
+- **Suivre l'aide proposée par un inconnu.** Les faux dépanneurs et les faux « récupérateurs de fonds » visent justement les victimes. Passe par les services officiels.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.17cyber.gouv.fr/" description="Le guichet en ligne de la police, de la gendarmerie et de Cybermalveillance.gouv.fr : diagnostic, conseils, plainte">17Cyber : l'assistance en ligne aux victimes</ExternalLink>
+
+<ExternalLink href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/piratage-de-compte" description="La fiche réflexe pour reprendre le contrôle d'un compte piraté">Cybermalveillance.gouv.fr : le piratage de compte</ExternalLink>
+
+<ExternalLink href="https://www.nomoreransom.org/fr/index.html" description="Des outils de déchiffrement gratuits pour de nombreux rançongiciels, par les polices européennes et des éditeurs">No More Ransom</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Après avoir changé le mot de passe d'une messagerie piratée, que faut-il vérifier en priorité ?" options={["La couleur du thème", "Les règles de transfert, les options de récupération et les sessions ouvertes", "Le nombre de courriels non lus", "Rien, le mot de passe suffit"]} correct={1} explanation="Un attaquant laisse souvent une règle de transfert ou change le numéro de récupération pour garder la main après avoir été expulsé." />
+  <Quiz id="q-2" question="Un rançongiciel vient de chiffrer tes fichiers. Quelle est la première action ?" options={["Débrancher l'appareil du réseau et des disques externes", "Payer vite avant la fin du compte à rebours", "Supprimer les fichiers chiffrés", "Brancher le disque de sauvegarde pour restaurer tout de suite"]} correct={0} explanation="On contient d'abord : couper le réseau et les disques empêche le chiffrement de s'étendre, notamment aux sauvegardes." />
+  <Quiz id="q-3" question="Pourquoi ne faut-il pas payer une rançon ?" options={["Parce que c'est toujours trop cher", "Parce que les banques l'interdisent", "Parce que la cryptomonnaie n'existe pas", "Parce que rien ne garantit la récupération, que cela finance les attaquants et désigne une cible qui paie"]} correct={3} explanation="Les autorités recommandent de ne jamais payer. Les sauvegardes et les outils comme No More Ransom sont la vraie solution." />
+  <Quiz id="q-4" question="Tu reçois un courriel qui cite un de tes anciens mots de passe et prétend t'avoir filmé. Que faire ?" options={["Payer pour éviter la diffusion", "Ne pas répondre, ne pas payer, signaler, et changer ce mot de passe s'il sert encore", "Répondre pour négocier", "Éteindre définitivement sa webcam et ne rien faire d'autre"]} correct={1} explanation="C'est presque toujours un bluff envoyé en masse avec un mot de passe issu d'une fuite. Le seul vrai risque est ce mot de passe, s'il est encore utilisé." />
+  <Quiz id="q-5" question="Ton téléphone a été volé. Quelle action empêche le voleur de recevoir tes codes de validation par SMS ?" options={["Changer le fond d'écran à distance", "Envoyer un SMS au voleur", "Attendre qu'il se décharge", "Faire suspendre la ligne auprès de l'opérateur"]} correct={3} explanation="La ligne suspendue, les SMS de validation n'arrivent plus sur la carte SIM volée." />
+  <Quiz id="q-6" question="Quel service propose un diagnostic en ligne, des conseils et le dépôt de plainte, avec la police et la gendarmerie ?" options={["Le 3018", "17Cyber", "Signal Spam", "Perceval"]} correct={1} explanation="17Cyber est le guichet commun de la police, de la gendarmerie et de Cybermalveillance.gouv.fr pour les victimes." />
+  <Quiz id="q-7" question="Pourquoi conserver messages, captures et relevés après un incident ?" options={["Pour les montrer à ses amis", "Parce qu'ils se suppriment tout seuls", "Ils ne servent à rien", "Parce qu'ils servent de preuves pour la banque, l'assureur et la plainte"]} correct={3} explanation="Supprimer les traces, c'est perdre les éléments qui permettent d'être remboursé et de poursuivre les auteurs." />
+</QuizGroup>
+
+## à retenir
+
+- Méthode : **constater**, **contenir**, **préserver les preuves**, **récupérer**, **signaler**, **tirer les leçons**. Ne jamais payer.
+- Compte piraté : reprendre la main par la procédure **officielle**, **fermer toutes les sessions**, vérifier **récupération**, **règles de transfert** et applications autorisées, activer la double authentification, changer les mots de passe **réutilisés**, prévenir ses contacts.
+- Appareil perdu : **localiser, verrouiller, effacer**, suspendre la ligne, changer les mots de passe, porter plainte.
+- Fraude bancaire : **opposition** immédiate, contestation auprès de la banque, **Perceval**.
+- Rançongiciel : **débrancher**, ne pas payer, photographier, **No More Ransom**, plainte, **restauration** depuis une sauvegarde saine.
+- Chantage : presque toujours un **bluff** ; ne pas répondre, ne pas payer, signaler.
+- Interlocuteurs : **Cybermalveillance.gouv.fr**, **17Cyber**, le 17 ou le 112 en urgence, sa banque, Info Escroqueries, Pharos, le 33700.
