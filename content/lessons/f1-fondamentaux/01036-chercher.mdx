@@ -1,0 +1,193 @@
+---
+refCode: CL-LSN-01036-V01
+slug: fondamentaux-chercher
+title: "Chercher : find, grep et les jokers"
+description: "Retrouver un fichier et une ligne parmi des milliers : les jokers que le shell développe, find pour chercher des fichiers par nom, type, taille ou date, grep pour chercher du texte dans les fichiers, et un premier tube pour compter ce qu'on a trouvé. Avec une enquête sur un vrai Linux : compter les échecs d'un journal et débusquer un mot de passe oublié dans une configuration."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 50
+xpReward: 250
+prerequisites: ["CL-LSN-01035-V01"]
+---
+
+Un serveur contient des centaines de milliers de fichiers, et un journal des millions de lignes. Les parcourir à l'œil est impossible. Deux questions reviennent pourtant sans cesse : **où est ce fichier ?** et **où est ce texte ?** La ligne de commande y répond avec deux outils, `find` et `grep`, parmi les plus utilisés de tout l'arsenal Unix, et avec les **jokers**, qui désignent plusieurs fichiers d'un seul motif. Combinés par un **tube**, ils répondent en une ligne à des questions qui prendraient des heures à la main. Cette leçon te les fait découvrir, puis te met en situation d'enquête.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- désigner plusieurs fichiers avec les jokers `*`, `?` et `[ ]` ;
+- chercher des fichiers avec `find` selon leur nom, leur type, leur taille ou leur date ;
+- chercher du texte avec `grep` et ses options essentielles ;
+- enchaîner deux commandes avec un tube `|` ;
+- compter ce qu'on a trouvé ;
+- utiliser ces outils pour une première enquête.
+
+## pourquoi ça compte
+
+« Où est le fichier de configuration du serveur web ? », « Quels fichiers ont été modifiés depuis hier ? », « Combien d'erreurs dans le journal ce matin ? », « Quel script contient ce mot de passe ? » Ce sont des questions quotidiennes en administration, en développement et en sécurité. Un analyste qui enquête sur une intrusion cherche les fichiers récemment modifiés et les lignes suspectes des journaux ; un auditeur cherche les mots de passe laissés en clair dans les configurations ; un attaquant fait exactement la même chose. `find` et `grep` sont leurs premiers outils.
+
+## les jokers
+
+Les **jokers** (*wildcards*, ou *globs*) permettent de désigner plusieurs noms de fichiers par un motif :
+
+| Joker | Correspond à | Exemple |
+| --- | --- | --- |
+| `*` | n'importe quelle suite de caractères, même vide | `*.txt` : tous les fichiers en `.txt` |
+| `?` | exactement un caractère | `photo?.jpg` : `photo1.jpg`, `photoA.jpg` |
+| `[abc]` | un caractère parmi ceux listés | `rapport[123].txt` |
+| `[0-9]` | un caractère dans un intervalle | `log-2026-0[1-6].txt` : le premier semestre |
+
+Un point essentiel : c'est le **shell** qui remplace le motif par la liste des noms correspondants, **avant** de lancer la commande. Quand tu tapes `ls *.txt`, `ls` reçoit en réalité `ls notes.txt rapport.txt plan.txt`. C'est pour cela que les jokers fonctionnent avec toutes les commandes, et pour cela qu'un `rm *` est si dangereux : `rm` reçoit tous les noms du dossier, sans savoir qu'ils venaient d'un joker. Le réflexe de la leçon sur les fichiers s'applique à plein : `ls` d'abord avec le même motif, `rm` ensuite.
+
+Par défaut, `*` ne correspond pas aux fichiers cachés : `ls *` ne montre pas `.bashrc`. Et si aucun fichier ne correspond au motif, la plupart des shells transmettent le motif tel quel à la commande, qui répond alors, par exemple, `ls: *.pdf: No such file or directory` : ce message signifie simplement qu'il n'y a aucun PDF ici.
+
+## find : chercher des fichiers
+
+`find` parcourt une arborescence et affiche les fichiers qui satisfont des critères. Sa forme : `find` suivi d'un **point de départ**, puis de **critères**.
+
+```bash
+find . -name "*.conf"            # les fichiers en .conf, à partir d'ici
+find / -iname "readme*"          # sans tenir compte des majuscules
+find . -type d                   # seulement les dossiers
+find . -type f -size +10M        # les fichiers de plus de 10 Mio
+find /var/log -mtime -1          # modifiés depuis moins d'un jour
+find . -name "*.tmp" -delete     # les trouver et les supprimer
+```
+
+Les critères principaux :
+
+| Critère | Signification |
+| --- | --- |
+| `-name motif` | le nom correspond au motif, en respectant la casse |
+| `-iname motif` | idem, sans tenir compte des majuscules |
+| `-type f`, `-type d` | un fichier, un dossier |
+| `-size +10M`, `-size -1k` | plus de 10 Mio, moins de 1 Kio |
+| `-mtime -7` | modifié il y a moins de 7 jours |
+| `-user alice` | appartenant à alice |
+
+Deux remarques importantes. D'abord, le motif de `-name` se met **entre guillemets** : sans eux, le shell développerait `*.conf` avant que `find` ne le voie, ce qui ne donne pas le résultat attendu. Ensuite, `-delete` et `-exec` agissent sur chaque fichier trouvé : on lance toujours la commande **sans** eux d'abord, pour voir la liste, exactement comme `ls` avant `rm`.
+
+Chercher depuis la racine `/` parcourt tout le système : c'est long, et affiche beaucoup d'erreurs `Permission denied` pour les dossiers interdits. On limite donc le point de départ quand c'est possible, et on peut masquer ces erreurs en ajoutant `2>/dev/null`, qui envoie les messages d'erreur dans un trou noir.
+
+## grep : chercher du texte
+
+`grep` affiche les **lignes** d'un ou plusieurs fichiers qui contiennent un motif :
+
+```bash
+grep ECHEC journal.log           # les lignes qui contiennent ECHEC
+grep -i erreur journal.log       # sans tenir compte des majuscules
+grep -n admin journal.log        # avec le numéro de chaque ligne
+grep -c ECHEC journal.log        # seulement le nombre de lignes trouvées
+grep -v OK journal.log           # les lignes qui ne contiennent PAS OK
+grep -r "password" /etc          # dans tous les fichiers d'une arborescence
+```
+
+| Option | Effet |
+| --- | --- |
+| `-i` | ignore la casse |
+| `-n` | numérote les lignes trouvées |
+| `-c` | compte au lieu d'afficher |
+| `-v` | inverse : les lignes qui ne correspondent pas |
+| `-r` | parcourt un dossier et ses sous-dossiers |
+| `-l` | affiche seulement les noms des fichiers qui contiennent le motif |
+
+Le motif de `grep` peut être bien plus riche qu'un simple mot : c'est une **expression régulière**, un langage pour décrire des motifs de texte (une adresse IP, une date, un numéro de carte). Le parcours Linux leur consacre une leçon ; pour l'instant, des mots simples suffisent, mis entre guillemets dès qu'ils contiennent un espace ou un caractère spécial.
+
+## le tube : combiner
+
+Le **tube** `|` envoie la sortie d'une commande dans l'entrée de la suivante. C'est ce qui permet de construire une réponse en assemblant de petits outils :
+
+```bash
+grep ECHEC journal.log | wc -l             # combien d'échecs ?
+grep ECHEC journal.log | grep admin         # les échecs sur le compte admin
+find . -name "*.log" | wc -l               # combien de journaux ?
+```
+
+<Diagram caption="Un tube : la sortie de l'un devient l'entrée de l'autre">
+flowchart LR
+  A["journal.log"] --> B["grep ECHEC : garde les lignes d'échec"]
+  B -->|"tube"| C["grep admin : garde celles sur admin"]
+  C -->|"tube"| D["wc -l : les compte"]
+  D --> E["6"]
+</Diagram>
+
+Chaque outil fait une seule chose, bien, et le tube les assemble : c'est la philosophie d'Unix, qui explique en grande partie la longévité de ces commandes. La redirection `>`, vue avec les fichiers, complète le tube : `grep -c ECHEC journal.log > compte.txt` enregistre le résultat dans un fichier au lieu de l'afficher.
+
+## trier et compter par valeur
+
+Deux outils de plus transforment une liste de lignes en statistique : `sort`, qui trie, et `uniq -c`, qui regroupe les lignes identiques **consécutives** en les comptant. D'où l'enchaînement classique, qu'on trie avant de dédoublonner :
+
+```bash
+grep -o "ip=[0-9.]*" journal.log | sort | uniq -c | sort -rn
+```
+
+`grep -o` n'affiche que le morceau qui correspond, ici l'adresse IP de chaque ligne ; `sort` range les adresses identiques côte à côte ; `uniq -c` les compte ; le second `sort -rn` classe du plus grand nombre au plus petit. En une ligne, on obtient les adresses qui se connectent le plus, et celle d'un attaquant qui multiplie les essais saute aux yeux en tête de liste. Les analystes utilisent cette recette sur des journaux de plusieurs millions de lignes ; la voir fonctionner sur seize lignes permet d'en comprendre chaque étage.
+
+## chercher des secrets : un classique de la sécurité
+
+Des mots de passe, des clés d'API et des jetons traînent souvent là où ils ne devraient pas : dans un fichier de configuration lisible par tous, un script de sauvegarde, une ancienne copie `config.php.bak`, un historique de commandes. Un `grep -ri "password" .` sur un dossier de projet ou un serveur les fait apparaître en quelques secondes. Les auditeurs le font pour les trouver et les faire retirer ; les attaquants le font dès qu'ils ont un accès, pour s'étendre à d'autres comptes. Ce seul geste justifie la règle de base : **aucun secret en clair dans un fichier**, et encore moins dans un dépôt de code, où l'historique le garde même après sa suppression. Des outils spécialisés font cette recherche automatiquement avant chaque envoi de code, et le site que tu utilises en fait tourner un à chaque modification.
+
+## à toi de jouer : une enquête
+
+Le dossier de travail contient une version courte du journal de connexions de la leçon précédente, et le dossier d'un petit projet. Mène l'enquête avec les outils de la leçon :
+
+1. trouve tous les fichiers de configuration du projet : `find . -name "*.conf"` ;
+2. cherche s'il reste un mot de passe en clair quelque part : `grep -rn "password" .` ;
+3. compte les lignes d'échec du journal avec `grep` et `wc -l`, en les combinant par un tube ;
+4. enregistre ce nombre dans un fichier `compte.txt`, avec `grep -c` et la redirection `>`.
+
+La vérification de la dernière étape est faite dans la machine : le fichier `compte.txt` doit contenir le bon nombre.
+
+<LinuxTerminal title="Enquête : find et grep" files={{ "journal.log": "2026-09-28 08:08:09 OK connexion utilisateur=david ip=192.168.1.24\n2026-09-28 08:24:43 OK connexion utilisateur=alice ip=192.168.1.23\n2026-09-28 08:42:15 ECHEC connexion utilisateur=bob ip=192.168.1.47\n2026-09-28 09:01:02 OK connexion utilisateur=bob ip=192.168.1.47\n2026-09-28 09:17:40 OK connexion utilisateur=chloe ip=192.168.1.31\n2026-09-28 09:29:11 ECHEC connexion utilisateur=david ip=192.168.1.24\n2026-09-28 09:30:05 OK connexion utilisateur=david ip=192.168.1.24\n2026-09-28 10:02:48 ECHEC connexion utilisateur=alice ip=192.168.1.23\n2026-09-28 10:03:20 OK connexion utilisateur=alice ip=192.168.1.23\n2026-09-28 11:45:33 OK connexion utilisateur=chloe ip=192.168.1.31\n2026-09-28 14:23:11 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:13 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:15 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:17 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:19 ECHEC connexion utilisateur=admin ip=203.0.113.66\n2026-09-28 14:23:21 ECHEC connexion utilisateur=admin ip=203.0.113.66\n", "projet/app.conf": "port=8080\nlangue=fr\n", "projet/base/base.conf": "hote=127.0.0.1\nutilisateur=appli\n", "projet/sauvegarde/copie.sh": "#!/bin/sh\n# ancienne sauvegarde, a supprimer\nexport DB_USER=appli\nexport DB_password=Ete2026!\ntar -czf /tmp/sauvegarde.tgz /mnt/projet\n", "projet/lisezmoi.txt": "Projet de démonstration.\n" }} expectedCommands={["find . -name \"*.conf\"", "grep -rn \"password\" ."]} checks={[{ "label": "compte.txt contient le nombre de lignes d'échec (9)", "path": "compte.txt", "expect": "file", "contains": "9" }]} hints={["find . -name \"*.conf\" cherche à partir du dossier courant ; les guillemets protègent le joker.", "grep -rn cherche dans tous les fichiers, sous-dossiers compris, et affiche les numéros de ligne.", "grep ECHEC journal.log | wc -l compte les échecs ; grep -c ECHEC journal.log > compte.txt les enregistre."]} />
+
+Tu as trouvé deux fichiers `.conf`, et surtout, dans un vieux script de sauvegarde qui n'a rien d'un fichier de configuration, un mot de passe de base de données en clair : exactement ce qu'un auditeur, ou un attaquant, cherche en premier. Et le journal compte 9 échecs, dont 6 en dix secondes sur `admin` depuis l'extérieur. Essaie `grep ECHEC journal.log | grep -v admin` pour isoler les échecs ordinaires, sans doute des fautes de frappe.
+
+## exercice noté : écrire son propre grep -n
+
+Écris `solution(texte, mot)` qui renvoie la liste des **numéros de ligne**, en commençant à 1, des lignes qui contiennent `mot`, en respectant les majuscules comme `grep` sans option. Indice : `enumerate(lignes, start=1)` fournit chaque ligne avec son numéro.
+
+<PythonChallenge id="f1-grep-1" title="Écrire son propre grep -n" description="Renvoie la liste des numéros des lignes qui contiennent le mot, en comptant à partir de 1." starterCode="def solution(texte, mot):
+    numeros = []
+    for numero, ligne in enumerate(texte.splitlines(), start=1):
+        pass  # ajouter le numéro si la ligne contient le mot
+    return numeros" tests={[{ input: "solution('OK alice\\nECHEC bob\\nOK chloe\\nECHEC admin\\n', 'ECHEC')", expected: "[2, 4]" }, { input: "solution('a\\nb\\n', 'z')", expected: "[]" }, { input: "solution('mot de passe\\nMot de passe\\n', 'mot')", expected: "[1]" }, { input: "solution('', 'x')", expected: "[]" }]} />
+
+Le troisième test rappelle que `grep` distingue les majuscules : `Mot` n'est pas `mot`. Pour ignorer la casse, `grep -i` compare les deux textes après les avoir mis en minuscules ; tu peux l'ajouter à ta fonction en exercice libre.
+
+## les pièges
+
+- **Oublier que le shell développe les jokers.** `rm *` reçoit tous les noms ; `ls` d'abord.
+- **Ne pas mettre le motif de `find -name` entre guillemets.** Le shell le développerait avant `find`.
+- **Lancer `find -delete` ou `-exec` sans avoir vu la liste.** On cherche d'abord, on agit ensuite.
+- **Oublier la casse avec `grep`.** `-i` quand elle n'a pas d'importance.
+- **Chercher depuis `/` sans raison.** C'est long et bruyant ; on part du bon dossier.
+- **Laisser un secret dans un fichier.** Un simple `grep -r` suffit à le trouver.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/find.1.html" description="Tous les critères et actions de find, en anglais">Page de manuel de find</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/grep.1.html" description="Toutes les options de grep, dont les expressions régulières, en anglais">Page de manuel de grep</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/glob.7.html" description="Comment le shell développe les jokers, en anglais">Page de manuel glob(7)</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que désigne le motif rapport?.txt ?" options={["Tous les fichiers qui commencent par rapport", "Le fichier rapport?.txt uniquement", "Tous les fichiers .txt", "Les fichiers rapport suivis d'exactement un caractère, puis .txt"]} correct={3} explanation="? remplace exactement un caractère : rapport1.txt, rapportA.txt, mais pas rapport12.txt." />
+  <Quiz id="q-2" question="Qui remplace *.txt par la liste des fichiers correspondants ?" options={["Le shell, avant de lancer la commande", "La commande ls elle-même", "Le noyau", "Le terminal"]} correct={0} explanation="Le shell développe les jokers ; la commande reçoit directement la liste des noms." />
+  <Quiz id="q-3" question="Quelle commande trouve les fichiers modifiés depuis moins d'un jour dans /var/log ?" options={["grep -r /var/log", "find /var/log -mtime -1", "ls -t /var/log", "find /var/log -size -1"]} correct={1} explanation="-mtime -1 : modifié il y a moins d'un jour. -size parle de taille." />
+  <Quiz id="q-4" question="Pourquoi mettre le motif *.conf entre guillemets dans une commande find ?" options={["Pour la décoration", "Parce que find refuse les motifs sans guillemets", "Pour que le shell ne développe pas le joker avant que find ne le reçoive", "Pour chercher sans tenir compte des majuscules"]} correct={2} explanation="Sans guillemets, le shell remplacerait *.conf par les fichiers du dossier courant, et find chercherait autre chose." />
+  <Quiz id="q-5" question="Que fait grep -v OK journal.log ?" options={["Il compte les lignes OK", "Il affiche la version de grep", "Il affiche les lignes OK en couleur", "Il affiche les lignes qui ne contiennent pas OK"]} correct={3} explanation="-v inverse la sélection : il garde ce qui ne correspond pas." />
+  <Quiz id="q-6" question="Que fait grep ECHEC journal.log | wc -l ?" options={["Il supprime les échecs", "Il affiche les échecs en couleur", "Il compte les lignes qui contiennent ECHEC", "Il écrit les échecs dans wc"]} correct={2} explanation="Le tube envoie les lignes trouvées par grep à wc -l, qui les compte. grep -c donne le même nombre." />
+  <Quiz id="q-7" question="Pourquoi un auditeur lance-t-il grep -ri password sur les dossiers d'un serveur ?" options={["Pour changer les mots de passe", "Pour trouver les secrets laissés en clair dans des fichiers, avant qu'un attaquant ne les trouve", "Pour tester la vitesse du disque", "Pour supprimer les mots de passe"]} correct={1} explanation="Des secrets traînent souvent dans des configurations, scripts et copies ; les trouver permet de les retirer." />
+</QuizGroup>
+
+## à retenir
+
+- Jokers : `*` (n'importe quoi), `?` (un caractère), `[abc]`, `[0-9]`. C'est le **shell** qui les développe.
+- `find départ critères` : `-name`, `-iname`, `-type f|d`, `-size`, `-mtime`, `-user`. Motifs **entre guillemets** ; `-delete` et `-exec` seulement après avoir vu la liste.
+- `grep motif fichiers` : `-i`, `-n`, `-c`, `-v`, `-r`, `-l`.
+- Le **tube** `|` enchaîne des outils simples ; la redirection `>` enregistre le résultat.
+- `grep -r` débusque les **secrets** en clair : aucun ne doit traîner dans un fichier.

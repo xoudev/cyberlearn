@@ -1,0 +1,125 @@
+---
+refCode: CL-LSN-01905-V01
+slug: fondamentaux-bilan-module-5
+title: "Bilan du module 5 : remettre de l'ordre, en ligne de commande"
+description: "Le quiz du module Premiers pas en ligne de commande, puis le projet : ranger un dossier de projet en désordre selon un cahier des charges, uniquement avec des commandes, sur un vrai Linux qui vérifie lui-même chaque exigence. Avec la correction commentée et les réflexes à garder."
+category: DEV
+difficulty: BEGINNER
+estimatedMinutes: 60
+xpReward: 400
+prerequisites: ["CL-LSN-01037-V01"]
+---
+
+Tu sais maintenant te repérer, manipuler, lire et chercher dans des fichiers en ligne de commande, sous Linux comme sous Windows. Ce bilan vérifie ces acquis avec un quiz, puis te confie une situation que tout professionnel rencontre un jour : reprendre un dossier de projet laissé en désordre par quelqu'un d'autre, et le ranger proprement, sans rien perdre d'utile et en éliminant ce qui ne doit pas rester. Sans souris, et sous le contrôle d'une machine qui vérifie chaque point du cahier des charges.
+
+## objectifs
+
+Ce bilan valide que tu sais :
+
+- te repérer dans une arborescence et vérifier où tu es ;
+- créer, déplacer, renommer et supprimer des fichiers et des dossiers ;
+- utiliser les jokers pour agir sur plusieurs fichiers à la fois ;
+- lire et chercher dans des fichiers pour prendre une décision ;
+- repérer un fichier sensible qui n'a pas sa place dans un projet ;
+- travailler prudemment : vérifier avant d'agir.
+
+## quiz
+
+Quatorze questions sur les sept leçons du module.
+
+<QuizGroup>
+  <Quiz id="f1m5-q-1" question="Quel est le rôle du shell ?" options={["Afficher le texte à l'écran", "Fournir l'électricité au terminal", "Stocker les fichiers", "Lire la commande, la comprendre et lancer le programme correspondant"]} correct={3} explanation="Le terminal affiche et transmet ; le shell, comme bash ou PowerShell, interprète et exécute." />
+  <Quiz id="f1m5-q-2" question="Le shell répond Permission denied. Qu'est-ce que cela signifie ?" options={["La commande n'existe pas", "Le fichier n'existe pas", "Le disque est plein", "Tu n'as pas le droit d'agir sur ce fichier ou ce dossier"]} correct={3} explanation="La commande et le fichier existent, mais tes droits ne suffisent pas." />
+  <Quiz id="f1m5-q-3" question="Tu es dans /home/alice/projet. Que désigne ../photos/plage.jpg ?" options={["/home/alice/projet/photos/plage.jpg", "/home/alice/photos/plage.jpg", "/photos/plage.jpg", "/home/photos/plage.jpg"]} correct={1} explanation=".. remonte à /home/alice, puis on descend dans photos." />
+  <Quiz id="f1m5-q-4" question="Quelle commande montre aussi les fichiers cachés, avec leurs détails ?" options={["ls", "ls -la", "ls -l", "ls -h"]} correct={1} explanation="-l détaille, -a ajoute les noms qui commencent par un point." />
+  <Quiz id="f1m5-q-5" question="Quelle commande renomme rapport_v3.txt en rapport-final.txt ?" options={["cp rapport_v3.txt rapport-final.txt", "mv rapport_v3.txt rapport-final.txt", "rename rapport-final.txt", "rm rapport_v3.txt rapport-final.txt"]} correct={1} explanation="Renommer, c'est déplacer vers un nouveau nom : mv." />
+  <Quiz id="f1m5-q-6" question="Que se passe-t-il si mv écrit sur un fichier de destination qui existe déjà ?" options={["mv refuse", "mv l'écrase sans prévenir, sauf avec -i", "mv crée une copie numérotée", "mv envoie l'ancien dans une corbeille"]} correct={1} explanation="cp et mv écrasent en silence ; -i demande confirmation." />
+  <Quiz id="f1m5-q-7" question="Avant rm *.log, quel réflexe adopter ?" options={["Ajouter -f pour aller plus vite", "Redémarrer la machine", "Taper ls *.log pour voir exactement ce qui sera supprimé", "Aucun"]} correct={2} explanation="Le shell développe le joker : ls avec le même motif montre la liste que rm recevra." />
+  <Quiz id="f1m5-q-8" question="Quel outil utiliser pour parcourir un journal de deux millions de lignes ?" options={["cat", "touch", "less", "mkdir"]} correct={2} explanation="less affiche page par page et permet de chercher avec / ; cat ferait tout défiler." />
+  <Quiz id="f1m5-q-9" question="Comment suivre un journal en direct, ligne par ligne ?" options={["cat -f", "less -live", "tail -f", "head -f"]} correct={2} explanation="tail -f affiche les lignes au fur et à mesure qu'elles sont écrites ; Ctrl + C arrête." />
+  <Quiz id="f1m5-q-10" question="Dans un synopsis de manuel, que signifie SOURCE... ?" options={["Une source facultative", "Taper trois points", "Une ou plusieurs sources", "Une source par défaut"]} correct={2} explanation="Les points de suspension marquent un élément répétable." />
+  <Quiz id="f1m5-q-11" question="Quelle commande trouve tous les fichiers .conf sous le dossier courant ?" options={["grep .conf", "ls -R conf", "find . -name \"*.conf\"", "cat *.conf"]} correct={2} explanation="find parcourt l'arborescence ; le motif entre guillemets est transmis tel quel à find." />
+  <Quiz id="f1m5-q-12" question="Que fait grep -c ECHEC journal.log ?" options={["Il supprime les lignes ECHEC", "Il colore les lignes ECHEC", "Il copie le journal", "Il compte les lignes qui contiennent ECHEC"]} correct={3} explanation="-c affiche seulement le nombre de lignes correspondantes, comme grep ECHEC journal.log | wc -l." />
+  <Quiz id="f1m5-q-13" question="Quel est l'équivalent PowerShell de tail -n 5 fichier ?" options={["Select-String fichier -Last 5", "Get-Content fichier -Tail 5", "Get-ChildItem -Tail 5", "tail -n 5 fichier fonctionne à l'identique"]} correct={1} explanation="Get-Content accepte -Tail et -Head ; les alias ne reprennent pas les options de Linux." />
+  <Quiz id="f1m5-q-14" question="Quel paramètre PowerShell décrit une suppression sans l'exécuter ?" options={["-Force", "-WhatIf", "-Recurse", "-Silent"]} correct={1} explanation="-WhatIf simule l'action ; c'est la version intégrée du réflexe ls avant rm." />
+</QuizGroup>
+
+Moins de 10 bonnes réponses ? Reprends les leçons concernées avant le projet.
+
+## projet
+
+### l'énoncé
+
+Tu reprends le dossier d'un petit projet Python, laissé en vrac par un collègue parti précipitamment. Tout est mélangé au même niveau : code, tests, documentation, captures d'écran, journaux, copies de sauvegarde, brouillons, un vieux dossier, et même un fichier qui n'aurait jamais dû exister. Range-le selon le cahier des charges, **uniquement en ligne de commande**.
+
+### le cahier des charges
+
+1. Le code source va dans un dossier `src` : `main.py` et `utils.py`.
+2. Les tests vont dans un dossier `tests` : `test_utils.py`.
+3. La documentation va dans un dossier `docs` : `guide-installation.md` et `notes-reunion.txt`. Le `README.md` **reste** à la racine, où les outils et les humains le cherchent.
+4. Toutes les images `.png` vont dans un dossier `images`.
+5. Tous les journaux `.log` vont dans un dossier `logs`.
+6. Les fichiers inutiles sont supprimés : le brouillon `.tmp` et la copie `.bak`.
+7. Le vieux dossier `vieux` n'est pas supprimé, mais déplacé, avec tout son contenu, dans un dossier `archives`.
+8. Un fichier ne doit **pas** rester dans le projet, parce qu'il contient des secrets : trouve-le en lisant ou en cherchant, et supprime-le.
+9. Enfin, crée un fichier `inventaire.txt` à la racine qui contient la liste des images, obtenue avec `ls` et une redirection.
+
+Chaque exigence est vérifiée dans la machine après chacune de tes commandes. L'ordre et la façon de faire sont libres ; seul le résultat compte. Travaille prudemment : `pwd` et `ls` avant toute commande qui déplace ou supprime, et le bouton Redémarrer si tu dois tout reprendre.
+
+<LinuxTerminal title="Projet : remettre de l'ordre" height={440} files={{ "main.py": "from utils import saluer\n\nprint(saluer('monde'))\n", "utils.py": "def saluer(nom):\n    return 'Bonjour, ' + nom\n", "test_utils.py": "from utils import saluer\n\ndef test_saluer():\n    assert saluer('Alice') == 'Bonjour, Alice'\n", "README.md": "# Projet de démonstration\n\nLancer : python src/main.py\n", "guide-installation.md": "# Installation\n\n1. Installer Python 3.\n", "notes-reunion.txt": "Réunion du 28 septembre : ranger le dépôt.\n", "logo.png": "(image) logo du projet\n", "capture-accueil.png": "(image) écran d'accueil\n", "capture-erreur.png": "(image) message d'erreur\n", "app.log": "2026-09-28 10:00:01 INFO démarrage\n", "erreurs-2026-09.log": "2026-09-27 16:42:10 ERREUR fichier introuvable\n", "brouillon.tmp": "idées en vrac\n", "main.py.bak": "print('ancienne version')\n", "acces-serveur.txt": "Serveur de production\nutilisateur=admin\nmot de passe=Rentree2026!\n", "vieux/ancien-script.py": "print('version 0.1')\n", "vieux/lisezmoi.txt": "Ancienne version du projet, à garder pour mémoire.\n" }} checks={[{ "label": "src/main.py", "path": "src/main.py", "expect": "file", "contains": "saluer" }, { "label": "src/utils.py", "path": "src/utils.py", "expect": "file", "contains": "def saluer" }, { "label": "tests/test_utils.py", "path": "tests/test_utils.py", "expect": "file" }, { "label": "README.md reste à la racine", "path": "README.md", "expect": "file" }, { "label": "docs/guide-installation.md", "path": "docs/guide-installation.md", "expect": "file" }, { "label": "docs/notes-reunion.txt", "path": "docs/notes-reunion.txt", "expect": "file" }, { "label": "images/logo.png", "path": "images/logo.png", "expect": "file" }, { "label": "images/capture-accueil.png", "path": "images/capture-accueil.png", "expect": "file" }, { "label": "images/capture-erreur.png", "path": "images/capture-erreur.png", "expect": "file" }, { "label": "logs/app.log", "path": "logs/app.log", "expect": "file" }, { "label": "logs/erreurs-2026-09.log", "path": "logs/erreurs-2026-09.log", "expect": "file" }, { "label": "brouillon.tmp supprimé", "path": "brouillon.tmp", "expect": "absent" }, { "label": "main.py.bak supprimé", "path": "main.py.bak", "expect": "absent" }, { "label": "vieux déplacé dans archives, avec son contenu", "path": "archives/vieux/ancien-script.py", "expect": "file" }, { "label": "plus de dossier vieux à la racine", "path": "vieux", "expect": "absent" }, { "label": "le fichier de secrets a disparu", "path": "acces-serveur.txt", "expect": "absent" }, { "label": "inventaire.txt liste les images", "path": "inventaire.txt", "expect": "file", "contains": "capture-erreur.png" }]} hints={["Commence par ls, puis crée tous les dossiers d'un coup avec mkdir.", "mv accepte plusieurs sources et un joker : mv *.png images/", "grep -ri \"mot de passe\" . trouve le fichier sensible.", "mv vieux archives/ déplace le dossier entier ; ls images > inventaire.txt crée l'inventaire."]} />
+
+### les critères de réussite
+
+| Critère | Attendu |
+| --- | --- |
+| Exigences | Les 17 vérifications de la machine sont cochées |
+| Prudence | Aucun fichier utile perdu : pas besoin de Redémarrer pour récupérer une erreur |
+| Efficacité | Les jokers et les commandes à plusieurs sources sont utilisés plutôt que fichier par fichier |
+| Compréhension | Tu sais expliquer pourquoi le fichier de secrets devait disparaître, et ce qu'il aurait fallu faire en plus dans la vraie vie |
+
+### la correction commentée
+
+Voici une solution possible, suivie de ses explications. Il en existe d'autres, tout aussi justes.
+
+```bash
+ls
+mkdir src tests docs images logs archives
+mv main.py utils.py src/
+mv test_utils.py tests/
+mv guide-installation.md notes-reunion.txt docs/
+ls *.png
+mv *.png images/
+mv *.log logs/
+grep -ri "mot de passe" .
+ls *.tmp *.bak acces-serveur.txt
+rm brouillon.tmp main.py.bak acces-serveur.txt
+mv vieux archives/
+ls images > inventaire.txt
+tree
+```
+
+**Se situer d'abord.** Le premier `ls` montre l'ampleur du désordre ; on ne touche à rien avant d'avoir vu.
+
+**Créer tous les dossiers d'un coup.** `mkdir` accepte plusieurs noms : une seule commande, et le plan de l'arborescence est posé.
+
+**Déplacer par groupes.** `mv` accepte plusieurs sources suivies d'un dossier, et la barre oblique finale garantit que la destination est bien un dossier existant : sans elle, une faute de frappe dans le nom du dossier aurait renommé un fichier au lieu de le déplacer.
+
+**Vérifier le joker avant de s'en servir.** `ls *.png` montre les trois images avant le `mv` ; le même geste avant `rm`, avec `ls *.tmp *.bak acces-serveur.txt`, montre exactement les fichiers qui vont disparaître.
+
+**Trouver le secret.** Le nom `acces-serveur.txt` pouvait passer pour une documentation. C'est `grep -ri "mot de passe" .` qui révèle son contenu : l'identifiant et le mot de passe d'un serveur de production, en clair. Le supprimer du projet était indispensable, mais **ne suffit pas** dans la vraie vie : si le dossier a été partagé, copié ou versionné, le mot de passe a pu être lu. Il faut donc aussi le **changer** sur le serveur, et prévenir le responsable. Un secret exposé est un secret à remplacer, pas seulement à cacher.
+
+**Archiver plutôt que supprimer.** `mv vieux archives/` déplace le dossier entier, sans `-r` : `mv` n'en a pas besoin. En cas de doute sur l'utilité d'un contenu, on archive, on ne supprime pas.
+
+**Produire l'inventaire.** `ls images > inventaire.txt` envoie la liste dans un fichier au lieu de l'afficher. Enfin, `tree` donne la vue d'ensemble finale, à comparer au cahier des charges.
+
+### pour aller plus loin
+
+Refais le projet sous Windows, en PowerShell, dans un dossier de test : `New-Item -ItemType Directory`, `Move-Item`, `Remove-Item -WhatIf` puis sans, et `Get-ChildItem images > inventaire.txt`. Puis écris la suite de commandes de la correction dans un fichier `ranger.sh` : tu viens d'écrire ton premier script, qui refait le rangement en une seule commande, `sh ranger.sh`. C'est l'objet du module suivant, qui t'apprend à penser comme un programmeur.
+
+## à retenir
+
+- Ranger en ligne de commande, c'est **voir** (`ls`, `tree`), **planifier** (`mkdir`), **déplacer par groupes** (`mv` et les jokers), **vérifier** avant de supprimer.
+- Les **jokers** agissent sur beaucoup de fichiers : `ls` avec le même motif avant `mv` ou `rm`.
+- Un doute sur un contenu : on **archive**, on ne supprime pas.
+- Un **secret** trouvé dans un fichier se retire, et surtout se **change**.
+- Une suite de commandes qui marche peut devenir un **script** : c'est le pont vers la programmation.
