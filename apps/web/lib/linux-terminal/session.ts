@@ -114,11 +114,25 @@ export function createLineTracker(
 // ── Checking the state the learner leaves ────────────────────────────────────
 
 /** What a path of the lesson directory turned out to be. */
-export type PathState = "file" | "dir" | "absent";
+export type PathState = "file" | "dir" | "link" | "absent";
+
+/** What the machine says about one path. */
+export interface PathObservation {
+  state: PathState;
+  /** A file's text. */
+  text: string | null;
+  /** Permission bits in octal, "640" or "4755"; null when unknown. */
+  mode: string | null;
+  /** A symbolic link's target, as it was written. */
+  target: string | null;
+  /** How many names the inode has: 2 once a hard link is made. */
+  links: number | null;
+}
 
 /**
  * One thing the exercise asks the learner to leave behind: a path that must
- * be a file (optionally containing a text), a directory, or nothing at all.
+ * be a file (optionally containing a text), a directory, a symbolic link, or
+ * nothing at all, with, if asked, given permissions or a number of hard links.
  * Checked in the machine itself, so any way of getting there counts.
  */
 export interface StateCheck {
@@ -127,11 +141,27 @@ export interface StateCheck {
   expect: PathState;
   /** For a file: a text it must contain. */
   contains?: string | undefined;
+  /** Permission bits in octal, as chmod takes them: "640", "750", "4755". */
+  mode?: string | undefined;
+  /** For a link: the target it must point to, as written by ln -s. */
+  target?: string | undefined;
+  /** The number of hard links the path must have. */
+  links?: number | undefined;
 }
 
-/** Whether a check holds, given what the path is and, for a file, its text. */
-export function checkHolds(check: StateCheck, state: PathState, text: string | null): boolean {
-  if (state !== check.expect) return false;
-  if (check.expect !== "file" || check.contains === undefined) return true;
-  return text?.includes(check.contains) === true;
+/** Permission bits in octal, without leading zeros beyond three digits. */
+export function octalMode(mode: number): string {
+  return (mode & 0o7777).toString(8).padStart(3, "0");
+}
+
+/** Whether a check holds, given what the machine says about its path. */
+export function checkHolds(check: StateCheck, seen: PathObservation): boolean {
+  if (seen.state !== check.expect) return false;
+  if (check.contains !== undefined && seen.text?.includes(check.contains) !== true) return false;
+  if (check.mode !== undefined && seen.mode !== check.mode.replace(/^0+(?=\d{3})/, "")) {
+    return false;
+  }
+  if (check.target !== undefined && seen.target !== check.target) return false;
+  if (check.links !== undefined && seen.links !== check.links) return false;
+  return true;
 }
