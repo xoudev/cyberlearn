@@ -1,0 +1,157 @@
+---
+refCode: CL-LSN-02032-V01
+slug: linux-voir-processus
+title: "Voir les processus"
+description: "Ce qui tourne sur une machine Linux et comment le voir : les processus et leurs identifiants (PID, PPID), l'arbre qui part de PID 1, ps et ses options, les états d'un processus (R, S, D, T, Z) et les zombies, le lien entre un processus et son propriétaire, et ce qu'un œil de défenseur cherche dans une liste de processus. Avec un arbre de processus à reconstituer sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02904-V01"]
+---
+
+Un serveur qui ralentit, une alerte qui signale une connexion sortante suspecte, un disque qui se remplit sans raison : dans tous ces cas, la première question est la même. **Qu'est-ce qui tourne sur cette machine ?** Sur Linux, tout ce qui s'exécute est un **processus** : ton shell, chaque commande que tu tapes, le serveur web, le démon SSH, et parfois un programme qui n'a rien à faire là. Ce module t'apprend à les voir, à les surveiller, à leur parler par des signaux, à régler leur priorité et à lire les ressources qu'ils consomment. Cette première leçon commence par l'essentiel : lister les processus et comprendre ce qu'on lit.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un processus, son PID et son PPID ;
+- lister les processus avec `ps` et choisir les colonnes à afficher ;
+- reconstituer l'arbre des processus à partir des PPID ;
+- lire l'état d'un processus : `R`, `S`, `D`, `T`, `Z` ;
+- expliquer ce qu'est un processus zombie et pourquoi il n'est pas dangereux en soi ;
+- repérer dans une liste de processus ce qui mérite une enquête.
+
+## pourquoi ça compte
+
+La liste des processus est l'un des premiers endroits que regarde un administrateur quand quelque chose ne va pas, et l'un des premiers que regarde un analyste quand il soupçonne une intrusion. Un mineur de cryptomonnaie qui consomme tout le processeur, un shell ouvert par un attaquant, un script oublié qui tourne depuis des mois : tous apparaissent dans cette liste, pour qui sait la lire. Savoir remonter l'arbre des processus, c'est aussi savoir **qui a lancé quoi** : un shell dont le parent est le serveur web, par exemple, est un signal d'alarme classique, parce qu'un serveur web n'a normalement aucune raison de lancer un shell.
+
+## un processus, un PID, un parent
+
+Un **programme** est un fichier sur le disque. Un **processus** est ce programme **en cours d'exécution** : une copie en mémoire, avec son propre état, ses fichiers ouverts et ses variables. On peut lancer dix fois le même programme et obtenir dix processus distincts.
+
+Chaque processus reçoit du noyau un numéro unique, son **PID** (*process identifier*). Et chaque processus a été créé par un autre, son **parent**, dont le numéro est le **PPID** (*parent process identifier*). Quand tu tapes `ls` dans ton shell, le shell se duplique et la copie devient `ls` : le PPID de `ls` est le PID de ton shell.
+
+En remontant les parents, on arrive toujours au même ancêtre : le processus numéro **1**, lancé par le noyau au démarrage. Sur la plupart des distributions, c'est **systemd** ; sur le Linux minimal des exercices, c'est l'`init` de BusyBox. Si un parent meurt avant ses enfants, ceux-ci sont **adoptés** par PID 1, qui les surveillera jusqu'au bout.
+
+<Diagram caption="Une branche de l'arbre des processus">
+flowchart TD
+  A["PID 1 : init ou systemd"] --> B["PID 612 : sshd, le service SSH"]
+  A --> C["PID 740 : nginx, le serveur web"]
+  B --> D["PID 2104 : sshd, la connexion d'alice"]
+  D --> E["PID 2110 : bash, le shell d'alice"]
+  E --> F["PID 2231 : ps"]
+  C --> G["PID 741 : nginx, un worker"]
+</Diagram>
+
+## fork et exec : comment naît un processus
+
+Sous Linux, un processus ne sort jamais de nulle part : il naît toujours d'un autre, en deux temps. D'abord, le parent se **duplique** avec l'appel système **`fork`** : le noyau crée une copie presque parfaite, avec la même mémoire, les mêmes fichiers ouverts et le même répertoire courant, mais un nouveau PID. Ensuite, la copie se **transforme** avec l'appel système **`exec`** : elle remplace son propre programme par un autre, en gardant son PID, son parent et ses fichiers ouverts.
+
+C'est exactement ce que fait ton shell quand tu tapes `ls` : il fait un `fork`, la copie fait un `exec` de `/bin/ls`, et le shell parent attend la fin de son enfant avec `wait`. Cette mécanique explique plusieurs comportements que tu as déjà rencontrés. Les redirections, `> fichier` ou `2>&1`, sont préparées par la copie entre le `fork` et l'`exec`, et le nouveau programme hérite des fichiers ainsi ouverts sans le savoir. Les variables d'environnement exportées passent aux enfants parce que la copie les emporte. Et la commande `exec` du shell, que tu croiseras dans l'exercice, fait un `exec` sans `fork` : le shell est **remplacé** par le programme, qui garde son PID.
+
+Retiens surtout la conséquence pratique : chaque processus porte la trace de celui qui l'a créé, son PPID. C'est ce fil que l'on remonte en enquête.
+
+## ps : la photo des processus
+
+`ps` (*process status*) prend une **photo** des processus à un instant donné. Sans option, il n'affiche que ceux de ton terminal, ce qui est rarement ce qu'on veut. Deux formes reviennent partout :
+
+```bash
+ps aux          # style BSD : tous les processus, avec l'utilisateur, le CPU, la mémoire
+ps -ef          # style System V : tous les processus, avec le PPID
+```
+
+Les deux syntaxes cohabitent pour des raisons historiques, et on les croise autant l'une que l'autre dans la documentation. `ps aux` affiche notamment `USER`, `PID`, `%CPU`, `%MEM`, `STAT` et `COMMAND` ; `ps -ef` affiche `UID`, `PID`, `PPID` et `CMD`. Sur un Linux complet, `ps -ef --forest` et la commande `pstree` dessinent directement l'arbre.
+
+La forme la plus utile en pratique est `ps -o`, qui laisse **choisir les colonnes** :
+
+```bash
+ps -o pid,ppid,stat,user,args
+```
+
+`args` montre la ligne de commande complète, avec ses arguments ; `comm` ne montre que le nom du programme. C'est une distinction importante : dix processus peuvent s'appeler `sh`, mais leurs `args` disent lequel exécute quel script. Le `ps` de BusyBox, celui des exercices, accepte les colonnes `pid`, `ppid`, `pgid`, `user`, `group`, `comm`, `args`, `stat`, `tty`, `vsz` et `rss`, mais pas `aux` ni `-ef`. C'est une bonne occasion de prendre l'habitude de `-o`, qui marche partout.
+
+Pour chercher un processus par son nom, on combine `ps` et `grep` : `ps -o pid,args | grep nginx`. Sur un Linux complet, `pgrep nginx` renvoie directement les PID, et `pgrep -a nginx` leurs lignes de commande.
+
+## les états d'un processus
+
+La colonne `STAT` résume ce que fait le processus à cet instant, avec une lettre principale :
+
+| Lettre | État | Ce que ça veut dire |
+|---|---|---|
+| `R` | *running* | en cours d'exécution, ou prêt à l'être |
+| `S` | *sleeping* | endormi, en attente d'un événement : une touche, un paquet, un délai |
+| `D` | *disk sleep* | en attente non interruptible, presque toujours une entrée ou sortie disque |
+| `T` | *stopped* | suspendu, par Ctrl+Z ou par le signal `SIGSTOP` |
+| `Z` | *zombie* | terminé, mais son parent n'a pas encore lu son code de retour |
+| `I` | *idle* | fil du noyau inactif |
+
+Des lettres supplémentaires affinent : `N` pour une priorité basse, `<` pour une priorité haute, `s` pour un chef de session, `+` pour un processus au premier plan de son terminal. Sur une machine en bonne santé, l'immense majorité des processus sont en `S` : ils attendent quelque chose. Beaucoup de `R` en permanence signalent une machine chargée ; des processus bloqués en `D` pointent souvent vers un disque lent ou un partage réseau qui ne répond plus.
+
+## les zombies
+
+Un **zombie** est un processus **déjà terminé**. Il n'occupe plus de mémoire ni de processeur : il ne reste de lui qu'une ligne dans la table des processus, qui contient son code de retour, en attendant que son parent vienne le lire avec l'appel système `wait`. C'est ainsi qu'un shell sait si une commande a réussi. Normalement, le parent lit ce code dans la foulée et la ligne disparaît.
+
+Un zombie isolé n'est donc pas dangereux. Des zombies qui s'accumulent révèlent en revanche un **programme parent mal écrit**, qui ne récupère jamais ses enfants. On ne peut pas tuer un zombie, puisqu'il est déjà mort : on corrige ou on relance le parent. Si le parent disparaît, PID 1 adopte les zombies et les fait disparaître aussitôt.
+
+## ce qu'un défenseur regarde
+
+Face à une liste de processus sur une machine suspecte, quelques questions guident l'enquête :
+
+- **Qui est le parent ?** Un shell dont le parent est un serveur web, une base de données ou un démon d'impression est anormal.
+- **Quel utilisateur ?** Un processus lancé par `www-data` ou `nobody` qui ouvre des connexions réseau mérite un examen.
+- **Quelle ligne de commande ?** Un nom rassurant, comme `[kworker]` ou `sshd`, peut cacher un programme lancé depuis `/tmp` : la colonne `args` et le lien `/proc/PID/exe`, vu en fin de module, le révèlent.
+- **Depuis quand ?** Un processus démarré en pleine nuit, alors que personne n'était connecté, pose question.
+
+Ces réflexes sont ceux des analystes de centre de supervision et des équipes de réponse à incident. La commande est simple ; c'est la lecture qui fait l'expertise.
+
+## à toi de jouer
+
+Le dossier de travail contient `demarrer.sh`, qui lance en arrière-plan un petit « service » et ses tâches. Lance-le avec `sh demarrer.sh`, puis enquête :
+
+1. affiche tous les processus avec leur PID, leur PPID, leur état et leur ligne de commande : `ps -o pid,ppid,stat,args` ;
+2. retrouve le processus `sh service.sh`, puis ses enfants, dont le PPID est son PID ;
+3. enregistre la photo complète dans `processus.txt`, avec une redirection ;
+4. repère enfin le processus en état `Z` : quel est son parent, et pourquoi ne disparaît-il pas ?
+
+<LinuxTerminal title="Reconstituer l'arbre des processus" files={{"demarrer.sh": "#!/bin/sh\n# Lance un petit service et ses tâches, en arrière-plan.\nsh service.sh &\nsh -c 'sleep 1 & exec sleep 600' &\nsleep 1\necho \"Service lancé.\"\n", "service.sh": "#!/bin/sh\n# Un faux service qui lance deux tâches, puis les attend.\n/bin/sleep 900 &\n/bin/sleep 901 &\nwait\n"}} expectedCommands={["sh demarrer.sh", "ps -o pid,ppid,stat,args"]} checks={[{"label": "processus.txt contient la photo des processus", "path": "processus.txt", "expect": "file", "contains": "service.sh"}]} hints={["Commence par sh demarrer.sh : il rend la main tout de suite, les processus tournent derrière.", "ps -o pid,ppid,stat,args affiche les colonnes demandées.", "Les enfants de sh service.sh ont pour PPID son PID.", "Ajoute > processus.txt au bout de la commande ps.", "Le zombie est marqué Z ; son PPID est le sleep 600."]} />
+
+Le script a lancé `service.sh`, qui a lui-même lancé deux tâches `sleep` : leur PPID est le PID du service. Il a aussi lancé un petit programme qui crée un zombie : un parent, remplacé par `sleep 600` grâce à `exec`, n'appellera jamais `wait` pour son enfant terminé. Le zombie restera là tant que ce parent vivra ; essaie `kill` sur le PID du parent, puis relance `ps` : le zombie disparaît avec lui.
+
+## les pièges
+
+- **Lancer `ps` sans option.** Il ne montre que les processus de ton terminal. Choisis les colonnes avec `-o`, ou tout voir avec `ps aux` ou `ps -ef` sur un Linux complet.
+- **Se fier au nom du programme.** Dix processus peuvent s'appeler `sh` ; seule la colonne `args` dit lequel fait quoi.
+- **Chercher avec `ps | grep` et se voir soi-même.** La commande `grep nginx` contient le mot cherché et apparaît dans le résultat. `pgrep` évite ce piège.
+- **Vouloir tuer un zombie.** Il est déjà mort : c'est son parent qu'il faut corriger ou arrêter.
+- **Confondre programme et processus.** Un même programme lancé trois fois donne trois processus, avec trois PID.
+- **Oublier que `ps` est une photo.** Entre deux appels, des processus naissent et meurent ; pour suivre en continu, c'est `top`, dans la prochaine leçon.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/ps.1.html" description="Toutes les options et toutes les colonnes de ps, dont les codes d'état, en anglais">Page de manuel de ps</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man2/wait.2.html" description="L'appel système qui récupère le code de retour d'un enfant, et ce qui arrive sans lui">Page de manuel de wait(2)</ExternalLink>
+
+<ExternalLink href="https://tldp.org/LDP/tlk/kernel/processes.html" description="Le fonctionnement interne des processus dans le noyau Linux, en anglais">The Linux Kernel : Processes</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que désigne le PPID d'un processus ?" options={["Son numéro de priorité", "Le PID du processus qui l'a créé", "Le nombre de ses enfants", "Son identifiant de session"]} correct={1} explanation="Parent process identifier : le numéro du parent. En remontant les PPID, on arrive toujours à PID 1." />
+  <Quiz id="q-2" question="Quel processus est l'ancêtre de tous les autres sur un système Linux démarré ?" options={["Le shell de root", "sshd", "Le processus numéro 1, init ou systemd", "Le noyau lui-même, avec le PID 0 pour tous"]} correct={2} explanation="Le noyau lance PID 1 au démarrage ; tout le reste en descend, et PID 1 adopte les orphelins." />
+  <Quiz id="q-3" question="Que signifie l'état S dans la colonne STAT ?" options={["Arrêté définitivement", "Endormi, en attente d'un événement", "En train d'utiliser le processeur", "Supprimé"]} correct={1} explanation="Sleeping : la plupart des processus attendent quelque chose, une touche, un paquet ou un délai." />
+  <Quiz id="q-4" question="Pourquoi ne peut-on pas tuer un processus zombie ?" options={["Parce qu'il est protégé par root", "Parce qu'il est déjà terminé : il ne reste que sa ligne, en attente de son parent", "Parce qu'il est en mode noyau", "On peut, avec kill -9"]} correct={1} explanation="Un zombie n'exécute plus rien. Il disparaît quand son parent lit son code de retour, ou quand le parent meurt et que PID 1 l'adopte." />
+  <Quiz id="q-5" question="Pourquoi préférer la colonne args à la colonne comm ?" options={["Elle est plus courte", "Elle montre la ligne de commande complète, qui distingue deux processus du même programme", "Elle affiche la mémoire", "Elle trie par PID"]} correct={1} explanation="Dix processus peuvent s'appeler sh ; args dit lequel exécute quel script, avec quels arguments." />
+  <Quiz id="q-6" question="Un processus bash a pour parent le serveur web nginx. Qu'en penser ?" options={["C'est normal, nginx lance toujours un shell", "C'est un signal d'alarme : un serveur web n'a normalement aucune raison de lancer un shell", "C'est un zombie", "Cela signifie que nginx est arrêté"]} correct={1} explanation="Un shell enfant d'un service réseau est un indice classique d'exploitation : quelqu'un a peut-être fait exécuter une commande au serveur." />
+  <Quiz id="q-7" question="Beaucoup de processus restent longtemps dans l'état D. Que soupçonner ?" options={["Un manque de mémoire", "Des entrées ou sorties bloquées, souvent un disque lent ou un partage réseau qui ne répond plus", "Un virus", "Trop d'utilisateurs connectés"]} correct={1} explanation="D est une attente non interruptible, presque toujours liée au stockage. C'est l'état qu'on ne peut même pas interrompre avec kill." />
+</QuizGroup>
+
+## à retenir
+
+- Un **processus** est un programme en cours d'exécution, identifié par son **PID** ; son parent est son **PPID**. Tout descend de **PID 1**.
+- `ps -o pid,ppid,stat,user,args` choisit les colonnes ; `ps aux` et `ps -ef` montrent tout sur un Linux complet ; `pstree` et `pgrep` y aident aussi.
+- États : **R** en cours, **S** endormi, **D** attente disque, **T** suspendu, **Z** zombie.
+- Un **zombie** est déjà mort : on corrige son **parent**.
+- En enquête : **parent**, **utilisateur**, **ligne de commande** et **heure de démarrage** de chaque processus suspect.

@@ -1,0 +1,174 @@
+---
+refCode: CL-LSN-02036-V01
+slug: linux-priorites
+title: "Les priorités : nice et renice"
+description: "Partager le processeur entre des programmes qui se le disputent : comment l'ordonnanceur de Linux répartit le temps de calcul, ce que règle la valeur de politesse (nice), de -20 à 19, lancer un programme avec nice, changer la priorité d'un processus en cours avec renice, qui a le droit de faire quoi, la priorité des disques avec ionice, et les limites qu'on pose avec systemd. Avec deux calculs qui se disputent un processeur, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02035-V01"]
+---
+
+Une sauvegarde nocturne déborde sur la matinée, et le site web devient poussif dès que les premiers clients arrivent. Arrêter la sauvegarde ? Elle n'aurait servi à rien. La laisser tourner à pleine vitesse ? Les clients partiront. Il existe une troisième voie : lui dire de **passer après les autres**. Linux permet de régler la **priorité** de chaque processus, c'est-à-dire la part de processeur qu'il obtient quand plusieurs programmes se le disputent. Cette leçon t'apprend à le faire avec `nice` et `renice`, à comprendre ce que ces réglages changent vraiment, et ce qu'ils ne changent pas.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer comment l'ordonnanceur partage le processeur entre les processus ;
+- lire la valeur de politesse d'un processus, de -20 à 19, dans `ps` et `top` ;
+- lancer un programme avec une priorité basse grâce à `nice` ;
+- changer la priorité d'un processus en cours avec `renice` ;
+- dire qui a le droit d'augmenter ou de baisser une priorité ;
+- régler aussi la priorité des accès disque avec `ionice` ;
+- savoir quand la priorité ne suffit pas, et qu'il faut une vraie limite.
+
+## pourquoi ça compte
+
+Sur un serveur, tous les programmes ne se valent pas. Le service qui répond aux clients doit rester réactif ; la compression des journaux, la sauvegarde, l'indexation ou la compilation peuvent attendre quelques minutes de plus. Régler les priorités, c'est traduire ces choix en consignes pour le système. Les administrateurs le font tous les jours, souvent sans y penser : `nice` devant une commande lourde est un réflexe de bonne hygiène sur une machine partagée. Côté sécurité, la priorité est aussi une ressource à protéger : un compte qui pourrait s'accorder la priorité maximale accaparerait la machine, et c'est pourquoi seul root peut le faire.
+
+## l'ordonnanceur
+
+Un processeur à un cœur n'exécute qu'un programme à la fois. L'impression que tout tourne en même temps vient de l'**ordonnanceur** (*scheduler*) du noyau, qui donne la main à chaque processus prêt pendant quelques millisecondes, puis au suivant, des centaines de fois par seconde. Sur une machine à plusieurs cœurs, il fait la même chose sur chaque cœur.
+
+La question est de savoir **combien** de temps chacun reçoit. Un processus endormi, en état `S`, ne demande rien : il ne compte pas. La répartition ne se joue qu'entre les processus **prêts**, en état `R`. Si un seul calcul tourne, il a tout le cœur, quelle que soit sa priorité. C'est seulement quand plusieurs processus veulent le même cœur que la priorité entre en jeu.
+
+L'ordonnanceur par défaut de Linux cherche l'**équité** : chaque processus prêt reçoit une part proportionnelle à son **poids**. Et ce poids dépend d'une seule valeur que l'utilisateur peut régler : la **valeur de politesse**, le *nice*.
+
+## la valeur de politesse
+
+La valeur *nice* va de **-20** à **19**, et vaut **0** par défaut. Le nom dit tout : un processus « gentil » (*nice*), avec une valeur élevée, laisse passer les autres. Plus la valeur est **haute**, plus la priorité est **basse**.
+
+| Valeur nice | Priorité | Usage typique |
+|---|---|---|
+| -20 | la plus haute | réservé à des cas très particuliers, par root |
+| 0 | normale | la valeur par défaut de tout processus |
+| 10 | basse | la valeur par défaut de la commande `nice` |
+| 19 | la plus basse | les tâches de fond qui peuvent attendre |
+
+L'écart est important : chaque cran change le poids d'environ 25 %. Entre un processus à 0 et un processus à 19 qui se disputent un cœur, le premier obtient en théorie près de **98 %** du temps. L'exercice te fera mesurer l'écart sur un vrai noyau.
+
+Dans `top`, la colonne **`NI`** affiche la valeur *nice*, et la colonne **`PR`** la priorité interne qui en découle (20 plus le *nice*, pour un processus ordinaire). La ligne `%Cpu` distingue d'ailleurs le temps passé par les programmes normaux (`us`) de celui des programmes à priorité réduite (`ni`). Dans `ps`, la colonne `nice` s'ajoute à `-o` sur un Linux complet, et la lettre `N` dans `STAT` signale une priorité basse, `<` une priorité haute.
+
+<Diagram caption="Deux calculs sur un seul cœur : la part de chacun selon sa valeur nice">
+flowchart LR
+  subgraph A["Les deux à nice 0"]
+    A1["calcul 1 : environ 50 %"]
+    A2["calcul 2 : environ 50 %"]
+  end
+  subgraph B["calcul 2 à nice 19"]
+    B1["calcul 1 : plus de 90 %"]
+    B2["calcul 2 : quelques %"]
+  end
+  A -->|"nice -n 19 sur le calcul 2"| B
+</Diagram>
+
+## nice : lancer avec une priorité choisie
+
+`nice` lance une commande avec une valeur de politesse modifiée :
+
+```bash
+nice -n 19 tar -czf sauvegarde.tar.gz /srv/donnees   # la plus basse priorité
+nice tar -czf sauvegarde.tar.gz /srv/donnees         # sans option : +10
+nice -n -5 ./calcul-urgent                           # plus prioritaire : root seulement
+```
+
+Sans argument, `nice` affiche simplement la valeur du shell courant, ce qui est pratique pour vérifier : dans un terminal ordinaire, il répond `0`, la valeur par défaut héritée de la session. La valeur est **héritée** : tout ce que lance une commande démarrée avec `nice -n 19` tourne aussi à 19. Une sauvegarde lancée ainsi reste donc discrète jusque dans ses sous-processus.
+
+## renice : changer en cours de route
+
+Pour un processus déjà lancé, on utilise `renice`, avec son PID :
+
+```bash
+renice -n 10 -p 2451      # passe le processus 2451 à la valeur 10
+renice -n 19 -u alice     # tous les processus de l'utilisateur alice
+```
+
+C'est l'outil de la situation d'ouverture : la sauvegarde tourne encore à 9 h, on la passe à 19 sans l'interrompre, et le site retrouve sa réactivité. Dans `top`, la touche `r` fait la même chose : elle demande un PID, puis la nouvelle valeur.
+
+## qui a le droit de faire quoi
+
+La règle protège la machine contre l'égoïsme :
+
+- **tout utilisateur** peut **baisser** la priorité de ses propres processus, en montant leur valeur *nice* ;
+- seul **root** peut **augmenter** une priorité, en baissant la valeur, y compris pour revenir en arrière. Un utilisateur qui passe son processus de 0 à 10 ne peut plus le ramener à 0 ;
+- personne, sauf root, ne touche aux processus des autres.
+
+Sans cette règle, chaque utilisateur d'un serveur partagé mettrait ses programmes à -20, et la priorité ne voudrait plus rien dire. Le fichier `/etc/security/limits.conf`, vu dans le module précédent, peut d'ailleurs autoriser un groupe précis à descendre jusqu'à une certaine valeur, avec l'élément `nice`.
+
+## ionice : la priorité des disques
+
+La valeur *nice* ne règle que le **processeur**. Or une sauvegarde gêne souvent davantage par ses **lectures et écritures** que par son calcul : elle occupe le disque, et le site attend ses fichiers. Sur un Linux complet, `ionice` règle la priorité des accès disque :
+
+```bash
+ionice -c 3 nice -n 19 tar -czf sauvegarde.tar.gz /srv/donnees
+```
+
+La classe `3` (*idle*) ne donne accès au disque que lorsque personne d'autre ne s'en sert. Associée à `nice -n 19`, c'est la façon la plus polie de lancer une grosse tâche de fond. L'effet réel dépend toutefois de l'ordonnanceur des disques utilisé par le noyau : sur certains disques rapides, il est faible.
+
+## quand la priorité ne suffit pas
+
+La priorité est **relative** : elle ne joue que s'il y a concurrence. Un calcul à *nice* 19, seul sur une machine au repos, prend 100 % d'un cœur, et c'est voulu, puisque ce temps serait sinon perdu. Mais cela ne répond pas à tous les besoins. Pour garantir qu'un service ne dépasse **jamais** une part donnée, même quand la machine est libre, ou pour limiter sa **mémoire**, il faut une **limite** dure. Sous Linux, elle passe par les **cgroups** (*control groups*), que systemd pilote simplement dans l'unité d'un service :
+
+```ini
+[Service]
+Nice=10
+CPUQuota=50%
+MemoryMax=1G
+```
+
+`Nice=` fixe la politesse, `CPUQuota=` plafonne le processeur, `MemoryMax=` la mémoire. Tu reverras ces réglages dans le module sur systemd ; les conteneurs, comme Docker, reposent exactement sur ces mêmes cgroups.
+
+Enfin, il existe des politiques d'ordonnancement **temps réel** (`chrt`), qui passent devant tout processus ordinaire, quelle que soit sa valeur *nice*. Elles servent à l'audio professionnel ou à l'industrie, et une erreur de réglage peut figer une machine : on n'y touche pas sans une raison précise.
+
+## à toi de jouer
+
+Le dossier de travail contient deux calculs sans fin, `lent.sh` et `rapide.sh`, qui notent leur valeur *nice* dans un fichier quand on les arrête. La machine n'a qu'un cœur : ils vont devoir le partager.
+
+1. lance `lent.sh` en arrière-plan avec la plus basse priorité : `nice -n 19 sh lent.sh &` ;
+2. lance `rapide.sh` en arrière-plan, normalement : `sh rapide.sh &` ;
+3. prends une mesure avec `top -b -n 1 | head -12`, et enregistre-la dans `mesure.txt`. Compare la colonne `%CPU` des deux calculs. Le `top` de BusyBox n'a pas de colonne `NI` : la lettre `N` de la colonne `STAT` signale la priorité basse, et la ligne `CPU` sépare le temps des programmes normaux (`usr`) de celui des programmes « gentils » (`nic`) ;
+4. baisse aussi la priorité de `rapide.sh` avec `renice -n 10 -p` suivi de son PID, puis mesure encore ;
+5. arrête les deux calculs avec `kill %1 %2`, attends une seconde, et lis `lent.fin` et `rapide.fin`.
+
+<LinuxTerminal title="Deux calculs pour un seul cœur" files={{"lent.sh": "#!/bin/sh\n# Un calcul sans fin, qui note sa priorité quand on l'arrête.\ntrap 'echo \"lent.sh arrêté, priorité $(nice)\" > lent.fin; exit 0' TERM\nwhile :; do :; done\n", "rapide.sh": "#!/bin/sh\n# Un calcul sans fin, qui note sa priorité quand on l'arrête.\ntrap 'echo \"rapide.sh arrêté, priorité $(nice)\" > rapide.fin; exit 0' TERM\nwhile :; do :; done\n"}} expectedCommands={["nice -n 19 sh lent.sh &", "sh rapide.sh &", "top -b -n 1 | head -12", "kill %1 %2"]} checks={[{"label": "mesure.txt contient une mesure de top", "path": "mesure.txt", "expect": "file", "contains": "lent.sh"}, {"label": "lent.sh a tourné avec la priorité 19", "path": "lent.fin", "expect": "file", "contains": "priorité 19"}, {"label": "rapide.sh est passé à la priorité 10", "path": "rapide.fin", "expect": "file", "contains": "priorité 10"}]} hints={["nice -n 19 se place devant la commande à lancer.", "top -b -n 1 | head -12 > mesure.txt enregistre la mesure.", "Le PID de rapide.sh est dans top, ou dans jobs -l.", "renice -n 10 -p suivi du PID de rapide.sh.", "kill %1 %2 arrête les deux tâches ; chacune écrit alors son fichier .fin."]} />
+
+À la première mesure, `rapide.sh` prend l'essentiel du processeur et `lent.sh` quelques pour cent seulement, alors qu'ils exécutent exactement le même code. Après le `renice`, `rapide.sh` garde pourtant l'avantage, parce que seules les **différences** de valeur comptent : deux processus à 10 et à 19 se partagent le cœur à peu près comme deux processus à 0 et à 9, et 10 reste bien plus prioritaire que 19. Ce qui change, c'est la ligne `CPU` : le temps passe de `usr` à `nic`, puisque les deux calculs sont désormais « gentils ». Ton shell, resté à 0, passe devant eux : le terminal reste réactif. Enfin, `lent.fin` apparaît souvent après `rapide.fin` : le calcul à 19 est servi en dernier, même pour exécuter son arrêt.
+
+## les pièges
+
+- **Croire qu'une valeur haute veut dire « plus important ».** C'est l'inverse : 19 est la priorité la plus **basse**.
+- **Attendre de `nice` qu'il limite un programme seul.** Sans concurrence, un processus à 19 prend tout le cœur. Pour un plafond, ce sont les cgroups.
+- **Baisser sa priorité puis vouloir revenir.** Seul root peut redescendre la valeur *nice*.
+- **Oublier les disques.** Une sauvegarde à *nice* 19 peut encore saturer le disque : ajoute `ionice -c 3`.
+- **Monter un service à -20 pour « l'accélérer ».** Cela ne sert que s'il manque de processeur, et c'est rarement le cas : la lenteur vient plus souvent des disques, du réseau ou de la base de données.
+- **Confondre `NI` et `PR` dans `top`.** `NI` est la valeur que tu règles ; `PR` est la priorité interne qui en découle.
+
+## pour aller plus loin
+
+<ExternalLink href="https://man7.org/linux/man-pages/man7/sched.7.html" description="Les politiques d'ordonnancement de Linux, la valeur nice et le temps réel, en anglais">Page de manuel sched(7)</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man1/renice.1.html" description="Changer la priorité d'un processus, d'un groupe ou d'un utilisateur, en anglais">Page de manuel de renice</ExternalLink>
+
+<ExternalLink href="https://www.freedesktop.org/software/systemd/man/latest/systemd.resource-control.html" description="CPUQuota, MemoryMax et les autres limites de ressources d'un service systemd, en anglais">systemd : le contrôle des ressources</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle valeur nice donne la priorité la plus basse ?" options={["-20", "0", "10", "19"]} correct={3} explanation="Plus la valeur est haute, plus le processus est « gentil » et laisse passer les autres." />
+  <Quiz id="q-2" question="Un calcul lancé avec nice -n 19 tourne seul sur une machine au repos. Quelle part du processeur obtient-il ?" options={["5 %", "50 %", "Tout le cœur, puisque personne d'autre n'en veut", "Aucune"]} correct={2} explanation="La priorité ne joue qu'en cas de concurrence. Sans rival, le temps libre lui revient." />
+  <Quiz id="q-3" question="Quelle commande passe le processus 2451, déjà lancé, à la valeur nice 10 ?" options={["nice -n 10 2451", "renice -n 10 -p 2451", "kill -10 2451", "top -p 2451"]} correct={1} explanation="nice lance une nouvelle commande ; renice modifie un processus existant." />
+  <Quiz id="q-4" question="Alice a passé son calcul de 0 à 10. Peut-elle le ramener à 0 ?" options={["Oui, toujours", "Non, seul root peut redescendre une valeur nice", "Oui, avec nice -n 0", "Seulement après un redémarrage"]} correct={1} explanation="Un utilisateur peut seulement baisser la priorité de ses processus ; l'augmenter, même pour revenir en arrière, est réservé à root." />
+  <Quiz id="q-5" question="Une sauvegarde à nice 19 ralentit encore le site, par ses lectures sur le disque. Que faire ?" options={["La passer à -20", "Ajouter ionice -c 3 pour qu'elle n'accède au disque que lorsque personne d'autre ne s'en sert", "Utiliser kill -STOP pour toujours", "Rien, c'est impossible"]} correct={1} explanation="nice ne règle que le processeur ; ionice règle la priorité des accès disque." />
+  <Quiz id="q-6" question="Comment garantir qu'un service ne dépasse jamais 50 % d'un processeur, même quand la machine est libre ?" options={["nice -n 19", "Une limite par cgroup, par exemple CPUQuota=50% dans son unité systemd", "renice -n 50", "ulimit -t 50"]} correct={1} explanation="La valeur nice est relative ; seule une limite de cgroup plafonne réellement la consommation." />
+  <Quiz id="q-7" question="Dans top, que montre la colonne NI ?" options={["Le numéro d'inode", "La valeur nice du processus", "Le nombre d'instances", "La mémoire non initialisée"]} correct={1} explanation="NI est la valeur nice ; PR est la priorité interne qui en découle." />
+</QuizGroup>
+
+## à retenir
+
+- L'**ordonnanceur** partage le processeur entre les processus **prêts** ; la priorité ne joue qu'en cas de **concurrence**.
+- La valeur **nice** va de **-20** (priorité haute) à **19** (priorité basse), **0** par défaut, et elle est **héritée** par les enfants.
+- **`nice -n 19 commande`** lance discrètement ; **`renice -n N -p PID`** change un processus en cours ; dans `top`, colonnes **`NI`** et **`PR`**, touche `r`.
+- Tout utilisateur peut **baisser** la priorité de ses processus ; seul **root** peut l'**augmenter**.
+- Pour les disques, **`ionice -c 3`** ; pour une vraie limite, les **cgroups** via systemd (`CPUQuota=`, `MemoryMax=`).
