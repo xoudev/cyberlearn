@@ -292,11 +292,11 @@ C'est une fonction définie dans sa configuration de bash (tu verras où au modu
 
 ## à toi de jouer
 
-Tu arrives sur une machine partagée. Vérifie trois choses dans l'ordre : quel shell est configuré pour toi, ce qu'est `cd` pour bash, et ce qu'est `ls`. Tu peux aussi essayer `tty`, `whoami`, `type -a ls` ou `echo $?`.
+Tu arrives sur une machine partagée. Vérifie trois choses dans l'ordre : quel shell est configuré pour toi, ce qu'est `cd` pour ce shell, et ce qu'est `ls`. Tu peux aussi essayer `tty`, `whoami`, `echo $0` ou `echo $?`.
 
-<SimulatedTerminal shell="bash" title="Machine partagée" expectedCommands={["echo $SHELL", "type cd", "type ls"]} hints={["La variable qui contient ton shell de connexion s'appelle SHELL.", "type suivi du nom de la commande dit ce qu'elle est pour bash."]} commands={{ "echo $SHELL": "/bin/bash", "echo $0": "bash", "type cd": "cd is a shell builtin", "type ls": "ls is aliased to `ls --color=auto'", "type -a ls": "ls is aliased to `ls --color=auto'\nls is /usr/bin/ls\nls is /bin/ls", "type python3": "python3 is /usr/bin/python3", "which cd": "", "tty": "/dev/pts/2", "echo $?": "0", "cat /etc/shells": "/bin/sh\n/bin/bash\n/usr/bin/bash\n/bin/dash\n/usr/bin/dash" }} />
+<LinuxTerminal title="Machine partagée" expectedCommands={["echo $SHELL", "type cd", "type ls"]} hints={["La variable qui contient ton shell de connexion s'appelle SHELL.", "type suivi du nom de la commande dit ce qu'elle est pour le shell."]} />
 
-Essaie aussi `which cd` : la réponse vide confirme ce qui a été dit plus haut, `which` ne voit pas les commandes intégrées.
+Surprise : le shell n'est pas bash, mais `/bin/sh`, qui est ici **ash**, le shell de BusyBox, courant sur les systèmes minimaux. Pour lui aussi, `cd` est une commande intégrée, et `ls` un programme, `/bin/ls`. Beaucoup de distributions définissent en plus un alias, `ls --color=auto`, que `type ls` signalerait ; ce Linux minimal n'en a pas. Sur ces points, tout ce que la leçon dit de bash vaut pour ash ; les différences apparaîtront plus loin, avec les accolades ou l'historique. Essaie aussi `which cd` : la réponse vide confirme que `which` ne voit pas les commandes intégrées.
 
 ## les pièges
 

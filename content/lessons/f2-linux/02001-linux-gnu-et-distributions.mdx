@@ -187,11 +187,11 @@ La ligne `Virtualization: kvm` t'apprend que tu es dans une machine virtuelle. D
 
 ## à toi de jouer
 
-Tu viens de te connecter à un serveur dont personne ne t'a rien dit. Identifie la distribution, puis la version du noyau, dans cet ordre. Le terminal valide chaque bonne commande.
+Tu viens de te connecter à une machine dont personne ne t'a rien dit. C'est un vrai Linux, qui tourne dans ton navigateur : identifie la distribution, puis la version du noyau, dans cet ordre. Le terminal valide chaque bonne commande.
 
-<SimulatedTerminal shell="bash" title="Serveur inconnu" expectedCommands={["cat /etc/os-release", "uname -r"]} hints={["La carte d'identité de la distribution est un fichier dans /etc.", "Pour le noyau seul, uname prend l'option -r (release)."]} commands={{ "cat /etc/os-release": "PRETTY_NAME=\"Ubuntu 24.04.1 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"", "uname -r": "6.8.0-45-generic", "uname -a": "Linux app-prod-03 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 x86_64 x86_64 GNU/Linux", "hostnamectl": " Static hostname: app-prod-03\n  Virtualization: kvm\nOperating System: Ubuntu 24.04.1 LTS\n          Kernel: Linux 6.8.0-45-generic\n    Architecture: x86-64" }} />
+<LinuxTerminal title="Machine inconnue" expectedCommands={["cat /etc/os-release", "uname -r"]} hints={["La carte d'identité de la distribution est un fichier dans /etc.", "Pour le noyau seul, uname prend l'option -r (release)."]} />
 
-Avant de passer à la suite, réponds à ces questions pour toi-même à partir de ce que le terminal t'a montré : quelle distribution, de quelle famille, avec quel gestionnaire de paquets, et quelle version du noyau ? Si tu as trouvé « Ubuntu 24.04, famille Debian, donc `apt`, noyau 6.8 », tu as fait exactement ce qu'un administrateur fait en arrivant sur une machine.
+Réponds ensuite pour toi-même : quelle distribution, de quelle famille, avec quel gestionnaire de paquets, et quelle version du noyau ? La réponse est instructive. Ce n'est ni Ubuntu ni Fedora, mais **Buildroot**, une distribution qu'on assemble soi-même pour les systèmes embarqués : pas de ligne `ID_LIKE`, donc pas de famille, et pas de gestionnaire de paquets du tout. Le noyau est un 6.8, et `uname -m` révèle une architecture `i686`, du x86 32 bits. C'est le genre de système qu'on trouve dans une box, une caméra ou un routeur. Sur un serveur, la même méthode aurait donné par exemple « Ubuntu 24.04, famille Debian, donc `apt`, noyau 6.8 » : c'est exactement ce que fait un administrateur en arrivant sur une machine.
 
 ## les pièges
 
