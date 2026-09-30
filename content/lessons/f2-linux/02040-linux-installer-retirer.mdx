@@ -1,0 +1,187 @@
+---
+refCode: CL-LSN-02040-V01
+slug: linux-installer-retirer
+title: "Chercher, installer, retirer"
+description: "Les commandes du quotidien d'apt et de dnf : chercher un paquet, le décrire, l'installer (avec ou sans les recommandations, dans une version précise, depuis un fichier .deb), le retirer avec remove ou purge, nettoyer les dépendances orphelines avec autoremove, marquer un paquet avec apt-mark, et relire l'historique des installations dans /var/log/apt et /var/log/dpkg.log. Avec un terminal simulé pour apt, et une enquête sur un vrai journal d'installation."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02039-V01"]
+---
+
+La leçon précédente a expliqué comment fonctionnent les paquets. Place à la pratique : trouver le bon paquet parmi des dizaines de milliers, l'installer sans embarquer la moitié du dépôt, le retirer proprement, et savoir, des semaines plus tard, **qui** a installé **quoi** et **quand**. Ces gestes reviennent chaque jour dans la vie d'un administrateur. La dernière question, elle, revient dans chaque enquête de sécurité : le journal des installations est l'un des premiers fichiers qu'on lit sur une machine suspecte.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- chercher un paquet par son nom ou sa description, et lire sa fiche ;
+- installer un paquet, avec ou sans ses recommandations, dans une version précise ou depuis un fichier `.deb` ;
+- retirer un paquet avec `remove` ou `purge`, et comprendre la différence ;
+- nettoyer les dépendances devenues inutiles avec `autoremove` ;
+- marquer un paquet comme installé à la main, automatique ou bloqué avec `apt-mark` ;
+- retrouver dans les journaux ce qui a été installé ou retiré, quand et par qui ;
+- transposer ces commandes avec `dnf`.
+
+## pourquoi ça compte
+
+Chaque paquet installé est du code qui tourne, ou peut tourner, sur ta machine. Chaque paquet inutile est donc une **surface d'attaque** en plus : un service qui écoute sans raison, une bibliothèque qui peut contenir une faille, un outil qu'un attaquant sera content de trouver déjà installé. Les guides de durcissement, comme celui de l'ANSSI, recommandent tous le **minimalisme** : n'installer que le nécessaire, retirer ce qui ne sert plus. À l'inverse, le journal des installations est une mine pour l'enquêteur : un attaquant qui a obtenu les droits de root installe souvent ses outils avec le gestionnaire de paquets, parce que c'est simple, et laisse ainsi une trace datée.
+
+## chercher et décrire
+
+```bash
+apt search "web server"        # dans les noms et les descriptions
+apt search --names-only nginx  # dans les noms seulement
+apt show nginx                 # la fiche complète du paquet
+apt-cache policy nginx         # la version installée, les versions disponibles, et leurs dépôts
+```
+
+`apt search` ratisse large : chercher `python` renvoie des milliers de résultats. `--names-only` resserre la recherche, et un filtre `grep` fait le reste. `apt show` affiche la fiche vue à la leçon précédente : version, dépendances, taille, dépôt d'origine. `apt-cache policy` répond à une question fréquente : quelle version est installée (`Installed`), laquelle serait installée (`Candidate`), et depuis quel dépôt. On y revient à la leçon sur les dépôts.
+
+Pour savoir quel paquet fournit une commande qui n'est **pas** encore installée, l'outil `apt-file` cherche dans le contenu de tous les paquets du dépôt : `apt-file search bin/dig` répond `bind9-dnsutils`. Sur Ubuntu, le shell le suggère d'ailleurs de lui-même quand on tape une commande introuvable.
+
+## installer
+
+```bash
+sudo apt install nginx                          # le paquet et ses dépendances
+sudo apt install -y nginx curl                  # plusieurs paquets, sans demander de confirmation
+sudo apt install --no-install-recommends nginx  # sans les paquets simplement recommandés
+sudo apt install nginx=1.22.1-9                 # une version précise
+sudo apt install ./outil_2.1.0_amd64.deb        # un fichier .deb local, dépendances comprises
+```
+
+Avant d'installer, `apt` affiche la liste de ce qu'il va ajouter et l'espace disque nécessaire, puis demande confirmation. **Lis cette liste** : c'est là qu'on découvre qu'un petit outil tire derrière lui un environnement graphique complet. L'option `--no-install-recommends` évite souvent ce genre de surprise sur un serveur ; c'est d'ailleurs le réglage habituel des images de conteneurs, pour rester légères.
+
+L'option `-y` répond oui d'avance. Elle est indispensable dans un script, où personne n'est là pour répondre, mais dangereuse à la main : on valide sans lire. Pour un fichier `.deb` téléchargé, préfère `apt install ./fichier.deb` (le `./` est obligatoire, sinon `apt` cherche un paquet de ce nom dans les dépôts) à `dpkg -i`, qui n'installe pas les dépendances manquantes.
+
+Une installation met à jour la base des paquets, et, pour un service, l'active souvent au passage : sur Debian, installer `nginx` le **démarre** aussitôt. C'est pratique, mais cela veut dire qu'un port s'ouvre dès l'installation, avant que tu aies relu la configuration. Un point à garder en tête sur un serveur exposé.
+
+## retirer : remove, purge, autoremove
+
+```bash
+sudo apt remove nginx       # retire le logiciel, garde sa configuration dans /etc
+sudo apt purge nginx        # retire le logiciel ET sa configuration
+sudo apt autoremove         # retire les dépendances qui ne servent plus à rien
+```
+
+`remove` laisse la configuration en place, pour le cas où tu réinstallerais : le paquet apparaît alors en état **`rc`** dans `dpkg -l` (*removed, config-files*). `purge` efface aussi les fichiers de configuration du paquet. Attention : ni l'un ni l'autre ne touche aux **données** (un site dans `/var/www`, une base dans `/var/lib/postgresql`), ni aux fichiers que tu as créés toi-même. Pour retrouver les paquets retirés dont il reste la configuration : `dpkg -l | grep '^rc'`.
+
+Quand tu installes `nginx`, `apt` installe aussi ses dépendances et les **marque automatiques** : elles ne sont là que pour lui. Quand `nginx` part, elles deviennent **orphelines**. `apt autoremove` les repère et propose de les retirer. Lis sa liste avant de valider : il arrive qu'un paquet que tu utilises directement ait été installé comme dépendance, et le voir partir surprend.
+
+## apt-mark : manuel, automatique, bloqué
+
+`apt` distingue les paquets installés **à la main** de ceux installés **comme dépendance**. `apt-mark` lit et modifie cette marque :
+
+```bash
+apt-mark showmanual            # ce qui a été installé à la main
+sudo apt-mark manual libssl3   # je l'utilise directement : autoremove ne doit pas le retirer
+sudo apt-mark hold nginx       # bloquer nginx dans sa version actuelle
+apt-mark showhold              # la liste des paquets bloqués
+sudo apt-mark unhold nginx     # le débloquer
+```
+
+`hold` bloque un paquet dans sa version : les mises à jour le laissent de côté. C'est utile pour éviter qu'une mise à jour casse une application qui dépend d'une version précise, mais c'est aussi une **dette** : un paquet bloqué ne reçoit plus ses **correctifs de sécurité**. Un blocage doit donc être temporaire, documenté, et relu régulièrement avec `apt-mark showhold`.
+
+## lister
+
+```bash
+apt list --installed           # tout ce qui est installé
+apt list --upgradable          # ce qui a une version plus récente disponible
+dpkg -l                        # la même base, vue par dpkg, avec l'état de chaque paquet
+```
+
+`apt list --installed | wc -l` donne un ordre de grandeur : quelques centaines de paquets pour un serveur minimal, plusieurs milliers pour un poste de travail. Rappelle-toi qu'`apt` prévient lui-même que son affichage n'est pas stable : dans un script, on préfère `dpkg-query -W`, dont le format se choisit et ne change pas.
+
+## vérifier et réinstaller
+
+La base des paquets conserve l'empreinte de chaque fichier installé. `dpkg --verify` (ou `dpkg -V`) la compare aux fichiers présents sur le disque, et ne signale que ceux qui ont changé : `dpkg -V openssh-server` ne répond rien si tout est intact, et affiche une ligne commençant par `??5` pour un fichier dont le contenu diffère. Une configuration que tu as modifiée apparaîtra, c'est normal, avec un `c` qui la désigne comme fichier de configuration. Un **exécutable** modifié, en revanche, n'a aucune raison de l'être : c'est l'un des signes les plus nets d'une compromission. L'outil `debsums` fait le même travail, paquet par paquet. Côté Red Hat, c'est `rpm -V`.
+
+Si un fichier a été abîmé ou supprimé par erreur, `sudo apt reinstall paquet` réinstalle la version d'origine, sans toucher à ta configuration. Sur une machine compromise, en revanche, on ne répare pas : on reconstruit, parce qu'on ne sait jamais tout ce que l'attaquant a modifié.
+
+## l'historique : qui a installé quoi, et quand
+
+Chaque opération d'`apt` est consignée dans **`/var/log/apt/history.log`** : la date de début et de fin, la ligne de commande exacte, l'utilisateur qui l'a lancée via `sudo`, et la liste des paquets installés, mis à jour ou retirés. Le détail de ce que `dpkg` a fait, paquet par paquet, est dans **`/var/log/dpkg.log`**. Ces fichiers tournent comme les autres journaux : les anciens sont compressés en `history.log.1.gz`, qu'on lit avec `zcat` ou `zgrep`.
+
+Pour l'enquêteur, ces journaux répondent à trois questions : **quoi** (quels paquets), **quand** (à la seconde près) et **par qui** (la ligne `Requested-By`). Un outil réseau comme `socat` ou `ncat` installé en pleine nuit, ou un outil de journalisation comme `auditd` retiré juste avant, raconte une histoire à lui seul. Un attaquant averti effacera ces lignes, bien sûr, mais il ne pense pas toujours à tout, et leur absence soudaine est elle-même un indice.
+
+<Diagram caption="La vie d'un paquet et ses traces">
+flowchart LR
+  A["apt search, apt show : choisir"] --> B["apt install : installé, marqué manuel"]
+  B --> C["ses dépendances : marquées automatiques"]
+  B --> D["apt remove : état rc, configuration conservée"]
+  D --> E["apt purge : configuration effacée"]
+  C -->|"plus personne n'en dépend"| F["apt autoremove"]
+  B -.->|"chaque opération"| G["/var/log/apt/history.log et /var/log/dpkg.log"]
+</Diagram>
+
+## et avec dnf
+
+| Besoin | apt | dnf |
+|---|---|---|
+| chercher | `apt search mot` | `dnf search mot` |
+| décrire | `apt show paquet` | `dnf info paquet` |
+| installer | `apt install paquet` | `dnf install paquet` |
+| retirer | `apt remove` ou `apt purge` | `dnf remove paquet` |
+| dépendances orphelines | `apt autoremove` | `dnf autoremove` |
+| quel paquet fournit une commande | `apt-file search bin/dig` | `dnf provides '*/bin/dig'` |
+| historique | `/var/log/apt/history.log` | `dnf history`, puis `dnf history info N` |
+
+`dnf` va plus loin sur un point : `dnf history undo N` annule une opération passée, en retirant ce qu'elle avait installé. Il ne garde pas de configuration en état `rc` : un `remove` laisse seulement les fichiers de configuration modifiés, renommés en `.rpmsave`.
+
+## à toi de jouer
+
+D'abord, pratique `apt` dans le terminal simulé : cherche un client DNS, installe-le sans ses recommandations, puis retire un paquet devenu inutile.
+
+1. cherche les paquets dont le nom contient `dnsutils` : `apt search --names-only dnsutils` ;
+2. installe `bind9-dnsutils` sans les paquets recommandés ;
+3. le serveur a encore `telnet`, un vieux client en clair : retire-le avec sa configuration, puis nettoie les dépendances orphelines.
+
+<SimulatedTerminal shell="bash" title="apt au quotidien" expectedCommands={["apt search --names-only dnsutils", "sudo apt install --no-install-recommends bind9-dnsutils", "sudo apt purge telnet", "sudo apt autoremove"]} hints={["--names-only limite la recherche aux noms.", "L'option --no-install-recommends se place entre install et le nom du paquet.", "purge retire aussi la configuration.", "autoremove, sans nom de paquet."]} commands={{ "apt search --names-only dnsutils": "Sorting... Done\nFull Text Search... Done\nbind9-dnsutils/stable-security 1:9.18.28-1~deb12u2 amd64\n  Clients provided with BIND 9\n\ndnsutils/stable-security 1:9.18.28-1~deb12u2 all\n  Transitional package for bind9-dnsutils", "sudo apt install --no-install-recommends bind9-dnsutils": "Reading package lists... Done\nBuilding dependency tree... Done\nReading state information... Done\nThe following additional packages will be installed:\n  bind9-host bind9-libs libfstrm0 liblmdb0 libmaxminddb0 libprotobuf-c1 libuv1\nThe following NEW packages will be installed:\n  bind9-dnsutils bind9-host bind9-libs libfstrm0 liblmdb0 libmaxminddb0 libprotobuf-c1 libuv1\n0 upgraded, 8 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 1 843 kB of archives.\nAfter this operation, 5 312 kB of additional disk space will be used.\nDo you want to continue? [Y/n] Y\n...\nSetting up bind9-dnsutils (1:9.18.28-1~deb12u2) ...", "sudo apt purge telnet": "Reading package lists... Done\nThe following packages were automatically installed and are no longer required:\n  inetutils-telnet\nUse 'sudo apt autoremove' to remove them.\nThe following packages will be REMOVED:\n  telnet*\n0 upgraded, 0 newly installed, 1 to remove and 0 not upgraded.\nDo you want to continue? [Y/n] Y\nRemoving telnet (0.17+2.4-2+deb12u1) ...", "sudo apt remove telnet": "The following packages will be REMOVED:\n  telnet\nDo you want to continue? [Y/n] Y\nRemoving telnet (0.17+2.4-2+deb12u1) ...", "sudo apt autoremove": "Reading package lists... Done\nThe following packages will be REMOVED:\n  inetutils-telnet\n0 upgraded, 0 newly installed, 1 to remove and 0 not upgraded.\nDo you want to continue? [Y/n] Y\nRemoving inetutils-telnet (2:2.4-2+deb12u1) ...", "apt-mark showhold": "", "apt-mark showmanual": "bind9-dnsutils\ncurl\nnginx\nopenssh-server\nsudo\nvim", "dpkg -l | grep '^rc'": "rc  apache2        2.4.62-1~deb12u2  amd64  Apache HTTP Server" }} />
+
+Lis la liste qu'affiche `apt` avant de valider : les paquets ajoutés sont tous des dépendances obligatoires, puisque les recommandations ont été écartées. Sur un gros logiciel, la différence se compte parfois en centaines de mégaoctets. Ensuite, un vrai journal d'installation t'attend. Le dossier de travail contient `history.log`, copié depuis un serveur où l'on soupçonne une intrusion. Retrouve ce qui s'est passé dans la nuit du 27 septembre :
+
+1. affiche toutes les lignes de commande avec `grep Commandline history.log` ;
+2. repère l'opération faite en pleine nuit, puis enregistre son bloc complet dans `nuit.txt` : `grep -A4 'Start-Date: 2026-09-27  02' history.log > nuit.txt` ;
+3. lis `nuit.txt` : qui a lancé ces commandes, et pourquoi ce qui a été retiré est-il aussi inquiétant que ce qui a été installé ?
+
+<LinuxTerminal title="Enquête dans le journal d'apt" files={{"history.log": "\nStart-Date: 2026-09-14  10:02:11\nCommandline: apt install nginx\nRequested-By: alice (1000)\nInstall: nginx:amd64 (1.22.1-9), nginx-common:amd64 (1.22.1-9, automatic)\nEnd-Date: 2026-09-14  10:02:19\n\nStart-Date: 2026-09-20  09:15:40\nCommandline: apt upgrade\nRequested-By: alice (1000)\nUpgrade: openssl:amd64 (3.0.14-1~deb12u1, 3.0.14-1~deb12u2), libssl3:amd64 (3.0.14-1~deb12u1, 3.0.14-1~deb12u2)\nEnd-Date: 2026-09-20  09:15:58\n\nStart-Date: 2026-09-27  02:47:03\nCommandline: apt-get install -y socat ncat\nRequested-By: deploy (1002)\nInstall: socat:amd64 (1.7.4.4-2), ncat:amd64 (7.93+dfsg1-1), liblua5.3-0:amd64 (5.3.6-2, automatic)\nEnd-Date: 2026-09-27  02:47:09\n\nStart-Date: 2026-09-27  02:48:31\nCommandline: apt-get purge -y auditd\nRequested-By: deploy (1002)\nPurge: auditd:amd64 (1:3.0.9-1)\nEnd-Date: 2026-09-27  02:48:34\n\nStart-Date: 2026-09-28  11:30:12\nCommandline: apt install htop\nRequested-By: alice (1000)\nInstall: htop:amd64 (3.2.2-2)\nEnd-Date: 2026-09-28  11:30:15\n"}} expectedCommands={["grep Commandline history.log", "grep -A4 'Start-Date: 2026-09-27  02' history.log > nuit.txt"]} checks={[{"label": "nuit.txt contient l'installation nocturne", "path": "nuit.txt", "expect": "file", "contains": "socat"}, {"label": "nuit.txt contient aussi la suppression", "path": "nuit.txt", "expect": "file", "contains": "auditd"}]} hints={["grep Commandline history.log liste toutes les commandes lancées.", "Les dates du journal ont deux espaces entre le jour et l'heure : recopie-les tels quels.", "-A4 ajoute les quatre lignes qui suivent chaque début d'opération : tout le bloc.", "Requested-By dit quel compte a lancé la commande avec sudo."]} />
+
+Le compte `deploy`, normalement réservé aux mises en production automatiques, a installé à 2 h 47 deux outils capables d'ouvrir des connexions réseau arbitraires, `socat` et `ncat`, puis, une minute plus tard, a **purgé** `auditd`, le service qui enregistre les actions sensibles du système. Installer ses outils, puis éteindre la caméra : c'est un schéma classique. La suite de l'enquête passerait par les journaux d'authentification, pour savoir comment ce compte a été utilisé, et par les connexions ouvertes par `socat`.
+
+## les pièges
+
+- **Valider sans lire la liste d'`apt`.** C'est là qu'on voit arriver des dizaines de paquets inattendus, ou partir un paquet utile.
+- **Croire que `remove` efface tout.** La configuration reste, en état `rc` ; `purge` l'efface. Les données ne sont effacées par aucun des deux.
+- **Lancer `autoremove` les yeux fermés.** Un paquet utilisé directement mais marqué automatique peut disparaître : `apt-mark manual` le protège.
+- **Oublier un `hold`.** Un paquet bloqué ne reçoit plus de correctifs de sécurité.
+- **Utiliser `dpkg -i` pour un `.deb` téléchargé.** Il n'installe pas les dépendances : `apt install ./fichier.deb`.
+- **Installer un service sans penser qu'il démarre aussitôt.** Sur Debian, un port peut s'ouvrir avant que la configuration soit relue.
+
+## pour aller plus loin
+
+<ExternalLink href="https://manpages.debian.org/bookworm/apt/apt.8.fr.html" description="Toutes les sous-commandes d'apt, en français">Page de manuel d'apt</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/apt/apt-mark.8.fr.html" description="Marquer un paquet manuel, automatique ou bloqué, en français">Page de manuel d'apt-mark</ExternalLink>
+
+<ExternalLink href="https://dnf.readthedocs.io/en/latest/command_ref.html" description="La référence des commandes de dnf, dont history et undo, en anglais">Référence des commandes de dnf</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quelle est la différence entre apt remove et apt purge ?" options={["Aucune", "remove garde les fichiers de configuration, purge les efface aussi", "purge efface aussi les données des utilisateurs", "remove ne fonctionne qu'avec dnf"]} correct={1} explanation="Après remove, le paquet reste en état rc avec sa configuration. Aucun des deux n'efface les données, comme un site ou une base." />
+  <Quiz id="q-2" question="Que fait apt autoremove ?" options={["Il met à jour automatiquement", "Il retire les paquets installés comme dépendances dont plus rien n'a besoin", "Il retire tous les paquets inutilisés depuis un mois", "Il supprime le cache d'apt"]} correct={1} explanation="Les dépendances sont marquées automatiques ; quand plus aucun paquet ne les demande, autoremove les propose au retrait." />
+  <Quiz id="q-3" question="Pourquoi utiliser --no-install-recommends sur un serveur ?" options={["Pour installer plus vite, sans vérification", "Pour ne pas installer les paquets simplement recommandés, et garder un système minimal", "Pour éviter les dépendances obligatoires", "Pour installer sans être root"]} correct={1} explanation="Les dépendances obligatoires sont toujours installées ; seules les recommandations sont écartées." />
+  <Quiz id="q-4" question="Que fait apt-mark hold nginx, et quel est le risque ?" options={["Il supprime nginx", "Il bloque nginx dans sa version actuelle ; il ne recevra plus de correctifs de sécurité", "Il redémarre nginx", "Il met nginx en pause"]} correct={1} explanation="Un blocage protège d'une mise à jour gênante, mais fige aussi les failles : il doit rester temporaire et documenté." />
+  <Quiz id="q-5" question="Quel fichier dit qui a installé quel paquet avec apt, et quand ?" options={["/etc/apt/sources.list", "/var/log/apt/history.log", "/var/lib/dpkg/status", "/var/log/auth.log uniquement"]} correct={1} explanation="Chaque opération y figure avec sa date, sa ligne de commande et le compte à l'origine (Requested-By)." />
+  <Quiz id="q-6" question="Comment installer proprement un fichier outil.deb téléchargé, avec ses dépendances ?" options={["dpkg -i outil.deb", "sudo apt install ./outil.deb", "sudo apt install outil.deb", "sh outil.deb"]} correct={1} explanation="Le ./ indique un fichier local ; apt résout alors les dépendances depuis les dépôts, ce que dpkg -i ne fait pas." />
+  <Quiz id="q-7" question="Dans un journal, un compte installe socat à 2 h du matin puis purge auditd. Pourquoi est-ce alarmant ?" options={["Parce que socat est lent", "Parce qu'on installe un outil réseau polyvalent, puis on retire l'outil qui enregistre les actions sensibles", "Parce qu'auditd est obligatoire pour démarrer", "Ce n'est pas alarmant"]} correct={1} explanation="Ajouter ses outils puis supprimer la journalisation est un schéma typique d'intrusion." />
+</QuizGroup>
+
+## à retenir
+
+- Chercher : **`apt search`** (`--names-only`), décrire : **`apt show`**, versions et origine : **`apt-cache policy`**.
+- Installer : **`apt install`**, avec **`--no-install-recommends`** sur un serveur, **`paquet=version`** pour une version, **`./fichier.deb`** pour un fichier local. Lis toujours la liste avant de valider.
+- Retirer : **`remove`** garde la configuration (état `rc`), **`purge`** l'efface, **`autoremove`** nettoie les orphelins.
+- **`apt-mark`** : `manual`, `auto`, `hold` (temporaire, car sans correctifs), `showhold`.
+- Historique : **`/var/log/apt/history.log`** (quoi, quand, par qui) et **`/var/log/dpkg.log`**. Avec dnf : **`dnf history`**.

@@ -1,0 +1,145 @@
+---
+refCode: CL-LSN-02043-V01
+slug: linux-compiler-sources
+title: "Compiler depuis les sources"
+description: "Installer un logiciel absent des dépôts en le compilant : récupérer et vérifier une archive de sources, installer les outils et les bibliothèques de développement, la séquence configure, make, make install, le rôle du préfixe /usr/local, les autres systèmes de construction (CMake, Meson, Cargo, Go), ce qu'on perd en sortant du gestionnaire de paquets, et quand il vaut mieux s'abstenir. Avec une compilation complète, erreur comprise, dans un terminal simulé."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02042-V01"]
+---
+
+Parfois, le logiciel dont tu as besoin n'est pas dans les dépôts de ta distribution, ou seulement dans une version trop ancienne, ou sans l'option qui t'intéresse. Il reste alors la solution historique d'Unix : récupérer le **code source**, le **compiler** sur ta machine et l'installer toi-même. C'est une compétence utile, parce qu'on la croise dans toutes les documentations et que certains outils de sécurité ne se distribuent que sous cette forme. Mais c'est aussi une porte de sortie du système de paquets, avec des conséquences qu'il faut connaître. Cette leçon t'apprend à le faire proprement, et surtout à savoir quand ne pas le faire.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- récupérer une archive de sources et vérifier son intégrité ;
+- installer les outils de compilation et les bibliothèques de développement nécessaires ;
+- dérouler la séquence `./configure`, `make`, `make install` et comprendre chaque étape ;
+- choisir où installer avec l'option `--prefix`, et expliquer le rôle de `/usr/local` ;
+- reconnaître les autres systèmes de construction : CMake, Meson, Cargo, Go ;
+- mesurer ce qu'on perd en sortant du gestionnaire de paquets ;
+- choisir entre compiler, un dépôt de rétroportages, le dépôt d'un éditeur ou un paquet maison.
+
+## pourquoi ça compte
+
+Un logiciel compilé à la main n'apparaît dans aucune liste de paquets. Personne ne te préviendra quand une faille y sera découverte, et aucun `apt upgrade` ne le corrigera : sa sécurité repose entièrement sur toi. Sur un parc de serveurs, ces installations oubliées deviennent vite les points faibles que les audits découvrent, des années plus tard, dans une version truffée de failles connues. Par ailleurs, laisser un compilateur sur un serveur de production facilite la vie d'un attaquant, qui peut y construire ses propres outils. Compiler est donc un geste réfléchi, documenté, et de préférence fait ailleurs qu'en production.
+
+## des sources à l'exécutable
+
+Un programme écrit en C, en C++, en Rust ou en Go est d'abord du **texte** : le code source. Pour que le processeur puisse l'exécuter, un **compilateur** le traduit en langage machine et produit un **binaire**. Les distributions font ce travail pour toi : un paquet `.deb` contient des binaires déjà compilés. Compiler soi-même, c'est refaire ce travail sur sa propre machine.
+
+Un projet un peu gros compte des centaines de fichiers, qui dépendent de bibliothèques présentes ou non sur le système, et qui doivent être compilés dans le bon ordre. D'où trois étapes, dans la tradition des outils GNU, dits *autotools* :
+
+- **`./configure`** examine le système : quel compilateur, quelles bibliothèques, quelles options. Il produit un fichier `Makefile` adapté à ta machine, ou s'arrête sur une erreur claire s'il manque quelque chose ;
+- **`make`** lit ce `Makefile` et compile tout ce qui doit l'être. `make -j4` lance quatre compilations en parallèle, et `make -j$(nproc)` autant que de cœurs ;
+- **`make install`** copie les fichiers produits à leur place : exécutables, bibliothèques, pages de manuel. C'est la seule étape qui demande les droits d'écriture sur le système, donc souvent `sudo`.
+
+<Diagram caption="Compiler et installer depuis les sources">
+flowchart LR
+  A["Archive .tar.gz et sa signature"] -->|"vérifier, puis tar -xzf"| B["Dossier des sources"]
+  B -->|"./configure --prefix=/usr/local"| C["Makefile adapté à la machine"]
+  C -->|"make -j$(nproc), en utilisateur ordinaire"| D["Binaires compilés dans le dossier"]
+  D -->|"sudo make install"| E["/usr/local/bin, /usr/local/lib, /usr/local/share/man"]
+</Diagram>
+
+## préparer la machine
+
+Il faut d'abord les outils. Sous Debian et Ubuntu, le paquet **`build-essential`** installe le compilateur C et C++ (`gcc`, `g++`), `make` et les en-têtes de la bibliothèque C. Sous Red Hat, c'est le groupe `dnf group install "Development Tools"`.
+
+Il faut ensuite les **bibliothèques de développement**. Un programme qui utilise `libcurl` a besoin, pour être compilé, non seulement de la bibliothèque, mais aussi de ses **fichiers d'en-tête**, qui décrivent ses fonctions. Les distributions les séparent dans des paquets suffixés **`-dev`** chez Debian (`libcurl4-openssl-dev`) et **`-devel`** chez Red Hat (`libcurl-devel`). Quand `./configure` s'arrête avec un message comme `libcurl not found`, c'est presque toujours le paquet `-dev` qui manque. Si le logiciel existe déjà dans les dépôts, même dans une vieille version, `sudo apt build-dep logiciel` installe d'un coup toutes ses dépendances de compilation (il faut pour cela activer les dépôts `deb-src`).
+
+## récupérer et vérifier les sources
+
+Les sources se distribuent en **archive**, souvent `.tar.gz` ou `.tar.xz`, sur le site du projet, ou dans un dépôt Git. Comme pour tout téléchargement, on vérifie l'archive avant de s'en servir : somme de contrôle et, quand le projet la publie, **signature** du fichier, avec `gpg --verify projet-1.4.0.tar.gz.asc`. On extrait ensuite l'archive et on **lit** les fichiers `README` et `INSTALL` : ils donnent les dépendances et les options propres au projet. `./configure --help` liste toutes les options disponibles.
+
+On compile en **utilisateur ordinaire**, jamais en root : le processus de construction exécute des scripts fournis par le projet, et il n'y a aucune raison de leur donner plus de droits que nécessaire. Seul `make install` a besoin de `sudo`.
+
+## et depuis un dépôt Git
+
+Beaucoup de projets ne publient plus d'archive, seulement leur dépôt Git. On le récupère avec `git clone`, mais la branche principale contient le travail **en cours**, pas une version publiée : elle peut être instable, voire ne pas compiler. On se place donc sur une **étiquette** (*tag*) de version, avec `git checkout v1.4.0`, après avoir listé les versions disponibles avec `git tag`. Les projets soucieux de sécurité **signent** leurs étiquettes : `git tag -v v1.4.0` vérifie cette signature, comme `gpg --verify` pour une archive. Autre différence : le dépôt ne contient souvent pas encore le script `configure`, qu'il faut générer avec `./autogen.sh` ou `autoreconf -i`, ce qui demande les outils `autoconf` et `automake`. La documentation du projet précise la marche à suivre ; lis-la avant de te lancer.
+
+## le préfixe et /usr/local
+
+Par convention, les logiciels installés hors du gestionnaire de paquets vont dans **`/usr/local`** : `/usr/local/bin` pour les exécutables, `/usr/local/lib` pour les bibliothèques, `/usr/local/share/man` pour la documentation. C'est la valeur par défaut de l'option **`--prefix`** de `./configure`, et le gestionnaire de paquets n'y touche jamais. Tu ne risques donc pas d'écraser un fichier installé par un paquet, ni l'inverse. `/usr/local/bin` figure en général dans le `PATH` **avant** `/usr/bin` : une version compilée à la main prend donc le pas sur celle de la distribution, ce qui est voulu, mais peut surprendre.
+
+Une autre pratique consiste à tout installer dans un dossier propre au logiciel et à sa version, par exemple `--prefix=/opt/compteur-1.4.0`. Supprimer le logiciel revient alors à supprimer ce dossier, et plusieurs versions peuvent cohabiter. C'est un point important, parce que la désinstallation est le talon d'Achille de `make install` : certains projets proposent `make uninstall`, beaucoup non, et les fichiers se retrouvent éparpillés sans liste pour les retrouver.
+
+## les autres systèmes de construction
+
+Les *autotools* ne sont plus les seuls. Tu croiseras :
+
+| Système | Reconnaissable à | Les commandes |
+|---|---|---|
+| CMake | `CMakeLists.txt` | `cmake -B build`, `cmake --build build`, `sudo cmake --install build` |
+| Meson | `meson.build` | `meson setup build`, `ninja -C build`, `sudo ninja -C build install` |
+| Cargo, pour Rust | `Cargo.toml` | `cargo build --release`, ou `cargo install` |
+| Go | `go.mod` | `go build`, qui produit un seul binaire autonome |
+
+Le principe reste le même : configurer, construire, installer. Et la règle aussi : construire en utilisateur ordinaire, installer seul en root, dans un préfixe qui n'appartient pas aux paquets. Rust et Go ont une particularité utile : ils produisent souvent un **binaire unique**, sans dépendance à installer, ce qui simplifie beaucoup le déploiement. La leçon suivante y revient.
+
+## compiler, ou pas ?
+
+Avant de compiler, passe en revue les alternatives, dans cet ordre :
+
+1. **les dépôts de la distribution**, même dans une version un peu ancienne : c'est la solution la plus sûre, suivie par l'équipe de sécurité ;
+2. **les rétroportages** (`bookworm-backports` chez Debian, EPEL chez Red Hat) : des versions plus récentes, empaquetées et maintenues ;
+3. **le dépôt officiel de l'éditeur**, ajouté proprement comme dans la leçon précédente ;
+4. **un paquet maison** : compiler, mais produire un `.deb` ou un `.rpm` (avec `dpkg-buildpackage`, ou l'outil `fpm`), qu'on installe avec le gestionnaire de paquets. Le logiciel apparaît alors dans l'inventaire et se retire proprement ;
+5. **compiler et installer à la main**, en dernier recours, dans `/usr/local` ou `/opt`, avec une trace écrite de la version, de la date et de la méthode.
+
+Dans une organisation, on compile d'ailleurs rarement sur le serveur final : une **machine de construction**, ou la chaîne d'intégration continue, produit le paquet, qu'on déploie ensuite. Le serveur de production n'a ainsi ni compilateur ni bibliothèques de développement.
+
+## à toi de jouer
+
+Tu dois installer `compteur`, un petit outil absent des dépôts. L'archive `compteur-1.4.0.tar.gz` est déjà téléchargée et vérifiée. Dans le terminal simulé :
+
+1. extrais l'archive et entre dans le dossier ;
+2. lance `./configure` : lis l'erreur ;
+3. installe le paquet de développement qui manque, puis relance la configuration, en précisant cette fois le préfixe : `./configure --prefix=/usr/local` ;
+4. compile avec `make -j2`, installe avec `sudo make install`, puis vérifie avec `compteur --version`.
+
+<SimulatedTerminal shell="bash" title="Compiler compteur 1.4.0" expectedCommands={["tar -xzf compteur-1.4.0.tar.gz", "cd compteur-1.4.0", "./configure", "sudo apt install libcurl4-openssl-dev", "./configure --prefix=/usr/local", "make -j2", "sudo make install", "compteur --version"]} hints={["tar -xzf extrait une archive .tar.gz.", "L'erreur de configure nomme la bibliothèque qui manque : son paquet de développement finit par -dev.", "Ici, c'est libcurl4-openssl-dev.", "Relance ./configure --prefix=/usr/local après l'installation."]} commands={{ "tar -xzf compteur-1.4.0.tar.gz": "", "ls": "compteur-1.4.0  compteur-1.4.0.tar.gz", "cd compteur-1.4.0": "", "cat README": "compteur 1.4.0\n\nDépendances : libcurl (avec ses en-têtes), zlib.\nInstallation : ./configure && make && sudo make install", "./configure": "checking for gcc... gcc\nchecking whether the C compiler works... yes\nchecking for zlib... yes\nchecking for libcurl... no\nconfigure: error: libcurl not found. Install its development files (libcurl-dev or libcurl-devel).", "./configure --prefix=/usr/local": "checking for gcc... gcc\nchecking whether the C compiler works... yes\nchecking for zlib... yes\nchecking for libcurl... yes\nconfigure: creating ./Makefile\n\ncompteur 1.4.0 will be installed in /usr/local", "sudo apt install libcurl4-openssl-dev": "Reading package lists... Done\nThe following NEW packages will be installed:\n  libcurl4-openssl-dev\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nSetting up libcurl4-openssl-dev:amd64 (7.88.1-10+deb12u8) ...", "make -j2": "gcc -O2 -Wall -c src/main.c -o src/main.o\ngcc -O2 -Wall -c src/compter.c -o src/compter.o\ngcc -O2 -Wall -c src/reseau.c -o src/reseau.o\ngcc -o compteur src/main.o src/compter.o src/reseau.o -lcurl -lz", "sudo make install": "install -d /usr/local/bin\ninstall -m 755 compteur /usr/local/bin/compteur\ninstall -d /usr/local/share/man/man1\ninstall -m 644 doc/compteur.1 /usr/local/share/man/man1/compteur.1", "compteur --version": "compteur 1.4.0 (compilé le 30/09/2026, libcurl 7.88.1)", "which compteur": "/usr/local/bin/compteur", "dpkg -S /usr/local/bin/compteur": "dpkg-query: no path found matching pattern /usr/local/bin/compteur" }} />
+
+La première tentative de `./configure` échoue, et c'est normal : son message nomme ce qui manque. Le préfixe `/usr/local` est de toute façon la valeur par défaut ; le préciser rend simplement la commande explicite, pour qui la relira dans tes notes. Remarque aussi les deux dernières commandes, disponibles dans la simulation : `which compteur` montre qu'il est dans `/usr/local/bin`, et `dpkg -S` confirme qu'il n'appartient à **aucun paquet**. C'est exactement le fichier « hors paquet » qu'une enquête repérerait : pense à noter quelque part ce que tu as installé, en quelle version, et pourquoi.
+
+## les pièges
+
+- **Compiler en root.** Seul `make install` a besoin de `sudo`.
+- **Installer ailleurs que dans `/usr/local` ou `/opt`.** Un `--prefix=/usr` écrase les fichiers des paquets, et le prochain `apt upgrade` écrasera les tiens.
+- **Oublier le logiciel une fois installé.** Aucune mise à jour ne le suivra : note-le, et surveille ses annonces de sécurité.
+- **Chercher la bibliothèque au lieu de son paquet `-dev`.** La bibliothèque est souvent déjà là ; ce sont ses en-têtes qui manquent.
+- **Laisser les outils de compilation en production.** Construis ailleurs, déploie un paquet.
+- **Supposer que `make uninstall` existe.** Beaucoup de projets ne le proposent pas : un préfixe dédié dans `/opt` ou un paquet maison évitent le problème.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.gnu.org/software/automake/manual/html_node/Standard-Targets.html" description="Les cibles make standard des projets GNU : all, install, uninstall, clean, en anglais">GNU Automake : les cibles standard</ExternalLink>
+
+<ExternalLink href="https://backports.debian.org/Instructions/" description="Activer les rétroportages Debian pour obtenir des versions plus récentes, empaquetées, en anglais">Debian Backports : mode d'emploi</ExternalLink>
+
+<ExternalLink href="https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch04s09.html" description="Ce que la norme de l'arborescence Linux prévoit pour /usr/local, en anglais">FHS : la hiérarchie /usr/local</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel est le rôle de ./configure ?" options={["Compiler le programme", "Examiner le système et produire un Makefile adapté, ou signaler ce qui manque", "Installer le programme", "Télécharger les dépendances"]} correct={1} explanation="configure vérifie le compilateur, les bibliothèques et les options, puis prépare la compilation." />
+  <Quiz id="q-2" question="./configure s'arrête sur « libcurl not found », alors que libcurl est installée. Que manque-t-il le plus souvent ?" options={["Un redémarrage", "Le paquet de développement, avec les fichiers d'en-tête : libcurl4-openssl-dev ou libcurl-devel", "Les droits de root", "Une connexion Internet"]} correct={1} explanation="La bibliothèque suffit pour exécuter un programme ; pour en compiler un, il faut aussi ses en-têtes, dans le paquet -dev." />
+  <Quiz id="q-3" question="Quelle étape nécessite sudo ?" options={["./configure", "make", "make install, qui copie les fichiers dans le système", "Toutes"]} correct={2} explanation="On configure et on compile en utilisateur ordinaire ; seule l'installation écrit hors du dossier de travail." />
+  <Quiz id="q-4" question="Pourquoi installer dans /usr/local plutôt que dans /usr ?" options={["Parce que c'est plus rapide", "Parce que le gestionnaire de paquets n'y touche jamais : pas de conflit avec les fichiers des paquets", "Parce que /usr est en lecture seule", "Parce que /usr/local est chiffré"]} correct={1} explanation="/usr appartient aux paquets ; /usr/local est réservé aux installations locales." />
+  <Quiz id="q-5" question="Quel est le principal inconvénient de sécurité d'un logiciel compilé à la main ?" options={["Il est plus lent", "Aucune mise à jour automatique ne le corrigera : c'est à toi de suivre ses failles", "Il ne peut pas utiliser le réseau", "Il est toujours vulnérable"]} correct={1} explanation="Il n'apparaît dans aucune liste de paquets et échappe aux apt upgrade." />
+  <Quiz id="q-6" question="Un projet contient un fichier CMakeLists.txt. Quel système de construction utilise-t-il ?" options={["Autotools", "CMake", "Meson", "Cargo"]} correct={1} explanation="cmake -B build, puis cmake --build build, puis cmake --install build." />
+  <Quiz id="q-7" question="Avant de compiler un logiciel absent de la version stable, que faut-il envisager d'abord ?" options={["Rien, compiler est toujours préférable", "Les rétroportages, le dépôt officiel de l'éditeur, ou un paquet maison", "Désactiver apt", "Changer de distribution"]} correct={1} explanation="Ces solutions gardent le logiciel dans le circuit des paquets, avec inventaire, mises à jour et retrait propre." />
+</QuizGroup>
+
+## à retenir
+
+- Compiler : **`./configure`** (vérifie, prépare), **`make -j$(nproc)`** (compile), **`sudo make install`** (installe). Seule la dernière étape en root.
+- Il faut **`build-essential`** et les paquets **`-dev`** (ou `-devel`) des bibliothèques utilisées ; `apt build-dep` les installe d'un coup.
+- **`--prefix=/usr/local`** (par défaut) ou `/opt/logiciel-version` : jamais `/usr`.
+- CMake, Meson, Cargo, Go : même logique, d'autres commandes.
+- Un logiciel compilé **échappe aux mises à jour** : note-le et suis ses failles.
+- Avant de compiler : dépôts, **rétroportages**, dépôt de l'éditeur, **paquet maison**. Et on compile de préférence hors de la production.

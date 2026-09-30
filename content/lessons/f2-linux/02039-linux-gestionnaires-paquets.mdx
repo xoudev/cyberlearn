@@ -1,0 +1,153 @@
+---
+refCode: CL-LSN-02039-V01
+slug: linux-gestionnaires-paquets
+title: "Les gestionnaires de paquets : apt et dnf"
+description: "Comment un Linux installe ses logiciels : ce qu'est un paquet (.deb ou .rpm), les dépendances, les dépôts, la base de données des paquets installés, les deux étages dpkg et apt chez Debian et Ubuntu, rpm et dnf chez Red Hat et Fedora, les autres familles (apk, pacman, zypper), et pourquoi installer depuis les dépôts officiels est une mesure de sécurité. Avec l'inventaire des paquets d'un serveur Debian, dans un terminal simulé."
+category: DEV
+difficulty: INTERMEDIATE
+estimatedMinutes: 45
+xpReward: 320
+prerequisites: ["CL-LSN-02905-V01"]
+---
+
+Sur Windows, installer un logiciel consiste souvent à chercher son site, télécharger un installateur et cliquer sur « Suivant » jusqu'au bout. Sur un serveur Linux, on tape une ligne : `sudo apt install nginx`, et quelques secondes plus tard le serveur web est installé, avec toutes les bibliothèques dont il a besoin, depuis une source vérifiée. Cette simplicité repose sur un système très organisé : les **paquets**, les **dépôts** et les **gestionnaires de paquets**. Ce module t'apprend à t'en servir comme un administrateur ; cette première leçon explique comment l'ensemble fonctionne, et pourquoi c'est aussi une question de sécurité.
+
+## objectifs
+
+À la fin de cette leçon, tu sais :
+
+- expliquer ce qu'est un paquet et ce qu'il contient ;
+- expliquer ce que sont les dépendances et qui les résout ;
+- expliquer le rôle d'un dépôt et de son index ;
+- distinguer les deux étages de la gestion des paquets : `dpkg` et `apt`, `rpm` et `dnf` ;
+- reconnaître la famille d'une distribution et son gestionnaire de paquets ;
+- interroger la base des paquets installés : quel paquet a installé ce fichier, que contient ce paquet ;
+- expliquer pourquoi les dépôts officiels sont la source la plus sûre.
+
+## pourquoi ça compte
+
+Installer, mettre à jour et retirer des logiciels est le quotidien d'un administrateur, et c'est l'une des tâches où une erreur coûte le plus cher. Une bibliothèque installée à la main, hors du gestionnaire de paquets, ne recevra jamais de correctif de sécurité. Un paquet téléchargé sur un site douteux peut contenir n'importe quoi, et il s'installe avec les droits de root. À l'inverse, un système entièrement géré par ses paquets se met à jour d'une commande, se décrit précisément (on sait ce qui est installé, en quelle version, et d'où ça vient) et se reconstruit à l'identique. C'est aussi un outil d'enquête : savoir à quel paquet appartient un fichier permet de repérer un exécutable qui n'appartient à **aucun** paquet, et qui mérite donc qu'on s'y intéresse.
+
+## ce qu'est un paquet
+
+Un **paquet** est une archive qui contient un logiciel prêt à installer. Sous Debian et Ubuntu, c'est un fichier **`.deb`** ; sous Red Hat, Fedora, Rocky Linux ou AlmaLinux, un fichier **`.rpm`**. Dans les deux cas, on y trouve trois choses :
+
+- les **fichiers** du logiciel, déjà compilés, avec leur emplacement final : l'exécutable dans `/usr/bin`, la configuration dans `/etc`, la documentation dans `/usr/share/doc` ;
+- des **métadonnées** : le nom du paquet, sa version, son architecture (`amd64`, `arm64`), sa description, son mainteneur, et surtout la liste de ses **dépendances** ;
+- des **scripts** exécutés à l'installation ou à la suppression : créer un compte de service, activer un service systemd, migrer une configuration.
+
+Ce dernier point mérite une attention particulière : ces scripts s'exécutent **en root**. Installer un paquet revient donc à donner les pleins pouvoirs sur la machine à celui qui l'a fabriqué. C'est pourquoi la provenance d'un paquet compte autant.
+
+## les dépendances
+
+Presque aucun logiciel ne fonctionne seul. Le serveur web `nginx` a besoin de bibliothèques pour le chiffrement (`libssl`), la compression (`zlib`), les expressions régulières (`libpcre2`). Plutôt que d'embarquer sa propre copie de chacune, il **déclare** qu'il en a besoin : ce sont ses **dépendances**. Le paquet `libssl` est installé une seule fois, partagé par tous les programmes qui l'utilisent, et corrigé une seule fois quand une faille y est découverte.
+
+Les dépendances ont leurs propres dépendances, ce qui forme un **arbre** parfois profond. Le travail du gestionnaire de paquets est de le parcourir, d'installer tout ce qui manque dans le bon ordre, et de refuser une opération qui casserait un autre logiciel. Il existe aussi des dépendances plus souples : les paquets **recommandés** (`Recommends`), installés par défaut par `apt` mais pas indispensables, et les paquets **suggérés** (`Suggests`), simplement signalés.
+
+## les dépôts
+
+Un **dépôt** (*repository*) est un serveur qui met à disposition des milliers de paquets, avec un **index** : la liste des paquets disponibles, leurs versions, leurs dépendances et leurs empreintes. Chaque distribution publie ses dépôts officiels, reproduits sur des **miroirs** dans le monde entier. Debian en propose plusieurs sections : `main`, les logiciels libres maintenus par Debian, `contrib` et `non-free`, ou `non-free-firmware` pour les micrologiciels de certains matériels.
+
+La machine garde une **copie locale de l'index**. C'est elle que consulte le gestionnaire quand tu cherches ou installes un paquet, et c'est elle que met à jour `apt update` : cette commande ne met à jour **aucun logiciel**, seulement la liste de ce qui est disponible. On y reviendra à la leçon sur les mises à jour, parce que c'est une confusion fréquente.
+
+<Diagram caption="De l'installation d'un paquet à la machine">
+flowchart LR
+  A["Dépôt officiel : paquets et index signés"] -->|"apt update : télécharge l'index"| B["Index local, /var/lib/apt/lists"]
+  B --> C["apt install nginx : résout les dépendances"]
+  A -->|"télécharge les .deb nécessaires"| C
+  C --> D["dpkg : installe les fichiers et lance les scripts"]
+  D --> E["Base des paquets installés, /var/lib/dpkg"]
+</Diagram>
+
+## deux étages : dpkg et apt
+
+Sous Debian et Ubuntu, la gestion des paquets repose sur **deux outils superposés** :
+
+- **`dpkg`**, l'étage du bas, sait installer, retirer et interroger un fichier `.deb` **qu'on lui donne**. Il vérifie que les dépendances sont présentes, mais ne va **pas** les chercher : s'il en manque une, il s'arrête sur une erreur. Il tient la base des paquets installés, dans `/var/lib/dpkg`.
+- **`apt`**, l'étage du haut, sait où trouver les paquets (les dépôts), télécharge ce qu'il faut, calcule l'arbre des dépendances, puis confie l'installation proprement dite à `dpkg`.
+
+Au quotidien, on utilise **`apt`**. On croise aussi ses ancêtres `apt-get` et `apt-cache`, toujours présents et préférés dans les **scripts**, parce que leur affichage ne change pas d'une version à l'autre, alors que celui d'`apt` est pensé pour un humain et peut évoluer. `dpkg` reste irremplaçable pour **interroger** la base des paquets installés :
+
+```bash
+dpkg -l | grep nginx          # les paquets installés dont le nom contient nginx
+dpkg -L nginx-common          # la liste des fichiers installés par ce paquet
+dpkg -S /usr/sbin/nginx       # quel paquet a installé ce fichier ?
+```
+
+`dpkg -l` affiche une colonne d'état au début de chaque ligne : `ii` signifie « voulu installé, et installé » ; `rc` signale un paquet retiré dont il reste la configuration, une situation que la leçon suivante t'apprendra à nettoyer.
+
+## rpm et dnf, et les autres familles
+
+La famille Red Hat suit exactement le même principe. **`rpm`** est l'étage du bas, qui installe et interroge les fichiers `.rpm` ; **`dnf`**, successeur de `yum`, est l'étage du haut, qui résout les dépendances depuis les dépôts. Les commandes se ressemblent :
+
+| Besoin | Debian, Ubuntu | Red Hat, Fedora, Rocky |
+|---|---|---|
+| installer | `apt install nginx` | `dnf install nginx` |
+| rechercher | `apt search nginx` | `dnf search nginx` |
+| décrire un paquet | `apt show nginx` | `dnf info nginx` |
+| quel paquet possède ce fichier | `dpkg -S /usr/sbin/nginx` | `rpm -qf /usr/sbin/nginx` |
+| fichiers d'un paquet | `dpkg -L nginx` | `rpm -ql nginx` |
+| paquets installés | `dpkg -l` ou `apt list --installed` | `rpm -qa` |
+
+D'autres familles existent : **`apk`** pour Alpine Linux, très utilisée dans les conteneurs Docker ; **`pacman`** pour Arch Linux ; **`zypper`** pour openSUSE. Les idées sont les mêmes, seuls les noms changent : une fois qu'on a compris un gestionnaire, on apprend les autres en une heure. Pour savoir sur quelle famille tu te trouves, le fichier **`/etc/os-release`** donne le nom et la version de la distribution, et la ligne `ID_LIKE` sa famille d'origine : Ubuntu y déclare `debian`, Rocky Linux `rhel centos fedora`.
+
+## pourquoi les dépôts officiels sont plus sûrs
+
+Installer depuis les dépôts de sa distribution apporte trois garanties qu'un téléchargement manuel n'offre pas :
+
+- **l'authenticité** : l'index des dépôts est **signé** par la distribution, et chaque paquet y figure avec son empreinte. `apt` refuse un paquet dont l'empreinte ne correspond pas, et un index dont la signature est invalide. Un miroir compromis ne peut donc pas glisser un paquet modifié. La troisième leçon du module détaille ce mécanisme ;
+- **le suivi** : l'équipe de sécurité de la distribution publie les correctifs dans ces mêmes dépôts. Un `apt upgrade` les applique à tout ce qui est installé, sans rien oublier ;
+- **la cohérence** : les versions ont été testées ensemble, et le gestionnaire sait à tout moment ce qui est installé et pourquoi.
+
+Chaque fois qu'on installe un logiciel en dehors de ce circuit (un binaire téléchargé, un script `curl | sh`, un paquet d'un dépôt tiers), on renonce à tout ou partie de ces garanties. Ce n'est pas interdit, mais c'est un choix à faire en connaissance de cause, et les leçons suivantes t'apprendront à le faire proprement.
+
+## à toi de jouer
+
+Tu arrives sur un serveur Debian que tu ne connais pas. Avant d'y toucher, fais l'inventaire :
+
+1. identifie la distribution avec `cat /etc/os-release` ;
+2. regarde la description et les dépendances du serveur web avec `apt show nginx` ;
+3. trouve le paquet qui a installé `/usr/bin/curl` avec `dpkg -S` ;
+4. un collègue a trouvé un exécutable `/usr/local/bin/sync-tool` : vérifie s'il appartient à un paquet.
+
+<SimulatedTerminal shell="bash" title="L'inventaire d'un serveur Debian" expectedCommands={["cat /etc/os-release", "apt show nginx", "dpkg -S /usr/bin/curl", "dpkg -S /usr/local/bin/sync-tool"]} hints={["os-release est un simple fichier texte : cat suffit.", "apt show suivi du nom du paquet.", "dpkg -S suivi du chemin complet du fichier.", "Même commande pour sync-tool : une erreur est aussi une réponse."]} commands={{ "cat /etc/os-release": "PRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"12\"\nVERSION=\"12 (bookworm)\"\nVERSION_CODENAME=bookworm\nID=debian\nHOME_URL=\"https://www.debian.org/\"\nSUPPORT_URL=\"https://www.debian.org/support\"\nBUG_REPORT_URL=\"https://bugs.debian.org/\"", "apt show nginx": "Package: nginx\nVersion: 1.22.1-9\nPriority: optional\nSection: httpd\nMaintainer: Debian Nginx Maintainers <pkg-nginx-maintainers@alioth-lists.debian.net>\nInstalled-Size: 1 222 kB\nProvides: httpd, httpd-cgi, nginx-abi-1.22.1-7\nDepends: nginx-common (= 1.22.1-9), iproute2, libc6 (>= 2.34), libcrypt1 (>= 1:4.1.0), libpcre2-8-0 (>= 10.22), libssl3 (>= 3.0.0), zlib1g (>= 1:1.1.4)\nHomepage: https://nginx.org\nAPT-Manual-Installed: yes\nAPT-Sources: http://deb.debian.org/debian bookworm/main amd64 Packages\nDescription: small, powerful, scalable web/proxy server", "apt-cache depends nginx": "nginx\n  Depends: nginx-common\n  Depends: iproute2\n  Depends: libc6\n  Depends: libcrypt1\n  Depends: libpcre2-8-0\n  Depends: libssl3\n  Depends: zlib1g", "dpkg -S /usr/bin/curl": "curl: /usr/bin/curl", "dpkg -S /usr/local/bin/sync-tool": "dpkg-query: no path found matching pattern /usr/local/bin/sync-tool", "dpkg -S /usr/sbin/nginx": "nginx: /usr/sbin/nginx", "dpkg -L curl": "/.\n/usr\n/usr/bin\n/usr/bin/curl\n/usr/share\n/usr/share/doc\n/usr/share/doc/curl\n/usr/share/doc/curl/copyright\n/usr/share/man\n/usr/share/man/man1\n/usr/share/man/man1/curl.1.gz\n/usr/share/zsh\n/usr/share/zsh/vendor-completions\n/usr/share/zsh/vendor-completions/_curl", "dpkg -l | grep nginx": "ii  nginx          1.22.1-9     amd64  small, powerful, scalable web/proxy server\nii  nginx-common   1.22.1-9     all    small, powerful, scalable web/proxy server - common files", "ls -l /usr/local/bin/sync-tool": "-rwxr-xr-x 1 root root 2849304 sept. 12 03:41 /usr/local/bin/sync-tool", "apt list --installed | wc -l": "WARNING: apt does not have a stable CLI interface. Use with caution in scripts.\n\n612" }} />
+
+`dpkg -S` répond pour `curl` : il appartient au paquet du même nom. Pour `sync-tool`, il ne trouve rien : ce fichier a été déposé à la main, hors de tout paquet. Ce n'est pas forcément grave, puisque `/usr/local` est précisément l'emplacement prévu pour les logiciels installés localement, mais il faudra savoir qui l'a mis là, quand, et pourquoi : aucun `apt upgrade` ne le mettra jamais à jour. Remarque aussi, dans `apt show nginx`, la ligne `APT-Sources` qui dit de quel dépôt vient le paquet, et la ligne `Depends` qui liste ses dépendances, avec les versions minimales exigées.
+
+## les pièges
+
+- **Confondre `apt update` et `apt upgrade`.** Le premier ne met à jour que l'index ; seul le second met à jour les logiciels.
+- **Installer un `.deb` avec `dpkg -i` et s'étonner des erreurs de dépendances.** `dpkg` ne va rien chercher. `apt install ./fichier.deb` résout les dépendances depuis les dépôts.
+- **Utiliser `apt` dans un script.** Son affichage n'est pas stable, il le dit lui-même : préfère `apt-get` et `apt-cache`.
+- **Mélanger les familles.** Un `.rpm` ne s'installe pas sur Debian, ni un `.deb` sur Rocky Linux. `/etc/os-release` dit où tu es.
+- **Oublier que les scripts d'un paquet tournent en root.** Installer un paquet d'origine douteuse, c'est donner la machine à son auteur.
+- **Ignorer les fichiers qui n'appartiennent à aucun paquet.** Ils échappent aux mises à jour, et parfois à la vigilance : `dpkg -S` les révèle.
+
+## pour aller plus loin
+
+<ExternalLink href="https://www.debian.org/doc/manuals/debian-reference/ch02.fr.html" description="Le chapitre de la référence Debian consacré à la gestion des paquets, en français">Référence Debian : gestion des paquets</ExternalLink>
+
+<ExternalLink href="https://docs.fedoraproject.org/en-US/quick-docs/dnf/" description="Utiliser dnf sur Fedora et les distributions de la famille Red Hat, en anglais">Documentation Fedora : dnf</ExternalLink>
+
+<ExternalLink href="https://man7.org/linux/man-pages/man5/os-release.5.html" description="Le fichier qui identifie la distribution et sa famille, en anglais">Page de manuel de os-release</ExternalLink>
+
+## quiz
+
+<QuizGroup>
+  <Quiz id="q-1" question="Que contient un paquet .deb ou .rpm, en plus des fichiers du logiciel ?" options={["Rien d'autre", "Des métadonnées, dont les dépendances, et des scripts exécutés à l'installation", "Une copie de tout le système", "Le code source obligatoirement"]} correct={1} explanation="Nom, version, architecture, dépendances, et des scripts d'installation et de suppression, qui s'exécutent en root." />
+  <Quiz id="q-2" question="Que fait apt update ?" options={["Il met à jour tous les logiciels", "Il télécharge la liste à jour des paquets disponibles, sans rien installer", "Il met à jour le noyau", "Il met à jour apt lui-même uniquement"]} correct={1} explanation="apt update rafraîchit l'index local des dépôts ; c'est apt upgrade qui met à jour les logiciels installés." />
+  <Quiz id="q-3" question="Quelle est la différence entre dpkg et apt ?" options={["Aucune, ce sont des synonymes", "dpkg installe un fichier .deb qu'on lui donne sans chercher les dépendances ; apt les résout et les télécharge depuis les dépôts", "dpkg est pour Red Hat, apt pour Debian", "apt est l'ancien nom de dpkg"]} correct={1} explanation="apt est l'étage du haut, qui calcule et télécharge ; dpkg, l'étage du bas, installe et tient la base des paquets." />
+  <Quiz id="q-4" question="Quelle commande dit quel paquet a installé /usr/sbin/nginx sur Debian ?" options={["apt show /usr/sbin/nginx", "dpkg -S /usr/sbin/nginx", "dpkg -L /usr/sbin/nginx", "which nginx"]} correct={1} explanation="dpkg -S cherche le fichier dans la base des paquets installés. dpkg -L fait l'inverse : il liste les fichiers d'un paquet." />
+  <Quiz id="q-5" question="Quel est l'équivalent de dpkg -S /usr/sbin/nginx sur Rocky Linux ?" options={["rpm -qf /usr/sbin/nginx", "dnf search nginx", "rpm -qa", "yum list nginx"]} correct={0} explanation="rpm -qf (query file) donne le paquet propriétaire d'un fichier." />
+  <Quiz id="q-6" question="Pourquoi les dépôts officiels d'une distribution sont-ils la source la plus sûre ?" options={["Parce qu'ils sont plus rapides", "Parce que leur index est signé, que les paquets y sont vérifiés par empreinte, et que les correctifs de sécurité y sont publiés", "Parce qu'ils ne contiennent que des logiciels payants", "Parce qu'ils évitent d'utiliser root"]} correct={1} explanation="Authenticité, suivi des correctifs et cohérence des versions : trois garanties qu'un téléchargement manuel n'offre pas." />
+  <Quiz id="q-7" question="dpkg -S ne trouve aucun paquet pour /usr/local/bin/sync-tool. Qu'en conclure ?" options={["Le fichier n'existe pas", "Il a été installé hors du gestionnaire de paquets : aucune mise à jour ne le suivra, et il faut savoir d'où il vient", "C'est un virus, forcément", "La base dpkg est corrompue"]} correct={1} explanation="/usr/local est prévu pour les installations locales, mais un fichier hors paquet échappe aux mises à jour et doit être documenté." />
+</QuizGroup>
+
+## à retenir
+
+- Un **paquet** (`.deb`, `.rpm`) contient les fichiers d'un logiciel, ses **métadonnées** (dont les **dépendances**) et des **scripts** qui tournent en root.
+- Un **dépôt** publie des paquets et un **index signé** ; `apt update` rafraîchit la copie locale de cet index.
+- Deux étages : **`dpkg`** (ou `rpm`) installe et interroge ; **`apt`** (ou `dnf`) résout les dépendances et télécharge.
+- `dpkg -l`, `dpkg -L paquet`, `dpkg -S fichier` ; côté Red Hat, `rpm -qa`, `rpm -ql`, `rpm -qf`.
+- **`/etc/os-release`** dit quelle distribution et quelle famille.
+- Les **dépôts officiels** apportent authenticité, correctifs et cohérence ; tout ce qui s'installe hors d'eux se fait en connaissance de cause.
